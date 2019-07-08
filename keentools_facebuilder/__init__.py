@@ -61,7 +61,7 @@ from . panels import OBJECT_PT_FBSettingsPanel, OBJECT_PT_FBColorsPanel
 from . panels import OBJECT_PT_TBPanel
 from . panels import FBFixMenu
 from . head import MESH_OT_FBAddHead
-# from . body import MESH_OT_FBAddBody
+from . body import MESH_OT_FBAddBody
 from . settings import FBCameraItem
 from . settings import FBHeadItem
 from . settings import FBSceneSettings
@@ -80,7 +80,7 @@ classes = (
     OBJECT_PT_FBColorsPanel,
     OBJECT_PT_TBPanel,
     MESH_OT_FBAddHead,
-    # MESH_OT_FBAddBody,
+    MESH_OT_FBAddBody,
     OBJECT_OT_FBOperator,
     FBCameraItem,
     FBHeadItem,
@@ -97,7 +97,7 @@ classes = (
 
 def menu_func(self, context):
     self.layout.operator(MESH_OT_FBAddHead.bl_idname, icon='USER')
-    # self.layout.operator(MESH_OT_FBAddBody.bl_idname, icon='ARMATURE_DATA')
+    self.layout.operator(MESH_OT_FBAddBody.bl_idname, icon='ARMATURE_DATA')
 
 
 def register():

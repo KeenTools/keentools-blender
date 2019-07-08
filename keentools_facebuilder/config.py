@@ -21,8 +21,8 @@ import bpy
 from enum import Enum
 
 
-_prefix = 'fb'  # for FaceBuilder
 _company = 'keentools'
+_prefix = _company + '_fb'  # for FaceBuilder
 
 
 class BuilderType(Enum):
@@ -37,13 +37,13 @@ class config:
     addon_name = __package__  # the same as module name
     addon_version = '0.1m'
     addon_search = 'KeenTools'
-    addon_global_var_name = 'keentools_' + _prefix + '_settings'
+    addon_global_var_name = _prefix + '_settings'
     fb_panel_label = 'Face Builder v0.1m'
     fb_tab_category = 'Face Builder'
     default_builder = BuilderType.FaceBuilder
 
     # Operators ids
-    fb_main_operator_idname = 'object.' + _prefix + '_operator'
+    fb_main_operator_idname = 'object.' + _prefix + '_main_operator'
     fb_filedialog_operator_idname = _prefix + '_import.open_filebrowser'
     fb_draw_operator_idname = 'object.' + _prefix + '_draw'
     fb_draw_operator_callname = _prefix + '_draw'
@@ -53,6 +53,10 @@ class config:
     fb_actor_operator_callname = _prefix + '_actor'
     fb_warning_operator_idname = 'wm.' + _prefix + '_addon_warning'
     fb_warning_operator_callname = _prefix + '_addon_warning'
+    fb_add_head_operator_idname = 'mesh.' + _prefix + '_add_head'
+    fb_add_head_operator_callname = _prefix + '_add_head'
+    fb_add_body_operator_idname = 'mesh.' + _prefix + '_add_body'
+    fb_add_body_operator_callname = _prefix + '_add_body'
 
     # Panels ids
     fb_panel_idname = 'OBJECT_PT_' + _prefix + '_panel_id'
@@ -69,10 +73,10 @@ class config:
 
     # Object Custom Properties
     version_prop_name = _company + '_version'
-    fb_serial_prop_name = _company + '_' + _prefix + '_serial'
-    fb_images_prop_name = _company + '_' + _prefix + '_images'
-    fb_dir_prop_name = _company + '_' + _prefix + '_dir'
-    fb_camera_prop_name = _company + '_' + _prefix + '_camera'
+    fb_serial_prop_name = _prefix + '_serial'
+    fb_images_prop_name = _prefix + '_images'
+    fb_dir_prop_name =  _prefix + '_dir'
+    fb_camera_prop_name = _prefix + '_camera'
     # Save / Reconstruct parameters
     reconstruct_focal_param = ('focal',)
     reconstruct_sensor_width_param = ('sensor_width',)
@@ -111,3 +115,4 @@ class ErrorType:
     BackgroundsDiffer = 2
     IllegalIndex = 3
     CannotReconstruct = 4
+    CannotCreate = 5

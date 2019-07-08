@@ -1,23 +1,13 @@
 import bpy
-import blf
-import gpu
-from gpu_extras.batch import batch_for_shader
-import mathutils
-import math
-from random import random
-from . utils import (
-    FBPoints2D, FBPoints3D, FBText, FBCalc,
-    BuilderType,
-    force_stop_shaders,
+from pykeentools import UnlicensedException
+
+from .config import config, get_main_settings, ErrorType, BuilderType
+from .fbdebug import FBDebug
+from .fbloader import FBLoader
+from .utils import (
+    FBCalc,
     FBStopTimer
 )
-from . fbloader import FBLoader
-from . fbdebug import FBDebug
-from .config import config, get_main_settings, ErrorType
-
-import pykeentools
-from pykeentools import UnlicensedException
-import numpy as np
 
 
 class OBJECT_OT_FBDraw(bpy.types.Operator):

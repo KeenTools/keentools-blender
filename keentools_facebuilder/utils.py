@@ -25,7 +25,7 @@ import math
 import blf
 import bgl
 from . const import FBConst
-from . config import get_main_settings, BuilderType
+from . config import get_main_settings
 
 
 def force_stop_shaders():

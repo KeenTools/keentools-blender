@@ -20,8 +20,8 @@
 import bpy
 from . fbloader import FBLoader
 from . fbdebug import FBDebug
-from . utils import FBCalc, BuilderType
-from . config import config, get_main_settings
+from . utils import FBCalc
+from . config import config, get_main_settings, BuilderType
 
 from pykeentools import UnlicensedException
 

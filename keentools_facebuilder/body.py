@@ -18,19 +18,18 @@
 
 
 import bpy
-import numpy as np
+from .config import config, get_main_settings, BuilderType, ErrorType
 from . fbloader import FBLoader
-from .config import config, BuilderType, get_main_settings, ErrorType
 
-
-class MESH_OT_FBAddHead(bpy.types.Operator):
-    bl_idname = config.fb_add_head_operator_idname
-    bl_label = "Face Builder Head"
+class MESH_OT_FBAddBody(bpy.types.Operator):
+    bl_idname = config.fb_add_body_operator_idname
+    bl_label = "BodyBuilder Body"
     bl_options = {'REGISTER', 'UNDO'}
+
 
     def execute(self, context):
         try:
-            obj = self.new_head()
+            obj = self.new_body()
         except:
             op = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
             op('INVOKE_DEFAULT', msg=ErrorType.CannotCreate)
@@ -48,9 +47,9 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         return {'FINISHED'}
 
     @classmethod
-    def new_head(cls):
+    def new_body(cls):
         stored_builder_type = FBLoader.get_builder_type()
-        fb = FBLoader.new_builder(BuilderType.FaceBuilder)
+        fb = FBLoader.new_builder(BuilderType.BodyBuilder)
         geo = fb.applied_args_model()
         me = geo.mesh(0)
 
@@ -76,7 +75,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
                 n += 1
             faces.append(tuple(row))
 
-        mesh = bpy.data.meshes.new('Head_mesh')
+        mesh = bpy.data.meshes.new('Body_mesh')
         mesh.from_pydata(vertices2, [], faces)
 
         # Init Custom Normals (work on Shading Flat!)
@@ -88,7 +87,6 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         # mesh.use_auto_smooth = True
         # mesh.auto_smooth_angle = 3.1415927410125732
 
-        obj = bpy.data.objects.new('FBHead', mesh)
-        # Restore builder
+        obj = bpy.data.objects.new('FBBody', mesh)
         FBLoader.new_builder(stored_builder_type)
         return obj

@@ -180,8 +180,8 @@ class FBLoader:
         return cls.builder.get_builder()
 
     @classmethod
-    def new_builder(cls):
-        return cls.builder.new_builder()
+    def new_builder(cls, builder_type=BuilderType.NoneBuilder):
+        return cls.builder.new_builder(builder_type)
 
     @classmethod
     def get_builder_type(cls):

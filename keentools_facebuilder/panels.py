@@ -294,7 +294,15 @@ class WM_OT_FBAddonWarning(Operator):
                 "===============",
                 "Object parameters are invalid or missing."
             ])
-
+        elif self.msg == ErrorType.CannotCreate:
+            self.set_content([
+                "===============",
+                "Can't create Object",
+                "===============",
+                "Error when creating Object",
+                "This addon version can't create",
+                "objects of this type"
+            ])
         return context.window_manager.invoke_props_dialog(self, width=300)
         # return context.window_manager.invoke_popup(self, width=300)
 

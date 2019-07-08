@@ -20,7 +20,7 @@
 from pykeentools import FaceBuilder
 from pykeentools import BodyBuilder
 
-from . utils import BuilderType
+from . config import BuilderType
 
 
 class UniBuilder:
@@ -41,11 +41,16 @@ class UniBuilder:
     def get_builder_type(self):
         return self.builder_type
 
-    def new_builder(self):
-        if self.builder_type == BuilderType.FaceBuilder:
+    def new_builder(self, builder_type=BuilderType.NoneBuilder):
+        b_type = builder_type
+        if builder_type == BuilderType.NoneBuilder:
+            b_type = self.builder_type
+
+        if b_type == BuilderType.FaceBuilder:
             self.builder = FaceBuilder()
             self.builder_type = BuilderType.FaceBuilder
-        elif self.builder_type == BuilderType.BodyBuilder:
+        elif b_type == BuilderType.BodyBuilder:
             self.builder = BodyBuilder()
             self.builder_type = BuilderType.BodyBuilder
         return self.builder
+
