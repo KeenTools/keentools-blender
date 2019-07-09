@@ -146,7 +146,7 @@ class FBHeadItem(PropertyGroup):
 
     def set_serial_str(self, value):
         self.serial_str = value
-        self.headobj[config.fb_serial_prop_name] = value
+        self.headobj[config.fb_serial_prop_name[0]] = value
 
     def get_serial_str(self):
         return self.serial_str
@@ -169,9 +169,9 @@ class FBHeadItem(PropertyGroup):
         for c in self.cameras:
             if c.cam_image:
                 res.append(c.cam_image.filepath)
-        self.headobj[config.fb_images_prop_name] = res
+        self.headobj[config.fb_images_prop_name[0]] = res
         # Dir name of current scene
-        self.headobj[config.fb_dir_prop_name] = bpy.path.abspath("//")
+        self.headobj[config.fb_dir_prop_name[0]] = bpy.path.abspath("//")
 
 
 class FBSceneSettings(PropertyGroup):
@@ -345,4 +345,4 @@ class FBSceneSettings(PropertyGroup):
                 config.reconstruct_focal_param[0]: self.focal,
                 config.reconstruct_frame_width_param[0]: render.resolution_x,
                 config.reconstruct_frame_height_param[0]: render.resolution_y}
-        obj[config.fb_camera_prop_name] = d
+        obj[config.fb_camera_prop_name[0]] = d

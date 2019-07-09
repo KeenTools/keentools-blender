@@ -72,11 +72,11 @@ class config:
     tex_builder_matname = 'texbuilder_view_mat'
 
     # Object Custom Properties
-    version_prop_name = _company + '_version'
-    fb_serial_prop_name = _prefix + '_serial'
-    fb_images_prop_name = _prefix + '_images'
-    fb_dir_prop_name =  _prefix + '_dir'
-    fb_camera_prop_name = _prefix + '_camera'
+    version_prop_name = (_company + '_version',)
+    fb_serial_prop_name = (_prefix + '_serial',)
+    fb_images_prop_name = (_prefix + '_images',)
+    fb_dir_prop_name =  (_prefix + '_dir',)
+    fb_camera_prop_name = (_prefix + '_camera',)
     # Save / Reconstruct parameters
     reconstruct_focal_param = ('focal',)
     reconstruct_sensor_width_param = ('sensor_width',)
