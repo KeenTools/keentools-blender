@@ -99,6 +99,10 @@ class OBJECT_OT_FBOperator(Operator):
                 fb = FBLoader.get_builder()
                 kid = FBLoader.keyframe_by_camnum(headnum, camnum)
                 # TODO: Unmorph method call
+                fb.unmorph()
+                print('UNMORPH', headnum, camnum)
+                FBLoader.fb_save(headnum, camnum)
+                FBLoader.fb_redraw(headnum, camnum)
 
         elif self.action == "select_camera":
             # Select camera from proper head
