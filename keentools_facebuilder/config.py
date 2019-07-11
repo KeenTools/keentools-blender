@@ -72,6 +72,10 @@ class config:
     tex_builder_matname = 'texbuilder_view_mat'
 
     # Object Custom Properties
+    # Tuples instead simple values are used to load custom properties
+    # if they have different names (from old scenes by ex. or if they will be
+    # renamed in future).
+    # Only first value in tuple is used for new custom property creation.
     version_prop_name = (_company + '_version',)
     fb_serial_prop_name = (_prefix + '_serial',)
     fb_images_prop_name = (_prefix + '_images',)
