@@ -63,7 +63,7 @@ def init_pykeentools_copy():
             print("CAN'T CREATE DEFAULT COPY")
             try:
                 # Create temporary folder
-                tmp_dir = tempfile.mkdtemp(prefix='keentools_fb_')  # creates new dir
+                tmp_dir = tempfile.mkdtemp(prefix='keentools_fb_')  # new dir
                 temp_path = os.path.join(tmp_dir, win_file_name)
                 shutil.copy2(src_path, temp_path)
                 pykeentools_dir = tmp_dir
@@ -105,7 +105,8 @@ from . body import MESH_OT_FBAddBody
 from . settings import FBCameraItem
 from . settings import FBHeadItem
 from . settings import FBSceneSettings
-from . main_operator import OBJECT_OT_FBOperator
+from . main_operator import (OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
+                             OBJECT_OT_FBUnmorph, OBJECT_OT_FBRemovePins)
 from . draw import OBJECT_OT_FBDraw
 from . movepin import OBJECT_OT_FBMovePin
 from . actor import OBJECT_OT_FBActor
@@ -121,7 +122,10 @@ classes = (
     OBJECT_PT_TBPanel,
     MESH_OT_FBAddHead,
     MESH_OT_FBAddBody,
-    OBJECT_OT_FBOperator,
+    OBJECT_OT_FBSelectCamera,
+    OBJECT_OT_FBCenterGeo,
+    OBJECT_OT_FBUnmorph,
+    OBJECT_OT_FBRemovePins,
     FBCameraItem,
     FBHeadItem,
     FBSceneSettings,

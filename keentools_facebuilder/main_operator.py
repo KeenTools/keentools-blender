@@ -29,21 +29,27 @@ from .config import get_main_settings, ErrorType
 from . config import config
 
 
-class OBJECT_OT_FBOperator(Operator):
-    """ Face Builder Main Operator """
-    bl_idname = config.fb_main_operator_idname
-    bl_label = "FaceBuilder PinMode"
-    bl_options = {'REGISTER', 'UNDO'}
+def check_settings():
+    settings = get_main_settings()
+    # Settings structure is broken
+    if not settings.check_heads_and_cams():
+        # Fix Heads and cameras
+        heads_deleted, cams_deleted = settings.fix_heads()
+        if heads_deleted == 0:
+            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
+        return False
+    return True
 
-    action: StringProperty(name="String Value")
+
+class OBJECT_OT_FBSelectCamera(Operator):
+    bl_idname = config.fb_main_select_camera_idname
+    bl_label = "Pin Mode"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Switch to pin-mode for this camera"
+
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
-
-    def get_headnum(self):
-        return self.headnum
-
-    def get_camnum(self):
-        return self.camnum
 
     # This draw overrides standard operator panel
     def draw(self, context):
@@ -52,101 +58,159 @@ class OBJECT_OT_FBOperator(Operator):
     def execute(self, context):
         scene = context.scene
         settings = get_main_settings()
-        headnum = self.get_headnum()
-        camnum = self.get_camnum()
+        headnum = self.headnum
+        camnum = self.camnum
 
-        print("Head:{0} Cam: {1}".format(headnum, camnum))
-        # Settings structure is broken
-        if not settings.check_heads_and_cams():
-            # Fix Heads and cameras
-            heads_deleted, cams_deleted = settings.fix_heads()
-            if heads_deleted == 0:
-                warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
-                warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
-            return {'FINISHED'}
+        if not check_settings():
+            return {'CANCELLED'}
 
-        if self.action == "remove_pins":
-            if settings.pinmode:
-                fb = FBLoader.get_builder()
-                kid = FBLoader.keyframe_by_camnum(headnum, camnum)
-                fb.remove_pins(kid)
-                print('PINS REMOVED')
-                FBLoader.fb_save(headnum, camnum)
-                FBLoader.fb_redraw(headnum, camnum)
-                FBLoader.update_pins_count(headnum, camnum)
-                # === Debug only ===
-                FBDebug.add_event_to_queue('REMOVE_PINS', (0, 0))
-                FBDebug.add_event_to_queue('FORCE_SNAPSHOT', (0, 0))
-                FBDebug.make_snapshot()
-                # === Debug only ===
+        # bpy.ops.object.select_all(action='DESELECT')
+        cam = settings.heads[headnum].cameras[camnum].camobj
+        cam.select_set(state=True)
+        bpy.context.view_layer.objects.active = cam
 
-        if self.action == "center_geo":
-            if settings.pinmode:
-                fb = FBLoader.get_builder()
-                kid = FBLoader.keyframe_by_camnum(headnum, camnum)
-                fb.center_model_mat(kid)
-                print('CENTERED GEO', headnum, camnum)
-                FBLoader.fb_save(headnum, camnum)
-                FBLoader.fb_redraw(headnum, camnum)
-                # === Debug only ===
-                FBDebug.add_event_to_queue('CENTER_GEO', (0, 0))
-                FBDebug.add_event_to_queue('FORCE_SNAPSHOT', (0, 0))
-                FBDebug.make_snapshot()
-                # === Debug only ===
+        # Switch to camera
+        if scene.camera != cam:
+            cam.hide_viewport = False  # To allow switch
+            bpy.ops.view3d.object_as_camera()
+        else:
+            # Toggle camera view
+            bpy.ops.view3d.view_camera()  # if settings.pinmode
 
-        if self.action == "unmorph":
-            if settings.pinmode:
-                fb = FBLoader.get_builder()
-                kid = FBLoader.keyframe_by_camnum(headnum, camnum)
-                # TODO: Unmorph method call
-                fb.unmorph()
-                print('UNMORPH', headnum, camnum)
-                FBLoader.fb_save(headnum, camnum)
-                FBLoader.fb_redraw(headnum, camnum)
+        # Add Background Image
+        c = cam.data
+        c.lens = settings.focal
+        c.show_background_images = True
+        if len(c.background_images) == 0:
+            b = c.background_images.new()
+        else:
+            b = c.background_images[0]
+        b.image = settings.heads[headnum].cameras[camnum].cam_image
 
-        elif self.action == "select_camera":
-            # Select camera from proper head
-            obj = context.active_object
-            # idx = settings.head_by_obj(obj)
-            idx = headnum
+        headobj = settings.heads[headnum].headobj
+        bpy.context.view_layer.objects.active = headobj
 
-            # bpy.ops.object.select_all(action='DESELECT')
-            cam = settings.heads[headnum].cameras[camnum].camobj
-            cam.select_set(state=True)
-            bpy.context.view_layer.objects.active = cam
+        # Auto Call PinMode
+        draw_op = getattr(bpy.ops.object, config.fb_draw_operator_callname)
+        draw_op('INVOKE_DEFAULT', headnum=headnum, camnum=camnum)
 
-            # Switch to camera
-            if scene.camera != cam:
-                cam.hide_viewport = False  # To allow switch
-                bpy.ops.view3d.object_as_camera()
-            else:
-                # Toggle camera view
-                bpy.ops.view3d.view_camera()  # if settings.pinmode
+        # === Debug only ===
+        FBDebug.add_event_to_queue('SELECT_CAMERA', (headnum, camnum))
+        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', (headnum, camnum))
+        FBDebug.make_snapshot()
+        # === Debug only ===
+        return {'FINISHED'}
 
-            # Add Background Image
-            c = cam.data
-            c.lens = settings.focal
-            c.show_background_images = True
-            if len(c.background_images) == 0:
-                b = c.background_images.new()
-            else:
-                b = c.background_images[0]
-            b.image = settings.heads[headnum].cameras[camnum].cam_image
 
-            headobj = settings.heads[headnum].headobj
-            bpy.context.view_layer.objects.active = headobj
+class OBJECT_OT_FBCenterGeo(Operator):
+    bl_idname = config.fb_main_center_geo_idname
+    bl_label = "Center Geo"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Place model geometry central in camera view"
 
-            # Auto Call PinMode
-            draw_op = getattr(bpy.ops.object, config.fb_draw_operator_callname)
-            draw_op('INVOKE_DEFAULT', headnum=headnum, camnum=camnum)
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
 
-            # === Debug only ===
-            FBDebug.add_event_to_queue('SELECT_CAMERA', (headnum, camnum))
-            FBDebug.add_event_to_queue('FORCE_SNAPSHOT', (headnum, camnum))
-            FBDebug.make_snapshot()
-            # === Debug only ===
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
 
-        self.report({'INFO'},
-                    "Action: {} Camera: {}".format(self.action, camnum))
+    def execute(self, context):
+        settings = get_main_settings()
+        headnum = self.headnum
+        camnum = self.camnum
 
+        if not settings.pinmode:
+            return {'CANCELLED'}
+
+        if not check_settings():
+            return {'CANCELLED'}
+
+        fb = FBLoader.get_builder()
+        kid = FBLoader.keyframe_by_camnum(headnum, camnum)
+        fb.center_model_mat(kid)
+        print('CENTERED GEO', headnum, camnum)
+        FBLoader.fb_save(headnum, camnum)
+        FBLoader.fb_redraw(headnum, camnum)
+        # === Debug only ===
+        FBDebug.add_event_to_queue('CENTER_GEO', (0, 0))
+        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', (0, 0))
+        FBDebug.make_snapshot()
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBUnmorph(Operator):
+    bl_idname = config.fb_main_unmorph_idname
+    bl_label = "Unmorph"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Unmorph shape to default mesh. It will return back when you move any pin."
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        scene = context.scene
+        settings = get_main_settings()
+        headnum = self.headnum
+        camnum = self.camnum
+
+        if not settings.pinmode:
+            return {'CANCELLED'}
+
+        if not check_settings():
+            return {'CANCELLED'}
+
+        fb = FBLoader.get_builder()
+        kid = FBLoader.keyframe_by_camnum(headnum, camnum)
+        # TODO: Unmorph method call
+        fb.unmorph()
+        print('UNMORPH', headnum, camnum)
+        FBLoader.fb_save(headnum, camnum)
+        FBLoader.fb_redraw(headnum, camnum)
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBRemovePins(Operator):
+    bl_idname = config.fb_main_remove_pins_idname
+    bl_label = "Remove Pins"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Place model geometry central in camera view"
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        scene = context.scene
+        settings = get_main_settings()
+        headnum = self.headnum
+        camnum = self.camnum
+
+        if not settings.pinmode:
+            return {'CANCELLED'}
+
+        if not check_settings():
+            return {'CANCELLED'}
+
+        fb = FBLoader.get_builder()
+        kid = FBLoader.keyframe_by_camnum(headnum, camnum)
+        fb.remove_pins(kid)
+        # Added but don't work
+        fb.solve_for_current_pins(kid)
+        print('PINS REMOVED')
+        FBLoader.fb_save(headnum, camnum)
+        FBLoader.fb_redraw(headnum, camnum)
+        FBLoader.update_pins_count(headnum, camnum)
+        # === Debug only ===
+        FBDebug.add_event_to_queue('REMOVE_PINS', (0, 0))
+        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', (0, 0))
+        FBDebug.make_snapshot()
+        # === Debug only ===
         return {'FINISHED'}

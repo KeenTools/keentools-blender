@@ -28,6 +28,7 @@ from .config import config, get_main_settings, ErrorType
 
 
 class OBJECT_OT_FBOpenFilebrowser(Operator, ImportHelper):
+    """ Open selected image sequence as cameras """
 
     bl_idname = config.fb_filedialog_operator_idname
     bl_label = "Open the file browser"

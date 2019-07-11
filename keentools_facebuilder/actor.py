@@ -34,8 +34,7 @@ from . config import get_main_settings
 
 
 class OBJECT_OT_FBActor(Operator):
-    """ Face Builder Actor Operator
-        It is used if we don't need operator params
+    """ Face Builder Action.
     """
     bl_idname = config.fb_actor_operator_idname
     bl_label = "FaceBuilder in Action"

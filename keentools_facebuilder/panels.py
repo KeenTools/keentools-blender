@@ -57,19 +57,20 @@ class OBJECT_PT_FBPanel(Panel):
     def poll(cls, context):
         return proper_object_test()
 
-    def draw_pins_panel(self, context):
+    def draw_pins_panel(self, headnum, camnum):
         layout = self.layout
         box = layout.box()
-        op = box.operator(config.fb_main_operator_idname, text="Center Geo")
-        op.action = 'center_geo'
-
+        op = box.operator(config.fb_main_center_geo_idname, text="Center Geo")
+        op.headnum = headnum
+        op.camnum = camnum
         op = box.operator(
-            config.fb_main_operator_idname, text="Remove Pins", icon='CANCEL')
-        op.action = 'remove_pins'
-
-        op = box.operator(
-            config.fb_main_operator_idname, text="Unmorph", icon='CANCEL')
-        op.action = 'unmorph'
+            config.fb_main_remove_pins_idname,
+            text="Remove Pins", icon='UNPINNED')
+        op.headnum = headnum
+        op.camnum = camnum
+        op = box.operator(config.fb_main_unmorph_idname, text="Unmorph")
+        op.headnum = headnum
+        op.camnum = camnum
 
     # Face Builder Main Panel Draw
     def draw(self, context):
@@ -121,8 +122,8 @@ class OBJECT_PT_FBPanel(Panel):
             icon = 'OUTLINER_OB_CAMERA' if settings.current_camnum == i \
                 else 'CAMERA_DATA'
             op = col.operator(
-                config.fb_main_operator_idname, text='', icon=icon)
-            op.action = 'select_camera'
+                config.fb_main_select_camera_idname, text='', icon=icon)
+            # op.action = 'select_camera'
             op.headnum = headnum
             op.camnum = i
 
@@ -188,7 +189,8 @@ class OBJECT_PT_FBPanel(Panel):
             if wrong_size_counter == 0:
                 op = row.operator("wm.call_menu", text='Fix Size')
             else:
-                op = row.operator("wm.call_menu", text='Fix Size', icon='ERROR')
+                op = row.operator("wm.call_menu",
+                                  text='Fix Size', icon='ERROR')
             op.name = config.fb_fix_frame_menu_idname
 
         # Open sequence Button (large x2)
@@ -200,6 +202,7 @@ class OBJECT_PT_FBPanel(Panel):
         # Add New Camera button
         op = layout.operator(
             config.fb_actor_operator_idname,
+            text_ctxt="Add camera to list",
             text="Add New Camera", icon='PLUS')
         op.action = "add_camera"
         op.headnum = headnum
@@ -207,7 +210,7 @@ class OBJECT_PT_FBPanel(Panel):
         # Camera buttons Center Geo, Remove pins, Unmorph
         if context.space_data.region_3d.view_perspective == 'CAMERA':
             if settings.pinmode:
-                self.draw_pins_panel(context)
+                self.draw_pins_panel(headnum, settings.current_camnum)
 
 
 class WM_OT_FBAddonWarning(Operator):
@@ -490,5 +493,6 @@ class FBFixMenu(Menu):
         # Disabled to avoid problems with users (but usefull for internal use)
         # frame_width & frame_height should be sets before rescale call
         # op = layout.operator(
-        #    config.fb_actor_operator_idname, text="Experimental Rescale to Render Size")
+        #    config.fb_actor_operator_idname,
+        #    text="Experimental Rescale to Render Size")
         # op.action = 'use_render_frame_size_scaled'

@@ -309,8 +309,8 @@ class FBText:
     def __init__(self):
         self.text_draw_handler = None
         self.message = [
-            "Pin Mode",
-            "Esc / Enter to Exit"
+            "Pin Mode ",
+            "Press 'Esc' to Exit "
         ]
 
     def set_message(self, msg):

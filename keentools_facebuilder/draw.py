@@ -138,8 +138,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             FBLoader.out_pinmode(context, headnum, camnum)
             return {'FINISHED'}
 
-        # Quit by ESC or ENTER pressed
-        if event.type in {'ESC', 'RET'}:
+        # Quit by ESC pressed
+        if event.type in {'ESC'}:
             FBLoader.out_pinmode(context, headnum, camnum)
             return {'FINISHED'}
 

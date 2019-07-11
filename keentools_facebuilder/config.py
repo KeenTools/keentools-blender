@@ -44,6 +44,11 @@ class config:
 
     # Operators ids
     fb_main_operator_idname = 'object.' + _prefix + '_main_operator'
+    fb_main_select_camera_idname = 'object.' + _prefix + '_main_select_camera'
+    fb_main_center_geo_idname = 'object.' + _prefix + '_main_center_geo'
+    fb_main_unmorph_idname = 'object.' + _prefix + '_main_unmorph'
+    fb_main_remove_pins_idname = 'object.' + _prefix + '_main_remove_pins'
+
     fb_filedialog_operator_idname = _prefix + '_import.open_filebrowser'
     fb_draw_operator_idname = 'object.' + _prefix + '_draw'
     fb_draw_operator_callname = _prefix + '_draw'
