@@ -97,7 +97,7 @@ classes = (
 
 def menu_func(self, context):
     self.layout.operator(MESH_OT_FBAddHead.bl_idname, icon='USER')
-    self.layout.operator(MESH_OT_FBAddBody.bl_idname, icon='ARMATURE_DATA')
+    # self.layout.operator(MESH_OT_FBAddBody.bl_idname, icon='ARMATURE_DATA')
 
 
 def register():
