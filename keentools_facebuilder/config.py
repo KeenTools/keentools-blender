@@ -48,6 +48,12 @@ class config:
     fb_main_center_geo_idname = 'object.' + _prefix + '_main_center_geo'
     fb_main_unmorph_idname = 'object.' + _prefix + '_main_unmorph'
     fb_main_remove_pins_idname = 'object.' + _prefix + '_main_remove_pins'
+    fb_main_wireframe_color_idname = 'object.' + _prefix + \
+                                     '_main_wireframe_color'
+    fb_main_filter_cameras_idname = 'object.' + _prefix + '_main_filter_cameras'
+    fb_main_delete_camera_idname = 'object.' + _prefix + '_main_delete_camera'
+    fb_main_add_camera_idname = 'object.' + _prefix + '_main_add_camera'
+    fb_main_fix_size_idname = 'object.' + _prefix + '_main_fix_size_camera'
 
     fb_filedialog_operator_idname = _prefix + '_import.open_filebrowser'
     fb_draw_operator_idname = 'object.' + _prefix + '_draw'
@@ -121,3 +127,4 @@ class ErrorType:
     IllegalIndex = 3
     CannotReconstruct = 4
     CannotCreate = 5
+    CustomMessage = 6

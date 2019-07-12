@@ -82,7 +82,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             (col[0], col[1], col[2], settings.wireframe_opacity))
 
         # Only for FaceBuilder coloring face parts
-        if FBLoader.get_builder_type() == BuilderType.FaceBuilder:
+        if (FBLoader.get_builder_type() == BuilderType.FaceBuilder) and \
+            settings.show_specials:
             FBLoader.wireframer.init_special_areas(
                 (1.0 - col[0], 1.0 - col[1], 1.0 - col[2],
                  settings.wireframe_opacity))
@@ -266,6 +267,10 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                 'FORCE_SNAPSHOT', (FBCalc.get_mouse_coords(event, context)))
             FBDebug.make_snapshot()
             # === Debug only ===
+
+            # Show mesh if wireframer is off
+            if not (FBLoader.wireframer.is_working()):
+                head.headobj.hide_viewport = False
 
         FBLoader.create_batch_2d(context)
 

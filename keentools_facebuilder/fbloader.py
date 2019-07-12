@@ -253,6 +253,10 @@ class FBLoader:
     @staticmethod
     def keyframe_by_camnum(headnum, camnum):
         settings = get_main_settings()
+        if headnum >= len(settings.heads):
+            return -1
+        if camnum >= len(settings.heads[headnum].cameras):
+            return -1
         return settings.heads[headnum].cameras[camnum].keyframe_id
 
     @classmethod

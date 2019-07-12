@@ -601,6 +601,9 @@ class FBEdgeShader:
         self.edges_colors = []
         self.init_shaders()
 
+    def is_working(self):
+        return self.draw_handler is None
+
     def draw_callback(self, op, context):
         # Force Stop
         if self.is_handler_list_empty():

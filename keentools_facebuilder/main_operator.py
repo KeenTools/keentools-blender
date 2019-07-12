@@ -31,12 +31,15 @@ from . config import config
 
 def check_settings():
     settings = get_main_settings()
-    # Settings structure is broken
     if not settings.check_heads_and_cams():
+        # Settings structure is broken
         # Fix Heads and cameras
         heads_deleted, cams_deleted = settings.fix_heads()
         if heads_deleted == 0:
             warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            # message = "Some error\n Happened"
+            # warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+            #     msg_content=message)
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
         return False
     return True
@@ -105,7 +108,7 @@ class OBJECT_OT_FBSelectCamera(Operator):
 class OBJECT_OT_FBCenterGeo(Operator):
     bl_idname = config.fb_main_center_geo_idname
     bl_label = "Center Geo"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER'}  # 'UNDO'
     bl_description = "Place model geometry central in camera view"
 
     headnum: IntProperty(default=0)
@@ -142,7 +145,7 @@ class OBJECT_OT_FBCenterGeo(Operator):
 class OBJECT_OT_FBUnmorph(Operator):
     bl_idname = config.fb_main_unmorph_idname
     bl_label = "Unmorph"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER'}  # 'UNDO'
     bl_description = "Unmorph shape to default mesh. It will return back when you move any pin."
 
     headnum: IntProperty(default=0)
@@ -213,4 +216,138 @@ class OBJECT_OT_FBRemovePins(Operator):
         FBDebug.add_event_to_queue('FORCE_SNAPSHOT', (0, 0))
         FBDebug.make_snapshot()
         # === Debug only ===
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBWireframeColor(Operator):
+    bl_idname = config.fb_main_wireframe_color_idname
+    bl_label = "Wireframe Color"
+    bl_options = {'REGISTER'}  # 'UNDO'
+    bl_description = "Change wireframe color according to scheme"
+
+    action: StringProperty(name="Action Name")
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+
+        if self.action == "wireframe_red":
+            settings.wireframe_color = config.red_color
+        elif self.action == "wireframe_green":
+            settings.wireframe_color = config.green_color
+        elif self.action == "wireframe_blue":
+            settings.wireframe_color = config.blue_color
+        elif self.action == "wireframe_cyan":
+            settings.wireframe_color = config.cyan_color
+        elif self.action == "wireframe_magenta":
+            settings.wireframe_color = config.magenta_color
+        elif self.action == "wireframe_yellow":
+            settings.wireframe_color = config.yellow_color
+        elif self.action == "wireframe_black":
+            settings.wireframe_color = config.black_color
+        elif self.action == "wireframe_white":
+            settings.wireframe_color = config.white_color
+
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBFilterCameras(Operator):
+    bl_idname = config.fb_main_filter_cameras_idname
+    bl_label = "Camera Filter"
+    bl_options = {'REGISTER'}  # 'UNDO'
+    bl_description = "Select cameras to use for texture baking"
+
+    action: StringProperty(name="Action Name")
+    headnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+
+        if self.action == "select_all_cameras":
+            for c in settings.heads[self.headnum].cameras:
+                c.use_in_tex_baking = True
+
+        elif self.action == "deselect_all_cameras":
+            for c in settings.heads[self.headnum].cameras:
+                c.use_in_tex_baking = False
+
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBDeleteCamera(Operator):
+    bl_idname = config.fb_main_delete_camera_idname
+    bl_label = "Delete Camera"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Delete this camera object from scene"
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        headnum = self.headnum
+        camnum = self.camnum
+        if not settings.pinmode:
+            fb = FBLoader.get_builder()
+            head = settings.heads[headnum]
+            kid = FBLoader.keyframe_by_camnum(headnum, camnum)
+            camobj = head.cameras[camnum].camobj
+            fb.remove_keyframe(kid)
+            FBLoader.fb_save(headnum, camnum)
+            # Delete camera object from scene
+            bpy.data.objects.remove(camobj, do_unlink=True)
+            # Delete link from list
+            head.cameras.remove(camnum)
+            print('CAMERA REMOVED')
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBAddCamera(Operator):
+    bl_idname = config.fb_main_add_camera_idname
+    bl_label = "Add Camera"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Add new camera without image (Not recommended). \n" \
+                     "Use 'Open Sequence' button instead."
+    headnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        headnum = self.headnum
+        if settings.heads[headnum].cameras:
+            FBLoader.load_only(headnum)
+        camera = FBLoader.add_camera(headnum, None)
+        FBLoader.set_keentools_version(camera.camobj)
+        FBLoader.save_only(headnum)
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBFixSize(Operator):
+    bl_idname = config.fb_main_fix_size_idname
+    bl_label = "Fix Size"
+    bl_options = {'REGISTER'}
+    bl_description = "Fix frame Width and High parameters for all cameras"
+    headnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        bpy.ops.wm.call_menu(
+            'INVOKE_DEFAULT', name=config.fb_fix_frame_menu_idname)
         return {'FINISHED'}

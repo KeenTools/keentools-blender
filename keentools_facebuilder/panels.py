@@ -21,6 +21,7 @@ import bpy
 from bpy.types import Panel, Operator, Menu
 import addon_utils
 from . config import config, get_main_settings, ErrorType
+import re
 
 
 # Test if selected object is our Mesh or Camera
@@ -98,6 +99,7 @@ class OBJECT_PT_FBPanel(Panel):
 
         layout.prop(settings, 'focal')
         layout.prop(settings, 'sensor_width')
+        layout.prop(settings, 'sensor_height')
 
         wrong_size_counter = 0
         fw = settings.frame_width
@@ -156,23 +158,26 @@ class OBJECT_PT_FBPanel(Panel):
             # Camera Delete button
             if not settings.pinmode:
                 op = row2.operator(
-                    config.fb_actor_operator_idname, text='', icon='CANCEL')
-                op.action = 'delete_camera'
+                    config.fb_main_delete_camera_idname,
+                    text='', icon='CANCEL')
+                # op.action = 'delete_camera'
                 op.headnum = headnum
                 op.camnum = i
 
-            col.template_ID(head.cameras[i], "cam_image", open="image.open")
+            col.template_ID(head.cameras[i], "cam_image", open="image.open",
+                            live_icon=True)
 
         if len(head.cameras) == 0:
             layout.label(text="-- Camera List is empty --")
         else:
             row = layout.row()
             # Select All cameras for baking Button
-            op = row.operator(config.fb_actor_operator_idname, text='All')
+            op = row.operator(config.fb_main_filter_cameras_idname, text='All')
             op.action = 'select_all_cameras'
             op.headnum = headnum
             # Deselect All cameras
-            op = row.operator(config.fb_actor_operator_idname, text='None')
+            op = row.operator(config.fb_main_filter_cameras_idname,
+                              text='None')
             op.action = 'deselect_all_cameras'
             op.headnum = headnum
             row.label(text='Use in bake')
@@ -187,11 +192,14 @@ class OBJECT_PT_FBPanel(Panel):
                 row.label(text="...")
 
             if wrong_size_counter == 0:
-                op = row.operator("wm.call_menu", text='Fix Size')
+                # op = row.operator("wm.call_menu", text='Fix Size')
+                row.operator(config.fb_main_fix_size_idname, text='Fix Size')
             else:
-                op = row.operator("wm.call_menu",
-                                  text='Fix Size', icon='ERROR')
-            op.name = config.fb_fix_frame_menu_idname
+                # op = row.operator("wm.call_menu",
+                #                  text='Fix Size', icon='ERROR')
+                row.operator(config.fb_main_fix_size_idname,
+                             text='Fix Size', icon='ERROR')
+            # op.name = config.fb_fix_frame_menu_idname
 
         # Open sequence Button (large x2)
         row = layout.row()
@@ -201,10 +209,9 @@ class OBJECT_PT_FBPanel(Panel):
 
         # Add New Camera button
         op = layout.operator(
-            config.fb_actor_operator_idname,
-            text_ctxt="Add camera to list",
+            config.fb_main_add_camera_idname,
             text="Add New Camera", icon='PLUS')
-        op.action = "add_camera"
+        # op.action = "add_camera"
         op.headnum = headnum
 
         # Camera buttons Center Geo, Remove pins, Unmorph
@@ -218,6 +225,7 @@ class WM_OT_FBAddonWarning(Operator):
     bl_label = "FaceBuilder Addon WARNING!"
 
     msg: bpy.props.IntProperty(default=ErrorType.Unknown)
+    msg_content: bpy.props.StringProperty(default="")
 
     content = []
 
@@ -252,7 +260,10 @@ class WM_OT_FBAddonWarning(Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        if self.msg == ErrorType.NoLicense:
+        if self.msg == ErrorType.CustomMessage:
+            self.set_content(re.split("\r\n|\n", self.msg_content))
+            return context.window_manager.invoke_props_dialog(self, width=300)
+        elif self.msg == ErrorType.NoLicense:
             self.set_content([
                 "===============",
                 "License is not detected",
@@ -381,21 +392,21 @@ class OBJECT_PT_FBColorsPanel(Panel):
         row.prop(settings, 'wireframe_opacity', text='', slider=True)
 
         row = box.row()
-        op = row.operator(config.fb_actor_operator_idname, text="R")
+        op = row.operator(config.fb_main_wireframe_color_idname, text="R")
         op.action = 'wireframe_red'
-        op = row.operator(config.fb_actor_operator_idname, text="G")
+        op = row.operator(config.fb_main_wireframe_color_idname, text="G")
         op.action = 'wireframe_green'
-        op = row.operator(config.fb_actor_operator_idname, text="B")
+        op = row.operator(config.fb_main_wireframe_color_idname, text="B")
         op.action = 'wireframe_blue'
-        op = row.operator(config.fb_actor_operator_idname, text="C")
+        op = row.operator(config.fb_main_wireframe_color_idname, text="C")
         op.action = 'wireframe_cyan'
-        op = row.operator(config.fb_actor_operator_idname, text="M")
+        op = row.operator(config.fb_main_wireframe_color_idname, text="M")
         op.action = 'wireframe_magenta'
-        op = row.operator(config.fb_actor_operator_idname, text="Y")
+        op = row.operator(config.fb_main_wireframe_color_idname, text="Y")
         op.action = 'wireframe_yellow'
-        op = row.operator(config.fb_actor_operator_idname, text="K")
+        op = row.operator(config.fb_main_wireframe_color_idname, text="K")
         op.action = 'wireframe_black'
-        op = row.operator(config.fb_actor_operator_idname, text="W")
+        op = row.operator(config.fb_main_wireframe_color_idname, text="W")
         op.action = 'wireframe_white'
 
         layout.prop(settings, 'show_specials', text='Highlight Parts')
@@ -473,6 +484,7 @@ class OBJECT_PT_FBSettingsPanel(Panel):
 class FBFixMenu(Menu):
     bl_label = "Select Frame Size"
     bl_idname = config.fb_fix_frame_menu_idname
+    bl_description = "Fix frame Width and High parameters for all cameras"
 
     def draw(self, context):
         layout = self.layout
