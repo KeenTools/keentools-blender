@@ -22,6 +22,7 @@ from bpy.props import StringProperty, IntProperty, BoolProperty, EnumProperty
 from . licmanager import FBLicManager
 from . config import config
 import re
+import pykeentools
 
 enum_lic_type = (
     ('ONLINE', "Online", "Online license management", 0),
@@ -169,3 +170,5 @@ class FBAddonPreferences(AddonPreferences):
 
             op = box.operator(config.fb_actor_operator_idname, text="connect")
             op.action = 'lic_floating_connect'
+
+        layout.label(text="Build info: {}".format(pykeentools.build_time))
