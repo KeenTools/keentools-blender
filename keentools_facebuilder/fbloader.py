@@ -160,6 +160,7 @@ class FBLoader:
 
                 except UnlicensedException:
                     settings.force_out_pinmode = True
+                    settings.license_error = True
                     # FBLoader.out_pinmode(context, headnum, camnum)
                     cls.report({'INFO'}, "LICENSE EXCEPTION")
 

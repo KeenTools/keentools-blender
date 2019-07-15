@@ -202,11 +202,13 @@ class FBSceneSettings(PropertyGroup):
     # ---------------------
     opnum: IntProperty(name="Operation Number", default=0)  # Test purpose
     debug_active: BoolProperty(
-        description="Not recommended. Can extremely enlarge your scene file size.",
+        description="Not recommended. "
+                    "Can extremely enlarge your scene file size",
         name="Debug Log active", default=False, update=update_debug_log)
 
     pinmode: BoolProperty(name="Pin Mode", default=False)
     force_out_pinmode: BoolProperty(name="Pin Mode", default=False)
+    license_error: BoolProperty(name="License Error", default=False)
 
     # ---------------------
     # Model View parameters
@@ -231,7 +233,7 @@ class FBSceneSettings(PropertyGroup):
         default=6.0, min=1.0, max=100.0, update=update_pin_size)
     pin_sensitivity: FloatProperty(
         description="Increase if it is difficult for you to get a pin. "
-        "Decrease if instead of a new pin, you capture the old one.",
+        "Decrease it if instead of a new pin, you capture the old one",
         name="Pin Sensitivity",
         default=12.0, min=1.0, max=100.0, update=update_pin_sensitivity)
 
@@ -276,16 +278,18 @@ class FBSceneSettings(PropertyGroup):
                     "the choice of camera for baking.",
         name="Face Angles Affection", default=10.0)
     tex_uv_expand_percents: FloatProperty(
-        description="Expand texture out of bounds to prevent seams visibility. "
-                    "Only if it's greate then zero.",
+        description="Expand texture out of bounds to prevent seams "
+                    "visibility. Only if it's greate then zero",
         name="UV Expand Percent", default=0.0)
     tex_back_face_culling: BoolProperty(
         description="Exclude backfacing polygons from baking (Recommended)",
         name="Back Face Culling", default=True)
     tex_equalize_brightness: BoolProperty(
-        description="Equalizes the brightness in case of a big difference in lightness.",
+        description="Equalizes the brightness in case of "
+                    "a big difference in lightness",
         name="Equalize Brightness", default=False)
     tex_equalize_colour: BoolProperty(
+        description="Equalizes colors used from different frames",
         name="Equalize color", default=False)
 
     # Find Head by Blender object (Head Mesh)

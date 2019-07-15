@@ -351,3 +351,56 @@ class OBJECT_OT_FBFixSize(Operator):
         bpy.ops.wm.call_menu(
             'INVOKE_DEFAULT', name=config.fb_fix_frame_menu_idname)
         return {'FINISHED'}
+
+
+class OBJECT_OT_FBAddonSettings(Operator):
+    bl_idname = config.fb_main_addon_settings_idname
+    bl_label = "Addon Settings"
+    bl_options = {'REGISTER'}
+    bl_description = "Open Addon Settings in Preferences window"
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        bpy.ops.preferences.addon_show(module=config.addon_name)
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBBakeTexture(Operator):
+    bl_idname = config.fb_main_bake_tex_idname
+    bl_label = "Bake Texture"
+    bl_options = {'REGISTER'}
+    bl_description = "Bake the texture using all selected cameras. " \
+                     "It can take a lot of time, be patient"
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        op = getattr(bpy.ops.object, config.fb_actor_operator_callname)
+        op('INVOKE_DEFAULT', action="bake_tex",
+           headnum=settings.current_headnum)
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBShowTexture(Operator):
+    bl_idname = config.fb_main_show_tex_idname
+    bl_label = "Show Texture"
+    bl_options = {'REGISTER'}
+    bl_description = "Switch to Material Mode and creates demo-shader " \
+                     "using Baked Texture. Second call reverts back to Solid"
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        op = getattr(bpy.ops.object, config.fb_actor_operator_callname)
+        op('INVOKE_DEFAULT', action="show_tex",
+           headnum=settings.current_headnum)
+        return {'FINISHED'}

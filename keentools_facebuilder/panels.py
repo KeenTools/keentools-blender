@@ -348,11 +348,11 @@ class OBJECT_PT_TBPanel(Panel):
 
         row = layout.row()
         row.scale_y = 3.0
-        op = row.operator(config.fb_actor_operator_idname, text="Bake Texture")
-        op.action = 'bake_tex'
-        op = row.operator(
-            config.fb_actor_operator_idname, text="Show on Object")
-        op.action = 'show_tex'
+
+        row.operator(config.fb_main_bake_tex_idname, text="Bake Texture")
+
+        row.operator(config.fb_main_show_tex_idname, text="Show Texture")
+
         layout.prop(settings, 'tex_back_face_culling')
         layout.prop(settings, 'tex_equalize_brightness')
         layout.prop(settings, 'tex_equalize_colour')
@@ -440,24 +440,12 @@ class OBJECT_PT_FBSettingsPanel(Panel):
 
         # layout.label(text='Pin Sensitivity')
         box = layout.box()
-        box.prop(settings, 'pin_sensitivity', slider=True)
-        row = box.row()
-        row.operator(
-            config.fb_actor_operator_idname, text="-2").action = 'sens_dec'
-        row.operator(
-            config.fb_actor_operator_idname, text="+4").action = 'sens_inc'
-
-        box = layout.box()
         box.prop(settings, 'pin_size', slider=True)
-        row = box.row()
-        row.operator(
-            config.fb_actor_operator_idname, text="-1").action = 'psize_dec'
-        row.operator(
-            config.fb_actor_operator_idname, text="+2").action = 'psize_inc'
+        box.prop(settings, 'pin_sensitivity', slider=True)
 
-        # layout.label(text='FaceBuilder Settings')
         layout.prop(settings, 'check_auto_rigidity')
         layout.prop(settings, 'rigidity')
+
         '''
         box = layout.box()
         row = box.row()
@@ -474,11 +462,10 @@ class OBJECT_PT_FBSettingsPanel(Panel):
 
         row = layout.row()
         row.scale_y = 2.0
-        op = row.operator(
-            config.fb_actor_operator_idname,
+        row.operator(
+            config.fb_main_addon_settings_idname,
             text="Open Addon Settings", icon="PREFERENCES")
-        op.action = 'addon_settings'
-        layout.prop(settings, 'debug_active', text="Debug Log Active")
+        # layout.prop(settings, 'debug_active', text="Debug Log Active")
 
 
 class FBFixMenu(Menu):

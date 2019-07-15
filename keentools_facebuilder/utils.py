@@ -602,7 +602,7 @@ class FBEdgeShader:
         self.init_shaders()
 
     def is_working(self):
-        return self.draw_handler is None
+        return not (self.draw_handler is None)
 
     def draw_callback(self, op, context):
         # Force Stop

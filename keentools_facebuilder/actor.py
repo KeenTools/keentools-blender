@@ -34,11 +34,12 @@ from . config import get_main_settings
 
 
 class OBJECT_OT_FBActor(Operator):
-    """ Face Builder Action.
+    """ Face Builder Action
     """
     bl_idname = config.fb_actor_operator_idname
     bl_label = "FaceBuilder in Action"
     bl_options = {'REGISTER'}
+    bl_description = "Face Builder"
 
     action: StringProperty(name="Action Name")
     headnum: IntProperty(default=0)
@@ -410,16 +411,6 @@ class OBJECT_OT_FBActor(Operator):
         if self.action == "reconstruct_by_head":
             self.reconstruct_by_head(context)
 
-        elif self.action == "sens_dec":
-            settings.pin_sensitivity -= 2.0
-        elif self.action == "sens_inc":
-            settings.pin_sensitivity += 4.0
-
-        elif self.action == "psize_dec":
-            settings.pin_size -= 1.0
-        elif self.action == "psize_inc":
-            settings.pin_size += 2.0
-
         elif self.action == "lic_hardware_id_copy":
             FBLicManager.copy_hardware_id()
 
@@ -441,8 +432,6 @@ class OBJECT_OT_FBActor(Operator):
         elif self.action == "visit_site":
             bpy.ops.wm.url_open(url="https://keentools.io/manual-installation")
 
-        elif self.action == "addon_settings":
-            bpy.ops.preferences.addon_show(module=config.addon_name)
 
         elif self.action == "auto_detect_frame_size":
             headnum = settings.current_headnum
@@ -466,6 +455,7 @@ class OBJECT_OT_FBActor(Operator):
                 scene.render.resolution_y = el[1]
                 settings.frame_height = el[1]
             print('COUNTER', mc)
+
         elif self.action == 'use_render_frame_size':
             settings.frame_width = scene.render.resolution_x
             settings.frame_height = scene.render.resolution_y

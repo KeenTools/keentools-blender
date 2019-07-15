@@ -53,7 +53,12 @@ class config:
     fb_main_filter_cameras_idname = 'object.' + _prefix + '_main_filter_cameras'
     fb_main_delete_camera_idname = 'object.' + _prefix + '_main_delete_camera'
     fb_main_add_camera_idname = 'object.' + _prefix + '_main_add_camera'
-    fb_main_fix_size_idname = 'object.' + _prefix + '_main_fix_size_camera'
+    fb_main_fix_size_idname = 'object.' + _prefix + '_main_fix_size'
+    fb_main_addon_settings_idname = 'object.' + _prefix + '_main_addon_settings'
+    fb_main_bake_tex_idname = 'object.' + _prefix + '_main_bake_tex'
+    fb_main_bake_tex_callname = _prefix + '_main_bake_tex'
+    fb_main_show_tex_idname = 'object.' + _prefix + '_main_show_tex'
+    fb_main_show_tex_callname = _prefix + '_main_show_tex'
 
     fb_filedialog_operator_idname = _prefix + '_import.open_filebrowser'
     fb_draw_operator_idname = 'object.' + _prefix + '_draw'

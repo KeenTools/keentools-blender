@@ -129,9 +129,10 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         if settings.force_out_pinmode:  # Move Pin problem by ex.
             FBLoader.out_pinmode(context, headnum, camnum)
             settings.force_out_pinmode = False
-            # bpy.ops.wm.fb_addon_warning('INVOKE_DEFAULT', msg=0)
-            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+            if settings.license_error:
+                warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+                warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+                settings.license_error = False
             return {'FINISHED'}
 
         # Quit when camera rotated by user
@@ -214,6 +215,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                         fb.solve_for_current_pins(kid)
                     except UnlicensedException:
                         settings.force_out_pinmode = True
+                        settings.license_error = True
                         FBLoader.out_pinmode(context, headnum, camnum)
                         self.report({'INFO'}, "PIN MODE LICENSE EXCEPTION")
                         return {'FINISHED'}
@@ -268,9 +270,11 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             FBDebug.make_snapshot()
             # === Debug only ===
 
-            # Show mesh if wireframer is off
-            if not (FBLoader.wireframer.is_working()):
-                head.headobj.hide_viewport = False
+        # Show mesh if wireframer is off
+        if not (FBLoader.wireframer.is_working()):
+            settings.force_out_pinmode = True
+            # head.headobj.hide_viewport = False
+            return {"RUNNING_MODAL"}
 
         FBLoader.create_batch_2d(context)
 

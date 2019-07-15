@@ -197,6 +197,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             fb.solve_for_current_pins(kid)
         except UnlicensedException:
             settings.force_out_pinmode = True
+            settings.license_error = True
             FBLoader.out_pinmode(context, headnum, camnum)
             self.report({'INFO'}, "MOVE PIN LICENSE EXCEPTION")
             return {'FINISHED'}
