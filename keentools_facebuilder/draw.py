@@ -114,6 +114,10 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             FBLoader.out_pinmode(context, headnum, camnum)
             return {'FINISHED'}
 
+        if headnum < 0:  # Head lost
+            FBLoader.out_pinmode(context, headnum, camnum)
+            return {'FINISHED'}
+
         head = settings.heads[headnum]
         if not head.headobj.hide_viewport:
             head.headobj.hide_viewport = True
@@ -250,8 +254,6 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
 
         if head.need_update:
             # Undo was called so Model redraw is needed
-            FBLoader.wireframer.init_geom_data(head.headobj)
-            FBLoader.wireframer.create_batches()
             head.need_update = False
             # Hide geometry
             # head.headobj.hide_viewport = True
@@ -261,6 +263,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             FBLoader.update_surface_points(
                 head.headobj, FBLoader.keyframe_by_camnum(headnum, camnum))
             # FBLoader.load_pins(self.camnum, scene)
+            FBLoader.wireframer.init_geom_data(head.headobj)
+            FBLoader.wireframer.create_batches()
 
             # === Debug only ===
             FBDebug.add_event_to_queue(
@@ -270,11 +274,10 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             FBDebug.make_snapshot()
             # === Debug only ===
 
-        # Show mesh if wireframer is off
+        # Catch if wireframer is off
         if not (FBLoader.wireframer.is_working()):
-            settings.force_out_pinmode = True
-            # head.headobj.hide_viewport = False
-            return {"RUNNING_MODAL"}
+            FBLoader.out_pinmode(context, headnum, camnum)
+            return {'FINISHED'}
 
         FBLoader.create_batch_2d(context)
 
@@ -282,5 +285,4 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             return {"RUNNING_MODAL"}
         else:
             return {"PASS_THROUGH"}
-        # return {"RUNNING_MODAL"}
         # return {'INTERFACE'}

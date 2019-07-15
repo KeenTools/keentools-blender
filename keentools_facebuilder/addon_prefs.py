@@ -171,4 +171,6 @@ class FBAddonPreferences(AddonPreferences):
             op = box.operator(config.fb_actor_operator_idname, text="connect")
             op.action = 'lic_floating_connect'
 
-        layout.label(text="Build info: {}".format(pykeentools.build_time))
+        layout.label(text="Build info: {} {} {}".format(
+            config.addon_full_name, pykeentools.__version__,
+            pykeentools.build_time))

@@ -38,6 +38,7 @@ class config:
     addon_version = '0.1m'
     addon_search = 'KeenTools'
     addon_global_var_name = _prefix + '_settings'
+    addon_full_name = 'Keentools Face Builder for Blender'
     fb_panel_label = 'Face Builder v0.1m'
     fb_tab_category = 'Face Builder'
     default_builder = BuilderType.FaceBuilder
