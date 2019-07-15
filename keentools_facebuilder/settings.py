@@ -76,6 +76,9 @@ class FBCameraItem(PropertyGroup):
     model_mat: StringProperty(
         name="Model Matrix", default=""
     )
+    tmp_model_mat: StringProperty(
+        name="Temporary Model Matrix", default=""
+    )
     pins_count: IntProperty(
         name="Pins in Camera", default=0)
 
@@ -142,6 +145,7 @@ class FBHeadItem(PropertyGroup):
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
 
     serial_str: StringProperty(name="Serialization string", default="")
+    tmp_serial_str: StringProperty(name="Temporary Serialization", default="")
     need_update: BoolProperty(name="Mesh need update", default=False)
 
     def set_serial_str(self, value):
