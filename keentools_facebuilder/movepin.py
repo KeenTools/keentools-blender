@@ -182,13 +182,18 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             head.need_update = False
             print("PUSH 1")
 
-        # Restore last position
-        head.set_serial_str(serial_str)
-        cam.model_mat = model_mat
-        fb.set_model_mat(kid, cam.get_model_mat())
+            # Restore last position
+            head.set_serial_str(serial_str)
+            cam.model_mat = model_mat
+            fb.set_model_mat(kid, cam.get_model_mat())
 
-        if not fb.deserialize(head.get_serial_str()):
-            print('DESERIALIZE ERROR: ', head.get_serial_str())
+            if not fb.deserialize(head.get_serial_str()):
+                print('DESERIALIZE ERROR: ', head.get_serial_str())
+        else:
+            # There was only one click
+            # Save current state
+            head.set_serial_str(fb.serialize())
+            cam.set_model_mat(fb.model_mat(kid))
 
         FBCalc.update_head_mesh(fb, head.headobj)
         # Update all cameras position
