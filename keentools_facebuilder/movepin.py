@@ -243,6 +243,14 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         if FBLoader.get_builder_type() == BuilderType.FaceBuilder:
             fb.set_auto_rigidity(settings.check_auto_rigidity)
             fb.set_rigidity(settings.rigidity)
+        elif FBLoader.get_builder_type() == BuilderType.BodyBuilder:
+            fb.set_shape_rigidity(settings.rigidity)
+            fb.set_bone_rigidity(settings.bone_rigidity)
+            fb.set_solver_type(settings.check_solve_shapes, settings.check_solve_bones)
+            fb.set_use_numeric(settings.check_use_numeric)
+            fb.set_use_prev(settings.check_use_previous)
+            fb.set_iters(settings.iters)
+            fb.set_log(settings.check_log)
 
         try:
             # Solver

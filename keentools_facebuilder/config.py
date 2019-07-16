@@ -22,7 +22,7 @@ from enum import Enum
 
 
 _company = 'keentools'
-_prefix = _company + '_fb'  # for FaceBuilder
+_prefix = _company + '_bb'  # for FaceBuilder
 
 
 class BuilderType(Enum):
@@ -40,8 +40,8 @@ class config:
     addon_global_var_name = _prefix + '_settings'
     addon_full_name = 'Keentools Face Builder for Blender'
     fb_panel_label = 'Face Builder v0.1m'
-    fb_tab_category = 'Face Builder'
-    default_builder = BuilderType.FaceBuilder
+    fb_tab_category = 'Body Builder'
+    default_builder = BuilderType.BodyBuilder
 
     # Operators ids
     fb_main_operator_idname = 'object.' + _prefix + '_main_operator'

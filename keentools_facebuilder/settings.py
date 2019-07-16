@@ -261,7 +261,16 @@ class FBSceneSettings(PropertyGroup):
     rigidity: FloatProperty(
         description="Model deformation sensitivity adjustment. "
         "You can use it in experimental purpose only. Autorigidity is recomended",
-        name="Rigidity", default=1.0, min=0.001, max=1000.0)
+        name="Rigidity", default=10, min=0.001, max=1000.0)
+    bone_rigidity: FloatProperty(
+        name="Bone rigidity", default=10, min=0.001, max=1000.0)
+    check_use_previous: BoolProperty(name="Use previous", default=True)
+    iters: IntProperty(name="Iterations", default=10, min=1, max=500)
+    check_use_numeric: BoolProperty(name="Use numeric", default=False)
+    check_solve_bones: BoolProperty(name="Solve bones", default=True)
+    check_solve_shapes: BoolProperty(name="Solve shapes", default=True)
+    check_log: BoolProperty(name="Enable logging", default=True)
+
     check_auto_rigidity: BoolProperty(
         description="Auto Model Rigidity detection. Highly recommended",
         name="auto rigidity", default=True)

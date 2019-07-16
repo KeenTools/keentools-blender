@@ -443,8 +443,15 @@ class OBJECT_PT_FBSettingsPanel(Panel):
         box.prop(settings, 'pin_size', slider=True)
         box.prop(settings, 'pin_sensitivity', slider=True)
 
-        layout.prop(settings, 'check_auto_rigidity')
+        # layout.prop(settings, 'check_auto_rigidity')
         layout.prop(settings, 'rigidity')
+        layout.prop(settings, 'bone_rigidity')
+        layout.prop(settings, 'check_use_previous')
+        layout.prop(settings, 'check_solve_bones')
+        layout.prop(settings, 'check_solve_shapes')
+        layout.prop(settings, 'iters')
+        layout.prop(settings, 'check_use_numeric')
+        layout.prop(settings, 'check_log')
 
         '''
         box = layout.box()
