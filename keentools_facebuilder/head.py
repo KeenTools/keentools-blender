@@ -53,7 +53,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         fb = FBLoader.new_builder(BuilderType.FaceBuilder)
         # fb.set_mask(0, False)
         # fb.set_mask(1, False)
-        fb.set_mask(6, False)
+        # fb.set_mask(6, False)
         geo = fb.applied_args_model()
         me = geo.mesh(0)
 

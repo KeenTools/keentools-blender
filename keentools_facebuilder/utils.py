@@ -729,6 +729,11 @@ class FBEdgeShader:
 
     def init_special_areas2(self, mesh, color=(0.5, 0.0, 0.7, 0.2)):
         pairs = FBConst.get_eyes_indices2()
+        pairs = pairs.union(FBConst.get_eyebrows_indices2())
+        pairs = pairs.union(FBConst.get_nose_indices2())
+        pairs = pairs.union(FBConst.get_mouth_indices2())
+        pairs = pairs.union(FBConst.get_ears_indices2())
+        pairs = pairs.union(FBConst.get_half_indices2())
 
         for i, edge in enumerate(mesh.edges):
             vv = edge.vertices
