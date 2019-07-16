@@ -32,8 +32,8 @@ def proper_object_test():
         return True
     if not obj:
         return False
-    if config.version_prop_name in obj.keys():
-        # Object has our attribute 'keentools_fb_version'
+    if config.version_prop_name[0] in obj.keys():
+        # Object has our attribute 'keentools_version'
         return True
     if obj.type == 'MESH':
         # Is this mesh in settings
@@ -488,6 +488,7 @@ class FBFixMenu(Menu):
         op.action = 'use_camera_frame_size'
 
         # Disabled to avoid problems with users (but usefull for internal use)
+        # frame_width & frame_height should be sets before rescale call
         # op = layout.operator(
         #    config.fb_actor_operator_idname, text="Experimental Rescale to Render Size")
         # op.action = 'use_render_frame_size_scaled'

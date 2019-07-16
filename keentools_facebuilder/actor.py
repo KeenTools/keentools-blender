@@ -264,50 +264,111 @@ class OBJECT_OT_FBActor(Operator):
         # Switch to Material Mode or Back
         self.toggle_mode(context, ('SOLID', 'MATERIAL'))
 
+
+    def get_attr_variant_named(self, data, attr_names):
+        for attr in attr_names:
+            if attr in data.keys():
+                return data[attr]
+        return None
+
+    def get_camera_params(self, obj):
+        # Init camera parameters
+        data = FBLoader.get_safe_custom_attribute(
+            obj, config.fb_camera_prop_name[0])
+        if not data:
+            return None
+
+        try:
+            params = {}
+            print("CAMERA_PARAMS", config.reconstruct_focal_param)
+            params['focal'] = self.get_attr_variant_named(
+                data, config.reconstruct_focal_param)
+            params['sensor_width'] = self.get_attr_variant_named(
+                data, config.reconstruct_sensor_width_param)
+            params['frame_width'] = self.get_attr_variant_named(
+                data, config.reconstruct_frame_width_param)
+            params['frame_height'] = self.get_attr_variant_named(
+                data, config.reconstruct_frame_height_param)
+            print("LOADED PARAMS", params)
+            if None in params.values():
+                return None
+        except:
+            return None
+        return params
+
+
     def reconstruct_by_head(self, context):
         """ Reconstruct Cameras and Scene sctructures by serial """
-        # TODO: Verify all data structures before objects creation
         scene = context.scene
+        rx = scene.render.resolution_x
+        ry = scene.render.resolution_y
         settings = get_main_settings()
-        headnum = self.get_headnum()
-        camnum = self.get_camnum()
+
+        # Some backup
+        old_sensor_width = settings.sensor_width
+        old_focal = settings.focal
 
         obj = context.object
-        # Object marked by our attribute, so can be proper object
-        if FBLoader.has_custom_attribute(obj, config.version_prop_name):
-            # Fix our settings struture before new head add
-            settings.fix_heads()
 
-            headnum = len(settings.heads)
-            # Create new head in collection
-            head = settings.heads.add()
-            head.headobj = obj
+        if obj.type != 'MESH':
+            return
 
+        # Has object our main attribute?
+        if not FBLoader.has_custom_attribute(obj, config.version_prop_name[0]):
+            return  # No, it hasn't, leave
+
+        # Object marked by our attribute, so can be reconstructed
+
+        print("START RECONSTRUCT")
+        print("PARAMS")
+        # Get all camera parameters
+        params = self.get_camera_params(obj)
+        if not params:
+            return  # One or more parameters undefined
+
+        print("SERIAL")
+        # Get Serial string
+        serial_str = FBLoader.get_safe_custom_attribute(
+                obj, config.fb_serial_prop_name[0])
+        if not serial_str:
+            return  # No serial string custom attribute
+
+        print("DIRNAME")
+        # Get Dir Name
+        dir_name = FBLoader.get_safe_custom_attribute(
+                obj, config.fb_dir_prop_name[0])
+        if not dir_name:
+            return  # No dir_name custom attribute
+
+        print("IMAGES")
+        # Get Image Names
+        images = FBLoader.get_safe_custom_attribute(
+                obj, config.fb_images_prop_name[0])
+        if (not images) or not (type(images) is list):
+            return  # Problem with images custom attribute
+
+
+        print("HEAD CREATION")
+        # -------------------
+        # Start Creation
+        # Fix our settings structure before new head add
+        settings.fix_heads()
+
+        headnum = len(settings.heads)
+        # Create new head in collection
+        head = settings.heads.add()
+        head.headobj = obj
+
+        try:
             # Copy serial string from object custom property
-            head.set_serial_str(
-                FBLoader.get_safe_custom_attribute(
-                    obj, config.fb_serial_prop_name))
-
-            # Init camera parameters
-            data = FBLoader.get_safe_custom_attribute(
-                    obj, config.fb_camera_prop_name)
-            try:
-                if data:
-                    settings.focal = data[
-                        config.reconstruct_focal_param[0]]
-                    settings.sensor = data[
-                        config.reconstruct_sensor_width_param[0]]
-                    scene.render.resolution_x = data[
-                        config.reconstruct_frame_width_param[0]]
-                    scene.render.resolution_y = data[
-                        config.reconstruct_frame_height_param[0]]
-            except:
-                print("WRONG PARAMETERS")
-                warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
-                warn('INVOKE_DEFAULT', msg=ErrorType.CannotReconstruct)
-                return
-
+            head.set_serial_str(serial_str)
             fb = FBLoader.new_builder()
+
+            settings.sensor_width = params['sensor_width']
+            settings.focal = params['focal']
+            scene.render.resolution_x = params['frame_width']
+            scene.render.resolution_y = params['frame_height']
+
             # New head shape
             fb.deserialize(head.get_serial_str())
             # Now reconstruct cameras
@@ -321,13 +382,23 @@ class OBJECT_OT_FBActor(Operator):
                 FBLoader.update_pins_count(headnum, i)
 
             # load background images
-            files = FBLoader.get_safe_custom_attribute(
-                obj, config.fb_images_prop_name)
-            for i, f in enumerate(files):
+            for i, f in enumerate(images):
                 img = bpy.data.images.new(f, 0, 0)
                 img.source = 'FILE'
                 img.filepath = f
                 head.cameras[i].cam_image = img
+
+        except:
+            print("WRONG PARAMETERS")
+            settings.sensor_width = old_sensor_width
+            settings.focal = old_focal
+            scene.render.resolution_x = rx
+            scene.render.resolution_y = ry
+            print("SCENE PARAMETERS RESTORED")
+            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.CannotReconstruct)
+            return
+
 
     def draw(self, context):
         """ No need to show panel so empty draw"""

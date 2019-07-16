@@ -72,19 +72,27 @@ class FBLoader:
             return None
 
     @classmethod
+    def get_custom_attribute_variants(cls, obj, attr_names):
+        for attr in attr_names:
+            res = cls.get_safe_custom_attribute(obj, attr)
+            if res:
+                return res
+        return None
+
+    @classmethod
     def set_custom_attribute(cls, obj, attr_name, val):
         obj[attr_name] = val
 
     @classmethod
     def has_keentools_attributes(cls, obj):
-        attr_name = config.version_prop_name
+        attr_name = config.version_prop_name[0]
         if cls.has_custom_attribute(obj, attr_name):
             return True
         return False
 
     @classmethod
     def set_keentools_version(cls, obj):
-        attr_name = config.version_prop_name
+        attr_name = config.version_prop_name[0]
         cls.set_custom_attribute(obj, attr_name, config.addon_version)
 
     # -----------------

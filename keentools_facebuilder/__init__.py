@@ -30,22 +30,62 @@ bl_info = {
 
 
 import bpy
+import os
+import sys
+import tempfile
+import shutil
 
 
-def init_pykeentools():
-    def configure_pykeentools():
-        import os
-        import sys
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        pykeentools_dir = os.path.join(base_dir, 'pykeentools')
+def init_pykeentools_copy():
+    win_file_name = "pykeentools.cp37-win_amd64.pyd"
+    dir_name = 'keentools_fb'
+
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    pykeentools_dir = os.path.join(base_dir, 'pykeentools')
+    data_dir = os.path.join(base_dir, 'data')
+    src_path = os.path.join(pykeentools_dir, win_file_name)
+
+    temp_dir = tempfile.gettempdir()
+
+    if os.path.exists(src_path):
+        # It's Win, so we need copy
+        tmp_dir = os.path.join(temp_dir, dir_name)
+        try:
+            # Create default folder
+            if not os.path.exists(tmp_dir):
+                os.mkdir(tmp_dir)
+            temp_path = os.path.join(tmp_dir, win_file_name)
+            shutil.copy2(src_path, temp_path)
+            pykeentools_dir = tmp_dir
+            print("DEFAULT COPY CREATED")
+            print("TMP_DIR", tmp_dir)
+        except:
+            print("CAN'T CREATE DEFAULT COPY")
+            try:
+                # Create temporary folder
+                tmp_dir = tempfile.mkdtemp(prefix='keentools_fb_')  # creates new dir
+                temp_path = os.path.join(tmp_dir, win_file_name)
+                shutil.copy2(src_path, temp_path)
+                pykeentools_dir = tmp_dir
+                print("TEMPORARY COPY CREATED")
+                print("TMP_DIR", tmp_dir)
+            except:
+                print("CAN'T CREATE TEMPORARY COPY")
+
+    print("BASE_DIR", base_dir)
+    print("DATA_DIR", data_dir)
+    print("TEMP_DIR", temp_dir)
+    print("PYKEENTOOLS_DIR", pykeentools_dir)
+
+    os.environ["KEENTOOLS_DATA_PATH"] = data_dir  # "../data"
+    # print("OS_ENV", os.environ)
+
+    if pykeentools_dir not in sys.path:
         sys.path.append(pykeentools_dir)
-        data_dir = os.path.join(base_dir, 'data')
-        # if this is true data directory will be found by pykeentools
-        assert(os.path.samefile(data_dir, os.path.join(pykeentools_dir, '../data')))
 
-    configure_pykeentools()
     from importlib.util import find_spec  # valid for python >= 3.4
     pykeentools_spec = find_spec('pykeentools')
+    print("PYKEENTOOLS_SPEC", pykeentools_spec)
     pykeentools_found = pykeentools_spec is not None
     if not pykeentools_found:
         # TODO
@@ -53,7 +93,7 @@ def init_pykeentools():
         print('failed to init pykeentools')
 
 
-init_pykeentools()
+init_pykeentools_copy()
 
 
 from . panels import OBJECT_PT_FBPanel, WM_OT_FBAddonWarning
