@@ -390,7 +390,7 @@ class FBLoader:
         cls.points3d.create_batch()
 
     @classmethod
-    def update_wireframe(cls):
+    def update_wireframe(cls, obj):
         settings = get_main_settings()
         color = settings.wireframe_color
 
@@ -399,7 +399,8 @@ class FBLoader:
         )
         if settings.show_specials and (
                 cls.get_builder_type() == BuilderType.FaceBuilder):
-            cls.wireframer.init_special_areas(
+            cls.wireframer.init_special_areas2(
+                obj.data,
                 (1.0 - color[0], 1.0 - color[1], 1.0 - color[2],
                  settings.wireframe_opacity)
             )

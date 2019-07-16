@@ -84,7 +84,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         # Only for FaceBuilder coloring face parts
         if (FBLoader.get_builder_type() == BuilderType.FaceBuilder) and \
             settings.show_specials:
-            FBLoader.wireframer.init_special_areas(
+            FBLoader.wireframer.init_special_areas2(
+                headobj.data,
                 (1.0 - col[0], 1.0 - col[1], 1.0 - col[2],
                  settings.wireframe_opacity))
 

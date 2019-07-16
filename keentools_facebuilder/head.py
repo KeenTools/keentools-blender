@@ -51,6 +51,9 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
     def new_head(cls):
         stored_builder_type = FBLoader.get_builder_type()
         fb = FBLoader.new_builder(BuilderType.FaceBuilder)
+        # fb.set_mask(0, False)
+        # fb.set_mask(1, False)
+        fb.set_mask(6, False)
         geo = fb.applied_args_model()
         me = geo.mesh(0)
 

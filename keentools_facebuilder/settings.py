@@ -32,11 +32,14 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 from . fbdebug import FBDebug
-from . config import config
+from . config import config, get_main_settings
 
 
 def update_wireframe(self, context):
-    FBLoader.update_wireframe()
+    settings = get_main_settings()
+    headnum = settings.current_headnum
+    head = settings.heads[headnum]
+    FBLoader.update_wireframe(head.headobj)
 
 
 def update_pin_sensitivity(self, context):

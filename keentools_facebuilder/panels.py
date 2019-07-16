@@ -446,7 +446,6 @@ class OBJECT_PT_FBSettingsPanel(Panel):
         layout.prop(settings, 'check_auto_rigidity')
         layout.prop(settings, 'rigidity')
 
-        '''
         box = layout.box()
         row = box.row()
         row.prop(settings, 'check_ears')
@@ -457,8 +456,8 @@ class OBJECT_PT_FBSettingsPanel(Panel):
         row = box.row()
         row.prop(settings, 'check_jaw')
         row.prop(settings, 'check_mouth')
+        row = box.row()
         row.prop(settings, 'check_neck')
-        '''
 
         row = layout.row()
         row.scale_y = 2.0
