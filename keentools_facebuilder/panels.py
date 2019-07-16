@@ -449,6 +449,7 @@ class OBJECT_PT_FBSettingsPanel(Panel):
         layout.prop(settings, 'check_use_previous')
         layout.prop(settings, 'check_solve_bones')
         layout.prop(settings, 'check_solve_shapes')
+        layout.prop(settings, 'check_solve_camera')
         layout.prop(settings, 'iters')
         layout.prop(settings, 'check_use_numeric')
         layout.prop(settings, 'check_log')

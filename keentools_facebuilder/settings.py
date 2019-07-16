@@ -269,6 +269,7 @@ class FBSceneSettings(PropertyGroup):
     check_use_numeric: BoolProperty(name="Use numeric", default=False)
     check_solve_bones: BoolProperty(name="Solve bones", default=True)
     check_solve_shapes: BoolProperty(name="Solve shapes", default=True)
+    check_solve_camera: BoolProperty(name="Solve camera", default=True)
     check_log: BoolProperty(name="Enable logging", default=True)
 
     check_auto_rigidity: BoolProperty(
