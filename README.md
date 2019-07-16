@@ -4,7 +4,7 @@
 
 ## Release History
 
-There are no releases yet
+1.5.2 - 16 July 2019
 
 ## Licensing
 
