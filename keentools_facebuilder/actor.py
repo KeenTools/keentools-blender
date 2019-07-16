@@ -34,12 +34,12 @@ from . config import get_main_settings
 
 
 class OBJECT_OT_FBActor(Operator):
-    """ Face Builder Actor Operator
-        It is used if we don't need operator params
+    """ Face Builder Action
     """
     bl_idname = config.fb_actor_operator_idname
     bl_label = "FaceBuilder in Action"
     bl_options = {'REGISTER'}
+    bl_description = "Face Builder"
 
     action: StringProperty(name="Action Name")
     headnum: IntProperty(default=0)
@@ -410,32 +410,6 @@ class OBJECT_OT_FBActor(Operator):
 
         if self.action == "reconstruct_by_head":
             self.reconstruct_by_head(context)
-        if self.action == "wireframe_red":
-            settings.wireframe_color = config.red_color
-        elif self.action == "wireframe_green":
-            settings.wireframe_color = config.green_color
-        elif self.action == "wireframe_blue":
-            settings.wireframe_color = config.blue_color
-        elif self.action == "wireframe_cyan":
-            settings.wireframe_color = config.cyan_color
-        elif self.action == "wireframe_magenta":
-            settings.wireframe_color = config.magenta_color
-        elif self.action == "wireframe_yellow":
-            settings.wireframe_color = config.yellow_color
-        elif self.action == "wireframe_black":
-            settings.wireframe_color = config.black_color
-        elif self.action == "wireframe_white":
-            settings.wireframe_color = config.white_color
-
-        elif self.action == "sens_dec":
-            settings.pin_sensitivity -= 2.0
-        elif self.action == "sens_inc":
-            settings.pin_sensitivity += 4.0
-
-        elif self.action == "psize_dec":
-            settings.pin_size -= 1.0
-        elif self.action == "psize_inc":
-            settings.pin_size += 2.0
 
         elif self.action == "lic_hardware_id_copy":
             FBLicManager.copy_hardware_id()
@@ -458,8 +432,6 @@ class OBJECT_OT_FBActor(Operator):
         elif self.action == "visit_site":
             bpy.ops.wm.url_open(url="https://keentools.io/manual-installation")
 
-        elif self.action == "addon_settings":
-            bpy.ops.preferences.addon_show(module=config.addon_name)
 
         elif self.action == "auto_detect_frame_size":
             headnum = settings.current_headnum
@@ -483,6 +455,7 @@ class OBJECT_OT_FBActor(Operator):
                 scene.render.resolution_y = el[1]
                 settings.frame_height = el[1]
             print('COUNTER', mc)
+
         elif self.action == 'use_render_frame_size':
             settings.frame_width = scene.render.resolution_x
             settings.frame_height = scene.render.resolution_y
@@ -524,41 +497,6 @@ class OBJECT_OT_FBActor(Operator):
 
             settings.frame_width = rw
             settings.frame_height = rh
-
-        elif self.action == "select_all_cameras":
-            headnum = self.get_headnum()
-            for c in settings.heads[headnum].cameras:
-                c.use_in_tex_baking = True
-
-        elif self.action == "deselect_all_cameras":
-            headnum = self.get_headnum()
-            for c in settings.heads[headnum].cameras:
-                c.use_in_tex_baking = False
-
-        if self.action == "add_camera":
-            headnum = self.get_headnum()
-            if settings.heads[headnum].cameras:
-                FBLoader.load_only(headnum)
-            camera = FBLoader.add_camera(headnum, None)
-            FBLoader.set_keentools_version(camera.camobj)
-            # FBLoader.fb_save(headnum, camnum)
-            FBLoader.save_only(headnum)
-
-        elif self.action == "delete_camera":
-            headnum = self.get_headnum()
-            camnum = self.get_camnum()
-            if not settings.pinmode:
-                fb = FBLoader.get_builder()
-                head = settings.heads[headnum]
-                kid = FBLoader.keyframe_by_camnum(headnum, camnum)
-                camobj = head.cameras[camnum].camobj
-                fb.remove_keyframe(kid)
-                FBLoader.fb_save(headnum, camnum)
-                # Delete camera object from scene
-                bpy.data.objects.remove(camobj, do_unlink=True)
-                # Delete link from list
-                head.cameras.remove(camnum)
-                print('CAMERA REMOVED')
 
         self.report({'INFO'}, "Actor: {}".format(self.action))
 

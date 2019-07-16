@@ -160,6 +160,7 @@ class FBLoader:
 
                 except UnlicensedException:
                     settings.force_out_pinmode = True
+                    settings.license_error = True
                     # FBLoader.out_pinmode(context, headnum, camnum)
                     cls.report({'INFO'}, "LICENSE EXCEPTION")
 
@@ -253,6 +254,10 @@ class FBLoader:
     @staticmethod
     def keyframe_by_camnum(headnum, camnum):
         settings = get_main_settings()
+        if headnum >= len(settings.heads):
+            return -1
+        if camnum >= len(settings.heads[headnum].cameras):
+            return -1
         return settings.heads[headnum].cameras[camnum].keyframe_id
 
     @classmethod

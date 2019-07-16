@@ -18,12 +18,13 @@
 
 
 bl_info = {
-    "name": "KeenTools FaceBuilder Addon v.0.1k",
+    "name": "KeenTools FaceBuilder Addon v.0.1m",
     "author": "KeenTools",
     "description": "Creates Head and Face geometry with a few reference photos",
     "blender": (2, 80, 0),
     "location": "View3D > Add > Mesh and View UI (press N to open panel)",
-    "wiki_url": "https://keentools.io/",
+    "wiki_url": "https://www.keentools.io/facebuilder",
+    "tracker_url": "https://www.keentools.io/contact",
     "warning": "",
     "category": "Add Mesh"
 }
@@ -63,7 +64,7 @@ def init_pykeentools_copy():
             print("CAN'T CREATE DEFAULT COPY")
             try:
                 # Create temporary folder
-                tmp_dir = tempfile.mkdtemp(prefix='keentools_fb_')  # creates new dir
+                tmp_dir = tempfile.mkdtemp(prefix='keentools_fb_')  # new dir
                 temp_path = os.path.join(tmp_dir, win_file_name)
                 shutil.copy2(src_path, temp_path)
                 pykeentools_dir = tmp_dir
@@ -105,7 +106,13 @@ from . body import MESH_OT_FBAddBody
 from . settings import FBCameraItem
 from . settings import FBHeadItem
 from . settings import FBSceneSettings
-from . main_operator import OBJECT_OT_FBOperator
+from . main_operator import (OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
+                             OBJECT_OT_FBUnmorph, OBJECT_OT_FBRemovePins,
+                             OBJECT_OT_FBWireframeColor,
+                             OBJECT_OT_FBFilterCameras, OBJECT_OT_FBFixSize,
+                             OBJECT_OT_FBDeleteCamera, OBJECT_OT_FBAddCamera,
+                             OBJECT_OT_FBAddonSettings,
+                             OBJECT_OT_FBBakeTexture, OBJECT_OT_FBShowTexture)
 from . draw import OBJECT_OT_FBDraw
 from . movepin import OBJECT_OT_FBMovePin
 from . actor import OBJECT_OT_FBActor
@@ -121,7 +128,18 @@ classes = (
     OBJECT_PT_TBPanel,
     MESH_OT_FBAddHead,
     MESH_OT_FBAddBody,
-    OBJECT_OT_FBOperator,
+    OBJECT_OT_FBSelectCamera,
+    OBJECT_OT_FBCenterGeo,
+    OBJECT_OT_FBUnmorph,
+    OBJECT_OT_FBRemovePins,
+    OBJECT_OT_FBWireframeColor,
+    OBJECT_OT_FBFilterCameras,
+    OBJECT_OT_FBDeleteCamera,
+    OBJECT_OT_FBAddCamera,
+    OBJECT_OT_FBFixSize,
+    OBJECT_OT_FBAddonSettings,
+    OBJECT_OT_FBBakeTexture,
+    OBJECT_OT_FBShowTexture,
     FBCameraItem,
     FBHeadItem,
     FBSceneSettings,

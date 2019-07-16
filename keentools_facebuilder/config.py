@@ -38,12 +38,29 @@ class config:
     addon_version = '0.1m'
     addon_search = 'KeenTools'
     addon_global_var_name = _prefix + '_settings'
+    addon_full_name = 'Keentools Face Builder for Blender'
     fb_panel_label = 'Face Builder v0.1m'
     fb_tab_category = 'Face Builder'
     default_builder = BuilderType.FaceBuilder
 
     # Operators ids
     fb_main_operator_idname = 'object.' + _prefix + '_main_operator'
+    fb_main_select_camera_idname = 'object.' + _prefix + '_main_select_camera'
+    fb_main_center_geo_idname = 'object.' + _prefix + '_main_center_geo'
+    fb_main_unmorph_idname = 'object.' + _prefix + '_main_unmorph'
+    fb_main_remove_pins_idname = 'object.' + _prefix + '_main_remove_pins'
+    fb_main_wireframe_color_idname = 'object.' + _prefix + \
+                                     '_main_wireframe_color'
+    fb_main_filter_cameras_idname = 'object.' + _prefix + '_main_filter_cameras'
+    fb_main_delete_camera_idname = 'object.' + _prefix + '_main_delete_camera'
+    fb_main_add_camera_idname = 'object.' + _prefix + '_main_add_camera'
+    fb_main_fix_size_idname = 'object.' + _prefix + '_main_fix_size'
+    fb_main_addon_settings_idname = 'object.' + _prefix + '_main_addon_settings'
+    fb_main_bake_tex_idname = 'object.' + _prefix + '_main_bake_tex'
+    fb_main_bake_tex_callname = _prefix + '_main_bake_tex'
+    fb_main_show_tex_idname = 'object.' + _prefix + '_main_show_tex'
+    fb_main_show_tex_callname = _prefix + '_main_show_tex'
+
     fb_filedialog_operator_idname = _prefix + '_import.open_filebrowser'
     fb_draw_operator_idname = 'object.' + _prefix + '_draw'
     fb_draw_operator_callname = _prefix + '_draw'
@@ -120,3 +137,4 @@ class ErrorType:
     IllegalIndex = 3
     CannotReconstruct = 4
     CannotCreate = 5
+    CustomMessage = 6

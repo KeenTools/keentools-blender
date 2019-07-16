@@ -82,7 +82,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             (col[0], col[1], col[2], settings.wireframe_opacity))
 
         # Only for FaceBuilder coloring face parts
-        if FBLoader.get_builder_type() == BuilderType.FaceBuilder:
+        if (FBLoader.get_builder_type() == BuilderType.FaceBuilder) and \
+            settings.show_specials:
             FBLoader.wireframer.init_special_areas(
                 (1.0 - col[0], 1.0 - col[1], 1.0 - col[2],
                  settings.wireframe_opacity))
@@ -113,6 +114,10 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             FBLoader.out_pinmode(context, headnum, camnum)
             return {'FINISHED'}
 
+        if headnum < 0:  # Head lost
+            FBLoader.out_pinmode(context, headnum, camnum)
+            return {'FINISHED'}
+
         head = settings.heads[headnum]
         if not head.headobj.hide_viewport:
             head.headobj.hide_viewport = True
@@ -128,9 +133,10 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         if settings.force_out_pinmode:  # Move Pin problem by ex.
             FBLoader.out_pinmode(context, headnum, camnum)
             settings.force_out_pinmode = False
-            # bpy.ops.wm.fb_addon_warning('INVOKE_DEFAULT', msg=0)
-            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+            if settings.license_error:
+                warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+                warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+                settings.license_error = False
             return {'FINISHED'}
 
         # Quit when camera rotated by user
@@ -138,8 +144,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             FBLoader.out_pinmode(context, headnum, camnum)
             return {'FINISHED'}
 
-        # Quit by ESC or ENTER pressed
-        if event.type in {'ESC', 'RET'}:
+        # Quit by ESC pressed
+        if event.type in {'ESC'}:
             FBLoader.out_pinmode(context, headnum, camnum)
             return {'FINISHED'}
 
@@ -213,6 +219,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                         fb.solve_for_current_pins(kid)
                     except UnlicensedException:
                         settings.force_out_pinmode = True
+                        settings.license_error = True
                         FBLoader.out_pinmode(context, headnum, camnum)
                         self.report({'INFO'}, "PIN MODE LICENSE EXCEPTION")
                         return {'FINISHED'}
@@ -247,8 +254,6 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
 
         if head.need_update:
             # Undo was called so Model redraw is needed
-            FBLoader.wireframer.init_geom_data(head.headobj)
-            FBLoader.wireframer.create_batches()
             head.need_update = False
             # Hide geometry
             # head.headobj.hide_viewport = True
@@ -258,6 +263,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             FBLoader.update_surface_points(
                 head.headobj, FBLoader.keyframe_by_camnum(headnum, camnum))
             # FBLoader.load_pins(self.camnum, scene)
+            FBLoader.wireframer.init_geom_data(head.headobj)
+            FBLoader.wireframer.create_batches()
 
             # === Debug only ===
             FBDebug.add_event_to_queue(
@@ -267,11 +274,15 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             FBDebug.make_snapshot()
             # === Debug only ===
 
+        # Catch if wireframer is off
+        if not (FBLoader.wireframer.is_working()):
+            FBLoader.out_pinmode(context, headnum, camnum)
+            return {'FINISHED'}
+
         FBLoader.create_batch_2d(context)
 
         if FBLoader.current_pin:
             return {"RUNNING_MODAL"}
         else:
             return {"PASS_THROUGH"}
-        # return {"RUNNING_MODAL"}
         # return {'INTERFACE'}

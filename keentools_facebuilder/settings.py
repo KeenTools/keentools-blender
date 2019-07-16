@@ -76,21 +76,37 @@ class FBCameraItem(PropertyGroup):
     model_mat: StringProperty(
         name="Model Matrix", default=""
     )
+    tmp_model_mat: StringProperty(
+        name="Temporary Model Matrix", default=""
+    )
     pins_count: IntProperty(
         name="Pins in Camera", default=0)
 
     use_in_tex_baking: BoolProperty(name="Use In Texture Baking", default=True)
 
-    def set_model_mat(self, arr):
+    @staticmethod
+    def convert_matrix_to_str(arr):
         b = arr.tobytes()
-        self.model_mat = b.hex()
+        return b.hex()
+
+    @staticmethod
+    def convert_str_to_matrix(mat):
+        if len(mat) == 0:
+            return np.eye(4)
+        b = bytes.fromhex(mat)
+        return np.frombuffer(b, dtype=np.float32).reshape((4, 4))
+
+    def set_model_mat(self, arr):
+        self.model_mat = self.convert_matrix_to_str(arr)
 
     def get_model_mat(self):
-        if len(self.model_mat) == 0:
-            return np.eye(4)
+        return self.convert_str_to_matrix(self.model_mat)
 
-        b = bytes.fromhex(self.model_mat)
-        return np.frombuffer(b, dtype=np.float32).reshape((4, 4))
+    def set_tmp_model_mat(self, arr):
+        self.tmp_model_mat = self.convert_matrix_to_str(arr)
+
+    def get_tmp_model_mat(self):
+        return self.convert_str_to_matrix(self.tmp_model_mat)
 
     # Simple getters/setters
     def get_image_width(self):
@@ -142,6 +158,7 @@ class FBHeadItem(PropertyGroup):
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
 
     serial_str: StringProperty(name="Serialization string", default="")
+    tmp_serial_str: StringProperty(name="Temporary Serialization", default="")
     need_update: BoolProperty(name="Mesh need update", default=False)
 
     def set_serial_str(self, value):
@@ -150,6 +167,9 @@ class FBHeadItem(PropertyGroup):
 
     def get_serial_str(self):
         return self.serial_str
+
+    def get_tmp_serial_str(self):
+        return self.tmp_serial_str
 
     def is_deleted(self):
         """ Checks that the list item references a non-existent object """
@@ -180,9 +200,18 @@ class FBSceneSettings(PropertyGroup):
     # ---------------------
     heads: CollectionProperty(type=FBHeadItem, name="Heads")
     sensor_width: FloatProperty(
+        description="The most important parameter. "
+                    "Set it according to the photo-camera specification",
         name="Sensor Width (mm)", default=36,
         min=0.1, update=update_camera_params)
+    sensor_height: FloatProperty(
+        description="Secondary parameter. "
+                    "Set it according to the photo-camera specification",
+        name="Sensor Height (mm)", default=24,
+        min=0.1, update=update_camera_params)
     focal: FloatProperty(
+        description="Camera focal length. "
+                    "You can found it in photo-camera settings or snapshot EXIF",
         name="Focal Length (mm)", default=50,
         min=0.1, update=update_camera_params)
 
@@ -193,36 +222,49 @@ class FBSceneSettings(PropertyGroup):
     # ---------------------
     opnum: IntProperty(name="Operation Number", default=0)  # Test purpose
     debug_active: BoolProperty(
+        description="Not recommended. "
+                    "Can extremely enlarge your scene file size",
         name="Debug Log active", default=False, update=update_debug_log)
 
     pinmode: BoolProperty(name="Pin Mode", default=False)
     force_out_pinmode: BoolProperty(name="Pin Mode", default=False)
+    license_error: BoolProperty(name="License Error", default=False)
 
     # ---------------------
     # Model View parameters
     # ---------------------
     wireframe_opacity: FloatProperty(
+        description="Wireframe visual density in pin-mode.",
         name="Wireframe opacity",
         default=0.2, min=0.0, max=1.0,
         update=update_wireframe)
     wireframe_color: FloatVectorProperty(
+        description="Color of wireframe mesh in pin-mode",
         name="Wireframe color", subtype='COLOR',
         default=[0.0, 0.0, 0.3], min=0.0, max=1.0, update=update_wireframe)
     show_specials: BoolProperty(
+        description="Show guide contours for individual parts of the face",
         name="Special face parts", default=True, update=update_wireframe)
 
     # Initial pin_size state in FBShaderPoints class
     pin_size: FloatProperty(
+        description="Size of visual markers (pins) in pin-mode",
         name="Pin Size",
         default=6.0, min=1.0, max=100.0, update=update_pin_size)
     pin_sensitivity: FloatProperty(
+        description="Increase if it is difficult for you to get a pin. "
+        "Decrease it if instead of a new pin, you capture the old one",
         name="Pin Sensitivity",
         default=12.0, min=1.0, max=100.0, update=update_pin_sensitivity)
 
     # Other settings
     rigidity: FloatProperty(
+        description="Model deformation sensitivity adjustment. "
+        "You can use it in experimental purpose only. Autorigidity is recomended",
         name="Rigidity", default=1.0, min=0.001, max=1000.0)
-    check_auto_rigidity: BoolProperty(name="auto rigidity", default=True)
+    check_auto_rigidity: BoolProperty(
+        description="Auto Model Rigidity detection. Highly recommended",
+        name="auto rigidity", default=True)
     check_ears: BoolProperty(name="Ears", default=True)
     check_eyes: BoolProperty(name="Eyes", default=True)
     check_face: BoolProperty(name="Face", default=True)
@@ -231,6 +273,7 @@ class FBSceneSettings(PropertyGroup):
     check_mouth: BoolProperty(name="Mouth", default=True)
     check_neck: BoolProperty(name="Neck", default=True)
 
+    # Internal use only
     current_headnum: IntProperty(name="Current Head Number", default=-1)
     current_camnum: IntProperty(name="Current Camera Number", default=-1)
 
@@ -243,18 +286,30 @@ class FBSceneSettings(PropertyGroup):
                 ('uv3', 'Spherical', 'Standard wrap-around Layout', 2),
                 ('uv4', 'Maxface', 'Maximum face area, non-uniform', 3),
                 ], description="UV Layout scheme")
-    tex_width: IntProperty(name="Texture Width", default=2048)
-    tex_height: IntProperty(name="Texture Height", default=2048)
+    tex_width: IntProperty(
+        description="Width size of output texture",
+        name="Texture Width", default=2048)
+    tex_height: IntProperty(
+        description="Height size of output texture",
+        name="Texture Height", default=2048)
 
     tex_face_angles_affection: FloatProperty(
+        description="Deviation angle of normal direction affects "
+                    "the choice of camera for baking.",
         name="Face Angles Affection", default=10.0)
     tex_uv_expand_percents: FloatProperty(
+        description="Expand texture out of bounds to prevent seams "
+                    "visibility. Only if it's greate then zero",
         name="UV Expand Percent", default=0.0)
     tex_back_face_culling: BoolProperty(
+        description="Exclude backfacing polygons from baking (Recommended)",
         name="Back Face Culling", default=True)
     tex_equalize_brightness: BoolProperty(
+        description="Equalizes the brightness in case of "
+                    "a big difference in lightness",
         name="Equalize Brightness", default=False)
     tex_equalize_colour: BoolProperty(
+        description="Equalizes colors used from different frames",
         name="Equalize color", default=False)
 
     # Find Head by Blender object (Head Mesh)

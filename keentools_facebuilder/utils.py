@@ -309,8 +309,8 @@ class FBText:
     def __init__(self):
         self.text_draw_handler = None
         self.message = [
-            "Pin Mode",
-            "Esc / Enter to Exit"
+            "Pin Mode ",
+            "Press 'Esc' to Exit "
         ]
 
     def set_message(self, msg):
@@ -600,6 +600,9 @@ class FBEdgeShader:
         self.edges_indices = []
         self.edges_colors = []
         self.init_shaders()
+
+    def is_working(self):
+        return not (self.draw_handler is None)
 
     def draw_callback(self, op, context):
         # Force Stop
