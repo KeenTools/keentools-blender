@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-from time import sleep
 
 import bpy
 from . fbloader import FBLoader
@@ -52,15 +51,26 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         args = (self, context)
         scene = context.scene
         settings = get_main_settings()
-
-        FBLoader.update_pixel_size(context)
-
         headnum = self.get_headnum()
         camnum = self.get_camnum()
         kid = FBLoader.keyframe_by_camnum(headnum, camnum)
 
+        # Checks for operator parameters
+        if headnum < 0:
+            return {'CANCELED'}
+        head = settings.heads[headnum]
+        if camnum < 0 or camnum >= len(head.cameras):
+            return {'CANCELED'}
+        cam = head.cameras[camnum]
+
+        # Init old state values
+        head.tmp_serial_str = ''
+        cam.tmp_model_mat = ''
+
+        FBLoader.update_pixel_size(context)
+
         # Load serialized model Uncentered (False param)
-        FBLoader.load_all(headnum, camnum, False)  # True
+        FBLoader.load_all(headnum, camnum, False)
 
         FBLoader.create_batch_2d(context)
         FBLoader.register_handlers(args, context)
@@ -121,6 +131,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         headnum = self.get_headnum()
         camnum = self.get_camnum()
         head = settings.heads[headnum]
+        headobj = settings.heads[headnum].headobj
         cam = head.cameras[camnum]
         kid = FBLoader.keyframe_by_camnum(headnum, camnum)
 
@@ -141,31 +152,35 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         FBLoader.current_pin = None
         FBLoader.current_pin_num = -1
 
-        # ---------
+        # --------------
+        # Pin lag solve
+        # --------------
         fb = FBLoader.get_builder()
+        # Save state to vars
+        serial_str = head.serial_str
+        model_mat = cam.model_mat
 
-        # Save block
-        serial_str = head.tmp_serial_str
-        model_mat = cam.tmp_model_mat
+        # Prepare previous state to push in history
+        if head.tmp_serial_str != '':
+            cam.model_mat = cam.tmp_model_mat
+            head.set_serial_str(head.get_tmp_serial_str())
+            fb.set_model_mat(kid, cam.get_tmp_model_mat())
 
-        head.set_serial_str(head.serial_str)
-        fb.set_model_mat(kid, cam.get_model_mat())
+            if not fb.deserialize(head.get_serial_str()):
+                print('DESERIALIZE ERROR: ', head.get_serial_str())
 
-        if not fb.deserialize(head.get_serial_str()):
-            print('DESERIALIZE ERROR: ', head.get_serial_str())
-
-        FBCalc.update_head_mesh(fb, head.headobj)
-        # Update all cameras position
-        FBLoader.update_cameras(headnum)
-        # ---------
-        # Undo push
-        # ---------
-        head = settings.heads[headnum]
-        # if head.serial_str != head.tmp_serial_str:
-        head.need_update = True
-        FBLoader.force_undo_push()
-        head.need_update = False
-        print("PUSH 1")
+            FBCalc.update_head_mesh(fb, head.headobj)
+            # Update all cameras position
+            FBLoader.update_cameras(headnum)
+            # ---------
+            # Undo push
+            # ---------
+            head = settings.heads[headnum]
+            # if head.serial_str != head.tmp_serial_str:
+            head.need_update = True
+            FBLoader.force_undo_push()
+            head.need_update = False
+            print("PUSH 1")
 
         # Restore last position
         head.set_serial_str(serial_str)
@@ -188,7 +203,6 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         print("PUSH 2")
         # ---------
 
-        headobj = settings.heads[headnum].headobj
         # Load 3D pins
         FBLoader.update_surface_points(headobj, kid)
 
@@ -203,7 +217,6 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         headobj = settings.heads[headnum].headobj
         cam = settings.heads[headnum].cameras[camnum]
         camobj = cam.camobj
-
         kid = FBLoader.keyframe_by_camnum(headnum, camnum)
 
         fb = FBLoader.get_builder()
@@ -223,7 +236,9 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         FBLoader.spins[FBLoader.current_pin_num] = (x, y)
 
         fb.move_pin(kid, p_idx, FBCalc.image_space_to_frame(x, y))
-        sleep(0.5)
+
+        # sleep(0.5)  # Test purpose only
+
         # Setup Rigidity
         if FBLoader.get_builder_type() == BuilderType.FaceBuilder:
             fb.set_auto_rigidity(settings.check_auto_rigidity)
@@ -243,13 +258,12 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         # Pin lag solve
         #--------------
         head = settings.heads[headnum]
-        head.serial_str = head.tmp_serial_str  # previous state
-        head.tmp_serial_str = fb.serialize()  # current state
-        arr = fb.model_mat(kid)
-        b = arr.tobytes()
-        cam.model_mat = cam.tmp_model_mat
-        cam.tmp_model_mat = b.hex()
-
+        # Store in tmp previous state
+        head.tmp_serial_str = head.serial_str
+        cam.tmp_model_mat = cam.model_mat
+        # Save current state
+        head.set_serial_str(fb.serialize())
+        cam.set_model_mat(fb.model_mat(kid))
         #--------------
 
         # Update Rigidity

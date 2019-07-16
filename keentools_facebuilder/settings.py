@@ -84,16 +84,29 @@ class FBCameraItem(PropertyGroup):
 
     use_in_tex_baking: BoolProperty(name="Use In Texture Baking", default=True)
 
-    def set_model_mat(self, arr):
+    @staticmethod
+    def convert_matrix_to_str(arr):
         b = arr.tobytes()
-        self.model_mat = b.hex()
+        return b.hex()
+
+    @staticmethod
+    def convert_str_to_matrix(mat):
+        if len(mat) == 0:
+            return np.eye(4)
+        b = bytes.fromhex(mat)
+        return np.frombuffer(b, dtype=np.float32).reshape((4, 4))
+
+    def set_model_mat(self, arr):
+        self.model_mat = self.convert_matrix_to_str(arr)
 
     def get_model_mat(self):
-        if len(self.model_mat) == 0:
-            return np.eye(4)
+        return self.convert_str_to_matrix(self.model_mat)
 
-        b = bytes.fromhex(self.model_mat)
-        return np.frombuffer(b, dtype=np.float32).reshape((4, 4))
+    def set_tmp_model_mat(self, arr):
+        self.tmp_model_mat = self.convert_matrix_to_str(arr)
+
+    def get_tmp_model_mat(self):
+        return self.convert_str_to_matrix(self.tmp_model_mat)
 
     # Simple getters/setters
     def get_image_width(self):
@@ -154,6 +167,9 @@ class FBHeadItem(PropertyGroup):
 
     def get_serial_str(self):
         return self.serial_str
+
+    def get_tmp_serial_str(self):
+        return self.tmp_serial_str
 
     def is_deleted(self):
         """ Checks that the list item references a non-existent object """
