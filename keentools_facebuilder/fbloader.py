@@ -26,6 +26,7 @@ from . utils import (
 )
 from . builder import UniBuilder
 from . fbdebug import FBDebug
+from . const import FBConst
 from . config import config, get_main_settings, BuilderType
 from pykeentools import UnlicensedException
 
@@ -390,6 +391,23 @@ class FBLoader:
         cls.points3d.create_batch()
 
     @classmethod
+    def get_special_indices(cls):
+        if (cls.builder.get_builder_type() == BuilderType.FaceBuilder):
+            indices = []
+            indices.extend(FBConst.get_eyes_indices())
+            indices.extend(FBConst.get_mouth_indices())
+            indices.extend(FBConst.get_nose_indices())
+            indices.extend(FBConst.get_half_indices())
+            indices.extend(FBConst.get_ears_indices())
+            indices.extend(FBConst.get_eyebrows_indices())
+            return indices
+        elif (cls.builder.get_builder_type() == BuilderType.BodyBuilder):
+            return FBConst.get_bodybuilder_highlight_indices()
+
+        return []
+
+
+    @classmethod
     def update_wireframe(cls):
         settings = get_main_settings()
         color = settings.wireframe_color
@@ -397,12 +415,11 @@ class FBLoader:
         cls.wireframer.init_color_data(
             (color[0], color[1], color[2], settings.wireframe_opacity)
         )
-        if settings.show_specials and (
-                cls.get_builder_type() == BuilderType.FaceBuilder):
-            cls.wireframer.init_special_areas(
-                (1.0 - color[0], 1.0 - color[1], 1.0 - color[2],
-                 settings.wireframe_opacity)
-            )
+        if settings.show_specials:
+            special_indices = cls.get_special_indices()
+            special_color = (1.0 - color[0], 1.0 - color[1], 1.0 - color[2],
+                settings.wireframe_opacity)
+            cls.wireframer.init_special_areas(special_indices, special_color)
         cls.wireframer.create_batches()
 
     @classmethod
