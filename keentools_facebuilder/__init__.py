@@ -97,10 +97,9 @@ def init_pykeentools_copy():
 init_pykeentools_copy()
 
 
-from . panels import OBJECT_PT_FBPanel, WM_OT_FBAddonWarning
-from . panels import OBJECT_PT_FBSettingsPanel, OBJECT_PT_FBColorsPanel
-from . panels import OBJECT_PT_TBPanel
-from . panels import FBFixMenu
+from . panels import (OBJECT_PT_FBPanel, OBJECT_PT_FBFaceParts,
+                      WM_OT_FBAddonWarning, OBJECT_PT_FBSettingsPanel,
+                      OBJECT_PT_FBColorsPanel, OBJECT_PT_TBPanel, FBFixMenu)
 from . head import MESH_OT_FBAddHead
 from . body import MESH_OT_FBAddBody
 from . settings import FBCameraItem
@@ -123,9 +122,10 @@ from . config import config
 
 classes = (
     OBJECT_PT_FBPanel,
-    WM_OT_FBAddonWarning,
+    OBJECT_PT_FBFaceParts,
     OBJECT_PT_FBColorsPanel,
     OBJECT_PT_TBPanel,
+    WM_OT_FBAddonWarning,
     MESH_OT_FBAddHead,
     MESH_OT_FBAddBody,
     OBJECT_OT_FBSelectCamera,

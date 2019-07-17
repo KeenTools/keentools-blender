@@ -48,45 +48,7 @@ class MESH_OT_FBAddBody(bpy.types.Operator):
 
     @classmethod
     def new_body(cls):
-        stored_builder_type = FBLoader.get_builder_type()
-        fb = FBLoader.new_builder(BuilderType.BodyBuilder)
-        geo = fb.applied_args_model()
-        me = geo.mesh(0)
-
-        v_count = me.points_count()
-        vertices = []
-        for i in range(0, v_count):
-            vertices.append(me.point(i))
-
-        rot = np.array([[1., 0., 0.], [0., 0., 1.], [0., -1., 0]])
-        vertices2 = vertices @ rot
-        # vertices2 = vertices
-
-        f_count = me.faces_count()
-        faces = []
-        normals = []
-        n = 0
-        for i in range(0, f_count):
-            row = []
-            for j in range(0, me.face_size(i)):
-                row.append(me.face_point(i, j))
-                normal = me.normal(i, j) @ rot
-                normals.append(tuple(normal))
-                n += 1
-            faces.append(tuple(row))
-
-        mesh = bpy.data.meshes.new('Body_mesh')
-        mesh.from_pydata(vertices2, [], faces)
-
-        # Init Custom Normals (work on Shading Flat!)
-        # mesh.calc_normals_split()
-        # mesh.normals_split_custom_set(normals)
-        mesh.update()
-
-        # Warning! our autosmooth settings work on Shading Flat!
-        # mesh.use_auto_smooth = True
-        # mesh.auto_smooth_angle = 3.1415927410125732
-
-        obj = bpy.data.objects.new('FBBody', mesh)
-        FBLoader.new_builder(stored_builder_type)
+        mesh = FBLoader.universal_mesh_loader(
+            BuilderType.BodyBuilder, 'Body_mesh')
+        obj = bpy.data.objects.new('BBBody', mesh)
         return obj

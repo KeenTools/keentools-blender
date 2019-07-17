@@ -321,6 +321,50 @@ class WM_OT_FBAddonWarning(Operator):
         # return context.window_manager.invoke_popup(self, width=300)
 
 
+class OBJECT_PT_FBFaceParts(Panel):
+    bl_idname = config.fb_parts_panel_idname
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_label = "Mesh parts"
+    bl_category = config.fb_tab_category
+    bl_options = {'DEFAULT_CLOSED'}
+
+    # Panel appear only when our Mesh or Camera selected
+    @classmethod
+    def poll(cls, context):
+        settings = get_main_settings()
+        if settings.pinmode:
+            return False
+        return proper_object_test()
+
+    # Panel Draw
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        obj = context.object
+        settings = get_main_settings()
+        headnum = settings.head_by_obj(obj)
+
+        # No registered models in scene
+        if headnum < 0:
+            if obj.type != 'MESH':
+                return
+        head = settings.heads[headnum]
+
+        box = layout.box()
+        row = box.row()
+        row.prop(head, 'check_ears')
+        row.prop(head, 'check_eyes')
+        row = box.row()
+        row.prop(head, 'check_face')
+        row.prop(head, 'check_headback')
+        row = box.row()
+        row.prop(head, 'check_jaw')
+        row.prop(head, 'check_mouth')
+        row = box.row()
+        row.prop(head, 'check_neck')
+
+
 class OBJECT_PT_TBPanel(Panel):
     bl_idname = config.fb_tb_panel_idname
     bl_space_type = "VIEW_3D"
@@ -445,19 +489,6 @@ class OBJECT_PT_FBSettingsPanel(Panel):
 
         layout.prop(settings, 'check_auto_rigidity')
         layout.prop(settings, 'rigidity')
-
-        box = layout.box()
-        row = box.row()
-        row.prop(settings, 'check_ears')
-        row.prop(settings, 'check_eyes')
-        row = box.row()
-        row.prop(settings, 'check_face')
-        row.prop(settings, 'check_headback')
-        row = box.row()
-        row.prop(settings, 'check_jaw')
-        row.prop(settings, 'check_mouth')
-        row = box.row()
-        row.prop(settings, 'check_neck')
 
         row = layout.row()
         row.scale_y = 2.0

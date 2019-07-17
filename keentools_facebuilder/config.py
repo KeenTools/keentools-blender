@@ -79,6 +79,7 @@ class config:
     fb_panel_idname = 'OBJECT_PT_' + _prefix + '_panel_id'
     fb_tb_panel_idname = 'OBJECT_PT_' + _prefix + '_tb_panel_id'
     fb_colors_panel_idname = 'OBJECT_PT_' + _prefix + '_colors_panel_id'
+    fb_parts_panel_idname = 'OBJECT_PT_' + _prefix + '_parts_panel_id'
     fb_settings_panel_idname = 'OBJECT_PT_' + _prefix + '_settings_panel_id'
 
     # Menu ids

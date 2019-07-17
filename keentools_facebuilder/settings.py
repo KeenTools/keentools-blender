@@ -32,7 +32,7 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 from . fbdebug import FBDebug
-from . config import config, get_main_settings
+from . config import config, get_main_settings, BuilderType
 
 
 def update_wireframe(self, context):
@@ -63,6 +63,28 @@ def update_cam_image(self, context):
 def update_camera_params(self, contex):
     print("CAMERA CHANGES", self.keys())
     FBLoader.update_camera_params()
+
+
+def update_mesh_parts(self, context):
+    print("MESH PARTS")
+    settings = get_main_settings()
+    headnum = settings.current_headnum
+    head = settings.heads[headnum]
+    masks = []
+    masks.append(head.check_ears)
+    masks.append(head.check_eyes)
+    masks.append(head.check_face)
+    masks.append(head.check_headback)
+    masks.append(head.check_jaw)
+    masks.append(head.check_mouth)
+    masks.append(head.check_neck)
+
+    old_mesh = head.headobj.data
+    mesh = FBLoader.get_builder_mesh(FBLoader.get_builder(), 'Head_mesh',
+                                          tuple(masks))
+    head.headobj.data = mesh
+    print("MESH_USERS", old_mesh.users)
+    bpy.data.meshes.remove(old_mesh, do_unlink=True)
 
 
 class FBCameraItem(PropertyGroup):
@@ -159,6 +181,21 @@ class FBCameraItem(PropertyGroup):
 class FBHeadItem(PropertyGroup):
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
+
+    check_ears: BoolProperty(name="Ears", default=True,
+                             update=update_mesh_parts)
+    check_eyes: BoolProperty(name="Eyes", default=True,
+                             update=update_mesh_parts)
+    check_face: BoolProperty(name="Face", default=True,
+                             update=update_mesh_parts)
+    check_headback: BoolProperty(name="Headback", default=True,
+                                 update=update_mesh_parts)
+    check_jaw: BoolProperty(name="Jaw", default=True,
+                            update=update_mesh_parts)
+    check_mouth: BoolProperty(name="Mouth", default=True,
+                              update=update_mesh_parts)
+    check_neck: BoolProperty(name="Neck", default=True,
+                             update=update_mesh_parts)
 
     serial_str: StringProperty(name="Serialization string", default="")
     tmp_serial_str: StringProperty(name="Temporary Serialization", default="")
@@ -268,13 +305,6 @@ class FBSceneSettings(PropertyGroup):
     check_auto_rigidity: BoolProperty(
         description="Auto Model Rigidity detection. Highly recommended",
         name="auto rigidity", default=True)
-    check_ears: BoolProperty(name="Ears", default=True)
-    check_eyes: BoolProperty(name="Eyes", default=True)
-    check_face: BoolProperty(name="Face", default=True)
-    check_headback: BoolProperty(name="Headback", default=True)
-    check_jaw: BoolProperty(name="Jaw", default=True)
-    check_mouth: BoolProperty(name="Mouth", default=True)
-    check_neck: BoolProperty(name="Neck", default=True)
 
     # Internal use only
     current_headnum: IntProperty(name="Current Head Number", default=-1)

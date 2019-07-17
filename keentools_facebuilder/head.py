@@ -42,56 +42,14 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         obj.select_set(state=True)
         bpy.context.view_layer.objects.active = obj
 
-        bpy.ops.object.shade_smooth()
+        # bpy.ops.object.shade_smooth()
         h = get_main_settings().heads.add()
         h.headobj = obj
         return {'FINISHED'}
 
     @classmethod
     def new_head(cls):
-        stored_builder_type = FBLoader.get_builder_type()
-        fb = FBLoader.new_builder(BuilderType.FaceBuilder)
-        # fb.set_mask(0, False)
-        # fb.set_mask(1, False)
-        # fb.set_mask(6, False)
-        geo = fb.applied_args_model()
-        me = geo.mesh(0)
-
-        v_count = me.points_count()
-        vertices = []
-        for i in range(0, v_count):
-            vertices.append(me.point(i))
-
-        rot = np.array([[1., 0., 0.], [0., 0., 1.], [0., -1., 0]])
-        vertices2 = vertices @ rot
-        # vertices2 = vertices
-
-        f_count = me.faces_count()
-        faces = []
-        normals = []
-        n = 0
-        for i in range(0, f_count):
-            row = []
-            for j in range(0, me.face_size(i)):
-                row.append(me.face_point(i, j))
-                normal = me.normal(i, j) @ rot
-                normals.append(tuple(normal))
-                n += 1
-            faces.append(tuple(row))
-
-        mesh = bpy.data.meshes.new('Head_mesh')
-        mesh.from_pydata(vertices2, [], faces)
-
-        # Init Custom Normals (work on Shading Flat!)
-        # mesh.calc_normals_split()
-        # mesh.normals_split_custom_set(normals)
-        mesh.update()
-
-        # Warning! our autosmooth settings work on Shading Flat!
-        # mesh.use_auto_smooth = True
-        # mesh.auto_smooth_angle = 3.1415927410125732
-
+        mesh = FBLoader.universal_mesh_loader(
+            BuilderType.FaceBuilder, 'Head_mesh')
         obj = bpy.data.objects.new('FBHead', mesh)
-        # Restore builder
-        FBLoader.new_builder(stored_builder_type)
         return obj

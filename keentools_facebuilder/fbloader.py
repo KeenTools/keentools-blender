@@ -562,6 +562,70 @@ class FBLoader:
         return 1
 
     @classmethod
+    def get_builder_mesh(cls, builder, mesh_name='keentools_mesh',
+                               masks=()):
+        for i, m in enumerate(masks):
+            builder.set_mask(i, m)
+
+        geo = builder.applied_args_model()
+        me = geo.mesh(0)
+
+        v_count = me.points_count()
+        vertices = []
+        for i in range(0, v_count):
+            vertices.append(me.point(i))
+
+        rot = np.array([[1., 0., 0.], [0., 0., 1.], [0., -1., 0]])
+        vertices2 = vertices @ rot
+        # vertices2 = vertices
+
+        f_count = me.faces_count()
+        faces = []
+
+        # Normals are not in use yet
+        normals = []
+        n = 0
+        for i in range(0, f_count):
+            row = []
+            for j in range(0, me.face_size(i)):
+                row.append(me.face_point(i, j))
+                normal = me.normal(i, j) @ rot
+                normals.append(tuple(normal))
+                n += 1
+            faces.append(tuple(row))
+
+        mesh = bpy.data.meshes.new(mesh_name)
+        mesh.from_pydata(vertices2, [], faces)
+
+        # Init Custom Normals (work on Shading Flat!)
+        # mesh.calc_normals_split()
+        # mesh.normals_split_custom_set(normals)
+
+        # Simple Shade Smooth analog
+        values = [True] * len(mesh.polygons)
+        mesh.polygons.foreach_set('use_smooth', values)
+        mesh.update()
+
+        # Warning! our autosmooth settings work on Shading Flat!
+        # mesh.use_auto_smooth = True
+        # mesh.auto_smooth_angle = 3.1415927410125732
+
+        return mesh
+
+
+    @classmethod
+    def universal_mesh_loader(cls, builder_type,
+                              mesh_name='keentools_mesh', masks=()):
+        stored_builder_type = FBLoader.get_builder_type()
+        builder = cls.new_builder(builder_type)
+
+        mesh = cls.get_builder_mesh(builder, mesh_name, masks)
+
+        # Restore builder
+        cls.new_builder(stored_builder_type)
+        return mesh
+
+    @classmethod
     def load_only(cls, headnum):
         settings = get_main_settings()
         head = settings.heads[headnum]
