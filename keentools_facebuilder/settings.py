@@ -80,12 +80,20 @@ def update_mesh_parts(self, context):
     masks.append(head.check_neck)
 
     old_mesh = head.headobj.data
-    mesh = FBLoader.get_builder_mesh(FBLoader.get_builder(), 'Head_mesh',
+    # Create new mesh
+    mesh = FBLoader.get_builder_mesh(FBLoader.get_builder(), 'FBHead_mesh',
                                           tuple(masks))
     head.headobj.data = mesh
+    if settings.pinmode:
+        # Update wireframe structures
+        FBLoader.wireframer.init_geom_data(head.headobj)
+        FBLoader.update_wireframe(head.headobj)
+
+    mesh_name = old_mesh.name
+    # Delete old mesh
     print("MESH_USERS", old_mesh.users)
     bpy.data.meshes.remove(old_mesh, do_unlink=True)
-
+    mesh.name = mesh_name
 
 class FBCameraItem(PropertyGroup):
     keyframe_id: IntProperty(default=0)

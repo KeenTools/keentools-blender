@@ -332,9 +332,6 @@ class OBJECT_PT_FBFaceParts(Panel):
     # Panel appear only when our Mesh or Camera selected
     @classmethod
     def poll(cls, context):
-        settings = get_main_settings()
-        if settings.pinmode:
-            return False
         return proper_object_test()
 
     # Panel Draw

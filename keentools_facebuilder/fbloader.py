@@ -399,11 +399,18 @@ class FBLoader:
         )
         if settings.show_specials and (
                 cls.get_builder_type() == BuilderType.FaceBuilder):
-            cls.wireframer.init_special_areas2(
-                obj.data,
-                (1.0 - color[0], 1.0 - color[1], 1.0 - color[2],
-                 settings.wireframe_opacity)
-            )
+            mesh = obj.data
+            # Check to prevent shader problem
+            if len(mesh.edges) * 2 == len(cls.wireframer.edges_colors):
+                cls.wireframer.init_special_areas2(
+                    obj.data,
+                    (1.0 - color[0], 1.0 - color[1], 1.0 - color[2],
+                     settings.wireframe_opacity)
+                )
+            else:
+                print("COMPARE PROBLEM")
+                print("EDGES", len(mesh.edges))
+                print("EDGE_COLORS", len(cls.wireframer.edges_colors))
         cls.wireframer.create_batches()
 
     @classmethod

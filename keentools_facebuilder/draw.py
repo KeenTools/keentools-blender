@@ -97,7 +97,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         FBLoader.update_surface_points(headobj, kid)
 
         # Can start much more times when not out from pinmode
-        FBStopTimer.start()
+        if not settings.pinmode:
+            FBStopTimer.start()
         settings.pinmode = True
         return {"RUNNING_MODAL"}
 
