@@ -250,6 +250,7 @@ class FBLoader:
         FBDebug.clear_event_queue()
         # === Debug use only ===
         FBStopTimer.stop()
+        print("STOPPER STOP")
 
     @staticmethod
     def keyframe_by_camnum(headnum, camnum):
@@ -574,6 +575,9 @@ class FBLoader:
         for i, m in enumerate(masks):
             builder.set_mask(i, m)
 
+        # default UV
+        builder.select_uv_set(0)
+
         geo = builder.applied_args_model()
         me = geo.mesh(0)
 
@@ -611,6 +615,14 @@ class FBLoader:
         # Simple Shade Smooth analog
         values = [True] * len(mesh.polygons)
         mesh.polygons.foreach_set('use_smooth', values)
+
+        uvtex = mesh.uv_layers.new()
+        uvmap = uvtex.data
+        # Fill uvs in uvmap
+        uvs_count = me.uvs_count()
+        for i in range(uvs_count):
+            uvmap[i].uv = me.uv(i)
+
         mesh.update()
 
         # Warning! our autosmooth settings work on Shading Flat!

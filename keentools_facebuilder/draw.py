@@ -99,6 +99,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         # Can start much more times when not out from pinmode
         if not settings.pinmode:
             FBStopTimer.start()
+            print("STOPPER START")
         settings.pinmode = True
         return {"RUNNING_MODAL"}
 
@@ -255,6 +256,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                 return {"RUNNING_MODAL"}
 
         if head.need_update:
+            print("UNDO CALL DETECTED")
             # Undo was called so Model redraw is needed
             head.need_update = False
             # Hide geometry
