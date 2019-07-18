@@ -28,6 +28,8 @@ from . builder import UniBuilder
 from . fbdebug import FBDebug
 from . config import config, get_main_settings, BuilderType
 from pykeentools import UnlicensedException
+import mathutils
+# import colorsys
 
 
 class FBLoader:
@@ -196,11 +198,10 @@ class FBLoader:
     def get_builder_type(cls):
         return cls.builder.get_builder_type()
 
-    # --- bpy dependent
     @classmethod
     def force_undo_push(cls):
         cls.inc_operation()
-        bpy.ops.ed.undo_push()
+        bpy.ops.ed.undo_push(message='KeenTools operation')
 
     @staticmethod
     def inc_operation():
@@ -393,20 +394,21 @@ class FBLoader:
     @classmethod
     def update_wireframe(cls, obj):
         settings = get_main_settings()
-        color = settings.wireframe_color
+        main_color = settings.wireframe_color
+        comp_color = mathutils.Color((
+            1.0 - main_color[0], 1.0 - main_color[1], 1.0 - main_color[2]))
+        # h, s, v = main_color.hsv
+        # comp_color = colorsys.hsv_to_rgb(h + 0.5, s, v)
 
-        cls.wireframer.init_color_data(
-            (color[0], color[1], color[2], settings.wireframe_opacity)
-        )
+        cls.wireframer.init_color_data((*main_color,
+                                        settings.wireframe_opacity))
         if settings.show_specials and (
                 cls.get_builder_type() == BuilderType.FaceBuilder):
             mesh = obj.data
             # Check to prevent shader problem
             if len(mesh.edges) * 2 == len(cls.wireframer.edges_colors):
                 cls.wireframer.init_special_areas2(
-                    obj.data,
-                    (1.0 - color[0], 1.0 - color[1], 1.0 - color[2],
-                     settings.wireframe_opacity)
+                    obj.data, (*comp_color, settings.wireframe_opacity)
                 )
             else:
                 print("COMPARE PROBLEM")
@@ -571,12 +573,19 @@ class FBLoader:
 
     @classmethod
     def get_builder_mesh(cls, builder, mesh_name='keentools_mesh',
-                               masks=()):
+                               masks=(), uv_set='uv0'):
         for i, m in enumerate(masks):
             builder.set_mask(i, m)
 
-        # default UV
+        # change UV in accordance to selected UV set
+        # Blender can't use integer as key in enum property
         builder.select_uv_set(0)
+        if uv_set=='uv1':
+            builder.select_uv_set(1)
+        if uv_set=='uv2':
+            builder.select_uv_set(2)
+        if uv_set=='uv3':
+            builder.select_uv_set(3)
 
         geo = builder.applied_args_model()
         me = geo.mesh(0)
@@ -633,12 +642,12 @@ class FBLoader:
 
 
     @classmethod
-    def universal_mesh_loader(cls, builder_type,
-                              mesh_name='keentools_mesh', masks=()):
+    def universal_mesh_loader(cls, builder_type, mesh_name='keentools_mesh',
+                              masks=(), uv_set='uv0'):
         stored_builder_type = FBLoader.get_builder_type()
         builder = cls.new_builder(builder_type)
 
-        mesh = cls.get_builder_mesh(builder, mesh_name, masks)
+        mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set)
 
         # Restore builder
         cls.new_builder(stored_builder_type)

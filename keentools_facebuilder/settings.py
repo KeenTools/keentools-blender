@@ -82,7 +82,8 @@ def update_mesh_parts(self, context):
     old_mesh = head.headobj.data
     # Create new mesh
     mesh = FBLoader.get_builder_mesh(FBLoader.get_builder(), 'FBHead_mesh',
-                                          tuple(masks))
+                                     tuple(masks),
+                                     uv_set=head.tex_uv_shape)
     head.headobj.data = mesh
     if settings.pinmode:
         # Update wireframe structures
@@ -209,6 +210,13 @@ class FBHeadItem(PropertyGroup):
     tmp_serial_str: StringProperty(name="Temporary Serialization", default="")
     need_update: BoolProperty(name="Mesh need update", default=False)
 
+    tex_uv_shape: EnumProperty(name="UV", items=[
+                ('uv0', 'Butterfly', 'Pretty standard one-seem Layout', 'UV', 0),
+                ('uv1', 'Legacy', 'Uniform tex scale but many seems', 'UV', 1),
+                ('uv2', 'Spherical', 'Standard wrap-around Layout', 'UV', 2),
+                ('uv3', 'Maxface', 'Maximum face area, non-uniform', 'UV', 3),
+                ], description="UV Layout scheme", update=update_mesh_parts)
+
     def set_serial_str(self, value):
         self.serial_str = value
         self.headobj[config.fb_serial_prop_name[0]] = value
@@ -248,18 +256,21 @@ class FBSceneSettings(PropertyGroup):
     # ---------------------
     heads: CollectionProperty(type=FBHeadItem, name="Heads")
     sensor_width: FloatProperty(
-        description="The most important parameter. "
-                    "Set it according to the photo-camera specification",
+        description="The horizontal size of the camera used to take photos."
+                    "This is VERY important parameter. "
+                    "Set it according to the real camera specification",
         name="Sensor Width (mm)", default=36,
         min=0.1, update=update_camera_params)
     sensor_height: FloatProperty(
         description="Secondary parameter. "
-                    "Set it according to the photo-camera specification",
+                    "Set it according to the real camera specification."
+                    "This parameter is not used if Sensor Width is greater",
         name="Sensor Height (mm)", default=24,
         min=0.1, update=update_camera_params)
     focal: FloatProperty(
         description="Camera focal length. "
-                    "You can found it in photo-camera settings or snapshot EXIF",
+                    "You can found it in real camera settings or snapshot EXIF."
+                    "This is VERY important parameter for proper reconstruction",
         name="Focal Length (mm)", default=50,
         min=0.1, update=update_camera_params)
 
@@ -321,12 +332,6 @@ class FBSceneSettings(PropertyGroup):
     # -------------------------
     # Texture Baking parameters
     # -------------------------
-    tex_uv_shape: EnumProperty(name="UV", items=[
-                ('uv1', 'Butterfly', 'Pretty standard one-seem Layout', 0),
-                ('uv2', 'Legacy', 'Uniform tex scale but many seems', 1),
-                ('uv3', 'Spherical', 'Standard wrap-around Layout', 2),
-                ('uv4', 'Maxface', 'Maximum face area, non-uniform', 3),
-                ], description="UV Layout scheme")
     tex_width: IntProperty(
         description="Width size of output texture",
         name="Texture Width", default=2048)

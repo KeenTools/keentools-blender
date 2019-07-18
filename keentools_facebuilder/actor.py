@@ -78,13 +78,13 @@ class OBJECT_OT_FBActor(Operator):
         uvmap = self.get_mesh_uvmap(mesh)
 
         # Generate UVs
-        uv_shape = settings.tex_uv_shape
+        uv_shape = head.tex_uv_shape
         fb.select_uv_set(0)
-        if uv_shape == 'uv2':
+        if uv_shape == 'uv1':
             fb.select_uv_set(1)
-        elif uv_shape == 'uv3':
+        elif uv_shape == 'uv2':
             fb.select_uv_set(2)
-        elif uv_shape == 'uv4':
+        elif uv_shape == 'uv3':
             fb.select_uv_set(3)
 
         print("UV_TYPE", uv_shape)

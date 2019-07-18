@@ -52,6 +52,7 @@ class OBJECT_PT_FBPanel(Panel):
     bl_region_type = "UI"
     bl_label = config.fb_panel_label
     bl_category = config.fb_tab_category
+    bl_context = "objectmode"
 
     # Panel appear only when our Mesh or Camera selected
     @classmethod
@@ -99,7 +100,9 @@ class OBJECT_PT_FBPanel(Panel):
 
         layout.prop(settings, 'focal')
         layout.prop(settings, 'sensor_width')
-        layout.prop(settings, 'sensor_height')
+        row = layout.row()
+        row.prop(settings, 'sensor_height')
+        row.active = False
 
         wrong_size_counter = 0
         fw = settings.frame_width
@@ -325,9 +328,10 @@ class OBJECT_PT_FBFaceParts(Panel):
     bl_idname = config.fb_parts_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_label = "Mesh parts"
+    bl_label = "Mesh parts & UV"
     bl_category = config.fb_tab_category
     bl_options = {'DEFAULT_CLOSED'}
+    bl_context = "objectmode"
 
     # Panel appear only when our Mesh or Camera selected
     @classmethod
@@ -360,6 +364,7 @@ class OBJECT_PT_FBFaceParts(Panel):
         row.prop(head, 'check_mouth')
         row = box.row()
         row.prop(head, 'check_neck')
+        box.prop(head, 'tex_uv_shape')
 
 
 class OBJECT_PT_TBPanel(Panel):
@@ -369,6 +374,7 @@ class OBJECT_PT_TBPanel(Panel):
     bl_label = "Texture Builder"
     bl_category = config.fb_tab_category
     bl_options = {'DEFAULT_CLOSED'}
+    bl_context = "objectmode"
 
     # Panel appear only when our Mesh or Camera selected
     @classmethod
@@ -381,11 +387,13 @@ class OBJECT_PT_TBPanel(Panel):
         scene = context.scene
         obj = context.object
         settings = get_main_settings()
+        headnum = settings.current_headnum
+        head = settings.heads[headnum]
 
         box = layout.box()
         box.prop(settings, 'tex_width')
         box.prop(settings, 'tex_height')
-        box.prop(settings, 'tex_uv_shape')
+        box.prop(head, 'tex_uv_shape')
 
         row = layout.row()
         row.scale_y = 3.0
@@ -413,6 +421,7 @@ class OBJECT_PT_FBColorsPanel(Panel):
     bl_region_type = "UI"
     bl_label = "Wireframe Colors"
     bl_category = config.fb_tab_category
+    bl_context = "objectmode"
 
     # Panel appear only when our Mesh or Camera selected
     @classmethod
@@ -464,6 +473,7 @@ class OBJECT_PT_FBSettingsPanel(Panel):
     bl_label = "Face Builder Settings"
     # bl_context = "objectmode"
     bl_category = config.fb_tab_category
+    bl_context = "objectmode"
 
     # bl_options = {'DEFAULT_CLOSED'}
 
@@ -495,7 +505,7 @@ class OBJECT_PT_FBSettingsPanel(Panel):
         # layout.prop(settings, 'debug_active', text="Debug Log Active")
 
 
-class FBFixMenu(Menu):
+class OBJECT_MT_FBFixMenu(Menu):
     bl_label = "Select Frame Size"
     bl_idname = config.fb_fix_frame_menu_idname
     bl_description = "Fix frame Width and High parameters for all cameras"

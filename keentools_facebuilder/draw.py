@@ -264,8 +264,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
 
             # Reload pins
             FBLoader.load_all(headnum, camnum)
-            FBLoader.update_surface_points(
-                head.headobj, FBLoader.keyframe_by_camnum(headnum, camnum))
+            kid = FBLoader.keyframe_by_camnum(headnum, camnum)
+            FBLoader.update_surface_points(head.headobj, kid)
             # FBLoader.load_pins(self.camnum, scene)
             FBLoader.wireframer.init_geom_data(head.headobj)
             FBLoader.wireframer.create_batches()

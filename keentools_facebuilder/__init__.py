@@ -99,7 +99,8 @@ init_pykeentools_copy()
 
 from . panels import (OBJECT_PT_FBPanel, OBJECT_PT_FBFaceParts,
                       WM_OT_FBAddonWarning, OBJECT_PT_FBSettingsPanel,
-                      OBJECT_PT_FBColorsPanel, OBJECT_PT_TBPanel, FBFixMenu)
+                      OBJECT_PT_FBColorsPanel, OBJECT_PT_TBPanel,
+                      OBJECT_MT_FBFixMenu)
 from . head import MESH_OT_FBAddHead
 from . body import MESH_OT_FBAddBody
 from . settings import FBCameraItem
@@ -116,7 +117,7 @@ from . draw import OBJECT_OT_FBDraw
 from . movepin import OBJECT_OT_FBMovePin
 from . actor import OBJECT_OT_FBActor
 from . addon_prefs import FBAddonPreferences
-from . filedialog import OBJECT_OT_FBOpenFilebrowser
+from . filedialog import WM_OT_FBOpenFilebrowser
 from . config import config
 
 
@@ -125,6 +126,7 @@ classes = (
     OBJECT_PT_FBFaceParts,
     OBJECT_PT_FBColorsPanel,
     OBJECT_PT_TBPanel,
+    OBJECT_MT_FBFixMenu,
     WM_OT_FBAddonWarning,
     MESH_OT_FBAddHead,
     MESH_OT_FBAddBody,
@@ -148,8 +150,7 @@ classes = (
     OBJECT_OT_FBMovePin,
     OBJECT_OT_FBActor,
     FBAddonPreferences,
-    OBJECT_OT_FBOpenFilebrowser,
-    FBFixMenu
+    WM_OT_FBOpenFilebrowser
 )
 
 
