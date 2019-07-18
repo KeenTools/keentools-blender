@@ -26,6 +26,7 @@ from . utils import (
 )
 from . builder import UniBuilder
 from . fbdebug import FBDebug
+from . const import FBConst
 from . config import config, get_main_settings, BuilderType
 from pykeentools import UnlicensedException
 import mathutils
@@ -275,7 +276,7 @@ class FBLoader:
         fb = cls.get_builder()
         scene = bpy.context.scene
         settings = get_main_settings()
-        cam = heads[headnum].cameras[camnum]
+        cam = settings.heads[headnum].cameras[camnum]
         kid = cls.keyframe_by_camnum(headnum, camnum)
 
         cam.set_model_mat(fb.model_mat(kid))
@@ -402,19 +403,36 @@ class FBLoader:
 
         cls.wireframer.init_color_data((*main_color,
                                         settings.wireframe_opacity))
-        if settings.show_specials and (
-                cls.get_builder_type() == BuilderType.FaceBuilder):
+        if settings.show_specials:
             mesh = obj.data
             # Check to prevent shader problem
             if len(mesh.edges) * 2 == len(cls.wireframer.edges_colors):
+                print("COLORING")
+                special_indices = cls.get_special_indices()
                 cls.wireframer.init_special_areas2(
-                    obj.data, (*comp_color, settings.wireframe_opacity)
+                    obj.data, special_indices,
+                    (*comp_color, settings.wireframe_opacity)
                 )
             else:
                 print("COMPARE PROBLEM")
                 print("EDGES", len(mesh.edges))
                 print("EDGE_COLORS", len(cls.wireframer.edges_colors))
         cls.wireframer.create_batches()
+
+
+    @classmethod
+    def get_special_indices(cls):
+        if (cls.builder.get_builder_type() == BuilderType.FaceBuilder):
+            pairs = FBConst.get_eyes_indices2()
+            pairs = pairs.union(FBConst.get_eyebrows_indices2())
+            pairs = pairs.union(FBConst.get_nose_indices2())
+            pairs = pairs.union(FBConst.get_mouth_indices2())
+            pairs = pairs.union(FBConst.get_ears_indices2())
+            pairs = pairs.union(FBConst.get_half_indices2())
+            return pairs
+        elif (cls.builder.get_builder_type() == BuilderType.BodyBuilder):
+            return FBConst.get_bodybuilder_highlight_indices()
+        return {}
 
     @classmethod
     def update_pin_sensitivity(cls):

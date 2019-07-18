@@ -8365,3 +8365,9 @@ class FBConst:
 (10953, 16211),
 (10953, 16209),
         }
+
+
+# FIXME its awful
+    @staticmethod
+    def get_bodybuilder_highlight_indices():
+        return []
