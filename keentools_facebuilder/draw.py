@@ -3,6 +3,7 @@ from pykeentools import UnlicensedException
 
 from .config import config, get_main_settings, ErrorType, BuilderType
 from .fbdebug import FBDebug
+from .const import FBConst
 from .fbloader import FBLoader
 from .utils import (
     FBCalc,
@@ -81,12 +82,11 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         FBLoader.wireframer.init_color_data(
             (col[0], col[1], col[2], settings.wireframe_opacity))
 
-        # Only for FaceBuilder coloring face parts
-        if (FBLoader.get_builder_type() == BuilderType.FaceBuilder) and \
-            settings.show_specials:
-            FBLoader.wireframer.init_special_areas(
-                (1.0 - col[0], 1.0 - col[1], 1.0 - col[2],
-                 settings.wireframe_opacity))
+        if settings.show_specials:
+            special_indices = FBLoader.get_special_indices()
+            special_color = (1.0 - col[0], 1.0 - col[1], 1.0 - col[2],
+                settings.wireframe_opacity)
+            FBLoader.wireframer.init_special_areas(special_indices, special_color)
 
         FBLoader.wireframer.create_batches()
         FBLoader.wireframer.register_handler(args)
