@@ -14,7 +14,7 @@ from .utils import (
 class OBJECT_OT_FBDraw(bpy.types.Operator):
     """ On Screen Face Builder Draw Operator """
     bl_idname = config.fb_draw_operator_idname
-    bl_label = "FaceBuilder Draw operator"
+    bl_label = "FaceBuilder Pinmode"
     bl_description = "Operator for in-Viewport drawing"
     bl_options = {'REGISTER', 'UNDO'}  # {'REGISTER', 'UNDO'}
 
@@ -31,7 +31,6 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             # We had to finish last operation
             if settings.current_headnum >= 0 and settings.current_camnum >= 0:
                 FBLoader.out_pinmode(
-                    context,
                     settings.current_headnum,
                     settings.current_camnum
                 )
@@ -116,11 +115,11 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
 
         # Quit if Screen changed
         if context.area is None:  # Different operation Space
-            FBLoader.out_pinmode(context, headnum, camnum)
+            FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
 
         if headnum < 0:  # Head lost
-            FBLoader.out_pinmode(context, headnum, camnum)
+            FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
 
         head = settings.heads[headnum]
@@ -136,7 +135,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
 
         # Quit if PinMode out
         if settings.force_out_pinmode:  # Move Pin problem by ex.
-            FBLoader.out_pinmode(context, headnum, camnum)
+            FBLoader.out_pinmode(headnum, camnum)
             settings.force_out_pinmode = False
             if settings.license_error:
                 warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
@@ -146,12 +145,12 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
 
         # Quit when camera rotated by user
         if context.space_data.region_3d.view_perspective != 'CAMERA':
-            FBLoader.out_pinmode(context, headnum, camnum)
+            FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
 
         # Quit by ESC pressed
         if event.type in {'ESC'}:
-            FBLoader.out_pinmode(context, headnum, camnum)
+            FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
 
         if event.value == "PRESS":
@@ -225,7 +224,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                     except UnlicensedException:
                         settings.force_out_pinmode = True
                         settings.license_error = True
-                        FBLoader.out_pinmode(context, headnum, camnum)
+                        FBLoader.out_pinmode(headnum, camnum)
                         self.report({'INFO'}, "PIN MODE LICENSE EXCEPTION")
                         return {'FINISHED'}
 
@@ -250,7 +249,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                     FBLoader.update_pins_count(headnum, camnum)
                     # Undo push
                     head.need_update = True
-                    FBLoader.force_undo_push()
+                    FBLoader.force_undo_push('Pin Remove')
                     head.need_update = False
 
                 FBLoader.create_batch_2d(context)
@@ -282,7 +281,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
 
         # Catch if wireframer is off
         if not (FBLoader.wireframer.is_working()):
-            FBLoader.out_pinmode(context, headnum, camnum)
+            FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
 
         FBLoader.create_batch_2d(context)

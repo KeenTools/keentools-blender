@@ -264,7 +264,6 @@ class OBJECT_OT_FBActor(Operator):
         # Switch to Material Mode or Back
         self.toggle_mode(context, ('SOLID', 'MATERIAL'))
 
-
     def get_attr_variant_named(self, data, attr_names):
         for attr in attr_names:
             if attr in data.keys():
@@ -432,6 +431,9 @@ class OBJECT_OT_FBActor(Operator):
         elif self.action == "visit_site":
             bpy.ops.wm.url_open(url="https://keentools.io/manual-installation")
 
+        elif self.action == "unhide_head":
+            settings.heads[self.headnum].headobj.hide_viewport = False
+            settings.pinmode = False
 
         elif self.action == "auto_detect_frame_size":
             headnum = settings.current_headnum

@@ -31,7 +31,7 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
     """ Open selected image sequence as cameras """
 
     bl_idname = config.fb_filedialog_operator_idname
-    bl_label = "Open the file browser"
+    bl_label = "Open Image(s)"
 
     filter_glob: bpy.props.StringProperty(
         default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp',

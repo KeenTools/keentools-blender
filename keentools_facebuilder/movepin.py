@@ -178,7 +178,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             head = settings.heads[headnum]
             # if head.serial_str != head.tmp_serial_str:
             head.need_update = True
-            FBLoader.force_undo_push()
+            FBLoader.force_undo_push('Pin Move')
             head.need_update = False
             print("PUSH 1")
 
@@ -203,7 +203,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         FBLoader.fb_save(headnum, camnum)
 
         head.need_update = True
-        FBLoader.force_undo_push()
+        FBLoader.force_undo_push('Pin Result')
         head.need_update = False
         print("PUSH 2")
         # ---------

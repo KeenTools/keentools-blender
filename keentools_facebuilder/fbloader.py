@@ -200,9 +200,9 @@ class FBLoader:
         return cls.builder.get_builder_type()
 
     @classmethod
-    def force_undo_push(cls):
+    def force_undo_push(cls, msg='KeenTools operation'):
         cls.inc_operation()
-        bpy.ops.ed.undo_push(message='KeenTools operation')
+        bpy.ops.ed.undo_push(message=msg)
 
     @staticmethod
     def inc_operation():
@@ -226,7 +226,7 @@ class FBLoader:
                 c.camobj.hide_viewport = True
 
     @staticmethod
-    def show_all_cameras(context, headnum):
+    def show_all_cameras(headnum):
         settings = get_main_settings()
         head = settings.heads[headnum]
         for i, c in enumerate(head.cameras):
@@ -234,7 +234,7 @@ class FBLoader:
             c.camobj.hide_viewport = False
 
     @classmethod
-    def out_pinmode(cls, context, headnum, camnum):
+    def out_pinmode(cls, headnum, camnum):
         settings = get_main_settings()
         cls.unregister_handlers()
         cls.fb_save(headnum, camnum)
@@ -245,7 +245,7 @@ class FBLoader:
         settings.pinmode = False
 
         cls.current_pin = None
-        cls.show_all_cameras(context, headnum)
+        cls.show_all_cameras(headnum)
         # === Debug use only ===
         FBDebug.add_event_to_queue('OUT_PIN_MODE', (0, 0))
         FBDebug.output_event_queue()

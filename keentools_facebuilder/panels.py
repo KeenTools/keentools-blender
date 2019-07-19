@@ -22,6 +22,7 @@ from bpy.types import Panel, Operator, Menu
 import addon_utils
 from . config import config, get_main_settings, ErrorType
 import re
+from . fbloader import FBLoader
 
 
 # Test if selected object is our Mesh or Camera
@@ -97,6 +98,16 @@ class OBJECT_PT_FBPanel(Panel):
             return
 
         head = settings.heads[headnum]
+
+        # Unhide Head if there some problem with pinmode
+        if settings.pinmode and not FBLoader.wireframer.is_working():
+            # Show Head
+            row = layout.row()
+            row.scale_y = 2.0
+            op = row.operator(config.fb_actor_operator_idname, text='Show Head',
+                              icon='RESTRICT_VIEW_OFF')
+            op.action = 'unhide_head'
+            op.headnum = headnum
 
         layout.prop(settings, 'focal')
         layout.prop(settings, 'sensor_width')
@@ -381,6 +392,15 @@ class OBJECT_PT_TBPanel(Panel):
     def poll(cls, context):
         return proper_object_test()
 
+    @classmethod
+    def get_area_mode(cls, context):
+        # Get Mode
+        area = context.area
+        for space in area.spaces:
+            if space.type == 'VIEW_3D':
+                return space.shading.type
+        return 'NONE'
+
     # Face Builder Main Panel Draw
     def draw(self, context):
         layout = self.layout
@@ -400,7 +420,11 @@ class OBJECT_PT_TBPanel(Panel):
 
         row.operator(config.fb_main_bake_tex_idname, text="Bake Texture")
 
-        row.operator(config.fb_main_show_tex_idname, text="Show Texture")
+        mode = self.get_area_mode(context)
+        if mode == 'MATERIAL':
+            row.operator(config.fb_main_show_tex_idname, text="Show Mesh")
+        else:
+            row.operator(config.fb_main_show_tex_idname, text="Show Texture")
 
         layout.prop(settings, 'tex_back_face_culling')
         layout.prop(settings, 'tex_equalize_brightness')

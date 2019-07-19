@@ -400,7 +400,10 @@ class OBJECT_OT_FBShowTexture(Operator):
 
     def execute(self, context):
         settings = get_main_settings()
+        if settings.pinmode:
+            FBLoader.out_pinmode(settings.current_headnum,
+                                 settings.current_camnum)
         op = getattr(bpy.ops.object, config.fb_actor_operator_callname)
-        op('INVOKE_DEFAULT', action="show_tex",
+        op('INVOKE_DEFAULT', action='show_tex',
            headnum=settings.current_headnum)
         return {'FINISHED'}
