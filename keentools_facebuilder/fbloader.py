@@ -170,7 +170,7 @@ class FBLoader:
             # Head Mesh update
             FBCalc.update_head_mesh(fb, head.headobj)
             if settings.pinmode:
-                cls.fb_redraw(headnum, camnum)
+                cls.fb_redraw(headnum, settings.current_camnum)
             cls.update_cameras(headnum)
             cls.save_only(headnum)
 
