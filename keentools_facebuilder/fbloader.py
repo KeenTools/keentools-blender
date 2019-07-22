@@ -150,6 +150,7 @@ class FBLoader:
                         max_pins = c.pins_count
                 c.camobj.data.lens = settings.focal
                 c.camobj.data.sensor_width = settings.sensor_width
+                c.camobj.data.sensor_height = settings.sensor_height
 
             if cls.get_builder_type() == BuilderType.FaceBuilder:
                 fb.set_auto_rigidity(settings.check_auto_rigidity)
@@ -223,7 +224,8 @@ class FBLoader:
         for i, c in enumerate(head.cameras):
             if i != camnum:
                 # Hide camera
-                c.camobj.hide_viewport = True
+                # c.camobj.hide_viewport = True
+                c.camobj.hide_set(True)
 
     @staticmethod
     def show_all_cameras(headnum):
@@ -231,7 +233,8 @@ class FBLoader:
         head = settings.heads[headnum]
         for i, c in enumerate(head.cameras):
             # Hide camera
-            c.camobj.hide_viewport = False
+            # c.camobj.hide_viewport = False
+            c.camobj.hide_set(False)
 
     @classmethod
     def out_pinmode(cls, headnum, camnum):
@@ -241,7 +244,8 @@ class FBLoader:
         cls.wireframer.unregister_handler()
         headobj = settings.heads[headnum].headobj
         # Show geometry
-        headobj.hide_viewport = False
+        # headobj.hide_viewport = False
+        headobj.hide_set(False)
         settings.pinmode = False
 
         cls.current_pin = None
@@ -754,6 +758,7 @@ class FBLoader:
         cam_data.display_size = 0.75  # Camera Size
         cam_data.lens = settings.focal  # From Interface
         cam_data.sensor_width = settings.sensor_width
+        cam_data.sensor_height = settings.sensor_height
         cam_data.show_background_images = True
 
         if len(cam_data.background_images) == 0:

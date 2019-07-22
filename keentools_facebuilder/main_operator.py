@@ -74,7 +74,8 @@ class OBJECT_OT_FBSelectCamera(Operator):
 
         # Switch to camera
         if scene.camera != cam:
-            cam.hide_viewport = False  # To allow switch
+            # cam.hide_viewport = False
+            cam.hide_set(False)  # To allow switch
             bpy.ops.view3d.object_as_camera()
         else:
             # Toggle camera view

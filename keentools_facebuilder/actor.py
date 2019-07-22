@@ -432,7 +432,8 @@ class OBJECT_OT_FBActor(Operator):
             bpy.ops.wm.url_open(url="https://keentools.io/manual-installation")
 
         elif self.action == "unhide_head":
-            settings.heads[self.headnum].headobj.hide_viewport = False
+            # settings.heads[self.headnum].headobj.hide_viewport = False
+            settings.heads[self.headnum].headobj.hide_set(False)
             settings.pinmode = False
 
         elif self.action == "auto_detect_frame_size":

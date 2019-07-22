@@ -45,7 +45,6 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             # Fix and Out
             heads_deleted, cams_deleted = settings.fix_heads()
             if heads_deleted == 0:
-                # bpy.ops.wm.fb_addon_warning('INVOKE_DEFAULT', msg=1)
                 warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
             return {'FINISHED'}
@@ -73,7 +72,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         context.window_manager.modal_handler_add(self)
 
         # Hide geometry
-        headobj.hide_viewport = True
+        # headobj.hide_viewport = True
+        headobj.hide_set(True)
         FBLoader.hide_other_cameras(context, self.headnum, self.camnum)
         # Start our shader
         FBLoader.wireframer.init_geom_data(headobj)
@@ -123,8 +123,9 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             return {'FINISHED'}
 
         head = settings.heads[headnum]
-        if not head.headobj.hide_viewport:
-            head.headobj.hide_viewport = True
+        if not head.headobj.hide_get():  # head.headobj.hide_viewport
+            # head.headobj.hide_viewport = True
+            head.headobj.hide_set(True)
 
         # Pixel size in relative coords
         FBLoader.update_pixel_size(context)

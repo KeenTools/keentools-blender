@@ -18,7 +18,7 @@
 
 
 bl_info = {
-    "name": "KeenTools FaceBuilder Addon v.0.1m",
+    "name": "KeenTools FaceBuilder Addon (Beta)",
     "author": "KeenTools",
     "description": "Creates Head and Face geometry with a few reference photos",
     "blender": (2, 80, 0),

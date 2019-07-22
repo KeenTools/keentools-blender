@@ -443,6 +443,7 @@ class FBSceneSettings(PropertyGroup):
         render = bpy.context.scene.render
         d = {
                 config.reconstruct_sensor_width_param[0]: self.sensor_width,
+            config.reconstruct_sensor_height_param[0]: self.sensor_height,
                 config.reconstruct_focal_param[0]: self.focal,
                 config.reconstruct_frame_width_param[0]: render.resolution_x,
                 config.reconstruct_frame_height_param[0]: render.resolution_y}

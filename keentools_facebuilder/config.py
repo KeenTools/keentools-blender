@@ -35,11 +35,11 @@ class BuilderType(Enum):
 
 class config:
     addon_name = __package__  # the same as module name
-    addon_version = '0.1m'
+    addon_version = '1.5.2 (Beta)'
     addon_search = 'KeenTools'
     addon_global_var_name = _prefix + '_settings'
     addon_full_name = 'Keentools Face Builder for Blender'
-    fb_panel_label = 'Face Builder v0.1m'
+    fb_panel_label = 'Face Builder (Beta)'
     fb_tab_category = 'Face Builder'
     default_builder = BuilderType.FaceBuilder
 
@@ -102,6 +102,7 @@ class config:
     # Save / Reconstruct parameters
     reconstruct_focal_param = ('focal',)
     reconstruct_sensor_width_param = ('sensor_width',)
+    reconstruct_sensor_height_param = ('sensor_height',)
     reconstruct_frame_width_param = ('frame_width', 'width')
     reconstruct_frame_height_param = ('frame_height', 'height')
 
