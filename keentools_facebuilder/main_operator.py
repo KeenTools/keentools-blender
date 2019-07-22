@@ -73,13 +73,11 @@ class OBJECT_OT_FBSelectCamera(Operator):
         bpy.context.view_layer.objects.active = cam
 
         # Switch to camera
-        if scene.camera != cam:
-            # cam.hide_viewport = False
+        if (scene.camera == cam) and settings.pinmode:
+            bpy.ops.view3d.view_camera()
+        else:
             cam.hide_set(False)  # To allow switch
             bpy.ops.view3d.object_as_camera()
-        else:
-            # Toggle camera view
-            bpy.ops.view3d.view_camera()  # if settings.pinmode
 
         # Add Background Image
         c = cam.data
