@@ -19,9 +19,11 @@
 
 import bpy
 from bpy.types import Panel, Operator, Menu
+from bpy.props import IntProperty
 import addon_utils
 from . config import config, get_main_settings, ErrorType
 import re
+from . fbloader import FBLoader
 
 
 # Test if selected object is our Mesh or Camera
@@ -52,6 +54,7 @@ class OBJECT_PT_FBPanel(Panel):
     bl_region_type = "UI"
     bl_label = config.fb_panel_label
     bl_category = config.fb_tab_category
+    bl_context = "objectmode"
 
     # Panel appear only when our Mesh or Camera selected
     @classmethod
@@ -97,9 +100,21 @@ class OBJECT_PT_FBPanel(Panel):
 
         head = settings.heads[headnum]
 
+        # Unhide Head if there some problem with pinmode
+        if settings.pinmode and not FBLoader.wireframer.is_working():
+            # Show Head
+            row = layout.row()
+            row.scale_y = 2.0
+            op = row.operator(config.fb_actor_operator_idname, text='Show Head',
+                              icon='HIDE_OFF')
+            op.action = 'unhide_head'
+            op.headnum = headnum
+
         layout.prop(settings, 'focal')
         layout.prop(settings, 'sensor_width')
-        layout.prop(settings, 'sensor_height')
+        row = layout.row()
+        row.prop(settings, 'sensor_height')
+        row.active = False
 
         wrong_size_counter = 0
         fw = settings.frame_width
@@ -139,17 +154,20 @@ class OBJECT_PT_FBPanel(Panel):
 
             text = "[{0}] -{1}- {2}".format(str(i), pc, camera.camobj.name)
 
-            icon = 'ERROR'
+
+            if wrong_size_flag:
+                # Background has different size
+                op = row2.operator(config.fb_main_camera_fix_size_idname,
+                              text='', icon='ERROR')
+                op.headnum = headnum
+                op.camnum = i
+
             if not camera.cam_image:
                 # No image --> Broken icon
-                icon = 'LIBRARY_DATA_BROKEN'
+                row2.label(text='', icon='LIBRARY_DATA_BROKEN')
 
-            if camera.cam_image and not wrong_size_flag:
-                # Camera has proper size background
-                row2.label(text=text)
-            else:
-                # Background has different size
-                row2.label(text=text, icon=icon)
+            # Output camera info
+            row2.label(text=text)
 
             # Pin Icon if there are some pins
             if pc != '-':
@@ -317,8 +335,64 @@ class WM_OT_FBAddonWarning(Operator):
                 "This addon version can't create",
                 "objects of this type"
             ])
+        elif self.msg == ErrorType.AboutFrameSize:
+            self.set_content([
+                "===============",
+                "About Frame Sizes",
+                "===============",
+                "All frames used as a background image ",
+                "must be the same size. This size should ",
+                "be specified as the Render Size ",
+                "in the scene.",
+                "You will receive a warning if these ",
+                "sizes are different. You can fix them ",
+                "by choosing commands from this menu."
+            ])
         return context.window_manager.invoke_props_dialog(self, width=300)
         # return context.window_manager.invoke_popup(self, width=300)
+
+
+class OBJECT_PT_FBFaceParts(Panel):
+    bl_idname = config.fb_parts_panel_idname
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_label = "Mesh parts & UV"
+    bl_category = config.fb_tab_category
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_context = "objectmode"
+
+    # Panel appear only when our Mesh or Camera selected
+    @classmethod
+    def poll(cls, context):
+        return proper_object_test()
+
+    # Panel Draw
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        obj = context.object
+        settings = get_main_settings()
+        headnum = settings.head_by_obj(obj)
+
+        # No registered models in scene
+        if headnum < 0:
+            if obj.type != 'MESH':
+                return
+        head = settings.heads[headnum]
+
+        box = layout.box()
+        row = box.row()
+        row.prop(head, 'check_ears')
+        row.prop(head, 'check_eyes')
+        row = box.row()
+        row.prop(head, 'check_face')
+        row.prop(head, 'check_headback')
+        row = box.row()
+        row.prop(head, 'check_jaw')
+        row.prop(head, 'check_mouth')
+        row = box.row()
+        row.prop(head, 'check_neck')
+        box.prop(head, 'tex_uv_shape')
 
 
 class OBJECT_PT_TBPanel(Panel):
@@ -328,11 +402,21 @@ class OBJECT_PT_TBPanel(Panel):
     bl_label = "Texture Builder"
     bl_category = config.fb_tab_category
     bl_options = {'DEFAULT_CLOSED'}
+    bl_context = "objectmode"
 
     # Panel appear only when our Mesh or Camera selected
     @classmethod
     def poll(cls, context):
         return proper_object_test()
+
+    @classmethod
+    def get_area_mode(cls, context):
+        # Get Mode
+        area = context.area
+        for space in area.spaces:
+            if space.type == 'VIEW_3D':
+                return space.shading.type
+        return 'NONE'
 
     # Face Builder Main Panel Draw
     def draw(self, context):
@@ -340,18 +424,24 @@ class OBJECT_PT_TBPanel(Panel):
         scene = context.scene
         obj = context.object
         settings = get_main_settings()
+        headnum = settings.current_headnum
+        head = settings.heads[headnum]
 
         box = layout.box()
         box.prop(settings, 'tex_width')
         box.prop(settings, 'tex_height')
-        box.prop(settings, 'tex_uv_shape')
+        box.prop(head, 'tex_uv_shape')
 
         row = layout.row()
         row.scale_y = 3.0
 
         row.operator(config.fb_main_bake_tex_idname, text="Bake Texture")
 
-        row.operator(config.fb_main_show_tex_idname, text="Show Texture")
+        mode = self.get_area_mode(context)
+        if mode == 'MATERIAL':
+            row.operator(config.fb_main_show_tex_idname, text="Show Mesh")
+        else:
+            row.operator(config.fb_main_show_tex_idname, text="Show Texture")
 
         layout.prop(settings, 'tex_back_face_culling')
         layout.prop(settings, 'tex_equalize_brightness')
@@ -372,6 +462,7 @@ class OBJECT_PT_FBColorsPanel(Panel):
     bl_region_type = "UI"
     bl_label = "Wireframe Colors"
     bl_category = config.fb_tab_category
+    bl_context = "objectmode"
 
     # Panel appear only when our Mesh or Camera selected
     @classmethod
@@ -423,6 +514,7 @@ class OBJECT_PT_FBSettingsPanel(Panel):
     bl_label = "Face Builder Settings"
     # bl_context = "objectmode"
     bl_category = config.fb_tab_category
+    bl_context = "objectmode"
 
     # bl_options = {'DEFAULT_CLOSED'}
 
@@ -446,20 +538,6 @@ class OBJECT_PT_FBSettingsPanel(Panel):
         layout.prop(settings, 'check_auto_rigidity')
         layout.prop(settings, 'rigidity')
 
-        '''
-        box = layout.box()
-        row = box.row()
-        row.prop(settings, 'check_ears')
-        row.prop(settings, 'check_eyes')
-        row = box.row()
-        row.prop(settings, 'check_face')
-        row.prop(settings, 'check_headback')
-        row = box.row()
-        row.prop(settings, 'check_jaw')
-        row.prop(settings, 'check_mouth')
-        row.prop(settings, 'check_neck')
-        '''
-
         row = layout.row()
         row.scale_y = 2.0
         row.operator(
@@ -468,13 +546,46 @@ class OBJECT_PT_FBSettingsPanel(Panel):
         # layout.prop(settings, 'debug_active', text="Debug Log Active")
 
 
-class FBFixMenu(Menu):
-    bl_label = "Select Frame Size"
-    bl_idname = config.fb_fix_frame_menu_idname
-    bl_description = "Fix frame Width and High parameters for all cameras"
+class OBJECT_MT_FBFixCameraMenu(Menu):
+    bl_label = "Fix Frame Size"
+    bl_idname = config.fb_fix_camera_frame_menu_idname
+    bl_description = "Fix frame Width and Height parameters for camera"
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
 
     def draw(self, context):
         layout = self.layout
+
+        op = layout.operator(
+            config.fb_actor_operator_idname, text="Info about this warning")
+        op.action = 'about_fix_frame_warning'
+
+        op = layout.operator(
+            config.fb_actor_operator_idname,
+            text="Auto-Detect most frequent Size")
+        op.action = 'auto_detect_frame_size'
+
+        op = layout.operator(
+            config.fb_actor_operator_idname, text="Use Scene Render Size")
+        op.action = 'use_render_frame_size'
+
+        op = layout.operator(
+            config.fb_actor_operator_idname, text="Use This Camera Size")
+        op.action = 'use_this_camera_frame_size'
+
+
+class OBJECT_MT_FBFixMenu(Menu):
+    bl_label = "Select Frame Size"
+    bl_idname = config.fb_fix_frame_menu_idname
+    bl_description = "Fix frame Width and Height parameters for all cameras"
+
+    def draw(self, context):
+        layout = self.layout
+
+        op = layout.operator(
+            config.fb_actor_operator_idname, text="Info about Size warning")
+        op.action = 'about_fix_frame_warning'
 
         op = layout.operator(
             config.fb_actor_operator_idname,

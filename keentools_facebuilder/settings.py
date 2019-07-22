@@ -32,11 +32,14 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 from . fbdebug import FBDebug
-from . config import config
+from . config import config, get_main_settings, BuilderType
 
 
 def update_wireframe(self, context):
-    FBLoader.update_wireframe()
+    settings = get_main_settings()
+    headnum = settings.current_headnum
+    head = settings.heads[headnum]
+    FBLoader.update_wireframe(head.headobj)
 
 
 def update_pin_sensitivity(self, context):
@@ -61,6 +64,37 @@ def update_camera_params(self, contex):
     print("CAMERA CHANGES", self.keys())
     FBLoader.update_camera_params()
 
+
+def update_mesh_parts(self, context):
+    print("MESH PARTS")
+    settings = get_main_settings()
+    headnum = settings.current_headnum
+    head = settings.heads[headnum]
+    masks = []
+    masks.append(head.check_ears)
+    masks.append(head.check_eyes)
+    masks.append(head.check_face)
+    masks.append(head.check_headback)
+    masks.append(head.check_jaw)
+    masks.append(head.check_mouth)
+    masks.append(head.check_neck)
+
+    old_mesh = head.headobj.data
+    # Create new mesh
+    mesh = FBLoader.get_builder_mesh(FBLoader.get_builder(), 'FBHead_mesh',
+                                     tuple(masks),
+                                     uv_set=head.tex_uv_shape)
+    head.headobj.data = mesh
+    if settings.pinmode:
+        # Update wireframe structures
+        FBLoader.wireframer.init_geom_data(head.headobj)
+        FBLoader.update_wireframe(head.headobj)
+
+    mesh_name = old_mesh.name
+    # Delete old mesh
+    print("MESH_USERS", old_mesh.users)
+    bpy.data.meshes.remove(old_mesh, do_unlink=True)
+    mesh.name = mesh_name
 
 class FBCameraItem(PropertyGroup):
     keyframe_id: IntProperty(default=0)
@@ -157,9 +191,31 @@ class FBHeadItem(PropertyGroup):
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
 
+    check_ears: BoolProperty(name="Ears", default=True,
+                             update=update_mesh_parts)
+    check_eyes: BoolProperty(name="Eyes", default=True,
+                             update=update_mesh_parts)
+    check_face: BoolProperty(name="Face", default=True,
+                             update=update_mesh_parts)
+    check_headback: BoolProperty(name="Headback", default=True,
+                                 update=update_mesh_parts)
+    check_jaw: BoolProperty(name="Jaw", default=True,
+                            update=update_mesh_parts)
+    check_mouth: BoolProperty(name="Mouth", default=True,
+                              update=update_mesh_parts)
+    check_neck: BoolProperty(name="Neck", default=True,
+                             update=update_mesh_parts)
+
     serial_str: StringProperty(name="Serialization string", default="")
     tmp_serial_str: StringProperty(name="Temporary Serialization", default="")
     need_update: BoolProperty(name="Mesh need update", default=False)
+
+    tex_uv_shape: EnumProperty(name="UV", items=[
+                ('uv0', 'Butterfly', 'Pretty standard one-seem Layout', 'UV', 0),
+                ('uv1', 'Legacy', 'Uniform tex scale but many seems', 'UV', 1),
+                ('uv2', 'Spherical', 'Standard wrap-around Layout', 'UV', 2),
+                ('uv3', 'Maxface', 'Maximum face area, non-uniform', 'UV', 3),
+                ], description="UV Layout scheme", update=update_mesh_parts)
 
     def set_serial_str(self, value):
         self.serial_str = value
@@ -200,18 +256,21 @@ class FBSceneSettings(PropertyGroup):
     # ---------------------
     heads: CollectionProperty(type=FBHeadItem, name="Heads")
     sensor_width: FloatProperty(
-        description="The most important parameter. "
-                    "Set it according to the photo-camera specification",
+        description="The horizontal size of the camera used to take photos."
+                    "This is VERY important parameter. "
+                    "Set it according to the real camera specification",
         name="Sensor Width (mm)", default=36,
         min=0.1, update=update_camera_params)
     sensor_height: FloatProperty(
         description="Secondary parameter. "
-                    "Set it according to the photo-camera specification",
+                    "Set it according to the real camera specification."
+                    "This parameter is not used if Sensor Width is greater",
         name="Sensor Height (mm)", default=24,
         min=0.1, update=update_camera_params)
     focal: FloatProperty(
         description="Camera focal length. "
-                    "You can found it in photo-camera settings or snapshot EXIF",
+                    "You can found it in real camera settings or snapshot EXIF."
+                    "This is VERY important parameter for proper reconstruction",
         name="Focal Length (mm)", default=50,
         min=0.1, update=update_camera_params)
 
@@ -265,13 +324,6 @@ class FBSceneSettings(PropertyGroup):
     check_auto_rigidity: BoolProperty(
         description="Auto Model Rigidity detection. Highly recommended",
         name="auto rigidity", default=True)
-    check_ears: BoolProperty(name="Ears", default=True)
-    check_eyes: BoolProperty(name="Eyes", default=True)
-    check_face: BoolProperty(name="Face", default=True)
-    check_headback: BoolProperty(name="Headback", default=True)
-    check_jaw: BoolProperty(name="Jaw", default=True)
-    check_mouth: BoolProperty(name="Mouth", default=True)
-    check_neck: BoolProperty(name="Neck", default=True)
 
     # Internal use only
     current_headnum: IntProperty(name="Current Head Number", default=-1)
@@ -280,12 +332,6 @@ class FBSceneSettings(PropertyGroup):
     # -------------------------
     # Texture Baking parameters
     # -------------------------
-    tex_uv_shape: EnumProperty(name="UV", items=[
-                ('uv1', 'Butterfly', 'Pretty standard one-seem Layout', 0),
-                ('uv2', 'Legacy', 'Uniform tex scale but many seems', 1),
-                ('uv3', 'Spherical', 'Standard wrap-around Layout', 2),
-                ('uv4', 'Maxface', 'Maximum face area, non-uniform', 3),
-                ], description="UV Layout scheme")
     tex_width: IntProperty(
         description="Width size of output texture",
         name="Texture Width", default=2048)
@@ -397,6 +443,7 @@ class FBSceneSettings(PropertyGroup):
         render = bpy.context.scene.render
         d = {
                 config.reconstruct_sensor_width_param[0]: self.sensor_width,
+            config.reconstruct_sensor_height_param[0]: self.sensor_height,
                 config.reconstruct_focal_param[0]: self.focal,
                 config.reconstruct_frame_width_param[0]: render.resolution_x,
                 config.reconstruct_frame_height_param[0]: render.resolution_y}

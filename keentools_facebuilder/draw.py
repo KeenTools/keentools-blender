@@ -14,7 +14,7 @@ from .utils import (
 class OBJECT_OT_FBDraw(bpy.types.Operator):
     """ On Screen Face Builder Draw Operator """
     bl_idname = config.fb_draw_operator_idname
-    bl_label = "FaceBuilder Draw operator"
+    bl_label = "FaceBuilder Pinmode"
     bl_description = "Operator for in-Viewport drawing"
     bl_options = {'REGISTER', 'UNDO'}  # {'REGISTER', 'UNDO'}
 
@@ -31,7 +31,6 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             # We had to finish last operation
             if settings.current_headnum >= 0 and settings.current_camnum >= 0:
                 FBLoader.out_pinmode(
-                    context,
                     settings.current_headnum,
                     settings.current_camnum
                 )
@@ -46,7 +45,6 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             # Fix and Out
             heads_deleted, cams_deleted = settings.fix_heads()
             if heads_deleted == 0:
-                # bpy.ops.wm.fb_addon_warning('INVOKE_DEFAULT', msg=1)
                 warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
             return {'FINISHED'}
@@ -74,7 +72,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         context.window_manager.modal_handler_add(self)
 
         # Hide geometry
-        headobj.hide_viewport = True
+        # headobj.hide_viewport = True
+        headobj.hide_set(True)
         FBLoader.hide_other_cameras(context, self.headnum, self.camnum)
         # Start our shader
         FBLoader.wireframer.init_geom_data(headobj)
@@ -82,11 +81,14 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         FBLoader.wireframer.init_color_data(
             (col[0], col[1], col[2], settings.wireframe_opacity))
 
+        # Coloring special parts
         if settings.show_specials:
             special_indices = FBLoader.get_special_indices()
             special_color = (1.0 - col[0], 1.0 - col[1], 1.0 - col[2],
-                settings.wireframe_opacity)
-            FBLoader.wireframer.init_special_areas(special_indices, special_color)
+                             settings.wireframe_opacity)
+            FBLoader.wireframer.init_special_areas2(
+                headobj.data, special_indices, special_color)
+
 
         FBLoader.wireframer.create_batches()
         FBLoader.wireframer.register_handler(args)
@@ -96,7 +98,9 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         FBLoader.update_surface_points(headobj, kid)
 
         # Can start much more times when not out from pinmode
-        FBStopTimer.start()
+        if not settings.pinmode:
+            FBStopTimer.start()
+            print("STOPPER START")
         settings.pinmode = True
         return {"RUNNING_MODAL"}
 
@@ -111,16 +115,17 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
 
         # Quit if Screen changed
         if context.area is None:  # Different operation Space
-            FBLoader.out_pinmode(context, headnum, camnum)
+            FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
 
         if headnum < 0:  # Head lost
-            FBLoader.out_pinmode(context, headnum, camnum)
+            FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
 
         head = settings.heads[headnum]
-        if not head.headobj.hide_viewport:
-            head.headobj.hide_viewport = True
+        if not head.headobj.hide_get():  # head.headobj.hide_viewport
+            # head.headobj.hide_viewport = True
+            head.headobj.hide_set(True)
 
         # Pixel size in relative coords
         FBLoader.update_pixel_size(context)
@@ -131,7 +136,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
 
         # Quit if PinMode out
         if settings.force_out_pinmode:  # Move Pin problem by ex.
-            FBLoader.out_pinmode(context, headnum, camnum)
+            FBLoader.out_pinmode(headnum, camnum)
             settings.force_out_pinmode = False
             if settings.license_error:
                 warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
@@ -141,12 +146,12 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
 
         # Quit when camera rotated by user
         if context.space_data.region_3d.view_perspective != 'CAMERA':
-            FBLoader.out_pinmode(context, headnum, camnum)
+            FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
 
         # Quit by ESC pressed
         if event.type in {'ESC'}:
-            FBLoader.out_pinmode(context, headnum, camnum)
+            FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
 
         if event.value == "PRESS":
@@ -220,7 +225,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                     except UnlicensedException:
                         settings.force_out_pinmode = True
                         settings.license_error = True
-                        FBLoader.out_pinmode(context, headnum, camnum)
+                        FBLoader.out_pinmode(headnum, camnum)
                         self.report({'INFO'}, "PIN MODE LICENSE EXCEPTION")
                         return {'FINISHED'}
 
@@ -245,7 +250,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                     FBLoader.update_pins_count(headnum, camnum)
                     # Undo push
                     head.need_update = True
-                    FBLoader.force_undo_push()
+                    FBLoader.force_undo_push('Pin Remove')
                     head.need_update = False
 
                 FBLoader.create_batch_2d(context)
@@ -253,6 +258,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                 return {"RUNNING_MODAL"}
 
         if head.need_update:
+            print("UNDO CALL DETECTED")
             # Undo was called so Model redraw is needed
             head.need_update = False
             # Hide geometry
@@ -260,8 +266,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
 
             # Reload pins
             FBLoader.load_all(headnum, camnum)
-            FBLoader.update_surface_points(
-                head.headobj, FBLoader.keyframe_by_camnum(headnum, camnum))
+            kid = FBLoader.keyframe_by_camnum(headnum, camnum)
+            FBLoader.update_surface_points(head.headobj, kid)
             # FBLoader.load_pins(self.camnum, scene)
             FBLoader.wireframer.init_geom_data(head.headobj)
             FBLoader.wireframer.create_batches()
@@ -276,7 +282,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
 
         # Catch if wireframer is off
         if not (FBLoader.wireframer.is_working()):
-            FBLoader.out_pinmode(context, headnum, camnum)
+            FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
 
         FBLoader.create_batch_2d(context)

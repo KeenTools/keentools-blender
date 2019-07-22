@@ -78,13 +78,13 @@ class OBJECT_OT_FBActor(Operator):
         uvmap = self.get_mesh_uvmap(mesh)
 
         # Generate UVs
-        uv_shape = settings.tex_uv_shape
+        uv_shape = head.tex_uv_shape
         fb.select_uv_set(0)
-        if uv_shape == 'uv2':
+        if uv_shape == 'uv1':
             fb.select_uv_set(1)
-        elif uv_shape == 'uv3':
+        elif uv_shape == 'uv2':
             fb.select_uv_set(2)
-        elif uv_shape == 'uv4':
+        elif uv_shape == 'uv3':
             fb.select_uv_set(3)
 
         print("UV_TYPE", uv_shape)
@@ -264,7 +264,6 @@ class OBJECT_OT_FBActor(Operator):
         # Switch to Material Mode or Back
         self.toggle_mode(context, ('SOLID', 'MATERIAL'))
 
-
     def get_attr_variant_named(self, data, attr_names):
         for attr in attr_names:
             if attr in data.keys():
@@ -432,6 +431,14 @@ class OBJECT_OT_FBActor(Operator):
         elif self.action == "visit_site":
             bpy.ops.wm.url_open(url="https://keentools.io/manual-installation")
 
+        elif self.action == "unhide_head":
+            # settings.heads[self.headnum].headobj.hide_viewport = False
+            settings.heads[self.headnum].headobj.hide_set(False)
+            settings.pinmode = False
+
+        elif self.action == "about_fix_frame_warning":
+            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.AboutFrameSize)
 
         elif self.action == "auto_detect_frame_size":
             headnum = settings.current_headnum

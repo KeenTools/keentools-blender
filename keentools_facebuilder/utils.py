@@ -727,12 +727,12 @@ class FBEdgeShader:
         self.edges_colors = np.full(
             (len(self.edges_vertices), 4), color).tolist()
 
-    def init_special_areas(self, indices, color=(0.5, 0.0, 0.7, 0.2)):
-        if len(self.edges_colors) == 0:
-            return
-        for i in indices:
-            self.edges_colors[i*2] = color
-            self.edges_colors[i*2+1] = color
+    def init_special_areas2(self, mesh, pairs, color=(0.5, 0.0, 0.7, 0.2)):
+        for i, edge in enumerate(mesh.edges):
+            vv = edge.vertices
+            if ((vv[0], vv[1]) in pairs) or ((vv[1], vv[0]) in pairs):
+                self.edges_colors[i * 2] = color
+                self.edges_colors[i * 2 + 1] = color
 
     def register_handler(self, args):
         if self.draw_handler is not None:
