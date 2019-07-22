@@ -436,6 +436,10 @@ class OBJECT_OT_FBActor(Operator):
             settings.heads[self.headnum].headobj.hide_set(False)
             settings.pinmode = False
 
+        elif self.action == "about_fix_frame_warning":
+            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.AboutFrameSize)
+
         elif self.action == "auto_detect_frame_size":
             headnum = settings.current_headnum
             sizes = []

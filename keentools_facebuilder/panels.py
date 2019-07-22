@@ -19,6 +19,7 @@
 
 import bpy
 from bpy.types import Panel, Operator, Menu
+from bpy.props import IntProperty
 import addon_utils
 from . config import config, get_main_settings, ErrorType
 import re
@@ -105,7 +106,7 @@ class OBJECT_PT_FBPanel(Panel):
             row = layout.row()
             row.scale_y = 2.0
             op = row.operator(config.fb_actor_operator_idname, text='Show Head',
-                              icon='RESTRICT_VIEW_OFF')
+                              icon='HIDE_OFF')
             op.action = 'unhide_head'
             op.headnum = headnum
 
@@ -153,17 +154,20 @@ class OBJECT_PT_FBPanel(Panel):
 
             text = "[{0}] -{1}- {2}".format(str(i), pc, camera.camobj.name)
 
-            icon = 'ERROR'
+
+            if wrong_size_flag:
+                # Background has different size
+                op = row2.operator(config.fb_main_camera_fix_size_idname,
+                              text='', icon='ERROR')
+                op.headnum = headnum
+                op.camnum = i
+
             if not camera.cam_image:
                 # No image --> Broken icon
-                icon = 'LIBRARY_DATA_BROKEN'
+                row2.label(text='', icon='LIBRARY_DATA_BROKEN')
 
-            if camera.cam_image and not wrong_size_flag:
-                # Camera has proper size background
-                row2.label(text=text)
-            else:
-                # Background has different size
-                row2.label(text=text, icon=icon)
+            # Output camera info
+            row2.label(text=text)
 
             # Pin Icon if there are some pins
             if pc != '-':
@@ -330,6 +334,19 @@ class WM_OT_FBAddonWarning(Operator):
                 "Error when creating Object",
                 "This addon version can't create",
                 "objects of this type"
+            ])
+        elif self.msg == ErrorType.AboutFrameSize:
+            self.set_content([
+                "===============",
+                "About Frame Sizes",
+                "===============",
+                "All frames used as a background image ",
+                "must be the same size. This size should ",
+                "be specified as the Render Size ",
+                "in the scene.",
+                "You will receive a warning if these ",
+                "sizes are different. You can fix them ",
+                "by choosing commands from this menu."
             ])
         return context.window_manager.invoke_props_dialog(self, width=300)
         # return context.window_manager.invoke_popup(self, width=300)
@@ -529,13 +546,46 @@ class OBJECT_PT_FBSettingsPanel(Panel):
         # layout.prop(settings, 'debug_active', text="Debug Log Active")
 
 
-class OBJECT_MT_FBFixMenu(Menu):
-    bl_label = "Select Frame Size"
-    bl_idname = config.fb_fix_frame_menu_idname
-    bl_description = "Fix frame Width and High parameters for all cameras"
+class OBJECT_MT_FBFixCameraMenu(Menu):
+    bl_label = "Fix Frame Size"
+    bl_idname = config.fb_fix_camera_frame_menu_idname
+    bl_description = "Fix frame Width and Height parameters for camera"
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
 
     def draw(self, context):
         layout = self.layout
+
+        op = layout.operator(
+            config.fb_actor_operator_idname, text="Info about this warning")
+        op.action = 'about_fix_frame_warning'
+
+        op = layout.operator(
+            config.fb_actor_operator_idname,
+            text="Auto-Detect most frequent Size")
+        op.action = 'auto_detect_frame_size'
+
+        op = layout.operator(
+            config.fb_actor_operator_idname, text="Use Scene Render Size")
+        op.action = 'use_render_frame_size'
+
+        op = layout.operator(
+            config.fb_actor_operator_idname, text="Use This Camera Size")
+        op.action = 'use_this_camera_frame_size'
+
+
+class OBJECT_MT_FBFixMenu(Menu):
+    bl_label = "Select Frame Size"
+    bl_idname = config.fb_fix_frame_menu_idname
+    bl_description = "Fix frame Width and Height parameters for all cameras"
+
+    def draw(self, context):
+        layout = self.layout
+
+        op = layout.operator(
+            config.fb_actor_operator_idname, text="Info about Size warning")
+        op.action = 'about_fix_frame_warning'
 
         op = layout.operator(
             config.fb_actor_operator_idname,

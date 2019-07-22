@@ -51,11 +51,15 @@ class config:
     fb_main_remove_pins_idname = 'object.' + _prefix + '_main_remove_pins'
     fb_main_wireframe_color_idname = 'object.' + _prefix + \
                                      '_main_wireframe_color'
-    fb_main_filter_cameras_idname = 'object.' + _prefix + '_main_filter_cameras'
+    fb_main_filter_cameras_idname = 'object.' + _prefix + \
+                                    '_main_filter_cameras'
     fb_main_delete_camera_idname = 'object.' + _prefix + '_main_delete_camera'
     fb_main_add_camera_idname = 'object.' + _prefix + '_main_add_camera'
     fb_main_fix_size_idname = 'object.' + _prefix + '_main_fix_size'
-    fb_main_addon_settings_idname = 'object.' + _prefix + '_main_addon_settings'
+    fb_main_camera_fix_size_idname = 'object.' + _prefix + \
+                                     '_main_camera_fix_size'
+    fb_main_addon_settings_idname = 'object.' + _prefix + \
+                                    '_main_addon_settings'
     fb_main_bake_tex_idname = 'object.' + _prefix + '_main_bake_tex'
     fb_main_bake_tex_callname = _prefix + '_main_bake_tex'
     fb_main_show_tex_idname = 'object.' + _prefix + '_main_show_tex'
@@ -84,6 +88,8 @@ class config:
 
     # Menu ids
     fb_fix_frame_menu_idname = 'OBJECT_MT_' + _prefix + '_fix_frame_menu_id'
+    fb_fix_camera_frame_menu_idname = 'OBJECT_MT_' + _prefix + \
+                                      '_fix_camera_frame_menu_id'
 
     # Standard names
     tex_builder_filename = 'texbuilder_baked'
@@ -140,3 +146,4 @@ class ErrorType:
     CannotReconstruct = 4
     CannotCreate = 5
     CustomMessage = 6
+    AboutFrameSize = 7

@@ -352,6 +352,25 @@ class OBJECT_OT_FBFixSize(Operator):
         return {'FINISHED'}
 
 
+class OBJECT_OT_FBCameraFixSize(Operator):
+    bl_idname = config.fb_main_camera_fix_size_idname
+    bl_label = "Fix Size by Camera"
+    bl_options = {'REGISTER'}
+    bl_description = "Fix frame Width and High parameters for all cameras"
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        bpy.ops.wm.call_menu(
+            'INVOKE_DEFAULT', name=config.fb_fix_camera_frame_menu_idname)
+        return {'FINISHED'}
+
+
 class OBJECT_OT_FBAddonSettings(Operator):
     bl_idname = config.fb_main_addon_settings_idname
     bl_label = "Addon Settings"
