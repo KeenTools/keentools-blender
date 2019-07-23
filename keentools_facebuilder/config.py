@@ -121,13 +121,33 @@ class config:
 
     # Colors
     red_color = (1.0, 0.0, 0.0)
+    red_scheme1 = (0.3, 0.0, 0.0)
+    # red_scheme2 = (0.0, 0.2, 0.4)
+    red_scheme2 = (0.0, 0.4, 0.7)
     green_color = (0.0, 1.0, 0.0)
+    green_scheme1 = (0.0, 0.3, 0.0)
+    green_scheme2 = (0.4, 0.0, 0.4)
     blue_color = (0.0, 0.0, 1.0)
+    blue_scheme1 = (0.0, 0.0, 0.3)
+    blue_scheme2 = (0.4, 0.75, 0.0)
     cyan_color = (0.0, 1.0, 1.0)
+    cyan_scheme1 = (0.0, 0.3, 0.3)
+    cyan_scheme2 = (0.4, 0.0, 0.0)
     magenta_color = (1.0, 0.0, 1.0)
+    magenta_scheme1 = (0.3, 0.0, 0.3)
+    magenta_scheme2 = (0.0, 0.55, 0.0)
     yellow_color = (1.0, 1.0, 0.0)
+    yellow_scheme1 = (0.2, 0.2, 0.0)
+    yellow_scheme2 = (0.0, 0.0, 0.4)
     black_color = (0.0, 0.0, 0.0)
+    black_scheme1 = (0.0, 0.0, 0.0)
+    black_scheme2 = (0.0, 0.0, 0.4)
     white_color = (1.0, 1.0, 1.0)
+    white_scheme1 = (1.0, 1.0, 1.0)
+    white_scheme2 = (0.0, 0.0, 0.4)
+
+    default_scheme1 = (0.05, 0.05, 0.1)
+    default_scheme2 = (0.0, 0.0, 0.55)
 
 
 def get_main_settings():

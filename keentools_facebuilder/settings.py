@@ -84,6 +84,12 @@ def update_mesh_parts(self, context):
     mesh = FBLoader.get_builder_mesh(FBLoader.get_builder(), 'FBHead_mesh',
                                      tuple(masks),
                                      uv_set=head.tex_uv_shape)
+    try:
+        # Copy old material
+        if old_mesh.materials:
+            mesh.materials.append(old_mesh.materials[0])
+    except:
+        pass
     head.headobj.data = mesh
     if settings.pinmode:
         # Update wireframe structures
@@ -211,7 +217,8 @@ class FBHeadItem(PropertyGroup):
     need_update: BoolProperty(name="Mesh need update", default=False)
 
     tex_uv_shape: EnumProperty(name="UV", items=[
-                ('uv0', 'Butterfly', 'Pretty standard one-seem Layout', 'UV', 0),
+                ('uv0', 'Butterfly', 'Pretty standard one-seem Layout',
+                 'UV',0),
                 ('uv1', 'Legacy', 'Uniform tex scale but many seems', 'UV', 1),
                 ('uv2', 'Spherical', 'Standard wrap-around Layout', 'UV', 2),
                 ('uv3', 'Maxface', 'Maximum face area, non-uniform', 'UV', 3),
@@ -268,9 +275,9 @@ class FBSceneSettings(PropertyGroup):
         name="Sensor Height (mm)", default=24,
         min=0.1, update=update_camera_params)
     focal: FloatProperty(
-        description="Camera focal length. "
-                    "You can found it in real camera settings or snapshot EXIF."
-                    "This is VERY important parameter for proper reconstruction",
+        description="Camera focal length. You can found it in real "
+                    "camera settings or snapshot EXIF. This is VERY important "
+                    "parameter for proper reconstruction",
         name="Focal Length (mm)", default=50,
         min=0.1, update=update_camera_params)
 
@@ -295,12 +302,18 @@ class FBSceneSettings(PropertyGroup):
     wireframe_opacity: FloatProperty(
         description="Wireframe visual density in pin-mode.",
         name="Wireframe opacity",
-        default=0.2, min=0.0, max=1.0,
+        default=0.35, min=0.0, max=1.0,
         update=update_wireframe)
     wireframe_color: FloatVectorProperty(
         description="Color of wireframe mesh in pin-mode",
         name="Wireframe color", subtype='COLOR',
-        default=[0.0, 0.0, 0.3], min=0.0, max=1.0, update=update_wireframe)
+        default=config.default_scheme1, min=0.0, max=1.0,
+        update=update_wireframe)
+    wireframe_special_color: FloatVectorProperty(
+        description="Color of special parts in pin-mode",
+        name="Wireframe Special color", subtype='COLOR',
+        default=config.default_scheme2, min=0.0, max=1.0,
+        update=update_wireframe)
     show_specials: BoolProperty(
         description="Show guide contours for individual parts of the face",
         name="Special face parts", default=True, update=update_wireframe)
@@ -319,7 +332,8 @@ class FBSceneSettings(PropertyGroup):
     # Other settings
     rigidity: FloatProperty(
         description="Model deformation sensitivity adjustment. "
-        "You can use it in experimental purpose only. Autorigidity is recomended",
+                    "You can use it in experimental purpose only. "
+                    "Autorigidity is recomended",
         name="Rigidity", default=1.0, min=0.001, max=1000.0)
     check_auto_rigidity: BoolProperty(
         description="Auto Model Rigidity detection. Highly recommended",

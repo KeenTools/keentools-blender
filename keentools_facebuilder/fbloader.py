@@ -29,8 +29,6 @@ from . fbdebug import FBDebug
 from . const import FBConst
 from . config import config, get_main_settings, BuilderType
 from pykeentools import UnlicensedException
-import mathutils
-# import colorsys
 
 
 class FBLoader:
@@ -400,10 +398,7 @@ class FBLoader:
     def update_wireframe(cls, obj):
         settings = get_main_settings()
         main_color = settings.wireframe_color
-        comp_color = mathutils.Color((
-            1.0 - main_color[0], 1.0 - main_color[1], 1.0 - main_color[2]))
-        # h, s, v = main_color.hsv
-        # comp_color = colorsys.hsv_to_rgb(h + 0.5, s, v)
+        comp_color = settings.wireframe_special_color
 
         cls.wireframer.init_color_data((*main_color,
                                         settings.wireframe_opacity))

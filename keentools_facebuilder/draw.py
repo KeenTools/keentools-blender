@@ -77,18 +77,17 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         FBLoader.hide_other_cameras(context, self.headnum, self.camnum)
         # Start our shader
         FBLoader.wireframer.init_geom_data(headobj)
-        col = settings.wireframe_color
+
         FBLoader.wireframer.init_color_data(
-            (col[0], col[1], col[2], settings.wireframe_opacity))
+            (*settings.wireframe_color, settings.wireframe_opacity))
 
         # Coloring special parts
         if settings.show_specials:
             special_indices = FBLoader.get_special_indices()
-            special_color = (1.0 - col[0], 1.0 - col[1], 1.0 - col[2],
+            special_color = (*settings.wireframe_special_color,
                              settings.wireframe_opacity)
             FBLoader.wireframer.init_special_areas2(
                 headobj.data, special_indices, special_color)
-
 
         FBLoader.wireframer.create_batches()
         FBLoader.wireframer.register_handler(args)

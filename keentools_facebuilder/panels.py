@@ -483,6 +483,7 @@ class OBJECT_PT_FBColorsPanel(Panel):
         box = layout.box()
         row = box.row()
         row.prop(settings, 'wireframe_color', text='')
+        row.prop(settings, 'wireframe_special_color', text='')
         row.prop(settings, 'wireframe_opacity', text='', slider=True)
 
         row = box.row()
@@ -515,7 +516,6 @@ class OBJECT_PT_FBSettingsPanel(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_label = "Face Builder Settings"
-    # bl_context = "objectmode"
     bl_category = config.fb_tab_category
     bl_context = "objectmode"
 
