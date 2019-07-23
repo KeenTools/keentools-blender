@@ -366,6 +366,9 @@ class OBJECT_OT_FBCameraFixSize(Operator):
         pass
 
     def execute(self, context):
+        settings = get_main_settings()
+        settings.tmp_headnum = self.headnum
+        settings.tmp_camnum = self.camnum
         bpy.ops.wm.call_menu(
             'INVOKE_DEFAULT', name=config.fb_fix_camera_frame_menu_idname)
         return {'FINISHED'}

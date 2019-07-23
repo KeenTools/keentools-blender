@@ -329,6 +329,9 @@ class FBSceneSettings(PropertyGroup):
     current_headnum: IntProperty(name="Current Head Number", default=-1)
     current_camnum: IntProperty(name="Current Camera Number", default=-1)
 
+    tmp_headnum: IntProperty(name="Temporary Head Number", default=-1)
+    tmp_camnum: IntProperty(name="Temporary Camera Number", default=-1)
+
     # -------------------------
     # Texture Baking parameters
     # -------------------------

@@ -110,6 +110,9 @@ class OBJECT_PT_FBPanel(Panel):
             op.action = 'unhide_head'
             op.headnum = headnum
 
+        if len(head.cameras) == 0:
+            layout.label(text="1. Setup two main parameters:")
+
         layout.prop(settings, 'focal')
         layout.prop(settings, 'sensor_width')
         row = layout.row()
@@ -186,7 +189,7 @@ class OBJECT_PT_FBPanel(Panel):
                             live_icon=True)
 
         if len(head.cameras) == 0:
-            layout.label(text="-- Camera List is empty --")
+            layout.label(text="2. Select reference photos")
         else:
             row = layout.row()
             # Select All cameras for baking Button
@@ -228,7 +231,7 @@ class OBJECT_PT_FBPanel(Panel):
         # Add New Camera button
         op = layout.operator(
             config.fb_main_add_camera_idname,
-            text="Add New Camera", icon='PLUS')
+            text="Add Empty Camera", icon='PLUS')
         # op.action = "add_camera"
         op.headnum = headnum
 
@@ -240,7 +243,7 @@ class OBJECT_PT_FBPanel(Panel):
 
 class WM_OT_FBAddonWarning(Operator):
     bl_idname = config.fb_warning_operator_idname
-    bl_label = "FaceBuilder Addon WARNING!"
+    bl_label = "FaceBuilder WARNING!"
 
     msg: bpy.props.IntProperty(default=ErrorType.Unknown)
     msg_content: bpy.props.StringProperty(default="")
@@ -551,8 +554,6 @@ class OBJECT_MT_FBFixCameraMenu(Menu):
     bl_idname = config.fb_fix_camera_frame_menu_idname
     bl_description = "Fix frame Width and Height parameters for camera"
 
-    headnum: IntProperty(default=0)
-    camnum: IntProperty(default=0)
 
     def draw(self, context):
         layout = self.layout

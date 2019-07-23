@@ -479,6 +479,18 @@ class OBJECT_OT_FBActor(Operator):
                 scene.render.resolution_x = w
                 scene.render.resolution_y = h
 
+        elif self.action == 'use_this_camera_frame_size':
+            # Current camera Background --> Render size
+            headnum = settings.tmp_headnum
+            camnum = settings.tmp_camnum
+            camera = settings.heads[headnum].cameras[camnum]
+            w, h = camera.get_image_size()
+            settings.frame_width = w
+            settings.frame_height = h
+            if w > 0 and h > 0:
+                scene.render.resolution_x = w
+                scene.render.resolution_y = h
+
         elif self.action == 'use_render_frame_size_scaled':
             # Allow converts scenes pinned on default cameras
             headnum = settings.current_headnum
