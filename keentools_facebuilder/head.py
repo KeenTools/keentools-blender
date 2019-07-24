@@ -45,6 +45,13 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         # bpy.ops.object.shade_smooth()
         h = get_main_settings().heads.add()
         h.headobj = obj
+
+        try:
+            a = context.area
+            # Try to show UI Panel
+            a.spaces[0].show_region_ui = True
+        except:
+            pass
         return {'FINISHED'}
 
     @classmethod

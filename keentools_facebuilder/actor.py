@@ -261,8 +261,6 @@ class OBJECT_OT_FBActor(Operator):
         else:
             headobj.data.materials.append(mat)
 
-        # Switch to Material Mode or Back
-        self.toggle_mode(context, ('SOLID', 'MATERIAL'))
 
     def get_attr_variant_named(self, data, attr_names):
         for attr in attr_names:
@@ -424,9 +422,12 @@ class OBJECT_OT_FBActor(Operator):
 
         elif self.action == 'show_tex':
             self.show_texture_in_mat(context)
+            # Switch to Material Mode or Back
+            self.toggle_mode(context, ('SOLID', 'MATERIAL'))
 
         elif self.action == 'bake_tex':
             self.bake_tex()
+            self.show_texture_in_mat(context)
 
         elif self.action == "visit_site":
             bpy.ops.wm.url_open(url="https://keentools.io/manual-installation")

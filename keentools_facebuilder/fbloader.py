@@ -422,12 +422,13 @@ class FBLoader:
     @classmethod
     def get_special_indices(cls):
         if (cls.builder.get_builder_type() == BuilderType.FaceBuilder):
-            pairs = FBConst.get_eyes_indices2()
-            pairs = pairs.union(FBConst.get_eyebrows_indices2())
-            pairs = pairs.union(FBConst.get_nose_indices2())
-            pairs = pairs.union(FBConst.get_mouth_indices2())
-            pairs = pairs.union(FBConst.get_ears_indices2())
-            pairs = pairs.union(FBConst.get_half_indices2())
+            pairs = FBConst.get_eyes_indices()
+            pairs = pairs.union(FBConst.get_eyebrows_indices())
+            pairs = pairs.union(FBConst.get_nose_indices())
+            pairs = pairs.union(FBConst.get_mouth_indices())
+            pairs = pairs.union(FBConst.get_ears_indices())
+            pairs = pairs.union(FBConst.get_half_indices())
+            pairs = pairs.union(FBConst.get_jaw_indices())
             return pairs
         elif (cls.builder.get_builder_type() == BuilderType.BodyBuilder):
             return FBConst.get_bodybuilder_highlight_indices()
@@ -442,7 +443,8 @@ class FBLoader:
     def update_pin_size(cls):
         settings = get_main_settings()
         cls.points2d.set_point_size(settings.pin_size)
-        cls.points3d.set_point_size(settings.pin_size)
+        cls.points3d.set_point_size(
+            settings.pin_size * config.surf_pin_size_scale)
 
     @classmethod
     def update_cameras(cls, headnum):

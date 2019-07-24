@@ -25,7 +25,7 @@ import math
 import blf
 import bgl
 from . const import FBConst
-from . config import get_main_settings
+from . config import get_main_settings, config
 
 
 def force_stop_shaders():
@@ -365,7 +365,7 @@ class FBText:
 
 class FBShaderPoints:
     """ Base class for Point Drawing Shaders """
-    point_size = 6.0
+    point_size = config.default_pin_size
 
     # Store all draw handlers registered by class objects
     handler_list = []
@@ -390,7 +390,6 @@ class FBShaderPoints:
 
         self.vertices = []
         self.vertices_colors = []
-        # self.point_size = 5.0
 
     @classmethod
     def set_point_size(cls, ps):
@@ -567,6 +566,16 @@ class FBPoints3D(FBShaderPoints):
     def create_batch(self):
         # 3D_FLAT_COLOR
         self._create_batch(self.vertices, self.vertices_colors, 'CUSTOM_3D')
+
+    def __init__(self):
+        self.draw_handler = None  # for 3d shader
+        self.shader = None
+        self.batch = None
+
+        self.vertices = []
+        self.vertices_colors = []
+        self.set_point_size(
+            config.default_pin_size * config.surf_pin_size_scale)
 
 
 class FBEdgeShader:

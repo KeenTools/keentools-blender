@@ -114,8 +114,9 @@ class OBJECT_PT_FBPanel(Panel):
             layout.label(text="1. Setup two main parameters:")
 
         layout.prop(settings, 'focal')
-        layout.prop(settings, 'sensor_width')
-        row = layout.row()
+        box = layout.box()
+        box.prop(settings, 'sensor_width')
+        row = box.row()
         row.prop(settings, 'sensor_height')
         row.active = False
 
@@ -169,12 +170,12 @@ class OBJECT_PT_FBPanel(Panel):
                 # No image --> Broken icon
                 row2.label(text='', icon='LIBRARY_DATA_BROKEN')
 
-            # Output camera info
-            row2.label(text=text)
-
             # Pin Icon if there are some pins
             if pc != '-':
                 row2.label(text='', icon='PINNED')
+
+            # Output camera info
+            row2.label(text=text)
 
             # Camera Delete button
             if not settings.pinmode:
@@ -538,8 +539,11 @@ class OBJECT_PT_FBSettingsPanel(Panel):
         box.prop(settings, 'pin_size', slider=True)
         box.prop(settings, 'pin_sensitivity', slider=True)
 
+
         layout.prop(settings, 'check_auto_rigidity')
-        layout.prop(settings, 'rigidity')
+        row = layout.row()
+        row.prop(settings, 'rigidity')
+        row.active = not settings.check_auto_rigidity
 
         row = layout.row()
         row.scale_y = 2.0

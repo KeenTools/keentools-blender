@@ -305,13 +305,13 @@ class FBSceneSettings(PropertyGroup):
         default=0.35, min=0.0, max=1.0,
         update=update_wireframe)
     wireframe_color: FloatVectorProperty(
-        description="Color of wireframe mesh in pin-mode",
-        name="Wireframe color", subtype='COLOR',
+        description="Color of mesh wireframe in pin-mode",
+        name="Wireframe Color", subtype='COLOR',
         default=config.default_scheme1, min=0.0, max=1.0,
         update=update_wireframe)
     wireframe_special_color: FloatVectorProperty(
         description="Color of special parts in pin-mode",
-        name="Wireframe Special color", subtype='COLOR',
+        name="Wireframe Special Color", subtype='COLOR',
         default=config.default_scheme2, min=0.0, max=1.0,
         update=update_wireframe)
     show_specials: BoolProperty(
@@ -322,12 +322,14 @@ class FBSceneSettings(PropertyGroup):
     pin_size: FloatProperty(
         description="Size of visual markers (pins) in pin-mode",
         name="Pin Size",
-        default=6.0, min=1.0, max=100.0, update=update_pin_size)
+        default=config.default_pin_size, min=1.0, max=100.0,
+        update=update_pin_size)
     pin_sensitivity: FloatProperty(
         description="Increase if it is difficult for you to get a pin. "
         "Decrease it if instead of a new pin, you capture the old one",
         name="Pin Sensitivity",
-        default=12.0, min=1.0, max=100.0, update=update_pin_sensitivity)
+        default=config.default_POINT_SENSITIVITY, min=1.0, max=100.0,
+        update=update_pin_sensitivity)
 
     # Other settings
     rigidity: FloatProperty(
@@ -337,7 +339,7 @@ class FBSceneSettings(PropertyGroup):
         name="Rigidity", default=1.0, min=0.001, max=1000.0)
     check_auto_rigidity: BoolProperty(
         description="Auto Model Rigidity detection. Highly recommended",
-        name="auto rigidity", default=True)
+        name="Auto rigidity", default=True)
 
     # Internal use only
     current_headnum: IntProperty(name="Current Head Number", default=-1)
