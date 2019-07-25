@@ -21,19 +21,19 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
     headnum: bpy.props.IntProperty(default=0)
     camnum: bpy.props.IntProperty(default=0)
 
-    def init_wireframer_colors(self):
+    def init_wireframer_colors(self, opacity):
         settings = get_main_settings()
         head = settings.heads[self.headnum]
         headobj = head.headobj
 
         FBLoader.wireframer.init_geom_data(headobj)
         FBLoader.wireframer.init_color_data(
-            (*settings.wireframe_color, settings.wireframe_opacity))
+            (*settings.wireframe_color, opacity * settings.wireframe_opacity))
         # Coloring special parts
         if settings.show_specials:
             special_indices = FBLoader.get_special_indices()
             special_color = (*settings.wireframe_special_color,
-                             settings.wireframe_opacity)
+                             opacity * settings.wireframe_opacity)
             FBLoader.wireframer.init_special_areas2(
                 headobj.data, special_indices, special_color)
         FBLoader.wireframer.create_batches()
@@ -93,20 +93,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         headobj.hide_set(True)
         FBLoader.hide_other_cameras(context, self.headnum, self.camnum)
         # Start our shader
-        FBLoader.wireframer.init_geom_data(headobj)
+        self.init_wireframer_colors(settings.overall_opacity)
 
-        FBLoader.wireframer.init_color_data(
-            (*settings.wireframe_color, settings.wireframe_opacity))
-
-        # Coloring special parts
-        if settings.show_specials:
-            special_indices = FBLoader.get_special_indices()
-            special_color = (*settings.wireframe_special_color,
-                             settings.wireframe_opacity)
-            FBLoader.wireframer.init_special_areas2(
-                headobj.data, special_indices, special_color)
-
-        FBLoader.wireframer.create_batches()
         FBLoader.wireframer.register_handler(args)
 
         kid = FBLoader.keyframe_by_camnum(self.headnum, self.camnum)
@@ -176,9 +164,9 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             else:
                 settings.overall_opacity = 1.0
             print("OVERALL_OPACITY", settings.overall_opacity)
-            FBLoader.wireframer.overall_opacity = settings.overall_opacity
-            print("wireframer_OPACITY", FBLoader.wireframer.overall_opacity)
-            self.init_wireframer_colors()
+            # FBLoader.wireframer.overall_opacity = settings.overall_opacity
+            # print("wireframer_OPACITY", FBLoader.wireframer.overall_opacity)
+            self.init_wireframer_colors(settings.overall_opacity)
             return {'RUNNING_MODAL'}
 
         if event.value == "PRESS":

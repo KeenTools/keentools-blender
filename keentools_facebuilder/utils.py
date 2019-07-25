@@ -572,12 +572,7 @@ class FBPoints3D(FBShaderPoints):
         self._create_batch(self.vertices, self.vertices_colors, 'CUSTOM_3D')
 
     def __init__(self):
-        self.draw_handler = None  # for 3d shader
-        self.shader = None
-        self.batch = None
-
-        self.vertices = []
-        self.vertices_colors = []
+        super().__init__()
         self.set_point_size(
             config.default_pin_size * config.surf_pin_size_scale)
 
@@ -612,7 +607,6 @@ class FBEdgeShader:
         self.edges_vertices = []
         self.edges_indices = []
         self.edges_colors = []
-        self.overall_opacity = 1.0
         self.init_shaders()
 
     def is_working(self):
@@ -738,12 +732,12 @@ class FBEdgeShader:
             len(self.edges_vertices), 2).tolist()
 
     def init_color_data(self, color=(0.5, 0.0, 0.7, 0.2)):
-        col = (color[0], color[1], color[2], color[3] * self.overall_opacity)
+        col = (color[0], color[1], color[2], color[3])
         self.edges_colors = np.full(
             (len(self.edges_vertices), 4), col).tolist()
 
     def init_special_areas2(self, mesh, pairs, color=(0.5, 0.0, 0.7, 0.2)):
-        col = (color[0], color[1], color[2], color[3] * self.overall_opacity)
+        col = (color[0], color[1], color[2], color[3])
         for i, edge in enumerate(mesh.edges):
             vv = edge.vertices
             if ((vv[0], vv[1]) in pairs) or ((vv[1], vv[0]) in pairs):
