@@ -86,7 +86,7 @@ class OBJECT_PT_FBPanel(Panel):
 
         # No registered models in scene
         if headnum < 0:
-            if obj.type != 'MESH':
+            if not obj or obj.type != 'MESH':
                 return
             # Need for reconstruction
             row = layout.row()
@@ -202,7 +202,7 @@ class OBJECT_PT_FBPanel(Panel):
                               text='None')
             op.action = 'deselect_all_cameras'
             op.headnum = headnum
-            row.label(text='Use in bake')
+            row.label(text='in bake')
 
             row = layout.row()
 

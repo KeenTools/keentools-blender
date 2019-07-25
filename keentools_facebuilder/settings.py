@@ -317,6 +317,10 @@ class FBSceneSettings(PropertyGroup):
     show_specials: BoolProperty(
         description="Show guide contours for individual parts of the face",
         name="Special face parts", default=True, update=update_wireframe)
+    overall_opacity: FloatProperty(
+        description="Overall opacity in pin-mode.",
+        name="Overall opacity",
+        default=1.00, min=0.0, max=1.0)
 
     # Initial pin_size state in FBShaderPoints class
     pin_size: FloatProperty(

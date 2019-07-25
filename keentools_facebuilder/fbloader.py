@@ -428,7 +428,7 @@ class FBLoader:
             pairs = pairs.union(FBConst.get_mouth_indices())
             pairs = pairs.union(FBConst.get_ears_indices())
             pairs = pairs.union(FBConst.get_half_indices())
-            pairs = pairs.union(FBConst.get_jaw_indices())
+            pairs = pairs.union(FBConst.get_jaw_indices2())
             return pairs
         elif (cls.builder.get_builder_type() == BuilderType.BodyBuilder):
             return FBConst.get_bodybuilder_highlight_indices()
@@ -521,10 +521,12 @@ class FBLoader:
     @classmethod
     def place_cameraobj(cls, keyframe, camobj, headobj):
         fb = cls.get_builder()
-        camobj.matrix_world = FBCalc.calc_model_mat(
+        mat = FBCalc.calc_model_mat(
             fb.model_mat(keyframe),
             headobj.matrix_world
         )
+        if mat is not None:
+            camobj.matrix_world = mat
 
     @classmethod
     def set_camera_projection(cls, fl, sw, rx, ry,
