@@ -29,8 +29,6 @@ from . fbdebug import FBDebug
 from . const import FBConst
 from . config import config, get_main_settings, BuilderType
 from pykeentools import UnlicensedException
-import mathutils
-# import colorsys
 
 
 class FBLoader:
@@ -400,10 +398,7 @@ class FBLoader:
     def update_wireframe(cls, obj):
         settings = get_main_settings()
         main_color = settings.wireframe_color
-        comp_color = mathutils.Color((
-            1.0 - main_color[0], 1.0 - main_color[1], 1.0 - main_color[2]))
-        # h, s, v = main_color.hsv
-        # comp_color = colorsys.hsv_to_rgb(h + 0.5, s, v)
+        comp_color = settings.wireframe_special_color
 
         cls.wireframer.init_color_data((*main_color,
                                         settings.wireframe_opacity))
@@ -427,12 +422,13 @@ class FBLoader:
     @classmethod
     def get_special_indices(cls):
         if (cls.builder.get_builder_type() == BuilderType.FaceBuilder):
-            pairs = FBConst.get_eyes_indices2()
-            pairs = pairs.union(FBConst.get_eyebrows_indices2())
-            pairs = pairs.union(FBConst.get_nose_indices2())
-            pairs = pairs.union(FBConst.get_mouth_indices2())
-            pairs = pairs.union(FBConst.get_ears_indices2())
-            pairs = pairs.union(FBConst.get_half_indices2())
+            pairs = FBConst.get_eyes_indices()
+            pairs = pairs.union(FBConst.get_eyebrows_indices())
+            pairs = pairs.union(FBConst.get_nose_indices())
+            pairs = pairs.union(FBConst.get_mouth_indices())
+            pairs = pairs.union(FBConst.get_ears_indices())
+            pairs = pairs.union(FBConst.get_half_indices())
+            pairs = pairs.union(FBConst.get_jaw_indices2())
             return pairs
         elif (cls.builder.get_builder_type() == BuilderType.BodyBuilder):
             return FBConst.get_bodybuilder_highlight_indices()
@@ -447,7 +443,8 @@ class FBLoader:
     def update_pin_size(cls):
         settings = get_main_settings()
         cls.points2d.set_point_size(settings.pin_size)
-        cls.points3d.set_point_size(settings.pin_size)
+        cls.points3d.set_point_size(
+            settings.pin_size * config.surf_pin_size_scale)
 
     @classmethod
     def update_cameras(cls, headnum):
@@ -524,10 +521,12 @@ class FBLoader:
     @classmethod
     def place_cameraobj(cls, keyframe, camobj, headobj):
         fb = cls.get_builder()
-        camobj.matrix_world = FBCalc.calc_model_mat(
+        mat = FBCalc.calc_model_mat(
             fb.model_mat(keyframe),
             headobj.matrix_world
         )
+        if mat is not None:
+            camobj.matrix_world = mat
 
     @classmethod
     def set_camera_projection(cls, fl, sw, rx, ry,

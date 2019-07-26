@@ -25,7 +25,7 @@ import math
 import blf
 import bgl
 from . const import FBConst
-from . config import get_main_settings
+from . config import get_main_settings, config
 
 
 def force_stop_shaders():
@@ -190,9 +190,13 @@ class FBCalc:
             [0., 0., 1., 0.],
             [0., -1., 0., 0.],
             [0., 0., 0., 1.]])
-        nm = np.array(model_mat @ rot_mat) @ np.linalg.inv(head_mat)
-        im = np.linalg.inv(nm)
-        return im.transpose()
+
+        try:
+            nm = np.array(model_mat @ rot_mat) @ np.linalg.inv(head_mat)
+            im = np.linalg.inv(nm)
+            return im.transpose()
+        except:
+            return None
 
     @staticmethod
     def get_raw_camera_2d_data(context):
@@ -365,7 +369,7 @@ class FBText:
 
 class FBShaderPoints:
     """ Base class for Point Drawing Shaders """
-    point_size = 6.0
+    point_size = config.default_pin_size
 
     # Store all draw handlers registered by class objects
     handler_list = []
@@ -390,7 +394,6 @@ class FBShaderPoints:
 
         self.vertices = []
         self.vertices_colors = []
-        # self.point_size = 5.0
 
     @classmethod
     def set_point_size(cls, ps):
@@ -568,6 +571,11 @@ class FBPoints3D(FBShaderPoints):
         # 3D_FLAT_COLOR
         self._create_batch(self.vertices, self.vertices_colors, 'CUSTOM_3D')
 
+    def __init__(self):
+        super().__init__()
+        self.set_point_size(
+            config.default_pin_size * config.surf_pin_size_scale)
+
 
 class FBEdgeShader:
     """ Wireframe drawing class """
@@ -724,15 +732,17 @@ class FBEdgeShader:
             len(self.edges_vertices), 2).tolist()
 
     def init_color_data(self, color=(0.5, 0.0, 0.7, 0.2)):
+        col = (color[0], color[1], color[2], color[3])
         self.edges_colors = np.full(
-            (len(self.edges_vertices), 4), color).tolist()
+            (len(self.edges_vertices), 4), col).tolist()
 
     def init_special_areas2(self, mesh, pairs, color=(0.5, 0.0, 0.7, 0.2)):
+        col = (color[0], color[1], color[2], color[3])
         for i, edge in enumerate(mesh.edges):
             vv = edge.vertices
             if ((vv[0], vv[1]) in pairs) or ((vv[1], vv[0]) in pairs):
-                self.edges_colors[i * 2] = color
-                self.edges_colors[i * 2 + 1] = color
+                self.edges_colors[i * 2] = col
+                self.edges_colors[i * 2 + 1] = col
 
     def register_handler(self, args):
         if self.draw_handler is not None:

@@ -35,7 +35,7 @@ class BuilderType(Enum):
 
 class config:
     addon_name = __package__  # the same as module name
-    addon_version = '1.5.2 (Beta)'
+    addon_version = '1.5.3 (Beta)'
     addon_search = 'KeenTools'
     addon_global_var_name = _prefix + '_settings'
     addon_full_name = 'Keentools Face Builder for Blender'
@@ -113,7 +113,9 @@ class config:
     reconstruct_frame_height_param = ('frame_height', 'height')
 
     # Constants
-    default_POINT_SENSITIVITY = 12.0
+    default_pin_size = 7.0
+    surf_pin_size_scale = 0.85
+    default_POINT_SENSITIVITY = 16.0
     default_FB_COLLECTION_NAME = 'FaceBuilderCol'
 
     # In Material
@@ -121,19 +123,38 @@ class config:
 
     # Colors
     red_color = (1.0, 0.0, 0.0)
+    red_scheme1 = (0.3, 0.0, 0.0)
+    # red_scheme2 = (0.0, 0.2, 0.4)
+    red_scheme2 = (0.0, 0.4, 0.7)
     green_color = (0.0, 1.0, 0.0)
+    green_scheme1 = (0.0, 0.2, 0.0)
+    green_scheme2 = (0.4, 0.0, 0.4)
     blue_color = (0.0, 0.0, 1.0)
+    blue_scheme1 = (0.0, 0.0, 0.3)
+    blue_scheme2 = (0.4, 0.75, 0.0)
     cyan_color = (0.0, 1.0, 1.0)
+    cyan_scheme1 = (0.0, 0.3, 0.3)
+    cyan_scheme2 = (0.4, 0.0, 0.0)
     magenta_color = (1.0, 0.0, 1.0)
+    magenta_scheme1 = (0.3, 0.0, 0.3)
+    magenta_scheme2 = (0.0, 0.55, 0.0)
     yellow_color = (1.0, 1.0, 0.0)
+    yellow_scheme1 = (0.2, 0.2, 0.0)
+    yellow_scheme2 = (0.0, 0.0, 0.4)
     black_color = (0.0, 0.0, 0.0)
+    black_scheme1 = (0.2, 0.2, 0.2)
+    black_scheme2 = (0.0, 0.0, 1.0)
     white_color = (1.0, 1.0, 1.0)
+    white_scheme1 = (1.0, 1.0, 1.0)
+    white_scheme2 = (0.0, 0.0, 0.4)
+
+    default_scheme1 = (0.05, 0.05, 0.1)
+    default_scheme2 = (0.0, 0.0, 1.0)
 
 
 def get_main_settings():
     """ Main addon settings"""
     return getattr(bpy.context.scene, config.addon_global_var_name)
-    # return bpy.context.scene.keentools_fb_settings
 
 
 class ErrorType:

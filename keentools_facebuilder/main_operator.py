@@ -234,21 +234,37 @@ class OBJECT_OT_FBWireframeColor(Operator):
         settings = get_main_settings()
 
         if self.action == "wireframe_red":
-            settings.wireframe_color = config.red_color
+            # settings.wireframe_color = config.red_color
+            settings.wireframe_color = config.red_scheme1
+            settings.wireframe_special_color = config.red_scheme2
         elif self.action == "wireframe_green":
-            settings.wireframe_color = config.green_color
+            # settings.wireframe_color = config.green_color
+            settings.wireframe_color = config.green_scheme1
+            settings.wireframe_special_color = config.green_scheme2
         elif self.action == "wireframe_blue":
-            settings.wireframe_color = config.blue_color
+            # settings.wireframe_color = config.blue_color
+            settings.wireframe_color = config.blue_scheme1
+            settings.wireframe_special_color = config.blue_scheme2
         elif self.action == "wireframe_cyan":
-            settings.wireframe_color = config.cyan_color
+            # settings.wireframe_color = config.cyan_color
+            settings.wireframe_color = config.cyan_scheme1
+            settings.wireframe_special_color = config.cyan_scheme2
         elif self.action == "wireframe_magenta":
-            settings.wireframe_color = config.magenta_color
+            # settings.wireframe_color = config.magenta_color
+            settings.wireframe_color = config.magenta_scheme1
+            settings.wireframe_special_color = config.magenta_scheme2
         elif self.action == "wireframe_yellow":
-            settings.wireframe_color = config.yellow_color
+            # settings.wireframe_color = config.yellow_color
+            settings.wireframe_color = config.yellow_scheme1
+            settings.wireframe_special_color = config.yellow_scheme2
         elif self.action == "wireframe_black":
-            settings.wireframe_color = config.black_color
+            # settings.wireframe_color = config.black_color
+            settings.wireframe_color = config.black_scheme1
+            settings.wireframe_special_color = config.black_scheme2
         elif self.action == "wireframe_white":
-            settings.wireframe_color = config.white_color
+            # settings.wireframe_color = config.white_color
+            settings.wireframe_color = config.white_scheme1
+            settings.wireframe_special_color = config.white_scheme2
 
         return {'FINISHED'}
 
