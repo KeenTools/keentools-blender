@@ -18,7 +18,7 @@
 
 
 bl_info = {
-    "name": "KeenTools FaceBuilder Addon v.0.1m",
+    "name": "KeenTools FaceBuilder (Beta)",
     "author": "KeenTools",
     "description": "Creates Head and Face geometry with a few reference photos",
     "blender": (2, 80, 0),
@@ -64,7 +64,7 @@ def init_pykeentools_copy():
             print("CAN'T CREATE DEFAULT COPY")
             try:
                 # Create temporary folder
-                tmp_dir = tempfile.mkdtemp(prefix='keentools_fb_')  # new dir
+                tmp_dir = tempfile.mkdtemp(prefix=dir_name + '_')  # new dir
                 temp_path = os.path.join(tmp_dir, win_file_name)
                 shutil.copy2(src_path, temp_path)
                 pykeentools_dir = tmp_dir
@@ -97,10 +97,10 @@ def init_pykeentools_copy():
 init_pykeentools_copy()
 
 
-from . panels import OBJECT_PT_FBPanel, WM_OT_FBAddonWarning
-from . panels import OBJECT_PT_FBSettingsPanel, OBJECT_PT_FBColorsPanel
-from . panels import OBJECT_PT_TBPanel
-from . panels import FBFixMenu
+from . panels import (OBJECT_PT_FBPanel, OBJECT_PT_FBFaceParts,
+                      WM_OT_FBAddonWarning, OBJECT_PT_FBSettingsPanel,
+                      OBJECT_PT_FBColorsPanel, OBJECT_PT_TBPanel,
+                      OBJECT_MT_FBFixMenu, OBJECT_MT_FBFixCameraMenu)
 from . head import MESH_OT_FBAddHead
 from . body import MESH_OT_FBAddBody
 from . settings import FBCameraItem
@@ -110,6 +110,7 @@ from . main_operator import (OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
                              OBJECT_OT_FBUnmorph, OBJECT_OT_FBRemovePins,
                              OBJECT_OT_FBWireframeColor,
                              OBJECT_OT_FBFilterCameras, OBJECT_OT_FBFixSize,
+                             OBJECT_OT_FBCameraFixSize,
                              OBJECT_OT_FBDeleteCamera, OBJECT_OT_FBAddCamera,
                              OBJECT_OT_FBAddonSettings,
                              OBJECT_OT_FBBakeTexture, OBJECT_OT_FBShowTexture)
@@ -117,15 +118,18 @@ from . draw import OBJECT_OT_FBDraw
 from . movepin import OBJECT_OT_FBMovePin
 from . actor import OBJECT_OT_FBActor
 from . addon_prefs import FBAddonPreferences
-from . filedialog import OBJECT_OT_FBOpenFilebrowser
+from . filedialog import WM_OT_FBOpenFilebrowser
 from . config import config
 
 
 classes = (
     OBJECT_PT_FBPanel,
-    WM_OT_FBAddonWarning,
+    OBJECT_PT_FBFaceParts,
     OBJECT_PT_FBColorsPanel,
     OBJECT_PT_TBPanel,
+    OBJECT_MT_FBFixMenu,
+    OBJECT_MT_FBFixCameraMenu,
+    WM_OT_FBAddonWarning,
     MESH_OT_FBAddHead,
     MESH_OT_FBAddBody,
     OBJECT_OT_FBSelectCamera,
@@ -137,6 +141,7 @@ classes = (
     OBJECT_OT_FBDeleteCamera,
     OBJECT_OT_FBAddCamera,
     OBJECT_OT_FBFixSize,
+    OBJECT_OT_FBCameraFixSize,
     OBJECT_OT_FBAddonSettings,
     OBJECT_OT_FBBakeTexture,
     OBJECT_OT_FBShowTexture,
@@ -148,8 +153,7 @@ classes = (
     OBJECT_OT_FBMovePin,
     OBJECT_OT_FBActor,
     FBAddonPreferences,
-    OBJECT_OT_FBOpenFilebrowser,
-    FBFixMenu
+    WM_OT_FBOpenFilebrowser
 )
 
 

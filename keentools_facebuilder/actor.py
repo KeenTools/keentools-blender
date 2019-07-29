@@ -78,13 +78,13 @@ class OBJECT_OT_FBActor(Operator):
         uvmap = self.get_mesh_uvmap(mesh)
 
         # Generate UVs
-        uv_shape = settings.tex_uv_shape
+        uv_shape = head.tex_uv_shape
         fb.select_uv_set(0)
-        if uv_shape == 'uv2':
+        if uv_shape == 'uv1':
             fb.select_uv_set(1)
-        elif uv_shape == 'uv3':
+        elif uv_shape == 'uv2':
             fb.select_uv_set(2)
-        elif uv_shape == 'uv4':
+        elif uv_shape == 'uv3':
             fb.select_uv_set(3)
 
         print("UV_TYPE", uv_shape)
@@ -261,9 +261,6 @@ class OBJECT_OT_FBActor(Operator):
         else:
             headobj.data.materials.append(mat)
 
-        # Switch to Material Mode or Back
-        self.toggle_mode(context, ('SOLID', 'MATERIAL'))
-
 
     def get_attr_variant_named(self, data, attr_names):
         for attr in attr_names:
@@ -425,13 +422,24 @@ class OBJECT_OT_FBActor(Operator):
 
         elif self.action == 'show_tex':
             self.show_texture_in_mat(context)
+            # Switch to Material Mode or Back
+            self.toggle_mode(context, ('SOLID', 'MATERIAL'))
 
         elif self.action == 'bake_tex':
             self.bake_tex()
+            self.show_texture_in_mat(context)
 
         elif self.action == "visit_site":
             bpy.ops.wm.url_open(url="https://keentools.io/manual-installation")
 
+        elif self.action == "unhide_head":
+            # settings.heads[self.headnum].headobj.hide_viewport = False
+            settings.heads[self.headnum].headobj.hide_set(False)
+            settings.pinmode = False
+
+        elif self.action == "about_fix_frame_warning":
+            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.AboutFrameSize)
 
         elif self.action == "auto_detect_frame_size":
             headnum = settings.current_headnum
@@ -464,6 +472,18 @@ class OBJECT_OT_FBActor(Operator):
             # Current camera Background --> Render size
             headnum = settings.current_headnum
             camnum = settings.current_camnum
+            camera = settings.heads[headnum].cameras[camnum]
+            w, h = camera.get_image_size()
+            settings.frame_width = w
+            settings.frame_height = h
+            if w > 0 and h > 0:
+                scene.render.resolution_x = w
+                scene.render.resolution_y = h
+
+        elif self.action == 'use_this_camera_frame_size':
+            # Current camera Background --> Render size
+            headnum = settings.tmp_headnum
+            camnum = settings.tmp_camnum
             camera = settings.heads[headnum].cameras[camnum]
             w, h = camera.get_image_size()
             settings.frame_width = w

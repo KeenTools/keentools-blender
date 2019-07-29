@@ -35,11 +35,11 @@ class BuilderType(Enum):
 
 class config:
     addon_name = __package__  # the same as module name
-    addon_version = '0.1m'
+    addon_version = '1.5.3 (Beta)'
     addon_search = 'KeenTools'
     addon_global_var_name = _prefix + '_settings'
     addon_full_name = 'Keentools Face Builder for Blender'
-    fb_panel_label = 'Face Builder v0.1m'
+    fb_panel_label = 'Face Builder (Beta)'
     fb_tab_category = 'Face Builder'
     default_builder = BuilderType.FaceBuilder
 
@@ -51,11 +51,15 @@ class config:
     fb_main_remove_pins_idname = 'object.' + _prefix + '_main_remove_pins'
     fb_main_wireframe_color_idname = 'object.' + _prefix + \
                                      '_main_wireframe_color'
-    fb_main_filter_cameras_idname = 'object.' + _prefix + '_main_filter_cameras'
+    fb_main_filter_cameras_idname = 'object.' + _prefix + \
+                                    '_main_filter_cameras'
     fb_main_delete_camera_idname = 'object.' + _prefix + '_main_delete_camera'
     fb_main_add_camera_idname = 'object.' + _prefix + '_main_add_camera'
     fb_main_fix_size_idname = 'object.' + _prefix + '_main_fix_size'
-    fb_main_addon_settings_idname = 'object.' + _prefix + '_main_addon_settings'
+    fb_main_camera_fix_size_idname = 'object.' + _prefix + \
+                                     '_main_camera_fix_size'
+    fb_main_addon_settings_idname = 'object.' + _prefix + \
+                                    '_main_addon_settings'
     fb_main_bake_tex_idname = 'object.' + _prefix + '_main_bake_tex'
     fb_main_bake_tex_callname = _prefix + '_main_bake_tex'
     fb_main_show_tex_idname = 'object.' + _prefix + '_main_show_tex'
@@ -79,10 +83,13 @@ class config:
     fb_panel_idname = 'OBJECT_PT_' + _prefix + '_panel_id'
     fb_tb_panel_idname = 'OBJECT_PT_' + _prefix + '_tb_panel_id'
     fb_colors_panel_idname = 'OBJECT_PT_' + _prefix + '_colors_panel_id'
+    fb_parts_panel_idname = 'OBJECT_PT_' + _prefix + '_parts_panel_id'
     fb_settings_panel_idname = 'OBJECT_PT_' + _prefix + '_settings_panel_id'
 
     # Menu ids
     fb_fix_frame_menu_idname = 'OBJECT_MT_' + _prefix + '_fix_frame_menu_id'
+    fb_fix_camera_frame_menu_idname = 'OBJECT_MT_' + _prefix + \
+                                      '_fix_camera_frame_menu_id'
 
     # Standard names
     tex_builder_filename = 'texbuilder_baked'
@@ -101,11 +108,14 @@ class config:
     # Save / Reconstruct parameters
     reconstruct_focal_param = ('focal',)
     reconstruct_sensor_width_param = ('sensor_width',)
+    reconstruct_sensor_height_param = ('sensor_height',)
     reconstruct_frame_width_param = ('frame_width', 'width')
     reconstruct_frame_height_param = ('frame_height', 'height')
 
     # Constants
-    default_POINT_SENSITIVITY = 12.0
+    default_pin_size = 7.0
+    surf_pin_size_scale = 0.85
+    default_POINT_SENSITIVITY = 16.0
     default_FB_COLLECTION_NAME = 'FaceBuilderCol'
 
     # In Material
@@ -113,19 +123,38 @@ class config:
 
     # Colors
     red_color = (1.0, 0.0, 0.0)
+    red_scheme1 = (0.3, 0.0, 0.0)
+    # red_scheme2 = (0.0, 0.2, 0.4)
+    red_scheme2 = (0.0, 0.4, 0.7)
     green_color = (0.0, 1.0, 0.0)
+    green_scheme1 = (0.0, 0.2, 0.0)
+    green_scheme2 = (0.4, 0.0, 0.4)
     blue_color = (0.0, 0.0, 1.0)
+    blue_scheme1 = (0.0, 0.0, 0.3)
+    blue_scheme2 = (0.4, 0.75, 0.0)
     cyan_color = (0.0, 1.0, 1.0)
+    cyan_scheme1 = (0.0, 0.3, 0.3)
+    cyan_scheme2 = (0.4, 0.0, 0.0)
     magenta_color = (1.0, 0.0, 1.0)
+    magenta_scheme1 = (0.3, 0.0, 0.3)
+    magenta_scheme2 = (0.0, 0.55, 0.0)
     yellow_color = (1.0, 1.0, 0.0)
+    yellow_scheme1 = (0.2, 0.2, 0.0)
+    yellow_scheme2 = (0.0, 0.0, 0.4)
     black_color = (0.0, 0.0, 0.0)
+    black_scheme1 = (0.2, 0.2, 0.2)
+    black_scheme2 = (0.0, 0.0, 1.0)
     white_color = (1.0, 1.0, 1.0)
+    white_scheme1 = (1.0, 1.0, 1.0)
+    white_scheme2 = (0.0, 0.0, 0.4)
+
+    default_scheme1 = (0.05, 0.05, 0.1)
+    default_scheme2 = (0.0, 0.0, 1.0)
 
 
 def get_main_settings():
     """ Main addon settings"""
     return getattr(bpy.context.scene, config.addon_global_var_name)
-    # return bpy.context.scene.keentools_fb_settings
 
 
 class ErrorType:
@@ -138,3 +167,4 @@ class ErrorType:
     CannotReconstruct = 4
     CannotCreate = 5
     CustomMessage = 6
+    AboutFrameSize = 7

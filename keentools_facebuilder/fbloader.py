@@ -26,6 +26,7 @@ from . utils import (
 )
 from . builder import UniBuilder
 from . fbdebug import FBDebug
+from . const import FBConst
 from . config import config, get_main_settings, BuilderType
 from pykeentools import UnlicensedException
 
@@ -147,6 +148,7 @@ class FBLoader:
                         max_pins = c.pins_count
                 c.camobj.data.lens = settings.focal
                 c.camobj.data.sensor_width = settings.sensor_width
+                c.camobj.data.sensor_height = settings.sensor_height
 
             if cls.get_builder_type() == BuilderType.FaceBuilder:
                 fb.set_auto_rigidity(settings.check_auto_rigidity)
@@ -167,7 +169,7 @@ class FBLoader:
             # Head Mesh update
             FBCalc.update_head_mesh(fb, head.headobj)
             if settings.pinmode:
-                cls.fb_redraw(headnum, camnum)
+                cls.fb_redraw(headnum, settings.current_camnum)
             cls.update_cameras(headnum)
             cls.save_only(headnum)
 
@@ -196,11 +198,10 @@ class FBLoader:
     def get_builder_type(cls):
         return cls.builder.get_builder_type()
 
-    # --- bpy dependent
     @classmethod
-    def force_undo_push(cls):
+    def force_undo_push(cls, msg='KeenTools operation'):
         cls.inc_operation()
-        bpy.ops.ed.undo_push()
+        bpy.ops.ed.undo_push(message=msg)
 
     @staticmethod
     def inc_operation():
@@ -221,35 +222,39 @@ class FBLoader:
         for i, c in enumerate(head.cameras):
             if i != camnum:
                 # Hide camera
-                c.camobj.hide_viewport = True
+                # c.camobj.hide_viewport = True
+                c.camobj.hide_set(True)
 
     @staticmethod
-    def show_all_cameras(context, headnum):
+    def show_all_cameras(headnum):
         settings = get_main_settings()
         head = settings.heads[headnum]
         for i, c in enumerate(head.cameras):
             # Hide camera
-            c.camobj.hide_viewport = False
+            # c.camobj.hide_viewport = False
+            c.camobj.hide_set(False)
 
     @classmethod
-    def out_pinmode(cls, context, headnum, camnum):
+    def out_pinmode(cls, headnum, camnum):
         settings = get_main_settings()
         cls.unregister_handlers()
         cls.fb_save(headnum, camnum)
         cls.wireframer.unregister_handler()
         headobj = settings.heads[headnum].headobj
         # Show geometry
-        headobj.hide_viewport = False
+        # headobj.hide_viewport = False
+        headobj.hide_set(False)
         settings.pinmode = False
 
         cls.current_pin = None
-        cls.show_all_cameras(context, headnum)
+        cls.show_all_cameras(headnum)
         # === Debug use only ===
         FBDebug.add_event_to_queue('OUT_PIN_MODE', (0, 0))
         FBDebug.output_event_queue()
         FBDebug.clear_event_queue()
         # === Debug use only ===
         FBStopTimer.stop()
+        print("STOPPER STOP")
 
     @staticmethod
     def keyframe_by_camnum(headnum, camnum):
@@ -273,7 +278,7 @@ class FBLoader:
         fb = cls.get_builder()
         scene = bpy.context.scene
         settings = get_main_settings()
-        cam = heads[headnum].cameras[camnum]
+        cam = settings.heads[headnum].cameras[camnum]
         kid = cls.keyframe_by_camnum(headnum, camnum)
 
         cam.set_model_mat(fb.model_mat(kid))
@@ -390,20 +395,44 @@ class FBLoader:
         cls.points3d.create_batch()
 
     @classmethod
-    def update_wireframe(cls):
+    def update_wireframe(cls, obj):
         settings = get_main_settings()
-        color = settings.wireframe_color
+        main_color = settings.wireframe_color
+        comp_color = settings.wireframe_special_color
 
-        cls.wireframer.init_color_data(
-            (color[0], color[1], color[2], settings.wireframe_opacity)
-        )
-        if settings.show_specials and (
-                cls.get_builder_type() == BuilderType.FaceBuilder):
-            cls.wireframer.init_special_areas(
-                (1.0 - color[0], 1.0 - color[1], 1.0 - color[2],
-                 settings.wireframe_opacity)
-            )
+        cls.wireframer.init_color_data((*main_color,
+                                        settings.wireframe_opacity))
+        if settings.show_specials:
+            mesh = obj.data
+            # Check to prevent shader problem
+            if len(mesh.edges) * 2 == len(cls.wireframer.edges_colors):
+                print("COLORING")
+                special_indices = cls.get_special_indices()
+                cls.wireframer.init_special_areas2(
+                    obj.data, special_indices,
+                    (*comp_color, settings.wireframe_opacity)
+                )
+            else:
+                print("COMPARE PROBLEM")
+                print("EDGES", len(mesh.edges))
+                print("EDGE_COLORS", len(cls.wireframer.edges_colors))
         cls.wireframer.create_batches()
+
+
+    @classmethod
+    def get_special_indices(cls):
+        if (cls.builder.get_builder_type() == BuilderType.FaceBuilder):
+            pairs = FBConst.get_eyes_indices()
+            pairs = pairs.union(FBConst.get_eyebrows_indices())
+            pairs = pairs.union(FBConst.get_nose_indices())
+            pairs = pairs.union(FBConst.get_mouth_indices())
+            pairs = pairs.union(FBConst.get_ears_indices())
+            pairs = pairs.union(FBConst.get_half_indices())
+            pairs = pairs.union(FBConst.get_jaw_indices2())
+            return pairs
+        elif (cls.builder.get_builder_type() == BuilderType.BodyBuilder):
+            return FBConst.get_bodybuilder_highlight_indices()
+        return {}
 
     @classmethod
     def update_pin_sensitivity(cls):
@@ -414,7 +443,8 @@ class FBLoader:
     def update_pin_size(cls):
         settings = get_main_settings()
         cls.points2d.set_point_size(settings.pin_size)
-        cls.points3d.set_point_size(settings.pin_size)
+        cls.points3d.set_point_size(
+            settings.pin_size * config.surf_pin_size_scale)
 
     @classmethod
     def update_cameras(cls, headnum):
@@ -491,10 +521,12 @@ class FBLoader:
     @classmethod
     def place_cameraobj(cls, keyframe, camobj, headobj):
         fb = cls.get_builder()
-        camobj.matrix_world = FBCalc.calc_model_mat(
+        mat = FBCalc.calc_model_mat(
             fb.model_mat(keyframe),
             headobj.matrix_world
         )
+        if mat is not None:
+            camobj.matrix_world = mat
 
     @classmethod
     def set_camera_projection(cls, fl, sw, rx, ry,
@@ -559,6 +591,88 @@ class FBLoader:
         if kfs:
             return max(kfs) + 1
         return 1
+
+    @classmethod
+    def get_builder_mesh(cls, builder, mesh_name='keentools_mesh',
+                               masks=(), uv_set='uv0'):
+        for i, m in enumerate(masks):
+            builder.set_mask(i, m)
+
+        # change UV in accordance to selected UV set
+        # Blender can't use integer as key in enum property
+        builder.select_uv_set(0)
+        if uv_set=='uv1':
+            builder.select_uv_set(1)
+        if uv_set=='uv2':
+            builder.select_uv_set(2)
+        if uv_set=='uv3':
+            builder.select_uv_set(3)
+
+        geo = builder.applied_args_model()
+        me = geo.mesh(0)
+
+        v_count = me.points_count()
+        vertices = []
+        for i in range(0, v_count):
+            vertices.append(me.point(i))
+
+        rot = np.array([[1., 0., 0.], [0., 0., 1.], [0., -1., 0]])
+        vertices2 = vertices @ rot
+        # vertices2 = vertices
+
+        f_count = me.faces_count()
+        faces = []
+
+        # Normals are not in use yet
+        normals = []
+        n = 0
+        for i in range(0, f_count):
+            row = []
+            for j in range(0, me.face_size(i)):
+                row.append(me.face_point(i, j))
+                normal = me.normal(i, j) @ rot
+                normals.append(tuple(normal))
+                n += 1
+            faces.append(tuple(row))
+
+        mesh = bpy.data.meshes.new(mesh_name)
+        mesh.from_pydata(vertices2, [], faces)
+
+        # Init Custom Normals (work on Shading Flat!)
+        # mesh.calc_normals_split()
+        # mesh.normals_split_custom_set(normals)
+
+        # Simple Shade Smooth analog
+        values = [True] * len(mesh.polygons)
+        mesh.polygons.foreach_set('use_smooth', values)
+
+        uvtex = mesh.uv_layers.new()
+        uvmap = uvtex.data
+        # Fill uvs in uvmap
+        uvs_count = me.uvs_count()
+        for i in range(uvs_count):
+            uvmap[i].uv = me.uv(i)
+
+        mesh.update()
+
+        # Warning! our autosmooth settings work on Shading Flat!
+        # mesh.use_auto_smooth = True
+        # mesh.auto_smooth_angle = 3.1415927410125732
+
+        return mesh
+
+
+    @classmethod
+    def universal_mesh_loader(cls, builder_type, mesh_name='keentools_mesh',
+                              masks=(), uv_set='uv0'):
+        stored_builder_type = FBLoader.get_builder_type()
+        builder = cls.new_builder(builder_type)
+
+        mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set)
+
+        # Restore builder
+        cls.new_builder(stored_builder_type)
+        return mesh
 
     @classmethod
     def load_only(cls, headnum):
@@ -643,6 +757,7 @@ class FBLoader:
         cam_data.display_size = 0.75  # Camera Size
         cam_data.lens = settings.focal  # From Interface
         cam_data.sensor_width = settings.sensor_width
+        cam_data.sensor_height = settings.sensor_height
         cam_data.show_background_images = True
 
         if len(cam_data.background_images) == 0:

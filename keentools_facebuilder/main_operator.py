@@ -73,12 +73,11 @@ class OBJECT_OT_FBSelectCamera(Operator):
         bpy.context.view_layer.objects.active = cam
 
         # Switch to camera
-        if scene.camera != cam:
-            cam.hide_viewport = False  # To allow switch
-            bpy.ops.view3d.object_as_camera()
+        if (scene.camera == cam) and settings.pinmode:
+            bpy.ops.view3d.view_camera()
         else:
-            # Toggle camera view
-            bpy.ops.view3d.view_camera()  # if settings.pinmode
+            cam.hide_set(False)  # To allow switch
+            bpy.ops.view3d.object_as_camera()
 
         # Add Background Image
         c = cam.data
@@ -235,21 +234,37 @@ class OBJECT_OT_FBWireframeColor(Operator):
         settings = get_main_settings()
 
         if self.action == "wireframe_red":
-            settings.wireframe_color = config.red_color
+            # settings.wireframe_color = config.red_color
+            settings.wireframe_color = config.red_scheme1
+            settings.wireframe_special_color = config.red_scheme2
         elif self.action == "wireframe_green":
-            settings.wireframe_color = config.green_color
+            # settings.wireframe_color = config.green_color
+            settings.wireframe_color = config.green_scheme1
+            settings.wireframe_special_color = config.green_scheme2
         elif self.action == "wireframe_blue":
-            settings.wireframe_color = config.blue_color
+            # settings.wireframe_color = config.blue_color
+            settings.wireframe_color = config.blue_scheme1
+            settings.wireframe_special_color = config.blue_scheme2
         elif self.action == "wireframe_cyan":
-            settings.wireframe_color = config.cyan_color
+            # settings.wireframe_color = config.cyan_color
+            settings.wireframe_color = config.cyan_scheme1
+            settings.wireframe_special_color = config.cyan_scheme2
         elif self.action == "wireframe_magenta":
-            settings.wireframe_color = config.magenta_color
+            # settings.wireframe_color = config.magenta_color
+            settings.wireframe_color = config.magenta_scheme1
+            settings.wireframe_special_color = config.magenta_scheme2
         elif self.action == "wireframe_yellow":
-            settings.wireframe_color = config.yellow_color
+            # settings.wireframe_color = config.yellow_color
+            settings.wireframe_color = config.yellow_scheme1
+            settings.wireframe_special_color = config.yellow_scheme2
         elif self.action == "wireframe_black":
-            settings.wireframe_color = config.black_color
+            # settings.wireframe_color = config.black_color
+            settings.wireframe_color = config.black_scheme1
+            settings.wireframe_special_color = config.black_scheme2
         elif self.action == "wireframe_white":
-            settings.wireframe_color = config.white_color
+            # settings.wireframe_color = config.white_color
+            settings.wireframe_color = config.white_scheme1
+            settings.wireframe_special_color = config.white_scheme2
 
         return {'FINISHED'}
 
@@ -353,6 +368,28 @@ class OBJECT_OT_FBFixSize(Operator):
         return {'FINISHED'}
 
 
+class OBJECT_OT_FBCameraFixSize(Operator):
+    bl_idname = config.fb_main_camera_fix_size_idname
+    bl_label = "Fix Size by Camera"
+    bl_options = {'REGISTER'}
+    bl_description = "Fix frame Width and High parameters for all cameras"
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        settings.tmp_headnum = self.headnum
+        settings.tmp_camnum = self.camnum
+        bpy.ops.wm.call_menu(
+            'INVOKE_DEFAULT', name=config.fb_fix_camera_frame_menu_idname)
+        return {'FINISHED'}
+
+
 class OBJECT_OT_FBAddonSettings(Operator):
     bl_idname = config.fb_main_addon_settings_idname
     bl_label = "Addon Settings"
@@ -400,7 +437,10 @@ class OBJECT_OT_FBShowTexture(Operator):
 
     def execute(self, context):
         settings = get_main_settings()
+        if settings.pinmode:
+            FBLoader.out_pinmode(settings.current_headnum,
+                                 settings.current_camnum)
         op = getattr(bpy.ops.object, config.fb_actor_operator_callname)
-        op('INVOKE_DEFAULT', action="show_tex",
+        op('INVOKE_DEFAULT', action='show_tex',
            headnum=settings.current_headnum)
         return {'FINISHED'}
