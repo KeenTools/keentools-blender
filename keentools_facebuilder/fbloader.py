@@ -46,6 +46,8 @@ class FBLoader:
     # Update timer
     draw_timer_handler = None
 
+    projected = FBPoints2D()
+
     # Pins
     spins = []  # current screen pins
     current_pin = None
@@ -371,6 +373,34 @@ class FBLoader:
         cls.points2d.set_vertices_colors(points, vertex_colors)
         cls.points2d.create_batch()
 
+        # ----------
+        # Projection
+        fb = cls.get_builder()
+        PROJECTION = fb.projection_mat()
+
+        camobj = bpy.context.scene.camera
+        m = camobj.matrix_world.inverted()
+
+        vv = np.array(
+            [[0, 0, 0, 1.0],
+             [1, 0, 0, 1.0],
+             [0.5, 0, 0, 1.0],
+             [0, 1, 0, 1.0],
+             [0.5, 0.5, 0, 1.0],
+             [1, 1, 0, 1.0]]
+        )
+        vv = vv @ m.transposed() @ PROJECTION
+        print("vv:", vv)
+        vv = (vv.T / vv[:,3]).T
+        verts2 = vv[:, :2] * 0.01 + np.array((500, 500))
+        print("vv_after", vv)
+        colors2 = np.full((len(verts2), 4), (1.0, 1.0, 0.0, 1.0))
+
+        cls.projected.set_vertices_colors(verts2, colors2)
+        cls.projected.create_batch()
+        # x1, y1, x2, y2 = FBCalc.get_camera_border(context)
+
+
     # --------------------
     # Update functions
     # --------------------
@@ -550,6 +580,8 @@ class FBLoader:
     def register_handlers(cls, args, context):
         cls.unregister_handlers()  # Experimental
 
+        cls.projected.register_handler(args)
+
         cls.points3d.register_handler(args)
         cls.points2d.register_handler(args)
         # Draw text on screen registration
@@ -569,6 +601,8 @@ class FBLoader:
         cls.texter.unregister_handler()
         cls.points2d.unregister_handler()
         cls.points3d.unregister_handler()
+
+        cls.projected.unregister_handler()
 
     @classmethod
     def update_pins_count(cls, headnum, camnum):
