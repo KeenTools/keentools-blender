@@ -337,7 +337,9 @@ class FBLoader:
 
         points = cls.spins.copy()
         scene = context.scene
-        asp = scene.render.resolution_y / scene.render.resolution_x
+        rx = scene.render.resolution_x
+        ry = scene.render.resolution_y
+        asp = ry / rx
 
         x1, y1, x2, y2 = FBCalc.get_camera_border(context)
 
@@ -376,7 +378,7 @@ class FBLoader:
         # ----------
         # Projection
         fb = cls.get_builder()
-        PROJECTION = fb.projection_mat()
+        PROJECTION = fb.projection_mat().T
 
         camobj = bpy.context.scene.camera
         m = camobj.matrix_world.inverted()
@@ -389,17 +391,24 @@ class FBLoader:
              [0.5, 0.5, 0, 1.0],
              [1, 1, 0, 1.0]]
         )
+        # Calc projection
         vv = vv @ m.transposed() @ PROJECTION
-        print("vv:", vv)
         vv = (vv.T / vv[:,3]).T
-        verts2 = vv[:, :2] * 0.01 + np.array((500, 500))
-        print("vv_after", vv)
+
+        verts2 = []
+        for v in vv:
+            x, y = FBCalc.frame_to_image_space(v[0], v[1], rx, ry)
+            verts2.append(FBCalc.image_space_to_region(x, y,
+                                                       x1, y1, x2, y2))
+
+        verts2.append(FBCalc.image_space_to_region(-0.5, asp * 0.5, x1, y1, x2, y2))
+        verts2.append(FBCalc.image_space_to_region(0.5, -asp * 0.5, x1, y1, x2, y2))
+
+        # print("verts2_after", verts2)
         colors2 = np.full((len(verts2), 4), (1.0, 1.0, 0.0, 1.0))
 
         cls.projected.set_vertices_colors(verts2, colors2)
         cls.projected.create_batch()
-        # x1, y1, x2, y2 = FBCalc.get_camera_border(context)
-
 
     # --------------------
     # Update functions
