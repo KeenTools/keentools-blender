@@ -377,20 +377,27 @@ class FBLoader:
 
         # ----------
         # Projection
+        verts = cls.points3d.vertices
+        if len(verts) == 0:
+            return
+
         fb = cls.get_builder()
         PROJECTION = fb.projection_mat().T
 
         camobj = bpy.context.scene.camera
         m = camobj.matrix_world.inverted()
 
-        vv = np.array(
-            [[0, 0, 0, 1.0],
-             [1, 0, 0, 1.0],
-             [0.5, 0, 0, 1.0],
-             [0, 1, 0, 1.0],
-             [0.5, 0.5, 0, 1.0],
-             [1, 1, 0, 1.0]]
-        )
+        # vv = np.array(
+        #     [[0, 0, 0, 1.0],
+        #      [1, 0, 0, 1.0],
+        #      [0.5, 0, 0, 1.0],
+        #      [0, 1, 0, 1.0],
+        #      [0.5, 0.5, 0, 1.0],
+        #      [1, 1, 0, 1.0]]
+        # )
+
+        vv = np.ones((len(verts), 4), dtype=np.float32)
+        vv[:, :-1] = verts
         # Calc projection
         vv = vv @ m.transposed() @ PROJECTION
         vv = (vv.T / vv[:,3]).T
