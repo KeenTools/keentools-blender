@@ -388,6 +388,8 @@ class FBLoader:
 
         wire = cls.residuals
         wire.clear_vertices()
+        wire.edge_lengths = []
+        wire.vertices_colors = []
 
         if len(p2d) != len(p3d):
             print("p2d != p3d")
@@ -417,16 +419,17 @@ class FBLoader:
             x, y = FBCalc.frame_to_image_space(v[0], v[1], rx, ry)
             verts2.append(FBCalc.image_space_to_region(x, y,
                                                        x1, y1, x2, y2))
+            wire.edge_lengths.append(0)
             verts2.append(FBCalc.image_space_to_region(p2d[i][0], p2d[i][1],
                                                        x1, y1, x2, y2))
-
-        colors2 = np.full((len(verts2), 4), config.residual_color)
+            # length = np.linalg.norm((v[0]-p2d[i][0], v[1]-p2d[i][1]))
+            length = 22.0
+            wire.edge_lengths.append(length)
 
         wire.vertices = verts2
-        # wire.arc_lengths = [0, 400]
+        wire.vertices_colors = np.full((len(verts2), 4),
+                                       config.residual_color).tolist()
         wire.create_batch()
-        # print("UPDATE RESIDUALS", len(verts2))
-
 
     # --------------------
     # Update functions

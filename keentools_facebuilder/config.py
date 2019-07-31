@@ -155,7 +155,6 @@ class config:
     current_pin_color = (1.0, 0.0, 1.0, 1.0)
     surface_point_color = (0.0, 1.0, 1.0, 0.5)
     residual_color = (0.0, 1.0, 1.0, 0.5)
-    dashed_shader_scale = 1.5
 
 
 def get_main_settings():

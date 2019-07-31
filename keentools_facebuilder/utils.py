@@ -669,38 +669,43 @@ class FBEdgeShaderBase:
 
 class FBEdgeShader2D(FBEdgeShaderBase):
     def __init__(self):
-        self.arc_lengths = []
+        self.edge_lengths = []
         super().__init__()
 
     def init_shaders(self):
         vertex_shader = '''
             uniform mat4 ModelViewProjectionMatrix;
             in vec2 pos;
-            in float arcLength;
-            out float v_ArcLength;
-
+            in float lineLength;
+            out float v_LineLength;
+            
+            in vec4 color;
+            flat out vec4 finalColor;
+            
             void main()
             {
-                v_ArcLength = arcLength;
+                v_LineLength = lineLength;
                 gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0f);
+                finalColor = color;
             }
         '''
 
         fragment_shader = '''
-            uniform float u_Scale;
-            in float v_ArcLength;
+            in float v_LineLength;            
+            flat in vec4 finalColor;
+            out vec4 fragColor;
 
             void main()
             {
-                if (step(sin(v_ArcLength * u_Scale), 0.5) == 1) discard;
-                gl_FragColor = vec4(1.0);
+                if (step(sin(v_LineLength), -0.3f) == 1) discard;
+                fragColor = finalColor;
             }
         '''
 
-        # self.line_shader = gpu.types.GPUShader(
-        #     vertex_shader, fragment_shader)
+        self.line_shader = gpu.types.GPUShader(
+             vertex_shader, fragment_shader)
         # TEST purpose
-        self.line_shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
+        # self.line_shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
         print("SHADER 2D INIT")
 
     def draw_callback(self, op, context):
@@ -716,10 +721,13 @@ class FBEdgeShader2D(FBEdgeShaderBase):
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
+
+        # bgl.glLineStipple(1, 0x00FF)
+        # bgl.glEnable(GL_LINE_STIPPLE)
+
         # bgl.glLineWidth(2.0)
         self.line_shader.bind()
-        # self.line_shader.uniform_float("u_Scale", config.dashed_shader_scale)
-        self.line_shader.uniform_float("color", config.residual_color)
+        # self.line_shader.uniform_float("color", config.residual_color)
         self.line_batch.draw(self.line_shader)
         # print("DRAW RESIDUALS")
 
@@ -727,8 +735,9 @@ class FBEdgeShader2D(FBEdgeShaderBase):
         # Our shader batch
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
-            {"pos": self.vertices}
-            #{"pos": self.edges_vertices, "arcLength": self.arc_lengths} # "color": self.edges_colors
+            # {"pos": self.vertices}
+            {"pos": self.vertices, "color": self.vertices_colors,
+             "lineLength": self.edge_lengths}
         )
 
     def register_handler(self, args):
