@@ -156,6 +156,10 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         # Quit by ESC pressed
         if event.type in {'ESC'}:
             FBLoader.out_pinmode(headnum, camnum)
+            # --- PROFILING ---
+            pr = FBLoader.pr
+            pr.dump_stats('c:/sure/profile.pstat')
+            # --- PROFILING ---
             return {'FINISHED'}
 
         if event.value == "PRESS" and event.type in {'TAB'}:

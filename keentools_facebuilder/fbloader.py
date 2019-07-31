@@ -30,8 +30,16 @@ from . const import FBConst
 from . config import config, get_main_settings, BuilderType
 from pykeentools import UnlicensedException
 
+import cProfile
+import pstats
+
 
 class FBLoader:
+    # --- PROFILING ---
+    pr = cProfile.Profile()
+    pr.disable()
+    # --- PROFILING ---
+
     # Builder selection: FaceBuilder or BodyBuilder
     builder = UniBuilder(config.default_builder)
 

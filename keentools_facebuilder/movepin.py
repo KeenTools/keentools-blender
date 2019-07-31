@@ -47,7 +47,16 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
     def get_camnum(self):
         return self.camnum
 
+    # --- PROFILING ---
     def invoke(self, context, event):
+        pr = FBLoader.pr
+        pr.enable()
+        ret = self.invoke2(context, event)
+        pr.disable()
+        return ret
+    # --- PROFILING ---
+
+    def invoke2(self, context, event):
         args = (self, context)
         scene = context.scene
         settings = get_main_settings()
@@ -301,7 +310,17 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             self.report({'INFO'}, "Finish MovePin")
             return {'FINISHED'}
 
+
+    # --- PROFILING ---
     def modal(self, context, event):
+        pr = FBLoader.pr
+        pr.enable()
+        ret = self.modal2(context, event)
+        pr.disable()
+        return ret
+    # --- PROFILING ---
+
+    def modal2(self, context, event):
         # print('EVENT: {} VALUE: {}'.format(event.type, event.value))
 
         # Pin is set
