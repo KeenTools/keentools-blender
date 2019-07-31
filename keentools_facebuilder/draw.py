@@ -301,6 +301,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             return {'FINISHED'}
 
         FBLoader.create_batch_2d(context)
+        FBLoader.update_residuals(context, head.headobj, kid)
 
         if FBLoader.current_pin:
             return {"RUNNING_MODAL"}

@@ -21,7 +21,7 @@ import bpy
 import numpy as np
 
 from . utils import (
-    FBPoints2D, FBPoints3D, FBText, FBCalc, FBEdgeShader,
+    FBPoints2D, FBPoints3D, FBText, FBCalc, FBEdgeShader2D, FBEdgeShader3D,
     FBStopTimer
 )
 from . builder import UniBuilder
@@ -42,11 +42,11 @@ class FBLoader:
     # Text output in Modal mode
     texter = FBText()
     # Wireframe shader object
-    wireframer = FBEdgeShader()
+    wireframer = FBEdgeShader3D()
     # Update timer
     draw_timer_handler = None
 
-    projected = FBPoints2D()
+    residuals = FBEdgeShader2D()
 
     # Pins
     spins = []  # current screen pins
@@ -347,10 +347,10 @@ class FBLoader:
             x, y = FBCalc.image_space_to_region(p[0], p[1], x1, y1, x2, y2)
             points[i] = (x, y)
 
-        vertex_colors = [(1.0, 0.0, 0.0, 1.0) for _ in range(len(points))]
+        vertex_colors = [config.pin_color for _ in range(len(points))]
 
         if cls.current_pin and cls.current_pin_num < len(vertex_colors):
-            vertex_colors[cls.current_pin_num] = (1.0, 0.0, 1.0, 1.0)
+            vertex_colors[cls.current_pin_num] = config.current_pin_color
 
         # Sensitivity indicator
         points.append(
@@ -369,16 +369,35 @@ class FBLoader:
                 x1, y1, x2, y2))
         )
         vertex_colors.append((0, 1, 0, 0.2))  # sensitivity indicator
-        vertex_colors.append((1, 0, 1, 1))  # camera corner
-        vertex_colors.append((1, 0, 1, 1))  # camera corner
+        vertex_colors.append(config.current_pin_color)  # camera corner
+        vertex_colors.append(config.current_pin_color)  # camera corner
 
         cls.points2d.set_vertices_colors(points, vertex_colors)
         cls.points2d.create_batch()
 
+    @classmethod
+    def update_residuals(cls, context, headobj, keyframe):
+        scene = bpy.context.scene
+        rx = scene.render.resolution_x
+        ry = scene.render.resolution_y
+
+        x1, y1, x2, y2 = FBCalc.get_camera_border(context)
+
+        p2d = cls.img_points(keyframe)
+        p3d = cls.surface_points_only(headobj, keyframe)
+
+        wire = cls.residuals
+        wire.clear_vertices()
+
+        if len(p2d) != len(p3d):
+            print("p2d != p3d")
+            return
+
         # ----------
         # Projection
-        verts = cls.points3d.vertices
-        if len(verts) == 0:
+        if len(p3d) == 0:
+            print("p3d")
+            wire.create_batch()
             return
 
         fb = cls.get_builder()
@@ -387,35 +406,27 @@ class FBLoader:
         camobj = bpy.context.scene.camera
         m = camobj.matrix_world.inverted()
 
-        # vv = np.array(
-        #     [[0, 0, 0, 1.0],
-        #      [1, 0, 0, 1.0],
-        #      [0.5, 0, 0, 1.0],
-        #      [0, 1, 0, 1.0],
-        #      [0.5, 0.5, 0, 1.0],
-        #      [1, 1, 0, 1.0]]
-        # )
-
-        vv = np.ones((len(verts), 4), dtype=np.float32)
-        vv[:, :-1] = verts
+        vv = np.ones((len(p3d), 4), dtype=np.float32)
+        vv[:, :-1] = p3d
         # Calc projection
         vv = vv @ m.transposed() @ PROJECTION
         vv = (vv.T / vv[:,3]).T
 
         verts2 = []
-        for v in vv:
+        for i, v in enumerate(vv):
             x, y = FBCalc.frame_to_image_space(v[0], v[1], rx, ry)
             verts2.append(FBCalc.image_space_to_region(x, y,
                                                        x1, y1, x2, y2))
+            verts2.append(FBCalc.image_space_to_region(p2d[i][0], p2d[i][1],
+                                                       x1, y1, x2, y2))
 
-        verts2.append(FBCalc.image_space_to_region(-0.5, asp * 0.5, x1, y1, x2, y2))
-        verts2.append(FBCalc.image_space_to_region(0.5, -asp * 0.5, x1, y1, x2, y2))
+        colors2 = np.full((len(verts2), 4), config.residual_color)
 
-        # print("verts2_after", verts2)
-        colors2 = np.full((len(verts2), 4), (1.0, 1.0, 0.0, 1.0))
+        wire.vertices = verts2
+        # wire.arc_lengths = [0, 400]
+        wire.create_batch()
+        # print("UPDATE RESIDUALS", len(verts2))
 
-        cls.projected.set_vertices_colors(verts2, colors2)
-        cls.projected.create_batch()
 
     # --------------------
     # Update functions
@@ -423,7 +434,7 @@ class FBLoader:
     @classmethod
     def update_surface_points(
             cls, headobj, keyframe=-1,
-            allcolor=(0, 0, 1, 0.15), selcolor=(0, 1, 0, 1)):
+            allcolor=(0, 0, 1, 0.15), selcolor=config.surface_point_color):
         # Load 3D pins
         verts, colors = cls.surface_points(
             headobj, keyframe, allcolor, selcolor)
@@ -463,7 +474,6 @@ class FBLoader:
                 print("EDGES", len(mesh.edges))
                 print("EDGE_COLORS", len(cls.wireframer.edges_colors))
         cls.wireframer.create_batches()
-
 
     @classmethod
     def get_special_indices(cls):
@@ -548,6 +558,20 @@ class FBLoader:
         return verts, colors
 
     @classmethod
+    def surface_points_only(
+            cls, headobj, keyframe=-1):
+        """ Load 3D pin points """
+        verts = []
+
+        fb = cls.get_builder()
+
+        for i in range(fb.pins_count(keyframe)):
+            pin = fb.pin(keyframe, i)
+            p = FBCalc.pin_to_xyz(pin, headobj)
+            verts.append(p)
+        return verts
+
+    @classmethod
     def img_points(cls, keyframe):
         scene = bpy.context.scene
         w = scene.render.resolution_x
@@ -596,7 +620,7 @@ class FBLoader:
     def register_handlers(cls, args, context):
         cls.unregister_handlers()  # Experimental
 
-        cls.projected.register_handler(args)
+        cls.residuals.register_handler(args)
 
         cls.points3d.register_handler(args)
         cls.points2d.register_handler(args)
@@ -618,7 +642,7 @@ class FBLoader:
         cls.points2d.unregister_handler()
         cls.points3d.unregister_handler()
 
-        cls.projected.unregister_handler()
+        cls.residuals.unregister_handler()
 
     @classmethod
     def update_pins_count(cls, headnum, camnum):
