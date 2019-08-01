@@ -105,6 +105,7 @@ class config:
     fb_images_prop_name = (_prefix + '_images',)
     fb_dir_prop_name =  (_prefix + '_dir',)
     fb_camera_prop_name = (_prefix + '_camera',)
+    fb_mod_ver_prop_name = (_prefix + '_mod_ver',)
     # Save / Reconstruct parameters
     reconstruct_focal_param = ('focal',)
     reconstruct_sensor_width_param = ('sensor_width',)

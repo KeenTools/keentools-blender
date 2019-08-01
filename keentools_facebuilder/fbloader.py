@@ -143,6 +143,9 @@ class FBLoader:
     def set_keentools_version(cls, obj):
         attr_name = config.version_prop_name[0]
         cls.set_custom_attribute(obj, attr_name, config.addon_version)
+        attr_name2 = config.fb_mod_ver_prop_name[0]
+        ver = cls.get_builder_version()
+        cls.set_custom_attribute(obj, attr_name2, ver)
 
     # -----------------
     @classmethod
@@ -247,6 +250,10 @@ class FBLoader:
         return cls.builder.get_builder_type()
 
     @classmethod
+    def get_builder_version(cls):
+        return cls.builder.get_version()
+
+    @classmethod
     def force_undo_push(cls, msg='KeenTools operation'):
         cls.inc_operation()
         bpy.ops.ed.undo_push(message=msg)
@@ -289,8 +296,9 @@ class FBLoader:
         cls.fb_save(headnum, camnum)
         cls.wireframer.unregister_handler()
         headobj = settings.heads[headnum].headobj
+        # Mark object by ver.
+        cls.set_keentools_version(headobj)
         # Show geometry
-        # headobj.hide_viewport = False
         headobj.hide_set(False)
         settings.pinmode = False
 

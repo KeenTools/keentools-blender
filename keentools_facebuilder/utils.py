@@ -866,7 +866,7 @@ class FBEdgeShader3D(FBEdgeShaderBase):
         self.edges_vertices = self.vertices[edges.ravel()]
         # self.init_edge_indices(obj)
 
-    # Separated to 
+    # Separated to
     def init_edge_indices(self, obj):
         self.edges_indices = np.arange(len(self.edges_vertices) * 2).reshape(
             len(self.edges_vertices), 2).tolist()

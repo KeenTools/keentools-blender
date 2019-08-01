@@ -195,6 +195,7 @@ class FBCameraItem(PropertyGroup):
 
 
 class FBHeadItem(PropertyGroup):
+    mod_ver: IntProperty(name="Modifier Version", default=-1)
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
 

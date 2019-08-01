@@ -24,19 +24,46 @@ from . config import BuilderType
 
 
 class UniBuilder:
-    def __init__(self, builder_type=BuilderType.FaceBuilder):
+    def __init__(self, builder_type=BuilderType.FaceBuilder, ver=-1):
         self.builder_type = BuilderType.NoneBuilder
         self.builder = None
+        self.version = -1
 
         if builder_type == BuilderType.FaceBuilder:
-            self.builder = FaceBuilder()
-            self.builder_type = BuilderType.FaceBuilder
+            self.init_facebuilder(ver)
         elif builder_type == BuilderType.BodyBuilder:
-            self.builder = BodyBuilder()
-            self.builder_type = BuilderType.BodyBuilder
+            self.init_bodybuilder()
+        print("END UNIBUILDER")
+
+    def init_facebuilder(self, ver):
+        print("INIT FB")
+        if ver < 0:
+            latest_version = FaceBuilder.latest_face_version()
+            self.builder = FaceBuilder(latest_version)
+            self.version = latest_version
+        else:
+            self.builder = FaceBuilder(ver)
+            self.version = ver
+        self.builder_type = BuilderType.FaceBuilder
+        print("END INIT FB")
+
+
+    def init_bodybuilder(self):
+        self.builder = BodyBuilder()
+        self.builder_type = BuilderType.BodyBuilder
+        self.version = -1
 
     def get_builder(self):
         return self.builder
+
+    def get_version(self):
+        return self.version
+
+    def get_latest_version(self):
+        if self.builder_type == BuilderType.NoneBuilder:
+            return FaceBuilder.latest_face_version()
+        else:
+            return -1
 
     def get_builder_type(self):
         return self.builder_type
@@ -47,10 +74,7 @@ class UniBuilder:
             b_type = self.builder_type
 
         if b_type == BuilderType.FaceBuilder:
-            self.builder = FaceBuilder()
-            self.builder_type = BuilderType.FaceBuilder
+            self.init_facebuilder(-1)  # const!
         elif b_type == BuilderType.BodyBuilder:
-            self.builder = BodyBuilder()
-            self.builder_type = BuilderType.BodyBuilder
+            self.init_bodybuilder()
         return self.builder
-

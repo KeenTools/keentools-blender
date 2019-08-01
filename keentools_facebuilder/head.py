@@ -24,6 +24,7 @@ from .config import config, BuilderType, get_main_settings, ErrorType
 
 
 class MESH_OT_FBAddHead(bpy.types.Operator):
+    """ Add FaceBuilder Head into scene"""
     bl_idname = config.fb_add_head_operator_idname
     bl_label = "Face Builder Head"
     bl_options = {'REGISTER', 'UNDO'}

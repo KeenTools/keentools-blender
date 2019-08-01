@@ -282,6 +282,8 @@ class OBJECT_OT_FBActor(Operator):
                 data, config.reconstruct_focal_param)
             params['sensor_width'] = self.get_attr_variant_named(
                 data, config.reconstruct_sensor_width_param)
+            params['sensor_height'] = self.get_attr_variant_named(
+                data, config.reconstruct_sensor_width_param)
             params['frame_width'] = self.get_attr_variant_named(
                 data, config.reconstruct_frame_width_param)
             params['frame_height'] = self.get_attr_variant_named(
@@ -295,7 +297,7 @@ class OBJECT_OT_FBActor(Operator):
 
 
     def reconstruct_by_head(self, context):
-        """ Reconstruct Cameras and Scene sctructures by serial """
+        """ Reconstruct Cameras and Scene structures by serial """
         scene = context.scene
         rx = scene.render.resolution_x
         ry = scene.render.resolution_y
@@ -303,6 +305,7 @@ class OBJECT_OT_FBActor(Operator):
 
         # Some backup
         old_sensor_width = settings.sensor_width
+        old_sensor_height = settings.sensor_height
         old_focal = settings.focal
 
         obj = context.object
@@ -316,11 +319,19 @@ class OBJECT_OT_FBActor(Operator):
 
         # Object marked by our attribute, so can be reconstructed
 
+
+        error_message = "===============\n" \
+                        "Can't reconstruct\n" \
+                        "===============\n" \
+                        "Object parameters are invalid or missing:\n"
         print("START RECONSTRUCT")
         print("PARAMS")
         # Get all camera parameters
         params = self.get_camera_params(obj)
-        if not params:
+        if params is None:
+            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+                 msg_content=error_message + 'camera')
             return  # One or more parameters undefined
 
         print("SERIAL")
@@ -328,13 +339,19 @@ class OBJECT_OT_FBActor(Operator):
         serial_str = FBLoader.get_safe_custom_attribute(
                 obj, config.fb_serial_prop_name[0])
         if not serial_str:
+            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+                 msg_content=error_message + 'serial')
             return  # No serial string custom attribute
 
         print("DIRNAME")
         # Get Dir Name
         dir_name = FBLoader.get_safe_custom_attribute(
                 obj, config.fb_dir_prop_name[0])
-        if not dir_name:
+        if dir_name is None:
+            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+                 msg_content=error_message + 'dir')
             return  # No dir_name custom attribute
 
         print("IMAGES")
@@ -342,6 +359,9 @@ class OBJECT_OT_FBActor(Operator):
         images = FBLoader.get_safe_custom_attribute(
                 obj, config.fb_images_prop_name[0])
         if (not images) or not (type(images) is list):
+            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+                 msg_content=error_message + 'images')
             return  # Problem with images custom attribute
 
 
@@ -362,6 +382,7 @@ class OBJECT_OT_FBActor(Operator):
             fb = FBLoader.new_builder()
 
             settings.sensor_width = params['sensor_width']
+            settings.sensor_height = params['sensor_height']
             settings.focal = params['focal']
             scene.render.resolution_x = params['frame_width']
             scene.render.resolution_y = params['frame_height']
@@ -388,6 +409,7 @@ class OBJECT_OT_FBActor(Operator):
         except:
             print("WRONG PARAMETERS")
             settings.sensor_width = old_sensor_width
+            settings.sensor_height = old_sensor_height
             settings.focal = old_focal
             scene.render.resolution_x = rx
             scene.render.resolution_y = ry
