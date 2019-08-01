@@ -371,6 +371,7 @@ class FBLoader:
         cls.update_surface_points(headobj, kid)
         # Shader update
         cls.wireframer.init_geom_data(headobj)
+        cls.wireframer.init_edge_indices(headobj)
         cls.wireframer.create_batches()
 
     @classmethod
@@ -514,10 +515,8 @@ class FBLoader:
             if len(mesh.edges) * 2 == len(cls.wireframer.edges_colors):
                 print("COLORING")
                 special_indices = cls.get_special_indices()
-                cls.wireframer.init_special_areas2(
-                    obj.data, special_indices,
-                    (*comp_color, settings.wireframe_opacity)
-                )
+                cls.wireframer.init_special_areas(obj.data, special_indices, (
+                *comp_color, settings.wireframe_opacity))
             else:
                 print("COMPARE PROBLEM")
                 print("EDGES", len(mesh.edges))

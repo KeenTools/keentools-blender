@@ -617,7 +617,7 @@ class FBEdgeShaderBase:
         self.edges_colors = np.full(
             (len(self.edges_vertices), 4), col).tolist()
 
-    def init_special_areas2(self, mesh, pairs, color=(0.5, 0.0, 0.7, 0.2)):
+    def init_special_areas(self, mesh, pairs, color=(0.5, 0.0, 0.7, 0.2)):
         col = (color[0], color[1], color[2], color[3])
         for i, edge in enumerate(mesh.edges):
             vv = edge.vertices
@@ -859,11 +859,14 @@ class FBEdgeShader3D(FBEdgeShaderBase):
         self.vertices = verts
         self.indices = indices
 
-        # Data for wireframe drawing
         edges = np.empty((len(mesh.edges), 2), 'i')
         mesh.edges.foreach_get(
             "vertices", np.reshape(edges, len(mesh.edges) * 2))
 
-        self.edges_vertices = verts[edges.ravel()]
+        self.edges_vertices = self.vertices[edges.ravel()]
+        # self.init_edge_indices(obj)
+
+    # Separated to 
+    def init_edge_indices(self, obj):
         self.edges_indices = np.arange(len(self.edges_vertices) * 2).reshape(
             len(self.edges_vertices), 2).tolist()

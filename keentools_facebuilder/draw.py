@@ -27,6 +27,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         headobj = head.headobj
 
         FBLoader.wireframer.init_geom_data(headobj)
+        FBLoader.wireframer.init_edge_indices(headobj)
+
         FBLoader.wireframer.init_color_data(
             (*settings.wireframe_color, opacity * settings.wireframe_opacity))
         # Coloring special parts
@@ -34,8 +36,9 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             special_indices = FBLoader.get_special_indices()
             special_color = (*settings.wireframe_special_color,
                              opacity * settings.wireframe_opacity)
-            FBLoader.wireframer.init_special_areas2(
-                headobj.data, special_indices, special_color)
+            FBLoader.wireframer.init_special_areas(headobj.data,
+                                                   special_indices,
+                                                   special_color)
         FBLoader.wireframer.create_batches()
 
     def invoke(self, context, event):
@@ -263,6 +266,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                     FBLoader.update_surface_points(headobj, kid)
                     # Shader update
                     FBLoader.wireframer.init_geom_data(headobj)
+                    FBLoader.wireframer.init_edge_indices(headobj)
                     FBLoader.wireframer.create_batches()
 
                     # Indicators update
@@ -289,6 +293,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             FBLoader.update_surface_points(head.headobj, kid)
             # FBLoader.load_pins(self.camnum, scene)
             FBLoader.wireframer.init_geom_data(head.headobj)
+            FBLoader.wireframer.init_edge_indices(head.headobj)
             FBLoader.wireframer.create_batches()
 
             # === Debug only ===

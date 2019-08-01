@@ -292,6 +292,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         # Head Mesh update
         FBCalc.update_head_mesh(fb, headobj)
         FBLoader.wireframer.init_geom_data(headobj)
+        # FBLoader.wireframer.init_edge_indices(headobj)
         FBLoader.wireframer.create_batches()
 
         FBLoader.create_batch_2d(context)

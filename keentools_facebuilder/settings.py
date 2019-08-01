@@ -94,6 +94,7 @@ def update_mesh_parts(self, context):
     if settings.pinmode:
         # Update wireframe structures
         FBLoader.wireframer.init_geom_data(head.headobj)
+        FBLoader.wireframer.init_edge_indices(head.headobj)
         FBLoader.update_wireframe(head.headobj)
 
     mesh_name = old_mesh.name
