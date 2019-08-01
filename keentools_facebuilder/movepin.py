@@ -316,6 +316,9 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         pr = FBLoader.pr
         pr.enable()
         ret = self.modal2(context, event)
+        FBLoader.fps.tick()
+        FBLoader.fps.update_indicator()
+        print("fps:", FBLoader.fps.indicator)
         pr.disable()
         return ret
     # --- PROFILING ---

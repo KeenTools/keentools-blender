@@ -31,13 +31,51 @@ from . config import config, get_main_settings, BuilderType
 from pykeentools import UnlicensedException
 
 import cProfile
-import pstats
+import time
+
+
+class FPSMeter:
+    def __init__(self, buf_length=5):
+        self.start_time = time.time()
+        self.indicator = "None"
+        self.counter = 0
+        self.buffer = [self.start_time for _ in range(buf_length)]
+        self.head = 0
+        self.buf_length = len(self.buffer)
+
+    def prev_index(self, ind):
+        prev_ind = ind - 1
+        if prev_ind < 0:
+            prev_ind = self.buf_length
+        return prev_ind
+
+    def next_index(self, ind):
+        next_ind = ind + 1
+        if next_ind >= self.buf_length:
+            next_ind = 0
+        return next_ind
+
+    def update_indicator(self):
+        new_time = self.buffer[self.head]
+        old_time = self.buffer[self.next_index(self.head)]
+        delta = new_time - old_time
+        d = 0.0
+        if delta > 0.00001:
+            d = (self.buf_length - 1) / delta
+        self.indicator = "{0:.2f}".format(d)
+
+    def tick(self):
+        self.head = self.next_index(self.head)
+        self.buffer[self.head] = time.time()
+        self.counter += 1
 
 
 class FBLoader:
     # --- PROFILING ---
     pr = cProfile.Profile()
     pr.disable()
+
+    fps = FPSMeter()
     # --- PROFILING ---
 
     # Builder selection: FaceBuilder or BodyBuilder
@@ -399,17 +437,17 @@ class FBLoader:
         wire.edge_lengths = []
         wire.vertices_colors = []
 
+        # Pins count != Surf points count
         if len(p2d) != len(p3d):
-            print("p2d != p3d")
+            return
+
+        if len(p3d) == 0:
+            # Empty shader
+            wire.create_batch()
             return
 
         # ----------
         # Projection
-        if len(p3d) == 0:
-            print("p3d")
-            wire.create_batch()
-            return
-
         fb = cls.get_builder()
         PROJECTION = fb.projection_mat().T
 
