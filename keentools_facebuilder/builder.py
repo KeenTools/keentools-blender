@@ -20,38 +20,35 @@
 from pykeentools import FaceBuilder
 from pykeentools import BodyBuilder
 
-from . config import BuilderType
+from . config import BuilderType, config
 
 
 class UniBuilder:
-    def __init__(self, builder_type=BuilderType.FaceBuilder, ver=-1):
+    def __init__(self, builder_type=BuilderType.FaceBuilder,
+                 ver=config.unknown_mod_ver):  # const
         self.builder_type = BuilderType.NoneBuilder
         self.builder = None
-        self.version = -1
+        self.version = ver
 
         if builder_type == BuilderType.FaceBuilder:
             self.init_facebuilder(ver)
         elif builder_type == BuilderType.BodyBuilder:
             self.init_bodybuilder()
-        print("END UNIBUILDER")
 
-    def init_facebuilder(self, ver):
-        print("INIT FB")
-        if ver < 0:
-            latest_version = FaceBuilder.latest_face_version()
+    def init_facebuilder(self, ver=config.unknown_mod_ver):
+        latest_version = FaceBuilder.latest_face_version()
+        if ver == config.unknown_mod_ver or ver > latest_version:
             self.builder = FaceBuilder(latest_version)
             self.version = latest_version
         else:
             self.builder = FaceBuilder(ver)
             self.version = ver
         self.builder_type = BuilderType.FaceBuilder
-        print("END INIT FB")
 
-
-    def init_bodybuilder(self):
+    def init_bodybuilder(self, ver=config.unknown_mod_ver):
         self.builder = BodyBuilder()
         self.builder_type = BuilderType.BodyBuilder
-        self.version = -1
+        self.version = ver
 
     def get_builder(self):
         return self.builder
@@ -63,18 +60,28 @@ class UniBuilder:
         if self.builder_type == BuilderType.NoneBuilder:
             return FaceBuilder.latest_face_version()
         else:
-            return -1
+            return config.unknown_mod_ver
 
     def get_builder_type(self):
         return self.builder_type
 
-    def new_builder(self, builder_type=BuilderType.NoneBuilder):
+    def new_builder(self, builder_type=BuilderType.NoneBuilder,
+                    ver=config.unknown_mod_ver):
         b_type = builder_type
         if builder_type == BuilderType.NoneBuilder:
             b_type = self.builder_type
 
         if b_type == BuilderType.FaceBuilder:
-            self.init_facebuilder(-1)  # const!
+            self.init_facebuilder(ver)
         elif b_type == BuilderType.BodyBuilder:
-            self.init_bodybuilder()
+            self.init_bodybuilder(ver)
+        return self.builder
+
+    def sync_version(self, ver=config.unknown_mod_ver):
+        if self.version == ver and self.version != config.unknown_mod_ver:
+            return self.builder
+        if self.builder_type == BuilderType.FaceBuilder:
+            self.init_facebuilder(ver)
+        elif self.builder_type == BuilderType.BodyBuilder:
+            self.init_bodybuilder(ver)
         return self.builder

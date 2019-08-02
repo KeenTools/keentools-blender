@@ -18,14 +18,13 @@
 
 
 import bpy
-from enum import Enum
 
 
 _company = 'keentools'
 _prefix = _company + '_fb'  # for FaceBuilder
 
 
-class BuilderType(Enum):
+class BuilderType:
     """ Types for Builder selection """
     NoneBuilder = -1
     FaceBuilder = 0
@@ -100,6 +99,7 @@ class config:
     # if they have different names (from old scenes by ex. or if they will be
     # renamed in future).
     # Only first value in tuple is used for new custom property creation.
+    object_type_prop_name = (_company + '_type',)
     version_prop_name = (_company + '_version',)
     fb_serial_prop_name = (_prefix + '_serial',)
     fb_images_prop_name = (_prefix + '_images',)
@@ -118,6 +118,8 @@ class config:
     surf_pin_size_scale = 0.85
     default_POINT_SENSITIVITY = 16.0
     default_FB_COLLECTION_NAME = 'FaceBuilderCol'
+
+    unknown_mod_ver = -1
 
     # In Material
     image_node_layout_coord = (-300, 0)

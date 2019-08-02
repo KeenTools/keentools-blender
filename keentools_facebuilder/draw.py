@@ -59,6 +59,9 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                     settings.current_headnum,
                     settings.current_camnum
                 )
+        else:
+            FBLoader.builder.sync_version(head.mod_ver)
+            head.mod_ver = FBLoader.get_builder_version()
 
         # Settings structure is broken
         if not settings.check_heads_and_cams():

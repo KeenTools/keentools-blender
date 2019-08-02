@@ -146,6 +146,9 @@ class FBLoader:
         attr_name2 = config.fb_mod_ver_prop_name[0]
         ver = cls.get_builder_version()
         cls.set_custom_attribute(obj, attr_name2, ver)
+        attr_name3 = config.object_type_prop_name[0]
+        obj_type = cls.get_builder_type()
+        cls.set_custom_attribute(obj, attr_name3, obj_type)
 
     # -----------------
     @classmethod
@@ -183,7 +186,7 @@ class FBLoader:
             rx = scene.render.resolution_x
             ry = scene.render.resolution_y
 
-            fb = cls.get_builder()
+            fb = cls.new_builder(BuilderType.NoneBuilder, head.mod_ver)  # auto-select
             cls.load_only(headnum)
 
             max_index = -1
@@ -242,8 +245,9 @@ class FBLoader:
         return cls.builder.get_builder()
 
     @classmethod
-    def new_builder(cls, builder_type=BuilderType.NoneBuilder):
-        return cls.builder.new_builder(builder_type)
+    def new_builder(cls, builder_type=BuilderType.NoneBuilder,
+                    ver=config.unknown_mod_ver):
+        return cls.builder.new_builder(builder_type, ver)
 
     @classmethod
     def get_builder_type(cls):
@@ -463,10 +467,15 @@ class FBLoader:
         camobj = bpy.context.scene.camera
         m = camobj.matrix_world.inverted()
 
+        # Fill matrix in homogeneous coords
         vv = np.ones((len(p3d), 4), dtype=np.float32)
         vv[:, :-1] = p3d
+
+        # Object transform, inverse camera, projection apply -> numpy
+        transform = np.array(
+            headobj.matrix_world.transposed() @ m.transposed()) @ PROJECTION
         # Calc projection
-        vv = vv @ m.transposed() @ PROJECTION
+        vv = vv @ transform
         vv = (vv.T / vv[:,3]).T
 
         verts2 = []
@@ -796,12 +805,13 @@ class FBLoader:
     def universal_mesh_loader(cls, builder_type, mesh_name='keentools_mesh',
                               masks=(), uv_set='uv0'):
         stored_builder_type = FBLoader.get_builder_type()
-        builder = cls.new_builder(builder_type)
+        stored_builder_version = FBLoader.get_builder_version()
+        builder = cls.new_builder(builder_type, config.unknown_mod_ver)
 
         mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set)
 
         # Restore builder
-        cls.new_builder(stored_builder_type)
+        cls.new_builder(stored_builder_type, stored_builder_version)
         return mesh
 
     @classmethod

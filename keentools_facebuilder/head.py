@@ -30,6 +30,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
+        settings = get_main_settings()
         try:
             obj = self.new_head()
         except:
@@ -46,6 +47,8 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         # bpy.ops.object.shade_smooth()
         h = get_main_settings().heads.add()
         h.headobj = obj
+        h.mod_ver = FBLoader.get_builder_version()
+        settings.save_cam_settings(obj)
 
         try:
             a = context.area
