@@ -138,8 +138,8 @@ class OBJECT_OT_FBActor(Operator):
         ky = 1.0
         # This is needed because of Image and Render size difference
         FBLoader.set_camera_projection(
-            settings.focal,
-            settings.sensor_width,
+            head.focal,
+            head.sensor_width,
             kx * W, ky * H
         )
 
@@ -302,11 +302,6 @@ class OBJECT_OT_FBActor(Operator):
         ry = scene.render.resolution_y
         settings = get_main_settings()
 
-        # Some backup
-        old_sensor_width = settings.sensor_width
-        old_sensor_height = settings.sensor_height
-        old_focal = settings.focal
-
         obj = context.object
 
         if obj.type != 'MESH':
@@ -370,8 +365,9 @@ class OBJECT_OT_FBActor(Operator):
         # Get Image Names
         images = FBLoader.get_safe_custom_attribute(
                 obj, config.fb_images_prop_name[0])
-        if (images is None):
+        if type(images) is not list:
             images = []
+        print("IMAGES", images)
 
         if not (type(images) is list):
             images = []
@@ -396,9 +392,9 @@ class OBJECT_OT_FBActor(Operator):
             settings.current_camnum = 0
             print("CREATED MOD_VER", head.mod_ver)
 
-            settings.sensor_width = params['sensor_width']
-            settings.sensor_height = params['sensor_height']
-            settings.focal = params['focal']
+            head.sensor_width = params['sensor_width']
+            head.sensor_height = params['sensor_height']
+            head.focal = params['focal']
             scene.render.resolution_x = params['frame_width']
             scene.render.resolution_y = params['frame_height']
 
@@ -416,19 +412,26 @@ class OBJECT_OT_FBActor(Operator):
 
             # load background images
             for i, f in enumerate(images):
+                print("IM", i, f)
                 img = bpy.data.images.new(f, 0, 0)
                 img.source = 'FILE'
                 img.filepath = f
                 head.cameras[i].cam_image = img
 
-            FBLoader.update_camera_params()
+            print("UPDATE")
+            FBLoader.update_camera_params(head)
 
         except:
             print("WRONG PARAMETERS")
+            for i, c in enumerate(reversed(head.cameras)):
+                print("CAM", i)
+                if not c.camobj is None:
+                    # Delete camera object from scene
+                    bpy.data.objects.remove(c.camobj, do_unlink=True)
+                    print("REMOVED")
+                # Delete link from list
+                head.cameras.remove(i)
             settings.heads.remove(headnum)
-            settings.sensor_width = old_sensor_width
-            settings.sensor_height = old_sensor_height
-            settings.focal = old_focal
             scene.render.resolution_x = rx
             scene.render.resolution_y = ry
             print("SCENE PARAMETERS RESTORED")

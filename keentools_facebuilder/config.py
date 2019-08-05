@@ -27,9 +27,8 @@ _prefix = _company + '_fb'  # for FaceBuilder
 class BuilderType:
     """ Types for Builder selection """
     NoneBuilder = -1
-    FaceBuilder = 0
-    BodyBuilder = 1
-    BothBuilder = 2
+    FaceBuilder = 1
+    BodyBuilder = 2
 
 
 class config:

@@ -57,7 +57,8 @@ class UniBuilder:
         return self.version
 
     def get_latest_version(self):
-        if self.builder_type == BuilderType.NoneBuilder:
+        if self.builder_type in {BuilderType.NoneBuilder,
+                                 BuilderType.FaceBuilder}:
             return FaceBuilder.latest_face_version()
         else:
             return config.unknown_mod_ver

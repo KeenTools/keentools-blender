@@ -63,12 +63,13 @@ class OBJECT_OT_FBSelectCamera(Operator):
         settings = get_main_settings()
         headnum = self.headnum
         camnum = self.camnum
+        head = settings.heads[headnum]
 
         if not check_settings():
             return {'CANCELLED'}
 
         # bpy.ops.object.select_all(action='DESELECT')
-        cam = settings.heads[headnum].cameras[camnum].camobj
+        cam = head.cameras[camnum].camobj
         cam.select_set(state=True)
         bpy.context.view_layer.objects.active = cam
 
@@ -81,15 +82,15 @@ class OBJECT_OT_FBSelectCamera(Operator):
 
         # Add Background Image
         c = cam.data
-        c.lens = settings.focal
+        c.lens = head.focal
         c.show_background_images = True
         if len(c.background_images) == 0:
             b = c.background_images.new()
         else:
             b = c.background_images[0]
-        b.image = settings.heads[headnum].cameras[camnum].cam_image
+        b.image = head.cameras[camnum].cam_image
 
-        headobj = settings.heads[headnum].headobj
+        headobj = head.headobj
         bpy.context.view_layer.objects.active = headobj
 
         # Auto Call PinMode

@@ -163,8 +163,9 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         if event.type in {'ESC'}:
             FBLoader.out_pinmode(headnum, camnum)
             # --- PROFILING ---
-            # pr = FBLoader.pr
-            # pr.dump_stats('profile.pstat')
+            if FBLoader.profiling:
+                pr = FBLoader.pr
+                pr.dump_stats('profile.pstat')
             # --- PROFILING ---
             return {'FINISHED'}
 

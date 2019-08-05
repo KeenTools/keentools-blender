@@ -29,7 +29,7 @@ from . config import get_main_settings, config
 
 
 def force_stop_shaders():
-    FBEdgeShader.handler_list = []
+    FBEdgeShader3D.handler_list = []
     FBText.handler_list = []
     FBPoints2D.handler_list = []
     FBPoints3D.handler_list = []

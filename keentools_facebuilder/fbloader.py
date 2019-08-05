@@ -71,9 +71,11 @@ class FPSMeter:
 
 
 class FBLoader:
+    profiling = False
     # --- PROFILING ---
-    pr = cProfile.Profile()
-    pr.disable()
+    if profiling:
+        pr = cProfile.Profile()
+        pr.disable()
 
     fps = FPSMeter()
     # --- PROFILING ---
@@ -171,61 +173,63 @@ class FBLoader:
         cam_item.update_image_size()
 
     @classmethod
-    def update_camera_params(cls):
-        """ Update when some camera parameters changes
-            Warning! Result may be unstable if some object where deleted
-        """
+    def update_camera_params(cls, head):
+        """ Update when some camera parameters changes """
         settings = get_main_settings()
         scene = bpy.context.scene
 
         # Check scene consistency
         heads_deleted, cams_deleted = settings.fix_heads()
 
-        for headnum, head in enumerate(settings.heads):
+        headnum = -1
+        for i, h in enumerate(settings.heads):
+            if head == h:
+                headnum = i
 
-            rx = scene.render.resolution_x
-            ry = scene.render.resolution_y
+        if headnum < 0:
+            return
 
-            fb = cls.new_builder(BuilderType.NoneBuilder, head.mod_ver)  # auto-select
-            cls.load_only(headnum)
+        rx = scene.render.resolution_x
+        ry = scene.render.resolution_y
 
-            max_index = -1
-            max_pins = -1
-            for i, c in enumerate(head.cameras):
-                kid = c.keyframe_id
-                cls.set_camera_projection(
-                    settings.focal, settings.sensor_width, rx, ry)
-                # We are looking for keyframe that has maximum pins
-                if c.pins_count > 0:
-                    if max_pins < c.pins_count:
-                        max_index = kid
-                        max_pins = c.pins_count
-                c.camobj.data.lens = settings.focal
-                c.camobj.data.sensor_width = settings.sensor_width
-                c.camobj.data.sensor_height = settings.sensor_height
+        fb = cls.new_builder(BuilderType.NoneBuilder, head.mod_ver)  # auto-select
+        cls.load_only(headnum)
 
-            if cls.get_builder_type() == BuilderType.FaceBuilder:
-                fb.set_auto_rigidity(settings.check_auto_rigidity)
-                fb.set_rigidity(settings.rigidity)
+        max_index = -1
+        max_pins = -1
+        for i, c in enumerate(head.cameras):
+            kid = c.keyframe_id
+            cls.set_camera_projection(
+                head.focal, head.sensor_width, rx, ry)
+            # We are looking for keyframe that has maximum pins
+            if c.pins_count > 0:
+                if max_pins < c.pins_count:
+                    max_index = kid
+                    max_pins = c.pins_count
+            c.camobj.data.lens = head.focal
+            c.camobj.data.sensor_width = head.sensor_width
+            c.camobj.data.sensor_height = head.sensor_height
 
-            if max_index >= 0:
-                try:
-                    # Solver
-                    fb.solve_for_current_pins(max_index)
-                    print("SOLVED", max_index)
+        if cls.get_builder_type() == BuilderType.FaceBuilder:
+            fb.set_auto_rigidity(settings.check_auto_rigidity)
+            fb.set_rigidity(settings.rigidity)
 
-                except UnlicensedException:
-                    settings.force_out_pinmode = True
-                    settings.license_error = True
-                    # FBLoader.out_pinmode(context, headnum, camnum)
-                    cls.report({'INFO'}, "LICENSE EXCEPTION")
+        if max_index >= 0:
+            try:
+                # Solver
+                fb.solve_for_current_pins(max_index)
+                print("SOLVED", max_index)
 
-            # Head Mesh update
-            FBCalc.update_head_mesh(fb, head.headobj)
-            if settings.pinmode:
-                cls.fb_redraw(headnum, settings.current_camnum)
-            cls.update_cameras(headnum)
-            cls.save_only(headnum)
+            except UnlicensedException:
+                settings.force_out_pinmode = True
+                settings.license_error = True
+
+        # Head Mesh update
+        FBCalc.update_head_mesh(fb, head.headobj)
+        if settings.pinmode:
+            cls.fb_redraw(headnum, settings.current_camnum)
+        cls.update_cameras(headnum)
+        cls.save_only(headnum)
 
     @classmethod
     def update_pixel_size(cls, context):
@@ -362,7 +366,7 @@ class FBLoader:
         cam.set_model_mat(fb.model_mat(kid))
         # Save images list on headobj
         head.save_images_src()
-        settings.save_cam_settings(head.headobj)
+        head.save_cam_settings()
 
     @classmethod
     def fb_redraw(cls, headnum, camnum):
@@ -843,8 +847,7 @@ class FBLoader:
         # Set projection matrix
         rx = scene.render.resolution_x
         ry = scene.render.resolution_y
-        cls.set_camera_projection(
-            settings.focal, settings.sensor_width, rx, ry)
+        cls.set_camera_projection(head.focal, head.sensor_width, rx, ry)
 
         # Update all cameras model_mat
         for i, c in enumerate(head.cameras):
@@ -868,6 +871,7 @@ class FBLoader:
     def add_camera(cls, headnum, img=None):
         # scene = bpy.context.scene
         settings = get_main_settings()
+        head = settings.heads[headnum]
         fb = cls.get_builder()
 
         # create camera data
@@ -876,12 +880,12 @@ class FBLoader:
         cam_ob = bpy.data.objects.new("fbCamObj", cam_data)
 
         cam_ob.rotation_euler = [3.1415927410125732 * 0.5, 0, 0]
-        camnum = len(settings.heads[headnum].cameras)
+        camnum = len(head.cameras)
 
         cam_ob.location = [2 * camnum, -5 - headnum, 0.5]
 
         # place camera object to our list
-        camera = settings.heads[headnum].cameras.add()
+        camera = head.cameras.add()
         camera.camobj = cam_ob
 
         num = cls.get_next_keyframe()
@@ -895,9 +899,9 @@ class FBLoader:
 
         # Add Background Image
         cam_data.display_size = 0.75  # Camera Size
-        cam_data.lens = settings.focal  # From Interface
-        cam_data.sensor_width = settings.sensor_width
-        cam_data.sensor_height = settings.sensor_height
+        cam_data.lens = head.focal  # From Interface
+        cam_data.sensor_width = head.sensor_width
+        cam_data.sensor_height = head.sensor_height
         cam_data.show_background_images = True
 
         if len(cam_data.background_images) == 0:
