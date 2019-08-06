@@ -27,7 +27,8 @@ from bpy.props import (
 )
 from bpy.types import Operator
 
-from .config import config, ErrorType, BuilderType, get_main_settings
+from . utils import attr
+from . config import config, ErrorType, BuilderType, get_main_settings
 from . fbloader import FBLoader
 from . licmanager import FBLicManager
 
@@ -261,15 +262,9 @@ class OBJECT_OT_FBActor(Operator):
             headobj.data.materials.append(mat)
 
 
-    def get_attr_variant_named(self, data, attr_names):
-        for attr in attr_names:
-            if attr in data.keys():
-                return data[attr]
-        return None
-
     def get_camera_params(self, obj):
         # Init camera parameters
-        data = FBLoader.get_safe_custom_attribute(
+        data = attr.get_safe_custom_attribute(
             obj, config.fb_camera_prop_name[0])
         if not data:
             return None
@@ -277,15 +272,15 @@ class OBJECT_OT_FBActor(Operator):
         try:
             params = {}
             print("CAMERA_PARAMS", config.reconstruct_focal_param)
-            params['focal'] = self.get_attr_variant_named(
+            params['focal'] = attr.get_attr_variant_named(
                 data, config.reconstruct_focal_param)
-            params['sensor_width'] = self.get_attr_variant_named(
+            params['sensor_width'] = attr.get_attr_variant_named(
                 data, config.reconstruct_sensor_width_param)
-            params['sensor_height'] = self.get_attr_variant_named(
+            params['sensor_height'] = attr.get_attr_variant_named(
                 data, config.reconstruct_sensor_width_param)
-            params['frame_width'] = self.get_attr_variant_named(
+            params['frame_width'] = attr.get_attr_variant_named(
                 data, config.reconstruct_frame_width_param)
-            params['frame_height'] = self.get_attr_variant_named(
+            params['frame_height'] = attr.get_attr_variant_named(
                 data, config.reconstruct_frame_height_param)
             print("LOADED PARAMS", params)
             if None in params.values():
@@ -308,7 +303,7 @@ class OBJECT_OT_FBActor(Operator):
             return
 
         # Has object our main attribute?
-        if not FBLoader.has_custom_attribute(obj, config.version_prop_name[0]):
+        if not attr.has_custom_attribute(obj, config.version_prop_name[0]):
             return  # No, it hasn't, leave
 
         # Object marked by our attribute, so can be reconstructed
@@ -319,7 +314,7 @@ class OBJECT_OT_FBActor(Operator):
 
         print("START RECONSTRUCT")
 
-        obj_type = FBLoader.get_safe_custom_attribute(
+        obj_type = attr.get_safe_custom_attribute(
                 obj, config.object_type_prop_name[0])
         if (obj_type is None):
             obj_type = BuilderType.FaceBuilder
@@ -332,7 +327,7 @@ class OBJECT_OT_FBActor(Operator):
 
         print("MOD_VER")
         # Get Mod version
-        mod_ver = FBLoader.get_safe_custom_attribute(
+        mod_ver = attr.get_safe_custom_attribute(
                 obj, config.fb_mod_ver_prop_name[0])
         if (mod_ver is None):
             mod_ver = config.unknown_mod_ver
@@ -349,21 +344,21 @@ class OBJECT_OT_FBActor(Operator):
 
         print("SERIAL")
         # Get Serial string
-        serial_str = FBLoader.get_safe_custom_attribute(
+        serial_str = attr.get_safe_custom_attribute(
                 obj, config.fb_serial_prop_name[0])
         if serial_str is None:
             serial_str = ""
 
         print("DIRNAME")
         # Get Dir Name
-        dir_name = FBLoader.get_safe_custom_attribute(
+        dir_name = attr.get_safe_custom_attribute(
                 obj, config.fb_dir_prop_name[0])
         if dir_name is None:
             dir_name = ""
 
         print("IMAGES")
         # Get Image Names
-        images = FBLoader.get_safe_custom_attribute(
+        images = attr.get_safe_custom_attribute(
                 obj, config.fb_images_prop_name[0])
         if type(images) is not list:
             images = []

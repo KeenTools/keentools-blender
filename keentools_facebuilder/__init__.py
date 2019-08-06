@@ -114,7 +114,7 @@ from . main_operator import (OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
                              OBJECT_OT_FBDeleteCamera, OBJECT_OT_FBAddCamera,
                              OBJECT_OT_FBAddonSettings,
                              OBJECT_OT_FBBakeTexture, OBJECT_OT_FBShowTexture)
-from . draw import OBJECT_OT_FBDraw
+from . pinmode import OBJECT_OT_FBDraw
 from . movepin import OBJECT_OT_FBMovePin
 from . actor import OBJECT_OT_FBActor
 from . addon_prefs import FBAddonPreferences

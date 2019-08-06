@@ -19,7 +19,7 @@
 import bpy
 from . fbloader import FBLoader
 from . fbdebug import FBDebug
-from . utils import FBCalc
+from keentools_facebuilder.utils.other import FBCalc
 from . config import config, get_main_settings, BuilderType
 
 from pykeentools import UnlicensedException

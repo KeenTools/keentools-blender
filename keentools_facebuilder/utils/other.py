@@ -24,8 +24,7 @@ import numpy as np
 import math
 import blf
 import bgl
-from . const import FBConst
-from . config import get_main_settings, config
+from keentools_facebuilder.config import get_main_settings, config
 
 
 def force_stop_shaders():

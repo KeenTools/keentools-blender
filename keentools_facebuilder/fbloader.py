@@ -20,7 +20,7 @@
 import bpy
 import numpy as np
 
-from . utils import (
+from keentools_facebuilder.utils.other import (
     FBPoints2D, FBPoints3D, FBText, FBCalc, FBEdgeShader2D, FBEdgeShader3D,
     FBStopTimer
 )

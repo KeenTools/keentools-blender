@@ -3,9 +3,8 @@ from pykeentools import UnlicensedException
 
 from .config import config, get_main_settings, ErrorType, BuilderType
 from .fbdebug import FBDebug
-from .const import FBConst
 from .fbloader import FBLoader
-from .utils import (
+from keentools_facebuilder.utils.other import (
     FBCalc,
     FBStopTimer
 )
