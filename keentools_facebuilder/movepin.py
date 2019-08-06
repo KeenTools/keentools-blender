@@ -23,6 +23,23 @@ from . utils import FBCalc
 from . config import config, get_main_settings, BuilderType
 
 from pykeentools import UnlicensedException
+from functools import wraps
+
+
+# Decorator for profiling
+def profile_this(fn):
+    @wraps(fn)
+    def wrapped(arg1, arg2, arg3):
+        if FBLoader.profiling:
+            pr = FBLoader.pr
+            pr.enable()
+            ret = fn(arg1, arg2, arg3)
+            pr.disable()
+            return ret
+        else:
+            ret = fn(arg1, arg2, arg3)
+            return ret
+    return wrapped
 
 
 class OBJECT_OT_FBMovePin(bpy.types.Operator):
@@ -47,20 +64,8 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
     def get_camnum(self):
         return self.camnum
 
-    # --- PROFILING ---
+    @profile_this
     def invoke(self, context, event):
-        if FBLoader.profiling:
-            pr = FBLoader.pr
-            pr.enable()
-
-        ret = self.invoke2(context, event)
-
-        if FBLoader.profiling:
-            pr.disable()
-        return ret
-    # --- PROFILING ---
-
-    def invoke2(self, context, event):
         args = (self, context)
         scene = context.scene
         settings = get_main_settings()
@@ -315,25 +320,8 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             self.report({'INFO'}, "Finish MovePin")
             return {'FINISHED'}
 
-
-    # --- PROFILING ---
+    @profile_this
     def modal(self, context, event):
-        if FBLoader.profiling:
-            pr = FBLoader.pr
-            pr.enable()
-
-        ret = self.modal2(context, event)
-
-        if FBLoader.profiling:
-            FBLoader.fps.tick()
-            FBLoader.fps.update_indicator()
-            print("fps:", FBLoader.fps.indicator)
-            pr.disable()
-
-        return ret
-    # --- PROFILING ---
-
-    def modal2(self, context, event):
         # print('EVENT: {} VALUE: {}'.format(event.type, event.value))
 
         # Pin is set
