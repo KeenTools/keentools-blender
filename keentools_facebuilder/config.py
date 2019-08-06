@@ -27,9 +27,8 @@ _prefix = _company + '_fb'  # for FaceBuilder
 class BuilderType:
     """ Types for Builder selection """
     NoneBuilder = -1
-    FaceBuilder = 0
-    BodyBuilder = 1
-    BothBuilder = 2
+    FaceBuilder = 1
+    BodyBuilder = 2
 
 
 class config:
@@ -168,11 +167,11 @@ def get_main_settings():
 class ErrorType:
     """ Types for Builder selection """
     Unknown = -1
-    NoLicense = 0
-    SceneDamaged = 1
-    BackgroundsDiffer = 2
-    IllegalIndex = 3
-    CannotReconstruct = 4
-    CannotCreate = 5
-    CustomMessage = 6
+    CustomMessage = 0
+    NoLicense = 1
+    SceneDamaged = 2
+    BackgroundsDiffer = 3
+    IllegalIndex = 4
+    CannotReconstruct = 5
+    CannotCreate = 6
     AboutFrameSize = 7

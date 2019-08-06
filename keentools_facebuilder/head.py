@@ -48,7 +48,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         h = get_main_settings().heads.add()
         h.headobj = obj
         h.mod_ver = FBLoader.get_builder_version()
-        settings.save_cam_settings(obj)
+        h.save_cam_settings()
 
         try:
             a = context.area

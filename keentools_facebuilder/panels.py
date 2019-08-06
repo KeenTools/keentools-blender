@@ -56,11 +56,6 @@ class OBJECT_PT_FBPanel(Panel):
     bl_category = config.fb_tab_category
     bl_context = "objectmode"
 
-    # Panel appear only when our Mesh or Camera selected
-    @classmethod
-    def poll(cls, context):
-        return proper_object_test()
-
     def draw_pins_panel(self, headnum, camnum):
         layout = self.layout
         box = layout.box()
@@ -83,6 +78,29 @@ class OBJECT_PT_FBPanel(Panel):
         obj = context.object
         settings = get_main_settings()
         headnum = settings.head_by_obj(obj)
+
+        proper = proper_object_test()
+
+        if not proper:
+            # Show User Hint when no target object selected
+            layout.label(text='Select FaceBuilder object:')
+            layout.label(text='Head or Camera.')
+            layout.label(text='You can create new via:')
+            layout.label(text='Add > Mesh > Face Builder')
+
+            row = layout.row()
+            row.scale_y = 2.0
+            row.operator(
+                config.fb_add_head_operator_idname,
+                text='Add New Head', icon='USER')
+
+            row = layout.row()
+            row.scale_y = 2.0
+            row.operator(
+                config.fb_main_addon_settings_idname,
+                text='Open Addon Settings', icon='PREFERENCES')
+            # and out
+            return
 
         # No registered models in scene
         if headnum < 0:
@@ -113,11 +131,11 @@ class OBJECT_PT_FBPanel(Panel):
         if len(head.cameras) == 0:
             layout.label(text="1. Setup two main parameters:")
 
-        layout.prop(settings, 'focal')
+        layout.prop(head, 'focal')
         box = layout.box()
-        box.prop(settings, 'sensor_width')
+        box.prop(head, 'sensor_width')
         row = box.row()
-        row.prop(settings, 'sensor_height')
+        row.prop(head, 'sensor_height')
         row.active = False
 
         wrong_size_counter = 0
@@ -516,7 +534,7 @@ class OBJECT_PT_FBSettingsPanel(Panel):
     bl_idname = config.fb_settings_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_label = "Face Builder Settings"
+    bl_label = "Settings"
     bl_category = config.fb_tab_category
     bl_context = "objectmode"
 

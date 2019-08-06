@@ -138,8 +138,8 @@ class OBJECT_OT_FBActor(Operator):
         ky = 1.0
         # This is needed because of Image and Render size difference
         FBLoader.set_camera_projection(
-            settings.focal,
-            settings.sensor_width,
+            head.focal,
+            head.sensor_width,
             kx * W, ky * H
         )
 
@@ -302,11 +302,6 @@ class OBJECT_OT_FBActor(Operator):
         ry = scene.render.resolution_y
         settings = get_main_settings()
 
-        # Some backup
-        old_sensor_width = settings.sensor_width
-        old_sensor_height = settings.sensor_height
-        old_focal = settings.focal
-
         obj = context.object
 
         if obj.type != 'MESH':
@@ -370,10 +365,11 @@ class OBJECT_OT_FBActor(Operator):
         # Get Image Names
         images = FBLoader.get_safe_custom_attribute(
                 obj, config.fb_images_prop_name[0])
-        if (images is None):
+        if type(images) is not list:
             images = []
+        print("IMAGES", images)
 
-        if not (type(images) is list):
+        if type(images) is not list:
             images = []
 
         print("HEAD CREATION")
@@ -396,9 +392,9 @@ class OBJECT_OT_FBActor(Operator):
             settings.current_camnum = 0
             print("CREATED MOD_VER", head.mod_ver)
 
-            settings.sensor_width = params['sensor_width']
-            settings.sensor_height = params['sensor_height']
-            settings.focal = params['focal']
+            head.sensor_width = params['sensor_width']
+            head.sensor_height = params['sensor_height']
+            head.focal = params['focal']
             scene.render.resolution_x = params['frame_width']
             scene.render.resolution_y = params['frame_height']
 
@@ -416,19 +412,26 @@ class OBJECT_OT_FBActor(Operator):
 
             # load background images
             for i, f in enumerate(images):
+                print("IM", i, f)
                 img = bpy.data.images.new(f, 0, 0)
                 img.source = 'FILE'
                 img.filepath = f
                 head.cameras[i].cam_image = img
 
-            FBLoader.update_camera_params()
+            print("UPDATE")
+            FBLoader.update_camera_params(head)
 
         except:
             print("WRONG PARAMETERS")
+            for i, c in enumerate(reversed(head.cameras)):
+                print("CAM", i)
+                if not c.camobj is None:
+                    # Delete camera object from scene
+                    bpy.data.objects.remove(c.camobj, do_unlink=True)
+                    print("REMOVED")
+                # Delete link from list
+                head.cameras.remove(i)
             settings.heads.remove(headnum)
-            settings.sensor_width = old_sensor_width
-            settings.sensor_height = old_sensor_height
-            settings.focal = old_focal
             scene.render.resolution_x = rx
             scene.render.resolution_y = ry
             print("SCENE PARAMETERS RESTORED")
@@ -436,15 +439,101 @@ class OBJECT_OT_FBActor(Operator):
             warn('INVOKE_DEFAULT', msg=ErrorType.CannotReconstruct)
             return
 
+    def unhide_head(self):
+        settings = get_main_settings()
+        settings.heads[self.headnum].headobj.hide_set(False)
+        settings.pinmode = False
+
+    def use_this_camera_frame_size(self):
+        # Current camera Background --> Render size
+        scene = bpy.context.scene
+        settings = get_main_settings()
+        headnum = settings.tmp_headnum
+        camnum = settings.tmp_camnum
+        camera = settings.heads[headnum].cameras[camnum]
+        w, h = camera.get_image_size()
+        settings.frame_width = w
+        settings.frame_height = h
+        if w > 0 and h > 0:
+            scene.render.resolution_x = w
+            scene.render.resolution_y = h
+
+    def use_camera_frame_size(self):
+        # Current camera Background --> Render size
+        scene = bpy.context.scene
+        settings = get_main_settings()
+        headnum = settings.current_headnum
+        camnum = settings.current_camnum
+        camera = settings.heads[headnum].cameras[camnum]
+        w, h = camera.get_image_size()
+        settings.frame_width = w
+        settings.frame_height = h
+        if w > 0 and h > 0:
+            scene.render.resolution_x = w
+            scene.render.resolution_y = h
+
+    def use_render_frame_size(self):
+        scene = bpy.context.scene
+        settings = get_main_settings()
+        settings.frame_width = scene.render.resolution_x
+        settings.frame_height = scene.render.resolution_y
+
+    def auto_detect_frame_size(self):
+        scene = bpy.context.scene
+        settings = get_main_settings()
+        headnum = settings.current_headnum
+        sizes = []
+        for c in settings.heads[headnum].cameras:
+            w, h = c.get_image_size()
+            sizes.append((w, h))
+        cnt = Counter(sizes)
+        mc = cnt.most_common(2)
+        el = mc[0][0]
+        # If most are undefined images
+        if el == (-1, -1):
+            if len(mc) > 1:
+                el = mc[1][0]
+        if el[0] > 0:
+            scene.render.resolution_x = el[0]
+            settings.frame_width = el[0]
+        if el[1] > 0:
+            scene.render.resolution_y = el[1]
+            settings.frame_height = el[1]
+        print('COUNTER', mc)
+
+    def use_render_frame_size_scaled(self):
+        # Allow converts scenes pinned on default cameras
+        scene = bpy.context.scene
+        settings = get_main_settings()
+        headnum = settings.current_headnum
+        head = settings.heads[headnum]
+        rw = scene.render.resolution_x
+        rh = scene.render.resolution_y
+        fw = settings.frame_width
+        fh = settings.frame_height
+        kx = rw / fw
+        dy = 0.5 * (rh - fh * kx)
+
+        FBLoader.load_only(headnum)
+        fb = FBLoader.get_builder()
+        for i, c in enumerate(head.cameras):
+            if c.pins_count > 0:
+                kid = FBLoader.keyframe_by_camnum(headnum, i)
+                for n in range(fb.pins_count(kid)):
+                    p = fb.pin(kid, n)
+                    fb.move_pin(
+                        kid, n, (kx * p.img_pos[0], kx * p.img_pos[1] + dy))
+                fb.solve_for_current_pins(kid)
+        FBLoader.save_only(headnum)
+
+        settings.frame_width = rw
+        settings.frame_height = rh
 
     def draw(self, context):
         """ No need to show panel so empty draw"""
         pass
 
     def execute(self, context):
-        scene = context.scene
-        settings = get_main_settings()
-
         if self.action == "reconstruct_by_head":
             self.reconstruct_by_head(context)
 
@@ -473,90 +562,29 @@ class OBJECT_OT_FBActor(Operator):
             bpy.ops.wm.url_open(url="https://keentools.io/manual-installation")
 
         elif self.action == "unhide_head":
-            # settings.heads[self.headnum].headobj.hide_viewport = False
-            settings.heads[self.headnum].headobj.hide_set(False)
-            settings.pinmode = False
+            self.unhide_head()
 
         elif self.action == "about_fix_frame_warning":
             warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.AboutFrameSize)
 
         elif self.action == "auto_detect_frame_size":
-            headnum = settings.current_headnum
-            sizes = []
-            for c in settings.heads[headnum].cameras:
-                # w = c.get_image_width()
-                # h = c.get_image_height()
-                w, h = c.get_image_size()
-                sizes.append((w, h))
-            cnt = Counter(sizes)
-            mc = cnt.most_common(2)
-            el = mc[0][0]
-            # If most are undefined images
-            if el == (-1, -1):
-                if len(mc) > 1:
-                    el = mc[1][0]
-            if el[0] > 0:
-                scene.render.resolution_x = el[0]
-                settings.frame_width = el[0]
-            if el[1] > 0:
-                scene.render.resolution_y = el[1]
-                settings.frame_height = el[1]
-            print('COUNTER', mc)
+            self.auto_detect_frame_size()
 
         elif self.action == 'use_render_frame_size':
-            settings.frame_width = scene.render.resolution_x
-            settings.frame_height = scene.render.resolution_y
+            self.use_render_frame_size()
 
         elif self.action == 'use_camera_frame_size':
-            # Current camera Background --> Render size
-            headnum = settings.current_headnum
-            camnum = settings.current_camnum
-            camera = settings.heads[headnum].cameras[camnum]
-            w, h = camera.get_image_size()
-            settings.frame_width = w
-            settings.frame_height = h
-            if w > 0 and h > 0:
-                scene.render.resolution_x = w
-                scene.render.resolution_y = h
+            # Current camera Background --> Render size (by Fix button)
+            self.use_camera_frame_size()
 
         elif self.action == 'use_this_camera_frame_size':
-            # Current camera Background --> Render size
-            headnum = settings.tmp_headnum
-            camnum = settings.tmp_camnum
-            camera = settings.heads[headnum].cameras[camnum]
-            w, h = camera.get_image_size()
-            settings.frame_width = w
-            settings.frame_height = h
-            if w > 0 and h > 0:
-                scene.render.resolution_x = w
-                scene.render.resolution_y = h
+            # Current camera Background --> Render size (by mini-button)
+            self.use_this_camera_frame_size()
 
         elif self.action == 'use_render_frame_size_scaled':
             # Allow converts scenes pinned on default cameras
-            headnum = settings.current_headnum
-            head = settings.heads[headnum]
-            rw = scene.render.resolution_x
-            rh = scene.render.resolution_y
-            fw = settings.frame_width
-            fh = settings.frame_height
-            kx = rw / fw
-            dy = 0.5 * (rh - fh * kx)
-
-            FBLoader.load_only(headnum)
-            fb = FBLoader.get_builder()
-            for i, c in enumerate(head.cameras):
-                if c.pins_count > 0:
-                    kid = FBLoader.keyframe_by_camnum(headnum, i)
-                    for n in range(fb.pins_count(kid)):
-                        p = fb.pin(kid, n)
-                        fb.move_pin(
-                            kid, n, (kx * p.img_pos[0], kx * p.img_pos[1] + dy))
-                    fb.solve_for_current_pins(kid)
-            FBLoader.save_only(headnum)
-
-            settings.frame_width = rw
-            settings.frame_height = rh
+            self.use_render_frame_size_scaled()  # disabled in interface
 
         self.report({'INFO'}, "Actor: {}".format(self.action))
 

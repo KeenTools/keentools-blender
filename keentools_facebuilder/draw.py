@@ -163,8 +163,9 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         if event.type in {'ESC'}:
             FBLoader.out_pinmode(headnum, camnum)
             # --- PROFILING ---
-            # pr = FBLoader.pr
-            # pr.dump_stats('profile.pstat')
+            if FBLoader.profiling:
+                pr = FBLoader.pr
+                pr.dump_stats('facebuilder.pstat')
             # --- PROFILING ---
             return {'FINISHED'}
 
@@ -174,8 +175,6 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             else:
                 settings.overall_opacity = 1.0
             print("OVERALL_OPACITY", settings.overall_opacity)
-            # FBLoader.wireframer.overall_opacity = settings.overall_opacity
-            # print("wireframer_OPACITY", FBLoader.wireframer.overall_opacity)
             self.init_wireframer_colors(settings.overall_opacity)
             return {'RUNNING_MODAL'}
 
