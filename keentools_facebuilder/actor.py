@@ -27,10 +27,9 @@ from bpy.props import (
 )
 from bpy.types import Operator
 
-from .config import config, ErrorType
+from .config import config, ErrorType, BuilderType, get_main_settings
 from . fbloader import FBLoader
 from . licmanager import FBLicManager
-from . config import get_main_settings
 
 
 class OBJECT_OT_FBActor(Operator):
@@ -282,6 +281,8 @@ class OBJECT_OT_FBActor(Operator):
                 data, config.reconstruct_focal_param)
             params['sensor_width'] = self.get_attr_variant_named(
                 data, config.reconstruct_sensor_width_param)
+            params['sensor_height'] = self.get_attr_variant_named(
+                data, config.reconstruct_sensor_width_param)
             params['frame_width'] = self.get_attr_variant_named(
                 data, config.reconstruct_frame_width_param)
             params['frame_height'] = self.get_attr_variant_named(
@@ -295,7 +296,7 @@ class OBJECT_OT_FBActor(Operator):
 
 
     def reconstruct_by_head(self, context):
-        """ Reconstruct Cameras and Scene sctructures by serial """
+        """ Reconstruct Cameras and Scene structures by serial """
         scene = context.scene
         rx = scene.render.resolution_x
         ry = scene.render.resolution_y
@@ -303,6 +304,7 @@ class OBJECT_OT_FBActor(Operator):
 
         # Some backup
         old_sensor_width = settings.sensor_width
+        old_sensor_height = settings.sensor_height
         old_focal = settings.focal
 
         obj = context.object
@@ -315,35 +317,64 @@ class OBJECT_OT_FBActor(Operator):
             return  # No, it hasn't, leave
 
         # Object marked by our attribute, so can be reconstructed
+        error_message = "===============\n" \
+                        "Can't reconstruct\n" \
+                        "===============\n" \
+                        "Object parameters are invalid or missing:\n"
 
         print("START RECONSTRUCT")
+
+        obj_type = FBLoader.get_safe_custom_attribute(
+                obj, config.object_type_prop_name[0])
+        if (obj_type is None):
+            obj_type = BuilderType.FaceBuilder
+        print("OBJ_TYPE", obj_type)
+        if obj_type != BuilderType.FaceBuilder:
+            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+                 msg_content=error_message + 'Object Type')
+            return  # Problem with object type custom attribute
+
+        print("MOD_VER")
+        # Get Mod version
+        mod_ver = FBLoader.get_safe_custom_attribute(
+                obj, config.fb_mod_ver_prop_name[0])
+        if (mod_ver is None):
+            mod_ver = config.unknown_mod_ver
+        print("MOD_VER", mod_ver)
+
         print("PARAMS")
         # Get all camera parameters
         params = self.get_camera_params(obj)
-        if not params:
+        if params is None:
+            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+                 msg_content=error_message + 'camera')
             return  # One or more parameters undefined
 
         print("SERIAL")
         # Get Serial string
         serial_str = FBLoader.get_safe_custom_attribute(
                 obj, config.fb_serial_prop_name[0])
-        if not serial_str:
-            return  # No serial string custom attribute
+        if serial_str is None:
+            serial_str = ""
 
         print("DIRNAME")
         # Get Dir Name
         dir_name = FBLoader.get_safe_custom_attribute(
                 obj, config.fb_dir_prop_name[0])
-        if not dir_name:
-            return  # No dir_name custom attribute
+        if dir_name is None:
+            dir_name = ""
 
         print("IMAGES")
         # Get Image Names
         images = FBLoader.get_safe_custom_attribute(
                 obj, config.fb_images_prop_name[0])
-        if (not images) or not (type(images) is list):
-            return  # Problem with images custom attribute
+        if (images is None):
+            images = []
 
+        if not (type(images) is list):
+            images = []
 
         print("HEAD CREATION")
         # -------------------
@@ -359,9 +390,14 @@ class OBJECT_OT_FBActor(Operator):
         try:
             # Copy serial string from object custom property
             head.set_serial_str(serial_str)
-            fb = FBLoader.new_builder()
+            fb = FBLoader.new_builder(obj_type, mod_ver)
+            head.mod_ver = FBLoader.get_builder_version()
+            settings.current_head = headnum
+            settings.current_camnum = 0
+            print("CREATED MOD_VER", head.mod_ver)
 
             settings.sensor_width = params['sensor_width']
+            settings.sensor_height = params['sensor_height']
             settings.focal = params['focal']
             scene.render.resolution_x = params['frame_width']
             scene.render.resolution_y = params['frame_height']
@@ -385,9 +421,13 @@ class OBJECT_OT_FBActor(Operator):
                 img.filepath = f
                 head.cameras[i].cam_image = img
 
+            FBLoader.update_camera_params()
+
         except:
             print("WRONG PARAMETERS")
+            settings.heads.remove(headnum)
             settings.sensor_width = old_sensor_width
+            settings.sensor_height = old_sensor_height
             settings.focal = old_focal
             scene.render.resolution_x = rx
             scene.render.resolution_y = ry

@@ -18,14 +18,13 @@
 
 
 import bpy
-from enum import Enum
 
 
 _company = 'keentools'
 _prefix = _company + '_fb'  # for FaceBuilder
 
 
-class BuilderType(Enum):
+class BuilderType:
     """ Types for Builder selection """
     NoneBuilder = -1
     FaceBuilder = 0
@@ -100,11 +99,13 @@ class config:
     # if they have different names (from old scenes by ex. or if they will be
     # renamed in future).
     # Only first value in tuple is used for new custom property creation.
+    object_type_prop_name = (_company + '_type',)
     version_prop_name = (_company + '_version',)
     fb_serial_prop_name = (_prefix + '_serial',)
     fb_images_prop_name = (_prefix + '_images',)
     fb_dir_prop_name =  (_prefix + '_dir',)
     fb_camera_prop_name = (_prefix + '_camera',)
+    fb_mod_ver_prop_name = (_prefix + '_mod_ver',)
     # Save / Reconstruct parameters
     reconstruct_focal_param = ('focal',)
     reconstruct_sensor_width_param = ('sensor_width',)
@@ -117,6 +118,8 @@ class config:
     surf_pin_size_scale = 0.85
     default_POINT_SENSITIVITY = 16.0
     default_FB_COLLECTION_NAME = 'FaceBuilderCol'
+
+    unknown_mod_ver = -1
 
     # In Material
     image_node_layout_coord = (-300, 0)
@@ -150,6 +153,11 @@ class config:
 
     default_scheme1 = (0.05, 0.05, 0.1)
     default_scheme2 = (0.0, 0.0, 1.0)
+
+    pin_color = (1.0, 0.0, 0.0, 1.0)
+    current_pin_color = (1.0, 0.0, 1.0, 1.0)
+    surface_point_color = (0.0, 1.0, 1.0, 0.5)
+    residual_color = (0.0, 1.0, 1.0, 0.5)
 
 
 def get_main_settings():

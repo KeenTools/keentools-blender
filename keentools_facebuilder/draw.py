@@ -27,6 +27,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         headobj = head.headobj
 
         FBLoader.wireframer.init_geom_data(headobj)
+        FBLoader.wireframer.init_edge_indices(headobj)
+
         FBLoader.wireframer.init_color_data(
             (*settings.wireframe_color, opacity * settings.wireframe_opacity))
         # Coloring special parts
@@ -34,8 +36,9 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             special_indices = FBLoader.get_special_indices()
             special_color = (*settings.wireframe_special_color,
                              opacity * settings.wireframe_opacity)
-            FBLoader.wireframer.init_special_areas2(
-                headobj.data, special_indices, special_color)
+            FBLoader.wireframer.init_special_areas(headobj.data,
+                                                   special_indices,
+                                                   special_color)
         FBLoader.wireframer.create_batches()
 
     def invoke(self, context, event):
@@ -56,6 +59,9 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                     settings.current_headnum,
                     settings.current_camnum
                 )
+        else:
+            FBLoader.builder.sync_version(head.mod_ver)
+            head.mod_ver = FBLoader.get_builder_version()
 
         # Settings structure is broken
         if not settings.check_heads_and_cams():
@@ -156,6 +162,10 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         # Quit by ESC pressed
         if event.type in {'ESC'}:
             FBLoader.out_pinmode(headnum, camnum)
+            # --- PROFILING ---
+            # pr = FBLoader.pr
+            # pr.dump_stats('profile.pstat')
+            # --- PROFILING ---
             return {'FINISHED'}
 
         if event.value == "PRESS" and event.type in {'TAB'}:
@@ -259,6 +269,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                     FBLoader.update_surface_points(headobj, kid)
                     # Shader update
                     FBLoader.wireframer.init_geom_data(headobj)
+                    FBLoader.wireframer.init_edge_indices(headobj)
                     FBLoader.wireframer.create_batches()
 
                     # Indicators update
@@ -285,6 +296,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             FBLoader.update_surface_points(head.headobj, kid)
             # FBLoader.load_pins(self.camnum, scene)
             FBLoader.wireframer.init_geom_data(head.headobj)
+            FBLoader.wireframer.init_edge_indices(head.headobj)
             FBLoader.wireframer.create_batches()
 
             # === Debug only ===
@@ -301,6 +313,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             return {'FINISHED'}
 
         FBLoader.create_batch_2d(context)
+        FBLoader.update_residuals(context, head.headobj, kid)
 
         if FBLoader.current_pin:
             return {"RUNNING_MODAL"}

@@ -47,6 +47,15 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
     def get_camnum(self):
         return self.camnum
 
+    # --- PROFILING ---
+    def invoke1(self, context, event):
+        pr = FBLoader.pr
+        pr.enable()
+        ret = self.invoke2(context, event)
+        pr.disable()
+        return ret
+    # --- PROFILING ---
+
     def invoke(self, context, event):
         args = (self, context)
         scene = context.scene
@@ -283,6 +292,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         # Head Mesh update
         FBCalc.update_head_mesh(fb, headobj)
         FBLoader.wireframer.init_geom_data(headobj)
+        # FBLoader.wireframer.init_edge_indices(headobj)
         FBLoader.wireframer.create_batches()
 
         FBLoader.create_batch_2d(context)
@@ -300,6 +310,19 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         else:
             self.report({'INFO'}, "Finish MovePin")
             return {'FINISHED'}
+
+
+    # --- PROFILING ---
+    def modal1(self, context, event):
+        pr = FBLoader.pr
+        pr.enable()
+        ret = self.modal2(context, event)
+        FBLoader.fps.tick()
+        FBLoader.fps.update_indicator()
+        print("fps:", FBLoader.fps.indicator)
+        pr.disable()
+        return ret
+    # --- PROFILING ---
 
     def modal(self, context, event):
         # print('EVENT: {} VALUE: {}'.format(event.type, event.value))
