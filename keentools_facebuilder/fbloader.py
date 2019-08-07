@@ -23,9 +23,10 @@ import numpy as np
 from keentools_facebuilder.utils import attrs
 from . utils import coords
 from . utils.other import (
-    FBPoints2D, FBPoints3D, FBText, FBEdgeShader2D, FBEdgeShader3D,
-    FBStopTimer
+    FBText, FBStopTimer
 )
+from keentools_facebuilder.utils.edges import FBEdgeShader2D, FBEdgeShader3D
+from keentools_facebuilder.utils.points import FBPoints2D, FBPoints3D
 from . builder import UniBuilder
 from . fbdebug import FBDebug
 from . const import FBConst
