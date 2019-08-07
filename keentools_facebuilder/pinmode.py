@@ -1,3 +1,5 @@
+import logging
+
 import bpy
 from pykeentools import UnlicensedException
 
@@ -8,7 +10,7 @@ from . fbloader import FBLoader
 from . utils.other import FBStopTimer
 
 
-class OBJECT_OT_FBDraw(bpy.types.Operator):
+class OBJECT_OT_FBPinMode(bpy.types.Operator):
     """ On Screen Face Builder Draw Operator """
     bl_idname = config.fb_draw_operator_idname
     bl_label = "FaceBuilder Pinmode"
@@ -39,6 +41,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         FBLoader.wireframer.create_batches()
 
     def invoke(self, context, event):
+        logger = logging.getLogger(__name__)
         args = (self, context)
         settings = get_main_settings()
         head = settings.heads[self.headnum]
@@ -51,11 +54,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                     settings.current_headnum,
                     settings.current_camnum
                 )
-                print(
-                    'DrawInvoke FORCE FINISH:',
-                    settings.current_headnum,
-                    settings.current_camnum
-                )
+                logger.debug("PINMODE FORCE FINISH: H{} C{}".format(
+                    settings.current_headnum, settings.current_camnum))
         else:
             FBLoader.builder.sync_version(head.mod_ver)
             head.mod_ver = FBLoader.get_builder_version()
@@ -64,6 +64,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         if not settings.check_heads_and_cams():
             # Fix and Out
             heads_deleted, cams_deleted = settings.fix_heads()
+            if heads_deleted > 0 or cams_deleted >0:
+                logger.warning("HEADS AND CAMERAS FIXED")
             if heads_deleted == 0:
                 warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
@@ -73,11 +75,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         settings.current_headnum = self.headnum
         settings.current_camnum = self.camnum
 
-        print(
-            'DrawInvoke START:',
-            settings.current_headnum,
-            settings.current_camnum
-        )
+        logger.debug("PINMODE START H{} C{}".format(
+            settings.current_headnum, settings.current_camnum))
         # === Debug only ===
         FBDebug.add_event_to_queue(
             'PIN_MODE_START', (self.headnum, self.camnum),
@@ -107,11 +106,12 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         # Can start much more times when not out from pinmode
         if not settings.pinmode:
             FBStopTimer.start()
-            print("STOPPER START")
+            logger.debug("STOPPER START")
         settings.pinmode = True
         return {"RUNNING_MODAL"}
 
     def modal(self, context, event):
+        logger = logging.getLogger(__name__)
         scene = context.scene
         settings = get_main_settings()
         # settings.pinmode = True
@@ -130,8 +130,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             return {'FINISHED'}
 
         head = settings.heads[headnum]
-        if not head.headobj.hide_get():  # head.headobj.hide_viewport
-            # head.headobj.hide_viewport = True
+        if not head.headobj.hide_get():
             head.headobj.hide_set(True)
 
         # Pixel size in relative coords
@@ -171,7 +170,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                 settings.overall_opacity = 0.0
             else:
                 settings.overall_opacity = 1.0
-            print("OVERALL_OPACITY", settings.overall_opacity)
+            logger.debug("OVERALL_OPACITY BY TAB {}".format(
+                settings.overall_opacity))
             self.init_wireframer_colors(settings.overall_opacity)
             return {'RUNNING_MODAL'}
 
@@ -206,10 +206,8 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                         headnum=headnum,
                         camnum=camnum,
                         pinx=p[0], piny=p[1])
-                    # return {'INTERFACE'}
                     return {'PASS_THROUGH'}
-                # return {'FINISHED'}
-                # return {'RUNNING_MODAL'}
+
                 return {'PASS_THROUGH'}
 
         if event.value == "PRESS":
@@ -247,7 +245,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                         settings.force_out_pinmode = True
                         settings.license_error = True
                         FBLoader.out_pinmode(headnum, camnum)
-                        self.report({'INFO'}, "PIN MODE LICENSE EXCEPTION")
+                        logger.error("PIN MODE LICENSE EXCEPTION")
                         return {'FINISHED'}
 
                     camobj = head.cameras[camnum].camobj
@@ -280,11 +278,9 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                 return {"RUNNING_MODAL"}
 
         if head.need_update:
-            print("UNDO CALL DETECTED")
+            logger.debug("UNDO CALL DETECTED")
             # Undo was called so Model redraw is needed
             head.need_update = False
-            # Hide geometry
-            # head.headobj.hide_viewport = True
 
             # Reload pins
             FBLoader.load_all(headnum, camnum)
@@ -315,4 +311,3 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
             return {"RUNNING_MODAL"}
         else:
             return {"PASS_THROUGH"}
-        # return {'INTERFACE'}

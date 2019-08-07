@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
+import logging
 
 import bpy
 import numpy as np
@@ -145,6 +145,8 @@ class FBLoader:
     @classmethod
     def update_camera_params(cls, head):
         """ Update when some camera parameters changes """
+        logger = logging.getLogger(__name__)
+
         settings = get_main_settings()
         scene = bpy.context.scene
 
@@ -188,7 +190,7 @@ class FBLoader:
             try:
                 # Solver
                 fb.solve_for_current_pins(max_index)
-                print("SOLVED", max_index)
+                logger.debug("SOLVED {}".format(max_index))
 
             except UnlicensedException:
                 settings.force_out_pinmode = True
@@ -269,6 +271,7 @@ class FBLoader:
 
     @classmethod
     def out_pinmode(cls, headnum, camnum):
+        logger = logging.getLogger(__name__)
         settings = get_main_settings()
         cls.unregister_handlers()
         cls.fb_save(headnum, camnum)
@@ -288,7 +291,8 @@ class FBLoader:
         FBDebug.clear_event_queue()
         # === Debug use only ===
         FBStopTimer.stop()
-        print("STOPPER STOP")
+        logger.debug("STOPPER STOP")
+        logger.debug("OUT PINMODE")
 
     @staticmethod
     def keyframe_by_camnum(headnum, camnum):
@@ -494,6 +498,7 @@ class FBLoader:
 
     @classmethod
     def update_wireframe(cls, obj):
+        logger = logging.getLogger(__name__)
         settings = get_main_settings()
         main_color = settings.wireframe_color
         comp_color = settings.wireframe_special_color
@@ -504,14 +509,12 @@ class FBLoader:
             mesh = obj.data
             # Check to prevent shader problem
             if len(mesh.edges) * 2 == len(cls.wireframer.edges_colors):
-                print("COLORING")
+                logger.info("COLORING")
                 special_indices = cls.get_special_indices()
                 cls.wireframer.init_special_areas(obj.data, special_indices, (
                 *comp_color, settings.wireframe_opacity))
             else:
-                print("COMPARE PROBLEM")
-                print("EDGES", len(mesh.edges))
-                print("EDGE_COLORS", len(cls.wireframer.edges_colors))
+                logging.error("LISTS HAVE DIFFERENT SIZES")
         cls.wireframer.create_batches()
 
     @classmethod
@@ -685,17 +688,16 @@ class FBLoader:
 
     @classmethod
     def update_pins_count(cls, headnum, camnum):
+        logger = logging.getLogger(__name__)
         settings = get_main_settings()
         head = settings.heads[headnum]
         cam = head.cameras[camnum]
         fb = cls.get_builder()
         kid = cls.keyframe_by_camnum(headnum, camnum)
         pins_count = fb.pins_count(kid)
-        print("HEADNUM", headnum)
-        print("CAMNUM", camnum)
-        print("KID", kid)
         cam.pins_count = pins_count
-        print("UPDATE_PINS_COUNT", pins_count)
+        logger.debug("PINS_COUNT H:{} C:{} k:{} count:{}".format(
+            headnum, camnum, kid, pins_count))
 
     @classmethod
     def get_next_keyframe(cls):
@@ -790,15 +792,17 @@ class FBLoader:
 
     @classmethod
     def load_only(cls, headnum):
+        logger = logging.getLogger(__name__)
         settings = get_main_settings()
         head = settings.heads[headnum]
         # Load serialized data
         fb = cls.get_builder()
         if not fb.deserialize(head.get_serial_str()):
-            print('DESERIALIZE ERROR: ', head.get_serial_str())
+            logger.error('DESERIALIZE ERROR: {}'.format(head.get_serial_str()))
 
     @classmethod
     def load_all(cls, headnum, camnum, center=False):
+        logger = logging.getLogger(__name__)
         scene = bpy.context.scene
         settings = get_main_settings()
         head = settings.heads[headnum]
@@ -810,7 +814,7 @@ class FBLoader:
         # Load serialized data
         fb = cls.get_builder()
         if not fb.deserialize(head.get_serial_str()):
-            print('DESERIALIZE ERROR: ', head.get_serial_str())
+            logger.error('DESERIALIZE ERROR: {}'.format(head.get_serial_str()))
 
         # Check Scene consistency
 
@@ -835,7 +839,7 @@ class FBLoader:
         # Load pins from model
         cls.spins = cls.img_points(kid)
         cls.current_pin = None
-        print("LOAD MODEL END")
+        logger.debug("LOAD MODEL END")
 
     @classmethod
     def add_camera(cls, headnum, img=None):

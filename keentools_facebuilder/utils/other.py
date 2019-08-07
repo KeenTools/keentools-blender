@@ -20,12 +20,13 @@
 import bpy
 import blf
 
-from . edges import FBEdgeShader3D
+from . edges import FBEdgeShader2D, FBEdgeShader3D
 from . points import FBPoints2D, FBPoints3D
 from .. config import get_main_settings
 
 
 def force_stop_shaders():
+    FBEdgeShader2D.handler_list = []
     FBEdgeShader3D.handler_list = []
     FBText.handler_list = []
     FBPoints2D.handler_list = []

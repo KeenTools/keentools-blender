@@ -35,9 +35,27 @@ import os
 import sys
 import tempfile
 import shutil
+import logging
+
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(name)-22s %(lineno)-5d %(levelname)-8s %(message)s',
+                    datefmt='%H:%M:%S',
+                    filename='c:/Sure/facebuilder.log',
+                    filemode='w')
+console = logging.StreamHandler()
+console.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+console.setFormatter(formatter)
+# add the handler to the root logger
+logging.getLogger('').addHandler(console)
+logger = logging.getLogger(__name__)
+
+logger.info('--- Log started ---')
 
 
 def init_pykeentools_copy():
+    logger = logging.getLogger(__name__)
     win_file_name = "pykeentools.cp37-win_amd64.pyd"
     dir_name = 'keentools_fb'
 
@@ -58,25 +76,25 @@ def init_pykeentools_copy():
             temp_path = os.path.join(tmp_dir, win_file_name)
             shutil.copy2(src_path, temp_path)
             pykeentools_dir = tmp_dir
-            print("DEFAULT COPY CREATED")
-            print("TMP_DIR", tmp_dir)
+            logger.debug("DEFAULT COPY CREATED")
+            logger.debug(tmp_dir)
         except:
-            print("CAN'T CREATE DEFAULT COPY")
+            logger.warning("CAN'T CREATE DEFAULT COPY")
             try:
                 # Create temporary folder
                 tmp_dir = tempfile.mkdtemp(prefix=dir_name + '_')  # new dir
                 temp_path = os.path.join(tmp_dir, win_file_name)
                 shutil.copy2(src_path, temp_path)
                 pykeentools_dir = tmp_dir
-                print("TEMPORARY COPY CREATED")
-                print("TMP_DIR", tmp_dir)
+                logger.debug("TEMPORARY COPY CREATED")
+                logger.debug("TMP_DIR: {}".format(tmp_dir))
             except:
-                print("CAN'T CREATE TEMPORARY COPY")
+                logger.warning("CAN'T CREATE TEMPORARY COPY")
 
-    print("BASE_DIR", base_dir)
-    print("DATA_DIR", data_dir)
-    print("TEMP_DIR", temp_dir)
-    print("PYKEENTOOLS_DIR", pykeentools_dir)
+    logger.debug("BASE_DIR: {}".format(base_dir))
+    logger.debug("DATA_DIR: {}".format(data_dir))
+    logger.debug("TEMP_DIR: {}".format(temp_dir))
+    logger.debug("PYKEENTOOLS_DIR: {}".format(pykeentools_dir))
 
     os.environ["KEENTOOLS_DATA_PATH"] = data_dir  # "../data"
     # print("OS_ENV", os.environ)
@@ -86,12 +104,9 @@ def init_pykeentools_copy():
 
     from importlib.util import find_spec  # valid for python >= 3.4
     pykeentools_spec = find_spec('pykeentools')
-    print("PYKEENTOOLS_SPEC", pykeentools_spec)
     pykeentools_found = pykeentools_spec is not None
     if not pykeentools_found:
-        # TODO
-        # print a detailed message for user
-        print('failed to init pykeentools')
+        logger.error('Failed to init pykeentools')
 
 
 init_pykeentools_copy()
@@ -114,7 +129,7 @@ from . main_operator import (OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
                              OBJECT_OT_FBDeleteCamera, OBJECT_OT_FBAddCamera,
                              OBJECT_OT_FBAddonSettings,
                              OBJECT_OT_FBBakeTexture, OBJECT_OT_FBShowTexture)
-from . pinmode import OBJECT_OT_FBDraw
+from . pinmode import OBJECT_OT_FBPinMode
 from . movepin import OBJECT_OT_FBMovePin
 from . actor import OBJECT_OT_FBActor
 from . addon_prefs import FBAddonPreferences
@@ -149,7 +164,7 @@ classes = (
     FBHeadItem,
     FBSceneSettings,
     OBJECT_PT_FBSettingsPanel,
-    OBJECT_OT_FBDraw,
+    OBJECT_OT_FBPinMode,
     OBJECT_OT_FBMovePin,
     OBJECT_OT_FBActor,
     FBAddonPreferences,

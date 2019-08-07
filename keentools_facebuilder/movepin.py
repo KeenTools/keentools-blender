@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+import logging
 
 import bpy
 
@@ -67,6 +68,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
 
     @profile_this
     def invoke(self, context, event):
+        logger = logging.getLogger(__name__)
         args = (self, context)
         scene = context.scene
         settings = get_main_settings()
@@ -135,16 +137,17 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
                 FBLoader.current_pin = None
                 FBLoader.current_pin_num = -1
                 # User miss Head  object
-                self.report({'INFO'}, "Miss model")
+                logger.debug("MISS MODEL")
                 return {"FINISHED"}
 
         FBLoader.create_batch_2d(context)
 
         context.window_manager.modal_handler_add(self)
-        self.report({'INFO'}, "Start pin moving")
+        logger.debug("START PIN MOVING")
         return {"RUNNING_MODAL"}
 
     def on_left_mouse_release(self, context, event):
+        logger = logging.getLogger(__name__)
         scene = context.scene
         settings = get_main_settings()
         headnum = self.get_headnum()
@@ -160,7 +163,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             coords.get_raw_camera_2d_data(context))
         # === Debug only ===
 
-        print('Left Up')
+        logger.debug('LEFT MOUSE RELEASE START')
 
         x, y = coords.get_image_space_coord(
             context, coords.get_mouse_coords(event, context))
@@ -186,7 +189,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             fb.set_model_mat(kid, cam.get_tmp_model_mat())
 
             if not fb.deserialize(head.get_serial_str()):
-                print('DESERIALIZE ERROR: ', head.get_serial_str())
+                logger.('DESERIALIZE ERROR: ', head.get_serial_str())
 
             coords.update_head_mesh(fb, head.headobj)
             # Update all cameras position
@@ -199,7 +202,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             head.need_update = True
             FBLoader.force_undo_push('Pin Move')
             head.need_update = False
-            print("PUSH 1")
+            logger.debug("PUSH 1")
 
             # Restore last position
             head.set_serial_str(serial_str)
@@ -207,7 +210,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             fb.set_model_mat(kid, cam.get_model_mat())
 
             if not fb.deserialize(head.get_serial_str()):
-                print('DESERIALIZE ERROR: ', head.get_serial_str())
+                logger.error("DESERIALIZE ERROR: {}", head.get_serial_str())
         else:
             # There was only one click
             # Save current state
@@ -224,16 +227,17 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         head.need_update = True
         FBLoader.force_undo_push('Pin Result')
         head.need_update = False
-        print("PUSH 2")
+        logger.debug("PUSH 2")
         # ---------
 
         # Load 3D pins
         FBLoader.update_surface_points(headobj, kid)
 
-        self.report({'INFO'}, "Release LM")
+        logger.debug("LEFT MOUSE RELEASE END")
         return {'FINISHED'}
 
     def on_mouse_move(self, context, event):
+        logger = logging.getLogger(__name__)
         scene = context.scene
         settings = get_main_settings()
         headnum = self.get_headnum()
@@ -274,8 +278,8 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         except UnlicensedException:
             settings.force_out_pinmode = True
             settings.license_error = True
-            FBLoader.out_pinmode(context, headnum, camnum)
-            self.report({'INFO'}, "MOVE PIN LICENSE EXCEPTION")
+            FBLoader.out_pinmode(headnum, camnum)
+            logger.error("MOVE PIN LICENSE EXCEPTION")
             return {'FINISHED'}
 
         #--------------
@@ -315,16 +319,15 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         return self.on_default_modal()
 
     def on_default_modal(self):
+        logger = logging.getLogger(__name__)
         if FBLoader.current_pin:
             return {"RUNNING_MODAL"}
         else:
-            self.report({'INFO'}, "Finish MovePin")
+            logger.debug("MOVE PIN FINISH")
             return {'FINISHED'}
 
     @profile_this
     def modal(self, context, event):
-        # print('EVENT: {} VALUE: {}'.format(event.type, event.value))
-
         # Pin is set
         if event.value == "RELEASE":
             if event.type == "LEFTMOUSE":
