@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-from keentools_facebuilder.config  import config
+from .. config  import config
 
 
 # Functions for Custom Attributes perform

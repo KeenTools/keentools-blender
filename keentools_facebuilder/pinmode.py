@@ -1,13 +1,11 @@
 import bpy
 from pykeentools import UnlicensedException
 
-from .config import config, get_main_settings, ErrorType, BuilderType
-from .fbdebug import FBDebug
-from .fbloader import FBLoader
-from keentools_facebuilder.utils.other import (
-    FBCalc,
-    FBStopTimer
-)
+from . utils import coords
+from . config import config, get_main_settings, ErrorType, BuilderType
+from . fbdebug import FBDebug
+from . fbloader import FBLoader
+from . utils.other import FBStopTimer
 
 
 class OBJECT_OT_FBDraw(bpy.types.Operator):
@@ -83,7 +81,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
         # === Debug only ===
         FBDebug.add_event_to_queue(
             'PIN_MODE_START', (self.headnum, self.camnum),
-            FBCalc.get_raw_camera_2d_data(context))
+            coords.get_raw_camera_2d_data(context))
         # === Debug only ===
 
         FBLoader.load_all(self.headnum, self.camnum, False)
@@ -183,22 +181,22 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                 # === Debug only ===
                 FBDebug.add_event_to_queue(
                     'DRAW_OPERATOR_PRESS_LEFTMOUSE',
-                    FBCalc.get_mouse_coords(event, context),
-                    FBCalc.get_raw_camera_2d_data(context))
+                    coords.get_mouse_coords(event, context),
+                    coords.get_raw_camera_2d_data(context))
                 # === Debug only ===
 
-                p = FBCalc.get_mouse_coords(event, context)
+                p = coords.get_mouse_coords(event, context)
 
-                if not FBCalc.is_in_area(context, p[0], p[1]):
+                if not coords.is_in_area(context, p[0], p[1]):
                     # FBLoader.out_pinmode(context, self.headnum, self.camnum)
                     return {'PASS_THROUGH'}
 
-                if FBCalc.is_safe_region(context, p[0], p[1]):
+                if coords.is_safe_region(context, p[0], p[1]):
                     # === Debug only ===
                     FBDebug.add_event_to_queue(
                         'CALL_MOVE_PIN_OPERATOR',
-                        FBCalc.get_mouse_coords(event, context),
-                        FBCalc.get_raw_camera_2d_data(context))
+                        coords.get_mouse_coords(event, context),
+                        coords.get_raw_camera_2d_data(context))
                     # === Debug only ===
 
                     # Registered Operator call
@@ -220,15 +218,15 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                 # === Debug only ===
                 FBDebug.add_event_to_queue(
                     'IN_DRAW_PRESS_RIGHTMOUSE',
-                    FBCalc.get_mouse_coords(event, context),
-                    FBCalc.get_raw_camera_2d_data(context))
+                    coords.get_mouse_coords(event, context),
+                    coords.get_raw_camera_2d_data(context))
                 # === Debug only ===
 
-                x, y = FBCalc.get_image_space_coord(
+                x, y = coords.get_image_space_coord(
                     context,
-                    FBCalc.get_mouse_coords(event, context)
+                    coords.get_mouse_coords(event, context)
                 )
-                nearest, dist2 = FBCalc.nearest_point(x, y, FBLoader.spins)
+                nearest, dist2 = coords.nearest_point(x, y, FBLoader.spins)
                 if nearest >= 0 and dist2 < FBLoader.tolerance_dist2():
                     # Nearest pin found
                     fb = FBLoader.get_builder()
@@ -259,7 +257,7 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
                     FBLoader.place_cameraobj(kid, camobj, headobj)
 
                     # Head Mesh update
-                    FBCalc.update_head_mesh(fb, headobj)
+                    coords.update_head_mesh(fb, headobj)
                     # Update all cameras position
                     FBLoader.update_cameras(headnum)
                     # Save result
@@ -299,9 +297,9 @@ class OBJECT_OT_FBDraw(bpy.types.Operator):
 
             # === Debug only ===
             FBDebug.add_event_to_queue(
-                'UNDO_CALLED', (FBCalc.get_mouse_coords(event, context)))
+                'UNDO_CALLED', (coords.get_mouse_coords(event, context)))
             FBDebug.add_event_to_queue(
-                'FORCE_SNAPSHOT', (FBCalc.get_mouse_coords(event, context)))
+                'FORCE_SNAPSHOT', (coords.get_mouse_coords(event, context)))
             FBDebug.make_snapshot()
             # === Debug only ===
 

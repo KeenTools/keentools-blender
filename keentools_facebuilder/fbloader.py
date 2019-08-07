@@ -20,8 +20,10 @@
 import bpy
 import numpy as np
 
-from keentools_facebuilder.utils.other import (
-    FBPoints2D, FBPoints3D, FBText, FBCalc, FBEdgeShader2D, FBEdgeShader3D,
+from keentools_facebuilder.utils import attrs
+from . utils import coords
+from . utils.other import (
+    FBPoints2D, FBPoints3D, FBText, FBEdgeShader2D, FBEdgeShader3D,
     FBStopTimer
 )
 from . builder import UniBuilder
@@ -107,50 +109,17 @@ class FBLoader:
     PIXEL_SIZE = 0.1  # Auto Calculated
 
     # Functions for Custom Attributes perform
-    @classmethod
-    def has_custom_attribute(cls, obj, attr_name):
-        return attr_name in obj.keys()
-
-    @classmethod
-    def get_custom_attribute(cls, obj, attr_name):
-        return obj[attr_name]
-
-    @classmethod
-    def get_safe_custom_attribute(cls, obj, attr_name):
-        if cls.has_custom_attribute(obj, attr_name):
-            return obj[attr_name]
-        else:
-            return None
-
-    @classmethod
-    def get_custom_attribute_variants(cls, obj, attr_names):
-        for attr in attr_names:
-            res = cls.get_safe_custom_attribute(obj, attr)
-            if res:
-                return res
-        return None
-
-    @classmethod
-    def set_custom_attribute(cls, obj, attr_name, val):
-        obj[attr_name] = val
-
-    @classmethod
-    def has_keentools_attributes(cls, obj):
-        attr_name = config.version_prop_name[0]
-        if cls.has_custom_attribute(obj, attr_name):
-            return True
-        return False
 
     @classmethod
     def set_keentools_version(cls, obj):
         attr_name = config.version_prop_name[0]
-        cls.set_custom_attribute(obj, attr_name, config.addon_version)
+        attrs.set_custom_attribute(obj, attr_name, config.addon_version)
         attr_name2 = config.fb_mod_ver_prop_name[0]
         ver = cls.get_builder_version()
-        cls.set_custom_attribute(obj, attr_name2, ver)
+        attrs.set_custom_attribute(obj, attr_name2, ver)
         attr_name3 = config.object_type_prop_name[0]
         obj_type = cls.get_builder_type()
-        cls.set_custom_attribute(obj, attr_name3, obj_type)
+        attrs.set_custom_attribute(obj, attr_name3, obj_type)
 
     # -----------------
     @classmethod
@@ -225,7 +194,7 @@ class FBLoader:
                 settings.license_error = True
 
         # Head Mesh update
-        FBCalc.update_head_mesh(fb, head.headobj)
+        coords.update_head_mesh(fb, head.headobj)
         if settings.pinmode:
             cls.fb_redraw(headnum, settings.current_camnum)
         cls.update_cameras(headnum)
@@ -233,7 +202,7 @@ class FBLoader:
 
     @classmethod
     def update_pixel_size(cls, context):
-        ps = FBCalc.get_pixel_relative_size(context)
+        ps = coords.get_pixel_relative_size(context)
         cls.PIXEL_SIZE = ps
 
     @classmethod
@@ -381,7 +350,7 @@ class FBLoader:
         # Camera update
         cls.place_cameraobj(kid, camobj, headobj)
         # Head Mesh update
-        FBCalc.update_head_mesh(fb, headobj)
+        coords.update_head_mesh(fb, headobj)
         # Load pins from model
         cls.spins = cls.img_points(kid)
         cls.update_surface_points(headobj, kid)
@@ -404,10 +373,10 @@ class FBLoader:
         ry = scene.render.resolution_y
         asp = ry / rx
 
-        x1, y1, x2, y2 = FBCalc.get_camera_border(context)
+        x1, y1, x2, y2 = coords.get_camera_border(context)
 
         for i, p in enumerate(points):
-            x, y = FBCalc.image_space_to_region(p[0], p[1], x1, y1, x2, y2)
+            x, y = coords.image_space_to_region(p[0], p[1], x1, y1, x2, y2)
             points[i] = (x, y)
 
         vertex_colors = [config.pin_color for _ in range(len(points))]
@@ -417,17 +386,17 @@ class FBLoader:
 
         # Sensitivity indicator
         points.append(
-            (FBCalc.image_space_to_region(
+            (coords.image_space_to_region(
                 -0.5 - cls.PIXEL_SIZE * cls.POINT_SENSITIVITY, -asp * 0.5,
                 x1, y1, x2, y2))
         )
         # Camera corners
         points.append(
-            (FBCalc.image_space_to_region(
+            (coords.image_space_to_region(
                 -0.5, -asp * 0.5, x1, y1, x2, y2))
         )
         points.append(
-            (FBCalc.image_space_to_region(
+            (coords.image_space_to_region(
                 0.5, asp * 0.5,
                 x1, y1, x2, y2))
         )
@@ -444,7 +413,7 @@ class FBLoader:
         rx = scene.render.resolution_x
         ry = scene.render.resolution_y
 
-        x1, y1, x2, y2 = FBCalc.get_camera_border(context)
+        x1, y1, x2, y2 = coords.get_camera_border(context)
 
         p2d = cls.img_points(keyframe)
         p3d = cls.surface_points_only(headobj, keyframe)
@@ -484,11 +453,11 @@ class FBLoader:
 
         verts2 = []
         for i, v in enumerate(vv):
-            x, y = FBCalc.frame_to_image_space(v[0], v[1], rx, ry)
-            verts2.append(FBCalc.image_space_to_region(x, y,
+            x, y = coords.frame_to_image_space(v[0], v[1], rx, ry)
+            verts2.append(coords.image_space_to_region(x, y,
                                                        x1, y1, x2, y2))
             wire.edge_lengths.append(0)
-            verts2.append(FBCalc.image_space_to_region(p2d[i][0], p2d[i][1],
+            verts2.append(coords.image_space_to_region(p2d[i][0], p2d[i][1],
                                                        x1, y1, x2, y2))
             # length = np.linalg.norm((v[0]-p2d[i][0], v[1]-p2d[i][1]))
             length = 22.0
@@ -618,7 +587,7 @@ class FBLoader:
         for k in fb.keyframes():
             for i in range(fb.pins_count(k)):
                 pin = fb.pin(k, i)
-                p = FBCalc.pin_to_xyz(pin, headobj)
+                p = coords.pin_to_xyz(pin, headobj)
                 verts.append(p)
                 if k == keyframe:
                     colors.append(selcolor)
@@ -636,7 +605,7 @@ class FBLoader:
 
         for i in range(fb.pins_count(keyframe)):
             pin = fb.pin(keyframe, i)
-            p = FBCalc.pin_to_xyz(pin, headobj)
+            p = coords.pin_to_xyz(pin, headobj)
             verts.append(p)
         return verts
 
@@ -654,13 +623,13 @@ class FBLoader:
         for i in range(pins_count):
             pin = fb.pin(keyframe, i)
             x, y = pin.img_pos
-            verts.append((FBCalc.frame_to_image_space(x, y, w, h)))
+            verts.append((coords.frame_to_image_space(x, y, w, h)))
         return verts
 
     @classmethod
     def place_cameraobj(cls, keyframe, camobj, headobj):
         fb = cls.get_builder()
-        mat = FBCalc.calc_model_mat(
+        mat = coords.calc_model_mat(
             fb.model_mat(keyframe),
             headobj.matrix_world
         )
@@ -680,7 +649,7 @@ class FBLoader:
         if CAMERA_W < CAMERA_H:
             SENSOR_WIDTH = sw * CAMERA_W / CAMERA_H
 
-        PROJECTION = FBCalc.projection_matrix(
+        PROJECTION = coords.projection_matrix(
             CAMERA_W, CAMERA_H, FOCAL_LENGTH, SENSOR_WIDTH,
             near_clip, far_clip)
         fb.set_projection_mat(PROJECTION)

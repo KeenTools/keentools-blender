@@ -17,9 +17,10 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
+
+from . utils import coords
 from . fbloader import FBLoader
 from . fbdebug import FBDebug
-from keentools_facebuilder.utils.other import FBCalc
 from . config import config, get_main_settings, BuilderType
 
 from pykeentools import UnlicensedException
@@ -95,30 +96,30 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
 
         # Pinmode
         settings.pinmode = True
-        x, y = FBCalc.get_image_space_coord(context, (self.pinx, self.piny))
+        x, y = coords.get_image_space_coord(context, (self.pinx, self.piny))
         FBLoader.current_pin = (x, y)
 
-        nearest, dist2 = FBCalc.nearest_point(x, y, FBLoader.spins)
+        nearest, dist2 = coords.nearest_point(x, y, FBLoader.spins)
 
         if nearest >= 0 and dist2 < FBLoader.tolerance_dist2():
             # Nearest pin found
             FBLoader.current_pin_num = nearest
             # === Debug only ===
             FBDebug.add_event_to_queue(
-                'PIN_FOUND', FBCalc.get_mouse_coords(event, context),
-                FBCalc.get_raw_camera_2d_data(context))
+                'PIN_FOUND', coords.get_mouse_coords(event, context),
+                coords.get_raw_camera_2d_data(context))
             # === Debug only ===
         else:
             # We need new pin
             pin = FBLoader.get_builder().add_pin(
-                kid, (FBCalc.image_space_to_frame(x, y))
+                kid, (coords.image_space_to_frame(x, y))
             )
 
             if pin is not None:
                 # === Debug only ===
                 FBDebug.add_event_to_queue(
-                    'ADD_PIN', FBCalc.get_mouse_coords(event, context),
-                    FBCalc.get_raw_camera_2d_data(context))
+                    'ADD_PIN', coords.get_mouse_coords(event, context),
+                    coords.get_raw_camera_2d_data(context))
                 # === Debug only ===
 
                 FBLoader.spins.append((x, y))
@@ -127,8 +128,8 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             else:
                 # === Debug only ===
                 FBDebug.add_event_to_queue(
-                    'MISS_PIN', FBCalc.get_mouse_coords(event, context),
-                    FBCalc.get_raw_camera_2d_data(context))
+                    'MISS_PIN', coords.get_mouse_coords(event, context),
+                    coords.get_raw_camera_2d_data(context))
                 # === Debug only ===
 
                 FBLoader.current_pin = None
@@ -155,14 +156,14 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
 
         # === Debug only ===
         FBDebug.add_event_to_queue(
-            'RELEASE_LEFTMOUSE', FBCalc.get_mouse_coords(event, context),
-            FBCalc.get_raw_camera_2d_data(context))
+            'RELEASE_LEFTMOUSE', coords.get_mouse_coords(event, context),
+            coords.get_raw_camera_2d_data(context))
         # === Debug only ===
 
         print('Left Up')
 
-        x, y = FBCalc.get_image_space_coord(
-            context, FBCalc.get_mouse_coords(event, context))
+        x, y = coords.get_image_space_coord(
+            context, coords.get_mouse_coords(event, context))
         if FBLoader.current_pin:
             # Move current pin
             FBLoader.spins[FBLoader.current_pin_num] = (x, y)
@@ -187,7 +188,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             if not fb.deserialize(head.get_serial_str()):
                 print('DESERIALIZE ERROR: ', head.get_serial_str())
 
-            FBCalc.update_head_mesh(fb, head.headobj)
+            coords.update_head_mesh(fb, head.headobj)
             # Update all cameras position
             FBLoader.update_cameras(headnum)
             # ---------
@@ -213,7 +214,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             head.set_serial_str(fb.serialize())
             cam.set_model_mat(fb.model_mat(kid))
 
-        FBCalc.update_head_mesh(fb, head.headobj)
+        coords.update_head_mesh(fb, head.headobj)
         # Update all cameras position
         FBLoader.update_cameras(headnum)
 
@@ -246,19 +247,19 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
 
         # === Debug only ===
         FBDebug.add_event_to_queue(
-            'MOUSEMOVE', FBCalc.get_mouse_coords(event, context),
-            FBCalc.get_raw_camera_2d_data(context))
+            'MOUSEMOVE', coords.get_mouse_coords(event, context),
+            coords.get_raw_camera_2d_data(context))
         # === Debug only ===
 
         # Pin drag
-        x, y = FBCalc.get_image_space_coord(
-            context, FBCalc.get_mouse_coords(event, context))
+        x, y = coords.get_image_space_coord(
+            context, coords.get_mouse_coords(event, context))
         FBLoader.current_pin = (x, y)
 
         p_idx = FBLoader.current_pin_num
         FBLoader.spins[FBLoader.current_pin_num] = (x, y)
 
-        fb.move_pin(kid, p_idx, FBCalc.image_space_to_frame(x, y))
+        fb.move_pin(kid, p_idx, coords.image_space_to_frame(x, y))
 
         # sleep(0.5)  # Test purpose only
 
@@ -299,7 +300,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         FBLoader.place_cameraobj(kid, camobj, headobj)
 
         # Head Mesh update
-        FBCalc.update_head_mesh(fb, headobj)
+        coords.update_head_mesh(fb, headobj)
         FBLoader.wireframer.init_geom_data(headobj)
         # FBLoader.wireframer.init_edge_indices(headobj)
         FBLoader.wireframer.create_batches()
