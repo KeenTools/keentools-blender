@@ -92,7 +92,8 @@ class FBLoader:
         rx = scene.render.resolution_x
         ry = scene.render.resolution_y
 
-        fb = cls.new_builder(BuilderType.NoneBuilder, head.mod_ver)  # auto-select
+        # NoneBuilder for auto-select builder class
+        fb = cls.new_builder(BuilderType.NoneBuilder, head.mod_ver)
         cls.load_only(headnum)
 
         max_index = -1
@@ -130,7 +131,6 @@ class FBLoader:
             cls.fb_redraw(headnum, settings.current_camnum)
         cls.update_cameras(headnum)
         cls.save_only(headnum)
-
 
     @classmethod
     def get_builder(cls):
@@ -280,8 +280,6 @@ class FBLoader:
         cls.viewport.wireframer.init_edge_indices(headobj)
         cls.viewport.wireframer.create_batches()
 
-
-
     @classmethod
     def update_cameras(cls, headnum):
         """ Update positions for all cameras """
@@ -329,20 +327,20 @@ class FBLoader:
     @classmethod
     def set_camera_projection(cls, fl, sw, rx, ry,
                               near_clip=0.1, far_clip=1000.0):
-        CAMERA_W = rx  # Camera Width in pixels 1920
-        CAMERA_H = ry  # Camera Height in pixels 1080
-        FOCAL_LENGTH = fl
-        SENSOR_WIDTH = sw
+        camera_w = rx  # Camera Width in pixels 1920
+        camera_h = ry  # Camera Height in pixels 1080
+        focal_length = fl
+        sensor_width = sw
         fb = cls.get_builder()
 
         # This works only when Camera Sensor Mode is Auto
-        if CAMERA_W < CAMERA_H:
-            SENSOR_WIDTH = sw * CAMERA_W / CAMERA_H
+        if camera_w < camera_h:
+            sensor_width = sw * camera_w / camera_h
 
-        PROJECTION = coords.projection_matrix(
-            CAMERA_W, CAMERA_H, FOCAL_LENGTH, SENSOR_WIDTH,
+        projection = coords.projection_matrix(
+            camera_w, camera_h, focal_length, sensor_width,
             near_clip, far_clip)
-        fb.set_projection_mat(PROJECTION)
+        fb.set_projection_mat(projection)
 
     @classmethod
     def update_pins_count(cls, headnum, camnum):
@@ -367,18 +365,18 @@ class FBLoader:
 
     @classmethod
     def get_builder_mesh(cls, builder, mesh_name='keentools_mesh',
-                               masks=(), uv_set='uv0'):
+                         masks=(), uv_set='uv0'):
         for i, m in enumerate(masks):
             builder.set_mask(i, m)
 
         # change UV in accordance to selected UV set
         # Blender can't use integer as key in enum property
         builder.select_uv_set(0)
-        if uv_set=='uv1':
+        if uv_set == 'uv1':
             builder.select_uv_set(1)
-        if uv_set=='uv2':
+        if uv_set == 'uv2':
             builder.select_uv_set(2)
-        if uv_set=='uv3':
+        if uv_set == 'uv3':
             builder.select_uv_set(3)
 
         geo = builder.applied_args_model()
@@ -434,7 +432,6 @@ class FBLoader:
 
         return mesh
 
-
     @classmethod
     def universal_mesh_loader(cls, builder_type, mesh_name='keentools_mesh',
                               masks=(), uv_set='uv0'):
@@ -456,7 +453,8 @@ class FBLoader:
         # Load serialized data
         fb = cls.get_builder()
         if not fb.deserialize(head.get_serial_str()):
-            logger.warning('DESERIALIZE ERROR: {}'.format(head.get_serial_str()))
+            logger.warning('DESERIALIZE ERROR: {}'.format(
+                head.get_serial_str()))
 
     @classmethod
     def load_all(cls, headnum, camnum, center=False):
@@ -472,7 +470,8 @@ class FBLoader:
         # Load serialized data
         fb = cls.get_builder()
         if not fb.deserialize(head.get_serial_str()):
-            logger.warning('DESERIALIZE ERROR: {}'.format(head.get_serial_str()))
+            logger.warning('DESERIALIZE ERROR: {}'.format(
+                head.get_serial_str()))
 
         # Check Scene consistency
 

@@ -53,6 +53,7 @@ class FBEdgeShaderBase:
         self.edges_vertices = []
         self.edges_indices = []
         self.edges_colors = []
+        self.vertices_colors = []
         self.init_shaders()
 
     def is_working(self):

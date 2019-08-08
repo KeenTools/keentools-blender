@@ -125,7 +125,8 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
                 # === Debug only ===
 
                 FBLoader.viewport.spins.append((x, y))
-                FBLoader.viewport.current_pin_num = len(FBLoader.viewport.spins) - 1
+                FBLoader.viewport.current_pin_num = \
+                    len(FBLoader.viewport.spins) - 1
                 FBLoader.update_pins_count(headnum, camnum)
             else:
                 # === Debug only ===
@@ -280,9 +281,9 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             logger.error("MOVE PIN LICENSE EXCEPTION")
             return {'FINISHED'}
 
-        #--------------
+        # --------------
         # Pin lag solve
-        #--------------
+        # --------------
         head = settings.heads[headnum]
         # Store in tmp previous state
         head.tmp_serial_str = head.serial_str
@@ -290,7 +291,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         # Save current state
         head.set_serial_str(fb.serialize())
         cam.set_model_mat(fb.model_mat(kid))
-        #--------------
+        # --------------
 
         # Update Rigidity
         if settings.check_auto_rigidity and (

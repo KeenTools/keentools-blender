@@ -104,7 +104,7 @@ class config:
     version_prop_name = (_company + '_version',)
     fb_serial_prop_name = (_prefix + '_serial',)
     fb_images_prop_name = (_prefix + '_images',)
-    fb_dir_prop_name =  (_prefix + '_dir',)
+    fb_dir_prop_name = (_prefix + '_dir',)
     fb_camera_prop_name = (_prefix + '_camera',)
     fb_mod_ver_prop_name = (_prefix + '_mod_ver',)
     # Save / Reconstruct parameters

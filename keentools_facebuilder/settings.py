@@ -67,14 +67,9 @@ def update_mesh_parts(self, context):
     settings = get_main_settings()
     headnum = settings.current_headnum
     head = settings.heads[headnum]
-    masks = []
-    masks.append(head.check_ears)
-    masks.append(head.check_eyes)
-    masks.append(head.check_face)
-    masks.append(head.check_headback)
-    masks.append(head.check_jaw)
-    masks.append(head.check_mouth)
-    masks.append(head.check_neck)
+    masks = [head.check_ears, head.check_eyes, head.check_face,
+             head.check_headback, head.check_jaw, head.check_mouth,
+             head.check_neck]
 
     old_mesh = head.headobj.data
     # Create new mesh
@@ -99,6 +94,7 @@ def update_mesh_parts(self, context):
     # Delete old mesh
     bpy.data.meshes.remove(old_mesh, do_unlink=True)
     mesh.name = mesh_name
+
 
 class FBCameraItem(PropertyGroup):
     keyframe_id: IntProperty(default=0)
@@ -236,7 +232,7 @@ class FBHeadItem(PropertyGroup):
 
     tex_uv_shape: EnumProperty(name="UV", items=[
                 ('uv0', 'Butterfly', 'Pretty standard one-seem Layout',
-                 'UV',0),
+                 'UV', 0),
                 ('uv1', 'Legacy', 'Uniform tex scale but many seems', 'UV', 1),
                 ('uv2', 'Spherical', 'Standard wrap-around Layout', 'UV', 2),
                 ('uv3', 'Maxface', 'Maximum face area, non-uniform', 'UV', 3),
@@ -283,6 +279,7 @@ class FBHeadItem(PropertyGroup):
                 config.reconstruct_frame_width_param[0]: render.resolution_x,
                 config.reconstruct_frame_height_param[0]: render.resolution_y}
         self.headobj[config.fb_camera_prop_name[0]] = d
+
 
 class FBSceneSettings(PropertyGroup):
     # ---------------------

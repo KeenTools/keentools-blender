@@ -101,8 +101,8 @@ class OBJECT_OT_FBActor(Operator):
         if len(head.cameras) == 0:
             return
 
-        W = -1
-        H = -1
+        w = -1
+        h = -1
         changes = 0
         for i, c in enumerate(head.cameras):
             if c.use_in_tex_baking:
@@ -110,13 +110,13 @@ class OBJECT_OT_FBActor(Operator):
                 img = c.cam_image
                 if img:
                     size = img.size
-                    if size[0] != W or size[1] != H:
+                    if size[0] != w or size[1] != h:
                         changes += 1
-                    W = size[0]
-                    H = size[1]
+                    w = size[0]
+                    h = size[1]
 
         # We have no background images
-        if W <= 0 or H <= 0:
+        if w <= 0 or h <= 0:
             return
 
         # Back images has different sizes
@@ -125,13 +125,13 @@ class OBJECT_OT_FBActor(Operator):
             warn('INVOKE_DEFAULT', msg=ErrorType.BackgroundsDiffer)
             return
 
-        logger.debug("IMAGE SIZE {} {} {}".format(W, H, changes))
+        logger.debug("IMAGE SIZE {} {} {}".format(w, h, changes))
 
-        TW = settings.tex_width
-        TH = settings.tex_height
+        tw = settings.tex_width
+        th = settings.tex_height
 
         # Set camera projection matrix
-        FBLoader.set_camera_projection(head.focal, head.sensor_width, W, H)
+        FBLoader.set_camera_projection(head.focal, head.sensor_width, w, h)
 
         imgs = []
         keyframes = []
@@ -142,7 +142,7 @@ class OBJECT_OT_FBActor(Operator):
             # Bake only if 1) Marked 2) Image is exists 3) Some pins added
             if cam.use_in_tex_baking and cam.cam_image and cam.pins_count > 0:
                 pix = cam.cam_image.pixels[:]
-                imgs.append(np.asarray(pix).reshape((H, W, 4)))
+                imgs.append(np.asarray(pix).reshape((h, w, 4)))
                 keyframes.append(cam.keyframe_id)
         wm.progress_end()
 
@@ -154,7 +154,7 @@ class OBJECT_OT_FBActor(Operator):
         # Texture Creation
         if len(keyframes) > 0:
             texture = fb.build_texture(
-                imgs, keyframes, TH, TW, tfaa, tuep, tbfc, teb, tec)
+                imgs, keyframes, th, tw, tfaa, tuep, tbfc, teb, tec)
 
             tex_num = bpy.data.images.find(self.tex_name)
 
@@ -163,7 +163,7 @@ class OBJECT_OT_FBActor(Operator):
                 bpy.data.images.remove(tex)
 
             tex = bpy.data.images.new(
-                    self.tex_name, width=TW, height=TH,
+                    self.tex_name, width=tw, height=th,
                     alpha=True, float_buffer=False)
             # Store Baked Texture into blender
             tex.pixels[:] = texture.ravel()
@@ -240,7 +240,6 @@ class OBJECT_OT_FBActor(Operator):
         else:
             headobj.data.materials.append(mat)
 
-
     def get_camera_params(self, obj):
         logger = logging.getLogger(__name__)
         # Init camera parameters
@@ -250,24 +249,22 @@ class OBJECT_OT_FBActor(Operator):
             return None
 
         try:
-            params = {}
-            params['focal'] = attrs.get_attr_variant_named(
-                data, config.reconstruct_focal_param)
-            params['sensor_width'] = attrs.get_attr_variant_named(
-                data, config.reconstruct_sensor_width_param)
-            params['sensor_height'] = attrs.get_attr_variant_named(
-                data, config.reconstruct_sensor_width_param)
-            params['frame_width'] = attrs.get_attr_variant_named(
-                data, config.reconstruct_frame_width_param)
-            params['frame_height'] = attrs.get_attr_variant_named(
-                data, config.reconstruct_frame_height_param)
+            params = {'focal': attrs.get_attr_variant_named(
+                data, config.reconstruct_focal_param),
+                'sensor_width': attrs.get_attr_variant_named(
+                    data, config.reconstruct_sensor_width_param),
+                'sensor_height': attrs.get_attr_variant_named(
+                    data, config.reconstruct_sensor_width_param),
+                'frame_width': attrs.get_attr_variant_named(
+                    data, config.reconstruct_frame_width_param),
+                'frame_height': attrs.get_attr_variant_named(
+                    data, config.reconstruct_frame_height_param)}
             logger.debug("LOADED PARAMS {}".format(params))
             if None in params.values():
                 return None
         except:
             return None
         return params
-
 
     def reconstruct_by_head(self, context):
         """ Reconstruct Cameras and Scene structures by serial """
@@ -296,7 +293,7 @@ class OBJECT_OT_FBActor(Operator):
 
         obj_type = attrs.get_safe_custom_attribute(
                 obj, config.object_type_prop_name[0])
-        if (obj_type is None):
+        if obj_type is None:
             obj_type = BuilderType.FaceBuilder
         logger.debug("OBJ_TYPE: {}".format(obj_type))
 
@@ -309,7 +306,7 @@ class OBJECT_OT_FBActor(Operator):
         # Get Mod version
         mod_ver = attrs.get_safe_custom_attribute(
                 obj, config.fb_mod_ver_prop_name[0])
-        if (mod_ver is None):
+        if mod_ver is None:
             mod_ver = config.unknown_mod_ver
         logger.debug("MOD_VER {}".format(mod_ver))
 
@@ -392,7 +389,7 @@ class OBJECT_OT_FBActor(Operator):
         except:
             logger.error("WRONG PARAMETERS")
             for i, c in enumerate(reversed(head.cameras)):
-                if not c.camobj is None:
+                if c.camobj is not None:
                     # Delete camera object from scene
                     bpy.data.objects.remove(c.camobj, do_unlink=True)
                 # Delete link from list

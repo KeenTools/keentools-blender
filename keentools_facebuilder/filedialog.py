@@ -52,9 +52,9 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
     headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
 
     update_render_size: bpy.props.EnumProperty(name="UV", items=[
-                ('yes', 'Update', 'Update render size to images resolution', 0),
-                ('no', 'Leave unchanged', 'Leave the render size unchanged', 1),
-                ], description="Update Render size")
+        ('yes', 'Update', 'Update render size to images resolution', 0),
+        ('no', 'Leave unchanged', 'Leave the render size unchanged', 1),
+    ], description="Update Render size")
 
     def draw(self, context):
         layout = self.layout
@@ -84,22 +84,22 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
         directory = self.directory
 
         changes = 0
-        W = -1
-        H = -1
+        w = -1
+        h = -1
         for f in self.files:
             filepath = os.path.join(directory, f.name)
             logger.debug("FILE: {}".format(filepath))
             img = FBLoader.add_camera_image(self.headnum, filepath)
-            if img.size[0] != W or img.size[1] != H:
-                W, H = img.size
+            if img.size[0] != w or img.size[1] != h:
+                w, h = img.size
                 changes += 1
 
         if self.update_render_size == 'yes' and changes == 1:
 
             render = bpy.context.scene.render
-            render.resolution_x = W
-            render.resolution_y = H
-            settings.frame_width = W
-            settings.frame_height = H
+            render.resolution_x = w
+            render.resolution_y = h
+            settings.frame_width = w
+            settings.frame_height = h
 
         return {'FINISHED'}

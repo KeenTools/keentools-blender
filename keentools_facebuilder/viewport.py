@@ -182,15 +182,16 @@ class FBViewport:
                 logger.info("COLORING")
                 special_indices = cls.get_special_indices(
                     fb.get_builder_type())
-                cls.wireframer.init_special_areas(obj.data, special_indices, (
-                *comp_color, settings.wireframe_opacity))
+                cls.wireframer.init_special_areas(
+                    obj.data, special_indices, (*comp_color,
+                                                settings.wireframe_opacity))
             else:
                 logging.warning("LISTS HAVE DIFFERENT SIZES")
         cls.wireframer.create_batches()
 
     @classmethod
     def get_special_indices(cls, builder_type):
-        if (builder_type == BuilderType.FaceBuilder):
+        if builder_type == BuilderType.FaceBuilder:
             pairs = FBConst.get_eyes_indices()
             pairs = pairs.union(FBConst.get_eyebrows_indices())
             pairs = pairs.union(FBConst.get_nose_indices())
@@ -199,7 +200,7 @@ class FBViewport:
             pairs = pairs.union(FBConst.get_half_indices())
             pairs = pairs.union(FBConst.get_jaw_indices2())
             return pairs
-        elif (builder_type == BuilderType.BodyBuilder):
+        elif builder_type == BuilderType.BodyBuilder:
             return FBConst.get_bodybuilder_highlight_indices()
         return {}
 
@@ -272,10 +273,7 @@ class FBViewport:
     @classmethod
     def create_batch_2d(cls, context):
         """ Main Pin Draw Batch"""
-        logger = logging.getLogger(__name__)
-
         points = cls.spins.copy()
-        logger.debug("CREATE BATCH 2D: {}".format(points))
 
         scene = context.scene
         rx = scene.render.resolution_x
@@ -343,7 +341,7 @@ class FBViewport:
 
         # ----------
         # Projection
-        PROJECTION = fb.projection_mat().T
+        projection = fb.projection_mat().T
 
         camobj = bpy.context.scene.camera
         m = camobj.matrix_world.inverted()
@@ -354,10 +352,10 @@ class FBViewport:
 
         # Object transform, inverse camera, projection apply -> numpy
         transform = np.array(
-            headobj.matrix_world.transposed() @ m.transposed()) @ PROJECTION
+            headobj.matrix_world.transposed() @ m.transposed()) @ projection
         # Calc projection
         vv = vv @ transform
-        vv = (vv.T / vv[:,3]).T
+        vv = (vv.T / vv[:, 3]).T
 
         verts2 = []
         for i, v in enumerate(vv):

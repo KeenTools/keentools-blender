@@ -21,11 +21,11 @@ import bpy
 from .config import config, get_main_settings, BuilderType, ErrorType
 from . fbloader import FBLoader
 
+
 class MESH_OT_FBAddBody(bpy.types.Operator):
     bl_idname = config.fb_add_body_operator_idname
     bl_label = "BodyBuilder Body"
     bl_options = {'REGISTER', 'UNDO'}
-
 
     def execute(self, context):
         try:

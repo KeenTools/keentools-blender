@@ -145,7 +145,8 @@ class OBJECT_OT_FBUnmorph(Operator):
     bl_idname = config.fb_main_unmorph_idname
     bl_label = "Unmorph"
     bl_options = {'REGISTER'}  # 'UNDO'
-    bl_description = "Unmorph shape to default mesh. It will return back when you move any pin."
+    bl_description = "Unmorph shape to default mesh. It will return back " \
+                     "when you move any pin."
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)

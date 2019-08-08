@@ -57,7 +57,7 @@ class FBDebug:
         now = time.clock()
         old = cls.timer
         cls.timer = now
-        return (now - old)
+        return now - old
 
     @classmethod
     def add_event_to_queue(cls, eventname, p, b=(-1, -1, -1, -1, -1, -1, -1)):
@@ -75,8 +75,9 @@ class FBDebug:
 
     @classmethod
     def format_event_output(cls, ev):
-        return "\n[{0[0]}] {0[1]} time:{0[13]:.4f}s\n x:{0[2]}  y:{0[3]} dx:{0[4]} dy:{0[5]}\n a:({0[6]},{0[7]}) ({0[8]},{0[9]}) z:{0[10]} off:({0[11]}, {0[12]})".format(
-            ev)
+        return "\n[{0[0]}] {0[1]} time:{0[13]:.4f}s\n x:{0[2]}  " \
+               "y:{0[3]} dx:{0[4]} dy:{0[5]}\n a:({0[6]},{0[7]}) " \
+               "({0[8]},{0[9]}) z:{0[10]} off:({0[11]}, {0[12]})".format(ev)
 
     @classmethod
     def clear_event_queue(cls):

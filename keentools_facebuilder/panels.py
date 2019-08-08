@@ -21,9 +21,9 @@ import bpy
 from bpy.types import Panel, Operator, Menu
 from bpy.props import IntProperty
 import addon_utils
-from . config import config, get_main_settings, ErrorType
+from .config import config, get_main_settings, ErrorType
 import re
-from . fbloader import FBLoader
+from .fbloader import FBLoader
 
 
 # Test if selected object is our Mesh or Camera
@@ -123,8 +123,8 @@ class OBJECT_PT_FBPanel(Panel):
             # Show Head
             row = layout.row()
             row.scale_y = 2.0
-            op = row.operator(config.fb_actor_operator_idname, text='Show Head',
-                              icon='HIDE_OFF')
+            op = row.operator(config.fb_actor_operator_idname,
+                              text='Show Head', icon='HIDE_OFF')
             op.action = 'unhide_head'
             op.headnum = headnum
 
@@ -176,11 +176,10 @@ class OBJECT_PT_FBPanel(Panel):
 
             text = "[{0}] -{1}- {2}".format(str(i), pc, camera.camobj.name)
 
-
             if wrong_size_flag:
                 # Background has different size
                 op = row2.operator(config.fb_main_camera_fix_size_idname,
-                              text='', icon='ERROR')
+                                   text='', icon='ERROR')
                 op.headnum = headnum
                 op.camnum = i
 

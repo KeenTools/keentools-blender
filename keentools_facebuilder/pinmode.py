@@ -21,11 +21,11 @@ import logging
 import bpy
 from pykeentools import UnlicensedException
 
-from . utils import coords
-from . config import config, get_main_settings, ErrorType, BuilderType
-from . fbdebug import FBDebug
-from . fbloader import FBLoader
-from . utils.other import FBStopTimer
+from .utils import coords
+from .config import config, get_main_settings, ErrorType, BuilderType
+from .fbdebug import FBDebug
+from .fbloader import FBLoader
+from .utils.other import FBStopTimer
 
 
 class OBJECT_OT_FBPinMode(bpy.types.Operator):
@@ -55,8 +55,8 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             special_color = (*settings.wireframe_special_color,
                              opacity * settings.wireframe_opacity)
             FBLoader.viewport.wireframer.init_special_areas(headobj.data,
-                                                   special_indices,
-                                                   special_color)
+                                                            special_indices,
+                                                            special_color)
         FBLoader.viewport.wireframer.create_batches()
 
     def invoke(self, context, event):
@@ -83,7 +83,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         if not settings.check_heads_and_cams():
             # Fix and Out
             heads_deleted, cams_deleted = settings.fix_heads()
-            if heads_deleted > 0 or cams_deleted >0:
+            if heads_deleted > 0 or cams_deleted > 0:
                 logger.warning("HEADS AND CAMERAS FIXED")
             if heads_deleted == 0:
                 warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
@@ -223,9 +223,9 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
                     op = getattr(
                         bpy.ops.object, config.fb_movepin_operator_callname)
                     op('INVOKE_DEFAULT',
-                        headnum=headnum,
-                        camnum=camnum,
-                        pinx=p[0], piny=p[1])
+                       headnum=headnum,
+                       camnum=camnum,
+                       pinx=p[0], piny=p[1])
                     return {'PASS_THROUGH'}
 
                 return {'PASS_THROUGH'}
@@ -244,8 +244,10 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
                     context,
                     coords.get_mouse_coords(event, context)
                 )
-                nearest, dist2 = coords.nearest_point(x, y, FBLoader.viewport.spins)
-                if nearest >= 0 and dist2 < FBLoader.viewport.tolerance_dist2():
+                nearest, dist2 = coords.nearest_point(
+                    x, y, FBLoader.viewport.spins)
+                if nearest >= 0 and \
+                        dist2 < FBLoader.viewport.tolerance_dist2():
                     # Nearest pin found
                     fb = FBLoader.get_builder()
                     head = settings.heads[headnum]

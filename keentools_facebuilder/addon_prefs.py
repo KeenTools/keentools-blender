@@ -127,10 +127,12 @@ class FBAddonPreferences(AddonPreferences):
             # Start output
             self.output_labels(layout, self.lic_offline_status)
 
-            layout.label(text="Generate license file at our site and install it")
+            layout.label(text="Generate license file at our site "
+                              "and install it")
             row = layout.row()
             row.label(text="Visit our site: ")
-            op = row.operator(config.fb_actor_operator_idname, text="keentools.io")
+            op = row.operator(
+                config.fb_actor_operator_idname, text="keentools.io")
             op.action = 'visit_site'
 
             box = layout.box()
