@@ -39,15 +39,16 @@ def update_wireframe(self, context):
     settings = get_main_settings()
     headnum = settings.current_headnum
     head = settings.heads[headnum]
-    FBLoader.update_wireframe(head.headobj)
+    FBLoader.viewport.update_wireframe(
+        FBLoader.get_builder(), head.headobj)
 
 
 def update_pin_sensitivity(self, context):
-    FBLoader.update_pin_sensitivity()
+    FBLoader.viewport.update_pin_sensitivity()
 
 
 def update_pin_size(self, context):
-    FBLoader.update_pin_size()
+    FBLoader.viewport.update_pin_size()
 
 
 def update_debug_log(self, value):
@@ -89,9 +90,10 @@ def update_mesh_parts(self, context):
     head.headobj.data = mesh
     if settings.pinmode:
         # Update wireframe structures
-        FBLoader.wireframer.init_geom_data(head.headobj)
-        FBLoader.wireframer.init_edge_indices(head.headobj)
-        FBLoader.update_wireframe(head.headobj)
+        FBLoader.viewport.wireframer.init_geom_data(head.headobj)
+        FBLoader.viewport.wireframer.init_edge_indices(head.headobj)
+        FBLoader.viewport.update_wireframe(
+            FBLoader.get_builder(), head.headobj)
 
     mesh_name = old_mesh.name
     # Delete old mesh

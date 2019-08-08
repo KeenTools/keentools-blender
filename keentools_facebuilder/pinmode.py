@@ -1,3 +1,21 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+# KeenTools for blender is a blender addon for using KeenTools in Blender.
+# Copyright (C) 2019  KeenTools
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# ##### END GPL LICENSE BLOCK #####
+
 import logging
 
 import bpy
@@ -25,20 +43,21 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         head = settings.heads[self.headnum]
         headobj = head.headobj
 
-        FBLoader.wireframer.init_geom_data(headobj)
-        FBLoader.wireframer.init_edge_indices(headobj)
+        FBLoader.viewport.wireframer.init_geom_data(headobj)
+        FBLoader.viewport.wireframer.init_edge_indices(headobj)
 
-        FBLoader.wireframer.init_color_data(
+        FBLoader.viewport.wireframer.init_color_data(
             (*settings.wireframe_color, opacity * settings.wireframe_opacity))
         # Coloring special parts
         if settings.show_specials:
-            special_indices = FBLoader.get_special_indices()
+            special_indices = FBLoader.viewport.get_special_indices(
+                FBLoader.get_builder_type())
             special_color = (*settings.wireframe_special_color,
                              opacity * settings.wireframe_opacity)
-            FBLoader.wireframer.init_special_areas(headobj.data,
+            FBLoader.viewport.wireframer.init_special_areas(headobj.data,
                                                    special_indices,
                                                    special_color)
-        FBLoader.wireframer.create_batches()
+        FBLoader.viewport.wireframer.create_batches()
 
     def invoke(self, context, event):
         logger = logging.getLogger(__name__)
@@ -85,8 +104,8 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
         FBLoader.load_all(self.headnum, self.camnum, False)
 
-        FBLoader.create_batch_2d(context)
-        FBLoader.register_handlers(args, context)
+        FBLoader.viewport.create_batch_2d(context)
+        FBLoader.viewport.register_handlers(args, context)
 
         context.window_manager.modal_handler_add(self)
 
@@ -97,11 +116,12 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         # Start our shader
         self.init_wireframer_colors(settings.overall_opacity)
 
-        FBLoader.wireframer.register_handler(args)
+        FBLoader.viewport.wireframer.register_handler(args)
 
         kid = FBLoader.keyframe_by_camnum(self.headnum, self.camnum)
         # Load 3D pins
-        FBLoader.update_surface_points(headobj, kid)
+        FBLoader.viewport.update_surface_points(
+            FBLoader.get_builder(), headobj, kid)
 
         # Can start much more times when not out from pinmode
         if not settings.pinmode:
@@ -134,7 +154,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             head.headobj.hide_set(True)
 
         # Pixel size in relative coords
-        FBLoader.update_pixel_size(context)
+        FBLoader.viewport.update_pixel_size(context)
 
         # Screen Update request
         if context.area:
@@ -159,8 +179,8 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         if event.type in {'ESC'}:
             FBLoader.out_pinmode(headnum, camnum)
             # --- PROFILING ---
-            if FBLoader.profiling:
-                pr = FBLoader.pr
+            if FBLoader.viewport.profiling:
+                pr = FBLoader.viewport.pr
                 pr.dump_stats('facebuilder.pstat')
             # --- PROFILING ---
             return {'FINISHED'}
@@ -224,15 +244,15 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
                     context,
                     coords.get_mouse_coords(event, context)
                 )
-                nearest, dist2 = coords.nearest_point(x, y, FBLoader.spins)
-                if nearest >= 0 and dist2 < FBLoader.tolerance_dist2():
+                nearest, dist2 = coords.nearest_point(x, y, FBLoader.viewport.spins)
+                if nearest >= 0 and dist2 < FBLoader.viewport.tolerance_dist2():
                     # Nearest pin found
                     fb = FBLoader.get_builder()
                     head = settings.heads[headnum]
                     headobj = head.headobj
                     # Delete pin
                     fb.remove_pin(kid, nearest)
-                    del FBLoader.spins[nearest]
+                    del FBLoader.viewport.spins[nearest]
                     # Setup Rigidity only for FaceBuilder
                     if FBLoader.get_builder_type() == BuilderType.FaceBuilder:
                         fb.set_auto_rigidity(settings.check_auto_rigidity)
@@ -260,11 +280,11 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
                     FBLoader.update_cameras(headnum)
                     # Save result
                     FBLoader.fb_save(headnum, camnum)
-                    FBLoader.update_surface_points(headobj, kid)
+                    FBLoader.viewport.update_surface_points(fb, headobj, kid)
                     # Shader update
-                    FBLoader.wireframer.init_geom_data(headobj)
-                    FBLoader.wireframer.init_edge_indices(headobj)
-                    FBLoader.wireframer.create_batches()
+                    FBLoader.viewport.wireframer.init_geom_data(headobj)
+                    FBLoader.viewport.wireframer.init_edge_indices(headobj)
+                    FBLoader.viewport.wireframer.create_batches()
 
                     # Indicators update
                     FBLoader.update_pins_count(headnum, camnum)
@@ -273,7 +293,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
                     FBLoader.force_undo_push('Pin Remove')
                     head.need_update = False
 
-                FBLoader.create_batch_2d(context)
+                FBLoader.viewport.create_batch_2d(context)
                 # out to prevent click events
                 return {"RUNNING_MODAL"}
 
@@ -285,11 +305,12 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             # Reload pins
             FBLoader.load_all(headnum, camnum)
             kid = FBLoader.keyframe_by_camnum(headnum, camnum)
-            FBLoader.update_surface_points(head.headobj, kid)
+            FBLoader.viewport.update_surface_points(
+                FBLoader.get_builder(), head.headobj, kid)
             # FBLoader.load_pins(self.camnum, scene)
-            FBLoader.wireframer.init_geom_data(head.headobj)
-            FBLoader.wireframer.init_edge_indices(head.headobj)
-            FBLoader.wireframer.create_batches()
+            FBLoader.viewport.wireframer.init_geom_data(head.headobj)
+            FBLoader.viewport.wireframer.init_edge_indices(head.headobj)
+            FBLoader.viewport.wireframer.create_batches()
 
             # === Debug only ===
             FBDebug.add_event_to_queue(
@@ -300,14 +321,15 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             # === Debug only ===
 
         # Catch if wireframer is off
-        if not (FBLoader.wireframer.is_working()):
+        if not (FBLoader.viewport.wireframer.is_working()):
             FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
 
-        FBLoader.create_batch_2d(context)
-        FBLoader.update_residuals(context, head.headobj, kid)
+        FBLoader.viewport.create_batch_2d(context)
+        FBLoader.viewport.update_residuals(
+            FBLoader.get_builder(), context, head.headobj, kid)
 
-        if FBLoader.current_pin:
+        if FBLoader.viewport.current_pin:
             return {"RUNNING_MODAL"}
         else:
             return {"PASS_THROUGH"}

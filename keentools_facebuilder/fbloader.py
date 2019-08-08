@@ -15,102 +15,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+import bpy
 import logging
 
-import bpy
 import numpy as np
 
-from keentools_facebuilder.utils import attrs
+from . viewport import FBViewport
+from . utils import attrs
 from . utils import coords
 from . utils.other import (
-    FBText, FBStopTimer
+    FBStopTimer
 )
-from keentools_facebuilder.utils.edges import FBEdgeShader2D, FBEdgeShader3D
-from keentools_facebuilder.utils.points import FBPoints2D, FBPoints3D
 from . builder import UniBuilder
 from . fbdebug import FBDebug
-from . const import FBConst
 from . config import config, get_main_settings, BuilderType
 from pykeentools import UnlicensedException
 
-import cProfile
-import time
-
-
-class FPSMeter:
-    def __init__(self, buf_length=5):
-        self.start_time = time.time()
-        self.indicator = "None"
-        self.counter = 0
-        self.buffer = [self.start_time for _ in range(buf_length)]
-        self.head = 0
-        self.buf_length = len(self.buffer)
-
-    def prev_index(self, ind):
-        prev_ind = ind - 1
-        if prev_ind < 0:
-            prev_ind = self.buf_length
-        return prev_ind
-
-    def next_index(self, ind):
-        next_ind = ind + 1
-        if next_ind >= self.buf_length:
-            next_ind = 0
-        return next_ind
-
-    def update_indicator(self):
-        new_time = self.buffer[self.head]
-        old_time = self.buffer[self.next_index(self.head)]
-        delta = new_time - old_time
-        d = 0.0
-        if delta > 0.00001:
-            d = (self.buf_length - 1) / delta
-        self.indicator = "{0:.2f}".format(d)
-
-    def tick(self):
-        self.head = self.next_index(self.head)
-        self.buffer[self.head] = time.time()
-        self.counter += 1
-
 
 class FBLoader:
-    profiling = False
-    # --- PROFILING ---
-    if profiling:
-        pr = cProfile.Profile()
-        pr.disable()
-
-    fps = FPSMeter()
-    # --- PROFILING ---
-
     # Builder selection: FaceBuilder or BodyBuilder
     builder = UniBuilder(config.default_builder)
-
-    # Current View Pins draw
-    points2d = FBPoints2D()
-    # Surface points draw
-    points3d = FBPoints3D()
-    # Text output in Modal mode
-    texter = FBText()
-    # Wireframe shader object
-    wireframer = FBEdgeShader3D()
-    # Update timer
-    draw_timer_handler = None
-
-    residuals = FBEdgeShader2D()
-
-    # Pins
-    spins = []  # current screen pins
-    current_pin = None
-    current_pin_num = -1
-
-    last_context = None
-
-    POINT_SENSITIVITY = config.default_POINT_SENSITIVITY
-    PIXEL_SIZE = 0.1  # Auto Calculated
+    viewport = FBViewport()
 
     # Functions for Custom Attributes perform
-
     @classmethod
     def set_keentools_version(cls, obj):
         attr_name = config.version_prop_name[0]
@@ -204,18 +131,6 @@ class FBLoader:
         cls.update_cameras(headnum)
         cls.save_only(headnum)
 
-    @classmethod
-    def update_pixel_size(cls, context):
-        ps = coords.get_pixel_relative_size(context)
-        cls.PIXEL_SIZE = ps
-
-    @classmethod
-    def tolerance_dist(cls):  # distance * sensitivity
-        return cls.POINT_SENSITIVITY * cls.PIXEL_SIZE
-
-    @classmethod
-    def tolerance_dist2(cls):  # squared distance
-        return (cls.POINT_SENSITIVITY * cls.PIXEL_SIZE)**2
 
     @classmethod
     def get_builder(cls):
@@ -274,9 +189,9 @@ class FBLoader:
     def out_pinmode(cls, headnum, camnum):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
-        cls.unregister_handlers()
+        cls.viewport.unregister_handlers()
         cls.fb_save(headnum, camnum)
-        cls.wireframer.unregister_handler()
+        cls.viewport.wireframer.unregister_handler()
         headobj = settings.heads[headnum].headobj
         # Mark object by ver.
         cls.set_keentools_version(headobj)
@@ -284,7 +199,7 @@ class FBLoader:
         headobj.hide_set(False)
         settings.pinmode = False
 
-        cls.current_pin = None
+        cls.viewport.current_pin = None
         cls.show_all_cameras(headnum)
         # === Debug use only ===
         FBDebug.add_event_to_queue('OUT_PIN_MODE', (0, 0))
@@ -358,192 +273,14 @@ class FBLoader:
         # Head Mesh update
         coords.update_head_mesh(fb, headobj)
         # Load pins from model
-        cls.spins = cls.img_points(kid)
-        cls.update_surface_points(headobj, kid)
+        cls.viewport.set_spins(cls.viewport.img_points(fb, kid))
+        cls.viewport.update_surface_points(fb, headobj, kid)
         # Shader update
-        cls.wireframer.init_geom_data(headobj)
-        cls.wireframer.init_edge_indices(headobj)
-        cls.wireframer.create_batches()
+        cls.viewport.wireframer.init_geom_data(headobj)
+        cls.viewport.wireframer.init_edge_indices(headobj)
+        cls.viewport.wireframer.create_batches()
 
-    @classmethod
-    def create_batch_2d(cls, context=None):
-        """ Main Pin Draw Batch"""
-        if context is None:
-            context = cls.last_context
-        else:
-            cls.last_context = context
 
-        points = cls.spins.copy()
-        scene = context.scene
-        rx = scene.render.resolution_x
-        ry = scene.render.resolution_y
-        asp = ry / rx
-
-        x1, y1, x2, y2 = coords.get_camera_border(context)
-
-        for i, p in enumerate(points):
-            x, y = coords.image_space_to_region(p[0], p[1], x1, y1, x2, y2)
-            points[i] = (x, y)
-
-        vertex_colors = [config.pin_color for _ in range(len(points))]
-
-        if cls.current_pin and cls.current_pin_num < len(vertex_colors):
-            vertex_colors[cls.current_pin_num] = config.current_pin_color
-
-        # Sensitivity indicator
-        points.append(
-            (coords.image_space_to_region(
-                -0.5 - cls.PIXEL_SIZE * cls.POINT_SENSITIVITY, -asp * 0.5,
-                x1, y1, x2, y2))
-        )
-        # Camera corners
-        points.append(
-            (coords.image_space_to_region(
-                -0.5, -asp * 0.5, x1, y1, x2, y2))
-        )
-        points.append(
-            (coords.image_space_to_region(
-                0.5, asp * 0.5,
-                x1, y1, x2, y2))
-        )
-        vertex_colors.append((0, 1, 0, 0.2))  # sensitivity indicator
-        vertex_colors.append(config.current_pin_color)  # camera corner
-        vertex_colors.append(config.current_pin_color)  # camera corner
-
-        cls.points2d.set_vertices_colors(points, vertex_colors)
-        cls.points2d.create_batch()
-
-    @classmethod
-    def update_residuals(cls, context, headobj, keyframe):
-        scene = bpy.context.scene
-        rx = scene.render.resolution_x
-        ry = scene.render.resolution_y
-
-        x1, y1, x2, y2 = coords.get_camera_border(context)
-
-        p2d = cls.img_points(keyframe)
-        p3d = cls.surface_points_only(headobj, keyframe)
-
-        wire = cls.residuals
-        wire.clear_vertices()
-        wire.edge_lengths = []
-        wire.vertices_colors = []
-
-        # Pins count != Surf points count
-        if len(p2d) != len(p3d):
-            return
-
-        if len(p3d) == 0:
-            # Empty shader
-            wire.create_batch()
-            return
-
-        # ----------
-        # Projection
-        fb = cls.get_builder()
-        PROJECTION = fb.projection_mat().T
-
-        camobj = bpy.context.scene.camera
-        m = camobj.matrix_world.inverted()
-
-        # Fill matrix in homogeneous coords
-        vv = np.ones((len(p3d), 4), dtype=np.float32)
-        vv[:, :-1] = p3d
-
-        # Object transform, inverse camera, projection apply -> numpy
-        transform = np.array(
-            headobj.matrix_world.transposed() @ m.transposed()) @ PROJECTION
-        # Calc projection
-        vv = vv @ transform
-        vv = (vv.T / vv[:,3]).T
-
-        verts2 = []
-        for i, v in enumerate(vv):
-            x, y = coords.frame_to_image_space(v[0], v[1], rx, ry)
-            verts2.append(coords.image_space_to_region(x, y,
-                                                       x1, y1, x2, y2))
-            wire.edge_lengths.append(0)
-            verts2.append(coords.image_space_to_region(p2d[i][0], p2d[i][1],
-                                                       x1, y1, x2, y2))
-            # length = np.linalg.norm((v[0]-p2d[i][0], v[1]-p2d[i][1]))
-            length = 22.0
-            wire.edge_lengths.append(length)
-
-        wire.vertices = verts2
-        wire.vertices_colors = np.full((len(verts2), 4),
-                                       config.residual_color).tolist()
-        wire.create_batch()
-
-    # --------------------
-    # Update functions
-    # --------------------
-    @classmethod
-    def update_surface_points(
-            cls, headobj, keyframe=-1,
-            allcolor=(0, 0, 1, 0.15), selcolor=config.surface_point_color):
-        # Load 3D pins
-        verts, colors = cls.surface_points(
-            headobj, keyframe, allcolor, selcolor)
-
-        if len(verts) > 0:
-            # Object matrix usage
-            m = np.array(headobj.matrix_world, dtype=np.float32).transpose()
-            vv = np.ones((len(verts), 4), dtype=np.float32)
-            vv[:, :-1] = verts
-            vv = vv @ m
-            # Transformed vertices
-            verts = vv[:, :3]
-
-        cls.points3d.set_vertices_colors(verts, colors)
-        cls.points3d.create_batch()
-
-    @classmethod
-    def update_wireframe(cls, obj):
-        logger = logging.getLogger(__name__)
-        settings = get_main_settings()
-        main_color = settings.wireframe_color
-        comp_color = settings.wireframe_special_color
-
-        cls.wireframer.init_color_data((*main_color,
-                                        settings.wireframe_opacity))
-        if settings.show_specials:
-            mesh = obj.data
-            # Check to prevent shader problem
-            if len(mesh.edges) * 2 == len(cls.wireframer.edges_colors):
-                logger.info("COLORING")
-                special_indices = cls.get_special_indices()
-                cls.wireframer.init_special_areas(obj.data, special_indices, (
-                *comp_color, settings.wireframe_opacity))
-            else:
-                logging.warning("LISTS HAVE DIFFERENT SIZES")
-        cls.wireframer.create_batches()
-
-    @classmethod
-    def get_special_indices(cls):
-        if (cls.builder.get_builder_type() == BuilderType.FaceBuilder):
-            pairs = FBConst.get_eyes_indices()
-            pairs = pairs.union(FBConst.get_eyebrows_indices())
-            pairs = pairs.union(FBConst.get_nose_indices())
-            pairs = pairs.union(FBConst.get_mouth_indices())
-            pairs = pairs.union(FBConst.get_ears_indices())
-            pairs = pairs.union(FBConst.get_half_indices())
-            pairs = pairs.union(FBConst.get_jaw_indices2())
-            return pairs
-        elif (cls.builder.get_builder_type() == BuilderType.BodyBuilder):
-            return FBConst.get_bodybuilder_highlight_indices()
-        return {}
-
-    @classmethod
-    def update_pin_sensitivity(cls):
-        settings = get_main_settings()
-        cls.POINT_SENSITIVITY = settings.pin_sensitivity
-
-    @classmethod
-    def update_pin_size(cls):
-        settings = get_main_settings()
-        cls.points2d.set_point_size(settings.pin_size)
-        cls.points3d.set_point_size(
-            settings.pin_size * config.surf_pin_size_scale)
 
     @classmethod
     def update_cameras(cls, headnum):
@@ -580,58 +317,6 @@ class FBLoader:
 
     # --------------------
     @classmethod
-    def surface_points(
-            cls, headobj, keyframe=-1,
-            allcolor=(0, 0, 1, 0.15), selcolor=(0, 1, 0, 1)):
-        """ Load 3D pin points """
-        verts = []
-        colors = []
-
-        fb = cls.get_builder()
-
-        for k in fb.keyframes():
-            for i in range(fb.pins_count(k)):
-                pin = fb.pin(k, i)
-                p = coords.pin_to_xyz(pin, headobj)
-                verts.append(p)
-                if k == keyframe:
-                    colors.append(selcolor)
-                else:
-                    colors.append(allcolor)
-        return verts, colors
-
-    @classmethod
-    def surface_points_only(
-            cls, headobj, keyframe=-1):
-        """ Load 3D pin points """
-        verts = []
-
-        fb = cls.get_builder()
-
-        for i in range(fb.pins_count(keyframe)):
-            pin = fb.pin(keyframe, i)
-            p = coords.pin_to_xyz(pin, headobj)
-            verts.append(p)
-        return verts
-
-    @classmethod
-    def img_points(cls, keyframe):
-        scene = bpy.context.scene
-        w = scene.render.resolution_x
-        h = scene.render.resolution_y
-
-        fb = cls.get_builder()
-
-        pins_count = fb.pins_count(keyframe)
-
-        verts = []
-        for i in range(pins_count):
-            pin = fb.pin(keyframe, i)
-            x, y = pin.img_pos
-            verts.append((coords.frame_to_image_space(x, y, w, h)))
-        return verts
-
-    @classmethod
     def place_cameraobj(cls, keyframe, camobj, headobj):
         fb = cls.get_builder()
         mat = coords.calc_model_mat(
@@ -658,34 +343,6 @@ class FBLoader:
             CAMERA_W, CAMERA_H, FOCAL_LENGTH, SENSOR_WIDTH,
             near_clip, far_clip)
         fb.set_projection_mat(PROJECTION)
-
-    @classmethod
-    def register_handlers(cls, args, context):
-        cls.unregister_handlers()  # Experimental
-
-        cls.residuals.register_handler(args)
-
-        cls.points3d.register_handler(args)
-        cls.points2d.register_handler(args)
-        # Draw text on screen registration
-        cls.texter.register_handler(args)
-        # Timer for continuous update modal view
-        cls.draw_timer_handler = context.window_manager.event_timer_add(
-            time_step=0.2, window=context.window
-        )
-
-    @classmethod
-    def unregister_handlers(cls):
-        if cls.draw_timer_handler is not None:
-            bpy.context.window_manager.event_timer_remove(
-                cls.draw_timer_handler
-            )
-        cls.draw_timer_handler = None
-        cls.texter.unregister_handler()
-        cls.points2d.unregister_handler()
-        cls.points3d.unregister_handler()
-
-        cls.residuals.unregister_handler()
 
     @classmethod
     def update_pins_count(cls, headnum, camnum):
@@ -838,8 +495,8 @@ class FBLoader:
         # Move current camera
         cls.place_cameraobj(kid, camobj, headobj)
         # Load pins from model
-        cls.spins = cls.img_points(kid)
-        cls.current_pin = None
+        cls.viewport.set_spins(cls.viewport.img_points(fb, kid))
+        cls.viewport.current_pin = None
         logger.debug("LOAD MODEL END")
 
     @classmethod
