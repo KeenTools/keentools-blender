@@ -163,7 +163,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             coords.get_raw_camera_2d_data(context))
         # === Debug only ===
 
-        logger.debug('LEFT MOUSE RELEASE START')
+        logger.debug("LEFT MOUSE RELEASE")
 
         x, y = coords.get_image_space_coord(
             context, coords.get_mouse_coords(event, context))
@@ -189,7 +189,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             fb.set_model_mat(kid, cam.get_tmp_model_mat())
 
             if not fb.deserialize(head.get_serial_str()):
-                logger.('DESERIALIZE ERROR: ', head.get_serial_str())
+                logger.warning('DESERIALIZE ERROR: ', head.get_serial_str())
 
             coords.update_head_mesh(fb, head.headobj)
             # Update all cameras position
@@ -202,15 +202,15 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             head.need_update = True
             FBLoader.force_undo_push('Pin Move')
             head.need_update = False
-            logger.debug("PUSH 1")
-
+            # End of PUSH 1
+            # ---------
             # Restore last position
             head.set_serial_str(serial_str)
             cam.model_mat = model_mat
             fb.set_model_mat(kid, cam.get_model_mat())
 
             if not fb.deserialize(head.get_serial_str()):
-                logger.error("DESERIALIZE ERROR: {}", head.get_serial_str())
+                logger.warning("DESERIALIZE ERROR: {}", head.get_serial_str())
         else:
             # There was only one click
             # Save current state
@@ -227,13 +227,11 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         head.need_update = True
         FBLoader.force_undo_push('Pin Result')
         head.need_update = False
-        logger.debug("PUSH 2")
+        # End of PUSH 2
         # ---------
 
         # Load 3D pins
         FBLoader.update_surface_points(headobj, kid)
-
-        logger.debug("LEFT MOUSE RELEASE END")
         return {'FINISHED'}
 
     def on_mouse_move(self, context, event):

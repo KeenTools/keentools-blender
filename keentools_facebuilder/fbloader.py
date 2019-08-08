@@ -146,6 +146,7 @@ class FBLoader:
     def update_camera_params(cls, head):
         """ Update when some camera parameters changes """
         logger = logging.getLogger(__name__)
+        logger.debug("UPDATE CAMERA PARAMETERS")
 
         settings = get_main_settings()
         scene = bpy.context.scene
@@ -514,7 +515,7 @@ class FBLoader:
                 cls.wireframer.init_special_areas(obj.data, special_indices, (
                 *comp_color, settings.wireframe_opacity))
             else:
-                logging.error("LISTS HAVE DIFFERENT SIZES")
+                logging.warning("LISTS HAVE DIFFERENT SIZES")
         cls.wireframer.create_batches()
 
     @classmethod
@@ -798,7 +799,7 @@ class FBLoader:
         # Load serialized data
         fb = cls.get_builder()
         if not fb.deserialize(head.get_serial_str()):
-            logger.error('DESERIALIZE ERROR: {}'.format(head.get_serial_str()))
+            logger.warning('DESERIALIZE ERROR: {}'.format(head.get_serial_str()))
 
     @classmethod
     def load_all(cls, headnum, camnum, center=False):
@@ -814,7 +815,7 @@ class FBLoader:
         # Load serialized data
         fb = cls.get_builder()
         if not fb.deserialize(head.get_serial_str()):
-            logger.error('DESERIALIZE ERROR: {}'.format(head.get_serial_str()))
+            logger.warning('DESERIALIZE ERROR: {}'.format(head.get_serial_str()))
 
         # Check Scene consistency
 

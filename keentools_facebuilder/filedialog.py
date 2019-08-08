@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
+import logging
 
 import bpy
 import os
@@ -70,7 +70,8 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
             layout.label(text=t)
 
     def execute(self, context):
-        """Do something with the selected file(s)"""
+        """ Selected files processing"""
+        logger = logging.getLogger(__name__)
         settings = get_main_settings()
         if len(settings.heads) <= self.headnum:
             op = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
@@ -87,7 +88,7 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
         H = -1
         for f in self.files:
             filepath = os.path.join(directory, f.name)
-            print(filepath)
+            logger.debug("FILE: {}".format(filepath))
             img = FBLoader.add_camera_image(self.headnum, filepath)
             if img.size[0] != W or img.size[1] != H:
                 W, H = img.size

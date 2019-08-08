@@ -151,9 +151,6 @@ class FBEdgeShader2D(FBEdgeShaderBase):
 
         self.line_shader = gpu.types.GPUShader(
              vertex_shader, fragment_shader)
-        # TEST purpose
-        # self.line_shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
-        print("SHADER 2D INIT")
 
     def draw_callback(self, op, context):
         # Force Stop
@@ -169,20 +166,13 @@ class FBEdgeShader2D(FBEdgeShaderBase):
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
 
-        # bgl.glLineStipple(1, 0x00FF)
-        # bgl.glEnable(GL_LINE_STIPPLE)
-
-        # bgl.glLineWidth(2.0)
         self.line_shader.bind()
-        # self.line_shader.uniform_float("color", config.residual_color)
         self.line_batch.draw(self.line_shader)
-        # print("DRAW RESIDUALS")
 
     def create_batch(self):
         # Our shader batch
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
-            # {"pos": self.vertices}
             {"pos": self.vertices, "color": self.vertices_colors,
              "lineLength": self.edge_lengths}
         )
@@ -202,20 +192,11 @@ class FBEdgeShader3D(FBEdgeShaderBase):
         if self.is_handler_list_empty():
             self.unregister_handler()
             return
-        # bgl.glEnable(bgl.GL_BLEND)
-        # batch.draw(shader)
-        # batch2.draw(shader2)
-        # bgl.glDisable(bgl.GL_BLEND)
-
-        # bgl.glPushAttrib(bgl.GL_ALL_ATTRIB_BITS)
 
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-        # bgl.glLineWidth(2.0)
-
-        # bgl.glEnable(bgl.GL_MULTISAMPLE)
 
         bgl.glEnable(bgl.GL_DEPTH_TEST)
         bgl.glEnable(bgl.GL_POLYGON_OFFSET_FILL)
@@ -237,7 +218,6 @@ class FBEdgeShader3D(FBEdgeShaderBase):
         bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_FILL)
         bgl.glDepthMask(bgl.GL_TRUE)
         bgl.glDisable(bgl.GL_DEPTH_TEST)
-        # bgl.glPopAttrib()
 
     def create_batches(self):
         self.fill_batch = batch_for_shader(
@@ -279,9 +259,8 @@ class FBEdgeShader3D(FBEdgeShaderBase):
             '''
 
         self.fill_shader = gpu.types.GPUShader(
-            fill_vertex_shader, fill_fragment_shader)  # ORIGINAL
-        # TEST purpose
-        # self.fill_shader = gpu.shader.from_builtin('3D_SMOOTH_COLOR')
+            fill_vertex_shader, fill_fragment_shader)
+
         self.line_shader = gpu.shader.from_builtin('3D_SMOOTH_COLOR')
 
     def init_geom_data(self, obj):

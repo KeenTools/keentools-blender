@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
+import logging
 
 import bpy
 import json
@@ -42,9 +42,7 @@ class FBDebug:
 
     @classmethod
     def set_active(cls, flag=True):
-        print("IN_SET:", flag)
         cls.active = flag
-        print("AFTER_SET:", cls.active)
 
     @classmethod
     def inc_event_number(cls):
@@ -93,13 +91,14 @@ class FBDebug:
 
     @classmethod
     def output_event_queue(cls):
+        logger = logging.getLogger(__name__)
         if not cls.active:
             return
         # Need output all in Text Editor
-        print("=== QUEUE ===")
+        logger.debug("=== QUEUE ===")
         for ev in cls.event_queue:
             res = cls.format_event_output(ev)
-            print(res)
+            logger.debug(res)
 
     @classmethod
     def make_snapshot(cls):

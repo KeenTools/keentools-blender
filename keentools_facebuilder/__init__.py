@@ -36,15 +36,14 @@ import sys
 import tempfile
 import shutil
 import logging
+from . config import config
 
-
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(name)-22s %(lineno)-5d %(levelname)-8s %(message)s',
-                    datefmt='%H:%M:%S',
-                    filename='c:/Sure/facebuilder.log',
-                    filemode='w')
+logging.basicConfig(
+    level=config.logging_level,
+    format='%(asctime)s %(name)-22s %(lineno)-5d %(levelname)-8s %(message)s',
+    datefmt='%H:%M:%S', filename=config.log_filename, filemode='w')
 console = logging.StreamHandler()
-console.setLevel(logging.DEBUG)
+console.setLevel(config.console_level)
 formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
 console.setFormatter(formatter)
 # add the handler to the root logger
@@ -97,7 +96,6 @@ def init_pykeentools_copy():
     logger.debug("PYKEENTOOLS_DIR: {}".format(pykeentools_dir))
 
     os.environ["KEENTOOLS_DATA_PATH"] = data_dir  # "../data"
-    # print("OS_ENV", os.environ)
 
     if pykeentools_dir not in sys.path:
         sys.path.append(pykeentools_dir)

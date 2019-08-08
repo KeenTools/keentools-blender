@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
+import logging
 
 import bpy
 import blf
@@ -50,34 +50,37 @@ class FBStopTimer:
 
     @classmethod
     def check_pinmode(cls):
+        logger = logging.getLogger(__name__)
         settings = get_main_settings()
         if not cls.is_active():
             # Timer works when shouldn't
-            print("STOP INACTIVE")
+            logger.debug("STOP INACTIVE")
             return None
         # Timer is active
         if not settings.pinmode:
             # But we are not in pinmode
             force_stop_shaders()
             cls.stop()
-            print("STOP FORCE")
+            logger.debug("STOP FORCE")
             return None
 
+        logger.debug("NEXT CALL")
         # Interval to next call
-        print("NEXT CALL")
         return 1.0
 
     @classmethod
     def start(cls):
+        logger = logging.getLogger(__name__)
         cls.stop()
         bpy.app.timers.register(cls.check_pinmode, persistent=True)
-        print("== REGISTER TIMER")
+        logger.debug("REGISTER TIMER")
         cls.set_active()
 
     @classmethod
     def stop(cls):
+        logger = logging.getLogger(__name__)
         if bpy.app.timers.is_registered(cls.check_pinmode):
-            print("== UNREGISTER TIMER")
+            logger.debug("UNREGISTER TIMER")
             bpy.app.timers.unregister(cls.check_pinmode)
         cls.set_inactive()
 

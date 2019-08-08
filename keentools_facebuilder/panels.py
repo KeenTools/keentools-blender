@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
+import logging
 
 import bpy
 from bpy.types import Panel, Operator, Menu
@@ -279,6 +279,7 @@ class WM_OT_FBAddonWarning(Operator):
             layout.label(text=t)
 
     def execute(self, context):
+        logger = logging.getLogger(__name__)
         if self.msg != 0:
             return {"FINISHED"}
 
@@ -292,9 +293,8 @@ class WM_OT_FBAddonWarning(Operator):
             mod = addon_utils.addons_fake_modules.get(config.addon_name)
             info = addon_utils.module_bl_info(mod)
             info["show_expanded"] = True
-            # bpy.ops.screen.userpref_show('INVOKE_DEFAULT')
         except:
-            print('SOME ERROR WITH SETTINGS OPENNING')
+            logger.error("SOME ERROR WITH ADDON SETTINGS OPENNING")
             pass
 
         return {"FINISHED"}
@@ -371,7 +371,6 @@ class WM_OT_FBAddonWarning(Operator):
                 "by choosing commands from this menu."
             ])
         return context.window_manager.invoke_props_dialog(self, width=300)
-        # return context.window_manager.invoke_popup(self, width=300)
 
 
 class OBJECT_PT_FBFaceParts(Panel):
@@ -471,10 +470,7 @@ class OBJECT_PT_TBPanel(Panel):
         layout.prop(settings, 'tex_face_angles_affection')
         layout.prop(settings, 'tex_uv_expand_percents')
 
-        # layout.prop_menu_enum(settings, 'tex_uv_shape', text='', icon='UV')
-
     def draw_header(self, context):
-        layout = self.layout
         pass
 
 
@@ -498,7 +494,6 @@ class OBJECT_PT_FBColorsPanel(Panel):
         obj = context.object
         settings = get_main_settings()
 
-        # layout.label(text='Wireframe Settings')
         box = layout.box()
         row = box.row()
         row.prop(settings, 'wireframe_color', text='')
@@ -526,7 +521,6 @@ class OBJECT_PT_FBColorsPanel(Panel):
         layout.prop(settings, 'show_specials', text='Highlight Parts')
 
     def draw_header(self, context):
-        layout = self.layout
         pass
 
 
@@ -537,8 +531,6 @@ class OBJECT_PT_FBSettingsPanel(Panel):
     bl_label = "Settings"
     bl_category = config.fb_tab_category
     bl_context = "objectmode"
-
-    # bl_options = {'DEFAULT_CLOSED'}
 
     # Panel appear only when our Mesh or Camera selected
     @classmethod
@@ -552,11 +544,9 @@ class OBJECT_PT_FBSettingsPanel(Panel):
         obj = context.object
         settings = get_main_settings()
 
-        # layout.label(text='Pin Sensitivity')
         box = layout.box()
         box.prop(settings, 'pin_size', slider=True)
         box.prop(settings, 'pin_sensitivity', slider=True)
-
 
         layout.prop(settings, 'check_auto_rigidity')
         row = layout.row()
@@ -575,7 +565,6 @@ class OBJECT_MT_FBFixCameraMenu(Menu):
     bl_label = "Fix Frame Size"
     bl_idname = config.fb_fix_camera_frame_menu_idname
     bl_description = "Fix frame Width and Height parameters for camera"
-
 
     def draw(self, context):
         layout = self.layout

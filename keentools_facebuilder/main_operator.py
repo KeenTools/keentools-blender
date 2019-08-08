@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
+import logging
 
 import bpy
 from bpy.types import Operator
@@ -132,7 +132,6 @@ class OBJECT_OT_FBCenterGeo(Operator):
         fb = FBLoader.get_builder()
         kid = FBLoader.keyframe_by_camnum(headnum, camnum)
         fb.center_model_mat(kid)
-        print('CENTERED GEO', headnum, camnum)
         FBLoader.fb_save(headnum, camnum)
         FBLoader.fb_redraw(headnum, camnum)
         # === Debug only ===
@@ -169,9 +168,7 @@ class OBJECT_OT_FBUnmorph(Operator):
 
         fb = FBLoader.get_builder()
         kid = FBLoader.keyframe_by_camnum(headnum, camnum)
-        # TODO: Unmorph method call
         fb.unmorph()
-        print('UNMORPH', headnum, camnum)
         FBLoader.fb_save(headnum, camnum)
         FBLoader.fb_redraw(headnum, camnum)
         return {'FINISHED'}
@@ -207,7 +204,6 @@ class OBJECT_OT_FBRemovePins(Operator):
         fb.remove_pins(kid)
         # Added but don't work
         fb.solve_for_current_pins(kid)
-        print('PINS REMOVED')
         FBLoader.fb_save(headnum, camnum)
         FBLoader.fb_redraw(headnum, camnum)
         FBLoader.update_pins_count(headnum, camnum)
@@ -311,6 +307,7 @@ class OBJECT_OT_FBDeleteCamera(Operator):
         pass
 
     def execute(self, context):
+        logger = logging.getLogger(__name__)
         settings = get_main_settings()
         headnum = self.headnum
         camnum = self.camnum
@@ -325,7 +322,7 @@ class OBJECT_OT_FBDeleteCamera(Operator):
             bpy.data.objects.remove(camobj, do_unlink=True)
             # Delete link from list
             head.cameras.remove(camnum)
-            print('CAMERA REMOVED')
+            logger.debug("CAMERA REMOVED")
         return {'FINISHED'}
 
 

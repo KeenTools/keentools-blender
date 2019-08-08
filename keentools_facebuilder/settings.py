@@ -51,22 +51,18 @@ def update_pin_size(self, context):
 
 
 def update_debug_log(self, value):
-    print("SET: ", value)
     FBDebug.set_active(value)
 
 
 def update_cam_image(self, context):
-    print("SELF", self.keys())
     FBLoader.update_cam_image_size(self)
 
 
 def update_camera_params(self, contex):
-    print("CAMERA CHANGES", self.keys())
     FBLoader.update_camera_params(self)  # pass current head
 
 
 def update_mesh_parts(self, context):
-    print("MESH PARTS")
     settings = get_main_settings()
     headnum = settings.current_headnum
     head = settings.heads[headnum]
@@ -99,7 +95,6 @@ def update_mesh_parts(self, context):
 
     mesh_name = old_mesh.name
     # Delete old mesh
-    print("MESH_USERS", old_mesh.users)
     bpy.data.meshes.remove(old_mesh, do_unlink=True)
     mesh.name = mesh_name
 
