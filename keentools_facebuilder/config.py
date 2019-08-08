@@ -33,7 +33,7 @@ class BuilderType:
 class config:
     logging_level = logging.DEBUG
     console_level = logging.INFO
-    log_filename = 'c:/Sure/facebuilder.log'
+    log_filename = 'keentools_facebuilder.log'
     addon_name = __package__  # the same as module name
     addon_version = '1.5.3 (Beta)'
     addon_search = 'KeenTools'

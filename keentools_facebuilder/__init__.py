@@ -41,15 +41,16 @@ from . config import config
 logging.basicConfig(
     level=config.logging_level,
     format='%(asctime)s %(name)-22s %(lineno)-5d %(levelname)-8s %(message)s',
-    datefmt='%H:%M:%S', filename=config.log_filename, filemode='w')
+    datefmt='%H:%M:%S')  # filename=config.log_filename, filemode='w')
+# duplicate short log in console
 console = logging.StreamHandler()
 console.setLevel(config.console_level)
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
+formatter_short = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+console.setFormatter(formatter_short)
 # add the handler to the root logger
 logging.getLogger('').addHandler(console)
 logger = logging.getLogger(__name__)
-
+# Start logging
 logger.info('--- Log started ---')
 
 
