@@ -45,7 +45,8 @@ class config:
 
     # Operators ids
     fb_main_operator_idname = 'object.' + _prefix + '_main_operator'
-    fb_main_select_camera_idname = 'object.' + _prefix + '_main_select_camera'
+    fb_main_select_camera_callname = _prefix + '_main_select_camera'
+    fb_main_select_camera_idname = 'object.' + fb_main_select_camera_callname
     fb_main_center_geo_idname = 'object.' + _prefix + '_main_center_geo'
     fb_main_unmorph_idname = 'object.' + _prefix + '_main_unmorph'
     fb_main_remove_pins_idname = 'object.' + _prefix + '_main_remove_pins'
@@ -54,7 +55,8 @@ class config:
     fb_main_filter_cameras_idname = 'object.' + _prefix + \
                                     '_main_filter_cameras'
     fb_main_delete_camera_idname = 'object.' + _prefix + '_main_delete_camera'
-    fb_main_add_camera_idname = 'object.' + _prefix + '_main_add_camera'
+    fb_main_add_camera_callname = _prefix + '_main_add_camera'
+    fb_main_add_camera_idname = 'object.' + fb_main_add_camera_callname
     fb_main_fix_size_idname = 'object.' + _prefix + '_main_fix_size'
     fb_main_camera_fix_size_idname = 'object.' + _prefix + \
                                      '_main_camera_fix_size'
@@ -80,15 +82,16 @@ class config:
     fb_add_body_operator_callname = _prefix + '_add_body'
 
     # Panels ids
-    fb_panel_idname = 'OBJECT_PT_' + _prefix + '_panel_id'
-    fb_tb_panel_idname = 'OBJECT_PT_' + _prefix + '_tb_panel_id'
-    fb_colors_panel_idname = 'OBJECT_PT_' + _prefix + '_colors_panel_id'
-    fb_parts_panel_idname = 'OBJECT_PT_' + _prefix + '_parts_panel_id'
-    fb_settings_panel_idname = 'OBJECT_PT_' + _prefix + '_settings_panel_id'
+    fb_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_panel_id'
+    fb_tb_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_tb_panel_id'
+    fb_colors_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_colors_panel_id'
+    fb_parts_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_parts_panel_id'
+    fb_settings_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_settings_panel_id'
 
     # Menu ids
-    fb_fix_frame_menu_idname = 'OBJECT_MT_' + _prefix + '_fix_frame_menu_id'
-    fb_fix_camera_frame_menu_idname = 'OBJECT_MT_' + _prefix + \
+    fb_fix_frame_menu_idname = 'FACEBUILDER_MT_' + _prefix + \
+                               '_fix_frame_menu_id'
+    fb_fix_camera_frame_menu_idname = 'FACEBUILDER_MT_' + _prefix + \
                                       '_fix_camera_frame_menu_id'
 
     # Standard names

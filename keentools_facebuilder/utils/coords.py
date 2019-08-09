@@ -134,7 +134,9 @@ def get_raw_camera_2d_data(context):
     rv3d = context.space_data.region_3d
     z = rv3d.view_camera_zoom
     off = rv3d.view_camera_offset
-    res = (a.x, a.y, a.width, a.height, z, off[0], off[1])
+    x1, y1, x2, y2 = get_camera_border(context)
+    # res = (a.x, a.y, a.width, a.height, z, off[0], off[1])
+    res = (x1, y1, x2, y2, z, off[0], off[1])
     return res
 
 

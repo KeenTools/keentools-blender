@@ -51,21 +51,6 @@ class FBLoader:
 
     # -----------------
     @classmethod
-    def get_fb_collection(cls):
-        """ Singleton for FB objects collection """
-        col_name = config.default_FB_COLLECTION_NAME
-        if col_name in bpy.data.collections:
-            return bpy.data.collections[col_name]
-        fb_col = bpy.data.collections.new(col_name)
-        bpy.context.scene.collection.children.link(fb_col)
-        return fb_col
-
-    @classmethod
-    def add_to_fb_collection(cls, obj):
-        fb_col = cls.get_fb_collection()
-        fb_col.objects.link(obj)
-
-    @classmethod
     def update_cam_image_size(cls, cam_item):
         cam_item.update_image_size()
 
@@ -525,7 +510,7 @@ class FBLoader:
         camera.keyframe_id = num
 
         # link camera into scene
-        cls.add_to_fb_collection(cam_ob)
+        attrs.add_to_fb_collection(cam_ob)
         # scene.collection.objects.link(cam_ob)  # Link to Scene
 
         # Add Background Image

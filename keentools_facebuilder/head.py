@@ -18,9 +18,10 @@
 
 
 import bpy
-import numpy as np
+
+from . utils import attrs
 from . fbloader import FBLoader
-from .config import config, BuilderType, get_main_settings, ErrorType
+from . config import config, BuilderType, get_main_settings, ErrorType
 
 
 class MESH_OT_FBAddHead(bpy.types.Operator):
@@ -37,7 +38,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
             op = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
             op('INVOKE_DEFAULT', msg=ErrorType.CannotCreate)
             return {'CANCELLED'}
-        FBLoader.add_to_fb_collection(obj)  # link to FB objects collection
+        attrs.add_to_fb_collection(obj)  # link to FB objects collection
         FBLoader.set_keentools_version(obj)  # Mark Keentools attribute
 
         bpy.ops.object.select_all(action='DESELECT')

@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-
+import bpy
 from .. config import config
 
 
@@ -69,3 +69,22 @@ def get_attr_variant_named(data, attr_names):
         if attribute in data.keys():
             return data[attribute]
     return None
+
+
+def get_collection(col_name):
+    """ Singleton for collection """
+    if col_name in bpy.data.collections:
+        return bpy.data.collections[col_name]
+    fb_col = bpy.data.collections.new(col_name)
+    bpy.context.scene.collection.children.link(fb_col)
+    return fb_col
+
+
+def get_fb_collection():
+    fb_col = get_collection(config.default_FB_COLLECTION_NAME)
+    return fb_col
+
+
+def add_to_fb_collection(obj):
+    fb_col = get_fb_collection()
+    fb_col.objects.link(obj)
