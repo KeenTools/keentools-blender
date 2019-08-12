@@ -44,32 +44,39 @@ class config:
     default_builder = BuilderType.FaceBuilder
 
     # Operators ids
-    fb_main_operator_idname = 'object.' + _prefix + '_main_operator'
+    fb_main_operator_callname = _prefix + '_main_operator'
+    fb_main_operator_idname = 'object.' + fb_main_operator_callname
     fb_main_select_camera_callname = _prefix + '_main_select_camera'
     fb_main_select_camera_idname = 'object.' + fb_main_select_camera_callname
-    fb_main_center_geo_idname = 'object.' + _prefix + '_main_center_geo'
-    fb_main_unmorph_idname = 'object.' + _prefix + '_main_unmorph'
-    fb_main_remove_pins_idname = 'object.' + _prefix + '_main_remove_pins'
+    fb_main_center_geo_callname = _prefix + '_main_center_geo'
+    fb_main_center_geo_idname = 'object.' + fb_main_center_geo_callname
+    fb_main_unmorph_callname = _prefix + '_main_unmorph'
+    fb_main_unmorph_idname = 'object.' + fb_main_unmorph_callname
+    fb_main_remove_pins_callname = _prefix + '_main_remove_pins'
+    fb_main_remove_pins_idname = 'object.' + fb_main_remove_pins_callname
     fb_main_wireframe_color_idname = 'object.' + _prefix + \
                                      '_main_wireframe_color'
     fb_main_filter_cameras_idname = 'object.' + _prefix + \
                                     '_main_filter_cameras'
-    fb_main_delete_camera_idname = 'object.' + _prefix + '_main_delete_camera'
+    fb_main_delete_camera_callname = _prefix + '_main_delete_camera'
+    fb_main_delete_camera_idname = 'object.' + fb_main_delete_camera_callname
     fb_main_add_camera_callname = _prefix + '_main_add_camera'
     fb_main_add_camera_idname = 'object.' + fb_main_add_camera_callname
-    fb_main_fix_size_idname = 'object.' + _prefix + '_main_fix_size'
+    fb_main_fix_size_callname = _prefix + '_main_fix_size'
+    fb_main_fix_size_idname = 'object.' + fb_main_fix_size_callname
     fb_main_camera_fix_size_idname = 'object.' + _prefix + \
                                      '_main_camera_fix_size'
     fb_main_addon_settings_idname = 'object.' + _prefix + \
                                     '_main_addon_settings'
-    fb_main_bake_tex_idname = 'object.' + _prefix + '_main_bake_tex'
     fb_main_bake_tex_callname = _prefix + '_main_bake_tex'
-    fb_main_show_tex_idname = 'object.' + _prefix + '_main_show_tex'
+    fb_main_bake_tex_idname = 'object.' + fb_main_bake_tex_callname
     fb_main_show_tex_callname = _prefix + '_main_show_tex'
+    fb_main_show_tex_idname = 'object.' + fb_main_show_tex_callname
 
     fb_filedialog_operator_idname = _prefix + '_import.open_filebrowser'
-    fb_draw_operator_idname = 'object.' + _prefix + '_draw'
     fb_draw_operator_callname = _prefix + '_draw'
+    fb_draw_operator_idname = 'object.' + fb_draw_operator_callname
+
     fb_movepin_operator_idname = 'object.' + _prefix + '_move_pin'
     fb_movepin_operator_callname = _prefix + '_move_pin'
     fb_actor_operator_idname = 'object.' + _prefix + '_actor'

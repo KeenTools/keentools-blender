@@ -3,7 +3,7 @@ from bpy.types import Panel, Operator
 from bpy.props import StringProperty
 
 import keentools_facebuilder
-from keentools_facebuilder.config import config
+from keentools_facebuilder.config import config, get_main_settings
 import keentools_facebuilder.utils.coords as coords
 
 class TestsOperator(Operator):
@@ -20,11 +20,15 @@ class TestsOperator(Operator):
 
     def execute(self, context):
         if self.action == "print_work":
-            print_work()
+            test_print_work()
         elif self.action == "test_create_head_and_cameras":
             test_create_head_and_cameras()
-        elif self.action == "test_create_and_move_pins":
-            test_create_and_move_pins()
+        elif self.action == "test_move_pins":
+            test_move_pins()
+        elif self.action == "test_delete_last_сamera":
+            test_delete_last_camera()
+        elif self.action == "test_duplicate_and_reconstruct":
+            test_duplicate_and_reconstruct()
         return {'FINISHED'}
 
 
@@ -42,14 +46,25 @@ class TestsPanel(Panel):
         scene = context.scene
         obj = context.object
 
-        op = layout.operator('object.keentools_fb_tests', text="print_work")
+        op = layout.operator('object.keentools_fb_tests',
+                             text="print_work")
         op.action = "print_work"
 
-        op = layout.operator('object.keentools_fb_tests', text="test_create_head_and_cameras")
+        op = layout.operator('object.keentools_fb_tests',
+                             text="test_create_head_and_cameras")
         op.action = "test_create_head_and_cameras"
 
-        op = layout.operator('object.keentools_fb_tests', text="test_create_and_move_pins")
-        op.action = "test_create_and_move_pins"
+        op = layout.operator('object.keentools_fb_tests',
+                             text="test_delete_camera")
+        op.action = "test_delete_last_сamera"
+
+        op = layout.operator('object.keentools_fb_tests',
+                             text="test_move_pins")
+        op.action = "test_move_pins"
+        op = layout.operator('object.keentools_fb_tests',
+                             text="test_duplicate_and_reconstruct")
+        op.action = "test_duplicate_and_reconstruct"
+
 
 
 _classes = (
@@ -70,20 +85,41 @@ def unregister():
 if __name__ == "__main__":
     register()
 
-
+# --------
 def create_head():
     # Create Head
     op = getattr(bpy.ops.mesh, config.fb_add_head_operator_callname)
     op('EXEC_DEFAULT')
 
 
+def get_last_headnum():
+    settings = get_main_settings()
+    headnum = len(settings.heads) - 1
+    return headnum
+
+
+def select_by_headnum(headnum):
+    settings = get_main_settings()
+    headobj = settings.heads[headnum].headobj
+    headobj.select_set(state=True)
+    bpy.context.view_layer.objects.active = headobj
+    return headobj
+
+
+def get_last_camnum(headnum):
+    settings = get_main_settings()
+    camnum = len(settings.heads[headnum].cameras) - 1
+    return camnum
+
 def create_empty_camera():
     # Add New Camera button
     op = getattr(bpy.ops.object, config.fb_main_add_camera_callname)
     op('EXEC_DEFAULT')
 
-def print_work():
-    print("WORK")
+
+def delete_camera(headnum, camnum):
+    op = getattr(bpy.ops.object, config.fb_main_delete_camera_callname)
+    op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
 
 
 def get_override_context():
@@ -107,6 +143,39 @@ def get_area():
     return None
 
 
+def move_pin(start_x, start_y, end_x, end_y, arect, brect, headnum=0, camnum=0):
+    # Registered Operator call
+    op = getattr(
+        bpy.ops.object, config.fb_movepin_operator_callname)
+    # Move pin
+    x, y = coords.region_to_image_space(start_x, start_y, *arect)
+    px, py = coords.image_space_to_region(x, y, *brect)
+    print("P:", px, py)
+    op('EXEC_DEFAULT', headnum=headnum, camnum=camnum,
+       pinx=px, piny=py, test_action="add_pin")
+
+    x, y = coords.region_to_image_space(end_x, end_y, *arect)
+    px, py = coords.image_space_to_region(x, y, *brect)
+    op('EXEC_DEFAULT', headnum=headnum, camnum=camnum,
+       pinx=px, piny=py, test_action="mouse_move")
+
+    # Stop pin
+    op('EXEC_DEFAULT', headnum=headnum, camnum=camnum,
+       pinx=px, piny=py, test_action="mouse_release")
+
+
+def select_camera(headnum=0, camnum=0):
+    op = getattr(bpy.ops.object, config.fb_main_select_camera_callname)
+    op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
+
+
+# -------
+# Tests
+# -------
+def test_print_work():
+    print("WORK")
+
+
 def test_create_head_and_cameras():
     create_head()
     create_empty_camera()
@@ -114,11 +183,18 @@ def test_create_head_and_cameras():
     create_empty_camera()
 
 
-def test_create_and_move_pins():
-    test_create_head_and_cameras()
+def test_delete_last_camera():
+    headnum = get_last_headnum()
+    assert(headnum >= 0)
+    camnum = get_last_camnum(headnum)
+    assert(camnum >= 0)
+    delete_camera(headnum, camnum)
+
+
+def test_move_pins():
+    # test_create_head_and_cameras()
     # Switch to PinMode
-    op = getattr(bpy.ops.object, config.fb_main_select_camera_callname)
-    op('EXEC_DEFAULT', headnum=0, camnum=0)
+    select_camera(0, 0)
 
     area = get_area()
     region_3d = area.spaces[0].region_3d
@@ -129,98 +205,18 @@ def test_create_and_move_pins():
     fake_context.space_data.region_3d = region_3d
     fake_context.scene = bpy.context.scene
 
-    x1, y1, x2, y2 = coords.get_camera_border(fake_context)
+    brect = tuple(coords.get_camera_border(fake_context))
+    arect = (396.5, -261.9, 1189.5, 1147.9)
 
-    ax1, ay1, ax2, ay2 = 396.5,-261.9, 1189.5,1147.9
+    move_pin(793, 421, 651, 425, arect, brect)
+    move_pin(732, 478, 826, 510, arect, brect)
+    move_pin(542, 549, 639, 527, arect, brect)
+    move_pin(912, 412, 911, 388, arect, brect)
 
-    # Add pin 1
-    x, y = coords.region_to_image_space(793, 421, ax1, ay1, ax2, ay2)
-    px, py = coords.image_space_to_region(x, y, x1, y1, x2, y2)
-    print("P1:", px, py)
-
-    # Registered Operator call
-    op = getattr(
-        bpy.ops.object, config.fb_movepin_operator_callname)
-    op('EXEC_DEFAULT', headnum=0, camnum=0,
-       pinx=px, piny=py, test_action="add_pin")
-
-    # Move pin
-    x, y = coords.region_to_image_space(651, 425, ax1, ay1, ax2, ay2)
-    px, py = coords.image_space_to_region(x, y, x1, y1, x2, y2)
-    print("P2:", px, py)
-    
-    op('EXEC_DEFAULT', headnum=0, camnum=0,
-       pinx=px, piny=py, test_action="mouse_move")
-
-    # Stop pin
-    op('EXEC_DEFAULT', headnum=0, camnum=0,
-       pinx=px, piny=py, test_action="mouse_release")
-
-    # Add pin 2
-    x, y = coords.region_to_image_space(732, 478, ax1, ay1, ax2, ay2)
-    px, py = coords.image_space_to_region(x, y, x1, y1, x2, y2)
-    print("P1:", px, py)
-
-    # Registered Operator call
-    op = getattr(
-        bpy.ops.object, config.fb_movepin_operator_callname)
-    op('EXEC_DEFAULT', headnum=0, camnum=0,
-       pinx=px, piny=py, test_action="add_pin")
-
-    # Move pin
-    x, y = coords.region_to_image_space(826, 510, ax1, ay1, ax2, ay2)
-    px, py = coords.image_space_to_region(x, y, x1, y1, x2, y2)
-    print("P2:", px, py)
-    
-    op('EXEC_DEFAULT', headnum=0, camnum=0,
-       pinx=px, piny=py, test_action="mouse_move")
-
-    # Stop pin
-    op('EXEC_DEFAULT', headnum=0, camnum=0,
-       pinx=px, piny=py, test_action="mouse_release")
-
-    # Add pin 3
-    x, y = coords.region_to_image_space(542, 549, ax1, ay1, ax2, ay2)
-    px, py = coords.image_space_to_region(x, y, x1, y1, x2, y2)
-    print("P1:", px, py)
-
-    # Registered Operator call
-    op = getattr(
-        bpy.ops.object, config.fb_movepin_operator_callname)
-    op('EXEC_DEFAULT', headnum=0, camnum=0,
-       pinx=px, piny=py, test_action="add_pin")
-
-    # Move pin
-    x, y = coords.region_to_image_space(639, 527, ax1, ay1, ax2, ay2)
-    px, py = coords.image_space_to_region(x, y, x1, y1, x2, y2)
-    print("P2:", px, py)
-    
-    op('EXEC_DEFAULT', headnum=0, camnum=0,
-       pinx=px, piny=py, test_action="mouse_move")
-
-    # Stop pin
-    op('EXEC_DEFAULT', headnum=0, camnum=0,
-       pinx=px, piny=py, test_action="mouse_release")
-
-    # Add pin 4
-    x, y = coords.region_to_image_space(912, 412, ax1, ay1, ax2, ay2)
-    px, py = coords.image_space_to_region(x, y, x1, y1, x2, y2)
-    print("P1:", px, py)
-
-    # Registered Operator call
-    op = getattr(
-        bpy.ops.object, config.fb_movepin_operator_callname)
-    op('EXEC_DEFAULT', headnum=0, camnum=0,
-       pinx=px, piny=py, test_action="add_pin")
-
-    # Move pin
-    x, y = coords.region_to_image_space(911, 388, ax1, ay1, ax2, ay2)
-    px, py = coords.image_space_to_region(x, y, x1, y1, x2, y2)
-    print("P2:", px, py)
-    
-    op('EXEC_DEFAULT', headnum=0, camnum=0,
-       pinx=px, piny=py, test_action="mouse_move")
-
-    # Stop pin
-    op('EXEC_DEFAULT', headnum=0, camnum=0,
-       pinx=px, piny=py, test_action="mouse_release")
+def test_duplicate_and_reconstruct():
+    headnum = get_last_headnum()
+    bpy.ops.object.select_all(action='DESELECT')
+    headobj = select_by_headnum(headnum)
+    bpy.ops.object.duplicate_move(
+        OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
+        TRANSFORM_OT_translate={"value": (-3.0, 0, 0)})

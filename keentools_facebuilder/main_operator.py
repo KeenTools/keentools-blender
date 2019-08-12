@@ -78,7 +78,8 @@ class OBJECT_OT_FBSelectCamera(Operator):
             bpy.ops.view3d.view_camera()
         else:
             cam.hide_set(False)  # To allow switch
-            bpy.ops.view3d.object_as_camera()
+            if not bpy.app.background:
+                bpy.ops.view3d.object_as_camera()
 
         # Add Background Image
         c = cam.data

@@ -54,7 +54,9 @@ class FBEdgeShaderBase:
         self.edges_indices = []
         self.edges_colors = []
         self.vertices_colors = []
-        self.init_shaders()
+        # Check if blender started in background mode
+        if not bpy.app.background:
+            self.init_shaders()
 
     def is_working(self):
         return not (self.draw_handler is None)
