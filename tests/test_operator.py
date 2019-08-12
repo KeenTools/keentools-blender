@@ -133,26 +133,94 @@ def test_create_and_move_pins():
 
     ax1, ay1, ax2, ay2 = 396.5,-261.9, 1189.5,1147.9
 
-    x, y = coords.region_to_image_space(792, 422, ax1, ay1, ax2, ay2)
+    # Add pin 1
+    x, y = coords.region_to_image_space(793, 421, ax1, ay1, ax2, ay2)
     px, py = coords.image_space_to_region(x, y, x1, y1, x2, y2)
-    
     print("P1:", px, py)
 
     # Registered Operator call
     op = getattr(
         bpy.ops.object, config.fb_movepin_operator_callname)
-    op('INVOKE_DEFAULT',
-       headnum=0,
-       camnum=0,
-       pinx=px, piny=py)
+    op('EXEC_DEFAULT', headnum=0, camnum=0,
+       pinx=px, piny=py, test_action="add_pin")
 
-    x, y = coords.region_to_image_space(655, 447, ax1, ay1, ax2, ay2)
+    # Move pin
+    x, y = coords.region_to_image_space(651, 425, ax1, ay1, ax2, ay2)
     px, py = coords.image_space_to_region(x, y, x1, y1, x2, y2)
-
     print("P2:", px, py)
     
-    op('INVOKE_DEFAULT',
-       headnum=0,
-       camnum=0,
-       pinx=px, piny=py)
+    op('EXEC_DEFAULT', headnum=0, camnum=0,
+       pinx=px, piny=py, test_action="mouse_move")
 
+    # Stop pin
+    op('EXEC_DEFAULT', headnum=0, camnum=0,
+       pinx=px, piny=py, test_action="mouse_release")
+
+    # Add pin 2
+    x, y = coords.region_to_image_space(732, 478, ax1, ay1, ax2, ay2)
+    px, py = coords.image_space_to_region(x, y, x1, y1, x2, y2)
+    print("P1:", px, py)
+
+    # Registered Operator call
+    op = getattr(
+        bpy.ops.object, config.fb_movepin_operator_callname)
+    op('EXEC_DEFAULT', headnum=0, camnum=0,
+       pinx=px, piny=py, test_action="add_pin")
+
+    # Move pin
+    x, y = coords.region_to_image_space(826, 510, ax1, ay1, ax2, ay2)
+    px, py = coords.image_space_to_region(x, y, x1, y1, x2, y2)
+    print("P2:", px, py)
+    
+    op('EXEC_DEFAULT', headnum=0, camnum=0,
+       pinx=px, piny=py, test_action="mouse_move")
+
+    # Stop pin
+    op('EXEC_DEFAULT', headnum=0, camnum=0,
+       pinx=px, piny=py, test_action="mouse_release")
+
+    # Add pin 3
+    x, y = coords.region_to_image_space(542, 549, ax1, ay1, ax2, ay2)
+    px, py = coords.image_space_to_region(x, y, x1, y1, x2, y2)
+    print("P1:", px, py)
+
+    # Registered Operator call
+    op = getattr(
+        bpy.ops.object, config.fb_movepin_operator_callname)
+    op('EXEC_DEFAULT', headnum=0, camnum=0,
+       pinx=px, piny=py, test_action="add_pin")
+
+    # Move pin
+    x, y = coords.region_to_image_space(639, 527, ax1, ay1, ax2, ay2)
+    px, py = coords.image_space_to_region(x, y, x1, y1, x2, y2)
+    print("P2:", px, py)
+    
+    op('EXEC_DEFAULT', headnum=0, camnum=0,
+       pinx=px, piny=py, test_action="mouse_move")
+
+    # Stop pin
+    op('EXEC_DEFAULT', headnum=0, camnum=0,
+       pinx=px, piny=py, test_action="mouse_release")
+
+    # Add pin 4
+    x, y = coords.region_to_image_space(912, 412, ax1, ay1, ax2, ay2)
+    px, py = coords.image_space_to_region(x, y, x1, y1, x2, y2)
+    print("P1:", px, py)
+
+    # Registered Operator call
+    op = getattr(
+        bpy.ops.object, config.fb_movepin_operator_callname)
+    op('EXEC_DEFAULT', headnum=0, camnum=0,
+       pinx=px, piny=py, test_action="add_pin")
+
+    # Move pin
+    x, y = coords.region_to_image_space(911, 388, ax1, ay1, ax2, ay2)
+    px, py = coords.image_space_to_region(x, y, x1, y1, x2, y2)
+    print("P2:", px, py)
+    
+    op('EXEC_DEFAULT', headnum=0, camnum=0,
+       pinx=px, piny=py, test_action="mouse_move")
+
+    # Stop pin
+    op('EXEC_DEFAULT', headnum=0, camnum=0,
+       pinx=px, piny=py, test_action="mouse_release")
