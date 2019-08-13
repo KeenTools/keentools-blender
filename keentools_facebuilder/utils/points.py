@@ -20,6 +20,8 @@ import bpy
 import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
+from . shaders import flat_color_3d_vertex_shader, \
+    circular_dot_fragment_shader, flat_color_2d_vertex_shader
 from .. config import Config
 
 
@@ -59,52 +61,8 @@ class FBShaderPoints:
                       shadername='2D_FLAT_COLOR'):
         if shadername == 'CUSTOM_3D':
             # 3D_FLAT_COLOR
-            vertex_shader = '''
-                uniform mat4 ModelViewProjectionMatrix;
-                #ifdef USE_WORLD_CLIP_PLANES
-                uniform mat4 ModelMatrix;
-                #endif
-
-                in vec3 pos;
-                #if defined(USE_COLOR_U32)
-                in uint color;
-                #else
-                in vec4 color;
-                #endif
-
-                flat out vec4 finalColor;
-
-                void main()
-                {
-                    vec4 pos_4d = vec4(pos, 1.0);
-                    gl_Position = ModelViewProjectionMatrix * pos_4d;
-
-                #if defined(USE_COLOR_U32)
-                    finalColor = vec4(
-                        ((color      ) & uint(0xFF)) * (1.0f / 255.0f),
-                        ((color >>  8) & uint(0xFF)) * (1.0f / 255.0f),
-                        ((color >> 16) & uint(0xFF)) * (1.0f / 255.0f),
-                        ((color >> 24)             ) * (1.0f / 255.0f));
-                #else
-                    finalColor = color;
-                #endif
-
-                #ifdef USE_WORLD_CLIP_PLANES
-                    world_clip_planes_calc_clip_distance((ModelMatrix * pos_4d).xyz);
-                #endif
-                }
-            '''
-            fragment_shader = '''
-                flat in vec4 finalColor;
-                out vec4 fragColor;
-                void main() {
-                        vec2 cxy = 2.0 * gl_PointCoord - 1.0;
-                        float r = dot(cxy, cxy);
-                        float delta = fwidth(r);
-                        float alpha = 1.0 - smoothstep(1.0 - delta, 1.0 + delta, r);
-                        fragColor = finalColor * alpha;
-                }
-            '''
+            vertex_shader = flat_color_3d_vertex_shader()
+            fragment_shader = circular_dot_fragment_shader()
 
             self.shader = gpu.types.GPUShader(vertex_shader, fragment_shader)
 
@@ -114,31 +72,9 @@ class FBShaderPoints:
                 indices=None
             )
         elif shadername == 'CUSTOM_2D':
-            vertex_shader = '''
-                uniform mat4 ModelViewProjectionMatrix;
+            vertex_shader = flat_color_2d_vertex_shader()
+            fragment_shader = circular_dot_fragment_shader()
 
-                in vec2 pos;
-                in vec4 color;
-
-                flat out vec4 finalColor;
-
-                void main()
-                {
-                    gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);
-                    finalColor = color;
-                }
-            '''
-            fragment_shader = '''
-                flat in vec4 finalColor;
-                out vec4 fragColor;
-                void main() {
-                        vec2 cxy = 2.0 * gl_PointCoord - 1.0;
-                        float r = dot(cxy, cxy);
-                        float delta = fwidth(r);
-                        float alpha = 1.0 - smoothstep(1.0 - delta, 1.0 + delta, r);
-                        fragColor = finalColor * alpha;
-                }
-            '''
             self.shader = gpu.types.GPUShader(vertex_shader, fragment_shader)
 
             self.batch = batch_for_shader(

@@ -21,6 +21,9 @@ import bpy
 import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
+from . shaders import simple_fill_vertex_shader, \
+    black_fill_fragment_shader, residual_vertex_shader, \
+    residual_fragment_shader
 
 
 class FBEdgeShaderBase:
@@ -121,37 +124,8 @@ class FBEdgeShader2D(FBEdgeShaderBase):
         super().__init__()
 
     def init_shaders(self):
-        vertex_shader = '''
-            uniform mat4 ModelViewProjectionMatrix;
-            in vec2 pos;
-            in float lineLength;
-            out float v_LineLength;
-            
-            in vec4 color;
-            flat out vec4 finalColor;
-            
-            void main()
-            {
-                v_LineLength = lineLength;
-                gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0f);
-                finalColor = color;
-            }
-        '''
-
-        fragment_shader = '''
-            in float v_LineLength;            
-            flat in vec4 finalColor;
-            out vec4 fragColor;
-
-            void main()
-            {
-                if (step(sin(v_LineLength), -0.3f) == 1) discard;
-                fragColor = finalColor;
-            }
-        '''
-
         self.line_shader = gpu.types.GPUShader(
-             vertex_shader, fragment_shader)
+            residual_vertex_shader(), residual_fragment_shader())
 
     def draw_callback(self, op, context):
         # Force Stop
@@ -234,33 +208,8 @@ class FBEdgeShader3D(FBEdgeShaderBase):
             indices=self.edges_indices)
 
     def init_shaders(self):
-        fill_vertex_shader = '''
-            uniform mat4 ModelViewProjectionMatrix;
-            #ifdef USE_WORLD_CLIP_PLANES
-            uniform mat4 ModelMatrix;
-            #endif
-
-            in vec3 pos;
-
-            void main()
-            {
-                gl_Position = ModelViewProjectionMatrix * vec4(pos, 1.0);
-
-            #ifdef USE_WORLD_CLIP_PLANES
-                world_clip_planes_calc_clip_distance((ModelMatrix * vec4(pos, 1.0)).xyz);
-            #endif
-            }
-            '''
-        fill_fragment_shader = '''
-            out vec4 fragColor;
-            void main()
-            {
-                fragColor = vec4(0.0, 0.0, 0.0, 1.0);
-            }
-            '''
-
         self.fill_shader = gpu.types.GPUShader(
-            fill_vertex_shader, fill_fragment_shader)
+            simple_fill_vertex_shader(), black_fill_fragment_shader())
 
         self.line_shader = gpu.shader.from_builtin('3D_SMOOTH_COLOR')
 
