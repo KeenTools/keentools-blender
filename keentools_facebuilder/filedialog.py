@@ -24,13 +24,13 @@ from bpy_extras.io_utils import ImportHelper
 from bpy.types import Operator
 
 from . fbloader import FBLoader
-from .config import config, get_main_settings, ErrorType
+from .config import Config, get_main_settings, ErrorType
 
 
 class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
     """ Open selected image sequence as cameras """
 
-    bl_idname = config.fb_filedialog_operator_idname
+    bl_idname = Config.fb_filedialog_operator_idname
     bl_label = "Open Image(s)"
 
     filter_glob: bpy.props.StringProperty(
@@ -74,7 +74,7 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         if len(settings.heads) <= self.headnum:
-            op = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            op = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
             op('INVOKE_DEFAULT', msg=ErrorType.IllegalIndex)
             return {'CANCELLED'}
         # if Settings structure is broken

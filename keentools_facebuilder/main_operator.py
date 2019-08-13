@@ -23,10 +23,12 @@ from bpy.props import (
     StringProperty,
     IntProperty,
 )
+
+from keentools_facebuilder.utils import manipulate
 from . fbloader import FBLoader
 from . fbdebug import FBDebug
 from .config import get_main_settings, ErrorType
-from . config import config
+from . config import Config
 
 
 def check_settings():
@@ -36,7 +38,7 @@ def check_settings():
         # Fix Heads and cameras
         heads_deleted, cams_deleted = settings.fix_heads()
         if heads_deleted == 0:
-            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
             # message = "Some error\n Happened"
             # warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
             #     msg_content=message)
@@ -46,7 +48,7 @@ def check_settings():
 
 
 class OBJECT_OT_FBSelectCamera(Operator):
-    bl_idname = config.fb_main_select_camera_idname
+    bl_idname = Config.fb_main_select_camera_idname
     bl_label = "Pin Mode"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Switch to pin-mode for this camera"
@@ -95,7 +97,7 @@ class OBJECT_OT_FBSelectCamera(Operator):
         bpy.context.view_layer.objects.active = headobj
 
         # Auto Call PinMode
-        draw_op = getattr(bpy.ops.object, config.fb_draw_operator_callname)
+        draw_op = getattr(bpy.ops.object, Config.fb_draw_operator_callname)
         draw_op('INVOKE_DEFAULT', headnum=headnum, camnum=camnum)
 
         # === Debug only ===
@@ -107,7 +109,7 @@ class OBJECT_OT_FBSelectCamera(Operator):
 
 
 class OBJECT_OT_FBCenterGeo(Operator):
-    bl_idname = config.fb_main_center_geo_idname
+    bl_idname = Config.fb_main_center_geo_idname
     bl_label = "Center Geo"
     bl_options = {'REGISTER'}  # 'UNDO'
     bl_description = "Place model geometry central in camera view"
@@ -131,7 +133,7 @@ class OBJECT_OT_FBCenterGeo(Operator):
             return {'CANCELLED'}
 
         fb = FBLoader.get_builder()
-        kid = FBLoader.keyframe_by_camnum(headnum, camnum)
+        kid = manipulate.keyframe_by_camnum(headnum, camnum)
         fb.center_model_mat(kid)
         FBLoader.fb_save(headnum, camnum)
         FBLoader.fb_redraw(headnum, camnum)
@@ -143,7 +145,7 @@ class OBJECT_OT_FBCenterGeo(Operator):
 
 
 class OBJECT_OT_FBUnmorph(Operator):
-    bl_idname = config.fb_main_unmorph_idname
+    bl_idname = Config.fb_main_unmorph_idname
     bl_label = "Unmorph"
     bl_options = {'REGISTER'}  # 'UNDO'
     bl_description = "Unmorph shape to default mesh. It will return back " \
@@ -169,7 +171,7 @@ class OBJECT_OT_FBUnmorph(Operator):
             return {'CANCELLED'}
 
         fb = FBLoader.get_builder()
-        kid = FBLoader.keyframe_by_camnum(headnum, camnum)
+        kid = manipulate.keyframe_by_camnum(headnum, camnum)
         fb.unmorph()
         FBLoader.fb_save(headnum, camnum)
         FBLoader.fb_redraw(headnum, camnum)
@@ -177,7 +179,7 @@ class OBJECT_OT_FBUnmorph(Operator):
 
 
 class OBJECT_OT_FBRemovePins(Operator):
-    bl_idname = config.fb_main_remove_pins_idname
+    bl_idname = Config.fb_main_remove_pins_idname
     bl_label = "Remove Pins"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Place model geometry central in camera view"
@@ -202,7 +204,7 @@ class OBJECT_OT_FBRemovePins(Operator):
             return {'CANCELLED'}
 
         fb = FBLoader.get_builder()
-        kid = FBLoader.keyframe_by_camnum(headnum, camnum)
+        kid = manipulate.keyframe_by_camnum(headnum, camnum)
         fb.remove_pins(kid)
         # Added but don't work
         fb.solve_for_current_pins(kid)
@@ -218,7 +220,7 @@ class OBJECT_OT_FBRemovePins(Operator):
 
 
 class OBJECT_OT_FBWireframeColor(Operator):
-    bl_idname = config.fb_main_wireframe_color_idname
+    bl_idname = Config.fb_main_wireframe_color_idname
     bl_label = "Wireframe Color"
     bl_options = {'REGISTER'}  # 'UNDO'
     bl_description = "Change wireframe color according to scheme"
@@ -234,42 +236,42 @@ class OBJECT_OT_FBWireframeColor(Operator):
 
         if self.action == "wireframe_red":
             # settings.wireframe_color = config.red_color
-            settings.wireframe_color = config.red_scheme1
-            settings.wireframe_special_color = config.red_scheme2
+            settings.wireframe_color = Config.red_scheme1
+            settings.wireframe_special_color = Config.red_scheme2
         elif self.action == "wireframe_green":
             # settings.wireframe_color = config.green_color
-            settings.wireframe_color = config.green_scheme1
-            settings.wireframe_special_color = config.green_scheme2
+            settings.wireframe_color = Config.green_scheme1
+            settings.wireframe_special_color = Config.green_scheme2
         elif self.action == "wireframe_blue":
             # settings.wireframe_color = config.blue_color
-            settings.wireframe_color = config.blue_scheme1
-            settings.wireframe_special_color = config.blue_scheme2
+            settings.wireframe_color = Config.blue_scheme1
+            settings.wireframe_special_color = Config.blue_scheme2
         elif self.action == "wireframe_cyan":
             # settings.wireframe_color = config.cyan_color
-            settings.wireframe_color = config.cyan_scheme1
-            settings.wireframe_special_color = config.cyan_scheme2
+            settings.wireframe_color = Config.cyan_scheme1
+            settings.wireframe_special_color = Config.cyan_scheme2
         elif self.action == "wireframe_magenta":
             # settings.wireframe_color = config.magenta_color
-            settings.wireframe_color = config.magenta_scheme1
-            settings.wireframe_special_color = config.magenta_scheme2
+            settings.wireframe_color = Config.magenta_scheme1
+            settings.wireframe_special_color = Config.magenta_scheme2
         elif self.action == "wireframe_yellow":
             # settings.wireframe_color = config.yellow_color
-            settings.wireframe_color = config.yellow_scheme1
-            settings.wireframe_special_color = config.yellow_scheme2
+            settings.wireframe_color = Config.yellow_scheme1
+            settings.wireframe_special_color = Config.yellow_scheme2
         elif self.action == "wireframe_black":
             # settings.wireframe_color = config.black_color
-            settings.wireframe_color = config.black_scheme1
-            settings.wireframe_special_color = config.black_scheme2
+            settings.wireframe_color = Config.black_scheme1
+            settings.wireframe_special_color = Config.black_scheme2
         elif self.action == "wireframe_white":
             # settings.wireframe_color = config.white_color
-            settings.wireframe_color = config.white_scheme1
-            settings.wireframe_special_color = config.white_scheme2
+            settings.wireframe_color = Config.white_scheme1
+            settings.wireframe_special_color = Config.white_scheme2
 
         return {'FINISHED'}
 
 
 class OBJECT_OT_FBFilterCameras(Operator):
-    bl_idname = config.fb_main_filter_cameras_idname
+    bl_idname = Config.fb_main_filter_cameras_idname
     bl_label = "Camera Filter"
     bl_options = {'REGISTER'}  # 'UNDO'
     bl_description = "Select cameras to use for texture baking"
@@ -296,7 +298,7 @@ class OBJECT_OT_FBFilterCameras(Operator):
 
 
 class OBJECT_OT_FBDeleteCamera(Operator):
-    bl_idname = config.fb_main_delete_camera_idname
+    bl_idname = Config.fb_main_delete_camera_idname
     bl_label = "Delete Camera"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Delete this camera object from scene"
@@ -316,7 +318,7 @@ class OBJECT_OT_FBDeleteCamera(Operator):
         if not settings.pinmode:
             fb = FBLoader.get_builder()
             head = settings.heads[headnum]
-            kid = FBLoader.keyframe_by_camnum(headnum, camnum)
+            kid = manipulate.keyframe_by_camnum(headnum, camnum)
             camobj = head.cameras[camnum].camobj
             fb.remove_keyframe(kid)
             FBLoader.fb_save(headnum, camnum)
@@ -329,7 +331,7 @@ class OBJECT_OT_FBDeleteCamera(Operator):
 
 
 class OBJECT_OT_FBAddCamera(Operator):
-    bl_idname = config.fb_main_add_camera_idname
+    bl_idname = Config.fb_main_add_camera_idname
     bl_label = "Add Camera"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Add new camera without image (Not recommended). \n" \
@@ -352,7 +354,7 @@ class OBJECT_OT_FBAddCamera(Operator):
 
 
 class OBJECT_OT_FBFixSize(Operator):
-    bl_idname = config.fb_main_fix_size_idname
+    bl_idname = Config.fb_main_fix_size_idname
     bl_label = "Fix Size"
     bl_options = {'REGISTER'}
     bl_description = "Fix frame Width and High parameters for all cameras"
@@ -364,12 +366,12 @@ class OBJECT_OT_FBFixSize(Operator):
 
     def execute(self, context):
         bpy.ops.wm.call_menu(
-            'INVOKE_DEFAULT', name=config.fb_fix_frame_menu_idname)
+            'INVOKE_DEFAULT', name=Config.fb_fix_frame_menu_idname)
         return {'FINISHED'}
 
 
 class OBJECT_OT_FBCameraFixSize(Operator):
-    bl_idname = config.fb_main_camera_fix_size_idname
+    bl_idname = Config.fb_main_camera_fix_size_idname
     bl_label = "Fix Size by Camera"
     bl_options = {'REGISTER'}
     bl_description = "Fix frame Width and High parameters for all cameras"
@@ -386,12 +388,12 @@ class OBJECT_OT_FBCameraFixSize(Operator):
         settings.tmp_headnum = self.headnum
         settings.tmp_camnum = self.camnum
         bpy.ops.wm.call_menu(
-            'INVOKE_DEFAULT', name=config.fb_fix_camera_frame_menu_idname)
+            'INVOKE_DEFAULT', name=Config.fb_fix_camera_frame_menu_idname)
         return {'FINISHED'}
 
 
 class OBJECT_OT_FBAddonSettings(Operator):
-    bl_idname = config.fb_main_addon_settings_idname
+    bl_idname = Config.fb_main_addon_settings_idname
     bl_label = "Addon Settings"
     bl_options = {'REGISTER'}
     bl_description = "Open Addon Settings in Preferences window"
@@ -401,12 +403,12 @@ class OBJECT_OT_FBAddonSettings(Operator):
         pass
 
     def execute(self, context):
-        bpy.ops.preferences.addon_show(module=config.addon_name)
+        bpy.ops.preferences.addon_show(module=Config.addon_name)
         return {'FINISHED'}
 
 
 class OBJECT_OT_FBBakeTexture(Operator):
-    bl_idname = config.fb_main_bake_tex_idname
+    bl_idname = Config.fb_main_bake_tex_idname
     bl_label = "Bake Texture"
     bl_options = {'REGISTER'}
     bl_description = "Bake the texture using all selected cameras. " \
@@ -418,14 +420,14 @@ class OBJECT_OT_FBBakeTexture(Operator):
 
     def execute(self, context):
         settings = get_main_settings()
-        op = getattr(bpy.ops.object, config.fb_actor_operator_callname)
+        op = getattr(bpy.ops.object, Config.fb_actor_operator_callname)
         op('INVOKE_DEFAULT', action="bake_tex",
            headnum=settings.current_headnum)
         return {'FINISHED'}
 
 
 class OBJECT_OT_FBShowTexture(Operator):
-    bl_idname = config.fb_main_show_tex_idname
+    bl_idname = Config.fb_main_show_tex_idname
     bl_label = "Show Texture"
     bl_options = {'REGISTER'}
     bl_description = "Switch to Material Mode and creates demo-shader " \
@@ -440,7 +442,7 @@ class OBJECT_OT_FBShowTexture(Operator):
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum,
                                  settings.current_camnum)
-        op = getattr(bpy.ops.object, config.fb_actor_operator_callname)
+        op = getattr(bpy.ops.object, Config.fb_actor_operator_callname)
         op('INVOKE_DEFAULT', action='show_tex',
            headnum=settings.current_headnum)
         return {'FINISHED'}

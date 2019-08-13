@@ -30,7 +30,7 @@ class BuilderType:
     BodyBuilder = 2
 
 
-class config:
+class Config:
     logging_level = logging.DEBUG
     console_level = logging.INFO
     log_filename = 'keentools_facebuilder.log'
@@ -79,8 +79,8 @@ class config:
 
     fb_movepin_operator_idname = 'object.' + _prefix + '_move_pin'
     fb_movepin_operator_callname = _prefix + '_move_pin'
-    fb_actor_operator_idname = 'object.' + _prefix + '_actor'
     fb_actor_operator_callname = _prefix + '_actor'
+    fb_actor_operator_idname = 'object.' + fb_actor_operator_callname
     fb_warning_operator_idname = 'wm.' + _prefix + '_addon_warning'
     fb_warning_operator_callname = _prefix + '_addon_warning'
     fb_add_head_operator_idname = 'mesh.' + _prefix + '_add_head'
@@ -93,7 +93,8 @@ class config:
     fb_tb_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_tb_panel_id'
     fb_colors_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_colors_panel_id'
     fb_parts_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_parts_panel_id'
-    fb_settings_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_settings_panel_id'
+    fb_settings_panel_idname = 'FACEBUILDER_PT_' + _prefix + \
+                               '_settings_panel_id'
 
     # Menu ids
     fb_fix_frame_menu_idname = 'FACEBUILDER_MT_' + _prefix + \
@@ -173,7 +174,7 @@ class config:
 
 def get_main_settings():
     """ Main addon settings"""
-    return getattr(bpy.context.scene, config.addon_global_var_name)
+    return getattr(bpy.context.scene, Config.addon_global_var_name)
 
 
 class ErrorType:

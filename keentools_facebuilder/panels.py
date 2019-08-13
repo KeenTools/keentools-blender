@@ -21,7 +21,7 @@ import bpy
 from bpy.types import Panel, Operator, Menu
 from bpy.props import IntProperty
 import addon_utils
-from .config import config, get_main_settings, ErrorType
+from .config import Config, get_main_settings, ErrorType
 import re
 from .fbloader import FBLoader
 
@@ -35,7 +35,7 @@ def proper_object_test():
         return True
     if not obj:
         return False
-    if config.version_prop_name[0] in obj.keys():
+    if Config.version_prop_name[0] in obj.keys():
         # Object has our attribute 'keentools_version'
         return True
     if obj.type == 'MESH':
@@ -49,25 +49,25 @@ def proper_object_test():
 
 
 class OBJECT_PT_FBPanel(Panel):
-    bl_idname = config.fb_panel_idname
+    bl_idname = Config.fb_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_label = config.fb_panel_label
-    bl_category = config.fb_tab_category
+    bl_label = Config.fb_panel_label
+    bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 
     def draw_pins_panel(self, headnum, camnum):
         layout = self.layout
         box = layout.box()
-        op = box.operator(config.fb_main_center_geo_idname, text="Center Geo")
+        op = box.operator(Config.fb_main_center_geo_idname, text="Center Geo")
         op.headnum = headnum
         op.camnum = camnum
         op = box.operator(
-            config.fb_main_remove_pins_idname,
+            Config.fb_main_remove_pins_idname,
             text="Remove Pins", icon='UNPINNED')
         op.headnum = headnum
         op.camnum = camnum
-        op = box.operator(config.fb_main_unmorph_idname, text="Unmorph")
+        op = box.operator(Config.fb_main_unmorph_idname, text="Unmorph")
         op.headnum = headnum
         op.camnum = camnum
 
@@ -91,13 +91,13 @@ class OBJECT_PT_FBPanel(Panel):
             row = layout.row()
             row.scale_y = 2.0
             row.operator(
-                config.fb_add_head_operator_idname,
+                Config.fb_add_head_operator_idname,
                 text='Add New Head', icon='USER')
 
             row = layout.row()
             row.scale_y = 2.0
             row.operator(
-                config.fb_main_addon_settings_idname,
+                Config.fb_main_addon_settings_idname,
                 text='Open Addon Settings', icon='PREFERENCES')
             # and out
             return
@@ -110,7 +110,7 @@ class OBJECT_PT_FBPanel(Panel):
             row = layout.row()
             row.scale_y = 3.0
             op = row.operator(
-                config.fb_actor_operator_idname, text='Reconstruct!')
+                Config.fb_actor_operator_idname, text='Reconstruct!')
             op.action = 'reconstruct_by_head'
             op.headnum = -1
             op.camnum = -1
@@ -123,7 +123,7 @@ class OBJECT_PT_FBPanel(Panel):
             # Show Head
             row = layout.row()
             row.scale_y = 2.0
-            op = row.operator(config.fb_actor_operator_idname,
+            op = row.operator(Config.fb_actor_operator_idname,
                               text='Show Head', icon='HIDE_OFF')
             op.action = 'unhide_head'
             op.headnum = headnum
@@ -161,7 +161,7 @@ class OBJECT_PT_FBPanel(Panel):
             icon = 'OUTLINER_OB_CAMERA' if settings.current_camnum == i \
                 else 'CAMERA_DATA'
             op = col.operator(
-                config.fb_main_select_camera_idname, text='', icon=icon)
+                Config.fb_main_select_camera_idname, text='', icon=icon)
             # op.action = 'select_camera'
             op.headnum = headnum
             op.camnum = i
@@ -178,7 +178,7 @@ class OBJECT_PT_FBPanel(Panel):
 
             if wrong_size_flag:
                 # Background has different size
-                op = row2.operator(config.fb_main_camera_fix_size_idname,
+                op = row2.operator(Config.fb_main_camera_fix_size_idname,
                                    text='', icon='ERROR')
                 op.headnum = headnum
                 op.camnum = i
@@ -197,7 +197,7 @@ class OBJECT_PT_FBPanel(Panel):
             # Camera Delete button
             if not settings.pinmode:
                 op = row2.operator(
-                    config.fb_main_delete_camera_idname,
+                    Config.fb_main_delete_camera_idname,
                     text='', icon='CANCEL')
                 # op.action = 'delete_camera'
                 op.headnum = headnum
@@ -211,11 +211,11 @@ class OBJECT_PT_FBPanel(Panel):
         else:
             row = layout.row()
             # Select All cameras for baking Button
-            op = row.operator(config.fb_main_filter_cameras_idname, text='All')
+            op = row.operator(Config.fb_main_filter_cameras_idname, text='All')
             op.action = 'select_all_cameras'
             op.headnum = headnum
             # Deselect All cameras
-            op = row.operator(config.fb_main_filter_cameras_idname,
+            op = row.operator(Config.fb_main_filter_cameras_idname,
                               text='None')
             op.action = 'deselect_all_cameras'
             op.headnum = headnum
@@ -232,23 +232,23 @@ class OBJECT_PT_FBPanel(Panel):
 
             if wrong_size_counter == 0:
                 # op = row.operator("wm.call_menu", text='Fix Size')
-                row.operator(config.fb_main_fix_size_idname, text='Fix Size')
+                row.operator(Config.fb_main_fix_size_idname, text='Fix Size')
             else:
                 # op = row.operator("wm.call_menu",
                 #                  text='Fix Size', icon='ERROR')
-                row.operator(config.fb_main_fix_size_idname,
+                row.operator(Config.fb_main_fix_size_idname,
                              text='Fix Size', icon='ERROR')
             # op.name = config.fb_fix_frame_menu_idname
 
         # Open sequence Button (large x2)
         row = layout.row()
         row.scale_y = 2.0
-        row.operator(config.fb_filedialog_operator_idname,
+        row.operator(Config.fb_filedialog_operator_idname,
                      text="Open Sequence", icon='OUTLINER_OB_IMAGE')
 
         # Add New Camera button
         op = layout.operator(
-            config.fb_main_add_camera_idname,
+            Config.fb_main_add_camera_idname,
             text="Add Empty Camera", icon='PLUS')
         # op.action = "add_camera"
         op.headnum = headnum
@@ -260,7 +260,7 @@ class OBJECT_PT_FBPanel(Panel):
 
 
 class WM_OT_FBAddonWarning(Operator):
-    bl_idname = config.fb_warning_operator_idname
+    bl_idname = Config.fb_warning_operator_idname
     bl_label = "FaceBuilder WARNING!"
 
     msg: bpy.props.IntProperty(default=ErrorType.Unknown)
@@ -285,14 +285,14 @@ class WM_OT_FBAddonWarning(Operator):
         # Unlicensed message only
         wm = context.window_manager
         # Searching keyword in Addons tab
-        wm.addon_search = config.addon_search
+        wm.addon_search = Config.addon_search
 
         try:
             addon_utils.modules_refresh()
-            mod = addon_utils.addons_fake_modules.get(config.addon_name)
+            mod = addon_utils.addons_fake_modules.get(Config.addon_name)
             info = addon_utils.module_bl_info(mod)
             info["show_expanded"] = True
-        except:
+        except Exception:
             logger.error("SOME ERROR WITH ADDON SETTINGS OPENNING")
             pass
 
@@ -373,11 +373,11 @@ class WM_OT_FBAddonWarning(Operator):
 
 
 class OBJECT_PT_FBFaceParts(Panel):
-    bl_idname = config.fb_parts_panel_idname
+    bl_idname = Config.fb_parts_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_label = "Mesh parts & UV"
-    bl_category = config.fb_tab_category
+    bl_category = Config.fb_tab_category
     bl_options = {'DEFAULT_CLOSED'}
     bl_context = "objectmode"
 
@@ -416,11 +416,11 @@ class OBJECT_PT_FBFaceParts(Panel):
 
 
 class OBJECT_PT_TBPanel(Panel):
-    bl_idname = config.fb_tb_panel_idname
+    bl_idname = Config.fb_tb_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_label = "Texture Builder"
-    bl_category = config.fb_tab_category
+    bl_category = Config.fb_tab_category
     bl_options = {'DEFAULT_CLOSED'}
     bl_context = "objectmode"
 
@@ -455,13 +455,13 @@ class OBJECT_PT_TBPanel(Panel):
         row = layout.row()
         row.scale_y = 3.0
 
-        row.operator(config.fb_main_bake_tex_idname, text="Bake Texture")
+        row.operator(Config.fb_main_bake_tex_idname, text="Bake Texture")
 
         mode = self.get_area_mode(context)
         if mode == 'MATERIAL':
-            row.operator(config.fb_main_show_tex_idname, text="Show Mesh")
+            row.operator(Config.fb_main_show_tex_idname, text="Show Mesh")
         else:
-            row.operator(config.fb_main_show_tex_idname, text="Show Texture")
+            row.operator(Config.fb_main_show_tex_idname, text="Show Texture")
 
         layout.prop(settings, 'tex_back_face_culling')
         layout.prop(settings, 'tex_equalize_brightness')
@@ -474,11 +474,11 @@ class OBJECT_PT_TBPanel(Panel):
 
 
 class OBJECT_PT_FBColorsPanel(Panel):
-    bl_idname = config.fb_colors_panel_idname
+    bl_idname = Config.fb_colors_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_label = "Wireframe Colors"
-    bl_category = config.fb_tab_category
+    bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 
     # Panel appear only when our Mesh or Camera selected
@@ -500,21 +500,21 @@ class OBJECT_PT_FBColorsPanel(Panel):
         row.prop(settings, 'wireframe_opacity', text='', slider=True)
 
         row = box.row()
-        op = row.operator(config.fb_main_wireframe_color_idname, text="R")
+        op = row.operator(Config.fb_main_wireframe_color_idname, text="R")
         op.action = 'wireframe_red'
-        op = row.operator(config.fb_main_wireframe_color_idname, text="G")
+        op = row.operator(Config.fb_main_wireframe_color_idname, text="G")
         op.action = 'wireframe_green'
-        op = row.operator(config.fb_main_wireframe_color_idname, text="B")
+        op = row.operator(Config.fb_main_wireframe_color_idname, text="B")
         op.action = 'wireframe_blue'
-        op = row.operator(config.fb_main_wireframe_color_idname, text="C")
+        op = row.operator(Config.fb_main_wireframe_color_idname, text="C")
         op.action = 'wireframe_cyan'
-        op = row.operator(config.fb_main_wireframe_color_idname, text="M")
+        op = row.operator(Config.fb_main_wireframe_color_idname, text="M")
         op.action = 'wireframe_magenta'
-        op = row.operator(config.fb_main_wireframe_color_idname, text="Y")
+        op = row.operator(Config.fb_main_wireframe_color_idname, text="Y")
         op.action = 'wireframe_yellow'
-        op = row.operator(config.fb_main_wireframe_color_idname, text="K")
+        op = row.operator(Config.fb_main_wireframe_color_idname, text="K")
         op.action = 'wireframe_black'
-        op = row.operator(config.fb_main_wireframe_color_idname, text="W")
+        op = row.operator(Config.fb_main_wireframe_color_idname, text="W")
         op.action = 'wireframe_white'
 
         layout.prop(settings, 'show_specials', text='Highlight Parts')
@@ -524,11 +524,11 @@ class OBJECT_PT_FBColorsPanel(Panel):
 
 
 class OBJECT_PT_FBSettingsPanel(Panel):
-    bl_idname = config.fb_settings_panel_idname
+    bl_idname = Config.fb_settings_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_label = "Settings"
-    bl_category = config.fb_tab_category
+    bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 
     # Panel appear only when our Mesh or Camera selected
@@ -555,60 +555,60 @@ class OBJECT_PT_FBSettingsPanel(Panel):
         row = layout.row()
         row.scale_y = 2.0
         row.operator(
-            config.fb_main_addon_settings_idname,
+            Config.fb_main_addon_settings_idname,
             text="Open Addon Settings", icon="PREFERENCES")
         # layout.prop(settings, 'debug_active', text="Debug Log Active")
 
 
 class OBJECT_MT_FBFixCameraMenu(Menu):
     bl_label = "Fix Frame Size"
-    bl_idname = config.fb_fix_camera_frame_menu_idname
+    bl_idname = Config.fb_fix_camera_frame_menu_idname
     bl_description = "Fix frame Width and Height parameters for camera"
 
     def draw(self, context):
         layout = self.layout
 
         op = layout.operator(
-            config.fb_actor_operator_idname, text="Info about this warning")
+            Config.fb_actor_operator_idname, text="Info about this warning")
         op.action = 'about_fix_frame_warning'
 
         op = layout.operator(
-            config.fb_actor_operator_idname,
+            Config.fb_actor_operator_idname,
             text="Auto-Detect most frequent Size")
         op.action = 'auto_detect_frame_size'
 
         op = layout.operator(
-            config.fb_actor_operator_idname, text="Use Scene Render Size")
+            Config.fb_actor_operator_idname, text="Use Scene Render Size")
         op.action = 'use_render_frame_size'
 
         op = layout.operator(
-            config.fb_actor_operator_idname, text="Use This Camera Size")
+            Config.fb_actor_operator_idname, text="Use This Camera Size")
         op.action = 'use_this_camera_frame_size'
 
 
 class OBJECT_MT_FBFixMenu(Menu):
     bl_label = "Select Frame Size"
-    bl_idname = config.fb_fix_frame_menu_idname
+    bl_idname = Config.fb_fix_frame_menu_idname
     bl_description = "Fix frame Width and Height parameters for all cameras"
 
     def draw(self, context):
         layout = self.layout
 
         op = layout.operator(
-            config.fb_actor_operator_idname, text="Info about Size warning")
+            Config.fb_actor_operator_idname, text="Info about Size warning")
         op.action = 'about_fix_frame_warning'
 
         op = layout.operator(
-            config.fb_actor_operator_idname,
+            Config.fb_actor_operator_idname,
             text="Auto-Detect most frequent Size")
         op.action = 'auto_detect_frame_size'
 
         op = layout.operator(
-            config.fb_actor_operator_idname, text="Use Scene Render Size")
+            Config.fb_actor_operator_idname, text="Use Scene Render Size")
         op.action = 'use_render_frame_size'
 
         op = layout.operator(
-            config.fb_actor_operator_idname, text="Use Current Camera Size")
+            Config.fb_actor_operator_idname, text="Use Current Camera Size")
         op.action = 'use_camera_frame_size'
 
         # Disabled to avoid problems with users (but usefull for internal use)

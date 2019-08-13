@@ -20,6 +20,7 @@ import logging
 
 import numpy as np
 
+from . utils import manipulate
 from . viewport import FBViewport
 from . utils import attrs
 from . utils import coords
@@ -28,24 +29,24 @@ from . utils.other import (
 )
 from . builder import UniBuilder
 from . fbdebug import FBDebug
-from . config import config, get_main_settings, BuilderType
+from . config import Config, get_main_settings, BuilderType
 from pykeentools import UnlicensedException
 
 
 class FBLoader:
     # Builder selection: FaceBuilder or BodyBuilder
-    builder = UniBuilder(config.default_builder)
+    builder = UniBuilder(Config.default_builder)
     viewport = FBViewport()
 
     # Functions for Custom Attributes perform
     @classmethod
     def set_keentools_version(cls, obj):
-        attr_name = config.version_prop_name[0]
-        attrs.set_custom_attribute(obj, attr_name, config.addon_version)
-        attr_name2 = config.fb_mod_ver_prop_name[0]
+        attr_name = Config.version_prop_name[0]
+        attrs.set_custom_attribute(obj, attr_name, Config.addon_version)
+        attr_name2 = Config.fb_mod_ver_prop_name[0]
         ver = cls.get_builder_version()
         attrs.set_custom_attribute(obj, attr_name2, ver)
-        attr_name3 = config.object_type_prop_name[0]
+        attr_name3 = Config.object_type_prop_name[0]
         obj_type = cls.get_builder_type()
         attrs.set_custom_attribute(obj, attr_name3, obj_type)
 
@@ -123,7 +124,7 @@ class FBLoader:
 
     @classmethod
     def new_builder(cls, builder_type=BuilderType.NoneBuilder,
-                    ver=config.unknown_mod_ver):
+                    ver=Config.unknown_mod_ver):
         return cls.builder.new_builder(builder_type, ver)
 
     @classmethod
@@ -135,48 +136,12 @@ class FBLoader:
         return cls.builder.get_version()
 
     @classmethod
-    def force_undo_push(cls, msg='KeenTools operation'):
-        cls.inc_operation()
-        bpy.ops.ed.undo_push(message=msg)
-
-    @staticmethod
-    def inc_operation():
-        """ Debug purpose """
-        settings = get_main_settings()
-        settings.opnum += 1
-
-    @staticmethod
-    def get_operation():
-        """ Debug purpose """
-        settings = get_main_settings()
-        return settings.opnum
-
-    @staticmethod
-    def hide_other_cameras(context, headnum, camnum):
-        settings = get_main_settings()
-        head = settings.heads[headnum]
-        for i, c in enumerate(head.cameras):
-            if i != camnum:
-                # Hide camera
-                # c.camobj.hide_viewport = True
-                c.camobj.hide_set(True)
-
-    @staticmethod
-    def show_all_cameras(headnum):
-        settings = get_main_settings()
-        head = settings.heads[headnum]
-        for i, c in enumerate(head.cameras):
-            # Hide camera
-            # c.camobj.hide_viewport = False
-            c.camobj.hide_set(False)
-
-    @classmethod
     def out_pinmode(cls, headnum, camnum):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         cls.viewport.unregister_handlers()
         cls.fb_save(headnum, camnum)
-        cls.viewport.wireframer.unregister_handler()
+        # cls.viewport.wireframer.unregister_handler()
         headobj = settings.heads[headnum].headobj
         # Mark object by ver.
         cls.set_keentools_version(headobj)
@@ -185,7 +150,7 @@ class FBLoader:
         settings.pinmode = False
 
         cls.viewport.current_pin = None
-        cls.show_all_cameras(headnum)
+        manipulate.show_all_cameras(headnum)
         # === Debug use only ===
         FBDebug.add_event_to_queue('OUT_PIN_MODE', (0, 0))
         FBDebug.output_event_queue()
@@ -194,15 +159,6 @@ class FBLoader:
         FBStopTimer.stop()
         logger.debug("STOPPER STOP")
         logger.debug("OUT PINMODE")
-
-    @staticmethod
-    def keyframe_by_camnum(headnum, camnum):
-        settings = get_main_settings()
-        if headnum >= len(settings.heads):
-            return -1
-        if camnum >= len(settings.heads[headnum].cameras):
-            return -1
-        return settings.heads[headnum].cameras[camnum].keyframe_id
 
     @classmethod
     def save_only(cls, headnum):
@@ -218,7 +174,7 @@ class FBLoader:
         scene = bpy.context.scene
         settings = get_main_settings()
         cam = settings.heads[headnum].cameras[camnum]
-        kid = cls.keyframe_by_camnum(headnum, camnum)
+        kid = manipulate.keyframe_by_camnum(headnum, camnum)
 
         cam.set_model_mat(fb.model_mat(kid))
         cam.set_frame_size(
@@ -237,7 +193,7 @@ class FBLoader:
         # Save block
         head.set_serial_str(fb.serialize())
 
-        kid = cls.keyframe_by_camnum(headnum, camnum)
+        kid = manipulate.keyframe_by_camnum(headnum, camnum)
         cam.set_model_mat(fb.model_mat(kid))
         # Save images list on headobj
         head.save_images_src()
@@ -252,7 +208,7 @@ class FBLoader:
         cam = head.cameras[camnum]
         headobj = head.headobj
         camobj = cam.camobj
-        kid = cls.keyframe_by_camnum(headnum, camnum)
+        kid = manipulate.keyframe_by_camnum(headnum, camnum)
         # Camera update
         cls.place_cameraobj(kid, camobj, headobj)
         # Head Mesh update
@@ -277,7 +233,7 @@ class FBLoader:
             camobj = cam.camobj
             if cam.pins_count > 0:
                 # Camera update only if pins is present
-                kid = cls.keyframe_by_camnum(headnum, i)
+                kid = manipulate.keyframe_by_camnum(headnum, i)
                 cls.place_cameraobj(kid, camobj, headobj)
                 cam.set_model_mat(fb.model_mat(kid))
 
@@ -334,7 +290,7 @@ class FBLoader:
         head = settings.heads[headnum]
         cam = head.cameras[camnum]
         fb = cls.get_builder()
-        kid = cls.keyframe_by_camnum(headnum, camnum)
+        kid = manipulate.keyframe_by_camnum(headnum, camnum)
         pins_count = fb.pins_count(kid)
         cam.pins_count = pins_count
         logger.debug("PINS_COUNT H:{} C:{} k:{} count:{}".format(
@@ -422,7 +378,7 @@ class FBLoader:
                               masks=(), uv_set='uv0'):
         stored_builder_type = FBLoader.get_builder_type()
         stored_builder_version = FBLoader.get_builder_version()
-        builder = cls.new_builder(builder_type, config.unknown_mod_ver)
+        builder = cls.new_builder(builder_type, Config.unknown_mod_ver)
 
         mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set)
 
@@ -475,7 +431,7 @@ class FBLoader:
             else:
                 fb.set_model_mat(kid, c.get_model_mat())
 
-        kid = cls.keyframe_by_camnum(headnum, camnum)
+        kid = manipulate.keyframe_by_camnum(headnum, camnum)
         # Move current camera
         cls.place_cameraobj(kid, camobj, headobj)
         # Load pins from model

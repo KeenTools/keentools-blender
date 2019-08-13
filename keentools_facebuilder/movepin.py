@@ -19,10 +19,11 @@ import logging
 
 import bpy
 
+from . utils import manipulate
 from . utils import coords
 from . fbloader import FBLoader
 from . fbdebug import FBDebug
-from . config import config, get_main_settings, BuilderType
+from . config import Config, get_main_settings, BuilderType
 
 from pykeentools import UnlicensedException
 from functools import wraps
@@ -46,7 +47,7 @@ def profile_this(fn):
 
 class OBJECT_OT_FBMovePin(bpy.types.Operator):
     """ On Screen Face Builder MovePin Operator """
-    bl_idname = config.fb_movepin_operator_idname
+    bl_idname = Config.fb_movepin_operator_idname
     bl_label = "FaceBuilder MovePin operator"
     bl_description = "Operator MovePin"
     bl_options = {'REGISTER'}  # 'UNDO'
@@ -74,7 +75,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         settings = get_main_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
-        kid = FBLoader.keyframe_by_camnum(headnum, camnum)
+        kid = manipulate.keyframe_by_camnum(headnum, camnum)
 
         # Checks for operator parameters
         if headnum < 0:
@@ -176,7 +177,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         head = settings.heads[headnum]
         headobj = settings.heads[headnum].headobj
         cam = head.cameras[camnum]
-        kid = FBLoader.keyframe_by_camnum(headnum, camnum)
+        kid = manipulate.keyframe_by_camnum(headnum, camnum)
 
         x, y = coords.get_image_space_coord(context, (mouse_x, mouse_y))
         if FBLoader.viewport.current_pin:
@@ -212,7 +213,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             head = settings.heads[headnum]
             # if head.serial_str != head.tmp_serial_str:
             head.need_update = True
-            FBLoader.force_undo_push('Pin Move')
+            manipulate.force_undo_push('Pin Move')
             head.need_update = False
             # End of PUSH 1
             # ---------
@@ -237,7 +238,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         FBLoader.fb_save(headnum, camnum)
 
         head.need_update = True
-        FBLoader.force_undo_push('Pin Result')
+        manipulate.force_undo_push('Pin Result')
         head.need_update = False
         # End of PUSH 2
         # ---------
@@ -255,7 +256,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         headobj = settings.heads[headnum].headobj
         cam = settings.heads[headnum].cameras[camnum]
         camobj = cam.camobj
-        kid = FBLoader.keyframe_by_camnum(headnum, camnum)
+        kid = manipulate.keyframe_by_camnum(headnum, camnum)
 
         fb = FBLoader.get_builder()
 

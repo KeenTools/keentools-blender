@@ -20,7 +20,7 @@
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty, IntProperty, BoolProperty, EnumProperty
 from . licmanager import FBLicManager
-from . config import config
+from . config import Config
 import re
 import pykeentools
 
@@ -116,7 +116,7 @@ class FBAddonPreferences(AddonPreferences):
             box = layout.box()
             row = box.row()
             row.prop(self, "license_id")
-            op = row.operator(config.fb_actor_operator_idname, text="install")
+            op = row.operator(Config.fb_actor_operator_idname, text="install")
             op.action = 'lic_online_install'
 
         elif self.lic_type == 'OFFLINE':
@@ -132,19 +132,19 @@ class FBAddonPreferences(AddonPreferences):
             row = layout.row()
             row.label(text="Visit our site: ")
             op = row.operator(
-                config.fb_actor_operator_idname, text="keentools.io")
+                Config.fb_actor_operator_idname, text="keentools.io")
             op.action = 'visit_site'
 
             box = layout.box()
             row = box.row()
             row.prop(self, "hardware_id")
-            op = row.operator(config.fb_actor_operator_idname, text="copy")
+            op = row.operator(Config.fb_actor_operator_idname, text="copy")
             op.action = 'lic_hardware_id_copy'
             # op.valstr = self.hardware_id
 
             row = box.row()
             row.prop(self, "lic_path")
-            op = row.operator(config.fb_actor_operator_idname, text="install")
+            op = row.operator(Config.fb_actor_operator_idname, text="install")
             op.action = 'lic_offline_install'
 
         elif self.lic_type == 'FLOATING':
@@ -170,9 +170,9 @@ class FBAddonPreferences(AddonPreferences):
                 box.prop(self, "license_server_auto",
                          text="Auto server/port settings")
 
-            op = box.operator(config.fb_actor_operator_idname, text="connect")
+            op = box.operator(Config.fb_actor_operator_idname, text="connect")
             op.action = 'lic_floating_connect'
 
         layout.label(text="Build info: {} {} {}".format(
-            config.addon_full_name, pykeentools.__version__,
+            Config.addon_full_name, pykeentools.__version__,
             pykeentools.build_time))

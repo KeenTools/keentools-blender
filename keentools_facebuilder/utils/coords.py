@@ -124,7 +124,7 @@ def calc_model_mat(model_mat, head_mat):
         nm = np.array(model_mat @ rot_mat) @ np.linalg.inv(head_mat)
         im = np.linalg.inv(nm)
         return im.transpose()
-    except:
+    except Exception:
         return None
 
 

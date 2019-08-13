@@ -21,16 +21,17 @@ import logging
 import bpy
 from pykeentools import UnlicensedException
 
-from .utils import coords
-from .config import config, get_main_settings, ErrorType, BuilderType
-from .fbdebug import FBDebug
-from .fbloader import FBLoader
-from .utils.other import FBStopTimer
+from . utils import manipulate
+from . utils import coords
+from . config import Config, get_main_settings, ErrorType, BuilderType
+from . fbdebug import FBDebug
+from . fbloader import FBLoader
+from . utils.other import FBStopTimer
 
 
 class OBJECT_OT_FBPinMode(bpy.types.Operator):
     """ On Screen Face Builder Draw Operator """
-    bl_idname = config.fb_draw_operator_idname
+    bl_idname = Config.fb_draw_operator_idname
     bl_label = "FaceBuilder Pinmode"
     bl_description = "Operator for in-Viewport drawing"
     bl_options = {'REGISTER', 'UNDO'}  # {'REGISTER', 'UNDO'}
@@ -86,7 +87,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             if heads_deleted > 0 or cams_deleted > 0:
                 logger.warning("HEADS AND CAMERAS FIXED")
             if heads_deleted == 0:
-                warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+                warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
             return {'FINISHED'}
 
@@ -104,21 +105,17 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
         FBLoader.load_all(self.headnum, self.camnum, False)
 
-        FBLoader.viewport.create_batch_2d(context)
-        FBLoader.viewport.register_handlers(args, context)
-
-        context.window_manager.modal_handler_add(self)
-
         # Hide geometry
-        # headobj.hide_viewport = True
         headobj.hide_set(True)
-        FBLoader.hide_other_cameras(context, self.headnum, self.camnum)
+        manipulate.hide_other_cameras(self.headnum, self.camnum)
         # Start our shader
         self.init_wireframer_colors(settings.overall_opacity)
+        # FBLoader.viewport.wireframer.register_handler(args)
+        FBLoader.viewport.create_batch_2d(context)
+        FBLoader.viewport.register_handlers(args, context)
+        context.window_manager.modal_handler_add(self)
 
-        FBLoader.viewport.wireframer.register_handler(args)
-
-        kid = FBLoader.keyframe_by_camnum(self.headnum, self.camnum)
+        kid = manipulate.keyframe_by_camnum(self.headnum, self.camnum)
         # Load 3D pins
         FBLoader.viewport.update_surface_points(
             FBLoader.get_builder(), headobj, kid)
@@ -138,7 +135,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
         headnum = settings.current_headnum
         camnum = settings.current_camnum
-        kid = FBLoader.keyframe_by_camnum(headnum, camnum)
+        kid = manipulate.keyframe_by_camnum(headnum, camnum)
 
         # Quit if Screen changed
         if context.area is None:  # Different operation Space
@@ -165,7 +162,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             FBLoader.out_pinmode(headnum, camnum)
             settings.force_out_pinmode = False
             if settings.license_error:
-                warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+                warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
                 settings.license_error = False
             return {'FINISHED'}
@@ -221,7 +218,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
                     # Registered Operator call
                     op = getattr(
-                        bpy.ops.object, config.fb_movepin_operator_callname)
+                        bpy.ops.object, Config.fb_movepin_operator_callname)
                     op('INVOKE_DEFAULT',
                        headnum=headnum,
                        camnum=camnum,
@@ -272,7 +269,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
                     camobj = head.cameras[camnum].camobj
 
-                    kid = FBLoader.keyframe_by_camnum(headnum, camnum)
+                    kid = manipulate.keyframe_by_camnum(headnum, camnum)
                     # Camera update
                     FBLoader.place_cameraobj(kid, camobj, headobj)
 
@@ -292,7 +289,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
                     FBLoader.update_pins_count(headnum, camnum)
                     # Undo push
                     head.need_update = True
-                    FBLoader.force_undo_push('Pin Remove')
+                    manipulate.force_undo_push('Pin Remove')
                     head.need_update = False
 
                 FBLoader.viewport.create_batch_2d(context)
@@ -306,7 +303,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
             # Reload pins
             FBLoader.load_all(headnum, camnum)
-            kid = FBLoader.keyframe_by_camnum(headnum, camnum)
+            kid = manipulate.keyframe_by_camnum(headnum, camnum)
             FBLoader.viewport.update_surface_points(
                 FBLoader.get_builder(), head.headobj, kid)
             # FBLoader.load_pins(self.camnum, scene)

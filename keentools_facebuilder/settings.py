@@ -32,7 +32,7 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 from . fbdebug import FBDebug
-from . config import config, get_main_settings, BuilderType
+from . config import Config, get_main_settings, BuilderType
 
 
 def update_wireframe(self, context):
@@ -40,7 +40,7 @@ def update_wireframe(self, context):
     headnum = settings.current_headnum
     head = settings.heads[headnum]
     FBLoader.viewport.update_wireframe(
-        FBLoader.get_builder(), head.headobj)
+        FBLoader.get_builder_type(), head.headobj)
 
 
 def update_pin_sensitivity(self, context):
@@ -80,7 +80,7 @@ def update_mesh_parts(self, context):
         # Copy old material
         if old_mesh.materials:
             mesh.materials.append(old_mesh.materials[0])
-    except:
+    except Exception:
         pass
     head.headobj.data = mesh
     if settings.pinmode:
@@ -88,7 +88,7 @@ def update_mesh_parts(self, context):
         FBLoader.viewport.wireframer.init_geom_data(head.headobj)
         FBLoader.viewport.wireframer.init_edge_indices(head.headobj)
         FBLoader.viewport.update_wireframe(
-            FBLoader.get_builder(), head.headobj)
+            FBLoader.get_builder_type(), head.headobj)
 
     mesh_name = old_mesh.name
     # Delete old mesh
@@ -240,7 +240,7 @@ class FBHeadItem(PropertyGroup):
 
     def set_serial_str(self, value):
         self.serial_str = value
-        self.headobj[config.fb_serial_prop_name[0]] = value
+        self.headobj[Config.fb_serial_prop_name[0]] = value
 
     def get_serial_str(self):
         return self.serial_str
@@ -266,19 +266,19 @@ class FBHeadItem(PropertyGroup):
         for c in self.cameras:
             if c.cam_image:
                 res.append(c.cam_image.filepath)
-        self.headobj[config.fb_images_prop_name[0]] = res
+        self.headobj[Config.fb_images_prop_name[0]] = res
         # Dir name of current scene
-        self.headobj[config.fb_dir_prop_name[0]] = bpy.path.abspath("//")
+        self.headobj[Config.fb_dir_prop_name[0]] = bpy.path.abspath("//")
 
     def save_cam_settings(self):
         render = bpy.context.scene.render
         d = {
-                config.reconstruct_sensor_width_param[0]: self.sensor_width,
-                config.reconstruct_sensor_height_param[0]: self.sensor_height,
-                config.reconstruct_focal_param[0]: self.focal,
-                config.reconstruct_frame_width_param[0]: render.resolution_x,
-                config.reconstruct_frame_height_param[0]: render.resolution_y}
-        self.headobj[config.fb_camera_prop_name[0]] = d
+                Config.reconstruct_sensor_width_param[0]: self.sensor_width,
+                Config.reconstruct_sensor_height_param[0]: self.sensor_height,
+                Config.reconstruct_focal_param[0]: self.focal,
+                Config.reconstruct_frame_width_param[0]: render.resolution_x,
+                Config.reconstruct_frame_height_param[0]: render.resolution_y}
+        self.headobj[Config.fb_camera_prop_name[0]] = d
 
 
 class FBSceneSettings(PropertyGroup):
@@ -312,12 +312,12 @@ class FBSceneSettings(PropertyGroup):
     wireframe_color: FloatVectorProperty(
         description="Color of mesh wireframe in pin-mode",
         name="Wireframe Color", subtype='COLOR',
-        default=config.default_scheme1, min=0.0, max=1.0,
+        default=Config.default_scheme1, min=0.0, max=1.0,
         update=update_wireframe)
     wireframe_special_color: FloatVectorProperty(
         description="Color of special parts in pin-mode",
         name="Wireframe Special Color", subtype='COLOR',
-        default=config.default_scheme2, min=0.0, max=1.0,
+        default=Config.default_scheme2, min=0.0, max=1.0,
         update=update_wireframe)
     show_specials: BoolProperty(
         description="Show guide contours for individual parts of the face",
@@ -331,13 +331,13 @@ class FBSceneSettings(PropertyGroup):
     pin_size: FloatProperty(
         description="Size of visual markers (pins) in pin-mode",
         name="Pin Size",
-        default=config.default_pin_size, min=1.0, max=100.0,
+        default=Config.default_pin_size, min=1.0, max=100.0,
         update=update_pin_size)
     pin_sensitivity: FloatProperty(
         description="Increase if it is difficult for you to get a pin. "
         "Decrease it if instead of a new pin, you capture the old one",
         name="Pin Sensitivity",
-        default=config.default_POINT_SENSITIVITY, min=1.0, max=100.0,
+        default=Config.default_POINT_SENSITIVITY, min=1.0, max=100.0,
         update=update_pin_sensitivity)
 
     # Other settings
@@ -452,7 +452,7 @@ class FBSceneSettings(PropertyGroup):
                         # Remove camera object
                         bpy.data.objects.remove(c.camobj)  # , do_unlink=True
                         cams_deleted += 1
-                    except:
+                    except Exception:
                         pass
                 err.append(i)  # Wrong head in list
             else:

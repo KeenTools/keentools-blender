@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
-from .. config import config
+from .. config import Config
 
 
 # Functions for Custom Attributes perform
@@ -49,18 +49,18 @@ def set_custom_attribute(obj, attr_name, val):
 
 
 def has_keentools_attributes(obj):
-    attr_name = config.version_prop_name[0]
+    attr_name = Config.version_prop_name[0]
     if has_custom_attribute(obj, attr_name):
         return True
     return False
 
 
 def set_keentools_version(obj, obj_type, ver):
-    attr_name = config.version_prop_name[0]
-    set_custom_attribute(obj, attr_name, config.addon_version)
-    attr_name2 = config.fb_mod_ver_prop_name[0]
+    attr_name = Config.version_prop_name[0]
+    set_custom_attribute(obj, attr_name, Config.addon_version)
+    attr_name2 = Config.fb_mod_ver_prop_name[0]
     set_custom_attribute(obj, attr_name2, ver)
-    attr_name3 = config.object_type_prop_name[0]
+    attr_name3 = Config.object_type_prop_name[0]
     set_custom_attribute(obj, attr_name3, obj_type)
 
 
@@ -81,7 +81,7 @@ def get_collection(col_name):
 
 
 def get_fb_collection():
-    fb_col = get_collection(config.default_FB_COLLECTION_NAME)
+    fb_col = get_collection(Config.default_FB_COLLECTION_NAME)
     return fb_col
 
 

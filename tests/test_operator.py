@@ -3,8 +3,9 @@ from bpy.types import Panel, Operator
 from bpy.props import StringProperty
 
 import keentools_facebuilder
-from keentools_facebuilder.config import config, get_main_settings
+from keentools_facebuilder.config import Config, get_main_settings
 import keentools_facebuilder.utils.coords as coords
+
 
 class TestsOperator(Operator):
     bl_idname = 'object.keentools_fb_tests'
@@ -66,7 +67,6 @@ class TestsPanel(Panel):
         op.action = "test_duplicate_and_reconstruct"
 
 
-
 _classes = (
     TestsPanel, TestsOperator
 )
@@ -85,10 +85,11 @@ def unregister():
 if __name__ == "__main__":
     register()
 
+
 # --------
 def create_head():
     # Create Head
-    op = getattr(bpy.ops.mesh, config.fb_add_head_operator_callname)
+    op = getattr(bpy.ops.mesh, Config.fb_add_head_operator_callname)
     op('EXEC_DEFAULT')
 
 
@@ -111,14 +112,15 @@ def get_last_camnum(headnum):
     camnum = len(settings.heads[headnum].cameras) - 1
     return camnum
 
+
 def create_empty_camera():
     # Add New Camera button
-    op = getattr(bpy.ops.object, config.fb_main_add_camera_callname)
+    op = getattr(bpy.ops.object, Config.fb_main_add_camera_callname)
     op('EXEC_DEFAULT')
 
 
 def delete_camera(headnum, camnum):
-    op = getattr(bpy.ops.object, config.fb_main_delete_camera_callname)
+    op = getattr(bpy.ops.object, Config.fb_main_delete_camera_callname)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
 
 
@@ -143,10 +145,11 @@ def get_area():
     return None
 
 
-def move_pin(start_x, start_y, end_x, end_y, arect, brect, headnum=0, camnum=0):
+def move_pin(start_x, start_y, end_x, end_y, arect, brect,
+             headnum=0, camnum=0):
     # Registered Operator call
     op = getattr(
-        bpy.ops.object, config.fb_movepin_operator_callname)
+        bpy.ops.object, Config.fb_movepin_operator_callname)
     # Move pin
     x, y = coords.region_to_image_space(start_x, start_y, *arect)
     px, py = coords.image_space_to_region(x, y, *brect)
@@ -165,7 +168,7 @@ def move_pin(start_x, start_y, end_x, end_y, arect, brect, headnum=0, camnum=0):
 
 
 def select_camera(headnum=0, camnum=0):
-    op = getattr(bpy.ops.object, config.fb_main_select_camera_callname)
+    op = getattr(bpy.ops.object, Config.fb_main_select_camera_callname)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
 
 
@@ -213,6 +216,7 @@ def test_move_pins():
     move_pin(542, 549, 639, 527, arect, brect)
     move_pin(912, 412, 911, 388, arect, brect)
 
+
 def test_duplicate_and_reconstruct():
     headnum = get_last_headnum()
     bpy.ops.object.select_all(action='DESELECT')
@@ -220,3 +224,7 @@ def test_duplicate_and_reconstruct():
     bpy.ops.object.duplicate_move(
         OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
         TRANSFORM_OT_translate={"value": (-3.0, 0, 0)})
+
+    op = getattr(
+        bpy.ops.object, Config.fb_actor_operator_callname)
+    op('EXEC_DEFAULT', action='reconstruct_by_head', headnum=-1, camnum=-1)

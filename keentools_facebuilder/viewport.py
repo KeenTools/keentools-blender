@@ -22,7 +22,7 @@ import logging
 
 import numpy as np
 
-from . config import config, get_main_settings, BuilderType
+from . config import Config, get_main_settings, BuilderType
 from . const import FBConst
 from . utils import coords
 from . utils.edges import FBEdgeShader3D, FBEdgeShader2D
@@ -96,7 +96,7 @@ class FBViewport:
 
     last_context = None
 
-    POINT_SENSITIVITY = config.default_POINT_SENSITIVITY
+    POINT_SENSITIVITY = Config.default_POINT_SENSITIVITY
     PIXEL_SIZE = 0.1  # Auto Calculated
 
     @classmethod
@@ -124,6 +124,7 @@ class FBViewport:
         cls.points2d.register_handler(args)
         # Draw text on screen registration
         cls.texter.register_handler(args)
+        cls.wireframer.register_handler(args)
         # Timer for continuous update modal view
         cls.draw_timer_handler = context.window_manager.event_timer_add(
             time_step=0.2, window=context.window
@@ -136,6 +137,7 @@ class FBViewport:
                 cls.draw_timer_handler
             )
         cls.draw_timer_handler = None
+        cls.wireframer.unregister_handler()
         cls.texter.unregister_handler()
         cls.points2d.unregister_handler()
         cls.points3d.unregister_handler()
@@ -149,7 +151,7 @@ class FBViewport:
     @classmethod
     def update_surface_points(
             cls, fb, headobj, keyframe=-1,
-            allcolor=(0, 0, 1, 0.15), selcolor=config.surface_point_color):
+            allcolor=(0, 0, 1, 0.15), selcolor=Config.surface_point_color):
         # Load 3D pins
         verts, colors = cls.surface_points(
             fb, headobj, keyframe, allcolor, selcolor)
@@ -167,7 +169,7 @@ class FBViewport:
         cls.points3d.create_batch()
 
     @classmethod
-    def update_wireframe(cls, fb, obj):
+    def update_wireframe(cls, builder_type, obj):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         main_color = settings.wireframe_color
@@ -180,8 +182,7 @@ class FBViewport:
             # Check to prevent shader problem
             if len(mesh.edges) * 2 == len(cls.wireframer.edges_colors):
                 logger.info("COLORING")
-                special_indices = cls.get_special_indices(
-                    fb.get_builder_type())
+                special_indices = cls.get_special_indices(builder_type)
                 cls.wireframer.init_special_areas(
                     obj.data, special_indices, (*comp_color,
                                                 settings.wireframe_opacity))
@@ -214,7 +215,7 @@ class FBViewport:
         settings = get_main_settings()
         cls.points2d.set_point_size(settings.pin_size)
         cls.points3d.set_point_size(
-            settings.pin_size * config.surf_pin_size_scale)
+            settings.pin_size * Config.surf_pin_size_scale)
 
     @classmethod
     def get_spins(cls):
@@ -286,10 +287,10 @@ class FBViewport:
             x, y = coords.image_space_to_region(p[0], p[1], x1, y1, x2, y2)
             points[i] = (x, y)
 
-        vertex_colors = [config.pin_color for _ in range(len(points))]
+        vertex_colors = [Config.pin_color for _ in range(len(points))]
 
         if cls.current_pin and cls.current_pin_num < len(vertex_colors):
-            vertex_colors[cls.current_pin_num] = config.current_pin_color
+            vertex_colors[cls.current_pin_num] = Config.current_pin_color
 
         # Sensitivity indicator
         points.append(
@@ -308,8 +309,8 @@ class FBViewport:
                 x1, y1, x2, y2))
         )
         vertex_colors.append((0, 1, 0, 0.2))  # sensitivity indicator
-        vertex_colors.append(config.current_pin_color)  # camera corner
-        vertex_colors.append(config.current_pin_color)  # camera corner
+        vertex_colors.append(Config.current_pin_color)  # camera corner
+        vertex_colors.append(Config.current_pin_color)  # camera corner
 
         cls.points2d.set_vertices_colors(points, vertex_colors)
         cls.points2d.create_batch()
@@ -371,5 +372,5 @@ class FBViewport:
 
         wire.vertices = verts2
         wire.vertices_colors = np.full((len(verts2), 4),
-                                       config.residual_color).tolist()
+                                       Config.residual_color).tolist()
         wire.create_batch()

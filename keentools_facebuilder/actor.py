@@ -26,8 +26,9 @@ from bpy.props import (
 )
 from bpy.types import Operator
 
+from . utils import manipulate
 from . utils import attrs
-from . config import config, ErrorType, BuilderType, get_main_settings
+from . config import Config, ErrorType, BuilderType, get_main_settings
 from . fbloader import FBLoader
 from . licmanager import FBLicManager
 
@@ -35,7 +36,7 @@ from . licmanager import FBLicManager
 class OBJECT_OT_FBActor(Operator):
     """ Face Builder Action
     """
-    bl_idname = config.fb_actor_operator_idname
+    bl_idname = Config.fb_actor_operator_idname
     bl_label = "FaceBuilder in Action"
     bl_options = {'REGISTER'}
     bl_description = "Face Builder"
@@ -44,8 +45,8 @@ class OBJECT_OT_FBActor(Operator):
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
-    tex_name = config.tex_builder_filename
-    mat_name = config.tex_builder_matname
+    tex_name = Config.tex_builder_filename
+    mat_name = Config.tex_builder_matname
 
     def get_headnum(self):
         return self.headnum
@@ -121,7 +122,7 @@ class OBJECT_OT_FBActor(Operator):
 
         # Back images has different sizes
         if changes > 1:
-            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.BackgroundsDiffer)
             return
 
@@ -170,30 +171,6 @@ class OBJECT_OT_FBActor(Operator):
             # Pack image to store in blend-file
             tex.pack()
 
-    @staticmethod
-    def switch_to_mode(context, mode='MATERIAL'):
-        # Switch to Mode
-        areas = context.workspace.screens[0].areas
-        for area in areas:
-            for space in area.spaces:
-                if space.type == 'VIEW_3D':
-                    space.shading.type = mode
-
-    @staticmethod
-    def toggle_mode(context, modes=('SOLID', 'MATERIAL')):
-        # Switch to Mode
-        areas = context.workspace.screens[0].areas
-        for area in areas:
-            for space in area.spaces:
-                if space.type == 'VIEW_3D':
-                    cur_mode = space.shading.type
-                    ind = 0
-                    if cur_mode in modes:
-                        ind = modes.index(cur_mode)
-                        ind += 1
-                        if ind >= len(modes):
-                            ind = 0
-                    space.shading.type = modes[ind]
 
     def show_texture_in_mat(self, context):
         settings = get_main_settings()
@@ -227,7 +204,7 @@ class OBJECT_OT_FBActor(Operator):
 
             nod = mat.node_tree.nodes.new('ShaderNodeTexImage')
             nod.image = tex
-            nod.location = config.image_node_layout_coord
+            nod.location = Config.image_node_layout_coord
 
             mat.node_tree.links.new(
                 nod.outputs['Color'],
@@ -244,25 +221,25 @@ class OBJECT_OT_FBActor(Operator):
         logger = logging.getLogger(__name__)
         # Init camera parameters
         data = attrs.get_safe_custom_attribute(
-            obj, config.fb_camera_prop_name[0])
+            obj, Config.fb_camera_prop_name[0])
         if not data:
             return None
 
         try:
             params = {'focal': attrs.get_attr_variant_named(
-                data, config.reconstruct_focal_param),
+                data, Config.reconstruct_focal_param),
                 'sensor_width': attrs.get_attr_variant_named(
-                    data, config.reconstruct_sensor_width_param),
+                    data, Config.reconstruct_sensor_width_param),
                 'sensor_height': attrs.get_attr_variant_named(
-                    data, config.reconstruct_sensor_width_param),
+                    data, Config.reconstruct_sensor_width_param),
                 'frame_width': attrs.get_attr_variant_named(
-                    data, config.reconstruct_frame_width_param),
+                    data, Config.reconstruct_frame_width_param),
                 'frame_height': attrs.get_attr_variant_named(
-                    data, config.reconstruct_frame_height_param)}
+                    data, Config.reconstruct_frame_height_param)}
             logger.debug("LOADED PARAMS {}".format(params))
             if None in params.values():
                 return None
-        except:
+        except Exception:
             return None
         return params
 
@@ -280,7 +257,7 @@ class OBJECT_OT_FBActor(Operator):
             return
 
         # Has object our main attribute?
-        if not attrs.has_custom_attribute(obj, config.version_prop_name[0]):
+        if not attrs.has_custom_attribute(obj, Config.version_prop_name[0]):
             return  # No, it hasn't, leave
 
         # Object marked by our attribute, so can be reconstructed
@@ -292,28 +269,28 @@ class OBJECT_OT_FBActor(Operator):
         logger.info("START RECONSTRUCT")
 
         obj_type = attrs.get_safe_custom_attribute(
-                obj, config.object_type_prop_name[0])
+                obj, Config.object_type_prop_name[0])
         if obj_type is None:
             obj_type = BuilderType.FaceBuilder
         logger.debug("OBJ_TYPE: {}".format(obj_type))
 
         if obj_type != BuilderType.FaceBuilder:
-            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
                  msg_content=error_message + 'Object Type')
             return  # Problem with object type custom attribute
 
         # Get Mod version
         mod_ver = attrs.get_safe_custom_attribute(
-                obj, config.fb_mod_ver_prop_name[0])
+                obj, Config.fb_mod_ver_prop_name[0])
         if mod_ver is None:
-            mod_ver = config.unknown_mod_ver
+            mod_ver = Config.unknown_mod_ver
         logger.debug("MOD_VER {}".format(mod_ver))
 
         # Get all camera parameters
         params = self.get_camera_params(obj)
         if params is None:
-            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
                  msg_content=error_message + 'camera')
             return  # One or more parameters undefined
@@ -321,21 +298,21 @@ class OBJECT_OT_FBActor(Operator):
 
         # Get Serial string
         serial_str = attrs.get_safe_custom_attribute(
-                obj, config.fb_serial_prop_name[0])
+                obj, Config.fb_serial_prop_name[0])
         if serial_str is None:
             serial_str = ""
         logger.debug("SERIAL")
 
         # Get Dir Name
         dir_name = attrs.get_safe_custom_attribute(
-                obj, config.fb_dir_prop_name[0])
+                obj, Config.fb_dir_prop_name[0])
         if dir_name is None:
             dir_name = ""
         logger.debug("DIR_NAME: {}".format(dir_name))
 
         # Get Image Names
         images = attrs.get_safe_custom_attribute(
-                obj, config.fb_images_prop_name[0])
+                obj, Config.fb_images_prop_name[0])
         if type(images) is not list:
             images = []
         logger.debug("IMAGES: {}".format(images))
@@ -386,7 +363,7 @@ class OBJECT_OT_FBActor(Operator):
 
             FBLoader.update_camera_params(head)
 
-        except:
+        except Exception:
             logger.error("WRONG PARAMETERS")
             for i, c in enumerate(reversed(head.cameras)):
                 if c.camobj is not None:
@@ -398,7 +375,7 @@ class OBJECT_OT_FBActor(Operator):
             scene.render.resolution_x = rx
             scene.render.resolution_y = ry
             logger.debug("SCENE PARAMETERS RESTORED")
-            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.CannotReconstruct)
             return
 
@@ -480,7 +457,7 @@ class OBJECT_OT_FBActor(Operator):
         fb = FBLoader.get_builder()
         for i, c in enumerate(head.cameras):
             if c.pins_count > 0:
-                kid = FBLoader.keyframe_by_camnum(headnum, i)
+                kid = manipulate.keyframe_by_camnum(headnum, i)
                 for n in range(fb.pins_count(kid)):
                     p = fb.pin(kid, n)
                     fb.move_pin(
@@ -515,7 +492,7 @@ class OBJECT_OT_FBActor(Operator):
         elif self.action == 'show_tex':
             self.show_texture_in_mat(context)
             # Switch to Material Mode or Back
-            self.toggle_mode(context, ('SOLID', 'MATERIAL'))
+            manipulate.toggle_mode(('SOLID', 'MATERIAL'))
 
         elif self.action == 'bake_tex':
             self.bake_tex()
@@ -528,7 +505,7 @@ class OBJECT_OT_FBActor(Operator):
             self.unhide_head()
 
         elif self.action == "about_fix_frame_warning":
-            warn = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+            warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.AboutFrameSize)
 
         elif self.action == "auto_detect_frame_size":

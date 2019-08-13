@@ -37,15 +37,15 @@ import sys
 import tempfile
 import shutil
 import logging
-from . config import config
+from . config import Config
 
 logging.basicConfig(
-    level=config.logging_level,
+    level=Config.logging_level,
     format='%(asctime)s %(name)-22s %(lineno)-5d %(levelname)-8s %(message)s',
     datefmt='%H:%M:%S')  # filename=config.log_filename, filemode='w')
 # duplicate short log in console
 console = logging.StreamHandler()
-console.setLevel(config.console_level)
+console.setLevel(Config.console_level)
 formatter_short = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
 console.setFormatter(formatter_short)
 # add the handler to the root logger
@@ -79,7 +79,7 @@ def init_pykeentools_copy():
             pykeentools_dir = tmp_dir
             logger.debug("DEFAULT COPY CREATED")
             logger.debug(tmp_dir)
-        except:
+        except Exception:
             logger.warning("CAN'T CREATE DEFAULT COPY")
             try:
                 # Create temporary folder
@@ -89,7 +89,7 @@ def init_pykeentools_copy():
                 pykeentools_dir = tmp_dir
                 logger.debug("TEMPORARY COPY CREATED")
                 logger.debug("TMP_DIR: {}".format(tmp_dir))
-            except:
+            except Exception:
                 logger.warning("CAN'T CREATE TEMPORARY COPY")
 
     logger.debug("BASE_DIR: {}".format(base_dir))
@@ -134,7 +134,7 @@ from . movepin import OBJECT_OT_FBMovePin
 from . actor import OBJECT_OT_FBActor
 from . addon_prefs import FBAddonPreferences
 from . filedialog import WM_OT_FBOpenFilebrowser
-from . config import config
+from . config import Config
 
 
 classes = (
@@ -182,7 +182,7 @@ def register():
         bpy.utils.register_class(cls)
     bpy.types.VIEW3D_MT_mesh_add.append(menu_func)
     # Main addon settings variable creation
-    setattr(bpy.types.Scene, config.addon_global_var_name,
+    setattr(bpy.types.Scene, Config.addon_global_var_name,
             bpy.props.PointerProperty(type=FBSceneSettings))
 
 
@@ -191,7 +191,7 @@ def unregister():
         bpy.utils.unregister_class(cls)
     bpy.types.VIEW3D_MT_mesh_add.remove(menu_func)
     # Delete addon settings
-    delattr(bpy.types.Scene, config.addon_global_var_name)
+    delattr(bpy.types.Scene, Config.addon_global_var_name)
 
 
 if __name__ == "__main__":

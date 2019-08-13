@@ -20,12 +20,12 @@ import bpy
 import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
-from .. config import config
+from .. config import Config
 
 
 class FBShaderPoints:
     """ Base class for Point Drawing Shaders """
-    point_size = config.default_pin_size
+    point_size = Config.default_pin_size
 
     # Store all draw handlers registered by class objects
     handler_list = []
@@ -230,4 +230,4 @@ class FBPoints3D(FBShaderPoints):
     def __init__(self):
         super().__init__()
         self.set_point_size(
-            config.default_pin_size * config.surf_pin_size_scale)
+            Config.default_pin_size * Config.surf_pin_size_scale)
