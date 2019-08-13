@@ -15,13 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import bpy
 import cProfile
 import time
 import logging
+import bpy
 
 import numpy as np
 
+from . import const
 from . config import Config, get_main_settings, BuilderType
 from . const import FBConst
 from . utils import coords
@@ -193,13 +194,13 @@ class FBViewport:
     @classmethod
     def get_special_indices(cls, builder_type):
         if builder_type == BuilderType.FaceBuilder:
-            pairs = FBConst.get_eyes_indices()
-            pairs = pairs.union(FBConst.get_eyebrows_indices())
-            pairs = pairs.union(FBConst.get_nose_indices())
-            pairs = pairs.union(FBConst.get_mouth_indices())
-            pairs = pairs.union(FBConst.get_ears_indices())
-            pairs = pairs.union(FBConst.get_half_indices())
-            pairs = pairs.union(FBConst.get_jaw_indices2())
+            pairs = const.get_eyes_indices()
+            pairs = pairs.union(const.get_eyebrows_indices())
+            pairs = pairs.union(const.get_nose_indices())
+            pairs = pairs.union(const.get_mouth_indices())
+            pairs = pairs.union(const.get_ears_indices())
+            pairs = pairs.union(const.get_half_indices())
+            pairs = pairs.union(const.get_jaw_indices2())
             return pairs
         elif builder_type == BuilderType.BodyBuilder:
             return FBConst.get_bodybuilder_highlight_indices()
