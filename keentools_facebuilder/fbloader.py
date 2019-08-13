@@ -38,19 +38,6 @@ class FBLoader:
     builder = UniBuilder(Config.default_builder)
     viewport = FBViewport()
 
-    # Functions for Custom Attributes perform
-    @classmethod
-    def set_keentools_version(cls, obj):
-        attr_name = Config.version_prop_name[0]
-        attrs.set_custom_attribute(obj, attr_name, Config.addon_version)
-        attr_name2 = Config.fb_mod_ver_prop_name[0]
-        ver = cls.get_builder_version()
-        attrs.set_custom_attribute(obj, attr_name2, ver)
-        attr_name3 = Config.object_type_prop_name[0]
-        obj_type = cls.get_builder_type()
-        attrs.set_custom_attribute(obj, attr_name3, obj_type)
-
-    # -----------------
     @classmethod
     def update_cam_image_size(cls, cam_item):
         cam_item.update_image_size()
@@ -134,6 +121,11 @@ class FBLoader:
     @classmethod
     def get_builder_version(cls):
         return cls.builder.get_version()
+
+    @classmethod
+    def set_keentools_version(cls, obj):
+        attrs.set_keentools_version(obj, cls.get_builder_type(),
+                                    cls.get_builder_version())
 
     @classmethod
     def out_pinmode(cls, headnum, camnum):

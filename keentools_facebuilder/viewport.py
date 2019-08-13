@@ -24,7 +24,6 @@ import numpy as np
 
 from . import const
 from . config import Config, get_main_settings, BuilderType
-from . const import FBConst
 from . utils import coords
 from . utils.edges import FBEdgeShader3D, FBEdgeShader2D
 from . utils.other import FBText
@@ -203,7 +202,7 @@ class FBViewport:
             pairs = pairs.union(const.get_jaw_indices2())
             return pairs
         elif builder_type == BuilderType.BodyBuilder:
-            return FBConst.get_bodybuilder_highlight_indices()
+            return const.get_bodybuilder_highlight_indices()
         return {}
 
     @classmethod

@@ -54,8 +54,9 @@ class Config:
     fb_main_unmorph_idname = 'object.' + fb_main_unmorph_callname
     fb_main_remove_pins_callname = _prefix + '_main_remove_pins'
     fb_main_remove_pins_idname = 'object.' + fb_main_remove_pins_callname
-    fb_main_wireframe_color_idname = 'object.' + _prefix + \
-                                     '_main_wireframe_color'
+    fb_main_wireframe_color_callname = _prefix + '_main_wireframe_color'
+    fb_main_wireframe_color_idname = 'object.' + \
+                                     fb_main_wireframe_color_callname
     fb_main_filter_cameras_idname = 'object.' + _prefix + \
                                     '_main_filter_cameras'
     fb_main_delete_camera_callname = _prefix + '_main_delete_camera'

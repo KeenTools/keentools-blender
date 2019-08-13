@@ -24,27 +24,11 @@ from bpy.props import (
     IntProperty,
 )
 
-from keentools_facebuilder.utils import manipulate
+from . utils.manipulate import check_settings
+from . utils import manipulate
 from . fbloader import FBLoader
 from . fbdebug import FBDebug
-from .config import get_main_settings, ErrorType
-from . config import Config
-
-
-def check_settings():
-    settings = get_main_settings()
-    if not settings.check_heads_and_cams():
-        # Settings structure is broken
-        # Fix Heads and cameras
-        heads_deleted, cams_deleted = settings.fix_heads()
-        if heads_deleted == 0:
-            warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
-            # message = "Some error\n Happened"
-            # warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
-            #     msg_content=message)
-            warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
-        return False
-    return True
+from . config import get_main_settings, Config
 
 
 class OBJECT_OT_FBSelectCamera(Operator):

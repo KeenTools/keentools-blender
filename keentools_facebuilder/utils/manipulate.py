@@ -16,7 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import bpy
-from .. config import get_main_settings
+
+from .. config import get_main_settings, ErrorType, Config
 
 
 def show_all_cameras(headnum):
@@ -85,3 +86,16 @@ def toggle_mode(modes=('SOLID', 'MATERIAL')):
                     if ind >= len(modes):
                         ind = 0
                 space.shading.type = modes[ind]
+
+
+def check_settings():
+    settings = get_main_settings()
+    if not settings.check_heads_and_cams():
+        # Settings structure is broken
+        # Fix Heads and cameras
+        heads_deleted, cams_deleted = settings.fix_heads()
+        if heads_deleted == 0:
+            warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
+        return False
+    return True

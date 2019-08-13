@@ -32,6 +32,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
 
     def execute(self, context):
         settings = get_main_settings()
+        heads_deleted, cams_deleted = settings.fix_heads()
         try:
             obj = self.new_head()
         except Exception:
