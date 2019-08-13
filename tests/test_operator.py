@@ -188,8 +188,10 @@ def test_create_head_and_cameras():
 
 def test_delete_last_camera():
     headnum = get_last_headnum()
+    print("HN", headnum)
     assert(headnum >= 0)
     camnum = get_last_camnum(headnum)
+    print("CN", camnum)
     assert(camnum >= 0)
     delete_camera(headnum, camnum)
 
@@ -215,6 +217,11 @@ def test_move_pins():
     move_pin(732, 478, 826, 510, arect, brect)
     move_pin(542, 549, 639, 527, arect, brect)
     move_pin(912, 412, 911, 388, arect, brect)
+
+    # Coloring wireframe
+    op = getattr(
+        bpy.ops.object, Config.fb_main_wireframe_color_callname)
+    op('EXEC_DEFAULT', action='wireframe_green')
 
 
 def test_duplicate_and_reconstruct():
