@@ -74,6 +74,13 @@ def select_camera(headnum=0, camnum=0):
 def deselect_all():
     bpy.ops.object.select_all(action='DESELECT')
 
+
 def out_pinmode():
     settings = get_main_settings()
     FBLoader.out_pinmode(settings.current_headnum, settings.current_camnum)
+
+
+def wireframe_coloring(action='wireframe_green'):
+    op = getattr(
+        bpy.ops.object, Config.fb_main_wireframe_color_callname)
+    op('EXEC_DEFAULT', action=action)
