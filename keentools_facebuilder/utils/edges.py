@@ -195,6 +195,8 @@ class FBEdgeShader3D(FBEdgeShaderBase):
         bgl.glDisable(bgl.GL_DEPTH_TEST)
 
     def create_batches(self):
+        if bpy.app.background:
+            return
         self.fill_batch = batch_for_shader(
                     self.fill_shader, 'TRIS',
                     {"pos": self.vertices},

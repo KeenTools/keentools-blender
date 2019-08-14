@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
 import numpy as np
 import math
 import bpy
+from . manipulate import get_fake_context
 
 
 def nearest_point(x, y, points, dist=4000000):  # dist squared
@@ -130,6 +130,9 @@ def calc_model_mat(model_mat, head_mat):
 
 def get_raw_camera_2d_data(context):
     """ Area coordinates and view parameters for debug logging """
+    if bpy.app.background:
+        context = get_fake_context()
+
     a = context.area
     rv3d = context.space_data.region_3d
     z = rv3d.view_camera_zoom
@@ -142,6 +145,9 @@ def get_raw_camera_2d_data(context):
 
 def get_camera_border(context):
     """ Camera corners detection via context and parameters """
+    if bpy.app.background:
+        context = get_fake_context()
+
     a = context.area
     w = a.width
     h = a.height
@@ -188,6 +194,9 @@ def get_camera_border(context):
 
 def is_safe_region(context, x, y):
     """ Safe region for pin operation """
+    if bpy.app.background:
+        context = get_fake_context()
+
     a = context.area
     rr = a.regions
     x0 = a.x
@@ -204,12 +213,18 @@ def is_safe_region(context, x, y):
 
 def is_in_area(context, x, y):
     """ Is point in context.area """
+    if bpy.app.background:
+        context = get_fake_context()
+
     a = context.area
     return (0 <= x <= a.width) and (0 <= y <= a.height)
 
 
 def get_pixel_relative_size(context):
     """ One Pixel size in relative coords via current zoom """
+    if bpy.app.background:
+        context = get_fake_context()
+
     a = context.area
     w = a.width if a.width > 0 else 1.0
     rv3d = context.space_data.region_3d

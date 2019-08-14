@@ -55,20 +55,12 @@ class OBJECT_OT_FBSelectCamera(Operator):
             return {'CANCELLED'}
 
         # bpy.ops.object.select_all(action='DESELECT')
-        cam = head.cameras[camnum].camobj
-        cam.select_set(state=True)
-        bpy.context.view_layer.objects.active = cam
+        camobj = head.cameras[camnum].camobj
 
-        # Switch to camera
-        if (scene.camera == cam) and settings.pinmode:
-            bpy.ops.view3d.view_camera()
-        else:
-            cam.hide_set(False)  # To allow switch
-            if not bpy.app.background:
-                bpy.ops.view3d.object_as_camera()
+        manipulate.switch_to_camera(camobj)
 
         # Add Background Image
-        c = cam.data
+        c = camobj.data
         c.lens = head.focal
         c.show_background_images = True
         if len(c.background_images) == 0:

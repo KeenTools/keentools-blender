@@ -315,7 +315,8 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
 
         FBLoader.viewport.create_batch_2d(context)
         # Try to redraw
-        context.area.tag_redraw()
+        if not bpy.app.background:
+            context.area.tag_redraw()
 
         # Load 3D pins
         FBLoader.viewport.update_surface_points(fb, headobj, kid)

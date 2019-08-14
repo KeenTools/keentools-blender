@@ -59,6 +59,8 @@ class FBShaderPoints:
 
     def _create_batch(self, vertices, vertices_colors,
                       shadername='2D_FLAT_COLOR'):
+        if bpy.app.background:
+            return
         if shadername == 'CUSTOM_3D':
             # 3D_FLAT_COLOR
             vertex_shader = flat_color_3d_vertex_shader()
