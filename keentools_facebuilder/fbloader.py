@@ -21,7 +21,7 @@ import bpy
 import numpy as np
 
 from . utils import (
-    FBPoints2D, FBPoints3D, FBText, FBCalc, FBEdgeShader,
+    FBPoints2D, FBPoints3D, FBText, FBCalc, FBEdgeShader2D, FBEdgeShader3D,
     FBStopTimer
 )
 from . builder import UniBuilder
@@ -30,8 +30,56 @@ from . const import FBConst
 from . config import config, get_main_settings, BuilderType
 from pykeentools import UnlicensedException
 
+import cProfile
+import time
+
+
+class FPSMeter:
+    def __init__(self, buf_length=5):
+        self.start_time = time.time()
+        self.indicator = "None"
+        self.counter = 0
+        self.buffer = [self.start_time for _ in range(buf_length)]
+        self.head = 0
+        self.buf_length = len(self.buffer)
+
+    def prev_index(self, ind):
+        prev_ind = ind - 1
+        if prev_ind < 0:
+            prev_ind = self.buf_length
+        return prev_ind
+
+    def next_index(self, ind):
+        next_ind = ind + 1
+        if next_ind >= self.buf_length:
+            next_ind = 0
+        return next_ind
+
+    def update_indicator(self):
+        new_time = self.buffer[self.head]
+        old_time = self.buffer[self.next_index(self.head)]
+        delta = new_time - old_time
+        d = 0.0
+        if delta > 0.00001:
+            d = (self.buf_length - 1) / delta
+        self.indicator = "{0:.2f}".format(d)
+
+    def tick(self):
+        self.head = self.next_index(self.head)
+        self.buffer[self.head] = time.time()
+        self.counter += 1
+
 
 class FBLoader:
+    profiling = False
+    # --- PROFILING ---
+    if profiling:
+        pr = cProfile.Profile()
+        pr.disable()
+
+    fps = FPSMeter()
+    # --- PROFILING ---
+
     # Builder selection: FaceBuilder or BodyBuilder
     builder = UniBuilder(config.default_builder)
 
@@ -42,9 +90,11 @@ class FBLoader:
     # Text output in Modal mode
     texter = FBText()
     # Wireframe shader object
-    wireframer = FBEdgeShader()
+    wireframer = FBEdgeShader3D()
     # Update timer
     draw_timer_handler = None
+
+    residuals = FBEdgeShader2D()
 
     # Pins
     spins = []  # current screen pins
@@ -95,6 +145,12 @@ class FBLoader:
     def set_keentools_version(cls, obj):
         attr_name = config.version_prop_name[0]
         cls.set_custom_attribute(obj, attr_name, config.addon_version)
+        attr_name2 = config.fb_mod_ver_prop_name[0]
+        ver = cls.get_builder_version()
+        cls.set_custom_attribute(obj, attr_name2, ver)
+        attr_name3 = config.object_type_prop_name[0]
+        obj_type = cls.get_builder_type()
+        cls.set_custom_attribute(obj, attr_name3, obj_type)
 
     # -----------------
     @classmethod
@@ -117,61 +173,63 @@ class FBLoader:
         cam_item.update_image_size()
 
     @classmethod
-    def update_camera_params(cls):
-        """ Update when some camera parameters changes
-            Warning! Result may be unstable if some object where deleted
-        """
+    def update_camera_params(cls, head):
+        """ Update when some camera parameters changes """
         settings = get_main_settings()
         scene = bpy.context.scene
 
         # Check scene consistency
         heads_deleted, cams_deleted = settings.fix_heads()
 
-        for headnum, head in enumerate(settings.heads):
+        headnum = -1
+        for i, h in enumerate(settings.heads):
+            if head == h:
+                headnum = i
 
-            rx = scene.render.resolution_x
-            ry = scene.render.resolution_y
+        if headnum < 0:
+            return
 
-            fb = cls.get_builder()
-            cls.load_only(headnum)
+        rx = scene.render.resolution_x
+        ry = scene.render.resolution_y
 
-            max_index = -1
-            max_pins = -1
-            for i, c in enumerate(head.cameras):
-                kid = c.keyframe_id
-                cls.set_camera_projection(
-                    settings.focal, settings.sensor_width, rx, ry)
-                # We are looking for keyframe that has maximum pins
-                if c.pins_count > 0:
-                    if max_pins < c.pins_count:
-                        max_index = kid
-                        max_pins = c.pins_count
-                c.camobj.data.lens = settings.focal
-                c.camobj.data.sensor_width = settings.sensor_width
-                c.camobj.data.sensor_height = settings.sensor_height
+        fb = cls.new_builder(BuilderType.NoneBuilder, head.mod_ver)  # auto-select
+        cls.load_only(headnum)
 
-            if cls.get_builder_type() == BuilderType.FaceBuilder:
-                fb.set_auto_rigidity(settings.check_auto_rigidity)
-                fb.set_rigidity(settings.rigidity)
+        max_index = -1
+        max_pins = -1
+        for i, c in enumerate(head.cameras):
+            kid = c.keyframe_id
+            cls.set_camera_projection(
+                head.focal, head.sensor_width, rx, ry)
+            # We are looking for keyframe that has maximum pins
+            if c.pins_count > 0:
+                if max_pins < c.pins_count:
+                    max_index = kid
+                    max_pins = c.pins_count
+            c.camobj.data.lens = head.focal
+            c.camobj.data.sensor_width = head.sensor_width
+            c.camobj.data.sensor_height = head.sensor_height
 
-            if max_index >= 0:
-                try:
-                    # Solver
-                    fb.solve_for_current_pins(max_index)
-                    print("SOLVED", max_index)
+        if cls.get_builder_type() == BuilderType.FaceBuilder:
+            fb.set_auto_rigidity(settings.check_auto_rigidity)
+            fb.set_rigidity(settings.rigidity)
 
-                except UnlicensedException:
-                    settings.force_out_pinmode = True
-                    settings.license_error = True
-                    # FBLoader.out_pinmode(context, headnum, camnum)
-                    cls.report({'INFO'}, "LICENSE EXCEPTION")
+        if max_index >= 0:
+            try:
+                # Solver
+                fb.solve_for_current_pins(max_index)
+                print("SOLVED", max_index)
 
-            # Head Mesh update
-            FBCalc.update_head_mesh(fb, head.headobj)
-            if settings.pinmode:
-                cls.fb_redraw(headnum, settings.current_camnum)
-            cls.update_cameras(headnum)
-            cls.save_only(headnum)
+            except UnlicensedException:
+                settings.force_out_pinmode = True
+                settings.license_error = True
+
+        # Head Mesh update
+        FBCalc.update_head_mesh(fb, head.headobj)
+        if settings.pinmode:
+            cls.fb_redraw(headnum, settings.current_camnum)
+        cls.update_cameras(headnum)
+        cls.save_only(headnum)
 
     @classmethod
     def update_pixel_size(cls, context):
@@ -191,12 +249,17 @@ class FBLoader:
         return cls.builder.get_builder()
 
     @classmethod
-    def new_builder(cls, builder_type=BuilderType.NoneBuilder):
-        return cls.builder.new_builder(builder_type)
+    def new_builder(cls, builder_type=BuilderType.NoneBuilder,
+                    ver=config.unknown_mod_ver):
+        return cls.builder.new_builder(builder_type, ver)
 
     @classmethod
     def get_builder_type(cls):
         return cls.builder.get_builder_type()
+
+    @classmethod
+    def get_builder_version(cls):
+        return cls.builder.get_version()
 
     @classmethod
     def force_undo_push(cls, msg='KeenTools operation'):
@@ -241,8 +304,9 @@ class FBLoader:
         cls.fb_save(headnum, camnum)
         cls.wireframer.unregister_handler()
         headobj = settings.heads[headnum].headobj
+        # Mark object by ver.
+        cls.set_keentools_version(headobj)
         # Show geometry
-        # headobj.hide_viewport = False
         headobj.hide_set(False)
         settings.pinmode = False
 
@@ -302,7 +366,7 @@ class FBLoader:
         cam.set_model_mat(fb.model_mat(kid))
         # Save images list on headobj
         head.save_images_src()
-        settings.save_cam_settings(head.headobj)
+        head.save_cam_settings()
 
     @classmethod
     def fb_redraw(cls, headnum, camnum):
@@ -323,6 +387,7 @@ class FBLoader:
         cls.update_surface_points(headobj, kid)
         # Shader update
         cls.wireframer.init_geom_data(headobj)
+        cls.wireframer.init_edge_indices(headobj)
         cls.wireframer.create_batches()
 
     @classmethod
@@ -335,7 +400,9 @@ class FBLoader:
 
         points = cls.spins.copy()
         scene = context.scene
-        asp = scene.render.resolution_y / scene.render.resolution_x
+        rx = scene.render.resolution_x
+        ry = scene.render.resolution_y
+        asp = ry / rx
 
         x1, y1, x2, y2 = FBCalc.get_camera_border(context)
 
@@ -343,10 +410,10 @@ class FBLoader:
             x, y = FBCalc.image_space_to_region(p[0], p[1], x1, y1, x2, y2)
             points[i] = (x, y)
 
-        vertex_colors = [(1.0, 0.0, 0.0, 1.0) for _ in range(len(points))]
+        vertex_colors = [config.pin_color for _ in range(len(points))]
 
         if cls.current_pin and cls.current_pin_num < len(vertex_colors):
-            vertex_colors[cls.current_pin_num] = (1.0, 0.0, 1.0, 1.0)
+            vertex_colors[cls.current_pin_num] = config.current_pin_color
 
         # Sensitivity indicator
         points.append(
@@ -365,11 +432,72 @@ class FBLoader:
                 x1, y1, x2, y2))
         )
         vertex_colors.append((0, 1, 0, 0.2))  # sensitivity indicator
-        vertex_colors.append((1, 0, 1, 1))  # camera corner
-        vertex_colors.append((1, 0, 1, 1))  # camera corner
+        vertex_colors.append(config.current_pin_color)  # camera corner
+        vertex_colors.append(config.current_pin_color)  # camera corner
 
         cls.points2d.set_vertices_colors(points, vertex_colors)
         cls.points2d.create_batch()
+
+    @classmethod
+    def update_residuals(cls, context, headobj, keyframe):
+        scene = bpy.context.scene
+        rx = scene.render.resolution_x
+        ry = scene.render.resolution_y
+
+        x1, y1, x2, y2 = FBCalc.get_camera_border(context)
+
+        p2d = cls.img_points(keyframe)
+        p3d = cls.surface_points_only(headobj, keyframe)
+
+        wire = cls.residuals
+        wire.clear_vertices()
+        wire.edge_lengths = []
+        wire.vertices_colors = []
+
+        # Pins count != Surf points count
+        if len(p2d) != len(p3d):
+            return
+
+        if len(p3d) == 0:
+            # Empty shader
+            wire.create_batch()
+            return
+
+        # ----------
+        # Projection
+        fb = cls.get_builder()
+        PROJECTION = fb.projection_mat().T
+
+        camobj = bpy.context.scene.camera
+        m = camobj.matrix_world.inverted()
+
+        # Fill matrix in homogeneous coords
+        vv = np.ones((len(p3d), 4), dtype=np.float32)
+        vv[:, :-1] = p3d
+
+        # Object transform, inverse camera, projection apply -> numpy
+        transform = np.array(
+            headobj.matrix_world.transposed() @ m.transposed()) @ PROJECTION
+        # Calc projection
+        vv = vv @ transform
+        vv = (vv.T / vv[:,3]).T
+
+        verts2 = []
+        for i, v in enumerate(vv):
+            x, y = FBCalc.frame_to_image_space(v[0], v[1], rx, ry)
+            verts2.append(FBCalc.image_space_to_region(x, y,
+                                                       x1, y1, x2, y2))
+            wire.edge_lengths.append(0)
+            verts2.append(FBCalc.image_space_to_region(p2d[i][0], p2d[i][1],
+                                                       x1, y1, x2, y2))
+            # length = np.linalg.norm((v[0]-p2d[i][0], v[1]-p2d[i][1]))
+            length = 22.0
+            wire.edge_lengths.append(length)
+
+        wire.vertices = verts2
+        wire.vertices_colors = np.full((len(verts2), 4),
+                                       config.residual_color).tolist()
+        wire.create_batch()
 
     # --------------------
     # Update functions
@@ -377,7 +505,7 @@ class FBLoader:
     @classmethod
     def update_surface_points(
             cls, headobj, keyframe=-1,
-            allcolor=(0, 0, 1, 0.15), selcolor=(0, 1, 0, 1)):
+            allcolor=(0, 0, 1, 0.15), selcolor=config.surface_point_color):
         # Load 3D pins
         verts, colors = cls.surface_points(
             headobj, keyframe, allcolor, selcolor)
@@ -408,16 +536,13 @@ class FBLoader:
             if len(mesh.edges) * 2 == len(cls.wireframer.edges_colors):
                 print("COLORING")
                 special_indices = cls.get_special_indices()
-                cls.wireframer.init_special_areas2(
-                    obj.data, special_indices,
-                    (*comp_color, settings.wireframe_opacity)
-                )
+                cls.wireframer.init_special_areas(obj.data, special_indices, (
+                *comp_color, settings.wireframe_opacity))
             else:
                 print("COMPARE PROBLEM")
                 print("EDGES", len(mesh.edges))
                 print("EDGE_COLORS", len(cls.wireframer.edges_colors))
         cls.wireframer.create_batches()
-
 
     @classmethod
     def get_special_indices(cls):
@@ -502,6 +627,20 @@ class FBLoader:
         return verts, colors
 
     @classmethod
+    def surface_points_only(
+            cls, headobj, keyframe=-1):
+        """ Load 3D pin points """
+        verts = []
+
+        fb = cls.get_builder()
+
+        for i in range(fb.pins_count(keyframe)):
+            pin = fb.pin(keyframe, i)
+            p = FBCalc.pin_to_xyz(pin, headobj)
+            verts.append(p)
+        return verts
+
+    @classmethod
     def img_points(cls, keyframe):
         scene = bpy.context.scene
         w = scene.render.resolution_x
@@ -550,6 +689,8 @@ class FBLoader:
     def register_handlers(cls, args, context):
         cls.unregister_handlers()  # Experimental
 
+        cls.residuals.register_handler(args)
+
         cls.points3d.register_handler(args)
         cls.points2d.register_handler(args)
         # Draw text on screen registration
@@ -569,6 +710,8 @@ class FBLoader:
         cls.texter.unregister_handler()
         cls.points2d.unregister_handler()
         cls.points3d.unregister_handler()
+
+        cls.residuals.unregister_handler()
 
     @classmethod
     def update_pins_count(cls, headnum, camnum):
@@ -666,12 +809,13 @@ class FBLoader:
     def universal_mesh_loader(cls, builder_type, mesh_name='keentools_mesh',
                               masks=(), uv_set='uv0'):
         stored_builder_type = FBLoader.get_builder_type()
-        builder = cls.new_builder(builder_type)
+        stored_builder_version = FBLoader.get_builder_version()
+        builder = cls.new_builder(builder_type, config.unknown_mod_ver)
 
         mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set)
 
         # Restore builder
-        cls.new_builder(stored_builder_type)
+        cls.new_builder(stored_builder_type, stored_builder_version)
         return mesh
 
     @classmethod
@@ -703,8 +847,7 @@ class FBLoader:
         # Set projection matrix
         rx = scene.render.resolution_x
         ry = scene.render.resolution_y
-        cls.set_camera_projection(
-            settings.focal, settings.sensor_width, rx, ry)
+        cls.set_camera_projection(head.focal, head.sensor_width, rx, ry)
 
         # Update all cameras model_mat
         for i, c in enumerate(head.cameras):
@@ -728,6 +871,7 @@ class FBLoader:
     def add_camera(cls, headnum, img=None):
         # scene = bpy.context.scene
         settings = get_main_settings()
+        head = settings.heads[headnum]
         fb = cls.get_builder()
 
         # create camera data
@@ -736,12 +880,12 @@ class FBLoader:
         cam_ob = bpy.data.objects.new("fbCamObj", cam_data)
 
         cam_ob.rotation_euler = [3.1415927410125732 * 0.5, 0, 0]
-        camnum = len(settings.heads[headnum].cameras)
+        camnum = len(head.cameras)
 
         cam_ob.location = [2 * camnum, -5 - headnum, 0.5]
 
         # place camera object to our list
-        camera = settings.heads[headnum].cameras.add()
+        camera = head.cameras.add()
         camera.camobj = cam_ob
 
         num = cls.get_next_keyframe()
@@ -755,9 +899,9 @@ class FBLoader:
 
         # Add Background Image
         cam_data.display_size = 0.75  # Camera Size
-        cam_data.lens = settings.focal  # From Interface
-        cam_data.sensor_width = settings.sensor_width
-        cam_data.sensor_height = settings.sensor_height
+        cam_data.lens = head.focal  # From Interface
+        cam_data.sensor_width = head.sensor_width
+        cam_data.sensor_height = head.sensor_height
         cam_data.show_background_images = True
 
         if len(cam_data.background_images) == 0:

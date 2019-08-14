@@ -114,26 +114,27 @@ class FBDebug:
     @classmethod
     def get_settings(cls):
         settings = get_main_settings()
-        h_arr = []
-        for h in settings.heads:
-            c_arr = []
-            for c in h.cameras:
-                c_arr.append({
-                    'model_mat': c.model_mat,
+        head_arr = []
+        res = {}
+        for head in settings.heads:
+            camera_arr = []
+            for camera in head.cameras:
+                camera_arr.append({
+                    'model_mat': camera.model_mat,
                     'frame_width': settings.frame_width,
                     'frame_height': settings.frame_height
                 })
             head_info = {
-                'serial': h.serial_str
+                'serial': head.serial_str
             }
-            h_arr.append(head_info)
-        res = {
-            'current_headnum': settings.current_headnum,
-            'current_camnum': settings.current_camnum,
-            'heads': h_arr,
-            'sensor_width': settings.sensor_width,
-            'focal': settings.focal
-        }
+            head_arr.append(head_info)
+            res = {
+                'current_headnum': settings.current_headnum,
+                'current_camnum': settings.current_camnum,
+                'heads': head_arr,
+                'sensor_width': head.sensor_width,
+                'focal': head.focal
+            }
         return res
 
     @classmethod

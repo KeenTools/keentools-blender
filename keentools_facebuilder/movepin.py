@@ -23,6 +23,23 @@ from . utils import FBCalc
 from . config import config, get_main_settings, BuilderType
 
 from pykeentools import UnlicensedException
+from functools import wraps
+
+
+# Decorator for profiling
+def profile_this(fn):
+    @wraps(fn)
+    def wrapped(arg1, arg2, arg3):
+        if FBLoader.profiling:
+            pr = FBLoader.pr
+            pr.enable()
+            ret = fn(arg1, arg2, arg3)
+            pr.disable()
+            return ret
+        else:
+            ret = fn(arg1, arg2, arg3)
+            return ret
+    return wrapped
 
 
 class OBJECT_OT_FBMovePin(bpy.types.Operator):
@@ -47,6 +64,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
     def get_camnum(self):
         return self.camnum
 
+    @profile_this
     def invoke(self, context, event):
         args = (self, context)
         scene = context.scene
@@ -283,6 +301,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         # Head Mesh update
         FBCalc.update_head_mesh(fb, headobj)
         FBLoader.wireframer.init_geom_data(headobj)
+        # FBLoader.wireframer.init_edge_indices(headobj)
         FBLoader.wireframer.create_batches()
 
         FBLoader.create_batch_2d(context)
@@ -301,6 +320,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             self.report({'INFO'}, "Finish MovePin")
             return {'FINISHED'}
 
+    @profile_this
     def modal(self, context, event):
         # print('EVENT: {} VALUE: {}'.format(event.type, event.value))
 

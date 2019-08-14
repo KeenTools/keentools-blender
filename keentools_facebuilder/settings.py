@@ -62,7 +62,7 @@ def update_cam_image(self, context):
 
 def update_camera_params(self, contex):
     print("CAMERA CHANGES", self.keys())
-    FBLoader.update_camera_params()
+    FBLoader.update_camera_params(self)  # pass current head
 
 
 def update_mesh_parts(self, context):
@@ -94,6 +94,7 @@ def update_mesh_parts(self, context):
     if settings.pinmode:
         # Update wireframe structures
         FBLoader.wireframer.init_geom_data(head.headobj)
+        FBLoader.wireframer.init_edge_indices(head.headobj)
         FBLoader.update_wireframe(head.headobj)
 
     mesh_name = old_mesh.name
@@ -194,8 +195,28 @@ class FBCameraItem(PropertyGroup):
 
 
 class FBHeadItem(PropertyGroup):
+    mod_ver: IntProperty(name="Modifier Version", default=-1)
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
+
+    sensor_width: FloatProperty(
+        description="The horizontal size of the camera used to take photos."
+                    "This is VERY important parameter. "
+                    "Set it according to the real camera specification",
+        name="Sensor Width (mm)", default=36,
+        min=0.1, update=update_camera_params)
+    sensor_height: FloatProperty(
+        description="Secondary parameter. "
+                    "Set it according to the real camera specification."
+                    "This parameter is not used if Sensor Width is greater",
+        name="Sensor Height (mm)", default=24,
+        min=0.1, update=update_camera_params)
+    focal: FloatProperty(
+        description="Camera focal length. You can found it in real "
+                    "camera settings or snapshot EXIF. This is VERY important "
+                    "parameter for proper reconstruction",
+        name="Focal Length (mm)", default=50,
+        min=0.1, update=update_camera_params)
 
     check_ears: BoolProperty(name="Ears", default=True,
                              update=update_mesh_parts)
@@ -256,31 +277,21 @@ class FBHeadItem(PropertyGroup):
         # Dir name of current scene
         self.headobj[config.fb_dir_prop_name[0]] = bpy.path.abspath("//")
 
+    def save_cam_settings(self):
+        render = bpy.context.scene.render
+        d = {
+                config.reconstruct_sensor_width_param[0]: self.sensor_width,
+            config.reconstruct_sensor_height_param[0]: self.sensor_height,
+                config.reconstruct_focal_param[0]: self.focal,
+                config.reconstruct_frame_width_param[0]: render.resolution_x,
+                config.reconstruct_frame_height_param[0]: render.resolution_y}
+        self.headobj[config.fb_camera_prop_name[0]] = d
 
 class FBSceneSettings(PropertyGroup):
     # ---------------------
     # Main settings
     # ---------------------
     heads: CollectionProperty(type=FBHeadItem, name="Heads")
-    sensor_width: FloatProperty(
-        description="The horizontal size of the camera used to take photos."
-                    "This is VERY important parameter. "
-                    "Set it according to the real camera specification",
-        name="Sensor Width (mm)", default=36,
-        min=0.1, update=update_camera_params)
-    sensor_height: FloatProperty(
-        description="Secondary parameter. "
-                    "Set it according to the real camera specification."
-                    "This parameter is not used if Sensor Width is greater",
-        name="Sensor Height (mm)", default=24,
-        min=0.1, update=update_camera_params)
-    focal: FloatProperty(
-        description="Camera focal length. You can found it in real "
-                    "camera settings or snapshot EXIF. This is VERY important "
-                    "parameter for proper reconstruction",
-        name="Focal Length (mm)", default=50,
-        min=0.1, update=update_camera_params)
-
     frame_width: IntProperty(default=-1)
     frame_height: IntProperty(default=-1)
     # ---------------------
@@ -461,13 +472,3 @@ class FBSceneSettings(PropertyGroup):
         i = self.find_head_index(obj)
         j, _ = self.find_cam_index(obj)
         return max(i, j)
-
-    def save_cam_settings(self, obj):
-        render = bpy.context.scene.render
-        d = {
-                config.reconstruct_sensor_width_param[0]: self.sensor_width,
-            config.reconstruct_sensor_height_param[0]: self.sensor_height,
-                config.reconstruct_focal_param[0]: self.focal,
-                config.reconstruct_frame_width_param[0]: render.resolution_x,
-                config.reconstruct_frame_height_param[0]: render.resolution_y}
-        obj[config.fb_camera_prop_name[0]] = d
