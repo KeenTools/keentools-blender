@@ -261,6 +261,10 @@ class FBHeadItem(PropertyGroup):
         except AttributeError:
             return True
 
+    def get_last_camnum(self):
+        camnum = len(self.cameras) - 1
+        return camnum
+
     def save_images_src(self):
         res = []
         for c in self.cameras:
@@ -466,3 +470,13 @@ class FBSceneSettings(PropertyGroup):
         i = self.find_head_index(obj)
         j, _ = self.find_cam_index(obj)
         return max(i, j)
+
+    def get_last_headnum(self):
+        headnum = len(self.heads) - 1
+        return headnum
+
+    def get_last_camnum(self, headnum):
+        if headnum <= self.get_last_headnum():
+            return self.heads[headnum].get_last_camnum()
+        else:
+            return -1

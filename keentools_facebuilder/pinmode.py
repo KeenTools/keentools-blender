@@ -31,7 +31,7 @@ from . utils.other import FBStopTimer
 
 class OBJECT_OT_FBPinMode(bpy.types.Operator):
     """ On Screen Face Builder Draw Operator """
-    bl_idname = Config.fb_draw_operator_idname
+    bl_idname = Config.fb_pinmode_operator_idname
     bl_label = "FaceBuilder Pinmode"
     bl_description = "Operator for in-Viewport drawing"
     bl_options = {'REGISTER', 'UNDO'}  # {'REGISTER', 'UNDO'}
@@ -66,6 +66,9 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         settings = get_main_settings()
         head = settings.heads[self.headnum]
         headobj = head.headobj
+
+        logger.debug("PINMODE ENTER: CH{} CC{}".format(
+            settings.current_headnum, settings.current_camnum))
 
         if settings.pinmode:
             # We had to finish last operation

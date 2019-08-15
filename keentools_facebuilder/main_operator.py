@@ -73,8 +73,9 @@ class OBJECT_OT_FBSelectCamera(Operator):
         bpy.context.view_layer.objects.active = headobj
 
         # Auto Call PinMode
-        draw_op = getattr(bpy.ops.object, Config.fb_draw_operator_callname)
-        draw_op('INVOKE_DEFAULT', headnum=headnum, camnum=camnum)
+        draw_op = getattr(bpy.ops.object, Config.fb_pinmode_operator_callname)
+        if not bpy.app.background:
+            draw_op('INVOKE_DEFAULT', headnum=headnum, camnum=camnum)
 
         # === Debug only ===
         FBDebug.add_event_to_queue('SELECT_CAMERA', (headnum, camnum))

@@ -5,25 +5,12 @@ import keentools_facebuilder.utils.coords as coords
 from keentools_facebuilder.fbloader import FBLoader
 
 # --------
-def get_last_headnum():
-    settings = get_main_settings()
-    headnum = len(settings.heads) - 1
-    return headnum
-
-
 def select_by_headnum(headnum):
     settings = get_main_settings()
     headobj = settings.heads[headnum].headobj
     headobj.select_set(state=True)
     bpy.context.view_layer.objects.active = headobj
     return headobj
-
-
-def get_last_camnum(headnum):
-    settings = get_main_settings()
-    camnum = len(settings.heads[headnum].cameras) - 1
-    return camnum
-
 
 # --------------
 # Operators call
@@ -84,3 +71,6 @@ def wireframe_coloring(action='wireframe_green'):
     op = getattr(
         bpy.ops.object, Config.fb_main_wireframe_color_callname)
     op('EXEC_DEFAULT', action=action)
+
+def new_scene():
+    bpy.ops.scene.new(type='NEW')

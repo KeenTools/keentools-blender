@@ -75,8 +75,8 @@ class Config:
     fb_main_show_tex_idname = 'object.' + fb_main_show_tex_callname
 
     fb_filedialog_operator_idname = _prefix + '_import.open_filebrowser'
-    fb_draw_operator_callname = _prefix + '_draw'
-    fb_draw_operator_idname = 'object.' + fb_draw_operator_callname
+    fb_pinmode_operator_callname = _prefix + '_pinmode'
+    fb_pinmode_operator_idname = 'object.' + fb_pinmode_operator_callname
 
     fb_movepin_operator_idname = 'object.' + _prefix + '_move_pin'
     fb_movepin_operator_callname = _prefix + '_move_pin'
