@@ -16,7 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+"""
+This module is designed to operate with pykeentools library:
+- install/uninstall
+- import
+"""
 
 from pkt.loader import *
 from pkt.install import *
-from pkt.config import MINIMUM_VERSION_REQUIRED

@@ -34,17 +34,25 @@ def uninstall():
 
 
 def _install_from_stream(file_like_object):
-    import zipfile
     uninstall()
 
-    target_path = pkt.config.pkt_installation_dir()
-    os.makedirs(target_path, exist_ok=False)
+    try:
+        target_path = pkt.config.pkt_installation_dir()
+        os.makedirs(target_path, exist_ok=False)
 
-    with zipfile.ZipFile(file_like_object) as archive:
-        archive.extractall(target_path)
+        import zipfile
+        with zipfile.ZipFile(file_like_object) as archive:
+            archive.extractall(target_path)
+    except Exception:
+        uninstall()
+        raise
 
 
 def install_from_download(version=None, nightly=False):
+    """
+    :param version: build to install. KeenTools version (1.5.4 for example) as string. None means latest version
+    :param nightly: latest nightly build will be installed if True. version should be None in that case
+    """
     import urllib.request
     import io
     url = pkt.config.download_path(version, nightly)
@@ -53,5 +61,9 @@ def install_from_download(version=None, nightly=False):
 
 
 def install_from_file(path):
+    """
+    Install pykeentools from selected archive
+    :param path: a path to a pykeentools bundle zip archive
+    """
     with open(path, mode='rb') as file:
         _install_from_stream(file)

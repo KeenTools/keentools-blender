@@ -50,7 +50,14 @@ def _add_pykeentools_to_sys_path():
         sys.path.append(pkt_lib_directory)
 
 
+# TODO add custom exceptions with helpful error message
+# TODO check loaded pykeentools version > MIN_VERSION
 def module():
+    """
+    A function to load pykeentools library
+    :raises ImportError
+    :return: pykeentools module
+    """
     if 'pykeentools' not in sys.modules and pkt.install.is_installed():
         _add_pykeentools_to_sys_path()
 
