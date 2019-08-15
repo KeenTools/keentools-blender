@@ -12,6 +12,16 @@ def select_by_headnum(headnum):
     bpy.context.view_layer.objects.active = headobj
     return headobj
 
+
+def out_pinmode():
+    settings = get_main_settings()
+    FBLoader.out_pinmode(settings.current_headnum, settings.current_camnum)
+
+
+def update_pins(headnum, camnum):
+    FBLoader.update_pins_count(headnum, camnum)
+
+
 # --------------
 # Operators call
 def create_head():
@@ -59,11 +69,6 @@ def select_camera(headnum=0, camnum=0):
 
 def deselect_all():
     bpy.ops.object.select_all(action='DESELECT')
-
-
-def out_pinmode():
-    settings = get_main_settings()
-    FBLoader.out_pinmode(settings.current_headnum, settings.current_camnum)
 
 
 def wireframe_coloring(action='wireframe_green'):

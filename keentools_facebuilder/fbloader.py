@@ -95,8 +95,12 @@ class FBLoader:
                 logger.debug("SOLVED {}".format(max_index))
 
             except UnlicensedException:
+                logger.error("LICENSE PROBLEM")
                 settings.force_out_pinmode = True
                 settings.license_error = True
+            except Exception:
+                logger.error("SOLVER PROBLEM")
+                settings.force_out_pinmode = True
 
         # Head Mesh update
         coords.update_head_mesh(fb, head.headobj)
