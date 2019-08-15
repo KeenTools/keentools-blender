@@ -22,5 +22,5 @@ This module is designed to operate with pykeentools library:
 - import
 """
 
-from pkt.loader import *
-from pkt.install import *
+from .loader import *
+from .install import *

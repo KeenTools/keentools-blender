@@ -17,27 +17,27 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-import pkt.config
 import os
+from .config import *
 
 __all__ = ['is_installed', 'install_from_download', 'uninstall', 'install_from_file']
 
 
 def is_installed():
-    return os.path.exists(pkt.config.pkt_installation_dir())
+    return os.path.exists(pkt_installation_dir())
 
 
 def uninstall():
     if is_installed():
         import shutil
-        shutil.rmtree(pkt.config.pkt_installation_dir(), ignore_errors=True)
+        shutil.rmtree(pkt_installation_dir(), ignore_errors=True)
 
 
 def _install_from_stream(file_like_object):
     uninstall()
 
     try:
-        target_path = pkt.config.pkt_installation_dir()
+        target_path = pkt_installation_dir()
         os.makedirs(target_path, exist_ok=False)
 
         import zipfile
@@ -55,7 +55,7 @@ def install_from_download(version=None, nightly=False):
     """
     import urllib.request
     import io
-    url = pkt.config.download_path(version, nightly)
+    url = download_path(version, nightly)
     with io.BytesIO(urllib.request.urlopen(url).read()) as archive_data:
         _install_from_stream(archive_data)
 

@@ -20,10 +20,14 @@
 import os
 import inspect
 import tempfile
-__all__ = ['SHADOW_COPIES_DIRECTORY', 'pkt_installation_dir', 'MINIMUM_VERSION_REQUIRED', 'os_name', 'download_path']
+__all__ = ['SHADOW_COPIES_DIRECTORY', 'RELATIVE_LIB_DIRECTORY',
+           'pkt_installation_dir', 'MINIMUM_VERSION_REQUIRED', 'os_name', 'download_path']
 
 
 SHADOW_COPIES_DIRECTORY = os.path.join(tempfile.gettempdir(), 'pykeentools_shadow_copies')
+
+
+RELATIVE_LIB_DIRECTORY = os.path.join('pykeentools', 'pykeentools')
 
 
 def pkt_installation_dir():

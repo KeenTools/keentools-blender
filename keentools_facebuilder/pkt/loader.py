@@ -19,35 +19,39 @@
 
 import sys
 import os
-import pkt.config
-import pkt.install
-__all__ = ['module']
+from .config import *
+from .install import is_installed
+__all__ = ['loaded', 'module']
 
 
 def _do_pkt_shadow_copy():
     import tempfile
     import shutil
 
-    shutil.rmtree(pkt.config.SHADOW_COPIES_DIRECTORY, ignore_errors=True)
-    os.makedirs(pkt.config.SHADOW_COPIES_DIRECTORY, exist_ok=True)
+    shutil.rmtree(SHADOW_COPIES_DIRECTORY, ignore_errors=True)
+    os.makedirs(SHADOW_COPIES_DIRECTORY, exist_ok=True)
 
-    shadow_copy_base_dir = tempfile.mkdtemp(dir=pkt.config.SHADOW_COPIES_DIRECTORY)
+    shadow_copy_base_dir = tempfile.mkdtemp(dir=SHADOW_COPIES_DIRECTORY)
     shadow_copy_dir = os.path.join(shadow_copy_base_dir, 'pykeentools')
 
-    shutil.copytree(pkt.config.pkt_installation_dir(), shadow_copy_dir)
+    shutil.copytree(pkt_installation_dir(), shadow_copy_dir)
 
     return shadow_copy_dir
 
 
 def _add_pykeentools_to_sys_path():
-    if pkt.config.os_name() == 'WIN':
+    if os_name() == 'WIN':
         pkt_directory = _do_pkt_shadow_copy()
     else:
-        pkt_directory = pkt.config.pkt_installation_dir()
+        pkt_directory = pkt_installation_dir()
 
-    pkt_lib_directory = os.path.join(pkt_directory, 'pykeentools', 'pykeentools')
+    pkt_lib_directory = os.path.join(pkt_directory, RELATIVE_LIB_DIRECTORY)
     if pkt_lib_directory not in sys.path:
         sys.path.append(pkt_lib_directory)
+
+
+def loaded():
+    return 'pykeentools' in sys.modules
 
 
 # TODO add custom exceptions with helpful error message
@@ -58,7 +62,7 @@ def module():
     :raises ImportError
     :return: pykeentools module
     """
-    if 'pykeentools' not in sys.modules and pkt.install.is_installed():
+    if not loaded() and is_installed():
         _add_pykeentools_to_sys_path()
 
     import pykeentools
