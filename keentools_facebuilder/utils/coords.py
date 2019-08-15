@@ -78,7 +78,7 @@ def frame_to_image_space(x, y, w, h):
     return x / w - 0.5, (y - 0.5 * h) / w
 
 
-def get_mouse_coords(event, context):
+def get_mouse_coords(event):
     return event.mouse_region_x, event.mouse_region_y
 
 

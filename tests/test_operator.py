@@ -44,8 +44,6 @@ class TestsPanel(Panel):
     # Face Builder Tests Panel Draw
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
-        obj = context.object
 
         op = layout.operator('object.keentools_fb_tests',
                              text="print_work")

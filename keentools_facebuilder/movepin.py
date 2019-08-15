@@ -323,7 +323,8 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
 
         return self.on_default_modal()
 
-    def on_default_modal(self):
+    @staticmethod
+    def on_default_modal():
         logger = logging.getLogger(__name__)
         if FBLoader.viewport.current_pin:
             return {"RUNNING_MODAL"}

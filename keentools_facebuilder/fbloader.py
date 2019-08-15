@@ -181,7 +181,6 @@ class FBLoader:
     def fb_save(cls, headnum, camnum):
         """ Face Builder Serialize Model Info """
         fb = cls.get_builder()
-        scene = bpy.context.scene
         settings = get_main_settings()
         head = settings.heads[headnum]
         cam = head.cameras[camnum]
@@ -197,7 +196,6 @@ class FBLoader:
 
     @classmethod
     def fb_redraw(cls, headnum, camnum):
-        scene = bpy.context.scene
         fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.heads[headnum]

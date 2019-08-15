@@ -48,11 +48,6 @@ class OBJECT_OT_FBActor(Operator):
     tex_name = Config.tex_builder_filename
     mat_name = Config.tex_builder_matname
 
-    def get_headnum(self):
-        return self.headnum
-
-    def get_camnum(self):
-        return self.camnum
 
     @staticmethod
     def get_mesh_uvmap(mesh):
@@ -63,11 +58,10 @@ class OBJECT_OT_FBActor(Operator):
             uvtex = mesh.uv_layers.active
         return uvtex.data
 
-    def bake_tex(self):
+    def bake_tex(self, headnum):
         logger = logging.getLogger(__name__)
-        scene = bpy.context.scene
         settings = get_main_settings()
-        headnum = settings.current_headnum
+        # headnum = settings.current_headnum
         head = settings.heads[headnum]
         # Add UV
         mesh = head.headobj.data
@@ -172,7 +166,7 @@ class OBJECT_OT_FBActor(Operator):
             tex.pack()
 
 
-    def show_texture_in_mat(self, context):
+    def show_texture_in_mat(self):
         settings = get_main_settings()
         tex_num = bpy.data.images.find(self.tex_name)
 
@@ -217,7 +211,8 @@ class OBJECT_OT_FBActor(Operator):
         else:
             headobj.data.materials.append(mat)
 
-    def get_camera_params(self, obj):
+    @staticmethod
+    def get_camera_params(obj):
         logger = logging.getLogger(__name__)
         # Init camera parameters
         data = attrs.get_safe_custom_attribute(
@@ -384,7 +379,8 @@ class OBJECT_OT_FBActor(Operator):
         settings.heads[self.headnum].headobj.hide_set(False)
         settings.pinmode = False
 
-    def use_this_camera_frame_size(self):
+    @staticmethod
+    def use_this_camera_frame_size():
         # Current camera Background --> Render size
         scene = bpy.context.scene
         settings = get_main_settings()
@@ -398,7 +394,8 @@ class OBJECT_OT_FBActor(Operator):
             scene.render.resolution_x = w
             scene.render.resolution_y = h
 
-    def use_camera_frame_size(self):
+    @staticmethod
+    def use_camera_frame_size():
         # Current camera Background --> Render size
         scene = bpy.context.scene
         settings = get_main_settings()
@@ -412,13 +409,15 @@ class OBJECT_OT_FBActor(Operator):
             scene.render.resolution_x = w
             scene.render.resolution_y = h
 
-    def use_render_frame_size(self):
+    @staticmethod
+    def use_render_frame_size():
         scene = bpy.context.scene
         settings = get_main_settings()
         settings.frame_width = scene.render.resolution_x
         settings.frame_height = scene.render.resolution_y
 
-    def auto_detect_frame_size(self):
+    @staticmethod
+    def auto_detect_frame_size():
         scene = bpy.context.scene
         settings = get_main_settings()
         headnum = settings.current_headnum
@@ -440,7 +439,8 @@ class OBJECT_OT_FBActor(Operator):
             scene.render.resolution_y = el[1]
             settings.frame_height = el[1]
 
-    def use_render_frame_size_scaled(self):
+    @staticmethod
+    def use_render_frame_size_scaled():
         # Allow converts scenes pinned on default cameras
         scene = bpy.context.scene
         settings = get_main_settings()
@@ -495,7 +495,7 @@ class OBJECT_OT_FBActor(Operator):
             manipulate.toggle_mode(('SOLID', 'MATERIAL'))
 
         elif self.action == 'bake_tex':
-            self.bake_tex()
+            self.bake_tex(self.headnum)
             self.show_texture_in_mat(context)
 
         elif self.action == "visit_site":

@@ -74,7 +74,6 @@ class OBJECT_PT_FBPanel(Panel):
     # Face Builder Main Panel Draw
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
         obj = context.object
         settings = get_main_settings()
         headnum = settings.head_by_obj(obj)
@@ -441,10 +440,11 @@ class OBJECT_PT_TBPanel(Panel):
     # Face Builder Main Panel Draw
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
         obj = context.object
         settings = get_main_settings()
-        headnum = settings.current_headnum
+        headnum = settings.head_by_obj(obj)
+        if headnum < 0:
+            headnum = settings.current_headnum
         head = settings.heads[headnum]
 
         box = layout.box()
@@ -455,7 +455,8 @@ class OBJECT_PT_TBPanel(Panel):
         row = layout.row()
         row.scale_y = 3.0
 
-        row.operator(Config.fb_main_bake_tex_idname, text="Bake Texture")
+        op = row.operator(Config.fb_main_bake_tex_idname, text="Bake Texture")
+        op.headnum = headnum
 
         mode = self.get_area_mode(context)
         if mode == 'MATERIAL':
@@ -489,8 +490,6 @@ class OBJECT_PT_FBColorsPanel(Panel):
     # Face Builder Main Panel Draw
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
-        obj = context.object
         settings = get_main_settings()
 
         box = layout.box()
@@ -539,8 +538,6 @@ class OBJECT_PT_FBSettingsPanel(Panel):
     # Right Panel Draw
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
-        obj = context.object
         settings = get_main_settings()
 
         box = layout.box()

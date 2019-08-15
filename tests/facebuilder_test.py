@@ -95,7 +95,6 @@ class FaceBuilderTest(unittest.TestCase):
             bpy.ops.object, Config.fb_actor_operator_callname)
         op('EXEC_DEFAULT', action='reconstruct_by_head', headnum=-1, camnum=-1)
         headnum2 = settings.get_last_headnum()
-        head_original = settings.heads[headnum]
         head_new = settings.heads[headnum2]
         # Two heads in scene
         self.assertEqual(1, settings.get_last_headnum())

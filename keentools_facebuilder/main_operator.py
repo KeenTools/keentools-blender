@@ -391,6 +391,8 @@ class OBJECT_OT_FBBakeTexture(Operator):
     bl_description = "Bake the texture using all selected cameras. " \
                      "It can take a lot of time, be patient"
 
+    headnum: IntProperty(default=0)
+
     # This draw overrides standard operator panel
     def draw(self, context):
         pass
@@ -398,8 +400,7 @@ class OBJECT_OT_FBBakeTexture(Operator):
     def execute(self, context):
         settings = get_main_settings()
         op = getattr(bpy.ops.object, Config.fb_actor_operator_callname)
-        op('INVOKE_DEFAULT', action="bake_tex",
-           headnum=settings.current_headnum)
+        op('INVOKE_DEFAULT', action="bake_tex", headnum=self.headnum)
         return {'FINISHED'}
 
 

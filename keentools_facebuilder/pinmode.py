@@ -113,7 +113,6 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         manipulate.hide_other_cameras(self.headnum, self.camnum)
         # Start our shader
         self.init_wireframer_colors(settings.overall_opacity)
-        # FBLoader.viewport.wireframer.register_handler(args)
         FBLoader.viewport.create_batch_2d(context)
         FBLoader.viewport.register_handlers(args, context)
         context.window_manager.modal_handler_add(self)
@@ -132,9 +131,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
     def modal(self, context, event):
         logger = logging.getLogger(__name__)
-        scene = context.scene
         settings = get_main_settings()
-        # settings.pinmode = True
 
         headnum = settings.current_headnum
         camnum = settings.current_camnum
@@ -201,11 +198,11 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
                 # === Debug only ===
                 FBDebug.add_event_to_queue(
                     'DRAW_OPERATOR_PRESS_LEFTMOUSE',
-                    coords.get_mouse_coords(event, context),
+                    coords.get_mouse_coords(event),
                     coords.get_raw_camera_2d_data(context))
                 # === Debug only ===
 
-                p = coords.get_mouse_coords(event, context)
+                p = coords.get_mouse_coords(event)
 
                 if not coords.is_in_area(context, p[0], p[1]):
                     # FBLoader.out_pinmode(context, self.headnum, self.camnum)
@@ -215,7 +212,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
                     # === Debug only ===
                     FBDebug.add_event_to_queue(
                         'CALL_MOVE_PIN_OPERATOR',
-                        coords.get_mouse_coords(event, context),
+                        coords.get_mouse_coords(event),
                         coords.get_raw_camera_2d_data(context))
                     # === Debug only ===
 
@@ -236,13 +233,13 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
                 # === Debug only ===
                 FBDebug.add_event_to_queue(
                     'IN_DRAW_PRESS_RIGHTMOUSE',
-                    coords.get_mouse_coords(event, context),
+                    coords.get_mouse_coords(event),
                     coords.get_raw_camera_2d_data(context))
                 # === Debug only ===
 
                 x, y = coords.get_image_space_coord(
                     context,
-                    coords.get_mouse_coords(event, context)
+                    coords.get_mouse_coords(event)
                 )
                 nearest, dist2 = coords.nearest_point(
                     x, y, FBLoader.viewport.spins)
@@ -316,9 +313,9 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
             # === Debug only ===
             FBDebug.add_event_to_queue(
-                'UNDO_CALLED', (coords.get_mouse_coords(event, context)))
+                'UNDO_CALLED', (coords.get_mouse_coords(event)))
             FBDebug.add_event_to_queue(
-                'FORCE_SNAPSHOT', (coords.get_mouse_coords(event, context)))
+                'FORCE_SNAPSHOT', (coords.get_mouse_coords(event)))
             FBDebug.make_snapshot()
             # === Debug only ===
 
