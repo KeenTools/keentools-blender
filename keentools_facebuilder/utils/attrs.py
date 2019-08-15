@@ -71,20 +71,32 @@ def get_attr_variant_named(data, attr_names):
     return None
 
 
-def get_collection(col_name):
+def get_collection_by_name(col_name):
     """ Singleton for collection """
-    if col_name in bpy.data.collections:
-        return bpy.data.collections[col_name]
+    if col_name not in bpy.context.scene.collection.children:
+        fb_col = bpy.data.collections.new(col_name)
+        bpy.context.scene.collection.children.link(fb_col)
+    else:
+        fb_col = bpy.context.scene.collection.children[col_name]
+    return fb_col
+
+
+def new_collection(col_name):
     fb_col = bpy.data.collections.new(col_name)
     bpy.context.scene.collection.children.link(fb_col)
     return fb_col
 
 
-def get_fb_collection():
-    fb_col = get_collection(Config.default_FB_COLLECTION_NAME)
-    return fb_col
+def get_obj_collection(obj):
+    if obj is None:
+        return None
+    cols = obj.users_collection
+    if len(cols) <= 0:
+        return None
+    return obj.users_collection[0]
 
 
 def add_to_fb_collection(obj):
-    fb_col = get_fb_collection()
+    # fb_col = get_collection_by_name(Config.default_FB_COLLECTION_NAME)
+    fb_col = new_collection(Config.default_FB_COLLECTION_NAME)
     fb_col.objects.link(obj)

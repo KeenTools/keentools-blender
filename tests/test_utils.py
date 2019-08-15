@@ -39,7 +39,6 @@ def move_pin(start_x, start_y, end_x, end_y, arect, brect,
     # Move pin
     x, y = coords.region_to_image_space(start_x, start_y, *arect)
     px, py = coords.image_space_to_region(x, y, *brect)
-    print("P:", px, py)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum,
        pinx=px, piny=py, test_action="add_pin")
 
@@ -71,6 +70,7 @@ def wireframe_coloring(action='wireframe_green'):
     op = getattr(
         bpy.ops.object, Config.fb_main_wireframe_color_callname)
     op('EXEC_DEFAULT', action=action)
+
 
 def new_scene():
     bpy.ops.scene.new(type='NEW')

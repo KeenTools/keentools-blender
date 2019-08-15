@@ -433,6 +433,7 @@ class FBLoader:
 
     @classmethod
     def add_camera(cls, headnum, img=None):
+        logger = logging.getLogger(__name__)
         # scene = bpy.context.scene
         settings = get_main_settings()
         head = settings.heads[headnum]
@@ -458,8 +459,12 @@ class FBLoader:
         camera.keyframe_id = num
 
         # link camera into scene
-        attrs.add_to_fb_collection(cam_ob)
-        # scene.collection.objects.link(cam_ob)  # Link to Scene
+        col = attrs.get_obj_collection(head.headobj)
+        if col is not None:
+            col.objects.link(cam_ob)
+        else:
+            logger.error("ERROR IN COLLECTIONS")
+            bpy.context.scene.collection.objects.link(cam_ob)  # Link to Scene
 
         # Add Background Image
         cam_data.display_size = 0.75  # Camera Size
