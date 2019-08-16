@@ -19,7 +19,6 @@
 import logging
 
 import bpy
-from pykeentools import UnlicensedException
 
 from . utils import manipulate
 from . utils import coords
@@ -27,6 +26,8 @@ from . config import Config, get_main_settings, ErrorType, BuilderType
 from . fbdebug import FBDebug
 from . fbloader import FBLoader
 from . utils.other import FBStopTimer
+
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 class OBJECT_OT_FBPinMode(bpy.types.Operator):
@@ -123,7 +124,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             try:
                 # Solver
                 fb.solve_for_current_pins(kid)
-            except UnlicensedException:
+            except pkt.module().UnlicensedException:
                 settings.force_out_pinmode = True
                 settings.license_error = True
                 FBLoader.out_pinmode(headnum, camnum)
