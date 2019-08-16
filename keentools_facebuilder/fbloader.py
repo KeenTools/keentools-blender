@@ -137,7 +137,6 @@ class FBLoader:
         settings = get_main_settings()
         cls.viewport.unregister_handlers()
         cls.fb_save(headnum, camnum)
-        # cls.viewport.wireframer.unregister_handler()
         headobj = settings.heads[headnum].headobj
         # Mark object by ver.
         cls.set_keentools_version(headobj)

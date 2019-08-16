@@ -37,22 +37,13 @@ import sys
 import tempfile
 import shutil
 import logging
+import logging.config
 from . config import Config
 
-logging.basicConfig(
-    level=Config.logging_level,
-    format='%(asctime)s %(name)-22s %(lineno)-5d %(levelname)-8s %(message)s',
-    datefmt='%H:%M:%S')  # filename=config.log_filename, filemode='w')
-# duplicate short log in console
-console = logging.StreamHandler()
-console.setLevel(Config.console_level)
-formatter_short = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter_short)
-# add the handler to the root logger
-logging.getLogger('').addHandler(console)
-logger = logging.getLogger(__name__)
-# Start logging
-logger.info('--- Log started ---')
+
+# Init logging system via config file
+base_dir = os.path.dirname(os.path.abspath(__file__))
+logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'))
 
 
 def init_pykeentools_copy():
