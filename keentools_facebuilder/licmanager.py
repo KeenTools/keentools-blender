@@ -39,7 +39,6 @@ class FBLicManager:
         lm = cls.get_lm()
         status = lm.license_status_text(force_check=False)
         prefs.lic_status = status
-        # print(status)
 
     @classmethod
     def update_hardware_id(cls):
@@ -95,7 +94,6 @@ class FBLicManager:
         lm = cls.get_lm()
         prefs = cls.get_prefs()
         res = lm.install_license_offline(prefs.lic_path)
-        print(res)
 
         if res is not None:
             prefs.lic_offline_status = res

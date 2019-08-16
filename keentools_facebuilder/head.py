@@ -18,26 +18,28 @@
 
 
 import bpy
-import numpy as np
+
+from . utils import attrs
 from . fbloader import FBLoader
-from .config import config, BuilderType, get_main_settings, ErrorType
+from . config import Config, BuilderType, get_main_settings, ErrorType
 
 
 class MESH_OT_FBAddHead(bpy.types.Operator):
     """ Add FaceBuilder Head into scene"""
-    bl_idname = config.fb_add_head_operator_idname
+    bl_idname = Config.fb_add_head_operator_idname
     bl_label = "Face Builder Head"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         settings = get_main_settings()
+        heads_deleted, cams_deleted = settings.fix_heads()
         try:
             obj = self.new_head()
-        except:
-            op = getattr(bpy.ops.wm, config.fb_warning_operator_callname)
+        except Exception:
+            op = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
             op('INVOKE_DEFAULT', msg=ErrorType.CannotCreate)
             return {'CANCELLED'}
-        FBLoader.add_to_fb_collection(obj)  # link to FB objects collection
+        attrs.add_to_fb_collection(obj)  # link to FB objects collection
         FBLoader.set_keentools_version(obj)  # Mark Keentools attribute
 
         bpy.ops.object.select_all(action='DESELECT')
@@ -54,7 +56,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
             a = context.area
             # Try to show UI Panel
             a.spaces[0].show_region_ui = True
-        except:
+        except Exception:
             pass
         return {'FINISHED'}
 

@@ -16,12 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-
-class FBConst:
-
-    @staticmethod
-    def get_eyes_indices():
-        return {
+def get_eyes_indices():
+    return {
 (12725, 15930),
 (12725, 13898),
 (7844, 13901),
@@ -1190,11 +1186,11 @@ class FBConst:
 (3047, 12852),
 (3047, 10070),
 (3047, 12757),
-        }
+    }
 
-    @staticmethod
-    def get_eyebrows_indices():
-        return {
+
+def get_eyebrows_indices():
+    return {
 (323, 7607),
 (323, 7532),
 (7607, 13432),
@@ -1349,11 +1345,11 @@ class FBConst:
 (2227, 9863),
 (2227, 5474),
 (2227, 4685),
-        }
+    }
 
-    @staticmethod
-    def get_nose_indices():
-        return {
+
+def get_nose_indices():
+    return {
 (652, 6862),
 (652, 6652),
 (6652, 13812),
@@ -2428,11 +2424,11 @@ class FBConst:
 (2925, 7022),
 (2925, 7467),
 (2925, 6306),
-        }
+    }
 
-    @staticmethod
-    def get_mouth_indices():
-        return {
+
+def get_mouth_indices():
+    return {
 (15798, 15846),
 (9732, 15798),
 (5181, 9732),
@@ -4151,11 +4147,11 @@ class FBConst:
 (2892, 9308),
 (2892, 4732),
 (2892, 6151),
-        }
+    }
 
-    @staticmethod
-    def get_ears_indices():
-        return {
+
+def get_ears_indices():
+    return {
 (0, 4350),
 (0, 4461),
 (4461, 12921),
@@ -8136,11 +8132,11 @@ class FBConst:
 (2744, 6666),
 (2744, 6177),
 (2744, 6322),
-        }
+    }
 
-    @staticmethod
-    def get_half_indices():
-        return {
+
+def get_half_indices():
+    return {
 (14431, 14495),
 (8781, 13212),
 (8781, 13213),
@@ -8364,11 +8360,10 @@ class FBConst:
 (11813, 16581),
 (10953, 16211),
 (10953, 16209),
-        }
+    }
 
-    @staticmethod
-    def get_jaw_indices():
-        return {
+def get_jaw_indices():
+    return {
 (513, 6214),
 (513, 9784),
 (9784, 13647),
@@ -8717,9 +8712,9 @@ class FBConst:
 (2630, 8694),
         }
 
-    @staticmethod
-    def get_jaw_indices2():
-        return {
+
+def get_jaw_indices2():
+    return {
 (6434, 13543),
 (6434, 13546),
 (8766, 13547),
@@ -8871,7 +8866,5 @@ class FBConst:
         }
 
 
-# FIXME its awful
-    @staticmethod
-    def get_bodybuilder_highlight_indices():
-        return []
+def get_bodybuilder_highlight_indices():
+    return []
