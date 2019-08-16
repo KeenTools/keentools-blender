@@ -1,5 +1,5 @@
 import pytest
-import keentools_facebuilder.pkt as pkt
+import pykeentools_loader as pkt
 
 
 def test_wrong_installations():
