@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
+import logging
 
 import bpy
 import json
@@ -42,9 +42,7 @@ class FBDebug:
 
     @classmethod
     def set_active(cls, flag=True):
-        print("IN_SET:", flag)
         cls.active = flag
-        print("AFTER_SET:", cls.active)
 
     @classmethod
     def inc_event_number(cls):
@@ -59,7 +57,7 @@ class FBDebug:
         now = time.clock()
         old = cls.timer
         cls.timer = now
-        return (now - old)
+        return now - old
 
     @classmethod
     def add_event_to_queue(cls, eventname, p, b=(-1, -1, -1, -1, -1, -1, -1)):
@@ -77,8 +75,9 @@ class FBDebug:
 
     @classmethod
     def format_event_output(cls, ev):
-        return "\n[{0[0]}] {0[1]} time:{0[13]:.4f}s\n x:{0[2]}  y:{0[3]} dx:{0[4]} dy:{0[5]}\n a:({0[6]},{0[7]}) ({0[8]},{0[9]}) z:{0[10]} off:({0[11]}, {0[12]})".format(
-            ev)
+        return "\n[{0[0]}] {0[1]} time:{0[13]:.4f}s\n x:{0[2]}  " \
+               "y:{0[3]} dx:{0[4]} dy:{0[5]}\n a:({0[6]},{0[7]}) " \
+               "({0[8]},{0[9]}) z:{0[10]} off:({0[11]}, {0[12]})".format(ev)
 
     @classmethod
     def clear_event_queue(cls):
@@ -93,13 +92,14 @@ class FBDebug:
 
     @classmethod
     def output_event_queue(cls):
+        logger = logging.getLogger(__name__)
         if not cls.active:
             return
         # Need output all in Text Editor
-        print("=== QUEUE ===")
+        logger.debug("=== QUEUE ===")
         for ev in cls.event_queue:
             res = cls.format_event_output(ev)
-            print(res)
+            logger.debug(res)
 
     @classmethod
     def make_snapshot(cls):

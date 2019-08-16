@@ -15,8 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
-
+import logging
 import bpy
 
 
@@ -31,7 +30,7 @@ class BuilderType:
     BodyBuilder = 2
 
 
-class config:
+class Config:
     addon_name = __package__  # the same as module name
     addon_version = '1.5.3 (Beta)'
     addon_search = 'KeenTools'
@@ -42,34 +41,44 @@ class config:
     default_builder = BuilderType.FaceBuilder
 
     # Operators ids
-    fb_main_operator_idname = 'object.' + _prefix + '_main_operator'
-    fb_main_select_camera_idname = 'object.' + _prefix + '_main_select_camera'
-    fb_main_center_geo_idname = 'object.' + _prefix + '_main_center_geo'
-    fb_main_unmorph_idname = 'object.' + _prefix + '_main_unmorph'
-    fb_main_remove_pins_idname = 'object.' + _prefix + '_main_remove_pins'
-    fb_main_wireframe_color_idname = 'object.' + _prefix + \
-                                     '_main_wireframe_color'
+    fb_main_operator_callname = _prefix + '_main_operator'
+    fb_main_operator_idname = 'object.' + fb_main_operator_callname
+    fb_main_select_camera_callname = _prefix + '_main_select_camera'
+    fb_main_select_camera_idname = 'object.' + fb_main_select_camera_callname
+    fb_main_center_geo_callname = _prefix + '_main_center_geo'
+    fb_main_center_geo_idname = 'object.' + fb_main_center_geo_callname
+    fb_main_unmorph_callname = _prefix + '_main_unmorph'
+    fb_main_unmorph_idname = 'object.' + fb_main_unmorph_callname
+    fb_main_remove_pins_callname = _prefix + '_main_remove_pins'
+    fb_main_remove_pins_idname = 'object.' + fb_main_remove_pins_callname
+    fb_main_wireframe_color_callname = _prefix + '_main_wireframe_color'
+    fb_main_wireframe_color_idname = 'object.' + \
+                                     fb_main_wireframe_color_callname
     fb_main_filter_cameras_idname = 'object.' + _prefix + \
                                     '_main_filter_cameras'
-    fb_main_delete_camera_idname = 'object.' + _prefix + '_main_delete_camera'
-    fb_main_add_camera_idname = 'object.' + _prefix + '_main_add_camera'
-    fb_main_fix_size_idname = 'object.' + _prefix + '_main_fix_size'
+    fb_main_delete_camera_callname = _prefix + '_main_delete_camera'
+    fb_main_delete_camera_idname = 'object.' + fb_main_delete_camera_callname
+    fb_main_add_camera_callname = _prefix + '_main_add_camera'
+    fb_main_add_camera_idname = 'object.' + fb_main_add_camera_callname
+    fb_main_fix_size_callname = _prefix + '_main_fix_size'
+    fb_main_fix_size_idname = 'object.' + fb_main_fix_size_callname
     fb_main_camera_fix_size_idname = 'object.' + _prefix + \
                                      '_main_camera_fix_size'
     fb_main_addon_settings_idname = 'object.' + _prefix + \
                                     '_main_addon_settings'
-    fb_main_bake_tex_idname = 'object.' + _prefix + '_main_bake_tex'
     fb_main_bake_tex_callname = _prefix + '_main_bake_tex'
-    fb_main_show_tex_idname = 'object.' + _prefix + '_main_show_tex'
+    fb_main_bake_tex_idname = 'object.' + fb_main_bake_tex_callname
     fb_main_show_tex_callname = _prefix + '_main_show_tex'
+    fb_main_show_tex_idname = 'object.' + fb_main_show_tex_callname
 
     fb_filedialog_operator_idname = _prefix + '_import.open_filebrowser'
-    fb_draw_operator_idname = 'object.' + _prefix + '_draw'
-    fb_draw_operator_callname = _prefix + '_draw'
+    fb_pinmode_operator_callname = _prefix + '_pinmode'
+    fb_pinmode_operator_idname = 'object.' + fb_pinmode_operator_callname
+
     fb_movepin_operator_idname = 'object.' + _prefix + '_move_pin'
     fb_movepin_operator_callname = _prefix + '_move_pin'
-    fb_actor_operator_idname = 'object.' + _prefix + '_actor'
     fb_actor_operator_callname = _prefix + '_actor'
+    fb_actor_operator_idname = 'object.' + fb_actor_operator_callname
     fb_warning_operator_idname = 'wm.' + _prefix + '_addon_warning'
     fb_warning_operator_callname = _prefix + '_addon_warning'
     fb_add_head_operator_idname = 'mesh.' + _prefix + '_add_head'
@@ -78,15 +87,17 @@ class config:
     fb_add_body_operator_callname = _prefix + '_add_body'
 
     # Panels ids
-    fb_panel_idname = 'OBJECT_PT_' + _prefix + '_panel_id'
-    fb_tb_panel_idname = 'OBJECT_PT_' + _prefix + '_tb_panel_id'
-    fb_colors_panel_idname = 'OBJECT_PT_' + _prefix + '_colors_panel_id'
-    fb_parts_panel_idname = 'OBJECT_PT_' + _prefix + '_parts_panel_id'
-    fb_settings_panel_idname = 'OBJECT_PT_' + _prefix + '_settings_panel_id'
+    fb_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_panel_id'
+    fb_tb_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_tb_panel_id'
+    fb_colors_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_colors_panel_id'
+    fb_parts_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_parts_panel_id'
+    fb_settings_panel_idname = 'FACEBUILDER_PT_' + _prefix + \
+                               '_settings_panel_id'
 
     # Menu ids
-    fb_fix_frame_menu_idname = 'OBJECT_MT_' + _prefix + '_fix_frame_menu_id'
-    fb_fix_camera_frame_menu_idname = 'OBJECT_MT_' + _prefix + \
+    fb_fix_frame_menu_idname = 'FACEBUILDER_MT_' + _prefix + \
+                               '_fix_frame_menu_id'
+    fb_fix_camera_frame_menu_idname = 'FACEBUILDER_MT_' + _prefix + \
                                       '_fix_camera_frame_menu_id'
 
     # Standard names
@@ -102,7 +113,7 @@ class config:
     version_prop_name = (_company + '_version',)
     fb_serial_prop_name = (_prefix + '_serial',)
     fb_images_prop_name = (_prefix + '_images',)
-    fb_dir_prop_name =  (_prefix + '_dir',)
+    fb_dir_prop_name = (_prefix + '_dir',)
     fb_camera_prop_name = (_prefix + '_camera',)
     fb_mod_ver_prop_name = (_prefix + '_mod_ver',)
     # Save / Reconstruct parameters
@@ -161,7 +172,7 @@ class config:
 
 def get_main_settings():
     """ Main addon settings"""
-    return getattr(bpy.context.scene, config.addon_global_var_name)
+    return getattr(bpy.context.scene, Config.addon_global_var_name)
 
 
 class ErrorType:
