@@ -30,13 +30,19 @@ from . utils.other import (
 from . builder import UniBuilder
 from . fbdebug import FBDebug
 from . config import Config, get_main_settings, BuilderType
-from pykeentools import UnlicensedException
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 class FBLoader:
     # Builder selection: FaceBuilder or BodyBuilder
-    builder = UniBuilder(Config.default_builder)
+    builder_instance = None
     viewport = FBViewport()
+
+    @classmethod
+    def builder(cls):
+        if cls.builder_instance is None:
+            cls.builder_instance = UniBuilder(Config.default_builder)
+        return cls.builder_instance
 
     @classmethod
     def update_cam_image_size(cls, cam_item):
@@ -94,7 +100,7 @@ class FBLoader:
                 fb.solve_for_current_pins(max_index)
                 logger.debug("SOLVED {}".format(max_index))
 
-            except UnlicensedException:
+            except pkt.module().UnlicensedException:
                 logger.error("LICENSE PROBLEM")
                 settings.force_out_pinmode = True
                 settings.license_error = True
@@ -111,20 +117,20 @@ class FBLoader:
 
     @classmethod
     def get_builder(cls):
-        return cls.builder.get_builder()
+        return cls.builder().get_builder()
 
     @classmethod
     def new_builder(cls, builder_type=BuilderType.NoneBuilder,
                     ver=Config.unknown_mod_ver):
-        return cls.builder.new_builder(builder_type, ver)
+        return cls.builder().new_builder(builder_type, ver)
 
     @classmethod
     def get_builder_type(cls):
-        return cls.builder.get_builder_type()
+        return cls.builder().get_builder_type()
 
     @classmethod
     def get_builder_version(cls):
-        return cls.builder.get_version()
+        return cls.builder().get_version()
 
     @classmethod
     def set_keentools_version(cls, obj):

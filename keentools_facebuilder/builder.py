@@ -17,8 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-from pykeentools import FaceBuilder
-from pykeentools import BodyBuilder
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 from . config import BuilderType, Config
 
@@ -36,17 +35,17 @@ class UniBuilder:
             self.init_bodybuilder()
 
     def init_facebuilder(self, ver=Config.unknown_mod_ver):
-        latest_version = FaceBuilder.latest_face_version()
+        latest_version = pkt.module().FaceBuilder.latest_face_version()
         if ver == Config.unknown_mod_ver or ver > latest_version:
-            self.builder = FaceBuilder(latest_version)
+            self.builder = pkt.module().FaceBuilder(latest_version)
             self.version = latest_version
         else:
-            self.builder = FaceBuilder(ver)
+            self.builder = pkt.module().FaceBuilder(ver)
             self.version = ver
         self.builder_type = BuilderType.FaceBuilder
 
     def init_bodybuilder(self, ver=Config.unknown_mod_ver):
-        self.builder = BodyBuilder()
+        self.builder = pkt.module().BodyBuilder()
         self.builder_type = BuilderType.BodyBuilder
         self.version = ver
 
@@ -59,7 +58,7 @@ class UniBuilder:
     def get_latest_version(self):
         if self.builder_type in {BuilderType.NoneBuilder,
                                  BuilderType.FaceBuilder}:
-            return FaceBuilder.latest_face_version()
+            return pkt.module().FaceBuilder.latest_face_version()
         else:
             return Config.unknown_mod_ver
 
