@@ -172,22 +172,31 @@ class FBAddonPreferences(AddonPreferences):
 
     def _draw_pkt_prefs(self, layout):
         box = layout.box()
-        box.label(text='pykeentools module:')
-        pass
+        if pkt.is_installed():
+            box.label(text="pykeentools is installed")
+        else:
+            box.label(text="pykeentools is not installed")
 
-    def _draw_pkt_build_info(self, layout):
-        pykeentools = pkt.module()
-        layout.label(text="Build info: {} {} {}".format(
-            Config.addon_full_name, pykeentools.__version__,
-            pykeentools.build_time))
+        op = box.operator(Config.fb_actor_operator_idname, text="install latest nightly pykeentools")
+        op.action = 'install_latest_nightly_pykeentools'
+
+        op = box.operator(Config.fb_actor_operator_idname, text="uninstall pykeentools")
+        op.action = 'uninstall_pykeentools'
+
+        if pkt.loaded():
+            box.label(text="pykeentools loaded. Build info: {} {}".format(
+                pkt.module().__version__,
+                pkt.module().build_time))
+            box.label(text="restart Blender to unload pykeentools")
+        else:
+            box.label(text="pykeentools is not loaded")
+            op = box.operator(Config.fb_actor_operator_idname, text="try load pykeentools")
+            op.action = 'load_pykeentools'
 
     def draw(self, context):
         layout = self.layout
 
         self._draw_pkt_prefs(layout)
 
-        if pkt.is_installed():
-            self._draw_pkt_build_info(layout)
-
-        if pkt.is_installed():
+        if pkt.loaded():
             self._draw_license_info(layout)

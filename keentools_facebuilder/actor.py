@@ -31,6 +31,7 @@ from . utils import attrs
 from . config import Config, ErrorType, BuilderType, get_main_settings
 from . fbloader import FBLoader
 from . licmanager import FBLicManager
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 class OBJECT_OT_FBActor(Operator):
@@ -488,6 +489,15 @@ class OBJECT_OT_FBActor(Operator):
 
         elif self.action == 'lic_floating_connect':
             FBLicManager.connect_floating_lic()
+
+        elif self.action == 'load_pykeentools':
+            pkt.module()
+
+        elif self.action == 'install_latest_nightly_pykeentools':
+            pkt.install_from_download(nightly=True)
+
+        elif self.action == 'uninstall_pykeentools':
+            pkt.uninstall()
 
         elif self.action == 'show_tex':
             self.show_texture_in_mat(context)
