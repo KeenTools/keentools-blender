@@ -31,12 +31,11 @@ from . utils.other import FPSMeter
 
 
 class FBViewport:
-    profiling = False
+    profiling = True
     # --- PROFILING ---
     if profiling:
         pr = cProfile.Profile()
         pr.disable()
-    _fps = FPSMeter()
     # --- PROFILING ---
 
     # Current View Pins draw
@@ -57,14 +56,8 @@ class FBViewport:
     current_pin = None
     current_pin_num = -1
 
-    last_context = None
-
     POINT_SENSITIVITY = Config.default_POINT_SENSITIVITY
     PIXEL_SIZE = 0.1  # Auto Calculated
-
-    @classmethod
-    def fps(cls):
-        return cls._fps
 
     @classmethod
     def points2d(cls):

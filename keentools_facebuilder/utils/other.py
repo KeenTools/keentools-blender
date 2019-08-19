@@ -164,6 +164,10 @@ class FBText:
         self.text_draw_handler = None
 
 
+# FPSMeter usage:
+# fps = FPSMeter()
+# fps.tick()
+# print(fps.update_indicator())
 class FPSMeter:
     def __init__(self, buf_length=5):
         self.start_time = time.time()
@@ -193,6 +197,7 @@ class FPSMeter:
         if delta > 0.00001:
             d = (self.buf_length - 1) / delta
         self.indicator = "{0:.2f}".format(d)
+        return self.indicator
 
     def tick(self):
         self.head = self.next_index(self.head)
