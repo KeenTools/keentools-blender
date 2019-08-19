@@ -36,7 +36,11 @@ import keentools_facebuilder.blender_independent_packages.pykeentools_loader as 
 class FBLoader:
     # Builder selection: FaceBuilder or BodyBuilder
     builder_instance = None
-    viewport = FBViewport()
+    _viewport = FBViewport()
+
+    @classmethod
+    def viewport(cls):
+        return cls._viewport
 
     @classmethod
     def builder(cls):
@@ -141,7 +145,7 @@ class FBLoader:
     def out_pinmode(cls, headnum, camnum):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
-        cls.viewport.unregister_handlers()
+        cls.viewport().unregister_handlers()
         cls.fb_save(headnum, camnum)
         headobj = settings.heads[headnum].headobj
         # Mark object by ver.
@@ -150,7 +154,7 @@ class FBLoader:
         headobj.hide_set(False)
         settings.pinmode = False
 
-        cls.viewport.current_pin = None
+        cls.viewport().current_pin = None
         manipulate.show_all_cameras(headnum)
         # === Debug use only ===
         FBDebug.add_event_to_queue('OUT_PIN_MODE', (0, 0))
@@ -213,12 +217,12 @@ class FBLoader:
         # Head Mesh update
         coords.update_head_mesh(fb, headobj)
         # Load pins from model
-        cls.viewport.set_spins(cls.viewport.img_points(fb, kid))
-        cls.viewport.update_surface_points(fb, headobj, kid)
+        cls.viewport().set_spins(cls.viewport().img_points(fb, kid))
+        cls.viewport().update_surface_points(fb, headobj, kid)
         # Shader update
-        cls.viewport.wireframer.init_geom_data(headobj)
-        cls.viewport.wireframer.init_edge_indices(headobj)
-        cls.viewport.wireframer.create_batches()
+        cls.viewport().wireframer().init_geom_data(headobj)
+        cls.viewport().wireframer().init_edge_indices(headobj)
+        cls.viewport().wireframer().create_batches()
 
     @classmethod
     def update_cameras(cls, headnum):
@@ -434,8 +438,8 @@ class FBLoader:
         # Move current camera
         cls.place_cameraobj(kid, camobj, headobj)
         # Load pins from model
-        cls.viewport.set_spins(cls.viewport.img_points(fb, kid))
-        cls.viewport.current_pin = None
+        cls.viewport().set_spins(cls.viewport().img_points(fb, kid))
+        cls.viewport().current_pin = None
         logger.debug("LOAD MODEL END")
 
     @classmethod

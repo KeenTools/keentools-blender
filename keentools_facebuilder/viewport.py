@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import cProfile
-import time
 import logging
 import bpy
 
@@ -28,42 +27,7 @@ from . utils import coords
 from . utils.edges import FBEdgeShader3D, FBEdgeShader2D
 from . utils.other import FBText
 from . utils.points import FBPoints2D, FBPoints3D
-
-
-class FPSMeter:
-    def __init__(self, buf_length=5):
-        self.start_time = time.time()
-        self.indicator = "None"
-        self.counter = 0
-        self.buffer = [self.start_time for _ in range(buf_length)]
-        self.head = 0
-        self.buf_length = len(self.buffer)
-
-    def prev_index(self, ind):
-        prev_ind = ind - 1
-        if prev_ind < 0:
-            prev_ind = self.buf_length
-        return prev_ind
-
-    def next_index(self, ind):
-        next_ind = ind + 1
-        if next_ind >= self.buf_length:
-            next_ind = 0
-        return next_ind
-
-    def update_indicator(self):
-        new_time = self.buffer[self.head]
-        old_time = self.buffer[self.next_index(self.head)]
-        delta = new_time - old_time
-        d = 0.0
-        if delta > 0.00001:
-            d = (self.buf_length - 1) / delta
-        self.indicator = "{0:.2f}".format(d)
-
-    def tick(self):
-        self.head = self.next_index(self.head)
-        self.buffer[self.head] = time.time()
-        self.counter += 1
+from . utils.other import FPSMeter
 
 
 class FBViewport:
@@ -72,22 +36,21 @@ class FBViewport:
     if profiling:
         pr = cProfile.Profile()
         pr.disable()
-
-    fps = FPSMeter()
+    _fps = FPSMeter()
     # --- PROFILING ---
 
     # Current View Pins draw
-    points2d = FBPoints2D()
+    _points2d = FBPoints2D()
     # Surface points draw
-    points3d = FBPoints3D()
+    _points3d = FBPoints3D()
     # Text output in Modal mode
-    texter = FBText()
+    _texter = FBText()
     # Wireframe shader object
-    wireframer = FBEdgeShader3D()
+    _wireframer = FBEdgeShader3D()
     # Update timer
     draw_timer_handler = None
 
-    residuals = FBEdgeShader2D()
+    _residuals = FBEdgeShader2D()
 
     # Pins
     spins = []  # current screen pins
@@ -98,6 +61,30 @@ class FBViewport:
 
     POINT_SENSITIVITY = Config.default_POINT_SENSITIVITY
     PIXEL_SIZE = 0.1  # Auto Calculated
+
+    @classmethod
+    def fps(cls):
+        return cls._fps
+
+    @classmethod
+    def points2d(cls):
+        return cls._points2d
+
+    @classmethod
+    def points3d(cls):
+        return cls._points3d
+
+    @classmethod
+    def texter(cls):
+        return cls._texter
+
+    @classmethod
+    def wireframer(cls):
+        return cls._wireframer
+
+    @classmethod
+    def residuals(cls):
+        return cls._residuals
 
     @classmethod
     def update_pixel_size(cls, context):
@@ -118,13 +105,13 @@ class FBViewport:
     def register_handlers(cls, args, context):
         cls.unregister_handlers()  # Experimental
 
-        cls.residuals.register_handler(args)
+        cls.residuals().register_handler(args)
 
-        cls.points3d.register_handler(args)
-        cls.points2d.register_handler(args)
+        cls.points3d().register_handler(args)
+        cls.points2d().register_handler(args)
         # Draw text on screen registration
-        cls.texter.register_handler(args)
-        cls.wireframer.register_handler(args)
+        cls.texter().register_handler(args)
+        cls.wireframer().register_handler(args)
         # Timer for continuous update modal view
         cls.draw_timer_handler = context.window_manager.event_timer_add(
             time_step=0.2, window=context.window
@@ -137,12 +124,12 @@ class FBViewport:
                 cls.draw_timer_handler
             )
         cls.draw_timer_handler = None
-        cls.wireframer.unregister_handler()
-        cls.texter.unregister_handler()
-        cls.points2d.unregister_handler()
-        cls.points3d.unregister_handler()
+        cls.wireframer().unregister_handler()
+        cls.texter().unregister_handler()
+        cls.points2d().unregister_handler()
+        cls.points3d().unregister_handler()
 
-        cls.residuals.unregister_handler()
+        cls.residuals().unregister_handler()
     # --------
 
     # --------------------
@@ -165,8 +152,8 @@ class FBViewport:
             # Transformed vertices
             verts = vv[:, :3]
 
-        cls.points3d.set_vertices_colors(verts, colors)
-        cls.points3d.create_batch()
+        cls.points3d().set_vertices_colors(verts, colors)
+        cls.points3d().create_batch()
 
     @classmethod
     def update_wireframe(cls, builder_type, obj):
@@ -175,20 +162,20 @@ class FBViewport:
         main_color = settings.wireframe_color
         comp_color = settings.wireframe_special_color
 
-        cls.wireframer.init_color_data((*main_color,
-                                        settings.wireframe_opacity))
+        cls.wireframer().init_color_data((*main_color,
+                                          settings.wireframe_opacity))
         if settings.show_specials:
             mesh = obj.data
             # Check to prevent shader problem
-            if len(mesh.edges) * 2 == len(cls.wireframer.edges_colors):
+            if len(mesh.edges) * 2 == len(cls.wireframer().edges_colors):
                 logger.info("COLORING")
                 special_indices = cls.get_special_indices(builder_type)
-                cls.wireframer.init_special_areas(
+                cls.wireframer().init_special_areas(
                     obj.data, special_indices, (*comp_color,
                                                 settings.wireframe_opacity))
             else:
                 logging.warning("LISTS HAVE DIFFERENT SIZES")
-        cls.wireframer.create_batches()
+        cls.wireframer().create_batches()
 
     @classmethod
     def get_special_indices(cls, builder_type):
@@ -213,8 +200,8 @@ class FBViewport:
     @classmethod
     def update_pin_size(cls):
         settings = get_main_settings()
-        cls.points2d.set_point_size(settings.pin_size)
-        cls.points3d.set_point_size(
+        cls.points2d().set_point_size(settings.pin_size)
+        cls.points3d().set_point_size(
             settings.pin_size * Config.surf_pin_size_scale)
 
     @classmethod
@@ -312,8 +299,8 @@ class FBViewport:
         vertex_colors.append(Config.current_pin_color)  # camera corner
         vertex_colors.append(Config.current_pin_color)  # camera corner
 
-        cls.points2d.set_vertices_colors(points, vertex_colors)
-        cls.points2d.create_batch()
+        cls.points2d().set_vertices_colors(points, vertex_colors)
+        cls.points2d().create_batch()
 
     @classmethod
     def update_residuals(cls, fb, context, headobj, keyframe):
@@ -326,7 +313,7 @@ class FBViewport:
         p2d = cls.img_points(fb, keyframe)
         p3d = cls.surface_points_only(fb, headobj, keyframe)
 
-        wire = cls.residuals
+        wire = cls.residuals()
         wire.clear_vertices()
         wire.edge_lengths = []
         wire.vertices_colors = []
