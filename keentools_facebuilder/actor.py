@@ -500,13 +500,13 @@ class OBJECT_OT_FBActor(Operator):
             pkt.uninstall()
 
         elif self.action == 'show_tex':
-            self.show_texture_in_mat(context)
+            self.show_texture_in_mat()
             # Switch to Material Mode or Back
             manipulate.toggle_mode(('SOLID', 'MATERIAL'))
 
         elif self.action == 'bake_tex':
             self.bake_tex(self.headnum)
-            self.show_texture_in_mat(context)
+            self.show_texture_in_mat()
 
         elif self.action == "visit_site":
             bpy.ops.wm.url_open(url="https://keentools.io/manual-installation")

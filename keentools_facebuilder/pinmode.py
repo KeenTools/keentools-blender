@@ -76,7 +76,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         if coords.is_safe_region(context, mouse_x, mouse_y):
             # === Debug only ===
             FBDebug.add_event_to_queue(
-                'CALL_MOVE_PIN_OPERATOR', (mouse_x, mouse_y),
+                'CALL_MOVE_PIN_OPERATOR', mouse_x, mouse_y,
                 coords.get_raw_camera_2d_data(context))
             # === Debug only ===
 
@@ -95,8 +95,8 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         logger = logging.getLogger(__name__)
         # === Debug only ===
         FBDebug.add_event_to_queue(
-            'IN_PINMODE_PRESS_RIGHTMOUSE',
-            (mouse_x, mouse_y), coords.get_raw_camera_2d_data(context))
+            'IN_PINMODE_PRESS_RIGHTMOUSE', mouse_x, mouse_y,
+            coords.get_raw_camera_2d_data(context))
         # === Debug only ===
 
         settings = get_main_settings()
@@ -104,7 +104,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         camnum = settings.current_camnum
         kid = manipulate.keyframe_by_camnum(headnum, camnum)
 
-        x, y = coords.get_image_space_coord(context, (mouse_x, mouse_y))
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
         nearest, dist2 = coords.nearest_point(
             x, y, FBLoader.viewport().spins)
         if nearest >= 0 and \
@@ -178,8 +178,8 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         FBLoader.viewport().wireframer().create_batches()
 
         # === Debug only ===
-        FBDebug.add_event_to_queue('UNDO_CALLED', (mouse_x, mouse_y))
-        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', (mouse_x, mouse_y))
+        FBDebug.add_event_to_queue('UNDO_CALLED', mouse_x, mouse_y)
+        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', mouse_x, mouse_y)
         FBDebug.make_snapshot()
         # === Debug only ===
 
@@ -225,7 +225,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             settings.current_headnum, settings.current_camnum))
         # === Debug only ===
         FBDebug.add_event_to_queue(
-            'PIN_MODE_START', (self.headnum, self.camnum),
+            'PIN_MODE_START', self.headnum, self.camnum,
             coords.get_raw_camera_2d_data(context))
         # === Debug only ===
 

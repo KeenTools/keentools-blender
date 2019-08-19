@@ -60,18 +60,19 @@ class FBDebug:
         return now - old
 
     @classmethod
-    def add_event_to_queue(cls, eventname, p, b=(-1, -1, -1, -1, -1, -1, -1)):
+    def add_event_to_queue(cls, eventname, px, py,
+                           b=(-1, -1, -1, -1, -1, -1, -1)):
         if not cls.active:
             return
         cls.inc_event_number()
         cls.event_queue.append((
-            cls.get_event_number(), eventname, p[0], p[1],
-            p[0] - cls.lastx, p[1] - cls.lasty,
+            cls.get_event_number(), eventname, px, py,
+            px - cls.lastx, py - cls.lasty,
             b[0], b[1], b[2], b[3], b[4], b[5], b[6],
             cls.get_timer()
         ))
-        cls.lastx = p[0]
-        cls.lasty = p[1]
+        cls.lastx = px
+        cls.lasty = py
 
     @classmethod
     def format_event_output(cls, ev):

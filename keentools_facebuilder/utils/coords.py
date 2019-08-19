@@ -90,9 +90,9 @@ def image_space_to_region(x, y, x1, y1, x2, y2):
     return x1 + (x + 0.5) * sc, (y1 + y2) * 0.5 + y * sc
 
 
-def get_image_space_coord(context, p):
+def get_image_space_coord(px, py, context):
     x1, y1, x2, y2 = get_camera_border(context)
-    x, y = region_to_image_space(p[0], p[1], x1, y1, x2, y2)
+    x, y = region_to_image_space(px, py, x1, y1, x2, y2)
     return x, y
 
 

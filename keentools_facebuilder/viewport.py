@@ -27,11 +27,10 @@ from . utils import coords
 from . utils.edges import FBEdgeShader3D, FBEdgeShader2D
 from . utils.other import FBText
 from . utils.points import FBPoints2D, FBPoints3D
-from . utils.other import FPSMeter
 
 
 class FBViewport:
-    profiling = True
+    profiling = False
     # --- PROFILING ---
     if profiling:
         pr = cProfile.Profile()

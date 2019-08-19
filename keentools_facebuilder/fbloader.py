@@ -157,7 +157,7 @@ class FBLoader:
         cls.viewport().current_pin = None
         manipulate.show_all_cameras(headnum)
         # === Debug use only ===
-        FBDebug.add_event_to_queue('OUT_PIN_MODE', (0, 0))
+        FBDebug.add_event_to_queue('OUT_PIN_MODE', 0, 0)
         FBDebug.output_event_queue()
         FBDebug.clear_event_queue()
         # === Debug use only ===
@@ -172,19 +172,6 @@ class FBLoader:
         head = settings.heads[headnum]
         # Save block
         head.set_serial_str(fb.serialize())
-
-    @classmethod
-    def save_camera(cls, headnum, camnum):
-        fb = cls.get_builder()
-        scene = bpy.context.scene
-        settings = get_main_settings()
-        cam = settings.heads[headnum].cameras[camnum]
-        kid = manipulate.keyframe_by_camnum(headnum, camnum)
-
-        cam.set_model_mat(fb.model_mat(kid))
-        cam.set_frame_size(
-            scene.render.resolution_x,
-            scene.render.resolution_y)
 
     @classmethod
     def fb_save(cls, headnum, camnum):
@@ -275,7 +262,6 @@ class FBLoader:
         camera_h = ry  # Camera Height in pixels 1080
         focal_length = fl
         sensor_width = sw
-        fb = cls.get_builder()
 
         # This works only when Camera Sensor Mode is Auto
         if camera_w < camera_h:
@@ -284,6 +270,8 @@ class FBLoader:
         projection = coords.projection_matrix(
             camera_w, camera_h, focal_length, sensor_width,
             near_clip, far_clip)
+
+        fb = cls.get_builder()
         fb.set_projection_mat(projection)
 
     @classmethod

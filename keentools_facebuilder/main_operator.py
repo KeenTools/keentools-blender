@@ -78,8 +78,8 @@ class OBJECT_OT_FBSelectCamera(Operator):
             draw_op('INVOKE_DEFAULT', headnum=headnum, camnum=camnum)
 
         # === Debug only ===
-        FBDebug.add_event_to_queue('SELECT_CAMERA', (headnum, camnum))
-        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', (headnum, camnum))
+        FBDebug.add_event_to_queue('SELECT_CAMERA', headnum, camnum)
+        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', headnum, camnum)
         FBDebug.make_snapshot()
         # === Debug only ===
         return {'FINISHED'}
@@ -115,8 +115,8 @@ class OBJECT_OT_FBCenterGeo(Operator):
         FBLoader.fb_save(headnum, camnum)
         FBLoader.fb_redraw(headnum, camnum)
         # === Debug only ===
-        FBDebug.add_event_to_queue('CENTER_GEO', (0, 0))
-        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', (0, 0))
+        FBDebug.add_event_to_queue('CENTER_GEO', 0, 0)
+        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', 0, 0)
         FBDebug.make_snapshot()
         return {'FINISHED'}
 
@@ -189,8 +189,8 @@ class OBJECT_OT_FBRemovePins(Operator):
         FBLoader.fb_redraw(headnum, camnum)
         FBLoader.update_pins_count(headnum, camnum)
         # === Debug only ===
-        FBDebug.add_event_to_queue('REMOVE_PINS', (0, 0))
-        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', (0, 0))
+        FBDebug.add_event_to_queue('REMOVE_PINS', 0, 0)
+        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', 0, 0)
         FBDebug.make_snapshot()
         # === Debug only ===
         return {'FINISHED'}

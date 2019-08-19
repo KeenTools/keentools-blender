@@ -472,8 +472,7 @@ class FBSceneSettings(PropertyGroup):
         return max(i, j)
 
     def get_last_headnum(self):
-        headnum = len(self.heads) - 1
-        return headnum
+        return len(self.heads) - 1
 
     def get_last_camnum(self, headnum):
         if headnum <= self.get_last_headnum():

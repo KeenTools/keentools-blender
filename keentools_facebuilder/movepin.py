@@ -99,7 +99,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
 
         # Pinmode
         settings.pinmode = True
-        x, y = coords.get_image_space_coord(context, (mouse_x, mouse_y))
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
         FBLoader.viewport().current_pin = (x, y)
 
         nearest, dist2 = coords.nearest_point(x, y, FBLoader.viewport().spins)
@@ -109,7 +109,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             FBLoader.viewport().current_pin_num = nearest
             # === Debug only ===
             FBDebug.add_event_to_queue(
-                'PIN_FOUND', (mouse_x, mouse_y),
+                'PIN_FOUND', mouse_x, mouse_y,
                 coords.get_raw_camera_2d_data(context))
             # === Debug only ===
         else:
@@ -121,7 +121,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             if pin is not None:
                 # === Debug only ===
                 FBDebug.add_event_to_queue(
-                    'ADD_PIN', (mouse_x, mouse_y),
+                    'ADD_PIN', mouse_x, mouse_y,
                     coords.get_raw_camera_2d_data(context))
                 # === Debug only ===
 
@@ -132,7 +132,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             else:
                 # === Debug only ===
                 FBDebug.add_event_to_queue(
-                    'MISS_PIN', (mouse_x, mouse_y),
+                    'MISS_PIN', mouse_x, mouse_y,
                     coords.get_raw_camera_2d_data(context))
                 # === Debug only ===
 
@@ -152,7 +152,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         cam = head.cameras[camnum]
         kid = manipulate.keyframe_by_camnum(headnum, camnum)
 
-        x, y = coords.get_image_space_coord(context, (mouse_x, mouse_y))
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
         if FBLoader.viewport().current_pin:
             # Move current pin
             FBLoader.viewport().spins[FBLoader.viewport().current_pin_num] = (x, y)
@@ -234,7 +234,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         fb = FBLoader.get_builder()
 
         # Pin drag
-        x, y = coords.get_image_space_coord(context, (mouse_x, mouse_y))
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
         FBLoader.viewport().current_pin = (x, y)
 
         p_idx = FBLoader.viewport().current_pin_num
@@ -340,7 +340,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             if event.type == "LEFTMOUSE":
                 # === Debug only ===
                 FBDebug.add_event_to_queue(
-                    'RELEASE_LEFTMOUSE', (mouse_x, mouse_y),
+                    'RELEASE_LEFTMOUSE', mouse_x, mouse_y,
                     coords.get_raw_camera_2d_data(context))
                 # === Debug only ===
 
@@ -351,7 +351,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             if FBLoader.viewport().current_pin:
                 # === Debug only ===
                 FBDebug.add_event_to_queue(
-                    'MOUSEMOVE', (mouse_x, mouse_y),
+                    'MOUSEMOVE', mouse_x, mouse_y,
                     coords.get_raw_camera_2d_data(context))
                 # === Debug only ===
 
