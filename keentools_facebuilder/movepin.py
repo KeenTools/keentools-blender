@@ -25,8 +25,8 @@ from . fbloader import FBLoader
 from . fbdebug import FBDebug
 from . config import Config, get_main_settings, BuilderType
 
-from pykeentools import UnlicensedException
 from functools import wraps
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 # Decorator for profiling
@@ -279,7 +279,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         try:
             # Solver
             fb.solve_for_current_pins(kid)
-        except UnlicensedException:
+        except pkt.module().UnlicensedException:
             settings.force_out_pinmode = True
             settings.license_error = True
             FBLoader.out_pinmode(headnum, camnum)

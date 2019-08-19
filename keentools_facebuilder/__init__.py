@@ -39,70 +39,6 @@ import shutil
 import logging
 import logging.config
 from . config import Config
-
-
-# Init logging system via config file
-base_dir = os.path.dirname(os.path.abspath(__file__))
-logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'))
-
-
-def init_pykeentools_copy():
-    logger = logging.getLogger(__name__)
-    win_file_name = "pykeentools.cp37-win_amd64.pyd"
-    dir_name = 'keentools_fb'
-
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    pykeentools_dir = os.path.join(base_dir, 'pykeentools')
-    data_dir = os.path.join(base_dir, 'data')
-    src_path = os.path.join(pykeentools_dir, win_file_name)
-
-    temp_dir = tempfile.gettempdir()
-
-    if os.path.exists(src_path):
-        # It's Win, so we need copy
-        tmp_dir = os.path.join(temp_dir, dir_name)
-        try:
-            # Create default folder
-            if not os.path.exists(tmp_dir):
-                os.mkdir(tmp_dir)
-            temp_path = os.path.join(tmp_dir, win_file_name)
-            shutil.copy2(src_path, temp_path)
-            pykeentools_dir = tmp_dir
-            logger.debug("DEFAULT COPY CREATED")
-            logger.debug(tmp_dir)
-        except Exception:
-            logger.warning("CAN'T CREATE DEFAULT COPY")
-            try:
-                # Create temporary folder
-                tmp_dir = tempfile.mkdtemp(prefix=dir_name + '_')  # new dir
-                temp_path = os.path.join(tmp_dir, win_file_name)
-                shutil.copy2(src_path, temp_path)
-                pykeentools_dir = tmp_dir
-                logger.debug("TEMPORARY COPY CREATED")
-                logger.debug("TMP_DIR: {}".format(tmp_dir))
-            except Exception:
-                logger.warning("CAN'T CREATE TEMPORARY COPY")
-
-    logger.debug("BASE_DIR: {}".format(base_dir))
-    logger.debug("DATA_DIR: {}".format(data_dir))
-    logger.debug("TEMP_DIR: {}".format(temp_dir))
-    logger.debug("PYKEENTOOLS_DIR: {}".format(pykeentools_dir))
-
-    os.environ["KEENTOOLS_DATA_PATH"] = data_dir  # "../data"
-
-    if pykeentools_dir not in sys.path:
-        sys.path.append(pykeentools_dir)
-
-    from importlib.util import find_spec  # valid for python >= 3.4
-    pykeentools_spec = find_spec('pykeentools')
-    pykeentools_found = pykeentools_spec is not None
-    if not pykeentools_found:
-        logger.error('Failed to init pykeentools')
-
-
-init_pykeentools_copy()
-
-
 from . panels import (OBJECT_PT_FBPanel, OBJECT_PT_FBFaceParts,
                       WM_OT_FBAddonWarning, OBJECT_PT_FBSettingsPanel,
                       OBJECT_PT_FBColorsPanel, OBJECT_PT_TBPanel,
@@ -128,7 +64,12 @@ from . filedialog import WM_OT_FBOpenFilebrowser
 from . config import Config
 
 
-classes = (
+# Init logging system via config file
+base_dir = os.path.dirname(os.path.abspath(__file__))
+logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'))
+
+
+_CLASSES_TO_REGISTER = (
     OBJECT_PT_FBPanel,
     OBJECT_PT_FBFaceParts,
     OBJECT_PT_FBColorsPanel,
@@ -169,7 +110,7 @@ def menu_func(self, context):
 
 
 def register():
-    for cls in classes:
+    for cls in _CLASSES_TO_REGISTER:
         bpy.utils.register_class(cls)
     bpy.types.VIEW3D_MT_mesh_add.append(menu_func)
     # Main addon settings variable creation
@@ -178,7 +119,7 @@ def register():
 
 
 def unregister():
-    for cls in reversed(classes):
+    for cls in reversed(_CLASSES_TO_REGISTER):
         bpy.utils.unregister_class(cls)
     bpy.types.VIEW3D_MT_mesh_add.remove(menu_func)
     # Delete addon settings

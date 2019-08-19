@@ -22,11 +22,15 @@ from . fbloader import FBLoader
 
 
 class FBLicManager:
-    fb = FBLoader.get_builder()
-    lm = fb.license_manager()
+    fb = None
+    lm = None
 
     @classmethod
     def get_lm(cls):
+        if cls.lm is None:
+            assert(cls.fb is None)
+            cls.fb = FBLoader.get_builder()
+            cls.lm = cls.fb.license_manager()
         return cls.lm
 
     @staticmethod

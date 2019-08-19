@@ -16,25 +16,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty, IntProperty, BoolProperty, EnumProperty
-from . licmanager import FBLicManager
 from . config import Config
 import re
-import pykeentools
-
-enum_lic_type = (
-    ('ONLINE', "Online", "Online license management", 0),
-    ('OFFLINE', "Offline", "Offline license management", 1),
-    ('FLOATING', "Floating", "Floating license management", 2)
-)
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 class FBAddonPreferences(AddonPreferences):
-    # this must match the add-on name, use '__package__'
-    # when defining this in a submodule of a python package.
-    bl_idname = __package__
+    bl_idname = __package__   # this must match the add-on name
 
     license_id: StringProperty(
         name="license ID", default=""
@@ -60,7 +50,13 @@ class FBAddonPreferences(AddonPreferences):
         name="hardware ID", default=""
     )
 
-    lic_type: EnumProperty(name="Type", items=enum_lic_type, default='ONLINE')
+    lic_type: EnumProperty(
+        name="Type",
+        items=(
+            ('ONLINE', "Online", "Online license management", 0),
+            ('OFFLINE', "Offline", "Offline license management", 1),
+            ('FLOATING', "Floating", "Floating license management", 2)),
+        default='ONLINE')
 
     lic_status: StringProperty(
         name="license status", default=""
@@ -98,8 +94,9 @@ class FBAddonPreferences(AddonPreferences):
         res = re.split("<br />|<br>|<br/>|\r\n|\n", s)
         return res
 
-    def draw(self, context):
-        layout = self.layout
+    def _draw_license_info(self, layout):
+        from .licmanager import FBLicManager
+
         box = layout.box()
         box.label(text='License info:')
 
@@ -173,6 +170,33 @@ class FBAddonPreferences(AddonPreferences):
             op = box.operator(Config.fb_actor_operator_idname, text="connect")
             op.action = 'lic_floating_connect'
 
-        layout.label(text="Build info: {} {} {}".format(
-            Config.addon_full_name, pykeentools.__version__,
-            pykeentools.build_time))
+    def _draw_pkt_prefs(self, layout):
+        box = layout.box()
+        if pkt.is_installed():
+            box.label(text="pykeentools is installed")
+        else:
+            box.label(text="pykeentools is not installed")
+
+        op = box.operator(Config.fb_actor_operator_idname, text="install latest nightly pykeentools")
+        op.action = 'install_latest_nightly_pykeentools'
+
+        op = box.operator(Config.fb_actor_operator_idname, text="uninstall pykeentools")
+        op.action = 'uninstall_pykeentools'
+
+        if pkt.loaded():
+            box.label(text="pykeentools loaded. Build info: {} {}".format(
+                pkt.module().__version__,
+                pkt.module().build_time))
+            box.label(text="restart Blender to unload pykeentools")
+        else:
+            box.label(text="pykeentools is not loaded")
+            op = box.operator(Config.fb_actor_operator_idname, text="try load pykeentools")
+            op.action = 'load_pykeentools'
+
+    def draw(self, context):
+        layout = self.layout
+
+        self._draw_pkt_prefs(layout)
+
+        if pkt.loaded():
+            self._draw_license_info(layout)
