@@ -203,7 +203,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
                 logger.debug("PINMODE FORCE FINISH: H{} C{}".format(
                     settings.current_headnum, settings.current_camnum))
         else:
-            FBLoader.builder.sync_version(head.mod_ver)
+            FBLoader.builder().sync_version(head.mod_ver)
             head.mod_ver = FBLoader.get_builder_version()
 
         # Settings structure is broken
