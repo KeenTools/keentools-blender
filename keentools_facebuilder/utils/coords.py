@@ -18,7 +18,7 @@
 import numpy as np
 import math
 import bpy
-from . manipulate import get_fake_context
+from . fake_context import get_fake_context
 
 
 def nearest_point(x, y, points, dist=4000000):  # dist squared

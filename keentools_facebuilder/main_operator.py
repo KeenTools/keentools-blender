@@ -24,6 +24,7 @@ from bpy.props import (
     IntProperty,
 )
 
+import keentools_facebuilder.utils.cameras
 from . utils.manipulate import check_settings
 from . utils import manipulate
 from . fbloader import FBLoader
@@ -57,7 +58,7 @@ class OBJECT_OT_FBSelectCamera(Operator):
         # bpy.ops.object.select_all(action='DESELECT')
         camobj = head.cameras[camnum].camobj
 
-        manipulate.switch_to_camera(camobj)
+        keentools_facebuilder.utils.cameras.switch_to_camera(camobj)
 
         # Add Background Image
         c = camobj.data
@@ -110,7 +111,7 @@ class OBJECT_OT_FBCenterGeo(Operator):
             return {'CANCELLED'}
 
         fb = FBLoader.get_builder()
-        kid = manipulate.keyframe_by_camnum(headnum, camnum)
+        kid = keentools_facebuilder.utils.cameras.keyframe_by_camnum(headnum, camnum)
         fb.center_model_mat(kid)
         FBLoader.fb_save(headnum, camnum)
         FBLoader.fb_redraw(headnum, camnum)
@@ -148,7 +149,7 @@ class OBJECT_OT_FBUnmorph(Operator):
             return {'CANCELLED'}
 
         fb = FBLoader.get_builder()
-        kid = manipulate.keyframe_by_camnum(headnum, camnum)
+        kid = keentools_facebuilder.utils.cameras.keyframe_by_camnum(headnum, camnum)
         fb.unmorph()
         FBLoader.fb_save(headnum, camnum)
         FBLoader.fb_redraw(headnum, camnum)
@@ -181,7 +182,7 @@ class OBJECT_OT_FBRemovePins(Operator):
             return {'CANCELLED'}
 
         fb = FBLoader.get_builder()
-        kid = manipulate.keyframe_by_camnum(headnum, camnum)
+        kid = keentools_facebuilder.utils.cameras.keyframe_by_camnum(headnum, camnum)
         fb.remove_pins(kid)
         # Added but don't work
         fb.solve_for_current_pins(kid)
@@ -295,7 +296,7 @@ class OBJECT_OT_FBDeleteCamera(Operator):
         if not settings.pinmode:
             fb = FBLoader.get_builder()
             head = settings.heads[headnum]
-            kid = manipulate.keyframe_by_camnum(headnum, camnum)
+            kid = keentools_facebuilder.utils.cameras.keyframe_by_camnum(headnum, camnum)
             camobj = head.cameras[camnum].camobj
             fb.remove_keyframe(kid)
             FBLoader.fb_save(headnum, camnum)
