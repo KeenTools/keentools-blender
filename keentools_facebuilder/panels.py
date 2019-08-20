@@ -117,7 +117,8 @@ class OBJECT_PT_FBPanel(Panel):
         head = settings.heads[headnum]
 
         # Unhide Head if there some problem with pinmode
-        if settings.pinmode and not FBLoader.viewport().wireframer().is_working():
+        if settings.pinmode and \
+                not FBLoader.viewport().wireframer().is_working():
             # Show Head
             row = layout.row()
             row.scale_y = 2.0

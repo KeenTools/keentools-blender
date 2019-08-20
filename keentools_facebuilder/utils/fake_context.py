@@ -17,7 +17,8 @@
 # ##### END GPL LICENSE BLOCK #####
 import bpy
 
-#--------------------
+
+# -------------------
 # Get Context objects
 def get_space(area):
     if area is None:

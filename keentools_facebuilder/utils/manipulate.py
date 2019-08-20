@@ -43,7 +43,7 @@ def check_settings():
     return True
 
 
-#--------------------
+# --------------------
 def inc_operation():
     """ Debug purpose """
     settings = get_main_settings()
@@ -54,7 +54,7 @@ def get_operation():
     """ Debug purpose """
     settings = get_main_settings()
     return settings.opnum
-#--------------------
+# --------------------
 
 
 def unhide_head(headnum):

@@ -20,9 +20,7 @@ import logging
 
 import bpy
 
-import keentools_facebuilder.utils.cameras
-from . utils import manipulate
-from . utils import coords
+from . utils import manipulate, coords, cameras
 from . config import Config, get_main_settings, ErrorType, BuilderType
 from . fbdebug import FBDebug
 from . fbloader import FBLoader
@@ -57,9 +55,8 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
                 FBLoader.get_builder_type())
             special_color = (*settings.wireframe_special_color,
                              opacity * settings.wireframe_opacity)
-            FBLoader.viewport().wireframer().init_special_areas(headobj.data,
-                                                            special_indices,
-                                                            special_color)
+            FBLoader.viewport().wireframer().init_special_areas(
+                headobj.data, special_indices, special_color)
         FBLoader.viewport().wireframer().create_batches()
 
     def on_left_mouse_press(self, context, mouse_x, mouse_y):
@@ -103,7 +100,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         settings = get_main_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
-        kid = keentools_facebuilder.utils.cameras.keyframe_by_camnum(headnum, camnum)
+        kid = cameras.keyframe_by_camnum(headnum, camnum)
 
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
         nearest, dist2 = coords.nearest_point(
@@ -134,7 +131,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
             camobj = head.cameras[camnum].camobj
 
-            kid = keentools_facebuilder.utils.cameras.keyframe_by_camnum(headnum, camnum)
+            kid = cameras.keyframe_by_camnum(headnum, camnum)
             # Camera update
             FBLoader.place_cameraobj(kid, camobj, headobj)
 
@@ -170,7 +167,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         head.need_update = False
         # Reload pins
         FBLoader.load_all(headnum, camnum)
-        kid = keentools_facebuilder.utils.cameras.keyframe_by_camnum(headnum, camnum)
+        kid = cameras.keyframe_by_camnum(headnum, camnum)
         FBLoader.viewport().update_surface_points(
             FBLoader.get_builder(), head.headobj, kid)
 
@@ -234,14 +231,14 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
         # Hide geometry
         headobj.hide_set(True)
-        keentools_facebuilder.utils.cameras.hide_other_cameras(self.headnum, self.camnum)
+        cameras.hide_other_cameras(self.headnum, self.camnum)
         # Start our shader
         self.init_wireframer_colors(settings.overall_opacity)
         FBLoader.viewport().create_batch_2d(context)
         FBLoader.viewport().register_handlers(args, context)
         context.window_manager.modal_handler_add(self)
 
-        kid = keentools_facebuilder.utils.cameras.keyframe_by_camnum(self.headnum, self.camnum)
+        kid = cameras.keyframe_by_camnum(self.headnum, self.camnum)
         # Load 3D pins
         FBLoader.viewport().update_surface_points(
             FBLoader.get_builder(), headobj, kid)
@@ -259,7 +256,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
         headnum = settings.current_headnum
         camnum = settings.current_camnum
-        kid = keentools_facebuilder.utils.cameras.keyframe_by_camnum(headnum, camnum)
+        kid = cameras.keyframe_by_camnum(headnum, camnum)
 
         mouse_x = event.mouse_region_x
         mouse_y = event.mouse_region_y

@@ -156,7 +156,8 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
         if FBLoader.viewport().current_pin:
             # Move current pin
-            FBLoader.viewport().spins[FBLoader.viewport().current_pin_num] = (x, y)
+            FBLoader.viewport().spins[FBLoader.viewport().current_pin_num] \
+                = (x, y)
 
         FBLoader.viewport().current_pin = None
         FBLoader.viewport().current_pin_num = -1

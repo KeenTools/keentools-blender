@@ -45,7 +45,6 @@ class OBJECT_OT_FBActor(Operator):
     tex_name = Config.tex_builder_filename
     mat_name = Config.tex_builder_matname
 
-
     def draw(self, context):
         """ No need to show panel so empty draw"""
         pass

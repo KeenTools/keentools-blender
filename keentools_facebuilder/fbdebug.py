@@ -85,7 +85,7 @@ class FBDebug:
         if not cls.active:
             return
         cls.make_snapshot()
-        fe = cls.get_events_file()
+        fe = cls.get_text_file(cls.EVENTS_FILENAME)
         for ev in cls.event_queue:
             res = cls.format_event_output(ev)
             fe.write(res)
@@ -107,7 +107,7 @@ class FBDebug:
         if not cls.active:
             return
         cls.inc_event_number()
-        fs = cls.get_snapshots_file()
+        fs = cls.get_text_file(cls.SNAPSHOTS_FILENAME)
         fs.write("\n\n[{}]\n".format(cls.get_event_number()))
         res = cls.get_settings()
         fs.write("{}\n".format(json.dumps(res)))
@@ -139,21 +139,11 @@ class FBDebug:
         return res
 
     @classmethod
-    def get_snapshots_file(cls):
+    def get_text_file(cls, file_name):
         if cls.snapshots_file is None:
-            n = bpy.data.texts.find(cls.SNAPSHOTS_FILENAME)
+            n = bpy.data.texts.find(file_name)
             if n >= 0:
                 cls.snapshots_file = bpy.data.texts[n]
             else:
-                cls.snapshots_file = bpy.data.texts.new(cls.SNAPSHOTS_FILENAME)
+                cls.snapshots_file = bpy.data.texts.new(file_name)
         return cls.snapshots_file
-
-    @classmethod
-    def get_events_file(cls):
-        if cls.events_file is None:
-            n = bpy.data.texts.find(cls.EVENTS_FILENAME)
-            if n >= 0:
-                cls.events_file = bpy.data.texts[n]
-            else:
-                cls.events_file = bpy.data.texts.new(cls.EVENTS_FILENAME)
-        return cls.events_file

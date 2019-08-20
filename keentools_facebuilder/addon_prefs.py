@@ -177,10 +177,12 @@ class FBAddonPreferences(AddonPreferences):
         else:
             box.label(text="pykeentools is not installed")
 
-        op = box.operator(Config.fb_actor_operator_idname, text="install latest nightly pykeentools")
+        op = box.operator(Config.fb_actor_operator_idname,
+                          text="install latest nightly pykeentools")
         op.action = 'install_latest_nightly_pykeentools'
 
-        op = box.operator(Config.fb_actor_operator_idname, text="uninstall pykeentools")
+        op = box.operator(Config.fb_actor_operator_idname,
+                          text="uninstall pykeentools")
         op.action = 'uninstall_pykeentools'
 
         if pkt.loaded():
@@ -190,7 +192,8 @@ class FBAddonPreferences(AddonPreferences):
             box.label(text="restart Blender to unload pykeentools")
         else:
             box.label(text="pykeentools is not loaded")
-            op = box.operator(Config.fb_actor_operator_idname, text="try load pykeentools")
+            op = box.operator(Config.fb_actor_operator_idname,
+                              text="try load pykeentools")
             op.action = 'load_pykeentools'
 
     def draw(self, context):

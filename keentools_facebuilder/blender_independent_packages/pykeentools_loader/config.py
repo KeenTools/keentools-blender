@@ -21,10 +21,12 @@ import os
 import inspect
 import tempfile
 __all__ = ['SHADOW_COPIES_DIRECTORY', 'RELATIVE_LIB_DIRECTORY',
-           'pkt_installation_dir', 'MINIMUM_VERSION_REQUIRED', 'os_name', 'download_path']
+           'pkt_installation_dir', 'MINIMUM_VERSION_REQUIRED',
+           'os_name', 'download_path']
 
 
-SHADOW_COPIES_DIRECTORY = os.path.join(tempfile.gettempdir(), 'pykeentools_shadow_copies')
+SHADOW_COPIES_DIRECTORY = os.path.join(tempfile.gettempdir(),
+                                       'pykeentools_shadow_copies')
 
 
 RELATIVE_LIB_DIRECTORY = os.path.join('pykeentools', 'pykeentools')
@@ -56,4 +58,5 @@ def download_path(version=None, nightly=False):
         version = 'LATEST_NIGHTLY'
     else:
         version = 'LATEST' if version is None else version.replace('.', '_')
-    return 'https://downloads.keentools.io/{}_{}_PYKEENTOOLS'.format(version, os_name())
+    return 'https://downloads.keentools.io/{}_{}_PYKEENTOOLS'.format(
+        version, os_name())

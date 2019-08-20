@@ -123,6 +123,7 @@ class FaceBuilderTest(unittest.TestCase):
         head.sensor_width = new_sensor_width
         self.assertEqual(new_sensor_width, camobj.data.sensor_width)
 
+
 if __name__ == "__main__":
     # unittest.main()  # -- Doesn't work with Blender, so we use Suite
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(FaceBuilderTest)
