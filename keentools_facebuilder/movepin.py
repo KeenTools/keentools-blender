@@ -19,7 +19,7 @@ import logging
 
 import bpy
 
-import keentools_facebuilder.utils.cameras
+from . utils import cameras
 from . utils import manipulate
 from . utils import coords
 from . fbloader import FBLoader
@@ -76,7 +76,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         settings = get_main_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
-        kid = keentools_facebuilder.utils.cameras.keyframe_by_camnum(headnum, camnum)
+        kid = cameras.keyframe_by_camnum(headnum, camnum)
 
         # Checks for operator parameters
         if headnum < 0:
@@ -151,7 +151,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         head = settings.heads[headnum]
         headobj = settings.heads[headnum].headobj
         cam = head.cameras[camnum]
-        kid = keentools_facebuilder.utils.cameras.keyframe_by_camnum(headnum, camnum)
+        kid = cameras.keyframe_by_camnum(headnum, camnum)
 
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
         if FBLoader.viewport().current_pin:
@@ -230,7 +230,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         headobj = settings.heads[headnum].headobj
         cam = settings.heads[headnum].cameras[camnum]
         camobj = cam.camobj
-        kid = keentools_facebuilder.utils.cameras.keyframe_by_camnum(headnum, camnum)
+        kid = cameras.keyframe_by_camnum(headnum, camnum)
 
         fb = FBLoader.get_builder()
 

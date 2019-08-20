@@ -20,13 +20,9 @@ from collections import Counter
 
 import bpy
 
-from keentools_facebuilder import Config
-from keentools_facebuilder.config import get_main_settings, BuilderType, \
-    ErrorType
-from keentools_facebuilder.fbloader import FBLoader
-from keentools_facebuilder.utils import cameras, attrs
-
-from .. config import get_main_settings, ErrorType, Config
+from .. fbloader import FBLoader
+from .. config import get_main_settings, ErrorType, BuilderType, Config
+from . import cameras, attrs
 
 
 def force_undo_push(msg='KeenTools operation'):

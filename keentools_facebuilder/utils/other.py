@@ -163,7 +163,7 @@ class FBText:
             self.remove_handler_list(self.text_draw_handler)
         self.text_draw_handler = None
 
-
+# --------------
 # FPSMeter usage:
 # fps = FPSMeter()
 # fps.tick()

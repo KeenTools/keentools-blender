@@ -19,7 +19,6 @@ import logging
 
 import bpy
 from bpy.types import Panel, Operator, Menu
-from bpy.props import IntProperty
 import addon_utils
 from .config import Config, get_main_settings, ErrorType
 import re

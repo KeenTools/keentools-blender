@@ -20,9 +20,8 @@ import logging
 import bpy
 import numpy as np
 
-from keentools_facebuilder import Config
-from keentools_facebuilder.config import get_main_settings, ErrorType
-from keentools_facebuilder.fbloader import FBLoader
+from .. config import get_main_settings, ErrorType, Config
+from .. fbloader import FBLoader
 
 
 def switch_to_mode(mode='MATERIAL'):

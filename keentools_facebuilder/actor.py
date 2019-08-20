@@ -24,11 +24,7 @@ from bpy.props import (
 )
 from bpy.types import Operator
 
-from keentools_facebuilder.utils.manipulate import unhide_head, \
-    use_camera_frame_size, use_render_frame_size, auto_detect_frame_size, \
-    use_render_frame_size_scaled
 from . utils import manipulate, materials
-
 from . config import Config, ErrorType, get_main_settings
 from . licmanager import FBLicManager
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
@@ -101,33 +97,33 @@ class OBJECT_OT_FBActor(Operator):
             bpy.ops.wm.url_open(url="https://keentools.io/manual-installation")
 
         elif self.action == "unhide_head":
-            unhide_head(self.headnum)
+            manipulate.unhide_head(self.headnum)
 
         elif self.action == "about_fix_frame_warning":
             warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.AboutFrameSize)
 
         elif self.action == "auto_detect_frame_size":
-            auto_detect_frame_size()
+            manipulate.auto_detect_frame_size()
 
         elif self.action == 'use_render_frame_size':
-            use_render_frame_size()
+            manipulate.use_render_frame_size()
 
         elif self.action == 'use_camera_frame_size':
             # Current camera Background --> Render size (by Fix button)
             settings = get_main_settings()
-            use_camera_frame_size(
+            manipulate.use_camera_frame_size(
                 settings.current_headnum, settings.current_camnum)
 
         elif self.action == 'use_this_camera_frame_size':
             # Current camera Background --> Render size (by mini-button)
             settings = get_main_settings()
-            use_camera_frame_size(
+            manipulate.use_camera_frame_size(
                 settings.tmp_headnum, settings.tmp.camnum)
 
         elif self.action == 'use_render_frame_size_scaled':
             # Allow converts scenes pinned on default cameras
-            use_render_frame_size_scaled()  # disabled in interface
+            manipulate.use_render_frame_size_scaled()  # disabled in interface
 
         logger.debug("Actor: {}".format(self.action))
 

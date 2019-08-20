@@ -31,13 +31,9 @@ bl_info = {
 }
 
 
-import bpy
 import os
-import sys
-import tempfile
-import shutil
-import logging
 import logging.config
+import bpy
 from . config import Config
 from . panels import (OBJECT_PT_FBPanel, OBJECT_PT_FBFaceParts,
                       WM_OT_FBAddonWarning, OBJECT_PT_FBSettingsPanel,

@@ -15,7 +15,7 @@ import test_utils
 # import tests.test_utils as test_utils
 
 
-from keentools_facebuilder.utils import manipulate, coords
+from keentools_facebuilder.utils import coords
 from keentools_facebuilder.config import Config, get_main_settings
 
 
