@@ -20,7 +20,8 @@
 import os
 from .config import *
 
-__all__ = ['is_installed', 'install_from_download', 'uninstall', 'install_from_file']
+__all__ = ['is_installed', 'install_from_download',
+           'uninstall', 'install_from_file']
 
 
 def is_installed():

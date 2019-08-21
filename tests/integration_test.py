@@ -15,7 +15,7 @@ import test_utils
 # import tests.test_utils as test_utils
 
 
-from keentools_facebuilder.utils import manipulate, coords
+from keentools_facebuilder.utils import coords
 from keentools_facebuilder.config import Config, get_main_settings
 
 
@@ -122,6 +122,7 @@ class FaceBuilderTest(unittest.TestCase):
         new_sensor_width = 20
         head.sensor_width = new_sensor_width
         self.assertEqual(new_sensor_width, camobj.data.sensor_width)
+
 
 if __name__ == "__main__":
     # unittest.main()  # -- Doesn't work with Blender, so we use Suite

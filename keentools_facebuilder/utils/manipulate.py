@@ -15,77 +15,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+import logging
+from collections import Counter
+
 import bpy
 
-from .. config import get_main_settings, ErrorType, Config
-
-
-def show_all_cameras(headnum):
-    settings = get_main_settings()
-    head = settings.heads[headnum]
-    for i, c in enumerate(head.cameras):
-        # Unhide camera
-        c.camobj.hide_set(False)
-
-
-def hide_other_cameras(headnum, camnum):
-    settings = get_main_settings()
-    head = settings.heads[headnum]
-    for i, c in enumerate(head.cameras):
-        if i != camnum:
-            # Hide camera
-            c.camobj.hide_set(True)
-
-
-def inc_operation():
-    """ Debug purpose """
-    settings = get_main_settings()
-    settings.opnum += 1
-
-
-def get_operation():
-    """ Debug purpose """
-    settings = get_main_settings()
-    return settings.opnum
+from .. fbloader import FBLoader
+from .. config import get_main_settings, ErrorType, BuilderType, Config
+from . import cameras, attrs
 
 
 def force_undo_push(msg='KeenTools operation'):
     inc_operation()
     bpy.ops.ed.undo_push(message=msg)
-
-
-def keyframe_by_camnum(headnum, camnum):
-    settings = get_main_settings()
-    if headnum >= len(settings.heads):
-        return -1
-    if camnum >= len(settings.heads[headnum].cameras):
-        return -1
-    return settings.heads[headnum].cameras[camnum].keyframe_id
-
-
-def switch_to_mode(mode='MATERIAL'):
-    # Switch to Mode
-    areas = bpy.context.workspace.screens[0].areas
-    for area in areas:
-        for space in area.spaces:
-            if space.type == 'VIEW_3D':
-                space.shading.type = mode
-
-
-def toggle_mode(modes=('SOLID', 'MATERIAL')):
-    # Switch to Mode
-    areas = bpy.context.workspace.screens[0].areas
-    for area in areas:
-        for space in area.spaces:
-            if space.type == 'VIEW_3D':
-                cur_mode = space.shading.type
-                ind = 0
-                if cur_mode in modes:
-                    ind = modes.index(cur_mode)
-                    ind += 1
-                    if ind >= len(modes):
-                        ind = 0
-                space.shading.type = modes[ind]
 
 
 def check_settings():
@@ -101,81 +43,230 @@ def check_settings():
     return True
 
 
-#--------------------
-# Get Context objects
-def get_space(area):
-    if area is None:
-        return None
-    for sp in area.spaces:
-        if sp.type == 'VIEW_3D':
-            return sp
-    return None
+# --------------------
+def inc_operation():
+    """ Debug purpose """
+    settings = get_main_settings()
+    settings.opnum += 1
 
 
-def get_region(area):
-    if area is None:
-        return None
-    for reg in area.regions:
-        if reg.type == 'WINDOW':
-            return reg
-    return None
+def get_operation():
+    """ Debug purpose """
+    settings = get_main_settings()
+    return settings.opnum
+# --------------------
 
 
-def get_area():
-    window = bpy.context.window
-    screen = window.screen
-    for area in screen.areas:
-        if area.type == 'VIEW_3D':
-            return area
-    return None
+def unhide_head(headnum):
+    settings = get_main_settings()
+    settings.heads[headnum].headobj.hide_set(False)
+    settings.pinmode = False
 
 
-def get_override_context():
-    window = bpy.context.window
-    screen = window.screen
-    override = bpy.context.copy()
-    area = get_area()
-    if area is not None:
-        override['window'] = window
-        override['screen'] = screen
-        override['area'] = area
-        override['region'] = get_region(area)
-    return override
-
-
-def get_fake_context():
-    area = get_area()
-    space = get_space(area)
-
-    fake_context = lambda: None
-    fake_context.area = area
-    fake_context.space_data = lambda: None
-    if space is not None:
-        fake_context.space_data.region_3d = space.region_3d
-    fake_context.scene = bpy.context.scene
-    return fake_context
-#--------------------
-
-
-def switch_to_camera(camobj):
-    """ Switch to camera context independently"""
+def use_camera_frame_size(headnum, camnum):
+    # Camera Background --> Render size
     scene = bpy.context.scene
     settings = get_main_settings()
+    camera = settings.heads[headnum].cameras[camnum]
+    w, h = camera.get_image_size()
+    settings.frame_width = w
+    settings.frame_height = h
+    if w > 0 and h > 0:
+        scene.render.resolution_x = w
+        scene.render.resolution_y = h
 
-    camobj.select_set(state=True)
-    bpy.context.view_layer.objects.active = camobj
 
-    # Switch to camera
-    if (scene.camera == camobj) and settings.pinmode:
-        if not bpy.app.background:
-            bpy.ops.view3d.view_camera()
-        else:
-            override = get_override_context()
-            bpy.ops.view3d.view_camera(override)
-    else:
-        camobj.hide_set(False)  # To allow switch
-        if not bpy.app.background:
-            bpy.ops.view3d.object_as_camera()
-        else:
-            override = get_override_context()
-            bpy.ops.view3d.object_as_camera(override)
+def use_render_frame_size():
+    scene = bpy.context.scene
+    settings = get_main_settings()
+    settings.frame_width = scene.render.resolution_x
+    settings.frame_height = scene.render.resolution_y
+
+
+def auto_detect_frame_size():
+    scene = bpy.context.scene
+    settings = get_main_settings()
+    headnum = settings.current_headnum
+    sizes = []
+    for c in settings.heads[headnum].cameras:
+        w, h = c.get_image_size()
+        sizes.append((w, h))
+    cnt = Counter(sizes)
+    mc = cnt.most_common(2)
+    el = mc[0][0]
+    # If most are undefined images
+    if el == (-1, -1):
+        if len(mc) > 1:
+            el = mc[1][0]
+    if el[0] > 0:
+        scene.render.resolution_x = el[0]
+        settings.frame_width = el[0]
+    if el[1] > 0:
+        scene.render.resolution_y = el[1]
+        settings.frame_height = el[1]
+
+
+def use_render_frame_size_scaled():
+    # Allow converts scenes pinned on default cameras
+    scene = bpy.context.scene
+    settings = get_main_settings()
+    headnum = settings.current_headnum
+    head = settings.heads[headnum]
+    rw = scene.render.resolution_x
+    rh = scene.render.resolution_y
+    fw = settings.frame_width
+    fh = settings.frame_height
+    kx = rw / fw
+    dy = 0.5 * (rh - fh * kx)
+
+    FBLoader.load_only(headnum)
+    fb = FBLoader.get_builder()
+    for i, c in enumerate(head.cameras):
+        if c.pins_count > 0:
+            kid = cameras.keyframe_by_camnum(headnum, i)
+            for n in range(fb.pins_count(kid)):
+                p = fb.pin(kid, n)
+                fb.move_pin(
+                    kid, n, (kx * p.img_pos[0], kx * p.img_pos[1] + dy))
+            fb.solve_for_current_pins(kid)
+    FBLoader.save_only(headnum)
+
+    settings.frame_width = rw
+    settings.frame_height = rh
+
+
+def reconstruct_by_head():
+    """ Reconstruct Cameras and Scene structures by serial """
+    logger = logging.getLogger(__name__)
+    scene = bpy.context.scene
+    rx = scene.render.resolution_x
+    ry = scene.render.resolution_y
+    settings = get_main_settings()
+
+    obj = bpy.context.object
+
+    if obj.type != 'MESH':
+        return
+
+    # Has object our main attribute?
+    if not attrs.has_custom_attribute(obj, Config.version_prop_name[0]):
+        return  # No, it hasn't, leave
+
+    # Object marked by our attribute, so can be reconstructed
+    error_message = "===============\n" \
+                    "Can't reconstruct\n" \
+                    "===============\n" \
+                    "Object parameters are invalid or missing:\n"
+
+    logger.info("START RECONSTRUCT")
+
+    obj_type = attrs.get_safe_custom_attribute(
+            obj, Config.object_type_prop_name[0])
+    if obj_type is None:
+        obj_type = BuilderType.FaceBuilder
+    logger.debug("OBJ_TYPE: {}".format(obj_type))
+
+    if obj_type != BuilderType.FaceBuilder:
+        warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+             msg_content=error_message + 'Object Type')
+        return  # Problem with object type custom attribute
+
+    # Get Mod version
+    mod_ver = attrs.get_safe_custom_attribute(
+            obj, Config.fb_mod_ver_prop_name[0])
+    if mod_ver is None:
+        mod_ver = Config.unknown_mod_ver
+    logger.debug("MOD_VER {}".format(mod_ver))
+
+    # Get all camera parameters
+    params = cameras.get_camera_params(obj)
+    if params is None:
+        warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+             msg_content=error_message + 'camera')
+        return  # One or more parameters undefined
+    logger.debug("PARAMS: {}".format(params))
+
+    # Get Serial string
+    serial_str = attrs.get_safe_custom_attribute(
+            obj, Config.fb_serial_prop_name[0])
+    if serial_str is None:
+        serial_str = ""
+    logger.debug("SERIAL")
+
+    # Get Dir Name
+    dir_name = attrs.get_safe_custom_attribute(
+            obj, Config.fb_dir_prop_name[0])
+    if dir_name is None:
+        dir_name = ""
+    logger.debug("DIR_NAME: {}".format(dir_name))
+
+    # Get Image Names
+    images = attrs.get_safe_custom_attribute(
+            obj, Config.fb_images_prop_name[0])
+    if type(images) is not list:
+        images = []
+    logger.debug("IMAGES: {}".format(images))
+    logger.debug("PARAMETERS LOADED. START HEAD CREATION")
+    # -------------------
+    # Fix our settings structure before new head add
+    settings.fix_heads()
+
+    headnum = len(settings.heads)
+    # Create new head in collection
+    head = settings.heads.add()
+    head.headobj = obj
+
+    try:
+        # Copy serial string from object custom property
+        head.set_serial_str(serial_str)
+        fb = FBLoader.new_builder(obj_type, mod_ver)
+        head.mod_ver = FBLoader.get_builder_version()
+        settings.current_head = headnum
+        settings.current_camnum = 0
+        logger.debug("CREATED MOD_VER {}".format(head.mod_ver))
+
+        head.sensor_width = params['sensor_width']
+        head.sensor_height = params['sensor_height']
+        head.focal = params['focal']
+        scene.render.resolution_x = params['frame_width']
+        scene.render.resolution_y = params['frame_height']
+
+        # New head shape
+        fb.deserialize(head.get_serial_str())
+        # Now reconstruct cameras
+        for i, kid in enumerate(fb.keyframes()):
+            c = FBLoader.add_camera(headnum, None)
+            FBLoader.set_keentools_version(c.camobj)
+            c.keyframe_id = kid
+            logger.debug("CAMERA CREATED {}".format(kid))
+            FBLoader.place_cameraobj(kid, c.camobj, obj)
+            c.set_model_mat(fb.model_mat(kid))
+            FBLoader.update_pins_count(headnum, i)
+
+        # load background images
+        for i, f in enumerate(images):
+            logger.debug("IM {} {}".format(i, f))
+            img = bpy.data.images.new(f, 0, 0)
+            img.source = 'FILE'
+            img.filepath = f
+            head.cameras[i].cam_image = img
+
+        FBLoader.update_camera_params(head)
+
+    except Exception:
+        logger.error("WRONG PARAMETERS")
+        for i, c in enumerate(reversed(head.cameras)):
+            if c.camobj is not None:
+                # Delete camera object from scene
+                bpy.data.objects.remove(c.camobj, do_unlink=True)
+            # Delete link from list
+            head.cameras.remove(i)
+        settings.heads.remove(headnum)
+        scene.render.resolution_x = rx
+        scene.render.resolution_y = ry
+        logger.debug("SCENE PARAMETERS RESTORED")
+        warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CannotReconstruct)
+        return

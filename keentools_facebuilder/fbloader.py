@@ -20,13 +20,10 @@ import logging
 
 import numpy as np
 
-from . utils import manipulate
 from . viewport import FBViewport
-from . utils import attrs
-from . utils import coords
-from . utils.other import (
-    FBStopTimer
-)
+from . utils import attrs, coords, cameras
+from . utils.other import FBStopTimer
+
 from . builder import UniBuilder
 from . fbdebug import FBDebug
 from . config import Config, get_main_settings, BuilderType
@@ -36,7 +33,11 @@ import keentools_facebuilder.blender_independent_packages.pykeentools_loader as 
 class FBLoader:
     # Builder selection: FaceBuilder or BodyBuilder
     builder_instance = None
-    viewport = FBViewport()
+    _viewport = FBViewport()
+
+    @classmethod
+    def viewport(cls):
+        return cls._viewport
 
     @classmethod
     def builder(cls):
@@ -141,7 +142,7 @@ class FBLoader:
     def out_pinmode(cls, headnum, camnum):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
-        cls.viewport.unregister_handlers()
+        cls.viewport().unregister_handlers()
         cls.fb_save(headnum, camnum)
         headobj = settings.heads[headnum].headobj
         # Mark object by ver.
@@ -150,10 +151,10 @@ class FBLoader:
         headobj.hide_set(False)
         settings.pinmode = False
 
-        cls.viewport.current_pin = None
-        manipulate.show_all_cameras(headnum)
+        cls.viewport().current_pin = None
+        cameras.show_all_cameras(headnum)
         # === Debug use only ===
-        FBDebug.add_event_to_queue('OUT_PIN_MODE', (0, 0))
+        FBDebug.add_event_to_queue('OUT_PIN_MODE', 0, 0)
         FBDebug.output_event_queue()
         FBDebug.clear_event_queue()
         # === Debug use only ===
@@ -170,19 +171,6 @@ class FBLoader:
         head.set_serial_str(fb.serialize())
 
     @classmethod
-    def save_camera(cls, headnum, camnum):
-        fb = cls.get_builder()
-        scene = bpy.context.scene
-        settings = get_main_settings()
-        cam = settings.heads[headnum].cameras[camnum]
-        kid = manipulate.keyframe_by_camnum(headnum, camnum)
-
-        cam.set_model_mat(fb.model_mat(kid))
-        cam.set_frame_size(
-            scene.render.resolution_x,
-            scene.render.resolution_y)
-
-    @classmethod
     def fb_save(cls, headnum, camnum):
         """ Face Builder Serialize Model Info """
         fb = cls.get_builder()
@@ -193,7 +181,7 @@ class FBLoader:
         # Save block
         head.set_serial_str(fb.serialize())
 
-        kid = manipulate.keyframe_by_camnum(headnum, camnum)
+        kid = cameras.keyframe_by_camnum(headnum, camnum)
         cam.set_model_mat(fb.model_mat(kid))
         # Save images list on headobj
         head.save_images_src()
@@ -207,18 +195,18 @@ class FBLoader:
         cam = head.cameras[camnum]
         headobj = head.headobj
         camobj = cam.camobj
-        kid = manipulate.keyframe_by_camnum(headnum, camnum)
+        kid = cameras.keyframe_by_camnum(headnum, camnum)
         # Camera update
         cls.place_cameraobj(kid, camobj, headobj)
         # Head Mesh update
         coords.update_head_mesh(fb, headobj)
         # Load pins from model
-        cls.viewport.set_spins(cls.viewport.img_points(fb, kid))
-        cls.viewport.update_surface_points(fb, headobj, kid)
+        cls.viewport().set_spins(cls.viewport().img_points(fb, kid))
+        cls.viewport().update_surface_points(fb, headobj, kid)
         # Shader update
-        cls.viewport.wireframer.init_geom_data(headobj)
-        cls.viewport.wireframer.init_edge_indices(headobj)
-        cls.viewport.wireframer.create_batches()
+        cls.viewport().wireframer().init_geom_data(headobj)
+        cls.viewport().wireframer().init_edge_indices(headobj)
+        cls.viewport().wireframer().create_batches()
 
     @classmethod
     def update_cameras(cls, headnum):
@@ -232,7 +220,7 @@ class FBLoader:
             camobj = cam.camobj
             if cam.pins_count > 0:
                 # Camera update only if pins is present
-                kid = manipulate.keyframe_by_camnum(headnum, i)
+                kid = cameras.keyframe_by_camnum(headnum, i)
                 cls.place_cameraobj(kid, camobj, headobj)
                 cam.set_model_mat(fb.model_mat(kid))
 
@@ -271,7 +259,6 @@ class FBLoader:
         camera_h = ry  # Camera Height in pixels 1080
         focal_length = fl
         sensor_width = sw
-        fb = cls.get_builder()
 
         # This works only when Camera Sensor Mode is Auto
         if camera_w < camera_h:
@@ -280,6 +267,8 @@ class FBLoader:
         projection = coords.projection_matrix(
             camera_w, camera_h, focal_length, sensor_width,
             near_clip, far_clip)
+
+        fb = cls.get_builder()
         fb.set_projection_mat(projection)
 
     @classmethod
@@ -289,7 +278,7 @@ class FBLoader:
         head = settings.heads[headnum]
         cam = head.cameras[camnum]
         fb = cls.get_builder()
-        kid = manipulate.keyframe_by_camnum(headnum, camnum)
+        kid = cameras.keyframe_by_camnum(headnum, camnum)
         pins_count = fb.pins_count(kid)
         cam.pins_count = pins_count
         logger.debug("PINS_COUNT H:{} C:{} k:{} count:{}".format(
@@ -430,12 +419,12 @@ class FBLoader:
             else:
                 fb.set_model_mat(kid, c.get_model_mat())
 
-        kid = manipulate.keyframe_by_camnum(headnum, camnum)
+        kid = cameras.keyframe_by_camnum(headnum, camnum)
         # Move current camera
         cls.place_cameraobj(kid, camobj, headobj)
         # Load pins from model
-        cls.viewport.set_spins(cls.viewport.img_points(fb, kid))
-        cls.viewport.current_pin = None
+        cls.viewport().set_spins(cls.viewport().img_points(fb, kid))
+        cls.viewport().current_pin = None
         logger.debug("LOAD MODEL END")
 
     @classmethod

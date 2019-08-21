@@ -24,6 +24,7 @@ from bpy.props import (
     IntProperty,
 )
 
+from . utils import cameras
 from . utils.manipulate import check_settings
 from . utils import manipulate
 from . fbloader import FBLoader
@@ -57,7 +58,7 @@ class OBJECT_OT_FBSelectCamera(Operator):
         # bpy.ops.object.select_all(action='DESELECT')
         camobj = head.cameras[camnum].camobj
 
-        manipulate.switch_to_camera(camobj)
+        cameras.switch_to_camera(camobj)
 
         # Add Background Image
         c = camobj.data
@@ -78,8 +79,8 @@ class OBJECT_OT_FBSelectCamera(Operator):
             draw_op('INVOKE_DEFAULT', headnum=headnum, camnum=camnum)
 
         # === Debug only ===
-        FBDebug.add_event_to_queue('SELECT_CAMERA', (headnum, camnum))
-        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', (headnum, camnum))
+        FBDebug.add_event_to_queue('SELECT_CAMERA', headnum, camnum)
+        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', headnum, camnum)
         FBDebug.make_snapshot()
         # === Debug only ===
         return {'FINISHED'}
@@ -110,13 +111,13 @@ class OBJECT_OT_FBCenterGeo(Operator):
             return {'CANCELLED'}
 
         fb = FBLoader.get_builder()
-        kid = manipulate.keyframe_by_camnum(headnum, camnum)
+        kid = cameras.keyframe_by_camnum(headnum, camnum)
         fb.center_model_mat(kid)
         FBLoader.fb_save(headnum, camnum)
         FBLoader.fb_redraw(headnum, camnum)
         # === Debug only ===
-        FBDebug.add_event_to_queue('CENTER_GEO', (0, 0))
-        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', (0, 0))
+        FBDebug.add_event_to_queue('CENTER_GEO', 0, 0)
+        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', 0, 0)
         FBDebug.make_snapshot()
         return {'FINISHED'}
 
@@ -148,7 +149,7 @@ class OBJECT_OT_FBUnmorph(Operator):
             return {'CANCELLED'}
 
         fb = FBLoader.get_builder()
-        kid = manipulate.keyframe_by_camnum(headnum, camnum)
+        kid = cameras.keyframe_by_camnum(headnum, camnum)
         fb.unmorph()
         FBLoader.fb_save(headnum, camnum)
         FBLoader.fb_redraw(headnum, camnum)
@@ -181,7 +182,7 @@ class OBJECT_OT_FBRemovePins(Operator):
             return {'CANCELLED'}
 
         fb = FBLoader.get_builder()
-        kid = manipulate.keyframe_by_camnum(headnum, camnum)
+        kid = cameras.keyframe_by_camnum(headnum, camnum)
         fb.remove_pins(kid)
         # Added but don't work
         fb.solve_for_current_pins(kid)
@@ -189,8 +190,8 @@ class OBJECT_OT_FBRemovePins(Operator):
         FBLoader.fb_redraw(headnum, camnum)
         FBLoader.update_pins_count(headnum, camnum)
         # === Debug only ===
-        FBDebug.add_event_to_queue('REMOVE_PINS', (0, 0))
-        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', (0, 0))
+        FBDebug.add_event_to_queue('REMOVE_PINS', 0, 0)
+        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', 0, 0)
         FBDebug.make_snapshot()
         # === Debug only ===
         return {'FINISHED'}
@@ -295,7 +296,7 @@ class OBJECT_OT_FBDeleteCamera(Operator):
         if not settings.pinmode:
             fb = FBLoader.get_builder()
             head = settings.heads[headnum]
-            kid = manipulate.keyframe_by_camnum(headnum, camnum)
+            kid = cameras.keyframe_by_camnum(headnum, camnum)
             camobj = head.cameras[camnum].camobj
             fb.remove_keyframe(kid)
             FBLoader.fb_save(headnum, camnum)

@@ -19,7 +19,6 @@ import logging
 
 import bpy
 from bpy.types import Panel, Operator, Menu
-from bpy.props import IntProperty
 import addon_utils
 from .config import Config, get_main_settings, ErrorType
 import re
@@ -118,7 +117,8 @@ class OBJECT_PT_FBPanel(Panel):
         head = settings.heads[headnum]
 
         # Unhide Head if there some problem with pinmode
-        if settings.pinmode and not FBLoader.viewport.wireframer.is_working():
+        if settings.pinmode and \
+                not FBLoader.viewport().wireframer().is_working():
             # Show Head
             row = layout.row()
             row.scale_y = 2.0

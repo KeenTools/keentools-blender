@@ -39,16 +39,16 @@ def update_wireframe(self, context):
     settings = get_main_settings()
     headnum = settings.current_headnum
     head = settings.heads[headnum]
-    FBLoader.viewport.update_wireframe(
+    FBLoader.viewport().update_wireframe(
         FBLoader.get_builder_type(), head.headobj)
 
 
 def update_pin_sensitivity(self, context):
-    FBLoader.viewport.update_pin_sensitivity()
+    FBLoader.viewport().update_pin_sensitivity()
 
 
 def update_pin_size(self, context):
-    FBLoader.viewport.update_pin_size()
+    FBLoader.viewport().update_pin_size()
 
 
 def update_debug_log(self, value):
@@ -85,9 +85,9 @@ def update_mesh_parts(self, context):
     head.headobj.data = mesh
     if settings.pinmode:
         # Update wireframe structures
-        FBLoader.viewport.wireframer.init_geom_data(head.headobj)
-        FBLoader.viewport.wireframer.init_edge_indices(head.headobj)
-        FBLoader.viewport.update_wireframe(
+        FBLoader.viewport().wireframer().init_geom_data(head.headobj)
+        FBLoader.viewport().wireframer().init_edge_indices(head.headobj)
+        FBLoader.viewport().update_wireframe(
             FBLoader.get_builder_type(), head.headobj)
 
     mesh_name = old_mesh.name
@@ -472,8 +472,7 @@ class FBSceneSettings(PropertyGroup):
         return max(i, j)
 
     def get_last_headnum(self):
-        headnum = len(self.heads) - 1
-        return headnum
+        return len(self.heads) - 1
 
     def get_last_camnum(self, headnum):
         if headnum <= self.get_last_headnum():
