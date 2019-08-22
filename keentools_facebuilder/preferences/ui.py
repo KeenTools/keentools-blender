@@ -18,13 +18,14 @@
 
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty, IntProperty, BoolProperty, EnumProperty
-from . config import Config
 import re
+import keentools_facebuilder.preferences.operators as operators
+import keentools_facebuilder.config
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 class FBAddonPreferences(AddonPreferences):
-    bl_idname = __package__   # this must match the add-on name
+    bl_idname = keentools_facebuilder.config.Config.addon_name
 
     license_id: StringProperty(
         name="license ID", default=""
@@ -113,8 +114,7 @@ class FBAddonPreferences(AddonPreferences):
             box = layout.box()
             row = box.row()
             row.prop(self, "license_id")
-            op = row.operator(Config.fb_actor_operator_idname, text="install")
-            op.action = 'lic_online_install'
+            row.operator(operators.OBJECT_OT_InstallLicenseOnline.bl_idname)
 
         elif self.lic_type == 'OFFLINE':
             # Get hardware ID
@@ -128,21 +128,16 @@ class FBAddonPreferences(AddonPreferences):
                               "and install it")
             row = layout.row()
             row.label(text="Visit our site: ")
-            op = row.operator(
-                Config.fb_actor_operator_idname, text="keentools.io")
-            op.action = 'visit_site'
+            row.operator(operators.OBJECT_OT_OpenManualInstallPage.bl_idname)
 
             box = layout.box()
             row = box.row()
             row.prop(self, "hardware_id")
-            op = row.operator(Config.fb_actor_operator_idname, text="copy")
-            op.action = 'lic_hardware_id_copy'
-            # op.valstr = self.hardware_id
+            row.operator(operators.OBJECT_OT_CopyHardwareId.bl_idname)
 
             row = box.row()
             row.prop(self, "lic_path")
-            op = row.operator(Config.fb_actor_operator_idname, text="install")
-            op.action = 'lic_offline_install'
+            row.operator(operators.OBJECT_OT_InstallLicenseOffline.bl_idname)
 
         elif self.lic_type == 'FLOATING':
             FBLicManager.update_floating_params()
@@ -167,8 +162,7 @@ class FBAddonPreferences(AddonPreferences):
                 box.prop(self, "license_server_auto",
                          text="Auto server/port settings")
 
-            op = box.operator(Config.fb_actor_operator_idname, text="connect")
-            op.action = 'lic_floating_connect'
+            row.operator(operators.OBJECT_OT_FloatingConnect.bl_idname)
 
     def _draw_pkt_prefs(self, layout):
         box = layout.box()
@@ -177,13 +171,9 @@ class FBAddonPreferences(AddonPreferences):
         else:
             box.label(text="pykeentools is not installed")
 
-        op = box.operator(Config.fb_actor_operator_idname,
-                          text="install latest nightly pykeentools")
-        op.action = 'install_latest_nightly_pykeentools'
+        box.operator(operators.OBJECT_OT_InstallNightlyPkt.bl_idname)
 
-        op = box.operator(Config.fb_actor_operator_idname,
-                          text="uninstall pykeentools")
-        op.action = 'uninstall_pykeentools'
+        box.operator(operators.OBJECT_OT_UninstallPkt.bl_idname)
 
         if pkt.loaded():
             box.label(text="pykeentools loaded. Build info: {} {}".format(
@@ -192,9 +182,7 @@ class FBAddonPreferences(AddonPreferences):
             box.label(text="restart Blender to unload pykeentools")
         else:
             box.label(text="pykeentools is not loaded")
-            op = box.operator(Config.fb_actor_operator_idname,
-                              text="try load pykeentools")
-            op.action = 'load_pykeentools'
+            box.operator(operators.OBJECT_OT_LoadPkt.bl_idname)
 
     def draw(self, context):
         layout = self.layout

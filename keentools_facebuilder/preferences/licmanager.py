@@ -18,7 +18,8 @@
 
 
 import bpy
-from . fbloader import FBLoader
+import keentools_facebuilder.fbloader
+import keentools_facebuilder.config
 
 
 class FBLicManager:
@@ -29,13 +30,13 @@ class FBLicManager:
     def get_lm(cls):
         if cls.lm is None:
             assert(cls.fb is None)
-            cls.fb = FBLoader.get_builder()
+            cls.fb = keentools_facebuilder.fbloader.FBLoader.get_builder()
             cls.lm = cls.fb.license_manager()
         return cls.lm
 
     @staticmethod
     def get_prefs():
-        return bpy.context.preferences.addons[__package__].preferences
+        return bpy.context.preferences.addons[keentools_facebuilder.config.Config.addon_name].preferences
 
     @classmethod
     def update_lic_status(cls):
