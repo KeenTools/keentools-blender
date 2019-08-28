@@ -243,12 +243,12 @@ class OBJECT_PT_FBPanel(Panel):
         row = layout.row()
         row.scale_y = 2.0
         row.operator(Config.fb_filedialog_operator_idname,
-                     text="Open Sequence", icon='OUTLINER_OB_IMAGE')
+                     text="Add Camera Image(s)", icon='OUTLINER_OB_IMAGE')
 
         # Add New Camera button
         op = layout.operator(
             Config.fb_main_add_camera_idname,
-            text="Add Empty Camera", icon='PLUS')
+            text="Create Empty Camera", icon='PLUS')
         # op.action = "add_camera"
         op.headnum = headnum
 

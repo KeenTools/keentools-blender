@@ -310,10 +310,10 @@ class OBJECT_OT_FBDeleteCamera(Operator):
 
 class OBJECT_OT_FBAddCamera(Operator):
     bl_idname = Config.fb_main_add_camera_idname
-    bl_label = "Add Camera"
+    bl_label = "Add Empty Camera"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Add new camera without image (Not recommended). \n" \
-                     "Use 'Open Sequence' button instead."
+                     "Use 'Add Camera Image(s)' button instead"
     headnum: IntProperty(default=0)
 
     # This draw overrides standard operator panel

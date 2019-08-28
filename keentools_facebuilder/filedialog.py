@@ -28,10 +28,11 @@ from .config import Config, get_main_settings, ErrorType
 
 
 class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
-    """ Open selected image sequence as cameras """
-
     bl_idname = Config.fb_filedialog_operator_idname
     bl_label = "Open Image(s)"
+    bl_description = "Automatically creates Camera(s) from selected Image(s). " \
+                     "All images must be the same size. " \
+                     "You can select multiple images at once"
 
     filter_glob: bpy.props.StringProperty(
         default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp',

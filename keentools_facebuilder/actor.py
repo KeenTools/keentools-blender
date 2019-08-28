@@ -118,7 +118,7 @@ class OBJECT_OT_FBActor(Operator):
             # Current camera Background --> Render size (by mini-button)
             settings = get_main_settings()
             manipulate.use_camera_frame_size(
-                settings.tmp_headnum, settings.tmp.camnum)
+                settings.tmp_headnum, settings.tmp_camnum)
 
         elif self.action == 'use_render_frame_size_scaled':
             # Allow converts scenes pinned on default cameras

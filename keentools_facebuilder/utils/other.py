@@ -111,7 +111,7 @@ class FBText:
         self.text_draw_handler = None
         self.message = [
             "Pin Mode ",
-            "Press 'Esc' to Exit "
+            "ESC to Exit / LMB add Pin / RMB remove Pin /"
         ]
 
     def set_message(self, msg):
