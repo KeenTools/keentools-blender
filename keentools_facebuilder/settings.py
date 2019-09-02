@@ -59,8 +59,34 @@ def update_cam_image(self, context):
     FBLoader.update_cam_image_size(self)
 
 
-def update_camera_params(self, contex):
-    FBLoader.update_camera_params(self)  # pass current head
+def update_sensor_width(self, context):
+    self.sensor_height = self.sensor_width * 0.666666667
+    if self.sensor_width != 36.0:
+        self.sensor_preset = 'custom'
+    FBLoader.update_camera_params(self)
+
+
+def update_sensor_height(self, context):
+    self.sensor_preset = 'custom'
+    FBLoader.update_camera_params(self)
+
+
+def update_focal(self, context):
+    settings = get_main_settings()
+    if not settings.pinmode:
+        FBLoader.update_focals(self)
+
+
+def update_preset(self, context):
+    if self.sensor_preset == "ff":
+        self.sensor_width = 36.0
+        self.sensor_height = 24.0
+    elif self.sensor_preset == "help":
+        self.sensor_width = 36.0
+        self.sensor_height = 24.0
+        self.focal = 50.0
+        self.auto_focal_estimation = True
+        self.use_exif = True
 
 
 def update_mesh_parts(self, context):
@@ -117,6 +143,9 @@ class FBCameraItem(PropertyGroup):
         name="Pins in Camera", default=0)
 
     use_in_tex_baking: BoolProperty(name="Use In Texture Baking", default=True)
+
+    exif_focal: FloatProperty(default=-1)
+    exif_focal35mm: FloatProperty(default=-1)
 
     @staticmethod
     def convert_matrix_to_str(arr):
@@ -192,24 +221,63 @@ class FBHeadItem(PropertyGroup):
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
 
+    use_exif: BoolProperty(
+        name="Use EXIF if available in file",
+        description="Automatically detects Focal Length & Sensor Size "
+                    "from EXIF data in image file if available",
+        default=True)
+
+    exif_message: StringProperty(name="EXIF Message", default="")
+
+    sensor_preset: EnumProperty(name="Sensor size", description="Sensor size presets",
+        items=[
+            ('custom', 'Custom', 'User sets all parameters manualy',
+                'IMAGE_DATA', 0),
+            ('ff', 'Full Frame 36.0 x 24.0 mm', 'Full Frame Width 36.0 '
+                'mm Height 24.0 mm', 'IMAGE_DATA', 1),
+            ('1/2.3', '1/2.3" 6.2 x 4.6 mm', '1/2.3" Diagonal 7.66 mm '
+                'Width 6.17 mm Height 4.55 mm', 'IMAGE_DATA', 2),
+            ('1/1.7', '1/1.7" 7.6 x 5.7 mm', '1/1.7" Diagonal 9.50 mm '
+                'Width 7.60 mm Height 5.7 mm', 'IMAGE_DATA', 3),
+            ('2/3', '2/3" 8.8 x 6.6 mm', '2/3" Diagonal 11.0 mm '
+                'Width 8.8 mm Height 6.6 mm', 'IMAGE_DATA', 4),
+            ('1', '1" 13.2 x 8.8 mm', '1" Diagonal 15.86 mm '
+                'Width 13.2 mm Height 8.8 mm', 'IMAGE_DATA', 5),
+            ('4/3', '4/3" 17.3 x 13.0 mm', '4/3" Diagonal 21.6 mm '
+                'Width 17.3 mm Height 13.0 mm', 'IMAGE_DATA', 6),
+            ('aps-c', 'APS-C 22.3 x 14.9 mm', 'APS-C Diagonal 26.82 mm '
+                'Width 22.3 mm Height 14.9 mm', 'IMAGE_DATA', 7),
+            ('aps-h', 'APS-H 27.9 x 18.6 mm', 'APS-C Diagonal 33.5 mm '
+                'Width 27.9 mm Height 18.6 mm', 'IMAGE_DATA', 8),
+            ('help', 'HELP! I have no idea!', "Choose this if you don't know "
+                "camera parameters at all. We will turn on automatic mode",
+             'QUESTION', 9),
+        ], default='ff', update=update_preset)
+
     sensor_width: FloatProperty(
         description="The horizontal size of the camera used to take photos."
                     "This is VERY important parameter. "
                     "Set it according to the real camera specification",
         name="Sensor Width (mm)", default=36,
-        min=0.1, update=update_camera_params)
+        min=0.1, update=update_sensor_width)
     sensor_height: FloatProperty(
         description="Secondary parameter. "
                     "Set it according to the real camera specification."
                     "This parameter is not used if Sensor Width is greater",
         name="Sensor Height (mm)", default=24,
-        min=0.1, update=update_camera_params)
+        min=0.1, update=update_sensor_height)
     focal: FloatProperty(
         description="Camera focal length. You can found it in real "
                     "camera settings or snapshot EXIF. This is VERY important "
                     "parameter for proper reconstruction",
         name="Focal Length (mm)", default=50,
-        min=0.1, update=update_camera_params)
+        min=0.1, update=update_focal)
+
+    auto_focal_estimation: BoolProperty(
+        name="Auto Focal Estimation",
+        description="Automatically detects Focal Length value during head "
+                    "construction",
+        default=False)
 
     check_ears: BoolProperty(name="Ears", default=True,
                              update=update_mesh_parts)

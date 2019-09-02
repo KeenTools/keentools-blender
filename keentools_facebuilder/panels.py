@@ -81,10 +81,12 @@ class OBJECT_PT_FBPanel(Panel):
 
         if not proper:
             # Show User Hint when no target object selected
-            layout.label(text='Select FaceBuilder object:')
-            layout.label(text='Head or Camera.')
-            layout.label(text='You can create new via:')
-            layout.label(text='Add > Mesh > Face Builder')
+            col = layout.column()
+            col.scale_y = 0.75
+            col.label(text='Select FaceBuilder object:')
+            col.label(text='Head or Camera.')
+            col.label(text='You can create new via:')
+            col.label(text='Add > Mesh > Face Builder')
 
             row = layout.row()
             row.scale_y = 2.0
@@ -97,6 +99,12 @@ class OBJECT_PT_FBPanel(Panel):
             row.operator(
                 Config.fb_main_addon_settings_idname,
                 text='Open Addon Settings', icon='PREFERENCES')
+
+            col = layout.column()
+            col.scale_y = 0.75
+            col.label(text="PyKeenTools must be installed")
+            col.label(text="before the addon using.")
+            col.label(text="Refer to Addon settings.")
             # and out
             return
 
@@ -127,20 +135,49 @@ class OBJECT_PT_FBPanel(Panel):
             op.action = 'unhide_head'
             op.headnum = headnum
 
+        # Sensor parameters
         if len(head.cameras) == 0:
-            layout.label(text="1. Setup two main parameters:")
+            col = layout.column()
+            col.scale_y = 0.75
+            col.label(text="1. Setup Sensor Size.")
+            col.label(text="Skip this step if unsure.")
+            col.label(text="It can be detected via EXIF.")
 
-        layout.prop(head, 'focal')
         box = layout.box()
+        box.prop(head, 'use_exif')
+        box.prop(head, 'sensor_preset', text='')
         box.prop(head, 'sensor_width')
+
         row = box.row()
         row.prop(head, 'sensor_height')
         row.active = False
+
+        if len(head.cameras) == 0:
+            col = layout.column()
+            col.scale_y = 0.75
+            col.label(text="2. Setup Focal Length.")
+            col.label(text="It can be detected via EXIF")
+            col.label(text="or automaticaly estimated.")
+
+        box = layout.box()
+
+        if head.use_exif:
+            col = box.column()
+            col.scale_y = 0.75
+            col.label(text="Focal affected by 'Use EXIF':")
+
+        row = box.row()
+        row.prop(head, 'focal')
+        if head.auto_focal_estimation:
+            row.active = False
+        box.prop(head, 'auto_focal_estimation')
 
         wrong_size_counter = 0
         fw = settings.frame_width
         fh = settings.frame_height
 
+        if len(head.cameras) > 0:
+            layout.label(text="Cameras (click icon to start)")
         # Output cameras list
         for i, camera in enumerate(head.cameras):
             box = layout.box()
@@ -206,7 +243,7 @@ class OBJECT_PT_FBPanel(Panel):
                             live_icon=True)
 
         if len(head.cameras) == 0:
-            layout.label(text="2. Select reference photos")
+            layout.label(text="3. Select reference photos")
         else:
             row = layout.row()
             # Select All cameras for baking Button
@@ -353,7 +390,9 @@ class WM_OT_FBAddonWarning(Operator):
                 "===============",
                 "Error when creating Object",
                 "This addon version can't create",
-                "objects of this type"
+                "objects of this type or ",
+                "PyKeenTools library not loaded. ",
+                "Refer to Addon Settings"
             ])
         elif self.msg == ErrorType.AboutFrameSize:
             self.set_content([

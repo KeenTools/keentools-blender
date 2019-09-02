@@ -118,6 +118,8 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             if FBLoader.get_builder_type() == BuilderType.FaceBuilder:
                 fb.set_auto_rigidity(settings.check_auto_rigidity)
                 fb.set_rigidity(settings.rigidity)
+            # Activate Focal Estimation
+            fb.set_focal_length_estimation(head.auto_focal_estimation)
 
             try:
                 # Solver
