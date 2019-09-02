@@ -132,6 +132,7 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
         exif_length = -1.0
         exif_units = 2.0
         units_scale = 25.4
+        message = ""
         for f in self.files:
             filepath = os.path.join(directory, f.name)
             logger.debug("FILE: {}".format(filepath))
@@ -180,6 +181,8 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
                     data)
 
                 img_file.close()
+                # Output filename
+                message = "EXIF for: {}".format(f.name)
 
             except IOError:
                 logger.error("{}' is unreadable for EXIF".format(filepath))
@@ -190,27 +193,38 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
                 w, h = img.size
                 changes += 1
 
+            # Output image size
+            message += "\n({}x{})".format(w, h)
+
             # Store EXIF data in camera
             if exif_units == 3.0:
                 units_scale = 10.0  # cm (3)
+                # message += "\nSensor units: cm"
             else:
                 units_scale = 25.4  # inch (2)
+                # message += "\nSensor units: inch"
 
             if exif_focal is not None:
                 camera.exif_focal = exif_focal
+                message += "\nFocal: {}".format(exif_focal)
             if exif_focal35mm is not None:
                 camera.exif_focal35mm = exif_focal35mm
+                message += "\nFocal equiv. 35mm: {:.2f}".format(exif_focal35mm)
             logger.debug("UNIT_SCALE {}".format(units_scale))
             if exif_width is not None and exif_focal_x_res is not None:
                 sx = 25.4 * exif_width / exif_focal_x_res
+                message += "\nSensor Width: {:.2f} mm".format(sx)
                 logger.debug("SX_inch: {}".format(sx))
                 sx = 10.0 * exif_width / exif_focal_x_res
+                message += " ({:.2f})".format(sx)
                 logger.debug("SX_cm: {}".format(sx))
 
             if exif_length is not None and exif_focal_y_res is not None:
                 sy = 25.4 * exif_length / exif_focal_y_res
+                message += "\nSensor Height: {:.2f} mm".format(sy)
                 logger.debug("SY_inch: {}".format(sy))
                 sy = 10.0 * exif_length / exif_focal_y_res
+                message += " ({:.2f})".format(sy)
                 logger.debug("SY_cm: {}".format(sy))
 
             if exif_focal is not None and exif_focal35mm is not None:
@@ -234,6 +248,7 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
             head.sensor_height = 24
             head.focal = exif_focal35mm
             logger.debug("UPDATE via EXIF focal35mm")
+            head.exif_message = message
             return {'FINISHED'}
 
         if exif_focal is not None and exif_focal > 0:
@@ -249,5 +264,7 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
                 and exif_length > 0 and exif_focal_y_res > 0:
             sy = 25.4 * exif_length / exif_focal_y_res
             head.sensor_height = sy
+
+        head.exif_message = message
 
         return {'FINISHED'}

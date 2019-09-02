@@ -23,6 +23,7 @@ import addon_utils
 from .config import Config, get_main_settings, ErrorType
 import re
 from .fbloader import FBLoader
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 # Test if selected object is our Mesh or Camera
@@ -86,7 +87,7 @@ class OBJECT_PT_FBPanel(Panel):
             col.label(text='Select FaceBuilder object:')
             col.label(text='Head or Camera.')
             col.label(text='You can create new via:')
-            col.label(text='Add > Mesh > Face Builder')
+            col.label(text='Add > Mesh > FaceBuilder')
 
             row = layout.row()
             row.scale_y = 2.0
@@ -100,11 +101,12 @@ class OBJECT_PT_FBPanel(Panel):
                 Config.fb_main_addon_settings_idname,
                 text='Open Addon Settings', icon='PREFERENCES')
 
-            col = layout.column()
-            col.scale_y = 0.75
-            col.label(text="PyKeenTools must be installed")
-            col.label(text="before the addon using.")
-            col.label(text="Refer to Addon settings.")
+            if not pkt.is_installed():
+                col = layout.column()
+                col.scale_y = 0.75
+                col.label(text="PyKeenTools must be installed")
+                col.label(text="before the addon using.")
+                col.label(text="Refer to Addon settings.")
             # and out
             return
 
@@ -294,6 +296,12 @@ class OBJECT_PT_FBPanel(Panel):
             if settings.pinmode:
                 self.draw_pins_panel(headnum, settings.current_camnum)
 
+        if len(head.exif_message) > 0:
+            arr = re.split("\r\n|\n", head.exif_message)
+            col = layout.column()
+            col.scale_y = 0.75
+            for a in arr:
+                col.label(text=a)
 
 class WM_OT_FBAddonWarning(Operator):
     bl_idname = Config.fb_warning_operator_idname
