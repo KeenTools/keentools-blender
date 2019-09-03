@@ -51,7 +51,8 @@ from . main_operator import (OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
                              OBJECT_OT_FBCameraFixSize,
                              OBJECT_OT_FBDeleteCamera, OBJECT_OT_FBAddCamera,
                              OBJECT_OT_FBAddonSettings,
-                             OBJECT_OT_FBBakeTexture, OBJECT_OT_FBShowTexture)
+                             OBJECT_OT_FBBakeTexture, OBJECT_OT_FBShowTexture,
+                             OBJECT_OT_FBDefaultSensor, OBJECT_OT_FBAllUnknown)
 from . pinmode import OBJECT_OT_FBPinMode
 from . movepin import OBJECT_OT_FBMovePin
 from . actor import OBJECT_OT_FBActor
@@ -88,6 +89,8 @@ _CLASSES_TO_REGISTER = (
     OBJECT_OT_FBAddonSettings,
     OBJECT_OT_FBBakeTexture,
     OBJECT_OT_FBShowTexture,
+    OBJECT_OT_FBDefaultSensor,
+    OBJECT_OT_FBAllUnknown,
     FBCameraItem,
     FBHeadItem,
     FBSceneSettings,

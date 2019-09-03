@@ -69,6 +69,10 @@ class Config:
     fb_main_bake_tex_idname = 'object.' + fb_main_bake_tex_callname
     fb_main_show_tex_callname = _prefix + '_main_show_tex'
     fb_main_show_tex_idname = 'object.' + fb_main_show_tex_callname
+    fb_main_default_sensor_callname = _prefix + '_main_default_sensor'
+    fb_main_default_sensor_idname = 'object.' + fb_main_default_sensor_callname
+    fb_main_all_unknown_callname = _prefix + '_main_all_unknown'
+    fb_main_all_unknown_idname = 'object.' + fb_main_all_unknown_callname
 
     fb_filedialog_operator_idname = _prefix + '_import.open_filebrowser'
     fb_pinmode_operator_callname = _prefix + '_pinmode'

@@ -27,7 +27,8 @@ from . fbloader import FBLoader
 from . config import Config, get_main_settings, ErrorType
 
 from . blender_independent_packages.exifread import process_file
-from . blender_independent_packages.exifread import DEFAULT_STOP_TAG, FIELD_TYPES
+from . blender_independent_packages.exifread import \
+    DEFAULT_STOP_TAG, FIELD_TYPES
 
 
 def frac_to_float(s):
@@ -44,19 +45,20 @@ def frac_to_float(s):
     return None
 
 
-def get_safe_param(p, data):
+def get_safe_exif_param(p, data):
     logger = logging.getLogger(__name__)
     if p in data.keys():
         val = frac_to_float(data[p].printable)
         logger.debug("{} {}".format(p, val))
         return val
+    return None
 
 
 class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
     bl_idname = Config.fb_filedialog_operator_idname
     bl_label = "Open Image(s)"
-    bl_description = "Automatically creates Camera(s) from selected Image(s). " \
-                     "All images must be the same size. " \
+    bl_description = "Automatically creates Camera(s) from selected " \
+                     "Image(s). All images must be the same size. " \
                      "You can select multiple images at once"
 
     filter_glob: bpy.props.StringProperty(
@@ -124,25 +126,26 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
         w = -1
         h = -1
 
-        exif_focal = -1.0
-        exif_focal35mm = -1.0
-        exif_focal_x_res = -1.0
-        exif_focal_y_res = -1.0
-        exif_width = -1.0
-        exif_length = -1.0
+        exif_focal = None
+        exif_focal35mm = None
+        exif_focal_x_res = None
+        exif_focal_y_res = None
+        exif_width = None
+        exif_length = None
         exif_units = 2.0
         units_scale = 25.4
         message = ""
+
         for f in self.files:
             filepath = os.path.join(directory, f.name)
             logger.debug("FILE: {}".format(filepath))
 
-            exif_focal = -1.0
-            exif_focal35mm = -1.0
-            exif_focal_x_res = -1.0
-            exif_focal_y_res = -1.0
-            exif_width = -1.0
-            exif_length = -1.0
+            exif_focal = None
+            exif_focal35mm = None
+            exif_focal_x_res = None
+            exif_focal_y_res = None
+            exif_width = None
+            exif_length = None
             exif_units = 2.0
             units_scale = 25.4
 
@@ -169,16 +172,16 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
                         logger.error("{} : {}".format(i, str(data[i])))
                 # print("TAGS:", data)
 
-                exif_focal = get_safe_param('EXIF FocalLength', data)
-                exif_focal35mm = get_safe_param('EXIF FocalLengthIn35mmFilm', data)
-                exif_focal_x_res = get_safe_param(
+                exif_focal = get_safe_exif_param('EXIF FocalLength', data)
+                exif_focal35mm = get_safe_exif_param('EXIF FocalLengthIn35mmFilm', data)
+                exif_focal_x_res = get_safe_exif_param(
                     'EXIF FocalPlaneXResolution', data)
-                exif_focal_y_res = get_safe_param(
+                exif_focal_y_res = get_safe_exif_param(
                     'EXIF FocalPlaneYResolution', data)
-                exif_width = get_safe_param('EXIF ExifImageWidth', data)
-                exif_length = get_safe_param('EXIF ExifImageLength', data)
-                exif_units = get_safe_param('EXIF FocalPlaneResolutionUnit',
-                    data)
+                exif_width = get_safe_exif_param('EXIF ExifImageWidth', data)
+                exif_length = get_safe_exif_param('EXIF ExifImageLength', data)
+                exif_units = get_safe_exif_param('EXIF FocalPlaneResolutionUnit',
+                                                 data)
 
                 img_file.close()
                 # Output filename
@@ -203,14 +206,19 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
             else:
                 units_scale = 25.4  # inch (2)
                 # message += "\nSensor units: inch"
+            logger.debug("UNIT_SCALE {}".format(units_scale))
 
+            # Focal
             if exif_focal is not None:
                 camera.exif_focal = exif_focal
                 message += "\nFocal: {}".format(exif_focal)
+
+            # Focal 35mm equivalent
             if exif_focal35mm is not None:
                 camera.exif_focal35mm = exif_focal35mm
                 message += "\nFocal equiv. 35mm: {:.2f}".format(exif_focal35mm)
-            logger.debug("UNIT_SCALE {}".format(units_scale))
+
+            # Sensor Width
             if exif_width is not None and exif_focal_x_res is not None:
                 sx = 25.4 * exif_width / exif_focal_x_res
                 message += "\nSensor Width: {:.2f} mm".format(sx)
@@ -219,6 +227,7 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
                 message += " ({:.2f})".format(sx)
                 logger.debug("SX_cm: {}".format(sx))
 
+            # Sensor Length
             if exif_length is not None and exif_focal_y_res is not None:
                 sy = 25.4 * exif_length / exif_focal_y_res
                 message += "\nSensor Height: {:.2f} mm".format(sy)
@@ -227,44 +236,51 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
                 message += " ({:.2f})".format(sy)
                 logger.debug("SY_cm: {}".format(sy))
 
+            # Sensor via 35mm Equivalent (not used yet)
             if exif_focal is not None and exif_focal35mm is not None:
                 sc = exif_focal / exif_focal35mm
                 logger.debug("VIA_FOCAL: {} {}".format(36.0 * sc, 24.0 * sc))
 
+        # We update Render Size in accordance to image size
         if self.update_render_size == 'yes' and changes == 1:
-
             render = bpy.context.scene.render
             render.resolution_x = w
             render.resolution_y = h
             settings.frame_width = w
             settings.frame_height = h
 
+        # Start EXIF results performing
         head = settings.heads[self.headnum]
         if not head.use_exif:
-            return {'FINISHED'}
+            # User don't want EXIF
+            head.exif_message = ""
+            return {'FINISHED'}  # (1)
 
-        if exif_focal35mm is not None and exif_focal35mm > 0:
+        # If there is focal35mm equivalent, use it instead real sensor size
+        if exif_focal35mm is not None:
             head.sensor_width = 36
             head.sensor_height = 24
             head.focal = exif_focal35mm
             logger.debug("UPDATE via EXIF focal35mm")
             head.exif_message = message
-            return {'FINISHED'}
+            return {'FINISHED'}  # (2)
 
-        if exif_focal is not None and exif_focal > 0:
+        # Focal Length if found
+        if exif_focal is not None:
             head.focal = exif_focal
             logger.debug("UPDATE via EXIF focal")
 
-        if exif_width is not None and exif_focal_x_res is not None \
-                and exif_width > 0 and exif_focal_x_res > 0:
+        # Sensor Width calculated via EXIF
+        if exif_width is not None and exif_focal_x_res is not None:
+            # assumed inches instead EXIF units_scale
             sx = 25.4 * exif_width / exif_focal_x_res
             head.sensor_width = sx
 
-        if exif_length is not None and exif_focal_y_res is not None \
-                and exif_length > 0 and exif_focal_y_res > 0:
+        if exif_length is not None and exif_focal_y_res is not None:
+            # assumed inches instead EXIF units_scale
             sy = 25.4 * exif_length / exif_focal_y_res
             head.sensor_height = sy
 
         head.exif_message = message
 
-        return {'FINISHED'}
+        return {'FINISHED'}  # (3)

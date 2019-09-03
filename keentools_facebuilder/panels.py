@@ -71,109 +71,38 @@ class OBJECT_PT_FBPanel(Panel):
         op.headnum = headnum
         op.camnum = camnum
 
-    # Face Builder Main Panel Draw
-    def draw(self, context):
-        layout = self.layout
-        obj = context.object
+    def draw_start_panel(self, layout):
+        # Show User Hint when no target object selected
+        # Add Head & Addon settings
+        col = layout.column()
+        col.scale_y = 0.75
+        col.label(text='Select FaceBuilder object:')
+        col.label(text='Head or Camera.')
+        col.label(text='You can create new via:')
+        col.label(text='Add > Mesh > FaceBuilder')
+
+        row = layout.row()
+        row.scale_y = 2.0
+        row.operator(
+            Config.fb_add_head_operator_idname,
+            text='Add New Head', icon='USER')
+
+        row = layout.row()
+        row.scale_y = 2.0
+        row.operator(
+            Config.fb_main_addon_settings_idname,
+            text='Open Addon Settings', icon='PREFERENCES')
+
+        if not pkt.is_installed():
+            col = layout.column()
+            col.scale_y = 0.75
+            col.label(text="PyKeenTools must be installed")
+            col.label(text="before the addon using.")
+            col.label(text="Refer to Addon settings.")
+
+    def draw_camera_list(self, headnum, layout):
         settings = get_main_settings()
-        headnum = settings.head_by_obj(obj)
-
-        proper = proper_object_test()
-
-        if not proper:
-            # Show User Hint when no target object selected
-            col = layout.column()
-            col.scale_y = 0.75
-            col.label(text='Select FaceBuilder object:')
-            col.label(text='Head or Camera.')
-            col.label(text='You can create new via:')
-            col.label(text='Add > Mesh > FaceBuilder')
-
-            row = layout.row()
-            row.scale_y = 2.0
-            row.operator(
-                Config.fb_add_head_operator_idname,
-                text='Add New Head', icon='USER')
-
-            row = layout.row()
-            row.scale_y = 2.0
-            row.operator(
-                Config.fb_main_addon_settings_idname,
-                text='Open Addon Settings', icon='PREFERENCES')
-
-            if not pkt.is_installed():
-                col = layout.column()
-                col.scale_y = 0.75
-                col.label(text="PyKeenTools must be installed")
-                col.label(text="before the addon using.")
-                col.label(text="Refer to Addon settings.")
-            # and out
-            return
-
-        # No registered models in scene
-        if headnum < 0:
-            if not obj or obj.type != 'MESH':
-                return
-            # Need for reconstruction
-            row = layout.row()
-            row.scale_y = 3.0
-            op = row.operator(
-                Config.fb_actor_operator_idname, text='Reconstruct!')
-            op.action = 'reconstruct_by_head'
-            op.headnum = -1
-            op.camnum = -1
-            return
-
         head = settings.heads[headnum]
-
-        # Unhide Head if there some problem with pinmode
-        if settings.pinmode and \
-                not FBLoader.viewport().wireframer().is_working():
-            # Show Head
-            row = layout.row()
-            row.scale_y = 2.0
-            op = row.operator(Config.fb_actor_operator_idname,
-                              text='Show Head', icon='HIDE_OFF')
-            op.action = 'unhide_head'
-            op.headnum = headnum
-
-        # Sensor parameters
-        if len(head.cameras) == 0:
-            col = layout.column()
-            col.scale_y = 0.75
-            col.label(text="1. Setup Sensor Size.")
-            col.label(text="Skip this step if unsure.")
-            col.label(text="It can be detected via EXIF.")
-
-        box = layout.box()
-        box.prop(head, 'use_exif')
-        box.prop(head, 'sensor_preset', text='')
-        box.prop(head, 'sensor_width')
-
-        row = box.row()
-        row.prop(head, 'sensor_height')
-        row.active = False
-
-        if len(head.cameras) == 0:
-            col = layout.column()
-            col.scale_y = 0.75
-            col.label(text="2. Setup Focal Length.")
-            col.label(text="It can be detected via EXIF")
-            col.label(text="or automaticaly estimated.")
-
-        box = layout.box()
-
-        if head.use_exif:
-            col = box.column()
-            col.scale_y = 0.75
-            col.label(text="Focal affected by 'Use EXIF':")
-
-        row = box.row()
-        row.prop(head, 'focal')
-        if head.auto_focal_estimation:
-            row.active = False
-        box.prop(head, 'auto_focal_estimation')
-
         wrong_size_counter = 0
         fw = settings.frame_width
         fh = settings.frame_height
@@ -277,6 +206,98 @@ class OBJECT_PT_FBPanel(Panel):
                 row.operator(Config.fb_main_fix_size_idname,
                              text='Fix Size', icon='ERROR')
             # op.name = config.fb_fix_frame_menu_idname
+
+    # Face Builder Main Panel Draw
+    def draw(self, context):
+        layout = self.layout
+        obj = context.object
+        settings = get_main_settings()
+        headnum = settings.head_by_obj(obj)
+
+        proper = proper_object_test()
+
+        if not proper:
+            self.draw_start_panel(layout)
+            return  # and out
+
+        # No registered models in scene
+        if headnum < 0:
+            if not obj or obj.type != 'MESH':
+                return
+            # Need for reconstruction
+            row = layout.row()
+            row.scale_y = 3.0
+            op = row.operator(
+                Config.fb_actor_operator_idname, text='Reconstruct!')
+            op.action = 'reconstruct_by_head'
+            op.headnum = -1
+            op.camnum = -1
+            return
+
+        head = settings.heads[headnum]
+
+        # Unhide Head if there some problem with pinmode
+        if settings.pinmode and \
+                not FBLoader.viewport().wireframer().is_working():
+            # Show Head
+            row = layout.row()
+            row.scale_y = 2.0
+            op = row.operator(Config.fb_actor_operator_idname,
+                              text='Show Head', icon='HIDE_OFF')
+            op.action = 'unhide_head'
+            op.headnum = headnum
+
+        # Sensor parameters
+        if len(head.cameras) == 0:
+            col = layout.column()
+            col.scale_y = 0.75
+            col.label(text="1. Setup Sensor Size.")
+            col.label(text="Skip this step if unsure.")
+            col.label(text="It can be detected via EXIF.")
+
+        box = layout.box()
+        box.prop(head, 'use_exif')
+        # box.prop(head, 'sensor_preset', text='')
+        box.prop(head, 'sensor_width')
+        row = box.row()
+        row.active = False
+        row.prop(head, 'sensor_height')
+
+        row = layout.row()
+        op = row.operator(
+            Config.fb_main_default_sensor_idname, text='36 x 24 mm')
+        op.headnum = headnum
+        op = row.operator(
+            Config.fb_main_all_unknown_idname, text='All unknown!')
+        op.headnum = headnum
+
+
+        if len(head.cameras) == 0:
+            col = layout.column()
+            col.scale_y = 0.75
+            col.label(text="2. Setup Focal Length.")
+            col.label(text="It can be detected via EXIF")
+            col.label(text="or automaticaly estimated.")
+
+        box = layout.box()
+        if head.use_exif:
+            col = box.column()
+            col.scale_y = 0.75
+            col.label(text="Focal affected by 'Use EXIF':")
+
+        row = box.row()
+        if head.auto_focal_estimation:
+            row.active = False
+            row.alert = True
+        row.prop(head, 'focal')
+
+        row = box.row()
+        if head.auto_focal_estimation:
+            row.alert = True
+        row.prop(head, 'auto_focal_estimation')
+
+        # Large List of cameras
+        self.draw_camera_list(headnum, layout)
 
         # Open sequence Button (large x2)
         row = layout.row()

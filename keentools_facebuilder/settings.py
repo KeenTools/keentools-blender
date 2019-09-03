@@ -251,7 +251,7 @@ class FBHeadItem(PropertyGroup):
                 'Width 27.9 mm Height 18.6 mm', 'IMAGE_DATA', 8),
             ('help', 'HELP! I have no idea!', "Choose this if you don't know "
                 "camera parameters at all. We will turn on automatic mode",
-             'QUESTION', 9),
+                'QUESTION', 9),
         ], default='ff', update=update_preset)
 
     sensor_width: FloatProperty(
