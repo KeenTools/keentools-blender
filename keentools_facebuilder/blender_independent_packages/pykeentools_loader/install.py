@@ -49,15 +49,50 @@ def _install_from_stream(file_like_object):
         raise
 
 
-def install_from_download(version=None, nightly=False):
+def _download_with_progress_callback(url, progress_callback):
+    import urllib.request
+    import io
+    response = urllib.request.urlopen(url)
+    if progress_callback is None:
+        return io.BytesIO(response.read())
+
+    length = response.getheader('content-length')
+    if length:
+        length = int(length)
+        chunk_size = max(2048, length // 100)
+    else:
+        chunk_size = 1024 * 1024
+
+    result = io.BytesIO()
+    downloaded = 0
+    it = 0
+    while True:
+        chunk = response.read(chunk_size)
+        if not chunk:
+            break
+        result.write(chunk)
+        downloaded += len(chunk)
+        if length:
+            progress_callback(downloaded / length)
+        else:
+            import math
+            # use exponential CDF as fallback
+            # will go from 0 to 1 as it goes from 0 to infinity
+            exp_lambda = 0.5
+            progress_callback(1.0 - math.exp(-exp_lambda * it))
+        it += 1
+
+    return result
+
+
+def install_from_download(version=None, nightly=False, progress_callback=None):
     """
+    :param progress_callback: callable getting progress in float [0, 1]
     :param version: build to install. KeenTools version (1.5.4 for example) as string. None means latest version
     :param nightly: latest nightly build will be installed if True. version should be None in that case
     """
-    import urllib.request
-    import io
     url = download_path(version, nightly)
-    with io.BytesIO(urllib.request.urlopen(url).read()) as archive_data:
+    with _download_with_progress_callback(url, progress_callback) as archive_data:
         _install_from_stream(archive_data)
 
 

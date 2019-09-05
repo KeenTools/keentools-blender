@@ -24,3 +24,4 @@ This module is designed to operate with pykeentools library:
 
 from .loader import *
 from .install import *
+from .config import MINIMUM_VERSION_REQUIRED
