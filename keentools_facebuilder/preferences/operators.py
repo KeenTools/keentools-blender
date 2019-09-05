@@ -24,19 +24,45 @@ import keentools_facebuilder.blender_independent_packages.pykeentools_loader as 
 _ID_NAME_PREFIX = 'preferences'
 
 
-class OBJECT_OT_InstallNightlyPkt(bpy.types.Operator):
-    bl_idname = _ID_NAME_PREFIX + '.install_latest_nightly_pkt'
-    bl_label = 'install latest nightly pykeentools'
+class OBJECT_OT_InstallPkt(bpy.types.Operator):
+    bl_idname = _ID_NAME_PREFIX + '.install_latest_pkt'
+    bl_label = 'install'
     bl_options = {'REGISTER', 'INTERNAL'}
 
+    install_type: bpy.props.EnumProperty(
+        name='Build',
+        items=(
+            ('nightly', 'Nightly', 'Install latest nightly build available', 0),
+            ('default', 'Default', 'Install the version this addon was tested with', 1),
+            ('latest', 'Latest', 'Install the latest release version available', 2)),
+        default='nightly')
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
     def execute(self, context):
-        pkt.install_from_download(nightly=True)
+        context.window_manager.progress_begin(0, 1)
+        try:
+            if self.install_type == 'nightly':
+                pkt.install_from_download(nightly=True,
+                                          progress_callback=context.window_manager.progress_update)
+            elif self.install_type == 'default':
+                pkt.install_from_download(version=pkt.MINIMUM_VERSION_REQUIRED,
+                                          progress_callback=context.window_manager.progress_update)
+            elif self.install_type == 'latest':
+                pkt.install_from_download(progress_callback=context.window_manager.progress_update)
+        finally:
+            context.window_manager.progress_end()
         return {"FINISHED"}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, 'install_type')
 
 
 class OBJECT_OT_UninstallPkt(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '.uninstall_pkt'
-    bl_label = 'uninstall pykeentools'
+    bl_label = 'uninstall'
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
@@ -46,7 +72,7 @@ class OBJECT_OT_UninstallPkt(bpy.types.Operator):
 
 class OBJECT_OT_LoadPkt(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '.load_pkt'
-    bl_label = 'load pykeentools'
+    bl_label = 'load'
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):

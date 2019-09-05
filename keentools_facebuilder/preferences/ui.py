@@ -167,13 +167,13 @@ class FBAddonPreferences(AddonPreferences):
     def _draw_pkt_prefs(self, layout):
         box = layout.box()
         if pkt.is_installed():
-            box.label(text="pykeentools is installed")
+            uninstall_row = box.row()
+            uninstall_row.label(text="pykeentools is installed")
+            uninstall_row.operator(operators.OBJECT_OT_UninstallPkt.bl_idname)
         else:
-            box.label(text="pykeentools is not installed")
-
-        box.operator(operators.OBJECT_OT_InstallNightlyPkt.bl_idname)
-
-        box.operator(operators.OBJECT_OT_UninstallPkt.bl_idname)
+            install_row = box.row()
+            install_row.label(text="pykeentools is not installed")
+            install_row.operator(operators.OBJECT_OT_InstallPkt.bl_idname)
 
         if pkt.loaded():
             box.label(text="pykeentools loaded. Build info: {} {}".format(
@@ -181,8 +181,9 @@ class FBAddonPreferences(AddonPreferences):
                 pkt.module().build_time))
             box.label(text="restart Blender to unload pykeentools")
         else:
-            box.label(text="pykeentools is not loaded")
-            box.operator(operators.OBJECT_OT_LoadPkt.bl_idname)
+            load_row = box.row()
+            load_row.label(text="pykeentools is not loaded")
+            load_row.operator(operators.OBJECT_OT_LoadPkt.bl_idname)
 
     def draw(self, context):
         layout = self.layout
