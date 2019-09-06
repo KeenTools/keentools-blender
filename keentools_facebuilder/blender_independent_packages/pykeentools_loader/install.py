@@ -59,7 +59,7 @@ def _download_with_progress_callback(url, progress_callback):
     length = response.getheader('content-length')
     if length:
         length = int(length)
-        chunk_size = max(2048, length // 100)
+        chunk_size = max(8 * 1024, length // 300)
     else:
         chunk_size = 1024 * 1024
 
@@ -78,7 +78,7 @@ def _download_with_progress_callback(url, progress_callback):
             import math
             # use exponential CDF as fallback
             # will go from 0 to 1 as it goes from 0 to infinity
-            exp_lambda = 0.5
+            exp_lambda = 0.2
             progress_callback(1.0 - math.exp(-exp_lambda * it))
         it += 1
 
