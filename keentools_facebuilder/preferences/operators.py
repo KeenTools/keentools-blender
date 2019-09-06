@@ -64,10 +64,9 @@ class OBJECT_OT_InstallFromFilePkt(bpy.types.Operator):
     bl_label = 'install from file'
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    pkt_file_path = None
+    pkt_file_path: bpy.props.StringProperty()
 
     def execute(self, context):
-        assert self.pkt_file_path is not None
         pkt.install_from_file(self.pkt_file_path)
         return {"FINISHED"}
 
@@ -119,11 +118,10 @@ class OBJECT_OT_InstallLicenseOnline(bpy.types.Operator):
     bl_label = 'install'
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    license_id = None
+    license_id: bpy.props.StringProperty()
 
     def execute(self, context):
         lm = pkt.module().FaceBuilder.license_manager()
-        assert self.license_id is not None
         res = lm.install_license_online(self.license_id)
 
         if res is not None:
@@ -138,11 +136,10 @@ class OBJECT_OT_InstallLicenseOffline(bpy.types.Operator):
     bl_label = 'install'
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    lic_path = None
+    lic_path: bpy.props.StringProperty()
 
     def execute(self, context):
         lm = pkt.module().FaceBuilder.license_manager()
-        assert self.lic_path is not None
         res = lm.install_license_offline(self.lic_path)
 
         if res is not None:
@@ -157,13 +154,11 @@ class OBJECT_OT_FloatingConnect(bpy.types.Operator):
     bl_label = 'connect'
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    license_server = None
-    license_server_port = None
+    license_server: bpy.props.StringProperty()
+    license_server_port: bpy.props.IntProperty()
 
     def execute(self, context):
         lm = pkt.module().FaceBuilder.license_manager()
-        assert self.license_server is not None
-        assert self.license_server_port is not None
         res = lm.install_floating_license(self.license_server, self.license_server_port)
 
         if res is not None:

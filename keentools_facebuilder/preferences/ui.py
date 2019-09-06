@@ -83,7 +83,7 @@ class FBAddonPreferences(AddonPreferences):
     )
 
     pkt_file_path: StringProperty(
-            name="pykeentools file",
+            name="",
             description="absolute path to pykeentools zip file",
             default="",
             subtype="FILE_PATH"
@@ -105,6 +105,10 @@ class FBAddonPreferences(AddonPreferences):
     def _draw_license_info(self, layout):
         box = layout.box()
         box.label(text='License info:')
+
+        if not pkt.loaded():
+            box.label(text='load pykeentools to see license info')
+            return
 
         lm = pkt.module().FaceBuilder.license_manager()
 
@@ -179,6 +183,7 @@ class FBAddonPreferences(AddonPreferences):
 
     def _draw_pkt_prefs(self, layout):
         box = layout.box()
+        box.label(text='Pykeentools:')
         if pkt.is_installed():
             uninstall_row = box.row()
             uninstall_row.label(text="pykeentools is installed")
@@ -207,5 +212,4 @@ class FBAddonPreferences(AddonPreferences):
 
         self._draw_pkt_prefs(layout)
 
-        if pkt.loaded():
-            self._draw_license_info(layout)
+        self._draw_license_info(layout)
