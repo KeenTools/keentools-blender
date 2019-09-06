@@ -26,16 +26,16 @@ _ID_NAME_PREFIX = 'preferences'
 
 class OBJECT_OT_InstallPkt(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '.install_latest_pkt'
-    bl_label = 'install from download'
+    bl_label = 'install from website'
     bl_options = {'REGISTER', 'INTERNAL'}
 
     install_type: bpy.props.EnumProperty(
         name='Build',
         items=(
             ('nightly', 'Nightly', 'Install latest nightly build available', 0),
-            ('default', 'Default', 'Install the version this addon was tested with', 1),
-            ('latest', 'Latest', 'Install the latest release version available', 2)),
-        default='nightly')
+            ('default', 'Default', 'Install the version this addon was tested with', 1)
+        ),
+        default='default')
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
@@ -49,8 +49,8 @@ class OBJECT_OT_InstallPkt(bpy.types.Operator):
             elif self.install_type == 'default':
                 pkt.install_from_download(version=pkt.MINIMUM_VERSION_REQUIRED,
                                           progress_callback=context.window_manager.progress_update)
-            elif self.install_type == 'latest':
-                pkt.install_from_download(progress_callback=context.window_manager.progress_update)
+        except Exception as error:
+            self.report({'ERROR'}, 'Failed to install pykeentools from website. ' + str(error))
         finally:
             context.window_manager.progress_end()
         return {"FINISHED"}
@@ -69,29 +69,6 @@ class OBJECT_OT_InstallFromFilePkt(bpy.types.Operator):
 
     def execute(self, context):
         pkt.install_from_file(self.pkt_file_path)
-        return {"FINISHED"}
-
-
-class OBJECT_OT_UninstallPkt(bpy.types.Operator):
-    bl_idname = _ID_NAME_PREFIX + '.uninstall_pkt'
-    bl_label = 'uninstall'
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def execute(self, context):
-        pkt.uninstall()
-        return {"FINISHED"}
-
-
-class OBJECT_OT_LoadPkt(bpy.types.Operator):
-    bl_idname = _ID_NAME_PREFIX + '.load_pkt'
-    bl_label = 'load'
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def execute(self, context):
-        try:
-            pkt.module()
-        except ImportError:
-            self.report({'ERROR'}, 'Failed to load pykeentools')
         return {"FINISHED"}
 
 

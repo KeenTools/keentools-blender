@@ -25,13 +25,11 @@ from .ui import FBAddonPreferences
 
 CLASSES_TO_REGISTER = (
     OBJECT_OT_InstallLicenseOnline,
-    OBJECT_OT_LoadPkt,
     OBJECT_OT_FloatingConnect,
     OBJECT_OT_InstallLicenseOffline,
     OBJECT_OT_CopyHardwareId,
     OBJECT_OT_InstallPkt,
     OBJECT_OT_InstallFromFilePkt,
-    OBJECT_OT_UninstallPkt,
     OBJECT_OT_OpenManualInstallPage,
     FBAddonPreferences
 )

@@ -91,35 +91,30 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         box = layout.box()
         box.label(text='Pykeentools:')
 
-        if pkt.is_installed():
-            uninstall_row = box.row()
-            uninstall_row.label(text="pykeentools is installed")
-            uninstall_row.operator(preferences_operators.OBJECT_OT_UninstallPkt.bl_idname)
-        else:
-            install_row = box.row()
-            install_row.label(text="pykeentools is not installed")
-            install_row.operator(preferences_operators.OBJECT_OT_InstallPkt.bl_idname)
-            install_from_file_row = box.row()
-            install_from_file_row.prop(self, "pkt_file_path")
-            install_from_file_op = install_from_file_row.operator(preferences_operators.OBJECT_OT_InstallFromFilePkt.bl_idname)
-            install_from_file_op.pkt_file_path = self.pkt_file_path
+        install_row = box.row()
+        install_row.operator(preferences_operators.OBJECT_OT_InstallPkt.bl_idname)
+        install_from_file_row = box.row()
+        install_from_file_row.prop(self, "pkt_file_path")
+        install_from_file_op = install_from_file_row.operator(
+            preferences_operators.OBJECT_OT_InstallFromFilePkt.bl_idname)
+        install_from_file_op.pkt_file_path = self.pkt_file_path
 
-        if pkt.loaded():
-            box.label(text="pykeentools loaded")
-            box.label(text="Build version '{}', build time '{}'".format(
-                pkt.module().__version__,
-                pkt.module().build_time))
-        else:
-            load_row = box.row()
-            load_row.label(text="pykeentools is not loaded")
-            load_row.operator(preferences_operators.OBJECT_OT_LoadPkt.bl_idname)
+        if pkt.is_installed():
+            try:
+                pkt.module()
+                assert pkt.loaded()
+                box.label(text="Build version '{}', build time '{}'".format(
+                    pkt.module().__version__,
+                    pkt.module().build_time))
+            except ImportError:
+                box.label(text='Failed to load pykeentools. Please check the installation')
 
     def _draw_license_info(self, layout):
         box = layout.box()
         box.label(text='License info:')
 
         if not pkt.loaded():
-            box.label(text='load pykeentools to see license info')
+            box.label(text='install pykeentools to see license info')
             return
 
         lm = pkt.module().FaceBuilder.license_manager()
