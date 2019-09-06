@@ -20,19 +20,14 @@ import bpy
 import keentools_facebuilder.preferences.operators as preferences_operators
 import keentools_facebuilder.config
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
-
-
-def _split_by_br_or_newlines(s):  # return list
-    import re
-    res = re.split("<br />|<br>|<br/>|\r\n|\n", s)
-    return res
+from keentools_facebuilder.preferences.formatting import split_by_br_or_newlines
 
 
 def _multi_line_text_to_output_labels(layout, txt):
     if txt is None:
         return
 
-    all_lines = _split_by_br_or_newlines(txt)
+    all_lines = split_by_br_or_newlines(txt)
     non_empty_lines = filter(len, all_lines)
 
     for text_line in non_empty_lines:
@@ -131,7 +126,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
         _multi_line_text_to_output_labels(box, lm.license_status_text(force_check=False))
 
-        box.prop(self, "lic_type", expand=True)
+        box.row().prop(self, "lic_type", expand=True)
 
         if self.lic_type == 'ONLINE':
             box = layout.box()
@@ -143,8 +138,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         elif self.lic_type == 'OFFLINE':
             self.hardware_id = lm.hardware_id()
 
-            layout.label(text="Generate license file at our site "
-                              "and install it")
+            layout.label(text="Generate license file at our site and install it")
             row = layout.row()
             row.label(text="Visit our site: ")
             row.operator(preferences_operators.OBJECT_OT_OpenManualInstallPage.bl_idname)

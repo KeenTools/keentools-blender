@@ -18,6 +18,7 @@
 
 import bpy
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from keentools_facebuilder.preferences.formatting import replace_newlines_with_spaces
 
 
 _ID_NAME_PREFIX = 'preferences'
@@ -125,7 +126,7 @@ class OBJECT_OT_InstallLicenseOnline(bpy.types.Operator):
         res = lm.install_license_online(self.license_id)
 
         if res is not None:
-            self.report({'ERROR'}, res)
+            self.report({'ERROR'}, replace_newlines_with_spaces(res))
         else:
             self.report({'INFO'}, 'License installed')
         return {"FINISHED"}
@@ -143,7 +144,7 @@ class OBJECT_OT_InstallLicenseOffline(bpy.types.Operator):
         res = lm.install_license_offline(self.lic_path)
 
         if res is not None:
-            self.report({'ERROR'}, res)
+            self.report({'ERROR'}, replace_newlines_with_spaces(res))
         else:
             self.report({'INFO'}, 'License installed')
         return {"FINISHED"}
@@ -162,7 +163,7 @@ class OBJECT_OT_FloatingConnect(bpy.types.Operator):
         res = lm.install_floating_license(self.license_server, self.license_server_port)
 
         if res is not None:
-            self.report({'ERROR'}, res)
+            self.report({'ERROR'}, replace_newlines_with_spaces(res))
         else:
             self.report({'INFO'}, 'Floating server settings saved')
         return {"FINISHED"}
