@@ -17,7 +17,6 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
-import keentools_facebuilder.preferences.licmanager as licmanager
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
@@ -96,7 +95,9 @@ class OBJECT_OT_CopyHardwareId(bpy.types.Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
-        licmanager.FBLicManager.copy_hardware_id()
+        hardware_id = pkt.module().FaceBuilder.license_manager().hardware_id()
+        context.window_manager.clipboard = hardware_id
+        self.report({'INFO'}, 'Hardware ID is in clipboard!')
         return {"FINISHED"}
 
 
@@ -105,8 +106,17 @@ class OBJECT_OT_InstallLicenseOnline(bpy.types.Operator):
     bl_label = 'install'
     bl_options = {'REGISTER', 'INTERNAL'}
 
+    license_id = None
+
     def execute(self, context):
-        licmanager.FBLicManager.install_online_lic()
+        lm = pkt.module().FaceBuilder.license_manager()
+        assert self.license_id is not None
+        res = lm.install_license_online(self.license_id)
+
+        if res is not None:
+            self.report({'ERROR'}, res)
+        else:
+            self.report({'INFO'}, 'License installed')
         return {"FINISHED"}
 
 
@@ -115,8 +125,17 @@ class OBJECT_OT_InstallLicenseOffline(bpy.types.Operator):
     bl_label = 'install'
     bl_options = {'REGISTER', 'INTERNAL'}
 
+    lic_path = None
+
     def execute(self, context):
-        licmanager.FBLicManager.install_offline_lic()
+        lm = pkt.module().FaceBuilder.license_manager()
+        assert self.lic_path is not None
+        res = lm.install_license_offline(self.lic_path)
+
+        if res is not None:
+            self.report({'ERROR'}, res)
+        else:
+            self.report({'INFO'}, 'License installed')
         return {"FINISHED"}
 
 
@@ -125,6 +144,17 @@ class OBJECT_OT_FloatingConnect(bpy.types.Operator):
     bl_label = 'connect'
     bl_options = {'REGISTER', 'INTERNAL'}
 
+    license_server = None
+    license_server_port = None
+
     def execute(self, context):
-        licmanager.FBLicManager.connect_floating_lic()
+        lm = pkt.module().FaceBuilder.license_manager()
+        assert self.license_server is not None
+        assert self.license_server_port is not None
+        res = lm.install_floating_license(self.license_server, self.license_server_port)
+
+        if res is not None:
+            self.report({'ERROR'}, res)
+        else:
+            self.report({'INFO'}, 'Floating server settings saved')
         return {"FINISHED"}

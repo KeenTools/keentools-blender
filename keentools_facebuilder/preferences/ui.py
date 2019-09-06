@@ -96,14 +96,12 @@ class FBAddonPreferences(AddonPreferences):
         return res
 
     def _draw_license_info(self, layout):
-        from .licmanager import FBLicManager
-
         box = layout.box()
         box.label(text='License info:')
 
-        FBLicManager.update_lic_status()
+        lm = pkt.module().FaceBuilder.license_manager()
 
-        self.output_labels(box, self.lic_status)
+        self.output_labels(box, lm.license_status_text(force_check=False))
 
         row = box.row()
         row.prop(self, "lic_type", expand=True)
@@ -114,12 +112,11 @@ class FBAddonPreferences(AddonPreferences):
             box = layout.box()
             row = box.row()
             row.prop(self, "license_id")
-            row.operator(operators.OBJECT_OT_InstallLicenseOnline.bl_idname)
+            install_online_op = row.operator(operators.OBJECT_OT_InstallLicenseOnline.bl_idname)
+            install_online_op.license_id = self.license_id
 
         elif self.lic_type == 'OFFLINE':
-            # Get hardware ID
-            if len(self.hardware_id) == 0:
-                FBLicManager.update_hardware_id()
+            self.hardware_id = lm.hardware_id()
 
             # Start output
             self.output_labels(layout, self.lic_offline_status)
@@ -137,10 +134,17 @@ class FBAddonPreferences(AddonPreferences):
 
             row = box.row()
             row.prop(self, "lic_path")
-            row.operator(operators.OBJECT_OT_InstallLicenseOffline.bl_idname)
+            install_offline_op = row.operator(operators.OBJECT_OT_InstallLicenseOffline.bl_idname)
+            install_offline_op.lic_path = self.lic_path
 
         elif self.lic_type == 'FLOATING':
-            FBLicManager.update_floating_params()
+            env = pkt.module().LicenseManager.env_server_info()
+            if env is not None:
+                self.license_server = env[0]
+                self.license_server_port = env[1]
+                self.license_server_lock = True
+            else:
+                self.license_server_lock = False
             self.output_labels(layout, self.lic_floating_status)
 
             box = layout.box()
@@ -162,7 +166,9 @@ class FBAddonPreferences(AddonPreferences):
                 box.prop(self, "license_server_auto",
                          text="Auto server/port settings")
 
-            row.operator(operators.OBJECT_OT_FloatingConnect.bl_idname)
+            floating_install_op = row.operator(operators.OBJECT_OT_FloatingConnect.bl_idname)
+            floating_install_op.license_server = self.license_server
+            floating_install_op.license_server_port = self.license_server_port
 
     def _draw_pkt_prefs(self, layout):
         box = layout.box()
