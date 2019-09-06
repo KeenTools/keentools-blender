@@ -88,7 +88,10 @@ class OBJECT_OT_LoadPkt(bpy.types.Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
-        pkt.module()
+        try:
+            pkt.module()
+        except ImportError:
+            self.report({'ERROR'}, 'Failed to load pykeentools')
         return {"FINISHED"}
 
 
