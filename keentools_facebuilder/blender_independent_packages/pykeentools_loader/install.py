@@ -49,7 +49,7 @@ def _install_from_stream(file_like_object):
         raise
 
 
-def _download_with_progress_callback(url, progress_callback):
+def _download_with_progress_callback(url, progress_callback, max_callback_updates_count):
     import urllib.request
     import io
     response = urllib.request.urlopen(url)
@@ -59,7 +59,7 @@ def _download_with_progress_callback(url, progress_callback):
     length = response.getheader('content-length')
     if length:
         length = int(length)
-        chunk_size = max(8 * 1024, length // 300)
+        chunk_size = max(8 * 1024, length // max_callback_updates_count)
     else:
         chunk_size = 1024 * 1024
 
@@ -85,14 +85,15 @@ def _download_with_progress_callback(url, progress_callback):
     return result
 
 
-def install_from_download(version=None, nightly=False, progress_callback=None):
+def install_from_download(version=None, nightly=False, progress_callback=None, max_callback_updates_count=481):
     """
+    :param max_callback_updates_count: max progress_callback calls count
     :param progress_callback: callable getting progress in float [0, 1]
     :param version: build to install. KeenTools version (1.5.4 for example) as string. None means latest version
     :param nightly: latest nightly build will be installed if True. version should be None in that case
     """
     url = download_path(version, nightly)
-    with _download_with_progress_callback(url, progress_callback) as archive_data:
+    with _download_with_progress_callback(url, progress_callback, max_callback_updates_count) as archive_data:
         _install_from_stream(archive_data)
 
 

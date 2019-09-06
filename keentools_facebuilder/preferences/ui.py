@@ -16,42 +16,57 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from bpy.types import Operator, AddonPreferences
-from bpy.props import StringProperty, IntProperty, BoolProperty, EnumProperty
-import re
-import keentools_facebuilder.preferences.operators as operators
+import bpy
+import keentools_facebuilder.preferences.operators as preferences_operators
 import keentools_facebuilder.config
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
-class FBAddonPreferences(AddonPreferences):
+def _split_by_br_or_newlines(s):  # return list
+    import re
+    res = re.split("<br />|<br>|<br/>|\r\n|\n", s)
+    return res
+
+
+def _multi_line_text_to_output_labels(layout, txt):
+    if txt is None:
+        return
+
+    all_lines = _split_by_br_or_newlines(txt)
+    non_empty_lines = filter(len, all_lines)
+
+    for text_line in non_empty_lines:
+        layout.label(text=text_line)
+
+
+class FBAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = keentools_facebuilder.config.Config.addon_name
 
-    license_id: StringProperty(
+    license_id: bpy.props.StringProperty(
         name="license ID", default=""
     )
 
-    license_server: StringProperty(
+    license_server: bpy.props.StringProperty(
         name="license server host/IP", default="localhost"
     )
 
-    license_server_port: IntProperty(
+    license_server_port: bpy.props.IntProperty(
         name="license server port", default=7096, min=0, max=65535
     )
 
-    license_server_lock: BoolProperty(
+    license_server_lock: bpy.props.BoolProperty(
         name="Variables from ENV", default=False
     )
 
-    license_server_auto: BoolProperty(
+    license_server_auto: bpy.props.BoolProperty(
         name="Auto settings from Environment", default=True
     )
 
-    hardware_id: StringProperty(
+    hardware_id: bpy.props.StringProperty(
         name="hardware ID", default=""
     )
 
-    lic_type: EnumProperty(
+    lic_type: bpy.props.EnumProperty(
         name="Type",
         items=(
             ('ONLINE', "Online", "Online license management", 0),
@@ -59,48 +74,50 @@ class FBAddonPreferences(AddonPreferences):
             ('FLOATING', "Floating", "Floating license management", 2)),
         default='ONLINE')
 
-    lic_status: StringProperty(
+    lic_status: bpy.props.StringProperty(
         name="license status", default=""
     )
 
-    lic_online_status: StringProperty(
-        name="online license status", default=""
-    )
-
-    lic_offline_status: StringProperty(
-        name="offline license status", default=""
-    )
-
-    lic_floating_status: StringProperty(
-        name="floating license status", default=""
-    )
-
-    lic_path: StringProperty(
+    lic_path: bpy.props.StringProperty(
             name="License file path",
             description="absolute path to license file",
             default="",
             subtype="FILE_PATH"
     )
 
-    pkt_file_path: StringProperty(
+    pkt_file_path: bpy.props.StringProperty(
             name="",
             description="absolute path to pykeentools zip file",
             default="",
             subtype="FILE_PATH"
     )
 
-    @classmethod
-    def output_labels(cls, layout, txt):
-        if txt is not None:
-            arr = cls.split_by_br(txt)
-            for a in arr:
-                if len(a) > 0:
-                    layout.label(text=a)
+    def _draw_pykeentools_preferences(self, layout):
+        box = layout.box()
+        box.label(text='Pykeentools:')
 
-    @staticmethod
-    def split_by_br(s):  # return list
-        res = re.split("<br />|<br>|<br/>|\r\n|\n", s)
-        return res
+        if pkt.is_installed():
+            uninstall_row = box.row()
+            uninstall_row.label(text="pykeentools is installed")
+            uninstall_row.operator(preferences_operators.OBJECT_OT_UninstallPkt.bl_idname)
+        else:
+            install_row = box.row()
+            install_row.label(text="pykeentools is not installed")
+            install_row.operator(preferences_operators.OBJECT_OT_InstallPkt.bl_idname)
+            install_from_file_row = box.row()
+            install_from_file_row.prop(self, "pkt_file_path")
+            install_from_file_op = install_from_file_row.operator(preferences_operators.OBJECT_OT_InstallFromFilePkt.bl_idname)
+            install_from_file_op.pkt_file_path = self.pkt_file_path
+
+        if pkt.loaded():
+            box.label(text="pykeentools loaded")
+            box.label(text="Build version '{}', build time '{}'".format(
+                pkt.module().__version__,
+                pkt.module().build_time))
+        else:
+            load_row = box.row()
+            load_row.label(text="pykeentools is not loaded")
+            load_row.operator(preferences_operators.OBJECT_OT_LoadPkt.bl_idname)
 
     def _draw_license_info(self, layout):
         box = layout.box()
@@ -112,40 +129,34 @@ class FBAddonPreferences(AddonPreferences):
 
         lm = pkt.module().FaceBuilder.license_manager()
 
-        self.output_labels(box, lm.license_status_text(force_check=False))
+        _multi_line_text_to_output_labels(box, lm.license_status_text(force_check=False))
 
-        row = box.row()
-        row.prop(self, "lic_type", expand=True)
+        box.prop(self, "lic_type", expand=True)
 
         if self.lic_type == 'ONLINE':
-            self.output_labels(layout, self.lic_online_status)
-
             box = layout.box()
             row = box.row()
             row.prop(self, "license_id")
-            install_online_op = row.operator(operators.OBJECT_OT_InstallLicenseOnline.bl_idname)
+            install_online_op = row.operator(preferences_operators.OBJECT_OT_InstallLicenseOnline.bl_idname)
             install_online_op.license_id = self.license_id
 
         elif self.lic_type == 'OFFLINE':
             self.hardware_id = lm.hardware_id()
 
-            # Start output
-            self.output_labels(layout, self.lic_offline_status)
-
             layout.label(text="Generate license file at our site "
                               "and install it")
             row = layout.row()
             row.label(text="Visit our site: ")
-            row.operator(operators.OBJECT_OT_OpenManualInstallPage.bl_idname)
+            row.operator(preferences_operators.OBJECT_OT_OpenManualInstallPage.bl_idname)
 
             box = layout.box()
             row = box.row()
             row.prop(self, "hardware_id")
-            row.operator(operators.OBJECT_OT_CopyHardwareId.bl_idname)
+            row.operator(preferences_operators.OBJECT_OT_CopyHardwareId.bl_idname)
 
             row = box.row()
             row.prop(self, "lic_path")
-            install_offline_op = row.operator(operators.OBJECT_OT_InstallLicenseOffline.bl_idname)
+            install_offline_op = row.operator(preferences_operators.OBJECT_OT_InstallLicenseOffline.bl_idname)
             install_offline_op.lic_path = self.lic_path
 
         elif self.lic_type == 'FLOATING':
@@ -156,7 +167,6 @@ class FBAddonPreferences(AddonPreferences):
                 self.license_server_lock = True
             else:
                 self.license_server_lock = False
-            self.output_labels(layout, self.lic_floating_status)
 
             box = layout.box()
             row = box.row()
@@ -177,39 +187,12 @@ class FBAddonPreferences(AddonPreferences):
                 box.prop(self, "license_server_auto",
                          text="Auto server/port settings")
 
-            floating_install_op = row.operator(operators.OBJECT_OT_FloatingConnect.bl_idname)
+            floating_install_op = row.operator(preferences_operators.OBJECT_OT_FloatingConnect.bl_idname)
             floating_install_op.license_server = self.license_server
             floating_install_op.license_server_port = self.license_server_port
-
-    def _draw_pkt_prefs(self, layout):
-        box = layout.box()
-        box.label(text='Pykeentools:')
-        if pkt.is_installed():
-            uninstall_row = box.row()
-            uninstall_row.label(text="pykeentools is installed")
-            uninstall_row.operator(operators.OBJECT_OT_UninstallPkt.bl_idname)
-        else:
-            install_row = box.row()
-            install_row.label(text="pykeentools is not installed")
-            install_row.operator(operators.OBJECT_OT_InstallPkt.bl_idname)
-            install_from_file_row = box.row()
-            install_from_file_row.prop(self, "pkt_file_path")
-            install_from_file_op = install_from_file_row.operator(operators.OBJECT_OT_InstallFromFilePkt.bl_idname)
-            install_from_file_op.pkt_file_path = self.pkt_file_path
-
-        if pkt.loaded():
-            box.label(text="pykeentools loaded. Build info: {} {}".format(
-                pkt.module().__version__,
-                pkt.module().build_time))
-            box.label(text="restart Blender to unload pykeentools")
-        else:
-            load_row = box.row()
-            load_row.label(text="pykeentools is not loaded")
-            load_row.operator(operators.OBJECT_OT_LoadPkt.bl_idname)
 
     def draw(self, context):
         layout = self.layout
 
-        self._draw_pkt_prefs(layout)
-
+        self._draw_pykeentools_preferences(layout)
         self._draw_license_info(layout)
