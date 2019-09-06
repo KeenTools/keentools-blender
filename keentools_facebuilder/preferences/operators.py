@@ -25,7 +25,7 @@ _ID_NAME_PREFIX = 'preferences'
 
 class OBJECT_OT_InstallPkt(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '.install_latest_pkt'
-    bl_label = 'install'
+    bl_label = 'install from download'
     bl_options = {'REGISTER', 'INTERNAL'}
 
     install_type: bpy.props.EnumProperty(
@@ -57,6 +57,19 @@ class OBJECT_OT_InstallPkt(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         layout.prop(self, 'install_type')
+
+
+class OBJECT_OT_InstallFromFilePkt(bpy.types.Operator):
+    bl_idname = _ID_NAME_PREFIX + '.install_pkt_from_file'
+    bl_label = 'install from file'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    pkt_file_path = None
+
+    def execute(self, context):
+        assert self.pkt_file_path is not None
+        pkt.install_from_file(self.pkt_file_path)
+        return {"FINISHED"}
 
 
 class OBJECT_OT_UninstallPkt(bpy.types.Operator):

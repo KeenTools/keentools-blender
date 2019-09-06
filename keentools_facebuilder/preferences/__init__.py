@@ -30,6 +30,7 @@ CLASSES_TO_REGISTER = (
     OBJECT_OT_InstallLicenseOffline,
     OBJECT_OT_CopyHardwareId,
     OBJECT_OT_InstallPkt,
+    OBJECT_OT_InstallFromFilePkt,
     OBJECT_OT_UninstallPkt,
     OBJECT_OT_OpenManualInstallPage,
     FBAddonPreferences

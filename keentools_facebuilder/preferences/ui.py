@@ -82,6 +82,13 @@ class FBAddonPreferences(AddonPreferences):
             subtype="FILE_PATH"
     )
 
+    pkt_file_path: StringProperty(
+            name="pykeentools file",
+            description="absolute path to pykeentools zip file",
+            default="",
+            subtype="FILE_PATH"
+    )
+
     @classmethod
     def output_labels(cls, layout, txt):
         if txt is not None:
@@ -180,6 +187,10 @@ class FBAddonPreferences(AddonPreferences):
             install_row = box.row()
             install_row.label(text="pykeentools is not installed")
             install_row.operator(operators.OBJECT_OT_InstallPkt.bl_idname)
+            install_from_file_row = box.row()
+            install_from_file_row.prop(self, "pkt_file_path")
+            install_from_file_op = install_from_file_row.operator(operators.OBJECT_OT_InstallFromFilePkt.bl_idname)
+            install_from_file_op.pkt_file_path = self.pkt_file_path
 
         if pkt.loaded():
             box.label(text="pykeentools loaded. Build info: {} {}".format(
