@@ -33,8 +33,8 @@ class OBJECT_OT_InstallPkt(bpy.types.Operator):
     install_type: bpy.props.EnumProperty(
         name='Build',
         items=(
-            ('nightly', 'Nightly', 'Install latest nightly build available', 0),
-            ('default', 'Default', 'Install the version this addon was tested with', 1)
+            ('default', 'Default', 'Install the version this addon was tested with', 0),
+            ('nightly', 'Nightly', 'Install latest nightly build available', 1)
         ),
         default='default')
 
@@ -66,11 +66,21 @@ class OBJECT_OT_InstallFromFilePkt(bpy.types.Operator):
     bl_label = 'install from file'
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    pkt_file_path: bpy.props.StringProperty()
+    # can only have exactly that name
+    filepath: bpy.props.StringProperty(
+            name="",
+            description="absolute path to pykeentools zip file",
+            default="",
+            subtype="FILE_PATH"
+    )
 
     def execute(self, context):
-        pkt.install_from_file(self.pkt_file_path)
+        pkt.install_from_file(self.filepath)
         return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
 
 
 class OBJECT_OT_OpenManualInstallPage(bpy.types.Operator):

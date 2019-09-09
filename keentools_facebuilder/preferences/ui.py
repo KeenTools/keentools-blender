@@ -80,24 +80,13 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             subtype="FILE_PATH"
     )
 
-    pkt_file_path: bpy.props.StringProperty(
-            name="",
-            description="absolute path to pykeentools zip file",
-            default="",
-            subtype="FILE_PATH"
-    )
-
     def _draw_pykeentools_preferences(self, layout):
         box = layout.box()
         box.label(text='Pykeentools:')
 
         install_row = box.row()
         install_row.operator(preferences_operators.OBJECT_OT_InstallPkt.bl_idname)
-        install_from_file_row = box.row()
-        install_from_file_row.prop(self, "pkt_file_path")
-        install_from_file_op = install_from_file_row.operator(
-            preferences_operators.OBJECT_OT_InstallFromFilePkt.bl_idname)
-        install_from_file_op.pkt_file_path = self.pkt_file_path
+        install_row.operator(preferences_operators.OBJECT_OT_InstallFromFilePkt.bl_idname)
 
         if pkt.is_installed():
             try:
