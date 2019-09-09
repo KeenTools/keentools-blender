@@ -38,6 +38,8 @@ class Config:
     fb_panel_label = 'Face Builder (Beta)'
     fb_tab_category = 'Face Builder'
     default_builder = BuilderType.FaceBuilder
+    keentools_website_url = 'https://keentools.io'
+    manual_install_url = keentools_website_url + '/manual-installation'
 
     # Operators ids
     fb_main_operator_callname = _prefix + '_main_operator'

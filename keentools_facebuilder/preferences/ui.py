@@ -20,7 +20,7 @@ import bpy
 import keentools_facebuilder.preferences.operators as preferences_operators
 import keentools_facebuilder.config
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
-from keentools_facebuilder.preferences.formatting import split_by_br_or_newlines
+from .formatting import split_by_br_or_newlines
 
 
 def _multi_line_text_to_output_labels(layout, txt):

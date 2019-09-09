@@ -18,7 +18,8 @@
 
 import bpy
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
-from keentools_facebuilder.preferences.formatting import replace_newlines_with_spaces
+import keentools_facebuilder.config
+from .formatting import replace_newlines_with_spaces
 
 
 _ID_NAME_PREFIX = 'preferences'
@@ -78,7 +79,7 @@ class OBJECT_OT_OpenManualInstallPage(bpy.types.Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
-        bpy.ops.wm.url_open(url="https://keentools.io/manual-installation")
+        bpy.ops.wm.url_open(url=keentools_facebuilder.config.Config.manual_install_url)
         return {"FINISHED"}
 
 
