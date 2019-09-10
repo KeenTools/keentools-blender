@@ -30,6 +30,9 @@ import keentools_facebuilder.blender_independent_packages.pykeentools_loader as 
 def proper_object_test():
     context = bpy.context
     settings = get_main_settings()
+    if len(settings.heads) > 0:
+        return True
+
     obj = context.active_object
     if settings.pinmode:
         return True
@@ -46,6 +49,52 @@ def proper_object_test():
         i, _ = settings.find_cam_index(obj)
         return i >= 0
     return False
+
+
+class OBJECT_PT_FBHeaderPanel(Panel):
+    bl_idname = Config.fb_header_panel_idname
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_label = "{} {}".format(
+            Config.addon_human_readable_name, Config.addon_version)
+    bl_category = Config.fb_tab_category
+    bl_context = "objectmode"
+
+    def draw_header(self, context):
+        layout = self.layout
+        row = layout.row()
+        # row.alignment = "LEFT"
+        row.operator(
+            Config.fb_main_addon_settings_idname,
+            text='', icon='PREFERENCES')
+
+    def draw(self, context):
+        pass
+
+
+class OBJECT_PT_FBCameraPanel(Panel):
+    bl_idname = Config.fb_camera_panel_idname
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_label = Config.fb_camera_panel_label
+    bl_category = Config.fb_tab_category
+    bl_context = "objectmode"
+    bl_option = {'DEFAULT_CLOSED'}
+
+    # Panel appear only when actual
+    @classmethod
+    def poll(cls, context):
+        return proper_object_test()
+
+    # Face Builder Panel Draw
+    def draw(self, context):
+        layout = self.layout
+        obj = context.object
+        settings = get_main_settings()
+        headnum = settings.head_by_obj(obj)
+
+        proper = proper_object_test()
+        layout.label(text="some label")
 
 
 class OBJECT_PT_FBPanel(Panel):
@@ -87,11 +136,11 @@ class OBJECT_PT_FBPanel(Panel):
             Config.fb_add_head_operator_idname,
             text='Add New Head', icon='USER')
 
-        row = layout.row()
-        row.scale_y = 2.0
-        row.operator(
-            Config.fb_main_addon_settings_idname,
-            text='Open Addon Settings', icon='PREFERENCES')
+        # row = layout.row()
+        # row.scale_y = 2.0
+        # row.operator(
+        #     Config.fb_main_addon_settings_idname,
+        #     text='Open Addon Settings', icon='PREFERENCES')
 
         if not pkt.is_installed():
             col = layout.column()
@@ -448,7 +497,7 @@ class OBJECT_PT_FBFaceParts(Panel):
     bl_options = {'DEFAULT_CLOSED'}
     bl_context = "objectmode"
 
-    # Panel appear only when our Mesh or Camera selected
+    # Panel appear only when actual
     @classmethod
     def poll(cls, context):
         return proper_object_test()

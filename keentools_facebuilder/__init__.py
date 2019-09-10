@@ -35,7 +35,8 @@ import os
 import logging.config
 import bpy
 from . config import Config
-from . panels import (OBJECT_PT_FBPanel, OBJECT_PT_FBFaceParts,
+from . panels import (OBJECT_PT_FBHeaderPanel, OBJECT_PT_FBCameraPanel,
+                      OBJECT_PT_FBPanel, OBJECT_PT_FBFaceParts,
                       WM_OT_FBAddonWarning, OBJECT_PT_FBSettingsPanel,
                       OBJECT_PT_FBColorsPanel, OBJECT_PT_TBPanel,
                       OBJECT_MT_FBFixMenu, OBJECT_MT_FBFixCameraMenu)
@@ -67,6 +68,8 @@ logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'))
 
 
 _CLASSES_TO_REGISTER = (
+    OBJECT_PT_FBHeaderPanel,
+    OBJECT_PT_FBCameraPanel,
     OBJECT_PT_FBPanel,
     OBJECT_PT_FBFaceParts,
     OBJECT_PT_FBColorsPanel,

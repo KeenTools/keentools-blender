@@ -27,7 +27,7 @@ from . config import Config, BuilderType, get_main_settings, ErrorType
 class MESH_OT_FBAddHead(bpy.types.Operator):
     """ Add FaceBuilder Head into scene"""
     bl_idname = Config.fb_add_head_operator_idname
-    bl_label = "Face Builder Head"
+    bl_label = "FaceBuilder Head"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):

@@ -31,12 +31,14 @@ class BuilderType:
 
 class Config:
     addon_name = __package__  # the same as module name
+    addon_human_readable_name = 'FaceBuilder'
     addon_version = '1.5.3 (Beta)'
     addon_search = 'KeenTools'
     addon_global_var_name = _prefix + '_settings'
-    addon_full_name = 'Keentools Face Builder for Blender'
-    fb_panel_label = 'Face Builder (Beta)'
-    fb_tab_category = 'Face Builder'
+    addon_full_name = 'Keentools FaceBuilder for Blender'
+    fb_panel_label = addon_human_readable_name + ' (Beta)'
+    fb_camera_panel_label = 'Camera parameters'
+    fb_tab_category = addon_human_readable_name
     default_builder = BuilderType.FaceBuilder
 
     # Operators ids
@@ -90,12 +92,15 @@ class Config:
     fb_add_body_operator_callname = _prefix + '_add_body'
 
     # Panels ids
+    fb_header_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_header_panel_id'
+    fb_camera_panel_idname = 'FACEBUILDER_PT_' + _prefix + 'camera_panel_id'
     fb_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_panel_id'
     fb_tb_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_tb_panel_id'
     fb_colors_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_colors_panel_id'
     fb_parts_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_parts_panel_id'
     fb_settings_panel_idname = 'FACEBUILDER_PT_' + _prefix + \
                                '_settings_panel_id'
+
 
     # Menu ids
     fb_fix_frame_menu_idname = 'FACEBUILDER_MT_' + _prefix + \
