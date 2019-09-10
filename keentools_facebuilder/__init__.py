@@ -34,6 +34,7 @@ bl_info = {
 import os
 import logging.config
 import bpy
+import keentools_facebuilder.preferences
 from . config import Config
 from . panels import (OBJECT_PT_FBHeaderPanel, OBJECT_PT_FBCameraPanel,
                       OBJECT_PT_FBPanel, OBJECT_PT_FBFaceParts,
@@ -57,7 +58,6 @@ from . main_operator import (OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
 from . pinmode import OBJECT_OT_FBPinMode
 from . movepin import OBJECT_OT_FBMovePin
 from . actor import OBJECT_OT_FBActor
-from . addon_prefs import FBAddonPreferences
 from . filedialog import WM_OT_FBOpenFilebrowser
 from . config import Config
 
@@ -101,9 +101,7 @@ _CLASSES_TO_REGISTER = (
     OBJECT_OT_FBPinMode,
     OBJECT_OT_FBMovePin,
     OBJECT_OT_FBActor,
-    FBAddonPreferences,
-    WM_OT_FBOpenFilebrowser
-)
+    WM_OT_FBOpenFilebrowser) + preferences.CLASSES_TO_REGISTER
 
 
 def menu_func(self, context):

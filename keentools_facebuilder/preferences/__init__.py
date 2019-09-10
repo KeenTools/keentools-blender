@@ -17,11 +17,20 @@
 # ##### END GPL LICENSE BLOCK #####
 
 """
-This module is designed to operate with pykeentools library:
-- install/uninstall
-- import
+This module contains everything connected with the addon preferences
 """
 
-from .loader import *
-from .install import *
-from .config import MINIMUM_VERSION_REQUIRED
+from .operators import *
+from .ui import FBAddonPreferences
+
+CLASSES_TO_REGISTER = (
+    OBJECT_OT_InstallLicenseOnline,
+    OBJECT_OT_FloatingConnect,
+    OBJECT_OT_InstallLicenseOffline,
+    OBJECT_OT_CopyHardwareId,
+    OBJECT_OT_InstallPkt,
+    OBJECT_OT_OpenPktLicensePage,
+    OBJECT_OT_InstallFromFilePkt,
+    OBJECT_OT_OpenManualInstallPage,
+    FBAddonPreferences
+)
