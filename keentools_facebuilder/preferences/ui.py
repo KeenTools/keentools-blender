@@ -37,6 +37,11 @@ def _multi_line_text_to_output_labels(layout, txt):
 class FBAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = keentools_facebuilder.config.Config.addon_name
 
+    license_accepted: bpy.props.BoolProperty(
+        name='I have read and I agree to pykeentools End-user License Agreement',
+        default=False
+    )
+
     license_id: bpy.props.StringProperty(
         name="license ID", default=""
     )
@@ -84,9 +89,15 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         box = layout.box()
         box.label(text='Pykeentools:')
 
+        if not pkt.is_installed() and not self.license_accepted:
+            box.prop(self, 'license_accepted')
+            box.operator(preferences_operators.OBJECT_OT_OpenPktLicensePage.bl_idname)
+
         install_row = box.row()
-        install_row.operator(preferences_operators.OBJECT_OT_InstallPkt.bl_idname)
-        install_row.operator(preferences_operators.OBJECT_OT_InstallFromFilePkt.bl_idname)
+        install_pkt_op = install_row.operator(preferences_operators.OBJECT_OT_InstallPkt.bl_idname)
+        install_pkt_op.license_accepted = self.license_accepted
+        install_from_file_pkt_op = install_row.operator(preferences_operators.OBJECT_OT_InstallFromFilePkt.bl_idname)
+        install_from_file_pkt_op.license_accepted = self.license_accepted
 
         if pkt.is_installed():
             try:
@@ -172,5 +183,5 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
 
-        self._draw_pykeentools_preferences(layout)
         self._draw_license_info(layout)
+        self._draw_pykeentools_preferences(layout)

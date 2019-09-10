@@ -25,6 +25,16 @@ from .formatting import replace_newlines_with_spaces
 _ID_NAME_PREFIX = 'preferences'
 
 
+class OBJECT_OT_OpenPktLicensePage(bpy.types.Operator):
+    bl_idname = _ID_NAME_PREFIX + '.open_pkt_license_page'
+    bl_label = 'read license'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        bpy.ops.wm.url_open(url=keentools_facebuilder.config.Config.pykeentools_license_url)
+        return {'FINISHED'}
+
+
 class OBJECT_OT_InstallPkt(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '.install_latest_pkt'
     bl_label = 'install from website'
@@ -36,10 +46,17 @@ class OBJECT_OT_InstallPkt(bpy.types.Operator):
             ('default', 'Default', 'Install the version this addon was tested with', 0),
             ('nightly', 'Nightly', 'Install latest nightly build available', 1)
         ),
-        default='default')
+        default='default'
+    )
+
+    license_accepted: bpy.props.BoolProperty()
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
+        if self.license_accepted:
+            return context.window_manager.invoke_props_dialog(self)
+        else:
+            self.report({'ERROR'}, 'Please accept license before running installation')
+            return {'FINISHED'}
 
     def execute(self, context):
         context.window_manager.progress_begin(0, 1)
@@ -50,11 +67,12 @@ class OBJECT_OT_InstallPkt(bpy.types.Operator):
             elif self.install_type == 'default':
                 pkt.install_from_download(version=pkt.MINIMUM_VERSION_REQUIRED,
                                           progress_callback=context.window_manager.progress_update)
+                self.report({'INFO'}, 'Installation successful')
         except Exception as error:
             self.report({'ERROR'}, 'Failed to install pykeentools from website. ' + str(error))
         finally:
             context.window_manager.progress_end()
-        return {"FINISHED"}
+        return {'FINISHED'}
 
     def draw(self, context):
         layout = self.layout
@@ -68,19 +86,29 @@ class OBJECT_OT_InstallFromFilePkt(bpy.types.Operator):
 
     # can only have exactly that name
     filepath: bpy.props.StringProperty(
-            name="",
-            description="absolute path to pykeentools zip file",
-            default="",
-            subtype="FILE_PATH"
+            name='',
+            description='absolute path to pykeentools zip file',
+            default='',
+            subtype='FILE_PATH'
     )
 
-    def execute(self, context):
-        pkt.install_from_file(self.filepath)
-        return {"FINISHED"}
+    license_accepted: bpy.props.BoolProperty()
 
     def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
+        if self.license_accepted:
+            context.window_manager.fileselect_add(self)
+            return {'RUNNING_MODAL'}
+        else:
+            self.report({'ERROR'}, 'Please accept license before running installation')
+            return {'FINISHED'}
+
+    def execute(self, context):
+        try:
+            pkt.install_from_file(self.filepath)
+            self.report({'INFO'}, 'Installation successful')
+        except Exception as error:
+            self.report({'ERROR'}, 'Failed to install pykeentools from file. ' + str(error))
+        return {'FINISHED'}
 
 
 class OBJECT_OT_OpenManualInstallPage(bpy.types.Operator):
@@ -90,7 +118,7 @@ class OBJECT_OT_OpenManualInstallPage(bpy.types.Operator):
 
     def execute(self, context):
         bpy.ops.wm.url_open(url=keentools_facebuilder.config.Config.manual_install_url)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
 class OBJECT_OT_CopyHardwareId(bpy.types.Operator):
@@ -102,7 +130,7 @@ class OBJECT_OT_CopyHardwareId(bpy.types.Operator):
         hardware_id = pkt.module().FaceBuilder.license_manager().hardware_id()
         context.window_manager.clipboard = hardware_id
         self.report({'INFO'}, 'Hardware ID is in clipboard!')
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
 class OBJECT_OT_InstallLicenseOnline(bpy.types.Operator):
@@ -120,7 +148,7 @@ class OBJECT_OT_InstallLicenseOnline(bpy.types.Operator):
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
         else:
             self.report({'INFO'}, 'License installed')
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
 class OBJECT_OT_InstallLicenseOffline(bpy.types.Operator):
@@ -138,7 +166,7 @@ class OBJECT_OT_InstallLicenseOffline(bpy.types.Operator):
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
         else:
             self.report({'INFO'}, 'License installed')
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
 class OBJECT_OT_FloatingConnect(bpy.types.Operator):
@@ -157,4 +185,4 @@ class OBJECT_OT_FloatingConnect(bpy.types.Operator):
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
         else:
             self.report({'INFO'}, 'Floating server settings saved')
-        return {"FINISHED"}
+        return {'FINISHED'}
