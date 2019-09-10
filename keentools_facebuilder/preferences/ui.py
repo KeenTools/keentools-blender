@@ -89,15 +89,18 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         box = layout.box()
         box.label(text='Pykeentools:')
 
-        if not pkt.is_installed() and not self.license_accepted:
+        # if installed then license was accepted at some point before. Don't need to check again
+        license_was_accepted = pkt.is_installed() or self.license_accepted
+
+        if not license_was_accepted:
             box.prop(self, 'license_accepted')
             box.operator(preferences_operators.OBJECT_OT_OpenPktLicensePage.bl_idname)
 
         install_row = box.row()
         install_pkt_op = install_row.operator(preferences_operators.OBJECT_OT_InstallPkt.bl_idname)
-        install_pkt_op.license_accepted = self.license_accepted
+        install_pkt_op.license_accepted = license_was_accepted
         install_from_file_pkt_op = install_row.operator(preferences_operators.OBJECT_OT_InstallFromFilePkt.bl_idname)
-        install_from_file_pkt_op.license_accepted = self.license_accepted
+        install_from_file_pkt_op.license_accepted = license_was_accepted
 
         if pkt.is_installed():
             try:
