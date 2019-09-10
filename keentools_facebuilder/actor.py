@@ -26,8 +26,6 @@ from bpy.types import Operator
 
 from . utils import manipulate, materials
 from . config import Config, ErrorType, get_main_settings
-from . licmanager import FBLicManager
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 class OBJECT_OT_FBActor(Operator):
@@ -54,27 +52,6 @@ class OBJECT_OT_FBActor(Operator):
         if self.action == "reconstruct_by_head":
             manipulate.reconstruct_by_head()
 
-        elif self.action == "lic_hardware_id_copy":
-            FBLicManager.copy_hardware_id()
-
-        elif self.action == "lic_online_install":
-            FBLicManager.install_online_lic()
-
-        elif self.action == 'lic_offline_install':
-            FBLicManager.install_offline_lic()
-
-        elif self.action == 'lic_floating_connect':
-            FBLicManager.connect_floating_lic()
-
-        elif self.action == 'load_pykeentools':
-            pkt.module()
-
-        elif self.action == 'install_latest_nightly_pykeentools':
-            pkt.install_from_download(nightly=True)
-
-        elif self.action == 'uninstall_pykeentools':
-            pkt.uninstall()
-
         elif self.action == 'show_tex':
             settings = get_main_settings()
             mat = materials.show_texture_in_mat(self.tex_name, self.mat_name)
@@ -91,9 +68,6 @@ class OBJECT_OT_FBActor(Operator):
             # Assign Material to Head Object
             materials.assign_mat(
                 settings.heads[settings.current_headnum].headobj, mat)
-
-        elif self.action == "visit_site":
-            bpy.ops.wm.url_open(url="https://keentools.io/manual-installation")
 
         elif self.action == "unhide_head":
             manipulate.unhide_head(self.headnum)

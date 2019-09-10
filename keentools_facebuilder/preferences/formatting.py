@@ -16,12 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-"""
-This module is designed to operate with pykeentools library:
-- install/uninstall
-- import
-"""
+import re
 
-from .loader import *
-from .install import *
-from .config import MINIMUM_VERSION_REQUIRED
+
+def split_by_br_or_newlines(text):
+    res = re.split("<br />|<br>|<br/>|\r\n|\n", text)
+    return res
+
+
+def replace_newlines_with_spaces(text):
+    return ' '.join(filter(len, split_by_br_or_newlines(text)))
