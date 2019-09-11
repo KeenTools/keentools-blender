@@ -36,7 +36,7 @@ class Config:
     addon_search = 'KeenTools'
     addon_global_var_name = _prefix + '_settings'
     addon_full_name = 'Keentools FaceBuilder for Blender'
-    fb_panel_label = addon_human_readable_name + ' (Beta)'
+    fb_views_panel_label = 'Views'
     fb_camera_panel_label = 'Camera parameters'
     fb_tab_category = addon_human_readable_name
     default_builder = BuilderType.FaceBuilder
@@ -97,7 +97,7 @@ class Config:
     # Panels ids
     fb_header_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_header_panel_id'
     fb_camera_panel_idname = 'FACEBUILDER_PT_' + _prefix + 'camera_panel_id'
-    fb_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_panel_id'
+    fb_views_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_views_panel_id'
     fb_tb_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_tb_panel_id'
     fb_colors_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_colors_panel_id'
     fb_parts_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_parts_panel_id'

@@ -197,7 +197,7 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
                 changes += 1
 
             # Output image size
-            message += "\n({}x{})".format(w, h)
+            message += "\nSize: {}x{}".format(w, h)
 
             # Store EXIF data in camera
             if exif_units == 3.0:
