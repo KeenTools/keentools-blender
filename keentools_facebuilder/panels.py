@@ -26,32 +26,8 @@ from .fbloader import FBLoader
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
-# Test if selected object is our Mesh or Camera
-def proper_object_test():
-    context = bpy.context
-    settings = get_main_settings()
-    if len(settings.heads) > 0:
-        return True
-
-    obj = context.active_object
-    if settings.pinmode:
-        return True
-    if not obj:
-        return False
-    if Config.version_prop_name[0] in obj.keys():
-        # Object has our attribute 'keentools_version'
-        return True
-    if obj.type == 'MESH':
-        # Is this mesh in settings
-        return settings.find_head_index(obj) >= 0
-    if obj.type == 'CAMERA':
-        # Is this camera in settings
-        i, _ = settings.find_cam_index(obj)
-        return i >= 0
-    return False
-
-STATES = {'THIS_HEAD', 'RECONSTRUCT', 'NO_HEADS', 'ONE_HEAD', 'MANY_HEAD'}
-
+# All States are:
+# 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
 def what_is_state():
     context = bpy.context
     settings = get_main_settings()
@@ -72,7 +48,8 @@ def what_is_state():
     elif obj.type == 'CAMERA':
         # Has object our attribute 'keentools_version'?
         if Config.version_prop_name[0] in obj.keys():
-            if settings.find_head_index(obj) >= 0:
+            i, _ = settings.find_cam_index(obj)
+            if i >= 0:
                 return 'THIS_HEAD'
             else:
                 return how_many_heads()
@@ -90,14 +67,6 @@ def how_many_heads():
         return 'ONE_HEAD'
     else:
         return 'MANY_HEADS'
-
-def get_features():
-    res = {'type': 'NONE', 'marked': False}
-
-
-def there_are_heads():
-    settings = get_main_settings()
-    return len(settings.heads)
 
 
 class OBJECT_PT_FBHeaderPanel(Panel):
@@ -130,38 +99,26 @@ class OBJECT_PT_FBHeaderPanel(Panel):
             col.label(text="before the addon using.")
             col.label(text="Refer to Addon settings.")
 
-    def draw_header_preset(self, context):
-        layout = self.layout
+    def draw_reconstruct(self, layout):
+        # Need for reconstruction
         row = layout.row()
-        # row.alignment = "LEFT"
-        row.operator(
-            Config.fb_main_addon_settings_idname,
-            text='', icon='PREFERENCES')
+        row.scale_y = 3.0
+        op = row.operator(
+            Config.fb_actor_operator_idname, text='Reconstruct!')
+        op.action = 'reconstruct_by_head'
+        op.headnum = -1
+        op.camnum = -1
 
-    def draw(self, context):
-        layout = self.layout
+    def draw_fix_hidden(self, layout):
+        # Unhide Head if there some problem with pinmode
         settings = get_main_settings()
-        if len(settings.heads) == 0:
-            self.draw_start_panel(layout)
-
-        obj = context.object
+        obj = bpy.context.object
         headnum = settings.head_by_obj(obj)
 
         # No registered models in scene
         if headnum < 0:
             if not obj or obj.type != 'MESH':
                 return
-            # Need for reconstruction
-            row = layout.row()
-            row.scale_y = 3.0
-            op = row.operator(
-                Config.fb_actor_operator_idname, text='Reconstruct!')
-            op.action = 'reconstruct_by_head'
-            op.headnum = -1
-            op.camnum = -1
-            return
-
-        # Unhide Head if there some problem with pinmode
         if settings.pinmode and \
                 not FBLoader.viewport().wireframer().is_working():
             # Show Head
@@ -171,6 +128,41 @@ class OBJECT_PT_FBHeaderPanel(Panel):
                               text='Show Head', icon='HIDE_OFF')
             op.action = 'unhide_head'
             op.headnum = headnum
+
+    # ----------------------
+    # Blender defined draws
+    # ----------------------
+    def draw_header_preset(self, context):
+        layout = self.layout
+        row = layout.row()
+        # row.alignment = "LEFT"
+        row.operator(
+            Config.fb_main_addon_settings_idname,
+            text='', icon='PREFERENCES')
+
+    def draw(self, context):
+        settings = get_main_settings()
+        layout = self.layout
+        state = what_is_state()
+
+        layout.label(text=state)
+
+        if state in {'THIS_HEAD', 'ONE_HEAD'}:
+            if settings.pinmode:
+                self.draw_fix_hidden(layout)
+            return
+
+        elif state == 'RECONSTRUCT':
+            self.draw_reconstruct(layout)
+            return
+
+        elif state == 'NO_HEADS':
+            self.draw_start_panel(layout)
+            return
+
+        elif state =='MANY_HEADS':
+            if settings.pinmode:
+                self.draw_fix_hidden(layout)
 
 
 class OBJECT_PT_FBCameraPanel(Panel):
@@ -185,13 +177,12 @@ class OBJECT_PT_FBCameraPanel(Panel):
     # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        # return proper_object_test()
-        return there_are_heads() > 0
+        state = what_is_state()
+        # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
+        return state in {'THIS_HEAD', 'ONE_HEAD'}
 
     # Face Builder Panel Draw
     def draw(self, context):
-        if not there_are_heads() > 0:
-            return
         layout = self.layout
         obj = context.object
         settings = get_main_settings()
@@ -218,6 +209,7 @@ class OBJECT_PT_FBCameraPanel(Panel):
             row.alert = True
         row.prop(head, 'auto_focal_estimation')
 
+
 class OBJECT_PT_FBViewsPanel(Panel):
     bl_idname = Config.fb_views_panel_idname
     bl_space_type = "VIEW_3D"
@@ -229,8 +221,9 @@ class OBJECT_PT_FBViewsPanel(Panel):
     # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        # return proper_object_test()
-        return there_are_heads() > 0
+        state = what_is_state()
+        # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
+        return state in {'THIS_HEAD', 'ONE_HEAD'}
 
     def draw_pins_panel(self, headnum, camnum):
         layout = self.layout
@@ -246,7 +239,6 @@ class OBJECT_PT_FBViewsPanel(Panel):
         op = box.operator(Config.fb_main_unmorph_idname, text="Unmorph")
         op.headnum = headnum
         op.camnum = camnum
-
 
     def draw_camera_list(self, headnum, layout):
         settings = get_main_settings()
@@ -389,7 +381,6 @@ class OBJECT_PT_FBViewsPanel(Panel):
             Config.fb_main_fix_size_idname,
             icon='SETTINGS', text=info)
 
-
     # View Panel Draw
     def draw(self, context):
         layout = self.layout
@@ -500,6 +491,7 @@ class OBJECT_PT_FBViewsPanel(Panel):
             col.scale_y = 0.75
             for a in arr:
                 col.label(text=a)
+
 
 class WM_OT_FBAddonWarning(Operator):
     bl_idname = Config.fb_warning_operator_idname
@@ -628,8 +620,9 @@ class OBJECT_PT_FBFaceParts(Panel):
     # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        # return proper_object_test()
-        return there_are_heads() > 0
+        state = what_is_state()
+        # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
+        return state in {'THIS_HEAD', 'ONE_HEAD'}
 
     # Panel Draw
     def draw(self, context):
@@ -677,11 +670,12 @@ class OBJECT_PT_TBPanel(Panel):
     bl_options = {'DEFAULT_CLOSED'}
     bl_context = "objectmode"
 
-    # Panel appear only when our Mesh or Camera selected
+    # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        # return proper_object_test()
-        return there_are_heads() > 0
+        state = what_is_state()
+        # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
+        return state in {'THIS_HEAD', 'ONE_HEAD'}
 
     @classmethod
     def get_area_mode(cls, context):
@@ -725,9 +719,6 @@ class OBJECT_PT_TBPanel(Panel):
         layout.prop(settings, 'tex_face_angles_affection')
         layout.prop(settings, 'tex_uv_expand_percents')
 
-    def draw_header(self, context):
-        pass
-
 
 class OBJECT_PT_FBColorsPanel(Panel):
     bl_idname = Config.fb_colors_panel_idname
@@ -737,11 +728,12 @@ class OBJECT_PT_FBColorsPanel(Panel):
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 
-    # Panel appear only when our Mesh or Camera selected
+    # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        # return proper_object_test()
-        return there_are_heads() > 0
+        state = what_is_state()
+        # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
+        return state in {'THIS_HEAD', 'ONE_HEAD'}
 
     # Face Builder Main Panel Draw
     def draw(self, context):
@@ -774,9 +766,6 @@ class OBJECT_PT_FBColorsPanel(Panel):
 
         layout.prop(settings, 'show_specials', text='Highlight Parts')
 
-    def draw_header(self, context):
-        pass
-
 
 class OBJECT_PT_FBSettingsPanel(Panel):
     bl_idname = Config.fb_settings_panel_idname
@@ -786,11 +775,12 @@ class OBJECT_PT_FBSettingsPanel(Panel):
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 
-    # Panel appear only when our Mesh or Camera selected
+    # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        # return proper_object_test()
-        return there_are_heads() > 0
+        state = what_is_state()
+        # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
+        return state in {'THIS_HEAD', 'ONE_HEAD'}
 
     # Right Panel Draw
     def draw(self, context):
