@@ -47,6 +47,10 @@ class Config:
     # Operators ids
     fb_main_operator_callname = _prefix + '_main_operator'
     fb_main_operator_idname = 'object.' + fb_main_operator_callname
+    fb_main_select_head_callname = _prefix + '_main_select_head'
+    fb_main_select_head_idname = 'object.' + fb_main_select_head_callname
+    fb_main_delete_head_callname = _prefix + '_main_delete_head'
+    fb_main_delete_head_idname = 'object.' + fb_main_delete_head_callname
     fb_main_select_camera_callname = _prefix + '_main_select_camera'
     fb_main_select_camera_idname = 'object.' + fb_main_select_camera_callname
     fb_main_center_geo_callname = _prefix + '_main_center_geo'

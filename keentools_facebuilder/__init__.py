@@ -35,18 +35,20 @@ import os
 import logging.config
 import bpy
 import keentools_facebuilder.preferences
-from . config import Config
-from . panels import (OBJECT_PT_FBHeaderPanel, OBJECT_PT_FBCameraPanel,
-                      OBJECT_PT_FBViewsPanel, OBJECT_PT_FBFaceParts,
-                      WM_OT_FBAddonWarning, OBJECT_PT_FBSettingsPanel,
-                      OBJECT_PT_FBColorsPanel, OBJECT_PT_TBPanel,
-                      OBJECT_MT_FBFixMenu, OBJECT_MT_FBFixCameraMenu)
-from . head import MESH_OT_FBAddHead
-from . body import MESH_OT_FBAddBody
-from . settings import FBCameraItem
-from . settings import FBHeadItem
-from . settings import FBSceneSettings
-from . main_operator import (OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
+from .config import Config
+from .interface.panels import (OBJECT_PT_FBHeaderPanel, OBJECT_PT_FBCameraPanel,
+                               OBJECT_PT_FBViewsPanel, OBJECT_PT_FBFaceParts,
+                               OBJECT_PT_FBSettingsPanel,
+                               OBJECT_PT_FBColorsPanel, OBJECT_PT_TBPanel)
+from .interface.menus import OBJECT_MT_FBFixMenu, OBJECT_MT_FBFixCameraMenu
+from .interface.dialogs import WM_OT_FBAddonWarning
+from .head import MESH_OT_FBAddHead
+from .body import MESH_OT_FBAddBody
+from .settings import FBCameraItem
+from .settings import FBHeadItem
+from .settings import FBSceneSettings
+from .main_operator import (OBJECT_OT_FBSelectHead, OBJECT_OT_FBDeleteHead,
+                             OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
                              OBJECT_OT_FBUnmorph, OBJECT_OT_FBRemovePins,
                              OBJECT_OT_FBWireframeColor,
                              OBJECT_OT_FBFilterCameras, OBJECT_OT_FBFixSize,
@@ -58,7 +60,7 @@ from . main_operator import (OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
 from . pinmode import OBJECT_OT_FBPinMode
 from . movepin import OBJECT_OT_FBMovePin
 from . actor import OBJECT_OT_FBActor
-from . filedialog import WM_OT_FBOpenFilebrowser
+from keentools_facebuilder.interface.filedialog import WM_OT_FBOpenFilebrowser
 from . config import Config
 
 
@@ -79,6 +81,8 @@ _CLASSES_TO_REGISTER = (
     WM_OT_FBAddonWarning,
     MESH_OT_FBAddHead,
     MESH_OT_FBAddBody,
+    OBJECT_OT_FBSelectHead,
+    OBJECT_OT_FBDeleteHead,
     OBJECT_OT_FBSelectCamera,
     OBJECT_OT_FBCenterGeo,
     OBJECT_OT_FBUnmorph,

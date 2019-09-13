@@ -33,6 +33,7 @@ from bpy.props import (
 from bpy.types import PropertyGroup
 from . fbdebug import FBDebug
 from . config import Config, get_main_settings, BuilderType
+from .utils.manipulate import what_is_state
 
 
 def update_wireframe(self, context):
@@ -91,7 +92,11 @@ def update_preset(self, context):
 
 def update_mesh_parts(self, context):
     settings = get_main_settings()
-    headnum = settings.current_headnum
+    state, headnum = what_is_state()
+
+    if headnum < 0:
+        return
+
     head = settings.heads[headnum]
     masks = [head.check_ears, head.check_eyes, head.check_face,
              head.check_headback, head.check_jaw, head.check_mouth,

@@ -23,11 +23,11 @@ import os
 from bpy_extras.io_utils import ImportHelper
 from bpy.types import Operator
 
-from . fbloader import FBLoader
-from . config import Config, get_main_settings, ErrorType
+from ..fbloader import FBLoader
+from ..config import Config, get_main_settings, ErrorType
 
-from . blender_independent_packages.exifread import process_file
-from . blender_independent_packages.exifread import \
+from ..blender_independent_packages.exifread import process_file
+from ..blender_independent_packages.exifread import \
     DEFAULT_STOP_TAG, FIELD_TYPES
 
 

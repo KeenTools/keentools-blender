@@ -32,6 +32,68 @@ from . fbdebug import FBDebug
 from . config import get_main_settings, Config
 
 
+class OBJECT_OT_FBSelectHead(Operator):
+    bl_idname = Config.fb_main_select_head_idname
+    bl_label = "Pin Mode"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Select Head"
+
+    headnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        if not check_settings():
+            return {'CANCELLED'}
+
+        settings = get_main_settings()
+        head = settings.heads[self.headnum]
+
+        bpy.ops.object.select_all(action='DESELECT')
+        head.headobj.select_set(state=True)
+        bpy.context.view_layer.objects.active = head.headobj
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBDeleteHead(Operator):
+    bl_idname = Config.fb_main_delete_head_idname
+    bl_label = "Pin Mode"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Delete Head"
+
+    headnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        if not check_settings():
+            return {'CANCELLED'}
+
+        settings = get_main_settings()
+        head = settings.heads[self.headnum]
+
+        for c in head.cameras:
+            try:
+                # Remove camera object
+                bpy.data.objects.remove(
+                    c.camobj)  # , do_unlink=True
+            except Exception:
+                pass
+
+        try:
+            # Remove camera object
+            bpy.data.objects.remove(
+                head.headobj)  # , do_unlink=True
+        except Exception:
+            pass
+        settings.heads.remove(self.headnum)
+        return {'FINISHED'}
+
+
 class OBJECT_OT_FBSelectCamera(Operator):
     bl_idname = Config.fb_main_select_camera_idname
     bl_label = "Pin Mode"
@@ -46,14 +108,13 @@ class OBJECT_OT_FBSelectCamera(Operator):
         pass
 
     def execute(self, context):
-        scene = context.scene
+        if not check_settings():
+            return {'CANCELLED'}
+
         settings = get_main_settings()
         headnum = self.headnum
         camnum = self.camnum
         head = settings.heads[headnum]
-
-        if not check_settings():
-            return {'CANCELLED'}
 
         # bpy.ops.object.select_all(action='DESELECT')
         camobj = head.cameras[camnum].camobj
@@ -100,15 +161,11 @@ class OBJECT_OT_FBCenterGeo(Operator):
         pass
 
     def execute(self, context):
-        settings = get_main_settings()
-        headnum = self.headnum
-        camnum = self.camnum
-
-        if not settings.pinmode:
-            return {'CANCELLED'}
-
         if not check_settings():
             return {'CANCELLED'}
+
+        headnum = self.headnum
+        camnum = self.camnum
 
         fb = FBLoader.get_builder()
         kid = cameras.keyframe_by_camnum(headnum, camnum)
@@ -137,16 +194,15 @@ class OBJECT_OT_FBUnmorph(Operator):
         pass
 
     def execute(self, context):
-        scene = context.scene
-        settings = get_main_settings()
-        headnum = self.headnum
-        camnum = self.camnum
+        if not check_settings():
+            return {'CANCELLED'}
 
+        settings = get_main_settings()
         if not settings.pinmode:
             return {'CANCELLED'}
 
-        if not check_settings():
-            return {'CANCELLED'}
+        headnum = self.headnum
+        camnum = self.camnum
 
         fb = FBLoader.get_builder()
         kid = cameras.keyframe_by_camnum(headnum, camnum)
@@ -170,16 +226,13 @@ class OBJECT_OT_FBRemovePins(Operator):
         pass
 
     def execute(self, context):
-        scene = context.scene
         settings = get_main_settings()
-        headnum = self.headnum
-        camnum = self.camnum
 
         if not settings.pinmode:
             return {'CANCELLED'}
 
-        if not check_settings():
-            return {'CANCELLED'}
+        headnum = self.headnum
+        camnum = self.camnum
 
         fb = FBLoader.get_builder()
         kid = cameras.keyframe_by_camnum(headnum, camnum)
@@ -289,8 +342,12 @@ class OBJECT_OT_FBDeleteCamera(Operator):
         pass
 
     def execute(self, context):
+        if not check_settings():
+            return {'CANCELLED'}
+
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
+
         headnum = self.headnum
         camnum = self.camnum
         if not settings.pinmode:
@@ -321,8 +378,12 @@ class OBJECT_OT_FBAddCamera(Operator):
         pass
 
     def execute(self, context):
+        if not check_settings():
+            return {'CANCELLED'}
+
         settings = get_main_settings()
         headnum = self.headnum
+
         if settings.heads[headnum].cameras:
             FBLoader.load_only(headnum)
         camera = FBLoader.add_camera(headnum, None)

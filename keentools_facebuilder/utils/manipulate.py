@@ -25,6 +25,58 @@ from .. config import get_main_settings, ErrorType, BuilderType, Config
 from . import cameras, attrs
 
 
+# Scene States and Head number. All States are:
+# 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD', 'PINMODE'
+# ------------
+def what_is_state():
+    context = bpy.context
+    settings = get_main_settings()
+    unknown_headnum = -1
+
+    if settings.pinmode:
+        return 'PINMODE', settings.current_headnum
+
+    obj = context.active_object
+
+    if not obj:
+        return how_many_heads()
+
+    if obj.type == 'MESH':
+        # Has object our attribute 'keentools_version'?
+        if Config.version_prop_name[0] in obj.keys():
+            ind = settings.find_head_index(obj)
+            if ind >= 0:
+                return 'THIS_HEAD', ind
+            else:
+                return 'RECONSTRUCT', unknown_headnum
+        else:
+            return how_many_heads()
+    elif obj.type == 'CAMERA':
+        # Has object our attribute 'keentools_version'?
+        if Config.version_prop_name[0] in obj.keys():
+            ind, _ = settings.find_cam_index(obj)
+            if ind >= 0:
+                return 'THIS_HEAD', ind
+            else:
+                return how_many_heads()
+        else:
+            return how_many_heads()
+    return how_many_heads()
+
+
+def how_many_heads():
+    settings = get_main_settings()
+    unknown_headnum = -1
+    heads_count = len(settings.heads)
+    if heads_count == 0:
+        return 'NO_HEADS', unknown_headnum
+    elif heads_count == 1:
+        return 'ONE_HEAD', 0
+    else:
+        return 'MANY_HEADS', unknown_headnum
+# ------------
+
+
 def force_undo_push(msg='KeenTools operation'):
     inc_operation()
     bpy.ops.ed.undo_push(message=msg)

@@ -15,58 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+
 import logging
 
 import bpy
-from bpy.types import Panel, Operator, Menu
+from bpy.types import Panel, Operator
 import addon_utils
-from .config import Config, get_main_settings, ErrorType
+from ..config import Config, get_main_settings, ErrorType
 import re
-from .fbloader import FBLoader
+from ..fbloader import FBLoader
+from ..utils.manipulate import what_is_state
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
-
-
-# All States are:
-# 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
-def what_is_state():
-    context = bpy.context
-    settings = get_main_settings()
-    obj = context.active_object
-
-    if not obj:
-        return how_many_heads()
-
-    if obj.type == 'MESH':
-        # Has object our attribute 'keentools_version'?
-        if Config.version_prop_name[0] in obj.keys():
-            if settings.find_head_index(obj) >= 0:
-                return 'THIS_HEAD'
-            else:
-                return 'RECONSTRUCT'
-        else:
-            return how_many_heads()
-    elif obj.type == 'CAMERA':
-        # Has object our attribute 'keentools_version'?
-        if Config.version_prop_name[0] in obj.keys():
-            i, _ = settings.find_cam_index(obj)
-            if i >= 0:
-                return 'THIS_HEAD'
-            else:
-                return how_many_heads()
-        else:
-            return how_many_heads()
-    return how_many_heads()
-
-
-def how_many_heads():
-    settings = get_main_settings()
-    heads_count = len(settings.heads)
-    if heads_count == 0:
-        return 'NO_HEADS'
-    elif heads_count == 1:
-        return 'ONE_HEAD'
-    else:
-        return 'MANY_HEADS'
 
 
 class OBJECT_PT_FBHeaderPanel(Panel):
@@ -109,25 +68,23 @@ class OBJECT_PT_FBHeaderPanel(Panel):
         op.headnum = -1
         op.camnum = -1
 
-    def draw_fix_hidden(self, layout):
-        # Unhide Head if there some problem with pinmode
+    def draw_many_heads(self, layout):
+        # Output List of all heads in Scene
         settings = get_main_settings()
-        obj = bpy.context.object
-        headnum = settings.head_by_obj(obj)
+        for i, h in enumerate(settings.heads):
+            box = layout.box()
+            row = box.row()
+            op = row.operator(
+                Config.fb_main_select_head_idname, text='', icon='USER')
+            op.headnum = i
 
-        # No registered models in scene
-        if headnum < 0:
-            if not obj or obj.type != 'MESH':
-                return
-        if settings.pinmode and \
-                not FBLoader.viewport().wireframer().is_working():
-            # Show Head
-            row = layout.row()
-            row.scale_y = 2.0
-            op = row.operator(Config.fb_actor_operator_idname,
-                              text='Show Head', icon='HIDE_OFF')
-            op.action = 'unhide_head'
-            op.headnum = headnum
+            row.label(text=h.headobj.name)
+
+            if not settings.pinmode:
+                op = row.operator(
+                    Config.fb_main_delete_head_idname,
+                    text='', icon='CANCEL')
+                op.headnum = i
 
     # ----------------------
     # Blender defined draws
@@ -143,13 +100,19 @@ class OBJECT_PT_FBHeaderPanel(Panel):
     def draw(self, context):
         settings = get_main_settings()
         layout = self.layout
-        state = what_is_state()
+        state, headnum = what_is_state()
 
-        layout.label(text=state)
+        layout.label(text="{} {}".format(state, headnum))
 
-        if state in {'THIS_HEAD', 'ONE_HEAD'}:
-            if settings.pinmode:
-                self.draw_fix_hidden(layout)
+        if state == 'PINMODE':
+            # Unhide Button if Head is hidden in pinmode (by ex. after Undo)
+            if not FBLoader.viewport().wireframer().is_working():
+                row = layout.row()
+                row.scale_y = 2.0
+                op = row.operator(Config.fb_actor_operator_idname,
+                                  text='Show Head', icon='HIDE_OFF')
+                op.action = 'unhide_head'
+                op.headnum = headnum
             return
 
         elif state == 'RECONSTRUCT':
@@ -161,8 +124,7 @@ class OBJECT_PT_FBHeaderPanel(Panel):
             return
 
         elif state =='MANY_HEADS':
-            if settings.pinmode:
-                self.draw_fix_hidden(layout)
+            self.draw_many_heads(layout)
 
 
 class OBJECT_PT_FBCameraPanel(Panel):
@@ -177,16 +139,20 @@ class OBJECT_PT_FBCameraPanel(Panel):
     # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        state = what_is_state()
+        state, _ = what_is_state()
         # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
-        return state in {'THIS_HEAD', 'ONE_HEAD'}
+        return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
 
     # Face Builder Panel Draw
     def draw(self, context):
-        layout = self.layout
-        obj = context.object
         settings = get_main_settings()
-        headnum = settings.head_by_obj(obj)
+        layout = self.layout
+
+        state, headnum = what_is_state()
+
+        if headnum < 0:
+            return
+
         head = settings.heads[headnum]
 
         row = layout.row()
@@ -221,9 +187,9 @@ class OBJECT_PT_FBViewsPanel(Panel):
     # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        state = what_is_state()
+        state, _ = what_is_state()
         # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
-        return state in {'THIS_HEAD', 'ONE_HEAD'}
+        return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
 
     def draw_pins_panel(self, headnum, camnum):
         layout = self.layout
@@ -247,8 +213,6 @@ class OBJECT_PT_FBViewsPanel(Panel):
         fw = settings.frame_width
         fh = settings.frame_height
 
-        # if len(head.cameras) > 0:
-        #     layout.label(text="Cameras (click icon to start)")
         # Output cameras list
         for i, camera in enumerate(head.cameras):
             box = layout.box()
@@ -265,8 +229,11 @@ class OBJECT_PT_FBViewsPanel(Panel):
 
             # Camera Icon
             col = row.column()
-            icon = 'OUTLINER_OB_CAMERA' if settings.current_camnum == i \
-                else 'CAMERA_DATA'
+            icon = 'CAMERA_DATA'
+            if settings.current_camnum == i:
+                if settings.pinmode:
+                    col.alert = True
+                icon = 'OUTLINER_OB_CAMERA'
             op = col.operator(
                 Config.fb_main_select_camera_idname, text='', icon=icon)
             op.headnum = headnum
@@ -286,12 +253,12 @@ class OBJECT_PT_FBViewsPanel(Panel):
             else:
                 text = "-- empty --"
 
-            if wrong_size_flag:
-                # Background has different size
-                op = row2.operator(Config.fb_main_camera_fix_size_idname,
-                                   text='', icon='ERROR')
-                op.headnum = headnum
-                op.camnum = i
+            # if wrong_size_flag:
+            #     # Background has different size
+            #     op = row2.operator(Config.fb_main_camera_fix_size_idname,
+            #                        text='', icon='ERROR')
+            #     op.headnum = headnum
+            #     op.camnum = i
 
             if not camera.cam_image:
                 # No image --> Broken icon
@@ -304,8 +271,12 @@ class OBJECT_PT_FBViewsPanel(Panel):
             # Output camera info
             row2.label(text=text)
 
+            icon = 'OUTLINER_DATA_GP_LAYER'  # FILEBROWSER
+            if wrong_size_flag:
+                # Background has different size
+                icon = 'ERROR'
             op = row2.operator(Config.fb_main_camera_fix_size_idname,
-                               text='', icon='FILEBROWSER')
+                text='', icon=icon)
             op.headnum = headnum
             op.camnum = i
 
@@ -313,13 +284,16 @@ class OBJECT_PT_FBViewsPanel(Panel):
             if not settings.pinmode:
                 op = row2.operator(
                     Config.fb_main_delete_camera_idname,
-                    text='', icon='CANCEL')
+                    text='', icon='X')  # 'CANCEL'
                 # op.action = 'delete_camera'
                 op.headnum = headnum
                 op.camnum = i
             else:
-                row2.label(text="", icon="X")
+                col = row2.column()
+                col.active = False
+                col.label(text='', icon='X')
 
+            # Image output variants
             # col.prop(head.cameras[i], "cam_image", text="", text_ctxt="", translate=True,
             #      icon='NONE', expand=False, slider=False, toggle=-1,
             #      icon_only=True, event=False, full_event=False, emboss=True,
@@ -328,11 +302,10 @@ class OBJECT_PT_FBViewsPanel(Panel):
             # col.template_ID(head.cameras[i], "cam_image", # open="image.open",
             #                 live_icon=True)
 
+            # col.template_ID_preview(head.cameras[i], "cam_image",
+            #     hide_buttons=True)  # work but large and name
 
-            # col.template_ID_preview(head.cameras[i], "cam_image", hide_buttons=True)  # work but large and name
 
-        # if len(head.cameras) == 0:
-        #     layout.label(text="3. Select reference photos")
         else:
             pass
             # row = layout.row()
@@ -383,86 +356,16 @@ class OBJECT_PT_FBViewsPanel(Panel):
 
     # View Panel Draw
     def draw(self, context):
-        layout = self.layout
-        obj = context.object
+        # 'THIS_HEAD', 'ONE_HEAD', 'PINMODE'
         settings = get_main_settings()
-        headnum = settings.head_by_obj(obj)
+        layout = self.layout
 
-        # No registered models in scene
+        state, headnum = what_is_state()
+
         if headnum < 0:
-            if not obj or obj.type != 'MESH':
-                return
-            # Need for reconstruction
-            row = layout.row()
-            row.scale_y = 3.0
-            op = row.operator(
-                Config.fb_actor_operator_idname, text='Reconstruct!')
-            op.action = 'reconstruct_by_head'
-            op.headnum = -1
-            op.camnum = -1
             return
 
         head = settings.heads[headnum]
-
-        # Unhide Head if there some problem with pinmode
-        if settings.pinmode and \
-                not FBLoader.viewport().wireframer().is_working():
-            # Show Head
-            row = layout.row()
-            row.scale_y = 2.0
-            op = row.operator(Config.fb_actor_operator_idname,
-                              text='Show Head', icon='HIDE_OFF')
-            op.action = 'unhide_head'
-            op.headnum = headnum
-
-        # Sensor parameters
-        # if len(head.cameras) == 0:
-        #     col = layout.column()
-        #     col.scale_y = 0.75
-        #     col.label(text="1. Setup Sensor Size.")
-        #     col.label(text="Skip this step if unsure.")
-        #     col.label(text="It can be detected via EXIF.")
-
-        # box = layout.box()
-        # box.prop(head, 'use_exif')
-        # # box.prop(head, 'sensor_preset', text='')
-        # box.prop(head, 'sensor_width')
-        # row = box.row()
-        # row.active = False
-        # row.prop(head, 'sensor_height')
-        #
-        # row = layout.row()
-        # op = row.operator(
-        #     Config.fb_main_default_sensor_idname, text='36 x 24 mm')
-        # op.headnum = headnum
-        # op = row.operator(
-        #     Config.fb_main_all_unknown_idname, text='All unknown!')
-        # op.headnum = headnum
-        #
-        #
-        # if len(head.cameras) == 0:
-        #     col = layout.column()
-        #     col.scale_y = 0.75
-        #     col.label(text="2. Setup Focal Length.")
-        #     col.label(text="It can be detected via EXIF")
-        #     col.label(text="or automaticaly estimated.")
-        #
-        # box = layout.box()
-        # if head.use_exif:
-        #     col = box.column()
-        #     col.scale_y = 0.75
-        #     col.label(text="Focal affected by 'Use EXIF':")
-        #
-        # row = box.row()
-        # if head.auto_focal_estimation:
-        #     row.active = False
-        #     row.alert = True
-        # row.prop(head, 'focal')
-        #
-        # row = box.row()
-        # if head.auto_focal_estimation:
-        #     row.alert = True
-        # row.prop(head, 'auto_focal_estimation')
 
         # Large List of cameras
         self.draw_camera_list(headnum, layout)
@@ -470,142 +373,27 @@ class OBJECT_PT_FBViewsPanel(Panel):
         # Open sequence Button (large x2)
         row = layout.row()
         row.scale_y = 2.0
-        row.operator(Config.fb_filedialog_operator_idname,
-                     text="Add Camera Image(s)", icon='OUTLINER_OB_IMAGE')
+        op = row.operator(Config.fb_filedialog_operator_idname,
+                          text="Add Camera Image(s)", icon='OUTLINER_OB_IMAGE')
+        op.headnum = headnum
 
         # Add New Camera button
-        op = layout.operator(
-            Config.fb_main_add_camera_idname,
-            text="Create Empty Camera", icon='PLUS')
-        # op.action = "add_camera"
+        op = layout.operator(Config.fb_main_add_camera_idname,
+                             text="Create Empty Camera", icon='PLUS')
         op.headnum = headnum
 
         # Camera buttons Center Geo, Remove pins, Unmorph
-        if context.space_data.region_3d.view_perspective == 'CAMERA':
-            if settings.pinmode:
-                self.draw_pins_panel(headnum, settings.current_camnum)
+        if settings.pinmode and \
+                context.space_data.region_3d.view_perspective == 'CAMERA':
+            self.draw_pins_panel(headnum, settings.current_camnum)
 
+        # Show EXIF message
         if len(head.exif_message) > 0:
             arr = re.split("\r\n|\n", head.exif_message)
             col = layout.column()
             col.scale_y = 0.75
             for a in arr:
                 col.label(text=a)
-
-
-class WM_OT_FBAddonWarning(Operator):
-    bl_idname = Config.fb_warning_operator_idname
-    bl_label = "FaceBuilder WARNING!"
-
-    msg: bpy.props.IntProperty(default=ErrorType.Unknown)
-    msg_content: bpy.props.StringProperty(default="")
-
-    content = []
-
-    def set_content(self, txt_list):
-        self.content = txt_list
-
-    def draw(self, context):
-        layout = self.layout
-
-        for t in self.content:
-            layout.label(text=t)
-
-    def execute(self, context):
-        logger = logging.getLogger(__name__)
-        if self.msg != 0:
-            return {"FINISHED"}
-
-        # Unlicensed message only
-        wm = context.window_manager
-        # Searching keyword in Addons tab
-        wm.addon_search = Config.addon_search
-
-        try:
-            addon_utils.modules_refresh()
-            mod = addon_utils.addons_fake_modules.get(Config.addon_name)
-            info = addon_utils.module_bl_info(mod)
-            info["show_expanded"] = True
-        except Exception:
-            logger.error("SOME ERROR WITH ADDON SETTINGS OPENNING")
-            pass
-
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        if self.msg == ErrorType.CustomMessage:
-            self.set_content(re.split("\r\n|\n", self.msg_content))
-            return context.window_manager.invoke_props_dialog(self, width=300)
-        elif self.msg == ErrorType.NoLicense:
-            self.set_content([
-                "===============",
-                "License is not detected",
-                "===============",
-                "Go to Addon preferences:",
-                "Edit > Preferences --> Addons",
-                "Use 'KeenTools' word in search field"
-            ])
-        elif self.msg == ErrorType.SceneDamaged:
-            self.set_content([
-                "===============",
-                "Scene was damaged",
-                "===============",
-                "It looks like you manualy deleted",
-                "some FaceBuilder cameras.",
-                "It's not safe way.",
-                "Please use [X] button on tab.",
-                "===============",
-                "The scene was fixed.",
-                "Now everything is ok!"
-            ])
-        elif self.msg == ErrorType.BackgroundsDiffer:
-            self.set_content([
-                "===============",
-                "Different sizes",
-                "===============",
-                "Cameras backgrounds",
-                "has different sizes.",
-                "Texture Builder can't bake"
-            ])
-        elif self.msg == ErrorType.IllegalIndex:
-            self.set_content([
-                "===============",
-                "Object index is out of bounds",
-                "===============",
-                "Object index out of scene count"
-            ])
-        elif self.msg == ErrorType.CannotReconstruct:
-            self.set_content([
-                "===============",
-                "Can't reconstruct",
-                "===============",
-                "Object parameters are invalid or missing."
-            ])
-        elif self.msg == ErrorType.CannotCreate:
-            self.set_content([
-                "===============",
-                "Can't create Object",
-                "===============",
-                "Error when creating Object",
-                "This addon version can't create",
-                "objects of this type or ",
-                "PyKeenTools library not loaded. ",
-                "Refer to Addon Settings"
-            ])
-        elif self.msg == ErrorType.AboutFrameSize:
-            self.set_content([
-                "===============",
-                "About Frame Sizes",
-                "===============",
-                "All frames used as a background image ",
-                "must be the same size. This size should ",
-                "be specified as the Render Size ",
-                "in the scene.",
-                "You will receive a warning if these ",
-                "sizes are different. You can fix them ",
-                "by choosing commands from this menu."
-            ])
-        return context.window_manager.invoke_props_dialog(self, width=300)
 
 
 class OBJECT_PT_FBFaceParts(Panel):
@@ -620,22 +408,17 @@ class OBJECT_PT_FBFaceParts(Panel):
     # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        state = what_is_state()
+        state, _ = what_is_state()
         # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
-        return state in {'THIS_HEAD', 'ONE_HEAD'}
+        return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
 
     # Panel Draw
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
         obj = context.object
         settings = get_main_settings()
-        if len(settings.heads) == 1:
-            # Only one head in scene
-            headnum = 0
-        else:
-            headnum = settings.head_by_obj(obj)
 
+        state, headnum = what_is_state()
         # No registered models in scene
         if headnum < 0:
             return
@@ -673,9 +456,9 @@ class OBJECT_PT_TBPanel(Panel):
     # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        state = what_is_state()
+        state, _ = what_is_state()
         # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
-        return state in {'THIS_HEAD', 'ONE_HEAD'}
+        return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
 
     @classmethod
     def get_area_mode(cls, context):
@@ -731,9 +514,9 @@ class OBJECT_PT_FBColorsPanel(Panel):
     # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        state = what_is_state()
+        state, _ = what_is_state()
         # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
-        return state in {'THIS_HEAD', 'ONE_HEAD'}
+        return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
 
     # Face Builder Main Panel Draw
     def draw(self, context):
@@ -778,9 +561,9 @@ class OBJECT_PT_FBSettingsPanel(Panel):
     # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        state = what_is_state()
+        state, _ = what_is_state()
         # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
-        return state in {'THIS_HEAD', 'ONE_HEAD'}
+        return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
 
     # Right Panel Draw
     def draw(self, context):
@@ -791,68 +574,4 @@ class OBJECT_PT_FBSettingsPanel(Panel):
         box.prop(settings, 'pin_size', slider=True)
         box.prop(settings, 'pin_sensitivity', slider=True)
 
-        # row = layout.row()
-        # row.scale_y = 2.0
-        # row.operator(
-        #     Config.fb_main_addon_settings_idname,
-        #     text="Open Addon Settings", icon="PREFERENCES")
         # layout.prop(settings, 'debug_active', text="Debug Log Active")
-
-
-class OBJECT_MT_FBFixCameraMenu(Menu):
-    bl_label = "Fix Frame Size"
-    bl_idname = Config.fb_fix_camera_frame_menu_idname
-    bl_description = "Fix frame Width and Height parameters for camera"
-
-    def draw(self, context):
-        layout = self.layout
-
-        op = layout.operator(
-            Config.fb_actor_operator_idname, text="Info about this warning")
-        op.action = 'about_fix_frame_warning'
-
-        op = layout.operator(
-            Config.fb_actor_operator_idname,
-            text="Auto-Detect most frequent Size")
-        op.action = 'auto_detect_frame_size'
-
-        op = layout.operator(
-            Config.fb_actor_operator_idname, text="Use Scene Render Size")
-        op.action = 'use_render_frame_size'
-
-        op = layout.operator(
-            Config.fb_actor_operator_idname, text="Use This Camera Size")
-        op.action = 'use_this_camera_frame_size'
-
-
-class OBJECT_MT_FBFixMenu(Menu):
-    bl_label = "Select Frame Size"
-    bl_idname = Config.fb_fix_frame_menu_idname
-    bl_description = "Fix frame Width and Height parameters for all cameras"
-
-    def draw(self, context):
-        layout = self.layout
-
-        op = layout.operator(
-            Config.fb_actor_operator_idname, text="Info about Size warning")
-        op.action = 'about_fix_frame_warning'
-
-        op = layout.operator(
-            Config.fb_actor_operator_idname,
-            text="Auto-Detect most frequent Size")
-        op.action = 'auto_detect_frame_size'
-
-        op = layout.operator(
-            Config.fb_actor_operator_idname, text="Use Scene Render Size")
-        op.action = 'use_render_frame_size'
-
-        op = layout.operator(
-            Config.fb_actor_operator_idname, text="Use Current Camera Size")
-        op.action = 'use_camera_frame_size'
-
-        # Disabled to avoid problems with users (but usefull for internal use)
-        # frame_width & frame_height should be sets before rescale call
-        # op = layout.operator(
-        #    config.fb_actor_operator_idname,
-        #    text="Experimental Rescale to Render Size")
-        # op.action = 'use_render_frame_size_scaled'
