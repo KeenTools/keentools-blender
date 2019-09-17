@@ -397,6 +397,7 @@ class OBJECT_OT_FBFixSize(Operator):
     bl_label = "Fix Size"
     bl_options = {'REGISTER'}
     bl_description = "Fix frame Width and High parameters for all cameras"
+
     headnum: IntProperty(default=0)
 
     # This draw overrides standard operator panel
@@ -404,6 +405,8 @@ class OBJECT_OT_FBFixSize(Operator):
         pass
 
     def execute(self, context):
+        settings = get_main_settings()
+        settings.tmp_headnum = self.headnum
         bpy.ops.wm.call_menu(
             'INVOKE_DEFAULT', name=Config.fb_fix_frame_menu_idname)
         return {'FINISHED'}

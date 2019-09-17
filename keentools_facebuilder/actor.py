@@ -34,7 +34,7 @@ class OBJECT_OT_FBActor(Operator):
     bl_idname = Config.fb_actor_operator_idname
     bl_label = "FaceBuilder in Action"
     bl_options = {'REGISTER'}
-    bl_description = "Face Builder"
+    bl_description = "FaceBuilder"
 
     action: StringProperty(name="Action Name")
     headnum: IntProperty(default=0)

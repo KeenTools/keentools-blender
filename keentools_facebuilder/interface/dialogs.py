@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+import re
 
 import bpy
 from bpy.types import Panel, Operator
@@ -138,3 +139,53 @@ class WM_OT_FBAddonWarning(Operator):
                 "by choosing commands from this menu."
             ])
         return context.window_manager.invoke_props_dialog(self, width=300)
+
+
+class WM_OT_FBTexSelector(Operator):
+    bl_idname = Config.fb_tex_selector_operator_idname
+    bl_label = "Select Images for Texture Baking"
+
+    headnum: bpy.props.IntProperty(default=0)
+
+    def draw(self, context):
+        settings = get_main_settings()
+        head = settings.heads[self.headnum]
+        layout = self.layout
+
+        if len(head.cameras) > 0:
+            row = layout.row()
+            # Select All cameras for baking Button
+            op = row.operator(Config.fb_main_filter_cameras_idname, text='All')
+            op.action = 'select_all_cameras'
+            op.headnum = self.headnum
+            # Deselect All cameras
+            op = row.operator(Config.fb_main_filter_cameras_idname,
+                              text='None')
+            op.action = 'deselect_all_cameras'
+            op.headnum = self.headnum
+        else:
+            layout.label(text="You need at least one image to get started.")
+
+        for camera in head.cameras:
+            row = layout.row()
+            # Use in Tex Baking
+            row.prop(camera, 'use_in_tex_baking', text='')
+
+            if camera.pins_count > 0:
+                row.label(text='', icon='PINNED')
+
+            if camera.cam_image:
+                row.label(text=camera.cam_image.name)
+            else:
+                row.label(text='-- empy --')
+
+        layout.label(text="Images without pins will be auto-ignored.")
+        layout.label(text="Texture baking can be time consuming, be patient.")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def execute(self, context):
+        op = getattr(bpy.ops.object, Config.fb_main_bake_tex_callname)
+        op('INVOKE_DEFAULT')
+        return {"FINISHED"}

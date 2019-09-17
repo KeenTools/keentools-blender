@@ -54,8 +54,24 @@ def get_safe_exif_param(p, data):
     return None
 
 
-class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
-    bl_idname = Config.fb_filedialog_operator_idname
+class WM_OT_FBSingleFilebrowser(Operator, ImportHelper):
+    bl_idname = Config.fb_single_filebrowser_operator_idname
+    bl_label = "Open Image"
+    bl_description = "Open single image file"
+
+    filter_glob: bpy.props.StringProperty(
+        default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp',
+        options={'HIDDEN'}
+    )
+
+    def execute(self, context):
+        """Do something with the selected file(s)."""
+        print('Selected file:', self.filepath)
+        return {'FINISHED'}
+
+
+class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
+    bl_idname = Config.fb_multiple_filebrowser_operator_idname
     bl_label = "Open Image(s)"
     bl_description = "Automatically creates Camera(s) from selected " \
                      "Image(s). All images must be the same size. " \
@@ -65,8 +81,6 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
         default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp',
         options={'HIDDEN'}
     )
-
-    filename_ext = ""
 
     files: bpy.props.CollectionProperty(
         name="File Path",
@@ -79,21 +93,14 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
 
     headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
 
-    update_render_size: bpy.props.EnumProperty(name="UV", items=[
+    update_render_size: bpy.props.EnumProperty(name="Update Size", items=[
         ('yes', 'Update', 'Update render size to images resolution', 0),
         ('no', 'Leave unchanged', 'Leave the render size unchanged', 1),
     ], description="Update Render size")
 
-    # use_exif: bpy.props.EnumProperty(name="Use EXIF Data", items=[
-    #    ('yes', 'Use EXIF', 'Update camera data if exists in EXIF', 0),
-    #    ('no', 'Leave unchanged', 'Leave camera parameters unchanged', 1),
-    #], description="EXIF using")
 
     def draw(self, context):
         layout = self.layout
-
-        #layout.label(text='EXIF for cameras (Focal, Sensor)')
-        #layout.prop(self, 'use_exif', expand=True)
 
         layout.label(text='Update Scene Render Size')
         layout.prop(self, 'update_render_size', expand=True)
@@ -110,15 +117,21 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
 
     def execute(self, context):
         """ Selected files processing"""
+        print('FILEDIALOG H:', self.headnum)
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         if len(settings.heads) <= self.headnum:
             op = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
             op('INVOKE_DEFAULT', msg=ErrorType.IllegalIndex)
             return {'CANCELLED'}
+
+        print('FILEDIALOG2')
+
         # if Settings structure is broken
         if not settings.check_heads_and_cams():
             settings.fix_heads()  # Fix
+
+        print('FILEDIALOG3')
 
         directory = self.directory
 
@@ -140,6 +153,7 @@ class WM_OT_FBOpenFilebrowser(Operator, ImportHelper):
             filepath = os.path.join(directory, f.name)
             logger.debug("FILE: {}".format(filepath))
 
+            # EXIF reading
             exif_focal = None
             exif_focal35mm = None
             exif_focal_x_res = None

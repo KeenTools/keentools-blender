@@ -17,7 +17,8 @@
 # ##### END GPL LICENSE BLOCK #####
 import bpy
 from bpy.types import Menu
-from ..config import Config
+from bpy.props import IntProperty
+from ..config import Config, get_main_settings
 
 
 class OBJECT_MT_FBFixCameraMenu(Menu):
@@ -25,33 +26,40 @@ class OBJECT_MT_FBFixCameraMenu(Menu):
     bl_idname = Config.fb_fix_camera_frame_menu_idname
     bl_description = "Fix frame Width and Height parameters for camera"
 
+    headnum: IntProperty(default=0)
+
     def draw(self, context):
+        settings = get_main_settings()
         layout = self.layout
 
-        op = layout.operator(
-            Config.fb_actor_operator_idname, text="Open New Image",
-            icon="FILEBROWSER")
-        op.action = 'about_fix_frame_warning'
+        # Disabled because it does not work in popup window
+        op = layout.operator(Config.fb_multiple_filebrowser_operator_idname,
+                          text="Add Camera Image(s)", icon='OUTLINER_OB_IMAGE')
+        op.headnum = settings.tmp_headnum
 
         layout.separator()
 
         op = layout.operator(
-            Config.fb_actor_operator_idname, text="Info about this warning",
+            Config.fb_actor_operator_idname, text="Info about Frame Size warning",
             icon="ERROR")
         op.action = 'about_fix_frame_warning'
 
         op = layout.operator(
             Config.fb_actor_operator_idname,
-            text="Auto-Detect most frequent Size")
+            text="Auto-Detect most frequent Size", icon="FULLSCREEN_ENTER")
         op.action = 'auto_detect_frame_size'
 
         op = layout.operator(
-            Config.fb_actor_operator_idname, text="Use Scene Render Size")
+            Config.fb_actor_operator_idname, text="Use Scene Render Size",
+            icon="OUTPUT")
         op.action = 'use_render_frame_size'
 
         op = layout.operator(
-            Config.fb_actor_operator_idname, text="Use This Camera Size")
+            Config.fb_actor_operator_idname, text="Use This Camera Size",
+            icon="VIEW_CAMERA")
         op.action = 'use_this_camera_frame_size'
+
+        layout.separator()
 
 
 class OBJECT_MT_FBFixMenu(Menu):
@@ -60,28 +68,51 @@ class OBJECT_MT_FBFixMenu(Menu):
     bl_description = "Fix frame Width and Height parameters for all cameras"
 
     def draw(self, context):
+        settings = get_main_settings()
         layout = self.layout
 
         op = layout.operator(
-            Config.fb_actor_operator_idname, text="Info about Size warning")
-        op.action = 'about_fix_frame_warning'
-
-        op = layout.operator(
             Config.fb_actor_operator_idname,
-            text="Auto-Detect most frequent Size")
+            text="Auto-Detect most frequent Size", icon="FULLSCREEN_ENTER")
         op.action = 'auto_detect_frame_size'
 
         op = layout.operator(
-            Config.fb_actor_operator_idname, text="Use Scene Render Size")
+            Config.fb_actor_operator_idname, text="Use Scene Render Size",
+            icon="OUTPUT")
         op.action = 'use_render_frame_size'
 
-        op = layout.operator(
-            Config.fb_actor_operator_idname, text="Use Current Camera Size")
-        op.action = 'use_camera_frame_size'
+        # Disabled because it is not obvious
+        # ---
+        # op = layout.operator(
+        #     Config.fb_actor_operator_idname, text="Use Current Camera Size",
+        #     icon="VIEW_CAMERA")
+        # op.action = 'use_camera_frame_size'
 
         # Disabled to avoid problems with users (but usefull for internal use)
+        # ---
         # frame_width & frame_height should be sets before rescale call
         # op = layout.operator(
         #    config.fb_actor_operator_idname,
         #    text="Experimental Rescale to Render Size")
         # op.action = 'use_render_frame_size_scaled'
+
+        layout.separator()
+
+        # Disabled becaouse it does not work in popup window
+        # op = layout.operator(Config.fb_filedialog_operator_idname,
+        #                   text="Add Camera Image(s)", icon='OUTLINER_OB_IMAGE')
+        # op.headnum = settings.tmp_headnum
+
+        # Add New Camera button
+        op = layout.operator(Config.fb_main_add_camera_idname,
+                             text="Create Empty Camera",
+                             icon='LIBRARY_DATA_BROKEN')  # 'PLUS'
+        op.headnum = settings.tmp_headnum
+
+        layout.separator()
+        op = layout.operator(
+            Config.fb_actor_operator_idname,
+            text="Info about Frame Size warning",
+            icon="ERROR")
+        op.action = 'about_fix_frame_warning'
+

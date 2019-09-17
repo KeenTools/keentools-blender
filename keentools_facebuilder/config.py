@@ -83,7 +83,10 @@ class Config:
     fb_main_all_unknown_callname = _prefix + '_main_all_unknown'
     fb_main_all_unknown_idname = 'object.' + fb_main_all_unknown_callname
 
-    fb_filedialog_operator_idname = _prefix + '_import.open_filebrowser'
+    fb_multiple_filebrowser_operator_idname = \
+        _prefix + '_import.open_multiple_filebrowser'
+    fb_single_filebrowser_operator_idname = \
+        _prefix + '_import.open_single_filebrowser'
     fb_pinmode_operator_callname = _prefix + '_pinmode'
     fb_pinmode_operator_idname = 'object.' + fb_pinmode_operator_callname
 
@@ -91,12 +94,14 @@ class Config:
     fb_movepin_operator_callname = _prefix + '_move_pin'
     fb_actor_operator_callname = _prefix + '_actor'
     fb_actor_operator_idname = 'object.' + fb_actor_operator_callname
-    fb_warning_operator_idname = 'wm.' + _prefix + '_addon_warning'
     fb_warning_operator_callname = _prefix + '_addon_warning'
-    fb_add_head_operator_idname = 'mesh.' + _prefix + '_add_head'
+    fb_warning_operator_idname = 'wm.' + fb_warning_operator_callname
+    fb_tex_selector_operator_callname = _prefix + '_tex_selector'
+    fb_tex_selector_operator_idname = 'wm.' + fb_tex_selector_operator_callname
     fb_add_head_operator_callname = _prefix + '_add_head'
-    fb_add_body_operator_idname = 'mesh.' + _prefix + '_add_body'
+    fb_add_head_operator_idname = 'mesh.' + fb_add_head_operator_callname
     fb_add_body_operator_callname = _prefix + '_add_body'
+    fb_add_body_operator_idname = 'mesh.' + fb_add_body_operator_callname
 
     # Panels ids
     fb_header_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_header_panel_id'

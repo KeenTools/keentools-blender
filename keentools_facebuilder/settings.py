@@ -226,14 +226,6 @@ class FBHeadItem(PropertyGroup):
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
 
-    use_exif: BoolProperty(
-        name="Use EXIF if available in file",
-        description="Automatically detects Focal Length & Sensor Size "
-                    "from EXIF data in image file if available",
-        default=True)
-
-    exif_message: StringProperty(name="EXIF Message", default="")
-
     sensor_preset: EnumProperty(name="Sensor size", description="Sensor size presets",
         items=[
             ('custom', 'Custom', 'User sets all parameters manualy',
@@ -310,6 +302,19 @@ class FBHeadItem(PropertyGroup):
                 ('uv2', 'Spherical', 'Standard wrap-around Layout', 'UV', 2),
                 ('uv3', 'Maxface', 'Maximum face area, non-uniform', 'UV', 3),
                 ], description="UV Layout scheme", update=update_mesh_parts)
+
+    use_exif: BoolProperty(
+        name="Use EXIF if available in file",
+        description="Automatically detects Focal Length & Sensor Size "
+                    "from EXIF data in image file if available",
+        default=True)
+
+    exif_message: StringProperty(name="EXIF Message", default="")
+    exif_focal: FloatProperty(default=-1)
+    exif_focal35mm: FloatProperty(default=-1)
+    exif_focal_x_res = FloatProperty(default=-1)
+    exif_focal_y_res = FloatProperty(default=-1)
+    exif_units = FloatProperty(default=2.0)
 
     def set_serial_str(self, value):
         self.serial_str = value

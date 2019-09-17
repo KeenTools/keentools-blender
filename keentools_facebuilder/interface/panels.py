@@ -123,7 +123,7 @@ class OBJECT_PT_FBHeaderPanel(Panel):
             self.draw_start_panel(layout)
             return
 
-        elif state =='MANY_HEADS':
+        else:  #  elif state =='MANY_HEADS':
             self.draw_many_heads(layout)
 
 
@@ -233,14 +233,11 @@ class OBJECT_PT_FBViewsPanel(Panel):
             if settings.current_camnum == i:
                 if settings.pinmode:
                     col.alert = True
-                icon = 'OUTLINER_OB_CAMERA'
+                icon = 'VIEW_CAMERA'  # 'OUTLINER_OB_CAMERA'
             op = col.operator(
                 Config.fb_main_select_camera_idname, text='', icon=icon)
             op.headnum = headnum
             op.camnum = i
-
-            # Use in Tex Baking
-            # col.prop(camera, 'use_in_tex_baking', text='')
 
             # Camera Num / Pins / Name
             col = row.column()
@@ -253,13 +250,6 @@ class OBJECT_PT_FBViewsPanel(Panel):
             else:
                 text = "-- empty --"
 
-            # if wrong_size_flag:
-            #     # Background has different size
-            #     op = row2.operator(Config.fb_main_camera_fix_size_idname,
-            #                        text='', icon='ERROR')
-            #     op.headnum = headnum
-            #     op.camnum = i
-
             if not camera.cam_image:
                 # No image --> Broken icon
                 row2.label(text='', icon='LIBRARY_DATA_BROKEN')
@@ -271,7 +261,7 @@ class OBJECT_PT_FBViewsPanel(Panel):
             # Output camera info
             row2.label(text=text)
 
-            icon = 'OUTLINER_DATA_GP_LAYER'  # FILEBROWSER
+            icon = 'OUTLINER_DATA_GP_LAYER'  # 'FILEBROWSER'
             if wrong_size_flag:
                 # Background has different size
                 icon = 'ERROR'
@@ -305,34 +295,9 @@ class OBJECT_PT_FBViewsPanel(Panel):
             # col.template_ID_preview(head.cameras[i], "cam_image",
             #     hide_buttons=True)  # work but large and name
 
-
         else:
             pass
-            # row = layout.row()
-            # # Select All cameras for baking Button
-            # op = row.operator(Config.fb_main_filter_cameras_idname, text='All')
-            # op.action = 'select_all_cameras'
-            # op.headnum = headnum
-            # # Deselect All cameras
-            # op = row.operator(Config.fb_main_filter_cameras_idname,
-            #                   text='None')
-            # op.action = 'deselect_all_cameras'
-            # op.headnum = headnum
-            # row.label(text='in bake')
 
-            # row = layout.row()
-            # Output current Frame Size
-            # if settings.frame_width > 0 and settings.frame_height > 0:
-            #     row.label(text='{} x {}'.format(
-            #         settings.frame_width, settings.frame_height))
-            # else:
-            #     row.label(text="...")
-
-            # if wrong_size_counter == 0:
-            #     row.operator(Config.fb_main_fix_size_idname, text='Fix Size')
-            # else:
-            #     row.operator(Config.fb_main_fix_size_idname,
-            #                  text='Fix Size', icon='ERROR')
 
 
     def draw_header_preset(self, context):
@@ -373,13 +338,8 @@ class OBJECT_PT_FBViewsPanel(Panel):
         # Open sequence Button (large x2)
         row = layout.row()
         row.scale_y = 2.0
-        op = row.operator(Config.fb_filedialog_operator_idname,
+        op = row.operator(Config.fb_multiple_filebrowser_operator_idname,
                           text="Add Camera Image(s)", icon='OUTLINER_OB_IMAGE')
-        op.headnum = headnum
-
-        # Add New Camera button
-        op = layout.operator(Config.fb_main_add_camera_idname,
-                             text="Create Empty Camera", icon='PLUS')
         op.headnum = headnum
 
         # Camera buttons Center Geo, Remove pins, Unmorph
@@ -425,10 +385,11 @@ class OBJECT_PT_FBFaceParts(Panel):
 
         head = settings.heads[headnum]
 
-        layout.prop(settings, 'check_auto_rigidity')
-        row = layout.row()
-        row.prop(settings, 'rigidity')
-        row.active = not settings.check_auto_rigidity
+        row = layout.split(factor=0.7)
+        col = row.column()
+        col.prop(settings, 'rigidity')
+        col.active = not settings.check_auto_rigidity
+        row.prop(settings, 'check_auto_rigidity', text="Auto")
 
         box = layout.box()
         row = box.row()
@@ -487,14 +448,18 @@ class OBJECT_PT_TBPanel(Panel):
         row = layout.row()
         row.scale_y = 3.0
 
-        op = row.operator(Config.fb_main_bake_tex_idname, text="Bake Texture")
+        # op = row.operator(Config.fb_main_bake_tex_idname, text="Bake Texture")
+        # op.headnum = headnum
+
+        op = row.operator(Config.fb_tex_selector_operator_idname, text="Bake Texture")
         op.headnum = headnum
 
         mode = self.get_area_mode(context)
         if mode == 'MATERIAL':
             row.operator(Config.fb_main_show_tex_idname, text="Show Mesh")
         else:
-            row.operator(Config.fb_main_show_tex_idname, text="Show Texture")
+            row.operator(Config.fb_main_show_tex_idname,
+                         text="Create Material", icon="MATERIAL")
 
         # layout.prop(settings, 'tex_back_face_culling')
         layout.prop(settings, 'tex_equalize_brightness')

@@ -41,7 +41,7 @@ from .interface.panels import (OBJECT_PT_FBHeaderPanel, OBJECT_PT_FBCameraPanel,
                                OBJECT_PT_FBSettingsPanel,
                                OBJECT_PT_FBColorsPanel, OBJECT_PT_TBPanel)
 from .interface.menus import OBJECT_MT_FBFixMenu, OBJECT_MT_FBFixCameraMenu
-from .interface.dialogs import WM_OT_FBAddonWarning
+from .interface.dialogs import WM_OT_FBAddonWarning, WM_OT_FBTexSelector
 from .head import MESH_OT_FBAddHead
 from .body import MESH_OT_FBAddBody
 from .settings import FBCameraItem
@@ -57,11 +57,12 @@ from .main_operator import (OBJECT_OT_FBSelectHead, OBJECT_OT_FBDeleteHead,
                              OBJECT_OT_FBAddonSettings,
                              OBJECT_OT_FBBakeTexture, OBJECT_OT_FBShowTexture,
                              OBJECT_OT_FBDefaultSensor, OBJECT_OT_FBAllUnknown)
-from . pinmode import OBJECT_OT_FBPinMode
-from . movepin import OBJECT_OT_FBMovePin
-from . actor import OBJECT_OT_FBActor
-from keentools_facebuilder.interface.filedialog import WM_OT_FBOpenFilebrowser
-from . config import Config
+from .pinmode import OBJECT_OT_FBPinMode
+from .movepin import OBJECT_OT_FBMovePin
+from .actor import OBJECT_OT_FBActor
+from keentools_facebuilder.interface.filedialog import \
+    WM_OT_FBSingleFilebrowser, WM_OT_FBMultipleFilebrowser
+from .config import Config
 
 
 # Init logging system via config file
@@ -105,7 +106,9 @@ _CLASSES_TO_REGISTER = (
     OBJECT_OT_FBPinMode,
     OBJECT_OT_FBMovePin,
     OBJECT_OT_FBActor,
-    WM_OT_FBOpenFilebrowser) + preferences.CLASSES_TO_REGISTER
+    WM_OT_FBSingleFilebrowser,
+    WM_OT_FBMultipleFilebrowser,
+    WM_OT_FBTexSelector) + preferences.CLASSES_TO_REGISTER
 
 
 def menu_func(self, context):
