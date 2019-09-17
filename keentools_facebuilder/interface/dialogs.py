@@ -171,10 +171,10 @@ class WM_OT_FBTexSelector(Operator):
             # Use in Tex Baking
             row.prop(camera, 'use_in_tex_baking', text='')
 
-            if camera.pins_count > 0:
-                row.label(text='', icon='PINNED')
-
             if camera.cam_image:
+                row.label(text='', icon='FILE_IMAGE')
+                if camera.pins_count > 0:
+                    row.label(text='', icon='PINNED')
                 row.label(text=camera.cam_image.name)
             else:
                 row.label(text='-- empy --')

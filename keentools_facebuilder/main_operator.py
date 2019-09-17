@@ -384,11 +384,53 @@ class OBJECT_OT_FBAddCamera(Operator):
         settings = get_main_settings()
         headnum = self.headnum
 
+        # Warning! Loading camera may cause data loss
         if settings.heads[headnum].cameras:
             FBLoader.load_only(headnum)
+
         camera = FBLoader.add_camera(headnum, None)
         FBLoader.set_keentools_version(camera.camobj)
         FBLoader.save_only(headnum)
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBSetSensorWidth(Operator):
+    bl_idname = Config.fb_main_set_sensor_width_idname
+    bl_label = "Fix Size"
+    bl_options = {'REGISTER'}
+    bl_description = "Fix frame Width and High parameters for all cameras"
+
+    headnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        settings.tmp_headnum = self.headnum
+        bpy.ops.wm.call_menu(
+            'INVOKE_DEFAULT', name=Config.fb_sensor_width_menu_idname)
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBSetFocalLength(Operator):
+    bl_idname = Config.fb_main_set_focal_length_idname
+    bl_label = "Fix Size"
+    bl_options = {'REGISTER'}
+    bl_description = "Fix frame Width and High parameters for all cameras"
+
+    headnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        settings.tmp_headnum = self.headnum
+        bpy.ops.wm.call_menu(
+            'INVOKE_DEFAULT', name=Config.fb_focal_length_menu_idname)
         return {'FINISHED'}
 
 

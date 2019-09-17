@@ -466,6 +466,7 @@ class FBLoader:
         # Create new keyframe
         fb.set_keyframe(num)
         camera.keyframe_id = num
+        logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
 
         # link camera into scene
         col = attrs.get_obj_collection(head.headobj)
@@ -495,7 +496,8 @@ class FBLoader:
         b.show_on_foreground = False  # True
         b.alpha = 1.0  # 0.5
 
-        # scene.update()  # Removed from API
+        # We added new keyframe, so update serial string
+        FBLoader.save_only(headnum)
         return camera
 
     @classmethod

@@ -28,6 +28,12 @@ from ..utils.manipulate import what_is_state
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
+def _show_all_panels():
+    state, _ = what_is_state()
+    # RECONSTRUCT, NO_HEADS, THIS_HEAD, ONE_HEAD, MANY_HEADS, PINMODE
+    return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
+
+
 class OBJECT_PT_FBHeaderPanel(Panel):
     bl_idname = Config.fb_header_panel_idname
     bl_space_type = "VIEW_3D"
@@ -109,6 +115,7 @@ class OBJECT_PT_FBHeaderPanel(Panel):
             if not FBLoader.viewport().wireframer().is_working():
                 row = layout.row()
                 row.scale_y = 2.0
+                row.alert = True
                 op = row.operator(Config.fb_actor_operator_idname,
                                   text='Show Head', icon='HIDE_OFF')
                 op.action = 'unhide_head'
@@ -139,9 +146,7 @@ class OBJECT_PT_FBCameraPanel(Panel):
     # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        state, _ = what_is_state()
-        # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
-        return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
+        return _show_all_panels()
 
     # Face Builder Panel Draw
     def draw(self, context):
@@ -158,7 +163,7 @@ class OBJECT_PT_FBCameraPanel(Panel):
         row = layout.row()
         row.prop(head, 'sensor_width')
         row.operator(
-            Config.fb_main_addon_settings_idname,
+            Config.fb_main_set_sensor_width_idname,
             text='', icon='SETTINGS')
         col = layout.column()
         if head.auto_focal_estimation:
@@ -167,13 +172,22 @@ class OBJECT_PT_FBCameraPanel(Panel):
         row = col.row()
         row.prop(head, 'focal')
         row.operator(
-            Config.fb_main_addon_settings_idname,
+            Config.fb_main_set_focal_length_idname,
             text='', icon='SETTINGS')
 
         row = layout.row()
         if head.auto_focal_estimation:
             row.alert = True
         row.prop(head, 'auto_focal_estimation')
+
+        # Show EXIF message
+        if len(head.exif_message) > 0:
+            box = layout.box()
+            arr = re.split("\r\n|\n", head.exif_message)
+            col = box.column()
+            col.scale_y = 0.75
+            for a in arr:
+                col.label(text=a)
 
 
 class OBJECT_PT_FBViewsPanel(Panel):
@@ -187,9 +201,7 @@ class OBJECT_PT_FBViewsPanel(Panel):
     # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        state, _ = what_is_state()
-        # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
-        return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
+        return _show_all_panels()
 
     def draw_pins_panel(self, headnum, camnum):
         layout = self.layout
@@ -245,39 +257,52 @@ class OBJECT_PT_FBViewsPanel(Panel):
             pc = str(camera.pins_count) if camera.pins_count > 0 else '-'
 
             # text = "[{0}] -{1}- {2}".format(str(i), pc, camera.camobj.name)
-            if camera.cam_image:
-                text = "{}".format(camera.cam_image.name)
-            else:
-                text = "-- empty --"
-
-            if not camera.cam_image:
-                # No image --> Broken icon
-                row2.label(text='', icon='LIBRARY_DATA_BROKEN')
 
             # Pin Icon if there are some pins
             if pc != '-':
                 row2.label(text='', icon='PINNED')
 
-            # Output camera info
-            row2.label(text=text)
+            # Filename and Context Menu button
+            if camera.cam_image:
+                row2.label(text="{}".format(camera.cam_image.name))
+                icon = 'OUTLINER_DATA_GP_LAYER'  # 'FILEBROWSER'
+                if wrong_size_flag:
+                    # Background has different size
+                    icon = 'ERROR'
+                op = row2.operator(Config.fb_main_camera_fix_size_idname,
+                                   text='', icon=icon)
+                op.headnum = headnum
+                op.camnum = i
+            else:
+                # No image --> Broken icon
+                row2.label(text='', icon='LIBRARY_DATA_BROKEN')
+                row2.label(text='-- empty --')
+                op = row2.operator(
+                    Config.fb_single_filebrowser_operator_idname,
+                    text='', icon='FILEBROWSER')
+                op.headnum = headnum
+                op.camnum = i
 
-            icon = 'OUTLINER_DATA_GP_LAYER'  # 'FILEBROWSER'
-            if wrong_size_flag:
-                # Background has different size
-                icon = 'ERROR'
-            op = row2.operator(Config.fb_main_camera_fix_size_idname,
-                text='', icon=icon)
-            op.headnum = headnum
-            op.camnum = i
+            # Testing purpose output
+            # row2.label(text="{}".format(camera.keyframe_id))
 
             # Camera Delete button
             if not settings.pinmode:
-                op = row2.operator(
-                    Config.fb_main_delete_camera_idname,
-                    text='', icon='X')  # 'CANCEL'
-                # op.action = 'delete_camera'
-                op.headnum = headnum
-                op.camnum = i
+                if camera.cam_image:
+                    op = row2.operator(
+                        # Config.fb_main_delete_camera_idname,
+                        Config.fb_actor_operator_idname,
+                        text='', icon='X')  # 'CANCEL'
+                    op.action = 'delete_camera_image'
+                    op.headnum = headnum
+                    op.camnum = i
+                else:
+                    op = row2.operator(
+                        Config.fb_main_delete_camera_idname,
+                        text='', icon='CANCEL')  #
+                    # op.action = 'delete_camera_image'
+                    op.headnum = headnum
+                    op.camnum = i
             else:
                 col = row2.column()
                 col.active = False
@@ -294,10 +319,6 @@ class OBJECT_PT_FBViewsPanel(Panel):
 
             # col.template_ID_preview(head.cameras[i], "cam_image",
             #     hide_buttons=True)  # work but large and name
-
-        else:
-            pass
-
 
 
     def draw_header_preset(self, context):
@@ -347,14 +368,6 @@ class OBJECT_PT_FBViewsPanel(Panel):
                 context.space_data.region_3d.view_perspective == 'CAMERA':
             self.draw_pins_panel(headnum, settings.current_camnum)
 
-        # Show EXIF message
-        if len(head.exif_message) > 0:
-            arr = re.split("\r\n|\n", head.exif_message)
-            col = layout.column()
-            col.scale_y = 0.75
-            for a in arr:
-                col.label(text=a)
-
 
 class OBJECT_PT_FBFaceParts(Panel):
     bl_idname = Config.fb_parts_panel_idname
@@ -368,9 +381,7 @@ class OBJECT_PT_FBFaceParts(Panel):
     # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        state, _ = what_is_state()
-        # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
-        return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
+        return _show_all_panels()
 
     # Panel Draw
     def draw(self, context):
@@ -417,9 +428,7 @@ class OBJECT_PT_TBPanel(Panel):
     # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        state, _ = what_is_state()
-        # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
-        return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
+        return _show_all_panels()
 
     @classmethod
     def get_area_mode(cls, context):
@@ -448,18 +457,17 @@ class OBJECT_PT_TBPanel(Panel):
         row = layout.row()
         row.scale_y = 3.0
 
-        # op = row.operator(Config.fb_main_bake_tex_idname, text="Bake Texture")
-        # op.headnum = headnum
-
-        op = row.operator(Config.fb_tex_selector_operator_idname, text="Bake Texture")
+        op = row.operator(Config.fb_tex_selector_operator_idname,
+                          text="Bake Texture", icon='RENDER_STILL')
         op.headnum = headnum
 
         mode = self.get_area_mode(context)
         if mode == 'MATERIAL':
-            row.operator(Config.fb_main_show_tex_idname, text="Show Mesh")
+            row.operator(Config.fb_main_show_tex_idname, text="Show Mesh",
+                         icon='SHADING_SOLID')
         else:
             row.operator(Config.fb_main_show_tex_idname,
-                         text="Create Material", icon="MATERIAL")
+                         text="Create Material", icon='MATERIAL')
 
         # layout.prop(settings, 'tex_back_face_culling')
         layout.prop(settings, 'tex_equalize_brightness')
@@ -479,9 +487,7 @@ class OBJECT_PT_FBColorsPanel(Panel):
     # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        state, _ = what_is_state()
-        # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
-        return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
+        return _show_all_panels()
 
     # Face Builder Main Panel Draw
     def draw(self, context):
@@ -526,9 +532,7 @@ class OBJECT_PT_FBSettingsPanel(Panel):
     # Panel appear only when actual
     @classmethod
     def poll(cls, context):
-        state, _ = what_is_state()
-        # 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD'
-        return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
+        return _show_all_panels()
 
     # Right Panel Draw
     def draw(self, context):

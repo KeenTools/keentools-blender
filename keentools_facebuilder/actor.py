@@ -49,11 +49,12 @@ class OBJECT_OT_FBActor(Operator):
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
-        if self.action == "reconstruct_by_head":
+        settings = get_main_settings()
+
+        if self.action == 'reconstruct_by_head':
             manipulate.reconstruct_by_head()
 
         elif self.action == 'show_tex':
-            settings = get_main_settings()
             mat = materials.show_texture_in_mat(self.tex_name, self.mat_name)
             # Assign Material to Head Object
             materials.assign_mat(
@@ -62,21 +63,20 @@ class OBJECT_OT_FBActor(Operator):
             materials.toggle_mode(('SOLID', 'MATERIAL'))
 
         elif self.action == 'bake_tex':
-            settings = get_main_settings()
             materials.bake_tex(self.headnum, self.tex_name)
             mat = materials.show_texture_in_mat(self.tex_name, self.mat_name)
             # Assign Material to Head Object
             materials.assign_mat(
                 settings.heads[settings.current_headnum].headobj, mat)
 
-        elif self.action == "unhide_head":
+        elif self.action == 'unhide_head':
             manipulate.unhide_head(self.headnum)
 
-        elif self.action == "about_fix_frame_warning":
+        elif self.action == 'about_fix_frame_warning':
             warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.AboutFrameSize)
 
-        elif self.action == "auto_detect_frame_size":
+        elif self.action == 'auto_detect_frame_size':
             manipulate.auto_detect_frame_size()
 
         elif self.action == 'use_render_frame_size':
@@ -84,19 +84,24 @@ class OBJECT_OT_FBActor(Operator):
 
         elif self.action == 'use_camera_frame_size':
             # Current camera Background --> Render size (by Fix button)
-            settings = get_main_settings()
             manipulate.use_camera_frame_size(
                 settings.current_headnum, settings.current_camnum)
 
         elif self.action == 'use_this_camera_frame_size':
             # Current camera Background --> Render size (by mini-button)
-            settings = get_main_settings()
             manipulate.use_camera_frame_size(
                 settings.tmp_headnum, settings.tmp_camnum)
 
         elif self.action == 'use_render_frame_size_scaled':
             # Allow converts scenes pinned on default cameras
             manipulate.use_render_frame_size_scaled()  # disabled in interface
+
+        elif self.action == 'read_exif':
+            pass
+
+        elif self.action == 'delete_camera_image':
+            head = settings.heads[self.headnum]
+            head.cameras[self.camnum].cam_image = None
 
         logger.debug("Actor: {}".format(self.action))
 

@@ -26,8 +26,6 @@ class OBJECT_MT_FBFixCameraMenu(Menu):
     bl_idname = Config.fb_fix_camera_frame_menu_idname
     bl_description = "Fix frame Width and Height parameters for camera"
 
-    headnum: IntProperty(default=0)
-
     def draw(self, context):
         settings = get_main_settings()
         layout = self.layout
@@ -41,7 +39,7 @@ class OBJECT_MT_FBFixCameraMenu(Menu):
 
         op = layout.operator(
             Config.fb_actor_operator_idname, text="Info about Frame Size warning",
-            icon="ERROR")
+            icon='ERROR')
         op.action = 'about_fix_frame_warning'
 
         op = layout.operator(
@@ -51,13 +49,20 @@ class OBJECT_MT_FBFixCameraMenu(Menu):
 
         op = layout.operator(
             Config.fb_actor_operator_idname, text="Use Scene Render Size",
-            icon="OUTPUT")
+            icon='OUTPUT')
         op.action = 'use_render_frame_size'
 
         op = layout.operator(
             Config.fb_actor_operator_idname, text="Use This Camera Size",
-            icon="VIEW_CAMERA")
+            icon='VIEW_CAMERA')
         op.action = 'use_this_camera_frame_size'
+
+        op = layout.operator(
+            Config.fb_actor_operator_idname, text="Read EXIF for this file",
+            icon='TEXT')
+        op.action = 'read_exif'
+        op.headnum = settings.tmp_headnum
+        op.camnum = settings.tmp_camnum
 
         layout.separator()
 
@@ -88,7 +93,7 @@ class OBJECT_MT_FBFixMenu(Menu):
         #     icon="VIEW_CAMERA")
         # op.action = 'use_camera_frame_size'
 
-        # Disabled to avoid problems with users (but usefull for internal use)
+        # Disabled to avoid problems with users (but useful for internal use)
         # ---
         # frame_width & frame_height should be sets before rescale call
         # op = layout.operator(
@@ -116,3 +121,31 @@ class OBJECT_MT_FBFixMenu(Menu):
             icon="ERROR")
         op.action = 'about_fix_frame_warning'
 
+
+class OBJECT_MT_FBFocalLengthMenu(Menu):
+    bl_label = "Select Frame Size"
+    bl_idname = Config.fb_focal_length_menu_idname
+    bl_description = "Fix frame Width and Height parameters for all cameras"
+
+    def draw(self, context):
+        settings = get_main_settings()
+        layout = self.layout
+
+        layout.label(text="Get from EXIF Focal Length")
+        layout.label(text="Get from EXIF Focal35mm Eqivalent Length "
+                          "(adjust Sensor Width)")
+        layout.label(text="Switch on Auto-Focal Estimation")
+
+
+
+class OBJECT_MT_FBSensorWidthMenu(Menu):
+    bl_label = "Select Frame Size"
+    bl_idname = Config.fb_sensor_width_menu_idname
+    bl_description = "Fix frame Width and Height parameters for all cameras"
+
+    def draw(self, context):
+        settings = get_main_settings()
+        layout = self.layout
+
+        layout.label(text="Get from EXIF Sensor Size")
+        layout.label(text="Set Default Sensor Size 36 x 24 mm")

@@ -29,6 +29,7 @@ from ..config import Config, get_main_settings, ErrorType
 from ..blender_independent_packages.exifread import process_file
 from ..blender_independent_packages.exifread import \
     DEFAULT_STOP_TAG, FIELD_TYPES
+from ..utils.exif_reader import read_exif, init_exif_settings
 
 
 def frac_to_float(s):
@@ -64,9 +65,18 @@ class WM_OT_FBSingleFilebrowser(Operator, ImportHelper):
         options={'HIDDEN'}
     )
 
+    headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
+    camnum: bpy.props.IntProperty(name='Camera index', default=0)
+
     def execute(self, context):
-        """Do something with the selected file(s)."""
-        print('Selected file:', self.filepath)
+        logger = logging.getLogger(__name__)
+        settings = get_main_settings()
+        logger.info('Loaded image file:', self.filepath)
+        img = bpy.data.images.load(self.filepath)
+        settings.heads[self.headnum].cameras[self.camnum].cam_image = img
+
+        exif = read_exif(self.filepath)
+        init_exif_settings(self.headnum, exif)
         return {'FINISHED'}
 
 

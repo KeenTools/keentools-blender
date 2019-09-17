@@ -20,6 +20,8 @@ import bpy
 
 _company = 'keentools'
 _prefix = _company + '_fb'  # for FaceBuilder
+_PT = 'FACEBUILDER_PT_'
+_MT = 'FACEBUILDER_MT_'
 
 
 class BuilderType:
@@ -70,6 +72,13 @@ class Config:
     fb_main_add_camera_idname = 'object.' + fb_main_add_camera_callname
     fb_main_fix_size_callname = _prefix + '_main_fix_size'
     fb_main_fix_size_idname = 'object.' + fb_main_fix_size_callname
+    fb_main_set_sensor_width_callname = _prefix + '_main_set_sensor_width'
+    fb_main_set_sensor_width_idname = 'object.' + \
+                                      fb_main_set_sensor_width_callname
+    fb_main_set_focal_length_callname = _prefix + '_main_set_focal_length'
+    fb_main_set_focal_length_idname = 'object.' + \
+                                      fb_main_set_focal_length_callname
+
     fb_main_camera_fix_size_idname = 'object.' + _prefix + \
                                      '_main_camera_fix_size'
     fb_main_addon_settings_idname = 'object.' + _prefix + \
@@ -104,21 +113,22 @@ class Config:
     fb_add_body_operator_idname = 'mesh.' + fb_add_body_operator_callname
 
     # Panels ids
-    fb_header_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_header_panel_id'
-    fb_camera_panel_idname = 'FACEBUILDER_PT_' + _prefix + 'camera_panel_id'
-    fb_views_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_views_panel_id'
-    fb_tb_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_tb_panel_id'
-    fb_colors_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_colors_panel_id'
-    fb_parts_panel_idname = 'FACEBUILDER_PT_' + _prefix + '_parts_panel_id'
-    fb_settings_panel_idname = 'FACEBUILDER_PT_' + _prefix + \
+    fb_header_panel_idname = _PT + _prefix + '_header_panel_id'
+    fb_camera_panel_idname = _PT + _prefix + 'camera_panel_id'
+    fb_views_panel_idname = _PT + _prefix + '_views_panel_id'
+    fb_tb_panel_idname = _PT + _prefix + '_tb_panel_id'
+    fb_colors_panel_idname = _PT + _prefix + '_colors_panel_id'
+    fb_parts_panel_idname = _PT + _prefix + '_parts_panel_id'
+    fb_settings_panel_idname = _PT + _prefix + \
                                '_settings_panel_id'
 
 
     # Menu ids
-    fb_fix_frame_menu_idname = 'FACEBUILDER_MT_' + _prefix + \
-                               '_fix_frame_menu_id'
-    fb_fix_camera_frame_menu_idname = 'FACEBUILDER_MT_' + _prefix + \
+    fb_fix_frame_menu_idname = _MT + _prefix + '_fix_frame_menu_id'
+    fb_fix_camera_frame_menu_idname = _MT + _prefix + \
                                       '_fix_camera_frame_menu_id'
+    fb_focal_length_menu_idname = _MT + _prefix + '_focal_length_menu_id'
+    fb_sensor_width_menu_idname = _MT + _prefix + '_sensor_width_menu_id'
 
     # Standard names
     tex_builder_filename = 'texbuilder_baked'
