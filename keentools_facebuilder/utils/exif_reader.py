@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+import os
 
 from ..blender_independent_packages.exifread import process_file
 from ..blender_independent_packages.exifread import \
@@ -94,6 +95,7 @@ def read_exif(filepath):
         logger.error("{}' is unreadable for EXIF".format(filepath))
 
     return {
+        'filepath': os.path.basename(filepath),
         'exif_focal': exif_focal,
         'exif_focal35mm': exif_focal35mm,
         'exif_focal_x_res': exif_focal_x_res,
@@ -109,7 +111,7 @@ def init_exif_settings(headnum, data):
     settings = get_main_settings()
     head = settings.heads[headnum]
     # Output image size
-    message = ""
+    message = "EXIF for: {}".format(data['filepath'])
 
     # message += "\nSize: {}x{}".format(w, h)
 
@@ -129,12 +131,12 @@ def init_exif_settings(headnum, data):
     # Focal
     if data['exif_focal'] is not None:
         head.exif_focal = data['exif_focal']
-        message += "\nFocal: {}".format(data['exif_focal'])
+        message += "\nFocal: {} mm".format(data['exif_focal'])
 
     # Focal 35mm equivalent
     if data['exif_focal35mm'] is not None:
         head.exif_focal35mm = data['exif_focal35mm']
-        message += "\nFocal equiv. 35mm: {:.2f}".format(data['exif_focal35mm'])
+        message += "\nFocal equiv. 35mm: {:.2f} mm".format(data['exif_focal35mm'])
 
     # Sensor Width
     if data['exif_width'] is not None and data['exif_focal_x_res'] is not None:
@@ -158,3 +160,5 @@ def init_exif_settings(headnum, data):
     if data['exif_focal'] is not None and data['exif_focal35mm'] is not None:
         sc = data['exif_focal'] / data['exif_focal35mm']
         logger.debug("VIA_FOCAL: {} {}".format(36.0 * sc, 24.0 * sc))
+
+    return message

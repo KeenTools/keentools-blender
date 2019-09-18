@@ -26,9 +26,6 @@ from bpy.types import Operator
 from ..fbloader import FBLoader
 from ..config import Config, get_main_settings, ErrorType
 
-from ..blender_independent_packages.exifread import process_file
-from ..blender_independent_packages.exifread import \
-    DEFAULT_STOP_TAG, FIELD_TYPES
 from ..utils.exif_reader import read_exif, init_exif_settings
 
 
@@ -68,15 +65,38 @@ class WM_OT_FBSingleFilebrowser(Operator, ImportHelper):
     headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
     camnum: bpy.props.IntProperty(name='Camera index', default=0)
 
+    update_render_size: bpy.props.EnumProperty(name="Update Size", items=[
+        ('yes', 'Update', 'Update render size to images resolution', 0),
+        ('no', 'Leave unchanged', 'Leave the render size unchanged', 1),
+    ], description="Update Render size")
+
+    def draw(self, context):
+        layout = self.layout
+
+        layout.label(text='Update Scene Render Size')
+        layout.prop(self, 'update_render_size', expand=True)
+
+        col = layout.column()
+        col.scale_y = 0.75
+        txt = ['All frames for FaceBuilder',
+               'should have the same size.',
+               'So Update option is the best choice',
+               'for standard workflow. [Update]',
+               'changes Render Size of your Scene!']
+        for t in txt:
+            col.label(text=t)
+
     def execute(self, context):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
-        logger.info('Loaded image file:', self.filepath)
+        logger.info('Loaded image file: {}'.format(self.filepath))
         img = bpy.data.images.load(self.filepath)
-        settings.heads[self.headnum].cameras[self.camnum].cam_image = img
+        head = settings.heads[self.headnum]
+        head.cameras[self.camnum].cam_image = img
 
         exif = read_exif(self.filepath)
-        init_exif_settings(self.headnum, exif)
+        message = init_exif_settings(self.headnum, exif)
+        head.exif_message = message
         return {'FINISHED'}
 
 
@@ -127,7 +147,6 @@ class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
 
     def execute(self, context):
         """ Selected files processing"""
-        print('FILEDIALOG H:', self.headnum)
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         if len(settings.heads) <= self.headnum:
@@ -135,135 +154,24 @@ class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
             op('INVOKE_DEFAULT', msg=ErrorType.IllegalIndex)
             return {'CANCELLED'}
 
-        print('FILEDIALOG2')
-
         # if Settings structure is broken
         if not settings.check_heads_and_cams():
             settings.fix_heads()  # Fix
-
-        print('FILEDIALOG3')
-
-        directory = self.directory
 
         changes = 0
         w = -1
         h = -1
 
-        exif_focal = None
-        exif_focal35mm = None
-        exif_focal_x_res = None
-        exif_focal_y_res = None
-        exif_width = None
-        exif_length = None
-        exif_units = 2.0
-        units_scale = 25.4
-        message = ""
-
+        img = None
+        filepath = ""
         for f in self.files:
-            filepath = os.path.join(directory, f.name)
+            filepath = os.path.join(self.directory, f.name)
             logger.debug("FILE: {}".format(filepath))
-
-            # EXIF reading
-            exif_focal = None
-            exif_focal35mm = None
-            exif_focal_x_res = None
-            exif_focal_y_res = None
-            exif_width = None
-            exif_length = None
-            exif_units = 2.0
-            units_scale = 25.4
-
-            try:
-                img_file = open(str(filepath), 'rb')
-                detailed = True
-                stop_tag = DEFAULT_STOP_TAG
-                debug = False
-                strict = False
-                color = False
-                # get the tags
-                data = process_file(img_file, stop_tag=stop_tag,
-                                    details=detailed, strict=strict,
-                                    debug=debug)
-                tag_keys = list(data.keys())
-                # tag_keys.sort()
-
-                for i in tag_keys:
-                    try:
-                        logger.info('{} ({}): {}'.format(i,
-                                    FIELD_TYPES[data[i].field_type][2],
-                                    data[i].printable))
-                    except:
-                        logger.error("{} : {}".format(i, str(data[i])))
-                # print("TAGS:", data)
-
-                exif_focal = get_safe_exif_param('EXIF FocalLength', data)
-                exif_focal35mm = get_safe_exif_param('EXIF FocalLengthIn35mmFilm', data)
-                exif_focal_x_res = get_safe_exif_param(
-                    'EXIF FocalPlaneXResolution', data)
-                exif_focal_y_res = get_safe_exif_param(
-                    'EXIF FocalPlaneYResolution', data)
-                exif_width = get_safe_exif_param('EXIF ExifImageWidth', data)
-                exif_length = get_safe_exif_param('EXIF ExifImageLength', data)
-                exif_units = get_safe_exif_param('EXIF FocalPlaneResolutionUnit',
-                                                 data)
-
-                img_file.close()
-                # Output filename
-                message = "EXIF for: {}".format(f.name)
-
-            except IOError:
-                logger.error("{}' is unreadable for EXIF".format(filepath))
-                continue
 
             img, camera = FBLoader.add_camera_image(self.headnum, filepath)
             if img.size[0] != w or img.size[1] != h:
                 w, h = img.size
                 changes += 1
-
-            # Output image size
-            message += "\nSize: {}x{}".format(w, h)
-
-            # Store EXIF data in camera
-            if exif_units == 3.0:
-                units_scale = 10.0  # cm (3)
-                # message += "\nSensor units: cm"
-            else:
-                units_scale = 25.4  # inch (2)
-                # message += "\nSensor units: inch"
-            logger.debug("UNIT_SCALE {}".format(units_scale))
-
-            # Focal
-            if exif_focal is not None:
-                camera.exif_focal = exif_focal
-                message += "\nFocal: {}".format(exif_focal)
-
-            # Focal 35mm equivalent
-            if exif_focal35mm is not None:
-                camera.exif_focal35mm = exif_focal35mm
-                message += "\nFocal equiv. 35mm: {:.2f}".format(exif_focal35mm)
-
-            # Sensor Width
-            if exif_width is not None and exif_focal_x_res is not None:
-                sx = 25.4 * exif_width / exif_focal_x_res
-                message += "\nSensor Width: {:.2f} mm".format(sx)
-                logger.debug("SX_inch: {}".format(sx))
-                sx = 10.0 * exif_width / exif_focal_x_res
-                message += " ({:.2f})".format(sx)
-                logger.debug("SX_cm: {}".format(sx))
-
-            # Sensor Length
-            if exif_length is not None and exif_focal_y_res is not None:
-                sy = 25.4 * exif_length / exif_focal_y_res
-                message += "\nSensor Height: {:.2f} mm".format(sy)
-                logger.debug("SY_inch: {}".format(sy))
-                sy = 10.0 * exif_length / exif_focal_y_res
-                message += " ({:.2f})".format(sy)
-                logger.debug("SY_cm: {}".format(sy))
-
-            # Sensor via 35mm Equivalent (not used yet)
-            if exif_focal is not None and exif_focal35mm is not None:
-                sc = exif_focal / exif_focal35mm
-                logger.debug("VIA_FOCAL: {} {}".format(36.0 * sc, 24.0 * sc))
 
         # We update Render Size in accordance to image size
         if self.update_render_size == 'yes' and changes == 1:
@@ -273,38 +181,11 @@ class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
             settings.frame_width = w
             settings.frame_height = h
 
-        # Start EXIF results performing
+        # Start EXIF reading
         head = settings.heads[self.headnum]
-        if not head.use_exif:
-            # User don't want EXIF
-            head.exif_message = ""
-            return {'FINISHED'}  # (1)
-
-        # If there is focal35mm equivalent, use it instead real sensor size
-        if exif_focal35mm is not None:
-            head.sensor_width = 36
-            head.sensor_height = 24
-            head.focal = exif_focal35mm
-            logger.debug("UPDATE via EXIF focal35mm")
+        if img is not None:
+            exif = read_exif(filepath)
+            message = init_exif_settings(self.headnum, exif)
             head.exif_message = message
-            return {'FINISHED'}  # (2)
 
-        # Focal Length if found
-        if exif_focal is not None:
-            head.focal = exif_focal
-            logger.debug("UPDATE via EXIF focal")
-
-        # Sensor Width calculated via EXIF
-        if exif_width is not None and exif_focal_x_res is not None:
-            # assumed inches instead EXIF units_scale
-            sx = 25.4 * exif_width / exif_focal_x_res
-            head.sensor_width = sx
-
-        if exif_length is not None and exif_focal_y_res is not None:
-            # assumed inches instead EXIF units_scale
-            sy = 25.4 * exif_length / exif_focal_y_res
-            head.sensor_height = sy
-
-        head.exif_message = message
-
-        return {'FINISHED'}  # (3)
+        return {'FINISHED'}

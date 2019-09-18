@@ -103,6 +103,9 @@ class Config:
     fb_movepin_operator_callname = _prefix + '_move_pin'
     fb_actor_operator_callname = _prefix + '_actor'
     fb_actor_operator_idname = 'object.' + fb_actor_operator_callname
+    fb_camera_actor_operator_callname = _prefix + '_camera_actor'
+    fb_camera_actor_operator_idname = 'object.' + \
+                                      fb_camera_actor_operator_callname
     fb_warning_operator_callname = _prefix + '_addon_warning'
     fb_warning_operator_idname = 'wm.' + fb_warning_operator_callname
     fb_tex_selector_operator_callname = _prefix + '_tex_selector'

@@ -60,7 +60,7 @@ class OBJECT_MT_FBFixCameraMenu(Menu):
         op = layout.operator(
             Config.fb_actor_operator_idname, text="Read EXIF for this file",
             icon='TEXT')
-        op.action = 'read_exif'
+        op.action = 'read_file_exif'
         op.headnum = settings.tmp_headnum
         op.camnum = settings.tmp_camnum
 
@@ -125,17 +125,37 @@ class OBJECT_MT_FBFixMenu(Menu):
 class OBJECT_MT_FBFocalLengthMenu(Menu):
     bl_label = "Select Frame Size"
     bl_idname = Config.fb_focal_length_menu_idname
-    bl_description = "Fix frame Width and Height parameters for all cameras"
+    bl_description = "Camera parameters"
 
     def draw(self, context):
         settings = get_main_settings()
         layout = self.layout
 
-        layout.label(text="Get from EXIF Focal Length")
-        layout.label(text="Get from EXIF Focal35mm Eqivalent Length "
-                          "(adjust Sensor Width)")
-        layout.label(text="Switch on Auto-Focal Estimation")
+        op = layout.operator(Config.fb_camera_actor_operator_idname,
+                             text="Set default Focal Length: 50 mm")
+        op.headnum = settings.tmp_headnum
+        op.action = 'focal_50mm'
 
+        op = layout.operator(Config.fb_camera_actor_operator_idname,
+                             text="Get Focal via EXIF")
+        op.headnum = settings.tmp_headnum
+        op.action = 'exif_focal'
+
+        op = layout.operator(Config.fb_camera_actor_operator_idname,
+                             text="Get Focal via EXIF 35mm equivalent "
+                                  "(adjust Sensor too)")
+        op.headnum = settings.tmp_headnum
+        op.action = 'exif_focal35mm'
+
+        if settings.heads[settings.tmp_headnum].auto_focal_estimation:
+            op = layout.operator(Config.fb_camera_actor_operator_idname,
+                                 text="Set Automatic Focal Length Estimation OFF")
+            op.action = 'auto_focal_off'
+        else:
+            op = layout.operator(Config.fb_camera_actor_operator_idname,
+                                 text="Set Automatic Focal Length Estimation ON")
+            op.action = 'auto_focal_on'
+        op.headnum = settings.tmp_headnum
 
 
 class OBJECT_MT_FBSensorWidthMenu(Menu):
@@ -147,5 +167,17 @@ class OBJECT_MT_FBSensorWidthMenu(Menu):
         settings = get_main_settings()
         layout = self.layout
 
-        layout.label(text="Get from EXIF Sensor Size")
-        layout.label(text="Set Default Sensor Size 36 x 24 mm")
+        op = layout.operator(Config.fb_camera_actor_operator_idname,
+                             text="Set default Sensor Size: 36 x 24 mm")
+        op.headnum = settings.tmp_headnum
+        op.action = 'sensor_36x24mm'
+
+        op = layout.operator(Config.fb_camera_actor_operator_idname,
+                             text="Get Sensor via EXIF")
+        op.headnum = settings.tmp_headnum
+        op.action = 'exif_sensor'
+
+        op = layout.operator(Config.fb_camera_actor_operator_idname,
+                             text="Get Sensor via EXIF 35mm equivalent")
+        op.headnum = settings.tmp_headnum
+        op.action = 'exif_sensor35mm'

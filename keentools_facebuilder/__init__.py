@@ -63,7 +63,7 @@ from .main_operator import (OBJECT_OT_FBSelectHead, OBJECT_OT_FBDeleteHead,
                             OBJECT_OT_FBDefaultSensor, OBJECT_OT_FBAllUnknown)
 from .pinmode import OBJECT_OT_FBPinMode
 from .movepin import OBJECT_OT_FBMovePin
-from .actor import OBJECT_OT_FBActor
+from .actor import OBJECT_OT_FBActor, OBJECT_OT_FBCameraActor
 from keentools_facebuilder.interface.filedialog import \
     WM_OT_FBSingleFilebrowser, WM_OT_FBMultipleFilebrowser
 from .config import Config
@@ -114,6 +114,7 @@ _CLASSES_TO_REGISTER = (
     OBJECT_OT_FBPinMode,
     OBJECT_OT_FBMovePin,
     OBJECT_OT_FBActor,
+    OBJECT_OT_FBCameraActor,
     WM_OT_FBSingleFilebrowser,
     WM_OT_FBMultipleFilebrowser,
     WM_OT_FBTexSelector) + preferences.CLASSES_TO_REGISTER
