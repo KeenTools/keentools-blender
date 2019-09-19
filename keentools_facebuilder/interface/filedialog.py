@@ -26,7 +26,7 @@ from bpy.types import Operator
 from ..fbloader import FBLoader
 from ..config import Config, get_main_settings, ErrorType
 
-from ..utils.exif_reader import read_exif, init_exif_settings
+from ..utils.exif_reader import read_exif, init_exif_settings, exif_message
 
 
 class WM_OT_FBSingleFilebrowser(Operator, ImportHelper):
@@ -163,8 +163,9 @@ class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
         # Start EXIF reading
         head = settings.heads[self.headnum]
         if img is not None:
-            exif = read_exif(filepath)
-            message = init_exif_settings(self.headnum, exif)
+            exif_data = read_exif(filepath)
+            init_exif_settings(self.headnum, exif_data)
+            message = exif_message(self.headnum, exif_data)
             head.exif_message = message
 
         return {'FINISHED'}

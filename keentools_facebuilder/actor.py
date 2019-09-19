@@ -26,7 +26,7 @@ from bpy.types import Operator
 
 from .utils import manipulate, materials
 from .config import Config, ErrorType, get_main_settings
-from .utils.exif_reader import (read_exif, init_exif_settings,
+from .utils.exif_reader import (read_exif, init_exif_settings, exif_message,
                                 get_sensor_size_35mm_equivalent)
 
 class OBJECT_OT_FBActor(Operator):
@@ -101,8 +101,9 @@ class OBJECT_OT_FBActor(Operator):
             head = settings.heads[self.headnum]
             camera = head.cameras[self.camnum]
             if camera.cam_image is not None:
-                exif = read_exif(camera.cam_image.filepath)
-                message = init_exif_settings(self.headnum, exif)
+                exif_data = read_exif(camera.cam_image.filepath)
+                init_exif_settings(self.headnum, exif_data)
+                message = exif_message(self.headnum, exif_data)
                 head.exif_message = message
 
         elif self.action == 'delete_camera_image':

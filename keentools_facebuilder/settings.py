@@ -312,7 +312,7 @@ class FBHeadItem(PropertyGroup):
     exif_focal35mm: FloatProperty(default=-1.0)
     exif_focal_x_res: FloatProperty(default=-1.0)
     exif_focal_y_res: FloatProperty(default=-1.0)
-    exif_units: FloatProperty(default=-2.0)
+    exif_units: StringProperty(default="inch")  # or cm
     exif_image_width: FloatProperty(default=-1.0)
     exif_image_length: FloatProperty(default=-1.0)
     exif_sensor_width: FloatProperty(default=-1.0)
