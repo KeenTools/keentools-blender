@@ -149,9 +149,6 @@ class FBCameraItem(PropertyGroup):
 
     use_in_tex_baking: BoolProperty(name="Use In Texture Baking", default=True)
 
-    exif_focal: FloatProperty(default=-1)
-    exif_focal35mm: FloatProperty(default=-1)
-
     @staticmethod
     def convert_matrix_to_str(arr):
         b = arr.tobytes()
@@ -252,9 +249,10 @@ class FBHeadItem(PropertyGroup):
         ], default='ff', update=update_preset)
 
     sensor_width: FloatProperty(
-        description="The horizontal size of the camera used to take photos."
-                    "This is VERY important parameter. "
-                    "Set it according to the real camera specification",
+        description="The larger dimension of the camera sensor "
+                    "used to take photos. This is VERY important parameter. "
+                    "Set it according to the real camera specification "
+                    "or via image file EXIF info",
         name="Sensor Width (mm)", default=36,
         min=0.1, update=update_sensor_width)
     sensor_height: FloatProperty(
@@ -310,11 +308,15 @@ class FBHeadItem(PropertyGroup):
         default=True)
 
     exif_message: StringProperty(name="EXIF Message", default="")
-    exif_focal: FloatProperty(default=-1)
-    exif_focal35mm: FloatProperty(default=-1)
-    exif_focal_x_res = FloatProperty(default=-1)
-    exif_focal_y_res = FloatProperty(default=-1)
-    exif_units = FloatProperty(default=2.0)
+    exif_focal: FloatProperty(default=-1.0)
+    exif_focal35mm: FloatProperty(default=-1.0)
+    exif_focal_x_res: FloatProperty(default=-1.0)
+    exif_focal_y_res: FloatProperty(default=-1.0)
+    exif_units: FloatProperty(default=-2.0)
+    exif_image_width: FloatProperty(default=-1.0)
+    exif_image_length: FloatProperty(default=-1.0)
+    exif_sensor_width: FloatProperty(default=-1.0)
+    exif_sensor_length: FloatProperty(default=-1.0)
 
     def set_serial_str(self, value):
         self.serial_str = value

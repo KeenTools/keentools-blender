@@ -29,29 +29,6 @@ from ..config import Config, get_main_settings, ErrorType
 from ..utils.exif_reader import read_exif, init_exif_settings
 
 
-def frac_to_float(s):
-    try:
-        arr = s.split('/')
-        if len(arr) == 1:
-            val = float(s)
-            return val
-        elif len(arr) == 2:
-            val = float(arr[0]) / float(arr[1])
-            return val
-    except Exception:
-        pass
-    return None
-
-
-def get_safe_exif_param(p, data):
-    logger = logging.getLogger(__name__)
-    if p in data.keys():
-        val = frac_to_float(data[p].printable)
-        logger.debug("{} {}".format(p, val))
-        return val
-    return None
-
-
 class WM_OT_FBSingleFilebrowser(Operator, ImportHelper):
     bl_idname = Config.fb_single_filebrowser_operator_idname
     bl_label = "Open Image"
@@ -158,7 +135,8 @@ class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
         if not settings.check_heads_and_cams():
             settings.fix_heads()  # Fix
 
-        changes = 0
+        # Loaded image sizes
+        changes = 0  # count image size changes over all files
         w = -1
         h = -1
 
@@ -174,6 +152,7 @@ class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
                 changes += 1
 
         # We update Render Size in accordance to image size
+        # (only if all images have the same size)
         if self.update_render_size == 'yes' and changes == 1:
             render = bpy.context.scene.render
             render.resolution_x = w

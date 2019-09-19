@@ -25,7 +25,6 @@ from . config import get_main_settings
 
 class FBDebug:
     """ Debug purpose object """
-    force_stop = True
     event_number = 0
     event_queue = []
     lastx = 0
@@ -63,9 +62,6 @@ class FBDebug:
     @classmethod
     def add_event_to_queue(cls, eventname, px, py,
                            b=(-1, -1, -1, -1, -1, -1, -1)):
-        if cls.force_stop:
-            return
-
         if not cls.active:
             return
         cls.inc_event_number()

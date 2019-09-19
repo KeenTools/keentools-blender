@@ -59,9 +59,9 @@ class OBJECT_OT_FBSelectHead(Operator):
 
 class OBJECT_OT_FBDeleteHead(Operator):
     bl_idname = Config.fb_main_delete_head_idname
-    bl_label = "Pin Mode"
+    bl_label = "Delete Head"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Delete Head"
+    bl_description = "Delete Head and its cameras from Scene"
 
     headnum: IntProperty(default=0)
 

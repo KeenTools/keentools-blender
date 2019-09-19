@@ -108,7 +108,7 @@ class OBJECT_PT_FBHeaderPanel(Panel):
         layout = self.layout
         state, headnum = what_is_state()
 
-        layout.label(text="{} {}".format(state, headnum))
+        # layout.label(text="{} {}".format(state, headnum))
 
         if state == 'PINMODE':
             # Unhide Button if Head is hidden in pinmode (by ex. after Undo)

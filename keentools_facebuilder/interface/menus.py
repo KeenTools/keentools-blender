@@ -20,6 +20,8 @@ from bpy.types import Menu
 from bpy.props import IntProperty
 from ..config import Config, get_main_settings
 
+from ..utils.exif_reader import get_sensor_size_35mm_equivalent
+
 
 class OBJECT_MT_FBFixCameraMenu(Menu):
     bl_label = "Fix Frame Size"
@@ -30,32 +32,23 @@ class OBJECT_MT_FBFixCameraMenu(Menu):
         settings = get_main_settings()
         layout = self.layout
 
-        # Disabled because it does not work in popup window
-        op = layout.operator(Config.fb_multiple_filebrowser_operator_idname,
-                          text="Add Camera Image(s)", icon='OUTLINER_OB_IMAGE')
-        op.headnum = settings.tmp_headnum
-
-        layout.separator()
-
-        op = layout.operator(
-            Config.fb_actor_operator_idname, text="Info about Frame Size warning",
-            icon='ERROR')
-        op.action = 'about_fix_frame_warning'
-
         op = layout.operator(
             Config.fb_actor_operator_idname,
-            text="Auto-Detect most frequent Size", icon="FULLSCREEN_ENTER")
+            text="Auto-Detect most frequent Frame Size",
+            icon="FULLSCREEN_ENTER")
         op.action = 'auto_detect_frame_size'
+
+        op = layout.operator(
+            Config.fb_actor_operator_idname, text="Use This Camera Frame Size",
+            icon='VIEW_CAMERA')
+        op.action = 'use_this_camera_frame_size'
 
         op = layout.operator(
             Config.fb_actor_operator_idname, text="Use Scene Render Size",
             icon='OUTPUT')
         op.action = 'use_render_frame_size'
 
-        op = layout.operator(
-            Config.fb_actor_operator_idname, text="Use This Camera Size",
-            icon='VIEW_CAMERA')
-        op.action = 'use_this_camera_frame_size'
+        layout.separator()
 
         op = layout.operator(
             Config.fb_actor_operator_idname, text="Read EXIF for this file",
@@ -66,11 +59,17 @@ class OBJECT_MT_FBFixCameraMenu(Menu):
 
         layout.separator()
 
+        op = layout.operator(
+            Config.fb_actor_operator_idname,
+            text="Info about Frame Size warning",
+            icon='ERROR')
+        op.action = 'about_fix_frame_warning'
+
 
 class OBJECT_MT_FBFixMenu(Menu):
-    bl_label = "Select Frame Size"
+    bl_label = "Frame Size Setup"
     bl_idname = Config.fb_fix_frame_menu_idname
-    bl_description = "Fix frame Width and Height parameters for all cameras"
+    bl_description = "Setup Frame Width and Height parameters for all cameras"
 
     def draw(self, context):
         settings = get_main_settings()
@@ -86,13 +85,6 @@ class OBJECT_MT_FBFixMenu(Menu):
             icon="OUTPUT")
         op.action = 'use_render_frame_size'
 
-        # Disabled because it is not obvious
-        # ---
-        # op = layout.operator(
-        #     Config.fb_actor_operator_idname, text="Use Current Camera Size",
-        #     icon="VIEW_CAMERA")
-        # op.action = 'use_camera_frame_size'
-
         # Disabled to avoid problems with users (but useful for internal use)
         # ---
         # frame_width & frame_height should be sets before rescale call
@@ -102,11 +94,6 @@ class OBJECT_MT_FBFixMenu(Menu):
         # op.action = 'use_render_frame_size_scaled'
 
         layout.separator()
-
-        # Disabled becaouse it does not work in popup window
-        # op = layout.operator(Config.fb_filedialog_operator_idname,
-        #                   text="Add Camera Image(s)", icon='OUTLINER_OB_IMAGE')
-        # op.headnum = settings.tmp_headnum
 
         # Add New Camera button
         op = layout.operator(Config.fb_main_add_camera_idname,
@@ -123,33 +110,41 @@ class OBJECT_MT_FBFixMenu(Menu):
 
 
 class OBJECT_MT_FBFocalLengthMenu(Menu):
-    bl_label = "Select Frame Size"
+    bl_label = "Focal Length setup"
     bl_idname = Config.fb_focal_length_menu_idname
-    bl_description = "Camera parameters"
+    bl_description = "Setup Camera Focal Length"
 
     def draw(self, context):
         settings = get_main_settings()
         layout = self.layout
+        head = settings.heads[settings.tmp_headnum]
 
-        op = layout.operator(Config.fb_camera_actor_operator_idname,
-                             text="Set default Focal Length: 50 mm")
-        op.headnum = settings.tmp_headnum
-        op.action = 'focal_50mm'
+        # Focal Length (only) via EXIF
+        if head.exif_focal > 0.0:
+            txt = ": [{:.2f} mm]".format(head.exif_focal)
+            op = layout.operator(Config.fb_camera_actor_operator_idname,
+                                 text="Focal Length (only) via EXIF" + txt,
+                                 icon='RESTRICT_RENDER_OFF')
+            op.headnum = settings.tmp_headnum
+            op.action = 'exif_focal'
 
-        op = layout.operator(Config.fb_camera_actor_operator_idname,
-                             text="Get Focal via EXIF")
-        op.headnum = settings.tmp_headnum
-        op.action = 'exif_focal'
+        # Focal Length (only) via EXIF 35mm equivalent
+        if head.exif_focal35mm > 0.0:
+            txt = ": [{:.2f} mm]".format(head.exif_focal35mm)
+            op = layout.operator(Config.fb_camera_actor_operator_idname,
+                                 text="Focal Length (only) via EXIF "
+                                      "35mm equivalent" + txt,
+                                 icon='RESTRICT_RENDER_ON')
+            op.headnum = settings.tmp_headnum
+            op.action = 'exif_focal35mm'
 
-        op = layout.operator(Config.fb_camera_actor_operator_idname,
-                             text="Get Focal via EXIF 35mm equivalent "
-                                  "(adjust Sensor too)")
-        op.headnum = settings.tmp_headnum
-        op.action = 'exif_focal35mm'
+        layout.separator()
 
+        # Set Automatic Focal Length Estimation OFF
         if settings.heads[settings.tmp_headnum].auto_focal_estimation:
             op = layout.operator(Config.fb_camera_actor_operator_idname,
-                                 text="Set Automatic Focal Length Estimation OFF")
+                                 text="Set Automatic Focal Length "
+                                      "Estimation OFF")
             op.action = 'auto_focal_off'
         else:
             op = layout.operator(Config.fb_camera_actor_operator_idname,
@@ -157,27 +152,79 @@ class OBJECT_MT_FBFocalLengthMenu(Menu):
             op.action = 'auto_focal_on'
         op.headnum = settings.tmp_headnum
 
+        layout.separator()
+
+        # Default Focal Length: 50 mm
+        op = layout.operator(Config.fb_camera_actor_operator_idname,
+                             text="Default Focal Length: [50 mm]",
+                             icon='DRIVER_DISTANCE')
+        op.headnum = settings.tmp_headnum
+        op.action = 'focal_50mm'
+
 
 class OBJECT_MT_FBSensorWidthMenu(Menu):
-    bl_label = "Select Frame Size"
+    bl_label = "Sensor Size setup"
     bl_idname = Config.fb_sensor_width_menu_idname
-    bl_description = "Fix frame Width and Height parameters for all cameras"
+    bl_description = "Setup Sensor Width and Height parameters for camera"
 
     def draw(self, context):
         settings = get_main_settings()
         layout = self.layout
+        head = settings.heads[settings.tmp_headnum]
 
+        # Auto Sensor & Focal via EXIF
+        if head.exif_sensor_width > 0.0 and head.exif_sensor_length > 0.0 \
+                and head.exif_focal > 0.0:
+            w = head.exif_sensor_width
+            h = head.exif_sensor_length
+            f = head.exif_focal
+            txt = ": {:.2f} x {:.2f} mm [{:.2f}]".format(w, h, f)
+            op = layout.operator(Config.fb_camera_actor_operator_idname,
+                                 text="Auto Sensor & [Focal] via EXIF" + txt,
+                                 icon='OBJECT_DATAMODE')
+            op.headnum = settings.tmp_headnum
+            op.action = 'exif_auto_sensor_and_focal'
+
+        # Auto Sensor & Focal via EXIF 35mm equiv.
+        if head.exif_focal > 0.0 and head.exif_focal35mm > 0.0:
+            w = 35.0
+            h = 24.0 * 35.0 / 36.0
+            f = head.exif_focal35mm
+            txt = ": {:.2f} x {:.2f} mm [{:.2f}]".format(w, h, f)
+            op = layout.operator(Config.fb_camera_actor_operator_idname,
+                text="Auto Sensor & [Focal] via EXIF 35mm equiv." + txt,
+                icon='FULLSCREEN_ENTER')
+            op.headnum = settings.tmp_headnum
+            op.action = 'exif_auto_sensor_and_focal_35mm'
+
+        layout.separator()
+
+        # Sensor Size (only) via EXIF
+        if head.exif_sensor_width > 0.0 and head.exif_sensor_length > 0.0:
+            w = head.exif_sensor_width
+            h = head.exif_sensor_length
+            txt = ": {:.2f} x {:.2f} mm".format(w, h)
+            op = layout.operator(Config.fb_camera_actor_operator_idname,
+                                 text="Sensor Size (only) via EXIF" + txt,
+                                 icon='OBJECT_DATAMODE')
+            op.headnum = settings.tmp_headnum
+            op.action = 'exif_sensor'
+
+        # Sensor Size (only) via EXIF 35mm equivalent
+        if head.exif_focal > 0.0 and head.exif_focal35mm > 0.0:
+            w, h = get_sensor_size_35mm_equivalent(head)
+            txt = ": {:.2f} x {:.2f} mm".format(w, h)
+            op = layout.operator(Config.fb_camera_actor_operator_idname,
+                                 text="Sensor Size (only) via EXIF "
+                                      "35mm equivalent" + txt,
+                                 icon='FULLSCREEN_ENTER')
+            op.headnum = settings.tmp_headnum
+            op.action = 'exif_sensor35mm'
+
+        layout.separator()
         op = layout.operator(Config.fb_camera_actor_operator_idname,
-                             text="Set default Sensor Size: 36 x 24 mm")
+                             text="Default Sensor Size: 36 x 24 mm",
+                             icon='OBJECT_HIDDEN')
         op.headnum = settings.tmp_headnum
         op.action = 'sensor_36x24mm'
 
-        op = layout.operator(Config.fb_camera_actor_operator_idname,
-                             text="Get Sensor via EXIF")
-        op.headnum = settings.tmp_headnum
-        op.action = 'exif_sensor'
-
-        op = layout.operator(Config.fb_camera_actor_operator_idname,
-                             text="Get Sensor via EXIF 35mm equivalent")
-        op.headnum = settings.tmp_headnum
-        op.action = 'exif_sensor35mm'

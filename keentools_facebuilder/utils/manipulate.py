@@ -145,6 +145,8 @@ def auto_detect_frame_size():
         sizes.append((w, h))
     cnt = Counter(sizes)
     mc = cnt.most_common(2)
+    if len(mc) == 0:
+        return
     el = mc[0][0]
     # If most are undefined images
     if el == (-1, -1):
