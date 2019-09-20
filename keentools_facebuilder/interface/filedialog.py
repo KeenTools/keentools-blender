@@ -73,7 +73,7 @@ class WM_OT_FBSingleFilebrowser(Operator, ImportHelper):
 
         exif = read_exif(self.filepath)
         message = init_exif_settings(self.headnum, exif)
-        head.exif_message = message
+        head.exif.message = message
         return {'FINISHED'}
 
 
@@ -166,6 +166,6 @@ class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
             exif_data = read_exif(filepath)
             init_exif_settings(self.headnum, exif_data)
             message = exif_message(self.headnum, exif_data)
-            head.exif_message = message
+            head.exif.message = message
 
         return {'FINISHED'}

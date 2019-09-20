@@ -122,8 +122,8 @@ class OBJECT_MT_FBFocalLengthMenu(Menu):
         head = settings.heads[settings.tmp_headnum]
 
         # Focal Length (only) via EXIF
-        if head.exif_focal > 0.0:
-            txt = "[{:.2f} mm]   ".format(head.exif_focal)
+        if head.exif.focal > 0.0:
+            txt = "[{:.2f} mm]   ".format(head.exif.focal)
             op = layout.operator(Config.fb_camera_actor_operator_idname,
                                  text=txt + "EXIF Focal Length",
                                  icon='RESTRICT_RENDER_OFF')
@@ -131,8 +131,8 @@ class OBJECT_MT_FBFocalLengthMenu(Menu):
             op.action = 'exif_focal'
 
         # Focal Length (only) via EXIF 35mm equivalent
-        if head.exif_focal35mm > 0.0:
-            txt = "[{:.2f} mm]   ".format(head.exif_focal35mm)
+        if head.exif.focal35mm > 0.0:
+            txt = "[{:.2f} mm]   ".format(head.exif.focal35mm)
             op = layout.operator(Config.fb_camera_actor_operator_idname,
                                  text=txt + "EXIF Focal Length "
                                       "35mm equivalent",
@@ -178,11 +178,11 @@ class OBJECT_MT_FBSensorWidthMenu(Menu):
         head = settings.heads[settings.tmp_headnum]
 
         # Auto Sensor & Focal via EXIF
-        if head.exif_sensor_width > 0.0 and head.exif_sensor_length > 0.0 \
-                and head.exif_focal > 0.0:
-            w = head.exif_sensor_width
-            h = head.exif_sensor_length
-            f = head.exif_focal
+        if head.exif.sensor_width > 0.0 and head.exif.sensor_length > 0.0 \
+                and head.exif.focal > 0.0:
+            w = head.exif.sensor_width
+            h = head.exif.sensor_length
+            f = head.exif.focal
             txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
             op = layout.operator(Config.fb_camera_actor_operator_idname,
                                  text=txt + "EXIF Sensor & [EXIF Focal]",
@@ -191,8 +191,8 @@ class OBJECT_MT_FBSensorWidthMenu(Menu):
             op.action = 'exif_sensor_and_focal'
 
         # EXIF Focal and Sensor via 35mm equiv.
-        if head.exif_focal > 0.0 and head.exif_focal35mm > 0.0:
-            f = head.exif_focal
+        if head.exif.focal > 0.0 and head.exif.focal35mm > 0.0:
+            f = head.exif.focal
             w, h = get_sensor_size_35mm_equivalent(head)
             txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
             op = layout.operator(Config.fb_camera_actor_operator_idname,
@@ -202,10 +202,10 @@ class OBJECT_MT_FBSensorWidthMenu(Menu):
             op.action = 'exif_focal_and_sensor_via_35mm'
 
         # Auto Sensor & Focal via EXIF 35mm equiv.
-        if head.exif_focal > 0.0 and head.exif_focal35mm > 0.0:
+        if head.exif.focal > 0.0 and head.exif.focal35mm > 0.0:
             w = 35.0
             h = 24.0 * 35.0 / 36.0
-            f = head.exif_focal35mm
+            f = head.exif.focal35mm
             txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
             op = layout.operator(Config.fb_camera_actor_operator_idname,
                 text=txt + "Standard Sensor & [Focal 35mm equiv.] ",
@@ -216,9 +216,9 @@ class OBJECT_MT_FBSensorWidthMenu(Menu):
         layout.separator()
 
         # Sensor Size (only) via EXIF
-        if head.exif_sensor_width > 0.0 and head.exif_sensor_length > 0.0:
-            w = head.exif_sensor_width
-            h = head.exif_sensor_length
+        if head.exif.sensor_width > 0.0 and head.exif.sensor_length > 0.0:
+            w = head.exif.sensor_width
+            h = head.exif.sensor_length
             txt = "{:.2f} x {:.2f} mm   ".format(w, h)
             op = layout.operator(Config.fb_camera_actor_operator_idname,
                                  text=txt + "EXIF Sensor Size",
@@ -227,7 +227,7 @@ class OBJECT_MT_FBSensorWidthMenu(Menu):
             op.action = 'exif_sensor'
 
         # Sensor Size (only) via EXIF 35mm equivalent
-        if head.exif_focal > 0.0 and head.exif_focal35mm > 0.0:
+        if head.exif.focal > 0.0 and head.exif.focal35mm > 0.0:
             w, h = get_sensor_size_35mm_equivalent(head)
             txt = "{:.2f} x {:.2f} mm   ".format(w, h)
             op = layout.operator(Config.fb_camera_actor_operator_idname,

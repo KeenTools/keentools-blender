@@ -573,5 +573,5 @@ class OBJECT_OT_FBAllUnknown(Operator):
         head.sensor_height = 24.0
         head.focal = 50.0
         head.auto_focal_estimation = True
-        head.use_exif = True
+        # head.use_exif = True
         return {'FINISHED'}

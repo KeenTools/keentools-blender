@@ -181,9 +181,9 @@ class OBJECT_PT_FBCameraPanel(Panel):
         row.prop(head, 'auto_focal_estimation')
 
         # Show EXIF message
-        if len(head.exif_message) > 0:
+        if len(head.exif.message) > 0:
             box = layout.box()
-            arr = re.split("\r\n|\n", head.exif_message)
+            arr = re.split("\r\n|\n", head.exif.message)
             col = box.column()
             col.scale_y = 0.75
             for a in arr:

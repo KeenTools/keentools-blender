@@ -285,17 +285,6 @@ class FBHeadItem(PropertyGroup):
 
     exif: PointerProperty(type=FBExifItem)
 
-    exif_message: StringProperty(name="EXIF Message", default="")
-    exif_focal: FloatProperty(default=-1.0)
-    exif_focal35mm: FloatProperty(default=-1.0)
-    exif_focal_x_res: FloatProperty(default=-1.0)
-    exif_focal_y_res: FloatProperty(default=-1.0)
-    exif_units: StringProperty(default="inch")  # or cm
-    exif_image_width: FloatProperty(default=-1.0)
-    exif_image_length: FloatProperty(default=-1.0)
-    exif_sensor_width: FloatProperty(default=-1.0)
-    exif_sensor_length: FloatProperty(default=-1.0)
-
     def set_serial_str(self, value):
         self.serial_str = value
         self.headobj[Config.fb_serial_prop_name[0]] = value
