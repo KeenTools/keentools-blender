@@ -42,6 +42,8 @@ class OBJECT_MT_FBFixCameraMenu(Menu):
             Config.fb_actor_operator_idname, text="Use This Camera Frame Size",
             icon='VIEW_CAMERA')
         op.action = 'use_this_camera_frame_size'
+        op.headnum = settings.tmp_headnum
+        op.camnum = settings.tmp_camnum
 
         op = layout.operator(
             Config.fb_actor_operator_idname, text="Use Scene Render Size",

@@ -177,7 +177,7 @@ class WM_OT_FBTexSelector(Operator):
                     row.label(text='', icon='PINNED')
                 row.label(text=camera.cam_image.name)
             else:
-                row.label(text='-- empy --')
+                row.label(text='-- empty --')
 
         layout.label(text="Images without pins will be auto-ignored.")
         layout.label(text="Texture baking can be time consuming, be patient.")
@@ -187,5 +187,5 @@ class WM_OT_FBTexSelector(Operator):
 
     def execute(self, context):
         op = getattr(bpy.ops.object, Config.fb_main_bake_tex_callname)
-        op('INVOKE_DEFAULT')
+        op('INVOKE_DEFAULT', headnum=self.headnum)
         return {"FINISHED"}

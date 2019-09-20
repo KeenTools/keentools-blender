@@ -57,7 +57,7 @@ class OBJECT_OT_FBActor(Operator):
                 Config.tex_builder_filename, Config.tex_builder_matname)
             # Assign Material to Head Object
             materials.assign_mat(
-                settings.heads[settings.current_headnum].headobj, mat)
+                settings.heads[self.headnum].headobj, mat)
             # Switch to Material Mode or Back
             materials.toggle_mode(('SOLID', 'MATERIAL'))
 
@@ -67,7 +67,7 @@ class OBJECT_OT_FBActor(Operator):
                 Config.tex_builder_filename, Config.tex_builder_matname)
             # Assign Material to Head Object
             materials.assign_mat(
-                settings.heads[settings.current_headnum].headobj, mat)
+                settings.heads[self.headnum].headobj, mat)
 
         elif self.action == 'unhide_head':
             manipulate.unhide_head(self.headnum)
@@ -82,15 +82,9 @@ class OBJECT_OT_FBActor(Operator):
         elif self.action == 'use_render_frame_size':
             manipulate.use_render_frame_size()
 
-        elif self.action == 'use_camera_frame_size':
-            # Current camera Background --> Render size (by Fix button)
-            manipulate.use_camera_frame_size(
-                settings.current_headnum, settings.current_camnum)
-
         elif self.action == 'use_this_camera_frame_size':
             # Current camera Background --> Render size (by mini-button)
-            manipulate.use_camera_frame_size(
-                settings.tmp_headnum, settings.tmp_camnum)  # ??????????????
+            manipulate.use_camera_frame_size(self.headnum, self.camnum)
 
         elif self.action == 'use_render_frame_size_scaled':
             # Allow converts scenes pinned on default cameras
