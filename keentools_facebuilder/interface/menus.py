@@ -15,11 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+
 import bpy
 from bpy.types import Menu
-from bpy.props import IntProperty
-from ..config import Config, get_main_settings
 
+from ..config import Config, get_main_settings
 from ..utils.exif_reader import get_sensor_size_35mm_equivalent
 
 
@@ -48,6 +48,7 @@ class OBJECT_MT_FBFixCameraMenu(Menu):
             icon='OUTPUT')
         op.action = 'use_render_frame_size'
 
+        # ----------------
         layout.separator()
 
         op = layout.operator(
@@ -57,6 +58,7 @@ class OBJECT_MT_FBFixCameraMenu(Menu):
         op.headnum = settings.tmp_headnum
         op.camnum = settings.tmp_camnum
 
+        # ----------------
         layout.separator()
 
         op = layout.operator(
@@ -121,23 +123,24 @@ class OBJECT_MT_FBFocalLengthMenu(Menu):
 
         # Focal Length (only) via EXIF
         if head.exif_focal > 0.0:
-            txt = ": [{:.2f} mm]".format(head.exif_focal)
+            txt = "[{:.2f} mm]   ".format(head.exif_focal)
             op = layout.operator(Config.fb_camera_actor_operator_idname,
-                                 text="Focal Length (only) via EXIF" + txt,
+                                 text=txt + "EXIF Focal Length",
                                  icon='RESTRICT_RENDER_OFF')
             op.headnum = settings.tmp_headnum
             op.action = 'exif_focal'
 
         # Focal Length (only) via EXIF 35mm equivalent
         if head.exif_focal35mm > 0.0:
-            txt = ": [{:.2f} mm]".format(head.exif_focal35mm)
+            txt = "[{:.2f} mm]   ".format(head.exif_focal35mm)
             op = layout.operator(Config.fb_camera_actor_operator_idname,
-                                 text="Focal Length (only) via EXIF "
-                                      "35mm equivalent" + txt,
+                                 text=txt + "EXIF Focal Length "
+                                      "35mm equivalent",
                                  icon='RESTRICT_RENDER_ON')
             op.headnum = settings.tmp_headnum
             op.action = 'exif_focal35mm'
 
+        # ----------------
         layout.separator()
 
         # Set Automatic Focal Length Estimation OFF
@@ -148,15 +151,17 @@ class OBJECT_MT_FBFocalLengthMenu(Menu):
             op.action = 'auto_focal_off'
         else:
             op = layout.operator(Config.fb_camera_actor_operator_idname,
-                                 text="Set Automatic Focal Length Estimation ON")
+                                 text="Set Automatic Focal Length "
+                                      "Estimation ON")
             op.action = 'auto_focal_on'
         op.headnum = settings.tmp_headnum
 
+        # ----------------
         layout.separator()
 
         # Default Focal Length: 50 mm
         op = layout.operator(Config.fb_camera_actor_operator_idname,
-                             text="Default Focal Length: [50 mm]",
+                             text="[50 mm]   Default Focal Length",
                              icon='DRIVER_DISTANCE')
         op.headnum = settings.tmp_headnum
         op.action = 'focal_50mm'
@@ -178,24 +183,35 @@ class OBJECT_MT_FBSensorWidthMenu(Menu):
             w = head.exif_sensor_width
             h = head.exif_sensor_length
             f = head.exif_focal
-            txt = ": {:.2f} x {:.2f} mm [{:.2f}]".format(w, h, f)
+            txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
             op = layout.operator(Config.fb_camera_actor_operator_idname,
-                                 text="Auto Sensor & [Focal] via EXIF" + txt,
+                                 text=txt + "EXIF Sensor & [EXIF Focal]",
                                  icon='OBJECT_DATAMODE')
             op.headnum = settings.tmp_headnum
-            op.action = 'exif_auto_sensor_and_focal'
+            op.action = 'exif_sensor_and_focal'
+
+        # EXIF Focal and Sensor via 35mm equiv.
+        if head.exif_focal > 0.0 and head.exif_focal35mm > 0.0:
+            f = head.exif_focal
+            w, h = get_sensor_size_35mm_equivalent(head)
+            txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
+            op = layout.operator(Config.fb_camera_actor_operator_idname,
+                text=txt + "Sensor via 35mm equiv. & [EXIF Focal]",
+                icon='OBJECT_HIDDEN')
+            op.headnum = settings.tmp_headnum
+            op.action = 'exif_focal_and_sensor_via_35mm'
 
         # Auto Sensor & Focal via EXIF 35mm equiv.
         if head.exif_focal > 0.0 and head.exif_focal35mm > 0.0:
             w = 35.0
             h = 24.0 * 35.0 / 36.0
             f = head.exif_focal35mm
-            txt = ": {:.2f} x {:.2f} mm [{:.2f}]".format(w, h, f)
+            txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
             op = layout.operator(Config.fb_camera_actor_operator_idname,
-                text="Auto Sensor & [Focal] via EXIF 35mm equiv." + txt,
+                text=txt + "Standard Sensor & [Focal 35mm equiv.] ",
                 icon='FULLSCREEN_ENTER')
             op.headnum = settings.tmp_headnum
-            op.action = 'exif_auto_sensor_and_focal_35mm'
+            op.action = 'standard_sensor_and_exif_focal35mm'
 
         layout.separator()
 
@@ -203,9 +219,9 @@ class OBJECT_MT_FBSensorWidthMenu(Menu):
         if head.exif_sensor_width > 0.0 and head.exif_sensor_length > 0.0:
             w = head.exif_sensor_width
             h = head.exif_sensor_length
-            txt = ": {:.2f} x {:.2f} mm".format(w, h)
+            txt = "{:.2f} x {:.2f} mm   ".format(w, h)
             op = layout.operator(Config.fb_camera_actor_operator_idname,
-                                 text="Sensor Size (only) via EXIF" + txt,
+                                 text=txt + "EXIF Sensor Size",
                                  icon='OBJECT_DATAMODE')
             op.headnum = settings.tmp_headnum
             op.action = 'exif_sensor'
@@ -213,18 +229,19 @@ class OBJECT_MT_FBSensorWidthMenu(Menu):
         # Sensor Size (only) via EXIF 35mm equivalent
         if head.exif_focal > 0.0 and head.exif_focal35mm > 0.0:
             w, h = get_sensor_size_35mm_equivalent(head)
-            txt = ": {:.2f} x {:.2f} mm".format(w, h)
+            txt = "{:.2f} x {:.2f} mm   ".format(w, h)
             op = layout.operator(Config.fb_camera_actor_operator_idname,
-                                 text="Sensor Size (only) via EXIF "
-                                      "35mm equivalent" + txt,
-                                 icon='FULLSCREEN_ENTER')
+                                 text=txt + "Sensor Size 35mm equivalent",
+                                 icon='OBJECT_HIDDEN')
             op.headnum = settings.tmp_headnum
-            op.action = 'exif_sensor35mm'
+            op.action = 'exif_sensor_via_35mm'
 
+        # ----------------
         layout.separator()
+
         op = layout.operator(Config.fb_camera_actor_operator_idname,
-                             text="Default Sensor Size: 36 x 24 mm",
-                             icon='OBJECT_HIDDEN')
+                             text="36 x 24 mm   Default Sensor Size",
+                             icon='FULLSCREEN_ENTER')
         op.headnum = settings.tmp_headnum
         op.action = 'sensor_36x24mm'
 

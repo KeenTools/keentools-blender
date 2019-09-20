@@ -33,7 +33,9 @@ bl_info = {
 
 import os
 import logging.config
+
 import bpy
+
 import keentools_facebuilder.preferences
 from .config import Config
 from .interface.panels import (OBJECT_PT_FBHeaderPanel, OBJECT_PT_FBCameraPanel,
@@ -46,9 +48,7 @@ from .interface.menus import (OBJECT_MT_FBFixMenu, OBJECT_MT_FBFixCameraMenu,
 from .interface.dialogs import WM_OT_FBAddonWarning, WM_OT_FBTexSelector
 from .head import MESH_OT_FBAddHead
 from .body import MESH_OT_FBAddBody
-from .settings import FBCameraItem
-from .settings import FBHeadItem
-from .settings import FBSceneSettings
+from .settings import FBExifItem, FBCameraItem, FBHeadItem, FBSceneSettings
 from .main_operator import (OBJECT_OT_FBSelectHead, OBJECT_OT_FBDeleteHead,
                             OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
                             OBJECT_OT_FBUnmorph, OBJECT_OT_FBRemovePins,
@@ -66,7 +66,6 @@ from .movepin import OBJECT_OT_FBMovePin
 from .actor import OBJECT_OT_FBActor, OBJECT_OT_FBCameraActor
 from keentools_facebuilder.interface.filedialog import \
     WM_OT_FBSingleFilebrowser, WM_OT_FBMultipleFilebrowser
-from .config import Config
 
 
 # Init logging system via config file
@@ -107,6 +106,7 @@ _CLASSES_TO_REGISTER = (
     OBJECT_OT_FBAllUnknown,
     OBJECT_OT_FBSetSensorWidth,
     OBJECT_OT_FBSetFocalLength,
+    FBExifItem,
     FBCameraItem,
     FBHeadItem,
     FBSceneSettings,

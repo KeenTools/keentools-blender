@@ -271,6 +271,12 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             proj_mat = fb.projection_mat()
             focal = coords.focal_by_projection_matrix(
                 proj_mat, head.sensor_width)
+
+            # Fix for Vertical camera (because Blender has Auto in sensor)
+            rx, ry = coords.render_frame()
+            if ry > rx:
+                focal = focal * rx / ry
+
             camobj.data.lens = focal
             head.focal = focal
 

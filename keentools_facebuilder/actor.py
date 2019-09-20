@@ -157,20 +157,10 @@ class OBJECT_OT_FBCameraActor(Operator):
             if head.exif_focal35mm > 0.0:
                 head.focal = head.exif_focal35mm
 
-        elif self.action == 'exif_sensor':
-            # EXIF --> Sensor Size
-            if head.exif_sensor_width > 0.0 and head.exif_sensor_length > 0.0:
-                head.sensor_width = head.exif_sensor_width
-                head.sensor_height = head.exif_sensor_length
-
-        elif self.action == 'exif_sensor35mm':
-            # EXIF 35mm --> Sensor Size
-            if head.exif_focal35mm > 0.0:
-                w, h = get_sensor_size_35mm_equivalent(head)
-                head.sensor_width = w
-                head.sensor_height = h
-
-        elif self.action == 'exif_auto_sensor_and_focal':
+        # ------------------
+        # Menu: Sensor Settings
+        # ------------------
+        elif self.action == 'exif_sensor_and_focal':
             # Get Sensor & Focal from EXIF
             if head.exif_focal > 0.0 and head.exif_sensor_width > 0.0 and \
                     head.exif_sensor_length > 0.0:
@@ -178,14 +168,36 @@ class OBJECT_OT_FBCameraActor(Operator):
                 head.sensor_width = head.exif_sensor_width
                 head.sensor_height = head.exif_sensor_length
 
-        elif self.action == 'exif_auto_sensor_and_focal_35mm':
+        elif self.action == 'exif_focal_and_sensor_via_35mm':
             # Get Sensor & Focal from EXIF 35mm equiv.
+            if head.exif_focal > 0.0 and head.exif_focal35mm > 0.0:
+                w, h = get_sensor_size_35mm_equivalent(head)
+                head.sensor_width = w
+                head.sensor_height = h
+                head.focal = head.exif_focal
+
+        elif self.action == 'standard_sensor_and_exif_focal35mm':
+            # 35 mm Sensor & EXIF Focal 35mm equiv.
             if head.exif_focal35mm > 0.0:
                 w = 35.0
                 h = 24.0 * 35.0 / 36.0
                 head.sensor_width = w
                 head.sensor_height = h
                 head.focal = head.exif_focal35mm
+
+        # ------------------
+        elif self.action == 'exif_sensor':
+            # EXIF --> Sensor Size
+            if head.exif_sensor_width > 0.0 and head.exif_sensor_length > 0.0:
+                head.sensor_width = head.exif_sensor_width
+                head.sensor_height = head.exif_sensor_length
+
+        elif self.action == 'exif_sensor_via_35mm':
+            # EXIF 35mm --> calc. Sensor Size
+            if head.exif_focal35mm > 0.0:
+                w, h = get_sensor_size_35mm_equivalent(head)
+                head.sensor_width = w
+                head.sensor_height = h
 
         logger.debug("Camera Actor: {}".format(self.action))
         return {'FINISHED'}

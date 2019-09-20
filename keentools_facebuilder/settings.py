@@ -78,18 +78,6 @@ def update_focal(self, context):
         FBLoader.update_focals(self)
 
 
-def update_preset(self, context):
-    if self.sensor_preset == "ff":
-        self.sensor_width = 36.0
-        self.sensor_height = 24.0
-    elif self.sensor_preset == "help":
-        self.sensor_width = 36.0
-        self.sensor_height = 24.0
-        self.focal = 50.0
-        self.auto_focal_estimation = True
-        self.use_exif = True
-
-
 def update_mesh_parts(self, context):
     settings = get_main_settings()
     state, headnum = what_is_state()
@@ -125,6 +113,19 @@ def update_mesh_parts(self, context):
     # Delete old mesh
     bpy.data.meshes.remove(old_mesh, do_unlink=True)
     mesh.name = mesh_name
+
+
+class FBExifItem(PropertyGroup):
+    message: StringProperty(name="EXIF Message", default="")
+    focal: FloatProperty(default=-1.0)
+    focal35mm: FloatProperty(default=-1.0)
+    focal_x_res: FloatProperty(default=-1.0)
+    focal_y_res: FloatProperty(default=-1.0)
+    units: StringProperty(default="inch")  # or cm
+    image_width: FloatProperty(default=-1.0)
+    image_length: FloatProperty(default=-1.0)
+    sensor_width: FloatProperty(default=-1.0)
+    sensor_length: FloatProperty(default=-1.0)
 
 
 class FBCameraItem(PropertyGroup):
@@ -223,31 +224,6 @@ class FBHeadItem(PropertyGroup):
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
 
-    sensor_preset: EnumProperty(name="Sensor size", description="Sensor size presets",
-        items=[
-            ('custom', 'Custom', 'User sets all parameters manualy',
-                'IMAGE_DATA', 0),
-            ('ff', 'Full Frame 36.0 x 24.0 mm', 'Full Frame Width 36.0 '
-                'mm Height 24.0 mm', 'IMAGE_DATA', 1),
-            ('1/2.3', '1/2.3" 6.2 x 4.6 mm', '1/2.3" Diagonal 7.66 mm '
-                'Width 6.17 mm Height 4.55 mm', 'IMAGE_DATA', 2),
-            ('1/1.7', '1/1.7" 7.6 x 5.7 mm', '1/1.7" Diagonal 9.50 mm '
-                'Width 7.60 mm Height 5.7 mm', 'IMAGE_DATA', 3),
-            ('2/3', '2/3" 8.8 x 6.6 mm', '2/3" Diagonal 11.0 mm '
-                'Width 8.8 mm Height 6.6 mm', 'IMAGE_DATA', 4),
-            ('1', '1" 13.2 x 8.8 mm', '1" Diagonal 15.86 mm '
-                'Width 13.2 mm Height 8.8 mm', 'IMAGE_DATA', 5),
-            ('4/3', '4/3" 17.3 x 13.0 mm', '4/3" Diagonal 21.6 mm '
-                'Width 17.3 mm Height 13.0 mm', 'IMAGE_DATA', 6),
-            ('aps-c', 'APS-C 22.3 x 14.9 mm', 'APS-C Diagonal 26.82 mm '
-                'Width 22.3 mm Height 14.9 mm', 'IMAGE_DATA', 7),
-            ('aps-h', 'APS-H 27.9 x 18.6 mm', 'APS-C Diagonal 33.5 mm '
-                'Width 27.9 mm Height 18.6 mm', 'IMAGE_DATA', 8),
-            ('help', 'HELP! I have no idea!', "Choose this if you don't know "
-                "camera parameters at all. We will turn on automatic mode",
-                'QUESTION', 9),
-        ], default='ff', update=update_preset)
-
     sensor_width: FloatProperty(
         description="The larger dimension of the camera sensor "
                     "used to take photos. This is VERY important parameter. "
@@ -306,6 +282,8 @@ class FBHeadItem(PropertyGroup):
         description="Automatically detects Focal Length & Sensor Size "
                     "from EXIF data in image file if available",
         default=True)
+
+    exif: PointerProperty(type=FBExifItem)
 
     exif_message: StringProperty(name="EXIF Message", default="")
     exif_focal: FloatProperty(default=-1.0)
