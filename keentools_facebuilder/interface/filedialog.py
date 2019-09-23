@@ -71,8 +71,9 @@ class WM_OT_FBSingleFilebrowser(Operator, ImportHelper):
         head = settings.heads[self.headnum]
         head.cameras[self.camnum].cam_image = img
 
-        exif = read_exif(self.filepath)
-        message = init_exif_settings(self.headnum, exif)
+        exif_data = read_exif(self.filepath)
+        init_exif_settings(self.headnum, exif_data)
+        message = exif_message(self.headnum, exif_data)
         head.exif.message = message
         return {'FINISHED'}
 
