@@ -25,8 +25,31 @@ from .. config import get_main_settings, ErrorType, BuilderType, Config
 from . import cameras, attrs
 
 
+def _is_keentools_object(obj):
+    return Config.version_prop_name[0] in obj.keys()
+
+
+def _get_object_type(obj):
+    return attrs.get_safe_custom_attribute(
+        obj, Config.object_type_prop_name[0])
+
+def _get_mod_version(obj):
+    return attrs.get_safe_custom_attribute(obj, Config.fb_mod_ver_prop_name[0])
+
+
+def _get_serial(obj):
+    return attrs.get_safe_custom_attribute(obj, Config.fb_serial_prop_name[0])
+
+def _get_dir_name(obj):
+    return attrs.get_safe_custom_attribute(obj, Config.fb_dir_prop_name[0])
+
+
+def _get_image_names(obj):
+    return attrs.get_safe_custom_attribute(obj, Config.fb_images_prop_name[0])
+
+
 # Scene States and Head number. All States are:
-# 'RECONSTRUCT', 'NO_HEADS', 'THIS_HEAD', 'ONE_HEAD', 'MANY_HEAD', 'PINMODE'
+# RECONSTRUCT, NO_HEADS, THIS_HEAD, ONE_HEAD, MANY_HEADS, PINMODE
 # ------------
 def what_is_state():
     context = bpy.context
@@ -42,8 +65,7 @@ def what_is_state():
         return how_many_heads()
 
     if obj.type == 'MESH':
-        # Has object our attribute 'keentools_version'?
-        if Config.version_prop_name[0] in obj.keys():
+        if _is_keentools_object(obj):
             ind = settings.find_head_index(obj)
             if ind >= 0:
                 return 'THIS_HEAD', ind
@@ -52,8 +74,7 @@ def what_is_state():
         else:
             return how_many_heads()
     elif obj.type == 'CAMERA':
-        # Has object our attribute 'keentools_version'?
-        if Config.version_prop_name[0] in obj.keys():
+        if _is_keentools_object(obj):
             ind, _ = settings.find_cam_index(obj)
             if ind >= 0:
                 return 'THIS_HEAD', ind
@@ -85,8 +106,6 @@ def force_undo_push(msg='KeenTools operation'):
 def check_settings():
     settings = get_main_settings()
     if not settings.check_heads_and_cams():
-        # Settings structure is broken
-        # Fix Heads and cameras
         heads_deleted, cams_deleted = settings.fix_heads()
         if heads_deleted == 0:
             warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
@@ -202,11 +221,9 @@ def reconstruct_by_head():
     if obj.type != 'MESH':
         return
 
-    # Has object our main attribute?
-    if not attrs.has_custom_attribute(obj, Config.version_prop_name[0]):
-        return  # No, it hasn't, leave
+    if not _is_keentools_object(obj):
+        return
 
-    # Object marked by our attribute, so can be reconstructed
     error_message = "===============\n" \
                     "Can't reconstruct\n" \
                     "===============\n" \
@@ -214,8 +231,7 @@ def reconstruct_by_head():
 
     logger.info("START RECONSTRUCT")
 
-    obj_type = attrs.get_safe_custom_attribute(
-            obj, Config.object_type_prop_name[0])
+    obj_type = _get_object_type(obj)
     if obj_type is None:
         obj_type = BuilderType.FaceBuilder
     logger.debug("OBJ_TYPE: {}".format(obj_type))
@@ -224,51 +240,41 @@ def reconstruct_by_head():
         warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=error_message + 'Object Type')
-        return  # Problem with object type custom attribute
+        return
 
-    # Get Mod version
-    mod_ver = attrs.get_safe_custom_attribute(
-            obj, Config.fb_mod_ver_prop_name[0])
+    mod_ver = _get_mod_version(obj)
     if mod_ver is None:
         mod_ver = Config.unknown_mod_ver
     logger.debug("MOD_VER {}".format(mod_ver))
 
-    # Get all camera parameters
     params = cameras.get_camera_params(obj)
     if params is None:
         warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=error_message + 'camera')
-        return  # One or more parameters undefined
+        return
     logger.debug("PARAMS: {}".format(params))
 
-    # Get Serial string
-    serial_str = attrs.get_safe_custom_attribute(
-            obj, Config.fb_serial_prop_name[0])
+    serial_str = _get_serial(obj)
     if serial_str is None:
         serial_str = ""
     logger.debug("SERIAL")
 
-    # Get Dir Name
-    dir_name = attrs.get_safe_custom_attribute(
-            obj, Config.fb_dir_prop_name[0])
+    dir_name = _get_dir_name(obj)
     if dir_name is None:
         dir_name = ""
     logger.debug("DIR_NAME: {}".format(dir_name))
 
     # Get Image Names
-    images = attrs.get_safe_custom_attribute(
-            obj, Config.fb_images_prop_name[0])
+    images = _get_image_names(obj)
     if type(images) is not list:
         images = []
     logger.debug("IMAGES: {}".format(images))
     logger.debug("PARAMETERS LOADED. START HEAD CREATION")
     # -------------------
-    # Fix our settings structure before new head add
     settings.fix_heads()
 
     headnum = len(settings.heads)
-    # Create new head in collection
     head = settings.heads.add()
     head.headobj = obj
 
@@ -301,7 +307,7 @@ def reconstruct_by_head():
 
         # load background images
         for i, f in enumerate(images):
-            logger.debug("IM {} {}".format(i, f))
+            logger.debug("IMAGE {} {}".format(i, f))
             img = bpy.data.images.new(f, 0, 0)
             img.source = 'FILE'
             img.filepath = f
