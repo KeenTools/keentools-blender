@@ -60,7 +60,9 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         FBLoader.viewport().wireframer().create_batches()
 
     def on_left_mouse_press(self, context, mouse_x, mouse_y):
-        settings = get_main_settings()
+        # Pixel size in relative coords in accordance to the current view scale
+        FBLoader.viewport().update_pixel_size(context)
+
         # === Debug only ===
         FBDebug.add_event_to_queue(
             'DRAW_OPERATOR_PRESS_LEFTMOUSE',
@@ -78,7 +80,8 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
                 coords.get_raw_camera_2d_data(context))
             # === Debug only ===
 
-            # Registered Operator call
+            settings = get_main_settings()
+            # Registered Movepin Operator call
             op = getattr(
                 bpy.ops.object, Config.fb_movepin_operator_callname)
             op('INVOKE_DEFAULT',
@@ -91,6 +94,10 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
     def on_right_mouse_press(self, context, mouse_x, mouse_y):
         logger = logging.getLogger(__name__)
+
+        # Pixel size in relative coords in accordance to the current view scale
+        FBLoader.viewport().update_pixel_size(context)
+
         # === Debug only ===
         FBDebug.add_event_to_queue(
             'IN_PINMODE_PRESS_RIGHTMOUSE', mouse_x, mouse_y,
@@ -160,7 +167,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         # out to prevent click events
         return {"RUNNING_MODAL"}
 
-    def on_undo_detected(self, mouse_x, mouse_y):
+    def on_undo_detected(self):
         settings = get_main_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
@@ -178,8 +185,8 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         FBLoader.viewport().wireframer().create_batches()
 
         # === Debug only ===
-        FBDebug.add_event_to_queue('UNDO_CALLED', mouse_x, mouse_y)
-        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', mouse_x, mouse_y)
+        FBDebug.add_event_to_queue('UNDO_CALLED', 0, 0)
+        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', 0, 0)
         FBDebug.make_snapshot()
         # === Debug only ===
 
@@ -193,8 +200,8 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         logger.debug("PINMODE ENTER: CH{} CC{}".format(
             settings.current_headnum, settings.current_camnum))
 
+        # We had to finish last operation if we are in Pinmode
         if settings.pinmode:
-            # We had to finish last operation
             if settings.current_headnum >= 0 and settings.current_camnum >= 0:
                 FBLoader.out_pinmode(
                     settings.current_headnum,
@@ -247,10 +254,48 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
         # Can start much more times when not out from pinmode
         if not settings.pinmode:
-            FBStopTimer.start()
             logger.debug("STOPPER START")
+            FBStopTimer.start()
         settings.pinmode = True
         return {"RUNNING_MODAL"}
+
+    def wireframe_view_toggle(self):
+        """ Show or Hide Wireframe by changing opacity value"""
+        logger = logging.getLogger(__name__)
+        settings = get_main_settings()
+
+        settings.overall_opacity = \
+            0.0 if settings.overall_opacity > 0.5 else 1.0
+        logger.debug("OVERALL_OPACITY BY TAB {}".format(
+            settings.overall_opacity))
+        self.init_wireframer_colors(settings.overall_opacity)
+
+    def on_final(self, context, head):
+        logger = logging.getLogger(__name__)
+        settings = get_main_settings()
+        headnum = settings.current_headnum
+        camnum = settings.current_camnum
+        kid = cameras.keyframe_by_camnum(headnum, camnum)
+
+        if head.need_update:
+            # Undo was called so Model redraw is needed
+            logger.debug("UNDO CALL DETECTED")
+            self.on_undo_detected()
+
+        # Catch if wireframer is off
+        if not (FBLoader.viewport().wireframer().is_working()):
+            logger.debug("WIREFRAME IS OFF")
+            FBLoader.out_pinmode(headnum, camnum)
+            return {'FINISHED'}
+
+        FBLoader.viewport().create_batch_2d(context)
+        FBLoader.viewport().update_residuals(
+            FBLoader.get_builder(), context, head.headobj, kid)
+
+        if FBLoader.viewport().current_pin:
+            return {"RUNNING_MODAL"}
+        else:
+            return {"PASS_THROUGH"}
 
     def modal(self, context, event):
         logger = logging.getLogger(__name__)
@@ -258,45 +303,47 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
         headnum = settings.current_headnum
         camnum = settings.current_camnum
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
-
-        mouse_x = event.mouse_region_x
-        mouse_y = event.mouse_region_y
+        head = settings.heads[headnum]
 
         # Quit if Screen changed
         if context.area is None:  # Different operation Space
+            logger.debug("CONTEXT LOST")
             FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
 
-        if headnum < 0:  # Head lost
-            FBLoader.out_pinmode(headnum, camnum)
+        # Check if Headnum is actual
+        if headnum < 0:
             logger.error("HEAD LOST")
+            FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
 
-        head = settings.heads[headnum]
+        # Hide Head mesh if it isn't hidden
         if not head.headobj.hide_get():
+            logger.debug("FORCE MESH HIDE")
             head.headobj.hide_set(True)
 
-        # Pixel size in relative coords
-        FBLoader.viewport().update_pixel_size(context)
+        # Pixel size in relative coords in accordance to the current view scale
+        # FBLoader.viewport().update_pixel_size(context)
 
-        # Screen Update request
+        # Screen Update request (Blender viewport redraw mark)
         if context.area:
             context.area.tag_redraw()
 
-        # Quit if PinMode out
-        if settings.force_out_pinmode:  # Move Pin problem by ex.
+        # Quit if Force Pinmode Out flag is set (by ex. license, pin problem)
+        if settings.force_out_pinmode:
+            logger.debug("FORCE PINMODE OUT")
             FBLoader.out_pinmode(headnum, camnum)
             settings.force_out_pinmode = False
             if settings.license_error:
+                # Show License Warning
                 warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
                 settings.license_error = False
-            logger.debug("FORCE OUT PINMODE")
             return {'FINISHED'}
 
         # Quit when camera rotated by user
         if context.space_data.region_3d.view_perspective != 'CAMERA':
+            logger.debug("CAMERA ROTATED PINMODE OUT")
             FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
 
@@ -310,40 +357,19 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             # --- PROFILING ---
             return {'FINISHED'}
 
+        # Head wireframe hide/show by TAB pressing
         if event.value == "PRESS" and event.type == 'TAB':
-            if settings.overall_opacity > 0.5:
-                settings.overall_opacity = 0.0
-            else:
-                settings.overall_opacity = 1.0
-            logger.debug("OVERALL_OPACITY BY TAB {}".format(
-                settings.overall_opacity))
-            self.init_wireframer_colors(settings.overall_opacity)
+            self.wireframe_view_toggle()
             return {'RUNNING_MODAL'}
 
+        # Left mouse button pressed. Set Pin
         if event.value == "PRESS" and event.type == "LEFTMOUSE":
-            # Left mouse button pressed. Set Pin
-            return self.on_left_mouse_press(context, mouse_x, mouse_y)
+            return self.on_left_mouse_press(
+                context, event.mouse_region_x, event.mouse_region_y)
 
+        # Right mouse button pressed - delete Pin
         if event.value == "PRESS" and event.type == "RIGHTMOUSE":
-            # Right mouse button pressed - delete Pin
-            return self.on_right_mouse_press(context, mouse_x, mouse_y)
+            return self.on_right_mouse_press(
+                context, event.mouse_region_x, event.mouse_region_y)
 
-        if head.need_update:
-            # Undo was called so Model redraw is needed
-            logger.debug("UNDO CALL DETECTED")
-            self.on_undo_detected(mouse_x, mouse_y)
-
-        # Catch if wireframer is off
-        if not (FBLoader.viewport().wireframer().is_working()):
-            FBLoader.out_pinmode(headnum, camnum)
-            logger.debug("WIREFRAME IS OFF")
-            return {'FINISHED'}
-
-        FBLoader.viewport().create_batch_2d(context)
-        FBLoader.viewport().update_residuals(
-            FBLoader.get_builder(), context, head.headobj, kid)
-
-        if FBLoader.viewport().current_pin:
-            return {"RUNNING_MODAL"}
-        else:
-            return {"PASS_THROUGH"}
+        return self.on_final(context, head)
