@@ -29,14 +29,14 @@ from ..config import Config, get_main_settings, ErrorType
 # Convert frac record like '16384/32768' to float 0.5
 def _frac_to_float(s):
     try:
-        arr = s.split('/')
+        arr = str(s).split('/')
         if len(arr) == 1:
             val = float(s)
             return val
         elif len(arr) == 2:
             val = float(arr[0]) / float(arr[1])
             return val
-    except Exception:
+    except (ValueError, ZeroDivisionError):
         pass
     return None
 
@@ -57,35 +57,37 @@ def _get_safe_exif_param_str(p, data):
 
 
 def _get_exif_units(tag):
-    # Sensor Units
-    if tag == 4.0:  # mm (4) non-standard
+    if tag == 4.0:
         return 'mm'
-    elif tag == 3.0:  # cm (3)
+    elif tag == 3.0:
         return 'cm'
     elif tag == 2.0:
-        return 'inch'  # inch (2)
+        return 'inch'
     else:
-        return 'undefined'  # undefined
+        return 'undefined'
 
 
-def _get_units_scale(exif_units):
-    # Sensor Units
+def _get_units_scale_in_mm(exif_units):
     if exif_units == 'mm':
-        return 1.0  # mm (4) non-standard
+        return 1.0
     elif exif_units == 'cm':
-        return 10.0  # cm (3)
+        return 10.0
     elif exif_units == 'inch':
-        return 25.4  # inch (2)
+        return 25.4
     else:
-        return 25.4  # if undefined
+        return 25.4
 
 
-def _get_sensor_size(exif_width, exif_focal_x_res, exif_units):
+def _get_sensor_size(exif_size, exif_focal_res, exif_units):
+    wrong_result = -1.0
     try:
-        scale = _get_units_scale(exif_units)
-        return scale * exif_width / exif_focal_x_res
-    except Exception:
-        return -1.0
+        if exif_size > 0.0 and exif_focal_res > 0.0:
+            scale = _get_units_scale_in_mm(exif_units)
+            return scale * float(exif_size) / float(exif_focal_res)
+        else:
+            return wrong_result
+    except (TypeError, ValueError, ZeroDivisionError):
+        return wrong_result
 
 
 def _print_out_exif_data(data):
@@ -152,64 +154,47 @@ def _safe_parameter(data, name):
 
 
 def init_exif_settings(headnum, data):
-    """ Fill Head fields from EXIF data """
     settings = get_main_settings()
-    head = settings.heads[headnum]
+    exif = settings.heads[headnum].exif
 
-    head.exif.units = _get_exif_units(data['exif_units'])
+    exif.units = _get_exif_units(data['exif_units'])
 
-    head.exif.image_width = _safe_parameter(data, 'exif_width')
-    head.exif.image_length = _safe_parameter(data, 'exif_length')
-    head.exif.focal = _safe_parameter(data, 'exif_focal')
-    head.exif.focal35mm = _safe_parameter(data, 'exif_focal35mm')
-    head.exif.focal_x_res = _safe_parameter(data, 'exif_focal_x_res')
-    head.exif.focal_y_res = _safe_parameter(data, 'exif_focal_y_res')
+    exif.image_width = _safe_parameter(data, 'exif_width')
+    exif.image_length = _safe_parameter(data, 'exif_length')
+    exif.focal = _safe_parameter(data, 'exif_focal')
+    exif.focal35mm = _safe_parameter(data, 'exif_focal35mm')
+    exif.focal_x_res = _safe_parameter(data, 'exif_focal_x_res')
+    exif.focal_y_res = _safe_parameter(data, 'exif_focal_y_res')
 
-    # Sensor Width
-    if head.exif.image_width > 0.0 and head.exif.focal_x_res > 0.0:
-        head.exif.sensor_width = _get_sensor_size(
-            head.exif.image_width, head.exif.focal_x_res, head.exif.units)
-    else:
-        head.exif.sensor_width = -1.0
+    exif.sensor_width = _get_sensor_size(
+            exif.image_width, exif.focal_x_res, exif.units)
 
-    # Sensor Length
-    if head.exif.image_length > 0.0 and head.exif.focal_y_res > 0.0:
-        head.exif.sensor_length = _get_sensor_size(
-            head.exif.image_length, head.exif.focal_y_res, head.exif.units)
-    else:
-        head.exif.sensor_length = -1.0
+    exif.sensor_length = _get_sensor_size(
+            exif.image_length, exif.focal_y_res, exif.units)
 
 
 def exif_message(headnum, data):
-    """ Fill Head fields from EXIF data """
     settings = get_main_settings()
-    head = settings.heads[headnum]
+    exif = settings.heads[headnum].exif
 
-    # Output image info
     message = "EXIF for: {}".format(data['filepath'])
 
-    # Size: W x H
-    if head.exif.image_width > 0.0 and head.exif.image_length > 0.0:
+    if exif.image_width > 0.0 and exif.image_length > 0.0:
         message += "\nSize: {} x {}".format(
-            int(head.exif.image_width), int(head.exif.image_length))
+            int(exif.image_width), int(exif.image_length))
 
-    # Focal
-    if head.exif.focal > 0.0:
-        message += "\nFocal: {} mm".format(head.exif.focal)
+    if exif.focal > 0.0:
+        message += "\nFocal: {} mm".format(exif.focal)
 
-    # Focal 35 mm equiv.
-    if head.exif.focal35mm > 0.0:
-        message += "\nFocal 35mm equiv.: {:.2f} mm".format(head.exif.focal35mm)
+    if exif.focal35mm > 0.0:
+        message += "\nFocal 35mm equiv.: {:.2f} mm".format(exif.focal35mm)
 
-    # Sensor Width
-    if head.exif.sensor_width > 0.0:
-        message += "\nSensor Width: {:.2f} mm".format(head.exif.sensor_width)
+    if exif.sensor_width > 0.0:
+        message += "\nSensor Width: {:.2f} mm".format(exif.sensor_width)
 
-    # Sensor Height
-    if head.exif.sensor_length > 0.0:
-        message += "\nSensor Height: {:.2f} mm".format(head.exif.sensor_length)
+    if exif.sensor_length > 0.0:
+        message += "\nSensor Height: {:.2f} mm".format(exif.sensor_length)
 
-    # Camera: Maker Model
     if data['exif_model'] is not None:
         make = ' '
         if data['exif_make'] is not None:
