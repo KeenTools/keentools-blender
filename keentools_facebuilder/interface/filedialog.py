@@ -67,12 +67,16 @@ class WM_OT_FBSingleFilebrowser(Operator, ImportHelper):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         logger.info('Loaded image file: {}'.format(self.filepath))
-        img = bpy.data.images.load(self.filepath)
-        head = settings.heads[self.headnum]
-        head.cameras[self.camnum].cam_image = img
+        try:
+            img = bpy.data.images.load(self.filepath)
+            head = settings.heads[self.headnum]
+            head.cameras[self.camnum].cam_image = img
+        except Exception:
+            return {'FINISHED'}
 
-        exif = read_exif(self.filepath)
-        message = init_exif_settings(self.headnum, exif)
+        exif_data = read_exif(self.filepath)
+        init_exif_settings(self.headnum, exif_data)
+        message = exif_message(self.headnum, exif_data)
         head.exif.message = message
         return {'FINISHED'}
 
@@ -169,3 +173,6 @@ class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
             head.exif.message = message
 
         return {'FINISHED'}
+
+
+CLASSES_TO_REGISTER = (WM_OT_FBSingleFilebrowser, WM_OT_FBMultipleFilebrowser)
