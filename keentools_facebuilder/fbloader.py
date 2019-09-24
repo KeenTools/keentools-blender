@@ -121,7 +121,7 @@ class FBLoader:
         coords.update_head_mesh(fb, head.headobj)
         if settings.pinmode:
             cls.fb_redraw(headnum, settings.current_camnum)
-        cls.update_cameras(headnum)
+        cls.update_all_camera_positions(headnum)
         cls.save_only(headnum)
 
     @classmethod
@@ -201,6 +201,12 @@ class FBLoader:
         head.save_cam_settings()
 
     @classmethod
+    def shader_update(cls, headobj):
+        cls.viewport().wireframer().init_geom_data(headobj)
+        cls.viewport().wireframer().init_edge_indices(headobj)
+        cls.viewport().wireframer().create_batches()
+
+    @classmethod
     def fb_redraw(cls, headnum, camnum):
         fb = cls.get_builder()
         settings = get_main_settings()
@@ -216,14 +222,11 @@ class FBLoader:
         # Load pins from model
         cls.viewport().set_spins(cls.viewport().img_points(fb, kid))
         cls.viewport().update_surface_points(fb, headobj, kid)
-        # Shader update
-        cls.viewport().wireframer().init_geom_data(headobj)
-        cls.viewport().wireframer().init_edge_indices(headobj)
-        cls.viewport().wireframer().create_batches()
+
+        cls.shader_update(headobj)
 
     @classmethod
-    def update_cameras(cls, headnum):
-        """ Update positions for all cameras """
+    def update_all_camera_positions(cls, headnum):
         fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.heads[headnum]
@@ -232,7 +235,6 @@ class FBLoader:
         for i, cam in enumerate(head.cameras):
             camobj = cam.camobj
             if cam.pins_count > 0:
-                # Camera update only if pins is present
                 kid = cameras.keyframe_by_camnum(headnum, i)
                 cls.place_cameraobj(kid, camobj, headobj)
                 cam.set_model_mat(fb.model_mat(kid))
@@ -251,8 +253,8 @@ class FBLoader:
         b.image = cam_item.cam_image
 
         b.frame_method = 'CROP'
-        b.show_on_foreground = False  # True
-        b.alpha = 1.0  # 0.5
+        b.show_on_foreground = False
+        b.alpha = 1.0
 
     # --------------------
     @classmethod

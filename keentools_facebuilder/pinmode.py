@@ -20,11 +20,11 @@ import logging
 
 import bpy
 
-from . utils import manipulate, coords, cameras
-from . config import Config, get_main_settings, ErrorType, BuilderType
-from . fbdebug import FBDebug
-from . fbloader import FBLoader
-from . utils.other import FBStopTimer
+from .utils import manipulate, coords, cameras
+from .config import Config, get_main_settings, ErrorType, BuilderType
+from .fbdebug import FBDebug
+from .fbloader import FBLoader
+from .utils.other import FBStopTimer
 
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
@@ -34,10 +34,36 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
     bl_idname = Config.fb_pinmode_operator_idname
     bl_label = "FaceBuilder Pinmode"
     bl_description = "Operator for in-Viewport drawing"
-    bl_options = {'REGISTER', 'UNDO'}  # {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'UNDO'}
 
     headnum: bpy.props.IntProperty(default=0)
     camnum: bpy.props.IntProperty(default=0)
+
+    def _fix_heads_with_warning(self):
+        logger = logging.getLogger(__name__)
+        settings = get_main_settings()
+        heads_deleted, cams_deleted = settings.fix_heads()
+        if heads_deleted > 0 or cams_deleted > 0:
+            logger.warning("HEADS AND CAMERAS FIXED")
+        if heads_deleted == 0:
+            warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
+
+    def _rigidity_setup(self, fb):
+        settings = get_main_settings()
+        if FBLoader.get_builder_type() == BuilderType.FaceBuilder:
+            fb.set_auto_rigidity(settings.check_auto_rigidity)
+            fb.set_rigidity(settings.rigidity)
+
+    def _coloring_special_parts(self, headobj, opacity):
+        settings = get_main_settings()
+        if settings.show_specials:
+            special_indices = FBLoader.viewport().get_special_indices(
+                FBLoader.get_builder_type())
+            special_color = (*settings.wireframe_special_color,
+                             opacity * settings.wireframe_opacity)
+            FBLoader.viewport().wireframer().init_special_areas(
+                headobj.data, special_indices, special_color)
 
     def init_wireframer_colors(self, opacity):
         settings = get_main_settings()
@@ -49,125 +75,53 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
         FBLoader.viewport().wireframer().init_color_data(
             (*settings.wireframe_color, opacity * settings.wireframe_opacity))
-        # Coloring special parts
-        if settings.show_specials:
-            special_indices = FBLoader.viewport().get_special_indices(
-                FBLoader.get_builder_type())
-            special_color = (*settings.wireframe_special_color,
-                             opacity * settings.wireframe_opacity)
-            FBLoader.viewport().wireframer().init_special_areas(
-                headobj.data, special_indices, special_color)
+        self._coloring_special_parts(headobj, opacity)
+
         FBLoader.viewport().wireframer().create_batches()
 
-    def on_left_mouse_press(self, context, mouse_x, mouse_y):
-        # Pixel size in relative coords in accordance to the current view scale
-        FBLoader.viewport().update_pixel_size(context)
+    def _force_undo_history_push(self, head):
+        head.need_update = True
+        manipulate.force_undo_push('Pin Remove')
+        head.need_update = False
 
-        # === Debug only ===
-        FBDebug.add_event_to_queue(
-            'DRAW_OPERATOR_PRESS_LEFTMOUSE',
-            (mouse_x, mouse_y), coords.get_raw_camera_2d_data(context))
-        # === Debug only ===
-
-        if not coords.is_in_area(context, mouse_x, mouse_y):
-            # Pass to interface interaction
-            return {'PASS_THROUGH'}
-
-        if coords.is_safe_region(context, mouse_x, mouse_y):
-            # === Debug only ===
-            FBDebug.add_event_to_queue(
-                'CALL_MOVE_PIN_OPERATOR', mouse_x, mouse_y,
-                coords.get_raw_camera_2d_data(context))
-            # === Debug only ===
-
-            settings = get_main_settings()
-            # Registered Movepin Operator call
-            op = getattr(
-                bpy.ops.object, Config.fb_movepin_operator_callname)
-            op('INVOKE_DEFAULT',
-               headnum=settings.current_headnum,
-               camnum=settings.current_camnum,
-               pinx=mouse_x, piny=mouse_y)
-            return {'PASS_THROUGH'}
-
-        return {'PASS_THROUGH'}
-
-    def on_right_mouse_press(self, context, mouse_x, mouse_y):
+    def _delete_found_pin(self, nearest, context):
         logger = logging.getLogger(__name__)
-
-        # Pixel size in relative coords in accordance to the current view scale
-        FBLoader.viewport().update_pixel_size(context)
-
-        # === Debug only ===
-        FBDebug.add_event_to_queue(
-            'IN_PINMODE_PRESS_RIGHTMOUSE', mouse_x, mouse_y,
-            coords.get_raw_camera_2d_data(context))
-        # === Debug only ===
-
         settings = get_main_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
+        head = settings.heads[headnum]
         kid = cameras.keyframe_by_camnum(headnum, camnum)
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
-        nearest, dist2 = coords.nearest_point(
-            x, y, FBLoader.viewport().spins)
-        if nearest >= 0 and \
-                dist2 < FBLoader.viewport().tolerance_dist2():
-            # Nearest pin found
-            fb = FBLoader.get_builder()
-            head = settings.heads[headnum]
-            headobj = head.headobj
-            # Delete pin
-            fb.remove_pin(kid, nearest)
-            del FBLoader.viewport().spins[nearest]
-            # Setup Rigidity only for FaceBuilder
-            if FBLoader.get_builder_type() == BuilderType.FaceBuilder:
-                fb.set_auto_rigidity(settings.check_auto_rigidity)
-                fb.set_rigidity(settings.rigidity)
-            # Activate Focal Estimation
-            fb.set_focal_length_estimation(head.auto_focal_estimation)
+        fb = FBLoader.get_builder()
+        fb.remove_pin(kid, nearest)
+        del FBLoader.viewport().spins[nearest]
+        logging.debug("PIN REMOVED {}".format(nearest))
 
-            try:
-                # Solver
-                fb.solve_for_current_pins(kid)
-            except pkt.module().UnlicensedException:
-                settings.force_out_pinmode = True
-                settings.license_error = True
-                FBLoader.out_pinmode(headnum, camnum)
-                logger.error("PIN MODE LICENSE EXCEPTION")
-                return {'FINISHED'}
+        self._rigidity_setup(fb)
+        fb.set_focal_length_estimation(head.auto_focal_estimation)
 
-            camobj = head.cameras[camnum].camobj
+        try:
+            fb.solve_for_current_pins(kid)
+        except pkt.module().UnlicensedException:
+            settings.force_out_pinmode = True
+            settings.license_error = True
+            FBLoader.out_pinmode(headnum, camnum)
+            logger.error("PINMODE LICENSE EXCEPTION")
+            return {'FINISHED'}
 
-            kid = cameras.keyframe_by_camnum(headnum, camnum)
-            # Camera update
-            FBLoader.place_cameraobj(kid, camobj, headobj)
-
-            # Head Mesh update
-            coords.update_head_mesh(fb, headobj)
-            # Update all cameras position
-            FBLoader.update_cameras(headnum)
-            # Save result
-            FBLoader.fb_save(headnum, camnum)
-            FBLoader.viewport().update_surface_points(fb, headobj, kid)
-            # Shader update
-            FBLoader.viewport().wireframer().init_geom_data(headobj)
-            FBLoader.viewport().wireframer().init_edge_indices(headobj)
-            FBLoader.viewport().wireframer().create_batches()
-
-            # Indicators update
-            FBLoader.update_pins_count(headnum, camnum)
-            # Undo push
-            head.need_update = True
-            manipulate.force_undo_push('Pin Remove')
-            head.need_update = False
+        FBLoader.update_pins_count(headnum, camnum)
+        coords.update_head_mesh(fb, head.headobj)
+        FBLoader.update_all_camera_positions(headnum)
+        FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
+        FBLoader.shader_update(head.headobj)
+        # Save result
+        FBLoader.fb_save(headnum, camnum)
+        self._force_undo_history_push(head)
 
         FBLoader.viewport().create_batch_2d(context)
-        # out to prevent click events
         return {"RUNNING_MODAL"}
 
-    def on_undo_detected(self):
+    def _undo_detected(self):
         settings = get_main_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
@@ -180,15 +134,54 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         FBLoader.viewport().update_surface_points(
             FBLoader.get_builder(), head.headobj, kid)
 
-        FBLoader.viewport().wireframer().init_geom_data(head.headobj)
-        FBLoader.viewport().wireframer().init_edge_indices(head.headobj)
-        FBLoader.viewport().wireframer().create_batches()
+        FBLoader.shader_update(head.headobj)
 
-        # === Debug only ===
         FBDebug.add_event_to_queue('UNDO_CALLED', 0, 0)
         FBDebug.add_event_to_queue('FORCE_SNAPSHOT', 0, 0)
         FBDebug.make_snapshot()
-        # === Debug only ===
+
+    def on_right_mouse_press(self, context, mouse_x, mouse_y):
+        FBDebug.add_event_to_queue(
+            'IN_PINMODE_PRESS_RIGHTMOUSE', mouse_x, mouse_y,
+            coords.get_raw_camera_2d_data(context))
+
+        FBLoader.viewport().update_view_relative_pixel_size(context)
+
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
+
+        nearest, dist2 = coords.nearest_point(x, y, FBLoader.viewport().spins)
+        if nearest >= 0 and dist2 < FBLoader.viewport().tolerance_dist2():
+            return self._delete_found_pin(nearest, context)
+
+        FBLoader.viewport().create_batch_2d(context)
+        return {"RUNNING_MODAL"}
+
+    def on_left_mouse_press(self, context, mouse_x, mouse_y):
+        FBLoader.viewport().update_view_relative_pixel_size(context)
+
+        FBDebug.add_event_to_queue(
+            'DRAW_OPERATOR_PRESS_LEFTMOUSE',
+            (mouse_x, mouse_y), coords.get_raw_camera_2d_data(context))
+
+        if not coords.is_in_area(context, mouse_x, mouse_y):
+            return {'PASS_THROUGH'}
+
+        if coords.is_safe_region(context, mouse_x, mouse_y):
+            FBDebug.add_event_to_queue(
+                'CALL_MOVE_PIN_OPERATOR', mouse_x, mouse_y,
+                coords.get_raw_camera_2d_data(context))
+
+            settings = get_main_settings()
+
+            # Movepin operator Call
+            op = getattr(
+                bpy.ops.object, Config.fb_movepin_operator_callname)
+            op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
+               headnum=settings.current_headnum,
+               camnum=settings.current_camnum)
+            return {'PASS_THROUGH'}
+
+        return {'PASS_THROUGH'}
 
     def invoke(self, context, event):
         logger = logging.getLogger(__name__)
@@ -213,15 +206,8 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             FBLoader.builder().sync_version(head.mod_ver)
             head.mod_ver = FBLoader.get_builder_version()
 
-        # Settings structure is broken
         if not settings.check_heads_and_cams():
-            # Fix and Out
-            heads_deleted, cams_deleted = settings.fix_heads()
-            if heads_deleted > 0 or cams_deleted > 0:
-                logger.warning("HEADS AND CAMERAS FIXED")
-            if heads_deleted == 0:
-                warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
-                warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
+            self._fix_heads_with_warning()
             return {'FINISHED'}
 
         # Current headnum & camnum in global settings object
@@ -230,11 +216,10 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
         logger.debug("PINMODE START H{} C{}".format(
             settings.current_headnum, settings.current_camnum))
-        # === Debug only ===
+
         FBDebug.add_event_to_queue(
-            'PIN_MODE_START', self.headnum, self.camnum,
+            'PINMODE_START', self.headnum, self.camnum,
             coords.get_raw_camera_2d_data(context))
-        # === Debug only ===
 
         FBLoader.load_all(self.headnum, self.camnum, False)
 
@@ -260,7 +245,6 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
     def wireframe_view_toggle(self):
-        """ Show or Hide Wireframe by changing opacity value"""
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
 
@@ -280,7 +264,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         if head.need_update:
             # Undo was called so Model redraw is needed
             logger.debug("UNDO CALL DETECTED")
-            self.on_undo_detected()
+            self._undo_detected()
 
         # Catch if wireframer is off
         if not (FBLoader.viewport().wireframer().is_working()):
@@ -322,9 +306,6 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             logger.debug("FORCE MESH HIDE")
             head.headobj.hide_set(True)
 
-        # Pixel size in relative coords in accordance to the current view scale
-        # FBLoader.viewport().update_pixel_size(context)
-
         # Screen Update request (Blender viewport redraw mark)
         if context.area:
             context.area.tag_redraw()
@@ -358,17 +339,17 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             return {'FINISHED'}
 
         # Head wireframe hide/show by TAB pressing
-        if event.value == "PRESS" and event.type == 'TAB':
+        if event.value == 'PRESS' and event.type == 'TAB':
             self.wireframe_view_toggle()
             return {'RUNNING_MODAL'}
 
         # Left mouse button pressed. Set Pin
-        if event.value == "PRESS" and event.type == "LEFTMOUSE":
+        if event.value == 'PRESS' and event.type == 'LEFTMOUSE':
             return self.on_left_mouse_press(
                 context, event.mouse_region_x, event.mouse_region_y)
 
         # Right mouse button pressed - delete Pin
-        if event.value == "PRESS" and event.type == "RIGHTMOUSE":
+        if event.value == 'PRESS' and event.type == 'RIGHTMOUSE':
             return self.on_right_mouse_press(
                 context, event.mouse_region_x, event.mouse_region_y)
 

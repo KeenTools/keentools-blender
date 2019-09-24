@@ -72,7 +72,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
     def init_action(self, context, mouse_x, mouse_y):
         logger = logging.getLogger(__name__)
         args = (self, context)
-        scene = context.scene
+
         settings = get_main_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
@@ -90,7 +90,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         head.tmp_serial_str = ''
         cam.tmp_model_mat = ''
 
-        FBLoader.viewport().update_pixel_size(context)
+        FBLoader.viewport().update_view_relative_pixel_size(context)
 
         # Load serialized model Uncentered (False param)
         FBLoader.load_all(headnum, camnum, False)
@@ -184,7 +184,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
 
             coords.update_head_mesh(fb, head.headobj)
             # Update all cameras position
-            FBLoader.update_cameras(headnum)
+            FBLoader.update_all_camera_positions(headnum)
             # ---------
             # Undo push
             # ---------
@@ -210,7 +210,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
 
         coords.update_head_mesh(fb, head.headobj)
         # Update all cameras position
-        FBLoader.update_cameras(headnum)
+        FBLoader.update_all_camera_positions(headnum)
 
         # ---------
         FBLoader.fb_save(headnum, camnum)
@@ -356,27 +356,23 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         logger = logging.getLogger(__name__)
         mouse_x = event.mouse_region_x
         mouse_y = event.mouse_region_y
-        # Pin is set
-        if event.value == "RELEASE":
-            if event.type == "LEFTMOUSE":
-                # === Debug only ===
-                FBDebug.add_event_to_queue(
-                    'RELEASE_LEFTMOUSE', mouse_x, mouse_y,
-                    coords.get_raw_camera_2d_data(context))
-                # === Debug only ===
 
-                logger.debug("LEFT MOUSE RELEASE")
-                return self.on_left_mouse_release(context, mouse_x, mouse_y)
+        if event.value == "RELEASE" and event.type == "LEFTMOUSE":
+            logger.debug("LEFT MOUSE RELEASE")
 
-        if event.type == "MOUSEMOVE":
-            if FBLoader.viewport().current_pin:
-                # === Debug only ===
-                FBDebug.add_event_to_queue(
-                    'MOUSEMOVE', mouse_x, mouse_y,
-                    coords.get_raw_camera_2d_data(context))
-                # === Debug only ===
+            FBDebug.add_event_to_queue(
+                'RELEASE_LEFTMOUSE', mouse_x, mouse_y,
+                coords.get_raw_camera_2d_data(context))
 
-                logger.debug("MOUSEMOVE")
-                return self.on_mouse_move(context, mouse_x, mouse_y)
+            return self.on_left_mouse_release(context, mouse_x, mouse_y)
+
+        if event.type == "MOUSEMOVE" and FBLoader.viewport().current_pin:
+            logger.debug("MOUSEMOVE")
+
+            FBDebug.add_event_to_queue(
+                'MOUSEMOVE', mouse_x, mouse_y,
+                coords.get_raw_camera_2d_data(context))
+
+            return self.on_mouse_move(context, mouse_x, mouse_y)
 
         return self.on_default_modal()

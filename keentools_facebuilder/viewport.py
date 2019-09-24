@@ -114,7 +114,7 @@ class FBViewport:
         return cls._residuals
 
     @classmethod
-    def update_pixel_size(cls, context):
+    def update_view_relative_pixel_size(cls, context):
         ps = coords.get_pixel_relative_size(context)
         cls.PIXEL_SIZE = ps
 
