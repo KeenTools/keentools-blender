@@ -396,9 +396,9 @@ class OBJECT_OT_FBAddCamera(Operator):
 
 class OBJECT_OT_FBSetSensorWidth(Operator):
     bl_idname = Config.fb_main_set_sensor_width_idname
-    bl_label = "Fix Size"
-    bl_options = {'REGISTER'}
-    bl_description = "Fix frame Width and High parameters for all cameras"
+    bl_label = "Sensor Size"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Change Sensor Size using EXIF data from loaded images"
 
     headnum: IntProperty(default=0)
 
@@ -416,9 +416,9 @@ class OBJECT_OT_FBSetSensorWidth(Operator):
 
 class OBJECT_OT_FBSetFocalLength(Operator):
     bl_idname = Config.fb_main_set_focal_length_idname
-    bl_label = "Fix Size"
-    bl_options = {'REGISTER'}
-    bl_description = "Fix frame Width and High parameters for all cameras"
+    bl_label = "Focal Length"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Change Focal Length using EXIF data from loaded images"
 
     headnum: IntProperty(default=0)
 
@@ -436,9 +436,10 @@ class OBJECT_OT_FBSetFocalLength(Operator):
 
 class OBJECT_OT_FBFixSize(Operator):
     bl_idname = Config.fb_main_fix_size_idname
-    bl_label = "Fix Size"
-    bl_options = {'REGISTER'}
-    bl_description = "Fix frame Width and High parameters for all cameras"
+    bl_label = "Fix Frame Size"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Fix frame Width and High parameters for all cameras " \
+                     "(same as Render Size)"
 
     headnum: IntProperty(default=0)
 
@@ -456,8 +457,8 @@ class OBJECT_OT_FBFixSize(Operator):
 
 class OBJECT_OT_FBCameraFixSize(Operator):
     bl_idname = Config.fb_main_camera_fix_size_idname
-    bl_label = "Fix Size by Camera"
-    bl_options = {'REGISTER'}
+    bl_label = "Fix Size by current Camera parameters"
+    bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Fix frame Width and High parameters for all cameras"
 
     headnum: IntProperty(default=0)
@@ -494,7 +495,7 @@ class OBJECT_OT_FBAddonSettings(Operator):
 class OBJECT_OT_FBBakeTexture(Operator):
     bl_idname = Config.fb_main_bake_tex_idname
     bl_label = "Bake Texture"
-    bl_options = {'REGISTER'}
+    bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Bake the texture using all selected cameras. " \
                      "It can take a lot of time, be patient"
 
