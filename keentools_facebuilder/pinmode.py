@@ -21,7 +21,7 @@ import logging
 import bpy
 
 from .utils import manipulate, coords, cameras
-from .config import Config, get_main_settings, ErrorType, BuilderType
+from .config import Config, get_main_settings, ErrorType
 from .fbdebug import FBDebug
 from .fbloader import FBLoader
 from .utils.other import FBStopTimer
@@ -59,7 +59,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             FBLoader.viewport().wireframer().init_special_areas(
                 headobj.data, special_indices, special_color)
 
-    def init_wireframer_colors(self, opacity):
+    def _init_wireframer_colors(self, opacity):
         settings = get_main_settings()
         head = settings.heads[settings.current_headnum]
         headobj = head.headobj
@@ -214,7 +214,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         headobj.hide_set(True)
         cameras.hide_other_cameras(self.headnum, self.camnum)
         # Start our shader
-        self.init_wireframer_colors(settings.overall_opacity)
+        self._init_wireframer_colors(settings.overall_opacity)
         FBLoader.viewport().create_batch_2d(context)
         FBLoader.viewport().register_handlers(args, context)
         context.window_manager.modal_handler_add(self)
@@ -231,7 +231,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         settings.pinmode = True
         return {"RUNNING_MODAL"}
 
-    def wireframe_view_toggle(self):
+    def _wireframe_view_toggle(self):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
 
@@ -239,7 +239,75 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             0.0 if settings.overall_opacity > 0.5 else 1.0
         logger.debug("OVERALL_OPACITY BY TAB {}".format(
             settings.overall_opacity))
-        self.init_wireframer_colors(settings.overall_opacity)
+        self._init_wireframer_colors(settings.overall_opacity)
+
+    def modal(self, context, event):
+        logger = logging.getLogger(__name__)
+        settings = get_main_settings()
+
+        headnum = settings.current_headnum
+        camnum = settings.current_camnum
+        head = settings.heads[headnum]
+
+        # Quit if Screen changed
+        if context.area is None:  # Different operation Space
+            logger.debug("CONTEXT LOST")
+            FBLoader.out_pinmode(headnum, camnum)
+            return {'FINISHED'}
+
+        if headnum < 0:
+            logger.error("HEAD LOST")
+            FBLoader.out_pinmode(headnum, camnum)
+            return {'FINISHED'}
+
+        if not head.headobj.hide_get():
+            logger.debug("FORCE MESH HIDE")
+            head.headobj.hide_set(True)
+
+        # Screen Update request (Blender viewport redraw mark)
+        if context.area:
+            context.area.tag_redraw()
+
+        # Quit if Force Pinmode Out flag is set (by ex. license, pin problem)
+        if settings.force_out_pinmode:
+            logger.debug("FORCE PINMODE OUT")
+            FBLoader.out_pinmode(headnum, camnum)
+            settings.force_out_pinmode = False
+            if settings.license_error:
+                # Show License Warning
+                warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+                warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+                settings.license_error = False
+            return {'FINISHED'}
+
+        # Quit when camera rotated by user
+        if context.space_data.region_3d.view_perspective != 'CAMERA':
+            logger.debug("CAMERA ROTATED PINMODE OUT")
+            FBLoader.out_pinmode(headnum, camnum)
+            return {'FINISHED'}
+
+        if event.type == 'ESC':
+            FBLoader.out_pinmode(headnum, camnum)
+            # --- PROFILING ---
+            if FBLoader.viewport().profiling:
+                pr = FBLoader.viewport().pr
+                pr.dump_stats('facebuilder.pstat')
+            # --- PROFILING ---
+            return {'FINISHED'}
+
+        if event.value == 'PRESS' and event.type == 'TAB':
+            self._wireframe_view_toggle()
+            return {'RUNNING_MODAL'}
+
+        if event.value == 'PRESS' and event.type == 'LEFTMOUSE':
+            return self.on_left_mouse_press(
+                context, event.mouse_region_x, event.mouse_region_y)
+
+        if event.value == 'PRESS' and event.type == 'RIGHTMOUSE':
+            return self.on_right_mouse_press(
+                context, event.mouse_region_x, event.mouse_region_y)
+
+        return self.on_final(context, head)
 
     def on_final(self, context, head):
         logger = logging.getLogger(__name__)
@@ -267,77 +335,3 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             return {"RUNNING_MODAL"}
         else:
             return {"PASS_THROUGH"}
-
-    def modal(self, context, event):
-        logger = logging.getLogger(__name__)
-        settings = get_main_settings()
-
-        headnum = settings.current_headnum
-        camnum = settings.current_camnum
-        head = settings.heads[headnum]
-
-        # Quit if Screen changed
-        if context.area is None:  # Different operation Space
-            logger.debug("CONTEXT LOST")
-            FBLoader.out_pinmode(headnum, camnum)
-            return {'FINISHED'}
-
-        # Check if Headnum is actual
-        if headnum < 0:
-            logger.error("HEAD LOST")
-            FBLoader.out_pinmode(headnum, camnum)
-            return {'FINISHED'}
-
-        # Hide Head mesh if it isn't hidden
-        if not head.headobj.hide_get():
-            logger.debug("FORCE MESH HIDE")
-            head.headobj.hide_set(True)
-
-        # Screen Update request (Blender viewport redraw mark)
-        if context.area:
-            context.area.tag_redraw()
-
-        # Quit if Force Pinmode Out flag is set (by ex. license, pin problem)
-        if settings.force_out_pinmode:
-            logger.debug("FORCE PINMODE OUT")
-            FBLoader.out_pinmode(headnum, camnum)
-            settings.force_out_pinmode = False
-            if settings.license_error:
-                # Show License Warning
-                warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
-                warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
-                settings.license_error = False
-            return {'FINISHED'}
-
-        # Quit when camera rotated by user
-        if context.space_data.region_3d.view_perspective != 'CAMERA':
-            logger.debug("CAMERA ROTATED PINMODE OUT")
-            FBLoader.out_pinmode(headnum, camnum)
-            return {'FINISHED'}
-
-        # Quit by ESC pressed
-        if event.type == 'ESC':
-            FBLoader.out_pinmode(headnum, camnum)
-            # --- PROFILING ---
-            if FBLoader.viewport().profiling:
-                pr = FBLoader.viewport().pr
-                pr.dump_stats('facebuilder.pstat')
-            # --- PROFILING ---
-            return {'FINISHED'}
-
-        # Head wireframe hide/show by TAB pressing
-        if event.value == 'PRESS' and event.type == 'TAB':
-            self.wireframe_view_toggle()
-            return {'RUNNING_MODAL'}
-
-        # Left mouse button pressed. Set Pin
-        if event.value == 'PRESS' and event.type == 'LEFTMOUSE':
-            return self.on_left_mouse_press(
-                context, event.mouse_region_x, event.mouse_region_y)
-
-        # Right mouse button pressed - delete Pin
-        if event.value == 'PRESS' and event.type == 'RIGHTMOUSE':
-            return self.on_right_mouse_press(
-                context, event.mouse_region_x, event.mouse_region_y)
-
-        return self.on_final(context, head)
