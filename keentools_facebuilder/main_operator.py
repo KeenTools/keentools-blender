@@ -34,9 +34,9 @@ from . config import get_main_settings, Config
 
 class OBJECT_OT_FBSelectHead(Operator):
     bl_idname = Config.fb_main_select_head_idname
-    bl_label = "Pin Mode"
+    bl_label = "Select Head"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Select Head"
+    bl_description = "Select Head in Scene"
 
     headnum: IntProperty(default=0)
 

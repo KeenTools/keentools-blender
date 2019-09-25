@@ -49,12 +49,6 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
 
-    def _rigidity_setup(self, fb):
-        settings = get_main_settings()
-        if FBLoader.get_builder_type() == BuilderType.FaceBuilder:
-            fb.set_auto_rigidity(settings.check_auto_rigidity)
-            fb.set_rigidity(settings.rigidity)
-
     def _coloring_special_parts(self, headobj, opacity):
         settings = get_main_settings()
         if settings.show_specials:
@@ -79,11 +73,6 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
         FBLoader.viewport().wireframer().create_batches()
 
-    def _force_undo_history_push(self, head):
-        head.need_update = True
-        manipulate.force_undo_push('Pin Remove')
-        head.need_update = False
-
     def _delete_found_pin(self, nearest, context):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
@@ -97,7 +86,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         del FBLoader.viewport().spins[nearest]
         logging.debug("PIN REMOVED {}".format(nearest))
 
-        self._rigidity_setup(fb)
+        FBLoader.rigidity_setup()
         fb.set_focal_length_estimation(head.auto_focal_estimation)
 
         try:
@@ -116,7 +105,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         FBLoader.shader_update(head.headobj)
         # Save result
         FBLoader.fb_save(headnum, camnum)
-        self._force_undo_history_push(head)
+        manipulate.push_head_state_in_undo_history(head, 'Pin remove')
 
         FBLoader.viewport().create_batch_2d(context)
         return {"RUNNING_MODAL"}
@@ -128,7 +117,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         head = settings.heads[headnum]
 
         head.need_update = False
-        # Reload pins
+        # Reload pins surface points
         FBLoader.load_all(headnum, camnum)
         kid = cameras.keyframe_by_camnum(headnum, camnum)
         FBLoader.viewport().update_surface_points(
@@ -214,14 +203,12 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         settings.current_headnum = self.headnum
         settings.current_camnum = self.camnum
 
-        logger.debug("PINMODE START H{} C{}".format(
-            settings.current_headnum, settings.current_camnum))
-
+        logger.debug("PINMODE START H{} C{}".format(self.headnum, self.camnum))
         FBDebug.add_event_to_queue(
             'PINMODE_START', self.headnum, self.camnum,
             coords.get_raw_camera_2d_data(context))
 
-        FBLoader.load_all(self.headnum, self.camnum, False)
+        FBLoader.load_all(self.headnum, self.camnum)
 
         # Hide geometry
         headobj.hide_set(True)

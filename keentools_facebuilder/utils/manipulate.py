@@ -82,6 +82,12 @@ def force_undo_push(msg='KeenTools operation'):
     bpy.ops.ed.undo_push(message=msg)
 
 
+def push_head_state_in_undo_history(head, msg='KeenTools operation'):
+    head.need_update = True
+    force_undo_push(msg)
+    head.need_update = False
+
+
 def check_settings():
     settings = get_main_settings()
     if not settings.check_heads_and_cams():
