@@ -137,7 +137,7 @@ class OBJECT_MT_FBFocalLengthMenu(Menu):
             txt = "[{:.2f} mm]   ".format(head.exif.focal35mm)
             op = layout.operator(Config.fb_camera_actor_operator_idname,
                                  text=txt + "EXIF Focal Length "
-                                      "35mm equivalent",
+                                            "35mm equivalent",
                                  icon='RESTRICT_RENDER_ON')
             op.headnum = settings.tmp_headnum
             op.action = 'exif_focal35mm'

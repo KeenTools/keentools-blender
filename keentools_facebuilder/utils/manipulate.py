@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+
 import logging
 from collections import Counter
 
@@ -32,6 +33,7 @@ def _is_keentools_object(obj):
 def _get_object_type(obj):
     return attrs.get_safe_custom_attribute(
         obj, Config.object_type_prop_name[0])
+
 
 def _get_mod_version(obj):
     return attrs.get_safe_custom_attribute(obj, Config.fb_mod_ver_prop_name[0])

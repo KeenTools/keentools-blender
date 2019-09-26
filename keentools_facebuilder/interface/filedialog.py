@@ -109,7 +109,6 @@ class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
         ('no', 'Leave unchanged', 'Leave the render size unchanged', 1),
     ], description="Update Render size")
 
-
     def draw(self, context):
         layout = self.layout
 

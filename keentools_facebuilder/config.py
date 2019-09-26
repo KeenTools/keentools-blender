@@ -122,9 +122,7 @@ class Config:
     fb_tb_panel_idname = _PT + _prefix + '_tb_panel_id'
     fb_colors_panel_idname = _PT + _prefix + '_colors_panel_id'
     fb_parts_panel_idname = _PT + _prefix + '_parts_panel_id'
-    fb_settings_panel_idname = _PT + _prefix + \
-                               '_settings_panel_id'
-
+    fb_settings_panel_idname = _PT + _prefix + '_settings_panel_id'
 
     # Menu ids
     fb_fix_frame_menu_idname = _MT + _prefix + '_fix_frame_menu_id'

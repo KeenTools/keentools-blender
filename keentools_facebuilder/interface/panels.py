@@ -16,8 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
-
 import bpy
 from bpy.types import Panel, Operator
 from ..config import Config, get_main_settings, ErrorType
@@ -103,10 +101,8 @@ class OBJECT_PT_FBHeaderPanel(Panel):
             text='', icon='PREFERENCES')
 
     def draw(self, context):
-        settings = get_main_settings()
         layout = self.layout
         state, headnum = what_is_state()
-
         # layout.label(text="{} {}".format(state, headnum))
 
         if state == 'PINMODE':
@@ -129,7 +125,7 @@ class OBJECT_PT_FBHeaderPanel(Panel):
             self.draw_start_panel(layout)
             return
 
-        else:  #  elif state =='MANY_HEADS':
+        else:
             self.draw_many_heads(layout)
 
 
@@ -255,8 +251,6 @@ class OBJECT_PT_FBViewsPanel(Panel):
             row2 = col.row()
             pc = str(camera.pins_count) if camera.pins_count > 0 else '-'
 
-            # text = "[{0}] -{1}- {2}".format(str(i), pc, camera.camobj.name)
-
             # Pin Icon if there are some pins
             if pc != '-':
                 row2.label(text='', icon='PINNED')
@@ -289,7 +283,6 @@ class OBJECT_PT_FBViewsPanel(Panel):
             if not settings.pinmode:
                 if camera.cam_image:
                     op = row2.operator(
-                        # Config.fb_main_delete_camera_idname,
                         Config.fb_actor_operator_idname,
                         text='', icon='X')  # 'CANCEL'
                     op.action = 'delete_camera_image'
@@ -307,19 +300,6 @@ class OBJECT_PT_FBViewsPanel(Panel):
                 col.active = False
                 col.label(text='', icon='X')
 
-            # Image output variants
-            # col.prop(head.cameras[i], "cam_image", text="", text_ctxt="", translate=True,
-            #      icon='NONE', expand=False, slider=False, toggle=-1,
-            #      icon_only=True, event=False, full_event=False, emboss=True,
-            #      index=-1, icon_value=0, invert_checkbox=False)
-
-            # col.template_ID(head.cameras[i], "cam_image", # open="image.open",
-            #                 live_icon=True)
-
-            # col.template_ID_preview(head.cameras[i], "cam_image",
-            #     hide_buttons=True)  # work but large and name
-
-
     def draw_header_preset(self, context):
         layout = self.layout
         settings = get_main_settings()
@@ -327,7 +307,7 @@ class OBJECT_PT_FBViewsPanel(Panel):
 
         # Output current Frame Size
         if settings.frame_width > 0 and settings.frame_height > 0:
-            info='{}x{}'.format(
+            info = '{}x{}'.format(
                 settings.frame_width, settings.frame_height)
         else:
             # info='1920x1080'  # Warning hardcoded value
@@ -349,8 +329,6 @@ class OBJECT_PT_FBViewsPanel(Panel):
 
         if headnum < 0:
             return
-
-        head = settings.heads[headnum]
 
         # Large List of cameras
         self.draw_camera_list(headnum, layout)

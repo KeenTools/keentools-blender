@@ -96,9 +96,9 @@ def _print_out_exif_data(data):
     tag_keys.sort()
     for i in tag_keys:
         try:
-            logger.info('{} ({}): {}'.format(i,
-                FIELD_TYPES[data[i].field_type][2], data[i].printable))
-        except:
+            logger.info('{} ({}): {}'.format(
+                i, FIELD_TYPES[data[i].field_type][2], data[i].printable))
+        except Exception:
             logger.error("{} : {}".format(i, str(data[i])))
 
 
