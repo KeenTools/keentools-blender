@@ -543,12 +543,3 @@ class OBJECT_PT_FBSettingsPanel(Panel):
         box.prop(settings, 'pin_sensitivity', slider=True)
 
         # layout.prop(settings, 'debug_active', text="Debug Log Active")
-
-
-CLASSES_TO_REGISTER = (OBJECT_PT_FBHeaderPanel,
-                       OBJECT_PT_FBCameraPanel,
-                       OBJECT_PT_FBViewsPanel,
-                       OBJECT_PT_FBFaceParts,
-                       OBJECT_PT_FBSettingsPanel,
-                       OBJECT_PT_FBColorsPanel,
-                       OBJECT_PT_TBPanel)

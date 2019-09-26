@@ -37,10 +37,29 @@ import logging.config
 import bpy
 
 from .config import Config
-from .utils.class_collector import CLASSES_TO_REGISTER
-from .settings import FBSceneSettings
+from .preferences import CLASSES_TO_REGISTER as PREFERENCES_CLASSES
+from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
+from .main_operator import CLASSES_TO_REGISTER as OPERATOR_CLASSES
 from .head import MESH_OT_FBAddHead
+from .body import MESH_OT_FBAddBody
+from .settings import FBExifItem, FBCameraItem, FBHeadItem, FBSceneSettings
+from .pinmode import OBJECT_OT_FBPinMode
+from .movepin import OBJECT_OT_FBMovePin
+from .actor import OBJECT_OT_FBActor, OBJECT_OT_FBCameraActor
 
+
+CLASSES_TO_REGISTER = (
+    MESH_OT_FBAddHead,
+    MESH_OT_FBAddBody,
+    FBExifItem,
+    FBCameraItem,
+    FBHeadItem,
+    FBSceneSettings,
+    OBJECT_OT_FBPinMode,
+    OBJECT_OT_FBMovePin,
+    OBJECT_OT_FBActor,
+    OBJECT_OT_FBCameraActor) + OPERATOR_CLASSES + \
+                      INTERFACE_CLASSES + PREFERENCES_CLASSES
 
 # Init logging system via config file
 base_dir = os.path.dirname(os.path.abspath(__file__))

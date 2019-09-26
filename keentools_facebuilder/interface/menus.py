@@ -246,9 +246,3 @@ class OBJECT_MT_FBSensorWidthMenu(Menu):
                              icon='FULLSCREEN_ENTER')
         op.headnum = settings.tmp_headnum
         op.action = 'sensor_36x24mm'
-
-
-CLASSES_TO_REGISTER = (OBJECT_MT_FBFixMenu,
-                       OBJECT_MT_FBFixCameraMenu,
-                       OBJECT_MT_FBSensorWidthMenu,
-                       OBJECT_MT_FBFocalLengthMenu)

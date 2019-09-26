@@ -16,10 +16,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from .menus import CLASSES_TO_REGISTER as MENUS_CLASSES
-from .panels import CLASSES_TO_REGISTER as PANELS_CLASSES
-from .dialogs import CLASSES_TO_REGISTER as DIALOGS_CLASSES
-from .filedialog import CLASSES_TO_REGISTER as FILEDIALOG_CLASSES
+from .menus import *
+from .panels import *
+from .dialogs import *
+from .filedialog import *
 
-CLASSES_TO_REGISTER = MENUS_CLASSES + PANELS_CLASSES + \
-                      DIALOGS_CLASSES + FILEDIALOG_CLASSES
+
+CLASSES_TO_REGISTER = (OBJECT_MT_FBFixMenu,  # menus
+                       OBJECT_MT_FBFixCameraMenu,
+                       OBJECT_MT_FBSensorWidthMenu,
+                       OBJECT_MT_FBFocalLengthMenu,
+                       OBJECT_PT_FBHeaderPanel,  # panels
+                       OBJECT_PT_FBCameraPanel,
+                       OBJECT_PT_FBViewsPanel,
+                       OBJECT_PT_FBFaceParts,
+                       OBJECT_PT_FBSettingsPanel,
+                       OBJECT_PT_FBColorsPanel,
+                       OBJECT_PT_TBPanel,
+                       WM_OT_FBAddonWarning,  # dialogs
+                       WM_OT_FBTexSelector,
+                       WM_OT_FBSingleFilebrowser,  # filedialog
+                       WM_OT_FBMultipleFilebrowser)

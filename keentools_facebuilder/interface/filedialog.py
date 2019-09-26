@@ -173,6 +173,3 @@ class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
             head.exif.message = message
 
         return {'FINISHED'}
-
-
-CLASSES_TO_REGISTER = (WM_OT_FBSingleFilebrowser, WM_OT_FBMultipleFilebrowser)

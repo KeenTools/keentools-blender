@@ -189,6 +189,3 @@ class WM_OT_FBTexSelector(Operator):
         op = getattr(bpy.ops.object, Config.fb_main_bake_tex_callname)
         op('INVOKE_DEFAULT', headnum=self.headnum)
         return {"FINISHED"}
-
-
-CLASSES_TO_REGISTER = (WM_OT_FBAddonWarning, WM_OT_FBTexSelector)

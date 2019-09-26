@@ -91,7 +91,6 @@ class OBJECT_OT_FBActor(Operator):
             manipulate.use_render_frame_size_scaled()  # disabled in interface
 
         elif self.action == 'read_file_exif':
-            # Start EXIF reading
             head = settings.heads[self.headnum]
             camera = head.cameras[self.camnum]
             if camera.cam_image is not None:
