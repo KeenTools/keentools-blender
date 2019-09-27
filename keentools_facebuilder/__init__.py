@@ -66,6 +66,7 @@ from .actor import OBJECT_OT_FBActor, OBJECT_OT_FBCameraActor
 from keentools_facebuilder.interface.filedialog import \
     WM_OT_FBSingleFilebrowser, WM_OT_FBMultipleFilebrowser
 
+from .utils.icons import FBIcons
 
 # Init logging system via config file
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -130,6 +131,7 @@ def register():
     setattr(bpy.types.Scene, Config.addon_global_var_name,
             bpy.props.PointerProperty(type=FBSceneSettings))
 
+    FBIcons.register()
 
 def unregister():
     for cls in reversed(_CLASSES_TO_REGISTER):
@@ -138,6 +140,7 @@ def unregister():
     # Delete addon settings
     delattr(bpy.types.Scene, Config.addon_global_var_name)
 
+    FBIcons.unregister()
 
 if __name__ == "__main__":
     register()
