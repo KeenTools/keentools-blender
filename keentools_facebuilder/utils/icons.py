@@ -16,9 +16,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import logging
 import os
 
 import bpy.utils.previews
+
+
+_ICONS_DIR = "icons"
+_ICONS = (("cam_icon", "cam_icon.png"),)
 
 
 class FBIcons:
@@ -35,14 +40,28 @@ class FBIcons:
 
     @classmethod
     def load_icon(cls, name, filename):
-        icons_dir = os.path.join(os.path.dirname(__file__), "icons")
-        cls.icons.load(
-            name, os.path.join(icons_dir, filename), 'IMAGE')
+        logger = logging.getLogger(__name__)
+        icons_dir = os.path.join(os.path.dirname(__file__), _ICONS_DIR)
+        full_path = os.path.join(icons_dir, filename)
+        res = cls.icons.load(name, full_path, 'IMAGE')
+        logger.debug("ICON:{} {}".format(name, full_path, res))
 
     @classmethod
     def load_icons(cls):
-        cls.load_icon("cam_icon", "cam_icon.png")
+        for i in _ICONS:
+            cls.load_icon(i[0], i[1])
+
+    @classmethod
+    def layout_icons(cls, layout):
+        # Testing purpose method
+        col = layout.column()
+        col.scale_y = 0.75
+        for i in _ICONS:
+            col.label(text=i[0], icon_value=FBIcons.get_id(i[0]))
 
     @classmethod
     def get_id(cls, name):
-        return cls.icons[name].icon_id
+        if name in cls.icons.keys():
+            return cls.icons[name].icon_id
+        else:
+            return 0

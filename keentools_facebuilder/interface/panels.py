@@ -50,7 +50,7 @@ class OBJECT_PT_FBHeaderPanel(Panel):
         col.label(text="Add > Mesh > FaceBuilder")
 
         # Test custom icons
-        # col.label(text="Test icon", icon_value=FBIcons.get_id('cam_icon'))
+        # FBIcons.layout_icons(layout)
 
         row = layout.row()
         row.scale_y = 2.0
