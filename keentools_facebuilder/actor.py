@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+
 import logging
 
 import bpy
@@ -28,6 +29,7 @@ from .utils import manipulate, materials
 from .config import Config, ErrorType, get_main_settings
 from .utils.exif_reader import (read_exif, init_exif_settings, exif_message,
                                 get_sensor_size_35mm_equivalent)
+
 
 class OBJECT_OT_FBActor(Operator):
     """ Face Builder Action
@@ -91,7 +93,6 @@ class OBJECT_OT_FBActor(Operator):
             manipulate.use_render_frame_size_scaled()  # disabled in interface
 
         elif self.action == 'read_file_exif':
-            # Start EXIF reading
             head = settings.heads[self.headnum]
             camera = head.cameras[self.camnum]
             if camera.cam_image is not None:
@@ -120,7 +121,6 @@ class OBJECT_OT_FBCameraActor(Operator):
     action: StringProperty(name="Action Name")
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
-
 
     def draw(self, context):
         """ No need to show panel so empty draw"""

@@ -532,3 +532,14 @@ class OBJECT_OT_FBShowTexture(Operator):
         op('INVOKE_DEFAULT', action='show_tex',
            headnum=settings.current_headnum)
         return {'FINISHED'}
+
+
+CLASSES_TO_REGISTER = (OBJECT_OT_FBSelectHead, OBJECT_OT_FBDeleteHead,
+                       OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
+                       OBJECT_OT_FBUnmorph, OBJECT_OT_FBRemovePins,
+                       OBJECT_OT_FBWireframeColor, OBJECT_OT_FBFilterCameras,
+                       OBJECT_OT_FBFixSize, OBJECT_OT_FBCameraFixSize,
+                       OBJECT_OT_FBDeleteCamera, OBJECT_OT_FBAddCamera,
+                       OBJECT_OT_FBAddonSettings, OBJECT_OT_FBBakeTexture,
+                       OBJECT_OT_FBShowTexture, OBJECT_OT_FBSetSensorWidth,
+                       OBJECT_OT_FBSetFocalLength)

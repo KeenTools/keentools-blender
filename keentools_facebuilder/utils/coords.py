@@ -61,6 +61,7 @@ def projection_matrix(w, h, fl, sw, near, far):
 def focal_by_projection_matrix(pm, sw):
     return - 0.5 * pm[0][0] * sw / pm[0][2]
 
+
 def render_frame():
     """ Just get frame size from scene render settings """
     scene = bpy.context.scene

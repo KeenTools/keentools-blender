@@ -67,9 +67,13 @@ class WM_OT_FBSingleFilebrowser(Operator, ImportHelper):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         logger.info('Loaded image file: {}'.format(self.filepath))
-        img = bpy.data.images.load(self.filepath)
-        head = settings.heads[self.headnum]
-        head.cameras[self.camnum].cam_image = img
+
+        try:
+            img = bpy.data.images.load(self.filepath)
+            head = settings.heads[self.headnum]
+            head.cameras[self.camnum].cam_image = img
+        except Exception:
+            return {'FINISHED'}
 
         exif_data = read_exif(self.filepath)
         init_exif_settings(self.headnum, exif_data)
@@ -105,7 +109,6 @@ class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
         ('yes', 'Update', 'Update render size to images resolution', 0),
         ('no', 'Leave unchanged', 'Leave the render size unchanged', 1),
     ], description="Update Render size")
-
 
     def draw(self, context):
         layout = self.layout
