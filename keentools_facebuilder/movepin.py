@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+
 import logging
 
 import bpy
@@ -162,6 +163,9 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         FBLoader.viewport().current_pin = None
         FBLoader.viewport().current_pin_num = -1
 
+        # Update all camera focals
+        FBLoader.update_focals(head)
+
         # --------------
         # Pin lag solve
         # --------------
@@ -228,7 +232,8 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         settings = get_main_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
-        headobj = settings.heads[headnum].headobj
+        head = settings.heads[headnum]
+        headobj = head.headobj
         cam = settings.heads[headnum].cameras[camnum]
         camobj = cam.camobj
         kid = cameras.keyframe_by_camnum(headnum, camnum)
@@ -246,10 +251,12 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
 
         # sleep(0.5)  # Test purpose only
 
-        # Setup Rigidity
+        # Setup Rigidity only for FaceBuilder
         if FBLoader.get_builder_type() == BuilderType.FaceBuilder:
             fb.set_auto_rigidity(settings.check_auto_rigidity)
             fb.set_rigidity(settings.rigidity)
+        # Activate Focal Estimation
+        fb.set_focal_length_estimation(head.auto_focal_estimation)
 
         try:
             # Solver
@@ -260,6 +267,19 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             FBLoader.out_pinmode(headnum, camnum)
             logger.error("MOVE PIN LICENSE EXCEPTION")
             return {'FINISHED'}
+
+        if head.auto_focal_estimation:
+            proj_mat = fb.projection_mat()
+            focal = coords.focal_by_projection_matrix(
+                proj_mat, head.sensor_width)
+
+            # Fix for Vertical camera (because Blender has Auto in sensor)
+            rx, ry = coords.render_frame()
+            if ry > rx:
+                focal = focal * rx / ry
+
+            camobj.data.lens = focal
+            head.focal = focal
 
         # --------------
         # Pin lag solve

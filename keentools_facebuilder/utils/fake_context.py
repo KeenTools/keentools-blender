@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+
 import bpy
 
 
@@ -71,4 +72,3 @@ def get_fake_context():
         fake_context.space_data.region_3d = space.region_3d
     fake_context.scene = bpy.context.scene
     return fake_context
-#--------------------

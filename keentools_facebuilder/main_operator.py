@@ -32,6 +32,68 @@ from . fbdebug import FBDebug
 from . config import get_main_settings, Config
 
 
+class OBJECT_OT_FBSelectHead(Operator):
+    bl_idname = Config.fb_main_select_head_idname
+    bl_label = "Pin Mode"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Select Head"
+
+    headnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        if not check_settings():
+            return {'CANCELLED'}
+
+        settings = get_main_settings()
+        head = settings.heads[self.headnum]
+
+        bpy.ops.object.select_all(action='DESELECT')
+        head.headobj.select_set(state=True)
+        bpy.context.view_layer.objects.active = head.headobj
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBDeleteHead(Operator):
+    bl_idname = Config.fb_main_delete_head_idname
+    bl_label = "Delete Head"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Delete Head and its cameras from Scene"
+
+    headnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        if not check_settings():
+            return {'CANCELLED'}
+
+        settings = get_main_settings()
+        head = settings.heads[self.headnum]
+
+        for c in head.cameras:
+            try:
+                # Remove camera object
+                bpy.data.objects.remove(
+                    c.camobj)  # , do_unlink=True
+            except Exception:
+                pass
+
+        try:
+            # Remove camera object
+            bpy.data.objects.remove(
+                head.headobj)  # , do_unlink=True
+        except Exception:
+            pass
+        settings.heads.remove(self.headnum)
+        return {'FINISHED'}
+
+
 class OBJECT_OT_FBSelectCamera(Operator):
     bl_idname = Config.fb_main_select_camera_idname
     bl_label = "Pin Mode"
@@ -46,14 +108,13 @@ class OBJECT_OT_FBSelectCamera(Operator):
         pass
 
     def execute(self, context):
-        scene = context.scene
+        if not check_settings():
+            return {'CANCELLED'}
+
         settings = get_main_settings()
         headnum = self.headnum
         camnum = self.camnum
         head = settings.heads[headnum]
-
-        if not check_settings():
-            return {'CANCELLED'}
 
         # bpy.ops.object.select_all(action='DESELECT')
         camobj = head.cameras[camnum].camobj
@@ -100,15 +161,11 @@ class OBJECT_OT_FBCenterGeo(Operator):
         pass
 
     def execute(self, context):
-        settings = get_main_settings()
-        headnum = self.headnum
-        camnum = self.camnum
-
-        if not settings.pinmode:
-            return {'CANCELLED'}
-
         if not check_settings():
             return {'CANCELLED'}
+
+        headnum = self.headnum
+        camnum = self.camnum
 
         fb = FBLoader.get_builder()
         kid = cameras.keyframe_by_camnum(headnum, camnum)
@@ -137,16 +194,15 @@ class OBJECT_OT_FBUnmorph(Operator):
         pass
 
     def execute(self, context):
-        scene = context.scene
-        settings = get_main_settings()
-        headnum = self.headnum
-        camnum = self.camnum
+        if not check_settings():
+            return {'CANCELLED'}
 
+        settings = get_main_settings()
         if not settings.pinmode:
             return {'CANCELLED'}
 
-        if not check_settings():
-            return {'CANCELLED'}
+        headnum = self.headnum
+        camnum = self.camnum
 
         fb = FBLoader.get_builder()
         kid = cameras.keyframe_by_camnum(headnum, camnum)
@@ -170,16 +226,13 @@ class OBJECT_OT_FBRemovePins(Operator):
         pass
 
     def execute(self, context):
-        scene = context.scene
         settings = get_main_settings()
-        headnum = self.headnum
-        camnum = self.camnum
 
         if not settings.pinmode:
             return {'CANCELLED'}
 
-        if not check_settings():
-            return {'CANCELLED'}
+        headnum = self.headnum
+        camnum = self.camnum
 
         fb = FBLoader.get_builder()
         kid = cameras.keyframe_by_camnum(headnum, camnum)
@@ -289,8 +342,12 @@ class OBJECT_OT_FBDeleteCamera(Operator):
         pass
 
     def execute(self, context):
+        if not check_settings():
+            return {'CANCELLED'}
+
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
+
         headnum = self.headnum
         camnum = self.camnum
         if not settings.pinmode:
@@ -321,13 +378,59 @@ class OBJECT_OT_FBAddCamera(Operator):
         pass
 
     def execute(self, context):
+        if not check_settings():
+            return {'CANCELLED'}
+
         settings = get_main_settings()
         headnum = self.headnum
+
+        # Warning! Loading camera may cause data loss
         if settings.heads[headnum].cameras:
             FBLoader.load_only(headnum)
+
         camera = FBLoader.add_camera(headnum, None)
         FBLoader.set_keentools_version(camera.camobj)
         FBLoader.save_only(headnum)
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBSetSensorWidth(Operator):
+    bl_idname = Config.fb_main_set_sensor_width_idname
+    bl_label = "Fix Size"
+    bl_options = {'REGISTER'}
+    bl_description = "Fix frame Width and High parameters for all cameras"
+
+    headnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        settings.tmp_headnum = self.headnum
+        bpy.ops.wm.call_menu(
+            'INVOKE_DEFAULT', name=Config.fb_sensor_width_menu_idname)
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBSetFocalLength(Operator):
+    bl_idname = Config.fb_main_set_focal_length_idname
+    bl_label = "Fix Size"
+    bl_options = {'REGISTER'}
+    bl_description = "Fix frame Width and High parameters for all cameras"
+
+    headnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        settings.tmp_headnum = self.headnum
+        bpy.ops.wm.call_menu(
+            'INVOKE_DEFAULT', name=Config.fb_focal_length_menu_idname)
         return {'FINISHED'}
 
 
@@ -336,6 +439,7 @@ class OBJECT_OT_FBFixSize(Operator):
     bl_label = "Fix Size"
     bl_options = {'REGISTER'}
     bl_description = "Fix frame Width and High parameters for all cameras"
+
     headnum: IntProperty(default=0)
 
     # This draw overrides standard operator panel
@@ -343,6 +447,8 @@ class OBJECT_OT_FBFixSize(Operator):
         pass
 
     def execute(self, context):
+        settings = get_main_settings()
+        settings.tmp_headnum = self.headnum
         bpy.ops.wm.call_menu(
             'INVOKE_DEFAULT', name=Config.fb_fix_frame_menu_idname)
         return {'FINISHED'}
@@ -425,3 +531,14 @@ class OBJECT_OT_FBShowTexture(Operator):
         op('INVOKE_DEFAULT', action='show_tex',
            headnum=settings.current_headnum)
         return {'FINISHED'}
+
+
+CLASSES_TO_REGISTER = (OBJECT_OT_FBSelectHead, OBJECT_OT_FBDeleteHead,
+                       OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
+                       OBJECT_OT_FBUnmorph, OBJECT_OT_FBRemovePins,
+                       OBJECT_OT_FBWireframeColor, OBJECT_OT_FBFilterCameras,
+                       OBJECT_OT_FBFixSize, OBJECT_OT_FBCameraFixSize,
+                       OBJECT_OT_FBDeleteCamera, OBJECT_OT_FBAddCamera,
+                       OBJECT_OT_FBAddonSettings, OBJECT_OT_FBBakeTexture,
+                       OBJECT_OT_FBShowTexture, OBJECT_OT_FBSetSensorWidth,
+                       OBJECT_OT_FBSetFocalLength)

@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+
 import logging
 from collections import Counter
 
@@ -25,6 +26,75 @@ from .. config import get_main_settings, ErrorType, BuilderType, Config
 from . import cameras, attrs
 
 
+def _is_keentools_object(obj):
+    return Config.version_prop_name[0] in obj.keys()
+
+
+def _get_object_type(obj):
+    return attrs.get_safe_custom_attribute(
+        obj, Config.object_type_prop_name[0])
+
+
+def _get_mod_version(obj):
+    return attrs.get_safe_custom_attribute(obj, Config.fb_mod_ver_prop_name[0])
+
+
+def _get_serial(obj):
+    return attrs.get_safe_custom_attribute(obj, Config.fb_serial_prop_name[0])
+
+
+def _get_dir_name(obj):
+    return attrs.get_safe_custom_attribute(obj, Config.fb_dir_prop_name[0])
+
+
+def _get_image_names(obj):
+    return attrs.get_safe_custom_attribute(obj, Config.fb_images_prop_name[0])
+
+
+# Scene States and Head number. All States are:
+# RECONSTRUCT, NO_HEADS, THIS_HEAD, ONE_HEAD, MANY_HEADS, PINMODE
+# ------------
+def what_is_state():
+    def _how_many_heads():
+        settings = get_main_settings()
+        unknown_headnum = -1
+        heads_count = len(settings.heads)
+        if heads_count == 0:
+            return 'NO_HEADS', unknown_headnum
+        elif heads_count == 1:
+            return 'ONE_HEAD', 0
+        else:
+            return 'MANY_HEADS', unknown_headnum
+
+    context = bpy.context
+    settings = get_main_settings()
+    unknown_headnum = -1
+
+    if settings.pinmode:
+        return 'PINMODE', settings.current_headnum
+
+    obj = context.active_object
+
+    if not obj or not _is_keentools_object(obj):
+        return _how_many_heads()
+
+    if obj.type == 'MESH':
+        ind = settings.find_head_index(obj)
+        if ind >= 0:
+            return 'THIS_HEAD', ind
+        else:
+            return 'RECONSTRUCT', unknown_headnum
+
+    elif obj.type == 'CAMERA':
+        ind, _ = settings.find_cam_index(obj)
+        if ind >= 0:
+            return 'THIS_HEAD', ind
+        else:
+            return _how_many_heads()
+
+    return _how_many_heads()
+
+
 def force_undo_push(msg='KeenTools operation'):
     inc_operation()
     bpy.ops.ed.undo_push(message=msg)
@@ -33,8 +103,6 @@ def force_undo_push(msg='KeenTools operation'):
 def check_settings():
     settings = get_main_settings()
     if not settings.check_heads_and_cams():
-        # Settings structure is broken
-        # Fix Heads and cameras
         heads_deleted, cams_deleted = settings.fix_heads()
         if heads_deleted == 0:
             warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
@@ -93,6 +161,8 @@ def auto_detect_frame_size():
         sizes.append((w, h))
     cnt = Counter(sizes)
     mc = cnt.most_common(2)
+    if len(mc) == 0:
+        return
     el = mc[0][0]
     # If most are undefined images
     if el == (-1, -1):
@@ -148,11 +218,9 @@ def reconstruct_by_head():
     if obj.type != 'MESH':
         return
 
-    # Has object our main attribute?
-    if not attrs.has_custom_attribute(obj, Config.version_prop_name[0]):
-        return  # No, it hasn't, leave
+    if not _is_keentools_object(obj):
+        return
 
-    # Object marked by our attribute, so can be reconstructed
     error_message = "===============\n" \
                     "Can't reconstruct\n" \
                     "===============\n" \
@@ -160,8 +228,7 @@ def reconstruct_by_head():
 
     logger.info("START RECONSTRUCT")
 
-    obj_type = attrs.get_safe_custom_attribute(
-            obj, Config.object_type_prop_name[0])
+    obj_type = _get_object_type(obj)
     if obj_type is None:
         obj_type = BuilderType.FaceBuilder
     logger.debug("OBJ_TYPE: {}".format(obj_type))
@@ -170,51 +237,41 @@ def reconstruct_by_head():
         warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=error_message + 'Object Type')
-        return  # Problem with object type custom attribute
+        return
 
-    # Get Mod version
-    mod_ver = attrs.get_safe_custom_attribute(
-            obj, Config.fb_mod_ver_prop_name[0])
+    mod_ver = _get_mod_version(obj)
     if mod_ver is None:
         mod_ver = Config.unknown_mod_ver
     logger.debug("MOD_VER {}".format(mod_ver))
 
-    # Get all camera parameters
     params = cameras.get_camera_params(obj)
     if params is None:
         warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=error_message + 'camera')
-        return  # One or more parameters undefined
+        return
     logger.debug("PARAMS: {}".format(params))
 
-    # Get Serial string
-    serial_str = attrs.get_safe_custom_attribute(
-            obj, Config.fb_serial_prop_name[0])
+    serial_str = _get_serial(obj)
     if serial_str is None:
         serial_str = ""
     logger.debug("SERIAL")
 
-    # Get Dir Name
-    dir_name = attrs.get_safe_custom_attribute(
-            obj, Config.fb_dir_prop_name[0])
+    dir_name = _get_dir_name(obj)
     if dir_name is None:
         dir_name = ""
     logger.debug("DIR_NAME: {}".format(dir_name))
 
     # Get Image Names
-    images = attrs.get_safe_custom_attribute(
-            obj, Config.fb_images_prop_name[0])
+    images = _get_image_names(obj)
     if type(images) is not list:
         images = []
     logger.debug("IMAGES: {}".format(images))
     logger.debug("PARAMETERS LOADED. START HEAD CREATION")
     # -------------------
-    # Fix our settings structure before new head add
     settings.fix_heads()
 
     headnum = len(settings.heads)
-    # Create new head in collection
     head = settings.heads.add()
     head.headobj = obj
 
@@ -247,7 +304,7 @@ def reconstruct_by_head():
 
         # load background images
         for i, f in enumerate(images):
-            logger.debug("IM {} {}".format(i, f))
+            logger.debug("IMAGE {} {}".format(i, f))
             img = bpy.data.images.new(f, 0, 0)
             img.source = 'FILE'
             img.filepath = f

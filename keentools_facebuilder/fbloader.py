@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+
 import bpy
 import logging
 
@@ -48,6 +49,11 @@ class FBLoader:
     @classmethod
     def update_cam_image_size(cls, cam_item):
         cam_item.update_image_size()
+
+    @classmethod
+    def update_focals(cls, head):
+        for c in head.cameras:
+            c.camobj.data.lens = head.focal
 
     @classmethod
     def update_camera_params(cls, head):
@@ -91,9 +97,12 @@ class FBLoader:
             c.camobj.data.sensor_width = head.sensor_width
             c.camobj.data.sensor_height = head.sensor_height
 
+        # Setup Rigidity only for FaceBuilder
         if cls.get_builder_type() == BuilderType.FaceBuilder:
             fb.set_auto_rigidity(settings.check_auto_rigidity)
             fb.set_rigidity(settings.rigidity)
+        # Activate Focal Estimation
+        fb.set_focal_length_estimation(head.auto_focal_estimation)
 
         if max_index >= 0:
             try:
@@ -144,7 +153,8 @@ class FBLoader:
         settings = get_main_settings()
         cls.viewport().unregister_handlers()
         cls.fb_save(headnum, camnum)
-        headobj = settings.heads[headnum].headobj
+        head = settings.heads[headnum]
+        headobj = head.headobj
         # Mark object by ver.
         cls.set_keentools_version(headobj)
         # Show geometry
@@ -153,6 +163,10 @@ class FBLoader:
 
         cls.viewport().current_pin = None
         cameras.show_all_cameras(headnum)
+
+        # Update all camera focals
+        FBLoader.update_focals(head)
+
         # === Debug use only ===
         FBDebug.add_event_to_queue('OUT_PIN_MODE', 0, 0)
         FBDebug.output_event_queue()
@@ -453,6 +467,7 @@ class FBLoader:
         # Create new keyframe
         fb.set_keyframe(num)
         camera.keyframe_id = num
+        logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
 
         # link camera into scene
         col = attrs.get_obj_collection(head.headobj)
@@ -482,11 +497,12 @@ class FBLoader:
         b.show_on_foreground = False  # True
         b.alpha = 1.0  # 0.5
 
-        # scene.update()  # Removed from API
+        # We added new keyframe, so update serial string
+        FBLoader.save_only(headnum)
         return camera
 
     @classmethod
     def add_camera_image(cls, headnum, img_path):
         img = bpy.data.images.load(img_path)
-        cam_ob = cls.add_camera(headnum, img)
-        return img
+        camera = cls.add_camera(headnum, img)
+        return img, camera

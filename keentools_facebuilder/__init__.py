@@ -33,69 +33,46 @@ bl_info = {
 
 import os
 import logging.config
-import bpy
-import keentools_facebuilder.preferences
-from . config import Config
-from . panels import (OBJECT_PT_FBPanel, OBJECT_PT_FBFaceParts,
-                      WM_OT_FBAddonWarning, OBJECT_PT_FBSettingsPanel,
-                      OBJECT_PT_FBColorsPanel, OBJECT_PT_TBPanel,
-                      OBJECT_MT_FBFixMenu, OBJECT_MT_FBFixCameraMenu)
-from . head import MESH_OT_FBAddHead
-from . body import MESH_OT_FBAddBody
-from . settings import FBCameraItem
-from . settings import FBHeadItem
-from . settings import FBSceneSettings
-from . main_operator import (OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
-                             OBJECT_OT_FBUnmorph, OBJECT_OT_FBRemovePins,
-                             OBJECT_OT_FBWireframeColor,
-                             OBJECT_OT_FBFilterCameras, OBJECT_OT_FBFixSize,
-                             OBJECT_OT_FBCameraFixSize,
-                             OBJECT_OT_FBDeleteCamera, OBJECT_OT_FBAddCamera,
-                             OBJECT_OT_FBAddonSettings,
-                             OBJECT_OT_FBBakeTexture, OBJECT_OT_FBShowTexture)
-from . pinmode import OBJECT_OT_FBPinMode
-from . movepin import OBJECT_OT_FBMovePin
-from . actor import OBJECT_OT_FBActor
-from . filedialog import WM_OT_FBOpenFilebrowser
-from . config import Config
 
+import bpy
+
+from .config import Config
+from .preferences import CLASSES_TO_REGISTER as PREFERENCES_CLASSES
+from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
+from .main_operator import CLASSES_TO_REGISTER as OPERATOR_CLASSES
+from .head import MESH_OT_FBAddHead
+from .body import MESH_OT_FBAddBody
+from .settings import FBExifItem, FBCameraItem, FBHeadItem, FBSceneSettings
+from .pinmode import OBJECT_OT_FBPinMode
+from .movepin import OBJECT_OT_FBMovePin
+from .actor import OBJECT_OT_FBActor, OBJECT_OT_FBCameraActor
+
+
+CLASSES_TO_REGISTER = (
+    MESH_OT_FBAddHead,
+    MESH_OT_FBAddBody,
+    FBExifItem,
+    FBCameraItem,
+    FBHeadItem,
+    FBSceneSettings,
+    OBJECT_OT_FBPinMode,
+    OBJECT_OT_FBMovePin,
+    OBJECT_OT_FBActor,
+    OBJECT_OT_FBCameraActor) + OPERATOR_CLASSES + \
+                      INTERFACE_CLASSES + PREFERENCES_CLASSES
 
 # Init logging system via config file
 base_dir = os.path.dirname(os.path.abspath(__file__))
 logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'))
 
 
-_CLASSES_TO_REGISTER = (
-    OBJECT_PT_FBPanel,
-    OBJECT_PT_FBFaceParts,
-    OBJECT_PT_FBColorsPanel,
-    OBJECT_PT_TBPanel,
-    OBJECT_MT_FBFixMenu,
-    OBJECT_MT_FBFixCameraMenu,
-    WM_OT_FBAddonWarning,
-    MESH_OT_FBAddHead,
-    MESH_OT_FBAddBody,
-    OBJECT_OT_FBSelectCamera,
-    OBJECT_OT_FBCenterGeo,
-    OBJECT_OT_FBUnmorph,
-    OBJECT_OT_FBRemovePins,
-    OBJECT_OT_FBWireframeColor,
-    OBJECT_OT_FBFilterCameras,
-    OBJECT_OT_FBDeleteCamera,
-    OBJECT_OT_FBAddCamera,
-    OBJECT_OT_FBFixSize,
-    OBJECT_OT_FBCameraFixSize,
-    OBJECT_OT_FBAddonSettings,
-    OBJECT_OT_FBBakeTexture,
-    OBJECT_OT_FBShowTexture,
-    FBCameraItem,
-    FBHeadItem,
-    FBSceneSettings,
-    OBJECT_PT_FBSettingsPanel,
-    OBJECT_OT_FBPinMode,
-    OBJECT_OT_FBMovePin,
-    OBJECT_OT_FBActor,
-    WM_OT_FBOpenFilebrowser) + preferences.CLASSES_TO_REGISTER
+def _add_addon_settings_var():
+    setattr(bpy.types.Scene, Config.addon_global_var_name,
+            bpy.props.PointerProperty(type=FBSceneSettings))
+
+
+def _remove_addon_settings_var():
+    delattr(bpy.types.Scene, Config.addon_global_var_name)
 
 
 def menu_func(self, context):
@@ -103,21 +80,19 @@ def menu_func(self, context):
     # self.layout.operator(MESH_OT_FBAddBody.bl_idname, icon='ARMATURE_DATA')
 
 
+# Blender predefined methods
 def register():
-    for cls in _CLASSES_TO_REGISTER:
+    for cls in CLASSES_TO_REGISTER:
         bpy.utils.register_class(cls)
     bpy.types.VIEW3D_MT_mesh_add.append(menu_func)
-    # Main addon settings variable creation
-    setattr(bpy.types.Scene, Config.addon_global_var_name,
-            bpy.props.PointerProperty(type=FBSceneSettings))
+    _add_addon_settings_var()
 
 
 def unregister():
-    for cls in reversed(_CLASSES_TO_REGISTER):
+    for cls in reversed(CLASSES_TO_REGISTER):
         bpy.utils.unregister_class(cls)
     bpy.types.VIEW3D_MT_mesh_add.remove(menu_func)
-    # Delete addon settings
-    delattr(bpy.types.Scene, Config.addon_global_var_name)
+    _remove_addon_settings_var()
 
 
 if __name__ == "__main__":
