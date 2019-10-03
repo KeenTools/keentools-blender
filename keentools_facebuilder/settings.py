@@ -32,52 +32,63 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 from . fbdebug import FBDebug
-from . config import config, get_main_settings, BuilderType
+from . config import Config, get_main_settings, BuilderType
+from .utils.manipulate import what_is_state
 
 
 def update_wireframe(self, context):
     settings = get_main_settings()
     headnum = settings.current_headnum
     head = settings.heads[headnum]
-    FBLoader.update_wireframe(head.headobj)
+    FBLoader.viewport().update_wireframe(
+        FBLoader.get_builder_type(), head.headobj)
 
 
 def update_pin_sensitivity(self, context):
-    FBLoader.update_pin_sensitivity()
+    FBLoader.viewport().update_pin_sensitivity()
 
 
 def update_pin_size(self, context):
-    FBLoader.update_pin_size()
+    FBLoader.viewport().update_pin_size()
 
 
 def update_debug_log(self, value):
-    print("SET: ", value)
     FBDebug.set_active(value)
 
 
 def update_cam_image(self, context):
-    print("SELF", self.keys())
     FBLoader.update_cam_image_size(self)
 
 
-def update_camera_params(self, contex):
-    print("CAMERA CHANGES", self.keys())
-    FBLoader.update_camera_params(self)  # pass current head
+def update_sensor_width(self, context):
+    self.sensor_height = self.sensor_width * 0.666666667
+    # if self.sensor_width != 36.0:
+    #    self.sensor_preset = 'custom'
+    FBLoader.update_camera_params(self)
+
+
+def update_sensor_height(self, context):
+    # self.sensor_preset = 'custom'
+    FBLoader.update_camera_params(self)
+
+
+def update_focal(self, context):
+    settings = get_main_settings()
+    if not settings.pinmode:
+        FBLoader.update_focals(self)
 
 
 def update_mesh_parts(self, context):
-    print("MESH PARTS")
     settings = get_main_settings()
-    headnum = settings.current_headnum
+    state, headnum = what_is_state()
+
+    if headnum < 0:
+        return
+
     head = settings.heads[headnum]
-    masks = []
-    masks.append(head.check_ears)
-    masks.append(head.check_eyes)
-    masks.append(head.check_face)
-    masks.append(head.check_headback)
-    masks.append(head.check_jaw)
-    masks.append(head.check_mouth)
-    masks.append(head.check_neck)
+    masks = [head.check_ears, head.check_eyes, head.check_face,
+             head.check_headback, head.check_jaw, head.check_mouth,
+             head.check_neck]
 
     old_mesh = head.headobj.data
     # Create new mesh
@@ -88,20 +99,34 @@ def update_mesh_parts(self, context):
         # Copy old material
         if old_mesh.materials:
             mesh.materials.append(old_mesh.materials[0])
-    except:
+    except Exception:
         pass
     head.headobj.data = mesh
     if settings.pinmode:
         # Update wireframe structures
-        FBLoader.wireframer.init_geom_data(head.headobj)
-        FBLoader.wireframer.init_edge_indices(head.headobj)
-        FBLoader.update_wireframe(head.headobj)
+        FBLoader.viewport().wireframer().init_geom_data(head.headobj)
+        FBLoader.viewport().wireframer().init_edge_indices(head.headobj)
+        FBLoader.viewport().update_wireframe(
+            FBLoader.get_builder_type(), head.headobj)
 
     mesh_name = old_mesh.name
     # Delete old mesh
-    print("MESH_USERS", old_mesh.users)
     bpy.data.meshes.remove(old_mesh, do_unlink=True)
     mesh.name = mesh_name
+
+
+class FBExifItem(PropertyGroup):
+    message: StringProperty(name="EXIF Message", default="")
+    focal: FloatProperty(default=-1.0)
+    focal35mm: FloatProperty(default=-1.0)
+    focal_x_res: FloatProperty(default=-1.0)
+    focal_y_res: FloatProperty(default=-1.0)
+    units: StringProperty(default="inch")  # or cm
+    image_width: FloatProperty(default=-1.0)
+    image_length: FloatProperty(default=-1.0)
+    sensor_width: FloatProperty(default=-1.0)
+    sensor_length: FloatProperty(default=-1.0)
+
 
 class FBCameraItem(PropertyGroup):
     keyframe_id: IntProperty(default=0)
@@ -200,23 +225,30 @@ class FBHeadItem(PropertyGroup):
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
 
     sensor_width: FloatProperty(
-        description="The horizontal size of the camera used to take photos."
-                    "This is VERY important parameter. "
-                    "Set it according to the real camera specification",
+        description="The larger dimension of the camera sensor "
+                    "used to take photos. This is VERY important parameter. "
+                    "Set it according to the real camera specification "
+                    "or via image file EXIF info",
         name="Sensor Width (mm)", default=36,
-        min=0.1, update=update_camera_params)
+        min=0.1, update=update_sensor_width)
     sensor_height: FloatProperty(
         description="Secondary parameter. "
                     "Set it according to the real camera specification."
                     "This parameter is not used if Sensor Width is greater",
         name="Sensor Height (mm)", default=24,
-        min=0.1, update=update_camera_params)
+        min=0.1, update=update_sensor_height)
     focal: FloatProperty(
         description="Camera focal length. You can found it in real "
                     "camera settings or snapshot EXIF. This is VERY important "
                     "parameter for proper reconstruction",
         name="Focal Length (mm)", default=50,
-        min=0.1, update=update_camera_params)
+        min=0.1, update=update_focal)
+
+    auto_focal_estimation: BoolProperty(
+        name="Auto Focal Estimation",
+        description="Automatically detects Focal Length value during head "
+                    "construction",
+        default=False)
 
     check_ears: BoolProperty(name="Ears", default=True,
                              update=update_mesh_parts)
@@ -239,15 +271,23 @@ class FBHeadItem(PropertyGroup):
 
     tex_uv_shape: EnumProperty(name="UV", items=[
                 ('uv0', 'Butterfly', 'Pretty standard one-seem Layout',
-                 'UV',0),
+                 'UV', 0),
                 ('uv1', 'Legacy', 'Uniform tex scale but many seems', 'UV', 1),
                 ('uv2', 'Spherical', 'Standard wrap-around Layout', 'UV', 2),
                 ('uv3', 'Maxface', 'Maximum face area, non-uniform', 'UV', 3),
                 ], description="UV Layout scheme", update=update_mesh_parts)
 
+    use_exif: BoolProperty(
+        name="Use EXIF if available in file",
+        description="Automatically detects Focal Length & Sensor Size "
+                    "from EXIF data in image file if available",
+        default=True)
+
+    exif: PointerProperty(type=FBExifItem)
+
     def set_serial_str(self, value):
         self.serial_str = value
-        self.headobj[config.fb_serial_prop_name[0]] = value
+        self.headobj[Config.fb_serial_prop_name[0]] = value
 
     def get_serial_str(self):
         return self.serial_str
@@ -268,24 +308,29 @@ class FBHeadItem(PropertyGroup):
         except AttributeError:
             return True
 
+    def get_last_camnum(self):
+        camnum = len(self.cameras) - 1
+        return camnum
+
     def save_images_src(self):
         res = []
         for c in self.cameras:
             if c.cam_image:
                 res.append(c.cam_image.filepath)
-        self.headobj[config.fb_images_prop_name[0]] = res
+        self.headobj[Config.fb_images_prop_name[0]] = res
         # Dir name of current scene
-        self.headobj[config.fb_dir_prop_name[0]] = bpy.path.abspath("//")
+        self.headobj[Config.fb_dir_prop_name[0]] = bpy.path.abspath("//")
 
     def save_cam_settings(self):
         render = bpy.context.scene.render
         d = {
-                config.reconstruct_sensor_width_param[0]: self.sensor_width,
-            config.reconstruct_sensor_height_param[0]: self.sensor_height,
-                config.reconstruct_focal_param[0]: self.focal,
-                config.reconstruct_frame_width_param[0]: render.resolution_x,
-                config.reconstruct_frame_height_param[0]: render.resolution_y}
-        self.headobj[config.fb_camera_prop_name[0]] = d
+                Config.reconstruct_sensor_width_param[0]: self.sensor_width,
+                Config.reconstruct_sensor_height_param[0]: self.sensor_height,
+                Config.reconstruct_focal_param[0]: self.focal,
+                Config.reconstruct_frame_width_param[0]: render.resolution_x,
+                Config.reconstruct_frame_height_param[0]: render.resolution_y}
+        self.headobj[Config.fb_camera_prop_name[0]] = d
+
 
 class FBSceneSettings(PropertyGroup):
     # ---------------------
@@ -318,12 +363,12 @@ class FBSceneSettings(PropertyGroup):
     wireframe_color: FloatVectorProperty(
         description="Color of mesh wireframe in pin-mode",
         name="Wireframe Color", subtype='COLOR',
-        default=config.default_scheme1, min=0.0, max=1.0,
+        default=Config.default_scheme1, min=0.0, max=1.0,
         update=update_wireframe)
     wireframe_special_color: FloatVectorProperty(
         description="Color of special parts in pin-mode",
         name="Wireframe Special Color", subtype='COLOR',
-        default=config.default_scheme2, min=0.0, max=1.0,
+        default=Config.default_scheme2, min=0.0, max=1.0,
         update=update_wireframe)
     show_specials: BoolProperty(
         description="Show guide contours for individual parts of the face",
@@ -337,13 +382,13 @@ class FBSceneSettings(PropertyGroup):
     pin_size: FloatProperty(
         description="Size of visual markers (pins) in pin-mode",
         name="Pin Size",
-        default=config.default_pin_size, min=1.0, max=100.0,
+        default=Config.default_pin_size, min=1.0, max=100.0,
         update=update_pin_size)
     pin_sensitivity: FloatProperty(
         description="Increase if it is difficult for you to get a pin. "
         "Decrease it if instead of a new pin, you capture the old one",
         name="Pin Sensitivity",
-        default=config.default_POINT_SENSITIVITY, min=1.0, max=100.0,
+        default=Config.default_POINT_SENSITIVITY, min=1.0, max=100.0,
         update=update_pin_sensitivity)
 
     # Other settings
@@ -458,7 +503,7 @@ class FBSceneSettings(PropertyGroup):
                         # Remove camera object
                         bpy.data.objects.remove(c.camobj)  # , do_unlink=True
                         cams_deleted += 1
-                    except:
+                    except Exception:
                         pass
                 err.append(i)  # Wrong head in list
             else:
@@ -472,3 +517,12 @@ class FBSceneSettings(PropertyGroup):
         i = self.find_head_index(obj)
         j, _ = self.find_cam_index(obj)
         return max(i, j)
+
+    def get_last_headnum(self):
+        return len(self.heads) - 1
+
+    def get_last_camnum(self, headnum):
+        if headnum <= self.get_last_headnum():
+            return self.heads[headnum].get_last_camnum()
+        else:
+            return -1
