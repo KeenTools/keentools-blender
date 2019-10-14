@@ -30,8 +30,10 @@ def _multi_line_text_to_output_labels(layout, txt):
     all_lines = split_by_br_or_newlines(txt)
     non_empty_lines = filter(len, all_lines)
 
+    col = layout.column()
+    col.scale_y = 0.75
     for text_line in non_empty_lines:
-        layout.label(text=text_line)
+        col.label(text=text_line)
 
 
 class FBAddonPreferences(bpy.types.AddonPreferences):
@@ -128,7 +130,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
         if self.lic_type == 'ONLINE':
             box = layout.box()
-            row = box.row()
+            row = box.split(factor=0.85)
             row.prop(self, "license_id")
             install_online_op = row.operator(preferences_operators.OBJECT_OT_InstallLicenseOnline.bl_idname)
             install_online_op.license_id = self.license_id
@@ -137,16 +139,16 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             self.hardware_id = lm.hardware_id()
 
             layout.label(text="Generate license file at our site and install it")
-            row = layout.row()
+            row = layout.split(factor=0.2)
             row.label(text="Visit our site: ")
             row.operator(preferences_operators.OBJECT_OT_OpenManualInstallPage.bl_idname)
 
             box = layout.box()
-            row = box.row()
+            row = box.split(factor=0.85)
             row.prop(self, "hardware_id")
             row.operator(preferences_operators.OBJECT_OT_CopyHardwareId.bl_idname)
 
-            row = box.row()
+            row = box.split(factor=0.85)
             row.prop(self, "lic_path")
             install_offline_op = row.operator(preferences_operators.OBJECT_OT_InstallLicenseOffline.bl_idname)
             install_offline_op.lic_path = self.lic_path
@@ -161,14 +163,14 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                 self.license_server_lock = False
 
             box = layout.box()
-            row = box.row()
+            row = box.split(factor=0.35)
             row.label(text="license server host/IP")
             if self.license_server_lock and self.license_server_auto:
                 row.label(text=self.license_server)
             else:
                 row.prop(self, "license_server", text="")
 
-            row = box.row()
+            row = box.split(factor=0.35)
             row.label(text="license server port")
             if self.license_server_lock and self.license_server_auto:
                 row.label(text=str(self.license_server_port))
