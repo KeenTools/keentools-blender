@@ -4,8 +4,12 @@
 
 ## Release History
 
+1.5.5 - 02 October 2019
+
 1.5.4 - 14 August 2019
+
 1.5.3 - 30 July 2019
+
 1.5.2 - 16 July 2019
 
 ## Licensing
