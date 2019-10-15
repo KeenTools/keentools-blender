@@ -306,14 +306,6 @@ class FBViewport:
         if cls.get_current_pin() and cls.get_current_pin_num() < len(vertex_colors):
             vertex_colors[cls.get_current_pin_num()] = Config.current_pin_color
 
-        # Sensitivity indicator (works only if PIXEL_SIZE updates in modal)
-        # points.append(
-        #     (coords.image_space_to_region(
-        #         -0.5 - cls.PIXEL_SIZE * cls.POINT_SENSITIVITY, -asp * 0.5,
-        #         x1, y1, x2, y2))
-        # )
-        # vertex_colors.append((0, 1, 0, 0.2))  # sensitivity indicator
-
         # Camera corners
         points.append(
             (coords.image_space_to_region(
@@ -324,8 +316,8 @@ class FBViewport:
                 0.5, asp * 0.5,
                 x1, y1, x2, y2))
         )
-        vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # camera corner
-        vertex_colors.append((1.0, 0, 1.0, 0.2))  # camera corner
+        vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # left camera corner
+        vertex_colors.append((1.0, 0, 1.0, 0.2))  # right camera corner
 
         cls.points2d().set_vertices_colors(points, vertex_colors)
         cls.points2d().create_batch()
