@@ -101,8 +101,6 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             col = box.column()
             col.scale_y = 0.75
             col.label(text='You accepted EULA before installing pykeentools. ')
-            col.label(text='If you want to cancel the EULA agreement '
-                           'you must remove the addon.')
 
         conf = keentools_facebuilder.config.Config
         row = box.split(factor=0.7)
@@ -210,7 +208,9 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         layout = self.layout
 
         if not pkt.loaded():
-            layout.label(text='You need to install pykeentools library '
+            col = layout.column()
+            col.alert = True
+            col.label(text='You need to install pykeentools library '
                               'before you start using the addon',
                          icon='ERROR')
         else:

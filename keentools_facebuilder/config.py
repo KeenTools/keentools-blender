@@ -216,5 +216,6 @@ class ErrorType:
     BackgroundsDiffer = 3
     IllegalIndex = 4
     CannotReconstruct = 5
-    CannotCreate = 6
-    AboutFrameSize = 7
+    CannotCreateObject = 6
+    PktProblem = 7
+    AboutFrameSize = 8

@@ -65,8 +65,7 @@ class OBJECT_MT_FBFixCameraMenu(Menu):
 
         op = layout.operator(
             Config.fb_actor_operator_idname,
-            text="Info about Frame Size warning",
-            icon='ERROR')
+            text="About Frame Sizes")  # icon='ERROR'
         op.action = 'about_fix_frame_warning'
 
 
@@ -108,8 +107,7 @@ class OBJECT_MT_FBFixMenu(Menu):
         layout.separator()
         op = layout.operator(
             Config.fb_actor_operator_idname,
-            text="Info about Frame Size warning",
-            icon="ERROR")
+            text="About Frame Sizes")  # icon="ERROR"
         op.action = 'about_fix_frame_warning'
 
 

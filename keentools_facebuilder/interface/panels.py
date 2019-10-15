@@ -250,11 +250,11 @@ class OBJECT_PT_FBViewsPanel(Panel):
 
             # Camera Icon
             col = row.column()
-            icon = 'CAMERA_DATA'
+            icon = 'HIDE_OFF'  # CAMERA_DATA
             if settings.current_camnum == i:
                 if settings.pinmode:
                     col.alert = True
-                icon = 'VIEW_CAMERA'  # 'OUTLINER_OB_CAMERA'
+                icon = 'VIEW_CAMERA'  # OUTLINER_OB_CAMERA
             op = col.operator(
                 Config.fb_main_select_camera_idname, text='', icon=icon)
             op.headnum = headnum
@@ -272,7 +272,7 @@ class OBJECT_PT_FBViewsPanel(Panel):
             # Filename and Context Menu button
             if camera.cam_image:
                 row2.label(text="{}".format(camera.cam_image.name))
-                icon = 'OUTLINER_DATA_GP_LAYER'  # 'FILEBROWSER'
+                icon = 'GREASEPENCIL'  # OUTLINER_DATA_GP_LAYER
                 if wrong_size_flag:
                     # Background has different size
                     icon = 'ERROR'
@@ -289,9 +289,6 @@ class OBJECT_PT_FBViewsPanel(Panel):
                     text='', icon='FILEBROWSER')
                 op.headnum = headnum
                 op.camnum = i
-
-            # Testing purpose output
-            # row2.label(text="{}".format(camera.keyframe_id))
 
             # Camera Delete button
             if not settings.pinmode:
@@ -516,7 +513,7 @@ class OBJECT_PT_FBSettingsPanel(Panel):
     bl_idname = Config.fb_settings_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_label = "Settings"
+    bl_label = "Pin Settings"
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 

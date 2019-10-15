@@ -28,7 +28,7 @@ from ..config import Config, get_main_settings, ErrorType
 
 class WM_OT_FBAddonWarning(Operator):
     bl_idname = Config.fb_warning_operator_idname
-    bl_label = "FaceBuilder WARNING!"
+    bl_label = ""
 
     msg: bpy.props.IntProperty(default=ErrorType.Unknown)
     msg_content: bpy.props.StringProperty(default="")
@@ -37,9 +37,11 @@ class WM_OT_FBAddonWarning(Operator):
 
     def set_content(self, txt_list):
         self.content = txt_list
+        self.content.append(" ")  # Additional line at end
 
     def draw(self, context):
         layout = self.layout
+        layout.scale_y = 0.75
 
         for t in self.content:
             layout.label(text=t)
@@ -71,7 +73,6 @@ class WM_OT_FBAddonWarning(Operator):
             return context.window_manager.invoke_props_dialog(self, width=300)
         elif self.msg == ErrorType.NoLicense:
             self.set_content([
-                "===============",
                 "License is not detected",
                 "===============",
                 "Go to Addon preferences:",
@@ -80,7 +81,6 @@ class WM_OT_FBAddonWarning(Operator):
             ])
         elif self.msg == ErrorType.SceneDamaged:
             self.set_content([
-                "===============",
                 "Scene was damaged",
                 "===============",
                 "It looks like you manualy deleted",
@@ -93,7 +93,6 @@ class WM_OT_FBAddonWarning(Operator):
             ])
         elif self.msg == ErrorType.BackgroundsDiffer:
             self.set_content([
-                "===============",
                 "Different sizes",
                 "===============",
                 "Cameras backgrounds",
@@ -102,32 +101,33 @@ class WM_OT_FBAddonWarning(Operator):
             ])
         elif self.msg == ErrorType.IllegalIndex:
             self.set_content([
-                "===============",
                 "Object index is out of bounds",
                 "===============",
                 "Object index out of scene count"
             ])
         elif self.msg == ErrorType.CannotReconstruct:
             self.set_content([
-                "===============",
                 "Can't reconstruct",
                 "===============",
                 "Object parameters are invalid or missing."
             ])
-        elif self.msg == ErrorType.CannotCreate:
+        elif self.msg == ErrorType.CannotCreateObject:
             self.set_content([
-                "===============",
                 "Can't create Object",
                 "===============",
-                "Error when creating Object",
+                "An error occurred while creating object.",
                 "This addon version can't create",
-                "objects of this type or ",
+                "objects of this type."
+            ])
+        elif self.msg == ErrorType.PktProblem:
+            self.set_content([
+                "PyKeenTools Error",
+                "===============",
                 "PyKeenTools library not loaded. ",
-                "Refer to Addon Settings"
+                "Refer to FaceBuilder Addon Settings to install it."
             ])
         elif self.msg == ErrorType.AboutFrameSize:
             self.set_content([
-                "===============",
                 "About Frame Sizes",
                 "===============",
                 "All frames used as a background image ",
