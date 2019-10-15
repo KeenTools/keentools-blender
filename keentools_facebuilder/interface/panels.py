@@ -41,9 +41,7 @@ class OBJECT_PT_FBHeaderPanel(Panel):
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 
-    def draw_start_panel(self, layout):
-        # Show User Hint when no target object selected
-        # Add Head & Addon settings
+    def _head_creation_offer(self, layout):
         col = layout.column()
         col.scale_y = 0.75
         col.label(text="You can create new Head via:")
@@ -58,12 +56,24 @@ class OBJECT_PT_FBHeaderPanel(Panel):
             Config.fb_add_head_operator_idname,
             text='Add New Head', icon='USER')
 
+    def _pkt_install_offer(self, layout):
+        col = layout.column()
+        col.scale_y = 0.75
+        col.label(text="PyKeenTools must be installed")
+        col.label(text="before the addon using.")
+        col.label(text="Refer to Addon settings.")
+
+        row = layout.row()
+        row.scale_y = 2.0
+        row.operator(
+            Config.fb_main_addon_settings_idname,
+            text='Addon Settings to install', icon='PREFERENCES')
+
+    def draw_start_panel(self, layout):
         if not pkt.is_installed():
-            col = layout.column()
-            col.scale_y = 0.75
-            col.label(text="PyKeenTools must be installed")
-            col.label(text="before the addon using.")
-            col.label(text="Refer to Addon settings.")
+            self._pkt_install_offer(layout)
+        else:
+            self._head_creation_offer(layout)
 
     def draw_reconstruct(self, layout):
         # Need for reconstruction

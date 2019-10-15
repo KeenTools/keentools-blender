@@ -29,6 +29,7 @@ class OBJECT_OT_OpenPktLicensePage(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '.open_pkt_license_page'
     bl_label = 'read license'
     bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = "Open KeenTools license via web-browser"
 
     def execute(self, context):
         bpy.ops.wm.url_open(url=keentools_facebuilder.config.Config.pykeentools_license_url)
@@ -39,6 +40,8 @@ class OBJECT_OT_InstallPkt(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '.install_latest_pkt'
     bl_label = 'install from website'
     bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Install pytkeentools from web-site ' \
+                     '(configured SSL in OS is required)'
 
     install_type: bpy.props.EnumProperty(
         name='Build',
@@ -83,6 +86,8 @@ class OBJECT_OT_InstallFromFilePkt(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '.install_pkt_from_file'
     bl_label = 'install from file'
     bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'You can download pykeentools manually ' \
+                     'and install it here'
 
     # can only have exactly that name
     filepath: bpy.props.StringProperty(
@@ -115,6 +120,7 @@ class OBJECT_OT_OpenManualInstallPage(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '.open_manual_install_page'
     bl_label = 'open license activation webpage'
     bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Open license activation webpage in browser'
 
     def execute(self, context):
         bpy.ops.wm.url_open(url=keentools_facebuilder.config.Config.manual_install_url)
@@ -125,6 +131,7 @@ class OBJECT_OT_CopyHardwareId(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '.lic_hardware_id_copy'
     bl_label = 'copy'
     bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Copy Hardware ID to clipboard'
 
     def execute(self, context):
         hardware_id = pkt.module().FaceBuilder.license_manager().hardware_id()
@@ -137,6 +144,7 @@ class OBJECT_OT_InstallLicenseOnline(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '.lic_online_install'
     bl_label = 'install'
     bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Install online license'
 
     license_id: bpy.props.StringProperty()
 
@@ -155,6 +163,7 @@ class OBJECT_OT_InstallLicenseOffline(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '.lic_offline_install'
     bl_label = 'install'
     bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Install offline license'
 
     lic_path: bpy.props.StringProperty()
 
@@ -173,6 +182,7 @@ class OBJECT_OT_FloatingConnect(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '.lic_floating_connect'
     bl_label = 'connect'
     bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Connect to floating license server'
 
     license_server: bpy.props.StringProperty()
     license_server_port: bpy.props.IntProperty()
@@ -185,4 +195,23 @@ class OBJECT_OT_FloatingConnect(bpy.types.Operator):
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
         else:
             self.report({'INFO'}, 'Floating server settings saved')
+        return {'FINISHED'}
+
+
+class OBJECT_OT_ShowURL(bpy.types.Operator):
+    bl_idname = _ID_NAME_PREFIX + '.show_url'
+    bl_label = 'Show URL'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Show URL for manual use'
+
+    url: bpy.props.StringProperty(name='URL', default='')
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, 'url')
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def execute(self, context):
         return {'FINISHED'}

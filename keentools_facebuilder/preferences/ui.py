@@ -91,18 +91,42 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         box = layout.box()
         box.label(text='Pykeentools:')
 
-        # if installed then license was accepted at some point before. Don't need to check again
+        # if installed then license was accepted at some point before.
+        # Don't need to check again
         license_was_accepted = pkt.is_installed() or self.license_accepted
 
         if not license_was_accepted:
             box.prop(self, 'license_accepted')
-            box.operator(preferences_operators.OBJECT_OT_OpenPktLicensePage.bl_idname)
+        else:
+            col = box.column()
+            col.scale_y = 0.75
+            col.label(text='You accepted EULA before installing pykeentools. ')
+            col.label(text='If you want to cancel the EULA agreement '
+                           'you must remove the addon.')
 
-        install_row = box.row()
-        install_pkt_op = install_row.operator(preferences_operators.OBJECT_OT_InstallPkt.bl_idname)
+        conf = keentools_facebuilder.config.Config
+        row = box.split(factor=0.7)
+        row.operator(
+            preferences_operators.OBJECT_OT_OpenPktLicensePage.bl_idname)
+        op = row.operator(
+            preferences_operators.OBJECT_OT_ShowURL.bl_idname,
+            text='URL to License')
+        op.url = conf.pykeentools_license_url
+
+        row = box.split(factor=0.7)
+        row.scale_y = 2.0
+        install_row = row.row()
+        install_pkt_op = install_row.operator(
+            preferences_operators.OBJECT_OT_InstallPkt.bl_idname, icon='WORLD')
         install_pkt_op.license_accepted = license_was_accepted
-        install_from_file_pkt_op = install_row.operator(preferences_operators.OBJECT_OT_InstallFromFilePkt.bl_idname)
+        install_from_file_pkt_op = install_row.operator(
+            preferences_operators.OBJECT_OT_InstallFromFilePkt.bl_idname,
+            icon='FILEBROWSER')
         install_from_file_pkt_op.license_accepted = license_was_accepted
+        op = row.operator(
+            preferences_operators.OBJECT_OT_ShowURL.bl_idname,
+            text='URL to pykeentools')
+        op.url = conf.pykeentools_manual_download_url
 
         if pkt.is_installed():
             try:
@@ -112,15 +136,12 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                     pkt.module().__version__,
                     pkt.module().build_time))
             except ImportError:
-                box.label(text='Failed to load pykeentools. Please check the installation')
+                box.label(text='Failed to load pykeentools. '
+                               'Please check the installation')
 
     def _draw_license_info(self, layout):
         box = layout.box()
         box.label(text='License info:')
-
-        if not pkt.loaded():
-            box.label(text='install pykeentools to see license info')
-            return
 
         lm = pkt.module().FaceBuilder.license_manager()
 
@@ -188,5 +209,11 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
 
-        self._draw_license_info(layout)
+        if not pkt.loaded():
+            layout.label(text='You need to install pykeentools library '
+                              'before you start using the addon',
+                         icon='ERROR')
+        else:
+            self._draw_license_info(layout)
+
         self._draw_pykeentools_preferences(layout)

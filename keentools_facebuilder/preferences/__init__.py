@@ -32,5 +32,6 @@ CLASSES_TO_REGISTER = (
     OBJECT_OT_OpenPktLicensePage,
     OBJECT_OT_InstallFromFilePkt,
     OBJECT_OT_OpenManualInstallPage,
+    OBJECT_OT_ShowURL,
     FBAddonPreferences
 )

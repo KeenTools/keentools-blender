@@ -45,7 +45,8 @@ class Config:
     keentools_website_url = 'https://keentools.io'
     manual_install_url = keentools_website_url + '/manual-installation'
     pykeentools_license_url = 'https://link.keentools.io/eula'
-
+    pykeentools_manual_download_url = 'https://www.keentools.io/nightly-builds'
+    
     # Operators ids
     fb_main_operator_callname = _prefix + '_main_operator'
     fb_main_operator_idname = 'object.' + fb_main_operator_callname
