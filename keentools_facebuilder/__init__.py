@@ -47,6 +47,7 @@ from .pinmode import OBJECT_OT_FBPinMode
 from .movepin import OBJECT_OT_FBMovePin
 from .actor import OBJECT_OT_FBActor, OBJECT_OT_FBCameraActor
 
+from .utils.icons import FBIcons
 
 CLASSES_TO_REGISTER = (
     MESH_OT_FBAddHead,
@@ -87,6 +88,7 @@ def register():
     bpy.types.VIEW3D_MT_mesh_add.append(menu_func)
     _add_addon_settings_var()
 
+    FBIcons.register()
 
 def unregister():
     for cls in reversed(CLASSES_TO_REGISTER):
@@ -94,6 +96,7 @@ def unregister():
     bpy.types.VIEW3D_MT_mesh_add.remove(menu_func)
     _remove_addon_settings_var()
 
+    FBIcons.unregister()
 
 if __name__ == "__main__":
     register()

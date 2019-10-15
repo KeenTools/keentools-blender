@@ -67,6 +67,7 @@ class WM_OT_FBSingleFilebrowser(Operator, ImportHelper):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         logger.info('Loaded image file: {}'.format(self.filepath))
+
         try:
             img = bpy.data.images.load(self.filepath)
             head = settings.heads[self.headnum]

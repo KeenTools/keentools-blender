@@ -75,7 +75,7 @@ def update_sensor_height(self, context):
 def update_focal(self, context):
     settings = get_main_settings()
     if not settings.pinmode:
-        FBLoader.update_focals(self)
+        FBLoader.update_all_camera_focals(self)
 
 
 def update_mesh_parts(self, context):

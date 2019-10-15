@@ -52,11 +52,46 @@ class FBViewport:
 
     # Pins
     spins = []  # current screen pins
-    current_pin = None
-    current_pin_num = -1
+    _current_pin = None
+    _current_pin_num = -1
 
     POINT_SENSITIVITY = Config.default_POINT_SENSITIVITY
     PIXEL_SIZE = 0.1  # Auto Calculated
+
+    # --- current_pin_num class property
+    @classmethod
+    def get_current_pin_num(cls):
+        return cls._current_pin_num
+
+    @classmethod
+    def set_current_pin_num(cls, value):
+        cls._current_pin_num = value
+
+    @property
+    def current_pin_num(self):
+        return self.get_current_pin_num()
+
+    @current_pin_num.setter
+    def current_pin_num(self, value):
+        self.set_current_pin_num(value)
+
+    # --- current_pin class property
+    @classmethod
+    def get_current_pin(cls):
+        return cls._current_pin
+
+    @classmethod
+    def set_current_pin(cls, value):
+        cls._current_pin = value
+
+    @property
+    def current_pin(self):
+        return self.get_current_pin()
+
+    @current_pin.setter
+    def current_pin(self, value):
+        self.set_current_pin(value)
+    # ---
 
     @classmethod
     def points2d(cls):
@@ -79,7 +114,7 @@ class FBViewport:
         return cls._residuals
 
     @classmethod
-    def update_pixel_size(cls, context):
+    def update_view_relative_pixel_size(cls, context):
         ps = coords.get_pixel_relative_size(context)
         cls.PIXEL_SIZE = ps
 
@@ -268,15 +303,9 @@ class FBViewport:
 
         vertex_colors = [Config.pin_color for _ in range(len(points))]
 
-        if cls.current_pin and cls.current_pin_num < len(vertex_colors):
-            vertex_colors[cls.current_pin_num] = Config.current_pin_color
+        if cls.get_current_pin() and cls.get_current_pin_num() < len(vertex_colors):
+            vertex_colors[cls.get_current_pin_num()] = Config.current_pin_color
 
-        # Sensitivity indicator
-        points.append(
-            (coords.image_space_to_region(
-                -0.5 - cls.PIXEL_SIZE * cls.POINT_SENSITIVITY, -asp * 0.5,
-                x1, y1, x2, y2))
-        )
         # Camera corners
         points.append(
             (coords.image_space_to_region(
@@ -287,9 +316,8 @@ class FBViewport:
                 0.5, asp * 0.5,
                 x1, y1, x2, y2))
         )
-        vertex_colors.append((0, 1, 0, 0.2))  # sensitivity indicator
-        vertex_colors.append(Config.current_pin_color)  # camera corner
-        vertex_colors.append(Config.current_pin_color)  # camera corner
+        vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # left camera corner
+        vertex_colors.append((1.0, 0, 1.0, 0.2))  # right camera corner
 
         cls.points2d().set_vertices_colors(points, vertex_colors)
         cls.points2d().create_batch()

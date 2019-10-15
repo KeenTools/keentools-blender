@@ -33,7 +33,7 @@ def nearest_point(x, y, points, dist=4000000):  # dist squared
 
 
 def update_head_mesh_geo(obj, geo):
-    """ Head Mesh update by verices coords in np.array """
+    """ Head Mesh update by vertices coords in np.array """
     mesh = obj.data
     rot = np.array([[1., 0., 0.], [0., 0., 1.], [0., -1., 0]])
     npbuffer = geo @ rot

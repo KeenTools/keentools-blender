@@ -24,6 +24,7 @@ from ..fbloader import FBLoader
 from ..utils.manipulate import what_is_state
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
+from ..utils.icons import FBIcons
 
 def _show_all_panels():
     state, _ = what_is_state()
@@ -45,8 +46,11 @@ class OBJECT_PT_FBHeaderPanel(Panel):
         # Add Head & Addon settings
         col = layout.column()
         col.scale_y = 0.75
-        col.label(text='You can create new Head via:')
-        col.label(text='Add > Mesh > FaceBuilder')
+        col.label(text="You can create new Head via:")
+        col.label(text="Add > Mesh > FaceBuilder")
+
+        # Test custom icons
+        # FBIcons.layout_icons(layout)
 
         row = layout.row()
         row.scale_y = 2.0
