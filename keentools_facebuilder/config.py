@@ -32,6 +32,7 @@ class BuilderType:
 
 
 class Config:
+    prefix = _prefix
     addon_name = __package__  # the same as module name
     addon_human_readable_name = 'FaceBuilder'
     addon_version = '1.5.5 (Beta)'
