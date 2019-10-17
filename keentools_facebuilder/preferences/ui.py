@@ -166,10 +166,11 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         elif self.lic_type == 'OFFLINE':
             self.hardware_id = lm.hardware_id()
 
-            layout.label(text="Generate license file at our site and install it")
-            row = layout.split(factor=0.2)
-            row.label(text="Visit our site: ")
-            row.operator(preferences_operators.PREF_OT_OpenManualInstallPage.bl_idname)
+            row = layout.split(factor=0.65)
+            row.label(text="Get an activated license file at our site:")
+            row.operator(
+                preferences_operators.PREF_OT_OpenManualInstallPage.bl_idname,
+                icon='URL')
 
             box = layout.box()
             row = box.split(factor=0.85)
@@ -264,18 +265,20 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                 preferences_operators.PREF_OT_InstallPkt.bl_idname,
                 text='Download & Install core', icon='WORLD')
             op.license_accepted = self._license_was_accepted()
-            row.operator(
-                preferences_operators.PREF_OT_OpenPktLicensePage.bl_idname,
-                text='Download & Update addon')
+            op = row.operator(
+                preferences_operators.PREF_OT_OpenURL.bl_idname,
+                text='Download & Update addon', icon='URL')
+            op.url = 'https://keentools.io/downloads'
         else:
             row = box.row()
             op = row.operator(
                 preferences_operators.PREF_OT_InstallFromFilePkt.bl_idname,
                 text='Install core from disk', icon='FILEBROWSER')
             op.license_accepted = self._license_was_accepted()
-            row.operator(
+            op = row.operator(
                 preferences_operators.PREF_OT_OpenPktLicensePage.bl_idname,
                 text='Update addon from disk')
+            op.url = 'https://keentools.io/downloads'
 
             row = box.split(factor=0.65)
             col = row.column()

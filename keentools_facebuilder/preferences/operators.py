@@ -46,7 +46,7 @@ class PREF_OT_InstallPkt(bpy.types.Operator):
     install_type: bpy.props.EnumProperty(
         name='Build',
         items=(
-            ('default', 'Default',
+            ('default', 'Latest Stable',
              'Install the version this addon was tested with', 0),
             ('nightly', 'Nightly',
              'Install latest nightly build available', 1)
@@ -121,7 +121,7 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
 
 class PREF_OT_OpenManualInstallPage(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_open_manual_install_page'
-    bl_label = 'open license activation webpage'
+    bl_label = 'Open in web browser'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Open license activation webpage in browser'
 
@@ -132,7 +132,7 @@ class PREF_OT_OpenManualInstallPage(bpy.types.Operator):
 
 class PREF_OT_CopyHardwareId(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_lic_hardware_id_copy'
-    bl_label = 'copy'
+    bl_label = 'Copy'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Copy Hardware ID to clipboard'
 
@@ -145,7 +145,7 @@ class PREF_OT_CopyHardwareId(bpy.types.Operator):
 
 class PREF_OT_InstallLicenseOnline(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_lic_online_install'
-    bl_label = 'install'
+    bl_label = 'Install'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Install online license'
 
@@ -164,7 +164,7 @@ class PREF_OT_InstallLicenseOnline(bpy.types.Operator):
 
 class PREF_OT_InstallLicenseOffline(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_lic_offline_install'
-    bl_label = 'install'
+    bl_label = 'Install'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Install offline license'
 
@@ -183,7 +183,7 @@ class PREF_OT_InstallLicenseOffline(bpy.types.Operator):
 
 class PREF_OT_FloatingConnect(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_lic_floating_connect'
-    bl_label = 'connect'
+    bl_label = 'Connect'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Connect to floating license server'
 
@@ -244,7 +244,7 @@ class PREF_OT_ShowWhy(bpy.types.Operator):
         layout.scale_y = 0.75
 
         content = ['We cannot ship our core library with addon '
-                   'due to Blender licensing,',
+                   'due to Blender license restrictions,',
                    'so you need to install it yourself.',
                    ' ',
                    'You have two options: automatic online '
