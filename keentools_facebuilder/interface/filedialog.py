@@ -66,13 +66,14 @@ class WM_OT_FBSingleFilebrowser(Operator, ImportHelper):
     def execute(self, context):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
-        logger.info('Loaded image file: {}'.format(self.filepath))
+        logger.info('Load image file: {}'.format(self.filepath))
 
         try:
             img = bpy.data.images.load(self.filepath)
             head = settings.heads[self.headnum]
             head.cameras[self.camnum].cam_image = img
-        except Exception:
+        except RuntimeError:
+            logger.error("FILE READ ERROR: {}".format(self.filepath))
             return {'FINISHED'}
 
         exif_data = read_exif(self.filepath)
@@ -150,10 +151,13 @@ class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
             filepath = os.path.join(self.directory, f.name)
             logger.debug("FILE: {}".format(filepath))
 
-            img, camera = FBLoader.add_camera_image(self.headnum, filepath)
-            if img.size[0] != w or img.size[1] != h:
-                w, h = img.size
-                changes += 1
+            try:
+                img, camera = FBLoader.add_camera_image(self.headnum, filepath)
+                if img.size[0] != w or img.size[1] != h:
+                    w, h = img.size
+                    changes += 1
+            except RuntimeError as ex:
+                logger.error("FILE READ ERROR: {}".format(filepath))
 
         # We update Render Size in accordance to image size
         # (only if all images have the same size)
