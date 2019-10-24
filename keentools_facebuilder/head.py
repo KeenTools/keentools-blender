@@ -39,6 +39,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
             op = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
             op('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
+
         attrs.add_to_fb_collection(obj)  # link to FB objects collection
         FBLoader.set_keentools_version(obj)  # Mark Keentools attribute
 

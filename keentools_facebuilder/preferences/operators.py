@@ -38,7 +38,7 @@ class PREF_OT_OpenPktLicensePage(bpy.types.Operator):
 
 class PREF_OT_InstallPkt(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_install_latest_pkt'
-    bl_label = 'install from website'
+    bl_label = 'Install from website'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Install pytkeentools from web-site ' \
                      '(configured SSL in OS is required)'
@@ -87,7 +87,7 @@ class PREF_OT_InstallPkt(bpy.types.Operator):
 
 class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_install_pkt_from_file'
-    bl_label = 'install from file'
+    bl_label = 'Install from file'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'You can download pykeentools manually ' \
                      'and install it here'
@@ -101,6 +101,19 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
     )
 
     license_accepted: bpy.props.BoolProperty()
+
+    def draw(self, context):
+        layout = self.layout
+        content = ["You can download",
+                   "the core library from ",
+                   "our site: keentools.io/downloads"]
+        for c in content:
+            layout.label(text=c)
+
+        op = layout.operator(
+            PREF_OT_OpenURL.bl_idname,
+            text='Open download page', icon='URL')
+        op.url = 'https://keentools.io/downloads'
 
     def invoke(self, context, event):
         if self.license_accepted:

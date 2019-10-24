@@ -79,8 +79,8 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     install_type: bpy.props.EnumProperty(
         name="Type",
         items=(
-            ('ONLINE', "Online", "Online license management", 0),
-            ('OFFLINE', "Offline", "Offline license management", 1)),
+            ('ONLINE', "Online", "Online installation", 0),
+            ('OFFLINE', "Offline", "Offline installation", 1)),
         default='ONLINE')
 
     lic_status: bpy.props.StringProperty(
@@ -167,95 +167,64 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
     def _draw_accept_license_offer(self, layout):
         box = layout.box()
-        row = box.split(factor=0.65)
-        row.label(text='KeenTools End-User License Agreement')
+        col = box.column()
+        col.scale_y = 0.75
+        content = ['We cannot ship our core library with addon '
+                   'due to Blender license restrictions,',
+                   'so you need to install it yourself.']
+        for c in content:
+            col.label(text=c)
+
+        row = box.split(factor=0.85)
+        row.prop(self, 'license_accepted')
+
         row.operator(
             preferences_operators.PREF_OT_OpenPktLicensePage.bl_idname,
-            text='Open in web browser', icon='WORLD'
+            text='Read', icon='URL'
         )
-        box.prop(self, 'license_accepted')
+
+        # Install online / Install from disk / Download
+        row = box.split(factor=0.35)
+        box2 = row.box()
+        row2 = box2.row()
+        if not self.license_accepted:
+            row2.active = False
+            row2.alert = True
+
+        op = row2.operator(
+            preferences_operators.PREF_OT_InstallPkt.bl_idname,
+            text='Install online', icon='WORLD')
+        op.license_accepted = self._license_was_accepted()
+
+        box2 = row.box()
+        row2 = box2.split(factor=0.6)
+        if not self.license_accepted:
+            row2.active = False
+            row2.alert = True
+
+        op = row2.operator(
+            preferences_operators.PREF_OT_InstallFromFilePkt.bl_idname,
+            text='Install from disk', icon='FILEBROWSER')
+        op.license_accepted = self._license_was_accepted()
+
+        op = row2.operator(
+            preferences_operators.PREF_OT_OpenURL.bl_idname,
+            text='Download', icon='URL')
+        op.url = 'https://keentools.io/downloads'
 
     def _draw_accepted_license(self, layout):
         box = layout.box()
-        row = box.split(factor=0.65)
+        row = box.split(factor=0.75)
         row.label(text='KeenTools End-User License Agreement [accepted]')
         row.operator(
             preferences_operators.PREF_OT_OpenPktLicensePage.bl_idname,
-            text='Open in web browser', icon='URL')
-
-    def _draw_installation(self, layout):
-        layout.label(text='Installation:')
-        box = layout.box()
-        box.label(text='Before you start using FaceBuilder, you need to '
-                       'install the KeenTools core library.')
-        row = box.row()
-        row.operator(
-            preferences_operators.PREF_OT_ShowWhy.bl_idname,
-            text='Why and How?', icon='INFO')
-        row.label(text=' ')
-
-        core = '<not installed>'
-        if pkt.is_installed():
-            core = "{} built {}".format(pkt.module().__version__,
-                                  pkt.module().build_time)
-        box.label(text="Installed versions: addon {}, "
-                       "core {}".format(Config.addon_version, core))
-
-        # -- Check for Update UI --
-        # row = box.split(factor=0.65)
-        # row.label(text='Available: --- ')
-        # op = row.operator(
-        #     preferences_operators.PREF_OT_OpenURL.bl_idname,
-        #     text='Check for Updates', icon='WORLD')
-        # op.url = 'https://keentools.io/downloads'
-
-        box.row().prop(self, "install_type", expand=True)
-
-        if self.install_type == 'ONLINE':
-            row = box.row()
-            row.scale_y = 2.0
-            op = row.operator(
-                preferences_operators.PREF_OT_InstallPkt.bl_idname,
-                text='Download & Install core', icon='WORLD')
-            op.license_accepted = self._license_was_accepted()
-
-            # -- Update online UI --
-            # op = row.operator(
-            #     preferences_operators.PREF_OT_OpenURL.bl_idname,
-            #     text='Download & Update addon', icon='URL')
-            # op.url = 'https://keentools.io/downloads'
-        else:
-            row = box.row()
-            row.scale_y = 2.0
-            op = row.operator(
-                preferences_operators.PREF_OT_InstallFromFilePkt.bl_idname,
-                text='Install core from disk', icon='FILEBROWSER')
-            op.license_accepted = self._license_was_accepted()
-
-            # -- Update offline UI --
-            # op = row.operator(
-            #     preferences_operators.PREF_OT_OpenURL.bl_idname,
-            #     text='Update addon from disk')
-            # op.url = 'https://keentools.io/downloads'
-
-            row = box.split(factor=0.65)
-            col = row.column()
-            col.scale_y = 0.75
-            col.label(text='You can download all the needed files from')
-            col.label(text='https://keentools.io/downloads')
-            op = row.operator(
-                preferences_operators.PREF_OT_OpenURL.bl_idname,
-                text='Open', icon='URL')
-            op.url = 'https://keentools.io/downloads'
+            text='Read', icon='URL')
 
     def draw(self, context):
         layout = self.layout
 
-        if not self._license_was_accepted():
+        if not pkt.is_installed():
             self._draw_accept_license_offer(layout)
         else:
             self._draw_accepted_license(layout)
-            self._draw_installation(layout)
-
-        if pkt.loaded():
             self._draw_license_info(layout)

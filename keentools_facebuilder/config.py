@@ -83,8 +83,8 @@ class Config:
 
     fb_main_camera_fix_size_idname = 'object.' + _prefix + \
                                      '_main_camera_fix_size'
-    fb_main_addon_settings_idname = 'object.' + _prefix + \
-                                    '_main_addon_settings'
+    fb_main_addon_settings_callname = _prefix + '_main_addon_settings'
+    fb_main_addon_settings_idname = 'object.' + fb_main_addon_settings_callname
     fb_main_bake_tex_callname = _prefix + '_main_bake_tex'
     fb_main_bake_tex_idname = 'object.' + fb_main_bake_tex_callname
     fb_main_show_tex_callname = _prefix + '_main_show_tex'

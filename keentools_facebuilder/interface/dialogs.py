@@ -48,23 +48,12 @@ class WM_OT_FBAddonWarning(Operator):
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
-        if self.msg != 0:
+        if self.msg != ErrorType.PktProblem:
             return {"FINISHED"}
 
-        # Unlicensed message only
-        wm = context.window_manager
-        # Searching keyword in Addons tab
-        wm.addon_search = Config.addon_search
-
-        try:
-            addon_utils.modules_refresh()
-            mod = addon_utils.addons_fake_modules.get(Config.addon_name)
-            info = addon_utils.module_bl_info(mod)
-            info["show_expanded"] = True
-        except Exception:
-            logger.error("SOME ERROR WITH ADDON SETTINGS OPENNING")
-            pass
-
+        op = getattr(bpy.ops.object,
+                     Config.fb_main_addon_settings_callname)
+        op('EXEC_DEFAULT')
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -121,10 +110,8 @@ class WM_OT_FBAddonWarning(Operator):
             ])
         elif self.msg == ErrorType.PktProblem:
             self.set_content([
-                "PyKeenTools Error",
-                "===============",
-                "PyKeenTools library not loaded. ",
-                "Refer to FaceBuilder Addon Settings to install it."
+                "You need to install KeenTools Core",
+                "before you can use the addon.",
             ])
         elif self.msg == ErrorType.AboutFrameSize:
             self.set_content([
@@ -152,19 +139,20 @@ class WM_OT_FBTexSelector(Operator):
         head = settings.heads[self.headnum]
         layout = self.layout
 
-        if len(head.cameras) > 0:
-            row = layout.row()
-            # Select All cameras for baking Button
-            op = row.operator(Config.fb_main_filter_cameras_idname, text='All')
-            op.action = 'select_all_cameras'
-            op.headnum = self.headnum
-            # Deselect All cameras
-            op = row.operator(Config.fb_main_filter_cameras_idname,
-                              text='None')
-            op.action = 'deselect_all_cameras'
-            op.headnum = self.headnum
-        else:
+        if not len(head.cameras) > 0:
             layout.label(text="You need at least one image to get started.")
+            return
+
+        row = layout.row()
+        # Select All cameras for baking Button
+        op = row.operator(Config.fb_main_filter_cameras_idname, text='All')
+        op.action = 'select_all_cameras'
+        op.headnum = self.headnum
+        # Deselect All cameras
+        op = row.operator(Config.fb_main_filter_cameras_idname,
+                          text='None')
+        op.action = 'deselect_all_cameras'
+        op.headnum = self.headnum
 
         for camera in head.cameras:
             row = layout.row()
