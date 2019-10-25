@@ -19,6 +19,7 @@
 
 import os
 from .config import *
+import time
 
 __all__ = ['is_installed', 'install_from_download',
            'uninstall', 'install_from_file']
@@ -49,7 +50,8 @@ def _install_from_stream(file_like_object):
         raise
 
 
-def _download_with_progress_callback(url, progress_callback, max_callback_updates_count):
+def _download_with_progress_callback(url, progress_callback,
+                                     max_callback_updates_count):
     import urllib.request
     import io
     response = urllib.request.urlopen(url)
@@ -67,6 +69,7 @@ def _download_with_progress_callback(url, progress_callback, max_callback_update
     downloaded = 0
     it = 0
     while True:
+        time.sleep(0.05)  # TODO REMOVE
         chunk = response.read(chunk_size)
         if not chunk:
             break
@@ -85,7 +88,8 @@ def _download_with_progress_callback(url, progress_callback, max_callback_update
     return result
 
 
-def install_from_download(version=None, nightly=False, progress_callback=None, max_callback_updates_count=481):
+def install_from_download(version=None, nightly=False, progress_callback=None,
+                          max_callback_updates_count=481, final_callback=None):
     """
     :param max_callback_updates_count: max progress_callback calls count
     :param progress_callback: callable getting progress in float [0, 1]
@@ -95,6 +99,8 @@ def install_from_download(version=None, nightly=False, progress_callback=None, m
     url = download_path(version, nightly)
     with _download_with_progress_callback(url, progress_callback, max_callback_updates_count) as archive_data:
         _install_from_stream(archive_data)
+        if final_callback is not None:
+            final_callback()
 
 
 def install_from_file(path):
