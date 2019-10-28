@@ -50,13 +50,13 @@ def _install_from_stream(file_like_object):
 
 
 def _download_with_progress_callback(url, progress_callback, max_callback_updates_count):
-    import urllib.request
+    import requests
     import io
-    response = urllib.request.urlopen(url)
+    response = requests.get(url, stream=True)
     if progress_callback is None:
-        return io.BytesIO(response.read())
+        return io.BytesIO(response.content)
 
-    length = response.getheader('content-length')
+    length = response.headers.get('content-length')
     if length:
         length = int(length)
         chunk_size = max(8 * 1024, length // max_callback_updates_count)
@@ -66,10 +66,7 @@ def _download_with_progress_callback(url, progress_callback, max_callback_update
     result = io.BytesIO()
     downloaded = 0
     it = 0
-    while True:
-        chunk = response.read(chunk_size)
-        if not chunk:
-            break
+    for chunk in response.iter_content(chunk_size=chunk_size):
         result.write(chunk)
         downloaded += len(chunk)
         if length:
@@ -81,6 +78,8 @@ def _download_with_progress_callback(url, progress_callback, max_callback_update
             exp_lambda = 0.2
             progress_callback(1.0 - math.exp(-exp_lambda * it))
         it += 1
+
+    progress_callback(1.0)
 
     return result
 
