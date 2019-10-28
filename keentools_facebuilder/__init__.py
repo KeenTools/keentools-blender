@@ -18,12 +18,12 @@
 
 
 bl_info = {
-    "name": "KeenTools FaceBuilder (Beta)",
+    "name": "KeenTools FaceBuilder 1.5.5 (Beta)",
     "author": "KeenTools",
     "description": "Creates Head and Face geometry with a few "
                    "reference photos",
     "blender": (2, 80, 0),
-    "location": "View3D > Add > Mesh and View UI (press N to open panel)",
+    "location": "Add > Mesh menu and View UI (press N to open panel)",
     "wiki_url": "https://www.keentools.io/facebuilder",
     "tracker_url": "https://www.keentools.io/contact",
     "warning": "",

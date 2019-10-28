@@ -41,9 +41,7 @@ class OBJECT_PT_FBHeaderPanel(Panel):
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 
-    def draw_start_panel(self, layout):
-        # Show User Hint when no target object selected
-        # Add Head & Addon settings
+    def _head_creation_offer(self, layout):
         col = layout.column()
         col.scale_y = 0.75
         col.label(text="You can create new Head via:")
@@ -58,12 +56,23 @@ class OBJECT_PT_FBHeaderPanel(Panel):
             Config.fb_add_head_operator_idname,
             text='Add New Head', icon='USER')
 
+    def _pkt_install_offer(self, layout):
+        col = layout.column()
+        col.scale_y = 0.75
+        col.label(text="You need to install KeenTools Core")
+        col.label(text="before you can use the addon.")
+
+        row = layout.row()
+        row.scale_y = 2.0
+        row.operator(
+            Config.fb_main_addon_settings_idname,
+            text='Install the core', icon='PREFERENCES')
+
+    def draw_start_panel(self, layout):
         if not pkt.is_installed():
-            col = layout.column()
-            col.scale_y = 0.75
-            col.label(text="PyKeenTools must be installed")
-            col.label(text="before the addon using.")
-            col.label(text="Refer to Addon settings.")
+            self._pkt_install_offer(layout)
+        else:
+            self._head_creation_offer(layout)
 
     def draw_reconstruct(self, layout):
         # Need for reconstruction
@@ -164,10 +173,12 @@ class OBJECT_PT_FBCameraPanel(Panel):
         row.operator(
             Config.fb_main_set_sensor_width_idname,
             text='', icon='SETTINGS')
+
         col = layout.column()
         if head.auto_focal_estimation:
             col.active = False
             col.alert = True
+            col.enabled = False
         row = col.row()
         row.prop(head, 'focal')
         row.operator(
@@ -240,11 +251,10 @@ class OBJECT_PT_FBViewsPanel(Panel):
 
             # Camera Icon
             col = row.column()
-            icon = 'CAMERA_DATA'
+            icon = 'HIDE_OFF'  # CAMERA_DATA
             if settings.current_camnum == i:
-                if settings.pinmode:
-                    col.alert = True
-                icon = 'VIEW_CAMERA'  # 'OUTLINER_OB_CAMERA'
+                col.alert = True
+
             op = col.operator(
                 Config.fb_main_select_camera_idname, text='', icon=icon)
             op.headnum = headnum
@@ -258,11 +268,13 @@ class OBJECT_PT_FBViewsPanel(Panel):
             # Pin Icon if there are some pins
             if pc != '-':
                 row2.label(text='', icon='PINNED')
+            else:
+                row2.label(text='', icon='BLANK1')
 
             # Filename and Context Menu button
             if camera.cam_image:
                 row2.label(text="{}".format(camera.cam_image.name))
-                icon = 'OUTLINER_DATA_GP_LAYER'  # 'FILEBROWSER'
+                icon = 'GREASEPENCIL'  # OUTLINER_DATA_GP_LAYER
                 if wrong_size_flag:
                     # Background has different size
                     icon = 'ERROR'
@@ -279,9 +291,6 @@ class OBJECT_PT_FBViewsPanel(Panel):
                     text='', icon='FILEBROWSER')
                 op.headnum = headnum
                 op.camnum = i
-
-            # Testing purpose output
-            # row2.label(text="{}".format(camera.keyframe_id))
 
             # Camera Delete button
             if not settings.pinmode:
@@ -314,7 +323,6 @@ class OBJECT_PT_FBViewsPanel(Panel):
             info = '{}x{}'.format(
                 settings.frame_width, settings.frame_height)
         else:
-            # info='1920x1080'  # Warning hardcoded value
             x = bpy.context.scene.render.resolution_x
             y = bpy.context.scene.render.resolution_y
             info = '{}x{}'.format(x, y)
@@ -325,7 +333,6 @@ class OBJECT_PT_FBViewsPanel(Panel):
 
     # View Panel Draw
     def draw(self, context):
-        # 'THIS_HEAD', 'ONE_HEAD', 'PINMODE'
         settings = get_main_settings()
         layout = self.layout
 
@@ -341,7 +348,7 @@ class OBJECT_PT_FBViewsPanel(Panel):
         row = layout.row()
         row.scale_y = 2.0
         op = row.operator(Config.fb_multiple_filebrowser_operator_idname,
-                          text="Add Camera Image(s)", icon='OUTLINER_OB_IMAGE')
+                          text="Add Image(s)", icon='OUTLINER_OB_IMAGE')
         op.headnum = headnum
 
         # Camera buttons Center Geo, Remove pins, Unmorph
@@ -436,12 +443,12 @@ class OBJECT_PT_TBPanel(Panel):
         box.prop(head, 'tex_uv_shape')
 
         row = layout.row()
-        row.scale_y = 3.0
-
+        row.scale_y = 2.0
         op = row.operator(Config.fb_tex_selector_operator_idname,
                           text="Bake Texture", icon='RENDER_STILL')
         op.headnum = headnum
 
+        row = layout.row()
         mode = self.get_area_mode(context)
         if mode == 'MATERIAL':
             row.operator(Config.fb_main_show_tex_idname, text="Show Mesh",
@@ -506,7 +513,7 @@ class OBJECT_PT_FBSettingsPanel(Panel):
     bl_idname = Config.fb_settings_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_label = "Settings"
+    bl_label = "Pin Settings"
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 
