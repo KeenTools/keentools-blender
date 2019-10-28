@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import pytest
-import pykeentools_loader as pkt
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 def test_wrong_installations():
@@ -47,8 +47,16 @@ def test_non_loaded_uninstalled_load():
 
 
 def test_download_latest_nightly():
+
     try:
-        pkt.install_from_download(nightly=True)
+        def testing_progress_callback(progress):
+            assert (testing_progress_callback.last_progress <= progress <= 1)
+            testing_progress_callback.last_progress = progress
+
+        testing_progress_callback.last_progress = 0
+
+        pkt.install_from_download(nightly=True, progress_callback=testing_progress_callback)
+        assert(testing_progress_callback.last_progress == 1.0)
     except Exception:
         # can fail with no network
         return
