@@ -34,35 +34,53 @@ def force_stop_shaders():
     FBPoints3D.handler_list = []
 
 
-class FBStopTimer:
-    active = False
+class FBTimer:
+    _active = False
 
     @classmethod
-    def set_active(cls):
-        cls.active = True
+    def set_active(cls, value=True):
+        cls._active = value
 
     @classmethod
     def set_inactive(cls):
-        cls.active = False
+        cls._active = False
 
     @classmethod
     def is_active(cls):
-        return cls.active
+        return cls._active
 
+    @classmethod
+    def _start(cls, callback, persistent=True):
+        logger = logging.getLogger(__name__)
+        cls._stop(callback)
+        bpy.app.timers.register(callback, persistent=persistent)
+        logger.debug("REGISTER TIMER")
+        cls.set_active()
+
+    @classmethod
+    def _stop(cls, callback):
+        logger = logging.getLogger(__name__)
+        if bpy.app.timers.is_registered(callback):
+            logger.debug("UNREGISTER TIMER")
+            bpy.app.timers.unregister(callback)
+        cls.set_inactive()
+
+
+class FBStopShaderTimer(FBTimer):
     @classmethod
     def check_pinmode(cls):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         if not cls.is_active():
             # Timer works when shouldn't
-            logger.debug("STOP INACTIVE")
+            logger.debug("STOP SHADER INACTIVE")
             return None
         # Timer is active
         if not settings.pinmode:
             # But we are not in pinmode
             force_stop_shaders()
             cls.stop()
-            logger.debug("STOP FORCE")
+            logger.debug("STOP SHADER FORCE")
             return None
 
         logger.debug("NEXT CALL")
@@ -71,19 +89,11 @@ class FBStopTimer:
 
     @classmethod
     def start(cls):
-        logger = logging.getLogger(__name__)
-        cls.stop()
-        bpy.app.timers.register(cls.check_pinmode, persistent=True)
-        logger.debug("REGISTER TIMER")
-        cls.set_active()
+        cls._start(cls.check_pinmode, persistent=True)
 
     @classmethod
     def stop(cls):
-        logger = logging.getLogger(__name__)
-        if bpy.app.timers.is_registered(cls.check_pinmode):
-            logger.debug("UNREGISTER TIMER")
-            bpy.app.timers.unregister(cls.check_pinmode)
-        cls.set_inactive()
+        cls._stop(cls.check_pinmode)
 
 
 class FBText:

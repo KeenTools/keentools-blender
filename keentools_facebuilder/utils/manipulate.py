@@ -211,13 +211,6 @@ def use_render_frame_size_scaled():
     settings.frame_height = rh
 
 
-def force_ui_redraw(area_type="USER_PREFERENCES"):
-    for window in bpy.data.window_managers['WinMan'].windows:
-        for area in window.screen.areas:
-            if area.type == area_type:
-                area.tag_redraw()
-
-
 def reconstruct_by_head():
     """ Reconstruct Cameras and Scene structures by serial """
     logger = logging.getLogger(__name__)

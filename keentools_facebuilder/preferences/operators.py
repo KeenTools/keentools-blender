@@ -20,7 +20,7 @@ import bpy
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 from keentools_facebuilder.config import Config
 from .formatting import replace_newlines_with_spaces
-from keentools_facebuilder.blender_independent_packages.pykeentools_loader.progress import DownloadManager
+from keentools_facebuilder.preferences.progress import InstallationProgress
 
 
 _ID_NAME_PREFIX = 'preferences.' + Config.prefix
@@ -66,17 +66,11 @@ class PREF_OT_InstallPkt(bpy.types.Operator):
             return {'FINISHED'}
 
     def execute(self, context):
-        context.window_manager.progress_begin(0, 1)
-        try:
-            if self.install_type == 'nightly':
-                DownloadManager.start_download_nightly()
-            elif self.install_type == 'default':
-                DownloadManager.start_download_stable()
-                self.report({'INFO'}, 'Installation successful')
-        except Exception as error:
-            self.report({'ERROR'}, 'Failed to install pykeentools from website. ' + str(error))
-        finally:
-            context.window_manager.progress_end()
+        InstallationProgress.start_download(self.install_type)
+
+        # except Exception as error:
+        #     self.report({'ERROR'}, 'Failed to install pykeentools from website. ' + str(error))
+
         return {'FINISHED'}
 
     def draw(self, context):

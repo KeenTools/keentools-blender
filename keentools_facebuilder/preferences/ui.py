@@ -21,7 +21,7 @@ import keentools_facebuilder.preferences.operators as preferences_operators
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 from keentools_facebuilder.config import Config
 from .formatting import split_by_br_or_newlines
-from keentools_facebuilder.blender_independent_packages.pykeentools_loader.progress import DownloadManager
+from keentools_facebuilder.preferences.progress import InstallationProgress
 
 
 def _multi_line_text_to_output_labels(layout, txt):
@@ -222,9 +222,12 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             text='Read', icon='URL')
 
     def _draw_download_progress(self, layout):
-        if DownloadManager.is_active():
+        if InstallationProgress.is_active():
             layout.label(text="Downloading: {:.1f}%".format(
-                100 * DownloadManager.get_progress()))
+                100 * InstallationProgress.get_progress()))
+        status = InstallationProgress.get_status()
+        if status is not None:
+            layout.label(text="{}".format(status))
 
     def draw(self, context):
         layout = self.layout
@@ -232,7 +235,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         if not pkt.is_installed():
             self._draw_accept_license_offer(layout)
         else:
-            self._draw_accepted_license(layout)
+            # self._draw_accepted_license(layout)
             self._draw_license_info(layout)
 
         self._draw_download_progress(layout)

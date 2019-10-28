@@ -23,7 +23,7 @@ import numpy as np
 
 from . viewport import FBViewport
 from . utils import attrs, coords, cameras
-from . utils.other import FBStopTimer
+from . utils.other import FBStopShaderTimer
 
 from . builder import UniBuilder
 from . fbdebug import FBDebug
@@ -169,7 +169,7 @@ class FBLoader:
         FBDebug.output_event_queue()
         FBDebug.clear_event_queue()
         # === Debug use only ===
-        FBStopTimer.stop()
+        FBStopShaderTimer.stop()
         logger.debug("STOPPER STOP")
         logger.debug("OUT PINMODE")
 

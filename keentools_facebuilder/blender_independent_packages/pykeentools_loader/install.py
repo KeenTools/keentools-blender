@@ -18,11 +18,14 @@
 
 
 import os
-from .config import *
+from threading import Thread
 import time
 
+from .config import *
+
+
 __all__ = ['is_installed', 'install_from_download',
-           'uninstall', 'install_from_file']
+           'install_from_download_async', 'uninstall', 'install_from_file']
 
 
 def is_installed():
@@ -69,7 +72,9 @@ def _download_with_progress_callback(url, progress_callback,
     downloaded = 0
     it = 0
     while True:
-        time.sleep(0.05)  # TODO REMOVE
+        # time.sleep(0.1)  # TODO REMOVE
+        # if it > 40:
+        #     raise IOError("Test error")
         chunk = response.read(chunk_size)
         if not chunk:
             break
@@ -89,18 +94,42 @@ def _download_with_progress_callback(url, progress_callback,
 
 
 def install_from_download(version=None, nightly=False, progress_callback=None,
-                          max_callback_updates_count=481, final_callback=None):
+                          final_callback=None, error_callback=None,
+                          max_callback_updates_count=481):
     """
     :param max_callback_updates_count: max progress_callback calls count
     :param progress_callback: callable getting progress in float [0, 1]
     :param version: build to install. KeenTools version (1.5.4 for example) as string. None means latest version
     :param nightly: latest nightly build will be installed if True. version should be None in that case
     """
-    url = download_path(version, nightly)
-    with _download_with_progress_callback(url, progress_callback, max_callback_updates_count) as archive_data:
-        _install_from_stream(archive_data)
+    try:
+        url = download_path(version, nightly)
+        with _download_with_progress_callback(url,
+                progress_callback, max_callback_updates_count) as archive_data:
+            _install_from_stream(archive_data)
+    except Exception as error:
+        print("EXCEPTION: {}".format(str(error)))
+        if error_callback is not None:
+            error_callback(error)
+    else:
         if final_callback is not None:
             final_callback()
+
+
+def install_from_download_async(version=None, nightly=False,
+                                progress_callback=None, final_callback=None,
+                                error_callback=None,
+                                max_callback_updates_count=481):
+    """
+    :param max_callback_updates_count: max progress_callback calls count
+    :param progress_callback: callable getting progress in float [0, 1]
+    :param version: build to install. KeenTools version (1.5.4 for example) as string. None means latest version
+    :param nightly: latest nightly build will be installed if True. version should be None in that case
+    """
+    t = Thread(target=install_from_download,
+               args=(version, nightly, progress_callback, final_callback,
+                     error_callback, max_callback_updates_count))
+    t.start()
 
 
 def install_from_file(path):

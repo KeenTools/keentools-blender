@@ -24,7 +24,7 @@ from .utils import manipulate, coords, cameras
 from .config import Config, get_main_settings, ErrorType
 from .fbdebug import FBDebug
 from .fbloader import FBLoader
-from .utils.other import FBStopTimer
+from .utils.other import FBStopShaderTimer
 
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
@@ -227,7 +227,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         # Can start much more times when not out from pinmode
         if not settings.pinmode:
             logger.debug("STOPPER START")
-            FBStopTimer.start()
+            FBStopShaderTimer.start()
         settings.pinmode = True
         return {"RUNNING_MODAL"}
 
