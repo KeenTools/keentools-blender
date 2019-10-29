@@ -63,7 +63,7 @@ def _progress_callback(value):
 def _final_callback():
     FBUpdateProgressTimer.stop()
     InstallationProgress.reset()
-    InstallationProgress.set_status('Core library downloaded and installed')
+    InstallationProgress.set_status('Core library downloaded and installed.')
     _force_ui_redraw()
 
 

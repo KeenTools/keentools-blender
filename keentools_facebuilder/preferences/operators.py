@@ -53,7 +53,7 @@ class PREF_OT_InstallPkt(bpy.types.Operator):
             ('nightly', 'Nightly',
              'Install latest nightly build available', 1)
         ),
-        default='default'
+        default= 'default'
     )
 
     license_accepted: bpy.props.BoolProperty()
