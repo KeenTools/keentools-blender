@@ -22,32 +22,45 @@ from threading import Thread, Lock
 
 from .config import *
 
-
-unpack_mutex = Lock()
-
 __all__ = ['is_installed', 'install_from_download',
            'install_from_download_async', 'uninstall', 'install_from_file']
 
 
-def path_exists():
+_unpack_mutex = Lock()
+
+
+def _is_installed_not_locked():
     return os.path.exists(pkt_installation_dir())
 
 
 def is_installed():
-    return not unpack_mutex.locked() and path_exists()
+    _unpack_mutex.acquire()
+    try:
+        return _is_installed_not_locked()
+    finally:
+        _unpack_mutex.release()
 
 
-def uninstall():
-    if path_exists():
+
+def _uninstall_not_locked():
+    if _is_installed_not_locked():
         import shutil
         shutil.rmtree(pkt_installation_dir(), ignore_errors=True)
 
 
-def _install_from_stream(file_like_object):
-    uninstall()
-    unpack_mutex.acquire()
-
+def uninstall():
+    _unpack_mutex.acquire()
     try:
+        _uninstall_not_locked()
+    finally:
+        _unpack_mutex.release()
+
+
+def _install_from_stream(file_like_object):
+    _unpack_mutex.acquire()
+    try:
+        _uninstall_not_locked()
+
         target_path = pkt_installation_dir()
         os.makedirs(target_path, exist_ok=False)
 
@@ -55,13 +68,14 @@ def _install_from_stream(file_like_object):
         with zipfile.ZipFile(file_like_object) as archive:
             archive.extractall(target_path)
     except Exception:
-        uninstall()
+        _uninstall_not_locked()
         raise
     finally:
-        unpack_mutex.release()
+        _unpack_mutex.release()
 
 
-def _download_with_progress_callback(url, progress_callback, max_callback_updates_count):
+def _download_with_progress_callback(url, progress_callback,
+                                     max_callback_updates_count):
     import requests
     import io
     response = requests.get(url, stream=True)
@@ -119,19 +133,11 @@ def install_from_download(version=None, nightly=False, progress_callback=None,
             final_callback()
 
 
-def install_from_download_async(version=None, nightly=False,
-                                progress_callback=None, final_callback=None,
-                                error_callback=None,
-                                max_callback_updates_count=481):
+def install_from_download_async(**kwargs):
     """
-    :param max_callback_updates_count: max progress_callback calls count
-    :param progress_callback: callable getting progress in float [0, 1]
-    :param version: build to install. KeenTools version (1.5.4 for example) as string. None means latest version
-    :param nightly: latest nightly build will be installed if True. version should be None in that case
+    The same as :func:`install_from_download`
     """
-    t = Thread(target=install_from_download,
-               args=(version, nightly, progress_callback, final_callback,
-                     error_callback, max_callback_updates_count))
+    t = Thread(target=install_from_download, kwargs=kwargs)
     t.start()
 
 
