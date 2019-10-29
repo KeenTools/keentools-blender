@@ -57,12 +57,10 @@ class FBUpdateProgressTimer(FBTimer):
 
 
 def _progress_callback(value):
-    print("PROGRESS_CALLBACK: {}".format(value))
     InstallationProgress.set_progress(value)
 
 
 def _final_callback():
-    print("FINAL_CALLBACK")
     FBUpdateProgressTimer.stop()
     InstallationProgress.reset()
     InstallationProgress.set_status('Core library downloaded and installed')
@@ -70,7 +68,6 @@ def _final_callback():
 
 
 def _error_callback(error):
-    print("ERROR_CALLBACK: {}".format(str(error)))
     FBUpdateProgressTimer.stop()
     InstallationProgress.reset()
     InstallationProgress.set_status('Download error: {}'.format(str(error)))

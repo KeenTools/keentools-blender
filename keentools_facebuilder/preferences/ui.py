@@ -229,13 +229,19 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         if status is not None:
             layout.label(text="{}".format(status))
 
+    def _draw_version(self, layout):
+        box = layout.box()
+        box.label(text="Version {}, build time {}".format(
+            pkt.module().__version__,
+            pkt.module().build_time))
+
     def draw(self, context):
         layout = self.layout
 
         if not pkt.is_installed():
             self._draw_accept_license_offer(layout)
         else:
-            # self._draw_accepted_license(layout)
+            self._draw_version(layout)
             self._draw_license_info(layout)
 
         self._draw_download_progress(layout)

@@ -18,28 +18,34 @@
 
 
 import os
-from threading import Thread
-import time
+from threading import Thread, Lock
 
 from .config import *
 
+
+unpack_mutex = Lock()
 
 __all__ = ['is_installed', 'install_from_download',
            'install_from_download_async', 'uninstall', 'install_from_file']
 
 
-def is_installed():
+def path_exists():
     return os.path.exists(pkt_installation_dir())
 
 
+def is_installed():
+    return not unpack_mutex.locked() and path_exists()
+
+
 def uninstall():
-    if is_installed():
+    if path_exists():
         import shutil
         shutil.rmtree(pkt_installation_dir(), ignore_errors=True)
 
 
 def _install_from_stream(file_like_object):
     uninstall()
+    unpack_mutex.acquire()
 
     try:
         target_path = pkt_installation_dir()
@@ -51,7 +57,8 @@ def _install_from_stream(file_like_object):
     except Exception:
         uninstall()
         raise
-
+    finally:
+        unpack_mutex.release()
 
 
 def _download_with_progress_callback(url, progress_callback, max_callback_updates_count):
@@ -105,7 +112,6 @@ def install_from_download(version=None, nightly=False, progress_callback=None,
                 progress_callback, max_callback_updates_count) as archive_data:
             _install_from_stream(archive_data)
     except Exception as error:
-        print("EXCEPTION: {}".format(str(error)))
         if error_callback is not None:
             error_callback(error)
     else:
