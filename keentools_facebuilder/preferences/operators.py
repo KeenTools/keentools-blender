@@ -17,7 +17,8 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader \
+    as pkt
 from keentools_facebuilder.config import Config
 from .formatting import replace_newlines_with_spaces
 from keentools_facebuilder.preferences.progress import InstallationProgress
@@ -67,10 +68,6 @@ class PREF_OT_InstallPkt(bpy.types.Operator):
 
     def execute(self, context):
         InstallationProgress.start_download(self.install_type)
-
-        # except Exception as error:
-        #     self.report({'ERROR'}, 'Failed to install pykeentools from website. ' + str(error))
-
         return {'FINISHED'}
 
     def draw(self, context):
@@ -113,7 +110,8 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
             context.window_manager.fileselect_add(self)
             return {'RUNNING_MODAL'}
         else:
-            self.report({'ERROR'}, 'Please accept license before running installation')
+            self.report({'ERROR'},
+                        'Please accept license before running installation')
             return {'FINISHED'}
 
     def execute(self, context):
@@ -121,7 +119,8 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
             pkt.install_from_file(self.filepath)
             self.report({'INFO'}, 'Installation successful')
         except Exception as error:
-            self.report({'ERROR'}, 'Failed to install pykeentools from file. ' + str(error))
+            self.report({'ERROR'},
+                'Failed to install pykeentools from file. ' + str(error))
         return {'FINISHED'}
 
 
@@ -198,8 +197,8 @@ class PREF_OT_FloatingConnect(bpy.types.Operator):
 
     def execute(self, context):
         lm = pkt.module().FaceBuilder.license_manager()
-        res = lm.install_floating_license(self.license_server, self.license_server_port)
-
+        res = lm.install_floating_license(self.license_server,
+                                          self.license_server_port)
         if res is not None:
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
         else:
