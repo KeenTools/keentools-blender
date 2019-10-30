@@ -39,7 +39,7 @@ class OBJECT_MT_FBFixCameraMenu(Menu):
         op.action = 'auto_detect_frame_size'
 
         op = layout.operator(
-            Config.fb_actor_operator_idname, text="Use This Camera Frame Size",
+            Config.fb_actor_operator_idname, text="Use This View Frame Size",
             icon='VIEW_CAMERA')
         op.action = 'use_this_camera_frame_size'
         op.headnum = settings.tmp_headnum
@@ -54,7 +54,8 @@ class OBJECT_MT_FBFixCameraMenu(Menu):
         layout.separator()
 
         op = layout.operator(
-            Config.fb_actor_operator_idname, text="Read EXIF for this file",
+            Config.fb_actor_operator_idname,
+            text="Read camera settings from EXIF",
             icon='TEXT')
         op.action = 'read_file_exif'
         op.headnum = settings.tmp_headnum
@@ -75,7 +76,6 @@ class OBJECT_MT_FBFixMenu(Menu):
     bl_description = "Setup Frame Width and Height parameters for all cameras"
 
     def draw(self, context):
-        settings = get_main_settings()
         layout = self.layout
 
         op = layout.operator(
@@ -87,22 +87,6 @@ class OBJECT_MT_FBFixMenu(Menu):
             Config.fb_actor_operator_idname, text="Use Scene Render Size",
             icon="OUTPUT")
         op.action = 'use_render_frame_size'
-
-        # Disabled to avoid problems with users (but useful for internal use)
-        # ---
-        # frame_width & frame_height should be sets before rescale call
-        # op = layout.operator(
-        #    config.fb_actor_operator_idname,
-        #    text="Experimental Rescale to Render Size")
-        # op.action = 'use_render_frame_size_scaled'
-
-        layout.separator()
-
-        # Add New Camera button
-        op = layout.operator(Config.fb_main_add_camera_idname,
-                             text="Create Empty Camera",
-                             icon='LIBRARY_DATA_BROKEN')  # 'PLUS'
-        op.headnum = settings.tmp_headnum
 
         layout.separator()
         op = layout.operator(
