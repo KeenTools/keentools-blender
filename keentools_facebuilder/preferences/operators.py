@@ -17,9 +17,11 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader \
+    as pkt
 from keentools_facebuilder.config import Config
 from .formatting import replace_newlines_with_spaces
+from keentools_facebuilder.preferences.progress import InstallationProgress
 
 
 _ID_NAME_PREFIX = 'preferences.' + Config.prefix
@@ -51,7 +53,7 @@ class PREF_OT_InstallPkt(bpy.types.Operator):
             ('nightly', 'Nightly',
              'Install latest nightly build available', 1)
         ),
-        default='default'
+        default= 'default'
     )
 
     license_accepted: bpy.props.BoolProperty()
@@ -65,19 +67,7 @@ class PREF_OT_InstallPkt(bpy.types.Operator):
             return {'FINISHED'}
 
     def execute(self, context):
-        context.window_manager.progress_begin(0, 1)
-        try:
-            if self.install_type == 'nightly':
-                pkt.install_from_download(nightly=True,
-                                          progress_callback=context.window_manager.progress_update)
-            elif self.install_type == 'default':
-                pkt.install_from_download(version=pkt.MINIMUM_VERSION_REQUIRED,
-                                          progress_callback=context.window_manager.progress_update)
-                self.report({'INFO'}, 'Installation successful')
-        except Exception as error:
-            self.report({'ERROR'}, 'Failed to install pykeentools from website. ' + str(error))
-        finally:
-            context.window_manager.progress_end()
+        InstallationProgress.start_download(self.install_type)
         return {'FINISHED'}
 
     def draw(self, context):
@@ -120,7 +110,8 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
             context.window_manager.fileselect_add(self)
             return {'RUNNING_MODAL'}
         else:
-            self.report({'ERROR'}, 'Please accept license before running installation')
+            self.report({'ERROR'},
+                        'Please accept license before running installation')
             return {'FINISHED'}
 
     def execute(self, context):
@@ -128,7 +119,8 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
             pkt.install_from_file(self.filepath)
             self.report({'INFO'}, 'Installation successful')
         except Exception as error:
-            self.report({'ERROR'}, 'Failed to install pykeentools from file. ' + str(error))
+            self.report({'ERROR'},
+                'Failed to install pykeentools from file. ' + str(error))
         return {'FINISHED'}
 
 
@@ -205,8 +197,8 @@ class PREF_OT_FloatingConnect(bpy.types.Operator):
 
     def execute(self, context):
         lm = pkt.module().FaceBuilder.license_manager()
-        res = lm.install_floating_license(self.license_server, self.license_server_port)
-
+        res = lm.install_floating_license(self.license_server,
+                                          self.license_server_port)
         if res is not None:
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
         else:

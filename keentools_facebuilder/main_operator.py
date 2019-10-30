@@ -182,7 +182,7 @@ class OBJECT_OT_FBCenterGeo(Operator):
 class OBJECT_OT_FBUnmorph(Operator):
     bl_idname = Config.fb_main_unmorph_idname
     bl_label = "Unmorph"
-    bl_options = {'REGISTER'}  # 'UNDO'
+    bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Unmorph shape to default mesh. It will return back " \
                      "when you move any pin."
 

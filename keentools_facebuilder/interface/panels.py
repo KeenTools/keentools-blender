@@ -251,41 +251,41 @@ class OBJECT_PT_FBViewsPanel(Panel):
 
             # Camera Icon
             col = row.column()
-            icon = 'HIDE_OFF'  # CAMERA_DATA
+            view_icon = 'HIDE_OFF'  # CAMERA_DATA
             if settings.current_camnum == i:
                 col.alert = True
 
             op = col.operator(
-                Config.fb_main_select_camera_idname, text='', icon=icon)
+                Config.fb_main_select_camera_idname, text='', icon=view_icon)
             op.headnum = headnum
             op.camnum = i
 
             # Camera Num / Pins / Name
             col = row.column()
             row2 = col.row()
-            pc = str(camera.pins_count) if camera.pins_count > 0 else '-'
 
             # Pin Icon if there are some pins
-            if pc != '-':
-                row2.label(text='', icon='PINNED')
-            else:
-                row2.label(text='', icon='BLANK1')
+            pin_icon = 'BLANK1'
+            if camera.pins_count > 0:
+                pin_icon = 'PINNED'
 
             # Filename and Context Menu button
             if camera.cam_image:
-                row2.label(text="{}".format(camera.cam_image.name))
-                icon = 'GREASEPENCIL'  # OUTLINER_DATA_GP_LAYER
+                row2.label(text="{}".format(camera.cam_image.name),
+                           icon=pin_icon)
+                edit_icon = 'GREASEPENCIL'  # OUTLINER_DATA_GP_LAYER
                 if wrong_size_flag:
                     # Background has different size
-                    icon = 'ERROR'
+                    edit_icon = 'ERROR'
                 op = row2.operator(Config.fb_main_camera_fix_size_idname,
-                                   text='', icon=icon)
+                                   text='', icon=edit_icon)
                 op.headnum = headnum
                 op.camnum = i
             else:
                 # No image --> Broken icon
+                row2.label(text='-- empty --', icon=pin_icon)
                 row2.label(text='', icon='LIBRARY_DATA_BROKEN')
-                row2.label(text='-- empty --')
+
                 op = row2.operator(
                     Config.fb_single_filebrowser_operator_idname,
                     text='', icon='FILEBROWSER')
