@@ -224,12 +224,12 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     def _draw_download_progress(self, layout):
         col = layout.column()
         col.scale_y = 0.75
-        state = InstallationProgress.get_state()
-        if state['active']:
-            col.label(text="Downloading: {:.1f}%".format(
-                100 * state['progress']))
-        if state['status'] != '':
-            col.label(text="{}".format(state['status']))
+        download_state = InstallationProgress.get_state()
+        if download_state['active']:
+            col.label(text="Core downloading: {:.1f}%".format(
+                100 * download_state['progress']))
+        if download_state['status'] is not None:
+            col.label(text="{}".format(download_state['status']))
 
     def _draw_version(self, layout):
         box = layout.box()
@@ -244,6 +244,6 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             self._draw_accept_license_offer(layout)
         else:
             self._draw_version(layout)
-            self._draw_license_info(layout)
+            # self._draw_license_info(layout)
 
         self._draw_download_progress(layout)
