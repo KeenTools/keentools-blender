@@ -17,11 +17,14 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
-from threading import Thread
+from threading import Lock
 
 import bpy
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 from ..utils.other import FBTimer
+
+
+rw_mutex = Lock()
 
 
 def _force_ui_redraw(area_type="PREFERENCES"):
@@ -33,17 +36,27 @@ def _force_ui_redraw(area_type="PREFERENCES"):
 
 class FBUpdateProgressTimer(FBTimer):
     @classmethod
+    def _timer_should_not_work(cls):
+        rw_mutex.acquire()
+        try:
+            return not cls.is_active() or not InstallationProgress.is_active()
+        except Exception as error:
+            raise error
+        finally:
+            rw_mutex.release()
+
+    @classmethod
     def check_progress(cls):
         logger = logging.getLogger(__name__)
-        # print("STATUS: {} {}".format(cls.is_active(), InstallationProgress.is_active()))
-        if not cls.is_active() or not InstallationProgress.is_active():
-            # Timer works when shouldn't
-            cls.stop()
+        if cls._timer_should_not_work():
             logger.debug("STOP PROGRESS INACTIVE")
+            cls.stop()
+            _force_ui_redraw()
             return None
-        # Timer is active
-        _force_ui_redraw()
+
         logger.debug("NEXT CALL UPDATE TIMER")
+        # This updates download progress value in preferences UI
+        _force_ui_redraw()
         # Interval to next call
         return 0.5
 
@@ -56,82 +69,111 @@ class FBUpdateProgressTimer(FBTimer):
         cls._stop(cls.check_progress)
 
 
-def _progress_callback(value):
-    InstallationProgress.set_progress(value)
-
-
-def _final_callback():
-    FBUpdateProgressTimer.stop()
-    InstallationProgress.reset()
-    InstallationProgress.set_status('Core library downloaded and installed.')
-    _force_ui_redraw()
-
-
-def _error_callback(error):
-    FBUpdateProgressTimer.stop()
-    InstallationProgress.reset()
-    InstallationProgress.set_status('Download error: {}'.format(str(error)))
-    _force_ui_redraw()
-
-
 class InstallationProgress:
-    _progress = 0.0
-    _active = False
-    _status = None
+    state = {'active': False, 'progress': 0.0, 'status':''}
+
+    @classmethod
+    def get_state(cls):
+        return cls.state
+
+    @classmethod
+    def _get_state_prop(cls, name):
+        return cls.state[name]
+
+    @classmethod
+    def _set_state_prop(cls, name, value):
+        cls.state[name] = value
 
     @classmethod
     def get_progress(cls):
-        return cls._progress
+        return cls._get_state_prop('progress')
 
     @classmethod
     def set_progress(cls, value):
         val = value if value <= 1.0 else 1.0
-        cls._progress = val
+        cls._set_state_prop('progress', val)
 
     @classmethod
     def is_active(cls):
-        return cls._active
+        return cls._get_state_prop('active')
 
     @classmethod
     def set_active(cls, value=True):
-        cls._active = value
+        cls._set_state_prop('active', value)
 
     @classmethod
     def get_status(cls):
-        return cls._status
+        return cls._get_state_prop('status')
 
     @classmethod
     def set_status(cls, value):
-        cls._status = value
+        cls._set_state_prop('status', value)
 
     @classmethod
-    def reset(cls):
-        cls.set_progress(0.0)
-        cls.set_active(False)
-        cls.set_status(None)
+    def reset(cls, msg=''):
+        cls.state = {'active': False, 'progress': 0.0, 'status': msg}
+
+    @classmethod
+    def _progress_callback(cls, value):
+        rw_mutex.acquire()
+        try:
+            cls.set_progress(value)
+        except Exception as error:
+            raise error
+        finally:
+            rw_mutex.release()
+
+    @classmethod
+    def _final_callback(cls):
+        rw_mutex.acquire()
+        try:
+            cls.reset('Core library downloaded and installed.')
+        except Exception as error:
+            raise error
+        finally:
+            rw_mutex.release()
+
+    @classmethod
+    def _error_callback(cls, err):
+        rw_mutex.acquire()
+        try:
+            cls.reset('Download error: {}'.format(str(err)))
+        except Exception as error:
+            raise error
+        finally:
+            rw_mutex.release()
 
     @classmethod
     def start_download(cls, install_type):
         logger = logging.getLogger(__name__)
-        if cls.is_active():
-            logger.error("OTHER FILE DOWNLOADING")
-            cls.set_status('Another process is loading the library')
-            return
+        rw_mutex.acquire()
+        try:
+            if cls.is_active():
+                logger.error("OTHER FILE DOWNLOADING")
+                cls.set_status('Another process is loading the library')
+                return
 
-        if install_type == 'nightly':
-            cls.set_active(True)
-            FBUpdateProgressTimer.start()
-            logger.debug("START NIGHTLY CORE LIBRARY DOWNLOAD")
-            pkt.install_from_download_async(nightly=True,
-                progress_callback=_progress_callback,
-                final_callback=_final_callback,
-                error_callback=_error_callback)
-        elif install_type == 'default':
-            cls.set_active(True)
-            FBUpdateProgressTimer.start()
-            logger.debug("START NIGHTLY CORE LIBRARY DOWNLOAD")
-            pkt.install_from_download_async(
-                version=pkt.MINIMUM_VERSION_REQUIRED,
-                progress_callback=_progress_callback,
-                final_callback=_final_callback,
-                error_callback=_error_callback)
+            if install_type == 'nightly':
+                cls.set_active(True)
+                FBUpdateProgressTimer.start()
+                logger.debug("START NIGHTLY CORE LIBRARY DOWNLOAD")
+                pkt.install_from_download_async(
+                    nightly=True,
+                    progress_callback=cls._progress_callback,
+                    final_callback=cls._final_callback,
+                    error_callback=cls._error_callback)
+            elif install_type == 'default':
+                cls.set_active(True)
+                FBUpdateProgressTimer.start()
+                logger.debug("START NIGHTLY CORE LIBRARY DOWNLOAD")
+                pkt.install_from_download_async(
+                    version=pkt.MINIMUM_VERSION_REQUIRED,
+                    progress_callback=cls._progress_callback,
+                    final_callback=cls._final_callback,
+                    error_callback=cls._error_callback)
+        except Exception as error:
+            raise error
+        finally:
+            rw_mutex.release()
+
+

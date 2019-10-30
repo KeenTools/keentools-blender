@@ -222,12 +222,14 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             text='Read', icon='URL')
 
     def _draw_download_progress(self, layout):
-        if InstallationProgress.is_active():
-            layout.label(text="Downloading: {:.1f}%".format(
-                100 * InstallationProgress.get_progress()))
-        status = InstallationProgress.get_status()
-        if status is not None:
-            layout.label(text="{}".format(status))
+        col = layout.column()
+        col.scale_y = 0.75
+        state = InstallationProgress.get_state()
+        if state['active']:
+            col.label(text="Downloading: {:.1f}%".format(
+                100 * state['progress']))
+        if state['status'] != '':
+            col.label(text="{}".format(state['status']))
 
     def _draw_version(self, layout):
         box = layout.box()
