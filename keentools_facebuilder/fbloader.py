@@ -182,6 +182,13 @@ class FBLoader:
         head.set_serial_str(fb.serialize())
 
     @classmethod
+    def update_mesh_only(cls, headnum):
+        fb = cls.get_builder()
+        settings = get_main_settings()
+        head = settings.heads[headnum]
+        coords.update_head_mesh(fb, head.headobj)
+
+    @classmethod
     def fb_save(cls, headnum, camnum):
         """ Face Builder Serialize Model Info """
         fb = cls.get_builder()

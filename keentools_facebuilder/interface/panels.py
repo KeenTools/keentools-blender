@@ -220,13 +220,12 @@ class OBJECT_PT_FBViewsPanel(Panel):
         op.headnum = headnum
         op.camnum = camnum
         op = box.operator(
-            Config.fb_main_remove_pins_idname,
-            text="Remove Pins", icon='UNPINNED')
+            Config.fb_main_remove_pins_idname, text="Remove Pins")
         op.headnum = headnum
         op.camnum = camnum
-        op = box.operator(Config.fb_main_unmorph_idname, text="Unmorph")
-        op.headnum = headnum
-        op.camnum = camnum
+        # op = box.operator(Config.fb_main_unmorph_idname, text="Unmorph")
+        # op.headnum = headnum
+        # op.camnum = camnum
 
     def draw_camera_list(self, headnum, layout):
         settings = get_main_settings()
@@ -384,6 +383,10 @@ class OBJECT_PT_FBFaceParts(Panel):
 
         head = settings.heads[headnum]
 
+        op = layout.operator(Config.fb_main_unmorph_idname, text="Unmorph")
+        op.headnum = headnum
+        op.camnum = settings.current_camnum
+
         row = layout.split(factor=0.7)
         col = row.column()
         col.prop(settings, 'rigidity')
@@ -402,7 +405,7 @@ class OBJECT_PT_FBFaceParts(Panel):
         row.prop(head, 'check_mouth')
         row = box.row()
         row.prop(head, 'check_neck')
-
+        row.prop(head, 'check_nose')
 
 class OBJECT_PT_TBPanel(Panel):
     bl_idname = Config.fb_tb_panel_idname

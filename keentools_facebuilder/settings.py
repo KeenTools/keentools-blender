@@ -32,7 +32,7 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 from . fbdebug import FBDebug
-from . config import Config, get_main_settings, BuilderType
+from . config import Config, get_main_settings
 from .utils.manipulate import what_is_state
 
 
@@ -62,8 +62,6 @@ def update_cam_image(self, context):
 
 def update_sensor_width(self, context):
     self.sensor_height = self.sensor_width * 0.666666667
-    # if self.sensor_width != 36.0:
-    #    self.sensor_preset = 'custom'
     FBLoader.update_camera_params(self)
 
 
@@ -88,7 +86,7 @@ def update_mesh_parts(self, context):
     head = settings.heads[headnum]
     masks = [head.check_ears, head.check_eyes, head.check_face,
              head.check_headback, head.check_jaw, head.check_mouth,
-             head.check_neck]
+             head.check_neck, head.check_nose]
 
     old_mesh = head.headobj.data
     # Create new mesh
@@ -263,6 +261,8 @@ class FBHeadItem(PropertyGroup):
     check_mouth: BoolProperty(name="Mouth", default=True,
                               update=update_mesh_parts)
     check_neck: BoolProperty(name="Neck", default=True,
+                             update=update_mesh_parts)
+    check_nose: BoolProperty(name="Nose", default=True,
                              update=update_mesh_parts)
 
     serial_str: StringProperty(name="Serialization string", default="")

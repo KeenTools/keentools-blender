@@ -26,7 +26,6 @@ from bpy.props import (
 
 from . utils import cameras
 from . utils.manipulate import check_settings
-from . utils import manipulate
 from . fbloader import FBLoader
 from . fbdebug import FBDebug
 from . config import get_main_settings, Config
@@ -196,19 +195,20 @@ class OBJECT_OT_FBUnmorph(Operator):
     def execute(self, context):
         if not check_settings():
             return {'CANCELLED'}
-
         settings = get_main_settings()
-        if not settings.pinmode:
-            return {'CANCELLED'}
-
         headnum = self.headnum
         camnum = self.camnum
 
         fb = FBLoader.get_builder()
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
         fb.unmorph()
-        FBLoader.fb_save(headnum, camnum)
-        FBLoader.fb_redraw(headnum, camnum)
+
+        if settings.pinmode:
+            FBLoader.fb_save(headnum, camnum)
+            FBLoader.fb_redraw(headnum, camnum)
+        else:
+            FBLoader.save_only(headnum)
+            FBLoader.update_mesh_only(headnum)
+
         return {'FINISHED'}
 
 
