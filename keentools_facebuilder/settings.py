@@ -257,7 +257,7 @@ class FBHeadItem(PropertyGroup):
         min=0.1, update=update_focal)
 
     auto_focal_estimation: BoolProperty(
-        name="Auto Focal Estimation",
+        name="Auto Focal Length",
         description="Automatically detects Focal Length value during head "
                     "construction",
         default=False)

@@ -120,8 +120,9 @@ class FBText:
     def __init__(self):
         self.text_draw_handler = None
         self.message = [
-            "Pin Mode ",
-            "ESC: Exit / LMB: Pin / RMB: Unpin / Tab: Hide-Show /"
+            "Pin Mode ",  # line 1
+            "ESC: Exit | LEFT CLICK: Create Pin | RIGHT CLICK: Delete Pin "
+            "| TAB: Hide/Show |"  # line 2
         ]
 
     def set_message(self, msg):

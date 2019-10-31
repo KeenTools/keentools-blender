@@ -264,10 +264,6 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             logger.debug("FORCE MESH HIDE")
             head.headobj.hide_set(True)
 
-        # Screen Update request (Blender viewport redraw mark)
-        if context.area:
-            context.area.tag_redraw()
-
         # Quit if Force Pinmode Out flag is set (by ex. license, pin problem)
         if settings.force_out_pinmode:
             logger.debug("FORCE PINMODE OUT")
