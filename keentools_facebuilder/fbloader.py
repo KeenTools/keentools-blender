@@ -193,14 +193,15 @@ class FBLoader:
         """ Face Builder Serialize Model Info """
         fb = cls.get_builder()
         settings = get_main_settings()
-        head = settings.heads[headnum]
-        cam = head.cameras[camnum]
+        head = settings.get_head(headnum)
+        cam = head.get_camera(camnum)
 
         # Save block
         head.set_serial_str(fb.serialize())
 
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
-        cam.set_model_mat(fb.model_mat(kid))
+        if cam is not None:
+            kid = cameras.keyframe_by_camnum(headnum, camnum)
+            cam.set_model_mat(fb.model_mat(kid))
         # Save images list on headobj
         head.save_images_src()
         head.save_cam_settings()

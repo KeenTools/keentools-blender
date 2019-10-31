@@ -342,26 +342,44 @@ class OBJECT_OT_FBDeleteCamera(Operator):
         pass
 
     def execute(self, context):
+        def _is_valid_nums(headnum, camnum):
+            settings = get_main_settings()
+            if headnum >= len(settings.heads):
+                return False
+            head = settings.heads[headnum]
+            if camnum >= len(head.cameras):
+                return False
+            return True
+
         if not check_settings():
             return {'CANCELLED'}
 
-        logger = logging.getLogger(__name__)
         settings = get_main_settings()
-
         headnum = self.headnum
         camnum = self.camnum
-        if not settings.pinmode:
-            fb = FBLoader.get_builder()
-            head = settings.heads[headnum]
-            kid = cameras.keyframe_by_camnum(headnum, camnum)
-            camobj = head.cameras[camnum].camobj
-            fb.remove_keyframe(kid)
-            FBLoader.fb_save(headnum, camnum)
-            # Delete camera object from scene
-            bpy.data.objects.remove(camobj, do_unlink=True)
-            # Delete link from list
-            head.cameras.remove(camnum)
-            logger.debug("CAMERA REMOVED")
+
+        if not _is_valid_nums(headnum, camnum):
+            return {'CANCELLED'}
+
+        fb = FBLoader.get_builder()
+        kid = cameras.keyframe_by_camnum(headnum, camnum)
+        fb.remove_keyframe(kid)
+
+        head = settings.heads[headnum]
+        cam = head.cameras[camnum]
+        cam.delete_cam_image()
+        cam.delete_camobj()
+        head.cameras.remove(camnum)
+
+        if settings.current_camnum > camnum:
+            settings.current_camnum -= 1
+        elif settings.current_camnum == camnum:
+            settings.current_camnum = -1
+
+        FBLoader.fb_save(headnum, settings.current_camnum)
+
+        logger = logging.getLogger(__name__)
+        logger.debug("CAMERA H:{} C:{} REMOVED".format(headnum, camnum))
         return {'FINISHED'}
 
 

@@ -216,6 +216,20 @@ class FBCameraItem(PropertyGroup):
         except AttributeError:
             return True
 
+    def delete_cam_background_images(self):
+        if self.camobj is None:
+            return
+        for im in reversed(self.camobj.data.background_images):
+            self.camobj.data.background_images.remove(im)
+        self.camobj.data.show_background_images = False
+
+    def delete_cam_image(self):
+        self.cam_image = None
+        self.delete_cam_background_images()
+
+    def delete_camobj(self):
+        bpy.data.objects.remove(self.camobj, do_unlink=True)
+
 
 class FBHeadItem(PropertyGroup):
     mod_ver: IntProperty(name="Modifier Version", default=-1)
@@ -284,6 +298,12 @@ class FBHeadItem(PropertyGroup):
         default=True)
 
     exif: PointerProperty(type=FBExifItem)
+
+    def get_camera(self, camnum):
+        if 0 <= camnum <= len(self.cameras):
+            return self.cameras[camnum]
+        else:
+            return None
 
     def set_serial_str(self, value):
         self.serial_str = value
@@ -436,6 +456,12 @@ class FBSceneSettings(PropertyGroup):
     tex_equalize_colour: BoolProperty(
         description="Equalizes colors used from different frames",
         name="Equalize color", default=False)
+
+    def get_head(self, headnum):
+        if 0 <= headnum <= len(self.heads):
+            return self.heads[headnum]
+        else:
+            return None
 
     # Find Head by Blender object (Head Mesh)
     def find_head_index(self, obj):

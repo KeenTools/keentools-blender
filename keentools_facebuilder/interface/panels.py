@@ -291,26 +291,12 @@ class OBJECT_PT_FBViewsPanel(Panel):
                 op.headnum = headnum
                 op.camnum = i
 
-            # Camera Delete button
-            if not settings.pinmode:
-                if camera.cam_image:
-                    op = row2.operator(
-                        Config.fb_actor_operator_idname,
-                        text='', icon='X')  # 'CANCEL'
-                    op.action = 'delete_camera_image'
-                    op.headnum = headnum
-                    op.camnum = i
-                else:
-                    op = row2.operator(
-                        Config.fb_main_delete_camera_idname,
-                        text='', icon='CANCEL')  #
-                    # op.action = 'delete_camera_image'
-                    op.headnum = headnum
-                    op.camnum = i
-            else:
-                col = row2.column()
-                col.active = False
-                col.label(text='', icon='X')
+            # Camera Delete
+            op = row2.operator(
+                Config.fb_main_delete_camera_idname,
+                text='', icon='CANCEL')  #
+            op.headnum = headnum
+            op.camnum = i
 
     def draw_header_preset(self, context):
         layout = self.layout
