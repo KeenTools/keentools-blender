@@ -110,8 +110,8 @@ class WM_OT_FBAddonWarning(Operator):
             ])
         elif self.msg == ErrorType.PktProblem:
             self.set_content([
-                "You need to install KeenTools Core",
-                "before you can use the addon.",
+                "You need to install KeenTools Core library",
+                "before using FaceBuilder.",
             ])
         elif self.msg == ErrorType.AboutFrameSize:
             self.set_content([

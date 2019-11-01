@@ -224,7 +224,7 @@ class OBJECT_MT_FBSensorWidthMenu(Menu):
         layout.separator()
 
         op = layout.operator(Config.fb_camera_actor_operator_idname,
-                             text="36 x 24 mm   Default Sensor Size",
+                             text="36 x 24 mm   35mm Full-frame (default)",
                              icon='FULLSCREEN_ENTER')
         op.headnum = settings.tmp_headnum
         op.action = 'sensor_36x24mm'

@@ -237,10 +237,8 @@ class FBHeadItem(PropertyGroup):
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
 
     sensor_width: FloatProperty(
-        description="The larger dimension of the camera sensor "
-                    "used to take photos. This is VERY important parameter. "
-                    "Set it according to the real camera specification "
-                    "or via image file EXIF info",
+        description="The length of the longest side "
+                    "of the camera sensor in millimeters",
         name="Sensor Width (mm)", default=36,
         min=0.1, update=update_sensor_width)
     sensor_height: FloatProperty(
@@ -250,16 +248,15 @@ class FBHeadItem(PropertyGroup):
         name="Sensor Height (mm)", default=24,
         min=0.1, update=update_sensor_height)
     focal: FloatProperty(
-        description="Camera focal length. You can found it in real "
-                    "camera settings or snapshot EXIF. This is VERY important "
-                    "parameter for proper reconstruction",
+        description="Focal length in millimeters",
         name="Focal Length (mm)", default=50,
         min=0.1, update=update_focal)
 
     auto_focal_estimation: BoolProperty(
-        name="Auto Focal Length",
-        description="Automatically detects Focal Length value during head "
-                    "construction",
+        name="Focal Length Estimation",
+        description="When turned on FaceBuilder will try to estimate "
+                    "focal length based on the position of the model "
+                    "in the frame",
         default=False)
 
     check_ears: BoolProperty(name="Ears", default=True,

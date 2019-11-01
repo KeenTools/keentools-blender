@@ -105,7 +105,8 @@ class InstallationProgress:
         cls._state_mutex.acquire()
         try:
             if cls.state['active']:
-                cls.state['status'] = 'Another process is loading the library'
+                cls.state['status'] = 'Another process is downloading ' \
+                                      'the library'
                 return True
             return False
         finally:
@@ -117,11 +118,12 @@ class InstallationProgress:
 
     @classmethod
     def _final_callback(cls):
-        cls._on_finish_download('Core library downloaded and installed.')
+        cls._on_finish_download(
+            'Core library has been downloaded and installed successfully.')
 
     @classmethod
     def _error_callback(cls, err):
-        cls._on_finish_download('Download error: {}'.format(str(err)))
+        cls._on_finish_download('Downloading error: {}'.format(str(err)))
 
     @classmethod
     def start_download(cls, install_type):

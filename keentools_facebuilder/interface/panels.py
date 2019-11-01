@@ -42,11 +42,6 @@ class OBJECT_PT_FBHeaderPanel(Panel):
     bl_context = "objectmode"
 
     def _head_creation_offer(self, layout):
-        col = layout.column()
-        col.scale_y = 0.75
-        col.label(text="You can create new Head via:")
-        col.label(text="Add > Mesh > FaceBuilder")
-
         # Test custom icons
         # FBIcons.layout_icons(layout)
 
@@ -54,19 +49,30 @@ class OBJECT_PT_FBHeaderPanel(Panel):
         row.scale_y = 2.0
         row.operator(
             Config.fb_add_head_operator_idname,
-            text='Add New Head', icon='USER')
+            text='Create a new head', icon='USER')
+
+        # row = layout.row()
+        # row.label(text='', icon='INFO')
+        box = layout.box()
+        col = box.column()
+        col.scale_y = 0.75
+        col.label(text="You can also create")
+        col.label(text="a new head using:")
+        col.label(text="Add > Mesh > FaceBuilder")
+
 
     def _pkt_install_offer(self, layout):
         col = layout.column()
         col.scale_y = 0.75
-        col.label(text="You need to install KeenTools Core")
-        col.label(text="before you can use the addon.")
+        col.label(text="You need to install ")
+        col.label(text="KeenTools Core library")
+        col.label(text="before using FaceBuilder.")
 
         row = layout.row()
         row.scale_y = 2.0
         row.operator(
             Config.fb_main_addon_settings_idname,
-            text='Install the core', icon='PREFERENCES')
+            text='Install Core library', icon='PREFERENCES')
 
     def draw_start_panel(self, layout):
         if not pkt.is_installed():

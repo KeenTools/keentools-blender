@@ -39,7 +39,7 @@ class Config:
     addon_global_var_name = prefix + '_settings'
     addon_full_name = 'Keentools FaceBuilder for Blender'
     fb_views_panel_label = 'Views'
-    fb_camera_panel_label = 'Camera parameters'
+    fb_camera_panel_label = 'Camera settings'
     fb_tab_category = addon_human_readable_name
     default_builder = BuilderType.FaceBuilder
     keentools_website_url = 'https://keentools.io'
