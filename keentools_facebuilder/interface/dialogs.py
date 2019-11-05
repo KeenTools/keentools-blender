@@ -167,8 +167,10 @@ class WM_OT_FBTexSelector(Operator):
             else:
                 row.label(text='-- empty --')
 
-        layout.label(text="Images without pins will be auto-ignored.")
-        layout.label(text="Texture baking can be time consuming, be patient.")
+        col = layout.column()
+        col.scale_y = 0.75
+        col.label(text="Images without pins will be auto-ignored.")
+        col.label(text="Texture baking can be time consuming, be patient.")
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)

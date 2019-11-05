@@ -19,16 +19,8 @@
 import logging
 from threading import Lock
 
-import bpy
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
-from ..utils.other import FBTimer
-
-
-def _force_ui_redraw(area_type="PREFERENCES"):
-    for window in bpy.data.window_managers['WinMan'].windows:
-        for area in window.screen.areas:
-            if area.type == area_type:
-                area.tag_redraw()
+from ..utils.other import FBTimer, force_ui_redraw
 
 
 class FBUpdateProgressTimer(FBTimer):
@@ -45,11 +37,11 @@ class FBUpdateProgressTimer(FBTimer):
         if cls._timer_should_not_work():
             logger.debug("STOP PROGRESS INACTIVE")
             cls.stop()
-            _force_ui_redraw()
+            force_ui_redraw("PREFERENCES")
             return None
 
         logger.debug("NEXT CALL UPDATE TIMER")
-        _force_ui_redraw()
+        force_ui_redraw("PREFERENCES")
         return cls._UPDATE_INTERVAL
 
     @classmethod

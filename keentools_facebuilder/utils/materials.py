@@ -113,7 +113,7 @@ def show_texture_in_mat(tex_name, mat_name):
 def bake_tex(headnum, tex_name):
     logger = logging.getLogger(__name__)
     settings = get_main_settings()
-    head = settings.heads[headnum]
+    head = settings.get_head(headnum)
     # Add UV
     mesh = head.headobj.data
 

@@ -39,7 +39,7 @@ from .utils.manipulate import what_is_state
 def update_wireframe(self, context):
     settings = get_main_settings()
     headnum = settings.current_headnum
-    head = settings.heads[headnum]
+    head = settings.get_head(headnum)
     FBLoader.viewport().update_wireframe(
         FBLoader.get_builder_type(), head.headobj)
 
@@ -83,7 +83,7 @@ def update_mesh_parts(self, context):
     if headnum < 0:
         return
 
-    head = settings.heads[headnum]
+    head = settings.get_head(headnum)
     masks = [head.check_ears, head.check_eyes, head.check_face,
              head.check_headback, head.check_jaw, head.check_mouth,
              head.check_neck, head.check_nose]

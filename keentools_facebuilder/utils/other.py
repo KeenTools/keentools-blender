@@ -26,6 +26,13 @@ from . points import FBPoints2D, FBPoints3D
 from .. config import get_main_settings
 
 
+def force_ui_redraw(area_type="PREFERENCES"):
+    for window in bpy.data.window_managers['WinMan'].windows:
+        for area in window.screen.areas:
+            if area.type == area_type:
+                area.tag_redraw()
+
+
 def force_stop_shaders():
     FBEdgeShader2D.handler_list = []
     FBEdgeShader3D.handler_list = []

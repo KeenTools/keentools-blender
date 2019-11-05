@@ -106,7 +106,7 @@ class FaceBuilderTest(unittest.TestCase):
         self._head_cams_and_pins()
         settings = get_main_settings()
         headnum = settings.get_last_headnum()
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
         camnum = head.get_last_camnum()
 
         new_focal = 35

@@ -25,7 +25,7 @@ from . fake_context import get_override_context
 
 def show_all_cameras(headnum):
     settings = get_main_settings()
-    head = settings.heads[headnum]
+    head = settings.get_head(headnum)
     for i, c in enumerate(head.cameras):
         # Unhide camera
         c.camobj.hide_set(False)
@@ -33,7 +33,7 @@ def show_all_cameras(headnum):
 
 def hide_other_cameras(headnum, camnum):
     settings = get_main_settings()
-    head = settings.heads[headnum]
+    head = settings.get_head(headnum)
     for i, c in enumerate(head.cameras):
         if i != camnum:
             # Hide camera

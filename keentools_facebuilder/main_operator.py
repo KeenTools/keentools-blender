@@ -113,7 +113,7 @@ class OBJECT_OT_FBSelectCamera(Operator):
         settings = get_main_settings()
         headnum = self.headnum
         camnum = self.camnum
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
 
         # bpy.ops.object.select_all(action='DESELECT')
         camobj = head.cameras[camnum].camobj
@@ -346,7 +346,7 @@ class OBJECT_OT_FBDeleteCamera(Operator):
             settings = get_main_settings()
             if headnum >= len(settings.heads):
                 return False
-            head = settings.heads[headnum]
+            head = settings.get_head(headnum)
             if camnum >= len(head.cameras):
                 return False
             return True
@@ -365,7 +365,7 @@ class OBJECT_OT_FBDeleteCamera(Operator):
         kid = cameras.keyframe_by_camnum(headnum, camnum)
         fb.remove_keyframe(kid)
 
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
         cam = head.cameras[camnum]
         cam.delete_cam_image()
         cam.delete_camobj()

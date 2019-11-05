@@ -24,7 +24,7 @@ from .utils import manipulate, coords, cameras
 from .config import Config, get_main_settings, ErrorType
 from .fbdebug import FBDebug
 from .fbloader import FBLoader
-from .utils.other import FBStopShaderTimer
+from .utils.other import FBStopShaderTimer, force_ui_redraw
 
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
@@ -78,7 +78,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         settings = get_main_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
         kid = cameras.keyframe_by_camnum(headnum, camnum)
 
         fb = FBLoader.get_builder()
@@ -114,7 +114,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         settings = get_main_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
 
         head.need_update = False
         # Reload pins surface points
@@ -240,6 +240,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         logger.debug("OVERALL_OPACITY BY TAB {}".format(
             settings.overall_opacity))
         self._init_wireframer_colors(settings.overall_opacity)
+        force_ui_redraw("VIEW_3D")
 
     def modal(self, context, event):
         logger = logging.getLogger(__name__)
@@ -247,7 +248,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
         headnum = settings.current_headnum
         camnum = settings.current_camnum
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
 
         # Quit if Screen changed
         if context.area is None:  # Different operation Space

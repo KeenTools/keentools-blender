@@ -41,6 +41,13 @@ class OBJECT_PT_FBHeaderPanel(Panel):
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 
+    def draw_header_preset(self, context):
+        layout = self.layout
+        row = layout.row()
+        row.operator(
+            Config.fb_main_addon_settings_idname,
+            text='', icon='PREFERENCES')
+
     def _head_creation_offer(self, layout):
         # Test custom icons
         # FBIcons.layout_icons(layout)
@@ -74,13 +81,13 @@ class OBJECT_PT_FBHeaderPanel(Panel):
             Config.fb_main_addon_settings_idname,
             text='Install Core library', icon='PREFERENCES')
 
-    def draw_start_panel(self, layout):
+    def _draw_start_panel(self, layout):
         if not pkt.is_installed():
             self._pkt_install_offer(layout)
         else:
             self._head_creation_offer(layout)
 
-    def draw_reconstruct(self, layout):
+    def _draw_reconstruct(self, layout):
         # Need for reconstruction
         row = layout.row()
         row.scale_y = 3.0
@@ -90,7 +97,7 @@ class OBJECT_PT_FBHeaderPanel(Panel):
         op.headnum = -1
         op.camnum = -1
 
-    def draw_many_heads(self, layout):
+    def _draw_many_heads(self, layout):
         # Output List of all heads in Scene
         settings = get_main_settings()
         for i, h in enumerate(settings.heads):
@@ -107,16 +114,6 @@ class OBJECT_PT_FBHeaderPanel(Panel):
                     Config.fb_main_delete_head_idname,
                     text='', icon='CANCEL')
                 op.headnum = i
-
-    # ----------------------
-    # Blender defined draws
-    # ----------------------
-    def draw_header_preset(self, context):
-        layout = self.layout
-        row = layout.row()
-        row.operator(
-            Config.fb_main_addon_settings_idname,
-            text='', icon='PREFERENCES')
 
     def draw(self, context):
         layout = self.layout
@@ -136,15 +133,15 @@ class OBJECT_PT_FBHeaderPanel(Panel):
             return
 
         elif state == 'RECONSTRUCT':
-            self.draw_reconstruct(layout)
+            self._draw_reconstruct(layout)
             return
 
         elif state == 'NO_HEADS':
-            self.draw_start_panel(layout)
+            self._draw_start_panel(layout)
             return
 
         else:
-            self.draw_many_heads(layout)
+            self._draw_many_heads(layout)
 
 
 class OBJECT_PT_FBCameraPanel(Panel):
@@ -156,7 +153,6 @@ class OBJECT_PT_FBCameraPanel(Panel):
     bl_context = "objectmode"
     bl_option = {'DEFAULT_CLOSED'}
 
-    # Panel appear only when actual
     @classmethod
     def poll(cls, context):
         return _show_all_panels()
@@ -169,7 +165,6 @@ class OBJECT_PT_FBCameraPanel(Panel):
             Config.fb_help_camera_idname,
             text='', icon='QUESTION')
 
-    # Face Builder Panel Draw
     def draw(self, context):
         settings = get_main_settings()
         layout = self.layout
@@ -179,7 +174,7 @@ class OBJECT_PT_FBCameraPanel(Panel):
         if headnum < 0:
             return
 
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
 
         row = layout.row()
         row.prop(head, 'sensor_width')
@@ -203,6 +198,37 @@ class OBJECT_PT_FBCameraPanel(Panel):
             row.alert = True
         row.prop(head, 'auto_focal_estimation')
 
+
+class OBJECT_PT_FBExifPanel(Panel):
+    bl_idname = Config.fb_exif_panel_idname
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_label = "EXIF"
+    bl_category = Config.fb_tab_category
+    bl_context = "objectmode"
+
+    @classmethod
+    def poll(cls, context):
+        return _show_all_panels()
+
+    def draw_header_preset(self, context):
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        row.operator(
+            Config.fb_help_exif_idname,
+            text='', icon='QUESTION')
+
+    def draw(self, context):
+        settings = get_main_settings()
+        layout = self.layout
+        state, headnum = what_is_state()
+
+        head = settings.get_head(headnum)
+
+        if head is None:
+            return
+
         # Show EXIF message
         if len(head.exif.message) > 0:
             box = layout.box()
@@ -211,6 +237,8 @@ class OBJECT_PT_FBCameraPanel(Panel):
             col.scale_y = 0.75
             for a in arr:
                 col.label(text=a)
+        else:
+            layout.label(text='EXIF info')
 
 
 class OBJECT_PT_FBViewsPanel(Panel):
@@ -233,7 +261,7 @@ class OBJECT_PT_FBViewsPanel(Panel):
             Config.fb_help_views_idname,
             text='', icon='QUESTION')
 
-    def draw_pins_panel(self, headnum, camnum):
+    def _draw_pins_panel(self, headnum, camnum):
         layout = self.layout
         box = layout.box()
         op = box.operator(Config.fb_main_center_geo_idname, text="Center Geo")
@@ -244,9 +272,9 @@ class OBJECT_PT_FBViewsPanel(Panel):
         op.headnum = headnum
         op.camnum = camnum
 
-    def draw_camera_list(self, headnum, layout):
+    def _draw_camera_list(self, headnum, layout):
         settings = get_main_settings()
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
         wrong_size_counter = 0
         fw = settings.frame_width
         fh = settings.frame_height
@@ -276,7 +304,7 @@ class OBJECT_PT_FBViewsPanel(Panel):
             op.headnum = headnum
             op.camnum = i
 
-            # Camera Num / Pins / Name
+            # Camera Num / Name
             col = row.column()
             row2 = col.row()
 
@@ -321,22 +349,27 @@ class OBJECT_PT_FBViewsPanel(Panel):
 
         # Output current Frame Size
         if settings.frame_width > 0 and settings.frame_height > 0:
-            info = '{}x{}'.format(
+            info = 'Frame size: {}x{}'.format(
                 settings.frame_width, settings.frame_height)
         else:
             x = bpy.context.scene.render.resolution_x
             y = bpy.context.scene.render.resolution_y
-            info = '{}x{}'.format(x, y)
-
-        layout.label(text=info)
+            info = 'Frame size: {}x{}'.format(x, y)
 
         state, headnum = what_is_state()
 
         if headnum < 0:
             return
 
+        row = layout.row()
+        row.label(text=info)
+        op = row.operator(Config.fb_main_fix_size_idname,
+                     text='', icon='SETTINGS')
+        op.headnum = headnum
+        # row.separator_spacer()
+
         # Large List of cameras
-        self.draw_camera_list(headnum, layout)
+        self._draw_camera_list(headnum, layout)
 
         # Open sequence Button (large x2)
         row = layout.row()
@@ -348,33 +381,8 @@ class OBJECT_PT_FBViewsPanel(Panel):
         # Camera buttons Center Geo, Remove pins
         if settings.pinmode and \
                 context.space_data.region_3d.view_perspective == 'CAMERA':
-            self.draw_pins_panel(headnum, settings.current_camnum)
+            self._draw_pins_panel(headnum, settings.current_camnum)
 
-
-class OBJECT_PT_FBExifPanel(Panel):
-    bl_idname = Config.fb_exif_panel_idname
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_label = "EXIF"
-    bl_category = Config.fb_tab_category
-    bl_context = "objectmode"
-
-    @classmethod
-    def poll(cls, context):
-        return _show_all_panels()
-
-    def draw_header_preset(self, context):
-        layout = self.layout
-        row = layout.row()
-        row.active = False
-        row.operator(
-            Config.fb_help_exif_idname,
-            text='', icon='QUESTION')
-
-    def draw(self, context):
-        settings = get_main_settings()
-        layout = self.layout
-        layout.label(text='EXIF info:')
 
 class OBJECT_PT_FBModel(Panel):
     bl_idname = Config.fb_model_panel_idname
@@ -409,7 +417,7 @@ class OBJECT_PT_FBModel(Panel):
         if headnum < 0:
             return
 
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
 
         op = layout.operator(Config.fb_main_unmorph_idname, text="Unmorph")
         op.headnum = headnum
@@ -474,7 +482,7 @@ class OBJECT_PT_TexturePanel(Panel):
         headnum = settings.head_by_obj(obj)
         if headnum < 0:
             headnum = settings.current_headnum
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
 
         box = layout.box()
         box.prop(settings, 'tex_width')

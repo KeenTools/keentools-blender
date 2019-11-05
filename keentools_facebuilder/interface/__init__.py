@@ -29,15 +29,15 @@ CLASSES_TO_REGISTER = (OBJECT_MT_FBFixMenu,  # menus
                        OBJECT_MT_FBFocalLengthMenu,
                        OBJECT_PT_FBHeaderPanel,  # panels
                        OBJECT_PT_FBCameraPanel,
-                       OBJECT_PT_FBViewsPanel,
                        OBJECT_PT_FBExifPanel,
+                       OBJECT_PT_FBViewsPanel,
                        OBJECT_PT_FBModel,
                        OBJECT_PT_FBPinSettingsPanel,
                        OBJECT_PT_FBColorsPanel,
                        OBJECT_PT_TexturePanel,
                        HELP_OT_CameraHelp,  # helps
-                       HELP_OT_ViewsHelp,
                        HELP_OT_ExifHelp,
+                       HELP_OT_ViewsHelp,
                        HELP_OT_ModelHelp,
                        HELP_OT_PinSettingsHelp,
                        HELP_OT_TextureHelp,
