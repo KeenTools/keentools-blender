@@ -118,12 +118,7 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
             return {'FINISHED'}
 
     def execute(self, context):
-        try:
-            pkt.install_from_file(self.filepath)
-            self.report({'INFO'}, 'Installation successful')
-        except Exception as error:
-            self.report({'ERROR'},
-                'Failed to install Core library from file. ' + str(error))
+        InstallationProgress.start_zip_install(self.filepath)
         return {'FINISHED'}
 
 
@@ -240,6 +235,18 @@ class PREF_OT_OpenURL(bpy.types.Operator):
         bpy.ops.wm.url_open(url=self.url)
         return {'FINISHED'}
 
+
+class PREF_OT_DownloadsURL(bpy.types.Operator):
+    bl_idname = _ID_NAME_PREFIX + '_downloads_url'
+    bl_label = 'Download'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Open downloads page in web browser'
+
+    url: bpy.props.StringProperty(name='URL', default='')
+
+    def execute(self, context):
+        bpy.ops.wm.url_open(url=self.url)
+        return {'FINISHED'}
 
 class PREF_OT_ShowWhy(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_show_why'

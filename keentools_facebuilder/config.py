@@ -115,14 +115,29 @@ class Config:
     fb_add_body_operator_callname = prefix + '_add_body'
     fb_add_body_operator_idname = 'mesh.' + fb_add_body_operator_callname
 
-    # Panels ids
+    # Panel ids
     fb_header_panel_idname = _PT + prefix + '_header_panel_id'
     fb_camera_panel_idname = _PT + prefix + 'camera_panel_id'
     fb_views_panel_idname = _PT + prefix + '_views_panel_id'
-    fb_tb_panel_idname = _PT + prefix + '_tb_panel_id'
+    fb_exif_panel_idname = _PT + prefix + '_exif_panel_id'
+    fb_texture_panel_idname = _PT + prefix + '_texture_panel_id'
     fb_colors_panel_idname = _PT + prefix + '_colors_panel_id'
-    fb_parts_panel_idname = _PT + prefix + '_parts_panel_id'
-    fb_settings_panel_idname = _PT + prefix + '_settings_panel_id'
+    fb_model_panel_idname = _PT + prefix + '_model_panel_id'
+    fb_pin_settings_panel_idname = _PT + prefix + '_pin_settings_panel_id'
+
+    # Help ids
+    fb_help_camera_callname = prefix + '_help_camera'
+    fb_help_camera_idname = 'wm.' + fb_help_camera_callname
+    fb_help_views_callname = prefix + '_help_view'
+    fb_help_views_idname = 'wm.' + fb_help_views_callname
+    fb_help_exif_callname = prefix + '_help_exif'
+    fb_help_exif_idname = 'wm.' + fb_help_exif_callname
+    fb_help_model_callname = prefix + '_help_model'
+    fb_help_model_idname = 'wm.' + fb_help_model_callname
+    fb_help_pin_settings_callname = prefix + '_help_pin_settings'
+    fb_help_pin_settings_idname = 'wm.' + fb_help_pin_settings_callname
+    fb_help_texture_callname = prefix + '_help_texture'
+    fb_help_texture_idname = 'wm.' + fb_help_texture_callname
 
     # Menu ids
     fb_fix_frame_menu_idname = _MT + prefix + '_fix_frame_menu_id'

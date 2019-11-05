@@ -34,6 +34,7 @@ CLASSES_TO_REGISTER = (
     PREF_OT_OpenManualInstallPage,
     PREF_OT_ShowURL,
     PREF_OT_OpenURL,
+    PREF_OT_DownloadsURL,
     PREF_OT_ShowWhy,
     FBAddonPreferences
 )

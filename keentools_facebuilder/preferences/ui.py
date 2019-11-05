@@ -209,7 +209,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         op.license_accepted = self._license_was_accepted()
 
         op = row2.operator(
-            preferences_operators.PREF_OT_OpenURL.bl_idname,
+            preferences_operators.PREF_OT_DownloadsURL.bl_idname,
             text='Download', icon='URL')
         op.url = 'https://keentools.io/downloads'
 

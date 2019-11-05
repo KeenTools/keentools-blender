@@ -114,7 +114,6 @@ class OBJECT_PT_FBHeaderPanel(Panel):
     def draw_header_preset(self, context):
         layout = self.layout
         row = layout.row()
-        # row.alignment = "LEFT"
         row.operator(
             Config.fb_main_addon_settings_idname,
             text='', icon='PREFERENCES')
@@ -161,6 +160,14 @@ class OBJECT_PT_FBCameraPanel(Panel):
     @classmethod
     def poll(cls, context):
         return _show_all_panels()
+
+    def draw_header_preset(self, context):
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        row.operator(
+            Config.fb_help_camera_idname,
+            text='', icon='QUESTION')
 
     # Face Builder Panel Draw
     def draw(self, context):
@@ -214,10 +221,17 @@ class OBJECT_PT_FBViewsPanel(Panel):
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 
-    # Panel appear only when actual
     @classmethod
     def poll(cls, context):
         return _show_all_panels()
+
+    def draw_header_preset(self, context):
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        row.operator(
+            Config.fb_help_views_idname,
+            text='', icon='QUESTION')
 
     def draw_pins_panel(self, headnum, camnum):
         layout = self.layout
@@ -229,9 +243,6 @@ class OBJECT_PT_FBViewsPanel(Panel):
             Config.fb_main_remove_pins_idname, text="Remove Pins")
         op.headnum = headnum
         op.camnum = camnum
-        # op = box.operator(Config.fb_main_unmorph_idname, text="Unmorph")
-        # op.headnum = headnum
-        # op.camnum = camnum
 
     def draw_camera_list(self, headnum, layout):
         settings = get_main_settings()
@@ -304,10 +315,9 @@ class OBJECT_PT_FBViewsPanel(Panel):
             op.headnum = headnum
             op.camnum = i
 
-    def draw_header_preset(self, context):
-        layout = self.layout
+    def draw(self, context):
         settings = get_main_settings()
-        row = layout.row()
+        layout = self.layout
 
         # Output current Frame Size
         if settings.frame_width > 0 and settings.frame_height > 0:
@@ -318,14 +328,7 @@ class OBJECT_PT_FBViewsPanel(Panel):
             y = bpy.context.scene.render.resolution_y
             info = '{}x{}'.format(x, y)
 
-        row.operator(
-            Config.fb_main_fix_size_idname,
-            icon='SETTINGS', text=info)
-
-    # View Panel Draw
-    def draw(self, context):
-        settings = get_main_settings()
-        layout = self.layout
+        layout.label(text=info)
 
         state, headnum = what_is_state()
 
@@ -342,14 +345,39 @@ class OBJECT_PT_FBViewsPanel(Panel):
                           text="Add Image(s)", icon='OUTLINER_OB_IMAGE')
         op.headnum = headnum
 
-        # Camera buttons Center Geo, Remove pins, Unmorph
+        # Camera buttons Center Geo, Remove pins
         if settings.pinmode and \
                 context.space_data.region_3d.view_perspective == 'CAMERA':
             self.draw_pins_panel(headnum, settings.current_camnum)
 
 
-class OBJECT_PT_FBFaceParts(Panel):
-    bl_idname = Config.fb_parts_panel_idname
+class OBJECT_PT_FBExifPanel(Panel):
+    bl_idname = Config.fb_exif_panel_idname
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_label = "EXIF"
+    bl_category = Config.fb_tab_category
+    bl_context = "objectmode"
+
+    @classmethod
+    def poll(cls, context):
+        return _show_all_panels()
+
+    def draw_header_preset(self, context):
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        row.operator(
+            Config.fb_help_exif_idname,
+            text='', icon='QUESTION')
+
+    def draw(self, context):
+        settings = get_main_settings()
+        layout = self.layout
+        layout.label(text='EXIF info:')
+
+class OBJECT_PT_FBModel(Panel):
+    bl_idname = Config.fb_model_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_label = "Model"
@@ -361,6 +389,14 @@ class OBJECT_PT_FBFaceParts(Panel):
     @classmethod
     def poll(cls, context):
         return _show_all_panels()
+
+    def draw_header_preset(self, context):
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        row.operator(
+            Config.fb_help_model_idname,
+            text='', icon='QUESTION')
 
     # Panel Draw
     def draw(self, context):
@@ -399,8 +435,8 @@ class OBJECT_PT_FBFaceParts(Panel):
         row.prop(head, 'check_neck')
         row.prop(head, 'check_nose')
 
-class OBJECT_PT_TBPanel(Panel):
-    bl_idname = Config.fb_tb_panel_idname
+class OBJECT_PT_TexturePanel(Panel):
+    bl_idname = Config.fb_texture_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_label = "Texture"
@@ -412,6 +448,14 @@ class OBJECT_PT_TBPanel(Panel):
     @classmethod
     def poll(cls, context):
         return _show_all_panels()
+
+    def draw_header_preset(self, context):
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        row.operator(
+            Config.fb_help_texture_idname,
+            text='', icon='QUESTION')
 
     @classmethod
     def get_area_mode(cls, context):
@@ -504,20 +548,26 @@ class OBJECT_PT_FBColorsPanel(Panel):
         layout.prop(settings, 'show_specials', text='Highlight Parts')
 
 
-class OBJECT_PT_FBSettingsPanel(Panel):
-    bl_idname = Config.fb_settings_panel_idname
+class OBJECT_PT_FBPinSettingsPanel(Panel):
+    bl_idname = Config.fb_pin_settings_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_label = "Pin Settings"
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 
-    # Panel appear only when actual
     @classmethod
     def poll(cls, context):
         return _show_all_panels()
 
-    # Right Panel Draw
+    def draw_header_preset(self, context):
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        row.operator(
+            Config.fb_help_pin_settings_idname,
+            text='', icon='QUESTION')
+
     def draw(self, context):
         layout = self.layout
         settings = get_main_settings()

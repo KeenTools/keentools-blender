@@ -20,6 +20,7 @@ from .menus import *
 from .panels import *
 from .dialogs import *
 from .filedialog import *
+from .helps import *
 
 
 CLASSES_TO_REGISTER = (OBJECT_MT_FBFixMenu,  # menus
@@ -29,10 +30,17 @@ CLASSES_TO_REGISTER = (OBJECT_MT_FBFixMenu,  # menus
                        OBJECT_PT_FBHeaderPanel,  # panels
                        OBJECT_PT_FBCameraPanel,
                        OBJECT_PT_FBViewsPanel,
-                       OBJECT_PT_FBFaceParts,
-                       OBJECT_PT_FBSettingsPanel,
+                       OBJECT_PT_FBExifPanel,
+                       OBJECT_PT_FBModel,
+                       OBJECT_PT_FBPinSettingsPanel,
                        OBJECT_PT_FBColorsPanel,
-                       OBJECT_PT_TBPanel,
+                       OBJECT_PT_TexturePanel,
+                       HELP_OT_CameraHelp,  # helps
+                       HELP_OT_ViewsHelp,
+                       HELP_OT_ExifHelp,
+                       HELP_OT_ModelHelp,
+                       HELP_OT_PinSettingsHelp,
+                       HELP_OT_TextureHelp,
                        WM_OT_FBAddonWarning,  # dialogs
                        WM_OT_FBTexSelector,
                        WM_OT_FBSingleFilebrowser,  # filedialog

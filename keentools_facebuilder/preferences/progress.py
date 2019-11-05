@@ -75,6 +75,14 @@ class InstallationProgress:
             cls._state_mutex.release()
 
     @classmethod
+    def set_state(cls, state):
+        cls._state_mutex.acquire()
+        try:
+            cls.state = state
+        finally:
+            cls._state_mutex.release()
+
+    @classmethod
     def _update_progress(cls, value):
         cls._state_mutex.acquire()
         try:
@@ -149,3 +157,24 @@ class InstallationProgress:
                 progress_callback=cls._progress_callback,
                 final_callback=cls._final_callback,
                 error_callback=cls._error_callback)
+
+    @classmethod
+    def start_zip_install(cls, filepath):
+        logger = logging.getLogger(__name__)
+
+        if cls._check_another_download_active():
+            logger.error("OTHER FILE DOWNLOADING")
+            return
+
+        cls._on_start_download()
+        logger.debug("START UNPACK CORE LIBRARY DOWNLOAD")
+        try:
+            pkt.install_from_file(filepath)
+        except Exception as error:
+            cls._on_finish_download(
+                'Failed to install Core library from file. ' + str(error))
+            logger.debug("UNPACK CORE ERROR" + str(error))
+        else:
+            cls._on_finish_download(
+                'Core library has been installed successfully.')
+            logger.debug("UNPACK CORE FINISH")
