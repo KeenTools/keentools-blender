@@ -75,12 +75,17 @@ class Config:
     fb_main_set_sensor_width_callname = prefix + '_main_set_sensor_width'
     fb_main_set_sensor_width_idname = 'object.' + \
                                       fb_main_set_sensor_width_callname
-    fb_main_set_focal_length_callname = prefix + '_main_set_focal_length'
-    fb_main_set_focal_length_idname = 'object.' + \
-                                      fb_main_set_focal_length_callname
+    fb_main_sensor_width_window_callname = prefix + '_main_sensor_width_window'
+    fb_main_sensor_width_window_idname = 'object.' + \
+                                      fb_main_sensor_width_window_callname
+    fb_main_focal_length_menu_exec_callname = prefix + '_main_set_focal_length'
+    fb_main_focal_length_menu_exec_idname = \
+        'object.' + fb_main_focal_length_menu_exec_callname
 
     fb_main_camera_fix_size_idname = 'object.' + prefix + \
                                      '_main_camera_fix_size'
+    fb_main_view_menu_exec_idname = 'object.' + prefix + \
+                                     '_view_menu_exec'
     fb_main_addon_settings_callname = prefix + '_main_addon_settings'
     fb_main_addon_settings_idname = 'object.' + fb_main_addon_settings_callname
     fb_main_bake_tex_callname = prefix + '_main_bake_tex'
@@ -92,10 +97,17 @@ class Config:
     fb_main_all_unknown_callname = prefix + '_main_all_unknown'
     fb_main_all_unknown_idname = 'object.' + fb_main_all_unknown_callname
 
-    fb_multiple_filebrowser_operator_idname = \
+    fb_multiple_filebrowser_idname = \
         prefix + '_import.open_multiple_filebrowser'
-    fb_single_filebrowser_operator_idname = \
-        prefix + '_import.open_single_filebrowser'
+
+    fb_single_filebrowser_callname = 'open_single_filebrowser'
+    fb_single_filebrowser_idname = \
+        prefix + '_import.' + fb_single_filebrowser_callname
+
+    fb_single_filebrowser_exec_callname = 'open_single_filebrowser_exec'
+    fb_single_filebrowser_exec_idname = \
+        prefix + '_import.' + fb_single_filebrowser_exec_callname
+
     fb_pinmode_operator_callname = prefix + '_pinmode'
     fb_pinmode_operator_idname = 'object.' + fb_pinmode_operator_callname
 
@@ -110,6 +122,7 @@ class Config:
     fb_warning_operator_idname = 'wm.' + fb_warning_operator_callname
     fb_tex_selector_operator_callname = prefix + '_tex_selector'
     fb_tex_selector_operator_idname = 'wm.' + fb_tex_selector_operator_callname
+
     fb_add_head_operator_callname = prefix + '_add_head'
     fb_add_head_operator_idname = 'mesh.' + fb_add_head_operator_callname
     fb_add_body_operator_callname = prefix + '_add_body'
@@ -143,6 +156,7 @@ class Config:
     fb_fix_frame_menu_idname = _MT + prefix + '_fix_frame_menu_id'
     fb_fix_camera_frame_menu_idname = _MT + prefix + \
                                       '_fix_camera_frame_menu_id'
+    fb_view_menu_idname = _MT + prefix + '_view_menu_id'
     fb_focal_length_menu_idname = _MT + prefix + '_focal_length_menu_id'
     fb_sensor_width_menu_idname = _MT + prefix + '_sensor_width_menu_id'
 

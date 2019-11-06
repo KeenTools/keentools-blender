@@ -179,7 +179,7 @@ class OBJECT_PT_FBCameraPanel(Panel):
         row = layout.row()
         row.prop(head, 'sensor_width')
         row.operator(
-            Config.fb_main_set_sensor_width_idname,
+            Config.fb_main_sensor_width_window_idname,
             text='', icon='SETTINGS')
 
         col = layout.column()
@@ -190,7 +190,7 @@ class OBJECT_PT_FBCameraPanel(Panel):
         row = col.row()
         row.prop(head, 'focal')
         row.operator(
-            Config.fb_main_set_focal_length_idname,
+            Config.fb_main_focal_length_menu_exec_idname,
             text='', icon='SETTINGS')
 
         row = layout.row()
@@ -299,47 +299,58 @@ class OBJECT_PT_FBViewsPanel(Panel):
             if settings.current_camnum == i:
                 col.alert = True
 
+            # Pin Icon if there are some pins
+            pin_icon = 'BLANK1'
+            if camera.pins_count > 0:
+                pin_icon = 'PINNED'
+                view_icon = 'PINNED'
+
             op = col.operator(
                 Config.fb_main_select_camera_idname, text='', icon=view_icon)
             op.headnum = headnum
             op.camnum = i
 
-            # Camera Num / Name
             col = row.column()
             row2 = col.row()
 
-            # Pin Icon if there are some pins
-            pin_icon = 'BLANK1'
-            if camera.pins_count > 0:
-                pin_icon = 'PINNED'
-
             # Filename and Context Menu button
             if camera.cam_image:
-                row2.label(text="{}".format(camera.cam_image.name),
-                           icon=pin_icon)
+                row2.label(text="{}".format(camera.cam_image.name))  # icon=pin_icon
                 edit_icon = 'GREASEPENCIL'  # OUTLINER_DATA_GP_LAYER
                 if wrong_size_flag:
                     # Background has different size
                     edit_icon = 'ERROR'
-                op = row2.operator(Config.fb_main_camera_fix_size_idname,
-                                   text='', icon=edit_icon)
-                op.headnum = headnum
-                op.camnum = i
+                    op = row2.operator(Config.fb_main_camera_fix_size_idname,
+                                       text='', icon=edit_icon)
+                    op.headnum = headnum
+                    op.camnum = i
             else:
                 # No image --> Broken icon
                 row2.label(text='-- empty --', icon=pin_icon)
                 row2.label(text='', icon='LIBRARY_DATA_BROKEN')
 
                 op = row2.operator(
-                    Config.fb_single_filebrowser_operator_idname,
+                    Config.fb_single_filebrowser_idname,
                     text='', icon='FILEBROWSER')
                 op.headnum = headnum
                 op.camnum = i
 
+            if camera.cam_image_status == 'broken':
+                row2.label(text='', icon='LIBRARY_DATA_BROKEN')
+
             # Camera Delete
-            op = row2.operator(
-                Config.fb_main_delete_camera_idname,
-                text='', icon='CANCEL')  #
+            # op = row2.operator(
+            #     Config.fb_main_delete_camera_idname,
+            #     text='', icon='CANCEL')  #
+            # op.headnum = headnum
+            # op.camnum = i
+
+            # Camera Menu
+            col2 = row2.column()
+            col2.active = False
+            op = col2.operator(
+                Config.fb_main_view_menu_exec_idname,
+                text='', icon='COLLAPSEMENU')  #
             op.headnum = headnum
             op.camnum = i
 
@@ -361,7 +372,9 @@ class OBJECT_PT_FBViewsPanel(Panel):
         if headnum < 0:
             return
 
-        row = layout.row()
+        box = layout.box()
+        box.scale_y = 1.5
+        row = box.row()
         row.label(text=info)
         op = row.operator(Config.fb_main_fix_size_idname,
                      text='', icon='SETTINGS')
@@ -374,7 +387,7 @@ class OBJECT_PT_FBViewsPanel(Panel):
         # Open sequence Button (large x2)
         row = layout.row()
         row.scale_y = 2.0
-        op = row.operator(Config.fb_multiple_filebrowser_operator_idname,
+        op = row.operator(Config.fb_multiple_filebrowser_idname,
                           text="Add Image(s)", icon='OUTLINER_OB_IMAGE')
         op.headnum = headnum
 

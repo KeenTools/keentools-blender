@@ -24,18 +24,19 @@ from bpy.props import (
     IntProperty,
 )
 
-from . utils import cameras
-from . utils.manipulate import check_settings
-from . fbloader import FBLoader
-from . fbdebug import FBDebug
-from . config import get_main_settings, Config
+from .utils import cameras
+from .utils.manipulate import check_settings
+from .fbloader import FBLoader
+from .fbdebug import FBDebug
+from .config import get_main_settings, Config
+from .utils.exif_reader import get_sensor_size_35mm_equivalent
 
 
 class OBJECT_OT_FBSelectHead(Operator):
     bl_idname = Config.fb_main_select_head_idname
-    bl_label = "Select Head"
+    bl_label = "Select head"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Select Head in Scene"
+    bl_description = "Select head in the scene"
 
     headnum: IntProperty(default=0)
 
@@ -58,9 +59,9 @@ class OBJECT_OT_FBSelectHead(Operator):
 
 class OBJECT_OT_FBDeleteHead(Operator):
     bl_idname = Config.fb_main_delete_head_idname
-    bl_label = "Delete Head"
+    bl_label = "Delete head"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Delete Head and its cameras from Scene"
+    bl_description = "Delete the head and its cameras from the scene"
 
     headnum: IntProperty(default=0)
 
@@ -432,15 +433,112 @@ class OBJECT_OT_FBSetSensorWidth(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBSetFocalLength(Operator):
-    bl_idname = Config.fb_main_set_focal_length_idname
+class OBJECT_OT_FBSensorWidthWindow(Operator):
+    bl_idname = Config.fb_main_sensor_width_window_idname
+    bl_label = "Sensor Size"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Change Sensor Size using EXIF data from loaded images"
+
+    headnum: IntProperty(default=0)
+
+    # This draw overrides standard operator panel
+    def draw(self, context):
+        settings = get_main_settings()
+        layout = self.layout
+        layout.label(text='Sensor Width Window')
+
+        layout = self.layout
+        head = settings.get_head(self.headnum)  # settings.tmp_headnum
+
+        # Auto Sensor & Focal via EXIF
+        if head.exif.sensor_width > 0.0 and head.exif.sensor_length > 0.0 \
+                and head.exif.focal > 0.0:
+            w = head.exif.sensor_width
+            h = head.exif.sensor_length
+            f = head.exif.focal
+            txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
+            op = layout.operator(Config.fb_camera_actor_operator_idname,
+                                 text=txt + "EXIF Sensor & [EXIF Focal]",
+                                 icon='OBJECT_DATAMODE')
+            op.headnum = settings.tmp_headnum
+            op.action = 'exif_sensor_and_focal'
+
+        # EXIF Focal and Sensor via 35mm equiv.
+        if head.exif.focal > 0.0 and head.exif.focal35mm > 0.0:
+            f = head.exif.focal
+            w, h = get_sensor_size_35mm_equivalent(head)
+            txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
+            op = layout.operator(Config.fb_camera_actor_operator_idname,
+                text=txt + "Sensor via 35mm equiv. & [EXIF Focal]",
+                icon='OBJECT_HIDDEN')
+            op.headnum = settings.tmp_headnum
+            op.action = 'exif_focal_and_sensor_via_35mm'
+
+        # Auto Sensor & Focal via EXIF 35mm equiv.
+        if head.exif.focal > 0.0 and head.exif.focal35mm > 0.0:
+            w = 35.0
+            h = 24.0 * 35.0 / 36.0
+            f = head.exif.focal35mm
+            txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
+            op = layout.operator(Config.fb_camera_actor_operator_idname,
+                text=txt + "Standard Sensor & [Focal 35mm equiv.] ",
+                icon='FULLSCREEN_ENTER')
+            op.headnum = settings.tmp_headnum
+            op.action = 'standard_sensor_and_exif_focal35mm'
+
+        layout.separator()
+
+        # Sensor Size (only) via EXIF
+        if head.exif.sensor_width > 0.0 and head.exif.sensor_length > 0.0:
+            w = head.exif.sensor_width
+            h = head.exif.sensor_length
+            txt = "{:.2f} x {:.2f} mm   ".format(w, h)
+            op = layout.operator(Config.fb_camera_actor_operator_idname,
+                                 text=txt + "EXIF Sensor Size",
+                                 icon='OBJECT_DATAMODE')
+            op.headnum = settings.tmp_headnum
+            op.action = 'exif_sensor'
+
+        # Sensor Size (only) via EXIF 35mm equivalent
+        if head.exif.focal > 0.0 and head.exif.focal35mm > 0.0:
+            w, h = get_sensor_size_35mm_equivalent(head)
+            txt = "{:.2f} x {:.2f} mm   ".format(w, h)
+            op = layout.operator(Config.fb_camera_actor_operator_idname,
+                                 text=txt + "Sensor Size 35mm equivalent",
+                                 icon='OBJECT_HIDDEN')
+            op.headnum = settings.tmp_headnum
+            op.action = 'exif_sensor_via_35mm'
+
+        # ----------------
+        layout.separator()
+
+        op = layout.operator(Config.fb_camera_actor_operator_idname,
+                             text="36 x 24 mm   35mm Full-frame (default)",
+                             icon='FULLSCREEN_ENTER')
+        op.headnum = settings.tmp_headnum
+        op.action = 'sensor_36x24mm'
+
+        layout.label(text='END Sensor Width Window')
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def execute(self, context):
+        settings = get_main_settings()
+        settings.tmp_headnum = self.headnum
+        bpy.ops.wm.call_menu(
+            'INVOKE_DEFAULT', name=Config.fb_sensor_width_menu_idname)
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBFocalLengthMenuExec(Operator):
+    bl_idname = Config.fb_main_focal_length_menu_exec_idname
     bl_label = "Focal Length"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Change Focal Length using EXIF data from loaded images"
 
     headnum: IntProperty(default=0)
 
-    # This draw overrides standard operator panel
     def draw(self, context):
         pass
 
@@ -452,16 +550,15 @@ class OBJECT_OT_FBSetFocalLength(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBFixSize(Operator):
+class OBJECT_OT_FBAllViewsMenuExec(Operator):
     bl_idname = Config.fb_main_fix_size_idname
     bl_label = "Fix Frame Size"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
     bl_description = "Fix frame Width and High parameters for all cameras " \
                      "(same as Render Size)"
 
     headnum: IntProperty(default=0)
 
-    # This draw overrides standard operator panel
     def draw(self, context):
         pass
 
@@ -476,13 +573,12 @@ class OBJECT_OT_FBFixSize(Operator):
 class OBJECT_OT_FBCameraFixSize(Operator):
     bl_idname = Config.fb_main_camera_fix_size_idname
     bl_label = "Fix Size by current Camera parameters"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Fix frame Width and High parameters for all cameras"
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
-    # This draw overrides standard operator panel
     def draw(self, context):
         pass
 
@@ -492,6 +588,27 @@ class OBJECT_OT_FBCameraFixSize(Operator):
         settings.tmp_camnum = self.camnum
         bpy.ops.wm.call_menu(
             'INVOKE_DEFAULT', name=Config.fb_fix_camera_frame_menu_idname)
+        return {'FINISHED'}
+
+
+class OBJECT_OT_FBViewMenuExec(Operator):
+    bl_idname = Config.fb_main_view_menu_exec_idname
+    bl_label = "View menu"
+    bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
+    bl_description = "View properties"
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        settings.tmp_headnum = self.headnum
+        settings.tmp_camnum = self.camnum
+        bpy.ops.wm.call_menu(
+            'INVOKE_DEFAULT', name=Config.fb_view_menu_idname)
         return {'FINISHED'}
 
 
@@ -556,8 +673,10 @@ CLASSES_TO_REGISTER = (OBJECT_OT_FBSelectHead, OBJECT_OT_FBDeleteHead,
                        OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
                        OBJECT_OT_FBUnmorph, OBJECT_OT_FBRemovePins,
                        OBJECT_OT_FBWireframeColor, OBJECT_OT_FBFilterCameras,
-                       OBJECT_OT_FBFixSize, OBJECT_OT_FBCameraFixSize,
+                       OBJECT_OT_FBAllViewsMenuExec, OBJECT_OT_FBViewMenuExec,
+                       OBJECT_OT_FBCameraFixSize,
                        OBJECT_OT_FBDeleteCamera, OBJECT_OT_FBAddCamera,
                        OBJECT_OT_FBAddonSettings, OBJECT_OT_FBBakeTexture,
                        OBJECT_OT_FBShowTexture, OBJECT_OT_FBSetSensorWidth,
-                       OBJECT_OT_FBSetFocalLength)
+                       OBJECT_OT_FBSensorWidthWindow,
+                       OBJECT_OT_FBFocalLengthMenuExec)

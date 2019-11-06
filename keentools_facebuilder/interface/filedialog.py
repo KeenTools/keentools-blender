@@ -29,8 +29,29 @@ from ..config import Config, get_main_settings, ErrorType
 from ..utils.exif_reader import read_exif, init_exif_settings, exif_message
 
 
+class WM_OT_FBSingleFilebrowserExec(Operator):
+    bl_idname = Config.fb_single_filebrowser_exec_idname
+    bl_label = "Exec File Browser"
+    bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
+    bl_description = "File Browser Helper"
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+
+        op = getattr(
+            bpy.ops.keentools_fb_import,
+            Config.fb_single_filebrowser_callname)
+        op('INVOKE_DEFAULT', headnum=settings.tmp_headnum,
+           camnum=settings.tmp_camnum)
+
+        return {'FINISHED'}
+
+
 class WM_OT_FBSingleFilebrowser(Operator, ImportHelper):
-    bl_idname = Config.fb_single_filebrowser_operator_idname
+    bl_idname = Config.fb_single_filebrowser_idname
     bl_label = "Open Image"
     bl_description = "Open single image file"
 
@@ -84,7 +105,7 @@ class WM_OT_FBSingleFilebrowser(Operator, ImportHelper):
 
 
 class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
-    bl_idname = Config.fb_multiple_filebrowser_operator_idname
+    bl_idname = Config.fb_multiple_filebrowser_idname
     bl_label = "Open Image(s)"
     bl_description = "Automatically creates Camera(s) from selected " \
                      "Image(s). All images must be the same size. " \

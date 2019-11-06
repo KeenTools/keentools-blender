@@ -25,6 +25,7 @@ from .helps import *
 
 CLASSES_TO_REGISTER = (OBJECT_MT_FBFixMenu,  # menus
                        OBJECT_MT_FBFixCameraMenu,
+                       OBJECT_MT_FBViewMenu,
                        OBJECT_MT_FBSensorWidthMenu,
                        OBJECT_MT_FBFocalLengthMenu,
                        OBJECT_PT_FBHeaderPanel,  # panels
@@ -44,4 +45,5 @@ CLASSES_TO_REGISTER = (OBJECT_MT_FBFixMenu,  # menus
                        WM_OT_FBAddonWarning,  # dialogs
                        WM_OT_FBTexSelector,
                        WM_OT_FBSingleFilebrowser,  # filedialog
+                       WM_OT_FBSingleFilebrowserExec,
                        WM_OT_FBMultipleFilebrowser)

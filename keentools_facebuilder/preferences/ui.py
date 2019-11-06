@@ -176,7 +176,8 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         for c in content:
             col.label(text=c)
 
-        row = box.split(factor=0.85)
+        box2 = box.box()
+        row = box2.split(factor=0.85)
         row.prop(self, 'license_accepted')
 
         row.operator(
