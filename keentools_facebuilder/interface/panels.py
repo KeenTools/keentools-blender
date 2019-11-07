@@ -229,6 +229,9 @@ class OBJECT_PT_FBExifPanel(Panel):
         if head is None:
             return
 
+        layout.operator(Config.fb_tex_selector_operator_idname,
+                        text='Read EXIF')
+
         # Show EXIF message
         if len(head.exif.message) > 0:
             box = layout.box()
@@ -376,7 +379,6 @@ class OBJECT_PT_FBModel(Panel):
     bl_options = {'DEFAULT_CLOSED'}
     bl_context = "objectmode"
 
-    # Panel appear only when actual
     @classmethod
     def poll(cls, context):
         return _show_all_panels()
@@ -389,7 +391,6 @@ class OBJECT_PT_FBModel(Panel):
             Config.fb_help_model_idname,
             text='', icon='QUESTION')
 
-    # Panel Draw
     def draw(self, context):
         layout = self.layout
         obj = context.object
@@ -402,17 +403,19 @@ class OBJECT_PT_FBModel(Panel):
 
         head = settings.get_head(headnum)
 
-        op = layout.operator(Config.fb_main_unmorph_idname, text="Unmorph")
+        op = layout.operator(Config.fb_main_unmorph_idname, text="Reset")
         op.headnum = headnum
         op.camnum = settings.current_camnum
 
-        row = layout.split(factor=0.7)
+        box = layout.box()
+        row = box.split(factor=0.65)
         col = row.column()
         col.prop(settings, 'rigidity')
         col.active = not settings.check_auto_rigidity
         row.prop(settings, 'check_auto_rigidity', text="Auto")
 
         box = layout.box()
+        box.label(text='Model parts:')
         row = box.row()
         row.prop(head, 'check_ears')
         row.prop(head, 'check_eyes')
@@ -468,14 +471,18 @@ class OBJECT_PT_TexturePanel(Panel):
         head = settings.get_head(headnum)
 
         box = layout.box()
-        box.prop(settings, 'tex_width')
-        box.prop(settings, 'tex_height')
+        box.label(text='Dimensions (in pixels):')
+        row = box.row()
+        row.prop(settings, 'tex_width', text='W')
+        row.prop(settings, 'tex_height', text='H')
+
+        box = layout.box()
         box.prop(head, 'tex_uv_shape')
 
         row = layout.row()
         row.scale_y = 2.0
         op = row.operator(Config.fb_tex_selector_operator_idname,
-                          text="Bake Texture", icon='RENDER_STILL')
+                          text="Create texture", icon='RENDER_STILL')
         op.headnum = headnum
 
         row = layout.row()
@@ -485,20 +492,22 @@ class OBJECT_PT_TexturePanel(Panel):
                          icon='SHADING_SOLID')
         else:
             row.operator(Config.fb_main_show_tex_idname,
-                         text="Create Material", icon='MATERIAL')
+                         text="Apply texture", icon='MATERIAL')
 
+        box = layout.box()
+        box.label(text='Advanced:')
         # layout.prop(settings, 'tex_back_face_culling')
-        layout.prop(settings, 'tex_equalize_brightness')
-        layout.prop(settings, 'tex_equalize_colour')
-        layout.prop(settings, 'tex_face_angles_affection')
-        layout.prop(settings, 'tex_uv_expand_percents')
+        box.prop(settings, 'tex_equalize_brightness')
+        box.prop(settings, 'tex_equalize_colour')
+        box.prop(settings, 'tex_face_angles_affection')
+        box.prop(settings, 'tex_uv_expand_percents')
 
 
 class OBJECT_PT_FBColorsPanel(Panel):
     bl_idname = Config.fb_colors_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_label = "Wireframe Colors"
+    bl_label = "Wireframe settings"
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 
@@ -536,14 +545,14 @@ class OBJECT_PT_FBColorsPanel(Panel):
         op = row.operator(Config.fb_main_wireframe_color_idname, text="W")
         op.action = 'wireframe_white'
 
-        layout.prop(settings, 'show_specials', text='Highlight Parts')
+        layout.prop(settings, 'show_specials', text='Highlight head parts')
 
 
 class OBJECT_PT_FBPinSettingsPanel(Panel):
     bl_idname = Config.fb_pin_settings_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_label = "Pin Settings"
+    bl_label = "Pin settings"
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 

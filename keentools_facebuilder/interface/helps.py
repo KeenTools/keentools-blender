@@ -22,9 +22,9 @@ from ..config import Config, get_main_settings
 
 class HELP_OT_CameraHelp(bpy.types.Operator):
     bl_idname = Config.fb_help_camera_idname
-    bl_label = "Camera Info"
+    bl_label = "Camera settings"
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Show Camera About"
+    bl_description = "Show help information about Camera settings panel"
 
     def draw(self, context):
         layout = self.layout
@@ -39,9 +39,9 @@ class HELP_OT_CameraHelp(bpy.types.Operator):
 
 class HELP_OT_ExifHelp(bpy.types.Operator):
     bl_idname = Config.fb_help_exif_idname
-    bl_label = "EXIF Info"
+    bl_label = "EXIF"
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Show EXIF About"
+    bl_description = "Show help information about EXIF panel"
 
     def draw(self, context):
         layout = self.layout
@@ -56,9 +56,9 @@ class HELP_OT_ExifHelp(bpy.types.Operator):
 
 class HELP_OT_ViewsHelp(bpy.types.Operator):
     bl_idname = Config.fb_help_views_idname
-    bl_label = "Views Info"
+    bl_label = "Views"
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Show Views About"
+    bl_description = "Show help information about Views panel"
 
     def draw(self, context):
         layout = self.layout
@@ -73,9 +73,9 @@ class HELP_OT_ViewsHelp(bpy.types.Operator):
 
 class HELP_OT_ModelHelp(bpy.types.Operator):
     bl_idname = Config.fb_help_model_idname
-    bl_label = "Model Info"
+    bl_label = "Model"
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Show Model About"
+    bl_description = "Show help information about Model panel"
 
     def draw(self, context):
         layout = self.layout
@@ -90,9 +90,9 @@ class HELP_OT_ModelHelp(bpy.types.Operator):
 
 class HELP_OT_PinSettingsHelp(bpy.types.Operator):
     bl_idname = Config.fb_help_pin_settings_idname
-    bl_label = "Pin Settings Info"
+    bl_label = "Pin settings"
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Show Pin Settings About"
+    bl_description = "Show help information about Pin settings panel"
 
     def draw(self, context):
         layout = self.layout
@@ -107,9 +107,9 @@ class HELP_OT_PinSettingsHelp(bpy.types.Operator):
 
 class HELP_OT_TextureHelp(bpy.types.Operator):
     bl_idname = Config.fb_help_texture_idname
-    bl_label = "Texture Info"
+    bl_label = "Texture"
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Show Texture About"
+    bl_description = "Show help information about Texture panel"
 
     def draw(self, context):
         layout = self.layout

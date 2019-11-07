@@ -182,15 +182,14 @@ class OBJECT_OT_FBCenterGeo(Operator):
 
 class OBJECT_OT_FBUnmorph(Operator):
     bl_idname = Config.fb_main_unmorph_idname
-    bl_label = "Unmorph"
+    bl_label = "Reset"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Unmorph shape to default mesh. It will return back " \
-                     "when you move any pin."
+    bl_description = "Reset shape deformations to the default state. " \
+                     "It will remove all pins as well"
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
-    # This draw overrides standard operator panel
     def draw(self, context):
         pass
 
@@ -254,9 +253,9 @@ class OBJECT_OT_FBRemovePins(Operator):
 
 class OBJECT_OT_FBWireframeColor(Operator):
     bl_idname = Config.fb_main_wireframe_color_idname
-    bl_label = "Wireframe Color"
+    bl_label = "Wireframe color"
     bl_options = {'REGISTER'}  # 'UNDO'
-    bl_description = "Change wireframe color according to scheme"
+    bl_description = "Choose the wireframe coloring scheme"
 
     action: StringProperty(name="Action Name")
 
@@ -332,9 +331,9 @@ class OBJECT_OT_FBFilterCameras(Operator):
 
 class OBJECT_OT_FBDeleteCamera(Operator):
     bl_idname = Config.fb_main_delete_camera_idname
-    bl_label = "Delete Camera"
+    bl_label = "Delete View"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Delete this camera object from scene"
+    bl_description = "Delete this view and its camera from the scene"
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
@@ -451,6 +450,7 @@ class OBJECT_OT_FBSensorWidthWindow(Operator):
         layout = self.layout
         head = settings.get_head(self.headnum)  # settings.tmp_headnum
 
+
         # Auto Sensor & Focal via EXIF
         if head.exif.sensor_width > 0.0 and head.exif.sensor_length > 0.0 \
                 and head.exif.focal > 0.0:
@@ -458,34 +458,43 @@ class OBJECT_OT_FBSensorWidthWindow(Operator):
             h = head.exif.sensor_length
             f = head.exif.focal
             txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
-            op = layout.operator(Config.fb_camera_actor_operator_idname,
-                                 text=txt + "EXIF Sensor & [EXIF Focal]",
+
+            row = layout.row()
+            op = row.operator(Config.fb_camera_actor_operator_idname,
+                                 text=txt,
                                  icon='OBJECT_DATAMODE')
             op.headnum = settings.tmp_headnum
             op.action = 'exif_sensor_and_focal'
+            row.label(text='EXIF Sensor & [EXIF Focal]')
 
         # EXIF Focal and Sensor via 35mm equiv.
         if head.exif.focal > 0.0 and head.exif.focal35mm > 0.0:
             f = head.exif.focal
             w, h = get_sensor_size_35mm_equivalent(head)
             txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
-            op = layout.operator(Config.fb_camera_actor_operator_idname,
-                text=txt + "Sensor via 35mm equiv. & [EXIF Focal]",
+
+            row = layout.row()
+            op = row.operator(Config.fb_camera_actor_operator_idname,
+                text=txt,
                 icon='OBJECT_HIDDEN')
             op.headnum = settings.tmp_headnum
             op.action = 'exif_focal_and_sensor_via_35mm'
+            row.label(text='Sensor via 35mm equiv. & [EXIF Focal]')
 
         # Auto Sensor & Focal via EXIF 35mm equiv.
-        if head.exif.focal > 0.0 and head.exif.focal35mm > 0.0:
-            w = 35.0
-            h = 24.0 * 35.0 / 36.0
-            f = head.exif.focal35mm
-            txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
-            op = layout.operator(Config.fb_camera_actor_operator_idname,
-                text=txt + "Standard Sensor & [Focal 35mm equiv.] ",
-                icon='FULLSCREEN_ENTER')
-            op.headnum = settings.tmp_headnum
-            op.action = 'standard_sensor_and_exif_focal35mm'
+        # if head.exif.focal > 0.0 and head.exif.focal35mm > 0.0:
+        #     w = 35.0
+        #     h = 24.0 * 35.0 / 36.0
+        #     f = head.exif.focal35mm
+        #     txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
+        #
+        #     row = layout.row()
+        #     op = row.operator(Config.fb_camera_actor_operator_idname,
+        #         text=txt,
+        #         icon='FULLSCREEN_ENTER')
+        #     op.headnum = settings.tmp_headnum
+        #     op.action = 'standard_sensor_and_exif_focal35mm'
+        #     row.label(text='Standard Sensor & [Focal 35mm equiv.]')
 
         layout.separator()
 
@@ -522,7 +531,7 @@ class OBJECT_OT_FBSensorWidthWindow(Operator):
         layout.label(text='END Sensor Width Window')
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
+        return context.window_manager.invoke_props_dialog(self, width=600)
 
     def execute(self, context):
         settings = get_main_settings()
@@ -553,10 +562,9 @@ class OBJECT_OT_FBFocalLengthMenuExec(Operator):
 
 class OBJECT_OT_FBAllViewsMenuExec(Operator):
     bl_idname = Config.fb_main_fix_size_idname
-    bl_label = "Fix Frame Size"
+    bl_label = "Change Frame size"
     bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
-    bl_description = "Fix frame Width and High parameters for all cameras " \
-                     "(same as Render Size)"
+    bl_description = "Set Frame size based on images or scene render size"
 
     headnum: IntProperty(default=0)
 
@@ -573,9 +581,9 @@ class OBJECT_OT_FBAllViewsMenuExec(Operator):
 
 class FB_OT_ProperViewMenuExec(Operator):
     bl_idname = Config.fb_proper_view_menu_exec_idname
-    bl_label = "Proper View menu"
+    bl_label = "View operations"
     bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
-    bl_description = "Proper View properties"
+    bl_description = "Delete the view or modify the image file path"
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
@@ -594,9 +602,9 @@ class FB_OT_ProperViewMenuExec(Operator):
 
 class FB_OT_ImproperViewMenuExec(Operator):
     bl_idname = Config.fb_improper_view_menu_exec_idname
-    bl_label = "Improper View menu"
+    bl_label = "Possible Frame size issue detected"
     bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
-    bl_description = "Improper View properties"
+    bl_description = "Size of this image is different from the Frame size"
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
@@ -615,9 +623,9 @@ class FB_OT_ImproperViewMenuExec(Operator):
 
 class FB_OT_ViewToFrameSize(Operator):
     bl_idname = Config.fb_view_to_frame_size_idname
-    bl_label = "Use this view frame size"
+    bl_label = "Set the Frame size using this view"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Use this view frame size description"
+    bl_description = "Set the Frame size using this view"
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
@@ -635,7 +643,7 @@ class FB_OT_MostFrequentFrameSize(Operator):
     bl_idname = Config.fb_most_frequent_frame_size_idname
     bl_label = "Most frequent frame size"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Auto-detect most frequent size"
+    bl_description = "Use most frequent image size"
 
     def draw(self, context):
         pass
@@ -647,9 +655,9 @@ class FB_OT_MostFrequentFrameSize(Operator):
 
 class FB_OT_RenderSizeToFrameSize(Operator):
     bl_idname = Config.fb_render_size_to_frame_size_idname
-    bl_label = "Scene Render Size"
+    bl_label = "Scene Render size"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Use scene render size as Frame size"
+    bl_description = "Use Scene render size"
 
     def draw(self, context):
         pass

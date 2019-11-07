@@ -192,8 +192,8 @@ class Config:
     fb_sensor_width_menu_idname = _MT + prefix + '_sensor_width_menu'
 
     # Standard names
-    tex_builder_filename = 'texbuilder_baked'
-    tex_builder_matname = 'texbuilder_view_mat'
+    tex_builder_filename = 'kt_facebuilder_texture'
+    tex_builder_matname = 'kt_facebuilder_material'
 
     # Object Custom Properties
     # Tuples instead simple values are used to load custom properties

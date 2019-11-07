@@ -24,7 +24,7 @@ from ..utils.exif_reader import get_sensor_size_35mm_equivalent
 
 
 class FB_MT_ProperViewMenu(Menu):
-    bl_label = "View menu"
+    bl_label = "View operations"
     bl_idname = Config.fb_proper_view_menu_idname
     bl_description = "View operations"
 
@@ -51,9 +51,9 @@ class FB_MT_ProperViewMenu(Menu):
 
 
 class FB_MT_ImproperViewMenu(Menu):
-    bl_label = "Improper View menu"
+    bl_label = "View operations"
     bl_idname = Config.fb_improper_view_menu_idname
-    bl_description = "ImproperView operations"
+    bl_description = "Improper View operations"
 
     def draw(self, context):
         settings = get_main_settings()
@@ -61,7 +61,7 @@ class FB_MT_ImproperViewMenu(Menu):
 
         op = layout.operator(
             Config.fb_view_to_frame_size_idname,
-            text="Use this view Frame Size")
+            text="Set the Frame size using this view", icon='ERROR')
         op.headnum = settings.tmp_headnum
         op.camnum = settings.tmp_camnum
 
@@ -84,20 +84,20 @@ class FB_MT_ImproperViewMenu(Menu):
 
 
 class FB_MT_FrameSizeMenu(Menu):
-    bl_label = "Frame Size Setup"
+    bl_label = "Change Frame size"
     bl_idname = Config.fb_fix_frame_size_menu_idname
-    bl_description = "Setup Frame Width and Height parameters for all cameras"
+    bl_description = "Change Frame size description"
 
     def draw(self, context):
         layout = self.layout
 
         layout.operator(
             Config.fb_most_frequent_frame_size_idname,
-            text="Auto-Detect most frequent Size", icon="FULLSCREEN_ENTER")
+            text="Use most frequent image size", icon="FULLSCREEN_ENTER")
 
         layout.operator(
             Config.fb_render_size_to_frame_size_idname,
-            text="Use Scene Render Size", icon="OUTPUT")
+            text="Use Scene render size", icon="OUTPUT")
 
         # layout.separator()
         # op = layout.operator(

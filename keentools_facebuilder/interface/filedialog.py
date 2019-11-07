@@ -31,9 +31,9 @@ from ..utils.exif_reader import read_exif, init_exif_settings, exif_message
 
 class FB_OT_SingleFilebrowserExec(Operator):
     bl_idname = Config.fb_single_filebrowser_exec_idname
-    bl_label = "Exec File Browser"
+    bl_label = "File Browser Execute"
     bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
-    bl_description = "File Browser Helper"
+    bl_description = "Change the image file path"
 
     def draw(self, context):
         pass
@@ -105,8 +105,8 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
 class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
     bl_idname = Config.fb_multiple_filebrowser_idname
     bl_label = "Open Image(s)"
-    bl_description = "Automatically creates Camera(s) from selected " \
-                     "Image(s). All images must be the same size. " \
+    bl_description = "Load images and create views. " \
+                     "All images must be of the same size. " \
                      "You can select multiple images at once"
 
     filter_glob: bpy.props.StringProperty(

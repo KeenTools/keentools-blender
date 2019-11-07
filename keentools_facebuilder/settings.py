@@ -254,7 +254,7 @@ class FBHeadItem(PropertyGroup):
 
     auto_focal_estimation: BoolProperty(
         name="Focal Length Estimation",
-        description="When turned on FaceBuilder will try to estimate "
+        description="When turned on, FaceBuilder will try to estimate "
                     "focal length based on the position of the model "
                     "in the frame",
         default=False)
@@ -281,12 +281,14 @@ class FBHeadItem(PropertyGroup):
     need_update: BoolProperty(name="Mesh need update", default=False)
 
     tex_uv_shape: EnumProperty(name="UV", items=[
-                ('uv0', 'Butterfly', 'Pretty standard one-seem Layout',
+                ('uv0', 'Butterfly', 'A one-seam layout for common use',
                  'UV', 0),
-                ('uv1', 'Legacy', 'Uniform tex scale but many seems', 'UV', 1),
-                ('uv2', 'Spherical', 'Standard wrap-around Layout', 'UV', 2),
-                ('uv3', 'Maxface', 'Maximum face area, non-uniform', 'UV', 3),
-                ], description="UV Layout scheme", update=update_mesh_parts)
+                ('uv1', 'Legacy',
+                 'A layout with minimal distortions but many seams', 'UV', 1),
+                ('uv2', 'Spherical', 'A wrap-around layout', 'UV', 2),
+                ('uv3', 'Maxface',
+                 'Maximum face resolution, low uniformness', 'UV', 3),
+                ], description="UV Layout", update=update_mesh_parts)
 
     use_exif: BoolProperty(
         name="Use EXIF if available in file",
@@ -373,7 +375,7 @@ class FBSceneSettings(PropertyGroup):
     # Model View parameters
     # ---------------------
     wireframe_opacity: FloatProperty(
-        description="Wireframe visual density in pin-mode.",
+        description="From 0.0 to 1.0",
         name="Wireframe opacity",
         default=0.35, min=0.0, max=1.0,
         update=update_wireframe)
@@ -388,7 +390,8 @@ class FBSceneSettings(PropertyGroup):
         default=Config.default_scheme2, min=0.0, max=1.0,
         update=update_wireframe)
     show_specials: BoolProperty(
-        description="Show guide contours for individual parts of the face",
+        description="Use different colors for important head parts "
+                    "on the mesh",
         name="Special face parts", default=True, update=update_wireframe)
     overall_opacity: FloatProperty(
         description="Overall opacity in pin-mode.",
@@ -397,25 +400,22 @@ class FBSceneSettings(PropertyGroup):
 
     # Initial pin_size state in FBShaderPoints class
     pin_size: FloatProperty(
-        description="Size of visual markers (pins) in pin-mode",
-        name="Pin Size",
+        description="Set pin size in pixels",
+        name="Pin size",
         default=Config.default_pin_size, min=1.0, max=100.0,
         update=update_pin_size)
     pin_sensitivity: FloatProperty(
-        description="Increase if it is difficult for you to get a pin. "
-        "Decrease it if instead of a new pin, you capture the old one",
-        name="Pin Sensitivity",
+        description="Set pin handle radius in pixels",
+        name="Pin handle radius",
         default=Config.default_POINT_SENSITIVITY, min=1.0, max=100.0,
         update=update_pin_sensitivity)
 
     # Other settings
     rigidity: FloatProperty(
-        description="Model deformation sensitivity adjustment. "
-                    "You can use it in experimental purpose only. "
-                    "Autorigidity is recomended",
+        description="Change how much pins affect the model shape",
         name="Rigidity", default=1.0, min=0.001, max=1000.0)
     check_auto_rigidity: BoolProperty(
-        description="Auto Model Rigidity detection. Highly recommended",
+        description="Automatic Rigidity calculation",
         name="Auto rigidity", default=True)
 
     # Internal use only
@@ -430,28 +430,31 @@ class FBSceneSettings(PropertyGroup):
     # -------------------------
     tex_width: IntProperty(
         description="Width size of output texture",
-        name="Texture Width", default=2048)
+        name="Width", default=2048)
     tex_height: IntProperty(
         description="Height size of output texture",
-        name="Texture Height", default=2048)
+        name="Height", default=2048)
 
     tex_face_angles_affection: FloatProperty(
-        description="Deviation angle of normal direction affects "
-                    "the choice of camera for baking.",
-        name="Face Angles Affection", default=10.0)
+        description="Choose how much a polygon view angle affects "
+                    "a pixel color: with 0 you will get an average "
+                    "color from all views; with 100 you'll get color "
+                    "information only from the polygons at which a camera "
+                    "is looking at 90 degrees",
+        name="Angle strictness", default=10.0, min=0.0, max=100.0)
     tex_uv_expand_percents: FloatProperty(
-        description="Expand texture out of bounds to prevent seams "
-                    "visibility. Only if it's greate then zero",
-        name="UV Expand Percent", default=0.0)
+        description="Expand texture edges",
+        name="Expand edges (%)", default=0.0)
     tex_back_face_culling: BoolProperty(
-        description="Exclude backfacing polygons from baking (Recommended)",
-        name="Back Face Culling", default=True)
+        description="Exclude backfacing polygons from the created texture",
+        name="Back face culling", default=True)
     tex_equalize_brightness: BoolProperty(
-        description="Equalizes the brightness in case of "
-                    "a big difference in lightness",
-        name="Equalize Brightness", default=False)
+        description="Experimental. Automatically equalize "
+                    "brightness across images",
+        name="Equalize brightness", default=False)
     tex_equalize_colour: BoolProperty(
-        description="Equalizes colors used from different frames",
+        description="Experimental. Automatically equalize "
+                    "colors across images",
         name="Equalize color", default=False)
 
     def get_head(self, headnum):

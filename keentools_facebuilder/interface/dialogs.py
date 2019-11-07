@@ -130,7 +130,8 @@ class WM_OT_FBAddonWarning(Operator):
 
 class WM_OT_FBTexSelector(Operator):
     bl_idname = Config.fb_tex_selector_operator_idname
-    bl_label = "Select Images for Texture Baking"
+    bl_label = "Select images:"
+    bl_description = "Create texture using pinned views"
 
     headnum: bpy.props.IntProperty(default=0)
 
@@ -140,22 +141,13 @@ class WM_OT_FBTexSelector(Operator):
         layout = self.layout
 
         if not len(head.cameras) > 0:
-            layout.label(text="You need at least one image to get started.")
+            layout.label(text="You need at least one image to create texture.",
+                         icon='ERROR')
             return
 
-        row = layout.row()
-        # Select All cameras for baking Button
-        op = row.operator(Config.fb_main_filter_cameras_idname, text='All')
-        op.action = 'select_all_cameras'
-        op.headnum = self.headnum
-        # Deselect All cameras
-        op = row.operator(Config.fb_main_filter_cameras_idname,
-                          text='None')
-        op.action = 'deselect_all_cameras'
-        op.headnum = self.headnum
-
+        box = layout.box()
         for camera in head.cameras:
-            row = layout.row()
+            row = box.row()
             # Use in Tex Baking
             row.prop(camera, 'use_in_tex_baking', text='')
 
@@ -167,10 +159,22 @@ class WM_OT_FBTexSelector(Operator):
             else:
                 row.label(text='-- empty --')
 
+        row = box.row()
+        # Select All cameras for baking Button
+        op = row.operator(Config.fb_main_filter_cameras_idname, text='All')
+        op.action = 'select_all_cameras'
+        op.headnum = self.headnum
+        # Deselect All cameras
+        op = row.operator(Config.fb_main_filter_cameras_idname,
+                          text='None')
+        op.action = 'deselect_all_cameras'
+        op.headnum = self.headnum
+
         col = layout.column()
         col.scale_y = 0.75
-        col.label(text="Images without pins will be auto-ignored.")
-        col.label(text="Texture baking can be time consuming, be patient.")
+        col.label(text="Images without pins will be ignored.")
+        col.label(text="Please note: texture creation is very time consuming.")
+
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
