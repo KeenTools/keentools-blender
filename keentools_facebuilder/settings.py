@@ -131,7 +131,6 @@ class FBCameraItem(PropertyGroup):
     cam_image: PointerProperty(
         name="Image", type=bpy.types.Image, update=update_cam_image
     )
-    cam_image_status: StringProperty(default="unknown")
     image_width: IntProperty(default=-1)
     image_height: IntProperty(default=-1)
 
@@ -200,10 +199,6 @@ class FBCameraItem(PropertyGroup):
         w, h = self.get_image_size()
         self.set_image_width(w)
         self.set_image_height(h)
-        # if w <= 0 and h <= 0:
-        #     self.cam_image_status = 'broken'
-        # else:
-        #     self.cam_image_status = 'verified'
 
     def is_model_mat_empty(self):
         return self.model_mat == ''

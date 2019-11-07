@@ -28,7 +28,8 @@ from .utils import cameras
 from .utils.manipulate import check_settings
 from .fbloader import FBLoader
 from .fbdebug import FBDebug
-from .config import get_main_settings, Config
+from .config import get_main_settings, get_operators, Config
+from .utils import manipulate
 from .utils.exif_reader import get_sensor_size_35mm_equivalent
 
 
@@ -566,36 +567,15 @@ class OBJECT_OT_FBAllViewsMenuExec(Operator):
         settings = get_main_settings()
         settings.tmp_headnum = self.headnum
         bpy.ops.wm.call_menu(
-            'INVOKE_DEFAULT', name=Config.fb_fix_frame_menu_idname)
+            'INVOKE_DEFAULT', name=Config.fb_fix_frame_size_menu_idname)
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBCameraFixSize(Operator):
-    bl_idname = Config.fb_main_camera_fix_size_idname
-    bl_label = "Fix Size by current Camera parameters"
-    bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Fix frame Width and High parameters for all cameras"
-
-    headnum: IntProperty(default=0)
-    camnum: IntProperty(default=0)
-
-    def draw(self, context):
-        pass
-
-    def execute(self, context):
-        settings = get_main_settings()
-        settings.tmp_headnum = self.headnum
-        settings.tmp_camnum = self.camnum
-        bpy.ops.wm.call_menu(
-            'INVOKE_DEFAULT', name=Config.fb_fix_camera_frame_menu_idname)
-        return {'FINISHED'}
-
-
-class OBJECT_OT_FBViewMenuExec(Operator):
-    bl_idname = Config.fb_main_view_menu_exec_idname
-    bl_label = "View menu"
+class FB_OT_ProperViewMenuExec(Operator):
+    bl_idname = Config.fb_proper_view_menu_exec_idname
+    bl_label = "Proper View menu"
     bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
-    bl_description = "View properties"
+    bl_description = "Proper View properties"
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
@@ -608,7 +588,74 @@ class OBJECT_OT_FBViewMenuExec(Operator):
         settings.tmp_headnum = self.headnum
         settings.tmp_camnum = self.camnum
         bpy.ops.wm.call_menu(
-            'INVOKE_DEFAULT', name=Config.fb_view_menu_idname)
+            'INVOKE_DEFAULT', name=Config.fb_proper_view_menu_idname)
+        return {'FINISHED'}
+
+
+class FB_OT_ImproperViewMenuExec(Operator):
+    bl_idname = Config.fb_improper_view_menu_exec_idname
+    bl_label = "Improper View menu"
+    bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
+    bl_description = "Improper View properties"
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        settings.tmp_headnum = self.headnum
+        settings.tmp_camnum = self.camnum
+        bpy.ops.wm.call_menu(
+            'INVOKE_DEFAULT', name=Config.fb_improper_view_menu_idname)
+        return {'FINISHED'}
+
+
+class FB_OT_ViewToFrameSize(Operator):
+    bl_idname = Config.fb_view_to_frame_size_idname
+    bl_label = "Use this view frame size"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Use this view frame size description"
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        # Current camera Background --> Render size
+        manipulate.use_camera_frame_size(self.headnum, self.camnum)
+        return {'FINISHED'}
+
+
+class FB_OT_MostFrequentFrameSize(Operator):
+    bl_idname = Config.fb_most_frequent_frame_size_idname
+    bl_label = "Most frequent frame size"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Auto-detect most frequent size"
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        manipulate.auto_detect_frame_size()
+        return {'FINISHED'}
+
+
+class FB_OT_RenderSizeToFrameSize(Operator):
+    bl_idname = Config.fb_render_size_to_frame_size_idname
+    bl_label = "Scene Render Size"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Use scene render size as Frame size"
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        manipulate.use_render_frame_size()
         return {'FINISHED'}
 
 
@@ -618,7 +665,6 @@ class OBJECT_OT_FBAddonSettings(Operator):
     bl_options = {'REGISTER'}
     bl_description = "Open Addon Settings in Preferences window"
 
-    # This draw overrides standard operator panel
     def draw(self, context):
         pass
 
@@ -641,8 +687,7 @@ class OBJECT_OT_FBBakeTexture(Operator):
         pass
 
     def execute(self, context):
-        settings = get_main_settings()
-        op = getattr(bpy.ops.object, Config.fb_actor_operator_callname)
+        op = getattr(get_operators(), Config.fb_actor_callname)
         op('INVOKE_DEFAULT', action="bake_tex", headnum=self.headnum)
         return {'FINISHED'}
 
@@ -663,7 +708,7 @@ class OBJECT_OT_FBShowTexture(Operator):
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum,
                                  settings.current_camnum)
-        op = getattr(bpy.ops.object, Config.fb_actor_operator_callname)
+        op = getattr(get_operators(), Config.fb_actor_callname)
         op('INVOKE_DEFAULT', action='show_tex',
            headnum=settings.current_headnum)
         return {'FINISHED'}
@@ -673,8 +718,10 @@ CLASSES_TO_REGISTER = (OBJECT_OT_FBSelectHead, OBJECT_OT_FBDeleteHead,
                        OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
                        OBJECT_OT_FBUnmorph, OBJECT_OT_FBRemovePins,
                        OBJECT_OT_FBWireframeColor, OBJECT_OT_FBFilterCameras,
-                       OBJECT_OT_FBAllViewsMenuExec, OBJECT_OT_FBViewMenuExec,
-                       OBJECT_OT_FBCameraFixSize,
+                       OBJECT_OT_FBAllViewsMenuExec,
+                       FB_OT_ProperViewMenuExec, FB_OT_ImproperViewMenuExec,
+                       FB_OT_ViewToFrameSize, FB_OT_MostFrequentFrameSize,
+                       FB_OT_RenderSizeToFrameSize,
                        OBJECT_OT_FBDeleteCamera, OBJECT_OT_FBAddCamera,
                        OBJECT_OT_FBAddonSettings, OBJECT_OT_FBBakeTexture,
                        OBJECT_OT_FBShowTexture, OBJECT_OT_FBSetSensorWidth,

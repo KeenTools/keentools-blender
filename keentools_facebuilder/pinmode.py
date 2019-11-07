@@ -29,7 +29,7 @@ from .utils.other import FBStopShaderTimer, force_ui_redraw
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
-class OBJECT_OT_FBPinMode(bpy.types.Operator):
+class FB_OT_PinMode(bpy.types.Operator):
     """ On Screen Face Builder Draw Operator """
     bl_idname = Config.fb_pinmode_operator_idname
     bl_label = "FaceBuilder Pinmode"

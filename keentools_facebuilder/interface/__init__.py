@@ -23,11 +23,11 @@ from .filedialog import *
 from .helps import *
 
 
-CLASSES_TO_REGISTER = (OBJECT_MT_FBFixMenu,  # menus
-                       OBJECT_MT_FBFixCameraMenu,
-                       OBJECT_MT_FBViewMenu,
-                       OBJECT_MT_FBSensorWidthMenu,
-                       OBJECT_MT_FBFocalLengthMenu,
+CLASSES_TO_REGISTER = (FB_MT_FrameSizeMenu,  # menus
+                       FB_MT_ProperViewMenu,
+                       FB_MT_ImproperViewMenu,
+                       FB_MT_SensorWidthMenu,
+                       FB_MT_FocalLengthMenu,
                        OBJECT_PT_FBHeaderPanel,  # panels
                        OBJECT_PT_FBCameraPanel,
                        OBJECT_PT_FBExifPanel,
@@ -44,6 +44,6 @@ CLASSES_TO_REGISTER = (OBJECT_MT_FBFixMenu,  # menus
                        HELP_OT_TextureHelp,
                        WM_OT_FBAddonWarning,  # dialogs
                        WM_OT_FBTexSelector,
-                       WM_OT_FBSingleFilebrowser,  # filedialog
-                       WM_OT_FBSingleFilebrowserExec,
-                       WM_OT_FBMultipleFilebrowser)
+                       FB_OT_SingleFilebrowser,  # filedialog
+                       FB_OT_SingleFilebrowserExec,
+                       FB_OT_MultipleFilebrowser)

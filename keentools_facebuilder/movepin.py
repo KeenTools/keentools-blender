@@ -45,7 +45,7 @@ def profile_this(fn):
     return wrapped
 
 
-class OBJECT_OT_FBMovePin(bpy.types.Operator):
+class FB_OT_MovePin(bpy.types.Operator):
     """ On Screen Face Builder MovePin Operator """
     bl_idname = Config.fb_movepin_operator_idname
     bl_label = "FaceBuilder MovePin operator"

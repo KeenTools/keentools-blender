@@ -1,6 +1,7 @@
 import bpy
 import keentools_facebuilder
-from keentools_facebuilder.config import Config, get_main_settings
+from keentools_facebuilder.config import Config, get_main_settings, \
+    get_operators
 import keentools_facebuilder.utils.coords as coords
 from keentools_facebuilder.fbloader import FBLoader
 
@@ -27,7 +28,7 @@ def update_pins(headnum, camnum):
 # Operators call
 def create_head():
     # Create Head
-    op = getattr(bpy.ops.mesh, Config.fb_add_head_operator_callname)
+    op = getattr(get_operators(), Config.fb_add_head_operator_callname)
     op('EXEC_DEFAULT')
 
 

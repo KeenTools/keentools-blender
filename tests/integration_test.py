@@ -92,7 +92,7 @@ class FaceBuilderTest(unittest.TestCase):
             OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
             TRANSFORM_OT_translate={"value": (-3.0, 0, 0)})
         op = getattr(
-            bpy.ops.object, Config.fb_actor_operator_callname)
+            bpy.ops.object, Config.fb_actor_callname)
         op('EXEC_DEFAULT', action='reconstruct_by_head', headnum=-1, camnum=-1)
         headnum2 = settings.get_last_headnum()
         head_new = settings.heads[headnum2]

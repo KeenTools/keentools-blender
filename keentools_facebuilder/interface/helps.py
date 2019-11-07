@@ -23,7 +23,7 @@ from ..config import Config, get_main_settings
 class HELP_OT_CameraHelp(bpy.types.Operator):
     bl_idname = Config.fb_help_camera_idname
     bl_label = "Camera Info"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Show Camera About"
 
     def draw(self, context):
@@ -37,27 +37,10 @@ class HELP_OT_CameraHelp(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class HELP_OT_ViewsHelp(bpy.types.Operator):
-    bl_idname = Config.fb_help_views_idname
-    bl_label = "Views Info"
-    bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Show Views About"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.label(text='Views Help')
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
-
-    def execute(self, context):
-        return {'FINISHED'}
-
-
 class HELP_OT_ExifHelp(bpy.types.Operator):
     bl_idname = Config.fb_help_exif_idname
     bl_label = "EXIF Info"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Show EXIF About"
 
     def draw(self, context):
@@ -71,10 +54,27 @@ class HELP_OT_ExifHelp(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class HELP_OT_ViewsHelp(bpy.types.Operator):
+    bl_idname = Config.fb_help_views_idname
+    bl_label = "Views Info"
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = "Show Views About"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text='Views Help')
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+
 class HELP_OT_ModelHelp(bpy.types.Operator):
     bl_idname = Config.fb_help_model_idname
     bl_label = "Model Info"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Show Model About"
 
     def draw(self, context):
@@ -91,7 +91,7 @@ class HELP_OT_ModelHelp(bpy.types.Operator):
 class HELP_OT_PinSettingsHelp(bpy.types.Operator):
     bl_idname = Config.fb_help_pin_settings_idname
     bl_label = "Pin Settings Info"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Show Pin Settings About"
 
     def draw(self, context):
@@ -108,7 +108,7 @@ class HELP_OT_PinSettingsHelp(bpy.types.Operator):
 class HELP_OT_TextureHelp(bpy.types.Operator):
     bl_idname = Config.fb_help_texture_idname
     bl_label = "Texture Info"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Show Texture About"
 
     def draw(self, context):

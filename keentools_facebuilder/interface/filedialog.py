@@ -24,12 +24,12 @@ from bpy_extras.io_utils import ImportHelper
 from bpy.types import Operator
 
 from ..fbloader import FBLoader
-from ..config import Config, get_main_settings, ErrorType
+from ..config import Config, get_main_settings, get_operators, ErrorType
 
 from ..utils.exif_reader import read_exif, init_exif_settings, exif_message
 
 
-class WM_OT_FBSingleFilebrowserExec(Operator):
+class FB_OT_SingleFilebrowserExec(Operator):
     bl_idname = Config.fb_single_filebrowser_exec_idname
     bl_label = "Exec File Browser"
     bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
@@ -41,16 +41,14 @@ class WM_OT_FBSingleFilebrowserExec(Operator):
     def execute(self, context):
         settings = get_main_settings()
 
-        op = getattr(
-            bpy.ops.keentools_fb_import,
-            Config.fb_single_filebrowser_callname)
+        op = getattr(get_operators(), Config.fb_single_filebrowser_callname)
         op('INVOKE_DEFAULT', headnum=settings.tmp_headnum,
            camnum=settings.tmp_camnum)
 
         return {'FINISHED'}
 
 
-class WM_OT_FBSingleFilebrowser(Operator, ImportHelper):
+class FB_OT_SingleFilebrowser(Operator, ImportHelper):
     bl_idname = Config.fb_single_filebrowser_idname
     bl_label = "Open Image"
     bl_description = "Open single image file"
@@ -104,7 +102,7 @@ class WM_OT_FBSingleFilebrowser(Operator, ImportHelper):
         return {'FINISHED'}
 
 
-class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
+class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
     bl_idname = Config.fb_multiple_filebrowser_idname
     bl_label = "Open Image(s)"
     bl_description = "Automatically creates Camera(s) from selected " \
@@ -148,6 +146,14 @@ class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
         for t in txt:
             col.label(text=t)
 
+    def _read_exif(self, filepath):
+        settings = get_main_settings()
+        head = settings.get_head(self.headnum)
+        exif_data = read_exif(filepath)
+        init_exif_settings(self.headnum, exif_data)
+        message = exif_message(self.headnum, exif_data)
+        head.exif.message = message
+
     def execute(self, context):
         """ Selected files processing"""
         logger = logging.getLogger(__name__)
@@ -162,12 +168,12 @@ class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
             settings.fix_heads()  # Fix
 
         # Loaded image sizes
-        changes = 0  # count image size changes over all files
         w = -1
         h = -1
+        # Count image size changes over all files
+        changes = 0
+        exif_allready_read_once = False
 
-        img = None
-        filepath = ""
         for f in self.files:
             filepath = os.path.join(self.directory, f.name)
             logger.debug("FILE: {}".format(filepath))
@@ -177,24 +183,23 @@ class WM_OT_FBMultipleFilebrowser(Operator, ImportHelper):
                 if img.size[0] != w or img.size[1] != h:
                     w, h = img.size
                     changes += 1
+
+                    if not exif_allready_read_once \
+                            and img.size[0] > 0.0 and img.size[1] > 0.0:
+                        self._read_exif(filepath)
+                        exif_allready_read_once = True
+
             except RuntimeError as ex:
                 logger.error("FILE READ ERROR: {}".format(filepath))
 
         # We update Render Size in accordance to image size
-        # (only if all images have the same size)
-        if self.update_render_size == 'yes' and changes == 1:
+        # only if all images have the same size
+        if self.update_render_size == 'yes' \
+                and changes == 1 and w > 0.0 and h > 0.0:
             render = bpy.context.scene.render
             render.resolution_x = w
             render.resolution_y = h
             settings.frame_width = w
             settings.frame_height = h
-
-        # Start EXIF reading
-        head = settings.heads[self.headnum]
-        if img is not None:
-            exif_data = read_exif(filepath)
-            init_exif_settings(self.headnum, exif_data)
-            message = exif_message(self.headnum, exif_data)
-            head.exif.message = message
 
         return {'FINISHED'}

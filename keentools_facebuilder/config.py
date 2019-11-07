@@ -32,6 +32,7 @@ class BuilderType:
 
 class Config:
     prefix = _company + '_fb'
+    operators = _company + '_facebuilder'
     addon_name = __package__  # the same as module name
     addon_human_readable_name = 'FaceBuilder'
     addon_version = '1.5.5 (Beta)'
@@ -47,8 +48,8 @@ class Config:
     pykeentools_license_url = 'https://link.keentools.io/eula'
     
     # Operators ids
-    fb_main_operator_callname = prefix + '_main_operator'
-    fb_main_operator_idname = 'object.' + fb_main_operator_callname
+    # fb_main_operator_callname = prefix + '_main_operator'
+    # fb_main_operator_idname = 'object.' + fb_main_operator_callname
     fb_main_select_head_callname = prefix + '_main_select_head'
     fb_main_select_head_idname = 'object.' + fb_main_select_head_callname
     fb_main_delete_head_callname = prefix + '_main_delete_head'
@@ -84,8 +85,27 @@ class Config:
 
     fb_main_camera_fix_size_idname = 'object.' + prefix + \
                                      '_main_camera_fix_size'
-    fb_main_view_menu_exec_idname = 'object.' + prefix + \
-                                     '_view_menu_exec'
+
+    fb_proper_view_menu_exec_callname = 'proper_view_menu_exec'
+    fb_proper_view_menu_exec_idname = \
+        operators + '.' + fb_proper_view_menu_exec_callname
+
+    fb_improper_view_menu_exec_callname = 'improper_view_menu_exec'
+    fb_improper_view_menu_exec_idname = \
+        operators + '.' + fb_improper_view_menu_exec_callname
+
+    fb_view_to_frame_size_callname = 'view_to_frame_size'
+    fb_view_to_frame_size_idname = \
+        operators + '.' + fb_view_to_frame_size_callname
+
+    fb_most_frequent_frame_size_callname = 'most_frequent_frame_size'
+    fb_most_frequent_frame_size_idname = \
+        operators + '.' + fb_most_frequent_frame_size_callname
+
+    fb_render_size_to_frame_size_callname = 'render_size_to_frame_size'
+    fb_render_size_to_frame_size_idname = \
+        operators + '.' + fb_render_size_to_frame_size_callname
+
     fb_main_addon_settings_callname = prefix + '_main_addon_settings'
     fb_main_addon_settings_idname = 'object.' + fb_main_addon_settings_callname
     fb_main_bake_tex_callname = prefix + '_main_bake_tex'
@@ -98,23 +118,24 @@ class Config:
     fb_main_all_unknown_idname = 'object.' + fb_main_all_unknown_callname
 
     fb_multiple_filebrowser_idname = \
-        prefix + '_import.open_multiple_filebrowser'
+        operators + '.' + 'open_multiple_filebrowser'
 
     fb_single_filebrowser_callname = 'open_single_filebrowser'
     fb_single_filebrowser_idname = \
-        prefix + '_import.' + fb_single_filebrowser_callname
-
+        operators + '.' + fb_single_filebrowser_callname
     fb_single_filebrowser_exec_callname = 'open_single_filebrowser_exec'
     fb_single_filebrowser_exec_idname = \
-        prefix + '_import.' + fb_single_filebrowser_exec_callname
+        operators + '.' + fb_single_filebrowser_exec_callname
 
     fb_pinmode_operator_callname = prefix + '_pinmode'
     fb_pinmode_operator_idname = 'object.' + fb_pinmode_operator_callname
 
     fb_movepin_operator_idname = 'object.' + prefix + '_move_pin'
     fb_movepin_operator_callname = prefix + '_move_pin'
-    fb_actor_operator_callname = prefix + '_actor'
-    fb_actor_operator_idname = 'object.' + fb_actor_operator_callname
+
+    fb_actor_callname = 'actor'
+    fb_actor_idname = operators + '.' + fb_actor_callname
+
     fb_camera_actor_operator_callname = prefix + '_camera_actor'
     fb_camera_actor_operator_idname = 'object.' + \
                                       fb_camera_actor_operator_callname
@@ -123,10 +144,13 @@ class Config:
     fb_tex_selector_operator_callname = prefix + '_tex_selector'
     fb_tex_selector_operator_idname = 'wm.' + fb_tex_selector_operator_callname
 
-    fb_add_head_operator_callname = prefix + '_add_head'
-    fb_add_head_operator_idname = 'mesh.' + fb_add_head_operator_callname
-    fb_add_body_operator_callname = prefix + '_add_body'
-    fb_add_body_operator_idname = 'mesh.' + fb_add_body_operator_callname
+    # Add Mesh commands
+    fb_add_head_operator_callname = 'add_head'
+    fb_add_head_operator_idname = operators + '.' \
+                                  + fb_add_head_operator_callname
+    fb_add_body_operator_callname = 'add_body'
+    fb_add_body_operator_idname = operators + '.' \
+                                  + fb_add_body_operator_callname
 
     # Panel ids
     fb_header_panel_idname = _PT + prefix + '_header_panel_id'
@@ -139,26 +163,33 @@ class Config:
     fb_pin_settings_panel_idname = _PT + prefix + '_pin_settings_panel_id'
 
     # Help ids
-    fb_help_camera_callname = prefix + '_help_camera'
-    fb_help_camera_idname = 'wm.' + fb_help_camera_callname
-    fb_help_views_callname = prefix + '_help_view'
-    fb_help_views_idname = 'wm.' + fb_help_views_callname
-    fb_help_exif_callname = prefix + '_help_exif'
-    fb_help_exif_idname = 'wm.' + fb_help_exif_callname
-    fb_help_model_callname = prefix + '_help_model'
-    fb_help_model_idname = 'wm.' + fb_help_model_callname
-    fb_help_pin_settings_callname = prefix + '_help_pin_settings'
-    fb_help_pin_settings_idname = 'wm.' + fb_help_pin_settings_callname
-    fb_help_texture_callname = prefix + '_help_texture'
-    fb_help_texture_idname = 'wm.' + fb_help_texture_callname
+    fb_help_camera_callname = 'help_camera'
+    fb_help_camera_idname = operators + '.' + fb_help_camera_callname
+
+    fb_help_views_callname = 'help_view'
+    fb_help_views_idname = operators + '.' + fb_help_views_callname
+
+    fb_help_exif_callname = 'help_exif'
+    fb_help_exif_idname = operators + '.' + fb_help_exif_callname
+
+    fb_help_model_callname = 'help_model'
+    fb_help_model_idname = operators + '.' + fb_help_model_callname
+
+    fb_help_pin_settings_callname = 'help_pin_settings'
+    fb_help_pin_settings_idname = operators + '.' \
+                                  + fb_help_pin_settings_callname
+
+    fb_help_texture_callname = 'help_texture'
+    fb_help_texture_idname = operators + '.' + fb_help_texture_callname
 
     # Menu ids
-    fb_fix_frame_menu_idname = _MT + prefix + '_fix_frame_menu_id'
-    fb_fix_camera_frame_menu_idname = _MT + prefix + \
-                                      '_fix_camera_frame_menu_id'
-    fb_view_menu_idname = _MT + prefix + '_view_menu_id'
-    fb_focal_length_menu_idname = _MT + prefix + '_focal_length_menu_id'
-    fb_sensor_width_menu_idname = _MT + prefix + '_sensor_width_menu_id'
+    fb_fix_frame_size_menu_idname = _MT + prefix + '_fix_frame_size_menu'
+
+    fb_proper_view_menu_idname = _MT + prefix + 'proper_view_menu'
+    fb_improper_view_menu_idname = _MT + prefix + 'improper_view_menu'
+
+    fb_focal_length_menu_idname = _MT + prefix + '_focal_length_menu'
+    fb_sensor_width_menu_idname = _MT + prefix + '_sensor_width_menu'
 
     # Standard names
     tex_builder_filename = 'texbuilder_baked'
@@ -233,6 +264,10 @@ class Config:
 def get_main_settings():
     """ Main addon settings"""
     return getattr(bpy.context.scene, Config.addon_global_var_name)
+
+
+def get_operators():
+    return getattr(bpy.ops, Config.operators)
 
 
 class ErrorType:

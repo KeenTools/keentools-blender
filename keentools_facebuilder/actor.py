@@ -31,10 +31,10 @@ from .utils.exif_reader import (read_exif, init_exif_settings, exif_message,
                                 get_sensor_size_35mm_equivalent)
 
 
-class OBJECT_OT_FBActor(Operator):
+class FB_OT_Actor(Operator):
     """ Face Builder Action
     """
-    bl_idname = Config.fb_actor_operator_idname
+    bl_idname = Config.fb_actor_idname
     bl_label = "FaceBuilder in Action"
     bl_options = {'REGISTER'}
     bl_description = "FaceBuilder"
@@ -78,16 +78,6 @@ class OBJECT_OT_FBActor(Operator):
             warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.AboutFrameSize)
 
-        elif self.action == 'auto_detect_frame_size':
-            manipulate.auto_detect_frame_size()
-
-        elif self.action == 'use_render_frame_size':
-            manipulate.use_render_frame_size()
-
-        elif self.action == 'use_this_camera_frame_size':
-            # Current camera Background --> Render size (by mini-button)
-            manipulate.use_camera_frame_size(self.headnum, self.camnum)
-
         elif self.action == 'use_render_frame_size_scaled':
             # Allow converts scenes pinned on default cameras
             manipulate.use_render_frame_size_scaled()  # disabled in interface
@@ -110,7 +100,7 @@ class OBJECT_OT_FBActor(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBCameraActor(Operator):
+class FB_OT_CameraActor(Operator):
     """ Camera Action
     """
     bl_idname = Config.fb_camera_actor_operator_idname

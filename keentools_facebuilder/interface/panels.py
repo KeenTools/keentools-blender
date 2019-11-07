@@ -92,7 +92,7 @@ class OBJECT_PT_FBHeaderPanel(Panel):
         row = layout.row()
         row.scale_y = 3.0
         op = row.operator(
-            Config.fb_actor_operator_idname, text='Reconstruct!')
+            Config.fb_actor_idname, text='Reconstruct!')
         op.action = 'reconstruct_by_head'
         op.headnum = -1
         op.camnum = -1
@@ -126,7 +126,7 @@ class OBJECT_PT_FBHeaderPanel(Panel):
                 row = layout.row()
                 row.scale_y = 2.0
                 row.alert = True
-                op = row.operator(Config.fb_actor_operator_idname,
+                op = row.operator(Config.fb_actor_idname,
                                   text='Show Head', icon='HIDE_OFF')
                 op.action = 'unhide_head'
                 op.headnum = headnum
@@ -286,73 +286,43 @@ class OBJECT_PT_FBViewsPanel(Panel):
 
             w = camera.get_image_width()
             h = camera.get_image_height()
-
-            # Count for wrong size images
             wrong_size_flag = w != fw or h != fh
 
             if wrong_size_flag:
                 wrong_size_counter += 1
 
-            # Camera Icon
+            view_icon = 'PINNED' if camera.pins_count > 0 else 'HIDE_OFF'
+
             col = row.column()
-            view_icon = 'HIDE_OFF'  # CAMERA_DATA
+            # col.alignment = 'LEFT'
             if settings.current_camnum == i:
                 col.alert = True
 
-            # Pin Icon if there are some pins
-            pin_icon = 'BLANK1'
-            if camera.pins_count > 0:
-                pin_icon = 'PINNED'
-                view_icon = 'PINNED'
-
             op = col.operator(
-                Config.fb_main_select_camera_idname, text='', icon=view_icon)
+                Config.fb_main_select_camera_idname,
+                text="{}".format(camera.cam_image.name), icon=view_icon)
             op.headnum = headnum
             op.camnum = i
+
+            # row.label(text="{}".format(camera.cam_image.name))
 
             col = row.column()
-            row2 = col.row()
-
-            # Filename and Context Menu button
-            if camera.cam_image:
-                row2.label(text="{}".format(camera.cam_image.name))  # icon=pin_icon
-                edit_icon = 'GREASEPENCIL'  # OUTLINER_DATA_GP_LAYER
-                if wrong_size_flag:
-                    # Background has different size
-                    edit_icon = 'ERROR'
-                    op = row2.operator(Config.fb_main_camera_fix_size_idname,
-                                       text='', icon=edit_icon)
-                    op.headnum = headnum
-                    op.camnum = i
+            if not camera.cam_image:
+                op = col.operator(
+                    Config.fb_improper_view_menu_exec_idname,
+                    text='', icon='COLLAPSEMENU')
+            elif wrong_size_flag:
+                op = col.operator(
+                    Config.fb_improper_view_menu_exec_idname,
+                    text='', icon='ERROR')
             else:
-                # No image --> Broken icon
-                row2.label(text='-- empty --', icon=pin_icon)
-                row2.label(text='', icon='LIBRARY_DATA_BROKEN')
-
-                op = row2.operator(
-                    Config.fb_single_filebrowser_idname,
-                    text='', icon='FILEBROWSER')
-                op.headnum = headnum
-                op.camnum = i
-
-            if camera.cam_image_status == 'broken':
-                row2.label(text='', icon='LIBRARY_DATA_BROKEN')
-
-            # Camera Delete
-            # op = row2.operator(
-            #     Config.fb_main_delete_camera_idname,
-            #     text='', icon='CANCEL')  #
-            # op.headnum = headnum
-            # op.camnum = i
-
-            # Camera Menu
-            col2 = row2.column()
-            col2.active = False
-            op = col2.operator(
-                Config.fb_main_view_menu_exec_idname,
-                text='', icon='COLLAPSEMENU')  #
+                col.active = False
+                op = col.operator(
+                    Config.fb_proper_view_menu_exec_idname,
+                    text='', icon='COLLAPSEMENU')
             op.headnum = headnum
             op.camnum = i
+
 
     def draw(self, context):
         settings = get_main_settings()
