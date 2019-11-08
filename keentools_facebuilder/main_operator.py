@@ -735,7 +735,8 @@ class FB_OT_ShowTexture(Operator):
     bl_idname = Config.fb_show_tex_idname
     bl_label = "Show Texture"
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Apply created texture on mesh with preview material"
+    bl_description = "Create a material from the generated texture " \
+                     "and apply it to the model"
 
     def draw(self, context):
         pass
@@ -755,7 +756,7 @@ class FB_OT_ShowSolid(Operator):
     bl_idname = Config.fb_show_solid_idname
     bl_label = "Show Solid"
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Switch back to Solid mode"
+    bl_description = "Hide texture and go back to Solid mode"
 
     def draw(self, context):
         pass

@@ -490,8 +490,8 @@ class OBJECT_PT_TexturePanel(Panel):
 
         mode = self.get_area_mode(context)
         if mode == 'MATERIAL':
-            row.operator(Config.fb_show_solid_idname, text="Show Mesh",
-                         icon='SHADING_SOLID')
+            row.operator(Config.fb_show_solid_idname,
+                         text="Hide texture", icon='SHADING_SOLID')
         else:
             row.operator(Config.fb_show_tex_idname,
                          text="Apply texture", icon='MATERIAL')
