@@ -54,6 +54,15 @@ class FB_OT_Actor(Operator):
         if self.action == 'reconstruct_by_head':
             manipulate.reconstruct_by_head()
 
+        elif self.action == 'force_show_tex':
+            mat = materials.show_texture_in_mat(
+                Config.tex_builder_filename, Config.tex_builder_matname)
+            # Assign Material to Head Object
+            materials.assign_mat(
+                settings.heads[self.headnum].headobj, mat)
+            # Switch to Material Mode or Back
+            materials.toggle_mode(('MATERIAL',))
+
         elif self.action == 'show_tex':
             mat = materials.show_texture_in_mat(
                 Config.tex_builder_filename, Config.tex_builder_matname)

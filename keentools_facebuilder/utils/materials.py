@@ -87,15 +87,17 @@ def get_shader_node(mat, find_name, create_name):
     return shader_node
 
 
-def show_texture_in_mat(tex_name, mat_name):
-    settings = get_main_settings()
+def find_tex_by_name(tex_name):
     tex_num = bpy.data.images.find(tex_name)
-
     if tex_num > 0:
         tex = bpy.data.images[tex_num]
     else:
         tex = None
+    return tex
 
+
+def show_texture_in_mat(tex_name, mat_name):
+    tex = find_tex_by_name(tex_name)
     mat = get_mat_by_name(mat_name)
     principled_node = get_shader_node(
         mat, 'Principled BSDF', 'ShaderNodeBsdfPrincipled')

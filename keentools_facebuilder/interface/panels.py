@@ -22,6 +22,7 @@ from ..config import Config, get_main_settings, ErrorType
 import re
 from ..fbloader import FBLoader
 from ..utils.manipulate import what_is_state
+from ..utils.materials import find_tex_by_name
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 from ..utils.icons import FBIcons
@@ -104,7 +105,7 @@ class OBJECT_PT_FBHeaderPanel(Panel):
             box = layout.box()
             row = box.row()
             op = row.operator(
-                Config.fb_main_select_head_idname, text='', icon='USER')
+                Config.fb_select_head_idname, text='', icon='USER')
             op.headnum = i
 
             row.label(text=h.headobj.name)
@@ -199,7 +200,7 @@ class OBJECT_PT_FBCameraPanel(Panel):
         row.prop(head, 'auto_focal_estimation')
 
 
-class OBJECT_PT_FBExifPanel(Panel):
+class FB_PT_ExifPanel(Panel):
     bl_idname = Config.fb_exif_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -229,8 +230,8 @@ class OBJECT_PT_FBExifPanel(Panel):
         if head is None:
             return
 
-        layout.operator(Config.fb_tex_selector_operator_idname,
-                        text='Read EXIF')
+        op = layout.operator(Config.fb_read_exif_menu_exec_idname, text='Read EXIF')
+        op.headnum = headnum
 
         # Show EXIF message
         if len(head.exif.message) > 0:
@@ -240,8 +241,6 @@ class OBJECT_PT_FBExifPanel(Panel):
             col.scale_y = 0.75
             for a in arr:
                 col.label(text=a)
-        else:
-            layout.label(text='EXIF info')
 
 
 class OBJECT_PT_FBViewsPanel(Panel):
@@ -481,17 +480,20 @@ class OBJECT_PT_TexturePanel(Panel):
 
         row = layout.row()
         row.scale_y = 2.0
-        op = row.operator(Config.fb_tex_selector_operator_idname,
-                          text="Create texture", icon='RENDER_STILL')
+        op = row.operator(Config.fb_tex_selector_idname,
+                          text="Create texture", icon='IMAGE')
         op.headnum = headnum
 
         row = layout.row()
+        if not find_tex_by_name(Config.tex_builder_filename):
+            row.active = False
+
         mode = self.get_area_mode(context)
         if mode == 'MATERIAL':
-            row.operator(Config.fb_main_show_tex_idname, text="Show Mesh",
+            row.operator(Config.fb_show_solid_idname, text="Show Mesh",
                          icon='SHADING_SOLID')
         else:
-            row.operator(Config.fb_main_show_tex_idname,
+            row.operator(Config.fb_show_tex_idname,
                          text="Apply texture", icon='MATERIAL')
 
         box = layout.box()

@@ -106,6 +106,34 @@ class FB_MT_FrameSizeMenu(Menu):
         # op.action = 'about_fix_frame_warning'
 
 
+class FB_MT_ReadExifMenu(Menu):
+    bl_label = "Select image to read EXIF"
+    bl_idname = Config.fb_read_exif_menu_idname
+    bl_description = "Select image to read EXIF"
+
+    def draw(self, context):
+        settings = get_main_settings()
+        headnum = settings.tmp_headnum
+        head = settings.get_head(headnum)
+        layout = self.layout
+
+        if not len(head.cameras) > 0:
+            layout.label(text='No images found', icon='ERROR')
+            layout.label(text='You need at least one image to read EXIF.')
+            return
+
+        for i, camera in enumerate(head.cameras):
+            image_icon = 'PINNED' if camera.pins_count > 0 else 'FILE_IMAGE'
+            if camera.cam_image:
+                op = layout.operator(Config.fb_read_exif_idname,
+                                  text=camera.cam_image.name, icon=image_icon)
+                op.headnum = headnum
+                op.camnum = i
+
+            else:
+                layout.label(text='-- empty --', icon='LIBRARY_DATA_BROKEN')
+
+
 class FB_MT_FocalLengthMenu(Menu):
     bl_label = "Focal Length setup"
     bl_idname = Config.fb_focal_length_menu_idname

@@ -238,7 +238,7 @@ class FBHeadItem(PropertyGroup):
 
     sensor_width: FloatProperty(
         description="The length of the longest side "
-                    "of the camera sensor in millimeters",
+                    "of the camera sensor in millimetres",
         name="Sensor Width (mm)", default=36,
         min=0.1, update=update_sensor_width)
     sensor_height: FloatProperty(
@@ -248,7 +248,7 @@ class FBHeadItem(PropertyGroup):
         name="Sensor Height (mm)", default=24,
         min=0.1, update=update_sensor_height)
     focal: FloatProperty(
-        description="Focal length in millimeters",
+        description="Focal length in millimetres",
         name="Focal Length (mm)", default=50,
         min=0.1, update=update_focal)
 
@@ -457,11 +457,21 @@ class FBSceneSettings(PropertyGroup):
                     "colors across images",
         name="Equalize color", default=False)
 
+    tex_auto_preview: BoolProperty(
+        description="Automatically apply created texture to preview material",
+        name="Automatically apply created texture", default=True)
+
     def get_head(self, headnum):
         if 0 <= headnum <= len(self.heads):
             return self.heads[headnum]
         else:
             return None
+
+    def get_camera(self, headnum, camnum):
+        head = self.get_head(headnum)
+        if head is None:
+            return None
+        return head.get_camera(camnum)
 
     # Find Head by Blender object (Head Mesh)
     def find_head_index(self, obj):

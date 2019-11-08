@@ -28,10 +28,44 @@ class HELP_OT_CameraHelp(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text='Camera Help')
+        # layout.label(text='Camera Help')
+
+        # box = layout.box()
+        # box.scale_y = 0.75
+        col = layout.column()
+        col.scale_y = 0.75
+        content = [
+            "In order to get a quality model you need to know two things:",
+            "sensor size and focal length. Both in millimetres.",
+            "Of the sensor size you need to know the length "
+            "of the longest side.",
+            "Of the focal length — you need to know the real focal length,",
+            "not the 35mm equivalent.",
+            " ",
+            "If you don't know either the sensor width or the focal length,",
+            "it's better to switch on the automatic focal length estimation —",
+            "it usually gives pretty good results. ",
+            "The sensor size in such case can be anything, "
+            "but it still is going to be used",
+            "in estimation. The estimation happens every "
+            "time you change pins.",
+            " ",
+            "You can also try getting camera settings from EXIF "
+            "when it's available.",
+            "It can be found on corresponding panel below.",
+            " ",
+            "Different ways of using EXIF information "
+            "for Sensor width and Focal length",
+            "can be found in corresponding menus (buttons with gear icons) "
+            "on this tab, ",
+            "on the right side of fields."]
+
+        for c in content:
+            col.label(text=c)
+
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
+        return context.window_manager.invoke_props_dialog(self, width=500)
 
     def execute(self, context):
         return {'FINISHED'}

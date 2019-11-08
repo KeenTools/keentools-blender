@@ -23,7 +23,7 @@ import bpy
 from bpy.types import Panel, Operator
 import addon_utils
 
-from ..config import Config, get_main_settings, ErrorType
+from ..config import Config, get_main_settings, get_operators, ErrorType
 
 
 class WM_OT_FBAddonWarning(Operator):
@@ -128,8 +128,8 @@ class WM_OT_FBAddonWarning(Operator):
         return context.window_manager.invoke_props_dialog(self, width=300)
 
 
-class WM_OT_FBTexSelector(Operator):
-    bl_idname = Config.fb_tex_selector_operator_idname
+class FB_OT_TexSelector(Operator):
+    bl_idname = Config.fb_tex_selector_idname
     bl_label = "Select images:"
     bl_description = "Create texture using pinned views"
 
@@ -137,7 +137,7 @@ class WM_OT_FBTexSelector(Operator):
 
     def draw(self, context):
         settings = get_main_settings()
-        head = settings.heads[self.headnum]
+        head = settings.get_head(self.headnum)
         layout = self.layout
 
         if not len(head.cameras) > 0:
@@ -151,13 +151,11 @@ class WM_OT_FBTexSelector(Operator):
             # Use in Tex Baking
             row.prop(camera, 'use_in_tex_baking', text='')
 
+            image_icon = 'PINNED' if camera.pins_count > 0 else 'FILE_IMAGE'
             if camera.cam_image:
-                row.label(text='', icon='FILE_IMAGE')
-                if camera.pins_count > 0:
-                    row.label(text='', icon='PINNED')
-                row.label(text=camera.cam_image.name)
+                row.label(text=camera.cam_image.name, icon=image_icon)
             else:
-                row.label(text='-- empty --')
+                row.label(text='-- empty --', icon='LIBRARY_DATA_BROKEN')
 
         row = box.row()
         # Select All cameras for baking Button
@@ -174,12 +172,59 @@ class WM_OT_FBTexSelector(Operator):
         col.scale_y = 0.75
         col.label(text="Images without pins will be ignored.")
         col.label(text="Please note: texture creation is very time consuming.")
+        layout.prop(settings, 'tex_auto_preview')
 
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
-        op = getattr(bpy.ops.object, Config.fb_main_bake_tex_callname)
+        op = getattr(get_operators(), Config.fb_bake_tex_callname)
         op('INVOKE_DEFAULT', headnum=self.headnum)
+
+        if get_main_settings().tex_auto_preview:
+            op = getattr(get_operators(), Config.fb_actor_callname)
+            op('INVOKE_DEFAULT', action='force_show_tex',
+               headnum=self.headnum)
+        return {"FINISHED"}
+
+
+class FB_OT_ExifSelector(Operator):
+    bl_idname = Config.fb_exif_selector_idname
+    bl_label = "Select image to read EXIF:"
+    bl_description = "Choose image to load EXIF from"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    headnum: bpy.props.IntProperty(default=0)
+
+    def draw(self, context):
+        settings = get_main_settings()
+        head = settings.get_head(self.headnum)
+        layout = self.layout
+
+        if not len(head.cameras) > 0:
+            layout.label(text='No images found')
+            layout.label(text='You need at least one image to read EXIF.',
+                         icon='ERROR')
+            return
+
+        layout.label(text='Select image to read EXIF:')
+        box = layout.box()
+        for i, camera in enumerate(head.cameras):
+            row = box.row()
+            image_icon = 'PINNED' if camera.pins_count > 0 else 'FILE_IMAGE'
+            if camera.cam_image:
+                op = row.operator(Config.fb_read_exif_idname,
+                                  text=camera.cam_image.name, icon=image_icon)
+                op.headnum = self.headnum
+                op.camnum = i
+
+            else:
+                row.label(text='-- empty --', icon='LIBRARY_DATA_BROKEN')
+
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_popup(self, event)
+
+    def execute(self, context):
         return {"FINISHED"}

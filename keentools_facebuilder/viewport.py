@@ -195,7 +195,7 @@ class FBViewport:
             mesh = obj.data
             # Check to prevent shader problem
             if len(mesh.edges) * 2 == len(cls.wireframer().edges_colors):
-                logger.info("COLORING")
+                logger.debug("COLORING")
                 special_indices = cls.get_special_indices(builder_type)
                 cls.wireframer().init_special_areas(
                     obj.data, special_indices, (*comp_color,

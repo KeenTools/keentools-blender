@@ -129,7 +129,7 @@ class FBText:
         self.message = [
             "Pin Mode ",  # line 1
             "ESC: Exit | LEFT CLICK: Create Pin | RIGHT CLICK: Delete Pin "
-            "| TAB: Hide/Show |"  # line 2
+            "| TAB: Hide/Show"  # line 2
         ]
 
     def set_message(self, msg):
@@ -145,18 +145,18 @@ class FBText:
             self.unregister_handler()
             return
 
-        self.inc_counter()
-        # TESTING
         settings = get_main_settings()
-        opnum = settings.opnum
-        camnum = settings.current_camnum
+
+        # TESTING
+        # self.inc_counter()
+        # opnum = settings.opnum
+        camera = settings.get_camera(settings.current_headnum,
+                                     settings.current_camnum)
         # Draw text
         if len(self.message) > 0:
             region = context.region
-            text = "Cam [{0}] {1}".format(camnum, self.message[0])
-            # TESTING
-            subtext = "{} {}".format(self.message[1], opnum)
-            # subtext = self.message[1]
+            text = "{0} [{1}]".format(self.message[0], camera.cam_image.name)
+            subtext = self.message[1]
 
             xt = int(region.width / 2.0)
 
@@ -169,7 +169,6 @@ class FBText:
             blf.draw(0, subtext)  # Text is on screen
 
     def register_handler(self, args):
-        # Draw text on screen registration
         self.text_draw_handler = bpy.types.SpaceView3D.draw_handler_add(
             self.text_draw_callback, args, "WINDOW", "POST_PIXEL")
         self.add_handler_list(self.text_draw_handler)

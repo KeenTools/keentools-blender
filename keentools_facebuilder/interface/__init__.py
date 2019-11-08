@@ -28,9 +28,10 @@ CLASSES_TO_REGISTER = (FB_MT_FrameSizeMenu,  # menus
                        FB_MT_ImproperViewMenu,
                        FB_MT_SensorWidthMenu,
                        FB_MT_FocalLengthMenu,
+                       FB_MT_ReadExifMenu,
                        OBJECT_PT_FBHeaderPanel,  # panels
                        OBJECT_PT_FBCameraPanel,
-                       OBJECT_PT_FBExifPanel,
+                       FB_PT_ExifPanel,
                        OBJECT_PT_FBViewsPanel,
                        OBJECT_PT_FBModel,
                        OBJECT_PT_FBPinSettingsPanel,
@@ -43,7 +44,8 @@ CLASSES_TO_REGISTER = (FB_MT_FrameSizeMenu,  # menus
                        HELP_OT_PinSettingsHelp,
                        HELP_OT_TextureHelp,
                        WM_OT_FBAddonWarning,  # dialogs
-                       WM_OT_FBTexSelector,
+                       FB_OT_ExifSelector,
+                       FB_OT_TexSelector,
                        FB_OT_SingleFilebrowser,  # filedialog
                        FB_OT_SingleFilebrowserExec,
                        FB_OT_MultipleFilebrowser)

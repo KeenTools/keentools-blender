@@ -248,6 +248,7 @@ class PREF_OT_DownloadsURL(bpy.types.Operator):
         bpy.ops.wm.url_open(url=self.url)
         return {'FINISHED'}
 
+
 class PREF_OT_ShowWhy(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_show_why'
     bl_label = ''

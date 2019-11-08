@@ -48,10 +48,8 @@ class Config:
     pykeentools_license_url = 'https://link.keentools.io/eula'
     
     # Operators ids
-    # fb_main_operator_callname = prefix + '_main_operator'
-    # fb_main_operator_idname = 'object.' + fb_main_operator_callname
-    fb_main_select_head_callname = prefix + '_main_select_head'
-    fb_main_select_head_idname = 'object.' + fb_main_select_head_callname
+    fb_select_head_callname = prefix + '_main_select_head'
+    fb_select_head_idname = 'object.' + fb_select_head_callname
     fb_main_delete_head_callname = prefix + '_main_delete_head'
     fb_main_delete_head_idname = 'object.' + fb_main_delete_head_callname
     fb_main_select_camera_callname = prefix + '_main_select_camera'
@@ -108,10 +106,15 @@ class Config:
 
     fb_main_addon_settings_callname = prefix + '_main_addon_settings'
     fb_main_addon_settings_idname = 'object.' + fb_main_addon_settings_callname
-    fb_main_bake_tex_callname = prefix + '_main_bake_tex'
-    fb_main_bake_tex_idname = 'object.' + fb_main_bake_tex_callname
-    fb_main_show_tex_callname = prefix + '_main_show_tex'
-    fb_main_show_tex_idname = 'object.' + fb_main_show_tex_callname
+
+    fb_bake_tex_callname = 'bake_tex'
+    fb_bake_tex_idname = operators + '.' + fb_bake_tex_callname
+    fb_show_tex_callname = 'show_tex'
+    fb_show_tex_idname = operators + '.' + fb_show_tex_callname
+    fb_show_solid_callname = 'show_solid'
+    fb_show_solid_idname = operators + '.' + fb_show_solid_callname
+
+
     fb_main_default_sensor_callname = prefix + '_main_default_sensor'
     fb_main_default_sensor_idname = 'object.' + fb_main_default_sensor_callname
     fb_main_all_unknown_callname = prefix + '_main_all_unknown'
@@ -141,8 +144,19 @@ class Config:
                                       fb_camera_actor_operator_callname
     fb_warning_operator_callname = prefix + '_addon_warning'
     fb_warning_operator_idname = 'wm.' + fb_warning_operator_callname
-    fb_tex_selector_operator_callname = prefix + '_tex_selector'
-    fb_tex_selector_operator_idname = 'wm.' + fb_tex_selector_operator_callname
+
+    fb_exif_selector_callname = 'exif_selector'
+    fb_exif_selector_idname = operators + '.' + fb_exif_selector_callname
+
+    fb_read_exif_callname = 'read_exif'
+    fb_read_exif_idname = operators + '.' + fb_read_exif_callname
+
+    fb_read_exif_menu_exec_callname = 'read_exif_menu_exec'
+    fb_read_exif_menu_exec_idname = \
+        operators + '.' + fb_read_exif_menu_exec_callname
+
+    fb_tex_selector_callname = 'tex_selector'
+    fb_tex_selector_idname = operators + '.' + fb_tex_selector_callname
 
     # Add Mesh commands
     fb_add_head_operator_callname = 'add_head'
@@ -183,13 +197,16 @@ class Config:
     fb_help_texture_idname = operators + '.' + fb_help_texture_callname
 
     # Menu ids
-    fb_fix_frame_size_menu_idname = _MT + prefix + '_fix_frame_size_menu'
+    fb_fix_frame_size_menu_idname = _MT + '_fix_frame_size_menu'
 
-    fb_proper_view_menu_idname = _MT + prefix + 'proper_view_menu'
-    fb_improper_view_menu_idname = _MT + prefix + 'improper_view_menu'
+    fb_proper_view_menu_idname = _MT + 'proper_view_menu'
+    fb_improper_view_menu_idname = _MT + 'improper_view_menu'
 
-    fb_focal_length_menu_idname = _MT + prefix + '_focal_length_menu'
-    fb_sensor_width_menu_idname = _MT + prefix + '_sensor_width_menu'
+    fb_focal_length_menu_idname = _MT + 'focal_length_menu'
+    fb_sensor_width_menu_idname = _MT + 'sensor_width_menu'
+
+    fb_read_exif_menu_idname = _MT + 'read_exif_menu'
+
 
     # Standard names
     tex_builder_filename = 'kt_facebuilder_texture'
