@@ -33,6 +33,12 @@ def force_ui_redraw(area_type="PREFERENCES"):
                 area.tag_redraw()
 
 
+def setup_user_interface(*args):
+    bpy.context.space_data.overlay.show_floor = args[0]
+    bpy.context.space_data.overlay.show_axis_x = args[1]
+    bpy.context.space_data.overlay.show_axis_y = args[2]
+
+
 def force_stop_shaders():
     FBEdgeShader2D.handler_list = []
     FBEdgeShader3D.handler_list = []

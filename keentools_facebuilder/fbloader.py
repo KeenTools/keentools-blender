@@ -21,13 +21,13 @@ import logging
 
 import numpy as np
 
-from . viewport import FBViewport
-from . utils import attrs, coords, cameras
-from . utils.other import FBStopShaderTimer
+from .viewport import FBViewport
+from .utils import attrs, coords, cameras
+from .utils.other import FBStopShaderTimer, setup_user_interface
 
-from . builder import UniBuilder
-from . fbdebug import FBDebug
-from . config import Config, get_main_settings, BuilderType
+from .builder import UniBuilder
+from .fbdebug import FBDebug
+from .config import Config, get_main_settings, BuilderType
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
@@ -171,6 +171,7 @@ class FBLoader:
         # === Debug use only ===
         FBStopShaderTimer.stop()
         logger.debug("STOPPER STOP")
+        setup_user_interface(True, True, True)
         logger.debug("OUT PINMODE")
 
     @classmethod

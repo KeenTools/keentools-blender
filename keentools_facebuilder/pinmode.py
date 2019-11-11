@@ -24,7 +24,8 @@ from .utils import manipulate, coords, cameras
 from .config import Config, get_main_settings, ErrorType
 from .fbdebug import FBDebug
 from .fbloader import FBLoader
-from .utils.other import FBStopShaderTimer, force_ui_redraw
+from .utils.other import FBStopShaderTimer, force_ui_redraw, \
+    setup_user_interface
 
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
@@ -38,6 +39,16 @@ class FB_OT_PinMode(bpy.types.Operator):
 
     headnum: bpy.props.IntProperty(default=0)
     camnum: bpy.props.IntProperty(default=0)
+
+    _shift_pressed = False
+
+    @classmethod
+    def _set_shift_pressed(cls, val):
+        cls._shift_pressed = val
+
+    @classmethod
+    def _is_shift_pressed(cls):
+        return cls._shift_pressed
 
     def _fix_heads_with_warning(self):
         logger = logging.getLogger(__name__)
@@ -199,6 +210,8 @@ class FB_OT_PinMode(bpy.types.Operator):
             self._fix_heads_with_warning()
             return {'FINISHED'}
 
+        setup_user_interface(False, False, False)
+
         # Current headnum & camnum in global settings object
         settings.current_headnum = self.headnum
         settings.current_camnum = self.camnum
@@ -290,6 +303,7 @@ class FB_OT_PinMode(bpy.types.Operator):
                 pr = FBLoader.viewport().pr
                 pr.dump_stats('facebuilder.pstat')
             # --- PROFILING ---
+            bpy.ops.view3d.view_camera()
             return {'FINISHED'}
 
         if event.value == 'PRESS' and event.type == 'TAB':
@@ -304,8 +318,19 @@ class FB_OT_PinMode(bpy.types.Operator):
             return self.on_right_mouse_press(
                 context, event.mouse_region_x, event.mouse_region_y)
 
+        # SHIFT-press control
+        if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
+                and event.value == 'PRESS':
+            self._set_shift_pressed(True)
+
+        if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
+                and event.value == 'RELEASE':
+            self._set_shift_pressed(False)
+
+        # Hardcoded MMB action skip
         if event.value == 'PRESS' and event.type == 'MIDDLEMOUSE':
-            return {'RUNNING_MODAL'}
+            if not self._is_shift_pressed():
+                return {'RUNNING_MODAL'}
 
         return self.on_final(context, head)
 

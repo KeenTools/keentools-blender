@@ -39,7 +39,7 @@ class FB_MT_ProperViewMenu(Menu):
         op.camnum = settings.tmp_camnum
 
         layout.operator(Config.fb_single_filebrowser_exec_idname,
-                        text="Open image", icon='FILEBROWSER')
+                        text="Open file", icon='FILEBROWSER')
 
         # op = layout.operator(
         #     Config.fb_actor_operator_idname,
@@ -72,7 +72,7 @@ class FB_MT_ImproperViewMenu(Menu):
         op.camnum = settings.tmp_camnum
 
         layout.operator(Config.fb_single_filebrowser_exec_idname,
-                        text="Open image", icon='FILEBROWSER')
+                        text="Open file", icon='FILEBROWSER')
 
         # op = layout.operator(
         #     Config.fb_actor_operator_idname,

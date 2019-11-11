@@ -103,7 +103,6 @@ class OBJECT_OT_FBSelectCamera(Operator):
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
-    # This draw overrides standard operator panel
     def draw(self, context):
         pass
 
