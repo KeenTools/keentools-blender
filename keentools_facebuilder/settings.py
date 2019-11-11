@@ -66,7 +66,6 @@ def update_sensor_width(self, context):
 
 
 def update_sensor_height(self, context):
-    # self.sensor_preset = 'custom'
     FBLoader.update_camera_params(self)
 
 

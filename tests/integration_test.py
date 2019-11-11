@@ -16,7 +16,8 @@ import test_utils
 
 
 from keentools_facebuilder.utils import coords
-from keentools_facebuilder.config import Config, get_main_settings
+from keentools_facebuilder.config import Config, get_main_settings, \
+    get_operators
 
 
 class FaceBuilderTest(unittest.TestCase):
@@ -49,6 +50,7 @@ class FaceBuilderTest(unittest.TestCase):
         test_utils.move_pin(542, 549, 639, 527, arect, brect, headnum, camnum)
         test_utils.move_pin(912, 412, 911, 388, arect, brect, headnum, camnum)
         test_utils.update_pins(headnum, camnum)
+        test_utils.out_pinmode()
         # Pins count
         self.assertEqual(4, settings.heads[headnum].cameras[camnum].pins_count)
 
@@ -76,7 +78,10 @@ class FaceBuilderTest(unittest.TestCase):
     def test_move_pins(self):
         test_utils.new_scene()
         self._head_cams_and_pins()
-        # Coloring wireframe
+
+    def test_wireframe_coloring(self):
+        test_utils.new_scene()
+        self._head_and_cameras()
         op = getattr(
             bpy.ops.object, Config.fb_main_wireframe_color_callname)
         op('EXEC_DEFAULT', action='wireframe_green')
@@ -91,8 +96,7 @@ class FaceBuilderTest(unittest.TestCase):
         bpy.ops.object.duplicate_move(
             OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
             TRANSFORM_OT_translate={"value": (-3.0, 0, 0)})
-        op = getattr(
-            bpy.ops.object, Config.fb_actor_callname)
+        op = getattr(get_operators(), Config.fb_actor_callname)
         op('EXEC_DEFAULT', action='reconstruct_by_head', headnum=-1, camnum=-1)
         headnum2 = settings.get_last_headnum()
         head_new = settings.heads[headnum2]
@@ -108,12 +112,12 @@ class FaceBuilderTest(unittest.TestCase):
         headnum = settings.get_last_headnum()
         head = settings.get_head(headnum)
         camnum = head.get_last_camnum()
+        camobj = head.get_camera(camnum).camobj
 
-        new_focal = 35
+        new_focal = 35.0
         head.focal = new_focal
-        camobj = head.cameras[camnum].camobj
         self.assertEqual(new_focal, camobj.data.lens)
-        new_focal = 18
+        new_focal = 18.0
         head.focal = new_focal
         self.assertEqual(new_focal, camobj.data.lens)
         new_sensor_width = 15
