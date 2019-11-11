@@ -149,14 +149,14 @@ class OBJECT_OT_FBSelectCamera(Operator):
 
 class OBJECT_OT_FBCenterGeo(Operator):
     bl_idname = Config.fb_main_center_geo_idname
-    bl_label = "Center Geo"
+    bl_label = "Reset Camera"
     bl_options = {'REGISTER'}  # 'UNDO'
-    bl_description = "Place model geometry central in camera view"
+    bl_description = "Place the camera so the model will be centred " \
+                     "in the view"
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
-    # This draw overrides standard operator panel
     def draw(self, context):
         pass
 
@@ -214,9 +214,9 @@ class OBJECT_OT_FBUnmorph(Operator):
 
 class OBJECT_OT_FBRemovePins(Operator):
     bl_idname = Config.fb_main_remove_pins_idname
-    bl_label = "Remove Pins"
+    bl_label = "Remove pins"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Place model geometry central in camera view"
+    bl_description = "Remove all pins on this view"
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)

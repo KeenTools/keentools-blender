@@ -457,8 +457,8 @@ class FBSceneSettings(PropertyGroup):
         name="Equalize color", default=False)
 
     tex_auto_preview: BoolProperty(
-        description="Automatically apply created texture to preview material",
-        name="Automatically apply created texture", default=True)
+        description="Automatically apply the created texture",
+        name="Automatically apply the created texture", default=True)
 
     def get_head(self, headnum):
         if 0 <= headnum <= len(self.heads):

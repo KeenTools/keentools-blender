@@ -266,11 +266,12 @@ class OBJECT_PT_FBViewsPanel(Panel):
     def _draw_pins_panel(self, headnum, camnum):
         layout = self.layout
         box = layout.box()
-        op = box.operator(Config.fb_main_center_geo_idname, text="Center Geo")
+        op = box.operator(Config.fb_main_center_geo_idname,
+                          text="Reset camera")
         op.headnum = headnum
         op.camnum = camnum
         op = box.operator(
-            Config.fb_main_remove_pins_idname, text="Remove Pins")
+            Config.fb_main_remove_pins_idname, text="Remove pins")
         op.headnum = headnum
         op.camnum = camnum
 
@@ -363,7 +364,7 @@ class OBJECT_PT_FBViewsPanel(Panel):
                           text="Add Image(s)", icon='OUTLINER_OB_IMAGE')
         op.headnum = headnum
 
-        # Camera buttons Center Geo, Remove pins
+        # Camera buttons Reset camera, Remove pins
         if settings.pinmode and \
                 context.space_data.region_3d.view_perspective == 'CAMERA':
             self._draw_pins_panel(headnum, settings.current_camnum)

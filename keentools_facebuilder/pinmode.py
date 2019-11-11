@@ -304,6 +304,9 @@ class FB_OT_PinMode(bpy.types.Operator):
             return self.on_right_mouse_press(
                 context, event.mouse_region_x, event.mouse_region_y)
 
+        if event.value == 'PRESS' and event.type == 'MIDDLEMOUSE':
+            return {'RUNNING_MODAL'}
+
         return self.on_final(context, head)
 
     def on_final(self, context, head):
