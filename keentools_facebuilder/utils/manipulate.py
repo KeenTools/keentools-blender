@@ -187,7 +187,7 @@ def use_render_frame_size_scaled():
     scene = bpy.context.scene
     settings = get_main_settings()
     headnum = settings.current_headnum
-    head = settings.heads[headnum]
+    head = settings.get_head(headnum)
     rw = scene.render.resolution_x
     rh = scene.render.resolution_y
     fw = settings.frame_width

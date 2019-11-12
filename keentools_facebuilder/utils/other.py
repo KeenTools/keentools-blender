@@ -26,12 +26,59 @@ from . points import FBPoints2D, FBPoints3D
 from .. config import get_main_settings
 
 
+def force_ui_redraw(area_type="PREFERENCES"):
+    for window in bpy.data.window_managers['WinMan'].windows:
+        for area in window.screen.areas:
+            if area.type == area_type:
+                area.tag_redraw()
+
+
 def force_stop_shaders():
     FBEdgeShader2D.handler_list = []
     FBEdgeShader3D.handler_list = []
     FBText.handler_list = []
     FBPoints2D.handler_list = []
     FBPoints3D.handler_list = []
+
+
+def _setup_ui_elements(*args):
+    bpy.context.space_data.overlay.show_floor = args[0]
+    bpy.context.space_data.overlay.show_axis_x = args[1]
+    bpy.context.space_data.overlay.show_axis_y = args[2]
+
+
+def hide_ui_elements():
+    state = UserState.get_state()
+    if state is not None:
+        return
+    UserState.put_state(bpy.context.space_data.overlay.show_floor,
+                        bpy.context.space_data.overlay.show_axis_x,
+                        bpy.context.space_data.overlay.show_axis_y)
+    _setup_ui_elements(False, False, False)
+
+
+def restore_ui_elements():
+    state = UserState.get_state()
+    if state is None:
+        return
+    _setup_ui_elements(*state)
+    UserState.reset_state()
+
+
+class UserState:
+    _state = None
+
+    @classmethod
+    def put_state(cls, *args):
+        cls._state = (*args,)
+
+    @classmethod
+    def get_state(cls):
+        return cls._state
+
+    @classmethod
+    def reset_state(cls):
+        cls._state = None
 
 
 class FBTimer:
@@ -99,7 +146,7 @@ class FBStopShaderTimer(FBTimer):
 class FBText:
     """ Text on screen output in Modal view"""
     # Test only
-    counter = 0
+    _counter = 0
 
     # Store all draw handlers registered by class objects
     handler_list = []
@@ -120,8 +167,9 @@ class FBText:
     def __init__(self):
         self.text_draw_handler = None
         self.message = [
-            "Pin Mode ",
-            "ESC: Exit / LMB: Pin / RMB: Unpin / Tab: Hide-Show /"
+            "Pin Mode ",  # line 1
+            "ESC: Exit | LEFT CLICK: Create Pin | RIGHT CLICK: Delete Pin "
+            "| TAB: Hide/Show"  # line 2
         ]
 
     def set_message(self, msg):
@@ -129,7 +177,12 @@ class FBText:
 
     @classmethod
     def inc_counter(cls):
-        cls.counter += 1
+        cls._counter += 1
+        return cls._counter
+
+    @classmethod
+    def get_counter(cls):
+        return cls._counter
 
     def text_draw_callback(self, op, context):
         # Force Stop
@@ -137,18 +190,17 @@ class FBText:
             self.unregister_handler()
             return
 
-        self.inc_counter()
-        # TESTING
         settings = get_main_settings()
-        opnum = settings.opnum
-        camnum = settings.current_camnum
+
+        # TESTING
+        # self.inc_counter()
+        camera = settings.get_camera(settings.current_headnum,
+                                     settings.current_camnum)
         # Draw text
         if len(self.message) > 0:
             region = context.region
-            text = "Cam [{0}] {1}".format(camnum, self.message[0])
-            # TESTING
-            subtext = "{} {}".format(self.message[1], opnum)
-            # subtext = self.message[1]
+            text = "{0} [{1}]".format(self.message[0], camera.cam_image.name)
+            subtext = "{} | {}".format(self.message[1], settings.opnum)
 
             xt = int(region.width / 2.0)
 
@@ -161,7 +213,6 @@ class FBText:
             blf.draw(0, subtext)  # Text is on screen
 
     def register_handler(self, args):
-        # Draw text on screen registration
         self.text_draw_handler = bpy.types.SpaceView3D.draw_handler_add(
             self.text_draw_callback, args, "WINDOW", "POST_PIXEL")
         self.add_handler_list(self.text_draw_handler)

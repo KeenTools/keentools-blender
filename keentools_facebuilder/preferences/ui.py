@@ -169,14 +169,15 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     def _draw_accept_license_offer(self, layout):
         box = layout.box()
         col = box.column()
+        col.alert = True
         col.scale_y = 0.75
-        content = ['We cannot ship our core library with addon '
-                   'due to Blender license restrictions,',
-                   'so you need to install it yourself.']
-        for c in content:
-            col.label(text=c)
+        col.label(text='We cannot ship our core library with our addon '
+                       'due to Blender', icon='INFO')
+        col.label(text=' license limitations, so you need to install '
+                       'it yourself.', icon='BLANK1')
 
-        row = box.split(factor=0.85)
+        box2 = box.box()
+        row = box2.split(factor=0.85)
         row.prop(self, 'license_accepted')
 
         row.operator(
@@ -190,7 +191,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         row2 = box2.row()
         if not self.license_accepted:
             row2.active = False
-            row2.alert = True
+            # row2.alert = True
 
         op = row2.operator(
             preferences_operators.PREF_OT_InstallPkt.bl_idname,
@@ -201,7 +202,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         row2 = box2.split(factor=0.6)
         if not self.license_accepted:
             row2.active = False
-            row2.alert = True
+            # row2.alert = True
 
         op = row2.operator(
             preferences_operators.PREF_OT_InstallFromFilePkt.bl_idname,
@@ -209,7 +210,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         op.license_accepted = self._license_was_accepted()
 
         op = row2.operator(
-            preferences_operators.PREF_OT_OpenURL.bl_idname,
+            preferences_operators.PREF_OT_DownloadsURL.bl_idname,
             text='Download', icon='URL')
         op.url = 'https://keentools.io/downloads'
 
@@ -226,14 +227,14 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         col.scale_y = 0.75
         download_state = InstallationProgress.get_state()
         if download_state['active']:
-            col.label(text="Core downloading: {:.1f}%".format(
+            col.label(text="Downloading: {:.1f}%".format(
                 100 * download_state['progress']))
         if download_state['status'] is not None:
             col.label(text="{}".format(download_state['status']))
 
     def _draw_version(self, layout):
         box = layout.box()
-        box.label(text="Version {}, build time {}".format(
+        box.label(text="Version {}, built {}".format(
             pkt.module().__version__,
             pkt.module().build_time))
 

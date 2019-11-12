@@ -19,16 +19,8 @@
 import logging
 from threading import Lock
 
-import bpy
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
-from ..utils.other import FBTimer
-
-
-def _force_ui_redraw(area_type="PREFERENCES"):
-    for window in bpy.data.window_managers['WinMan'].windows:
-        for area in window.screen.areas:
-            if area.type == area_type:
-                area.tag_redraw()
+from ..utils.other import FBTimer, force_ui_redraw
 
 
 class FBUpdateProgressTimer(FBTimer):
@@ -45,11 +37,11 @@ class FBUpdateProgressTimer(FBTimer):
         if cls._timer_should_not_work():
             logger.debug("STOP PROGRESS INACTIVE")
             cls.stop()
-            _force_ui_redraw()
+            force_ui_redraw("PREFERENCES")
             return None
 
         logger.debug("NEXT CALL UPDATE TIMER")
-        _force_ui_redraw()
+        force_ui_redraw("PREFERENCES")
         return cls._UPDATE_INTERVAL
 
     @classmethod
@@ -71,6 +63,14 @@ class InstallationProgress:
         cls._state_mutex.acquire()
         try:
             return cls.state.copy()
+        finally:
+            cls._state_mutex.release()
+
+    @classmethod
+    def set_state(cls, state):
+        cls._state_mutex.acquire()
+        try:
+            cls.state = state
         finally:
             cls._state_mutex.release()
 
@@ -105,7 +105,8 @@ class InstallationProgress:
         cls._state_mutex.acquire()
         try:
             if cls.state['active']:
-                cls.state['status'] = 'Another process is loading the library'
+                cls.state['status'] = 'Another process is downloading ' \
+                                      'the library'
                 return True
             return False
         finally:
@@ -117,11 +118,12 @@ class InstallationProgress:
 
     @classmethod
     def _final_callback(cls):
-        cls._on_finish_download('Core library downloaded and installed.')
+        cls._on_finish_download(
+            'Core library has been downloaded and installed successfully.')
 
     @classmethod
     def _error_callback(cls, err):
-        cls._on_finish_download('Download error: {}'.format(str(err)))
+        cls._on_finish_download('Downloading error: {}'.format(str(err)))
 
     @classmethod
     def start_download(cls, install_type):
@@ -147,3 +149,24 @@ class InstallationProgress:
                 progress_callback=cls._progress_callback,
                 final_callback=cls._final_callback,
                 error_callback=cls._error_callback)
+
+    @classmethod
+    def start_zip_install(cls, filepath):
+        logger = logging.getLogger(__name__)
+
+        if cls._check_another_download_active():
+            logger.error("OTHER FILE DOWNLOADING")
+            return
+
+        cls._on_start_download()
+        logger.debug("START UNPACK CORE LIBRARY DOWNLOAD")
+        try:
+            pkt.install_from_file(filepath)
+        except Exception as error:
+            cls._on_finish_download(
+                'Failed to install Core library from file. ' + str(error))
+            logger.debug("UNPACK CORE ERROR" + str(error))
+        else:
+            cls._on_finish_download(
+                'Core library has been installed successfully.')
+            logger.debug("UNPACK CORE FINISH")

@@ -195,7 +195,7 @@ class FBViewport:
             mesh = obj.data
             # Check to prevent shader problem
             if len(mesh.edges) * 2 == len(cls.wireframer().edges_colors):
-                logger.info("COLORING")
+                logger.debug("COLORING")
                 special_indices = cls.get_special_indices(builder_type)
                 cls.wireframer().init_special_areas(
                     obj.data, special_indices, (*comp_color,
@@ -213,7 +213,7 @@ class FBViewport:
             pairs = pairs.union(const.get_mouth_indices())
             pairs = pairs.union(const.get_ears_indices())
             pairs = pairs.union(const.get_half_indices())
-            pairs = pairs.union(const.get_jaw_indices2())
+            # pairs = pairs.union(const.get_jaw_indices2())
             return pairs
         elif builder_type == BuilderType.BodyBuilder:
             return const.get_bodybuilder_highlight_indices()

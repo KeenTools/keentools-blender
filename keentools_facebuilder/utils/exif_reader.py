@@ -155,7 +155,7 @@ def _safe_parameter(data, name):
 
 def init_exif_settings(headnum, data):
     settings = get_main_settings()
-    exif = settings.heads[headnum].exif
+    exif = settings.get_head(headnum).exif
 
     exif.units = _get_exif_units(data['exif_units'])
 
@@ -175,25 +175,29 @@ def init_exif_settings(headnum, data):
 
 def exif_message(headnum, data):
     settings = get_main_settings()
-    exif = settings.heads[headnum].exif
+    exif = settings.get_head(headnum).exif
 
-    message = "EXIF for: {}".format(data['filepath'])
+    message = "Source file: {}".format(data['filepath'])
 
     if exif.image_width > 0.0 and exif.image_length > 0.0:
-        message += "\nSize: {} x {}".format(
+        message += "\nSize: {} x {}px".format(
             int(exif.image_width), int(exif.image_length))
 
     if exif.focal > 0.0:
-        message += "\nFocal: {} mm".format(exif.focal)
+        message += "\nFocal length: {}mm".format(exif.focal)
 
     if exif.focal35mm > 0.0:
-        message += "\nFocal 35mm equiv.: {:.2f} mm".format(exif.focal35mm)
+        message += \
+            "\n35mm equiv.: {:.2f}mm".format(exif.focal35mm)
 
-    if exif.sensor_width > 0.0:
-        message += "\nSensor Width: {:.2f} mm".format(exif.sensor_width)
+    if exif.sensor_width > 0.0 and exif.sensor_length > 0.0:
+        message += "\nSensor: {:.2f} x {:.2f}mm".format(exif.sensor_width,
+                                                      exif.sensor_length)
+    elif exif.sensor_width > 0.0:
+        message += "\nSensor Width: {:.2f}mm".format(exif.sensor_width)
 
-    if exif.sensor_length > 0.0:
-        message += "\nSensor Height: {:.2f} mm".format(exif.sensor_length)
+    elif exif.sensor_length > 0.0:
+        message += "\nSensor Height: {:.2f}mm".format(exif.sensor_length)
 
     if data['exif_model'] is not None:
         make = ' '

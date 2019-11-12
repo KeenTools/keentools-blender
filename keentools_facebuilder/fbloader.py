@@ -21,13 +21,13 @@ import logging
 
 import numpy as np
 
-from . viewport import FBViewport
-from . utils import attrs, coords, cameras
-from . utils.other import FBStopShaderTimer
+from .viewport import FBViewport
+from .utils import attrs, coords, cameras
+from .utils.other import FBStopShaderTimer, restore_ui_elements
 
-from . builder import UniBuilder
-from . fbdebug import FBDebug
-from . config import Config, get_main_settings, BuilderType
+from .builder import UniBuilder
+from .fbdebug import FBDebug
+from .config import Config, get_main_settings, BuilderType
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
@@ -151,7 +151,7 @@ class FBLoader:
         settings = get_main_settings()
         cls.viewport().unregister_handlers()
         cls.fb_save(headnum, camnum)
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
         headobj = head.headobj
         # Mark object by ver.
         cls.set_keentools_version(headobj)
@@ -171,29 +171,39 @@ class FBLoader:
         # === Debug use only ===
         FBStopShaderTimer.stop()
         logger.debug("STOPPER STOP")
+
+        restore_ui_elements()
         logger.debug("OUT PINMODE")
 
     @classmethod
     def save_only(cls, headnum):
         fb = cls.get_builder()
         settings = get_main_settings()
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
         # Save block
         head.set_serial_str(fb.serialize())
+
+    @classmethod
+    def update_mesh_only(cls, headnum):
+        fb = cls.get_builder()
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        coords.update_head_mesh(fb, head.headobj)
 
     @classmethod
     def fb_save(cls, headnum, camnum):
         """ Face Builder Serialize Model Info """
         fb = cls.get_builder()
         settings = get_main_settings()
-        head = settings.heads[headnum]
-        cam = head.cameras[camnum]
+        head = settings.get_head(headnum)
+        cam = head.get_camera(camnum)
 
         # Save block
         head.set_serial_str(fb.serialize())
 
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
-        cam.set_model_mat(fb.model_mat(kid))
+        if cam is not None:
+            kid = cameras.keyframe_by_camnum(headnum, camnum)
+            cam.set_model_mat(fb.model_mat(kid))
         # Save images list on headobj
         head.save_images_src()
         head.save_cam_settings()
@@ -208,8 +218,8 @@ class FBLoader:
     def fb_redraw(cls, headnum, camnum):
         fb = cls.get_builder()
         settings = get_main_settings()
-        head = settings.heads[headnum]
-        cam = head.cameras[camnum]
+        head = settings.get_head(headnum)
+        cam = head.get_camera(camnum)
         headobj = head.headobj
         camobj = cam.camobj
         kid = cameras.keyframe_by_camnum(headnum, camnum)
@@ -244,7 +254,7 @@ class FBLoader:
     def update_all_camera_positions(cls, headnum):
         fb = cls.get_builder()
         settings = get_main_settings()
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
         headobj = head.headobj
 
         for i, cam in enumerate(head.cameras):
@@ -305,8 +315,8 @@ class FBLoader:
     def update_pins_count(cls, headnum, camnum):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
-        head = settings.heads[headnum]
-        cam = head.cameras[camnum]
+        head = settings.get_head(headnum)
+        cam = head.get_camera(camnum)
         fb = cls.get_builder()
         kid = cameras.keyframe_by_camnum(headnum, camnum)
         pins_count = fb.pins_count(kid)
@@ -408,7 +418,7 @@ class FBLoader:
     def load_only(cls, headnum):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
         # Load serialized data
         fb = cls.get_builder()
         if not fb.deserialize(head.get_serial_str()):
@@ -420,8 +430,8 @@ class FBLoader:
         logger = logging.getLogger(__name__)
         scene = bpy.context.scene
         settings = get_main_settings()
-        head = settings.heads[headnum]
-        cam = head.cameras[camnum]
+        head = settings.get_head(headnum)
+        cam = head.get_camera(camnum)
         camobj = cam.camobj
         headobj = head.headobj
 
@@ -457,7 +467,7 @@ class FBLoader:
         logger = logging.getLogger(__name__)
         # scene = bpy.context.scene
         settings = get_main_settings()
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
         fb = cls.get_builder()
 
         # create camera data

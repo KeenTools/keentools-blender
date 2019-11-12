@@ -24,12 +24,12 @@ from .utils import manipulate, coords, cameras
 from .config import Config, get_main_settings, ErrorType
 from .fbdebug import FBDebug
 from .fbloader import FBLoader
-from .utils.other import FBStopShaderTimer
+from .utils.other import FBStopShaderTimer, force_ui_redraw, hide_ui_elements
 
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
-class OBJECT_OT_FBPinMode(bpy.types.Operator):
+class FB_OT_PinMode(bpy.types.Operator):
     """ On Screen Face Builder Draw Operator """
     bl_idname = Config.fb_pinmode_operator_idname
     bl_label = "FaceBuilder Pinmode"
@@ -38,6 +38,16 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
     headnum: bpy.props.IntProperty(default=0)
     camnum: bpy.props.IntProperty(default=0)
+
+    _shift_pressed = False
+
+    @classmethod
+    def _set_shift_pressed(cls, val):
+        cls._shift_pressed = val
+
+    @classmethod
+    def _is_shift_pressed(cls):
+        return cls._shift_pressed
 
     def _fix_heads_with_warning(self):
         logger = logging.getLogger(__name__)
@@ -78,7 +88,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         settings = get_main_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
         kid = cameras.keyframe_by_camnum(headnum, camnum)
 
         fb = FBLoader.get_builder()
@@ -114,7 +124,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         settings = get_main_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
 
         head.need_update = False
         # Reload pins surface points
@@ -199,6 +209,8 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
             self._fix_heads_with_warning()
             return {'FINISHED'}
 
+        hide_ui_elements()
+
         # Current headnum & camnum in global settings object
         settings.current_headnum = self.headnum
         settings.current_camnum = self.camnum
@@ -240,6 +252,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         logger.debug("OVERALL_OPACITY BY TAB {}".format(
             settings.overall_opacity))
         self._init_wireframer_colors(settings.overall_opacity)
+        force_ui_redraw("VIEW_3D")
 
     def modal(self, context, event):
         logger = logging.getLogger(__name__)
@@ -247,7 +260,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
 
         headnum = settings.current_headnum
         camnum = settings.current_camnum
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
 
         # Quit if Screen changed
         if context.area is None:  # Different operation Space
@@ -263,10 +276,6 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         if not head.headobj.hide_get():
             logger.debug("FORCE MESH HIDE")
             head.headobj.hide_set(True)
-
-        # Screen Update request (Blender viewport redraw mark)
-        if context.area:
-            context.area.tag_redraw()
 
         # Quit if Force Pinmode Out flag is set (by ex. license, pin problem)
         if settings.force_out_pinmode:
@@ -293,6 +302,7 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
                 pr = FBLoader.viewport().pr
                 pr.dump_stats('facebuilder.pstat')
             # --- PROFILING ---
+            bpy.ops.view3d.view_camera()
             return {'FINISHED'}
 
         if event.value == 'PRESS' and event.type == 'TAB':
@@ -306,6 +316,15 @@ class OBJECT_OT_FBPinMode(bpy.types.Operator):
         if event.value == 'PRESS' and event.type == 'RIGHTMOUSE':
             return self.on_right_mouse_press(
                 context, event.mouse_region_x, event.mouse_region_y)
+
+        # SHIFT-press control
+        if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
+                and event.value == 'PRESS':
+            self._set_shift_pressed(True)
+
+        if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
+                and event.value == 'RELEASE':
+            self._set_shift_pressed(False)
 
         return self.on_final(context, head)
 

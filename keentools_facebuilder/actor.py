@@ -31,10 +31,10 @@ from .utils.exif_reader import (read_exif, init_exif_settings, exif_message,
                                 get_sensor_size_35mm_equivalent)
 
 
-class OBJECT_OT_FBActor(Operator):
+class FB_OT_Actor(Operator):
     """ Face Builder Action
     """
-    bl_idname = Config.fb_actor_operator_idname
+    bl_idname = Config.fb_actor_idname
     bl_label = "FaceBuilder in Action"
     bl_options = {'REGISTER'}
     bl_description = "FaceBuilder"
@@ -54,14 +54,14 @@ class OBJECT_OT_FBActor(Operator):
         if self.action == 'reconstruct_by_head':
             manipulate.reconstruct_by_head()
 
-        elif self.action == 'show_tex':
+        elif self.action == 'force_show_tex':
             mat = materials.show_texture_in_mat(
                 Config.tex_builder_filename, Config.tex_builder_matname)
             # Assign Material to Head Object
             materials.assign_mat(
                 settings.heads[self.headnum].headobj, mat)
             # Switch to Material Mode or Back
-            materials.toggle_mode(('SOLID', 'MATERIAL'))
+            materials.toggle_mode(('MATERIAL',))
 
         elif self.action == 'bake_tex':
             materials.bake_tex(self.headnum, Config.tex_builder_filename)
@@ -77,16 +77,6 @@ class OBJECT_OT_FBActor(Operator):
         elif self.action == 'about_fix_frame_warning':
             warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.AboutFrameSize)
-
-        elif self.action == 'auto_detect_frame_size':
-            manipulate.auto_detect_frame_size()
-
-        elif self.action == 'use_render_frame_size':
-            manipulate.use_render_frame_size()
-
-        elif self.action == 'use_this_camera_frame_size':
-            # Current camera Background --> Render size (by mini-button)
-            manipulate.use_camera_frame_size(self.headnum, self.camnum)
 
         elif self.action == 'use_render_frame_size_scaled':
             # Allow converts scenes pinned on default cameras
@@ -110,7 +100,7 @@ class OBJECT_OT_FBActor(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBCameraActor(Operator):
+class FB_OT_CameraActor(Operator):
     """ Camera Action
     """
     bl_idname = Config.fb_camera_actor_operator_idname

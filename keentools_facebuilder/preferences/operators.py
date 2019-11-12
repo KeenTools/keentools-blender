@@ -31,7 +31,7 @@ class PREF_OT_OpenPktLicensePage(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_open_pkt_license_page'
     bl_label = 'read license'
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Open KeenTools license via web-browser"
+    bl_description = "Open KeenTools license in web browser"
 
     def execute(self, context):
         bpy.ops.wm.url_open(url=Config.pykeentools_license_url)
@@ -40,18 +40,19 @@ class PREF_OT_OpenPktLicensePage(bpy.types.Operator):
 
 class PREF_OT_InstallPkt(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_install_latest_pkt'
-    bl_label = 'Install from website'
+    bl_label = 'Install online'
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Install pytkeentools from web-site ' \
-                     '(configured SSL in OS is required)'
+    bl_description = 'Install Core library from website'
 
     install_type: bpy.props.EnumProperty(
-        name='Build',
+        name='Version',
         items=(
             ('default', 'Latest Stable',
-             'Install the version this addon was tested with', 0),
+             'Install the latest stable version', 0),
             ('nightly', 'Nightly',
-             'Install latest nightly build available', 1)
+             'Install latest nightly build available. '
+             'Be ready to experience bugs and glitches. '
+             'Please report them', 1)
         ),
         default= 'default'
     )
@@ -79,8 +80,8 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_install_pkt_from_file'
     bl_label = 'Install from file'
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'You can download pykeentools manually ' \
-                     'and install it here'
+    bl_description = 'You can download Core library manually ' \
+                     'and install it using this button'
 
     # can only have exactly that name
     filepath: bpy.props.StringProperty(
@@ -95,14 +96,16 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         content = ["You can download",
-                   "the core library from ",
+                   "Core library from ",
                    "our site: keentools.io/downloads"]
+        col = layout.column()
+        col.scale_y = 0.75
         for c in content:
-            layout.label(text=c)
+            col.label(text=c)
 
         op = layout.operator(
             PREF_OT_OpenURL.bl_idname,
-            text='Open download page', icon='URL')
+            text='Open downloads page', icon='URL')
         op.url = 'https://keentools.io/downloads'
 
     def invoke(self, context, event):
@@ -115,12 +118,7 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
             return {'FINISHED'}
 
     def execute(self, context):
-        try:
-            pkt.install_from_file(self.filepath)
-            self.report({'INFO'}, 'Installation successful')
-        except Exception as error:
-            self.report({'ERROR'},
-                'Failed to install pykeentools from file. ' + str(error))
+        InstallationProgress.start_zip_install(self.filepath)
         return {'FINISHED'}
 
 
@@ -229,7 +227,20 @@ class PREF_OT_OpenURL(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_open_url'
     bl_label = 'Open URL'
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Open URL in web-browser'
+    bl_description = 'Open URL in web browser'
+
+    url: bpy.props.StringProperty(name='URL', default='')
+
+    def execute(self, context):
+        bpy.ops.wm.url_open(url=self.url)
+        return {'FINISHED'}
+
+
+class PREF_OT_DownloadsURL(bpy.types.Operator):
+    bl_idname = _ID_NAME_PREFIX + '_downloads_url'
+    bl_label = 'Download'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Open downloads page in web browser'
 
     url: bpy.props.StringProperty(name='URL', default='')
 

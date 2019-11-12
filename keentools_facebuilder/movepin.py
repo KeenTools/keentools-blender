@@ -45,7 +45,7 @@ def profile_this(fn):
     return wrapped
 
 
-class OBJECT_OT_FBMovePin(bpy.types.Operator):
+class FB_OT_MovePin(bpy.types.Operator):
     """ On Screen Face Builder MovePin Operator """
     bl_idname = Config.fb_movepin_operator_idname
     bl_label = "FaceBuilder MovePin operator"
@@ -110,13 +110,13 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         headnum = self.get_headnum()
         camnum = self.get_camnum()
 
-        # Checks for operator parameters
-        if headnum < 0:
+        head = settings.get_head(headnum)
+        if head is None:
             return {'CANCELLED'}
-        head = settings.heads[headnum]
-        if camnum < 0 or camnum >= len(head.cameras):
+
+        cam = head.get_camera(camnum)
+        if cam is None:
             return {'CANCELLED'}
-        cam = head.cameras[camnum]
 
         # Init old state values
         head.tmp_serial_str = ''
@@ -147,7 +147,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         settings = get_main_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
         cam = head.cameras[camnum]
         kid = cameras.keyframe_by_camnum(headnum, camnum)
 
@@ -188,7 +188,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         settings = get_main_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
         kid = cameras.keyframe_by_camnum(headnum, camnum)
 
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
@@ -245,7 +245,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         settings = get_main_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
         headobj = head.headobj
         cam = settings.heads[headnum].cameras[camnum]
         camobj = cam.camobj
@@ -271,7 +271,7 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         # --------------
         # Pin lag solve
         # --------------
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
         # Store in tmp previous state
         head.tmp_serial_str = head.serial_str
         cam.tmp_model_mat = cam.model_mat

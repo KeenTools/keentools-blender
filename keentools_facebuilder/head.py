@@ -53,6 +53,8 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         h.mod_ver = FBLoader.get_builder_version()
         h.save_cam_settings()
 
+        settings.current_headnum = settings.get_last_headnum()
+
         try:
             a = context.area
             # Try to show UI Panel
@@ -65,5 +67,5 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
     def new_head(cls):
         mesh = FBLoader.universal_mesh_loader(
             BuilderType.FaceBuilder, 'Head_mesh')
-        obj = bpy.data.objects.new('FBHead', mesh)
+        obj = bpy.data.objects.new('FaceBuilderHead', mesh)
         return obj

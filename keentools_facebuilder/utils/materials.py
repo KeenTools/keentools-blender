@@ -87,15 +87,17 @@ def get_shader_node(mat, find_name, create_name):
     return shader_node
 
 
-def show_texture_in_mat(tex_name, mat_name):
-    settings = get_main_settings()
+def find_tex_by_name(tex_name):
     tex_num = bpy.data.images.find(tex_name)
-
-    if tex_num > 0:
+    if tex_num >= 0:
         tex = bpy.data.images[tex_num]
     else:
         tex = None
+    return tex
 
+
+def show_texture_in_mat(tex_name, mat_name):
+    tex = find_tex_by_name(tex_name)
     mat = get_mat_by_name(mat_name)
     principled_node = get_shader_node(
         mat, 'Principled BSDF', 'ShaderNodeBsdfPrincipled')
@@ -113,7 +115,7 @@ def show_texture_in_mat(tex_name, mat_name):
 def bake_tex(headnum, tex_name):
     logger = logging.getLogger(__name__)
     settings = get_main_settings()
-    head = settings.heads[headnum]
+    head = settings.get_head(headnum)
     # Add UV
     mesh = head.headobj.data
 
@@ -145,28 +147,28 @@ def bake_tex(headnum, tex_name):
 
     # There no cameras on object
     if len(head.cameras) == 0:
+        logger.debug("NO CAMERAS ON HEAD")
         return
 
     w = -1
     h = -1
     changes = 0
     for i, c in enumerate(head.cameras):
-        if c.use_in_tex_baking:
-            # Image marked to use in baking
-            img = c.cam_image
-            if img:
-                size = img.size
-                if size[0] != w or size[1] != h:
-                    changes += 1
-                w = size[0]
-                h = size[1]
+        if c.use_in_tex_baking  and c.cam_image and c.pins_count > 0:
+            size = c.cam_image.size
+            if size[0] <= 0 or size[1] <= 0:
+                continue
+            if size[0] != w or size[1] != h:
+                changes += 1
+            w = size[0]
+            h = size[1]
 
-    # We have no background images
     if w <= 0 or h <= 0:
+        logger.debug("NO BACKGROUND IMAGES")
         return
 
-    # Back images has different sizes
     if changes > 1:
+        logger.debug("BACKGROUNDS HAVE DIFFERENT SIZES")
         warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
         warn('INVOKE_DEFAULT', msg=ErrorType.BackgroundsDiffer)
         return
@@ -205,6 +207,7 @@ def bake_tex(headnum, tex_name):
         tex_num = bpy.data.images.find(tex_name)
 
         if tex_num > 0:
+            logger.debug("TEXTURE ALREADY EXISTS")
             tex = bpy.data.images[tex_num]
             bpy.data.images.remove(tex)
 
@@ -215,3 +218,6 @@ def bake_tex(headnum, tex_name):
         tex.pixels[:] = texture.ravel()
         # Pack image to store in blend-file
         tex.pack()
+        logger.debug("TEXTURE BAKED SUCCESSFULLY")
+    else:
+        logger.debug("NO KEYFRAMES")
