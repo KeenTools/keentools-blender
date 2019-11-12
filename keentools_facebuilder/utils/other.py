@@ -33,18 +33,52 @@ def force_ui_redraw(area_type="PREFERENCES"):
                 area.tag_redraw()
 
 
-def setup_user_interface(*args):
-    bpy.context.space_data.overlay.show_floor = args[0]
-    bpy.context.space_data.overlay.show_axis_x = args[1]
-    bpy.context.space_data.overlay.show_axis_y = args[2]
-
-
 def force_stop_shaders():
     FBEdgeShader2D.handler_list = []
     FBEdgeShader3D.handler_list = []
     FBText.handler_list = []
     FBPoints2D.handler_list = []
     FBPoints3D.handler_list = []
+
+
+def _setup_ui_elements(*args):
+    bpy.context.space_data.overlay.show_floor = args[0]
+    bpy.context.space_data.overlay.show_axis_x = args[1]
+    bpy.context.space_data.overlay.show_axis_y = args[2]
+
+
+def hide_ui_elements():
+    state = UserState.get_state()
+    if state is not None:
+        return
+    UserState.put_state(bpy.context.space_data.overlay.show_floor,
+                        bpy.context.space_data.overlay.show_axis_x,
+                        bpy.context.space_data.overlay.show_axis_y)
+    _setup_ui_elements(False, False, False)
+
+
+def restore_ui_elements():
+    state = UserState.get_state()
+    if state is None:
+        return
+    _setup_ui_elements(*state)
+    UserState.reset_state()
+
+
+class UserState:
+    _state = None
+
+    @classmethod
+    def put_state(cls, *args):
+        cls._state = (*args,)
+
+    @classmethod
+    def get_state(cls):
+        return cls._state
+
+    @classmethod
+    def reset_state(cls):
+        cls._state = None
 
 
 class FBTimer:

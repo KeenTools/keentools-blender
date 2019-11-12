@@ -24,8 +24,7 @@ from .utils import manipulate, coords, cameras
 from .config import Config, get_main_settings, ErrorType
 from .fbdebug import FBDebug
 from .fbloader import FBLoader
-from .utils.other import FBStopShaderTimer, force_ui_redraw, \
-    setup_user_interface
+from .utils.other import FBStopShaderTimer, force_ui_redraw, hide_ui_elements
 
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
@@ -210,7 +209,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             self._fix_heads_with_warning()
             return {'FINISHED'}
 
-        setup_user_interface(False, False, False)
+        hide_ui_elements()
 
         # Current headnum & camnum in global settings object
         settings.current_headnum = self.headnum

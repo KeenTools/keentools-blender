@@ -23,7 +23,7 @@ import numpy as np
 
 from .viewport import FBViewport
 from .utils import attrs, coords, cameras
-from .utils.other import FBStopShaderTimer, setup_user_interface
+from .utils.other import FBStopShaderTimer, restore_ui_elements
 
 from .builder import UniBuilder
 from .fbdebug import FBDebug
@@ -171,7 +171,8 @@ class FBLoader:
         # === Debug use only ===
         FBStopShaderTimer.stop()
         logger.debug("STOPPER STOP")
-        setup_user_interface(True, True, True)
+
+        restore_ui_elements()
         logger.debug("OUT PINMODE")
 
     @classmethod
