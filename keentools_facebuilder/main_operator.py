@@ -98,7 +98,7 @@ class OBJECT_OT_FBSelectCamera(Operator):
     bl_idname = Config.fb_main_select_camera_idname
     bl_label = "Pin Mode"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Switch to pin-mode for this camera"
+    bl_description = "Switch to Pin mode for this view"
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)

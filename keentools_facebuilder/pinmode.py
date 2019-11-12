@@ -326,11 +326,6 @@ class FB_OT_PinMode(bpy.types.Operator):
                 and event.value == 'RELEASE':
             self._set_shift_pressed(False)
 
-        # Hardcoded MMB action skip
-        if event.value == 'PRESS' and event.type == 'MIDDLEMOUSE':
-            if not self._is_shift_pressed():
-                return {'RUNNING_MODAL'}
-
         return self.on_final(context, head)
 
     def on_final(self, context, head):

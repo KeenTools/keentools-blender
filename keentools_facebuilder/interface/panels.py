@@ -184,7 +184,7 @@ class FB_PT_CameraPanel(Panel):
         col = layout.column()
         if head.auto_focal_estimation:
             col.active = False
-            col.alert = True
+            # col.alert = True
             col.enabled = False
         row = col.row()
         row.prop(head, 'focal')
@@ -193,8 +193,8 @@ class FB_PT_CameraPanel(Panel):
             text='', icon='SETTINGS')
 
         row = layout.row()
-        if head.auto_focal_estimation:
-            row.alert = True
+        # if head.auto_focal_estimation:
+        #     row.alert = True
         row.prop(head, 'auto_focal_estimation')
 
 
@@ -280,7 +280,6 @@ class FB_PT_ViewsPanel(Panel):
         fw = settings.frame_width
         fh = settings.frame_height
 
-        # Output cameras list
         for i, camera in enumerate(head.cameras):
             box = layout.box()
             row = box.row()
@@ -295,8 +294,7 @@ class FB_PT_ViewsPanel(Panel):
             view_icon = 'PINNED' if camera.pins_count > 0 else 'HIDE_OFF'
 
             col = row.column()
-            # col.alignment = 'LEFT'
-            if settings.current_camnum == i:
+            if settings.current_camnum == i and settings.pinmode:
                 col.alert = True
 
             op = col.operator(
@@ -304,8 +302,6 @@ class FB_PT_ViewsPanel(Panel):
                 text="{}".format(camera.cam_image.name), icon=view_icon)
             op.headnum = headnum
             op.camnum = i
-
-            # row.label(text="{}".format(camera.cam_image.name))
 
             col = row.column()
             if not camera.cam_image:
@@ -324,6 +320,21 @@ class FB_PT_ViewsPanel(Panel):
             op.headnum = headnum
             op.camnum = i
 
+    def _there_are_pins(self, head):
+        for c in head.cameras:
+            if c.pins_count > 0:
+                return True
+        return False
+
+    def _draw_camera_hint(self, layout, headnum):
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        if not self._there_are_pins(head) and head.get_last_camnum() >= 0:
+            col = layout.column()
+            col.alert = True
+            col.scale_y = 0.75
+            col.label(text='Press a view button below', icon='INFO')
+            col.label(text='to switch to Pin mode', icon='BLANK1')
 
     def draw(self, context):
         settings = get_main_settings()
@@ -350,7 +361,8 @@ class FB_PT_ViewsPanel(Panel):
         op = row.operator(Config.fb_main_fix_size_idname,
                      text='', icon='SETTINGS')
         op.headnum = headnum
-        # row.separator_spacer()
+
+        self._draw_camera_hint(layout, headnum)
 
         # Large List of cameras
         self._draw_camera_list(headnum, layout)
@@ -359,7 +371,7 @@ class FB_PT_ViewsPanel(Panel):
         row = layout.row()
         row.scale_y = 2.0
         op = row.operator(Config.fb_multiple_filebrowser_idname,
-                          text="Add Image(s)", icon='OUTLINER_OB_IMAGE')
+                          text="Add Images", icon='OUTLINER_OB_IMAGE')
         op.headnum = headnum
 
         # Camera buttons Reset camera, Remove pins

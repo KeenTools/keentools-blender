@@ -169,12 +169,12 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     def _draw_accept_license_offer(self, layout):
         box = layout.box()
         col = box.column()
+        col.alert = True
         col.scale_y = 0.75
-        content = ['We cannot ship our core library with addon '
-                   'due to Blender license restrictions,',
-                   'so you need to install it yourself.']
-        for c in content:
-            col.label(text=c)
+        col.label(text='We cannot ship our core library with our addon '
+                       'due to Blender', icon='INFO')
+        col.label(text=' license limitations, so you need to install '
+                       'it yourself.', icon='BLANK1')
 
         box2 = box.box()
         row = box2.split(factor=0.85)
