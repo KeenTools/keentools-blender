@@ -63,15 +63,6 @@ class FB_OT_Actor(Operator):
             # Switch to Material Mode or Back
             materials.toggle_mode(('MATERIAL',))
 
-        elif self.action == 'show_tex':
-            mat = materials.show_texture_in_mat(
-                Config.tex_builder_filename, Config.tex_builder_matname)
-            # Assign Material to Head Object
-            materials.assign_mat(
-                settings.heads[self.headnum].headobj, mat)
-            # Switch to Material Mode or Back
-            materials.toggle_mode(('SOLID', 'MATERIAL'))
-
         elif self.action == 'bake_tex':
             materials.bake_tex(self.headnum, Config.tex_builder_filename)
             mat = materials.show_texture_in_mat(

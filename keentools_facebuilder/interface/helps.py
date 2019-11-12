@@ -20,6 +20,9 @@ import bpy
 from ..config import Config, get_main_settings
 
 
+_help_window_width = 500
+
+
 class HELP_OT_CameraHelp(bpy.types.Operator):
     bl_idname = Config.fb_help_camera_idname
     bl_label = "Camera settings"
@@ -28,10 +31,6 @@ class HELP_OT_CameraHelp(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        # layout.label(text='Camera Help')
-
-        # box = layout.box()
-        # box.scale_y = 0.75
         col = layout.column()
         col.scale_y = 0.75
         content = [
@@ -65,7 +64,8 @@ class HELP_OT_CameraHelp(bpy.types.Operator):
 
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=500)
+        return context.window_manager.invoke_props_dialog(
+            self, width=_help_window_width)
 
     def execute(self, context):
         return {'FINISHED'}
@@ -79,10 +79,19 @@ class HELP_OT_ExifHelp(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text='EXIF Help')
+        col = layout.column()
+        col.scale_y = 0.75
+        content = [
+            "On this panel you can load and see EXIF information stored in the image files",
+            "that you have loaded into Views. By default EXIF data of the first file is loaded.",
+            "This information can be used for the camera in the panel above after loading."]
+
+        for c in content:
+            col.label(text=c)
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
+        return context.window_manager.invoke_props_dialog(
+            self, width=_help_window_width)
 
     def execute(self, context):
         return {'FINISHED'}
@@ -96,10 +105,24 @@ class HELP_OT_ViewsHelp(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text='Views Help')
+        col = layout.column()
+        col.scale_y = 0.75
+        content = [
+            "On this panel you can load and remove images automatically creating and removing ",
+            "views, replace image files, set the Frame size and go into Pin Mode for each ",
+            "of the Views.",
+            " ",
+            "Please note that all images loaded into stack should have the same dimensions,",
+            "they should be shot with the same camera settings (sensor size and focal length),",
+            "should not be cropped (or the camera settings should be modified accordingly),",
+            "should be shot in the same orientation (vertical or horizontal)."]
+
+        for c in content:
+            col.label(text=c)
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
+        return context.window_manager.invoke_props_dialog(
+            self, width=_help_window_width)
 
     def execute(self, context):
         return {'FINISHED'}
@@ -113,10 +136,22 @@ class HELP_OT_ModelHelp(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text='Model Help')
+        col = layout.column()
+        col.scale_y = 0.75
+        content = [
+            "On this panel you can modify the 3D model of the head in different ways: ",
+            "switch on and off different parts of the model (pins created on the disabled ",
+            "parts remain intact), reset the model to the default state (also removing ",
+            "all pins on all views), and finally you can modify the rigidity of the ",
+            "model — the less is the number, the softer the model becomes and the more ",
+            "pins affect its shape."]
+
+        for c in content:
+            col.label(text=c)
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
+        return context.window_manager.invoke_props_dialog(
+            self, width=_help_window_width)
 
     def execute(self, context):
         return {'FINISHED'}
@@ -130,10 +165,44 @@ class HELP_OT_PinSettingsHelp(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text='Pin Settings Help')
+        col = layout.column()
+        col.scale_y = 0.75
+        content = [
+            "Here you can tweak the pin size in terms of visual appearance and the size ",
+            "of the active area that responds to mouse pointer actions."]
+
+        for c in content:
+            col.label(text=c)
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
+        return context.window_manager.invoke_props_dialog(
+            self, width=_help_window_width)
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+
+class HELP_OT_WireframeSettingsHelp(bpy.types.Operator):
+    bl_idname = Config.fb_help_wireframe_settings_idname
+    bl_label = "Wireframe settings"
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = "Show help information about Wireframe settings panel"
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.scale_y = 0.75
+        content = [
+            "On this panel you can change colours and opacity of the model's wireframe ",
+            "visible in Pin mode. Aside of changing colours manually you can try different ",
+            "presets loadable by clicking the one-letter buttons."]
+
+        for c in content:
+            col.label(text=c)
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(
+            self, width=_help_window_width)
 
     def execute(self, context):
         return {'FINISHED'}
@@ -147,10 +216,37 @@ class HELP_OT_TextureHelp(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text='Texture Help')
+        col = layout.column()
+        col.scale_y = 0.75
+        content = [
+            "This panel gives you access to an experimental functionality of automatic texture ",
+            "grabbing and stitching. You can change the resolution of the texture, its layout. ",
+            "You can choose which views to use in the grabbing process after clicking ",
+            "the \"Create Texture\" button, also you can apply the material created ",
+            "automatically from the grabbed texture to the head object. ",
+            " ",
+            "Finally you can tweak the grabbing and stitching algorithm: ",
+            "— Brightness equalisation is a highly experimental feature that will try ",
+            "to normalise the brightness of different texture parts across different views. ",
+            "— Colour equalisation is similar to Brightness equalisation only it affects ",
+            "colour instead of brightness.",
+            "— Angle strictness determines how much the angle of view of the polygon affects ",
+            "the weight of the colour information grabbed for each pixel. The value range ",
+            "is 0-100. When you have multiple frames containing the same pixel, 0 would mean ",
+            "that in the texture you’ll get an average colour of that pixel between colours ",
+            "from all frames where the pixel was found. The larger the number — the more ",
+            "the algorithm prefers frames where the angle of view of the pixel ",
+            "is closer to 90°, still mixing colours from all frames but with different strength.",
+            "— Expanding edges can help with hiding stitches on texture edges visible when ",
+            "the texture is applied to the object. It basically takes the colour of the last ",
+            "pixel on the edge and duplicates it on the next empty pixel."]
+
+        for c in content:
+            col.label(text=c)
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
+        return context.window_manager.invoke_props_dialog(
+            self, width=_help_window_width)
 
     def execute(self, context):
         return {'FINISHED'}

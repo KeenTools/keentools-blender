@@ -54,12 +54,16 @@ class Config:
     fb_main_delete_head_idname = 'object.' + fb_main_delete_head_callname
     fb_main_select_camera_callname = prefix + '_main_select_camera'
     fb_main_select_camera_idname = 'object.' + fb_main_select_camera_callname
-    fb_main_center_geo_callname = prefix + '_main_center_geo'
-    fb_main_center_geo_idname = 'object.' + fb_main_center_geo_callname
+
+    fb_center_geo_callname = 'center_geo'
+    fb_center_geo_idname = operators + '.' + fb_center_geo_callname
+
     fb_main_unmorph_callname = prefix + '_main_unmorph'
     fb_main_unmorph_idname = 'object.' + fb_main_unmorph_callname
-    fb_main_remove_pins_callname = prefix + '_main_remove_pins'
-    fb_main_remove_pins_idname = 'object.' + fb_main_remove_pins_callname
+
+    fb_remove_pins_callname = 'remove_pins'
+    fb_remove_pins_idname = operators + '.' + fb_remove_pins_callname
+
     fb_main_wireframe_color_callname = prefix + '_main_wireframe_color'
     fb_main_wireframe_color_idname = 'object.' + \
                                      fb_main_wireframe_color_callname
@@ -192,6 +196,10 @@ class Config:
     fb_help_pin_settings_callname = 'help_pin_settings'
     fb_help_pin_settings_idname = operators + '.' \
                                   + fb_help_pin_settings_callname
+
+    fb_help_wireframe_settings_callname = 'help_wireframe_settings'
+    fb_help_wireframe_settings_idname = \
+        operators + '.' + fb_help_wireframe_settings_callname
 
     fb_help_texture_callname = 'help_texture'
     fb_help_texture_idname = operators + '.' + fb_help_texture_callname

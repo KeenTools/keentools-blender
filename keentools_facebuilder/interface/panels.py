@@ -33,7 +33,7 @@ def _show_all_panels():
     return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
 
 
-class OBJECT_PT_FBHeaderPanel(Panel):
+class FB_PT_HeaderPanel(Panel):
     bl_idname = Config.fb_header_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -59,8 +59,6 @@ class OBJECT_PT_FBHeaderPanel(Panel):
             Config.fb_add_head_operator_idname,
             text='Create a new head', icon='USER')
 
-        # row = layout.row()
-        # row.label(text='', icon='INFO')
         box = layout.box()
         col = box.column()
         col.scale_y = 0.75
@@ -145,7 +143,7 @@ class OBJECT_PT_FBHeaderPanel(Panel):
             self._draw_many_heads(layout)
 
 
-class OBJECT_PT_FBCameraPanel(Panel):
+class FB_PT_CameraPanel(Panel):
     bl_idname = Config.fb_camera_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -243,7 +241,7 @@ class FB_PT_ExifPanel(Panel):
                 col.label(text=a)
 
 
-class OBJECT_PT_FBViewsPanel(Panel):
+class FB_PT_ViewsPanel(Panel):
     bl_idname = Config.fb_views_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -266,12 +264,12 @@ class OBJECT_PT_FBViewsPanel(Panel):
     def _draw_pins_panel(self, headnum, camnum):
         layout = self.layout
         box = layout.box()
-        op = box.operator(Config.fb_main_center_geo_idname,
+        op = box.operator(Config.fb_center_geo_idname,
                           text="Reset camera")
         op.headnum = headnum
         op.camnum = camnum
         op = box.operator(
-            Config.fb_main_remove_pins_idname, text="Remove pins")
+            Config.fb_remove_pins_idname, text="Remove pins")
         op.headnum = headnum
         op.camnum = camnum
 
@@ -370,7 +368,7 @@ class OBJECT_PT_FBViewsPanel(Panel):
             self._draw_pins_panel(headnum, settings.current_camnum)
 
 
-class OBJECT_PT_FBModel(Panel):
+class FB_PT_Model(Panel):
     bl_idname = Config.fb_model_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -429,7 +427,8 @@ class OBJECT_PT_FBModel(Panel):
         row.prop(head, 'check_neck')
         row.prop(head, 'check_nose')
 
-class OBJECT_PT_TexturePanel(Panel):
+
+class FB_PT_TexturePanel(Panel):
     bl_idname = Config.fb_texture_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -438,7 +437,6 @@ class OBJECT_PT_TexturePanel(Panel):
     bl_options = {'DEFAULT_CLOSED'}
     bl_context = "objectmode"
 
-    # Panel appear only when actual
     @classmethod
     def poll(cls, context):
         return _show_all_panels()
@@ -460,7 +458,6 @@ class OBJECT_PT_TexturePanel(Panel):
                 return space.shading.type
         return 'NONE'
 
-    # Face Builder Main Panel Draw
     def draw(self, context):
         layout = self.layout
         obj = context.object
@@ -506,7 +503,7 @@ class OBJECT_PT_TexturePanel(Panel):
         box.prop(settings, 'tex_uv_expand_percents')
 
 
-class OBJECT_PT_FBColorsPanel(Panel):
+class FB_PT_WireframeSettingsPanel(Panel):
     bl_idname = Config.fb_colors_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -514,12 +511,18 @@ class OBJECT_PT_FBColorsPanel(Panel):
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 
-    # Panel appear only when actual
     @classmethod
     def poll(cls, context):
         return _show_all_panels()
 
-    # Face Builder Main Panel Draw
+    def draw_header_preset(self, context):
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        row.operator(
+            Config.fb_help_wireframe_settings_idname,
+            text='', icon='QUESTION')
+
     def draw(self, context):
         layout = self.layout
         settings = get_main_settings()
@@ -551,7 +554,7 @@ class OBJECT_PT_FBColorsPanel(Panel):
         layout.prop(settings, 'show_specials', text='Highlight head parts')
 
 
-class OBJECT_PT_FBPinSettingsPanel(Panel):
+class FB_PT_PinSettingsPanel(Panel):
     bl_idname = Config.fb_pin_settings_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"

@@ -112,7 +112,7 @@ class FBStopShaderTimer(FBTimer):
 class FBText:
     """ Text on screen output in Modal view"""
     # Test only
-    counter = 0
+    _counter = 0
 
     # Store all draw handlers registered by class objects
     handler_list = []
@@ -143,7 +143,12 @@ class FBText:
 
     @classmethod
     def inc_counter(cls):
-        cls.counter += 1
+        cls._counter += 1
+        return cls._counter
+
+    @classmethod
+    def get_counter(cls):
+        return cls._counter
 
     def text_draw_callback(self, op, context):
         # Force Stop
@@ -155,14 +160,13 @@ class FBText:
 
         # TESTING
         # self.inc_counter()
-        # opnum = settings.opnum
         camera = settings.get_camera(settings.current_headnum,
                                      settings.current_camnum)
         # Draw text
         if len(self.message) > 0:
             region = context.region
             text = "{0} [{1}]".format(self.message[0], camera.cam_image.name)
-            subtext = self.message[1]
+            subtext = "{} | {}".format(self.message[1], settings.opnum)
 
             xt = int(region.width / 2.0)
 

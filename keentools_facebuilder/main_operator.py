@@ -25,7 +25,7 @@ from bpy.props import (
     IntProperty,
 )
 
-from .utils import cameras, manipulate
+from .utils import cameras, manipulate, materials
 from .utils.manipulate import check_settings
 from .fbloader import FBLoader
 from .fbdebug import FBDebug
@@ -146,10 +146,10 @@ class OBJECT_OT_FBSelectCamera(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBCenterGeo(Operator):
-    bl_idname = Config.fb_main_center_geo_idname
+class FB_OT_CenterGeo(Operator):
+    bl_idname = Config.fb_center_geo_idname
     bl_label = "Reset Camera"
-    bl_options = {'REGISTER'}  # 'UNDO'
+    bl_options = {'REGISTER', 'INTERNAL'}  # 'UNDO'
     bl_description = "Place the camera so the model will be centred " \
                      "in the view"
 
@@ -163,14 +163,23 @@ class OBJECT_OT_FBCenterGeo(Operator):
         if not check_settings():
             return {'CANCELLED'}
 
+        settings = get_main_settings()
         headnum = self.headnum
         camnum = self.camnum
 
         fb = FBLoader.get_builder()
         kid = cameras.keyframe_by_camnum(headnum, camnum)
+
+        FBLoader.fb_save(headnum, camnum)
+        manipulate.push_head_state_in_undo_history(
+            settings.get_head(headnum), 'Before Reset Camera')
+
         fb.center_model_mat(kid)
         FBLoader.fb_save(headnum, camnum)
         FBLoader.fb_redraw(headnum, camnum)
+
+        manipulate.push_head_state_in_undo_history(
+            settings.get_head(headnum), 'After Reset Camera')
         # === Debug only ===
         FBDebug.add_event_to_queue('CENTER_GEO', 0, 0)
         FBDebug.add_event_to_queue('FORCE_SNAPSHOT', 0, 0)
@@ -178,10 +187,10 @@ class OBJECT_OT_FBCenterGeo(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBUnmorph(Operator):
+class FB_OT_Unmorph(Operator):
     bl_idname = Config.fb_main_unmorph_idname
     bl_label = "Reset"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Reset shape deformations to the default state. " \
                      "It will remove all pins as well"
 
@@ -197,9 +206,18 @@ class OBJECT_OT_FBUnmorph(Operator):
         settings = get_main_settings()
         headnum = self.headnum
         camnum = self.camnum
+        head = settings.get_head(headnum)
 
         fb = FBLoader.get_builder()
+        FBLoader.fb_save(headnum, camnum)
+        manipulate.push_head_state_in_undo_history(
+            settings.get_head(headnum), 'Before Reset')
+
         fb.unmorph()
+
+        for i, camera in enumerate(head.cameras):
+            fb.remove_pins(camera.keyframe_id)
+            camera.pins_count = 0
 
         if settings.pinmode:
             FBLoader.fb_save(headnum, camnum)
@@ -208,19 +226,22 @@ class OBJECT_OT_FBUnmorph(Operator):
             FBLoader.save_only(headnum)
             FBLoader.update_mesh_only(headnum)
 
+        FBLoader.fb_save(headnum, camnum)
+        manipulate.push_head_state_in_undo_history(
+            settings.get_head(headnum), 'After Remove pins')
+
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBRemovePins(Operator):
-    bl_idname = Config.fb_main_remove_pins_idname
+class FB_OT_RemovePins(Operator):
+    bl_idname = Config.fb_remove_pins_idname
     bl_label = "Remove pins"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Remove all pins on this view"
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
-    # This draw overrides standard operator panel
     def draw(self, context):
         pass
 
@@ -235,12 +256,20 @@ class OBJECT_OT_FBRemovePins(Operator):
 
         fb = FBLoader.get_builder()
         kid = cameras.keyframe_by_camnum(headnum, camnum)
+        FBLoader.fb_save(headnum, camnum)
+        manipulate.push_head_state_in_undo_history(
+            settings.get_head(headnum), 'Before Remove pins')
+
         fb.remove_pins(kid)
         # Added but don't work
         fb.solve_for_current_pins(kid)
         FBLoader.fb_save(headnum, camnum)
         FBLoader.fb_redraw(headnum, camnum)
         FBLoader.update_pins_count(headnum, camnum)
+
+        manipulate.push_head_state_in_undo_history(
+            settings.get_head(headnum), 'After Remove pins')
+
         # === Debug only ===
         FBDebug.add_event_to_queue('REMOVE_PINS', 0, 0)
         FBDebug.add_event_to_queue('FORCE_SNAPSHOT', 0, 0)
@@ -741,13 +770,23 @@ class FB_OT_ShowTexture(Operator):
         pass
 
     def execute(self, context):
+        tex = materials.find_tex_by_name(Config.tex_builder_filename)
+        if tex is None:
+            return {'CANCELLED'}
+
         settings = get_main_settings()
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum,
                                  settings.current_camnum)
-        op = getattr(get_operators(), Config.fb_actor_callname)
-        op('INVOKE_DEFAULT', action='show_tex',
-           headnum=settings.current_headnum)
+
+        mat = materials.show_texture_in_mat(
+            Config.tex_builder_filename, Config.tex_builder_matname)
+        materials.assign_mat(
+            settings.get_head(settings.current_headnum).headobj, mat)
+        materials.switch_to_mode('MATERIAL')
+
+        logger = logging.getLogger(__name__)
+        logger.debug("SWITCH TO MATERIAL MODE WITH TEXTURE")
         return {'FINISHED'}
 
 
@@ -761,19 +800,22 @@ class FB_OT_ShowSolid(Operator):
         pass
 
     def execute(self, context):
+        logger = logging.getLogger(__name__)
+        logger.debug("SWITCH TO SOLID MODE")
         settings = get_main_settings()
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum,
                                  settings.current_camnum)
-        op = getattr(get_operators(), Config.fb_actor_callname)
-        op('INVOKE_DEFAULT', action='show_tex',
-           headnum=settings.current_headnum)
+        # op = getattr(get_operators(), Config.fb_actor_callname)
+        # op('INVOKE_DEFAULT', action='show_tex',
+        #    headnum=settings.current_headnum)
+        materials.switch_to_mode('SOLID')
         return {'FINISHED'}
 
 
 CLASSES_TO_REGISTER = (FB_OT_SelectHead, OBJECT_OT_FBDeleteHead,
-                       OBJECT_OT_FBSelectCamera, OBJECT_OT_FBCenterGeo,
-                       OBJECT_OT_FBUnmorph, OBJECT_OT_FBRemovePins,
+                       OBJECT_OT_FBSelectCamera, FB_OT_CenterGeo,
+                       FB_OT_Unmorph, FB_OT_RemovePins,
                        OBJECT_OT_FBWireframeColor, OBJECT_OT_FBFilterCameras,
                        FB_OT_AllViewsMenuExec,
                        FB_OT_ProperViewMenuExec, FB_OT_ImproperViewMenuExec,

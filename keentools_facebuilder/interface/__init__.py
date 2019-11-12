@@ -29,19 +29,20 @@ CLASSES_TO_REGISTER = (FB_MT_FrameSizeMenu,  # menus
                        FB_MT_SensorWidthMenu,
                        FB_MT_FocalLengthMenu,
                        FB_MT_ReadExifMenu,
-                       OBJECT_PT_FBHeaderPanel,  # panels
-                       OBJECT_PT_FBCameraPanel,
+                       FB_PT_HeaderPanel,  # panels
+                       FB_PT_CameraPanel,
                        FB_PT_ExifPanel,
-                       OBJECT_PT_FBViewsPanel,
-                       OBJECT_PT_FBModel,
-                       OBJECT_PT_FBPinSettingsPanel,
-                       OBJECT_PT_FBColorsPanel,
-                       OBJECT_PT_TexturePanel,
+                       FB_PT_ViewsPanel,
+                       FB_PT_Model,
+                       FB_PT_PinSettingsPanel,
+                       FB_PT_WireframeSettingsPanel,
+                       FB_PT_TexturePanel,
                        HELP_OT_CameraHelp,  # helps
                        HELP_OT_ExifHelp,
                        HELP_OT_ViewsHelp,
                        HELP_OT_ModelHelp,
                        HELP_OT_PinSettingsHelp,
+                       HELP_OT_WireframeSettingsHelp,
                        HELP_OT_TextureHelp,
                        WM_OT_FBAddonWarning,  # dialogs
                        FB_OT_ExifSelector,
