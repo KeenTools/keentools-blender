@@ -295,14 +295,16 @@ class FB_PT_ViewsPanel(Panel):
             view_icon = 'PINNED' if camera.pins_count > 0 else 'HIDE_OFF'
 
             col = row.column()
+            cam_name = camera.cam_image.name
             if settings.current_camnum == i and settings.pinmode:
-                col.alert = True
-
-            op = col.operator(
-                Config.fb_main_select_camera_idname,
-                text="{}".format(camera.cam_image.name), icon=view_icon)
-            op.headnum = headnum
-            op.camnum = i
+                col.prop(settings, 'blue_button', toggle=1,
+                         text=cam_name, icon=view_icon)
+            else:
+                op = col.operator(
+                    Config.fb_main_select_camera_idname,
+                    text=cam_name, icon=view_icon)
+                op.headnum = headnum
+                op.camnum = i
 
             col = row.column()
             if not camera.cam_image:
@@ -383,9 +385,11 @@ class FB_PT_ViewsPanel(Panel):
         # Open sequence Button (large x2)
         col = layout.column()
         col.scale_y = 2.0
+
         op = col.operator(Config.fb_multiple_filebrowser_exec_idname,
                           text="Add Images", icon='OUTLINER_OB_IMAGE')
         op.headnum = headnum
+        op.auto_update_frame_size = settings.get_last_camnum(headnum) < 0
 
         # Camera buttons Reset camera, Remove pins
         if settings.pinmode and \
