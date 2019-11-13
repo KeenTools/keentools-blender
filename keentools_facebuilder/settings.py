@@ -32,7 +32,7 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 from . fbdebug import FBDebug
-from . config import Config, get_main_settings
+from . config import Config, get_main_settings, get_operators
 from .utils.manipulate import what_is_state
 
 
@@ -73,6 +73,13 @@ def update_focal(self, context):
     settings = get_main_settings()
     if not settings.pinmode:
         FBLoader.update_all_camera_focals(self)
+
+
+def update_blue_button(self, context):
+    settings = get_main_settings()
+    settings.blue_button = True
+    op = getattr(get_operators(), Config.fb_exit_pinmode_callname)
+    op('EXEC_DEFAULT')
 
 
 def update_mesh_parts(self, context):
@@ -459,6 +466,10 @@ class FBSceneSettings(PropertyGroup):
     tex_auto_preview: BoolProperty(
         description="Automatically apply the created texture",
         name="Automatically apply the created texture", default=True)
+
+    blue_button: BoolProperty(
+        description="Current camera",
+        name="Blue button", default=True, update=update_blue_button)
 
     def get_head(self, headnum):
         if 0 <= headnum <= len(self.heads):

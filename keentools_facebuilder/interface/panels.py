@@ -294,14 +294,17 @@ class FB_PT_ViewsPanel(Panel):
             view_icon = 'PINNED' if camera.pins_count > 0 else 'HIDE_OFF'
 
             col = row.column()
+            cam_name = "{}".format(camera.cam_image.name)
             if settings.current_camnum == i and settings.pinmode:
-                col.alert = True
-
-            op = col.operator(
-                Config.fb_main_select_camera_idname,
-                text="{}".format(camera.cam_image.name), icon=view_icon)
-            op.headnum = headnum
-            op.camnum = i
+                # col.alert = True
+                col.prop(settings, 'blue_button', toggle=1,
+                         text=cam_name, icon=view_icon)
+            else:
+                op = col.operator(
+                    Config.fb_main_select_camera_idname,
+                    text=cam_name, icon=view_icon)
+                op.headnum = headnum
+                op.camnum = i
 
             col = row.column()
             if not camera.cam_image:
