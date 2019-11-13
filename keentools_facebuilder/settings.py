@@ -467,6 +467,7 @@ class FBSceneSettings(PropertyGroup):
         description="Automatically apply the created texture",
         name="Automatically apply the created texture", default=True)
 
+    # Workaround to get blue button for selected camera
     blue_button: BoolProperty(
         description="Current camera",
         name="Blue button", default=True, update=update_blue_button)
