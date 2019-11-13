@@ -247,7 +247,7 @@ class FB_OT_MovePin(bpy.types.Operator):
         camnum = self.get_camnum()
         head = settings.get_head(headnum)
         headobj = head.headobj
-        cam = settings.heads[headnum].cameras[camnum]
+        cam = settings.get_camera(headnum, camnum)
         camobj = cam.camobj
         kid = cameras.keyframe_by_camnum(headnum, camnum)
 

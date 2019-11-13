@@ -512,11 +512,11 @@ class FBLoader:
 
         if img is not None:
             b.image = img
-            settings.heads[headnum].cameras[camnum].cam_image = img
+            settings.get_camera(headnum, camnum).cam_image = img
         # b.image = settings.heads[headnum].cameras[camnum].cam_image
         b.frame_method = 'CROP'
-        b.show_on_foreground = False  # True
-        b.alpha = 1.0  # 0.5
+        b.show_on_foreground = False
+        b.alpha = 1.0
 
         # We added new keyframe, so update serial string
         FBLoader.save_only(headnum)

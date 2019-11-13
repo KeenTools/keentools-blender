@@ -27,6 +27,7 @@ from ..fbloader import FBLoader
 from ..config import Config, get_main_settings, get_operators, ErrorType
 
 from ..utils.exif_reader import read_exif, init_exif_settings, exif_message
+from ..utils.other import restore_ui_elements
 
 
 class FB_OT_SingleFilebrowserExec(Operator):
@@ -40,6 +41,7 @@ class FB_OT_SingleFilebrowserExec(Operator):
 
     def execute(self, context):
         settings = get_main_settings()
+        restore_ui_elements()
 
         op = getattr(get_operators(), Config.fb_single_filebrowser_callname)
         op('INVOKE_DEFAULT', headnum=settings.tmp_headnum,
@@ -89,8 +91,8 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
 
         try:
             img = bpy.data.images.load(self.filepath)
-            head = settings.heads[self.headnum]
-            head.cameras[self.camnum].cam_image = img
+            head = settings.get_head(self.headnum)
+            head.get_camera(self.camnum).cam_image = img
         except RuntimeError:
             logger.error("FILE READ ERROR: {}".format(self.filepath))
             return {'FINISHED'}
@@ -99,6 +101,28 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
         init_exif_settings(self.headnum, exif_data)
         message = exif_message(self.headnum, exif_data)
         head.exif.message = message
+        return {'FINISHED'}
+
+
+class FB_OT_MultipleFilebrowserExec(Operator):
+    bl_idname = Config.fb_multiple_filebrowser_exec_idname
+    bl_label = "Open Images"
+    bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
+    bl_description = "Load images and create views. " \
+                     "All images must be of the same size. " \
+                     "You can select multiple images at once"
+
+    headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        restore_ui_elements()
+
+        op = getattr(get_operators(), Config.fb_multiple_filebrowser_callname)
+        op('INVOKE_DEFAULT', headnum=self.headnum)
+
         return {'FINISHED'}
 
 

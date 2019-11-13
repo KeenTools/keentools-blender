@@ -118,14 +118,17 @@ class Config:
     fb_show_solid_callname = 'show_solid'
     fb_show_solid_idname = operators + '.' + fb_show_solid_callname
 
-
     fb_main_default_sensor_callname = prefix + '_main_default_sensor'
     fb_main_default_sensor_idname = 'object.' + fb_main_default_sensor_callname
     fb_main_all_unknown_callname = prefix + '_main_all_unknown'
     fb_main_all_unknown_idname = 'object.' + fb_main_all_unknown_callname
 
+    fb_multiple_filebrowser_callname = 'open_multiple_filebrowser'
     fb_multiple_filebrowser_idname = \
-        operators + '.' + 'open_multiple_filebrowser'
+        operators + '.' + fb_multiple_filebrowser_callname
+    fb_multiple_filebrowser_exec_callname = 'open_multiple_filebrowser_exec'
+    fb_multiple_filebrowser_exec_idname = \
+        operators + '.' + fb_multiple_filebrowser_exec_callname
 
     fb_single_filebrowser_callname = 'open_single_filebrowser'
     fb_single_filebrowser_idname = \
@@ -161,6 +164,9 @@ class Config:
 
     fb_tex_selector_callname = 'tex_selector'
     fb_tex_selector_idname = operators + '.' + fb_tex_selector_callname
+
+    fb_exit_pinmode_callname = 'exit_pinmode'
+    fb_exit_pinmode_idname = operators + '.' + fb_exit_pinmode_callname
 
     # Add Mesh commands
     fb_add_head_operator_callname = 'add_head'

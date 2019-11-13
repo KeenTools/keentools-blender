@@ -228,7 +228,7 @@ class FB_OT_Unmorph(Operator):
 
         FBLoader.fb_save(headnum, camnum)
         manipulate.push_head_state_in_undo_history(
-            settings.get_head(headnum), 'After Remove pins')
+            settings.get_head(headnum), 'After Reset')
 
         return {'FINISHED'}
 
@@ -458,7 +458,9 @@ class OBJECT_OT_FBSensorWidthWindow(Operator):
     def draw(self, context):
         settings = get_main_settings()
         layout = self.layout
-        head = settings.get_head(self.headnum)  # settings.tmp_headnum
+        head = settings.get_head(self.headnum)
+
+        split_factor = 0.37
 
         # Auto Sensor & Focal via EXIF
         if head.exif.sensor_width > 0.0 and head.exif.sensor_length > 0.0 \
@@ -468,13 +470,13 @@ class OBJECT_OT_FBSensorWidthWindow(Operator):
             f = head.exif.focal
             txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
 
-            row = layout.row()
+            row = layout.split(factor=split_factor)
             op = row.operator(Config.fb_camera_actor_operator_idname,
                                  text=txt,
                                  icon='OBJECT_DATAMODE')
             op.headnum = settings.tmp_headnum
             op.action = 'exif_sensor_and_focal'
-            row.label(text='EXIF Sensor & [EXIF Focal]')
+            row.label(text='EXIF Sensor & [EXIF Focal Length]')
 
         # EXIF Focal and Sensor via 35mm equiv.
         if head.exif.focal > 0.0 and head.exif.focal35mm > 0.0:
@@ -482,28 +484,13 @@ class OBJECT_OT_FBSensorWidthWindow(Operator):
             w, h = get_sensor_size_35mm_equivalent(head)
             txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
 
-            row = layout.row()
+            row = layout.split(factor=split_factor)
             op = row.operator(Config.fb_camera_actor_operator_idname,
                 text=txt,
                 icon='OBJECT_HIDDEN')
             op.headnum = settings.tmp_headnum
             op.action = 'exif_focal_and_sensor_via_35mm'
-            row.label(text='Sensor via 35mm equiv. & [EXIF Focal]')
-
-        # Auto Sensor & Focal via EXIF 35mm equiv.
-        # if head.exif.focal > 0.0 and head.exif.focal35mm > 0.0:
-        #     w = 35.0
-        #     h = 24.0 * 35.0 / 36.0
-        #     f = head.exif.focal35mm
-        #     txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
-        #
-        #     row = layout.row()
-        #     op = row.operator(Config.fb_camera_actor_operator_idname,
-        #         text=txt,
-        #         icon='FULLSCREEN_ENTER')
-        #     op.headnum = settings.tmp_headnum
-        #     op.action = 'standard_sensor_and_exif_focal35mm'
-        #     row.label(text='Standard Sensor & [Focal 35mm equiv.]')
+            row.label(text='Sensor via 35mm equiv. & [EXIF Focal Length]')
 
         layout.separator()
 
@@ -513,7 +500,7 @@ class OBJECT_OT_FBSensorWidthWindow(Operator):
             h = head.exif.sensor_length
             txt = "{:.2f} x {:.2f} mm   ".format(w, h)
 
-            row = layout.row()
+            row = layout.split(factor=split_factor)
             op = row.operator(Config.fb_camera_actor_operator_idname,
                                  text=txt,
                                  icon='OBJECT_DATAMODE')
@@ -526,7 +513,7 @@ class OBJECT_OT_FBSensorWidthWindow(Operator):
             w, h = get_sensor_size_35mm_equivalent(head)
             txt = "{:.2f} x {:.2f} mm   ".format(w, h)
 
-            row = layout.row()
+            row = layout.split(factor=split_factor)
             op = row.operator(Config.fb_camera_actor_operator_idname,
                                  text=txt,
                                  icon='OBJECT_HIDDEN')
@@ -537,7 +524,7 @@ class OBJECT_OT_FBSensorWidthWindow(Operator):
         # ----------------
         layout.separator()
 
-        row = layout.row()
+        row = layout.split(factor=split_factor)
         op = row.operator(Config.fb_camera_actor_operator_idname,
                              text="36 x 24 mm",
                              icon='FULLSCREEN_ENTER')
@@ -546,13 +533,9 @@ class OBJECT_OT_FBSensorWidthWindow(Operator):
         row.label(text='35mm Full-frame (default)')
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=500)
+        return context.window_manager.invoke_props_dialog(self, width=480)
 
     def execute(self, context):
-        settings = get_main_settings()
-        settings.tmp_headnum = self.headnum
-        # bpy.ops.wm.call_menu(
-        #     'INVOKE_DEFAULT', name=Config.fb_sensor_width_menu_idname)
         return {'FINISHED'}
 
 
@@ -709,9 +692,9 @@ class FB_OT_ReadExif(Operator):
 
 class FB_OT_ReadExifMenuExec(Operator):
     bl_idname = Config.fb_read_exif_menu_exec_idname
-    bl_label = "Possible Frame size issue detected"
+    bl_label = "Read EXIF"
     bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
-    bl_description = "Size of this image is different from the Frame size"
+    bl_description = "Select image to read EXIF"
 
     headnum: IntProperty(default=0)
 
@@ -813,6 +796,24 @@ class FB_OT_ShowSolid(Operator):
         return {'FINISHED'}
 
 
+class FB_OT_ExitPinmode(Operator):
+    bl_idname = Config.fb_exit_pinmode_idname
+    bl_label = "Exit Pin mode"
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = "Exit Pin mode"
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        if settings.pinmode:
+            FBLoader.out_pinmode(settings.current_headnum,
+                                 settings.current_camnum)
+            bpy.ops.view3d.view_camera()
+        return {'FINISHED'}
+
+
 CLASSES_TO_REGISTER = (FB_OT_SelectHead, OBJECT_OT_FBDeleteHead,
                        OBJECT_OT_FBSelectCamera, FB_OT_CenterGeo,
                        FB_OT_Unmorph, FB_OT_RemovePins,
@@ -824,7 +825,7 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead, OBJECT_OT_FBDeleteHead,
                        FB_OT_ReadExifMenuExec,
                        OBJECT_OT_FBDeleteCamera, OBJECT_OT_FBAddCamera,
                        OBJECT_OT_FBAddonSettings, OBJECT_OT_FBBakeTexture,
-                       FB_OT_ShowTexture, FB_OT_ShowSolid,
+                       FB_OT_ShowTexture, FB_OT_ShowSolid, FB_OT_ExitPinmode,
                        OBJECT_OT_FBSetSensorWidth,
                        OBJECT_OT_FBSensorWidthWindow,
                        OBJECT_OT_FBFocalLengthMenuExec)

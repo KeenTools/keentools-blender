@@ -329,12 +329,22 @@ class FB_PT_ViewsPanel(Panel):
     def _draw_camera_hint(self, layout, headnum):
         settings = get_main_settings()
         head = settings.get_head(headnum)
-        if not self._there_are_pins(head) and head.get_last_camnum() >= 0:
+        if not self._there_are_pins(head) \
+                and head.get_last_camnum() >= 0 \
+                and not settings.pinmode:
             col = layout.column()
             col.alert = True
             col.scale_y = 0.75
             col.label(text='Press a view button below', icon='INFO')
             col.label(text='to switch to Pin mode', icon='BLANK1')
+
+    def _draw_exit_pinmode(self, layout):
+        settings = get_main_settings()
+        if settings.pinmode:
+            col = layout.column()
+            col.scale_y = 2.0
+            op = col.operator(Config.fb_exit_pinmode_idname,
+                              text="Exit Pin mode", icon='LOOP_BACK')
 
     def draw(self, context):
         settings = get_main_settings()
@@ -364,13 +374,15 @@ class FB_PT_ViewsPanel(Panel):
 
         self._draw_camera_hint(layout, headnum)
 
+        self._draw_exit_pinmode(layout)
+
         # Large List of cameras
         self._draw_camera_list(headnum, layout)
 
         # Open sequence Button (large x2)
-        row = layout.row()
-        row.scale_y = 2.0
-        op = row.operator(Config.fb_multiple_filebrowser_idname,
+        col = layout.column()
+        col.scale_y = 2.0
+        op = col.operator(Config.fb_multiple_filebrowser_exec_idname,
                           text="Add Images", icon='OUTLINER_OB_IMAGE')
         op.headnum = headnum
 
