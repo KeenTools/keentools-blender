@@ -606,4 +606,4 @@ class FB_PT_PinSettingsPanel(Panel):
         box.prop(settings, 'pin_size', slider=True)
         box.prop(settings, 'pin_sensitivity', slider=True)
 
-        # layout.prop(settings, 'debug_active', text="Debug Log Active")
+        # layout.prop(settings, 'debug_active', text="Debug Log Active", toggle=1)

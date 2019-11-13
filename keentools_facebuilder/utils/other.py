@@ -61,8 +61,11 @@ def restore_ui_elements():
     state = UserState.get_state()
     if state is None:
         return
-    _setup_ui_elements(*state)
-    UserState.reset_state()
+    try:
+        _setup_ui_elements(*state)
+        UserState.reset_state()
+    except AttributeError:
+        pass
 
 
 class UserState:
