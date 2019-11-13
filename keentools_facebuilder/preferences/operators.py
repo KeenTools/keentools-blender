@@ -64,7 +64,7 @@ class PREF_OT_InstallPkt(bpy.types.Operator):
             return context.window_manager.invoke_props_dialog(self)
         else:
             self.report({'ERROR'},
-                        'Please accept license before running installation')
+                        'You need to accept our EULA before installation')
             return {'FINISHED'}
 
     def execute(self, context):
@@ -114,7 +114,7 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
             return {'RUNNING_MODAL'}
         else:
             self.report({'ERROR'},
-                        'Please accept license before running installation')
+                        'You need to accept our EULA before installation')
             return {'FINISHED'}
 
     def execute(self, context):
