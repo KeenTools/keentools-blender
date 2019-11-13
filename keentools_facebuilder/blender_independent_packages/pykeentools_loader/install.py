@@ -18,26 +18,49 @@
 
 
 import os
+from threading import Thread, Lock
+
 from .config import *
 
 __all__ = ['is_installed', 'install_from_download',
-           'uninstall', 'install_from_file']
+           'install_from_download_async', 'uninstall', 'install_from_file']
 
 
-def is_installed():
+_unpack_mutex = Lock()
+
+
+def _is_installed_not_locked():
     return os.path.exists(pkt_installation_dir())
 
 
-def uninstall():
-    if is_installed():
+def is_installed():
+    _unpack_mutex.acquire()
+    try:
+        return _is_installed_not_locked()
+    finally:
+        _unpack_mutex.release()
+
+
+
+def _uninstall_not_locked():
+    if _is_installed_not_locked():
         import shutil
         shutil.rmtree(pkt_installation_dir(), ignore_errors=True)
 
 
-def _install_from_stream(file_like_object):
-    uninstall()
-
+def uninstall():
+    _unpack_mutex.acquire()
     try:
+        _uninstall_not_locked()
+    finally:
+        _unpack_mutex.release()
+
+
+def _install_from_stream(file_like_object):
+    _unpack_mutex.acquire()
+    try:
+        _uninstall_not_locked()
+
         target_path = pkt_installation_dir()
         os.makedirs(target_path, exist_ok=False)
 
@@ -45,18 +68,21 @@ def _install_from_stream(file_like_object):
         with zipfile.ZipFile(file_like_object) as archive:
             archive.extractall(target_path)
     except Exception:
-        uninstall()
+        _uninstall_not_locked()
         raise
+    finally:
+        _unpack_mutex.release()
 
 
-def _download_with_progress_callback(url, progress_callback, max_callback_updates_count):
-    import urllib.request
+def _download_with_progress_callback(url, progress_callback,
+                                     max_callback_updates_count):
+    import requests
     import io
-    response = urllib.request.urlopen(url)
+    response = requests.get(url, stream=True)
     if progress_callback is None:
-        return io.BytesIO(response.read())
+        return io.BytesIO(response.content)
 
-    length = response.getheader('content-length')
+    length = response.headers.get('content-length')
     if length:
         length = int(length)
         chunk_size = max(8 * 1024, length // max_callback_updates_count)
@@ -66,10 +92,8 @@ def _download_with_progress_callback(url, progress_callback, max_callback_update
     result = io.BytesIO()
     downloaded = 0
     it = 0
-    while True:
-        chunk = response.read(chunk_size)
-        if not chunk:
-            break
+
+    for chunk in response.iter_content(chunk_size=chunk_size):
         result.write(chunk)
         downloaded += len(chunk)
         if length:
@@ -82,19 +106,39 @@ def _download_with_progress_callback(url, progress_callback, max_callback_update
             progress_callback(1.0 - math.exp(-exp_lambda * it))
         it += 1
 
+    progress_callback(1.0)
+
     return result
 
 
-def install_from_download(version=None, nightly=False, progress_callback=None, max_callback_updates_count=481):
+def install_from_download(version=None, nightly=False, progress_callback=None,
+                          final_callback=None, error_callback=None,
+                          max_callback_updates_count=481):
     """
     :param max_callback_updates_count: max progress_callback calls count
     :param progress_callback: callable getting progress in float [0, 1]
     :param version: build to install. KeenTools version (1.5.4 for example) as string. None means latest version
     :param nightly: latest nightly build will be installed if True. version should be None in that case
     """
-    url = download_path(version, nightly)
-    with _download_with_progress_callback(url, progress_callback, max_callback_updates_count) as archive_data:
-        _install_from_stream(archive_data)
+    try:
+        url = download_path(version, nightly)
+        with _download_with_progress_callback(url,
+                progress_callback, max_callback_updates_count) as archive_data:
+            _install_from_stream(archive_data)
+    except Exception as error:
+        if error_callback is not None:
+            error_callback(error)
+    else:
+        if final_callback is not None:
+            final_callback()
+
+
+def install_from_download_async(**kwargs):
+    """
+    The same as :func:`install_from_download`
+    """
+    t = Thread(target=install_from_download, kwargs=kwargs)
+    t.start()
 
 
 def install_from_file(path):

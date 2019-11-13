@@ -23,97 +23,118 @@ from ..config import Config, get_main_settings
 from ..utils.exif_reader import get_sensor_size_35mm_equivalent
 
 
-class OBJECT_MT_FBFixCameraMenu(Menu):
-    bl_label = "Fix Frame Size"
-    bl_idname = Config.fb_fix_camera_frame_menu_idname
-    bl_description = "Fix frame Width and Height parameters for camera"
+class FB_MT_ProperViewMenu(Menu):
+    bl_label = "View operations"
+    bl_idname = Config.fb_proper_view_menu_idname
+    bl_description = "View operations"
 
     def draw(self, context):
         settings = get_main_settings()
         layout = self.layout
 
         op = layout.operator(
-            Config.fb_actor_operator_idname,
-            text="Auto-Detect most frequent Frame Size",
-            icon="FULLSCREEN_ENTER")
-        op.action = 'auto_detect_frame_size'
-
-        op = layout.operator(
-            Config.fb_actor_operator_idname, text="Use This Camera Frame Size",
-            icon='VIEW_CAMERA')
-        op.action = 'use_this_camera_frame_size'
+            Config.fb_main_delete_camera_idname,
+            text='Delete this view', icon='CANCEL')  #
         op.headnum = settings.tmp_headnum
         op.camnum = settings.tmp_camnum
 
-        op = layout.operator(
-            Config.fb_actor_operator_idname, text="Use Scene Render Size",
-            icon='OUTPUT')
-        op.action = 'use_render_frame_size'
+        layout.operator(Config.fb_single_filebrowser_exec_idname,
+                        text="Open file", icon='FILEBROWSER')
 
-        # ----------------
-        layout.separator()
-
-        op = layout.operator(
-            Config.fb_actor_operator_idname, text="Read EXIF for this file",
-            icon='TEXT')
-        op.action = 'read_file_exif'
-        op.headnum = settings.tmp_headnum
-        op.camnum = settings.tmp_camnum
-
-        # ----------------
-        layout.separator()
-
-        op = layout.operator(
-            Config.fb_actor_operator_idname,
-            text="Info about Frame Size warning",
-            icon='ERROR')
-        op.action = 'about_fix_frame_warning'
-
-
-class OBJECT_MT_FBFixMenu(Menu):
-    bl_label = "Frame Size Setup"
-    bl_idname = Config.fb_fix_frame_menu_idname
-    bl_description = "Setup Frame Width and Height parameters for all cameras"
-
-    def draw(self, context):
-        settings = get_main_settings()
-        layout = self.layout
-
-        op = layout.operator(
-            Config.fb_actor_operator_idname,
-            text="Auto-Detect most frequent Size", icon="FULLSCREEN_ENTER")
-        op.action = 'auto_detect_frame_size'
-
-        op = layout.operator(
-            Config.fb_actor_operator_idname, text="Use Scene Render Size",
-            icon="OUTPUT")
-        op.action = 'use_render_frame_size'
-
-        # Disabled to avoid problems with users (but useful for internal use)
-        # ---
-        # frame_width & frame_height should be sets before rescale call
         # op = layout.operator(
-        #    config.fb_actor_operator_idname,
-        #    text="Experimental Rescale to Render Size")
-        # op.action = 'use_render_frame_size_scaled'
+        #     Config.fb_actor_operator_idname,
+        #     text="Read camera settings from EXIF",
+        #     icon='TEXT')
+        # op.action = 'read_file_exif'
+        # op.headnum = settings.tmp_headnum
+        # op.camnum = settings.tmp_camnum
 
-        layout.separator()
 
-        # Add New Camera button
-        op = layout.operator(Config.fb_main_add_camera_idname,
-                             text="Create Empty Camera",
-                             icon='LIBRARY_DATA_BROKEN')  # 'PLUS'
-        op.headnum = settings.tmp_headnum
+class FB_MT_ImproperViewMenu(Menu):
+    bl_label = "View operations"
+    bl_idname = Config.fb_improper_view_menu_idname
+    bl_description = "Improper View operations"
 
-        layout.separator()
+    def draw(self, context):
+        settings = get_main_settings()
+        layout = self.layout
+
         op = layout.operator(
-            Config.fb_actor_operator_idname,
-            text="Info about Frame Size warning",
-            icon="ERROR")
-        op.action = 'about_fix_frame_warning'
+            Config.fb_view_to_frame_size_idname,
+            text="Set the Frame size using this view", icon='ERROR')
+        op.headnum = settings.tmp_headnum
+        op.camnum = settings.tmp_camnum
+
+        op = layout.operator(
+            Config.fb_main_delete_camera_idname,
+            text='Delete this view', icon='CANCEL')  #
+        op.headnum = settings.tmp_headnum
+        op.camnum = settings.tmp_camnum
+
+        layout.operator(Config.fb_single_filebrowser_exec_idname,
+                        text="Open file", icon='FILEBROWSER')
+
+        # op = layout.operator(
+        #     Config.fb_actor_operator_idname,
+        #     text="Read camera settings from EXIF",
+        #     icon='TEXT')
+        # op.action = 'read_file_exif'
+        # op.headnum = settings.tmp_headnum
+        # op.camnum = settings.tmp_camnum
 
 
-class OBJECT_MT_FBFocalLengthMenu(Menu):
+class FB_MT_FrameSizeMenu(Menu):
+    bl_label = "Change Frame size"
+    bl_idname = Config.fb_fix_frame_size_menu_idname
+    bl_description = "Change Frame size description"
+
+    def draw(self, context):
+        layout = self.layout
+
+        layout.operator(
+            Config.fb_most_frequent_frame_size_idname,
+            text="Use most frequent image size", icon="FULLSCREEN_ENTER")
+
+        layout.operator(
+            Config.fb_render_size_to_frame_size_idname,
+            text="Use Scene render size", icon="OUTPUT")
+
+        # layout.separator()
+        # op = layout.operator(
+        #     Config.fb_actor_operator_idname,
+        #     text="About Frame Sizes")  # icon="ERROR"
+        # op.action = 'about_fix_frame_warning'
+
+
+class FB_MT_ReadExifMenu(Menu):
+    bl_label = "Select image to read EXIF"
+    bl_idname = Config.fb_read_exif_menu_idname
+    bl_description = "Select image to read EXIF"
+
+    def draw(self, context):
+        settings = get_main_settings()
+        headnum = settings.tmp_headnum
+        head = settings.get_head(headnum)
+        layout = self.layout
+
+        if not len(head.cameras) > 0:
+            layout.label(text='No images found', icon='ERROR')
+            layout.label(text='You need at least one image to read EXIF.')
+            return
+
+        for i, camera in enumerate(head.cameras):
+            image_icon = 'PINNED' if camera.pins_count > 0 else 'FILE_IMAGE'
+            if camera.cam_image:
+                op = layout.operator(Config.fb_read_exif_idname,
+                                  text=camera.cam_image.name, icon=image_icon)
+                op.headnum = headnum
+                op.camnum = i
+
+            else:
+                layout.label(text='-- empty --', icon='LIBRARY_DATA_BROKEN')
+
+
+class FB_MT_FocalLengthMenu(Menu):
     bl_label = "Focal Length setup"
     bl_idname = Config.fb_focal_length_menu_idname
     bl_description = "Setup Camera Focal Length"
@@ -169,7 +190,7 @@ class OBJECT_MT_FBFocalLengthMenu(Menu):
         op.action = 'focal_50mm'
 
 
-class OBJECT_MT_FBSensorWidthMenu(Menu):
+class FB_MT_SensorWidthMenu(Menu):
     bl_label = "Sensor Size setup"
     bl_idname = Config.fb_sensor_width_menu_idname
     bl_description = "Setup Sensor Width and Height parameters for camera"
@@ -242,7 +263,7 @@ class OBJECT_MT_FBSensorWidthMenu(Menu):
         layout.separator()
 
         op = layout.operator(Config.fb_camera_actor_operator_idname,
-                             text="36 x 24 mm   Default Sensor Size",
+                             text="36 x 24 mm   35mm Full-frame (default)",
                              icon='FULLSCREEN_ENTER')
         op.headnum = settings.tmp_headnum
         op.action = 'sensor_36x24mm'

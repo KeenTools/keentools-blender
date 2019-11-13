@@ -24,13 +24,17 @@ from .operators import *
 from .ui import FBAddonPreferences
 
 CLASSES_TO_REGISTER = (
-    OBJECT_OT_InstallLicenseOnline,
-    OBJECT_OT_FloatingConnect,
-    OBJECT_OT_InstallLicenseOffline,
-    OBJECT_OT_CopyHardwareId,
-    OBJECT_OT_InstallPkt,
-    OBJECT_OT_OpenPktLicensePage,
-    OBJECT_OT_InstallFromFilePkt,
-    OBJECT_OT_OpenManualInstallPage,
+    PREF_OT_InstallLicenseOnline,
+    PREF_OT_FloatingConnect,
+    PREF_OT_InstallLicenseOffline,
+    PREF_OT_CopyHardwareId,
+    PREF_OT_InstallPkt,
+    PREF_OT_OpenPktLicensePage,
+    PREF_OT_InstallFromFilePkt,
+    PREF_OT_OpenManualInstallPage,
+    PREF_OT_ShowURL,
+    PREF_OT_OpenURL,
+    PREF_OT_DownloadsURL,
+    PREF_OT_ShowWhy,
     FBAddonPreferences
 )

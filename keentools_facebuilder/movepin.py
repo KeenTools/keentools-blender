@@ -20,12 +20,10 @@ import logging
 
 import bpy
 
-from . utils import cameras
-from . utils import manipulate
-from . utils import coords
-from . fbloader import FBLoader
-from . fbdebug import FBDebug
-from . config import Config, get_main_settings, BuilderType
+from .utils import cameras, manipulate, coords
+from .fbloader import FBLoader
+from .fbdebug import FBDebug
+from .config import Config, get_main_settings
 
 from functools import wraps
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
@@ -47,7 +45,7 @@ def profile_this(fn):
     return wrapped
 
 
-class OBJECT_OT_FBMovePin(bpy.types.Operator):
+class FB_OT_MovePin(bpy.types.Operator):
     """ On Screen Face Builder MovePin Operator """
     bl_idname = Config.fb_movepin_operator_idname
     bl_label = "FaceBuilder MovePin operator"
@@ -70,36 +68,66 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
     def get_camnum(self):
         return self.camnum
 
-    def init_action(self, context, mouse_x, mouse_y):
+    def _no_current_pin(self):
+        FBLoader.viewport().current_pin = None
+        FBLoader.viewport().current_pin_num = -1
+
+    def _new_pin(self, context, mouse_x, mouse_y):
         logger = logging.getLogger(__name__)
-        args = (self, context)
-        scene = context.scene
-        settings = get_main_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
         kid = cameras.keyframe_by_camnum(headnum, camnum)
 
-        # Checks for operator parameters
-        if headnum < 0:
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
+
+        pin = FBLoader.get_builder().add_pin(
+            kid, (coords.image_space_to_frame(x, y))
+        )
+        if pin is not None:
+            logger.debug("ADD PIN")
+            FBDebug.add_event_to_queue(
+                'ADD_PIN', mouse_x, mouse_y,
+                coords.get_raw_camera_2d_data(context))
+
+            FBLoader.viewport().spins.append((x, y))
+            FBLoader.viewport().current_pin_num = \
+                len(FBLoader.viewport().spins) - 1
+            FBLoader.update_pins_count(headnum, camnum)
+        else:
+            logger.debug("MISS MODEL")
+            FBDebug.add_event_to_queue(
+                'MISS_PIN', mouse_x, mouse_y,
+                coords.get_raw_camera_2d_data(context))
+
+            self._no_current_pin()
+            return {"FINISHED"}
+        return None
+
+    def init_action(self, context, mouse_x, mouse_y):
+        args = (self, context)
+
+        settings = get_main_settings()
+        headnum = self.get_headnum()
+        camnum = self.get_camnum()
+
+        head = settings.get_head(headnum)
+        if head is None:
             return {'CANCELLED'}
-        head = settings.heads[headnum]
-        if camnum < 0 or camnum >= len(head.cameras):
+
+        cam = head.get_camera(camnum)
+        if cam is None:
             return {'CANCELLED'}
-        cam = head.cameras[camnum]
 
         # Init old state values
         head.tmp_serial_str = ''
         cam.tmp_model_mat = ''
 
-        FBLoader.viewport().update_pixel_size(context)
+        FBLoader.viewport().update_view_relative_pixel_size(context)
 
-        # Load serialized model Uncentered (False param)
-        FBLoader.load_all(headnum, camnum, False)
-
+        FBLoader.load_all(headnum, camnum)
         FBLoader.viewport().create_batch_2d(context)
         FBLoader.viewport().register_handlers(args, context)
 
-        # Pinmode
         settings.pinmode = True
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
         FBLoader.viewport().current_pin = (x, y)
@@ -107,68 +135,22 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         nearest, dist2 = coords.nearest_point(x, y, FBLoader.viewport().spins)
 
         if nearest >= 0 and dist2 < FBLoader.viewport().tolerance_dist2():
-            # Nearest pin found
-            FBLoader.viewport().current_pin_num = nearest
-            # === Debug only ===
             FBDebug.add_event_to_queue(
                 'PIN_FOUND', mouse_x, mouse_y,
                 coords.get_raw_camera_2d_data(context))
-            # === Debug only ===
+            FBLoader.viewport().current_pin_num = nearest
         else:
-            # We need new pin
-            pin = FBLoader.get_builder().add_pin(
-                kid, (coords.image_space_to_frame(x, y))
-            )
+            return self._new_pin(context, mouse_x, mouse_y)
 
-            if pin is not None:
-                # === Debug only ===
-                FBDebug.add_event_to_queue(
-                    'ADD_PIN', mouse_x, mouse_y,
-                    coords.get_raw_camera_2d_data(context))
-                # === Debug only ===
-
-                FBLoader.viewport().spins.append((x, y))
-                FBLoader.viewport().current_pin_num = \
-                    len(FBLoader.viewport().spins) - 1
-                FBLoader.update_pins_count(headnum, camnum)
-            else:
-                # === Debug only ===
-                FBDebug.add_event_to_queue(
-                    'MISS_PIN', mouse_x, mouse_y,
-                    coords.get_raw_camera_2d_data(context))
-                # === Debug only ===
-
-                FBLoader.viewport().current_pin = None
-                FBLoader.viewport().current_pin_num = -1
-                # User miss Head  object
-                logger.debug("MISS MODEL")
-                return {"FINISHED"}
-
-    def on_left_mouse_release(self, context, mouse_x, mouse_y):
+    def _push_previous_state(self):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
-        head = settings.heads[headnum]
-        headobj = settings.heads[headnum].headobj
+        head = settings.get_head(headnum)
         cam = head.cameras[camnum]
         kid = cameras.keyframe_by_camnum(headnum, camnum)
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
-        if FBLoader.viewport().current_pin:
-            # Move current pin
-            FBLoader.viewport().spins[FBLoader.viewport().current_pin_num] \
-                = (x, y)
-
-        FBLoader.viewport().current_pin = None
-        FBLoader.viewport().current_pin_num = -1
-
-        # Update all camera focals
-        FBLoader.update_focals(head)
-
-        # --------------
-        # Pin lag solve
-        # --------------
         fb = FBLoader.get_builder()
         # Save state to vars
         serial_str = head.serial_str
@@ -184,17 +166,10 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
                 logger.warning('DESERIALIZE ERROR: ', head.get_serial_str())
 
             coords.update_head_mesh(fb, head.headobj)
-            # Update all cameras position
-            FBLoader.update_cameras(headnum)
+            FBLoader.update_all_camera_positions(headnum)
             # ---------
-            # Undo push
-            # ---------
-            head = settings.heads[headnum]
-            # if head.serial_str != head.tmp_serial_str:
-            head.need_update = True
-            manipulate.force_undo_push('Pin Move')
-            head.need_update = False
-            # End of PUSH 1
+            # PUSH Previous
+            manipulate.push_head_state_in_undo_history(head, 'Pin Move')
             # ---------
             # Restore last position
             head.set_serial_str(serial_str)
@@ -209,65 +184,49 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             head.set_serial_str(fb.serialize())
             cam.set_model_mat(fb.model_mat(kid))
 
-        coords.update_head_mesh(fb, head.headobj)
-        # Update all cameras position
-        FBLoader.update_cameras(headnum)
-
-        # ---------
-        FBLoader.fb_save(headnum, camnum)
-
-        head.need_update = True
-        manipulate.force_undo_push('Pin Result')
-        head.need_update = False
-        # End of PUSH 2
-        # ---------
-
-        # Load 3D pins
-        FBLoader.viewport().update_surface_points(fb, headobj, kid)
-        return {'FINISHED'}
-
-    def on_mouse_move(self, context, mouse_x, mouse_y):
-        logger = logging.getLogger(__name__)
-
+    def on_left_mouse_release(self, context, mouse_x, mouse_y):
         settings = get_main_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
-        head = settings.heads[headnum]
-        headobj = head.headobj
-        cam = settings.heads[headnum].cameras[camnum]
-        camobj = cam.camobj
+        head = settings.get_head(headnum)
         kid = cameras.keyframe_by_camnum(headnum, camnum)
 
-        fb = FBLoader.get_builder()
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
+        if FBLoader.viewport().current_pin:
+            # Move current 2D-pin
+            FBLoader.viewport().spins[FBLoader.viewport().current_pin_num] \
+                = (x, y)
 
-        # Pin drag
+        self._no_current_pin()
+        FBLoader.update_all_camera_focals(head)
+
+        self._push_previous_state()
+
+        fb = FBLoader.get_builder()
+        coords.update_head_mesh(fb, head.headobj)
+        FBLoader.update_all_camera_positions(headnum)
+
+        # ---------
+        # PUSH Last
+        FBLoader.fb_save(headnum, camnum)
+        manipulate.push_head_state_in_undo_history(head, 'Pin Result')
+        # ---------
+
+        # Load 3D pins
+        FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
+        return {'FINISHED'}
+
+    @staticmethod
+    def _pin_drag(kid, context, mouse_x, mouse_y):
+        fb = FBLoader.get_builder()
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
         FBLoader.viewport().current_pin = (x, y)
-
         p_idx = FBLoader.viewport().current_pin_num
         FBLoader.viewport().spins[FBLoader.viewport().current_pin_num] = (x, y)
-
         fb.move_pin(kid, p_idx, coords.image_space_to_frame(x, y))
 
-        # sleep(0.5)  # Test purpose only
-
-        # Setup Rigidity only for FaceBuilder
-        if FBLoader.get_builder_type() == BuilderType.FaceBuilder:
-            fb.set_auto_rigidity(settings.check_auto_rigidity)
-            fb.set_rigidity(settings.rigidity)
-        # Activate Focal Estimation
-        fb.set_focal_length_estimation(head.auto_focal_estimation)
-
-        try:
-            # Solver
-            fb.solve_for_current_pins(kid)
-        except pkt.module().UnlicensedException:
-            settings.force_out_pinmode = True
-            settings.license_error = True
-            FBLoader.out_pinmode(headnum, camnum)
-            logger.error("MOVE PIN LICENSE EXCEPTION")
-            return {'FINISHED'}
-
+    def _auto_focal_estimation_post(self, head, camobj):
+        fb = FBLoader.get_builder()
         if head.auto_focal_estimation:
             proj_mat = fb.projection_mat()
             focal = coords.focal_by_projection_matrix(
@@ -281,10 +240,38 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
             camobj.data.lens = focal
             head.focal = focal
 
+    def on_mouse_move(self, context, mouse_x, mouse_y):
+        logger = logging.getLogger(__name__)
+        settings = get_main_settings()
+        headnum = self.get_headnum()
+        camnum = self.get_camnum()
+        head = settings.get_head(headnum)
+        headobj = head.headobj
+        cam = settings.get_camera(headnum, camnum)
+        camobj = cam.camobj
+        kid = cameras.keyframe_by_camnum(headnum, camnum)
+
+        self._pin_drag(kid, context, mouse_x, mouse_y)
+
+        fb = FBLoader.get_builder()
+        FBLoader.rigidity_setup()
+        fb.set_focal_length_estimation(head.auto_focal_estimation)
+
+        try:
+            fb.solve_for_current_pins(kid)
+        except pkt.module().UnlicensedException:
+            logger.error("MOVE PIN LICENSE EXCEPTION")
+            settings.force_out_pinmode = True
+            settings.license_error = True
+            FBLoader.out_pinmode(headnum, camnum)
+            return {'FINISHED'}
+
+        self._auto_focal_estimation_post(head, camobj)
+
         # --------------
         # Pin lag solve
         # --------------
-        head = settings.heads[headnum]
+        head = settings.get_head(headnum)
         # Store in tmp previous state
         head.tmp_serial_str = head.serial_str
         cam.tmp_model_mat = cam.model_mat
@@ -293,16 +280,8 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         cam.set_model_mat(fb.model_mat(kid))
         # --------------
 
-        # Update Rigidity
-        if settings.check_auto_rigidity and (
-                FBLoader.get_builder_type() == BuilderType.FaceBuilder):
-            rg = fb.current_rigidity()
-            settings.rigidity = rg
-
-        # Camera update
+        FBLoader.rigidity_post()
         FBLoader.place_cameraobj(kid, camobj, headobj)
-
-        # Head Mesh update
         coords.update_head_mesh(fb, headobj)
         FBLoader.viewport().wireframer().init_geom_data(headobj)
         FBLoader.viewport().wireframer().create_batches()
@@ -357,27 +336,23 @@ class OBJECT_OT_FBMovePin(bpy.types.Operator):
         logger = logging.getLogger(__name__)
         mouse_x = event.mouse_region_x
         mouse_y = event.mouse_region_y
-        # Pin is set
-        if event.value == "RELEASE":
-            if event.type == "LEFTMOUSE":
-                # === Debug only ===
-                FBDebug.add_event_to_queue(
-                    'RELEASE_LEFTMOUSE', mouse_x, mouse_y,
-                    coords.get_raw_camera_2d_data(context))
-                # === Debug only ===
 
-                logger.debug("LEFT MOUSE RELEASE")
-                return self.on_left_mouse_release(context, mouse_x, mouse_y)
+        if event.value == "RELEASE" and event.type == "LEFTMOUSE":
+            logger.debug("LEFT MOUSE RELEASE")
 
-        if event.type == "MOUSEMOVE":
-            if FBLoader.viewport().current_pin:
-                # === Debug only ===
-                FBDebug.add_event_to_queue(
-                    'MOUSEMOVE', mouse_x, mouse_y,
-                    coords.get_raw_camera_2d_data(context))
-                # === Debug only ===
+            FBDebug.add_event_to_queue(
+                'RELEASE_LEFTMOUSE', mouse_x, mouse_y,
+                coords.get_raw_camera_2d_data(context))
 
-                logger.debug("MOUSEMOVE")
-                return self.on_mouse_move(context, mouse_x, mouse_y)
+            return self.on_left_mouse_release(context, mouse_x, mouse_y)
+
+        if event.type == "MOUSEMOVE" and FBLoader.viewport().current_pin:
+            logger.debug("MOUSEMOVE")
+
+            FBDebug.add_event_to_queue(
+                'MOUSEMOVE', mouse_x, mouse_y,
+                coords.get_raw_camera_2d_data(context))
+
+            return self.on_mouse_move(context, mouse_x, mouse_y)
 
         return self.on_default_modal()

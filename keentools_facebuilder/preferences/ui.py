@@ -18,9 +18,10 @@
 
 import bpy
 import keentools_facebuilder.preferences.operators as preferences_operators
-import keentools_facebuilder.config
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from keentools_facebuilder.config import Config
 from .formatting import split_by_br_or_newlines
+from keentools_facebuilder.preferences.progress import InstallationProgress
 
 
 def _multi_line_text_to_output_labels(layout, txt):
@@ -30,28 +31,30 @@ def _multi_line_text_to_output_labels(layout, txt):
     all_lines = split_by_br_or_newlines(txt)
     non_empty_lines = filter(len, all_lines)
 
+    col = layout.column()
+    col.scale_y = 0.75
     for text_line in non_empty_lines:
-        layout.label(text=text_line)
+        col.label(text=text_line)
 
 
 class FBAddonPreferences(bpy.types.AddonPreferences):
-    bl_idname = keentools_facebuilder.config.Config.addon_name
+    bl_idname = Config.addon_name
 
     license_accepted: bpy.props.BoolProperty(
-        name='I have read and I agree to pykeentools End-user License Agreement',
+        name='I have read and I agree to KeenTools End-user License Agreement',
         default=False
     )
 
     license_id: bpy.props.StringProperty(
-        name="license ID", default=""
+        name="License ID", default=""
     )
 
     license_server: bpy.props.StringProperty(
-        name="license server host/IP", default="localhost"
+        name="License Server host/IP", default="localhost"
     )
 
     license_server_port: bpy.props.IntProperty(
-        name="license server port", default=7096, min=0, max=65535
+        name="License Server port", default=7096, min=0, max=65535
     )
 
     license_server_lock: bpy.props.BoolProperty(
@@ -63,7 +66,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     )
 
     hardware_id: bpy.props.StringProperty(
-        name="hardware ID", default=""
+        name="Hardware ID", default=""
     )
 
     lic_type: bpy.props.EnumProperty(
@@ -72,6 +75,13 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             ('ONLINE', "Online", "Online license management", 0),
             ('OFFLINE', "Offline", "Offline license management", 1),
             ('FLOATING', "Floating", "Floating license management", 2)),
+        default='ONLINE')
+
+    install_type: bpy.props.EnumProperty(
+        name="Type",
+        items=(
+            ('ONLINE', "Online", "Online installation", 0),
+            ('OFFLINE', "Offline", "Offline installation", 1)),
         default='ONLINE')
 
     lic_status: bpy.props.StringProperty(
@@ -85,40 +95,12 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             subtype="FILE_PATH"
     )
 
-    def _draw_pykeentools_preferences(self, layout):
-        box = layout.box()
-        box.label(text='Pykeentools:')
-
-        # if installed then license was accepted at some point before. Don't need to check again
-        license_was_accepted = pkt.is_installed() or self.license_accepted
-
-        if not license_was_accepted:
-            box.prop(self, 'license_accepted')
-            box.operator(preferences_operators.OBJECT_OT_OpenPktLicensePage.bl_idname)
-
-        install_row = box.row()
-        install_pkt_op = install_row.operator(preferences_operators.OBJECT_OT_InstallPkt.bl_idname)
-        install_pkt_op.license_accepted = license_was_accepted
-        install_from_file_pkt_op = install_row.operator(preferences_operators.OBJECT_OT_InstallFromFilePkt.bl_idname)
-        install_from_file_pkt_op.license_accepted = license_was_accepted
-
-        if pkt.is_installed():
-            try:
-                pkt.module()
-                assert pkt.loaded()
-                box.label(text="Build version '{}', build time '{}'".format(
-                    pkt.module().__version__,
-                    pkt.module().build_time))
-            except ImportError:
-                box.label(text='Failed to load pykeentools. Please check the installation')
+    def _license_was_accepted(self):
+        return pkt.is_installed() or self.license_accepted
 
     def _draw_license_info(self, layout):
+        layout.label(text='License info:')
         box = layout.box()
-        box.label(text='License info:')
-
-        if not pkt.loaded():
-            box.label(text='install pykeentools to see license info')
-            return
 
         lm = pkt.module().FaceBuilder.license_manager()
 
@@ -128,27 +110,28 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
         if self.lic_type == 'ONLINE':
             box = layout.box()
-            row = box.row()
+            row = box.split(factor=0.85)
             row.prop(self, "license_id")
-            install_online_op = row.operator(preferences_operators.OBJECT_OT_InstallLicenseOnline.bl_idname)
+            install_online_op = row.operator(preferences_operators.PREF_OT_InstallLicenseOnline.bl_idname)
             install_online_op.license_id = self.license_id
 
         elif self.lic_type == 'OFFLINE':
             self.hardware_id = lm.hardware_id()
 
-            layout.label(text="Generate license file at our site and install it")
-            row = layout.row()
-            row.label(text="Visit our site: ")
-            row.operator(preferences_operators.OBJECT_OT_OpenManualInstallPage.bl_idname)
+            row = layout.split(factor=0.65)
+            row.label(text="Get an activated license file at our site:")
+            row.operator(
+                preferences_operators.PREF_OT_OpenManualInstallPage.bl_idname,
+                icon='URL')
 
             box = layout.box()
-            row = box.row()
+            row = box.split(factor=0.85)
             row.prop(self, "hardware_id")
-            row.operator(preferences_operators.OBJECT_OT_CopyHardwareId.bl_idname)
+            row.operator(preferences_operators.PREF_OT_CopyHardwareId.bl_idname)
 
-            row = box.row()
+            row = box.split(factor=0.85)
             row.prop(self, "lic_path")
-            install_offline_op = row.operator(preferences_operators.OBJECT_OT_InstallLicenseOffline.bl_idname)
+            install_offline_op = row.operator(preferences_operators.PREF_OT_InstallLicenseOffline.bl_idname)
             install_offline_op.lic_path = self.lic_path
 
         elif self.lic_type == 'FLOATING':
@@ -161,15 +144,15 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                 self.license_server_lock = False
 
             box = layout.box()
-            row = box.row()
-            row.label(text="license server host/IP")
+            row = box.split(factor=0.35)
+            row.label(text="License Server host/IP")
             if self.license_server_lock and self.license_server_auto:
                 row.label(text=self.license_server)
             else:
                 row.prop(self, "license_server", text="")
 
-            row = box.row()
-            row.label(text="license server port")
+            row = box.split(factor=0.35)
+            row.label(text="License Server port")
             if self.license_server_lock and self.license_server_auto:
                 row.label(text=str(self.license_server_port))
             else:
@@ -179,12 +162,89 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                 box.prop(self, "license_server_auto",
                          text="Auto server/port settings")
 
-            floating_install_op = row.operator(preferences_operators.OBJECT_OT_FloatingConnect.bl_idname)
+            floating_install_op = row.operator(preferences_operators.PREF_OT_FloatingConnect.bl_idname)
             floating_install_op.license_server = self.license_server
             floating_install_op.license_server_port = self.license_server_port
+
+    def _draw_accept_license_offer(self, layout):
+        box = layout.box()
+        col = box.column()
+        col.alert = True
+        col.scale_y = 0.75
+        col.label(text='We cannot ship our core library with our addon '
+                       'due to Blender', icon='INFO')
+        col.label(text=' license limitations, so you need to install '
+                       'it yourself.', icon='BLANK1')
+
+        box2 = box.box()
+        row = box2.split(factor=0.85)
+        row.prop(self, 'license_accepted')
+
+        row.operator(
+            preferences_operators.PREF_OT_OpenPktLicensePage.bl_idname,
+            text='Read', icon='URL'
+        )
+
+        # Install online / Install from disk / Download
+        row = box.split(factor=0.35)
+        box2 = row.box()
+        row2 = box2.row()
+        if not self.license_accepted:
+            row2.active = False
+            # row2.alert = True
+
+        op = row2.operator(
+            preferences_operators.PREF_OT_InstallPkt.bl_idname,
+            text='Install online', icon='WORLD')
+        op.license_accepted = self._license_was_accepted()
+
+        box2 = row.box()
+        row2 = box2.split(factor=0.6)
+        if not self.license_accepted:
+            row2.active = False
+            # row2.alert = True
+
+        op = row2.operator(
+            preferences_operators.PREF_OT_InstallFromFilePkt.bl_idname,
+            text='Install from disk', icon='FILEBROWSER')
+        op.license_accepted = self._license_was_accepted()
+
+        op = row2.operator(
+            preferences_operators.PREF_OT_DownloadsURL.bl_idname,
+            text='Download', icon='URL')
+        op.url = 'https://keentools.io/downloads'
+
+    def _draw_accepted_license(self, layout):
+        box = layout.box()
+        row = box.split(factor=0.75)
+        row.label(text='KeenTools End-User License Agreement [accepted]')
+        row.operator(
+            preferences_operators.PREF_OT_OpenPktLicensePage.bl_idname,
+            text='Read', icon='URL')
+
+    def _draw_download_progress(self, layout):
+        col = layout.column()
+        col.scale_y = 0.75
+        download_state = InstallationProgress.get_state()
+        if download_state['active']:
+            col.label(text="Downloading: {:.1f}%".format(
+                100 * download_state['progress']))
+        if download_state['status'] is not None:
+            col.label(text="{}".format(download_state['status']))
+
+    def _draw_version(self, layout):
+        box = layout.box()
+        box.label(text="Version {}, built {}".format(
+            pkt.module().__version__,
+            pkt.module().build_time))
 
     def draw(self, context):
         layout = self.layout
 
-        self._draw_license_info(layout)
-        self._draw_pykeentools_preferences(layout)
+        if not pkt.is_installed():
+            self._draw_accept_license_offer(layout)
+        else:
+            self._draw_version(layout)
+            # self._draw_license_info(layout)
+
+        self._draw_download_progress(layout)

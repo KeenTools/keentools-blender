@@ -20,20 +20,34 @@ from .menus import *
 from .panels import *
 from .dialogs import *
 from .filedialog import *
+from .helps import *
 
 
-CLASSES_TO_REGISTER = (OBJECT_MT_FBFixMenu,  # menus
-                       OBJECT_MT_FBFixCameraMenu,
-                       OBJECT_MT_FBSensorWidthMenu,
-                       OBJECT_MT_FBFocalLengthMenu,
-                       OBJECT_PT_FBHeaderPanel,  # panels
-                       OBJECT_PT_FBCameraPanel,
-                       OBJECT_PT_FBViewsPanel,
-                       OBJECT_PT_FBFaceParts,
-                       OBJECT_PT_FBSettingsPanel,
-                       OBJECT_PT_FBColorsPanel,
-                       OBJECT_PT_TBPanel,
+CLASSES_TO_REGISTER = (FB_MT_FrameSizeMenu,  # menus
+                       FB_MT_ProperViewMenu,
+                       FB_MT_ImproperViewMenu,
+                       FB_MT_SensorWidthMenu,
+                       FB_MT_FocalLengthMenu,
+                       FB_MT_ReadExifMenu,
+                       FB_PT_HeaderPanel,  # panels
+                       FB_PT_CameraPanel,
+                       FB_PT_ExifPanel,
+                       FB_PT_ViewsPanel,
+                       FB_PT_Model,
+                       FB_PT_PinSettingsPanel,
+                       FB_PT_WireframeSettingsPanel,
+                       FB_PT_TexturePanel,
+                       HELP_OT_CameraHelp,  # helps
+                       HELP_OT_ExifHelp,
+                       HELP_OT_ViewsHelp,
+                       HELP_OT_ModelHelp,
+                       HELP_OT_PinSettingsHelp,
+                       HELP_OT_WireframeSettingsHelp,
+                       HELP_OT_TextureHelp,
                        WM_OT_FBAddonWarning,  # dialogs
-                       WM_OT_FBTexSelector,
-                       WM_OT_FBSingleFilebrowser,  # filedialog
-                       WM_OT_FBMultipleFilebrowser)
+                       FB_OT_ExifSelector,
+                       FB_OT_TexSelector,
+                       FB_OT_SingleFilebrowser,  # filedialog
+                       FB_OT_SingleFilebrowserExec,
+                       FB_OT_MultipleFilebrowser,
+                       FB_OT_MultipleFilebrowserExec)

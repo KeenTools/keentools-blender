@@ -3,7 +3,8 @@ from bpy.types import Panel, Operator
 from bpy.props import StringProperty
 
 import keentools_facebuilder
-from keentools_facebuilder.config import Config, get_main_settings
+from keentools_facebuilder.config import Config, get_main_settings, \
+    get_operators
 import keentools_facebuilder.utils.coords as coords
 
 
@@ -87,7 +88,7 @@ if __name__ == "__main__":
 # --------
 def create_head():
     # Create Head
-    op = getattr(bpy.ops.mesh, Config.fb_add_head_operator_callname)
+    op = getattr(get_operators(), Config.fb_add_head_operator_callname)
     op('EXEC_DEFAULT')
 
 
@@ -231,5 +232,5 @@ def test_duplicate_and_reconstruct():
         TRANSFORM_OT_translate={"value": (-3.0, 0, 0)})
 
     op = getattr(
-        bpy.ops.object, Config.fb_actor_operator_callname)
+        bpy.ops.object, Config.fb_actor_callname)
     op('EXEC_DEFAULT', action='reconstruct_by_head', headnum=-1, camnum=-1)
