@@ -228,7 +228,8 @@ class FB_PT_ExifPanel(Panel):
         if head is None:
             return
 
-        op = layout.operator(Config.fb_read_exif_menu_exec_idname, text='Read EXIF')
+        op = layout.operator(Config.fb_read_exif_menu_exec_idname,
+                             text='Read EXIF')
         op.headnum = headnum
 
         # Show EXIF message

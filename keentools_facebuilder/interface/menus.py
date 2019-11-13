@@ -126,7 +126,8 @@ class FB_MT_ReadExifMenu(Menu):
             image_icon = 'PINNED' if camera.pins_count > 0 else 'FILE_IMAGE'
             if camera.cam_image:
                 op = layout.operator(Config.fb_read_exif_idname,
-                                  text=camera.cam_image.name, icon=image_icon)
+                                     text=camera.cam_image.name,
+                                     icon=image_icon)
                 op.headnum = headnum
                 op.camnum = i
 
@@ -226,8 +227,8 @@ class FB_MT_SensorWidthMenu(Menu):
 
         # Auto Sensor & Focal via EXIF 35mm equiv.
         if head.exif.focal > 0.0 and head.exif.focal35mm > 0.0:
-            w = 35.0
-            h = 24.0 * 35.0 / 36.0
+            w = 36.0
+            h = 24.0
             f = head.exif.focal35mm
             txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
             op = layout.operator(Config.fb_camera_actor_operator_idname,
