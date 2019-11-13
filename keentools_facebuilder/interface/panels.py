@@ -382,9 +382,11 @@ class FB_PT_ViewsPanel(Panel):
         # Open sequence Button (large x2)
         col = layout.column()
         col.scale_y = 2.0
+
         op = col.operator(Config.fb_multiple_filebrowser_exec_idname,
                           text="Add Images", icon='OUTLINER_OB_IMAGE')
         op.headnum = headnum
+        op.auto_update_frame_size = settings.get_last_camnum(headnum) < 0
 
         # Camera buttons Reset camera, Remove pins
         if settings.pinmode and \

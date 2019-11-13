@@ -59,9 +59,16 @@ class FB_MT_ImproperViewMenu(Menu):
         settings = get_main_settings()
         layout = self.layout
 
+        col = layout.column()
+        col.scale_y = 0.7
+        col.label(icon='ERROR', text='Possible Frame size issue detected.')
+        col.label(icon='BLANK1', text='Size of this image is different from the Frame size.')
+
+        layout.separator()
+
         op = layout.operator(
             Config.fb_view_to_frame_size_idname,
-            text="Set the Frame size using this view", icon='ERROR')
+            text="Set the Frame size using this view", icon='SHADING_BBOX')
         op.headnum = settings.tmp_headnum
         op.camnum = settings.tmp_camnum
 

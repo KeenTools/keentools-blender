@@ -71,16 +71,14 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
     def draw(self, context):
         layout = self.layout
 
-        layout.label(text='Update Scene Render Size')
+        layout.label(text='Update Scene Render size')
         layout.prop(self, 'update_render_size', expand=True)
 
         col = layout.column()
         col.scale_y = 0.75
-        txt = ['All frames for FaceBuilder',
-               'should have the same size.',
-               'So Update option is the best choice',
-               'for standard workflow. [Update]',
-               'changes Render Size of your Scene!']
+        txt = ['Please keep in mind that',
+               'all frames for FaceBuilder',
+               'should have the same size.']
         for t in txt:
             col.label(text=t)
 
@@ -113,6 +111,8 @@ class FB_OT_MultipleFilebrowserExec(Operator):
                      "You can select multiple images at once"
 
     headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
+    auto_update_frame_size: bpy.props.BoolProperty(
+        name='Auto update frame size', default=True)
 
     def draw(self, context):
         pass
@@ -120,15 +120,17 @@ class FB_OT_MultipleFilebrowserExec(Operator):
     def execute(self, context):
         restore_ui_elements()
 
+        auto_update = 'yes' if self.auto_update_frame_size else 'no'
         op = getattr(get_operators(), Config.fb_multiple_filebrowser_callname)
-        op('INVOKE_DEFAULT', headnum=self.headnum)
+        op('INVOKE_DEFAULT', headnum=self.headnum,
+           update_render_size=auto_update)
 
         return {'FINISHED'}
 
 
 class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
     bl_idname = Config.fb_multiple_filebrowser_idname
-    bl_label = "Open Image(s)"
+    bl_label = "Open Images"
     bl_description = "Load images and create views. " \
                      "All images must be of the same size. " \
                      "You can select multiple images at once"
@@ -157,16 +159,14 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
     def draw(self, context):
         layout = self.layout
 
-        layout.label(text='Update Scene Render Size')
+        layout.label(text='Update Scene Render size')
         layout.prop(self, 'update_render_size', expand=True)
 
         col = layout.column()
         col.scale_y = 0.75
-        txt = ['All frames for FaceBuilder',
-               'should have the same size.',
-               'So Update option is the best choice',
-               'for standard workflow. [Update]',
-               'changes Render Size of your Scene!']
+        txt = ['Please keep in mind that',
+               'all frames for FaceBuilder',
+               'should have the same size.']
         for t in txt:
             col.label(text=t)
 
