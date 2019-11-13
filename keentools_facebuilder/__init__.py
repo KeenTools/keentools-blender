@@ -18,7 +18,7 @@
 
 
 bl_info = {
-    "name": "KeenTools FaceBuilder 1.5.5 (Beta)",
+    "name": "KeenTools FaceBuilder 1.5.6 (Beta)",
     "author": "KeenTools",
     "description": "Creates Head and Face geometry with a few "
                    "reference photos",

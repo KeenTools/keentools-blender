@@ -35,7 +35,7 @@ class Config:
     operators = _company + '_facebuilder'
     addon_name = __package__  # the same as module name
     addon_human_readable_name = 'FaceBuilder'
-    addon_version = '1.5.5 (Beta)'
+    addon_version = '1.5.6 (Beta)'
     addon_search = 'KeenTools'
     addon_global_var_name = prefix + '_settings'
     addon_full_name = 'Keentools FaceBuilder for Blender'
