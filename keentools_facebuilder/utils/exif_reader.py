@@ -107,19 +107,21 @@ def get_sensor_size_35mm_equivalent(head):
         p = head.exif.image_length / head.exif.image_width
     else:
         p = 24.0 / 36.0
-    w = 35.0 * head.exif.focal / head.exif.focal35mm
-    h = 35.0 * p * head.exif.focal / head.exif.focal35mm
+    w = 36.0 * head.exif.focal / head.exif.focal35mm
+    h = 36.0 * p * head.exif.focal / head.exif.focal35mm
     return w, h
 
 
 def read_exif(filepath):
     logger = logging.getLogger(__name__)
 
+    status = False
     try:
         with open(str(filepath), 'rb') as img_file:
             data = process_file(img_file, stop_tag=DEFAULT_STOP_TAG,
                                 details=True, strict=False,
                                 debug=False)
+            status = True
 
         # This call is needed only for full EXIF review
         # _print_out_exif_data(data)
@@ -142,7 +144,8 @@ def read_exif(filepath):
         'exif_units': _get_safe_exif_param(
             'EXIF FocalPlaneResolutionUnit', data),
         'exif_make': _get_safe_exif_param_str('Image Make', data),
-        'exif_model': _get_safe_exif_param_str('Image Model', data)
+        'exif_model': _get_safe_exif_param_str('Image Model', data),
+        'status': status
     }
 
 
@@ -179,9 +182,9 @@ def exif_message(headnum, data):
 
     message = "Source file: {}".format(data['filepath'])
 
-    if exif.image_width > 0.0 and exif.image_length > 0.0:
-        message += "\nSize: {} x {}px".format(
-            int(exif.image_width), int(exif.image_length))
+    # if exif.image_width > 0.0 and exif.image_length > 0.0:
+    #     message += "\nSize: {} x {}px".format(
+    #         int(exif.image_width), int(exif.image_length))
 
     if exif.focal > 0.0:
         message += "\nFocal length: {}mm".format(exif.focal)

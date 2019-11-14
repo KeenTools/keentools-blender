@@ -678,15 +678,24 @@ class FB_OT_ReadExif(Operator):
         pass
 
     def execute(self, context):
+        logger = logging.getLogger(__name__)
         settings = get_main_settings()
         head = settings.heads[self.headnum]
         camera = head.cameras[self.camnum]
         if camera.cam_image is not None:
-            exif_data = read_exif(camera.cam_image.filepath)
+            filepath = camera.cam_image.filepath
+            absfilepath = bpy.path.abspath(filepath)
+            logger.debug("EXIF LOAD: {}".format(filepath))
+            logger.debug("EXIF ABSPATH: {}".format(absfilepath))
+            exif_data = read_exif(absfilepath)
             init_exif_settings(self.headnum, exif_data)
             message = exif_message(self.headnum, exif_data)
             head.exif.message = message
-            self.report({'INFO'}, 'EXIF read success')
+            if exif_data['status']:
+                self.report({'INFO'}, 'EXIF read success')
+            else:
+                self.report({'ERROR'},
+                            'EXIF read failed. File is damaged or missing')
         return {'FINISHED'}
 
 

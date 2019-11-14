@@ -164,8 +164,8 @@ class FB_OT_CameraActor(Operator):
         elif self.action == 'standard_sensor_and_exif_focal35mm':
             # 35 mm Sensor & EXIF Focal 35mm equiv.
             if head.exif.focal35mm > 0.0:
-                w = 35.0
-                h = 24.0 * 35.0 / 36.0
+                w = 36.0
+                h = 24.0
                 head.sensor_width = w
                 head.sensor_height = h
                 head.focal = head.exif.focal35mm
