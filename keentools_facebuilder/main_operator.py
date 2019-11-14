@@ -168,7 +168,7 @@ class FB_OT_CenterGeo(Operator):
         camnum = self.camnum
 
         fb = FBLoader.get_builder()
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
+        kid = settings.get_keyframe(headnum, camnum)
 
         FBLoader.fb_save(headnum, camnum)
         manipulate.push_head_state_in_undo_history(
@@ -216,7 +216,7 @@ class FB_OT_Unmorph(Operator):
         fb.unmorph()
 
         for i, camera in enumerate(head.cameras):
-            fb.remove_pins(camera.keyframe_id)
+            fb.remove_pins(camera.get_keyframe())
             camera.pins_count = 0
 
         if settings.pinmode:
@@ -255,7 +255,7 @@ class FB_OT_RemovePins(Operator):
         camnum = self.camnum
 
         fb = FBLoader.get_builder()
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
+        kid = settings.get_keyframe(headnum, camnum)
         FBLoader.fb_save(headnum, camnum)
         manipulate.push_head_state_in_undo_history(
             settings.get_head(headnum), 'Before Remove pins')
@@ -379,7 +379,7 @@ class OBJECT_OT_FBDeleteCamera(Operator):
             return {'CANCELLED'}
 
         fb = FBLoader.get_builder()
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
+        kid = settings.get_keyframe(headnum, camnum)
         fb.remove_keyframe(kid)
 
         head = settings.get_head(headnum)

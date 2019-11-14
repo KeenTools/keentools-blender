@@ -89,7 +89,9 @@ class FB_OT_PinMode(bpy.types.Operator):
         headnum = settings.current_headnum
         camnum = settings.current_camnum
         head = settings.get_head(headnum)
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
+        kid = settings.get_keyframe(headnum, camnum)
+        cam = head.get_camera(camnum)
+        camobj = cam.camobj
 
         fb = FBLoader.get_builder()
         fb.remove_pin(kid, nearest)
@@ -107,6 +109,8 @@ class FB_OT_PinMode(bpy.types.Operator):
             FBLoader.out_pinmode(headnum, camnum)
             logger.error("PINMODE LICENSE EXCEPTION")
             return {'FINISHED'}
+
+        FBLoader.auto_focal_estimation_post(head, camobj)
 
         FBLoader.update_pins_count(headnum, camnum)
         coords.update_head_mesh(fb, head.headobj)
@@ -129,7 +133,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         head.need_update = False
         # Reload pins surface points
         FBLoader.load_all(headnum, camnum)
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
+        kid = settings.get_keyframe(headnum, camnum)
         FBLoader.viewport().update_surface_points(
             FBLoader.get_builder(), head.headobj, kid)
 
@@ -231,7 +235,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.viewport().register_handlers(args, context)
         context.window_manager.modal_handler_add(self)
 
-        kid = cameras.keyframe_by_camnum(self.headnum, self.camnum)
+        kid = settings.get_keyframe(self.headnum, self.camnum)
         # Load 3D pins
         FBLoader.viewport().update_surface_points(
             FBLoader.get_builder(), headobj, kid)
@@ -333,7 +337,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         settings = get_main_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
+        kid = settings.get_keyframe(headnum, camnum)
 
         if head.need_update:
             # Undo was called so Model redraw is needed

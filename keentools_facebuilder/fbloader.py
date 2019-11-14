@@ -85,7 +85,7 @@ class FBLoader:
         max_index = -1
         max_pins = -1
         for i, c in enumerate(head.cameras):
-            kid = c.keyframe_id
+            kid = c.get_keyframe()
             cls.set_camera_projection(
                 head.focal, head.sensor_width, rx, ry)
             # We are looking for keyframe that has maximum pins
@@ -202,7 +202,7 @@ class FBLoader:
         head.set_serial_str(fb.serialize())
 
         if cam is not None:
-            kid = cameras.keyframe_by_camnum(headnum, camnum)
+            kid = settings.get_keyframe(headnum, camnum)
             cam.set_model_mat(fb.model_mat(kid))
         # Save images list on headobj
         head.save_images_src()
@@ -222,7 +222,7 @@ class FBLoader:
         cam = head.get_camera(camnum)
         headobj = head.headobj
         camobj = cam.camobj
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
+        kid = settings.get_keyframe(headnum, camnum)
         # Camera update
         cls.place_cameraobj(kid, camobj, headobj)
         # Head Mesh update
@@ -260,7 +260,7 @@ class FBLoader:
         for i, cam in enumerate(head.cameras):
             camobj = cam.camobj
             if cam.pins_count > 0:
-                kid = cameras.keyframe_by_camnum(headnum, i)
+                kid = settings.get_keyframe(headnum, i)
                 cls.place_cameraobj(kid, camobj, headobj)
                 cam.set_model_mat(fb.model_mat(kid))
 
@@ -318,7 +318,7 @@ class FBLoader:
         head = settings.get_head(headnum)
         cam = head.get_camera(camnum)
         fb = cls.get_builder()
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
+        kid = settings.get_keyframe(headnum, camnum)
         pins_count = fb.pins_count(kid)
         cam.pins_count = pins_count
         logger.debug("PINS_COUNT H:{} C:{} k:{} count:{}".format(
@@ -447,7 +447,7 @@ class FBLoader:
 
         # Update all cameras model_mat
         for i, c in enumerate(head.cameras):
-            kid = c.keyframe_id
+            kid = c.get_keyframe()
             pins_count = fb.pins_count(kid)
             if pins_count == 0:
                 if c.is_model_mat_empty():
@@ -455,7 +455,7 @@ class FBLoader:
             else:
                 fb.set_model_mat(kid, c.get_model_mat())
 
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
+        kid = settings.get_keyframe(headnum, camnum)
         cls.place_cameraobj(kid, camobj, headobj)
         # Load pins from model
         cls.viewport().set_spins(cls.viewport().img_points(fb, kid))
@@ -487,7 +487,7 @@ class FBLoader:
         num = cls.get_next_keyframe()
         # Create new keyframe
         fb.set_keyframe(num)
-        camera.keyframe_id = num
+        camera.set_keyframe(num)
         logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
 
         # link camera into scene
@@ -527,3 +527,19 @@ class FBLoader:
         img = bpy.data.images.load(img_path)
         camera = cls.add_camera(headnum, img)
         return img, camera
+
+    @classmethod
+    def auto_focal_estimation_post(cls, head, camobj):
+        fb = cls.get_builder()
+        if head.auto_focal_estimation:
+            proj_mat = fb.projection_mat()
+            focal = coords.focal_by_projection_matrix(
+                proj_mat, head.sensor_width)
+
+            # Fix for Vertical camera (because Blender has Auto in sensor)
+            rx, ry = coords.render_frame()
+            if ry > rx:
+                focal = focal * rx / ry
+
+            camobj.data.lens = focal
+            head.focal = focal
