@@ -115,11 +115,13 @@ def get_sensor_size_35mm_equivalent(head):
 def read_exif(filepath):
     logger = logging.getLogger(__name__)
 
+    status = False
     try:
         with open(str(filepath), 'rb') as img_file:
             data = process_file(img_file, stop_tag=DEFAULT_STOP_TAG,
                                 details=True, strict=False,
                                 debug=False)
+            status = True
 
         # This call is needed only for full EXIF review
         # _print_out_exif_data(data)
@@ -142,7 +144,8 @@ def read_exif(filepath):
         'exif_units': _get_safe_exif_param(
             'EXIF FocalPlaneResolutionUnit', data),
         'exif_make': _get_safe_exif_param_str('Image Make', data),
-        'exif_model': _get_safe_exif_param_str('Image Model', data)
+        'exif_model': _get_safe_exif_param_str('Image Model', data),
+        'status': status
     }
 
 
