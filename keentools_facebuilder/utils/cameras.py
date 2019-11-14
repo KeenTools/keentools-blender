@@ -40,15 +40,6 @@ def hide_other_cameras(headnum, camnum):
             c.camobj.hide_set(True)
 
 
-def keyframe_by_camnum(headnum, camnum):
-    settings = get_main_settings()
-    if headnum >= len(settings.heads):
-        return -1
-    if camnum >= len(settings.heads[headnum].cameras):
-        return -1
-    return settings.heads[headnum].cameras[camnum].keyframe_id
-
-
 def switch_to_camera(camobj):
     """ Switch to camera context independently"""
     scene = bpy.context.scene

@@ -199,7 +199,7 @@ def use_render_frame_size_scaled():
     fb = FBLoader.get_builder()
     for i, c in enumerate(head.cameras):
         if c.pins_count > 0:
-            kid = cameras.keyframe_by_camnum(headnum, i)
+            kid = settings.get_keyframe(headnum, i)
             for n in range(fb.pins_count(kid)):
                 p = fb.pin(kid, n)
                 fb.move_pin(
@@ -302,7 +302,7 @@ def reconstruct_by_head():
         for i, kid in enumerate(fb.keyframes()):
             c = FBLoader.add_camera(headnum, None)
             FBLoader.set_keentools_version(c.camobj)
-            c.keyframe_id = kid
+            c.set_keyframe(kid)
             logger.debug("CAMERA CREATED {}".format(kid))
             FBLoader.place_cameraobj(kid, c.camobj, obj)
             c.set_model_mat(fb.model_mat(kid))

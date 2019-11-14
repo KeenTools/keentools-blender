@@ -191,7 +191,7 @@ def bake_tex(headnum, tex_name):
         if cam.use_in_tex_baking and cam.cam_image and cam.pins_count > 0:
             pix = cam.cam_image.pixels[:]
             imgs.append(np.asarray(pix).reshape((h, w, 4)))
-            keyframes.append(cam.keyframe_id)
+            keyframes.append(cam.get_keyframe())
     wm.progress_end()
 
     tfaa = settings.tex_face_angles_affection

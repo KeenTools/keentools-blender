@@ -236,6 +236,12 @@ class FBCameraItem(PropertyGroup):
     def delete_camobj(self):
         bpy.data.objects.remove(self.camobj, do_unlink=True)
 
+    def get_keyframe(self):
+        return self.keyframe_id
+
+    def set_keyframe(self, num):
+        self.keyframe_id = num
+
 
 class FBHeadItem(PropertyGroup):
     mod_ver: IntProperty(name="Modifier Version", default=-1)
@@ -336,6 +342,13 @@ class FBHeadItem(PropertyGroup):
     def get_last_camnum(self):
         camnum = len(self.cameras) - 1
         return camnum
+
+    def get_keyframe(self, camnum):
+        camera = self.get_camera(camnum)
+        if camera is not None:
+            return camera.get_keyframe()
+        else:
+            return -1
 
     def save_images_src(self):
         res = []
@@ -483,6 +496,15 @@ class FBSceneSettings(PropertyGroup):
         if head is None:
             return None
         return head.get_camera(camnum)
+
+    def get_keyframe(self, headnum, camnum):
+        head = self.get_head(headnum)
+        if head is None:
+            return -1
+        camera = head.get_camera(camnum)
+        if camera is None:
+            return -1
+        return camera.get_keyframe()
 
     # Find Head by Blender object (Head Mesh)
     def find_head_index(self, obj):
