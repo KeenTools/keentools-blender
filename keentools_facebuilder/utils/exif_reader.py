@@ -103,8 +103,9 @@ def _print_out_exif_data(data):
 
 
 def get_sensor_size_35mm_equivalent(head):
-    if head.exif.image_width > 0.0 and head.exif.image_length > 0.0:
-        p = head.exif.image_length / head.exif.image_width
+    w, h = head.exif.calculated_image_size()
+    if w > 0.0 and h > 0.0:
+        p = h / w
     else:
         p = 24.0 / 36.0
     w = 36.0 * head.exif.focal / head.exif.focal35mm
@@ -112,7 +113,7 @@ def get_sensor_size_35mm_equivalent(head):
     return w, h
 
 
-def read_exif(filepath):
+def _read_exif(filepath):
     logger = logging.getLogger(__name__)
 
     status = False
@@ -124,7 +125,7 @@ def read_exif(filepath):
             status = True
 
         # This call is needed only for full EXIF review
-        # _print_out_exif_data(data)
+        _print_out_exif_data(data)
 
     except IOError:
         logger.error("{}' is unreadable for EXIF".format(filepath))
@@ -158,23 +159,16 @@ def _safe_parameter(data, name):
         return -1.0
 
 
-def init_exif_settings(headnum, data):
+def _init_exif_settings(headnum, data):
     settings = get_main_settings()
     exif = settings.get_head(headnum).exif
 
     exif.units = _get_exif_units(data['exif_units'])
 
-    image_width = _safe_parameter(data, 'image_width')
-    exif_width = _safe_parameter(data, 'exif_width')
-    image_length = _safe_parameter(data, 'image_length')
-    exif_length = _safe_parameter(data, 'exif_length')
-
-    if image_width > 0.0 and image_length > 0.0:
-        exif.image_width = image_width
-        exif.image_length = image_length
-    else:
-        exif.image_width = exif_width
-        exif.image_length = exif_length
+    exif.image_width = _safe_parameter(data, 'image_width')
+    exif.image_length = _safe_parameter(data, 'image_length')
+    exif.exif_width = _safe_parameter(data, 'exif_width')
+    exif.exif_length = _safe_parameter(data, 'exif_length')
 
     exif.focal = _safe_parameter(data, 'exif_focal')
     exif.focal35mm = _safe_parameter(data, 'exif_focal35mm')
@@ -188,15 +182,11 @@ def init_exif_settings(headnum, data):
             exif.image_length, exif.focal_y_res, exif.units)
 
 
-def exif_message(headnum, data):
+def _exif_info_message(headnum, data):
     settings = get_main_settings()
     exif = settings.get_head(headnum).exif
 
     message = "Source file: {}".format(data['filepath'])
-
-    if exif.image_width > 0.0 and exif.image_length > 0.0:
-        message += "\nSize: {} x {}px".format(
-            int(exif.image_width), int(exif.image_length))
 
     if exif.focal > 0.0:
         message += "\nFocal length: {}mm".format(exif.focal)
@@ -223,21 +213,97 @@ def exif_message(headnum, data):
     return message
 
 
-def exif_sizes(headnum):
-    # TODO: fill sizes
+def _same(a1, b1, a2, b2):
+    return a1 == a2 and b1 == b2
+
+
+def _exif_sizes_message(headnum, image):
     settings = get_main_settings()
-    exif = settings.get_head(headnum).exif
+    head = settings.get_head(headnum)
+
+    if image is None:
+        rw = -1
+        rh = -1
+    else:
+        rw, rh = image.size
+
+    iw = head.exif.image_width
+    ih = head.exif.image_length
+
+    ew = head.exif.exif_width
+    eh = head.exif.exif_length
+
+    r_msg = "{}x{}px".format(rw, rh)
+    i_msg = "{}x{}px".format(int(iw), int(ih))
+    e_msg = "{}x{}px".format(int(ew), int(eh))
+    no_msg = "-1x-1px"
+
+    # print('r_msg:', r_msg)
+    # print('i_msg:', i_msg)
+    # print('e_msg:', i_msg)
+
+    sec_msg = no_msg
+    trd_msg = no_msg
+
+    # Main logic
+    if i_msg != e_msg:
+        if i_msg == r_msg:
+            sec_msg = e_msg  # r == i != e
+        else:
+            sec_msg = i_msg
+            if e_msg != r_msg:
+                trd_msg = e_msg  # All different
+    else:
+        if i_msg == r_msg:
+            pass
+        else:
+            sec_msg = e_msg
+
+    # print('sec_msg:', sec_msg)
+    # print('trd_msg:', trd_msg)
+
+    # Output
+    if rw > 0 and rh > 0:
+        message = "Real size: {}".format(r_msg)
+    else:
+        message = "Real size: N/A"
+
+    if sec_msg == no_msg and trd_msg == no_msg:
+        return message
+
+    if sec_msg != no_msg and trd_msg != no_msg:
+        message += "\nEXIF: Multiple({} / {})".format(sec_msg, trd_msg)
+        return message
+
+    if sec_msg != no_msg:
+        message += "\nEXIF: {}".format(sec_msg)
+        return message
+
+    if trd_msg != no_msg:
+        message += "\nEXIF: {}".format(trd_msg)
+        return message
+
+    return message
 
 
 def read_exif_to_head(headnum, filepath):
     settings = get_main_settings()
     head = settings.get_head(headnum)
 
-    exif_data = read_exif(filepath)
-    init_exif_settings(headnum, exif_data)
-    message = exif_message(headnum, exif_data)
-    head.exif.message = message
+    exif_data = _read_exif(filepath)
+    _init_exif_settings(headnum, exif_data)
+    head.exif.info_message = _exif_info_message(headnum, exif_data)
     return exif_data['status']
+
+
+def update_exif_sizes_message(headnum, image):
+    settings = get_main_settings()
+    head = settings.get_head(headnum)
+    if head is None:
+        return False
+
+    head.exif.sizes_message = _exif_sizes_message(headnum, image)
+    return True
 
 
 def read_exif_from_camera(headnum, camnum):
@@ -255,4 +321,5 @@ def read_exif_from_camera(headnum, camnum):
         return False
 
     status = read_exif_to_head(headnum, abspath)
+    update_exif_sizes_message(headnum, camera.cam_image)
     return status

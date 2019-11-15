@@ -129,18 +129,37 @@ def update_mesh_parts(self, context):
 
 
 class FBExifItem(PropertyGroup):
-    message: StringProperty(name="EXIF Message", default="")
+    info_message: StringProperty(name="EXIF Info Message", default="")
+    sizes_message: StringProperty(name="EXIF Sizes Message", default="")
+
     focal: FloatProperty(default=-1.0)
     focal35mm: FloatProperty(default=-1.0)
     focal_x_res: FloatProperty(default=-1.0)
     focal_y_res: FloatProperty(default=-1.0)
     units: StringProperty(default="inch")  # or cm
-    image_width: FloatProperty(default=-1.0)
-    image_length: FloatProperty(default=-1.0)
     sensor_width: FloatProperty(default=-1.0)
     sensor_length: FloatProperty(default=-1.0)
-    real_image_width: FloatProperty(default=-1.0)
-    real_image_length: FloatProperty(default=-1.0)
+
+    # from EXIF tags Image_ImageWidth, Image_ImageLength
+    image_width: FloatProperty(default=-1.0)
+    image_length: FloatProperty(default=-1.0)
+
+    # from EXIF tag ExifImageWidth, ExifImageLength
+    exif_width: FloatProperty(default=-1.0)
+    exif_length: FloatProperty(default=-1.0)
+
+    # from image file
+    real_width: FloatProperty(default=-1.0)
+    real_length: FloatProperty(default=-1.0)
+
+    def calculated_image_size(self):
+        if self.image_width > 0.0 and self.image_length > 0.0:
+            w = self.image_width
+            h = self.image_length
+        else:
+            w = self.exif_width
+            h = self.exif_length
+        return w, h
 
 
 class FBCameraItem(PropertyGroup):

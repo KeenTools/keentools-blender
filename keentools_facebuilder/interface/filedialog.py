@@ -26,7 +26,7 @@ from bpy.types import Operator
 from ..fbloader import FBLoader
 from ..config import Config, get_main_settings, get_operators, ErrorType
 
-from ..utils.exif_reader import read_exif_to_head
+from ..utils.exif_reader import read_exif_to_head, update_exif_sizes_message
 from ..utils.other import restore_ui_elements
 
 
@@ -101,6 +101,7 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
             return {'FINISHED'}
 
         read_exif_to_head(self.headnum, self.filepath)
+        update_exif_sizes_message(self.headnum, img)
 
         return {'FINISHED'}
 
@@ -208,6 +209,8 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
                     if not exif_allready_read_once \
                             and img.size[0] > 0.0 and img.size[1] > 0.0:
                         read_exif_to_head(self.headnum, filepath)
+                        update_exif_sizes_message(self.headnum, img)
+
                         exif_allready_read_once = True
 
             except RuntimeError as ex:

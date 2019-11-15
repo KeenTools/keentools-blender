@@ -237,10 +237,19 @@ class FB_PT_ExifPanel(Panel):
                              text='Read EXIF')
         op.headnum = headnum
 
-        # Show EXIF message
-        if len(head.exif.message) > 0:
+        # Show EXIF info message
+        if len(head.exif.info_message) > 0:
             box = layout.box()
-            arr = re.split("\r\n|\n", head.exif.message)
+            arr = re.split("\r\n|\n", head.exif.info_message)
+            col = box.column()
+            col.scale_y = 0.75
+            for a in arr:
+                col.label(text=a)
+
+        # Show EXIF sizes message
+        if len(head.exif.sizes_message) > 0:
+            box = layout.box()
+            arr = re.split("\r\n|\n", head.exif.sizes_message)
             col = box.column()
             col.scale_y = 0.75
             for a in arr:
