@@ -139,6 +139,8 @@ class FBExifItem(PropertyGroup):
     image_length: FloatProperty(default=-1.0)
     sensor_width: FloatProperty(default=-1.0)
     sensor_length: FloatProperty(default=-1.0)
+    real_image_width: FloatProperty(default=-1.0)
+    real_image_length: FloatProperty(default=-1.0)
 
 
 class FBCameraItem(PropertyGroup):
@@ -538,6 +540,12 @@ class FBSceneSettings(PropertyGroup):
         if head is None:
             return False
         return head.has_pins()
+
+    def head_has_cameras(self, headnum):
+        head = self.get_head(headnum)
+        if head is None:
+            return False
+        return head.has_cameras()
 
     # Find Head by Blender object (Head Mesh)
     def find_head_index(self, obj):

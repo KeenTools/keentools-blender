@@ -222,6 +222,18 @@ def exif_message(headnum, data):
 
     return message
 
+
 def exif_sizes():
     settings = get_main_settings()
     exif = settings.get_head(headnum).exif
+
+
+def read_exif_to_head(headnum, filepath):
+    settings = get_main_settings()
+    head = settings.get_head(headnum)
+
+    exif_data = read_exif(filepath)
+    init_exif_settings(headnum, exif_data)
+    message = exif_message(headnum, exif_data)
+    head.exif.message = message
+    return exif_data['status']

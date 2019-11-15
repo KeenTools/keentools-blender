@@ -536,7 +536,7 @@ class FB_PT_WireframeSettingsPanel(Panel):
     bl_idname = Config.fb_colors_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_label = "Wireframe settings"
+    bl_label = "Wireframe"
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 
@@ -587,7 +587,7 @@ class FB_PT_PinSettingsPanel(Panel):
     bl_idname = Config.fb_pin_settings_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_label = "Pin settings"
+    bl_label = "Pins"
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 

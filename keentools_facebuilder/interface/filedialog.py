@@ -26,7 +26,7 @@ from bpy.types import Operator
 from ..fbloader import FBLoader
 from ..config import Config, get_main_settings, get_operators, ErrorType
 
-from ..utils.exif_reader import read_exif, init_exif_settings, exif_message
+from ..utils.exif_reader import read_exif_to_head
 from ..utils.other import restore_ui_elements
 
 
@@ -87,6 +87,11 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
         settings = get_main_settings()
         logger.info('Load image file: {}'.format(self.filepath))
 
+        # if Settings structure is broken
+        if not settings.check_heads_and_cams():
+            settings.fix_heads()  # Fix
+            return {'CANCELLED'}
+
         try:
             img = bpy.data.images.load(self.filepath)
             head = settings.get_head(self.headnum)
@@ -95,10 +100,8 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
             logger.error("FILE READ ERROR: {}".format(self.filepath))
             return {'FINISHED'}
 
-        exif_data = read_exif(self.filepath)
-        init_exif_settings(self.headnum, exif_data)
-        message = exif_message(self.headnum, exif_data)
-        head.exif.message = message
+        read_exif_to_head(self.headnum, self.filepath)
+
         return {'FINISHED'}
 
 
@@ -170,14 +173,6 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
         for t in txt:
             col.label(text=t)
 
-    def _read_exif(self, filepath):
-        settings = get_main_settings()
-        head = settings.get_head(self.headnum)
-        exif_data = read_exif(filepath)
-        init_exif_settings(self.headnum, exif_data)
-        message = exif_message(self.headnum, exif_data)
-        head.exif.message = message
-
     def execute(self, context):
         """ Selected files processing"""
         logger = logging.getLogger(__name__)
@@ -189,15 +184,17 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
 
         # if Settings structure is broken
         if not settings.check_heads_and_cams():
-            settings.fix_heads()  # Fix
+            settings.fix_heads()  # Fix & Out
+            return {'CANCELLED'}
+
+        # Flag to prevent EXIF load if the head already has cameras
+        exif_allready_read_once = settings.head_has_cameras(self.headnum)
 
         # Loaded image sizes
         w = -1
         h = -1
         # Count image size changes over all files
         changes = 0
-        exif_allready_read_once = False
-
         for f in self.files:
             filepath = os.path.join(self.directory, f.name)
             logger.debug("FILE: {}".format(filepath))
@@ -210,14 +207,14 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
 
                     if not exif_allready_read_once \
                             and img.size[0] > 0.0 and img.size[1] > 0.0:
-                        self._read_exif(filepath)
+                        read_exif_to_head(self.headnum, filepath)
                         exif_allready_read_once = True
 
             except RuntimeError as ex:
                 logger.error("FILE READ ERROR: {}".format(filepath))
 
         # We update Render Size in accordance to image size
-        # only if all images have the same size
+        # only if 1) all images have the same size and 2) user want it
         if self.update_render_size == 'yes' \
                 and changes == 1 and w > 0.0 and h > 0.0:
             render = bpy.context.scene.render

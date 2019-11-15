@@ -41,14 +41,6 @@ class FB_MT_ProperViewMenu(Menu):
         layout.operator(Config.fb_single_filebrowser_exec_idname,
                         text="Open file", icon='FILEBROWSER')
 
-        # op = layout.operator(
-        #     Config.fb_actor_operator_idname,
-        #     text="Read camera settings from EXIF",
-        #     icon='TEXT')
-        # op.action = 'read_file_exif'
-        # op.headnum = settings.tmp_headnum
-        # op.camnum = settings.tmp_camnum
-
 
 class FB_MT_ImproperViewMenu(Menu):
     bl_label = "View operations"
@@ -64,7 +56,8 @@ class FB_MT_ImproperViewMenu(Menu):
         col.active = True
         col.scale_y = 0.7
         col.label(icon='ERROR', text='Possible Frame size issue detected.')
-        col.label(icon='BLANK1', text='Size of this image is different from the Frame size.')
+        col.label(icon='BLANK1',
+                  text='Size of this image is different from the Frame size.')
 
         layout.separator()
 
@@ -82,14 +75,6 @@ class FB_MT_ImproperViewMenu(Menu):
 
         layout.operator(Config.fb_single_filebrowser_exec_idname,
                         text="Open file", icon='FILEBROWSER')
-
-        # op = layout.operator(
-        #     Config.fb_actor_operator_idname,
-        #     text="Read camera settings from EXIF",
-        #     icon='TEXT')
-        # op.action = 'read_file_exif'
-        # op.headnum = settings.tmp_headnum
-        # op.camnum = settings.tmp_camnum
 
 
 class FB_MT_FrameSizeMenu(Menu):
