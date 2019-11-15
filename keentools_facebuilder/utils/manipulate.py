@@ -198,7 +198,7 @@ def use_render_frame_size_scaled():
     FBLoader.load_only(headnum)
     fb = FBLoader.get_builder()
     for i, c in enumerate(head.cameras):
-        if c.pins_count > 0:
+        if c.has_pins():
             kid = settings.get_keyframe(headnum, i)
             for n in range(fb.pins_count(kid)):
                 p = fb.pin(kid, n)

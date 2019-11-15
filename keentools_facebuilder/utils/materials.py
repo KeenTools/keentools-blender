@@ -154,7 +154,7 @@ def bake_tex(headnum, tex_name):
     h = -1
     changes = 0
     for i, c in enumerate(head.cameras):
-        if c.use_in_tex_baking  and c.cam_image and c.pins_count > 0:
+        if c.use_in_tex_baking  and c.cam_image and c.has_pins():
             size = c.cam_image.size
             if size[0] <= 0 or size[1] <= 0:
                 continue
@@ -188,7 +188,7 @@ def bake_tex(headnum, tex_name):
     for i, cam in enumerate(head.cameras):
         wm.progress_update(i + 1.0)
         # Bake only if 1) Marked 2) Image is exists 3) Some pins added
-        if cam.use_in_tex_baking and cam.cam_image and cam.pins_count > 0:
+        if cam.use_in_tex_baking and cam.cam_image and cam.has_pins():
             pix = cam.cam_image.pixels[:]
             imgs.append(np.asarray(pix).reshape((h, w, 4)))
             keyframes.append(cam.get_keyframe())

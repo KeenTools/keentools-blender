@@ -99,14 +99,19 @@ class FB_PT_HeaderPanel(Panel):
     def _draw_many_heads(self, layout):
         # Output List of all heads in Scene
         settings = get_main_settings()
+        state, headnum = what_is_state()
+
         for i, h in enumerate(settings.heads):
             box = layout.box()
             row = box.row()
-            op = row.operator(
-                Config.fb_select_head_idname, text='', icon='USER')
-            op.headnum = i
 
-            row.label(text=h.headobj.name)
+            if headnum == i:
+                row.prop(settings, 'blue_head_button', toggle=1,
+                         text=h.headobj.name, icon='USER')
+            else:
+                op = row.operator(Config.fb_select_head_idname,
+                                  text=h.headobj.name, icon='USER')
+                op.headnum = i
 
             if not settings.pinmode:
                 op = row.operator(
@@ -292,12 +297,12 @@ class FB_PT_ViewsPanel(Panel):
             if wrong_size_flag:
                 wrong_size_counter += 1
 
-            view_icon = 'PINNED' if camera.pins_count > 0 else 'HIDE_OFF'
+            view_icon = 'PINNED' if camera.has_pins() else 'HIDE_OFF'
 
             col = row.column()
             cam_name = camera.cam_image.name
             if settings.current_camnum == i and settings.pinmode:
-                col.prop(settings, 'blue_button', toggle=1,
+                col.prop(settings, 'blue_camera_button', toggle=1,
                          text=cam_name, icon=view_icon)
             else:
                 op = col.operator(
@@ -312,6 +317,7 @@ class FB_PT_ViewsPanel(Panel):
                     Config.fb_improper_view_menu_exec_idname,
                     text='', icon='COLLAPSEMENU')
             elif wrong_size_flag:
+                col.alert = True
                 op = col.operator(
                     Config.fb_improper_view_menu_exec_idname,
                     text='', icon='ERROR')
@@ -323,16 +329,10 @@ class FB_PT_ViewsPanel(Panel):
             op.headnum = headnum
             op.camnum = i
 
-    def _there_are_pins(self, head):
-        for c in head.cameras:
-            if c.pins_count > 0:
-                return True
-        return False
-
     def _draw_camera_hint(self, layout, headnum):
         settings = get_main_settings()
         head = settings.get_head(headnum)
-        if not self._there_are_pins(head) \
+        if not head.has_pins() \
                 and head.get_last_camnum() >= 0 \
                 and not settings.pinmode:
             col = layout.column()
@@ -355,12 +355,12 @@ class FB_PT_ViewsPanel(Panel):
 
         # Output current Frame Size
         if settings.frame_width > 0 and settings.frame_height > 0:
-            info = 'Frame size: {}x{}'.format(
+            info = 'Frame size: {}x{}px'.format(
                 settings.frame_width, settings.frame_height)
         else:
             x = bpy.context.scene.render.resolution_x
             y = bpy.context.scene.render.resolution_y
-            info = 'Frame size: {}x{}'.format(x, y)
+            info = 'Frame size: {}x{}px'.format(x, y)
 
         state, headnum = what_is_state()
 

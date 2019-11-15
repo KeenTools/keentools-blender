@@ -141,6 +141,8 @@ def read_exif(filepath):
             'EXIF FocalPlaneYResolution', data),
         'exif_width': _get_safe_exif_param('EXIF ExifImageWidth', data),
         'exif_length': _get_safe_exif_param('EXIF ExifImageLength', data),
+        'image_width': _get_safe_exif_param('Image ImageWidth', data),
+        'image_length': _get_safe_exif_param('Image ImageLength', data),
         'exif_units': _get_safe_exif_param(
             'EXIF FocalPlaneResolutionUnit', data),
         'exif_make': _get_safe_exif_param_str('Image Make', data),
@@ -162,8 +164,18 @@ def init_exif_settings(headnum, data):
 
     exif.units = _get_exif_units(data['exif_units'])
 
-    exif.image_width = _safe_parameter(data, 'exif_width')
-    exif.image_length = _safe_parameter(data, 'exif_length')
+    image_width = _safe_parameter(data, 'image_width')
+    exif_width = _safe_parameter(data, 'exif_width')
+    image_length = _safe_parameter(data, 'image_length')
+    exif_length = _safe_parameter(data, 'exif_length')
+
+    if image_width > 0.0 and image_length > 0.0:
+        exif.image_width = image_width
+        exif.image_length = image_length
+    else:
+        exif.image_width = exif_width
+        exif.image_length = exif_length
+
     exif.focal = _safe_parameter(data, 'exif_focal')
     exif.focal35mm = _safe_parameter(data, 'exif_focal35mm')
     exif.focal_x_res = _safe_parameter(data, 'exif_focal_x_res')
@@ -182,9 +194,9 @@ def exif_message(headnum, data):
 
     message = "Source file: {}".format(data['filepath'])
 
-    # if exif.image_width > 0.0 and exif.image_length > 0.0:
-    #     message += "\nSize: {} x {}px".format(
-    #         int(exif.image_width), int(exif.image_length))
+    if exif.image_width > 0.0 and exif.image_length > 0.0:
+        message += "\nSize: {} x {}px".format(
+            int(exif.image_width), int(exif.image_length))
 
     if exif.focal > 0.0:
         message += "\nFocal length: {}mm".format(exif.focal)
@@ -209,3 +221,7 @@ def exif_message(headnum, data):
         message += "\nCamera: {}{}".format(make, data['exif_model'])
 
     return message
+
+def exif_sizes():
+    settings = get_main_settings()
+    exif = settings.get_head(headnum).exif

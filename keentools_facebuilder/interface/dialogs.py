@@ -151,7 +151,7 @@ class FB_OT_TexSelector(Operator):
             # Use in Tex Baking
             row.prop(camera, 'use_in_tex_baking', text='')
 
-            image_icon = 'PINNED' if camera.pins_count > 0 else 'FILE_IMAGE'
+            image_icon = 'PINNED' if camera.has_pins() else 'FILE_IMAGE'
             if camera.cam_image:
                 row.label(text=camera.cam_image.name, icon=image_icon)
             else:
@@ -212,7 +212,7 @@ class FB_OT_ExifSelector(Operator):
         box = layout.box()
         for i, camera in enumerate(head.cameras):
             row = box.row()
-            image_icon = 'PINNED' if camera.pins_count > 0 else 'FILE_IMAGE'
+            image_icon = 'PINNED' if camera.has_pins() else 'FILE_IMAGE'
             if camera.cam_image:
                 op = row.operator(Config.fb_read_exif_idname,
                                   text=camera.cam_image.name, icon=image_icon)

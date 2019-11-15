@@ -60,6 +60,8 @@ class FB_MT_ImproperViewMenu(Menu):
         layout = self.layout
 
         col = layout.column()
+        col.alert = True
+        col.active = True
         col.scale_y = 0.7
         col.label(icon='ERROR', text='Possible Frame size issue detected.')
         col.label(icon='BLANK1', text='Size of this image is different from the Frame size.')
@@ -130,7 +132,7 @@ class FB_MT_ReadExifMenu(Menu):
             return
 
         for i, camera in enumerate(head.cameras):
-            image_icon = 'PINNED' if camera.pins_count > 0 else 'FILE_IMAGE'
+            image_icon = 'PINNED' if camera.has_pins() else 'FILE_IMAGE'
             if camera.cam_image:
                 op = layout.operator(Config.fb_read_exif_idname,
                                      text=camera.cam_image.name,

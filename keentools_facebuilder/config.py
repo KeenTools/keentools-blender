@@ -48,8 +48,9 @@ class Config:
     pykeentools_license_url = 'https://link.keentools.io/eula'
     
     # Operators ids
-    fb_select_head_callname = prefix + '_main_select_head'
-    fb_select_head_idname = 'object.' + fb_select_head_callname
+    fb_select_head_callname = 'select_head'
+    fb_select_head_idname = operators + '.' + fb_select_head_callname
+
     fb_main_delete_head_callname = prefix + '_main_delete_head'
     fb_main_delete_head_idname = 'object.' + fb_main_delete_head_callname
     fb_main_select_camera_callname = prefix + '_main_select_camera'

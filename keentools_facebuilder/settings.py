@@ -75,11 +75,20 @@ def update_focal(self, context):
         FBLoader.update_all_camera_focals(self)
 
 
-def update_blue_button(self, context):
+def update_blue_camera_button(self, context):
     settings = get_main_settings()
-    settings.blue_button = True
-    op = getattr(get_operators(), Config.fb_exit_pinmode_callname)
-    op('EXEC_DEFAULT')
+    if not settings.blue_camera_button:
+        op = getattr(get_operators(), Config.fb_exit_pinmode_callname)
+        op('EXEC_DEFAULT')
+        settings.blue_camera_button = True
+
+
+def update_blue_head_button(self, context):
+    settings = get_main_settings()
+    if not settings.blue_head_button:
+        op = getattr(get_operators(), Config.fb_select_head_callname)
+        op('EXEC_DEFAULT')
+        settings.blue_head_button = True
 
 
 def update_mesh_parts(self, context):
@@ -242,6 +251,9 @@ class FBCameraItem(PropertyGroup):
     def set_keyframe(self, num):
         self.keyframe_id = num
 
+    def has_pins(self):
+        return self.pins_count > 0
+
 
 class FBHeadItem(PropertyGroup):
     mod_ver: IntProperty(name="Modifier Version", default=-1)
@@ -349,6 +361,15 @@ class FBHeadItem(PropertyGroup):
             return camera.get_keyframe()
         else:
             return -1
+
+    def has_cameras(self):
+        return len(self.cameras) > 0
+
+    def has_pins(self):
+        for c in self.cameras:
+            if c.has_pins():
+                return True
+        return False
 
     def save_images_src(self):
         res = []
@@ -481,9 +502,15 @@ class FBSceneSettings(PropertyGroup):
         name="Automatically apply the created texture", default=True)
 
     # Workaround to get blue button for selected camera
-    blue_button: BoolProperty(
+    blue_camera_button: BoolProperty(
         description="Current camera",
-        name="Blue button", default=True, update=update_blue_button)
+        name="Blue camera button", default=True,
+        update=update_blue_camera_button)
+
+    blue_head_button: BoolProperty(
+        description="Current head",
+        name="Blue head button", default=True,
+        update=update_blue_head_button)
 
     def get_head(self, headnum):
         if 0 <= headnum <= len(self.heads):
@@ -505,6 +532,12 @@ class FBSceneSettings(PropertyGroup):
         if camera is None:
             return -1
         return camera.get_keyframe()
+
+    def head_has_pins(self, headnum):
+        head = self.get_head(headnum)
+        if head is None:
+            return False
+        return head.has_pins()
 
     # Find Head by Blender object (Head Mesh)
     def find_head_index(self, obj):
