@@ -256,6 +256,12 @@ class FBCameraItem(PropertyGroup):
     def has_pins(self):
         return self.pins_count > 0
 
+    def get_abspath(self):
+        if self.cam_image is not None:
+            return bpy.path.abspath(self.cam_image.filepath)
+        else:
+            return None
+
 
 class FBHeadItem(PropertyGroup):
     mod_ver: IntProperty(name="Modifier Version", default=-1)

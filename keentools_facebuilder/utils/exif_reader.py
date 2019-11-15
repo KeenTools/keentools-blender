@@ -223,7 +223,8 @@ def exif_message(headnum, data):
     return message
 
 
-def exif_sizes():
+def exif_sizes(headnum):
+    # TODO: fill sizes
     settings = get_main_settings()
     exif = settings.get_head(headnum).exif
 
@@ -237,3 +238,21 @@ def read_exif_to_head(headnum, filepath):
     message = exif_message(headnum, exif_data)
     head.exif.message = message
     return exif_data['status']
+
+
+def read_exif_from_camera(headnum, camnum):
+    settings = get_main_settings()
+    head = settings.get_head(headnum)
+    if head is None:
+        return False
+
+    camera = head.get_camera(camnum)
+    if camera is None:
+        return False
+
+    abspath = camera.get_abspath()
+    if abspath is None:
+        return False
+
+    status = read_exif_to_head(headnum, abspath)
+    return status

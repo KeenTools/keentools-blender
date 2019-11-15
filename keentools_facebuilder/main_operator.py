@@ -30,7 +30,7 @@ from .utils.manipulate import check_settings
 from .fbloader import FBLoader
 from .fbdebug import FBDebug
 from .config import get_main_settings, get_operators, Config
-from .utils.exif_reader import (read_exif_to_head,
+from .utils.exif_reader import (read_exif_from_camera,
                                 get_sensor_size_35mm_equivalent)
 
 
@@ -678,23 +678,13 @@ class FB_OT_ReadExif(Operator):
         pass
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        settings = get_main_settings()
-        head = settings.heads[self.headnum]
-        camera = head.cameras[self.camnum]
-        if camera.cam_image is not None:
-            filepath = camera.cam_image.filepath
-            absfilepath = bpy.path.abspath(filepath)
-            logger.debug("EXIF LOAD: {}".format(filepath))
-            logger.debug("EXIF ABSPATH: {}".format(absfilepath))
+        status = read_exif_from_camera(self.headnum, self.camnum)
 
-            status = read_exif_to_head(self.headnum, absfilepath)
-
-            if status:
-                self.report({'INFO'}, 'EXIF read success')
-            else:
-                self.report({'ERROR'},
-                            'EXIF read failed. File is damaged or missing')
+        if status:
+            self.report({'INFO'}, 'EXIF read success')
+        else:
+            self.report({'ERROR'},
+                        'EXIF read failed. File is damaged or missing')
         return {'FINISHED'}
 
 
