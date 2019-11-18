@@ -347,7 +347,8 @@ class FB_PT_ViewsPanel(Panel):
             col = layout.column()
             col.alert = True
             col.scale_y = 0.75
-            col.label(text='Press a view button below', icon='INFO')
+            col.label(text='Press a view button with',icon='INFO')
+            col.label(text='a picture file name below', icon='BLANK1')
             col.label(text='to switch to Pin mode', icon='BLANK1')
 
     def _draw_exit_pinmode(self, layout):
@@ -535,10 +536,10 @@ class FB_PT_TexturePanel(Panel):
         box = layout.box()
         box.label(text='Advanced:')
         # layout.prop(settings, 'tex_back_face_culling')
-        box.prop(settings, 'tex_equalize_brightness')
-        box.prop(settings, 'tex_equalize_colour')
         box.prop(settings, 'tex_face_angles_affection')
         box.prop(settings, 'tex_uv_expand_percents')
+        box.prop(settings, 'tex_equalize_brightness')
+        box.prop(settings, 'tex_equalize_colour')
 
 
 class FB_PT_WireframeSettingsPanel(Panel):

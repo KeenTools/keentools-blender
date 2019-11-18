@@ -212,7 +212,7 @@ class Config:
     fb_help_texture_idname = operators + '.' + fb_help_texture_callname
 
     # Menu ids
-    fb_fix_frame_size_menu_idname = _MT + '_fix_frame_size_menu'
+    fb_fix_frame_size_menu_idname = _MT + 'fix_frame_size_menu'
 
     fb_proper_view_menu_idname = _MT + 'proper_view_menu'
     fb_improper_view_menu_idname = _MT + 'improper_view_menu'

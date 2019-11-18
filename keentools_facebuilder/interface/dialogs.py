@@ -179,9 +179,26 @@ class FB_OT_TexSelector(Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
-        op = getattr(get_operators(), Config.fb_bake_tex_callname)
-        op('INVOKE_DEFAULT', headnum=self.headnum)
-        return {"FINISHED"}
+        logger = logging.getLogger(__name__)
+        logger.debug('START TEXTURE CREATION')
+
+        head = get_main_settings().get_head(self.headnum)
+        if head is None:
+            logger.error('WRONG HEADNUM')
+            return {'CANCELLED'}
+
+        if len(head.cameras) > 0:
+            op = getattr(get_operators(), Config.fb_bake_tex_callname)
+            res = op('INVOKE_DEFAULT', headnum=self.headnum)
+
+            if res == {'CANCELLED'}:
+                logger.debug('CANNOT CREATE TEXTURE')
+                self.report({'ERROR'}, "Can't create texture")
+            elif res == {'FINISHED'}:
+                logger.debug('TEXTURE CREATED')
+                self.report({'INFO'}, "Texture created successfully")
+
+        return {'FINISHED'}
 
 
 class FB_OT_ExifSelector(Operator):

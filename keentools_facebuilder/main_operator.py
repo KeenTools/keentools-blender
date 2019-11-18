@@ -58,15 +58,14 @@ class FB_OT_SelectHead(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBDeleteHead(Operator):
+class FB_OT_DeleteHead(Operator):
     bl_idname = Config.fb_main_delete_head_idname
     bl_label = "Delete head"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Delete the head and its cameras from the scene"
 
     headnum: IntProperty(default=0)
 
-    # This draw overrides standard operator panel
     def draw(self, context):
         pass
 
@@ -94,10 +93,10 @@ class OBJECT_OT_FBDeleteHead(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBSelectCamera(Operator):
+class FB_OT_SelectCamera(Operator):
     bl_idname = Config.fb_main_select_camera_idname
     bl_label = "Pin Mode"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Switch to Pin mode for this view"
 
     headnum: IntProperty(default=0)
@@ -278,7 +277,7 @@ class FB_OT_RemovePins(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBWireframeColor(Operator):
+class FB_OT_WireframeColor(Operator):
     bl_idname = Config.fb_main_wireframe_color_idname
     bl_label = "Wireframe color"
     bl_options = {'REGISTER'}  # 'UNDO'
@@ -320,10 +319,10 @@ class OBJECT_OT_FBWireframeColor(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBFilterCameras(Operator):
+class FB_OT_FilterCameras(Operator):
     bl_idname = Config.fb_main_filter_cameras_idname
     bl_label = "Camera Filter"
-    bl_options = {'REGISTER'}  # 'UNDO'
+    bl_options = {'REGISTER'}
     bl_description = "Select cameras to use for texture baking"
 
     action: StringProperty(name="Action Name")
@@ -730,10 +729,16 @@ class FB_OT_BakeTexture(Operator):
 
     headnum: IntProperty(default=0)
 
+    def draw(self, context):
+        pass
+
     def execute(self, context):
         settings = get_main_settings()
         tex_name = materials.bake_tex(
             self.headnum, Config.tex_builder_filename)
+
+        if tex_name is None:
+            return {'CANCELLED'}
 
         if settings.tex_auto_preview:
             mat = materials.show_texture_in_mat(
@@ -750,7 +755,7 @@ class FB_OT_BakeTexture(Operator):
 class FB_OT_ShowTexture(Operator):
     bl_idname = Config.fb_show_tex_idname
     bl_label = "Show Texture"
-    bl_options = {'REGISTER', 'INTERNAL', 'UNDO'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Create a material from the generated texture " \
                      "and apply it to the model"
 
@@ -804,7 +809,7 @@ class FB_OT_ShowSolid(Operator):
 class FB_OT_ExitPinmode(Operator):
     bl_idname = Config.fb_exit_pinmode_idname
     bl_label = "Exit Pin mode"
-    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Exit Pin mode"
 
     def draw(self, context):
@@ -819,10 +824,10 @@ class FB_OT_ExitPinmode(Operator):
         return {'FINISHED'}
 
 
-CLASSES_TO_REGISTER = (FB_OT_SelectHead, OBJECT_OT_FBDeleteHead,
-                       OBJECT_OT_FBSelectCamera, FB_OT_CenterGeo,
+CLASSES_TO_REGISTER = (FB_OT_SelectHead, FB_OT_DeleteHead,
+                       FB_OT_SelectCamera, FB_OT_CenterGeo,
                        FB_OT_Unmorph, FB_OT_RemovePins,
-                       OBJECT_OT_FBWireframeColor, OBJECT_OT_FBFilterCameras,
+                       FB_OT_WireframeColor, FB_OT_FilterCameras,
                        FB_OT_AllViewsMenuExec,
                        FB_OT_ProperViewMenuExec, FB_OT_ImproperViewMenuExec,
                        FB_OT_ViewToFrameSize, FB_OT_MostFrequentFrameSize,
