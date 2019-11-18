@@ -93,12 +93,6 @@ class FB_MT_FrameSizeMenu(Menu):
             Config.fb_render_size_to_frame_size_idname,
             text="Use Scene render size", icon="OUTPUT")
 
-        # layout.separator()
-        # op = layout.operator(
-        #     Config.fb_actor_operator_idname,
-        #     text="About Frame Sizes")  # icon="ERROR"
-        # op.action = 'about_fix_frame_warning'
-
 
 class FB_MT_ReadExifMenu(Menu):
     bl_label = "Select image to read EXIF"
@@ -120,7 +114,7 @@ class FB_MT_ReadExifMenu(Menu):
             image_icon = 'PINNED' if camera.has_pins() else 'FILE_IMAGE'
             if camera.cam_image:
                 op = layout.operator(Config.fb_read_exif_idname,
-                                     text=camera.cam_image.name,
+                                     text=camera.get_image_name(),
                                      icon=image_icon)
                 op.headnum = headnum
                 op.camnum = i

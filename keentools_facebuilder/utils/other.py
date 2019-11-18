@@ -202,7 +202,7 @@ class FBText:
         # Draw text
         if len(self.message) > 0:
             region = context.region
-            text = "{0} [{1}]".format(self.message[0], camera.cam_image.name)
+            text = "{0} [{1}]".format(self.message[0], camera.get_image_name())
             subtext = "{} | {}".format(self.message[1], settings.opnum)
 
             xt = int(region.width / 2.0)

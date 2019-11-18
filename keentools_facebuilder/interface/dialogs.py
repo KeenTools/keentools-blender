@@ -153,7 +153,7 @@ class FB_OT_TexSelector(Operator):
 
             image_icon = 'PINNED' if camera.has_pins() else 'FILE_IMAGE'
             if camera.cam_image:
-                row.label(text=camera.cam_image.name, icon=image_icon)
+                row.label(text=camera.get_image_name(), icon=image_icon)
             else:
                 row.label(text='-- empty --', icon='LIBRARY_DATA_BROKEN')
 
@@ -181,11 +181,6 @@ class FB_OT_TexSelector(Operator):
     def execute(self, context):
         op = getattr(get_operators(), Config.fb_bake_tex_callname)
         op('INVOKE_DEFAULT', headnum=self.headnum)
-
-        if get_main_settings().tex_auto_preview:
-            op = getattr(get_operators(), Config.fb_actor_callname)
-            op('INVOKE_DEFAULT', action='force_show_tex',
-               headnum=self.headnum)
         return {"FINISHED"}
 
 
@@ -215,7 +210,7 @@ class FB_OT_ExifSelector(Operator):
             image_icon = 'PINNED' if camera.has_pins() else 'FILE_IMAGE'
             if camera.cam_image:
                 op = row.operator(Config.fb_read_exif_idname,
-                                  text=camera.cam_image.name, icon=image_icon)
+                                  text=camera.get_image_name(), icon=image_icon)
                 op.headnum = self.headnum
                 op.camnum = i
 

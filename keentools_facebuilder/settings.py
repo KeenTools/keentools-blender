@@ -281,6 +281,12 @@ class FBCameraItem(PropertyGroup):
         else:
             return None
 
+    def get_image_name(self):
+        if self.cam_image is not None:
+            return self.cam_image.name
+        else:
+            return 'N/A'
+
 
 class FBHeadItem(PropertyGroup):
     mod_ver: IntProperty(name="Modifier Version", default=-1)

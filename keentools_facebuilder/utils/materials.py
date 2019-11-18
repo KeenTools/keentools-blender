@@ -148,7 +148,7 @@ def bake_tex(headnum, tex_name):
     # There no cameras on object
     if len(head.cameras) == 0:
         logger.debug("NO CAMERAS ON HEAD")
-        return
+        return None
 
     w = -1
     h = -1
@@ -165,13 +165,13 @@ def bake_tex(headnum, tex_name):
 
     if w <= 0 or h <= 0:
         logger.debug("NO BACKGROUND IMAGES")
-        return
+        return None
 
     if changes > 1:
         logger.debug("BACKGROUNDS HAVE DIFFERENT SIZES")
         warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
         warn('INVOKE_DEFAULT', msg=ErrorType.BackgroundsDiffer)
-        return
+        return None
 
     logger.debug("IMAGE SIZE {} {} {}".format(w, h, changes))
 
@@ -206,7 +206,7 @@ def bake_tex(headnum, tex_name):
 
         tex_num = bpy.data.images.find(tex_name)
 
-        if tex_num > 0:
+        if tex_num >= 0:
             logger.debug("TEXTURE ALREADY EXISTS")
             tex = bpy.data.images[tex_num]
             bpy.data.images.remove(tex)
@@ -218,6 +218,8 @@ def bake_tex(headnum, tex_name):
         tex.pixels[:] = texture.ravel()
         # Pack image to store in blend-file
         tex.pack()
-        logger.debug("TEXTURE BAKED SUCCESSFULLY")
+        logger.debug("TEXTURE BAKED SUCCESSFULLY: {}".format(tex.name))
+        return tex.name
     else:
         logger.debug("NO KEYFRAMES")
+    return None

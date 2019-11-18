@@ -721,29 +721,36 @@ class OBJECT_OT_FBAddonSettings(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBBakeTexture(Operator):
+class FB_OT_BakeTexture(Operator):
     bl_idname = Config.fb_bake_tex_idname
     bl_label = "Bake Texture"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Bake the texture using all selected cameras. " \
                      "It can take a lot of time, be patient"
 
     headnum: IntProperty(default=0)
 
-    # This draw overrides standard operator panel
-    def draw(self, context):
-        pass
-
     def execute(self, context):
-        op = getattr(get_operators(), Config.fb_actor_callname)
-        op('INVOKE_DEFAULT', action="bake_tex", headnum=self.headnum)
+        settings = get_main_settings()
+        tex_name = materials.bake_tex(
+            self.headnum, Config.tex_builder_filename)
+
+        if settings.tex_auto_preview:
+            mat = materials.show_texture_in_mat(
+                tex_name, Config.tex_builder_matname)
+            # Assign Material to Head Object
+            materials.assign_mat(
+                settings.get_head(self.headnum).headobj, mat)
+            # Switch to Material Mode or Back
+            materials.toggle_mode(('MATERIAL',))
+
         return {'FINISHED'}
 
 
 class FB_OT_ShowTexture(Operator):
     bl_idname = Config.fb_show_tex_idname
     bl_label = "Show Texture"
-    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_options = {'REGISTER', 'INTERNAL', 'UNDO'}
     bl_description = "Create a material from the generated texture " \
                      "and apply it to the model"
 
@@ -822,7 +829,7 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead, OBJECT_OT_FBDeleteHead,
                        FB_OT_RenderSizeToFrameSize, FB_OT_ReadExif,
                        FB_OT_ReadExifMenuExec,
                        OBJECT_OT_FBDeleteCamera, OBJECT_OT_FBAddCamera,
-                       OBJECT_OT_FBAddonSettings, OBJECT_OT_FBBakeTexture,
+                       OBJECT_OT_FBAddonSettings, FB_OT_BakeTexture,
                        FB_OT_ShowTexture, FB_OT_ShowSolid, FB_OT_ExitPinmode,
                        OBJECT_OT_FBSetSensorWidth,
                        OBJECT_OT_FBSensorWidthWindow,

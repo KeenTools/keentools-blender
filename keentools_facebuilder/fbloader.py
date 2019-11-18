@@ -150,7 +150,7 @@ class FBLoader:
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         cls.viewport().unregister_handlers()
-        cls.fb_save(headnum, camnum)
+        # cls.fb_save(headnum, camnum)  # try to save only after pin move
         head = settings.get_head(headnum)
         headobj = head.headobj
         # Mark object by ver.
