@@ -521,8 +521,9 @@ class FB_PT_TexturePanel(Panel):
                           text="Create texture", icon='IMAGE')
         op.headnum = headnum
 
+        texture_exists = find_tex_by_name(Config.tex_builder_filename)
         row = layout.row()
-        if not find_tex_by_name(Config.tex_builder_filename):
+        if not texture_exists:
             row.active = False
 
         mode = self.get_area_mode(context)
@@ -532,6 +533,14 @@ class FB_PT_TexturePanel(Panel):
         else:
             row.operator(Config.fb_show_tex_idname,
                          text="Apply texture", icon='MATERIAL')
+
+        row = layout.row()
+        if not texture_exists:
+            row.active = False
+        row.operator(Config.fb_texture_file_export_idname,
+                     text="Export", icon='EXPORT')
+        row.operator(Config.fb_delete_texture_idname,
+                     text="Delete", icon='X')
 
         box = layout.box()
         box.label(text='Advanced:')

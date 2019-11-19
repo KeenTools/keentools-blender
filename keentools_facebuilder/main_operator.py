@@ -752,6 +752,22 @@ class FB_OT_BakeTexture(Operator):
         return {'FINISHED'}
 
 
+class FB_OT_DeleteTexture(Operator):
+    bl_idname = Config.fb_delete_texture_idname
+    bl_label = "Delete texture"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Delete created texture from scene"
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        tex = materials.find_tex_by_name(Config.tex_builder_filename)
+        if tex is not None:
+            bpy.data.images.remove(tex)
+        return {'FINISHED'}
+
+
 class FB_OT_ShowTexture(Operator):
     bl_idname = Config.fb_show_tex_idname
     bl_label = "Show Texture"
@@ -835,6 +851,7 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead, FB_OT_DeleteHead,
                        FB_OT_ReadExifMenuExec,
                        OBJECT_OT_FBDeleteCamera, OBJECT_OT_FBAddCamera,
                        OBJECT_OT_FBAddonSettings, FB_OT_BakeTexture,
+                       FB_OT_DeleteTexture,
                        FB_OT_ShowTexture, FB_OT_ShowSolid, FB_OT_ExitPinmode,
                        OBJECT_OT_FBSetSensorWidth,
                        OBJECT_OT_FBSensorWidthWindow,

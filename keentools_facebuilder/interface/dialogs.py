@@ -196,7 +196,7 @@ class FB_OT_TexSelector(Operator):
                 self.report({'ERROR'}, "Can't create texture")
             elif res == {'FINISHED'}:
                 logger.debug('TEXTURE CREATED')
-                self.report({'INFO'}, "Texture created successfully")
+                self.report({'INFO'}, "Texture has been created successfully")
 
         return {'FINISHED'}
 

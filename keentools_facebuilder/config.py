@@ -112,6 +112,9 @@ class Config:
     fb_main_addon_settings_callname = prefix + '_main_addon_settings'
     fb_main_addon_settings_idname = 'object.' + fb_main_addon_settings_callname
 
+    fb_delete_texture_callname = 'delete_texture'
+    fb_delete_texture_idname = operators + '.' + fb_delete_texture_callname
+
     fb_bake_tex_callname = 'bake_tex'
     fb_bake_tex_idname = operators + '.' + fb_bake_tex_callname
     fb_show_tex_callname = 'show_tex'
@@ -137,6 +140,10 @@ class Config:
     fb_single_filebrowser_exec_callname = 'open_single_filebrowser_exec'
     fb_single_filebrowser_exec_idname = \
         operators + '.' + fb_single_filebrowser_exec_callname
+
+    fb_texture_file_export_callname = 'texture_file_export'
+    fb_texture_file_export_idname = \
+        operators + '.' + fb_texture_file_export_callname
 
     fb_pinmode_operator_callname = prefix + '_pinmode'
     fb_pinmode_operator_idname = 'object.' + fb_pinmode_operator_callname

@@ -20,7 +20,7 @@ import logging
 import bpy
 import os
 
-from bpy_extras.io_utils import ImportHelper
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bpy.types import Operator
 
 from ..fbloader import FBLoader
@@ -46,6 +46,30 @@ class FB_OT_SingleFilebrowserExec(Operator):
         op = getattr(get_operators(), Config.fb_single_filebrowser_callname)
         op('INVOKE_DEFAULT', headnum=settings.tmp_headnum,
            camnum=settings.tmp_camnum)
+
+        return {'FINISHED'}
+
+
+def load_single_image_file(headnum, camnum, filepath):
+        logger = logging.getLogger(__name__)
+        settings = get_main_settings()
+        logger.info('Load image file: {}'.format(filepath))
+
+        # if Settings structure is broken
+        if not settings.check_heads_and_cams():
+            settings.fix_heads()  # Fix
+            return {'CANCELLED'}
+
+        try:
+            img = bpy.data.images.load(filepath)
+            head = settings.get_head(headnum)
+            head.get_camera(camnum).cam_image = img
+        except RuntimeError:
+            logger.error("FILE READ ERROR: {}".format(filepath))
+            return {'CANCELLED'}
+
+        read_exif_to_head(headnum, filepath)
+        update_exif_sizes_message(headnum, img)
 
         return {'FINISHED'}
 
@@ -83,27 +107,52 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
             col.label(text=t)
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        settings = get_main_settings()
-        logger.info('Load image file: {}'.format(self.filepath))
+        return load_single_image_file(self.headnum, self.camnum, self.filepath)
 
-        # if Settings structure is broken
-        if not settings.check_heads_and_cams():
-            settings.fix_heads()  # Fix
-            return {'CANCELLED'}
 
-        try:
-            img = bpy.data.images.load(self.filepath)
-            head = settings.get_head(self.headnum)
-            head.get_camera(self.camnum).cam_image = img
-        except RuntimeError:
-            logger.error("FILE READ ERROR: {}".format(self.filepath))
-            return {'FINISHED'}
+def update_format(self, context):
+    ext = ".png" if self.file_format == "png" else ".jpg"
+    self.filename_ext = ext
 
-        read_exif_to_head(self.headnum, self.filepath)
-        update_exif_sizes_message(self.headnum, img)
 
+class FB_OT_TextureFileExport(Operator, ExportHelper):
+    bl_idname = Config.fb_texture_file_export_idname
+    bl_label = "Export texture"
+    bl_description = "Export created texture in a file"
+
+    filter_glob: bpy.props.StringProperty(
+        default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp',
+        options={'HIDDEN'}
+    )
+
+    file_format: bpy.props.EnumProperty(name="Image file format", items=[
+        ('png', 'PNG', 'Default image file format', 0),
+        ('jpeg', 'JPEG', 'Data loss image format', 1),
+    ], description="Choose image file format", update=update_format)
+
+
+    headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
+    camnum: bpy.props.IntProperty(name='Camera index', default=0)
+
+    filename_ext = bpy.props.StringProperty(default=".png")
+
+    filepath: bpy.props.StringProperty(
+        default=Config.tex_builder_filename,
+        subtype='FILE_PATH'
+    )
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text='Image file format')
+        layout.prop(self, 'file_format', expand=True)
+        pass
+
+    def execute(self, context):
         return {'FINISHED'}
+
+    # def invoke(self, context, event):
+    #     print(dir(self))
+    #     return {'RUNNING_MODAL'}
 
 
 class FB_OT_MultipleFilebrowserExec(Operator):
