@@ -149,8 +149,8 @@ class FB_OT_MovePin(bpy.types.Operator):
         headnum = self.get_headnum()
         camnum = self.get_camnum()
         head = settings.get_head(headnum)
-        cam = head.cameras[camnum]
-        kid = settings.get_keyframe(headnum, camnum)
+        cam = head.get_camera(camnum)
+        kid = cam.get_keyframe()
 
         fb = FBLoader.get_builder()
         # Save state to vars

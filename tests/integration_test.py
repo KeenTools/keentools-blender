@@ -15,7 +15,7 @@ import test_utils
 # import tests.test_utils as test_utils
 
 
-from keentools_facebuilder.utils import coords
+from keentools_facebuilder.utils import coords, materials
 from keentools_facebuilder.config import Config, get_main_settings, \
     get_operators
 
@@ -128,15 +128,31 @@ class FaceBuilderTest(unittest.TestCase):
         head.sensor_width = new_sensor_width
         self.assertEqual(new_sensor_width, camobj.data.sensor_width)
 
-    def test_load_image(self):
+    def test_load_images_and_bake_texture(self):
         test_utils.new_scene()
-        self._head_and_cameras()
+        self._head_cams_and_pins()
+        settings = get_main_settings()
 
         dir = os.path.dirname(os.path.abspath(__file__))
-        filename = os.path.join(dir, 'images/ant_red.jpg')
+        filename = os.path.join(dir, 'images/ale_white_24x16.jpg')
+        headnum = 0
+        camnum = 1
         res = test_utils.create_camera_from_image(
-            headnum=0, camnum=0, filename=filename)
+            headnum=headnum, camnum=camnum, filename=filename)
         self.assertEqual(res, {'FINISHED'})
+        head = settings.get_head(headnum)
+        # Test EXIF read
+        self.assertEqual(head.exif.focal, 50.0)
+        self.assertEqual(head.exif.focal35mm, 75.0)
+
+        camnum = 2
+        filename = os.path.join(dir, 'images/ana_blue_24x16.tif')
+        res = test_utils.create_camera_from_image(
+            headnum=headnum, camnum=camnum, filename=filename)
+        self.assertEqual(res, {'FINISHED'})
+
+        tex_name = materials.bake_tex(headnum=0, tex_name='bake_texture_name')
+        self.assertTrue(tex_name is not None)
 
 
 if __name__ == "__main__":
