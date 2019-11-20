@@ -756,7 +756,7 @@ class FB_OT_DeleteTexture(Operator):
     bl_idname = Config.fb_delete_texture_idname
     bl_label = "Delete texture"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Delete created texture from scene"
+    bl_description = "Delete the created texture from the scene"
 
     def draw(self, context):
         pass

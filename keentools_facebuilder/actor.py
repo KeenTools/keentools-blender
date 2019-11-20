@@ -28,11 +28,10 @@ from bpy.types import Operator
 from .utils import manipulate
 from .config import Config, get_main_settings
 from .utils.exif_reader import get_sensor_size_35mm_equivalent
+from .utils import materials
 
 
 class FB_OT_Actor(Operator):
-    """ Face Builder Action
-    """
     bl_idname = Config.fb_actor_idname
     bl_label = "FaceBuilder in Action"
     bl_options = {'REGISTER'}
@@ -43,7 +42,6 @@ class FB_OT_Actor(Operator):
     camnum: IntProperty(default=0)
 
     def draw(self, context):
-        """ No need to show panel so empty draw"""
         pass
 
     def execute(self, context):
@@ -66,6 +64,19 @@ class FB_OT_Actor(Operator):
             camera = settings.get_camera(self.headnum, self.camnum)
             if camera is not None:
                 camera.cam_image = None
+
+        elif self.action == 'save_tex':
+            src_context = bpy.context.copy()
+            area = bpy.context.area
+            type = area.type
+            area.type = 'IMAGE_EDITOR'
+            tex = materials.find_tex_by_name(Config.tex_builder_filename)
+            if tex is not None:
+                src_context['edit_image'] = tex
+                area.spaces[0].image = tex
+                # area.type = type
+                op = bpy.ops.image.save_as
+                op('INVOKE_DEFAULT')  # src_context, 'INVOKE_DEFAULT'
 
         return {'FINISHED'}
 

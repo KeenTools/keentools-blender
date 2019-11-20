@@ -28,6 +28,7 @@ from ..config import Config, get_main_settings, get_operators, ErrorType
 
 from ..utils.exif_reader import read_exif_to_head, update_exif_sizes_message
 from ..utils.other import restore_ui_elements
+from ..utils.materials import find_tex_by_name
 
 
 class FB_OT_SingleFilebrowserExec(Operator):
@@ -111,14 +112,14 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
 
 
 def update_format(self, context):
-    ext = ".png" if self.file_format == "png" else ".jpg"
+    ext = ".png" if self.file_format == "PNG" else ".jpg"
     self.filename_ext = ext
 
 
 class FB_OT_TextureFileExport(Operator, ExportHelper):
     bl_idname = Config.fb_texture_file_export_idname
     bl_label = "Export texture"
-    bl_description = "Export created texture in a file"
+    bl_description = "Export the created texture to a file"
 
     filter_glob: bpy.props.StringProperty(
         default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp',
@@ -126,33 +127,64 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
     )
 
     file_format: bpy.props.EnumProperty(name="Image file format", items=[
-        ('png', 'PNG', 'Default image file format', 0),
-        ('jpeg', 'JPEG', 'Data loss image format', 1),
+        ('PNG', 'PNG', 'Default image file format', 0),
+        ('JPEG', 'JPEG', 'Data loss image format', 1),
     ], description="Choose image file format", update=update_format)
 
+    check_existing: bpy.props.BoolProperty(
+        name="Check Existing",
+        description="Check and warn on overwriting existing files",
+        default=True,
+        options={'HIDDEN'},
+    )
 
-    headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
-    camnum: bpy.props.IntProperty(name='Camera index', default=0)
-
-    filename_ext = bpy.props.StringProperty(default=".png")
+    filename_ext: bpy.props.StringProperty(default=".png")
 
     filepath: bpy.props.StringProperty(
         default=Config.tex_builder_filename,
         subtype='FILE_PATH'
     )
 
+    def check(self, context):
+        change_ext = False
+
+        filepath = self.filepath
+        sp = os.path.splitext(filepath)
+
+        if sp[1] in {'.jpg', '.', '.png', '.PNG', '.JPG', '.JPEG'}:
+            filepath = sp[0]
+
+        filepath = bpy.path.ensure_ext(filepath, self.filename_ext)
+
+        if filepath != self.filepath:
+            self.filepath = filepath
+            change_ext = True
+
+        return change_ext
+
     def draw(self, context):
         layout = self.layout
         layout.label(text='Image file format')
         layout.prop(self, 'file_format', expand=True)
-        pass
 
     def execute(self, context):
+        logger = logging.getLogger(__name__)
+        logger.debug("START SAVE TEXTURE: {}".format(self.filepath))
+        tex = find_tex_by_name(Config.tex_builder_filename)
+        if tex is None:
+            return {'CANCELLED'}
+        tex.filepath = self.filepath
+        # Blender doesn't change file_format after filepath assigning, so
+        fix_for_blender_bug = tex.file_format  # Do not remove!
+        tex.file_format = self.file_format
+        tex.save()
+        logger.debug("SAVED TEXTURE: {} {}".format(tex.file_format,
+                                                   self.filepath))
         return {'FINISHED'}
 
-    # def invoke(self, context, event):
-    #     print(dir(self))
-    #     return {'RUNNING_MODAL'}
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
 
 
 class FB_OT_MultipleFilebrowserExec(Operator):
