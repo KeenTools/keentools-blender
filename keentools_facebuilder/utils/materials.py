@@ -96,6 +96,18 @@ def find_tex_by_name(tex_name):
     return tex
 
 
+def remove_tex_by_name(name):
+    tex = find_tex_by_name(name)
+    if tex is not None:
+        bpy.data.images.remove(tex)
+
+
+def remove_mat_by_name(name):
+    mat_num = bpy.data.materials.find(name)
+    if mat_num >= 0:
+        bpy.data.materials.remove(bpy.data.materials[mat_num])
+
+
 def show_texture_in_mat(tex_name, mat_name):
     tex = find_tex_by_name(tex_name)
     mat = get_mat_by_name(mat_name)

@@ -762,9 +762,10 @@ class FB_OT_DeleteTexture(Operator):
         pass
 
     def execute(self, context):
-        tex = materials.find_tex_by_name(Config.tex_builder_filename)
-        if tex is not None:
-            bpy.data.images.remove(tex)
+        materials.remove_tex_by_name(Config.tex_builder_filename)
+        materials.remove_mat_by_name(Config.tex_builder_matname)
+        op = getattr(get_operators(), Config.fb_show_solid_callname)
+        op('EXEC_DEFAULT')
         return {'FINISHED'}
 
 
