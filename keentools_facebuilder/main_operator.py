@@ -823,6 +823,19 @@ class FB_OT_ExitPinmode(Operator):
         return {'FINISHED'}
 
 
+class FB_OT_OpenURL(bpy.types.Operator):
+    bl_idname = Config.fb_open_url_idname
+    bl_label = 'Open URL'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Open URL in web browser'
+
+    url: bpy.props.StringProperty(name='URL', default='')
+
+    def execute(self, context):
+        bpy.ops.wm.url_open(url=self.url)
+        return {'FINISHED'}
+
+
 CLASSES_TO_REGISTER = (FB_OT_SelectHead, OBJECT_OT_FBDeleteHead,
                        OBJECT_OT_FBSelectCamera, FB_OT_CenterGeo,
                        FB_OT_Unmorph, FB_OT_RemovePins,
@@ -835,6 +848,7 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead, OBJECT_OT_FBDeleteHead,
                        OBJECT_OT_FBDeleteCamera, OBJECT_OT_FBAddCamera,
                        OBJECT_OT_FBAddonSettings, OBJECT_OT_FBBakeTexture,
                        FB_OT_ShowTexture, FB_OT_ShowSolid, FB_OT_ExitPinmode,
+                       FB_OT_OpenURL,
                        OBJECT_OT_FBSetSensorWidth,
                        OBJECT_OT_FBSensorWidthWindow,
                        OBJECT_OT_FBFocalLengthMenuExec)

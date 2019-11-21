@@ -177,14 +177,15 @@ class Config:
                                   + fb_add_body_operator_callname
 
     # Panel ids
-    fb_header_panel_idname = _PT + prefix + '_header_panel_id'
-    fb_camera_panel_idname = _PT + prefix + 'camera_panel_id'
-    fb_views_panel_idname = _PT + prefix + '_views_panel_id'
-    fb_exif_panel_idname = _PT + prefix + '_exif_panel_id'
-    fb_texture_panel_idname = _PT + prefix + '_texture_panel_id'
-    fb_colors_panel_idname = _PT + prefix + '_colors_panel_id'
-    fb_model_panel_idname = _PT + prefix + '_model_panel_id'
-    fb_pin_settings_panel_idname = _PT + prefix + '_pin_settings_panel_id'
+    fb_header_panel_idname = _PT + 'header_panel'
+    fb_camera_panel_idname = _PT + 'camera_panel'
+    fb_update_panel_idname = _PT + 'update_panel'
+    fb_views_panel_idname = _PT + 'views_panel'
+    fb_exif_panel_idname = _PT + 'exif_panel'
+    fb_texture_panel_idname = _PT + 'texture_panel'
+    fb_colors_panel_idname = _PT + 'colors_panel'
+    fb_model_panel_idname = _PT + 'model_panel'
+    fb_pin_settings_panel_idname = _PT + 'pin_settings_panel'
 
     # Help ids
     fb_help_camera_callname = 'help_camera'
@@ -209,6 +210,9 @@ class Config:
 
     fb_help_texture_callname = 'help_texture'
     fb_help_texture_idname = operators + '.' + fb_help_texture_callname
+
+    fb_open_url_callname = 'open_url'
+    fb_open_url_idname = operators + '.' + fb_open_url_callname
 
     # Menu ids
     fb_fix_frame_size_menu_idname = _MT + '_fix_frame_size_menu'

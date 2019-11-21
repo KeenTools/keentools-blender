@@ -30,6 +30,7 @@ CLASSES_TO_REGISTER = (FB_MT_FrameSizeMenu,  # menus
                        FB_MT_FocalLengthMenu,
                        FB_MT_ReadExifMenu,
                        FB_PT_HeaderPanel,  # panels
+                       FB_PT_UpdatePanel,
                        FB_PT_CameraPanel,
                        FB_PT_ExifPanel,
                        FB_PT_ViewsPanel,

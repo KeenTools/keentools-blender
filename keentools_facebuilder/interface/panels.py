@@ -143,6 +143,93 @@ class FB_PT_HeaderPanel(Panel):
             self._draw_many_heads(layout)
 
 
+
+
+
+class FBUpdater:
+    _state = True
+    _response = None
+    _message = "<h3>What's New in KeenTools 1.5.6</h3>\n" \
+               "<ul>\n  " \
+               "<li>fixed performance issues in Nuke 12;</li>\n  " \
+               "<li>pintooling performance improvements;</li>\n  " \
+               "<li>fixed large frame numbers bug;</li>\n  " \
+               "<li>fixed invisible model in macOS Catalina;</li>\n  " \
+               "<li>minor fixes and improvements</li>\n" \
+               "</ul>\n<br />\n"
+
+    @classmethod
+    def set_state(cls, val):
+        cls._state = val
+
+    @classmethod
+    def get_state(cls):
+        return cls._state
+
+    @classmethod
+    def set_response(cls, val):
+        cls._response = val
+
+    @classmethod
+    def get_message(cls):
+        return cls.parse_message(cls._message)
+
+    @staticmethod
+    def parse_message(val):
+        import re
+
+        return val
+
+
+# import pykeentools
+# platform = 'Blender'
+# ver = pykeentools.Version(*bpy.app.version)
+# uc = pykeentools.UpdatesChecker.instance(platform, ver)
+# res = uc.check_for_updates('FaceBuilder'); print(res)
+
+
+class FB_PT_UpdatePanel(Panel):
+    bl_idname = Config.fb_update_panel_idname
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_label = "Update"
+    bl_category = Config.fb_tab_category
+    bl_context = "objectmode"
+
+    @classmethod
+    def poll(cls, context):
+        force_show = True
+        return _show_all_panels()
+
+    def _draw_response(self, layout):
+        layout.label(text=FBUpdater.get_message())
+
+        op = layout.operator(Config.fb_open_url_idname,
+            text='Open downloads page', icon='URL')
+        op.url = 'https://keentools.io/downloads'
+        layout.operator(Config.fb_open_url_idname,
+            text='Remind tomorrow', icon='RECOVER_LAST')
+        layout.operator(Config.fb_open_url_idname,
+            text='Skip this version', icon='X')
+
+    def draw(self, context):
+        settings = get_main_settings()
+        layout = self.layout
+        if FBUpdater.get_state():
+            self._draw_response(layout)
+
+        if not pkt.is_installed():
+            return
+
+        import pykeentools
+        platform = 'Blender'
+        ver = pykeentools.Version(*bpy.app.version)
+        uc = pykeentools.UpdatesChecker.instance(platform, ver)
+        res = uc.check_for_updates('FaceBuilder')
+        if res is not None:
+            FBUpdater.set_state(True)
+
+
 class FB_PT_CameraPanel(Panel):
     bl_idname = Config.fb_camera_panel_idname
     bl_space_type = "VIEW_3D"
