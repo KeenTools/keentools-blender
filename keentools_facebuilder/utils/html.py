@@ -34,14 +34,12 @@ def skip_new_lines_and_spaces(txt):
 
 
 def skip_single_tags(html):
-    # print("SKIP:", html)
     start = 0
     end = len(html)
 
     arr = list()
     while start < end:
-        # print("skip:", len(html[start:end]), html[start:end])
-        res = re.search("(<br>|<br\s*/>)", html[start:end])  # (<\s*(\w+)\s*>|<\s*(\w+)\s*/>)
+        res = re.search("(<br>|<br\s*/>)", html[start:end])
 
         if res is None:
             arr.append({'type':'text', 'content':html[start:end]})
@@ -62,13 +60,11 @@ def skip_single_tags(html):
 
 
 def parse_html(html):
-    # print("PARSE:", html)
     start = 0
     end = len(html)
 
     arr = list()
     while start < end:
-        # print("parse:", len(html[start:end]), html[start:end])
         res = re.search("(<(.+)>((.|\n)+?)</\\2>)", html[start:end])
         if res is None:
             print('no: "{}"'.format(html[start:end]))
@@ -76,7 +72,6 @@ def parse_html(html):
             start = end
         else:
             if res.start() > 0:
-                # print("before:", html[start:res.start()])
                 print('no2: "{} {} {}"'.format(start, end, html[start:start + res.start()]))
 
                 arr.append(skip_single_tags(html[start:start + res.start()]))
@@ -87,6 +82,28 @@ def parse_html(html):
         return arr[0]
     else:
         return arr
+
+
+def split_long_string(txt, limit):
+    if len(txt) < limit:
+        return [txt]
+    start = 0
+    end = len(txt)
+    spaces_pos = [i for i in range(0, end) if txt[i]==' ']
+    arr = ['']
+    for p in spaces_pos:
+        if p - start < limit:
+            arr[-1] = txt[start:p]
+        else:
+            start += len(arr[-1]) + 1 # +1 to skip space
+            arr.append(txt[start:p])
+    arr[-1] = txt[start:end]
+    return arr
+
+
+def create_label(txt, limit=30):
+    for t in split_long_string(txt, limit):
+        print("layout.label(text='{}')".format(t))
 
 
 def text_from_element(el):
@@ -107,7 +124,7 @@ def render_dict(el):
     t = el['type']
     if t == 'h3':
         txt = text_from_element(el['content'])
-        print("layout.label(text='{}')".format(txt))
+        create_label(txt)
 
     if t == 'ul':
         render_element(el['content'])
@@ -115,11 +132,11 @@ def render_dict(el):
     elif t == 'text':
         txt = text_from_element(el['content'])
         if txt not in {'',' '}:
-            print("layout.label(text='{}')".format(txt))
+            create_label(txt)
 
     elif t == 'li':
         txt = text_from_element(el['content'])
-        print("layout.label(text='- {}')".format(txt))
+        create_label('- ' + txt)
 
     elif t == 'br':
         return
