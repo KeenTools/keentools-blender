@@ -19,7 +19,7 @@
 import re
 
 
-msg = "Hello people! <h3>What's New in KeenTools 1.5.6</h3>\n Some <br />text" \
+msg = "Hello <br>people! <h3>What's New in KeenTools 1.5.6</h3>\n Some <br />text" \
                "<ul>\n  " \
                "<li>fixed performance issues in Nuke 12;</li>\n  " \
                "<li>pintooling performance improvements;</li>\n  " \
@@ -41,16 +41,20 @@ def skip_single_tags(html):
     arr = list()
     while start < end:
         # print("skip:", len(html[start:end]), html[start:end])
-        res = re.search("(<br>|<br\s*/>)", html[start:end])
+        res = re.search("(<br>|<br\s*/>)", html[start:end])  # (<\s*(\w+)\s*>|<\s*(\w+)\s*/>)
 
         if res is None:
-            arr.append(['text', html[start:end]])
+            arr.append({'type':'text', 'content':html[start:end]})
             start = end
         else:
             if res.start() > 0:
-                arr.append(['text', html[start:res.start()]])
-            arr.append(['br', ''])
+                arr.append({'type':'text', 'content': html[start:res.start()]})
+            arr.append({'type':'br', 'content': res.group(0)})
             start += res.end()
+
+    if arr == []:
+        print('[]:"{}"'.format(html))
+        return {'type':'none', 'content':''}
     if len(arr) == 1:
         return arr[0]
     else:
@@ -67,13 +71,17 @@ def parse_html(html):
         # print("parse:", len(html[start:end]), html[start:end])
         res = re.search("(<(.+)>((.|\n)+?)</\\2>)", html[start:end])
         if res is None:
+            print('no: "{}"'.format(html[start:end]))
             arr.append(skip_single_tags(html[start:end]))
             start = end
         else:
             if res.start() > 0:
                 # print("before:", html[start:res.start()])
-                arr.append(skip_single_tags(html[start:res.start()]))
-            arr.append([res.group(2), parse_html(res.group(3))])
+                print('no2: "{} {} {}"'.format(start, end, html[start:start + res.start()]))
+
+                arr.append(skip_single_tags(html[start:start + res.start()]))
+            arr.append({'type':res.group(2),
+                        'content':parse_html(res.group(3))})
             start += res.end()
     if len(arr) == 1:
         return arr[0]
@@ -81,54 +89,59 @@ def parse_html(html):
         return arr
 
 
-def output_element(el):
-    if type(el[1]) == list:
-        render_message(el)
-    elif type(el[1]) == str:
-        if el[0] == 'h3':
-            print("layout.label(text='{}')".format(el[1]))
-        elif el[0] == 'li':
-            print("layout.label(text='- {}')".format(el[1]))
-        elif el[0] == 'text':
-            if el[1] != ' ':
-                print("layout.label(text='{}')".format(el[1]))
-        else:
-            print("layout.label(text='{}')".format(el[1]))
+def text_from_element(el):
+    t = type(el)
+    if t == list:
+        txt = ''
+        for t in el:
+            txt += text_from_element(t)
+        return txt
+    elif t == dict:
+        if el['type'] not in {'br', 'none'}:
+            return text_from_element(el['content'])
+    elif t == str:
+        return el
 
 
-def text_from_tree(tree):
-    if len(tree) == 0:
-        return ''
+def render_dict(el):
+    t = el['type']
+    if t == 'h3':
+        txt = text_from_element(el['content'])
+        print("layout.label(text='{}')".format(txt))
 
-    if type(tree) == str:
-        print("tree:", tree)
-        return tree
+    if t == 'ul':
+        render_element(el['content'])
 
-    if type(tree[1]) == str:
-        print("tree1:", tree)
-        return tree[1]
+    elif t == 'text':
+        txt = text_from_element(el['content'])
+        if txt not in {'',' '}:
+            print("layout.label(text='{}')".format(txt))
 
-    if type(tree[0]) == str:
-        return text_from_tree(tree[1])
+    elif t == 'li':
+        txt = text_from_element(el['content'])
+        print("layout.label(text='- {}')".format(txt))
 
-    txt = ''
+    elif t == 'br':
+        return
+
+
+def render_list(tree):
     for el in tree:
-        txt = txt + text_from_tree(el)
-    print("txt:", txt)
-    return txt
+        if type(el) == list:
+            render_list(el)
+        elif type(el) == dict:
+            render_dict(el)
 
 
-def render_message(tree):
-    for el in tree:
-        print("el:", el)
-        if type(el[0]) == str:
-            output_element(el)
-        if type(el[0]) == list:
-            render_message(el)
+def render_element(el):
+    if type(el) == list:
+        return render_list(el)
+    elif type(el) == dict:
+        return render_dict(el)
 
 
 res = parse_html(skip_new_lines_and_spaces(msg))
 print(res)
-tx = text_from_tree(res)
-print("TEXT:", tx)
-#render_message(res)
+txt = render_element(res)
+print("TEXT:", txt)
+
