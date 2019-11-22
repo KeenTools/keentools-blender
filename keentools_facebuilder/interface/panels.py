@@ -23,6 +23,7 @@ import re
 from ..fbloader import FBLoader
 from ..utils.manipulate import what_is_state
 from ..utils.materials import find_tex_by_name
+from ..utils.html import render_main, parse_html, skip_new_lines_and_spaces
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 from ..utils.icons import FBIcons
@@ -143,9 +144,6 @@ class FB_PT_HeaderPanel(Panel):
             self._draw_many_heads(layout)
 
 
-
-
-
 class FBUpdater:
     _state = True
     _response = None
@@ -157,6 +155,7 @@ class FBUpdater:
                "<li>fixed invisible model in macOS Catalina;</li>\n  " \
                "<li>minor fixes and improvements</li>\n" \
                "</ul>\n<br />\n"
+    _parsed = None
 
     @classmethod
     def set_state(cls, val):
@@ -172,13 +171,24 @@ class FBUpdater:
 
     @classmethod
     def get_message(cls):
-        return cls.parse_message(cls._message)
+        return cls._message
 
-    @staticmethod
-    def parse_message(val):
-        import re
+    @classmethod
+    def get_parsed(cls):
+        return cls._parsed
 
-        return val
+    @classmethod
+    def set_parsed(cls, val):
+        cls._parsed = val
+
+    @classmethod
+    def render_message(cls, layout):
+        parsed = cls.get_parsed()
+        if parsed is None:
+            parsed = parse_html(skip_new_lines_and_spaces(cls.get_message()))
+            cls.set_parsed(parsed)
+
+        render_main(layout, parsed)
 
 
 # import pykeentools
@@ -202,7 +212,10 @@ class FB_PT_UpdatePanel(Panel):
         return _show_all_panels()
 
     def _draw_response(self, layout):
-        layout.label(text=FBUpdater.get_message())
+        # layout.label(text=FBUpdater.get_message())
+        col = layout.column()
+        col.scale_y = 0.75
+        FBUpdater.render_message(col)
 
         op = layout.operator(Config.fb_open_url_idname,
             text='Open downloads page', icon='URL')

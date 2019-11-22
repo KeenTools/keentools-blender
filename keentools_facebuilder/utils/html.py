@@ -19,16 +19,6 @@
 import re
 
 
-msg = "Hello <br>people! <h3>What's New in KeenTools 1.5.6</h3>\n Some <br />text" \
-               "<ul>\n  " \
-               "<li>fixed performance issues in Nuke 12;</li>\n  " \
-               "<li>pintooling performance improvements;</li>\n  " \
-               "<li>fixed large frame numbers bug;</li>\n  " \
-               "<li>fixed invisible model in macOS Catalina;</li>\n  " \
-               "<li>minor fixes and improvements</li>\n" \
-               "</ul>\n<br />\n"
-
-
 def skip_new_lines_and_spaces(txt):
     return re.sub("[\r\n\s]+", " ", txt)
 
@@ -90,20 +80,21 @@ def split_long_string(txt, limit):
     start = 0
     end = len(txt)
     spaces_pos = [i for i in range(0, end) if txt[i]==' ']
+    spaces_pos.append(end)  # for last call
     arr = ['']
     for p in spaces_pos:
         if p - start < limit:
             arr[-1] = txt[start:p]
         else:
-            start += len(arr[-1]) + 1 # +1 to skip space
+            start += len(arr[-1]) + 1  # +1 to skip space
             arr.append(txt[start:p])
     arr[-1] = txt[start:end]
     return arr
 
 
-def create_label(txt, limit=30):
+def create_label(layout, txt, limit=32):
     for t in split_long_string(txt, limit):
-        print("layout.label(text='{}')".format(t))
+        layout.label(text="{}".format(t))
 
 
 def text_from_element(el):
@@ -120,45 +111,38 @@ def text_from_element(el):
         return el
 
 
-def render_dict(el):
+def render_dict(layout, el):
     t = el['type']
-    if t == 'h3':
+    if t in {'h1', 'h2', 'h3', 'h4'}:
         txt = text_from_element(el['content'])
-        create_label(txt)
+        create_label(layout, txt)
 
-    if t == 'ul':
-        render_element(el['content'])
+    if t in {'ul', 'p'}:
+        render_main(layout, el['content'])
 
     elif t == 'text':
         txt = text_from_element(el['content'])
         if txt not in {'',' '}:
-            create_label(txt)
+            create_label(layout, txt)
 
     elif t == 'li':
         txt = text_from_element(el['content'])
-        create_label('- ' + txt)
+        create_label(layout, '- ' + txt)
 
     elif t == 'br':
         return
 
 
-def render_list(tree):
+def render_list(layout, tree):
     for el in tree:
         if type(el) == list:
-            render_list(el)
+            render_list(layout, el)
         elif type(el) == dict:
-            render_dict(el)
+            render_dict(layout, el)
 
 
-def render_element(el):
+def render_main(layout, el):
     if type(el) == list:
-        return render_list(el)
+        return render_list(layout, el)
     elif type(el) == dict:
-        return render_dict(el)
-
-
-res = parse_html(skip_new_lines_and_spaces(msg))
-print(res)
-txt = render_element(res)
-print("TEXT:", txt)
-
+        return render_dict(layout, el)
