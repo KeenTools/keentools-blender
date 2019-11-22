@@ -41,7 +41,6 @@ def skip_single_tags(html):
             start += res.end()
 
     if arr == []:
-        print('[]:"{}"'.format(html))
         return {'type':'none', 'content':''}
     if len(arr) == 1:
         return arr[0]
@@ -57,13 +56,10 @@ def parse_html(html):
     while start < end:
         res = re.search("(<(.+)>((.|\n)+?)</\\2>)", html[start:end])
         if res is None:
-            print('no: "{}"'.format(html[start:end]))
             arr.append(skip_single_tags(html[start:end]))
             start = end
         else:
             if res.start() > 0:
-                print('no2: "{} {} {}"'.format(start, end, html[start:start + res.start()]))
-
                 arr.append(skip_single_tags(html[start:start + res.start()]))
             arr.append({'type':res.group(2),
                         'content':parse_html(res.group(3))})
@@ -127,7 +123,7 @@ def render_dict(layout, el):
 
     elif t == 'li':
         txt = text_from_element(el['content'])
-        create_label(layout, '- ' + txt)
+        create_label(layout, '— ' + txt)
 
     elif t == 'br':
         return

@@ -17,16 +17,16 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
-from bpy.types import Panel, Operator
-from ..config import Config, get_main_settings, ErrorType
+from bpy.types import Panel
+
+from .updater import FBUpdater, init_updater
+from ..config import Config, get_main_settings
 import re
 from ..fbloader import FBLoader
 from ..utils.manipulate import what_is_state
 from ..utils.materials import find_tex_by_name
-from ..utils.html import render_main, parse_html, skip_new_lines_and_spaces
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
-from ..utils.icons import FBIcons
 
 def _show_all_panels():
     state, _ = what_is_state()
@@ -142,105 +142,39 @@ class FB_PT_HeaderPanel(Panel):
 
         else:
             self._draw_many_heads(layout)
-
-
-class FBUpdater:
-    _state = True
-    _response = None
-    _message = "<h3>What's New in KeenTools 1.5.6</h3>\n" \
-               "<ul>\n  " \
-               "<li>fixed performance issues in Nuke 12;</li>\n  " \
-               "<li>pintooling performance improvements;</li>\n  " \
-               "<li>fixed large frame numbers bug;</li>\n  " \
-               "<li>fixed invisible model in macOS Catalina;</li>\n  " \
-               "<li>minor fixes and improvements</li>\n" \
-               "</ul>\n<br />\n"
-    _parsed = None
-
-    @classmethod
-    def set_state(cls, val):
-        cls._state = val
-
-    @classmethod
-    def get_state(cls):
-        return cls._state
-
-    @classmethod
-    def set_response(cls, val):
-        cls._response = val
-
-    @classmethod
-    def get_message(cls):
-        return cls._message
-
-    @classmethod
-    def get_parsed(cls):
-        return cls._parsed
-
-    @classmethod
-    def set_parsed(cls, val):
-        cls._parsed = val
-
-    @classmethod
-    def render_message(cls, layout):
-        parsed = cls.get_parsed()
-        if parsed is None:
-            parsed = parse_html(skip_new_lines_and_spaces(cls.get_message()))
-            cls.set_parsed(parsed)
-
-        render_main(layout, parsed)
-
-
-# import pykeentools
-# platform = 'Blender'
-# ver = pykeentools.Version(*bpy.app.version)
-# uc = pykeentools.UpdatesChecker.instance(platform, ver)
-# res = uc.check_for_updates('FaceBuilder'); print(res)
+            if not FBUpdater.get_state():
+                init_updater()
 
 
 class FB_PT_UpdatePanel(Panel):
     bl_idname = Config.fb_update_panel_idname
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_label = "Update"
+    bl_label = "Update available"
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 
     @classmethod
     def poll(cls, context):
-        force_show = True
-        return _show_all_panels()
+        return FBUpdater.visible() and _show_all_panels()
 
     def _draw_response(self, layout):
-        # layout.label(text=FBUpdater.get_message())
         col = layout.column()
         col.scale_y = 0.75
         FBUpdater.render_message(col)
 
+        res = FBUpdater.get_response()
         op = layout.operator(Config.fb_open_url_idname,
             text='Open downloads page', icon='URL')
-        op.url = 'https://keentools.io/downloads'
-        layout.operator(Config.fb_open_url_idname,
+        op.url = res.download_url
+        layout.operator(Config.fb_remind_later_idname,
             text='Remind tomorrow', icon='RECOVER_LAST')
-        layout.operator(Config.fb_open_url_idname,
+        layout.operator(Config.fb_skip_version_idname,
             text='Skip this version', icon='X')
 
     def draw(self, context):
-        settings = get_main_settings()
         layout = self.layout
-        if FBUpdater.get_state():
-            self._draw_response(layout)
-
-        if not pkt.is_installed():
-            return
-
-        import pykeentools
-        platform = 'Blender'
-        ver = pykeentools.Version(*bpy.app.version)
-        uc = pykeentools.UpdatesChecker.instance(platform, ver)
-        res = uc.check_for_updates('FaceBuilder')
-        if res is not None:
-            FBUpdater.set_state(True)
+        self._draw_response(layout)
 
 
 class FB_PT_CameraPanel(Panel):
@@ -284,7 +218,6 @@ class FB_PT_CameraPanel(Panel):
         col = layout.column()
         if head.auto_focal_estimation:
             col.active = False
-            # col.alert = True
             col.enabled = False
         row = col.row()
         row.prop(head, 'focal')
@@ -293,8 +226,6 @@ class FB_PT_CameraPanel(Panel):
             text='', icon='SETTINGS')
 
         row = layout.row()
-        # if head.auto_focal_estimation:
-        #     row.alert = True
         row.prop(head, 'auto_focal_estimation')
 
 

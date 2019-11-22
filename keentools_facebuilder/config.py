@@ -214,6 +214,12 @@ class Config:
     fb_open_url_callname = 'open_url'
     fb_open_url_idname = operators + '.' + fb_open_url_callname
 
+    fb_remind_later_callname = 'remind_later'
+    fb_remind_later_idname = operators + '.' + fb_remind_later_callname
+
+    fb_skip_version_callname = 'skip_version'
+    fb_skip_version_idname = operators + '.' + fb_skip_version_callname
+
     # Menu ids
     fb_fix_frame_size_menu_idname = _MT + '_fix_frame_size_menu'
 
