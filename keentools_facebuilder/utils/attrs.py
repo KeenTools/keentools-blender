@@ -81,6 +81,15 @@ def get_collection_by_name(col_name):
     return fb_col
 
 
+def get_collection_index_by_name(col_name):
+    return bpy.data.collections.find(col_name)
+
+
+def safe_delete_collection(col):
+    if len(col.all_objects) == 0:
+        bpy.data.collections.remove(col)
+
+
 def new_collection(col_name):
     fb_col = bpy.data.collections.new(col_name)
     bpy.context.scene.collection.children.link(fb_col)

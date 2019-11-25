@@ -27,6 +27,7 @@ from bpy.props import (
 
 from .utils import cameras, manipulate, materials
 from .utils.manipulate import check_settings
+from .utils.attrs import get_obj_collection, safe_delete_collection
 from .fbloader import FBLoader
 from .fbdebug import FBDebug
 from .config import get_main_settings, get_operators, Config
@@ -85,9 +86,12 @@ class OBJECT_OT_FBDeleteHead(Operator):
                 pass
 
         try:
-            # Remove camera object
+            col = get_obj_collection(head.headobj)
+            # Remove head object
             bpy.data.objects.remove(
                 head.headobj)  # , do_unlink=True
+            if col is not None:
+                safe_delete_collection(col)
         except Exception:
             pass
         settings.heads.remove(self.headnum)
