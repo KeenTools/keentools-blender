@@ -86,7 +86,7 @@ def get_collection_index_by_name(col_name):
 
 
 def safe_delete_collection(col):
-    if len(col.all_objects) == 0:
+    if col is not None and len(col.all_objects) == 0:
         bpy.data.collections.remove(col)
 
 

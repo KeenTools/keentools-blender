@@ -90,8 +90,7 @@ class OBJECT_OT_FBDeleteHead(Operator):
             # Remove head object
             bpy.data.objects.remove(
                 head.headobj)  # , do_unlink=True
-            if col is not None:
-                safe_delete_collection(col)
+            safe_delete_collection(col)
         except Exception:
             pass
         settings.heads.remove(self.headnum)
