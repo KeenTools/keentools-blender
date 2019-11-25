@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import logging
+
 import bpy
 
 from ..config import Config
@@ -24,39 +26,31 @@ from keentools_facebuilder.blender_independent_packages import \
 from ..utils.html import parse_html, skip_new_lines_and_spaces, render_main
 
 
-def get_update_checker():
-    import pykeentools
-    platform = 'Blender'
-    ver = pykeentools.Version(*bpy.app.version)
-    uc = pykeentools.UpdatesChecker.instance(platform, ver)
-    return uc
-
-
-def init_updater():
-    if FBUpdater.get_state() or not pkt.is_installed():
-        return
-
-    uc = get_update_checker()
-    res = uc.check_for_updates('FaceBuilder')  # production
-    res = FBUpdater.get_response()  # Mock data
-    if res is not None:
-        FBUpdater.set_response(res)
-        FBUpdater.set_state(True)
+def mock_response():
+    response = lambda: None
+    response.description_url = 'https://keentools.io/downloads'
+    response.download_url = 'https://keentools.io/downloads'
+    response.message = "<h3>What's New in KeenTools 1.5.6</h3>\n" \
+                       "<ul>\n  " \
+                       "<li>fixed performance issues in Nuke 12;</li>\n  " \
+                       "<li>pintooling performance improvements;</li>\n  " \
+                       "<li>fixed large frame numbers bug;</li>\n  " \
+                       "<li>fixed invisible model in macOS Catalina;</li>\n " \
+                       "<li>minor fixes and improvements</li>\n" \
+                       "</ul>\n<br />\n"
+    response.plugin_name = 'FaceBuilder'
+    response.version = pkt.module().Version(1, 5, 6)
+    return response
 
 
 class FBUpdater:
-    _state = False  # updater read status
     _response = None
-    _parsed = None
-    _show = True  # for force hiding after skip or remind later
+    # _response = mock_response()  # Mock for testing (1/2)
+    _parsed_response_content = None
 
     @classmethod
-    def set_state(cls, val):
-        cls._state = val
-
-    @classmethod
-    def get_state(cls):
-        return cls._state
+    def has_response_message(cls):
+        return cls._parsed_response_content is not None
 
     @classmethod
     def set_response(cls, val):
@@ -64,56 +58,47 @@ class FBUpdater:
 
     @classmethod
     def get_response(cls):
-        return cls._response  # production code, comment it for mocking
-
-        # Mock code
-        if cls._response is not None:
-            return cls._response
-
-        # Mock object
-        response = lambda: None
-        response.description_url = 'https://keentools.io/downloads'
-        response.download_url = 'https://keentools.io/downloads'
-        response.message = "<h3>What's New in KeenTools 1.5.6</h3>\n" \
-            "<ul>\n  " \
-            "<li>fixed performance issues in Nuke 12;</li>\n  " \
-            "<li>pintooling performance improvements;</li>\n  " \
-            "<li>fixed large frame numbers bug;</li>\n  " \
-            "<li>fixed invisible model in macOS Catalina;</li>\n  " \
-            "<li>minor fixes and improvements</li>\n" \
-            "</ul>\n<br />\n"
-        response.plugin_name = 'FaceBuilder'
-        response.version = pkt.module().Version(1, 5, 6)
-        return response
+        return cls._response
 
     @classmethod
     def get_parsed(cls):
-        return cls._parsed
+        return cls._parsed_response_content
 
     @classmethod
     def set_parsed(cls, val):
-        cls._parsed = val
+        cls._parsed_response_content = val
 
     @classmethod
-    def get_show(cls):
-        return cls._show
-
-    @classmethod
-    def set_show(cls, val):
-        cls._show = val
-
-    @classmethod
-    def visible(cls):
-        return cls.get_state() and cls.get_show()
+    def clear_message(cls):
+        cls.set_response(None)
+        cls.set_parsed(None)
 
     @classmethod
     def render_message(cls, layout):
         parsed = cls.get_parsed()
-        if parsed is None:
-            res = cls.get_response()
+        if parsed is not None:
+            render_main(layout, parsed)
+
+    @classmethod
+    def get_update_checker(cls):
+        pykeentools = pkt.module()
+        platform = 'Blender'
+        ver = pykeentools.Version(*bpy.app.version)
+        uc = pykeentools.UpdatesChecker.instance(platform, ver)
+        return uc
+
+    @classmethod
+    def init_updater(cls):
+        if cls.has_response_message() or not pkt.is_installed():
+            return
+
+        uc = cls.get_update_checker()
+        res = uc.check_for_updates('FaceBuilder')
+        # res = cls.get_response()  # Mock (2/2)
+        if res is not None:
+            cls.set_response(res)
             parsed = parse_html(skip_new_lines_and_spaces(res.message))
             cls.set_parsed(parsed)
-        render_main(layout, parsed)
 
 
 class FB_OT_RemindLater(bpy.types.Operator):
@@ -123,10 +108,13 @@ class FB_OT_RemindLater(bpy.types.Operator):
     bl_description = 'Remind about this update tomorrow'
 
     def execute(self, context):
-        uc = get_update_checker()
+        logger = logging.getLogger(__name__)
+        logger.debug('REMIND LATER')
+
+        uc = FBUpdater.get_update_checker()
         res = FBUpdater.get_response()
         uc.pause_update(res.plugin_name, res.version)
-        FBUpdater.set_show(False)
+        FBUpdater.clear_message()
         return {'FINISHED'}
 
 
@@ -137,8 +125,11 @@ class FB_OT_SkipVersion(bpy.types.Operator):
     bl_description = 'Skip this version'
 
     def execute(self, context):
-        uc = get_update_checker()
+        logger = logging.getLogger(__name__)
+        logger.debug('SKIP THIS VERSION')
+
+        uc = FBUpdater.get_update_checker()
         res = FBUpdater.get_response()
         uc.skip_update(res.plugin_name, res.version)
-        FBUpdater.set_show(False)
+        FBUpdater.clear_message()
         return {'FINISHED'}

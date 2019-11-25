@@ -19,7 +19,7 @@
 import bpy
 from bpy.types import Panel
 
-from .updater import FBUpdater, init_updater
+from .updater import FBUpdater
 from ..config import Config, get_main_settings
 import re
 from ..fbloader import FBLoader
@@ -142,8 +142,8 @@ class FB_PT_HeaderPanel(Panel):
 
         else:
             self._draw_many_heads(layout)
-            if not FBUpdater.get_state():
-                init_updater()
+            if not FBUpdater.has_response_message():
+                FBUpdater.init_updater()
 
 
 class FB_PT_UpdatePanel(Panel):
@@ -156,7 +156,7 @@ class FB_PT_UpdatePanel(Panel):
 
     @classmethod
     def poll(cls, context):
-        return FBUpdater.visible() and _show_all_panels()
+        return FBUpdater.has_response_message() and _show_all_panels()
 
     def _draw_response(self, layout):
         col = layout.column()
@@ -164,6 +164,8 @@ class FB_PT_UpdatePanel(Panel):
         FBUpdater.render_message(col)
 
         res = FBUpdater.get_response()
+        if res is None:
+            return
         op = layout.operator(Config.fb_open_url_idname,
             text='Open downloads page', icon='URL')
         op.url = res.download_url
