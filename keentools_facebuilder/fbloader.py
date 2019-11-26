@@ -89,7 +89,7 @@ class FBLoader:
             cls.set_camera_projection(
                 head.focal, head.sensor_width, rx, ry)
             # We are looking for keyframe that has maximum pins
-            if c.pins_count > 0:
+            if c.has_pins():
                 if max_pins < c.pins_count:
                     max_index = kid
                     max_pins = c.pins_count
@@ -150,7 +150,7 @@ class FBLoader:
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         cls.viewport().unregister_handlers()
-        cls.fb_save(headnum, camnum)
+        # cls.fb_save(headnum, camnum)  # try to save only after pin move
         head = settings.get_head(headnum)
         headobj = head.headobj
         # Mark object by ver.
@@ -259,7 +259,7 @@ class FBLoader:
 
         for i, cam in enumerate(head.cameras):
             camobj = cam.camobj
-            if cam.pins_count > 0:
+            if cam.has_pins():
                 kid = settings.get_keyframe(headnum, i)
                 cls.place_cameraobj(kid, camobj, headobj)
                 cam.set_model_mat(fb.model_mat(kid))

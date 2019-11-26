@@ -38,6 +38,11 @@ def create_empty_camera(headnum):
     op('EXEC_DEFAULT', headnum=headnum)
 
 
+def create_camera_from_image(headnum, camnum, filename):
+    return keentools_facebuilder.interface.filedialog.load_single_image_file(
+        headnum, camnum, filename)
+
+
 def delete_camera(headnum, camnum):
     op = getattr(bpy.ops.object, Config.fb_main_delete_camera_callname)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)

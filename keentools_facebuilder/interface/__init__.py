@@ -49,5 +49,6 @@ CLASSES_TO_REGISTER = (FB_MT_FrameSizeMenu,  # menus
                        FB_OT_TexSelector,
                        FB_OT_SingleFilebrowser,  # filedialog
                        FB_OT_SingleFilebrowserExec,
+                       FB_OT_TextureFileExport,
                        FB_OT_MultipleFilebrowser,
                        FB_OT_MultipleFilebrowserExec)

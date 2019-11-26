@@ -40,7 +40,7 @@ class Config:
     addon_global_var_name = prefix + '_settings'
     addon_full_name = 'Keentools FaceBuilder for Blender'
     fb_views_panel_label = 'Views'
-    fb_camera_panel_label = 'Camera settings'
+    fb_camera_panel_label = 'Camera'
     fb_tab_category = addon_human_readable_name
     default_builder = BuilderType.FaceBuilder
     keentools_website_url = 'https://keentools.io'
@@ -48,8 +48,9 @@ class Config:
     pykeentools_license_url = 'https://link.keentools.io/eula'
     
     # Operators ids
-    fb_select_head_callname = prefix + '_main_select_head'
-    fb_select_head_idname = 'object.' + fb_select_head_callname
+    fb_select_head_callname = 'select_head'
+    fb_select_head_idname = operators + '.' + fb_select_head_callname
+
     fb_main_delete_head_callname = prefix + '_main_delete_head'
     fb_main_delete_head_idname = 'object.' + fb_main_delete_head_callname
     fb_main_select_camera_callname = prefix + '_main_select_camera'
@@ -111,6 +112,9 @@ class Config:
     fb_main_addon_settings_callname = prefix + '_main_addon_settings'
     fb_main_addon_settings_idname = 'object.' + fb_main_addon_settings_callname
 
+    fb_delete_texture_callname = 'delete_texture'
+    fb_delete_texture_idname = operators + '.' + fb_delete_texture_callname
+
     fb_bake_tex_callname = 'bake_tex'
     fb_bake_tex_idname = operators + '.' + fb_bake_tex_callname
     fb_show_tex_callname = 'show_tex'
@@ -136,6 +140,10 @@ class Config:
     fb_single_filebrowser_exec_callname = 'open_single_filebrowser_exec'
     fb_single_filebrowser_exec_idname = \
         operators + '.' + fb_single_filebrowser_exec_callname
+
+    fb_texture_file_export_callname = 'texture_file_export'
+    fb_texture_file_export_idname = \
+        operators + '.' + fb_texture_file_export_callname
 
     fb_pinmode_operator_callname = prefix + '_pinmode'
     fb_pinmode_operator_idname = 'object.' + fb_pinmode_operator_callname
@@ -211,7 +219,7 @@ class Config:
     fb_help_texture_idname = operators + '.' + fb_help_texture_callname
 
     # Menu ids
-    fb_fix_frame_size_menu_idname = _MT + '_fix_frame_size_menu'
+    fb_fix_frame_size_menu_idname = _MT + 'fix_frame_size_menu'
 
     fb_proper_view_menu_idname = _MT + 'proper_view_menu'
     fb_improper_view_menu_idname = _MT + 'improper_view_menu'
