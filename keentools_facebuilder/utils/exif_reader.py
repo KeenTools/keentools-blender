@@ -125,7 +125,7 @@ def _read_exif(filepath):
             status = True
 
         # This call is needed only for full EXIF review
-        _print_out_exif_data(data)
+        # _print_out_exif_data(data)
 
     except IOError:
         logger.error("{}' is unreadable for EXIF".format(filepath))
@@ -213,10 +213,6 @@ def _exif_info_message(headnum, data):
     return message
 
 
-def _same(a1, b1, a2, b2):
-    return a1 == a2 and b1 == b2
-
-
 def _exif_sizes_message(headnum, image):
     settings = get_main_settings()
     head = settings.get_head(headnum)
@@ -238,10 +234,6 @@ def _exif_sizes_message(headnum, image):
     e_msg = "{}x{}px".format(int(ew), int(eh))
     no_msg = "-1x-1px"
 
-    # print('r_msg:', r_msg)
-    # print('i_msg:', i_msg)
-    # print('e_msg:', i_msg)
-
     sec_msg = no_msg
     trd_msg = no_msg
 
@@ -258,9 +250,6 @@ def _exif_sizes_message(headnum, image):
             pass
         else:
             sec_msg = e_msg
-
-    # print('sec_msg:', sec_msg)
-    # print('trd_msg:', trd_msg)
 
     # Output
     if rw > 0 and rh > 0:

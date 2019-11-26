@@ -25,10 +25,9 @@ from bpy.props import (
 )
 from bpy.types import Operator
 
-from .utils import manipulate
+from .utils import manipulate, materials
 from .config import Config, get_main_settings
 from .utils.exif_reader import get_sensor_size_35mm_equivalent
-from .utils import materials
 
 
 class FB_OT_Actor(Operator):
