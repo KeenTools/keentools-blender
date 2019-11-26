@@ -26,14 +26,11 @@ from bpy.props import (
 from bpy.types import Operator
 
 from .utils import manipulate, materials
-from .config import Config, ErrorType, get_main_settings
-from .utils.exif_reader import (read_exif, init_exif_settings, exif_message,
-                                get_sensor_size_35mm_equivalent)
+from .config import Config, get_main_settings
+from .utils.exif_reader import get_sensor_size_35mm_equivalent
 
 
 class FB_OT_Actor(Operator):
-    """ Face Builder Action
-    """
     bl_idname = Config.fb_actor_idname
     bl_label = "FaceBuilder in Action"
     bl_options = {'REGISTER'}
@@ -44,59 +41,42 @@ class FB_OT_Actor(Operator):
     camnum: IntProperty(default=0)
 
     def draw(self, context):
-        """ No need to show panel so empty draw"""
         pass
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
+        logger.debug("Actor: {}".format(self.action))
+
         settings = get_main_settings()
 
         if self.action == 'reconstruct_by_head':
             manipulate.reconstruct_by_head()
 
-        elif self.action == 'force_show_tex':
-            mat = materials.show_texture_in_mat(
-                Config.tex_builder_filename, Config.tex_builder_matname)
-            # Assign Material to Head Object
-            materials.assign_mat(
-                settings.heads[self.headnum].headobj, mat)
-            # Switch to Material Mode or Back
-            materials.toggle_mode(('MATERIAL',))
-
-        elif self.action == 'bake_tex':
-            materials.bake_tex(self.headnum, Config.tex_builder_filename)
-            mat = materials.show_texture_in_mat(
-                Config.tex_builder_filename, Config.tex_builder_matname)
-            # Assign Material to Head Object
-            materials.assign_mat(
-                settings.heads[self.headnum].headobj, mat)
-
         elif self.action == 'unhide_head':
             manipulate.unhide_head(self.headnum)
-
-        elif self.action == 'about_fix_frame_warning':
-            warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.AboutFrameSize)
 
         elif self.action == 'use_render_frame_size_scaled':
             # Allow converts scenes pinned on default cameras
             manipulate.use_render_frame_size_scaled()  # disabled in interface
 
-        elif self.action == 'read_file_exif':
-            head = settings.heads[self.headnum]
-            camera = head.cameras[self.camnum]
-            if camera.cam_image is not None:
-                exif_data = read_exif(camera.cam_image.filepath)
-                init_exif_settings(self.headnum, exif_data)
-                message = exif_message(self.headnum, exif_data)
-                head.exif.message = message
-                self.report({'INFO'}, 'EXIF read success')
-
         elif self.action == 'delete_camera_image':
-            head = settings.heads[self.headnum]
-            head.cameras[self.camnum].cam_image = None
+            camera = settings.get_camera(self.headnum, self.camnum)
+            if camera is not None:
+                camera.cam_image = None
 
-        logger.debug("Actor: {}".format(self.action))
+        elif self.action == 'save_tex':
+            src_context = bpy.context.copy()
+            area = bpy.context.area
+            type = area.type
+            area.type = 'IMAGE_EDITOR'
+            tex = materials.find_tex_by_name(Config.tex_builder_filename)
+            if tex is not None:
+                src_context['edit_image'] = tex
+                area.spaces[0].image = tex
+                # area.type = type
+                op = bpy.ops.image.save_as
+                op('INVOKE_DEFAULT')  # src_context, 'INVOKE_DEFAULT'
+
         return {'FINISHED'}
 
 

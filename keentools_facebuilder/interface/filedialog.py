@@ -20,14 +20,15 @@ import logging
 import bpy
 import os
 
-from bpy_extras.io_utils import ImportHelper
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bpy.types import Operator
 
 from ..fbloader import FBLoader
 from ..config import Config, get_main_settings, get_operators, ErrorType
 
-from ..utils.exif_reader import read_exif, init_exif_settings, exif_message
+from ..utils.exif_reader import read_exif_to_head, update_exif_sizes_message
 from ..utils.other import restore_ui_elements
+from ..utils.materials import find_tex_by_name
 
 
 class FB_OT_SingleFilebrowserExec(Operator):
@@ -46,6 +47,30 @@ class FB_OT_SingleFilebrowserExec(Operator):
         op = getattr(get_operators(), Config.fb_single_filebrowser_callname)
         op('INVOKE_DEFAULT', headnum=settings.tmp_headnum,
            camnum=settings.tmp_camnum)
+
+        return {'FINISHED'}
+
+
+def load_single_image_file(headnum, camnum, filepath):
+        logger = logging.getLogger(__name__)
+        settings = get_main_settings()
+        logger.info('Load image file: {}'.format(filepath))
+
+        # if Settings structure is broken
+        if not settings.check_heads_and_cams():
+            settings.fix_heads()  # Fix
+            return {'CANCELLED'}
+
+        try:
+            img = bpy.data.images.load(filepath)
+            head = settings.get_head(headnum)
+            head.get_camera(camnum).cam_image = img
+        except RuntimeError:
+            logger.error("FILE READ ERROR: {}".format(filepath))
+            return {'CANCELLED'}
+
+        read_exif_to_head(headnum, filepath)
+        update_exif_sizes_message(headnum, img)
 
         return {'FINISHED'}
 
@@ -83,23 +108,83 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
             col.label(text=t)
 
     def execute(self, context):
+        return load_single_image_file(self.headnum, self.camnum, self.filepath)
+
+
+def update_format(self, context):
+    ext = ".png" if self.file_format == "PNG" else ".jpg"
+    self.filename_ext = ext
+
+
+class FB_OT_TextureFileExport(Operator, ExportHelper):
+    bl_idname = Config.fb_texture_file_export_idname
+    bl_label = "Export texture"
+    bl_description = "Export the created texture to a file"
+
+    filter_glob: bpy.props.StringProperty(
+        default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp',
+        options={'HIDDEN'}
+    )
+
+    file_format: bpy.props.EnumProperty(name="Image file format", items=[
+        ('PNG', 'PNG', 'Default image file format', 0),
+        ('JPEG', 'JPEG', 'Data loss image format', 1),
+    ], description="Choose image file format", update=update_format)
+
+    check_existing: bpy.props.BoolProperty(
+        name="Check Existing",
+        description="Check and warn on overwriting existing files",
+        default=True,
+        options={'HIDDEN'},
+    )
+
+    filename_ext: bpy.props.StringProperty(default=".png")
+
+    filepath: bpy.props.StringProperty(
+        default=Config.tex_builder_filename,
+        subtype='FILE_PATH'
+    )
+
+    def check(self, context):
+        change_ext = False
+
+        filepath = self.filepath
+        sp = os.path.splitext(filepath)
+
+        if sp[1] in {'.jpg', '.', '.png', '.PNG', '.JPG', '.JPEG'}:
+            filepath = sp[0]
+
+        filepath = bpy.path.ensure_ext(filepath, self.filename_ext)
+
+        if filepath != self.filepath:
+            self.filepath = filepath
+            change_ext = True
+
+        return change_ext
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text='Image file format')
+        layout.prop(self, 'file_format', expand=True)
+
+    def execute(self, context):
         logger = logging.getLogger(__name__)
-        settings = get_main_settings()
-        logger.info('Load image file: {}'.format(self.filepath))
-
-        try:
-            img = bpy.data.images.load(self.filepath)
-            head = settings.get_head(self.headnum)
-            head.get_camera(self.camnum).cam_image = img
-        except RuntimeError:
-            logger.error("FILE READ ERROR: {}".format(self.filepath))
-            return {'FINISHED'}
-
-        exif_data = read_exif(self.filepath)
-        init_exif_settings(self.headnum, exif_data)
-        message = exif_message(self.headnum, exif_data)
-        head.exif.message = message
+        logger.debug("START SAVE TEXTURE: {}".format(self.filepath))
+        tex = find_tex_by_name(Config.tex_builder_filename)
+        if tex is None:
+            return {'CANCELLED'}
+        tex.filepath = self.filepath
+        # Blender doesn't change file_format after filepath assigning, so
+        fix_for_blender_bug = tex.file_format  # Do not remove!
+        tex.file_format = self.file_format
+        tex.save()
+        logger.debug("SAVED TEXTURE: {} {}".format(tex.file_format,
+                                                   self.filepath))
         return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
 
 
 class FB_OT_MultipleFilebrowserExec(Operator):
@@ -170,14 +255,6 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
         for t in txt:
             col.label(text=t)
 
-    def _read_exif(self, filepath):
-        settings = get_main_settings()
-        head = settings.get_head(self.headnum)
-        exif_data = read_exif(filepath)
-        init_exif_settings(self.headnum, exif_data)
-        message = exif_message(self.headnum, exif_data)
-        head.exif.message = message
-
     def execute(self, context):
         """ Selected files processing"""
         logger = logging.getLogger(__name__)
@@ -189,15 +266,17 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
 
         # if Settings structure is broken
         if not settings.check_heads_and_cams():
-            settings.fix_heads()  # Fix
+            settings.fix_heads()  # Fix & Out
+            return {'CANCELLED'}
+
+        # Flag to prevent EXIF load if the head already has cameras
+        exif_allready_read_once = settings.head_has_cameras(self.headnum)
 
         # Loaded image sizes
         w = -1
         h = -1
         # Count image size changes over all files
         changes = 0
-        exif_allready_read_once = False
-
         for f in self.files:
             filepath = os.path.join(self.directory, f.name)
             logger.debug("FILE: {}".format(filepath))
@@ -210,14 +289,16 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
 
                     if not exif_allready_read_once \
                             and img.size[0] > 0.0 and img.size[1] > 0.0:
-                        self._read_exif(filepath)
+                        read_exif_to_head(self.headnum, filepath)
+                        update_exif_sizes_message(self.headnum, img)
+
                         exif_allready_read_once = True
 
             except RuntimeError as ex:
                 logger.error("FILE READ ERROR: {}".format(filepath))
 
         # We update Render Size in accordance to image size
-        # only if all images have the same size
+        # only if 1) all images have the same size and 2) user want it
         if self.update_render_size == 'yes' \
                 and changes == 1 and w > 0.0 and h > 0.0:
             render = bpy.context.scene.render

@@ -27,10 +27,11 @@ from bpy.props import (
 
 from .utils import cameras, manipulate, materials
 from .utils.manipulate import check_settings
+from .utils.attrs import get_obj_collection, safe_delete_collection
 from .fbloader import FBLoader
 from .fbdebug import FBDebug
 from .config import get_main_settings, get_operators, Config
-from .utils.exif_reader import (read_exif, init_exif_settings, exif_message,
+from .utils.exif_reader import (read_exif_from_camera,
                                 get_sensor_size_35mm_equivalent)
 
 
@@ -58,15 +59,14 @@ class FB_OT_SelectHead(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBDeleteHead(Operator):
+class FB_OT_DeleteHead(Operator):
     bl_idname = Config.fb_main_delete_head_idname
     bl_label = "Delete head"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Delete the head and its cameras from the scene"
 
     headnum: IntProperty(default=0)
 
-    # This draw overrides standard operator panel
     def draw(self, context):
         pass
 
@@ -85,19 +85,21 @@ class OBJECT_OT_FBDeleteHead(Operator):
                 pass
 
         try:
-            # Remove camera object
+            col = get_obj_collection(head.headobj)
+            # Remove head object
             bpy.data.objects.remove(
                 head.headobj)  # , do_unlink=True
+            safe_delete_collection(col)
         except Exception:
             pass
         settings.heads.remove(self.headnum)
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBSelectCamera(Operator):
+class FB_OT_SelectCamera(Operator):
     bl_idname = Config.fb_main_select_camera_idname
     bl_label = "Pin Mode"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Switch to Pin mode for this view"
 
     headnum: IntProperty(default=0)
@@ -278,7 +280,7 @@ class FB_OT_RemovePins(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBWireframeColor(Operator):
+class FB_OT_WireframeColor(Operator):
     bl_idname = Config.fb_main_wireframe_color_idname
     bl_label = "Wireframe color"
     bl_options = {'REGISTER'}  # 'UNDO'
@@ -320,10 +322,10 @@ class OBJECT_OT_FBWireframeColor(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBFilterCameras(Operator):
+class FB_OT_FilterCameras(Operator):
     bl_idname = Config.fb_main_filter_cameras_idname
     bl_label = "Camera Filter"
-    bl_options = {'REGISTER'}  # 'UNDO'
+    bl_options = {'REGISTER'}
     bl_description = "Select cameras to use for texture baking"
 
     action: StringProperty(name="Action Name")
@@ -678,24 +680,13 @@ class FB_OT_ReadExif(Operator):
         pass
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        settings = get_main_settings()
-        head = settings.heads[self.headnum]
-        camera = head.cameras[self.camnum]
-        if camera.cam_image is not None:
-            filepath = camera.cam_image.filepath
-            absfilepath = bpy.path.abspath(filepath)
-            logger.debug("EXIF LOAD: {}".format(filepath))
-            logger.debug("EXIF ABSPATH: {}".format(absfilepath))
-            exif_data = read_exif(absfilepath)
-            init_exif_settings(self.headnum, exif_data)
-            message = exif_message(self.headnum, exif_data)
-            head.exif.message = message
-            if exif_data['status']:
-                self.report({'INFO'}, 'EXIF read success')
-            else:
-                self.report({'ERROR'},
-                            'EXIF read failed. File is damaged or missing')
+        status = read_exif_from_camera(self.headnum, self.camnum)
+
+        if status:
+            self.report({'INFO'}, 'EXIF read success')
+        else:
+            self.report({'ERROR'},
+                        'EXIF read failed. File is damaged or missing')
         return {'FINISHED'}
 
 
@@ -732,29 +723,59 @@ class OBJECT_OT_FBAddonSettings(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBBakeTexture(Operator):
+class FB_OT_BakeTexture(Operator):
     bl_idname = Config.fb_bake_tex_idname
     bl_label = "Bake Texture"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Bake the texture using all selected cameras. " \
                      "It can take a lot of time, be patient"
 
     headnum: IntProperty(default=0)
 
-    # This draw overrides standard operator panel
     def draw(self, context):
         pass
 
     def execute(self, context):
-        op = getattr(get_operators(), Config.fb_actor_callname)
-        op('INVOKE_DEFAULT', action="bake_tex", headnum=self.headnum)
+        settings = get_main_settings()
+        tex_name = materials.bake_tex(
+            self.headnum, Config.tex_builder_filename)
+
+        if tex_name is None:
+            return {'CANCELLED'}
+
+        if settings.tex_auto_preview:
+            mat = materials.show_texture_in_mat(
+                tex_name, Config.tex_builder_matname)
+            # Assign Material to Head Object
+            materials.assign_mat(
+                settings.get_head(self.headnum).headobj, mat)
+            # Switch to Material Mode or Back
+            materials.toggle_mode(('MATERIAL',))
+
+        return {'FINISHED'}
+
+
+class FB_OT_DeleteTexture(Operator):
+    bl_idname = Config.fb_delete_texture_idname
+    bl_label = "Delete texture"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Delete the created texture from the scene"
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        materials.remove_tex_by_name(Config.tex_builder_filename)
+        materials.remove_mat_by_name(Config.tex_builder_matname)
+        op = getattr(get_operators(), Config.fb_show_solid_callname)
+        op('EXEC_DEFAULT')
         return {'FINISHED'}
 
 
 class FB_OT_ShowTexture(Operator):
     bl_idname = Config.fb_show_tex_idname
     bl_label = "Show Texture"
-    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Create a material from the generated texture " \
                      "and apply it to the model"
 
@@ -808,7 +829,7 @@ class FB_OT_ShowSolid(Operator):
 class FB_OT_ExitPinmode(Operator):
     bl_idname = Config.fb_exit_pinmode_idname
     bl_label = "Exit Pin mode"
-    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Exit Pin mode"
 
     def draw(self, context):
@@ -836,17 +857,18 @@ class FB_OT_OpenURL(bpy.types.Operator):
         return {'FINISHED'}
 
 
-CLASSES_TO_REGISTER = (FB_OT_SelectHead, OBJECT_OT_FBDeleteHead,
-                       OBJECT_OT_FBSelectCamera, FB_OT_CenterGeo,
+CLASSES_TO_REGISTER = (FB_OT_SelectHead, FB_OT_DeleteHead,
+                       FB_OT_SelectCamera, FB_OT_CenterGeo,
                        FB_OT_Unmorph, FB_OT_RemovePins,
-                       OBJECT_OT_FBWireframeColor, OBJECT_OT_FBFilterCameras,
+                       FB_OT_WireframeColor, FB_OT_FilterCameras,
                        FB_OT_AllViewsMenuExec,
                        FB_OT_ProperViewMenuExec, FB_OT_ImproperViewMenuExec,
                        FB_OT_ViewToFrameSize, FB_OT_MostFrequentFrameSize,
                        FB_OT_RenderSizeToFrameSize, FB_OT_ReadExif,
                        FB_OT_ReadExifMenuExec,
                        OBJECT_OT_FBDeleteCamera, OBJECT_OT_FBAddCamera,
-                       OBJECT_OT_FBAddonSettings, OBJECT_OT_FBBakeTexture,
+                       OBJECT_OT_FBAddonSettings, FB_OT_BakeTexture,
+                       FB_OT_DeleteTexture,
                        FB_OT_ShowTexture, FB_OT_ShowSolid, FB_OT_ExitPinmode,
                        FB_OT_OpenURL,
                        OBJECT_OT_FBSetSensorWidth,

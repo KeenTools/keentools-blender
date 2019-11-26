@@ -151,9 +151,9 @@ class FB_OT_TexSelector(Operator):
             # Use in Tex Baking
             row.prop(camera, 'use_in_tex_baking', text='')
 
-            image_icon = 'PINNED' if camera.pins_count > 0 else 'FILE_IMAGE'
+            image_icon = 'PINNED' if camera.has_pins() else 'FILE_IMAGE'
             if camera.cam_image:
-                row.label(text=camera.cam_image.name, icon=image_icon)
+                row.label(text=camera.get_image_name(), icon=image_icon)
             else:
                 row.label(text='-- empty --', icon='LIBRARY_DATA_BROKEN')
 
@@ -179,14 +179,26 @@ class FB_OT_TexSelector(Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
-        op = getattr(get_operators(), Config.fb_bake_tex_callname)
-        op('INVOKE_DEFAULT', headnum=self.headnum)
+        logger = logging.getLogger(__name__)
+        logger.debug('START TEXTURE CREATION')
 
-        if get_main_settings().tex_auto_preview:
-            op = getattr(get_operators(), Config.fb_actor_callname)
-            op('INVOKE_DEFAULT', action='force_show_tex',
-               headnum=self.headnum)
-        return {"FINISHED"}
+        head = get_main_settings().get_head(self.headnum)
+        if head is None:
+            logger.error('WRONG HEADNUM')
+            return {'CANCELLED'}
+
+        if len(head.cameras) > 0:
+            op = getattr(get_operators(), Config.fb_bake_tex_callname)
+            res = op('INVOKE_DEFAULT', headnum=self.headnum)
+
+            if res == {'CANCELLED'}:
+                logger.debug('CANNOT CREATE TEXTURE')
+                self.report({'ERROR'}, "Can't create texture")
+            elif res == {'FINISHED'}:
+                logger.debug('TEXTURE CREATED')
+                self.report({'INFO'}, "Texture has been created successfully")
+
+        return {'FINISHED'}
 
 
 class FB_OT_ExifSelector(Operator):
@@ -212,10 +224,10 @@ class FB_OT_ExifSelector(Operator):
         box = layout.box()
         for i, camera in enumerate(head.cameras):
             row = box.row()
-            image_icon = 'PINNED' if camera.pins_count > 0 else 'FILE_IMAGE'
+            image_icon = 'PINNED' if camera.has_pins() else 'FILE_IMAGE'
             if camera.cam_image:
                 op = row.operator(Config.fb_read_exif_idname,
-                                  text=camera.cam_image.name, icon=image_icon)
+                                  text=camera.get_image_name(), icon=image_icon)
                 op.headnum = self.headnum
                 op.camnum = i
 

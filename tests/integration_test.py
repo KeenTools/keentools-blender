@@ -15,7 +15,7 @@ import test_utils
 # import tests.test_utils as test_utils
 
 
-from keentools_facebuilder.utils import coords
+from keentools_facebuilder.utils import coords, materials
 from keentools_facebuilder.config import Config, get_main_settings, \
     get_operators
 
@@ -29,12 +29,13 @@ class FaceBuilderTest(unittest.TestCase):
         self.assertEqual(1, len(settings.heads))
         headnum = settings.get_last_headnum()
         # No cameras
-        self.assertEqual(0, len(settings.heads[headnum].cameras))
+        head = settings.get_head(headnum)
+        self.assertTrue(head is not None)
         test_utils.create_empty_camera(headnum)
         test_utils.create_empty_camera(headnum)
         test_utils.create_empty_camera(headnum)
         # Cameras counter
-        self.assertEqual(3, len(settings.heads[headnum].cameras))
+        self.assertEqual(3, len(settings.get_head(headnum).cameras))
 
     def _head_cams_and_pins(self):
         self._head_and_cameras()
@@ -52,7 +53,7 @@ class FaceBuilderTest(unittest.TestCase):
         test_utils.update_pins(headnum, camnum)
         test_utils.out_pinmode()
         # Pins count
-        self.assertEqual(4, settings.heads[headnum].cameras[camnum].pins_count)
+        self.assertEqual(4, settings.get_camera(headnum, camnum).pins_count)
 
     def test_addon_on(self):
         test_utils.new_scene()
@@ -69,11 +70,11 @@ class FaceBuilderTest(unittest.TestCase):
         settings = get_main_settings()
         headnum = settings.get_last_headnum()
         test_utils.create_empty_camera(headnum)
-        self.assertEqual(4, len(settings.heads[headnum].cameras))
+        self.assertEqual(4, len(settings.get_head(headnum).cameras))
         test_utils.delete_camera(headnum, 2)
-        self.assertEqual(3, len(settings.heads[headnum].cameras))
+        self.assertEqual(3, len(settings.get_head(headnum).cameras))
         test_utils.delete_camera(headnum, 2)
-        self.assertEqual(2, len(settings.heads[headnum].cameras))
+        self.assertEqual(2, len(settings.get_head(headnum).cameras))
 
     def test_move_pins(self):
         test_utils.new_scene()
@@ -99,7 +100,7 @@ class FaceBuilderTest(unittest.TestCase):
         op = getattr(get_operators(), Config.fb_actor_callname)
         op('EXEC_DEFAULT', action='reconstruct_by_head', headnum=-1, camnum=-1)
         headnum2 = settings.get_last_headnum()
-        head_new = settings.heads[headnum2]
+        head_new = settings.get_head(headnum2)
         # Two heads in scene
         self.assertEqual(1, settings.get_last_headnum())
         # Three cameras created
@@ -126,6 +127,32 @@ class FaceBuilderTest(unittest.TestCase):
         new_sensor_width = 20
         head.sensor_width = new_sensor_width
         self.assertEqual(new_sensor_width, camobj.data.sensor_width)
+
+    def test_load_images_and_bake_texture(self):
+        test_utils.new_scene()
+        self._head_cams_and_pins()
+        settings = get_main_settings()
+
+        dir = os.path.dirname(os.path.abspath(__file__))
+        filename = os.path.join(dir, 'images/ale_white_24x16.jpg')
+        headnum = 0
+        camnum = 1
+        res = test_utils.create_camera_from_image(
+            headnum=headnum, camnum=camnum, filename=filename)
+        self.assertEqual(res, {'FINISHED'})
+        head = settings.get_head(headnum)
+        # Test EXIF read
+        self.assertEqual(head.exif.focal, 50.0)
+        self.assertEqual(head.exif.focal35mm, 75.0)
+
+        camnum = 2
+        filename = os.path.join(dir, 'images/ana_blue_24x16.tif')
+        res = test_utils.create_camera_from_image(
+            headnum=headnum, camnum=camnum, filename=filename)
+        self.assertEqual(res, {'FINISHED'})
+
+        tex_name = materials.bake_tex(headnum=0, tex_name='bake_texture_name')
+        self.assertTrue(tex_name is not None)
 
 
 if __name__ == "__main__":

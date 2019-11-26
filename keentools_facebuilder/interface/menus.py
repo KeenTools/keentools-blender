@@ -41,14 +41,6 @@ class FB_MT_ProperViewMenu(Menu):
         layout.operator(Config.fb_single_filebrowser_exec_idname,
                         text="Open file", icon='FILEBROWSER')
 
-        # op = layout.operator(
-        #     Config.fb_actor_operator_idname,
-        #     text="Read camera settings from EXIF",
-        #     icon='TEXT')
-        # op.action = 'read_file_exif'
-        # op.headnum = settings.tmp_headnum
-        # op.camnum = settings.tmp_camnum
-
 
 class FB_MT_ImproperViewMenu(Menu):
     bl_label = "View operations"
@@ -60,9 +52,12 @@ class FB_MT_ImproperViewMenu(Menu):
         layout = self.layout
 
         col = layout.column()
+        col.alert = True
+        col.active = True
         col.scale_y = 0.7
         col.label(icon='ERROR', text='Possible Frame size issue detected.')
-        col.label(icon='BLANK1', text='Size of this image is different from the Frame size.')
+        col.label(icon='BLANK1',
+                  text='Size of this image is different from the Frame size.')
 
         layout.separator()
 
@@ -81,14 +76,6 @@ class FB_MT_ImproperViewMenu(Menu):
         layout.operator(Config.fb_single_filebrowser_exec_idname,
                         text="Open file", icon='FILEBROWSER')
 
-        # op = layout.operator(
-        #     Config.fb_actor_operator_idname,
-        #     text="Read camera settings from EXIF",
-        #     icon='TEXT')
-        # op.action = 'read_file_exif'
-        # op.headnum = settings.tmp_headnum
-        # op.camnum = settings.tmp_camnum
-
 
 class FB_MT_FrameSizeMenu(Menu):
     bl_label = "Change Frame size"
@@ -105,12 +92,6 @@ class FB_MT_FrameSizeMenu(Menu):
         layout.operator(
             Config.fb_render_size_to_frame_size_idname,
             text="Use Scene render size", icon="OUTPUT")
-
-        # layout.separator()
-        # op = layout.operator(
-        #     Config.fb_actor_operator_idname,
-        #     text="About Frame Sizes")  # icon="ERROR"
-        # op.action = 'about_fix_frame_warning'
 
 
 class FB_MT_ReadExifMenu(Menu):
@@ -130,10 +111,10 @@ class FB_MT_ReadExifMenu(Menu):
             return
 
         for i, camera in enumerate(head.cameras):
-            image_icon = 'PINNED' if camera.pins_count > 0 else 'FILE_IMAGE'
+            image_icon = 'PINNED' if camera.has_pins() else 'FILE_IMAGE'
             if camera.cam_image:
                 op = layout.operator(Config.fb_read_exif_idname,
-                                     text=camera.cam_image.name,
+                                     text=camera.get_image_name(),
                                      icon=image_icon)
                 op.headnum = headnum
                 op.camnum = i

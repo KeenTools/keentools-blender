@@ -96,6 +96,18 @@ def find_tex_by_name(tex_name):
     return tex
 
 
+def remove_tex_by_name(name):
+    tex = find_tex_by_name(name)
+    if tex is not None:
+        bpy.data.images.remove(tex)
+
+
+def remove_mat_by_name(name):
+    mat_num = bpy.data.materials.find(name)
+    if mat_num >= 0:
+        bpy.data.materials.remove(bpy.data.materials[mat_num])
+
+
 def show_texture_in_mat(tex_name, mat_name):
     tex = find_tex_by_name(tex_name)
     mat = get_mat_by_name(mat_name)
@@ -148,13 +160,13 @@ def bake_tex(headnum, tex_name):
     # There no cameras on object
     if len(head.cameras) == 0:
         logger.debug("NO CAMERAS ON HEAD")
-        return
+        return None
 
     w = -1
     h = -1
     changes = 0
     for i, c in enumerate(head.cameras):
-        if c.use_in_tex_baking  and c.cam_image and c.pins_count > 0:
+        if c.use_in_tex_baking  and c.cam_image and c.has_pins():
             size = c.cam_image.size
             if size[0] <= 0 or size[1] <= 0:
                 continue
@@ -165,13 +177,13 @@ def bake_tex(headnum, tex_name):
 
     if w <= 0 or h <= 0:
         logger.debug("NO BACKGROUND IMAGES")
-        return
+        return None
 
     if changes > 1:
         logger.debug("BACKGROUNDS HAVE DIFFERENT SIZES")
         warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
         warn('INVOKE_DEFAULT', msg=ErrorType.BackgroundsDiffer)
-        return
+        return None
 
     logger.debug("IMAGE SIZE {} {} {}".format(w, h, changes))
 
@@ -188,7 +200,7 @@ def bake_tex(headnum, tex_name):
     for i, cam in enumerate(head.cameras):
         wm.progress_update(i + 1.0)
         # Bake only if 1) Marked 2) Image is exists 3) Some pins added
-        if cam.use_in_tex_baking and cam.cam_image and cam.pins_count > 0:
+        if cam.use_in_tex_baking and cam.cam_image and cam.has_pins():
             pix = cam.cam_image.pixels[:]
             imgs.append(np.asarray(pix).reshape((h, w, 4)))
             keyframes.append(cam.get_keyframe())
@@ -206,7 +218,7 @@ def bake_tex(headnum, tex_name):
 
         tex_num = bpy.data.images.find(tex_name)
 
-        if tex_num > 0:
+        if tex_num >= 0:
             logger.debug("TEXTURE ALREADY EXISTS")
             tex = bpy.data.images[tex_num]
             bpy.data.images.remove(tex)
@@ -218,6 +230,8 @@ def bake_tex(headnum, tex_name):
         tex.pixels[:] = texture.ravel()
         # Pack image to store in blend-file
         tex.pack()
-        logger.debug("TEXTURE BAKED SUCCESSFULLY")
+        logger.debug("TEXTURE BAKED SUCCESSFULLY: {}".format(tex.name))
+        return tex.name
     else:
         logger.debug("NO KEYFRAMES")
+    return None
