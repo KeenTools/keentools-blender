@@ -21,6 +21,7 @@ from .panels import *
 from .dialogs import *
 from .filedialog import *
 from .helps import *
+from .updater import *
 
 
 CLASSES_TO_REGISTER = (FB_MT_FrameSizeMenu,  # menus
@@ -30,6 +31,7 @@ CLASSES_TO_REGISTER = (FB_MT_FrameSizeMenu,  # menus
                        FB_MT_FocalLengthMenu,
                        FB_MT_ReadExifMenu,
                        FB_PT_HeaderPanel,  # panels
+                       FB_PT_UpdatePanel,
                        FB_PT_CameraPanel,
                        FB_PT_ExifPanel,
                        FB_PT_ViewsPanel,
@@ -37,6 +39,7 @@ CLASSES_TO_REGISTER = (FB_MT_FrameSizeMenu,  # menus
                        FB_PT_PinSettingsPanel,
                        FB_PT_WireframeSettingsPanel,
                        FB_PT_TexturePanel,
+                       FB_OT_RemindLater, FB_OT_SkipVersion,
                        HELP_OT_CameraHelp,  # helps
                        HELP_OT_ExifHelp,
                        HELP_OT_ViewsHelp,

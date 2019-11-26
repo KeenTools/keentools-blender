@@ -17,15 +17,16 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
-from bpy.types import Panel, Operator
-from ..config import Config, get_main_settings, ErrorType
+from bpy.types import Panel
+
+from .updater import FBUpdater
+from ..config import Config, get_main_settings
 import re
 from ..fbloader import FBLoader
 from ..utils.manipulate import what_is_state
 from ..utils.materials import find_tex_by_name
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
-from ..utils.icons import FBIcons
 
 def _show_all_panels():
     state, _ = what_is_state()
@@ -146,6 +147,41 @@ class FB_PT_HeaderPanel(Panel):
 
         else:
             self._draw_many_heads(layout)
+            if not FBUpdater.has_response_message():
+                FBUpdater.init_updater()
+
+
+class FB_PT_UpdatePanel(Panel):
+    bl_idname = Config.fb_update_panel_idname
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_label = "Update available"
+    bl_category = Config.fb_tab_category
+    bl_context = "objectmode"
+
+    @classmethod
+    def poll(cls, context):
+        return FBUpdater.has_response_message() and _show_all_panels()
+
+    def _draw_response(self, layout):
+        col = layout.column()
+        col.scale_y = 0.75
+        FBUpdater.render_message(col)
+
+        res = FBUpdater.get_response()
+        if res is None:
+            return
+        op = layout.operator(Config.fb_open_url_idname,
+            text='Open downloads page', icon='URL')
+        op.url = res.download_url
+        layout.operator(Config.fb_remind_later_idname,
+            text='Remind tomorrow', icon='RECOVER_LAST')
+        layout.operator(Config.fb_skip_version_idname,
+            text='Skip this version', icon='X')
+
+    def draw(self, context):
+        layout = self.layout
+        self._draw_response(layout)
 
 
 class FB_PT_CameraPanel(Panel):
@@ -189,7 +225,6 @@ class FB_PT_CameraPanel(Panel):
         col = layout.column()
         if head.auto_focal_estimation:
             col.active = False
-            # col.alert = True
             col.enabled = False
         row = col.row()
         row.prop(head, 'focal')
@@ -198,8 +233,6 @@ class FB_PT_CameraPanel(Panel):
             text='', icon='SETTINGS')
 
         row = layout.row()
-        # if head.auto_focal_estimation:
-        #     row.alert = True
         row.prop(head, 'auto_focal_estimation')
 
 
