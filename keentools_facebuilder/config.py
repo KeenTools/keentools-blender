@@ -331,3 +331,4 @@ class ErrorType:
     CannotCreateObject = 6
     PktProblem = 7
     AboutFrameSize = 8
+    MeshCorrupted = 9

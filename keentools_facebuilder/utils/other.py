@@ -42,19 +42,28 @@ def force_stop_shaders():
 
 
 def _setup_ui_elements(*args):
-    bpy.context.space_data.overlay.show_floor = args[0]
-    bpy.context.space_data.overlay.show_axis_x = args[1]
-    bpy.context.space_data.overlay.show_axis_y = args[2]
+    try:
+        bpy.context.space_data.overlay.show_floor = args[0]
+        bpy.context.space_data.overlay.show_axis_x = args[1]
+        bpy.context.space_data.overlay.show_axis_y = args[2]
+        bpy.context.space_data.overlay.show_cursor = args[3]
+    except Exception:
+        pass
 
 
 def hide_ui_elements():
     state = UserState.get_state()
     if state is not None:
         return
-    UserState.put_state(bpy.context.space_data.overlay.show_floor,
-                        bpy.context.space_data.overlay.show_axis_x,
-                        bpy.context.space_data.overlay.show_axis_y)
-    _setup_ui_elements(False, False, False)
+
+    try:
+        UserState.put_state(bpy.context.space_data.overlay.show_floor,
+                            bpy.context.space_data.overlay.show_axis_x,
+                            bpy.context.space_data.overlay.show_axis_y,
+                            bpy.context.space_data.overlay.show_cursor)
+    except Exception:
+        pass
+    _setup_ui_elements(False, False, False, False)
 
 
 def restore_ui_elements():

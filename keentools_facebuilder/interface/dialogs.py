@@ -125,6 +125,13 @@ class WM_OT_FBAddonWarning(Operator):
                 "sizes are different. You can fix them ",
                 "by choosing commands from this menu."
             ])
+        elif self.msg == ErrorType.MeshCorrupted:
+            self.set_content([
+                "Mesh is corrupted",
+                "===============",
+                "It looks like the mesh is damaged. ",
+                "Addon cannot work with the wrong topology"
+            ])
         return context.window_manager.invoke_props_dialog(self, width=300)
 
 
