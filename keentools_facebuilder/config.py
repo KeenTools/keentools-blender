@@ -250,7 +250,6 @@ class Config:
     surf_pin_size_scale = 0.85
     default_POINT_SENSITIVITY = 16.0
     default_FB_COLLECTION_NAME = 'FaceBuilderCol'
-    head_vertices_count = 17250
 
     unknown_mod_ver = -1
 

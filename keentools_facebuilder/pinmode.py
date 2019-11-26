@@ -196,7 +196,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         logger.debug("PINMODE ENTER: CH{} CC{}".format(
             settings.current_headnum, settings.current_camnum))
 
-        if not manipulate.check_mesh(headobj):
+        if not FBLoader.check_mesh(headobj):
             logger.error("MESH IS CORRUPTED")
             op = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
             op('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)

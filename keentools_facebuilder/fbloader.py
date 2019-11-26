@@ -146,6 +146,16 @@ class FBLoader:
                                     cls.get_builder_version())
 
     @classmethod
+    def check_mesh(cls, headobj):
+        try:
+            fb = cls.get_builder()
+            if len(headobj.data.vertices) == len(fb.applied_args_vertices()):
+                return True
+        except Exception:
+            pass
+        return False
+
+    @classmethod
     def out_pinmode(cls, headnum, camnum):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()

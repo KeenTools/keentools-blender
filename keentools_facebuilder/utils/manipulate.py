@@ -117,15 +117,6 @@ def check_settings():
     return True
 
 
-def check_mesh(headobj):
-    try:
-        if len(headobj.data.vertices) == Config.head_vertices_count:
-            return True
-    except Exception:
-        pass
-    return False
-
-
 # --------------------
 def inc_operation():
     """ Debug purpose """
