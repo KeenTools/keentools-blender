@@ -51,43 +51,48 @@ class Config:
     fb_select_head_callname = 'select_head'
     fb_select_head_idname = operators + '.' + fb_select_head_callname
 
-    fb_main_delete_head_callname = prefix + '_main_delete_head'
-    fb_main_delete_head_idname = 'object.' + fb_main_delete_head_callname
-    fb_main_select_camera_callname = prefix + '_main_select_camera'
-    fb_main_select_camera_idname = 'object.' + fb_main_select_camera_callname
+    fb_delete_head_callname = 'delete_head'
+    fb_delete_head_idname = operators + '.' + fb_delete_head_callname
+
+    fb_select_camera_callname = 'select_camera'
+    fb_select_camera_idname = operators + '.' + fb_select_camera_callname
 
     fb_center_geo_callname = 'center_geo'
     fb_center_geo_idname = operators + '.' + fb_center_geo_callname
 
-    fb_main_unmorph_callname = prefix + '_main_unmorph'
-    fb_main_unmorph_idname = 'object.' + fb_main_unmorph_callname
+    fb_unmorph_callname = 'unmorph'
+    fb_unmorph_idname = operators + '.' + fb_unmorph_callname
 
     fb_remove_pins_callname = 'remove_pins'
     fb_remove_pins_idname = operators + '.' + fb_remove_pins_callname
 
-    fb_main_wireframe_color_callname = prefix + '_main_wireframe_color'
-    fb_main_wireframe_color_idname = 'object.' + \
-                                     fb_main_wireframe_color_callname
-    fb_main_filter_cameras_idname = 'object.' + prefix + \
-                                    '_main_filter_cameras'
-    fb_main_delete_camera_callname = prefix + '_main_delete_camera'
-    fb_main_delete_camera_idname = 'object.' + fb_main_delete_camera_callname
-    fb_main_add_camera_callname = prefix + '_main_add_camera'
-    fb_main_add_camera_idname = 'object.' + fb_main_add_camera_callname
-    fb_main_fix_size_callname = prefix + '_main_fix_size'
-    fb_main_fix_size_idname = 'object.' + fb_main_fix_size_callname
-    fb_main_set_sensor_width_callname = prefix + '_main_set_sensor_width'
-    fb_main_set_sensor_width_idname = 'object.' + \
-                                      fb_main_set_sensor_width_callname
-    fb_main_sensor_width_window_callname = prefix + '_main_sensor_width_window'
-    fb_main_sensor_width_window_idname = 'object.' + \
-                                      fb_main_sensor_width_window_callname
-    fb_main_focal_length_menu_exec_callname = prefix + '_main_set_focal_length'
-    fb_main_focal_length_menu_exec_idname = \
-        'object.' + fb_main_focal_length_menu_exec_callname
+    fb_wireframe_color_callname = 'wireframe_color'
+    fb_wireframe_color_idname = operators + '.' + fb_wireframe_color_callname
 
-    fb_main_camera_fix_size_idname = 'object.' + prefix + \
-                                     '_main_camera_fix_size'
+    fb_filter_cameras_callname = 'filter_cameras'
+    fb_filter_cameras_idname = operators + '.' + fb_filter_cameras_callname
+
+    fb_delete_camera_callname = 'delete_camera'
+    fb_delete_camera_idname = operators + '.' + fb_delete_camera_callname
+
+    fb_add_camera_callname = 'add_camera'
+    fb_add_camera_idname = operators + '.' + fb_add_camera_callname
+
+    fb_fix_size_menu_exec_callname = 'fix_size_menu_exec'
+    fb_fix_size_menu_exec_idname = \
+        operators + '.' + fb_fix_size_menu_exec_callname
+
+    fb_set_sensor_width_callname = 'set_sensor_width'
+    fb_set_sensor_width_idname = \
+        operators + '.' + fb_set_sensor_width_callname
+
+    fb_sensor_size_window_callname = 'sensor_width_window'
+    fb_sensor_size_window_idname = \
+        operators + '.' + fb_sensor_size_window_callname
+
+    fb_focal_length_menu_exec_callname = 'set_focal_length_menu_exec'
+    fb_focal_length_menu_exec_idname = \
+        operators + '.' + fb_focal_length_menu_exec_callname
 
     fb_proper_view_menu_exec_callname = 'proper_view_menu_exec'
     fb_proper_view_menu_exec_idname = \
@@ -109,27 +114,30 @@ class Config:
     fb_render_size_to_frame_size_idname = \
         operators + '.' + fb_render_size_to_frame_size_callname
 
-    fb_main_addon_settings_callname = prefix + '_main_addon_settings'
-    fb_main_addon_settings_idname = 'object.' + fb_main_addon_settings_callname
+    fb_addon_settings_callname = 'addon_settings'
+    fb_addon_settings_idname = operators + '.' + fb_addon_settings_callname
 
     fb_delete_texture_callname = 'delete_texture'
     fb_delete_texture_idname = operators + '.' + fb_delete_texture_callname
 
     fb_bake_tex_callname = 'bake_tex'
     fb_bake_tex_idname = operators + '.' + fb_bake_tex_callname
+
     fb_show_tex_callname = 'show_tex'
     fb_show_tex_idname = operators + '.' + fb_show_tex_callname
+
     fb_show_solid_callname = 'show_solid'
     fb_show_solid_idname = operators + '.' + fb_show_solid_callname
 
-    fb_main_default_sensor_callname = prefix + '_main_default_sensor'
-    fb_main_default_sensor_idname = 'object.' + fb_main_default_sensor_callname
-    fb_main_all_unknown_callname = prefix + '_main_all_unknown'
-    fb_main_all_unknown_idname = 'object.' + fb_main_all_unknown_callname
+    # Not in use
+    fb_default_sensor_callname = 'default_sensor'
+    fb_default_sensor_idname = operators + '.' + fb_default_sensor_callname
+    # Not in use
 
     fb_multiple_filebrowser_callname = 'open_multiple_filebrowser'
     fb_multiple_filebrowser_idname = \
         operators + '.' + fb_multiple_filebrowser_callname
+
     fb_multiple_filebrowser_exec_callname = 'open_multiple_filebrowser_exec'
     fb_multiple_filebrowser_exec_idname = \
         operators + '.' + fb_multiple_filebrowser_exec_callname
@@ -137,6 +145,7 @@ class Config:
     fb_single_filebrowser_callname = 'open_single_filebrowser'
     fb_single_filebrowser_idname = \
         operators + '.' + fb_single_filebrowser_callname
+
     fb_single_filebrowser_exec_callname = 'open_single_filebrowser_exec'
     fb_single_filebrowser_exec_idname = \
         operators + '.' + fb_single_filebrowser_exec_callname
@@ -145,20 +154,20 @@ class Config:
     fb_texture_file_export_idname = \
         operators + '.' + fb_texture_file_export_callname
 
-    fb_pinmode_operator_callname = prefix + '_pinmode'
-    fb_pinmode_operator_idname = 'object.' + fb_pinmode_operator_callname
+    fb_pinmode_callname = 'pinmode'
+    fb_pinmode_idname = operators + '.' + fb_pinmode_callname
 
-    fb_movepin_operator_idname = 'object.' + prefix + '_move_pin'
-    fb_movepin_operator_callname = prefix + '_move_pin'
+    fb_movepin_callname = 'movepin'
+    fb_movepin_idname = operators + '.' + fb_movepin_callname
 
     fb_actor_callname = 'actor'
     fb_actor_idname = operators + '.' + fb_actor_callname
 
-    fb_camera_actor_operator_callname = prefix + '_camera_actor'
-    fb_camera_actor_operator_idname = 'object.' + \
-                                      fb_camera_actor_operator_callname
-    fb_warning_operator_callname = prefix + '_addon_warning'
-    fb_warning_operator_idname = 'wm.' + fb_warning_operator_callname
+    fb_camera_actor_callname = 'camera_actor'
+    fb_camera_actor_idname = operators + '.' + fb_camera_actor_callname
+
+    fb_warning_callname = 'addon_warning'
+    fb_warning_idname = operators + '.' + fb_warning_callname
 
     fb_exif_selector_callname = 'exif_selector'
     fb_exif_selector_idname = operators + '.' + fb_exif_selector_callname
@@ -178,11 +187,12 @@ class Config:
 
     # Add Mesh commands
     fb_add_head_operator_callname = 'add_head'
-    fb_add_head_operator_idname = operators + '.' \
-                                  + fb_add_head_operator_callname
+    fb_add_head_operator_idname = \
+        operators + '.' + fb_add_head_operator_callname
+
     fb_add_body_operator_callname = 'add_body'
-    fb_add_body_operator_idname = operators + '.' \
-                                  + fb_add_body_operator_callname
+    fb_add_body_operator_idname = \
+        operators + '.' + fb_add_body_operator_callname
 
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'

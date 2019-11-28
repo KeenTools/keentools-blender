@@ -100,7 +100,7 @@ def get_last_headnum():
 
 def select_by_headnum(headnum):
     settings = get_main_settings()
-    headobj = settings.heads[headnum].headobj
+    headobj = settings.get_head(headnum).headobj
     headobj.select_set(state=True)
     bpy.context.view_layer.objects.active = headobj
     return headobj
@@ -108,18 +108,17 @@ def select_by_headnum(headnum):
 
 def get_last_camnum(headnum):
     settings = get_main_settings()
-    camnum = len(settings.heads[headnum].cameras) - 1
+    camnum = len(settings.get_head(headnum).cameras) - 1
     return camnum
 
 
 def create_empty_camera():
-    # Add New Camera button
-    op = getattr(bpy.ops.object, Config.fb_main_add_camera_callname)
+    op = getattr(get_operators(), Config.fb_add_camera_callname)
     op('EXEC_DEFAULT')
 
 
 def delete_camera(headnum, camnum):
-    op = getattr(bpy.ops.object, Config.fb_main_delete_camera_callname)
+    op = getattr(get_operators(), Config.fb_delete_camera_callname)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
 
 
@@ -147,8 +146,7 @@ def get_area():
 def move_pin(start_x, start_y, end_x, end_y, arect, brect,
              headnum=0, camnum=0):
     # Registered Operator call
-    op = getattr(
-        bpy.ops.object, Config.fb_movepin_operator_callname)
+    op = getattr(get_operators(), Config.fb_movepin_callname)
     # Move pin
     x, y = coords.region_to_image_space(start_x, start_y, *arect)
     px, py = coords.image_space_to_region(x, y, *brect)
@@ -167,7 +165,7 @@ def move_pin(start_x, start_y, end_x, end_y, arect, brect,
 
 
 def select_camera(headnum=0, camnum=0):
-    op = getattr(bpy.ops.object, Config.fb_main_select_camera_callname)
+    op = getattr(get_operators(), Config.fb_select_camera_callname)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
 
 
@@ -218,8 +216,7 @@ def test_move_pins():
     move_pin(912, 412, 911, 388, arect, brect)
 
     # Coloring wireframe
-    op = getattr(
-        bpy.ops.object, Config.fb_main_wireframe_color_callname)
+    op = getattr(get_operators(), Config.fb_wireframe_color_callname)
     op('EXEC_DEFAULT', action='wireframe_green')
 
 
@@ -231,6 +228,5 @@ def test_duplicate_and_reconstruct():
         OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
         TRANSFORM_OT_translate={"value": (-3.0, 0, 0)})
 
-    op = getattr(
-        bpy.ops.object, Config.fb_actor_callname)
+    op = getattr(get_operators(), Config.fb_actor_callname)
     op('EXEC_DEFAULT', action='reconstruct_by_head', headnum=-1, camnum=-1)

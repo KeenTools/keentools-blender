@@ -21,14 +21,14 @@ import re
 
 import bpy
 from bpy.types import Panel, Operator
-import addon_utils
 
 from ..config import Config, get_main_settings, get_operators, ErrorType
 
 
-class WM_OT_FBAddonWarning(Operator):
-    bl_idname = Config.fb_warning_operator_idname
+class FB_OT_AddonWarning(Operator):
+    bl_idname = Config.fb_warning_idname
     bl_label = ""
+    bl_options = {'REGISTER', 'INTERNAL'}
 
     msg: bpy.props.IntProperty(default=ErrorType.Unknown)
     msg_content: bpy.props.StringProperty(default="")
@@ -51,8 +51,7 @@ class WM_OT_FBAddonWarning(Operator):
         if self.msg != ErrorType.PktProblem:
             return {"FINISHED"}
 
-        op = getattr(bpy.ops.object,
-                     Config.fb_main_addon_settings_callname)
+        op = getattr(get_operators(), Config.fb_addon_settings_callname)
         op('EXEC_DEFAULT')
         return {"FINISHED"}
 
@@ -139,6 +138,7 @@ class FB_OT_TexSelector(Operator):
     bl_idname = Config.fb_tex_selector_idname
     bl_label = "Select images:"
     bl_description = "Create texture using pinned views"
+    bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: bpy.props.IntProperty(default=0)
 
@@ -166,12 +166,11 @@ class FB_OT_TexSelector(Operator):
 
         row = box.row()
         # Select All cameras for baking Button
-        op = row.operator(Config.fb_main_filter_cameras_idname, text='All')
+        op = row.operator(Config.fb_filter_cameras_idname, text='All')
         op.action = 'select_all_cameras'
         op.headnum = self.headnum
         # Deselect All cameras
-        op = row.operator(Config.fb_main_filter_cameras_idname,
-                          text='None')
+        op = row.operator(Config.fb_filter_cameras_idname, text='None')
         op.action = 'deselect_all_cameras'
         op.headnum = self.headnum
 

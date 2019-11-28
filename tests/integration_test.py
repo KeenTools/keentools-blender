@@ -83,8 +83,7 @@ class FaceBuilderTest(unittest.TestCase):
     def test_wireframe_coloring(self):
         test_utils.new_scene()
         self._head_and_cameras()
-        op = getattr(
-            bpy.ops.object, Config.fb_main_wireframe_color_callname)
+        op = getattr(get_operators(), Config.fb_wireframe_color_callname)
         op('EXEC_DEFAULT', action='wireframe_green')
 
     def test_duplicate_and_reconstruct(self):

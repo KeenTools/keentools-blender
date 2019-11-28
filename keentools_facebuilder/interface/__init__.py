@@ -47,7 +47,7 @@ CLASSES_TO_REGISTER = (FB_MT_FrameSizeMenu,  # menus
                        HELP_OT_PinSettingsHelp,
                        HELP_OT_WireframeSettingsHelp,
                        HELP_OT_TextureHelp,
-                       WM_OT_FBAddonWarning,  # dialogs
+                       FB_OT_AddonWarning,  # dialogs
                        FB_OT_ExifSelector,
                        FB_OT_TexSelector,
                        FB_OT_SingleFilebrowser,  # filedialog

@@ -47,7 +47,7 @@ class FB_PT_HeaderPanel(Panel):
         layout = self.layout
         row = layout.row()
         row.operator(
-            Config.fb_main_addon_settings_idname,
+            Config.fb_addon_settings_idname,
             text='', icon='PREFERENCES')
 
     def _head_creation_offer(self, layout):
@@ -78,7 +78,7 @@ class FB_PT_HeaderPanel(Panel):
         row = layout.row()
         row.scale_y = 2.0
         row.operator(
-            Config.fb_main_addon_settings_idname,
+            Config.fb_addon_settings_idname,
             text='Install Core library', icon='PREFERENCES')
 
     def _draw_start_panel(self, layout):
@@ -116,7 +116,7 @@ class FB_PT_HeaderPanel(Panel):
 
             if not settings.pinmode:
                 op = row.operator(
-                    Config.fb_main_delete_head_idname,
+                    Config.fb_delete_head_idname,
                     text='', icon='CANCEL')
                 op.headnum = i
 
@@ -219,7 +219,7 @@ class FB_PT_CameraPanel(Panel):
         row = layout.row()
         row.prop(head, 'sensor_width')
         row.operator(
-            Config.fb_main_sensor_width_window_idname,
+            Config.fb_sensor_size_window_idname,
             text='', icon='SETTINGS')
 
         col = layout.column()
@@ -229,7 +229,7 @@ class FB_PT_CameraPanel(Panel):
         row = col.row()
         row.prop(head, 'focal')
         row.operator(
-            Config.fb_main_focal_length_menu_exec_idname,
+            Config.fb_focal_length_menu_exec_idname,
             text='', icon='SETTINGS')
 
         row = layout.row()
@@ -348,7 +348,7 @@ class FB_PT_ViewsPanel(Panel):
                          text=cam_name, icon=view_icon)
             else:
                 op = col.operator(
-                    Config.fb_main_select_camera_idname,
+                    Config.fb_select_camera_idname,
                     text=cam_name, icon=view_icon)
                 op.headnum = headnum
                 op.camnum = i
@@ -414,8 +414,8 @@ class FB_PT_ViewsPanel(Panel):
         box.scale_y = 1.5
         row = box.row()
         row.label(text=info)
-        op = row.operator(Config.fb_main_fix_size_idname,
-                     text='', icon='SETTINGS')
+        op = row.operator(Config.fb_fix_size_menu_exec_idname,
+                          text='', icon='SETTINGS')
         op.headnum = headnum
 
         self._draw_camera_hint(layout, headnum)
@@ -473,7 +473,7 @@ class FB_PT_Model(Panel):
 
         head = settings.get_head(headnum)
 
-        op = layout.operator(Config.fb_main_unmorph_idname, text="Reset")
+        op = layout.operator(Config.fb_unmorph_idname, text="Reset")
         op.headnum = headnum
         op.camnum = settings.current_camnum
 
@@ -615,21 +615,21 @@ class FB_PT_WireframeSettingsPanel(Panel):
         row.prop(settings, 'wireframe_opacity', text='', slider=True)
 
         row = box.row()
-        op = row.operator(Config.fb_main_wireframe_color_idname, text="R")
+        op = row.operator(Config.fb_wireframe_color_idname, text="R")
         op.action = 'wireframe_red'
-        op = row.operator(Config.fb_main_wireframe_color_idname, text="G")
+        op = row.operator(Config.fb_wireframe_color_idname, text="G")
         op.action = 'wireframe_green'
-        op = row.operator(Config.fb_main_wireframe_color_idname, text="B")
+        op = row.operator(Config.fb_wireframe_color_idname, text="B")
         op.action = 'wireframe_blue'
-        op = row.operator(Config.fb_main_wireframe_color_idname, text="C")
+        op = row.operator(Config.fb_wireframe_color_idname, text="C")
         op.action = 'wireframe_cyan'
-        op = row.operator(Config.fb_main_wireframe_color_idname, text="M")
+        op = row.operator(Config.fb_wireframe_color_idname, text="M")
         op.action = 'wireframe_magenta'
-        op = row.operator(Config.fb_main_wireframe_color_idname, text="Y")
+        op = row.operator(Config.fb_wireframe_color_idname, text="Y")
         op.action = 'wireframe_yellow'
-        op = row.operator(Config.fb_main_wireframe_color_idname, text="K")
+        op = row.operator(Config.fb_wireframe_color_idname, text="K")
         op.action = 'wireframe_black'
-        op = row.operator(Config.fb_main_wireframe_color_idname, text="W")
+        op = row.operator(Config.fb_wireframe_color_idname, text="W")
         op.action = 'wireframe_white'
 
         layout.prop(settings, 'show_specials', text='Highlight head parts')

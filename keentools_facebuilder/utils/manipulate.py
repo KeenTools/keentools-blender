@@ -22,7 +22,8 @@ from collections import Counter
 import bpy
 
 from .. fbloader import FBLoader
-from .. config import get_main_settings, ErrorType, BuilderType, Config
+from .. config import Config, get_main_settings, get_operators, \
+    ErrorType, BuilderType
 from . import cameras, attrs
 
 
@@ -111,7 +112,7 @@ def check_settings():
     if not settings.check_heads_and_cams():
         heads_deleted, cams_deleted = settings.fix_heads()
         if heads_deleted == 0:
-            warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+            warn = getattr(get_operators(), Config.fb_warning_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
         return False
     return True
@@ -133,7 +134,7 @@ def get_operation():
 
 def unhide_head(headnum):
     settings = get_main_settings()
-    settings.heads[headnum].headobj.hide_set(False)
+    settings.get_head(headnum).headobj.hide_set(False)
     settings.pinmode = False
 
 
@@ -141,7 +142,7 @@ def use_camera_frame_size(headnum, camnum):
     # Camera Background --> Render size
     scene = bpy.context.scene
     settings = get_main_settings()
-    camera = settings.heads[headnum].cameras[camnum]
+    camera = settings.get_head(headnum).cameras[camnum]
     w, h = camera.get_image_size()
     settings.frame_width = w
     settings.frame_height = h
@@ -162,7 +163,7 @@ def auto_detect_frame_size():
     settings = get_main_settings()
     headnum = settings.current_headnum
     sizes = []
-    for c in settings.heads[headnum].cameras:
+    for c in settings.get_head(headnum).cameras:
         w, h = c.get_image_size()
         sizes.append((w, h))
     cnt = Counter(sizes)
@@ -240,7 +241,7 @@ def reconstruct_by_head():
     logger.debug("OBJ_TYPE: {}".format(obj_type))
 
     if obj_type != BuilderType.FaceBuilder:
-        warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+        warn = getattr(get_operators(), Config.fb_warning_callname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=error_message + 'Object Type')
         return
@@ -252,7 +253,7 @@ def reconstruct_by_head():
 
     params = cameras.get_camera_params(obj)
     if params is None:
-        warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+        warn = getattr(get_operators(), Config.fb_warning_callname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=error_message + 'camera')
         return
@@ -330,6 +331,6 @@ def reconstruct_by_head():
         scene.render.resolution_x = rx
         scene.render.resolution_y = ry
         logger.debug("SCENE PARAMETERS RESTORED")
-        warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+        warn = getattr(get_operators(), Config.fb_warning_callname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CannotReconstruct)
         return

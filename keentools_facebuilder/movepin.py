@@ -47,10 +47,10 @@ def profile_this(fn):
 
 class FB_OT_MovePin(bpy.types.Operator):
     """ On Screen Face Builder MovePin Operator """
-    bl_idname = Config.fb_movepin_operator_idname
+    bl_idname = Config.fb_movepin_idname
     bl_label = "FaceBuilder MovePin operator"
     bl_description = "Operator MovePin"
-    bl_options = {'REGISTER'}  # 'UNDO'
+    bl_options = {'REGISTER'}
 
     headnum: bpy.props.IntProperty(default=0)
     camnum: bpy.props.IntProperty(default=0)
