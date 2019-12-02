@@ -83,6 +83,11 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
     bl_description = 'You can download Core library manually ' \
                      'and install it using this button'
 
+    filter_glob: bpy.props.StringProperty(
+        default='*.zip',
+        options={'HIDDEN'}
+    )
+
     # can only have exactly that name
     filepath: bpy.props.StringProperty(
             name='',
