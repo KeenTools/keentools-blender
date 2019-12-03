@@ -118,7 +118,7 @@ class FB_OT_SelectCamera(Operator):
         head = settings.get_head(headnum)
 
         # bpy.ops.object.select_all(action='DESELECT')
-        camobj = head.cameras[camnum].camobj
+        camobj = head.get_camera(camnum).camobj
 
         cameras.switch_to_camera(camobj)
 
@@ -130,7 +130,7 @@ class FB_OT_SelectCamera(Operator):
             b = c.background_images.new()
         else:
             b = c.background_images[0]
-        b.image = head.cameras[camnum].cam_image
+        b.image = head.get_camera(camnum).cam_image
 
         headobj = head.headobj
         bpy.context.view_layer.objects.active = headobj
@@ -361,15 +361,6 @@ class FB_OT_DeleteCamera(Operator):
         pass
 
     def execute(self, context):
-        def _is_valid_nums(headnum, camnum):
-            settings = get_main_settings()
-            if headnum >= len(settings.heads):
-                return False
-            head = settings.get_head(headnum)
-            if camnum >= len(head.cameras):
-                return False
-            return True
-
         if not check_settings():
             return {'CANCELLED'}
 
@@ -377,17 +368,17 @@ class FB_OT_DeleteCamera(Operator):
         headnum = self.headnum
         camnum = self.camnum
 
-        if not _is_valid_nums(headnum, camnum):
+        camera = settings.get_camera(headnum, camnum)
+        if camera is None:
             return {'CANCELLED'}
 
+        kid = camera.get_keyframe()
         fb = FBLoader.get_builder()
-        kid = settings.get_keyframe(headnum, camnum)
         fb.remove_keyframe(kid)
 
         head = settings.get_head(headnum)
-        cam = head.get_camera(camnum)
-        cam.delete_cam_image()
-        cam.delete_camobj()
+        camera.delete_cam_image()
+        camera.delete_camobj()
         head.cameras.remove(camnum)
 
         if settings.current_camnum > camnum:

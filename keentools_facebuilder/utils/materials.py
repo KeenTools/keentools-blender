@@ -158,7 +158,7 @@ def bake_tex(headnum, tex_name):
         uvmap[i].uv = me.uv(i)
 
     # There no cameras on object
-    if len(head.cameras) == 0:
+    if not head.has_cameras():
         logger.debug("NO CAMERAS ON HEAD")
         return None
 

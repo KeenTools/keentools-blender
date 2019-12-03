@@ -147,7 +147,7 @@ class FB_OT_TexSelector(Operator):
         head = settings.get_head(self.headnum)
         layout = self.layout
 
-        if not len(head.cameras) > 0:
+        if not head.has_cameras():
             layout.label(text="You need at least one image to create texture.",
                          icon='ERROR')
             return
@@ -193,7 +193,7 @@ class FB_OT_TexSelector(Operator):
             logger.error('WRONG HEADNUM')
             return {'CANCELLED'}
 
-        if len(head.cameras) > 0:
+        if head.has_cameras():
             op = getattr(get_operators(), Config.fb_bake_tex_callname)
             res = op('INVOKE_DEFAULT', headnum=self.headnum)
 
@@ -220,7 +220,7 @@ class FB_OT_ExifSelector(Operator):
         head = settings.get_head(self.headnum)
         layout = self.layout
 
-        if not len(head.cameras) > 0:
+        if not head.has_cameras():
             layout.label(text='No images found')
             layout.label(text='You need at least one image to read EXIF.',
                          icon='ERROR')

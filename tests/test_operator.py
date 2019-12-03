@@ -6,6 +6,7 @@ import keentools_facebuilder
 from keentools_facebuilder.config import Config, get_main_settings, \
     get_operators
 import keentools_facebuilder.utils.coords as coords
+from keentools_facebuilder.utils.fake_context import get_area
 
 
 class TestsOperator(Operator):
@@ -120,27 +121,6 @@ def create_empty_camera():
 def delete_camera(headnum, camnum):
     op = getattr(get_operators(), Config.fb_delete_camera_callname)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
-
-
-def get_override_context():
-    window = bpy.context.window
-    screen = window.screen
-    override = bpy.context.copy()
-    area = get_area()
-    if area is not None:
-        override['window'] = window
-        override['screen'] = screen
-        override['area'] = area
-    return override
-
-
-def get_area():
-    window = bpy.context.window
-    screen = window.screen
-    for area in screen.areas:
-        if area.type == 'VIEW_3D':
-            return area
-    return None
 
 
 def move_pin(start_x, start_y, end_x, end_y, arect, brect,

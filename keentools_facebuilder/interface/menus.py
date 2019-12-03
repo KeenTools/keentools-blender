@@ -105,7 +105,7 @@ class FB_MT_ReadExifMenu(Menu):
         head = settings.get_head(headnum)
         layout = self.layout
 
-        if not len(head.cameras) > 0:
+        if not head.has_cameras():
             layout.label(text='No images found', icon='ERROR')
             layout.label(text='You need at least one image to read EXIF.')
             return

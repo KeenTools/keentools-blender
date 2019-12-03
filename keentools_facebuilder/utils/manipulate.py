@@ -142,7 +142,7 @@ def use_camera_frame_size(headnum, camnum):
     # Camera Background --> Render size
     scene = bpy.context.scene
     settings = get_main_settings()
-    camera = settings.get_head(headnum).cameras[camnum]
+    camera = settings.get_camera(headnum, camnum)
     w, h = camera.get_image_size()
     settings.frame_width = w
     settings.frame_height = h
@@ -315,7 +315,7 @@ def reconstruct_by_head():
             img = bpy.data.images.new(f, 0, 0)
             img.source = 'FILE'
             img.filepath = f
-            head.cameras[i].cam_image = img
+            head.get_camera(i).cam_image = img
 
         FBLoader.update_camera_params(head)
 
