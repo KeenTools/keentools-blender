@@ -99,9 +99,7 @@ class FB_OT_CameraActor(Operator):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
 
-        # TODO: check all calls for headnum
-        headnum = self.headnum if self.headnum >=0 else 0
-        head = settings.get_head(headnum)
+        head = settings.get_head(self.headnum)
 
         if self.action == 'sensor_36x24mm':
             head.sensor_width = 36.0
