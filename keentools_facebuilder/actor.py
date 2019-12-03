@@ -83,9 +83,9 @@ class FB_OT_Actor(Operator):
 class FB_OT_CameraActor(Operator):
     """ Camera Action
     """
-    bl_idname = Config.fb_camera_actor_operator_idname
-    bl_label = "Action for camera parameters"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_idname = Config.fb_camera_actor_idname
+    bl_label = "Camera parameters"
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Parameters setup"
 
     action: StringProperty(name="Action Name")
@@ -93,13 +93,13 @@ class FB_OT_CameraActor(Operator):
     camnum: IntProperty(default=0)
 
     def draw(self, context):
-        """ No need to show panel so empty draw"""
         pass
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
-        head = settings.heads[self.headnum]
+
+        head = settings.get_head(self.headnum)
 
         if self.action == 'sensor_36x24mm':
             head.sensor_width = 36.0

@@ -356,6 +356,8 @@ class FBHeadItem(PropertyGroup):
     exif: PointerProperty(type=FBExifItem)
 
     def get_camera(self, camnum):
+        if camnum < 0 and len(self.cameras) + camnum >= 0:
+            return self.cameras[len(self.cameras) + camnum]
         if 0 <= camnum <= len(self.cameras):
             return self.cameras[camnum]
         else:
@@ -385,8 +387,7 @@ class FBHeadItem(PropertyGroup):
             return True
 
     def get_last_camnum(self):
-        camnum = len(self.cameras) - 1
-        return camnum
+        return len(self.cameras) - 1
 
     def get_keyframe(self, camnum):
         camera = self.get_camera(camnum)
@@ -546,6 +547,8 @@ class FBSceneSettings(PropertyGroup):
         update=update_blue_head_button)
 
     def get_head(self, headnum):
+        if headnum < 0 and len(self.heads) + headnum >= 0:
+            return self.heads[len(self.heads) + headnum]
         if 0 <= headnum <= len(self.heads):
             return self.heads[headnum]
         else:
@@ -663,7 +666,7 @@ class FBSceneSettings(PropertyGroup):
         return len(self.heads) - 1
 
     def get_last_camnum(self, headnum):
-        if headnum <= self.get_last_headnum():
-            return self.heads[headnum].get_last_camnum()
-        else:
+        head = self.get_head(headnum)
+        if head is None:
             return -1
+        return head.get_last_camnum()

@@ -523,7 +523,6 @@ class FBLoader:
         if img is not None:
             b.image = img
             settings.get_camera(headnum, camnum).cam_image = img
-        # b.image = settings.heads[headnum].cameras[camnum].cam_image
         b.frame_method = 'CROP'
         b.show_on_foreground = False
         b.alpha = 1.0

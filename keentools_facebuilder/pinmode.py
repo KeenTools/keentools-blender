@@ -21,7 +21,7 @@ import logging
 import bpy
 
 from .utils import manipulate, coords, cameras
-from .config import Config, get_main_settings, ErrorType
+from .config import Config, get_main_settings, get_operators, ErrorType
 from .fbdebug import FBDebug
 from .fbloader import FBLoader
 from .utils.other import FBStopShaderTimer, force_ui_redraw, hide_ui_elements
@@ -31,7 +31,7 @@ import keentools_facebuilder.blender_independent_packages.pykeentools_loader as 
 
 class FB_OT_PinMode(bpy.types.Operator):
     """ On Screen Face Builder Draw Operator """
-    bl_idname = Config.fb_pinmode_operator_idname
+    bl_idname = Config.fb_pinmode_idname
     bl_label = "FaceBuilder Pinmode"
     bl_description = "Operator for in-Viewport drawing"
     bl_options = {'REGISTER', 'UNDO'}
@@ -56,7 +56,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         if heads_deleted > 0 or cams_deleted > 0:
             logger.warning("HEADS AND CAMERAS FIXED")
         if heads_deleted == 0:
-            warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+            warn = getattr(get_operators(), Config.fb_warning_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
 
     def _coloring_special_parts(self, headobj, opacity):
@@ -71,7 +71,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
     def _init_wireframer_colors(self, opacity):
         settings = get_main_settings()
-        head = settings.heads[settings.current_headnum]
+        head = settings.get_head(settings.current_headnum)
         headobj = head.headobj
 
         FBLoader.viewport().wireframer().init_geom_data(headobj)
@@ -177,8 +177,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             settings = get_main_settings()
 
             # Movepin operator Call
-            op = getattr(
-                bpy.ops.object, Config.fb_movepin_operator_callname)
+            op = getattr(get_operators(), Config.fb_movepin_callname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
                headnum=settings.current_headnum,
                camnum=settings.current_camnum)
@@ -190,7 +189,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         logger = logging.getLogger(__name__)
         args = (self, context)
         settings = get_main_settings()
-        head = settings.heads[self.headnum]
+        head = settings.get_head(self.headnum)
         headobj = head.headobj
 
         logger.debug("PINMODE ENTER: CH{} CC{}".format(
@@ -198,8 +197,8 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         if not FBLoader.check_mesh(headobj):
             logger.error("MESH IS CORRUPTED")
-            op = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
-            op('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
+            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
             return {'CANCELLED'}
 
         # We had to finish last operation if we are in Pinmode
@@ -294,7 +293,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             settings.force_out_pinmode = False
             if settings.license_error:
                 # Show License Warning
-                warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+                warn = getattr(get_operators(), Config.fb_warning_callname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
                 settings.license_error = False
             return {'FINISHED'}

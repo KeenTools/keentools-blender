@@ -21,7 +21,8 @@ import bpy
 
 from . utils import attrs
 from . fbloader import FBLoader
-from . config import Config, BuilderType, get_main_settings, ErrorType
+from . config import Config, get_main_settings, get_operators, \
+    BuilderType, ErrorType
 
 
 class MESH_OT_FBAddHead(bpy.types.Operator):
@@ -36,8 +37,8 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         try:
             obj = self.new_head()
         except Exception:
-            op = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
-            op('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
+            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
 
         attrs.add_to_fb_collection(obj)  # link to FB objects collection

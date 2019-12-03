@@ -67,6 +67,7 @@ def get_fake_context():
 
     fake_context = lambda: None
     fake_context.area = area
+    fake_context.region = get_region(area)
     fake_context.space_data = lambda: None
     if space is not None:
         fake_context.space_data.region_3d = space.region_3d

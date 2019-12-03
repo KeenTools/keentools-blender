@@ -20,7 +20,7 @@ import logging
 import bpy
 import numpy as np
 
-from .. config import get_main_settings, ErrorType, Config
+from .. config import Config, get_main_settings, get_operators, ErrorType
 from .. fbloader import FBLoader
 
 
@@ -158,7 +158,7 @@ def bake_tex(headnum, tex_name):
         uvmap[i].uv = me.uv(i)
 
     # There no cameras on object
-    if len(head.cameras) == 0:
+    if not head.has_cameras():
         logger.debug("NO CAMERAS ON HEAD")
         return None
 
@@ -181,7 +181,7 @@ def bake_tex(headnum, tex_name):
 
     if changes > 1:
         logger.debug("BACKGROUNDS HAVE DIFFERENT SIZES")
-        warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+        warn = getattr(get_operators(), Config.fb_warning_callname)
         warn('INVOKE_DEFAULT', msg=ErrorType.BackgroundsDiffer)
         return None
 

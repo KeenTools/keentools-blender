@@ -34,7 +34,7 @@ from ..utils.materials import find_tex_by_name
 class FB_OT_SingleFilebrowserExec(Operator):
     bl_idname = Config.fb_single_filebrowser_exec_idname
     bl_label = "File Browser Execute"
-    bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Change the image file path"
 
     def draw(self, context):
@@ -79,6 +79,7 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
     bl_idname = Config.fb_single_filebrowser_idname
     bl_label = "Open Image"
     bl_description = "Open single image file"
+    bl_options = {'REGISTER', 'UNDO'}
 
     filter_glob: bpy.props.StringProperty(
         default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp',
@@ -120,6 +121,7 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
     bl_idname = Config.fb_texture_file_export_idname
     bl_label = "Export texture"
     bl_description = "Export the created texture to a file"
+    bl_options = {'REGISTER', 'INTERNAL'}
 
     filter_glob: bpy.props.StringProperty(
         default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp',
@@ -190,7 +192,7 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
 class FB_OT_MultipleFilebrowserExec(Operator):
     bl_idname = Config.fb_multiple_filebrowser_exec_idname
     bl_label = "Open Images"
-    bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
+    bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Load images and create views. " \
                      "All images must be of the same size. " \
                      "You can select multiple images at once"
@@ -260,8 +262,8 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         if len(settings.heads) <= self.headnum:
-            op = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
-            op('INVOKE_DEFAULT', msg=ErrorType.IllegalIndex)
+            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.IllegalIndex)
             return {'CANCELLED'}
 
         # if Settings structure is broken
