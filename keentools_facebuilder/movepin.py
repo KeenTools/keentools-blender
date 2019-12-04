@@ -94,6 +94,9 @@ class FB_OT_MovePin(bpy.types.Operator):
             FBLoader.viewport().current_pin_num = \
                 len(FBLoader.viewport().spins) - 1
             FBLoader.update_pins_count(headnum, camnum)
+
+            manipulate.push_head_state_in_undo_history(
+                settings.get_head(headnum), 'New Pin')
         else:
             logger.debug("MISS MODEL")
             FBDebug.add_event_to_queue(
