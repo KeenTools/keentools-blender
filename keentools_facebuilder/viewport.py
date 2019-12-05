@@ -89,7 +89,7 @@ class FBViewport:
     # Wireframe shader object
     _wireframer = FBEdgeShader3D()
     # Update timer
-    draw_timer_handler = None
+    _draw_timer_handler = None
 
     _residuals = FBEdgeShader2D()
 
@@ -150,17 +150,17 @@ class FBViewport:
         cls.texter().register_handler(args)
         cls.wireframer().register_handler(args)
         # Timer for continuous update modal view
-        cls.draw_timer_handler = context.window_manager.event_timer_add(
+        cls._draw_timer_handler = context.window_manager.event_timer_add(
             time_step=0.2, window=context.window
         )
 
     @classmethod
     def unregister_handlers(cls):
-        if cls.draw_timer_handler is not None:
+        if cls._draw_timer_handler is not None:
             bpy.context.window_manager.event_timer_remove(
-                cls.draw_timer_handler
+                cls._draw_timer_handler
             )
-        cls.draw_timer_handler = None
+        cls._draw_timer_handler = None
         cls.wireframer().unregister_handler()
         cls.texter().unregister_handler()
         cls.points2d().unregister_handler()
@@ -242,10 +242,8 @@ class FBViewport:
             settings.pin_size * Config.surf_pin_size_scale)
 
     @classmethod
-    def surface_points(
-            cls, fb, headobj, keyframe=-1,
-            allcolor=(0, 0, 1, 0.15), selcolor=(0, 1, 0, 1)):
-        """ Load 3D pin points """
+    def surface_points(cls, fb, headobj, keyframe=-1,
+                       allcolor=(0, 0, 1, 0.15), selcolor=(0, 1, 0, 1)):
         verts = []
         colors = []
 
@@ -261,9 +259,7 @@ class FBViewport:
         return verts, colors
 
     @classmethod
-    def surface_points_only(
-            cls, fb, headobj, keyframe=-1):
-        """ Load 3D pin points """
+    def surface_points_only(cls, fb, headobj, keyframe=-1):
         verts = []
 
         for i in range(fb.pins_count(keyframe)):
