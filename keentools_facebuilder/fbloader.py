@@ -159,7 +159,9 @@ class FBLoader:
     def out_pinmode(cls, headnum, camnum):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
-        cls.viewport().unregister_handlers()
+
+        vp = cls.viewport()
+        vp.unregister_handlers()
         # cls.fb_save(headnum, camnum)  # try to save only after pin move
         head = settings.get_head(headnum)
         headobj = head.headobj
@@ -169,7 +171,7 @@ class FBLoader:
         headobj.hide_set(False)
         settings.pinmode = False
 
-        cls.viewport().current_pin = None
+        vp.pins().reset_current_pin()
         cameras.show_all_cameras(headnum)
 
         FBLoader.update_all_camera_focals(head)
@@ -238,8 +240,9 @@ class FBLoader:
         # Head Mesh update
         coords.update_head_mesh(fb, headobj)
         # Load pins from model
-        cls.viewport().set_spins(cls.viewport().img_points(fb, kid))
-        cls.viewport().update_surface_points(fb, headobj, kid)
+        vp = cls.viewport()
+        vp.pins().set_pins(vp.img_points(fb, kid))
+        vp.update_surface_points(fb, headobj, kid)
 
         cls.shader_update(headobj)
 
@@ -468,8 +471,9 @@ class FBLoader:
         kid = settings.get_keyframe(headnum, camnum)
         cls.place_cameraobj(kid, camobj, headobj)
         # Load pins from model
-        cls.viewport().set_spins(cls.viewport().img_points(fb, kid))
-        cls.viewport().current_pin = None
+        vp = cls.viewport()
+        vp.pins().set_pins(vp.img_points(fb, kid))
+        vp.pins().reset_current_pin()
         logger.debug("LOAD MODEL END")
 
     @classmethod
