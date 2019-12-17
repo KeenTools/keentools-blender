@@ -27,10 +27,11 @@ from bpy.props import (
 
 from .utils import cameras, manipulate, materials
 from .utils.manipulate import check_settings
+from .utils.attrs import get_obj_collection, safe_delete_collection
 from .fbloader import FBLoader
 from .fbdebug import FBDebug
 from .config import get_main_settings, get_operators, Config
-from .utils.exif_reader import (read_exif, init_exif_settings, exif_message,
+from .utils.exif_reader import (read_exif_from_camera,
                                 get_sensor_size_35mm_equivalent)
 
 
@@ -50,7 +51,7 @@ class FB_OT_SelectHead(Operator):
             return {'CANCELLED'}
 
         settings = get_main_settings()
-        head = settings.heads[self.headnum]
+        head = settings.get_head(self.headnum)
 
         bpy.ops.object.select_all(action='DESELECT')
         head.headobj.select_set(state=True)
@@ -58,15 +59,14 @@ class FB_OT_SelectHead(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBDeleteHead(Operator):
-    bl_idname = Config.fb_main_delete_head_idname
+class FB_OT_DeleteHead(Operator):
+    bl_idname = Config.fb_delete_head_idname
     bl_label = "Delete head"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Delete the head and its cameras from the scene"
 
     headnum: IntProperty(default=0)
 
-    # This draw overrides standard operator panel
     def draw(self, context):
         pass
 
@@ -75,7 +75,7 @@ class OBJECT_OT_FBDeleteHead(Operator):
             return {'CANCELLED'}
 
         settings = get_main_settings()
-        head = settings.heads[self.headnum]
+        head = settings.get_head(self.headnum)
 
         for c in head.cameras:
             try:
@@ -85,19 +85,21 @@ class OBJECT_OT_FBDeleteHead(Operator):
                 pass
 
         try:
-            # Remove camera object
+            col = get_obj_collection(head.headobj)
+            # Remove head object
             bpy.data.objects.remove(
                 head.headobj)  # , do_unlink=True
+            safe_delete_collection(col)
         except Exception:
             pass
         settings.heads.remove(self.headnum)
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBSelectCamera(Operator):
-    bl_idname = Config.fb_main_select_camera_idname
+class FB_OT_SelectCamera(Operator):
+    bl_idname = Config.fb_select_camera_idname
     bl_label = "Pin Mode"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Switch to Pin mode for this view"
 
     headnum: IntProperty(default=0)
@@ -116,7 +118,7 @@ class OBJECT_OT_FBSelectCamera(Operator):
         head = settings.get_head(headnum)
 
         # bpy.ops.object.select_all(action='DESELECT')
-        camobj = head.cameras[camnum].camobj
+        camobj = head.get_camera(camnum).camobj
 
         cameras.switch_to_camera(camobj)
 
@@ -128,13 +130,13 @@ class OBJECT_OT_FBSelectCamera(Operator):
             b = c.background_images.new()
         else:
             b = c.background_images[0]
-        b.image = head.cameras[camnum].cam_image
+        b.image = head.get_camera(camnum).cam_image
 
         headobj = head.headobj
         bpy.context.view_layer.objects.active = headobj
 
         # Auto Call PinMode
-        draw_op = getattr(bpy.ops.object, Config.fb_pinmode_operator_callname)
+        draw_op = getattr(get_operators(), Config.fb_pinmode_callname)
         if not bpy.app.background:
             draw_op('INVOKE_DEFAULT', headnum=headnum, camnum=camnum)
 
@@ -168,7 +170,7 @@ class FB_OT_CenterGeo(Operator):
         camnum = self.camnum
 
         fb = FBLoader.get_builder()
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
+        kid = settings.get_keyframe(headnum, camnum)
 
         FBLoader.fb_save(headnum, camnum)
         manipulate.push_head_state_in_undo_history(
@@ -188,7 +190,7 @@ class FB_OT_CenterGeo(Operator):
 
 
 class FB_OT_Unmorph(Operator):
-    bl_idname = Config.fb_main_unmorph_idname
+    bl_idname = Config.fb_unmorph_idname
     bl_label = "Reset"
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Reset shape deformations to the default state. " \
@@ -216,7 +218,7 @@ class FB_OT_Unmorph(Operator):
         fb.unmorph()
 
         for i, camera in enumerate(head.cameras):
-            fb.remove_pins(camera.keyframe_id)
+            fb.remove_pins(camera.get_keyframe())
             camera.pins_count = 0
 
         if settings.pinmode:
@@ -255,7 +257,7 @@ class FB_OT_RemovePins(Operator):
         camnum = self.camnum
 
         fb = FBLoader.get_builder()
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
+        kid = settings.get_keyframe(headnum, camnum)
         FBLoader.fb_save(headnum, camnum)
         manipulate.push_head_state_in_undo_history(
             settings.get_head(headnum), 'Before Remove pins')
@@ -278,10 +280,10 @@ class FB_OT_RemovePins(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBWireframeColor(Operator):
-    bl_idname = Config.fb_main_wireframe_color_idname
+class FB_OT_WireframeColor(Operator):
+    bl_idname = Config.fb_wireframe_color_idname
     bl_label = "Wireframe color"
-    bl_options = {'REGISTER'}  # 'UNDO'
+    bl_options = {'REGISTER', 'INTERNAL'}  # 'UNDO'
     bl_description = "Choose the wireframe coloring scheme"
 
     action: StringProperty(name="Action Name")
@@ -320,10 +322,10 @@ class OBJECT_OT_FBWireframeColor(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBFilterCameras(Operator):
-    bl_idname = Config.fb_main_filter_cameras_idname
+class FB_OT_FilterCameras(Operator):
+    bl_idname = Config.fb_filter_cameras_idname
     bl_label = "Camera Filter"
-    bl_options = {'REGISTER'}  # 'UNDO'
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Select cameras to use for texture baking"
 
     action: StringProperty(name="Action Name")
@@ -336,18 +338,18 @@ class OBJECT_OT_FBFilterCameras(Operator):
         settings = get_main_settings()
 
         if self.action == "select_all_cameras":
-            for c in settings.heads[self.headnum].cameras:
+            for c in settings.get_head(self.headnum).cameras:
                 c.use_in_tex_baking = True
 
         elif self.action == "deselect_all_cameras":
-            for c in settings.heads[self.headnum].cameras:
+            for c in settings.get_head(self.headnum).cameras:
                 c.use_in_tex_baking = False
 
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBDeleteCamera(Operator):
-    bl_idname = Config.fb_main_delete_camera_idname
+class FB_OT_DeleteCamera(Operator):
+    bl_idname = Config.fb_delete_camera_idname
     bl_label = "Delete View"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Delete this view and its camera from the scene"
@@ -359,15 +361,6 @@ class OBJECT_OT_FBDeleteCamera(Operator):
         pass
 
     def execute(self, context):
-        def _is_valid_nums(headnum, camnum):
-            settings = get_main_settings()
-            if headnum >= len(settings.heads):
-                return False
-            head = settings.get_head(headnum)
-            if camnum >= len(head.cameras):
-                return False
-            return True
-
         if not check_settings():
             return {'CANCELLED'}
 
@@ -375,17 +368,17 @@ class OBJECT_OT_FBDeleteCamera(Operator):
         headnum = self.headnum
         camnum = self.camnum
 
-        if not _is_valid_nums(headnum, camnum):
+        camera = settings.get_camera(headnum, camnum)
+        if camera is None:
             return {'CANCELLED'}
 
+        kid = camera.get_keyframe()
         fb = FBLoader.get_builder()
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
         fb.remove_keyframe(kid)
 
         head = settings.get_head(headnum)
-        cam = head.cameras[camnum]
-        cam.delete_cam_image()
-        cam.delete_camobj()
+        camera.delete_cam_image()
+        camera.delete_camobj()
         head.cameras.remove(camnum)
 
         if settings.current_camnum > camnum:
@@ -400,8 +393,8 @@ class OBJECT_OT_FBDeleteCamera(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBAddCamera(Operator):
-    bl_idname = Config.fb_main_add_camera_idname
+class FB_OT_AddCamera(Operator):
+    bl_idname = Config.fb_add_camera_idname
     bl_label = "Add Empty Camera"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Add new camera without image (Not recommended). \n" \
@@ -419,7 +412,7 @@ class OBJECT_OT_FBAddCamera(Operator):
         headnum = self.headnum
 
         # Warning! Loading camera may cause data loss
-        if settings.heads[headnum].cameras:
+        if settings.get_head(headnum).cameras:
             FBLoader.load_only(headnum)
 
         camera = FBLoader.add_camera(headnum, None)
@@ -428,8 +421,8 @@ class OBJECT_OT_FBAddCamera(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBSetSensorWidth(Operator):
-    bl_idname = Config.fb_main_set_sensor_width_idname
+class FB_OT_SetSensorWidth(Operator):
+    bl_idname = Config.fb_set_sensor_width_idname
     bl_label = "Sensor Size"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Change Sensor Size using EXIF data from loaded images"
@@ -447,10 +440,10 @@ class OBJECT_OT_FBSetSensorWidth(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBSensorWidthWindow(Operator):
-    bl_idname = Config.fb_main_sensor_width_window_idname
+class FB_OT_SensorSizeWindow(Operator):
+    bl_idname = Config.fb_sensor_size_window_idname
     bl_label = "Sensor Size"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Change Sensor Size using EXIF data from loaded images"
 
     headnum: IntProperty(default=0)
@@ -471,9 +464,9 @@ class OBJECT_OT_FBSensorWidthWindow(Operator):
             txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
 
             row = layout.split(factor=split_factor)
-            op = row.operator(Config.fb_camera_actor_operator_idname,
-                                 text=txt,
-                                 icon='OBJECT_DATAMODE')
+            op = row.operator(Config.fb_camera_actor_idname,
+                              text=txt,
+                              icon='OBJECT_DATAMODE')
             op.headnum = settings.tmp_headnum
             op.action = 'exif_sensor_and_focal'
             row.label(text='EXIF Sensor & [EXIF Focal Length]')
@@ -485,9 +478,9 @@ class OBJECT_OT_FBSensorWidthWindow(Operator):
             txt = "{:.2f} x {:.2f} mm [{:.2f}]   ".format(w, h, f)
 
             row = layout.split(factor=split_factor)
-            op = row.operator(Config.fb_camera_actor_operator_idname,
-                text=txt,
-                icon='OBJECT_HIDDEN')
+            op = row.operator(Config.fb_camera_actor_idname,
+                              text=txt,
+                              icon='OBJECT_HIDDEN')
             op.headnum = settings.tmp_headnum
             op.action = 'exif_focal_and_sensor_via_35mm'
             row.label(text='Sensor via 35mm equiv. & [EXIF Focal Length]')
@@ -501,9 +494,9 @@ class OBJECT_OT_FBSensorWidthWindow(Operator):
             txt = "{:.2f} x {:.2f} mm   ".format(w, h)
 
             row = layout.split(factor=split_factor)
-            op = row.operator(Config.fb_camera_actor_operator_idname,
-                                 text=txt,
-                                 icon='OBJECT_DATAMODE')
+            op = row.operator(Config.fb_camera_actor_idname,
+                              text=txt,
+                              icon='OBJECT_DATAMODE')
             op.headnum = settings.tmp_headnum
             op.action = 'exif_sensor'
             row.label(text='EXIF Sensor Size')
@@ -514,9 +507,9 @@ class OBJECT_OT_FBSensorWidthWindow(Operator):
             txt = "{:.2f} x {:.2f} mm   ".format(w, h)
 
             row = layout.split(factor=split_factor)
-            op = row.operator(Config.fb_camera_actor_operator_idname,
-                                 text=txt,
-                                 icon='OBJECT_HIDDEN')
+            op = row.operator(Config.fb_camera_actor_idname,
+                              text=txt,
+                              icon='OBJECT_HIDDEN')
             op.headnum = settings.tmp_headnum
             op.action = 'exif_sensor_via_35mm'
             row.label(text='Sensor Size 35mm equivalent')
@@ -525,9 +518,9 @@ class OBJECT_OT_FBSensorWidthWindow(Operator):
         layout.separator()
 
         row = layout.split(factor=split_factor)
-        op = row.operator(Config.fb_camera_actor_operator_idname,
-                             text="36 x 24 mm",
-                             icon='FULLSCREEN_ENTER')
+        op = row.operator(Config.fb_camera_actor_idname,
+                          text="36 x 24 mm",
+                          icon='FULLSCREEN_ENTER')
         op.headnum = settings.tmp_headnum
         op.action = 'sensor_36x24mm'
         row.label(text='35mm Full-frame (default)')
@@ -539,8 +532,8 @@ class OBJECT_OT_FBSensorWidthWindow(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBFocalLengthMenuExec(Operator):
-    bl_idname = Config.fb_main_focal_length_menu_exec_idname
+class FB_OT_FocalLengthMenuExec(Operator):
+    bl_idname = Config.fb_focal_length_menu_exec_idname
     bl_label = "Focal Length"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Change Focal Length using EXIF data from loaded images"
@@ -559,9 +552,9 @@ class OBJECT_OT_FBFocalLengthMenuExec(Operator):
 
 
 class FB_OT_AllViewsMenuExec(Operator):
-    bl_idname = Config.fb_main_fix_size_idname
+    bl_idname = Config.fb_fix_size_menu_exec_idname
     bl_label = "Change Frame size"
-    bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Set Frame size based on images or scene render size"
 
     headnum: IntProperty(default=0)
@@ -580,7 +573,7 @@ class FB_OT_AllViewsMenuExec(Operator):
 class FB_OT_ProperViewMenuExec(Operator):
     bl_idname = Config.fb_proper_view_menu_exec_idname
     bl_label = "View operations"
-    bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
+    bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Delete the view or modify the image file path"
 
     headnum: IntProperty(default=0)
@@ -678,22 +671,20 @@ class FB_OT_ReadExif(Operator):
         pass
 
     def execute(self, context):
-        settings = get_main_settings()
-        head = settings.heads[self.headnum]
-        camera = head.cameras[self.camnum]
-        if camera.cam_image is not None:
-            exif_data = read_exif(camera.cam_image.filepath)
-            init_exif_settings(self.headnum, exif_data)
-            message = exif_message(self.headnum, exif_data)
-            head.exif.message = message
+        status = read_exif_from_camera(self.headnum, self.camnum)
+
+        if status:
             self.report({'INFO'}, 'EXIF read success')
+        else:
+            self.report({'ERROR'},
+                        'EXIF read failed. File is damaged or missing')
         return {'FINISHED'}
 
 
 class FB_OT_ReadExifMenuExec(Operator):
     bl_idname = Config.fb_read_exif_menu_exec_idname
     bl_label = "Read EXIF"
-    bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Select image to read EXIF"
 
     headnum: IntProperty(default=0)
@@ -709,8 +700,8 @@ class FB_OT_ReadExifMenuExec(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBAddonSettings(Operator):
-    bl_idname = Config.fb_main_addon_settings_idname
+class FB_OT_AddonSettings(Operator):
+    bl_idname = Config.fb_addon_settings_idname
     bl_label = "Addon Settings"
     bl_options = {'REGISTER'}
     bl_description = "Open Addon Settings in Preferences window"
@@ -723,7 +714,7 @@ class OBJECT_OT_FBAddonSettings(Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_FBBakeTexture(Operator):
+class FB_OT_BakeTexture(Operator):
     bl_idname = Config.fb_bake_tex_idname
     bl_label = "Bake Texture"
     bl_options = {'REGISTER', 'UNDO'}
@@ -732,20 +723,50 @@ class OBJECT_OT_FBBakeTexture(Operator):
 
     headnum: IntProperty(default=0)
 
-    # This draw overrides standard operator panel
     def draw(self, context):
         pass
 
     def execute(self, context):
-        op = getattr(get_operators(), Config.fb_actor_callname)
-        op('INVOKE_DEFAULT', action="bake_tex", headnum=self.headnum)
+        settings = get_main_settings()
+        tex_name = materials.bake_tex(
+            self.headnum, Config.tex_builder_filename)
+
+        if tex_name is None:
+            return {'CANCELLED'}
+
+        if settings.tex_auto_preview:
+            mat = materials.show_texture_in_mat(
+                tex_name, Config.tex_builder_matname)
+            # Assign Material to Head Object
+            materials.assign_mat(
+                settings.get_head(self.headnum).headobj, mat)
+            # Switch to Material Mode or Back
+            materials.toggle_mode(('MATERIAL',))
+
+        return {'FINISHED'}
+
+
+class FB_OT_DeleteTexture(Operator):
+    bl_idname = Config.fb_delete_texture_idname
+    bl_label = "Delete texture"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Delete the created texture from the scene"
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        materials.remove_tex_by_name(Config.tex_builder_filename)
+        materials.remove_mat_by_name(Config.tex_builder_matname)
+        op = getattr(get_operators(), Config.fb_show_solid_callname)
+        op('EXEC_DEFAULT')
         return {'FINISHED'}
 
 
 class FB_OT_ShowTexture(Operator):
     bl_idname = Config.fb_show_tex_idname
     bl_label = "Show Texture"
-    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Create a material from the generated texture " \
                      "and apply it to the model"
 
@@ -789,9 +810,6 @@ class FB_OT_ShowSolid(Operator):
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum,
                                  settings.current_camnum)
-        # op = getattr(get_operators(), Config.fb_actor_callname)
-        # op('INVOKE_DEFAULT', action='show_tex',
-        #    headnum=settings.current_headnum)
         materials.switch_to_mode('SOLID')
         return {'FINISHED'}
 
@@ -799,7 +817,7 @@ class FB_OT_ShowSolid(Operator):
 class FB_OT_ExitPinmode(Operator):
     bl_idname = Config.fb_exit_pinmode_idname
     bl_label = "Exit Pin mode"
-    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Exit Pin mode"
 
     def draw(self, context):
@@ -814,18 +832,44 @@ class FB_OT_ExitPinmode(Operator):
         return {'FINISHED'}
 
 
-CLASSES_TO_REGISTER = (FB_OT_SelectHead, OBJECT_OT_FBDeleteHead,
-                       OBJECT_OT_FBSelectCamera, FB_OT_CenterGeo,
-                       FB_OT_Unmorph, FB_OT_RemovePins,
-                       OBJECT_OT_FBWireframeColor, OBJECT_OT_FBFilterCameras,
+class FB_OT_OpenURL(bpy.types.Operator):
+    bl_idname = Config.fb_open_url_idname
+    bl_label = 'Open URL'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Open URL in web browser'
+
+    url: bpy.props.StringProperty(name='URL', default='')
+
+    def execute(self, context):
+        bpy.ops.wm.url_open(url=self.url)
+        return {'FINISHED'}
+
+
+CLASSES_TO_REGISTER = (FB_OT_SelectHead,
+                       FB_OT_DeleteHead,
+                       FB_OT_SelectCamera,
+                       FB_OT_CenterGeo,
+                       FB_OT_Unmorph,
+                       FB_OT_RemovePins,
+                       FB_OT_WireframeColor,
+                       FB_OT_FilterCameras,
                        FB_OT_AllViewsMenuExec,
-                       FB_OT_ProperViewMenuExec, FB_OT_ImproperViewMenuExec,
-                       FB_OT_ViewToFrameSize, FB_OT_MostFrequentFrameSize,
-                       FB_OT_RenderSizeToFrameSize, FB_OT_ReadExif,
+                       FB_OT_ProperViewMenuExec,
+                       FB_OT_ImproperViewMenuExec,
+                       FB_OT_ViewToFrameSize,
+                       FB_OT_MostFrequentFrameSize,
+                       FB_OT_RenderSizeToFrameSize,
+                       FB_OT_ReadExif,
                        FB_OT_ReadExifMenuExec,
-                       OBJECT_OT_FBDeleteCamera, OBJECT_OT_FBAddCamera,
-                       OBJECT_OT_FBAddonSettings, OBJECT_OT_FBBakeTexture,
-                       FB_OT_ShowTexture, FB_OT_ShowSolid, FB_OT_ExitPinmode,
-                       OBJECT_OT_FBSetSensorWidth,
-                       OBJECT_OT_FBSensorWidthWindow,
-                       OBJECT_OT_FBFocalLengthMenuExec)
+                       FB_OT_DeleteCamera,
+                       FB_OT_AddCamera,
+                       FB_OT_AddonSettings,
+                       FB_OT_BakeTexture,
+                       FB_OT_DeleteTexture,
+                       FB_OT_ShowTexture,
+                       FB_OT_ShowSolid,
+                       FB_OT_ExitPinmode,
+                       FB_OT_OpenURL,
+                       FB_OT_SetSensorWidth,
+                       FB_OT_SensorSizeWindow,
+                       FB_OT_FocalLengthMenuExec)

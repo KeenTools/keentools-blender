@@ -25,6 +25,7 @@ from keentools_facebuilder.preferences.progress import InstallationProgress
 
 
 _ID_NAME_PREFIX = 'preferences.' + Config.prefix
+_please_accept_eula = 'You need to accept our EULA before installation'
 
 
 class PREF_OT_OpenPktLicensePage(bpy.types.Operator):
@@ -63,8 +64,7 @@ class PREF_OT_InstallPkt(bpy.types.Operator):
         if self.license_accepted:
             return context.window_manager.invoke_props_dialog(self)
         else:
-            self.report({'ERROR'},
-                        'Please accept license before running installation')
+            self.report({'ERROR'}, _please_accept_eula)
             return {'FINISHED'}
 
     def execute(self, context):
@@ -82,6 +82,11 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'You can download Core library manually ' \
                      'and install it using this button'
+
+    filter_glob: bpy.props.StringProperty(
+        default='*.zip',
+        options={'HIDDEN'}
+    )
 
     # can only have exactly that name
     filepath: bpy.props.StringProperty(
@@ -113,8 +118,7 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
             context.window_manager.fileselect_add(self)
             return {'RUNNING_MODAL'}
         else:
-            self.report({'ERROR'},
-                        'Please accept license before running installation')
+            self.report({'ERROR'}, _please_accept_eula)
             return {'FINISHED'}
 
     def execute(self, context):

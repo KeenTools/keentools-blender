@@ -152,9 +152,9 @@ def get_camera_border(context):
     if bpy.app.background:
         context = get_fake_context()
 
-    a = context.area
-    w = a.width
-    h = a.height
+    reg = context.region
+    w = reg.width
+    h = reg.height
     rv3d = context.space_data.region_3d
     z = rv3d.view_camera_zoom
     # Blender Zoom formula

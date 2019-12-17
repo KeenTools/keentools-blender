@@ -47,10 +47,10 @@ def profile_this(fn):
 
 class FB_OT_MovePin(bpy.types.Operator):
     """ On Screen Face Builder MovePin Operator """
-    bl_idname = Config.fb_movepin_operator_idname
+    bl_idname = Config.fb_movepin_idname
     bl_label = "FaceBuilder MovePin operator"
     bl_description = "Operator MovePin"
-    bl_options = {'REGISTER'}  # 'UNDO'
+    bl_options = {'REGISTER'}
 
     headnum: bpy.props.IntProperty(default=0)
     camnum: bpy.props.IntProperty(default=0)
@@ -74,9 +74,10 @@ class FB_OT_MovePin(bpy.types.Operator):
 
     def _new_pin(self, context, mouse_x, mouse_y):
         logger = logging.getLogger(__name__)
+        settings = get_main_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
+        kid = settings.get_keyframe(headnum, camnum)
 
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
 
@@ -148,8 +149,8 @@ class FB_OT_MovePin(bpy.types.Operator):
         headnum = self.get_headnum()
         camnum = self.get_camnum()
         head = settings.get_head(headnum)
-        cam = head.cameras[camnum]
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
+        cam = head.get_camera(camnum)
+        kid = cam.get_keyframe()
 
         fb = FBLoader.get_builder()
         # Save state to vars
@@ -189,7 +190,7 @@ class FB_OT_MovePin(bpy.types.Operator):
         headnum = self.get_headnum()
         camnum = self.get_camnum()
         head = settings.get_head(headnum)
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
+        kid = settings.get_keyframe(headnum, camnum)
 
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
         if FBLoader.viewport().current_pin:
@@ -225,21 +226,6 @@ class FB_OT_MovePin(bpy.types.Operator):
         FBLoader.viewport().spins[FBLoader.viewport().current_pin_num] = (x, y)
         fb.move_pin(kid, p_idx, coords.image_space_to_frame(x, y))
 
-    def _auto_focal_estimation_post(self, head, camobj):
-        fb = FBLoader.get_builder()
-        if head.auto_focal_estimation:
-            proj_mat = fb.projection_mat()
-            focal = coords.focal_by_projection_matrix(
-                proj_mat, head.sensor_width)
-
-            # Fix for Vertical camera (because Blender has Auto in sensor)
-            rx, ry = coords.render_frame()
-            if ry > rx:
-                focal = focal * rx / ry
-
-            camobj.data.lens = focal
-            head.focal = focal
-
     def on_mouse_move(self, context, mouse_x, mouse_y):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
@@ -247,9 +233,9 @@ class FB_OT_MovePin(bpy.types.Operator):
         camnum = self.get_camnum()
         head = settings.get_head(headnum)
         headobj = head.headobj
-        cam = settings.get_camera(headnum, camnum)
+        cam = head.get_camera(camnum)
         camobj = cam.camobj
-        kid = cameras.keyframe_by_camnum(headnum, camnum)
+        kid = settings.get_keyframe(headnum, camnum)
 
         self._pin_drag(kid, context, mouse_x, mouse_y)
 
@@ -266,7 +252,7 @@ class FB_OT_MovePin(bpy.types.Operator):
             FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
 
-        self._auto_focal_estimation_post(head, camobj)
+        FBLoader.auto_focal_estimation_post(head, camobj)
 
         # --------------
         # Pin lag solve

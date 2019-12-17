@@ -61,6 +61,7 @@ class HELP_OT_CameraHelp(bpy.types.Operator):
 
         for c in content:
             col.label(text=c)
+        layout.separator()
 
 
     def invoke(self, context, event):
@@ -91,6 +92,7 @@ class HELP_OT_ExifHelp(bpy.types.Operator):
 
         for c in content:
             col.label(text=c)
+        layout.separator()
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(
@@ -127,6 +129,7 @@ class HELP_OT_ViewsHelp(bpy.types.Operator):
 
         for c in content:
             col.label(text=c)
+        layout.separator()
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(
@@ -161,6 +164,7 @@ class HELP_OT_ModelHelp(bpy.types.Operator):
 
         for c in content:
             col.label(text=c)
+        layout.separator()
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(
@@ -187,6 +191,7 @@ class HELP_OT_PinSettingsHelp(bpy.types.Operator):
 
         for c in content:
             col.label(text=c)
+        layout.separator()
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(
@@ -215,6 +220,7 @@ class HELP_OT_WireframeSettingsHelp(bpy.types.Operator):
 
         for c in content:
             col.label(text=c)
+        layout.separator()
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(
@@ -275,6 +281,7 @@ class HELP_OT_TextureHelp(bpy.types.Operator):
 
         for c in content:
             col.label(text=c)
+        layout.separator()
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(

@@ -22,7 +22,8 @@ from collections import Counter
 import bpy
 
 from .. fbloader import FBLoader
-from .. config import get_main_settings, ErrorType, BuilderType, Config
+from .. config import Config, get_main_settings, get_operators, \
+    ErrorType, BuilderType
 from . import cameras, attrs
 
 
@@ -111,7 +112,7 @@ def check_settings():
     if not settings.check_heads_and_cams():
         heads_deleted, cams_deleted = settings.fix_heads()
         if heads_deleted == 0:
-            warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+            warn = getattr(get_operators(), Config.fb_warning_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
         return False
     return True
@@ -133,7 +134,7 @@ def get_operation():
 
 def unhide_head(headnum):
     settings = get_main_settings()
-    settings.heads[headnum].headobj.hide_set(False)
+    settings.get_head(headnum).headobj.hide_set(False)
     settings.pinmode = False
 
 
@@ -141,7 +142,7 @@ def use_camera_frame_size(headnum, camnum):
     # Camera Background --> Render size
     scene = bpy.context.scene
     settings = get_main_settings()
-    camera = settings.heads[headnum].cameras[camnum]
+    camera = settings.get_camera(headnum, camnum)
     w, h = camera.get_image_size()
     settings.frame_width = w
     settings.frame_height = h
@@ -162,7 +163,7 @@ def auto_detect_frame_size():
     settings = get_main_settings()
     headnum = settings.current_headnum
     sizes = []
-    for c in settings.heads[headnum].cameras:
+    for c in settings.get_head(headnum).cameras:
         w, h = c.get_image_size()
         sizes.append((w, h))
     cnt = Counter(sizes)
@@ -198,8 +199,8 @@ def use_render_frame_size_scaled():
     FBLoader.load_only(headnum)
     fb = FBLoader.get_builder()
     for i, c in enumerate(head.cameras):
-        if c.pins_count > 0:
-            kid = cameras.keyframe_by_camnum(headnum, i)
+        if c.has_pins():
+            kid = settings.get_keyframe(headnum, i)
             for n in range(fb.pins_count(kid)):
                 p = fb.pin(kid, n)
                 fb.move_pin(
@@ -240,7 +241,7 @@ def reconstruct_by_head():
     logger.debug("OBJ_TYPE: {}".format(obj_type))
 
     if obj_type != BuilderType.FaceBuilder:
-        warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+        warn = getattr(get_operators(), Config.fb_warning_callname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=error_message + 'Object Type')
         return
@@ -252,7 +253,7 @@ def reconstruct_by_head():
 
     params = cameras.get_camera_params(obj)
     if params is None:
-        warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+        warn = getattr(get_operators(), Config.fb_warning_callname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=error_message + 'camera')
         return
@@ -302,7 +303,7 @@ def reconstruct_by_head():
         for i, kid in enumerate(fb.keyframes()):
             c = FBLoader.add_camera(headnum, None)
             FBLoader.set_keentools_version(c.camobj)
-            c.keyframe_id = kid
+            c.set_keyframe(kid)
             logger.debug("CAMERA CREATED {}".format(kid))
             FBLoader.place_cameraobj(kid, c.camobj, obj)
             c.set_model_mat(fb.model_mat(kid))
@@ -314,7 +315,7 @@ def reconstruct_by_head():
             img = bpy.data.images.new(f, 0, 0)
             img.source = 'FILE'
             img.filepath = f
-            head.cameras[i].cam_image = img
+            head.get_camera(i).cam_image = img
 
         FBLoader.update_camera_params(head)
 
@@ -330,6 +331,6 @@ def reconstruct_by_head():
         scene.render.resolution_x = rx
         scene.render.resolution_y = ry
         logger.debug("SCENE PARAMETERS RESTORED")
-        warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
+        warn = getattr(get_operators(), Config.fb_warning_callname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CannotReconstruct)
         return

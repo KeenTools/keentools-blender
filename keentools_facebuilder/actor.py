@@ -26,14 +26,11 @@ from bpy.props import (
 from bpy.types import Operator
 
 from .utils import manipulate, materials
-from .config import Config, ErrorType, get_main_settings
-from .utils.exif_reader import (read_exif, init_exif_settings, exif_message,
-                                get_sensor_size_35mm_equivalent)
+from .config import Config, get_main_settings
+from .utils.exif_reader import get_sensor_size_35mm_equivalent
 
 
 class FB_OT_Actor(Operator):
-    """ Face Builder Action
-    """
     bl_idname = Config.fb_actor_idname
     bl_label = "FaceBuilder in Action"
     bl_options = {'REGISTER'}
@@ -44,68 +41,51 @@ class FB_OT_Actor(Operator):
     camnum: IntProperty(default=0)
 
     def draw(self, context):
-        """ No need to show panel so empty draw"""
         pass
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
+        logger.debug("Actor: {}".format(self.action))
+
         settings = get_main_settings()
 
         if self.action == 'reconstruct_by_head':
             manipulate.reconstruct_by_head()
 
-        elif self.action == 'force_show_tex':
-            mat = materials.show_texture_in_mat(
-                Config.tex_builder_filename, Config.tex_builder_matname)
-            # Assign Material to Head Object
-            materials.assign_mat(
-                settings.heads[self.headnum].headobj, mat)
-            # Switch to Material Mode or Back
-            materials.toggle_mode(('MATERIAL',))
-
-        elif self.action == 'bake_tex':
-            materials.bake_tex(self.headnum, Config.tex_builder_filename)
-            mat = materials.show_texture_in_mat(
-                Config.tex_builder_filename, Config.tex_builder_matname)
-            # Assign Material to Head Object
-            materials.assign_mat(
-                settings.heads[self.headnum].headobj, mat)
-
         elif self.action == 'unhide_head':
             manipulate.unhide_head(self.headnum)
-
-        elif self.action == 'about_fix_frame_warning':
-            warn = getattr(bpy.ops.wm, Config.fb_warning_operator_callname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.AboutFrameSize)
 
         elif self.action == 'use_render_frame_size_scaled':
             # Allow converts scenes pinned on default cameras
             manipulate.use_render_frame_size_scaled()  # disabled in interface
 
-        elif self.action == 'read_file_exif':
-            head = settings.heads[self.headnum]
-            camera = head.cameras[self.camnum]
-            if camera.cam_image is not None:
-                exif_data = read_exif(camera.cam_image.filepath)
-                init_exif_settings(self.headnum, exif_data)
-                message = exif_message(self.headnum, exif_data)
-                head.exif.message = message
-                self.report({'INFO'}, 'EXIF read success')
-
         elif self.action == 'delete_camera_image':
-            head = settings.heads[self.headnum]
-            head.cameras[self.camnum].cam_image = None
+            camera = settings.get_camera(self.headnum, self.camnum)
+            if camera is not None:
+                camera.cam_image = None
 
-        logger.debug("Actor: {}".format(self.action))
+        elif self.action == 'save_tex':
+            src_context = bpy.context.copy()
+            area = bpy.context.area
+            type = area.type
+            area.type = 'IMAGE_EDITOR'
+            tex = materials.find_tex_by_name(Config.tex_builder_filename)
+            if tex is not None:
+                src_context['edit_image'] = tex
+                area.spaces[0].image = tex
+                # area.type = type
+                op = bpy.ops.image.save_as
+                op('INVOKE_DEFAULT')  # src_context, 'INVOKE_DEFAULT'
+
         return {'FINISHED'}
 
 
 class FB_OT_CameraActor(Operator):
     """ Camera Action
     """
-    bl_idname = Config.fb_camera_actor_operator_idname
-    bl_label = "Action for camera parameters"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_idname = Config.fb_camera_actor_idname
+    bl_label = "Camera parameters"
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Parameters setup"
 
     action: StringProperty(name="Action Name")
@@ -113,13 +93,13 @@ class FB_OT_CameraActor(Operator):
     camnum: IntProperty(default=0)
 
     def draw(self, context):
-        """ No need to show panel so empty draw"""
         pass
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
-        head = settings.heads[self.headnum]
+
+        head = settings.get_head(self.headnum)
 
         if self.action == 'sensor_36x24mm':
             head.sensor_width = 36.0
@@ -164,8 +144,8 @@ class FB_OT_CameraActor(Operator):
         elif self.action == 'standard_sensor_and_exif_focal35mm':
             # 35 mm Sensor & EXIF Focal 35mm equiv.
             if head.exif.focal35mm > 0.0:
-                w = 35.0
-                h = 24.0 * 35.0 / 36.0
+                w = 36.0
+                h = 24.0
                 head.sensor_width = w
                 head.sensor_height = h
                 head.focal = head.exif.focal35mm

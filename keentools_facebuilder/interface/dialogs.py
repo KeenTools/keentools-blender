@@ -21,14 +21,14 @@ import re
 
 import bpy
 from bpy.types import Panel, Operator
-import addon_utils
 
 from ..config import Config, get_main_settings, get_operators, ErrorType
 
 
-class WM_OT_FBAddonWarning(Operator):
-    bl_idname = Config.fb_warning_operator_idname
+class FB_OT_AddonWarning(Operator):
+    bl_idname = Config.fb_warning_idname
     bl_label = ""
+    bl_options = {'REGISTER', 'INTERNAL'}
 
     msg: bpy.props.IntProperty(default=ErrorType.Unknown)
     msg_content: bpy.props.StringProperty(default="")
@@ -51,8 +51,7 @@ class WM_OT_FBAddonWarning(Operator):
         if self.msg != ErrorType.PktProblem:
             return {"FINISHED"}
 
-        op = getattr(bpy.ops.object,
-                     Config.fb_main_addon_settings_callname)
+        op = getattr(get_operators(), Config.fb_addon_settings_callname)
         op('EXEC_DEFAULT')
         return {"FINISHED"}
 
@@ -125,6 +124,13 @@ class WM_OT_FBAddonWarning(Operator):
                 "sizes are different. You can fix them ",
                 "by choosing commands from this menu."
             ])
+        elif self.msg == ErrorType.MeshCorrupted:
+            self.set_content([
+                "Mesh is corrupted",
+                "===============",
+                "It looks like the mesh is damaged. ",
+                "Addon cannot work with the wrong topology"
+            ])
         return context.window_manager.invoke_props_dialog(self, width=300)
 
 
@@ -132,6 +138,7 @@ class FB_OT_TexSelector(Operator):
     bl_idname = Config.fb_tex_selector_idname
     bl_label = "Select images:"
     bl_description = "Create texture using pinned views"
+    bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: bpy.props.IntProperty(default=0)
 
@@ -140,7 +147,7 @@ class FB_OT_TexSelector(Operator):
         head = settings.get_head(self.headnum)
         layout = self.layout
 
-        if not len(head.cameras) > 0:
+        if not head.has_cameras():
             layout.label(text="You need at least one image to create texture.",
                          icon='ERROR')
             return
@@ -151,20 +158,19 @@ class FB_OT_TexSelector(Operator):
             # Use in Tex Baking
             row.prop(camera, 'use_in_tex_baking', text='')
 
-            image_icon = 'PINNED' if camera.pins_count > 0 else 'FILE_IMAGE'
+            image_icon = 'PINNED' if camera.has_pins() else 'FILE_IMAGE'
             if camera.cam_image:
-                row.label(text=camera.cam_image.name, icon=image_icon)
+                row.label(text=camera.get_image_name(), icon=image_icon)
             else:
                 row.label(text='-- empty --', icon='LIBRARY_DATA_BROKEN')
 
         row = box.row()
         # Select All cameras for baking Button
-        op = row.operator(Config.fb_main_filter_cameras_idname, text='All')
+        op = row.operator(Config.fb_filter_cameras_idname, text='All')
         op.action = 'select_all_cameras'
         op.headnum = self.headnum
         # Deselect All cameras
-        op = row.operator(Config.fb_main_filter_cameras_idname,
-                          text='None')
+        op = row.operator(Config.fb_filter_cameras_idname, text='None')
         op.action = 'deselect_all_cameras'
         op.headnum = self.headnum
 
@@ -179,14 +185,26 @@ class FB_OT_TexSelector(Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
-        op = getattr(get_operators(), Config.fb_bake_tex_callname)
-        op('INVOKE_DEFAULT', headnum=self.headnum)
+        logger = logging.getLogger(__name__)
+        logger.debug('START TEXTURE CREATION')
 
-        if get_main_settings().tex_auto_preview:
-            op = getattr(get_operators(), Config.fb_actor_callname)
-            op('INVOKE_DEFAULT', action='force_show_tex',
-               headnum=self.headnum)
-        return {"FINISHED"}
+        head = get_main_settings().get_head(self.headnum)
+        if head is None:
+            logger.error('WRONG HEADNUM')
+            return {'CANCELLED'}
+
+        if head.has_cameras():
+            op = getattr(get_operators(), Config.fb_bake_tex_callname)
+            res = op('INVOKE_DEFAULT', headnum=self.headnum)
+
+            if res == {'CANCELLED'}:
+                logger.debug('CANNOT CREATE TEXTURE')
+                self.report({'ERROR'}, "Can't create texture")
+            elif res == {'FINISHED'}:
+                logger.debug('TEXTURE CREATED')
+                self.report({'INFO'}, "Texture has been created successfully")
+
+        return {'FINISHED'}
 
 
 class FB_OT_ExifSelector(Operator):
@@ -202,7 +220,7 @@ class FB_OT_ExifSelector(Operator):
         head = settings.get_head(self.headnum)
         layout = self.layout
 
-        if not len(head.cameras) > 0:
+        if not head.has_cameras():
             layout.label(text='No images found')
             layout.label(text='You need at least one image to read EXIF.',
                          icon='ERROR')
@@ -212,10 +230,10 @@ class FB_OT_ExifSelector(Operator):
         box = layout.box()
         for i, camera in enumerate(head.cameras):
             row = box.row()
-            image_icon = 'PINNED' if camera.pins_count > 0 else 'FILE_IMAGE'
+            image_icon = 'PINNED' if camera.has_pins() else 'FILE_IMAGE'
             if camera.cam_image:
                 op = row.operator(Config.fb_read_exif_idname,
-                                  text=camera.cam_image.name, icon=image_icon)
+                                  text=camera.get_image_name(), icon=image_icon)
                 op.headnum = self.headnum
                 op.camnum = i
 
