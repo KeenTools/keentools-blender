@@ -56,9 +56,9 @@ def download_path(version=None, nightly=False):
     if nightly:
         assert(version is None)
         return 'https://downloads.keentools.io/keentools-core-nightly-{}'.format(os_name())
-    else:
-        if version is None:
-            return 'https://downloads.keentools.io/latest-keentools-core-{}'.format(os_name())
+
+    if version is None:
+        return 'https://downloads.keentools.io/latest-keentools-core-{}'.format(os_name())
 
     return 'https://downloads.keentools.io/keentools-core-{}-{}'.format(
         version.replace('.', '_'), os_name())
