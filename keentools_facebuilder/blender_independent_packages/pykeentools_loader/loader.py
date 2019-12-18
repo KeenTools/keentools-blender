@@ -40,7 +40,7 @@ def _do_pkt_shadow_copy():
 
 
 def _add_pykeentools_to_sys_path():
-    if os_name() == 'WIN':
+    if os_name() == 'windows':
         pkt_directory = _do_pkt_shadow_copy()
     else:
         pkt_directory = pkt_installation_dir()

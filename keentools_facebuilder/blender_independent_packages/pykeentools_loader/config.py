@@ -45,18 +45,20 @@ MINIMUM_VERSION_REQUIRED = '1.5.7'
 def os_name():
     from sys import platform
     if platform == "win32":
-        return 'WIN'
+        return 'windows'
     if platform == "linux" or platform == "linux2":
-        return 'LINUX'
+        return 'linux'
     if platform == "darwin":
-        return 'OSX'
+        return 'macos'
 
 
 def download_path(version=None, nightly=False):
     if nightly:
         assert(version is None)
-        version = 'LATEST_NIGHTLY'
-    else:
-        version = 'LATEST' if version is None else version.replace('.', '_')
-    return 'https://downloads.keentools.io/{}_{}_PYKEENTOOLS'.format(
-        version, os_name())
+        return 'https://downloads.keentools.io/keentools-core-nightly-{}'.format(os_name())
+
+    if version is None:
+        return 'https://downloads.keentools.io/latest-keentools-core-{}'.format(os_name())
+
+    return 'https://downloads.keentools.io/keentools-core-{}-{}'.format(
+        version.replace('.', '_'), os_name())

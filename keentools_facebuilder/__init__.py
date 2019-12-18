@@ -24,8 +24,8 @@ bl_info = {
                    "reference photos",
     "blender": (2, 80, 0),
     "location": "Add > Mesh menu and View UI (press N to open panel)",
-    "wiki_url": "https://www.keentools.io/facebuilder",
-    "tracker_url": "https://www.keentools.io/contact",
+    "wiki_url": "https://link.keentools.io/fbb-guide",
+    "tracker_url": "https://link.keentools.io/new-support-request",
     "warning": "",
     "category": "Add Mesh"
 }
