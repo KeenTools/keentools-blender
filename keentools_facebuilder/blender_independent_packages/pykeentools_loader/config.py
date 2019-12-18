@@ -53,9 +53,6 @@ def os_name():
 
 
 def download_path(version=None, nightly=False):
-    # downloads.keentools.io/latest-keentools-core-macos
-    # downloads.keentools.io/keentools-core-1_5_7-macos
-    # downloads.keentools.io/keentools-core-nightly-windows
     if nightly:
         assert(version is None)
         return 'https://downloads.keentools.io/keentools-core-nightly-{}'.format(os_name())
