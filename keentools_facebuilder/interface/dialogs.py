@@ -47,6 +47,12 @@ class FB_OT_AddonWarning(Operator):
             layout.label(text=t)
 
     def execute(self, context):
+        # TODO: Remove this when Beta ends
+        # Go to download page
+        if self.msg == ErrorType.NoLicense:
+            bpy.ops.wm.url_open(url="https://www.keentools.io/download-blender")
+            return {"FINISHED"}
+
         logger = logging.getLogger(__name__)
         if self.msg != ErrorType.PktProblem:
             return {"FINISHED"}
@@ -60,12 +66,26 @@ class FB_OT_AddonWarning(Operator):
             self.set_content(re.split("\r\n|\n", self.msg_content))
             return context.window_manager.invoke_props_dialog(self, width=300)
         elif self.msg == ErrorType.NoLicense:
+            # self.set_content([
+            #     "License is not detected",
+            #     "===============",
+            #     "Go to Addon preferences:",
+            #     "Edit > Preferences --> Addons",
+            #     "Use 'KeenTools' word in search field"
+            # ])
             self.set_content([
-                "License is not detected",
-                "===============",
-                "Go to Addon preferences:",
-                "Edit > Preferences --> Addons",
-                "Use 'KeenTools' word in search field"
+                "This Beta version is outdated",
+                "=================",
+                "The installed beta version ",
+                "of KeenTools FaceBuilder is outdated. ",
+                "Please download a new version ",
+                "from our site and re-install ",
+                "the add-on (you'll need to relaunch ",
+                "Blender after installation). ",
+                "While in beta, we kindly ask our users ",
+                "to not stick with outdated versions ",
+                "and update the add-on frequently. ",
+                "Thank you for understanding!"
             ])
         elif self.msg == ErrorType.SceneDamaged:
             self.set_content([
