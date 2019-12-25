@@ -79,13 +79,16 @@ class FB_OT_AddonWarning(Operator):
                 "The installed beta version ",
                 "of KeenTools FaceBuilder is outdated. ",
                 "Please download a new version ",
-                "from our site and re-install ",
-                "the add-on (you'll need to relaunch ",
-                "Blender after installation). ",
+                "from our site and re-install the add-on ",
+                "(you'll need to relaunch Blender ",
+                "after installation). ",
                 "While in beta, we kindly ask our users ",
                 "to not stick with outdated versions ",
                 "and update the add-on frequently. ",
-                "Thank you for understanding!"
+                "Thank you for understanding!",
+                " ",
+                "The new version of add-on is available ",
+                "here: https://keentools.io"
             ])
         elif self.msg == ErrorType.SceneDamaged:
             self.set_content([

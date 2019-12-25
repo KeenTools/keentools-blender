@@ -29,7 +29,7 @@ class FBDebug:
     event_queue = []
     lastx = 0
     lasty = 0
-    timer = time.clock()
+    timer = time.perf_counter()
 
     SNAPSHOTS_FILENAME = 'facebuilder_debug_snapshots'
     EVENTS_FILENAME = 'facebuilder_debug_events'
@@ -54,7 +54,7 @@ class FBDebug:
 
     @classmethod
     def get_timer(cls):
-        now = time.clock()
+        now = time.perf_counter()
         old = cls.timer
         cls.timer = now
         return now - old
