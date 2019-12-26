@@ -16,10 +16,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import sys
+
 import bpy
 import keentools_facebuilder.preferences.operators as preferences_operators
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
-from keentools_facebuilder.config import Config
+from keentools_facebuilder.config import Config, is_blender_supported
 from .formatting import split_by_br_or_newlines
 from keentools_facebuilder.preferences.progress import InstallationProgress
 
@@ -166,15 +168,21 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             floating_install_op.license_server = self.license_server
             floating_install_op.license_server_port = self.license_server_port
 
-    def _draw_accept_license_offer(self, layout):
-        box = layout.box()
-        col = box.column()
+    def _draw_warning_labels(self, layout, content):
+        col = layout.column()
         col.alert = True
         col.scale_y = 0.75
-        col.label(text='We cannot ship our core library with our addon '
-                       'due to Blender', icon='INFO')
-        col.label(text=' license limitations, so you need to install '
-                       'it yourself.', icon='BLANK1')
+        for i, c in enumerate(content):
+            icon = 'INFO' if i == 0 else 'BLANK1'
+            col.label(text=c, icon=icon)
+        return col
+
+    def _draw_accept_license_offer(self, layout):
+        content = ['We cannot ship our core library with our addon '
+                   'due to Blender ',
+                   'license limitations, so you need to install it yourself.']
+        box = layout.box()
+        self._draw_warning_labels(box, content)
 
         box2 = box.box()
         row = box2.split(factor=0.85)
@@ -212,7 +220,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         op = row2.operator(
             preferences_operators.PREF_OT_DownloadsURL.bl_idname,
             text='Download', icon='URL')
-        op.url = 'https://keentools.io/downloads'
+        op.url = Config.download_website_url
 
     def _draw_accepted_license(self, layout):
         box = layout.box()
@@ -238,10 +246,44 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             pkt.module().__version__,
             pkt.module().build_time))
 
+    def _draw_old_addon(self, layout):
+        content = ['You have most likely installed an outdated ',
+                   'version of FaceBuilder. Please download the latest one ',
+                   'from our web site: https://keentools.io ']
+        box = layout.box()
+        self._draw_warning_labels(box, content)
+
+    def _draw_wrong_blender(self, layout):
+        content = ['You are probably using Blender with unsupported ',
+                   'version of Python built in. Please install an official ',
+                   'version of Blender.']
+        box = layout.box()
+        self._draw_warning_labels(box, content)
+
+    def _draw_unsupported_python(self, layout):
+        if is_blender_supported():
+            self._draw_wrong_blender(layout)
+        else:
+            self._draw_old_addon(layout)
+            row = layout.split(factor=0.35)
+            op = row.operator(
+                preferences_operators.PREF_OT_DownloadsURL.bl_idname,
+                text='Download', icon='URL')
+            op.url = Config.download_website_url
+
+        col = layout.column()
+        col.scale_y = 0.75
+        col.label(
+            text="Your Blender version: {}".format(bpy.app.version_string))
+        col.label(text="Python: {}".format(sys.version))
+
     def draw(self, context):
         layout = self.layout
 
-        if not pkt.is_installed():
+        if not pkt.is_python_supported():
+            self._draw_unsupported_python(layout)
+
+        elif not pkt.is_installed():
             self._draw_accept_license_offer(layout)
         else:
             self._draw_version(layout)

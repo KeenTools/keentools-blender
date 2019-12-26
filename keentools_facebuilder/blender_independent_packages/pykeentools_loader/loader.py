@@ -21,7 +21,7 @@ import sys
 import os
 from .config import *
 from .install import is_installed
-__all__ = ['loaded', 'module']
+__all__ = ['loaded', 'module', 'is_python_supported']
 
 
 def _do_pkt_shadow_copy():
@@ -67,3 +67,11 @@ def module():
 
     import pykeentools
     return pykeentools
+
+
+def is_python_supported():
+    ver = sys.version_info[0:3]
+    for supported_ver in SUPPORTED_PYTHON_VERSIONS:
+        if ver[:len(supported_ver)] == supported_ver:
+            return True
+    return False

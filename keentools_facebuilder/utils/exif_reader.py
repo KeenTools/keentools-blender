@@ -189,7 +189,7 @@ def _exif_info_message(headnum, data):
     message = "Source file: {}".format(data['filepath'])
 
     if exif.focal > 0.0:
-        message += "\nFocal length: {}mm".format(exif.focal)
+        message += "\nFocal length: {:.2f}mm".format(exif.focal)
 
     if exif.focal35mm > 0.0:
         message += \

@@ -22,6 +22,7 @@ import inspect
 import tempfile
 __all__ = ['SHADOW_COPIES_DIRECTORY', 'RELATIVE_LIB_DIRECTORY',
            'pkt_installation_dir', 'MINIMUM_VERSION_REQUIRED',
+           'SUPPORTED_PYTHON_VERSIONS',
            'os_name', 'download_path']
 
 
@@ -40,6 +41,7 @@ def pkt_installation_dir():
 
 
 MINIMUM_VERSION_REQUIRED = '1.5.7'
+SUPPORTED_PYTHON_VERSIONS = ((3,7),)
 
 
 def os_name():

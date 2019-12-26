@@ -31,11 +31,16 @@ class BuilderType:
 
 
 class Config:
+    # Version dependent
+    addon_version = '1.5.7 (Beta)'
+    supported_blender_versions = ((2, 80), (2, 81), (2, 82))
+
+    # Version independent
     prefix = _company + '_fb'
     operators = _company + '_facebuilder'
     addon_name = __package__  # the same as module name
     addon_human_readable_name = 'FaceBuilder'
-    addon_version = '1.5.7 (Beta)'
+
     addon_search = 'KeenTools'
     addon_global_var_name = prefix + '_settings'
     addon_full_name = 'Keentools FaceBuilder for Blender'
@@ -44,6 +49,8 @@ class Config:
     fb_tab_category = addon_human_readable_name
     default_builder = BuilderType.FaceBuilder
     keentools_website_url = 'https://keentools.io'
+    download_website_url = keentools_website_url + '/download-blender'
+
     manual_install_url = keentools_website_url + '/manual-installation'
     pykeentools_license_url = 'https://link.keentools.io/eula'
     
@@ -287,7 +294,6 @@ class Config:
     # Colors
     red_color = (1.0, 0.0, 0.0)
     red_scheme1 = (0.3, 0.0, 0.0)
-    # red_scheme2 = (0.0, 0.2, 0.4)
     red_scheme2 = (0.0, 0.4, 0.7)
     green_color = (0.0, 1.0, 0.0)
     green_scheme1 = (0.0, 0.2, 0.0)
@@ -320,8 +326,15 @@ class Config:
     residual_color = (0.0, 1.0, 1.0, 0.5)
 
 
+def is_blender_supported():
+    ver = bpy.app.version
+    for supported_ver in Config.supported_blender_versions:
+        if ver[:len(supported_ver)] == supported_ver:
+            return True
+    return False
+
+
 def get_main_settings():
-    """ Main addon settings"""
     return getattr(bpy.context.scene, Config.addon_global_var_name)
 
 
@@ -330,7 +343,6 @@ def get_operators():
 
 
 class ErrorType:
-    """ Types for Builder selection """
     Unknown = -1
     CustomMessage = 0
     NoLicense = 1
