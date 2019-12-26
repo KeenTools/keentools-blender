@@ -41,7 +41,7 @@ def pkt_installation_dir():
 
 
 MINIMUM_VERSION_REQUIRED = '1.5.7'
-SUPPORTED_PYTHON_VERSIONS = ('3.7',)
+SUPPORTED_PYTHON_VERSIONS = ((3,7),)
 
 
 def os_name():

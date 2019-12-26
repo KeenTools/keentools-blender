@@ -70,9 +70,8 @@ def module():
 
 
 def is_python_supported():
-    ver_str = "{}.{}.{}".format(*sys.version_info[0:3])
+    ver = sys.version_info[0:3]
     for supported_ver in SUPPORTED_PYTHON_VERSIONS:
-        # '3.7.4' == '3.7'
-        if ver_str[:len(supported_ver)] == supported_ver:
+        if ver[:len(supported_ver)] == supported_ver:
             return True
     return False
