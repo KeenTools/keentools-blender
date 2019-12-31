@@ -220,7 +220,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         op = row2.operator(
             preferences_operators.PREF_OT_DownloadsURL.bl_idname,
             text='Download', icon='URL')
-        op.url = Config.download_website_url
+        op.url = Config.core_download_website_url
 
     def _draw_accepted_license(self, layout):
         box = layout.box()
@@ -242,9 +242,39 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
     def _draw_version(self, layout):
         box = layout.box()
-        box.label(text="Version {}, built {}".format(
-            pkt.module().__version__,
-            pkt.module().build_time))
+        col = box.column()
+        col.scale_y = 0.75
+        messages = {
+            'NOT_INSTALLED': ['Core library is not installed'],
+            'CANNOT_IMPORT': ['The installed core is corrupted. ',
+                             'Please remove the addon, install it again, ',
+                             'and then install the proper core library '
+                             'package again'],
+            'NO_VERSION': ['The installed core is corrupted. ',
+                          'Please remove the addon, install it again, ',
+                          'and then install the proper core library '
+                          'package again.'],
+            'VERSION_PROBLEM': ['The installed core library is outdated. '
+                                'You can experience issues. ',
+                               'We recommend you to update the addon '
+                               'and the core library.'],
+            'OK':['The core library have been installed successfully']
+        }
+
+        try:
+            col.label(text="Version {}, built {}".format(
+                pkt.module().__version__,
+                pkt.module().build_time))
+        except Exception:
+            col.label(text='Installation error.', icon='ERROR')
+
+        state, status = pkt.installation_status()
+
+        if status in messages.keys():
+            for c in messages[status]:
+                col.label(text=c)
+        else:
+            col.label(text='Unknown error')
 
     def _draw_old_addon(self, layout):
         content = ['You have most likely installed an outdated ',
@@ -269,7 +299,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             op = row.operator(
                 preferences_operators.PREF_OT_DownloadsURL.bl_idname,
                 text='Download', icon='URL')
-            op.url = Config.download_website_url
+            op.url = Config.core_download_website_url
 
         col = layout.column()
         col.scale_y = 0.75
@@ -282,8 +312,9 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
         if not pkt.is_python_supported():
             self._draw_unsupported_python(layout)
+            return
 
-        elif not pkt.is_installed():
+        if not pkt.is_installed():
             self._draw_accept_license_offer(layout)
         else:
             self._draw_version(layout)

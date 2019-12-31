@@ -225,7 +225,7 @@ class FB_PT_CameraPanel(Panel):
         col = layout.column()
         if head.auto_focal_estimation:
             col.active = False
-            col.enabled = False
+            col.enabled = True  # User can change inactive looking field
         row = col.row()
         row.prop(head, 'focal')
         row.operator(

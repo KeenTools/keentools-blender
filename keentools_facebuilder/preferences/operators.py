@@ -111,7 +111,7 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
         op = layout.operator(
             PREF_OT_OpenURL.bl_idname,
             text='Open downloads page', icon='URL')
-        op.url = Config.download_website_url
+        op.url = Config.core_download_website_url
 
     def invoke(self, context, event):
         if self.license_accepted:

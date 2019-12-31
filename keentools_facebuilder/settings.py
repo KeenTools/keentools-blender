@@ -74,6 +74,10 @@ def update_focal(self, context):
     if not settings.pinmode:
         FBLoader.update_all_camera_focals(self)
 
+        state, headnum = what_is_state()
+        head = settings.get_head(headnum)
+        head.auto_focal_estimation = False
+
 
 def update_blue_camera_button(self, context):
     settings = get_main_settings()
@@ -314,7 +318,7 @@ class FBHeadItem(PropertyGroup):
         description="When turned on, FaceBuilder will try to estimate "
                     "focal length based on the position of the model "
                     "in the frame",
-        default=False)
+        default=True)
 
     check_ears: BoolProperty(name="Ears", default=True,
                              update=update_mesh_parts)
