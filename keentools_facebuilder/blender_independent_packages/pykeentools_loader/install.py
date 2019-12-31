@@ -22,11 +22,45 @@ from threading import Thread, Lock
 
 from .config import *
 
-__all__ = ['is_installed', 'install_from_download',
+__all__ = ['is_installed', 'installation_status', 'install_from_download',
            'install_from_download_async', 'uninstall', 'install_from_file']
 
 
 _unpack_mutex = Lock()
+
+
+def _import_pykeentools():
+    try:
+        import pykeentools
+        return True
+    except ImportError:
+        return False
+
+
+def _get_pykeentools_version():
+    try:
+        import pykeentools
+        ver = pykeentools.__version__
+        return ver
+    except Exception:
+        return None
+
+
+def installation_status():
+    if not is_installed():
+        return (False, 'NOT_INSTALLED')
+
+    if not _import_pykeentools():
+        return (False, 'CANNOT_IMPORT')
+
+    ver = _get_pykeentools_version()
+    if ver is None:
+        return (False, 'NO_VERSION')
+
+    if ver < MINIMUM_VERSION_REQUIRED:
+        return (True, 'VERSION_PROBLEM')
+
+    return (True, 'OK')
 
 
 def _is_installed_not_locked():
@@ -39,7 +73,6 @@ def is_installed():
         return _is_installed_not_locked()
     finally:
         _unpack_mutex.release()
-
 
 
 def _uninstall_not_locked():
