@@ -220,7 +220,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         op = row2.operator(
             preferences_operators.PREF_OT_DownloadsURL.bl_idname,
             text='Download', icon='URL')
-        op.url = Config.download_website_url
+        op.url = Config.core_download_website_url
 
     def _draw_accepted_license(self, layout):
         box = layout.box()
@@ -269,7 +269,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             op = row.operator(
                 preferences_operators.PREF_OT_DownloadsURL.bl_idname,
                 text='Download', icon='URL')
-            op.url = Config.download_website_url
+            op.url = Config.core_download_website_url
 
         col = layout.column()
         col.scale_y = 0.75
