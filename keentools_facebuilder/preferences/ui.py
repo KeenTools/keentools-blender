@@ -266,7 +266,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                 pkt.module().__version__,
                 pkt.module().build_time))
         except Exception:
-            box.label(text="Installation error:")
+            col.label(text='Installation error.', icon='ERROR')
 
         state, status = pkt.installation_status()
 
@@ -274,7 +274,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             for c in messages[status]:
                 col.label(text=c)
         else:
-            col.label(text="Unknown error")
+            col.label(text='Unknown error')
 
     def _draw_old_addon(self, layout):
         content = ['You have most likely installed an outdated ',
