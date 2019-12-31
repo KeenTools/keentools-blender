@@ -42,7 +42,7 @@ def _get_pykeentools_version():
         import pykeentools
         ver = pykeentools.__version__
         return ver
-    except Exception:
+    except AttributeError:
         return None
 
 

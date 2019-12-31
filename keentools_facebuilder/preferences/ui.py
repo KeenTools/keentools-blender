@@ -245,15 +245,19 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         col = box.column()
         col.scale_y = 0.75
         messages = {
-            'NOT_INSTALLED':['Core library is not installed'],
-            'CANNOT_IMPORT':['The installed core is corrupted. ',
+            'NOT_INSTALLED': ['Core library is not installed'],
+            'CANNOT_IMPORT': ['The installed core is corrupted. ',
                              'Please remove the addon, install it again, ',
-                             'and then install the proper core library package again.'],
-            'NO_VERSION':['The installed core is corrupted. ',
+                             'and then install the proper core library '
+                             'package again'],
+            'NO_VERSION': ['The installed core is corrupted. ',
                           'Please remove the addon, install it again, ',
-                          'and then install the proper core library package again.'],
-            'VERSION_PROBLEM':['The installed core library is outdated. You can experience issues. ',
-                               'We recommend you to update the addon and the core library.'],
+                          'and then install the proper core library '
+                          'package again.'],
+            'VERSION_PROBLEM': ['The installed core library is outdated. '
+                                'You can experience issues. ',
+                               'We recommend you to update the addon '
+                               'and the core library.'],
             'OK':['The core library have been installed successfully']
         }
 
