@@ -21,9 +21,9 @@ import sys
 import bpy
 import keentools_facebuilder.preferences.operators as preferences_operators
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
-from keentools_facebuilder.config import Config, is_blender_supported
+from ..config import (Config, is_blender_supported, is_blender_too_old)
 from .formatting import split_by_br_or_newlines
-from keentools_facebuilder.preferences.progress import InstallationProgress
+from ..preferences.progress import InstallationProgress
 
 
 def _multi_line_text_to_output_labels(layout, txt):
@@ -34,7 +34,7 @@ def _multi_line_text_to_output_labels(layout, txt):
     non_empty_lines = filter(len, all_lines)
 
     col = layout.column()
-    col.scale_y = 0.75
+    col.scale_y = Config.text_scale_y
     for text_line in non_empty_lines:
         col.label(text=text_line)
 
@@ -171,7 +171,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     def _draw_warning_labels(self, layout, content):
         col = layout.column()
         col.alert = True
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         for i, c in enumerate(content):
             icon = 'INFO' if i == 0 else 'BLANK1'
             col.label(text=c, icon=icon)
@@ -232,7 +232,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
     def _draw_download_progress(self, layout):
         col = layout.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         download_state = InstallationProgress.get_state()
         if download_state['active']:
             col.label(text="Downloading: {:.1f}%".format(
@@ -243,7 +243,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     def _draw_version(self, layout):
         box = layout.box()
         col = box.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         messages = {
             'NOT_INSTALLED': ['Core library is not installed'],
             'CANNOT_IMPORT': ['The installed core is corrupted. ',
@@ -290,6 +290,12 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         box = layout.box()
         self._draw_warning_labels(box, content)
 
+    def _draw_blender_too_old(self, layout):
+        content = ['You are using too old version of Blender.',
+                   'Please install the last one to use the add-on.']
+        box = layout.box()
+        self._draw_warning_labels(box, content)
+
     def _draw_unsupported_python(self, layout):
         if is_blender_supported():
             self._draw_wrong_blender(layout)
@@ -302,13 +308,17 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             op.url = Config.core_download_website_url
 
         col = layout.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         col.label(
             text="Your Blender version: {}".format(bpy.app.version_string))
         col.label(text="Python: {}".format(sys.version))
 
     def draw(self, context):
         layout = self.layout
+
+        if is_blender_too_old():
+            self._draw_blender_too_old(layout)
+            return
 
         if not pkt.is_python_supported():
             self._draw_unsupported_python(layout)

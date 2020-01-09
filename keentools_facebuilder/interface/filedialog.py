@@ -101,7 +101,7 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
         layout.prop(self, 'update_render_size', expand=True)
 
         col = layout.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         txt = ['Please keep in mind that',
                'all frames for FaceBuilder',
                'should have the same size.']
@@ -250,7 +250,7 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
         layout.prop(self, 'update_render_size', expand=True)
 
         col = layout.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         txt = ['Please keep in mind that',
                'all frames for FaceBuilder',
                'should have the same size.']

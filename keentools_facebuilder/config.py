@@ -34,6 +34,7 @@ class Config:
     # Version dependent
     addon_version = '1.5.7 (Beta)'
     supported_blender_versions = ((2, 80), (2, 81), (2, 82))
+    minimal_blender_api = (2, 80, 60)
 
     # Version independent
     prefix = _company + '_fb'
@@ -285,6 +286,7 @@ class Config:
     surf_pin_size_scale = 0.85
     default_POINT_SENSITIVITY = 16.0
     default_FB_COLLECTION_NAME = 'FaceBuilderCol'
+    text_scale_y = 0.75
 
     unknown_mod_ver = -1
 
@@ -332,6 +334,10 @@ def is_blender_supported():
         if ver[:len(supported_ver)] == supported_ver:
             return True
     return False
+
+
+def is_blender_too_old():
+    return bpy.app.version < Config.minimal_blender_api
 
 
 def get_main_settings():
