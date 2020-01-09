@@ -291,8 +291,10 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         self._draw_warning_labels(box, content)
 
     def _draw_blender_too_old(self, layout):
-        content = ['You are using too old version of Blender.',
-                   'Please install the last one to use the add-on.']
+        content = ['You are using an outdated version of Blender '
+                   'which we can\'t support. ',
+                   'Please install the latest official version '
+                   'of Blender downloaded from their site.']
         box = layout.box()
         self._draw_warning_labels(box, content)
 
