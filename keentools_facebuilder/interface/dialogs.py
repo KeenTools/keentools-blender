@@ -41,7 +41,7 @@ class FB_OT_AddonWarning(Operator):
 
     def draw(self, context):
         layout = self.layout
-        layout.scale_y = 0.75
+        layout.scale_y = Config.text_scale_y
 
         for t in self.content:
             layout.label(text=t)
@@ -198,7 +198,7 @@ class FB_OT_TexSelector(Operator):
         op.headnum = self.headnum
 
         col = layout.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         col.label(text="Images without pins will be ignored.")
         col.label(text="Please note: texture creation is very time consuming.")
         layout.prop(settings, 'tex_auto_preview')

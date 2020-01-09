@@ -62,7 +62,7 @@ class FB_PT_HeaderPanel(Panel):
 
         box = layout.box()
         col = box.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         col.label(text="You can also create")
         col.label(text="a new head using:")
         col.label(text="Add > Mesh > FaceBuilder")
@@ -70,7 +70,7 @@ class FB_PT_HeaderPanel(Panel):
 
     def _pkt_install_offer(self, layout):
         col = layout.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         col.label(text="You need to install ")
         col.label(text="KeenTools Core library")
         col.label(text="before using FaceBuilder.")
@@ -165,7 +165,7 @@ class FB_PT_UpdatePanel(Panel):
 
     def _draw_response(self, layout):
         col = layout.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         FBUpdater.render_message(col)
 
         res = FBUpdater.get_response()
@@ -275,7 +275,7 @@ class FB_PT_ExifPanel(Panel):
             box = layout.box()
             arr = re.split("\r\n|\n", head.exif.info_message)
             col = box.column()
-            col.scale_y = 0.75
+            col.scale_y = Config.text_scale_y
             for a in arr:
                 col.label(text=a)
 
@@ -284,7 +284,7 @@ class FB_PT_ExifPanel(Panel):
             box = layout.box()
             arr = re.split("\r\n|\n", head.exif.sizes_message)
             col = box.column()
-            col.scale_y = 0.75
+            col.scale_y = Config.text_scale_y
             for a in arr:
                 col.label(text=a)
 
@@ -379,7 +379,7 @@ class FB_PT_ViewsPanel(Panel):
                 and not settings.pinmode:
             col = layout.column()
             col.alert = True
-            col.scale_y = 0.75
+            col.scale_y = Config.text_scale_y
             col.label(text='Press a view button with',icon='INFO')
             col.label(text='a picture file name below', icon='BLANK1')
             col.label(text='to switch to Pin mode', icon='BLANK1')

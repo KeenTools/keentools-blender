@@ -32,7 +32,7 @@ class HELP_OT_CameraHelp(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         col = layout.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         content = [
             "In order to get a quality model you need to know two things:",
             "sensor size and focal length. Both in millimetres.",
@@ -81,7 +81,7 @@ class HELP_OT_ExifHelp(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         col = layout.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         content = [
             "On this panel you can load and see EXIF information stored "
             "in the image files",
@@ -111,7 +111,7 @@ class HELP_OT_ViewsHelp(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         col = layout.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         content = [
             "On this panel you can load and remove images "
             "automatically creating ",
@@ -148,7 +148,7 @@ class HELP_OT_ModelHelp(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         col = layout.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         content = [
             "On this panel you can modify the 3D model of the "
             "head in different ways: ",
@@ -183,7 +183,7 @@ class HELP_OT_PinSettingsHelp(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         col = layout.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         content = [
             "Here you can tweak the pin size in terms of visual appearance ",
             "and the size of the active area that responds to mouse "
@@ -210,7 +210,7 @@ class HELP_OT_WireframeSettingsHelp(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         col = layout.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         content = [
             "On this panel you can change colours and opacity of the "
             "model's wireframe ",
@@ -239,7 +239,7 @@ class HELP_OT_TextureHelp(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         col = layout.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         content = [
             "This panel gives you access to an experimental functionality "
             "of automatic texture ",
