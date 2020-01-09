@@ -29,6 +29,49 @@ from . utils.other import FBText
 from . utils.points import FBPoints2D, FBPoints3D
 
 
+class FBScreenPins:
+    _pins = []
+    _current_pin = None
+    _current_pin_num = -1
+
+    @classmethod
+    def arr(cls):
+        return cls._pins
+
+    @classmethod
+    def set_pins(cls, arr):
+        cls._pins = arr
+
+    @classmethod
+    def add_pin(cls, vec2d):
+        cls._pins.append(vec2d)
+
+    @classmethod
+    def current_pin_num(cls):
+        return cls._current_pin_num
+
+    @classmethod
+    def set_current_pin_num(cls, value):
+        cls._current_pin_num = value
+
+    @classmethod
+    def set_current_pin_num_to_last(cls):
+        cls._current_pin_num = len(cls.arr()) - 1
+
+    @classmethod
+    def current_pin(cls):
+        return cls._current_pin
+
+    @classmethod
+    def set_current_pin(cls, value):
+        cls._current_pin = value
+
+    @classmethod
+    def reset_current_pin(cls):
+        cls._current_pin = None
+        cls._current_pin_num = -1
+
+
 class FBViewport:
     profiling = False
     # --- PROFILING ---
@@ -46,52 +89,19 @@ class FBViewport:
     # Wireframe shader object
     _wireframer = FBEdgeShader3D()
     # Update timer
-    draw_timer_handler = None
+    _draw_timer_handler = None
 
     _residuals = FBEdgeShader2D()
 
     # Pins
-    spins = []  # current screen pins
-    _current_pin = None
-    _current_pin_num = -1
+    _pins = FBScreenPins()
+
+    @classmethod
+    def pins(cls):
+        return cls._pins
 
     POINT_SENSITIVITY = Config.default_POINT_SENSITIVITY
     PIXEL_SIZE = 0.1  # Auto Calculated
-
-    # --- current_pin_num class property
-    @classmethod
-    def get_current_pin_num(cls):
-        return cls._current_pin_num
-
-    @classmethod
-    def set_current_pin_num(cls, value):
-        cls._current_pin_num = value
-
-    @property
-    def current_pin_num(self):
-        return self.get_current_pin_num()
-
-    @current_pin_num.setter
-    def current_pin_num(self, value):
-        self.set_current_pin_num(value)
-
-    # --- current_pin class property
-    @classmethod
-    def get_current_pin(cls):
-        return cls._current_pin
-
-    @classmethod
-    def set_current_pin(cls, value):
-        cls._current_pin = value
-
-    @property
-    def current_pin(self):
-        return self.get_current_pin()
-
-    @current_pin.setter
-    def current_pin(self, value):
-        self.set_current_pin(value)
-    # ---
 
     @classmethod
     def points2d(cls):
@@ -140,17 +150,17 @@ class FBViewport:
         cls.texter().register_handler(args)
         cls.wireframer().register_handler(args)
         # Timer for continuous update modal view
-        cls.draw_timer_handler = context.window_manager.event_timer_add(
+        cls._draw_timer_handler = context.window_manager.event_timer_add(
             time_step=0.2, window=context.window
         )
 
     @classmethod
     def unregister_handlers(cls):
-        if cls.draw_timer_handler is not None:
+        if cls._draw_timer_handler is not None:
             bpy.context.window_manager.event_timer_remove(
-                cls.draw_timer_handler
+                cls._draw_timer_handler
             )
-        cls.draw_timer_handler = None
+        cls._draw_timer_handler = None
         cls.wireframer().unregister_handler()
         cls.texter().unregister_handler()
         cls.points2d().unregister_handler()
@@ -232,18 +242,8 @@ class FBViewport:
             settings.pin_size * Config.surf_pin_size_scale)
 
     @classmethod
-    def get_spins(cls):
-        return cls.spins
-
-    @classmethod
-    def set_spins(cls, arr):
-        cls.spins = arr
-
-    @classmethod
-    def surface_points(
-            cls, fb, headobj, keyframe=-1,
-            allcolor=(0, 0, 1, 0.15), selcolor=(0, 1, 0, 1)):
-        """ Load 3D pin points """
+    def surface_points(cls, fb, headobj, keyframe=-1,
+                       allcolor=(0, 0, 1, 0.15), selcolor=(0, 1, 0, 1)):
         verts = []
         colors = []
 
@@ -259,9 +259,7 @@ class FBViewport:
         return verts, colors
 
     @classmethod
-    def surface_points_only(
-            cls, fb, headobj, keyframe=-1):
-        """ Load 3D pin points """
+    def surface_points_only(cls, fb, headobj, keyframe=-1):
         verts = []
 
         for i in range(fb.pins_count(keyframe)):
@@ -288,7 +286,7 @@ class FBViewport:
     @classmethod
     def create_batch_2d(cls, context):
         """ Main Pin Draw Batch"""
-        points = cls.spins.copy()
+        points = cls.pins().arr().copy()
 
         scene = context.scene
         rx = scene.render.resolution_x
@@ -303,8 +301,9 @@ class FBViewport:
 
         vertex_colors = [Config.pin_color for _ in range(len(points))]
 
-        if cls.get_current_pin() and cls.get_current_pin_num() < len(vertex_colors):
-            vertex_colors[cls.get_current_pin_num()] = Config.current_pin_color
+        pins = cls.pins()
+        if pins.current_pin() and pins.current_pin_num() < len(vertex_colors):
+            vertex_colors[pins.current_pin_num()] = Config.current_pin_color
 
         # Camera corners
         points.append(

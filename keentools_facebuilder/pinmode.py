@@ -95,7 +95,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         fb = FBLoader.get_builder()
         fb.remove_pin(kid, nearest)
-        del FBLoader.viewport().spins[nearest]
+        del FBLoader.viewport().pins().arr()[nearest]
         logging.debug("PIN REMOVED {}".format(nearest))
 
         FBLoader.rigidity_setup()
@@ -148,11 +148,12 @@ class FB_OT_PinMode(bpy.types.Operator):
             'IN_PINMODE_PRESS_RIGHTMOUSE', mouse_x, mouse_y,
             coords.get_raw_camera_2d_data(context))
 
-        FBLoader.viewport().update_view_relative_pixel_size(context)
+        vp = FBLoader.viewport()
+        vp.update_view_relative_pixel_size(context)
 
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
 
-        nearest, dist2 = coords.nearest_point(x, y, FBLoader.viewport().spins)
+        nearest, dist2 = coords.nearest_point(x, y, vp.pins().arr())
         if nearest >= 0 and dist2 < FBLoader.viewport().tolerance_dist2():
             return self._delete_found_pin(nearest, context)
 
@@ -236,13 +237,15 @@ class FB_OT_PinMode(bpy.types.Operator):
         cameras.hide_other_cameras(self.headnum, self.camnum)
         # Start our shader
         self._init_wireframer_colors(settings.overall_opacity)
-        FBLoader.viewport().create_batch_2d(context)
-        FBLoader.viewport().register_handlers(args, context)
+
+        vp = FBLoader.viewport()
+        vp.create_batch_2d(context)
+        vp.register_handlers(args, context)
         context.window_manager.modal_handler_add(self)
 
         kid = settings.get_keyframe(self.headnum, self.camnum)
         # Load 3D pins
-        FBLoader.viewport().update_surface_points(
+        vp.update_surface_points(
             FBLoader.get_builder(), headobj, kid)
 
         # Can start much more times when not out from pinmode
@@ -349,17 +352,18 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.debug("UNDO CALL DETECTED")
             self._undo_detected()
 
+        vp = FBLoader.viewport()
         # Catch if wireframer is off
-        if not (FBLoader.viewport().wireframer().is_working()):
+        if not (vp.wireframer().is_working()):
             logger.debug("WIREFRAME IS OFF")
             FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
 
-        FBLoader.viewport().create_batch_2d(context)
-        FBLoader.viewport().update_residuals(
+        vp.create_batch_2d(context)
+        vp.update_residuals(
             FBLoader.get_builder(), context, head.headobj, kid)
 
-        if FBLoader.viewport().current_pin:
+        if vp.pins().current_pin() is not None:
             return {"RUNNING_MODAL"}
         else:
             return {"PASS_THROUGH"}
