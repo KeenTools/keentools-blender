@@ -40,6 +40,16 @@ class FB_OT_PinMode(bpy.types.Operator):
     camnum: bpy.props.IntProperty(default=0)
 
     _shift_pressed = False
+    _camera_zoom = -1.0
+    _camera_pan = (0, 0)
+
+    @classmethod
+    def _check_camera_state(cls, zoom, camera_pan):
+        flag = cls._camera_zoom == zoom
+        cls._camera_zoom = zoom
+        flag = flag and cls._camera_pan == camera_pan
+        cls._camera_pan = camera_pan
+        return flag
 
     @classmethod
     def _set_shift_pressed(cls, val):
@@ -301,11 +311,18 @@ class FB_OT_PinMode(bpy.types.Operator):
                 settings.license_error = False
             return {'FINISHED'}
 
+        rv3d = context.space_data.region_3d
         # Quit when camera rotated by user
-        if context.space_data.region_3d.view_perspective != 'CAMERA':
+        if rv3d.view_perspective != 'CAMERA':
             logger.debug("CAMERA ROTATED PINMODE OUT")
             FBLoader.out_pinmode(headnum, camnum)
             return {'FINISHED'}
+
+        # Screen Update request
+        if not self._check_camera_state(rv3d.view_camera_zoom,
+                                        rv3d.view_camera_offset):
+            logger.debug("FORCE TAG REDRAW")
+            context.area.tag_redraw()
 
         if event.type == 'ESC':
             FBLoader.out_pinmode(headnum, camnum)

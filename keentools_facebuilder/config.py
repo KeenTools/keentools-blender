@@ -286,6 +286,7 @@ class Config:
     default_POINT_SENSITIVITY = 16.0
     default_FB_COLLECTION_NAME = 'FaceBuilderCol'
 
+    viewport_redraw_interval = 0.1
     unknown_mod_ver = -1
 
     # In Material
