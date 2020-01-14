@@ -40,8 +40,8 @@ def _import_pykeentools():
 def _get_pykeentools_version():
     try:
         import pykeentools
-        ver = pykeentools.__version__
-        return ver
+        ver = pykeentools.version
+        return (ver.major, ver.minor, ver.patch)
     except AttributeError:
         return None
 

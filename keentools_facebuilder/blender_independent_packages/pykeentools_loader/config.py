@@ -40,7 +40,7 @@ def pkt_installation_dir():
     return os.path.abspath(installation_dir)
 
 
-MINIMUM_VERSION_REQUIRED = '1.5.7'
+MINIMUM_VERSION_REQUIRED = (1, 5, 7)  # '1.5.7'
 SUPPORTED_PYTHON_VERSIONS = ((3, 7),)
 
 
@@ -63,4 +63,4 @@ def download_path(version=None, nightly=False):
         return 'https://downloads.keentools.io/latest-keentools-core-{}'.format(os_name())
 
     return 'https://downloads.keentools.io/keentools-core-{}-{}'.format(
-        version.replace('.', '_'), os_name())
+        '_'.join([str(x) for x in version]), os_name())
