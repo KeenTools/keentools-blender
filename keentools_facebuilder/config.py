@@ -288,6 +288,7 @@ class Config:
     default_FB_COLLECTION_NAME = 'FaceBuilderCol'
     text_scale_y = 0.75
 
+    viewport_redraw_interval = 0.1
     unknown_mod_ver = -1
 
     # In Material

@@ -41,6 +41,19 @@ class FB_OT_PinMode(bpy.types.Operator):
 
     _shift_pressed = False
 
+
+    _prev_camera_state = ()
+
+    @classmethod
+    def _check_camera_state_changed(cls, rv3d):
+        camera_state = (rv3d.view_camera_zoom, rv3d.view_camera_offset)
+
+        if camera_state != cls._prev_camera_state:
+            cls._prev_camera_state = camera_state
+            return True
+
+        return False
+
     @classmethod
     def _set_shift_pressed(cls, val):
         cls._shift_pressed = val
@@ -143,7 +156,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBDebug.add_event_to_queue('FORCE_SNAPSHOT', 0, 0)
         FBDebug.make_snapshot()
 
-    def on_right_mouse_press(self, context, mouse_x, mouse_y):
+    def _on_right_mouse_press(self, context, mouse_x, mouse_y):
         FBDebug.add_event_to_queue(
             'IN_PINMODE_PRESS_RIGHTMOUSE', mouse_x, mouse_y,
             coords.get_raw_camera_2d_data(context))
@@ -160,7 +173,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.viewport().create_batch_2d(context)
         return {"RUNNING_MODAL"}
 
-    def on_left_mouse_press(self, context, mouse_x, mouse_y):
+    def _on_left_mouse_press(self, context, mouse_x, mouse_y):
         FBLoader.viewport().update_view_relative_pixel_size(context)
 
         FBDebug.add_event_to_queue(
@@ -266,28 +279,23 @@ class FB_OT_PinMode(bpy.types.Operator):
         self._init_wireframer_colors(settings.overall_opacity)
         force_ui_redraw("VIEW_3D")
 
-    def modal(self, context, event):
+    def _modal_should_finish(self, context, event):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
 
         headnum = settings.current_headnum
         camnum = settings.current_camnum
-        head = settings.get_head(headnum)
 
         # Quit if Screen changed
         if context.area is None:  # Different operation Space
             logger.debug("CONTEXT LOST")
             FBLoader.out_pinmode(headnum, camnum)
-            return {'FINISHED'}
+            return True
 
         if headnum < 0:
             logger.error("HEAD LOST")
             FBLoader.out_pinmode(headnum, camnum)
-            return {'FINISHED'}
-
-        if not head.headobj.hide_get():
-            logger.debug("FORCE MESH HIDE")
-            head.headobj.hide_set(True)
+            return True
 
         # Quit if Force Pinmode Out flag is set (by ex. license, pin problem)
         if settings.force_out_pinmode:
@@ -299,13 +307,13 @@ class FB_OT_PinMode(bpy.types.Operator):
                 warn = getattr(get_operators(), Config.fb_warning_callname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
                 settings.license_error = False
-            return {'FINISHED'}
+            return True
 
         # Quit when camera rotated by user
         if context.space_data.region_3d.view_perspective != 'CAMERA':
             logger.debug("CAMERA ROTATED PINMODE OUT")
             FBLoader.out_pinmode(headnum, camnum)
-            return {'FINISHED'}
+            return True
 
         if event.type == 'ESC':
             FBLoader.out_pinmode(headnum, camnum)
@@ -315,18 +323,38 @@ class FB_OT_PinMode(bpy.types.Operator):
                 pr.dump_stats('facebuilder.pstat')
             # --- PROFILING ---
             bpy.ops.view3d.view_camera()
+            return True
+
+        return False
+
+    def modal(self, context, event):
+        logger = logging.getLogger(__name__)
+        settings = get_main_settings()
+
+        headnum = settings.current_headnum
+        head = settings.get_head(headnum)
+
+        if self._modal_should_finish(context, event):
             return {'FINISHED'}
+
+        if not head.headobj.hide_get():
+            logger.debug("FORCE MESH HIDE")
+            head.headobj.hide_set(True)
+
+        if self._check_camera_state_changed(context.space_data.region_3d):
+            logger.debug("FORCE TAG REDRAW")
+            context.area.tag_redraw()
 
         if event.value == 'PRESS' and event.type == 'TAB':
             self._wireframe_view_toggle()
             return {'RUNNING_MODAL'}
 
         if event.value == 'PRESS' and event.type == 'LEFTMOUSE':
-            return self.on_left_mouse_press(
+            return self._on_left_mouse_press(
                 context, event.mouse_region_x, event.mouse_region_y)
 
         if event.value == 'PRESS' and event.type == 'RIGHTMOUSE':
-            return self.on_right_mouse_press(
+            return self._on_right_mouse_press(
                 context, event.mouse_region_x, event.mouse_region_y)
 
         # SHIFT-press control
@@ -338,9 +366,9 @@ class FB_OT_PinMode(bpy.types.Operator):
                 and event.value == 'RELEASE':
             self._set_shift_pressed(False)
 
-        return self.on_final(context, head)
+        return self._on_final(context, head)
 
-    def on_final(self, context, head):
+    def _on_final(self, context, head):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         headnum = settings.current_headnum

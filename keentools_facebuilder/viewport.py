@@ -151,7 +151,7 @@ class FBViewport:
         cls.wireframer().register_handler(args)
         # Timer for continuous update modal view
         cls._draw_timer_handler = context.window_manager.event_timer_add(
-            time_step=0.2, window=context.window
+            time_step=Config.viewport_redraw_interval, window=context.window
         )
 
     @classmethod
