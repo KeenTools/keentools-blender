@@ -26,6 +26,62 @@ from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
 
 
+_ERROR_MESSAGES = {
+    'WE_CANNOT_SHIP': [
+        'We cannot ship our core library with our addon due to Blender ',
+        'license limitations, so you need to install it yourself.'],
+
+    'OLD_ADDON': [
+        'You have most likely installed an outdated ',
+        'version of FaceBuilder. Please download the latest one ',
+        'from our web site: https://keentools.io '],
+
+    'OLD_BLENDER': [
+        'You are using an outdated version of Blender '
+        'which we can\'t support. ',
+        'Please install the latest official version '
+        'of Blender downloaded from their site.'],
+
+    'UNSUPPORTED_PYTHON': [
+        'You are probably using Blender with unsupported ',
+        'version of Python built in. Please install an official ',
+        'version of Blender.'],
+
+    'PYKEENTOOLS_CONFLICT': [
+        'There is conflict with keentools core library namespace.',
+        'You have to restart Blender before continue installation.'],
+
+    'NOT_INSTALLED': [
+        'Installation error: ',
+        'Core library is not installed'],
+
+    'CANNOT_IMPORT': [
+        'Installation error: ',
+        'The installed core is corrupted. ',
+        'Please remove the addon, install it again, ',
+        'and then install the proper core library '
+        'package again'],
+
+    'NO_VERSION': [
+        'Installation error: ',
+        'The installed core is corrupted. ',
+        'Please remove the addon, install it again, ',
+        'and then install the proper core library '
+        'package again.'],
+
+    'VERSION_PROBLEM': [
+        'Installation error: ',
+        'The installed core library is outdated. '
+        'You can experience issues. ',
+        'We recommend you to update the addon '
+        'and the core library.'],
+
+    'OK': ['The core library have been installed successfully'],
+
+    'UNKNOWN': ['Unknown error']
+}
+
+
 def _multi_line_text_to_output_labels(layout, txt):
     if txt is None:
         return
@@ -37,6 +93,10 @@ def _multi_line_text_to_output_labels(layout, txt):
     col.scale_y = Config.text_scale_y
     for text_line in non_empty_lines:
         col.label(text=text_line)
+
+
+def _split_long_string(txt, length=80):
+    return [txt[i:i + length] for i in range(0, len(txt), length)]
 
 
 class FBAddonPreferences(bpy.types.AddonPreferences):
@@ -208,11 +268,8 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         op.url = Config.core_download_website_url
 
     def _draw_please_accept_license(self, layout):
-        content = ['We cannot ship our core library with our addon '
-                   'due to Blender ',
-                   'license limitations, so you need to install it yourself.']
         box = layout.box()
-        self._draw_warning_labels(box, content)
+        self._draw_warning_labels(box, _ERROR_MESSAGES['WE_CANNOT_SHIP'])
 
         box2 = box.box()
         row = box2.split(factor=0.85)
@@ -224,6 +281,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         )
 
         self._draw_download_install_buttons(box)
+        return box
 
     def _draw_accepted_license(self, layout):
         box = layout.box()
@@ -232,6 +290,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         row.operator(
             preferences_operators.PREF_OT_OpenPktLicensePage.bl_idname,
             text='Read', icon='URL')
+        return box
 
     def _draw_download_progress(self, layout):
         col = layout.column()
@@ -243,70 +302,46 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         if download_state['status'] is not None:
             col.label(text="{}".format(download_state['status']))
 
+    def _draw_pkt_detail_report(self, layout):
+        state, status = pkt.installation_status()
+
+        status = status if status in _ERROR_MESSAGES.keys() else 'UNKNOWN'
+        self._draw_warning_labels(
+            layout, _ERROR_MESSAGES[status], alert=True, icon='ERROR')
+
+        if status in ('CANNOT_IMPORT', 'NO_VERSION', 'VERSION_PROBLEM'):
+            # Core Uninstall button
+            layout.operator(Config.fb_uninstall_core_idname)
+
     def _draw_version(self, layout):
         box = layout.box()
-        messages = {
-            'NOT_INSTALLED': ['Installation error: ',
-                              'Core library is not installed'],
-            'CANNOT_IMPORT': ['Installation error: ',
-                              'The installed core is corrupted. ',
-                              'Please remove the addon, install it again, ',
-                              'and then install the proper core library '
-                              'package again. [CANNOT_IMPORT]'],
-            'NO_VERSION': ['Installation error: ',
-                           'The installed core is corrupted. ',
-                           'Please remove the addon, install it again, ',
-                           'and then install the proper core library '
-                           'package again. [NO_VERSION]'],
-            'VERSION_PROBLEM': ['Installation error: ',
-                                'The installed core library is outdated. '
-                                'You can experience issues. ',
-                                'We recommend you to update the addon '
-                                'and the core library.'],
-            'OK':['The core library have been installed successfully'],
-            'UNKNOWN':['Unknown error']
-        }
-
         try:
             arr = ["Version {}, built {}".format(pkt.module().__version__,
                                                  pkt.module().build_time),
                    'The core library have been installed successfully']
             self._draw_warning_labels(box, arr, alert=False, icon='INFO')
-            return
+            return box
         except Exception:
             pass
 
-        # Error report
-        state, status = pkt.installation_status()
-
-        status = status if status in messages.keys() else 'UNKNOWN'
-        self._draw_warning_labels(
-            box, messages[status], alert=True, icon='ERROR')
-
-        if status in ('CANNOT_IMPORT', 'NO_VERSION', 'VERSION_PROBLEM'):
-            box.operator(Config.fb_uninstall_core_idname)
+        self._draw_pkt_detail_report(box)
+        self._draw_system_info(layout)
+        return box
 
     def _draw_old_addon(self, layout):
-        content = ['You have most likely installed an outdated ',
-                   'version of FaceBuilder. Please download the latest one ',
-                   'from our web site: https://keentools.io ']
         box = layout.box()
-        self._draw_warning_labels(box, content)
+        self._draw_warning_labels(box, _ERROR_MESSAGES['OLD_ADDON'])
+        return box
 
     def _draw_wrong_blender(self, layout):
-        content = ['You are probably using Blender with unsupported ',
-                   'version of Python built in. Please install an official ',
-                   'version of Blender.']
         box = layout.box()
-        self._draw_warning_labels(box, content)
+        self._draw_warning_labels(box, _ERROR_MESSAGES['UNSUPPORTED_PYTHON'])
+        return box
 
     def _draw_blender_too_old(self, layout):
-        content = ['You are using an outdated version of Blender '
-                   'which we can\'t support. ',
-                   'Please install the latest official version '
-                   'of Blender downloaded from their site.']
         box = layout.box()
-        self._draw_warning_labels(box, content)
+        self._draw_warning_labels(box, _ERROR_MESSAGES['OLD_BLENDER'])
+        return box
 
     def _draw_unsupported_python(self, layout):
         if is_blender_supported():
@@ -319,28 +354,31 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                 text='Download', icon='URL')
             op.url = Config.core_download_website_url
 
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-        col.label(
-            text="Your Blender version: {}".format(bpy.app.version_string))
-        col.label(text="Python: {}".format(sys.version))
-
-    def _split_long_string(self, txt, length=80):
-        return [txt[i:i + length] for i in range(0, len(txt), length)]
-
     def _draw_problem_library(self, layout):
         col = layout.column()
         col.scale_y = Config.text_scale_y
         if 'pykeentools' in sys.modules:
-            arr = self._split_long_string(str(sys.modules['pykeentools']))
+            arr = _split_long_string(str(sys.modules['pykeentools']))
             for t in arr:
                 col.label(text=t)
+        return col
 
     def _draw_please_restart(self, layout):
-        content = ['There is conflict with keentools core library namespace.',
-                   'You have to restart Blender before continue installation.']
         box = layout.box()
-        self._draw_warning_labels(box, content)
+        self._draw_warning_labels(box, _ERROR_MESSAGES['PYKEENTOOLS_CONFLICT'])
+        return box
+
+    def _draw_system_info(self, layout):
+        box = layout.box()
+        col = box.column()
+        col.scale_y = Config.text_scale_y
+        col.label(
+            text="Blender version: {} API: {}.{}.{}".format(
+                bpy.app.version_string, *bpy.app.version))
+        col.label(text="Python: {}".format(sys.version))
+        import platform
+        arch = platform.architecture()
+        col.label(text="Platform: {} / {}".format(arch[1], arch[0]))
         return box
 
     def draw(self, context):
@@ -348,10 +386,12 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
         if is_blender_too_old():
             self._draw_blender_too_old(layout)
+            self._draw_system_info(layout)
             return
 
         if not pkt.is_python_supported():
             self._draw_unsupported_python(layout)
+            self._draw_system_info(layout)
             return
 
         if pkt.is_installed():
@@ -361,6 +401,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             if pkt.loaded():
                 box = self._draw_please_restart(layout)
                 self._draw_problem_library(box)
+                self._draw_system_info(layout)
                 return
 
             self._draw_please_accept_license(layout)
