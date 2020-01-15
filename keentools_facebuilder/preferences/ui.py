@@ -26,59 +26,75 @@ from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
 
 
-_ERROR_MESSAGES = {
+_USER_MESSAGES = {
     'WE_CANNOT_SHIP': [
         'We cannot ship our core library with our addon due to Blender ',
         'license limitations, so you need to install it yourself.'],
 
-    'OLD_ADDON': [
-        'You have most likely installed an outdated ',
-        'version of FaceBuilder. Please download the latest one ',
-        'from our web site: https://keentools.io '],
+    'RESTART_BLENDER_TO_UNLOAD_CORE': [
+        'Before installing the new Core version you need to relaunch Blender.']
+}
+
+_ERROR_MESSAGES = {
+    'OS_32_BIT': [
+        'Error (1010): you have a 32-bit OS. '
+        'To use our add-on you need a 64-bit OS. '
+    ],
+
+    'BLENDER_32_BIT': [
+        'Error (1020): you are using a 32-bit version of Blender. ',
+        'To use our add-on you need a 64-bit version of Blender. '],
 
     'OLD_BLENDER': [
-        'You are using an outdated version of Blender '
-        'which we can\'t support. ',
+        'Error (1030): you are using an outdated version of Blender '
+        'which we don\'t support. ',
         'Please install the latest official version '
-        'of Blender downloaded from their site.'],
+        'of Blender downloaded from their site. '],
 
     'UNSUPPORTED_PYTHON': [
-        'You are probably using Blender with unsupported ',
+        'Error (1040): you are probably using Blender with an unsupported ',
         'version of Python built in. Please install an official ',
-        'version of Blender.'],
+        'version of Blender. '],
+
+    'OLD_ADDON': [
+        'Error (1050): you have most likely installed an outdated ',
+        'version of FaceBuilder add-on. Please download the latest one ',
+        'from our web site: https://keentools.io '],
 
     'PYKEENTOOLS_CONFLICT': [
-        'There is conflict with keentools core library namespace.',
-        'You have to restart Blender before continue installation.'],
+        'Error (1060): Core library cannot be loaded due to '
+        'a name conflict.',
+        'Unfortunately you need to remove the conflicting file manually,'
+        'and also relaunch Blender. ',
+        'The conflicting file is being loaded from the following path:'],
 
     'NOT_INSTALLED': [
-        'Installation error: ',
-        'Core library is not installed'],
+        'Error (1070): Core library is not installed.'],
 
     'CANNOT_IMPORT': [
-        'Installation error: ',
-        'The installed core is corrupted. ',
-        'Please remove the addon, install it again, ',
-        'and then install the proper core library '
-        'package again'],
+        'Error (1080): the installed Core is corrupted. ',
+        'You can try to uninstall it using the button bellow, ',
+        'and then download and install the Core again.'],
 
     'NO_VERSION': [
-        'Installation error: ',
-        'The installed core is corrupted. ',
-        'Please remove the addon, install it again, ',
-        'and then install the proper core library '
-        'package again.'],
+        'Error (1090): the loaded Core library seems to be corrupted.',
+        'You can try to uninstall it using the button bellow, ',
+        'and then download and install the Core again.'],
 
     'VERSION_PROBLEM': [
-        'Installation error: ',
-        'The installed core library is outdated. '
+        'Error (1100): the installed Core library is outdated. '
         'You can experience issues. ',
-        'We recommend you to update the addon '
-        'and the core library.'],
+        'We recommend you to update the addon and the Core library.'],
 
-    'OK': ['The core library have been installed successfully'],
+    'PYKEENTOOLS_FILE_NOT_FOUND': [
+        'Error (1110): the installed file seems not to be a Core library.',
+        'It might also be a damaged archive file. ',
+        'Please remove it using the button below, relaunch Blender, ',
+        'download a new Core library package from our site and install it.'],
 
-    'UNKNOWN': ['Unknown error']
+    'PYKEENTOOLS_OK': ['The core library has been installed successfully'],
+
+    'UNKNOWN': ['Unknown error (0000)']
 }
 
 
@@ -269,7 +285,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
     def _draw_please_accept_license(self, layout):
         box = layout.box()
-        self._draw_warning_labels(box, _ERROR_MESSAGES['WE_CANNOT_SHIP'])
+        self._draw_warning_labels(box, _USER_MESSAGES['WE_CANNOT_SHIP'])
 
         box2 = box.box()
         row = box2.split(factor=0.85)
@@ -365,7 +381,8 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
     def _draw_please_restart(self, layout):
         box = layout.box()
-        self._draw_warning_labels(box, _ERROR_MESSAGES['PYKEENTOOLS_CONFLICT'])
+        self._draw_warning_labels(
+            box, _USER_MESSAGES['RESTART_BLENDER_TO_UNLOAD_CORE'])
         return box
 
     def _draw_system_info(self, layout):
@@ -400,8 +417,8 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         else:
             if pkt.loaded():
                 box = self._draw_please_restart(layout)
-                self._draw_problem_library(box)
-                self._draw_system_info(layout)
+                # self._draw_problem_library(box)
+                # self._draw_system_info(layout)
                 return
 
             self._draw_please_accept_license(layout)

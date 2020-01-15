@@ -60,7 +60,7 @@ def installation_status():
     if ver < MINIMUM_VERSION_REQUIRED:
         return (True, 'VERSION_PROBLEM')
 
-    return (True, 'OK')
+    return (True, 'PYKEENTOOLS_OK')
 
 
 def _is_installed_not_locked():
