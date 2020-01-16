@@ -67,6 +67,22 @@ if not check_libraries():
             for i, c in enumerate(content):
                 col.label(icon='ERROR' if i == 0 else 'BLANK1', text=c)
 
+            box = layout.box()
+            col = box.column()
+            col.scale_y = Config.text_scale_y
+            col.label(text='NumPy paths:')
+            try:
+                import importlib
+                sp = importlib.util.find_spec('numpy')
+                if sp is not None:
+                    col.label(text=sp.origin)
+                    for loc in sp.submodule_search_locations:
+                        col.label(text=loc)
+                else:
+                    col.label(icon='ERROR', text='Cannot detect numpy paths.')
+            except Exception as err:
+                col.label(icon='ERROR', text='importlib problems.')
+
             import sys, platform
             box = layout.box()
             col = box.column()
