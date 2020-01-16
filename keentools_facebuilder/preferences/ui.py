@@ -41,8 +41,8 @@ _USER_MESSAGES = {
 
 _ERROR_MESSAGES = {
     'OS_32_BIT': [
-        'Error (1010): you have a 32-bit OS. '
-        'To use our add-on you need a 64-bit OS. '
+        'Error (1010): you have a 32-bit OS or Blender. ',
+        'To use our add-on you need a 64-bit OS and Blender. '
     ],
 
     'BLENDER_32_BIT': [
@@ -342,7 +342,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         error = error if error in _ERROR_MESSAGES.keys() else 'UNKNOWN'
 
         self._draw_warning_labels(
-            layout, _ERROR_MESSAGES[status], alert=True, icon='ERROR')
+            layout, _ERROR_MESSAGES[error], alert=True, icon='ERROR')
 
         if status in ('CANNOT_IMPORT', 'NO_VERSION', 'VERSION_PROBLEM'):
             # Core Uninstall button
