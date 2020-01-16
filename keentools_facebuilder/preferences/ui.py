@@ -21,91 +21,11 @@ import sys, platform
 import bpy
 import keentools_facebuilder.preferences.operators as preferences_operators
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
-from ..config import (Config, is_blender_supported, is_blender_too_old)
+from ..config import (Config, is_blender_supported)
 from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
-
-
-_USER_MESSAGES = {
-    'WE_CANNOT_SHIP': [
-        'We cannot ship our core library with our addon due to Blender ',
-        'license limitations, so you need to install it yourself.'],
-
-    'RESTART_BLENDER_TO_UNLOAD_CORE': [
-        'Before installing the new Core version you need '
-        'to relaunch Blender.'],
-
-    'PYKEENTOOLS_OK': ['The core library has been installed successfully']
-}
-
-
-_ERROR_MESSAGES = {
-    'OS_32_BIT': [
-        'Error (1010): you have a 32-bit OS or Blender. ',
-        'To use our add-on you need a 64-bit OS and Blender. '
-    ],
-
-    'BLENDER_32_BIT': [
-        'Error (1020): you are using a 32-bit version of Blender. ',
-        'To use our add-on you need a 64-bit version of Blender. '],
-
-    'OLD_BLENDER': [
-        'Error (1030): you are using an outdated version of Blender '
-        'which we don\'t support. ',
-        'Please install the latest official version '
-        'of Blender downloaded from their site. '],
-
-    'UNSUPPORTED_PYTHON': [
-        'Error (1040): you are probably using Blender with an unsupported ',
-        'version of Python built in. Please install an official ',
-        'version of Blender. '],
-
-    'OLD_ADDON': [
-        'Error (1050): you have most likely installed an outdated ',
-        'version of FaceBuilder add-on. Please download the latest one ',
-        'from our web site: https://keentools.io '],
-
-    'PYKEENTOOLS_CONFLICT': [
-        'Error (1060): Core library cannot be loaded due to '
-        'a name conflict.',
-        'Unfortunately you need to remove the conflicting file manually,'
-        'and also relaunch Blender. ',
-        'The conflicting file is being loaded from the following path:'],
-
-    'CORE_NOT_INSTALLED': [
-        'Error (1070): Core library is not installed.'],
-
-    'INSTALLED_WRONG_INSTEAD_CORE': [
-        'Error (1080): you\'ve tried to install either a corrupted archive, ',
-        'or something that is not a KeenTools Core library package. ',
-        'Please, remove it using the button below, then come to our site ',
-        'and download a proper KeenTools Core package and try '
-        'to install it again.'],
-
-    'CORE_CANNOT_IMPORT': [
-        'Error (1090): the installed Core is corrupted. ',
-        'You can try to uninstall it using the button bellow, ',
-        'and then download and install the Core again.'],
-
-    'CORE_HAS_NO_VERSION': [
-        'Error (1100): the loaded Core library seems to be corrupted.',
-        'You can try to uninstall it using the button bellow, ',
-        'and then download and install the Core again.'],
-
-    'CORE_VERSION_PROBLEM': [
-        'Error (1110): the installed Core library is outdated. '
-        'You can experience issues. ',
-        'We recommend you to update the addon and the Core library.'],
-
-    'PYKEENTOOLS_FILE_NOT_FOUND': [
-        'Error (1120): the installed file seems not to be a Core library.',
-        'It might also be a damaged archive file. ',
-        'Please remove it using the button below, relaunch Blender, ',
-        'download a new Core library package from our site and install it.'],
-
-    'UNKNOWN': ['Unknown error (0000)']
-}
-
+from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
+                        draw_warning_labels, draw_long_label)
 
 def _multi_line_text_to_output_labels(layout, txt):
     if txt is None:
@@ -118,10 +38,6 @@ def _multi_line_text_to_output_labels(layout, txt):
     col.scale_y = Config.text_scale_y
     for text_line in non_empty_lines:
         col.label(text=text_line)
-
-
-def _split_long_string(txt, length=80):
-    return [txt[i:i + length] for i in range(0, len(txt), length)]
 
 
 class FBAddonPreferences(bpy.types.AddonPreferences):
@@ -294,7 +210,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
     def _draw_please_accept_license(self, layout):
         box = layout.box()
-        self._draw_warning_labels(box, _USER_MESSAGES['WE_CANNOT_SHIP'])
+        self._draw_warning_labels(box, USER_MESSAGES['WE_CANNOT_SHIP'])
 
         box2 = box.box()
         row = box2.split(factor=0.85)
@@ -330,8 +246,8 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     def _draw_pkt_detail_error_report(self, layout):
         state, status = pkt.installation_status()
         if status == 'PYKEENTOOLS_OK':
-            self._draw_warning_labels(
-                layout, _USER_MESSAGES['PYKEENTOOLS_OK'],
+            draw_warning_labels(
+                layout, USER_MESSAGES['PYKEENTOOLS_OK'],
                 alert=False, icon='INFO')
             return
 
@@ -347,10 +263,10 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         error = status_to_errors[status] if \
             status in status_to_errors.keys() else 'UNKNOWN'
 
-        error = error if error in _ERROR_MESSAGES.keys() else 'UNKNOWN'
+        error = error if error in ERROR_MESSAGES.keys() else 'UNKNOWN'
 
-        self._draw_warning_labels(
-            layout, _ERROR_MESSAGES[error], alert=True, icon='ERROR')
+        draw_warning_labels(
+            layout, ERROR_MESSAGES[error], alert=True, icon='ERROR')
 
         if status in ('INSTALLED_WRONG', 'CANNOT_IMPORT',
                       'NO_VERSION', 'VERSION_PROBLEM'):
@@ -363,38 +279,23 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             arr = ["Version {}, built {}".format(pkt.module().__version__,
                                                  pkt.module().build_time),
                    'The core library have been installed successfully']
-            self._draw_warning_labels(box, arr, alert=False, icon='INFO')
+            draw_warning_labels(box, arr, alert=False, icon='INFO')
             return box
         except Exception:
             pass
 
         self._draw_pkt_detail_error_report(box)
-        self._draw_system_info(layout)
+        draw_system_info(layout)
         return box
 
     def _draw_old_addon(self, layout):
         box = layout.box()
-        self._draw_warning_labels(box, _ERROR_MESSAGES['OLD_ADDON'])
+        draw_warning_labels(box, ERROR_MESSAGES['OLD_ADDON'])
         return box
 
     def _draw_wrong_blender(self, layout):
         box = layout.box()
-        self._draw_warning_labels(box, _ERROR_MESSAGES['UNSUPPORTED_PYTHON'])
-        return box
-
-    def _draw_blender_too_old(self, layout):
-        box = layout.box()
-        self._draw_warning_labels(box, _ERROR_MESSAGES['OLD_BLENDER'])
-        return box
-
-    def _draw_system_32bit(self, layout):
-        box = layout.box()
-        self._draw_warning_labels(box, _ERROR_MESSAGES['OS_32_BIT'])
-        return box
-
-    def _draw_blender_32bit(self, layout):
-        box = layout.box()
-        self._draw_warning_labels(box, _ERROR_MESSAGES['BLENDER_32_BIT'])
+        draw_warning_labels(box, ERROR_MESSAGES['UNSUPPORTED_PYTHON'])
         return box
 
     def _draw_unsupported_python(self, layout):
@@ -409,59 +310,21 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             op.url = Config.core_download_website_url
 
     def _draw_problem_library(self, layout):
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
         if 'pykeentools' in sys.modules:
-            arr = _split_long_string(str(sys.modules['pykeentools']))
-            for t in arr:
-                col.label(text=t)
-        return col
+            draw_long_label(layout, str(sys.modules['pykeentools']))
 
     def _draw_please_restart(self, layout):
         box = layout.box()
-        self._draw_warning_labels(
-            box, _USER_MESSAGES['RESTART_BLENDER_TO_UNLOAD_CORE'])
-        return box
-
-    def is_platform_64bit(self):
-        return platform.architecture()[0] == '64bit'
-
-    def is_python_64bit(self):
-        return sys.maxsize > 4294967296  # 2**32
-
-    def _draw_system_info(self, layout):
-        box = layout.box()
-        col = box.column()
-        col.scale_y = Config.text_scale_y
-        col.label(
-            text="Blender version: {} API: {}.{}.{}".format(
-                bpy.app.version_string, *bpy.app.version))
-        col.label(text="Python: {}".format(sys.version))
-        arch = platform.architecture()
-        col.label(text="Platform: {} / {}".format(arch[1], arch[0]))
+        draw_warning_labels(
+            box, USER_MESSAGES['RESTART_BLENDER_TO_UNLOAD_CORE'])
         return box
 
     def draw(self, context):
         layout = self.layout
 
-        if not self.is_platform_64bit():
-            self._draw_system_32bit(layout)
-            self._draw_system_info(layout)
-            return
-
-        if not self.is_python_64bit():
-            self._draw_blender_32bit(layout)
-            self._draw_system_info(layout)
-            return
-
-        if is_blender_too_old():
-            self._draw_blender_too_old(layout)
-            self._draw_system_info(layout)
-            return
-
         if not pkt.is_python_supported():
             self._draw_unsupported_python(layout)
-            self._draw_system_info(layout)
+            draw_system_info(layout)
             return
 
         if pkt.is_installed():
@@ -470,8 +333,8 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         else:
             if pkt.loaded():
                 box = self._draw_please_restart(layout)
-                # self._draw_problem_library(box)
-                # self._draw_system_info(layout)
+                self._draw_problem_library(box)
+                draw_system_info(layout)
                 return
 
             self._draw_please_accept_license(layout)

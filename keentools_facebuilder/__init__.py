@@ -31,12 +31,24 @@ bl_info = {
 }
 
 
-import os
+import os, sys
 import logging.config
 
 import bpy
 
-from .config import Config
+from .config import Config, is_blender_too_old
+from .messages import (ERROR_MESSAGES, draw_warning_labels, draw_system_info,
+                       draw_long_label, draw_long_labels)
+
+
+def is_platform_64bit():
+    import platform
+    return platform.architecture()[0] == '64bit'
+
+
+def is_python_64bit():
+    return sys.maxsize > 4294967296  # 2**32
+
 
 def check_libraries():
     try:
@@ -45,27 +57,76 @@ def check_libraries():
     except Exception:
         return False
 
-if not check_libraries():
-    class FBWrongLibImportPreferences(bpy.types.AddonPreferences):
+
+if not is_platform_64bit():
+    class FBPlatform32bitPreferences(bpy.types.AddonPreferences):
         bl_idname = Config.addon_name
 
         def draw(self, context):
             layout = self.layout
             box = layout.box()
-            col = box.column()
-            col.scale_y = Config.text_scale_y
-            col.alert = True
+            draw_warning_labels(box, ERROR_MESSAGES['OS_32_BIT'],
+                                alert=True, icon='ERROR')
 
-            content = [
-                'We have detected a critical issue with NumPy Python library: ',
-                'it\'s either not available or incompatible. ',
-                'It can happen when Blender is not using its built-in Python libraries, ',
-                'for some reason relying on the Python libraries installed in your OS. ',
-                'Please try reinstalling Blender using a package from ',
-                'the official Blender website: blender.org']
+            draw_system_info(layout)
 
-            for i, c in enumerate(content):
-                col.label(icon='ERROR' if i == 0 else 'BLANK1', text=c)
+
+    def register():
+        bpy.utils.register_class(FBPlatform32bitPreferences)
+
+
+    def unregister():
+        bpy.utils.unregister_class(FBPlatform32bitPreferences)
+
+elif not is_python_64bit():
+    class FBPython32bitPreferences(bpy.types.AddonPreferences):
+        bl_idname = Config.addon_name
+
+        def draw(self, context):
+            layout = self.layout
+            box = layout.box()
+            draw_warning_labels(box, ERROR_MESSAGES['BLENDER_32_BIT'],
+                                alert=True, icon='ERROR')
+
+            draw_system_info(layout)
+
+
+    def register():
+        bpy.utils.register_class(FBPython32bitPreferences)
+
+
+    def unregister():
+        bpy.utils.unregister_class(FBPython32bitPreferences)
+
+elif is_blender_too_old():
+    class FBOldBlenderPreferences(bpy.types.AddonPreferences):
+        bl_idname = Config.addon_name
+
+        def draw(self, context):
+            layout = self.layout
+            box = layout.box()
+            draw_warning_labels(box, ERROR_MESSAGES['BLENDER_TOO_OLD'],
+                                alert=True, icon='ERROR')
+
+            draw_system_info(layout)
+
+
+    def register():
+        bpy.utils.register_class(FBOldBlenderPreferences)
+
+
+    def unregister():
+        bpy.utils.unregister_class(FBOldBlenderPreferences)
+
+elif not check_libraries():
+    class FBWrongNumpyPreferences(bpy.types.AddonPreferences):
+        bl_idname = Config.addon_name
+
+        def draw(self, context):
+            layout = self.layout
+            box = layout.box()
+            draw_warning_labels(box, ERROR_MESSAGES['NUMPY_PROBLEM'],
+                                alert=True, icon='ERROR')
 
             box = layout.box()
             col = box.column()
@@ -75,32 +136,22 @@ if not check_libraries():
                 import importlib
                 sp = importlib.util.find_spec('numpy')
                 if sp is not None:
-                    col.label(text=sp.origin)
-                    for loc in sp.submodule_search_locations:
-                        col.label(text=loc)
+                    draw_long_label(col, sp.origin, 120)
+                    draw_long_labels(col, sp.submodule_search_locations, 120)
                 else:
                     col.label(icon='ERROR', text='Cannot detect numpy paths.')
-            except Exception as err:
+            except Exception:
                 col.label(icon='ERROR', text='importlib problems.')
 
-            import sys, platform
-            box = layout.box()
-            col = box.column()
-            col.scale_y = Config.text_scale_y
-            col.label(
-                text="Blender version: {} API: {}.{}.{}".format(
-                    bpy.app.version_string, *bpy.app.version))
-            col.label(text="Python: {}".format(sys.version))
-            arch = platform.architecture()
-            col.label(text="Platform: {} / {}".format(arch[1], arch[0]))
+            draw_system_info(layout)
 
 
     def register():
-        bpy.utils.register_class(FBWrongLibImportPreferences)
+        bpy.utils.register_class(FBWrongNumpyPreferences)
 
 
     def unregister():
-        bpy.utils.unregister_class(FBWrongLibImportPreferences)
+        bpy.utils.unregister_class(FBWrongNumpyPreferences)
 
 else:
     from .preferences import CLASSES_TO_REGISTER as PREFERENCES_CLASSES

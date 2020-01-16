@@ -40,7 +40,7 @@ def pkt_installation_dir():
     return os.path.abspath(installation_dir)
 
 
-MINIMUM_VERSION_REQUIRED = (1, 5, 7)  # '1.5.7'
+MINIMUM_VERSION_REQUIRED = (1, 5, 7)
 SUPPORTED_PYTHON_VERSIONS = ((3, 7),)
 
 
