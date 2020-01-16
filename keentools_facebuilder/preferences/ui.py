@@ -75,23 +75,30 @@ _ERROR_MESSAGES = {
     'CORE_NOT_INSTALLED': [
         'Error (1070): Core library is not installed.'],
 
+    'INSTALLED_WRONG_INSTEAD_CORE': [
+        'Error (1080): you\'ve tried to install either a corrupted archive, ',
+        'or something that is not a KeenTools Core library package. ',
+        'Please, remove it using the button below, then come to our site ',
+        'and download a proper KeenTools Core package and try '
+        'to install it again.'],
+
     'CORE_CANNOT_IMPORT': [
-        'Error (1080): the installed Core is corrupted. ',
+        'Error (1090): the installed Core is corrupted. ',
         'You can try to uninstall it using the button bellow, ',
         'and then download and install the Core again.'],
 
     'CORE_HAS_NO_VERSION': [
-        'Error (1090): the loaded Core library seems to be corrupted.',
+        'Error (1100): the loaded Core library seems to be corrupted.',
         'You can try to uninstall it using the button bellow, ',
         'and then download and install the Core again.'],
 
     'CORE_VERSION_PROBLEM': [
-        'Error (1100): the installed Core library is outdated. '
+        'Error (1110): the installed Core library is outdated. '
         'You can experience issues. ',
         'We recommend you to update the addon and the Core library.'],
 
     'PYKEENTOOLS_FILE_NOT_FOUND': [
-        'Error (1110): the installed file seems not to be a Core library.',
+        'Error (1120): the installed file seems not to be a Core library.',
         'It might also be a damaged archive file. ',
         'Please remove it using the button below, relaunch Blender, ',
         'download a new Core library package from our site and install it.'],
@@ -330,6 +337,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
         status_to_errors = {
             'NOT_INSTALLED': 'CORE_NOT_INSTALLED',
+            'INSTALLED_WRONG': 'INSTALLED_WRONG_INSTEAD_CORE',
             'CANNOT_IMPORT': 'CORE_CANNOT_IMPORT',
             'NO_VERSION': 'CORE_HAS_NO_VERSION',
             'VERSION_PROBLEM': 'CORE_VERSION_PROBLEM',
@@ -344,7 +352,8 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         self._draw_warning_labels(
             layout, _ERROR_MESSAGES[error], alert=True, icon='ERROR')
 
-        if status in ('CANNOT_IMPORT', 'NO_VERSION', 'VERSION_PROBLEM'):
+        if status in ('INSTALLED_WRONG', 'CANNOT_IMPORT',
+                      'NO_VERSION', 'VERSION_PROBLEM'):
             # Core Uninstall button
             layout.operator(Config.fb_uninstall_core_idname)
 

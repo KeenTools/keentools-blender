@@ -50,6 +50,9 @@ def installation_status():
     if not is_installed():
         return (False, 'NOT_INSTALLED')
 
+    if not _installation_path_exists():
+        return (False, 'INSTALLED_WRONG')
+
     if not _import_pykeentools():
         return (False, 'CANNOT_IMPORT')
 
@@ -65,6 +68,14 @@ def installation_status():
 
 def _is_installed_not_locked():
     return os.path.exists(pkt_installation_dir())
+
+
+def _installation_path_exists():
+    _unpack_mutex.acquire()
+    try:
+        return os.path.exists(os.path.join(pkt_installation_dir(), RELATIVE_LIB_DIRECTORY))
+    finally:
+        _unpack_mutex.release()
 
 
 def is_installed():

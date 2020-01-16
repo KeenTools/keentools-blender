@@ -46,24 +46,45 @@ def check_libraries():
         return False
 
 if not check_libraries():
-    class FBAddonPreferences(bpy.types.AddonPreferences):
+    class FBWrongLibImportPreferences(bpy.types.AddonPreferences):
         bl_idname = Config.addon_name
 
         def draw(self, context):
             layout = self.layout
             box = layout.box()
-            box.label(icon='ERROR',
-                      text='You have problem with your numpy installation.')
+            col = box.column()
+            col.scale_y = Config.text_scale_y
+            col.alert = True
+
+            content = [
+                'We have detected a critical issue with NumPy Python library: ',
+                'it\'s either not available or incompatible. ',
+                'It can happen when Blender is not using its built-in Python libraries, ',
+                'for some reason relying on the Python libraries installed in your OS. ',
+                'Please try reinstalling Blender using a package from ',
+                'the official Blender website: blender.org']
+
+            for i, c in enumerate(content):
+                col.label(icon='ERROR' if i == 0 else 'BLANK1', text=c)
+
+            import sys, platform
+            box = layout.box()
+            col = box.column()
+            col.scale_y = Config.text_scale_y
+            col.label(
+                text="Blender version: {} API: {}.{}.{}".format(
+                    bpy.app.version_string, *bpy.app.version))
+            col.label(text="Python: {}".format(sys.version))
+            arch = platform.architecture()
+            col.label(text="Platform: {} / {}".format(arch[1], arch[0]))
 
 
     def register():
-        bpy.utils.register_class(FBAddonPreferences)
+        bpy.utils.register_class(FBWrongLibImportPreferences)
+
 
     def unregister():
-        bpy.utils.register_class(FBAddonPreferences)
-
-    if __name__ == "__main__":
-        register()
+        bpy.utils.unregister_class(FBWrongLibImportPreferences)
 
 else:
     from .preferences import CLASSES_TO_REGISTER as PREFERENCES_CLASSES
@@ -127,5 +148,6 @@ else:
 
         FBIcons.unregister()
 
-    if __name__ == "__main__":
-        register()
+
+if __name__ == "__main__":
+    register()
