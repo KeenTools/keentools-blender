@@ -30,7 +30,7 @@ SHADOW_COPIES_DIRECTORY = os.path.join(tempfile.gettempdir(),
                                        'pykeentools_shadow_copies')
 
 
-RELATIVE_LIB_DIRECTORY = os.path.join('pykeentools', 'pykeentools')
+RELATIVE_LIB_DIRECTORY = os.path.join('pykeentools_installation', 'pykeentools')
 
 
 def pkt_installation_dir():
