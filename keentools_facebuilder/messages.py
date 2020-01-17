@@ -94,19 +94,6 @@ ERROR_MESSAGES = {
         'You can experience issues. ',
         'We recommend you to update the addon and the Core library.'],
 
-    'PYKEENTOOLS_CONFLICT': [  # not used
-        'Error (): Core library cannot be loaded due to '
-        'a name conflict.',
-        'Unfortunately you need to remove the conflicting file manually,'
-        'and also relaunch Blender. ',
-        'The conflicting file is being loaded from the following path:'],
-
-    'PYKEENTOOLS_FILE_NOT_FOUND': [  # not used
-        'Error (): the installed file seems not to be a Core library.',
-        'It might also be a damaged archive file. ',
-        'Please remove it using the button below, relaunch Blender, ',
-        'download a new Core library package from our site and install it.'],
-
     'UNKNOWN': ['Unknown error (0000)']
 }
 
