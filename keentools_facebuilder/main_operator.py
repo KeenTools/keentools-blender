@@ -845,6 +845,18 @@ class FB_OT_OpenURL(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class FB_OT_UninstallCore(bpy.types.Operator):
+    bl_idname = Config.fb_uninstall_core_idname
+    bl_label = 'Uninstall Core'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Uninstall Core Library'
+
+    def execute(self, context):
+        import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+        pkt.uninstall()
+        return {'FINISHED'}
+
+
 CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_DeleteHead,
                        FB_OT_SelectCamera,
@@ -870,6 +882,7 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ShowSolid,
                        FB_OT_ExitPinmode,
                        FB_OT_OpenURL,
+                       FB_OT_UninstallCore,
                        FB_OT_SetSensorWidth,
                        FB_OT_SensorSizeWindow,
                        FB_OT_FocalLengthMenuExec)

@@ -33,7 +33,7 @@ class BuilderType:
 class Config:
     # Version dependent
     addon_version = '1.5.7 (Beta)'
-    supported_blender_versions = ((2, 80), (2, 81), (2, 82))
+    supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83))
     minimal_blender_api = (2, 80, 60)
 
     # Version independent
@@ -246,6 +246,9 @@ class Config:
     fb_skip_version_callname = 'skip_version'
     fb_skip_version_idname = operators + '.' + fb_skip_version_callname
 
+    fb_uninstall_core_callname = 'uninstall_core'
+    fb_uninstall_core_idname = operators + '.' + fb_uninstall_core_callname
+
     # Menu ids
     fb_fix_frame_size_menu_idname = _MT + 'fix_frame_size_menu'
 
@@ -335,10 +338,6 @@ def is_blender_supported():
         if ver[:len(supported_ver)] == supported_ver:
             return True
     return False
-
-
-def is_blender_too_old():
-    return bpy.app.version < Config.minimal_blender_api
 
 
 def get_main_settings():
