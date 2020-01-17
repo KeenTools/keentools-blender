@@ -340,10 +340,6 @@ def is_blender_supported():
     return False
 
 
-def is_blender_too_old():
-    return bpy.app.version < Config.minimal_blender_api
-
-
 def get_main_settings():
     return getattr(bpy.context.scene, Config.addon_global_var_name)
 
