@@ -103,7 +103,9 @@ def split_long_string(txt, length=80):
 
 
 def draw_system_info(layout):
-    import sys, platform, bpy
+    import sys
+    import platform
+    import bpy
     box = layout.box()
     col = box.column()
     col.scale_y = Config.text_scale_y

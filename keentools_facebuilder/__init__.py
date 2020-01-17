@@ -48,7 +48,7 @@ def _is_platform_64bit():
 
 
 def _is_python_64bit():
-    return sys.maxsize > 4294967296  # 2**32 = 4294967296
+    return sys.maxsize > 4294967296  # 2**32
 
 
 def _is_blender_too_old():
@@ -106,7 +106,8 @@ if not _can_load():
                     import importlib
                     sp = importlib.util.find_spec('numpy')
                     if sp is not None:
-                        draw_long_label(col, sp.origin, 120)
+                        if sp.origin:
+                            draw_long_label(col, sp.origin, 120)
                         draw_long_labels(col, sp.submodule_search_locations,
                                          120)
                     else:

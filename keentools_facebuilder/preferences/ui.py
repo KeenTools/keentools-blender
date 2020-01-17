@@ -25,7 +25,7 @@ from ..config import (Config, is_blender_supported)
 from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
-                        draw_warning_labels, draw_long_label)
+                        draw_warning_labels, draw_long_label, draw_long_labels)
 
 def _multi_line_text_to_output_labels(layout, txt):
     if txt is None:
@@ -260,10 +260,9 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             'PYKEENTOOLS_OK': 'PYKEENTOOLS_OK'
         }
 
-        error = status_to_errors[status] if \
-            status in status_to_errors.keys() else 'UNKNOWN'
-
-        error = error if error in ERROR_MESSAGES.keys() else 'UNKNOWN'
+        assert(status in status_to_errors.keys())
+        error = status_to_errors[status]
+        assert(error in ERROR_MESSAGES.keys())
 
         draw_warning_labels(
             layout, ERROR_MESSAGES[error], alert=True, icon='ERROR')
@@ -312,6 +311,15 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
     def _draw_problem_library(self, layout):
         if 'pykeentools' in sys.modules:
+            try:
+                import importlib
+                sp = importlib.util.find_spec('pykeentools')
+                if sp is not None:
+                    draw_long_label(layout, sp.origin, 120)
+                    draw_long_labels(layout,
+                                     sp.submodule_search_locations, 120)
+            except Exception:
+                layout.label(text='Cannot detect pykeentools spec.')
             draw_long_label(layout, str(sys.modules['pykeentools']))
 
     def _draw_please_restart(self, layout):
