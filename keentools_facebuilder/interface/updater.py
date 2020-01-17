@@ -30,7 +30,7 @@ def mock_response():
     response = lambda: None
     response.description_url = 'https://keentools.io/downloads'
     response.download_url = 'https://keentools.io/downloads'
-    response.message = "<h3>What's New in KeenTools 1.5.7</h3>\n" \
+    response.message = "<h3>What's New in KeenTools 1.5.9</h3>\n" \
                        "<ul>\n  " \
                        "<li>fixed performance issues in Nuke 12;</li>\n  " \
                        "<li>pintooling performance improvements;</li>\n  " \
@@ -39,7 +39,7 @@ def mock_response():
                        "<li>minor fixes and improvements</li>\n" \
                        "</ul>\n<br />\n"
     response.plugin_name = 'FaceBuilder'
-    response.version = pkt.module().Version(1, 5, 6)
+    response.version = pkt.module().Version(1, 5, 9)
     return response
 
 

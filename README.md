@@ -4,6 +4,8 @@
 
 ## Release History
 
+1.5.8 - 20 January 2019
+
 1.5.7 - 18 December 2019
 
 1.5.6 - 13 November 2019

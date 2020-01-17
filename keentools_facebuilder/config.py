@@ -32,7 +32,7 @@ class BuilderType:
 
 class Config:
     # Version dependent
-    addon_version = '1.5.7 (Beta)'
+    addon_version = '1.5.8 (Beta)'
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83))
     minimal_blender_api = (2, 80, 60)
 
