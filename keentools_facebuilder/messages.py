@@ -42,13 +42,13 @@ ERROR_MESSAGES = {
         'Error (1020): you are using a 32-bit version of Blender. ',
         'To use our add-on you need a 64-bit version of Blender. '],
 
-    'OLD_BLENDER': [
+    'BLENDER_TOO_OLD': [
         'Error (1030): you are using an outdated version of Blender '
         'which we don\'t support. ',
         'Please install the latest official version '
-        'of Blender downloaded from their site. '],
+        'of Blender downloaded from their site: www.blender.org'],
 
-    'UNSUPPORTED_PYTHON': [
+    'BLENDER_WITH_UNSUPPORTED_PYTHON': [
         'Error (1040): you are probably using Blender with an unsupported ',
         'version of Python built in. Please install an official ',
         'version of Blender. '],
@@ -58,12 +58,16 @@ ERROR_MESSAGES = {
         'version of FaceBuilder add-on. Please download the latest one ',
         'from our web site: https://keentools.io '],
 
-    'PYKEENTOOLS_CONFLICT': [
-        'Error (1060): Core library cannot be loaded due to '
-        'a name conflict.',
-        'Unfortunately you need to remove the conflicting file manually,'
-        'and also relaunch Blender. ',
-        'The conflicting file is being loaded from the following path:'],
+    'NUMPY_PROBLEM': [
+        'Error (1060): we have detected a critical issue with '
+        'NumPy Python library: ',
+        'it\'s either not available or incompatible. ',
+        'It can happen when Blender is not using its built-in '
+        'Python libraries, ',
+        'for some reason relying on the Python libraries '
+        'installed in your OS. ',
+        'Please try reinstalling Blender using a package from ',
+        'the official Blender website: blender.org'],
 
     'CORE_NOT_INSTALLED': [
         'Error (1070): Core library is not installed.'],
@@ -90,22 +94,18 @@ ERROR_MESSAGES = {
         'You can experience issues. ',
         'We recommend you to update the addon and the Core library.'],
 
-    'PYKEENTOOLS_FILE_NOT_FOUND': [
-        'Error (1120): the installed file seems not to be a Core library.',
+    'PYKEENTOOLS_CONFLICT': [  # not used
+        'Error (): Core library cannot be loaded due to '
+        'a name conflict.',
+        'Unfortunately you need to remove the conflicting file manually,'
+        'and also relaunch Blender. ',
+        'The conflicting file is being loaded from the following path:'],
+
+    'PYKEENTOOLS_FILE_NOT_FOUND': [  # not used
+        'Error (): the installed file seems not to be a Core library.',
         'It might also be a damaged archive file. ',
         'Please remove it using the button below, relaunch Blender, ',
         'download a new Core library package from our site and install it.'],
-
-    'NUMPY_PROBLEM': [
-        'Error (1130): we have detected a critical issue with '
-        'NumPy Python library: ',
-        'it\'s either not available or incompatible. ',
-        'It can happen when Blender is not using its built-in '
-        'Python libraries, ',
-        'for some reason relying on the Python libraries '
-        'installed in your OS. ',
-        'Please try reinstalling Blender using a package from ',
-        'the official Blender website: blender.org'],
 
     'UNKNOWN': ['Unknown error (0000)']
 }

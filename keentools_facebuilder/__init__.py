@@ -31,7 +31,8 @@ bl_info = {
 }
 
 
-import os, sys
+import os
+import sys
 import logging.config
 
 import bpy
@@ -41,13 +42,13 @@ from .messages import (ERROR_MESSAGES, draw_warning_labels, draw_system_info,
                        draw_long_label, draw_long_labels)
 
 
-def is_platform_64bit():
+def _is_platform_64bit():
     import platform
     return platform.architecture()[0] == '64bit'
 
 
-def is_python_64bit():
-    return sys.maxsize > 4294967296  # 2**32
+def _is_python_64bit():
+    return sys.maxsize > 4294967296  # 2**32 = 4294967296
 
 
 def check_libraries():
@@ -58,7 +59,7 @@ def check_libraries():
         return False
 
 
-if not is_platform_64bit():
+if not _is_platform_64bit():
     class FBPlatform32bitPreferences(bpy.types.AddonPreferences):
         bl_idname = Config.addon_name
 
@@ -78,7 +79,7 @@ if not is_platform_64bit():
     def unregister():
         bpy.utils.unregister_class(FBPlatform32bitPreferences)
 
-elif not is_python_64bit():
+elif not _is_python_64bit():
     class FBPython32bitPreferences(bpy.types.AddonPreferences):
         bl_idname = Config.addon_name
 

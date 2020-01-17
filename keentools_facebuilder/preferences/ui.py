@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import sys, platform
+import sys
 
 import bpy
 import keentools_facebuilder.preferences.operators as preferences_operators
@@ -273,6 +273,8 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             # Core Uninstall button
             layout.operator(Config.fb_uninstall_core_idname)
 
+        self._draw_problem_library(layout)
+
     def _draw_version(self, layout):
         box = layout.box()
         try:
@@ -282,25 +284,24 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             draw_warning_labels(box, arr, alert=False, icon='INFO')
             return box
         except Exception:
-            pass
-
-        self._draw_pkt_detail_error_report(box)
-        draw_system_info(layout)
-        return box
+            self._draw_pkt_detail_error_report(box)
+            draw_system_info(layout)
+            return box
 
     def _draw_old_addon(self, layout):
         box = layout.box()
         draw_warning_labels(box, ERROR_MESSAGES['OLD_ADDON'])
         return box
 
-    def _draw_wrong_blender(self, layout):
+    def _draw_blender_with_unsupported_python(self, layout):
         box = layout.box()
-        draw_warning_labels(box, ERROR_MESSAGES['UNSUPPORTED_PYTHON'])
+        draw_warning_labels(
+            box, ERROR_MESSAGES['BLENDER_WITH_UNSUPPORTED_PYTHON'])
         return box
 
     def _draw_unsupported_python(self, layout):
         if is_blender_supported():
-            self._draw_wrong_blender(layout)
+            self._draw_blender_with_unsupported_python(layout)
         else:
             self._draw_old_addon(layout)
             row = layout.split(factor=0.35)
