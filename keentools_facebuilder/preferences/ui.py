@@ -314,25 +314,31 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                 text='Download', icon='URL')
             op.url = Config.core_download_website_url
 
-    def _draw_problem_library(self, layout):
-        layout.prop(self, "more_info", toggle=1)
-        if not self.more_info:
-            return
-
+    def _get_problem_info(self):
+        info = []
         if 'pykeentools' in sys.modules:
-
-            col = layout.column()
-            col.scale_y = Config.text_scale_y
             try:
                 import importlib
                 sp = importlib.util.find_spec('pykeentools')
                 if sp is not None:
-                    draw_long_label(col, sp.origin, 120)
-                    draw_long_labels(col,
-                                     sp.submodule_search_locations, 120)
+                    info.append(sp.origin)
+                    [info.append(x) for x in sp.submodule_search_locations]
             except Exception:
-                col.label(text='Cannot detect pykeentools spec.')
-            draw_long_label(col, str(sys.modules['pykeentools']))
+                info.append('Cannot detect pykeentools spec.')
+        else:
+            info.append('No pykeentools in modules.')
+        return info
+
+    def _draw_problem_library(self, layout):
+        info = self._get_problem_info()
+        if len(info) == 0:
+            return
+        layout.prop(self, "more_info", toggle=1)
+        if not self.more_info:
+            return
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        draw_long_labels(col, info, 120)
 
     def _draw_please_restart(self, layout):
         box = layout.box()
