@@ -311,16 +311,18 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
     def _draw_problem_library(self, layout):
         if 'pykeentools' in sys.modules:
+            col = layout.column()
+            col.scale_y = Config.text_scale_y
             try:
                 import importlib
                 sp = importlib.util.find_spec('pykeentools')
                 if sp is not None:
-                    draw_long_label(layout, sp.origin, 120)
-                    draw_long_labels(layout,
+                    draw_long_label(col, sp.origin, 120)
+                    draw_long_labels(col,
                                      sp.submodule_search_locations, 120)
             except Exception:
-                layout.label(text='Cannot detect pykeentools spec.')
-            draw_long_label(layout, str(sys.modules['pykeentools']))
+                col.label(text='Cannot detect pykeentools spec.')
+            draw_long_label(col, str(sys.modules['pykeentools']))
 
     def _draw_please_restart(self, layout):
         box = layout.box()
