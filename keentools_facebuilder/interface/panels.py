@@ -540,7 +540,7 @@ class FB_PT_TexturePanel(Panel):
         head = settings.get_head(headnum)
 
         box = layout.box()
-        box.label(text='Dimensions (in pixels):')
+        box.label(text='Resolution (in pixels):')
         row = box.row()
         row.prop(settings, 'tex_width', text='W')
         row.prop(settings, 'tex_height', text='H')

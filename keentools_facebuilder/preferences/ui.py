@@ -99,7 +99,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     )
 
     more_info: bpy.props.BoolProperty(
-        name='Click to view more info',
+        name='More Info',
         default=False
     )
 

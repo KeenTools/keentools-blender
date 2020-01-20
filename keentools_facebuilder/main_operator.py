@@ -737,11 +737,12 @@ class FB_OT_BakeTexture(Operator):
         if settings.tex_auto_preview:
             mat = materials.show_texture_in_mat(
                 tex_name, Config.tex_builder_matname)
-            # Assign Material to Head Object
             materials.assign_mat(
                 settings.get_head(self.headnum).headobj, mat)
-            # Switch to Material Mode or Back
             materials.toggle_mode(('MATERIAL',))
+
+            if settings.pinmode:
+                settings.force_out_pinmode = True
 
         return {'FINISHED'}
 
