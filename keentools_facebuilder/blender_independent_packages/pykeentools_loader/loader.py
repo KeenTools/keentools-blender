@@ -48,6 +48,9 @@ def _add_pykeentools_to_sys_path():
     pkt_lib_directory = os.path.join(pkt_directory, RELATIVE_LIB_DIRECTORY)
     if pkt_lib_directory not in sys.path:
         sys.path.append(pkt_lib_directory)
+    else:
+        import importlib
+        importlib.invalidate_caches()
 
 
 def loaded():
