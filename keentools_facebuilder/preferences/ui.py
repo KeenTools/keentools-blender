@@ -98,6 +98,11 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             subtype="FILE_PATH"
     )
 
+    more_info: bpy.props.BoolProperty(
+        name='Click to view more info',
+        default=False
+    )
+
     def _license_was_accepted(self):
         return pkt.is_installed() or self.license_accepted
 
@@ -310,7 +315,12 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             op.url = Config.core_download_website_url
 
     def _draw_problem_library(self, layout):
+        layout.prop(self, "more_info", toggle=1)
+        if not self.more_info:
+            return
+
         if 'pykeentools' in sys.modules:
+
             col = layout.column()
             col.scale_y = Config.text_scale_y
             try:
