@@ -18,7 +18,7 @@
 
 
 bl_info = {
-    "name": "KeenTools FaceBuilder 1.5.7 (Beta)",
+    "name": "KeenTools FaceBuilder 1.5.8 (Beta)",
     "author": "KeenTools",
     "description": "Creates Head and Face geometry with a few "
                    "reference photos",
@@ -32,70 +32,165 @@ bl_info = {
 
 
 import os
+import sys
 import logging.config
 
 import bpy
 
 from .config import Config
-from .preferences import CLASSES_TO_REGISTER as PREFERENCES_CLASSES
-from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
-from .main_operator import CLASSES_TO_REGISTER as OPERATOR_CLASSES
-from .head import MESH_OT_FBAddHead
-from .body import MESH_OT_FBAddBody
-from .settings import FBExifItem, FBCameraItem, FBHeadItem, FBSceneSettings
-from .pinmode import FB_OT_PinMode
-from .movepin import FB_OT_MovePin
-from .actor import FB_OT_Actor, FB_OT_CameraActor
-
-from .utils.icons import FBIcons
-
-CLASSES_TO_REGISTER = (MESH_OT_FBAddHead,
-                       MESH_OT_FBAddBody,
-                       FBExifItem,
-                       FBCameraItem,
-                       FBHeadItem,
-                       FBSceneSettings,
-                       FB_OT_PinMode,
-                       FB_OT_MovePin,
-                       FB_OT_Actor,
-                       FB_OT_CameraActor) + OPERATOR_CLASSES + \
-                       INTERFACE_CLASSES + PREFERENCES_CLASSES
-
-# Init logging system via config file
-base_dir = os.path.dirname(os.path.abspath(__file__))
-logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'))
+from .messages import (ERROR_MESSAGES, draw_warning_labels, draw_system_info,
+                       draw_long_label, draw_long_labels)
 
 
-def _add_addon_settings_var():
-    setattr(bpy.types.Scene, Config.addon_global_var_name,
-            bpy.props.PointerProperty(type=FBSceneSettings))
+def _is_platform_64bit():
+    import platform
+    return platform.architecture()[0] == '64bit'
 
 
-def _remove_addon_settings_var():
-    delattr(bpy.types.Scene, Config.addon_global_var_name)
+def _is_python_64bit():
+    return sys.maxsize > 4294967296  # 2**32
 
 
-def menu_func(self, context):
-    self.layout.operator(MESH_OT_FBAddHead.bl_idname, icon='USER')
-    # self.layout.operator(MESH_OT_FBAddBody.bl_idname, icon='ARMATURE_DATA')
+def _is_blender_too_old():
+    return bpy.app.version < Config.minimal_blender_api
 
 
-# Blender predefined methods
-def register():
-    for cls in CLASSES_TO_REGISTER:
-        bpy.utils.register_class(cls)
-    bpy.types.VIEW3D_MT_mesh_add.append(menu_func)
-    _add_addon_settings_var()
+def _check_libraries():
+    try:
+        import numpy
+        return True
+    except Exception:
+        return False
 
-    FBIcons.register()
 
-def unregister():
-    for cls in reversed(CLASSES_TO_REGISTER):
-        bpy.utils.unregister_class(cls)
-    bpy.types.VIEW3D_MT_mesh_add.remove(menu_func)
-    _remove_addon_settings_var()
+def _can_load():
+    return _is_platform_64bit() and _is_python_64bit() and \
+           not _is_blender_too_old() and _check_libraries()
 
-    FBIcons.unregister()
+
+if not _can_load():
+    class FBCannotLoadPreferences(bpy.types.AddonPreferences):
+        bl_idname = Config.addon_name
+
+        def draw(self, context):
+            layout = self.layout
+            box = layout.box()
+
+            if not _is_platform_64bit():
+                draw_warning_labels(box, ERROR_MESSAGES['OS_32_BIT'],
+                                    alert=True, icon='ERROR')
+                draw_system_info(layout)
+                return
+
+            if not _is_python_64bit():
+                draw_warning_labels(box, ERROR_MESSAGES['BLENDER_32_BIT'],
+                                    alert=True, icon='ERROR')
+                draw_system_info(layout)
+                return
+
+            if _is_blender_too_old():
+                draw_warning_labels(box, ERROR_MESSAGES['BLENDER_TOO_OLD'],
+                                    alert=True, icon='ERROR')
+                draw_system_info(layout)
+                return
+
+            if not _check_libraries():
+                draw_warning_labels(box, ERROR_MESSAGES['NUMPY_PROBLEM'],
+                                    alert=True, icon='ERROR')
+
+                box = layout.box()
+                col = box.column()
+                col.scale_y = Config.text_scale_y
+                col.label(text='NumPy paths:')
+                try:
+                    import importlib
+                    sp = importlib.util.find_spec('numpy')
+                    if sp is not None:
+                        if sp.origin:
+                            draw_long_label(col, sp.origin, 120)
+                        draw_long_labels(col, sp.submodule_search_locations,
+                                         120)
+                    else:
+                        col.label(icon='ERROR',
+                                  text='Cannot detect numpy paths.')
+                except Exception:
+                    col.label(icon='ERROR', text='importlib problems.')
+                draw_system_info(layout)
+                return
+
+            draw_warning_labels(box, ERROR_MESSAGES['UNKNOWN'],
+                                alert=True, icon='ERROR')
+
+
+    def register():
+        bpy.utils.register_class(FBCannotLoadPreferences)
+
+
+    def unregister():
+        bpy.utils.unregister_class(FBCannotLoadPreferences)
+
+else:
+    from .preferences import CLASSES_TO_REGISTER as PREFERENCES_CLASSES
+    from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
+    from .main_operator import CLASSES_TO_REGISTER as OPERATOR_CLASSES
+    from .head import MESH_OT_FBAddHead
+    from .body import MESH_OT_FBAddBody
+    from .settings import FBExifItem, FBCameraItem, FBHeadItem, FBSceneSettings
+    from .pinmode import FB_OT_PinMode
+    from .movepin import FB_OT_MovePin
+    from .actor import FB_OT_Actor, FB_OT_CameraActor
+
+    from .utils.icons import FBIcons
+
+    CLASSES_TO_REGISTER = (MESH_OT_FBAddHead,
+                           MESH_OT_FBAddBody,
+                           FBExifItem,
+                           FBCameraItem,
+                           FBHeadItem,
+                           FBSceneSettings,
+                           FB_OT_PinMode,
+                           FB_OT_MovePin,
+                           FB_OT_Actor,
+                           FB_OT_CameraActor) + OPERATOR_CLASSES + \
+                           INTERFACE_CLASSES + PREFERENCES_CLASSES
+
+    # Init logging system via config file
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'))
+
+
+    def _add_addon_settings_var():
+        setattr(bpy.types.Scene, Config.addon_global_var_name,
+                bpy.props.PointerProperty(type=FBSceneSettings))
+
+
+    def _remove_addon_settings_var():
+        delattr(bpy.types.Scene, Config.addon_global_var_name)
+
+
+    def menu_func(self, context):
+        self.layout.operator(MESH_OT_FBAddHead.bl_idname, icon='USER')
+        # self.layout.operator(MESH_OT_FBAddBody.bl_idname, icon='ARMATURE_DATA')
+
+
+    # Blender predefined methods
+    def register():
+        for cls in CLASSES_TO_REGISTER:
+            bpy.utils.register_class(cls)
+        bpy.types.VIEW3D_MT_mesh_add.append(menu_func)
+        _add_addon_settings_var()
+
+        FBIcons.register()
+
+
+    def unregister():
+        for cls in reversed(CLASSES_TO_REGISTER):
+            bpy.utils.unregister_class(cls)
+        bpy.types.VIEW3D_MT_mesh_add.remove(menu_func)
+        _remove_addon_settings_var()
+
+        FBIcons.unregister()
+
 
 if __name__ == "__main__":
     register()

@@ -209,7 +209,7 @@ class FBText:
         camera = settings.get_camera(settings.current_headnum,
                                      settings.current_camnum)
         # Draw text
-        if len(self.message) > 0:
+        if camera is not None and len(self.message) > 0:
             region = context.region
             text = "{0} [{1}]".format(self.message[0], camera.get_image_name())
             subtext = "{} | {}".format(self.message[1], settings.opnum)

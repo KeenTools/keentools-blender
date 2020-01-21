@@ -32,8 +32,9 @@ class BuilderType:
 
 class Config:
     # Version dependent
-    addon_version = '1.5.7 (Beta)'
-    supported_blender_versions = ((2, 80), (2, 81), (2, 82))
+    addon_version = '1.5.8 (Beta)'
+    supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83))
+    minimal_blender_api = (2, 80, 60)
 
     # Version independent
     prefix = _company + '_fb'
@@ -245,6 +246,9 @@ class Config:
     fb_skip_version_callname = 'skip_version'
     fb_skip_version_idname = operators + '.' + fb_skip_version_callname
 
+    fb_uninstall_core_callname = 'uninstall_core'
+    fb_uninstall_core_idname = operators + '.' + fb_uninstall_core_callname
+
     # Menu ids
     fb_fix_frame_size_menu_idname = _MT + 'fix_frame_size_menu'
 
@@ -285,7 +289,9 @@ class Config:
     surf_pin_size_scale = 0.85
     default_POINT_SENSITIVITY = 16.0
     default_FB_COLLECTION_NAME = 'FaceBuilderCol'
+    text_scale_y = 0.75
 
+    viewport_redraw_interval = 0.1
     unknown_mod_ver = -1
 
     # In Material

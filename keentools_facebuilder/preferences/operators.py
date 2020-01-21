@@ -104,7 +104,7 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
                    "Core library from ",
                    "our site: keentools.io/downloads"]
         col = layout.column()
-        col.scale_y = 0.75
+        col.scale_y = Config.text_scale_y
         for c in content:
             col.label(text=c)
 
@@ -261,7 +261,7 @@ class PREF_OT_ShowWhy(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        layout.scale_y = 0.75
+        layout.scale_y = Config.text_scale_y
 
         content = ['We cannot ship our core library with addon '
                    'due to Blender license restrictions,',

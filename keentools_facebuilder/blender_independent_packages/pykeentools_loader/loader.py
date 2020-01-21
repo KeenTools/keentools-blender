@@ -20,8 +20,8 @@
 import sys
 import os
 from .config import *
-from .install import is_installed
-__all__ = ['loaded', 'module', 'is_python_supported']
+from .install import is_installed, installation_path_exists
+__all__ = ['loaded', 'module', 'is_python_supported', 'installation_status']
 
 
 def _do_pkt_shadow_copy():
@@ -48,6 +48,9 @@ def _add_pykeentools_to_sys_path():
     pkt_lib_directory = os.path.join(pkt_directory, RELATIVE_LIB_DIRECTORY)
     if pkt_lib_directory not in sys.path:
         sys.path.append(pkt_lib_directory)
+    else:
+        import importlib
+        importlib.invalidate_caches()
 
 
 def loaded():
@@ -75,3 +78,40 @@ def is_python_supported():
         if ver[:len(supported_ver)] == supported_ver:
             return True
     return False
+
+
+def _import_pykeentools():
+    try:
+        pk = module()
+        return True
+    except ImportError:
+        return False
+
+
+def _get_pykeentools_version():
+    try:
+        pk = module()
+        ver = pk.version
+        return (ver.major, ver.minor, ver.patch)
+    except AttributeError:
+        return None
+
+
+def installation_status():
+    if not is_installed():
+        return (False, 'NOT_INSTALLED')
+
+    if not installation_path_exists():
+        return (False, 'INSTALLED_WRONG')
+
+    if not _import_pykeentools():
+        return (False, 'CANNOT_IMPORT')
+
+    ver = _get_pykeentools_version()
+    if ver is None:
+        return (False, 'NO_VERSION')
+
+    if ver < MINIMUM_VERSION_REQUIRED:
+        return (True, 'VERSION_PROBLEM')
+
+    return (True, 'PYKEENTOOLS_OK')
