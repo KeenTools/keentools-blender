@@ -116,9 +116,10 @@ class FB_OT_SelectCamera(Operator):
         headnum = self.headnum
         camnum = self.camnum
         head = settings.get_head(headnum)
+        camera = head.get_camera(camnum)
 
         # bpy.ops.object.select_all(action='DESELECT')
-        camobj = head.get_camera(camnum).camobj
+        camobj = camera.camobj
 
         cameras.switch_to_camera(camobj)
 
@@ -130,7 +131,8 @@ class FB_OT_SelectCamera(Operator):
             b = c.background_images.new()
         else:
             b = c.background_images[0]
-        b.image = head.get_camera(camnum).cam_image
+        b.image = camera.cam_image
+        b.rotation = camera.orientation * 1.5707963267948966
 
         headobj = head.headobj
         bpy.context.view_layer.objects.active = headobj

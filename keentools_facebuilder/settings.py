@@ -147,6 +147,8 @@ class FBExifItem(PropertyGroup):
     # from EXIF tags Image_ImageWidth, Image_ImageLength
     image_width: FloatProperty(default=-1.0)
     image_length: FloatProperty(default=-1.0)
+    # converted from image orientation
+    orientation: IntProperty(default=0)  # angle = orientation * Pi/2
 
     # from EXIF tag ExifImageWidth, ExifImageLength
     exif_width: FloatProperty(default=-1.0)
@@ -187,6 +189,10 @@ class FBCameraItem(PropertyGroup):
         name="Pins in Camera", default=0)
 
     use_in_tex_baking: BoolProperty(name="Use In Texture Baking", default=True)
+
+    exif: PointerProperty(type=FBExifItem)
+
+    orientation: IntProperty(default=0)  # angle = orientation * Pi/2
 
     @staticmethod
     def convert_matrix_to_str(arr):
@@ -366,6 +372,9 @@ class FBHeadItem(PropertyGroup):
             return self.cameras[camnum]
         else:
             return None
+
+    def get_last_camera(self):
+        return self.get_camera(self.get_last_camnum())
 
     def set_serial_str(self, value):
         self.serial_str = value

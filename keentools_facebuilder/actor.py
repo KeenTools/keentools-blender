@@ -59,23 +59,27 @@ class FB_OT_Actor(Operator):
             # Allow converts scenes pinned on default cameras
             manipulate.use_render_frame_size_scaled()  # disabled in interface
 
-        elif self.action == 'delete_camera_image':
-            camera = settings.get_camera(self.headnum, self.camnum)
-            if camera is not None:
-                camera.cam_image = None
+        elif self.action == 'rotate_cw':
+            headnum = self.headnum
+            camnum = self.camnum
+            camobj = settings.get_camera(headnum, camnum).camobj
+            c = camobj.data
+            if len(c.background_images) == 0:
+                return
+            else:
+                b = c.background_images[0]
+            b.rotation += 1.5707963267948966
 
-        elif self.action == 'save_tex':
-            src_context = bpy.context.copy()
-            area = bpy.context.area
-            type = area.type
-            area.type = 'IMAGE_EDITOR'
-            tex = materials.find_tex_by_name(Config.tex_builder_filename)
-            if tex is not None:
-                src_context['edit_image'] = tex
-                area.spaces[0].image = tex
-                # area.type = type
-                op = bpy.ops.image.save_as
-                op('INVOKE_DEFAULT')  # src_context, 'INVOKE_DEFAULT'
+        elif self.action == 'rotate_ccw':
+            headnum = self.headnum
+            camnum = self.camnum
+            camobj = settings.get_camera(headnum, camnum).camobj
+            c = camobj.data
+            if len(c.background_images) == 0:
+                return
+            else:
+                b = c.background_images[0]
+            b.rotation -= 1.5707963267948966
 
         return {'FINISHED'}
 

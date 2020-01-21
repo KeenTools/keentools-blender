@@ -41,6 +41,18 @@ class FB_MT_ProperViewMenu(Menu):
         layout.operator(Config.fb_single_filebrowser_exec_idname,
                         text="Open file", icon='FILEBROWSER')
 
+        op = layout.operator(Config.fb_actor_idname,
+                             text='Rotate CW', icon='LOOP_FORWARDS')
+        op.action = 'rotate_cw'
+        op.headnum = settings.tmp_headnum
+        op.camnum = settings.tmp_camnum
+
+        op = layout.operator(Config.fb_actor_idname,
+                             text='Rotate CCW', icon='LOOP_BACK')
+        op.action = 'rotate_ccw'
+        op.headnum = settings.tmp_headnum
+        op.camnum = settings.tmp_camnum
+
 
 class FB_MT_ImproperViewMenu(Menu):
     bl_label = "View operations"
