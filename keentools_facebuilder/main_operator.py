@@ -137,6 +137,9 @@ class FB_OT_SelectCamera(Operator):
         headobj = head.headobj
         bpy.context.view_layer.objects.active = headobj
 
+        # Update EXIF info
+        head.exif.info_message = camera.exif.info_message
+
         # Auto Call PinMode
         draw_op = getattr(get_operators(), Config.fb_pinmode_callname)
         if not bpy.app.background:

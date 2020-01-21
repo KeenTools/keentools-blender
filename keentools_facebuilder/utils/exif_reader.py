@@ -200,10 +200,7 @@ def _init_exif_settings(exif, data):
             exif.image_length, exif.focal_y_res, exif.units)
 
 
-def _exif_info_message(headnum, data):
-    settings = get_main_settings()
-    exif = settings.get_head(headnum).exif
-
+def _exif_info_message(exif, data):
     message = "Source file: {}".format(data['filepath'])
 
     if exif.focal > 0.0:
@@ -299,7 +296,7 @@ def read_exif_to_head(headnum, filepath):
 
     exif_data = _read_exif(filepath)
     _init_exif_settings(head.exif, exif_data)
-    head.exif.info_message = _exif_info_message(headnum, exif_data)
+    head.exif.info_message = _exif_info_message(head.exif, exif_data)
     return exif_data['status']
 
 
@@ -310,6 +307,7 @@ def read_exif_to_camera(headnum, camnum, filepath):
         return False
     exif_data = _read_exif(filepath)
     _init_exif_settings(camera.exif, exif_data)
+    camera.exif.info_message = _exif_info_message(camera.exif, exif_data)
     return exif_data['status']
 
 
