@@ -284,7 +284,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         try:
             arr = ["Version {}, built {}".format(pkt.module().__version__,
                                                  pkt.module().build_time),
-                   'The core library have been installed successfully']
+                   'The core library has been installed successfully']
             draw_warning_labels(box, arr, alert=False, icon='INFO')
             return box
         except Exception:
