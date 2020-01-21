@@ -43,6 +43,20 @@ class FB_OT_Actor(Operator):
     def draw(self, context):
         pass
 
+    def rotate_image(self, camera, delta=1):
+        camobj = camera.camobj
+        c = camobj.data
+        if len(c.background_images) == 0:
+            return
+        else:
+            b = c.background_images[0]
+        camera.orientation += delta
+        if camera.orientation < 0:
+            camera.orientation += 4  # +360
+        if camera.orientation >= 4:
+            camera.orientation += -4  # -360
+        b.rotation = camera.orientation * 1.5707963267948966
+
     def execute(self, context):
         logger = logging.getLogger(__name__)
         logger.debug("Actor: {}".format(self.action))
@@ -60,26 +74,12 @@ class FB_OT_Actor(Operator):
             manipulate.use_render_frame_size_scaled()  # disabled in interface
 
         elif self.action == 'rotate_cw':
-            headnum = self.headnum
-            camnum = self.camnum
-            camobj = settings.get_camera(headnum, camnum).camobj
-            c = camobj.data
-            if len(c.background_images) == 0:
-                return
-            else:
-                b = c.background_images[0]
-            b.rotation += 1.5707963267948966
+            camera = settings.get_camera(self.headnum, self.camnum)
+            self.rotate_image(camera, 1)
 
         elif self.action == 'rotate_ccw':
-            headnum = self.headnum
-            camnum = self.camnum
-            camobj = settings.get_camera(headnum, camnum).camobj
-            c = camobj.data
-            if len(c.background_images) == 0:
-                return
-            else:
-                b = c.background_images[0]
-            b.rotation -= 1.5707963267948966
+            camera = settings.get_camera(self.headnum, self.camnum)
+            self.rotate_image(camera, -1)
 
         return {'FINISHED'}
 
