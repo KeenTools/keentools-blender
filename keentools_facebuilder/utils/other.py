@@ -39,6 +39,7 @@ def force_stop_shaders():
     FBText.handler_list = []
     FBPoints2D.handler_list = []
     FBPoints3D.handler_list = []
+    force_ui_redraw('VIEW_3D')
 
 
 def _setup_ui_elements(*args):
