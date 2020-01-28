@@ -526,7 +526,7 @@ class FB_OT_SensorSizeWindow(Operator):
         row.label(text='35mm Full-frame (default)')
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=480)
+        return context.window_manager.invoke_popup(self, width=480)
 
     def execute(self, context):
         return {'FINISHED'}
