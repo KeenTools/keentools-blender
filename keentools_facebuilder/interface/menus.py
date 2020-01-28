@@ -155,22 +155,6 @@ class FB_MT_FocalLengthMenu(Menu):
         # ----------------
         layout.separator()
 
-        # Set Automatic Focal Length Estimation OFF
-        if settings.get_head(settings.tmp_headnum).auto_focal_estimation:
-            op = layout.operator(Config.fb_camera_actor_idname,
-                                 text="Set Automatic Focal Length "
-                                      "Estimation OFF")
-            op.action = 'auto_focal_off'
-        else:
-            op = layout.operator(Config.fb_camera_actor_idname,
-                                 text="Set Automatic Focal Length "
-                                      "Estimation ON")
-            op.action = 'auto_focal_on'
-        op.headnum = settings.tmp_headnum
-
-        # ----------------
-        layout.separator()
-
         # Default Focal Length: 50 mm
         op = layout.operator(Config.fb_camera_actor_idname,
                              text="[50 mm]   Default Focal Length",

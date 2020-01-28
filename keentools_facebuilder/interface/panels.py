@@ -216,11 +216,7 @@ class FB_PT_CameraPanel(Panel):
 
         head = settings.get_head(headnum)
 
-        row = layout.row()
-        row.prop(head, 'sensor_width')
-        row.operator(
-            Config.fb_sensor_size_window_idname,
-            text='', icon='SETTINGS')
+        layout.prop(head, 'auto_focal_estimation')
 
         col = layout.column()
         if head.auto_focal_estimation:
@@ -233,7 +229,11 @@ class FB_PT_CameraPanel(Panel):
             text='', icon='SETTINGS')
 
         row = layout.row()
-        row.prop(head, 'auto_focal_estimation')
+        row.prop(head, 'sensor_width')
+        row.operator(
+            Config.fb_sensor_size_window_idname,
+            text='', icon='SETTINGS')
+
 
 
 class FB_PT_ExifPanel(Panel):
@@ -317,7 +317,7 @@ class FB_PT_ViewsPanel(Panel):
         op.headnum = headnum
         op.camnum = camnum
         op = box.operator(
-            Config.fb_remove_pins_idname, text="Remove pins")
+            Config.fb_remove_pins_idname, text="Remove all pins")
         op.headnum = headnum
         op.camnum = camnum
 
