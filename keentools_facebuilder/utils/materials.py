@@ -138,7 +138,6 @@ def bake_tex(headnum, tex_name):
     FBLoader.load_only(headnum)
     fb = FBLoader.get_builder()
 
-    # Add UV
     mesh = head.headobj.data
     uvmap = get_mesh_uvmap(mesh)
 
@@ -157,7 +156,6 @@ def bake_tex(headnum, tex_name):
     geo = fb.applied_args_model()
     me = geo.mesh(0)
 
-    # Fill uvs in uvmap
     uvs_count = me.uvs_count()
     for i in range(uvs_count):
         uvmap[i].uv = me.uv(i)
@@ -180,7 +178,11 @@ def bake_tex(headnum, tex_name):
                     np.asarray(cam.cam_image.pixels[:]).reshape((h, w, 4)),
                     cam.orientation)  # Slow operation .pixels[:]
 
-                pm = projection_matrix(w, h, head.focal, head.sensor_width,
+                if w < h:  # Fix for Blender Camera Auto-mode
+                    sw = head.sensor_width * w / h
+                else:
+                    sw = head.sensor_width
+                pm = projection_matrix(w, h, head.focal, sw,
                                        near=0.1, far=1000.)
                 if cam.orientation % 2 > 0:
                     offset = np.array([[1., 0., 0., (h - w) * 0.5],
@@ -222,8 +224,8 @@ def bake_tex(headnum, tex_name):
         tex = bpy.data.images.new(
                 tex_name, width=settings.tex_width, height=settings.tex_height,
                 alpha=True, float_buffer=False)
-        tex.pixels[:] = texture.ravel()
-        tex.pack()  # Pack image to store in blend-file
+        tex.pixels[:] = texture.ravel()  # Slow operation
+        tex.pack()  # Pack in blend-file
         logger.debug("TEXTURE BAKED SUCCESSFULLY: {}".format(tex.name))
         return tex.name
     else:
