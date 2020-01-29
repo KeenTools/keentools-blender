@@ -733,7 +733,7 @@ class FB_OT_BakeTexture(Operator):
 
     def execute(self, context):
         settings = get_main_settings()
-        tex_name = materials.bake_tex2(
+        tex_name = materials.bake_tex(
             self.headnum, Config.tex_builder_filename)
 
         if tex_name is None:
