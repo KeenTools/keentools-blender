@@ -179,7 +179,8 @@ def bake_tex(headnum, tex_name):
                     cam.orientation)  # Slow operation .pixels[:]
 
                 if w < h:  # Fix for Blender Camera Auto-mode
-                    sw = head.sensor_width * w / h
+                    sw = head.sensor_width * \
+                         settings.frame_width / settings.frame_height
                 else:
                     sw = head.sensor_width
                 pm = projection_matrix(w, h, head.focal, sw,
