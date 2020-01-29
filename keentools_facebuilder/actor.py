@@ -43,13 +43,27 @@ class FB_OT_Actor(Operator):
     def draw(self, context):
         pass
 
-    def rotate_image(self, camera, delta=1):
+    def get_camera_background(self, camera):
         camobj = camera.camobj
         c = camobj.data
         if len(c.background_images) == 0:
-            return
+            return None
         else:
-            b = c.background_images[0]
+            return c.background_images[0]
+
+
+    def reset_image_rotation(self, camera):
+        b = self.get_camera_background(camera)
+        if b is None:
+            return
+        b.rotation = 0
+        camera.orientation = 0
+
+    def rotate_image(self, camera, delta=1):
+        b = self.get_camera_background(camera)
+        if b is None:
+            return
+
         camera.orientation += delta
         if camera.orientation < 0:
             camera.orientation += 4  # +360
@@ -80,6 +94,10 @@ class FB_OT_Actor(Operator):
         elif self.action == 'rotate_ccw':
             camera = settings.get_camera(self.headnum, self.camnum)
             self.rotate_image(camera, -1)
+
+        elif self.action == 'reset_rotation':
+            camera = settings.get_camera(self.headnum, self.camnum)
+            self.reset_image_rotation(camera)
 
         return {'FINISHED'}
 

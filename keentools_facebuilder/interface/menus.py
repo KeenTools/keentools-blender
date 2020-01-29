@@ -53,6 +53,14 @@ class FB_MT_ProperViewMenu(Menu):
         op.headnum = settings.tmp_headnum
         op.camnum = settings.tmp_camnum
 
+        op = layout.operator(Config.fb_actor_idname,
+                             text='Reset Orientation',
+                             icon='OUTLINER_OB_IMAGE')
+        op.action = 'reset_rotation'
+        op.headnum = settings.tmp_headnum
+        op.camnum = settings.tmp_camnum
+
+
 
 class FB_MT_ImproperViewMenu(Menu):
     bl_label = "View operations"
