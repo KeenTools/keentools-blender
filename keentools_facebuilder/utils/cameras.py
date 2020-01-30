@@ -88,3 +88,32 @@ def get_camera_params(obj):
     except Exception:
         return None
     return params
+
+
+def get_camera_background(camera):
+    camobj = camera.camobj
+    c = camobj.data
+    if len(c.background_images) == 0:
+        return None
+    else:
+        return c.background_images[0]
+
+
+def reset_background_image_rotation(camera):
+    b = get_camera_background(camera)
+    if b is None:
+        return
+    b.rotation = 0
+    camera.orientation = 0
+
+def rotate_background_image(camera, delta=1):
+    b = get_camera_background(camera)
+    if b is None:
+        return
+
+    camera.orientation += delta
+    if camera.orientation < 0:
+        camera.orientation += 4  # +360
+    if camera.orientation >= 4:
+        camera.orientation += -4  # -360
+    b.rotation = camera.orientation * 1.5707963267948966

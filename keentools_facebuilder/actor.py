@@ -25,7 +25,7 @@ from bpy.props import (
 )
 from bpy.types import Operator
 
-from .utils import manipulate, materials
+from .utils import manipulate
 from .config import Config, get_main_settings
 from .utils.exif_reader import get_sensor_size_35mm_equivalent
 
@@ -43,39 +43,9 @@ class FB_OT_Actor(Operator):
     def draw(self, context):
         pass
 
-    def get_camera_background(self, camera):
-        camobj = camera.camobj
-        c = camobj.data
-        if len(c.background_images) == 0:
-            return None
-        else:
-            return c.background_images[0]
-
-
-    def reset_image_rotation(self, camera):
-        b = self.get_camera_background(camera)
-        if b is None:
-            return
-        b.rotation = 0
-        camera.orientation = 0
-
-    def rotate_image(self, camera, delta=1):
-        b = self.get_camera_background(camera)
-        if b is None:
-            return
-
-        camera.orientation += delta
-        if camera.orientation < 0:
-            camera.orientation += 4  # +360
-        if camera.orientation >= 4:
-            camera.orientation += -4  # -360
-        b.rotation = camera.orientation * 1.5707963267948966
-
     def execute(self, context):
         logger = logging.getLogger(__name__)
         logger.debug("Actor: {}".format(self.action))
-
-        settings = get_main_settings()
 
         if self.action == 'reconstruct_by_head':
             manipulate.reconstruct_by_head()
@@ -86,18 +56,6 @@ class FB_OT_Actor(Operator):
         elif self.action == 'use_render_frame_size_scaled':
             # Allow converts scenes pinned on default cameras
             manipulate.use_render_frame_size_scaled()  # disabled in interface
-
-        elif self.action == 'rotate_cw':
-            camera = settings.get_camera(self.headnum, self.camnum)
-            self.rotate_image(camera, 1)
-
-        elif self.action == 'rotate_ccw':
-            camera = settings.get_camera(self.headnum, self.camnum)
-            self.rotate_image(camera, -1)
-
-        elif self.action == 'reset_rotation':
-            camera = settings.get_camera(self.headnum, self.camnum)
-            self.reset_image_rotation(camera)
 
         return {'FINISHED'}
 

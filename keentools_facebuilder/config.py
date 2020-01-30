@@ -128,6 +128,16 @@ class Config:
     fb_delete_texture_callname = 'delete_texture'
     fb_delete_texture_idname = operators + '.' + fb_delete_texture_callname
 
+    fb_rotate_image_cw_callname = 'rotate_image_cw'
+    fb_rotate_image_cw_idname = operators + '.' + fb_rotate_image_cw_callname
+
+    fb_rotate_image_ccw_callname = 'rotate_image_ccw'
+    fb_rotate_image_ccw_idname = operators + '.' + fb_rotate_image_ccw_callname
+
+    fb_reset_image_rotation_callname = 'reset_image_rotation'
+    fb_reset_image_rotation_idname = \
+        operators + '.' + fb_reset_image_rotation_callname
+
     fb_bake_tex_callname = 'bake_tex'
     fb_bake_tex_idname = operators + '.' + fb_bake_tex_callname
 

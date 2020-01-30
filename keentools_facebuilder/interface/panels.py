@@ -28,10 +28,14 @@ from ..utils.materials import find_tex_by_name
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
-def _show_all_panels():
-    state, _ = what_is_state()
+def _state_valid_to_show(state):
     # RECONSTRUCT, NO_HEADS, THIS_HEAD, ONE_HEAD, MANY_HEADS, PINMODE
     return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
+
+
+def _show_all_panels():
+    state, _ = what_is_state()
+    return _state_valid_to_show(state)
 
 
 class FB_PT_HeaderPanel(Panel):
@@ -246,7 +250,10 @@ class FB_PT_ExifPanel(Panel):
 
     @classmethod
     def poll(cls, context):
-        return _show_all_panels()
+        state, headnum = what_is_state()
+        if not _state_valid_to_show(state):
+            return False
+        return get_main_settings().head_has_cameras(headnum)
 
     def draw_header_preset(self, context):
         layout = self.layout
@@ -265,10 +272,6 @@ class FB_PT_ExifPanel(Panel):
 
         if head is None:
             return
-
-        op = layout.operator(Config.fb_read_exif_menu_exec_idname,
-                             text='Read EXIF')
-        op.headnum = headnum
 
         # Show EXIF info message
         if len(head.exif.info_message) > 0:
