@@ -167,7 +167,8 @@ class FB_OT_MovePin(bpy.types.Operator):
             if not fb.deserialize(head.get_serial_str()):
                 logger.warning('DESERIALIZE ERROR: ', head.get_serial_str())
 
-            coords.update_head_mesh(fb, head.headobj)
+            # coords.update_head_mesh_neutral(fb, head.headobj)
+            coords.update_head_mesh(settings, fb, head)
             FBLoader.update_all_camera_positions(headnum)
             # ---------
             # PUSH Previous
@@ -206,7 +207,8 @@ class FB_OT_MovePin(bpy.types.Operator):
         self._push_previous_state()
 
         fb = FBLoader.get_builder()
-        coords.update_head_mesh(fb, head.headobj)
+        # coords.update_head_mesh_neutral(fb, head.headobj)
+        coords.update_head_mesh(settings, fb, head)
         FBLoader.update_all_camera_positions(headnum)
 
         # ---------
@@ -245,6 +247,7 @@ class FB_OT_MovePin(bpy.types.Operator):
         fb = FBLoader.get_builder()
         FBLoader.rigidity_setup()
         fb.set_focal_length_estimation(head.auto_focal_estimation)
+        fb.set_use_emotions(head.should_use_emotions())
 
         try:
             fb.solve_for_current_pins(kid)
@@ -271,7 +274,9 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         FBLoader.rigidity_post()
         FBLoader.place_cameraobj(kid, camobj, headobj)
-        coords.update_head_mesh(fb, headobj)
+        # coords.update_head_mesh_neutral(fb, headobj)
+        coords.update_head_mesh(settings, fb, head)
+
         FBLoader.viewport().wireframer().init_geom_data(headobj)
         FBLoader.viewport().wireframer().create_batches()
         FBLoader.viewport().create_batch_2d(context)

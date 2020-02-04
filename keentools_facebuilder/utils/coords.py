@@ -32,19 +32,31 @@ def nearest_point(x, y, points, dist=4000000):  # dist squared
     return nearest, dist2
 
 
-def update_head_mesh_geo(obj, geo):
-    """ Head Mesh update by vertices coords in np.array """
+def update_head_mesh_geom(obj, geom):
     mesh = obj.data
     rot = np.array([[1., 0., 0.], [0., 0., 1.], [0., -1., 0]])
-    npbuffer = geo @ rot
+    npbuffer = geom @ rot
     mesh.vertices.foreach_set('co', npbuffer.ravel())
     mesh.update()
 
 
-def update_head_mesh(fb, headobj):
-    """ Recalculate head mesh & update head object in scene """
-    geo = fb.applied_args_vertices()
-    update_head_mesh_geo(headobj, geo)
+def update_head_mesh_neutral(fb, headobj):
+    geom = fb.applied_args_vertices()
+    update_head_mesh_geom(headobj, geom)
+
+
+def update_head_mesh_emotions(fb, headobj, keyframe):
+    geom = fb.applied_args_model_vertices_at(keyframe)
+    update_head_mesh_geom(headobj, geom)
+
+
+def update_head_mesh(settings, fb, head):
+    if head.should_use_emotions():
+        if settings.current_camnum >= 0:
+            update_head_mesh_emotions(fb, head.headobj,
+                                      settings.current_camnum)
+    else:
+        update_head_mesh_neutral(fb, head.headobj)
 
 
 def projection_matrix(w, h, fl, sw, near, far):

@@ -418,6 +418,8 @@ class FB_PT_ViewsPanel(Panel):
                           text='', icon='SETTINGS')
         op.headnum = headnum
 
+        layout.prop(settings.get_head(headnum), 'use_emotions', expand=True)
+
         self._draw_camera_hint(layout, headnum)
 
         self._draw_exit_pinmode(layout)

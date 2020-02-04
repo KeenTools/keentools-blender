@@ -113,6 +113,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         FBLoader.rigidity_setup()
         fb.set_focal_length_estimation(head.auto_focal_estimation)
+        fb.set_use_emotions(head.should_use_emotions())
 
         try:
             fb.solve_for_current_pins(kid)
@@ -126,7 +127,9 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.auto_focal_estimation_post(head, camobj)
 
         FBLoader.update_pins_count(headnum, camnum)
-        coords.update_head_mesh(fb, head.headobj)
+        # coords.update_head_mesh_neutral(fb, head.headobj)
+        coords.update_head_mesh(settings, fb, head)
+
         FBLoader.update_all_camera_positions(headnum)
         FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
         FBLoader.shader_update(head.headobj)

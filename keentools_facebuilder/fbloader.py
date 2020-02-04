@@ -101,6 +101,7 @@ class FBLoader:
         FBLoader.rigidity_setup()
         # Activate Focal Estimation
         fb.set_focal_length_estimation(head.auto_focal_estimation)
+        fb.set_use_emotions(head.should_use_emotions())
 
         if max_index >= 0:
             try:
@@ -117,7 +118,9 @@ class FBLoader:
                 settings.force_out_pinmode = True
 
         # Head Mesh update
-        coords.update_head_mesh(fb, head.headobj)
+        # coords.update_head_mesh_neutral(fb, head.headobj)
+        coords.update_head_mesh(settings, fb, head)
+
         if settings.pinmode:
             cls.fb_redraw(headnum, settings.current_camnum)
         cls.update_all_camera_positions(headnum)
@@ -162,7 +165,7 @@ class FBLoader:
 
         vp = cls.viewport()
         vp.unregister_handlers()
-        # cls.fb_save(headnum, camnum)  # try to save only after pin move
+
         head = settings.get_head(headnum)
         headobj = head.headobj
         # Mark object by ver.
@@ -200,7 +203,8 @@ class FBLoader:
         fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.get_head(headnum)
-        coords.update_head_mesh(fb, head.headobj)
+        # coords.update_head_mesh_neutral(fb, head.headobj)
+        coords.update_head_mesh(settings, fb, head)
 
     @classmethod
     def fb_save(cls, headnum, camnum):
@@ -238,7 +242,8 @@ class FBLoader:
         # Camera update
         cls.place_cameraobj(kid, camobj, headobj)
         # Head Mesh update
-        coords.update_head_mesh(fb, headobj)
+        # coords.update_head_mesh_neutral(fb, headobj)
+        coords.update_head_mesh(settings, fb, head)
         # Load pins from model
         vp = cls.viewport()
         vp.pins().set_pins(vp.img_points(fb, kid))

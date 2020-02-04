@@ -294,6 +294,11 @@ class FBCameraItem(PropertyGroup):
 
 class FBHeadItem(PropertyGroup):
     mod_ver: IntProperty(name="Modifier Version", default=-1)
+    use_emotions: bpy.props.EnumProperty(
+        name="Use Emotions", items=[
+            ('emotions', 'Use emotions', 'Update render size to images resolution', 0),
+            ('neutral', 'Neutral', 'Leave the render size unchanged', 1)],
+        default='neutral')
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
 
@@ -427,6 +432,9 @@ class FBHeadItem(PropertyGroup):
                 Config.reconstruct_frame_width_param[0]: render.resolution_x,
                 Config.reconstruct_frame_height_param[0]: render.resolution_y}
         self.headobj[Config.fb_camera_prop_name[0]] = d
+
+    def should_use_emotions(self):
+        return self.use_emotions == 'emotions'
 
 
 class FBSceneSettings(PropertyGroup):
