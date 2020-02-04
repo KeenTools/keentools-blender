@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import logging
+import math
+
 import bpy
 
 from .. config import get_main_settings, Config
@@ -100,15 +102,15 @@ def get_camera_background(camera):
 
 
 def reset_background_image_rotation(camera):
-    b = get_camera_background(camera)
-    if b is None:
+    background_image = get_camera_background(camera)
+    if background_image is None:
         return
-    b.rotation = 0
+    background_image.rotation = 0
     camera.orientation = 0
 
 def rotate_background_image(camera, delta=1):
-    b = get_camera_background(camera)
-    if b is None:
+    background_image = get_camera_background(camera)
+    if background_image is None:
         return
 
     camera.orientation += delta
@@ -116,4 +118,4 @@ def rotate_background_image(camera, delta=1):
         camera.orientation += 4  # +360
     if camera.orientation >= 4:
         camera.orientation += -4  # -360
-    b.rotation = camera.orientation * 1.5707963267948966
+    background_image.rotation = camera.orientation * math.pi / 2

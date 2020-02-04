@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+import math
 
 import bpy
 from bpy.types import Operator
@@ -133,7 +134,7 @@ class FB_OT_SelectCamera(Operator):
         else:
             b = c.background_images[0]
         b.image = camera.cam_image
-        b.rotation = camera.orientation * 1.5707963267948966
+        b.rotation = camera.orientation * math.pi / 2
 
         headobj = head.headobj
         bpy.context.view_layer.objects.active = headobj
