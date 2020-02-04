@@ -149,7 +149,7 @@ def bake_tex(headnum, tex_name):
 
     logger.debug("UV_TYPE: {}".format(uv_shape))
 
-    geo = fb.applied_args_model_at()  # fb.applied_args_model()
+    geo = fb.applied_args_model()
     me = geo.mesh(0)
 
     # Fill uvs in uvmap
