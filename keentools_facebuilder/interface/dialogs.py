@@ -106,8 +106,8 @@ class FB_OT_AddonWarning(Operator):
             self.set_content([
                 "Different sizes",
                 "===============",
-                "Cameras backgrounds",
-                "has different sizes.",
+                "Camera backgrounds",
+                "have different sizes.",
                 "Texture Builder can't bake"
             ])
         elif self.msg == ErrorType.IllegalIndex:
