@@ -26,7 +26,8 @@ from bpy.types import Operator
 from ..fbloader import FBLoader
 from ..config import Config, get_main_settings, get_operators, ErrorType
 
-from ..utils.exif_reader import read_exif_to_head, update_exif_sizes_message
+from ..utils.exif_reader import (read_exif_to_head, read_exif_to_camera,
+                                 update_exif_sizes_message)
 from ..utils.other import restore_ui_elements
 from ..utils.materials import find_tex_by_name
 
@@ -274,6 +275,8 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
         # Flag to prevent EXIF load if the head already has cameras
         exif_allready_read_once = settings.head_has_cameras(self.headnum)
 
+        head = settings.get_head(self.headnum)
+
         # Loaded image sizes
         w = -1
         h = -1
@@ -295,6 +298,11 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
                         update_exif_sizes_message(self.headnum, img)
 
                         exif_allready_read_once = True
+
+                read_exif_to_camera(
+                    self.headnum, head.get_last_camnum(), filepath)
+                camera = head.get_last_camera()
+                camera.orientation = camera.exif.orientation
 
             except RuntimeError as ex:
                 logger.error("FILE READ ERROR: {}".format(filepath))

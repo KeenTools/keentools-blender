@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+import math
 
 import bpy
 from bpy.types import Operator
@@ -32,7 +33,9 @@ from .fbloader import FBLoader
 from .fbdebug import FBDebug
 from .config import get_main_settings, get_operators, Config
 from .utils.exif_reader import (read_exif_from_camera,
-                                get_sensor_size_35mm_equivalent)
+                                update_exif_sizes_message,
+                                get_sensor_size_35mm_equivalent,
+                                copy_exif_parameters_from_camera_to_head)
 
 
 class FB_OT_SelectHead(Operator):
@@ -116,9 +119,10 @@ class FB_OT_SelectCamera(Operator):
         headnum = self.headnum
         camnum = self.camnum
         head = settings.get_head(headnum)
+        camera = head.get_camera(camnum)
 
         # bpy.ops.object.select_all(action='DESELECT')
-        camobj = head.get_camera(camnum).camobj
+        camobj = camera.camobj
 
         cameras.switch_to_camera(camobj)
 
@@ -130,10 +134,14 @@ class FB_OT_SelectCamera(Operator):
             b = c.background_images.new()
         else:
             b = c.background_images[0]
-        b.image = head.get_camera(camnum).cam_image
+        b.image = camera.cam_image
+        b.rotation = camera.orientation * math.pi / 2
 
         headobj = head.headobj
         bpy.context.view_layer.objects.active = headobj
+
+        copy_exif_parameters_from_camera_to_head(camera, head)
+        update_exif_sizes_message(self.headnum, camera.cam_image)
 
         # Auto Call PinMode
         draw_op = getattr(get_operators(), Config.fb_pinmode_callname)
@@ -764,6 +772,63 @@ class FB_OT_DeleteTexture(Operator):
         return {'FINISHED'}
 
 
+class FB_OT_RotateImageCW(Operator):
+    bl_idname = Config.fb_rotate_image_cw_idname
+    bl_label = "Rotate Image CW"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Rotate image clock-wise"
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        camera = settings.get_camera(self.headnum, self.camnum)
+        cameras.rotate_background_image(camera, 1)
+        return {'FINISHED'}
+
+
+class FB_OT_RotateImageCCW(Operator):
+    bl_idname = Config.fb_rotate_image_ccw_idname
+    bl_label = "Rotate Image CCW"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Rotate image counter clock-wise"
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        camera = settings.get_camera(self.headnum, self.camnum)
+        cameras.rotate_background_image(camera, -1)
+        return {'FINISHED'}
+
+
+class FB_OT_ResetImageRotation(Operator):
+    bl_idname = Config.fb_reset_image_rotation_idname
+    bl_label = "Reset Image Rotation"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Reset Image Rotation"
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        camera = settings.get_camera(self.headnum, self.camnum)
+        cameras.reset_background_image_rotation(camera)
+        return {'FINISHED'}
+
+
 class FB_OT_ShowTexture(Operator):
     bl_idname = Config.fb_show_tex_idname
     bl_label = "Show Texture"
@@ -879,6 +944,9 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_AddonSettings,
                        FB_OT_BakeTexture,
                        FB_OT_DeleteTexture,
+                       FB_OT_RotateImageCW,
+                       FB_OT_RotateImageCCW,
+                       FB_OT_ResetImageRotation,
                        FB_OT_ShowTexture,
                        FB_OT_ShowSolid,
                        FB_OT_ExitPinmode,
