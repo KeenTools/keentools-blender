@@ -41,7 +41,7 @@ def _frac_to_float(s):
     return None
 
 
-def _get_safe_exif_param(p, data):
+def _get_safe_exif_param_num(p, data):
     logger = logging.getLogger(__name__)
     if data is not None and p in data.keys():
         val = _frac_to_float(data[p].printable)
@@ -133,19 +133,21 @@ def _read_exif(filepath):
 
     return {
         'filepath': os.path.basename(filepath),
-        'exif_focal': _get_safe_exif_param('EXIF FocalLength', data),
-        'exif_focal35mm': _get_safe_exif_param(
+        'exif_focal': _get_safe_exif_param_num('EXIF FocalLength', data),
+        'exif_focal35mm': _get_safe_exif_param_num(
             'EXIF FocalLengthIn35mmFilm', data),
-        'exif_focal_x_res': _get_safe_exif_param(
+        'exif_focal_x_res': _get_safe_exif_param_num(
             'EXIF FocalPlaneXResolution', data),
-        'exif_focal_y_res': _get_safe_exif_param(
+        'exif_focal_y_res': _get_safe_exif_param_num(
             'EXIF FocalPlaneYResolution', data),
-        'exif_width': _get_safe_exif_param('EXIF ExifImageWidth', data),
-        'exif_length': _get_safe_exif_param('EXIF ExifImageLength', data),
-        'image_width': _get_safe_exif_param('Image ImageWidth', data),
-        'image_length': _get_safe_exif_param('Image ImageLength', data),
-        'exif_units': _get_safe_exif_param(
+        'exif_width': _get_safe_exif_param_num('EXIF ExifImageWidth', data),
+        'exif_length': _get_safe_exif_param_num('EXIF ExifImageLength', data),
+        'image_width': _get_safe_exif_param_num('Image ImageWidth', data),
+        'image_length': _get_safe_exif_param_num('Image ImageLength', data),
+        'exif_units': _get_safe_exif_param_num(
             'EXIF FocalPlaneResolutionUnit', data),
+        'image_orientation': _get_safe_exif_param_str(
+            'Image Orientation', data),
         'exif_make': _get_safe_exif_param_str('Image Make', data),
         'exif_model': _get_safe_exif_param_str('Image Model', data),
         'status': status
@@ -159,10 +161,24 @@ def _safe_parameter(data, name):
         return -1.0
 
 
-def _init_exif_settings(headnum, data):
-    settings = get_main_settings()
-    exif = settings.get_head(headnum).exif
+def _orientation_to_index(data, name='image_orientation'):
+    param = str(_safe_parameter(data, name))
+    orient_to_index = {
+        'Horizontal (normal)': 0,
+        'Mirrored horizontal': 0,
+        'Rotated 180': 2,
+        'Mirrored vertical': 1,
+        'Mirrored horizontal then rotated 90 CCW': 0,
+        'Rotated 90 CW': 1,
+        'Mirrored horizontal then rotated 90 CW': 0,
+        'Rotated 90 CCW': 3
+    }
+    if param not in orient_to_index.keys():
+        return 0
+    return orient_to_index[param]
 
+
+def _init_exif_settings(exif, data):
     exif.units = _get_exif_units(data['exif_units'])
 
     exif.image_width = _safe_parameter(data, 'image_width')
@@ -175,6 +191,8 @@ def _init_exif_settings(headnum, data):
     exif.focal_x_res = _safe_parameter(data, 'exif_focal_x_res')
     exif.focal_y_res = _safe_parameter(data, 'exif_focal_y_res')
 
+    exif.orientation = _orientation_to_index(data)
+
     exif.sensor_width = _get_sensor_size(
             exif.image_width, exif.focal_x_res, exif.units)
 
@@ -182,10 +200,7 @@ def _init_exif_settings(headnum, data):
             exif.image_length, exif.focal_y_res, exif.units)
 
 
-def _exif_info_message(headnum, data):
-    settings = get_main_settings()
-    exif = settings.get_head(headnum).exif
-
+def _exif_info_message(exif, data):
     message = "Source file: {}".format(data['filepath'])
 
     if exif.focal > 0.0:
@@ -280,8 +295,19 @@ def read_exif_to_head(headnum, filepath):
     head = settings.get_head(headnum)
 
     exif_data = _read_exif(filepath)
-    _init_exif_settings(headnum, exif_data)
-    head.exif.info_message = _exif_info_message(headnum, exif_data)
+    _init_exif_settings(head.exif, exif_data)
+    head.exif.info_message = _exif_info_message(head.exif, exif_data)
+    return exif_data['status']
+
+
+def read_exif_to_camera(headnum, camnum, filepath):
+    settings = get_main_settings()
+    camera = settings.get_camera(headnum, camnum)
+    if camera is None:
+        return False
+    exif_data = _read_exif(filepath)
+    _init_exif_settings(camera.exif, exif_data)
+    camera.exif.info_message = _exif_info_message(camera.exif, exif_data)
     return exif_data['status']
 
 
@@ -293,6 +319,14 @@ def update_exif_sizes_message(headnum, image):
 
     head.exif.sizes_message = _exif_sizes_message(headnum, image)
     return True
+
+
+def copy_exif_parameters_from_camera_to_head(camera, head):
+    head.exif.info_message = camera.exif.info_message
+    head.exif.image_width = camera.exif.image_width
+    head.exif.image_length = camera.exif.image_length
+    head.exif.exif_width = camera.exif.exif_width
+    head.exif.exif_length = camera.exif.exif_length
 
 
 def read_exif_from_camera(headnum, camnum):
