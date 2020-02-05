@@ -422,6 +422,9 @@ class FB_PT_ViewsPanel(Panel):
         op.headnum = headnum
 
         layout.prop(settings.get_head(headnum), 'use_emotions', expand=True)
+        op = layout.operator(Config.fb_actor_idname, text='Reset emotions')
+        op.action = 'reset_to_neutral_emotions'
+        op.headnum = headnum
 
         self._draw_camera_hint(layout, headnum)
 
