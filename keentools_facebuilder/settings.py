@@ -147,8 +147,8 @@ class FBExifItem(PropertyGroup):
     # from EXIF tags Image_ImageWidth, Image_ImageLength
     image_width: FloatProperty(default=-1.0)
     image_length: FloatProperty(default=-1.0)
-    # converted from image orientation
-    orientation: IntProperty(default=0)  # angle = orientation * Pi/2
+
+    orientation: IntProperty(default=0)
 
     # from EXIF tag ExifImageWidth, ExifImageLength
     exif_width: FloatProperty(default=-1.0)

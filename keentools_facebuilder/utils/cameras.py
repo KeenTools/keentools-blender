@@ -115,7 +115,7 @@ def rotate_background_image(camera, delta=1):
 
     camera.orientation += delta
     if camera.orientation < 0:
-        camera.orientation += 4  # +360
+        camera.orientation += 4
     if camera.orientation >= 4:
-        camera.orientation += -4  # -360
+        camera.orientation += -4
     background_image.rotation = camera.orientation * math.pi / 2

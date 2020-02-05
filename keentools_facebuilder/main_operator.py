@@ -34,7 +34,8 @@ from .fbdebug import FBDebug
 from .config import get_main_settings, get_operators, Config
 from .utils.exif_reader import (read_exif_from_camera,
                                 update_exif_sizes_message,
-                                get_sensor_size_35mm_equivalent)
+                                get_sensor_size_35mm_equivalent,
+                                copy_exif_parameters_from_camera_to_head)
 
 
 class FB_OT_SelectHead(Operator):
@@ -139,12 +140,7 @@ class FB_OT_SelectCamera(Operator):
         headobj = head.headobj
         bpy.context.view_layer.objects.active = headobj
 
-        # Update EXIF info
-        head.exif.info_message = camera.exif.info_message
-        head.exif.image_width = camera.exif.image_width
-        head.exif.image_length = camera.exif.image_length
-        head.exif.exif_width = camera.exif.exif_width
-        head.exif.exif_length = camera.exif.exif_length
+        copy_exif_parameters_from_camera_to_head(camera, head)
         update_exif_sizes_message(self.headnum, camera.cam_image)
 
         # Auto Call PinMode

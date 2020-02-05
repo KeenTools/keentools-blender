@@ -321,6 +321,14 @@ def update_exif_sizes_message(headnum, image):
     return True
 
 
+def copy_exif_parameters_from_camera_to_head(camera, head):
+    head.exif.info_message = camera.exif.info_message
+    head.exif.image_width = camera.exif.image_width
+    head.exif.image_length = camera.exif.image_length
+    head.exif.exif_width = camera.exif.exif_width
+    head.exif.exif_length = camera.exif.exif_length
+
+
 def read_exif_from_camera(headnum, camnum):
     settings = get_main_settings()
     head = settings.get_head(headnum)
