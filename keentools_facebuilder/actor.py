@@ -61,11 +61,11 @@ class FB_OT_Actor(Operator):
 
         elif self.action == 'reset_to_neutral_emotions':
             settings = get_main_settings()
-            head = settings.get_head(self.headnum)
-            fb = FBLoader.get_builder()
-            fb.reset_to_neutral_emotions(head.get_keyframe(self.camnum))
-            # coords.update_head_mesh(settings, fb, head)
-            FBLoader.fb_redraw(self.headnum, self.camnum)
+            if settings.current_camnum >= 0:
+                head = settings.get_head(self.headnum)
+                fb = FBLoader.get_builder()
+                fb.reset_to_neutral_emotions(head.get_keyframe(settings.current_camnum))
+                FBLoader.fb_redraw(self.headnum, settings.current_camnum)
 
         return {'FINISHED'}
 
