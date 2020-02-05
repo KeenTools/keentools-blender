@@ -53,8 +53,8 @@ def update_head_mesh_emotions(fb, headobj, keyframe):
 def update_head_mesh(settings, fb, head):
     if head.should_use_emotions():
         if settings.current_camnum >= 0:
-            update_head_mesh_emotions(fb, head.headobj,
-                                      settings.current_camnum)
+            update_head_mesh_emotions(
+                fb, head.headobj, head.get_keyframe(settings.current_camnum))
     else:
         update_head_mesh_neutral(fb, head.headobj)
 
