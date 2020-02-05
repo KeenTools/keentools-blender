@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from keentools_facebuilder.config import Config
+
 
 USER_MESSAGES = {
     'WE_CANNOT_SHIP': [
@@ -96,6 +98,13 @@ ERROR_MESSAGES = {
 }
 
 
+def _get_text_scale_y():
+    if hasattr(Config, 'text_scale_y'):
+        return Config.text_scale_y
+    else:
+        return 0.75
+
+
 def split_long_string(txt, length=80):
     return [txt[i:i + length] for i in range(0, len(txt), length)]
 
@@ -106,7 +115,7 @@ def draw_system_info(layout):
     import bpy
     box = layout.box()
     col = box.column()
-    col.scale_y = 0.75
+    col.scale_y = _get_text_scale_y()
     col.label(
         text="Blender version: {} API: {}.{}.{}".format(
             bpy.app.version_string, *bpy.app.version))
@@ -119,7 +128,7 @@ def draw_system_info(layout):
 def draw_warning_labels(layout, content, alert=True, icon='INFO'):
     col = layout.column()
     col.alert = alert
-    col.scale_y = 0.75
+    col.scale_y = _get_text_scale_y()
     for i, c in enumerate(content):
         icon_first = icon if i == 0 else 'BLANK1'
         col.label(text=c, icon=icon_first)

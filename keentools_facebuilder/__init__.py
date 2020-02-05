@@ -37,6 +37,7 @@ import logging.config
 
 import bpy
 
+# Only minimal imports are performed to check the start
 from .config import Config
 from .messages import (ERROR_MESSAGES, draw_warning_labels, draw_system_info,
                        draw_long_label, draw_long_labels)
@@ -52,7 +53,7 @@ def _is_python_64bit():
 
 
 def _is_config_latest():
-    return Config.addon_version == '1.5.8 (Beta)'  # 1.5.8
+    return Config.addon_version == '1.5.8 (Beta)'
 
 
 def _is_blender_too_old():
