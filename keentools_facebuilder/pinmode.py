@@ -247,6 +247,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             coords.get_raw_camera_2d_data(context))
 
         FBLoader.load_all(self.headnum, self.camnum)
+        coords.update_head_mesh(settings, FBLoader.get_builder(), head)
 
         # Hide geometry
         headobj.hide_set(True)
