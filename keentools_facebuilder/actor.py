@@ -67,6 +67,8 @@ class FB_OT_Actor(Operator):
                 fb.reset_to_neutral_emotions(head.get_keyframe(settings.current_camnum))
                 FBLoader.fb_redraw(self.headnum, settings.current_camnum)
 
+                FBLoader.save_only(self.headnum)
+
         return {'FINISHED'}
 
 
