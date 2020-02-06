@@ -137,6 +137,8 @@ def bake_tex(headnum, tex_name):
 
     FBLoader.load_only(headnum)
     fb = FBLoader.get_builder()
+    for i, m in enumerate(head.get_masks()):
+        fb.set_mask(i, m)
 
     mesh = head.headobj.data
     uvmap = get_mesh_uvmap(mesh)

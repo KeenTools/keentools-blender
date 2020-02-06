@@ -103,14 +103,11 @@ def update_mesh_parts(self, context):
         return
 
     head = settings.get_head(headnum)
-    masks = [head.check_ears, head.check_eyes, head.check_face,
-             head.check_headback, head.check_jaw, head.check_mouth,
-             head.check_neck, head.check_nose]
 
     old_mesh = head.headobj.data
     # Create new mesh
     mesh = FBLoader.get_builder_mesh(FBLoader.get_builder(), 'FBHead_mesh',
-                                     tuple(masks),
+                                     head.get_masks(),
                                      uv_set=head.tex_uv_shape)
     try:
         # Copy old material
@@ -447,6 +444,11 @@ class FBHeadItem(PropertyGroup):
 
     def should_use_emotions(self):
         return self.use_emotions == 'emotions'
+
+    def get_masks(self):
+        return (self.check_ears, self.check_eyes, self.check_face,
+                self.check_headback, self.check_jaw, self.check_mouth,
+                self.check_neck, self.check_nose)
 
 
 class FBSceneSettings(PropertyGroup):
