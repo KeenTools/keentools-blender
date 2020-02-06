@@ -26,7 +26,7 @@ from bpy.props import (
     IntProperty,
 )
 
-from .utils import cameras, manipulate, materials
+from .utils import cameras, manipulate, materials, coords
 from .utils.manipulate import check_settings
 from .utils.attrs import get_obj_collection, safe_delete_collection
 from .fbloader import FBLoader
@@ -829,6 +829,40 @@ class FB_OT_ResetImageRotation(Operator):
         return {'FINISHED'}
 
 
+class FB_OT_ResetExpression(Operator):
+    bl_idname = Config.fb_reset_expression_idname
+    bl_label = "Reset Expression"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Reset Expression"
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        head = settings.get_head(self.headnum)
+        if head is None:
+            return {'CANCELLED'}
+        if not head.has_camera(settings.current_camnum):
+            return {'CANCELLED'}
+
+        FBLoader.load_only(self.headnum)
+        fb = FBLoader.get_builder()
+        fb.reset_to_neutral_emotions(
+            head.get_keyframe(settings.current_camnum))
+
+        if settings.pinmode:
+            FBLoader.save_only(self.headnum)
+            FBLoader.fb_redraw(self.headnum, settings.current_camnum)
+        else:
+            coords.update_head_mesh(settings, fb, head)
+
+        return {'FINISHED'}
+
+
 class FB_OT_ShowTexture(Operator):
     bl_idname = Config.fb_show_tex_idname
     bl_label = "Show Texture"
@@ -947,6 +981,7 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_RotateImageCW,
                        FB_OT_RotateImageCCW,
                        FB_OT_ResetImageRotation,
+                       FB_OT_ResetExpression,
                        FB_OT_ShowTexture,
                        FB_OT_ShowSolid,
                        FB_OT_ExitPinmode,

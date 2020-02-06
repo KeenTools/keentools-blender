@@ -203,7 +203,6 @@ class FBLoader:
         fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.get_head(headnum)
-        # coords.update_head_mesh_neutral(fb, head.headobj)
         coords.update_head_mesh(settings, fb, head)
 
     @classmethod

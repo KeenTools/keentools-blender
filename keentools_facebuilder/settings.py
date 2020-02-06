@@ -373,7 +373,7 @@ class FBHeadItem(PropertyGroup):
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
             return self.cameras[len(self.cameras) + camnum]
-        if 0 <= camnum <= len(self.cameras):
+        if 0 <= camnum < len(self.cameras):
             return self.cameras[camnum]
         else:
             return None
@@ -413,6 +413,9 @@ class FBHeadItem(PropertyGroup):
             return camera.get_keyframe()
         else:
             return -1
+
+    def has_camera(self, camnum):
+        return 0 <= camnum < len(self.cameras)
 
     def has_cameras(self):
         return len(self.cameras) > 0

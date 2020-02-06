@@ -138,6 +138,9 @@ class Config:
     fb_reset_image_rotation_idname = \
         operators + '.' + fb_reset_image_rotation_callname
 
+    fb_reset_expression_callname = 'reset_expression'
+    fb_reset_expression_idname = operators + '.' + fb_reset_expression_callname
+
     fb_bake_tex_callname = 'bake_tex'
     fb_bake_tex_idname = operators + '.' + fb_bake_tex_callname
 
