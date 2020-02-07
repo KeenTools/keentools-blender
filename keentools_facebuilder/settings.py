@@ -297,11 +297,12 @@ class FBCameraItem(PropertyGroup):
 
 class FBHeadItem(PropertyGroup):
     mod_ver: IntProperty(name="Modifier Version", default=-1)
-    use_emotions: bpy.props.EnumProperty(
-        name="Use Emotions", items=[
-            ('emotions', 'Use emotions', 'Update render size to images resolution', 0),
-            ('neutral', 'Neutral', 'Leave the render size unchanged', 1)],
-        default='neutral')
+    # use_emotions: bpy.props.EnumProperty(
+    #     name="Use Emotions", items=[
+    #         ('emotions', 'Use emotions', 'Update render size to images resolution', 0),
+    #         ('neutral', 'Neutral', 'Leave the render size unchanged', 1)],
+    #     default='neutral')
+    use_emotions: bpy.props.BoolProperty(name="Allow facial expressions", default=False)
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
 
@@ -443,7 +444,7 @@ class FBHeadItem(PropertyGroup):
         self.headobj[Config.fb_camera_prop_name[0]] = d
 
     def should_use_emotions(self):
-        return self.use_emotions == 'emotions'
+        return self.use_emotions
 
     def get_masks(self):
         return (self.check_ears, self.check_eyes, self.check_face,
@@ -521,6 +522,8 @@ class FBSceneSettings(PropertyGroup):
     # Internal use only
     current_headnum: IntProperty(name="Current Head Number", default=-1)
     current_camnum: IntProperty(name="Current Camera Number", default=-1)
+    current_emotions_camnum: IntProperty(name="Current Emotions Camera Number",
+                                         default=-1)
 
     tmp_headnum: IntProperty(name="Temporary Head Number", default=-1)
     tmp_camnum: IntProperty(name="Temporary Camera Number", default=-1)
@@ -565,6 +568,11 @@ class FBSceneSettings(PropertyGroup):
     blue_camera_button: BoolProperty(
         description="Current camera",
         name="Blue camera button", default=True,
+        update=update_blue_camera_button)
+
+    blue_emotions_button: BoolProperty(
+        description="Use Expressions",
+        name="Blue expressions button", default=True,
         update=update_blue_camera_button)
 
     blue_head_button: BoolProperty(

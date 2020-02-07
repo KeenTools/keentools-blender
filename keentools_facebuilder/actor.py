@@ -59,6 +59,16 @@ class FB_OT_Actor(Operator):
             # Allow converts scenes pinned on default cameras
             manipulate.use_render_frame_size_scaled()  # disabled in interface
 
+        elif self.action == 'reset_model_to_neutral':
+            settings = get_main_settings()
+            manipulate.reset_model_to_neutral(self.headnum)
+            settings.current_emotions_camnum = -1
+
+        elif self.action == 'load_expressions_to_model':
+            settings = get_main_settings()
+            manipulate.load_expressions_to_model(self.headnum, self.camnum)
+            settings.current_emotions_camnum = self.camnum
+
         return {'FINISHED'}
 
 

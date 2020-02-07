@@ -25,6 +25,7 @@ import re
 from ..fbloader import FBLoader
 from ..utils.manipulate import what_is_state
 from ..utils.materials import find_tex_by_name
+from ..utils.icons import FBIcons
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
@@ -313,8 +314,14 @@ class FB_PT_ViewsPanel(Panel):
             text='', icon='QUESTION')
 
     def _draw_pins_panel(self, headnum, camnum):
+        settings = get_main_settings()
         layout = self.layout
         box = layout.box()
+
+        if settings.get_head(headnum).should_use_emotions():
+            op = box.operator(Config.fb_reset_expression_idname)
+            op.headnum = headnum
+
         op = box.operator(Config.fb_center_geo_idname,
                           text="Reset camera")
         op.headnum = headnum
@@ -327,12 +334,22 @@ class FB_PT_ViewsPanel(Panel):
     def _draw_camera_list(self, headnum, layout):
         settings = get_main_settings()
         head = settings.get_head(headnum)
+
+        if not head.has_cameras():
+            return
+
         wrong_size_counter = 0
         fw = settings.frame_width
         fh = settings.frame_height
 
+        box = layout.box()
+        if settings.pinmode:
+            # layout.prop(settings.get_head(headnum), 'use_emotions', expand=True)
+            box.prop(settings.get_head(headnum), 'use_emotions', expand=True)
+
+        box = layout.box()
         for i, camera in enumerate(head.cameras):
-            box = layout.box()
+
             row = box.row()
 
             w = camera.get_image_width()
@@ -355,6 +372,29 @@ class FB_PT_ViewsPanel(Panel):
                     text=cam_name, icon=view_icon)
                 op.headnum = headnum
                 op.camnum = i
+
+            if head.should_use_emotions():
+                col = row.column()
+                if settings.pinmode:
+                    col.enabled = False
+
+                if settings.current_emotions_camnum == i:
+                    op = col.operator(
+                        Config.fb_actor_idname, text='',
+                        icon='GHOST_ENABLED')
+                    op.action = 'reset_model_to_neutral'
+                    op.headnum = headnum
+                    op.camnum = i
+                    # col.prop(settings, 'blue_emotions_button', toggle=1,
+                    #          text='',
+                    #          icon_value=FBIcons.get_id('expressions_icon'))
+                else:
+                    op = col.operator(
+                        Config.fb_actor_idname, text='',
+                        icon_value=FBIcons.get_id('expressions_icon'))
+                    op.action = 'load_expressions_to_model'
+                    op.headnum = headnum
+                    op.camnum = i
 
             col = row.column()
             if not camera.cam_image:
@@ -421,13 +461,9 @@ class FB_PT_ViewsPanel(Panel):
                           text='', icon='SETTINGS')
         op.headnum = headnum
 
-        layout.prop(settings.get_head(headnum), 'use_emotions', expand=True)
-        op = layout.operator(Config.fb_reset_expression_idname)
-        op.headnum = headnum
+        self._draw_exit_pinmode(layout)
 
         self._draw_camera_hint(layout, headnum)
-
-        self._draw_exit_pinmode(layout)
 
         # Large List of cameras
         self._draw_camera_list(headnum, layout)
