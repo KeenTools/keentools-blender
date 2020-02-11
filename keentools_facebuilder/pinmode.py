@@ -150,8 +150,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         kid = settings.get_keyframe(headnum, camnum)
         fb = FBLoader.get_builder()
 
-        if head.should_use_emotions:
-            coords.update_head_mesh_emotions(fb, head.headobj, kid)
+        coords.update_head_mesh(settings, fb, head)
 
         FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
         FBLoader.shader_update(head.headobj)

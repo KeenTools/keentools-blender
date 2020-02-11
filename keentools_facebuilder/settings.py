@@ -47,6 +47,7 @@ def update_emotions(self, context):
     fb = FBLoader.get_builder()
     head = settings.get_head(settings.current_headnum)
     if head is not None:
+        head.need_update = True
         coords.update_head_mesh(settings, fb, head)
         FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
 
@@ -584,11 +585,6 @@ class FBSceneSettings(PropertyGroup):
     blue_camera_button: BoolProperty(
         description="Current camera",
         name="Blue camera button", default=True,
-        update=update_blue_camera_button)
-
-    blue_emotions_button: BoolProperty(
-        description="Use Expressions",
-        name="Blue expressions button", default=True,
         update=update_blue_camera_button)
 
     blue_head_button: BoolProperty(

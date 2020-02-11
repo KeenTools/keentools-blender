@@ -827,9 +827,9 @@ class FB_OT_ResetImageRotation(Operator):
 
 class FB_OT_ResetExpression(Operator):
     bl_idname = Config.fb_reset_expression_idname
-    bl_label = "Reset Expression"
+    bl_label = "Reset expression"
     bl_options = {'REGISTER'}  # 'UNDO'
-    bl_description = "Reset Expression"
+    bl_description = "Reset expression"
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
