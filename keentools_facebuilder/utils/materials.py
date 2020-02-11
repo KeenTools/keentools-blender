@@ -214,7 +214,6 @@ def bake_tex(headnum, tex_name):
         tb.set_equalize_brightness(settings.tex_equalize_brightness)
         tb.set_equalize_colour(settings.tex_equalize_colour)
 
-        # geos = [geo for _ in keyframes]
         model_views = [head.cameras[x].get_model_mat() for x in camnums]
 
         texture = tb.build_texture(geos, imgs, model_views, projections)

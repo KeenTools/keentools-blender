@@ -269,7 +269,6 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         FBLoader.rigidity_post()
         FBLoader.place_cameraobj(kid, camobj, headobj)
-        # coords.update_head_mesh_neutral(fb, headobj)
         coords.update_head_mesh(settings, fb, head)
 
         FBLoader.viewport().wireframer().init_geom_data(headobj)

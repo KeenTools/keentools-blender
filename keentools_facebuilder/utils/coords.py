@@ -55,10 +55,8 @@ def update_head_mesh(settings, fb, head):
         if settings.current_camnum >= 0:
             update_head_mesh_emotions(
                 fb, head.headobj, head.get_keyframe(settings.current_camnum))
-            settings.current_emotions_camnum = settings.current_camnum
     else:
         update_head_mesh_neutral(fb, head.headobj)
-        settings.current_emotions_camnum = -1
 
 
 def projection_matrix(w, h, fl, sw, near, far):

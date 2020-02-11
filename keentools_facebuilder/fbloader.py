@@ -97,15 +97,12 @@ class FBLoader:
             c.camobj.data.sensor_width = head.sensor_width
             c.camobj.data.sensor_height = head.sensor_height
 
-        # Setup Rigidity only for FaceBuilder
         FBLoader.rigidity_setup()
-        # Activate Focal Estimation
         fb.set_focal_length_estimation(head.auto_focal_estimation)
         fb.set_use_emotions(head.should_use_emotions())
 
         if max_index >= 0:
             try:
-                # Solver
                 fb.solve_for_current_pins(max_index)
                 logger.debug("SOLVED {}".format(max_index))
 
@@ -117,8 +114,6 @@ class FBLoader:
                 logger.error("SOLVER PROBLEM")
                 settings.force_out_pinmode = True
 
-        # Head Mesh update
-        # coords.update_head_mesh_neutral(fb, head.headobj)
         coords.update_head_mesh(settings, fb, head)
 
         if settings.pinmode:
@@ -239,10 +234,7 @@ class FBLoader:
         headobj = head.headobj
         camobj = cam.camobj
         kid = settings.get_keyframe(headnum, camnum)
-        # Camera update
         cls.place_cameraobj(kid, camobj, headobj)
-        # Head Mesh update
-        # coords.update_head_mesh_neutral(fb, headobj)
         coords.update_head_mesh(settings, fb, head)
         # Load pins from model
         vp = cls.viewport()

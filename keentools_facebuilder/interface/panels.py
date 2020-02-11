@@ -25,7 +25,6 @@ import re
 from ..fbloader import FBLoader
 from ..utils.manipulate import what_is_state
 from ..utils.materials import find_tex_by_name
-from ..utils.icons import FBIcons
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 

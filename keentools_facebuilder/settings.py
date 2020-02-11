@@ -313,11 +313,6 @@ class FBCameraItem(PropertyGroup):
 
 class FBHeadItem(PropertyGroup):
     mod_ver: IntProperty(name="Modifier Version", default=-1)
-    # use_emotions: bpy.props.EnumProperty(
-    #     name="Use Emotions", items=[
-    #         ('emotions', 'Use emotions', 'Update render size to images resolution', 0),
-    #         ('neutral', 'Neutral', 'Leave the render size unchanged', 1)],
-    #     default='neutral')
     use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
                                          default=False, update=update_emotions)
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
@@ -539,8 +534,6 @@ class FBSceneSettings(PropertyGroup):
     # Internal use only
     current_headnum: IntProperty(name="Current Head Number", default=-1)
     current_camnum: IntProperty(name="Current Camera Number", default=-1)
-    current_emotions_camnum: IntProperty(name="Current Emotions Camera Number",
-                                         default=-1)
 
     tmp_headnum: IntProperty(name="Temporary Head Number", default=-1)
     tmp_camnum: IntProperty(name="Temporary Camera Number", default=-1)
