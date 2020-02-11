@@ -125,17 +125,15 @@ class FB_OT_PinMode(bpy.types.Operator):
             return {'FINISHED'}
 
         FBLoader.auto_focal_estimation_post(head, camobj)
-
         FBLoader.update_pins_count(headnum, camnum)
-        # coords.update_head_mesh_neutral(fb, head.headobj)
-        coords.update_head_mesh(settings, fb, head)
 
         FBLoader.update_all_camera_positions(headnum)
-        FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
-        FBLoader.shader_update(head.headobj)
         # Save result
         FBLoader.fb_save(headnum, camnum)
-        manipulate.push_head_state_in_undo_history(head, 'Pin remove')
+        manipulate.push_neutral_head_in_undo_history(head, kid, 'Pin remove.')
+
+        FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
+        FBLoader.shader_update(head.headobj)
 
         FBLoader.viewport().create_batch_2d(context)
         return {"RUNNING_MODAL"}
@@ -150,9 +148,12 @@ class FB_OT_PinMode(bpy.types.Operator):
         # Reload pins surface points
         FBLoader.load_all(headnum, camnum)
         kid = settings.get_keyframe(headnum, camnum)
-        FBLoader.viewport().update_surface_points(
-            FBLoader.get_builder(), head.headobj, kid)
+        fb = FBLoader.get_builder()
 
+        if head.should_use_emotions:
+            coords.update_head_mesh_emotions(fb, head.headobj, kid)
+
+        FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
         FBLoader.shader_update(head.headobj)
 
         FBDebug.add_event_to_queue('UNDO_CALLED', 0, 0)
@@ -271,7 +272,8 @@ class FB_OT_PinMode(bpy.types.Operator):
             FBStopShaderTimer.start()
         settings.pinmode = True
 
-        manipulate.push_head_state_in_undo_history(head, 'Pin Mode Start')
+        manipulate.push_neutral_head_in_undo_history(head, kid,
+                                                     'Pin Mode Start.')
         return {"RUNNING_MODAL"}
 
     def _wireframe_view_toggle(self):

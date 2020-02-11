@@ -180,16 +180,12 @@ class FB_OT_CenterGeo(Operator):
         fb = FBLoader.get_builder()
         kid = settings.get_keyframe(headnum, camnum)
 
-        FBLoader.fb_save(headnum, camnum)
-        manipulate.push_head_state_in_undo_history(
-            settings.get_head(headnum), 'Before Reset Camera')
-
         fb.center_model_mat(kid)
         FBLoader.fb_save(headnum, camnum)
-        FBLoader.fb_redraw(headnum, camnum)
 
-        manipulate.push_head_state_in_undo_history(
-            settings.get_head(headnum), 'After Reset Camera')
+        manipulate.push_neutral_head_in_undo_history(
+            settings.get_head(headnum), kid, 'Reset Camera.')
+        FBLoader.fb_redraw(headnum, camnum)
         # === Debug only ===
         FBDebug.add_event_to_queue('CENTER_GEO', 0, 0)
         FBDebug.add_event_to_queue('FORCE_SNAPSHOT', 0, 0)
@@ -220,7 +216,7 @@ class FB_OT_Unmorph(Operator):
 
         fb = FBLoader.get_builder()
         FBLoader.fb_save(headnum, camnum)
-        manipulate.push_head_state_in_undo_history(
+        manipulate.push_head_in_undo_history(
             settings.get_head(headnum), 'Before Reset')
 
         fb.unmorph()
@@ -237,7 +233,7 @@ class FB_OT_Unmorph(Operator):
             FBLoader.update_mesh_only(headnum)
 
         FBLoader.fb_save(headnum, camnum)
-        manipulate.push_head_state_in_undo_history(
+        manipulate.push_head_in_undo_history(
             settings.get_head(headnum), 'After Reset')
 
         return {'FINISHED'}
@@ -267,7 +263,7 @@ class FB_OT_RemovePins(Operator):
         fb = FBLoader.get_builder()
         kid = settings.get_keyframe(headnum, camnum)
         FBLoader.fb_save(headnum, camnum)
-        manipulate.push_head_state_in_undo_history(
+        manipulate.push_head_in_undo_history(
             settings.get_head(headnum), 'Before Remove pins')
 
         fb.remove_pins(kid)
@@ -277,7 +273,7 @@ class FB_OT_RemovePins(Operator):
         FBLoader.fb_redraw(headnum, camnum)
         FBLoader.update_pins_count(headnum, camnum)
 
-        manipulate.push_head_state_in_undo_history(
+        manipulate.push_head_in_undo_history(
             settings.get_head(headnum), 'After Remove pins')
 
         # === Debug only ===
@@ -844,6 +840,9 @@ class FB_OT_ResetExpression(Operator):
     def execute(self, context):
         settings = get_main_settings()
         head = settings.get_head(self.headnum)
+
+        if not settings.pinmode:
+            return {'CANCELLED'}
         if head is None:
             return {'CANCELLED'}
         if not head.has_camera(settings.current_camnum):
@@ -854,13 +853,11 @@ class FB_OT_ResetExpression(Operator):
         fb.reset_to_neutral_emotions(
             head.get_keyframe(settings.current_camnum))
 
-        if settings.pinmode:
-            FBLoader.save_only(self.headnum)
-            FBLoader.fb_redraw(self.headnum, settings.current_camnum)
-        else:
-            coords.update_head_mesh(settings, fb, head)
+        FBLoader.save_only(self.headnum)
+        FBLoader.fb_redraw(self.headnum, settings.current_camnum)
+        coords.update_head_mesh_neutral(fb, head.headobj)
 
-        manipulate.push_head_state_in_undo_history(head, 'Reset Expression')
+        manipulate.push_head_in_undo_history(head, 'Reset Expression.')
 
         return {'FINISHED'}
 

@@ -91,8 +91,8 @@ class FB_OT_MovePin(bpy.types.Operator):
             vp.pins().set_current_pin_num_to_last()
             FBLoader.update_pins_count(headnum, camnum)
 
-            manipulate.push_head_state_in_undo_history(
-                settings.get_head(headnum), 'New Pin')
+            manipulate.push_neutral_head_in_undo_history(
+                settings.get_head(headnum), kid, 'New Pin.')
         else:
             logger.debug("MISS MODEL")
             FBDebug.add_event_to_queue(
@@ -167,12 +167,10 @@ class FB_OT_MovePin(bpy.types.Operator):
             if not fb.deserialize(head.get_serial_str()):
                 logger.warning('DESERIALIZE ERROR: ', head.get_serial_str())
 
-            # coords.update_head_mesh_neutral(fb, head.headobj)
-            coords.update_head_mesh(settings, fb, head)
             FBLoader.update_all_camera_positions(headnum)
             # ---------
             # PUSH Previous
-            manipulate.push_head_state_in_undo_history(head, 'Pin Move')
+            manipulate.push_neutral_head_in_undo_history(head, kid, 'Move Pin.')
             # ---------
             # Restore last position
             head.set_serial_str(serial_str)
@@ -207,14 +205,11 @@ class FB_OT_MovePin(bpy.types.Operator):
         self._push_previous_state()
 
         fb = FBLoader.get_builder()
-        # coords.update_head_mesh_neutral(fb, head.headobj)
-        coords.update_head_mesh(settings, fb, head)
         FBLoader.update_all_camera_positions(headnum)
-
+        FBLoader.fb_save(headnum, camnum)
         # ---------
         # PUSH Last
-        FBLoader.fb_save(headnum, camnum)
-        manipulate.push_head_state_in_undo_history(head, 'Pin Result')
+        manipulate.push_neutral_head_in_undo_history(head, kid, 'Pin Result.')
         # ---------
 
         # Load 3D pins

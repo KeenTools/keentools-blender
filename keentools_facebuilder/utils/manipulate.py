@@ -101,20 +101,19 @@ def force_undo_push(msg='KeenTools operation'):
     bpy.ops.ed.undo_push(message=msg)
 
 
-def push_head_state_in_undo_history(head, msg='KeenTools operation'):
+def push_head_in_undo_history(head, msg='KeenTools operation'):
     head.need_update = True
     force_undo_push(msg)
     head.need_update = False
 
 
-def push_neutral_head_state_in_undo_history(head, keyframe,
-                                            msg='KeenTools operation'):
+def push_neutral_head_in_undo_history(head, keyframe,
+                                      msg='KeenTools operation'):
     fb = FBLoader.get_builder()
     coords.update_head_mesh_neutral(fb, head.headobj)
-    head.need_update = True
-    force_undo_push(msg)
-    head.need_update = False
-    coords.update_head_mesh_emotions(fb, head.headobj, keyframe)
+    push_head_in_undo_history(head, msg)
+    if head.should_use_emotions():
+        coords.update_head_mesh_emotions(fb, head.headobj, keyframe)
 
 
 def check_settings():
