@@ -343,9 +343,7 @@ class FB_PT_ViewsPanel(Panel):
         fh = settings.frame_height
 
         box = layout.box()
-        if settings.pinmode:
-            # layout.prop(settings.get_head(headnum), 'use_emotions', expand=True)
-            box.prop(settings.get_head(headnum), 'use_emotions', expand=True)
+        box.prop(settings.get_head(headnum), 'use_emotions')
 
         box = layout.box()
         for i, camera in enumerate(head.cameras):
@@ -372,29 +370,6 @@ class FB_PT_ViewsPanel(Panel):
                     text=cam_name, icon=view_icon)
                 op.headnum = headnum
                 op.camnum = i
-
-            if head.should_use_emotions():
-                col = row.column()
-                if settings.pinmode:
-                    col.enabled = False
-
-                if settings.current_emotions_camnum == i:
-                    op = col.operator(
-                        Config.fb_actor_idname, text='',
-                        icon='GHOST_ENABLED')
-                    op.action = 'reset_model_to_neutral'
-                    op.headnum = headnum
-                    op.camnum = i
-                    # col.prop(settings, 'blue_emotions_button', toggle=1,
-                    #          text='',
-                    #          icon_value=FBIcons.get_id('expressions_icon'))
-                else:
-                    op = col.operator(
-                        Config.fb_actor_idname, text='',
-                        icon_value=FBIcons.get_id('expressions_icon'))
-                    op.action = 'load_expressions_to_model'
-                    op.headnum = headnum
-                    op.camnum = i
 
             col = row.column()
             if not camera.cam_image:

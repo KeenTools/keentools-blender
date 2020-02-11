@@ -19,6 +19,9 @@
 
 import bpy
 import numpy as np
+import logging
+
+
 from . fbloader import FBLoader
 from bpy.props import (
     BoolProperty,
@@ -31,9 +34,21 @@ from bpy.props import (
     EnumProperty
 )
 from bpy.types import PropertyGroup
+from .utils import coords, manipulate
 from . fbdebug import FBDebug
 from . config import Config, get_main_settings, get_operators
 from .utils.manipulate import what_is_state
+
+
+def update_emotions(self, context):
+    settings = get_main_settings()
+    if not settings.pinmode:
+        return
+    fb = FBLoader.get_builder()
+    head = settings.get_head(settings.current_headnum)
+    if head is not None:
+        coords.update_head_mesh(settings, fb, head)
+        FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
 
 
 def update_wireframe(self, context):
@@ -302,7 +317,8 @@ class FBHeadItem(PropertyGroup):
     #         ('emotions', 'Use emotions', 'Update render size to images resolution', 0),
     #         ('neutral', 'Neutral', 'Leave the render size unchanged', 1)],
     #     default='neutral')
-    use_emotions: bpy.props.BoolProperty(name="Allow facial expressions", default=False)
+    use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
+                                         default=False, update=update_emotions)
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
 

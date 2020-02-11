@@ -178,6 +178,7 @@ class FBLoader:
         cameras.show_all_cameras(headnum)
 
         FBLoader.update_all_camera_focals(head)
+        coords.update_head_mesh_neutral(FBLoader.get_builder(), headobj)
 
         # === Debug use only ===
         FBDebug.add_event_to_queue('OUT_PIN_MODE', 0, 0)

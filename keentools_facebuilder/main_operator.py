@@ -101,8 +101,8 @@ class FB_OT_DeleteHead(Operator):
 
 class FB_OT_SelectCamera(Operator):
     bl_idname = Config.fb_select_camera_idname
-    bl_label = "Pin Mode"
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+    bl_label = "Pin Mode Select Camera"
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Switch to Pin mode for this view"
 
     headnum: IntProperty(default=0)
@@ -832,7 +832,7 @@ class FB_OT_ResetImageRotation(Operator):
 class FB_OT_ResetExpression(Operator):
     bl_idname = Config.fb_reset_expression_idname
     bl_label = "Reset Expression"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER'}  # 'UNDO'
     bl_description = "Reset Expression"
 
     headnum: IntProperty(default=0)
@@ -859,6 +859,8 @@ class FB_OT_ResetExpression(Operator):
             FBLoader.fb_redraw(self.headnum, settings.current_camnum)
         else:
             coords.update_head_mesh(settings, fb, head)
+
+        manipulate.push_head_state_in_undo_history(head, 'Reset Expression')
 
         return {'FINISHED'}
 

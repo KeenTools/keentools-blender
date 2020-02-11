@@ -34,7 +34,7 @@ class FB_OT_PinMode(bpy.types.Operator):
     bl_idname = Config.fb_pinmode_idname
     bl_label = "FaceBuilder Pinmode"
     bl_description = "Operator for in-Viewport drawing"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'INTERNAL'}  # 'UNDO'
 
     headnum: bpy.props.IntProperty(default=0)
     camnum: bpy.props.IntProperty(default=0)
@@ -270,6 +270,8 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.debug("STOPPER START")
             FBStopShaderTimer.start()
         settings.pinmode = True
+
+        manipulate.push_head_state_in_undo_history(head, 'Pin Mode Start')
         return {"RUNNING_MODAL"}
 
     def _wireframe_view_toggle(self):
@@ -370,15 +372,10 @@ class FB_OT_PinMode(bpy.types.Operator):
                 and event.value == 'RELEASE':
             self._set_shift_pressed(False)
 
-        return self._on_final(context, head)
-
-    def _on_final(self, context, head):
-        logger = logging.getLogger(__name__)
-        settings = get_main_settings()
-        headnum = settings.current_headnum
         camnum = settings.current_camnum
         kid = settings.get_keyframe(headnum, camnum)
 
+        # logger.debug("need_update {}".format(head.need_update))
         if head.need_update:
             # Undo was called so Model redraw is needed
             logger.debug("UNDO CALL DETECTED")
