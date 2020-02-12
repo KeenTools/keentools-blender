@@ -133,7 +133,7 @@ class FB_OT_AddonWarning(Operator):
         elif self.msg == ErrorType.PktProblem:
             self.set_content([
                 "You need to install KeenTools Core library",
-                "before using FaceBuilder.",
+                "before using FaceBuilder."
             ])
         elif self.msg == ErrorType.AboutFrameSize:
             self.set_content([
@@ -153,6 +153,14 @@ class FB_OT_AddonWarning(Operator):
                 "===============",
                 "It looks like the mesh is damaged. ",
                 "Addon cannot work with the wrong topology"
+            ])
+        elif self.msg == ErrorType.PktModelProblem:
+            self.set_content([
+                "Can't load Model data",
+                "===============",
+                "You need to reinstall ",
+                "KeenTools FaceBuilder add-on",
+                "because the Model data was corrupted."
             ])
         return context.window_manager.invoke_props_dialog(self, width=300)
 

@@ -373,3 +373,4 @@ class ErrorType:
     PktProblem = 7
     AboutFrameSize = 8
     MeshCorrupted = 9
+    PktModelProblem = 10
