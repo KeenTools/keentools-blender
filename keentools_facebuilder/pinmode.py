@@ -97,34 +97,22 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.viewport().wireframer().create_batches()
 
     def _delete_found_pin(self, nearest, context):
-        logger = logging.getLogger(__name__)
         settings = get_main_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
         head = settings.get_head(headnum)
         kid = settings.get_keyframe(headnum, camnum)
-        cam = head.get_camera(camnum)
-        camobj = cam.camobj
 
         fb = FBLoader.get_builder()
         fb.remove_pin(kid, nearest)
         del FBLoader.viewport().pins().arr()[nearest]
         logging.debug("PIN REMOVED {}".format(nearest))
 
-        FBLoader.rigidity_setup()
-        fb.set_focal_length_estimation(head.auto_focal_estimation)
-        fb.set_use_emotions(head.should_use_emotions())
-
-        try:
-            fb.solve_for_current_pins(kid)
-        except pkt.module().UnlicensedException:
-            settings.force_out_pinmode = True
-            settings.license_error = True
-            FBLoader.out_pinmode(headnum, camnum)
-            logger.error("PINMODE LICENSE EXCEPTION")
+        if not FBLoader.solve(headnum, camnum):
+            logger = logging.getLogger(__name__)
+            logger.error("DELETE PIN PROBLEM")
             return {'FINISHED'}
 
-        FBLoader.auto_focal_estimation_post(head, camobj)
         FBLoader.update_pins_count(headnum, camnum)
 
         FBLoader.update_all_camera_positions(headnum)
@@ -221,10 +209,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         # We had to finish last operation if we are in Pinmode
         if settings.pinmode:
             if settings.current_headnum >= 0 and settings.current_camnum >= 0:
-                FBLoader.out_pinmode(
-                    settings.current_headnum,
-                    settings.current_camnum
-                )
+                FBLoader.out_pinmode(settings.current_headnum)
                 logger.debug("PINMODE FORCE FINISH: H{} C{}".format(
                     settings.current_headnum, settings.current_camnum))
         else:
@@ -289,25 +274,23 @@ class FB_OT_PinMode(bpy.types.Operator):
     def _modal_should_finish(self, context, event):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
-
         headnum = settings.current_headnum
-        camnum = settings.current_camnum
 
         # Quit if Screen changed
         if context.area is None:  # Different operation Space
             logger.debug("CONTEXT LOST")
-            FBLoader.out_pinmode(headnum, camnum)
+            FBLoader.out_pinmode(headnum)
             return True
 
         if headnum < 0:
             logger.error("HEAD LOST")
-            FBLoader.out_pinmode(headnum, camnum)
+            FBLoader.out_pinmode(headnum)
             return True
 
         # Quit if Force Pinmode Out flag is set (by ex. license, pin problem)
         if settings.force_out_pinmode:
             logger.debug("FORCE PINMODE OUT")
-            FBLoader.out_pinmode(headnum, camnum)
+            FBLoader.out_pinmode(headnum)
             settings.force_out_pinmode = False
             if settings.license_error:
                 # Show License Warning
@@ -319,11 +302,11 @@ class FB_OT_PinMode(bpy.types.Operator):
         # Quit when camera rotated by user
         if context.space_data.region_3d.view_perspective != 'CAMERA':
             logger.debug("CAMERA ROTATED PINMODE OUT")
-            FBLoader.out_pinmode(headnum, camnum)
+            FBLoader.out_pinmode(headnum)
             return True
 
         if event.type == 'ESC':
-            FBLoader.out_pinmode(headnum, camnum)
+            FBLoader.out_pinmode(headnum)
             # --- PROFILING ---
             if FBLoader.viewport().profiling:
                 pr = FBLoader.viewport().pr
@@ -364,7 +347,6 @@ class FB_OT_PinMode(bpy.types.Operator):
             return self._on_right_mouse_press(
                 context, event.mouse_region_x, event.mouse_region_y)
 
-        # SHIFT-press control
         if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
                 and event.value == 'PRESS':
             self._set_shift_pressed(True)
@@ -376,17 +358,14 @@ class FB_OT_PinMode(bpy.types.Operator):
         camnum = settings.current_camnum
         kid = settings.get_keyframe(headnum, camnum)
 
-        # logger.debug("need_update {}".format(head.need_update))
         if head.need_update:
-            # Undo was called so Model redraw is needed
             logger.debug("UNDO CALL DETECTED")
             self._undo_detected()
 
         vp = FBLoader.viewport()
-        # Catch if wireframer is off
         if not (vp.wireframer().is_working()):
             logger.debug("WIREFRAME IS OFF")
-            FBLoader.out_pinmode(headnum, camnum)
+            FBLoader.out_pinmode(headnum)
             return {'FINISHED'}
 
         vp.create_batch_2d(context)

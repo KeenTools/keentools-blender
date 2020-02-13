@@ -267,8 +267,8 @@ class FB_OT_RemovePins(Operator):
             settings.get_head(headnum), 'Before Remove pins')
 
         fb.remove_pins(kid)
-        # Added but don't work
-        fb.solve_for_current_pins(kid)
+        FBLoader.solve(headnum, camnum)  # is it needed?
+
         FBLoader.fb_save(headnum, camnum)
         FBLoader.fb_redraw(headnum, camnum)
         FBLoader.update_pins_count(headnum, camnum)
@@ -879,8 +879,7 @@ class FB_OT_ShowTexture(Operator):
 
         settings = get_main_settings()
         if settings.pinmode:
-            FBLoader.out_pinmode(settings.current_headnum,
-                                 settings.current_camnum)
+            FBLoader.out_pinmode(settings.current_headnum)
 
         mat = materials.show_texture_in_mat(
             Config.tex_builder_filename, Config.tex_builder_matname)
@@ -907,8 +906,7 @@ class FB_OT_ShowSolid(Operator):
         logger.debug("SWITCH TO SOLID MODE")
         settings = get_main_settings()
         if settings.pinmode:
-            FBLoader.out_pinmode(settings.current_headnum,
-                                 settings.current_camnum)
+            FBLoader.out_pinmode(settings.current_headnum)
         materials.switch_to_mode('SOLID')
         return {'FINISHED'}
 
@@ -925,8 +923,7 @@ class FB_OT_ExitPinmode(Operator):
     def execute(self, context):
         settings = get_main_settings()
         if settings.pinmode:
-            FBLoader.out_pinmode(settings.current_headnum,
-                                 settings.current_camnum)
+            FBLoader.out_pinmode(settings.current_headnum)
             bpy.ops.view3d.view_camera()
         return {'FINISHED'}
 

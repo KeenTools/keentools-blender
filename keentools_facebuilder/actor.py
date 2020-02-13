@@ -29,8 +29,6 @@ from .utils import manipulate
 from .config import Config, get_main_settings
 from .utils.exif_reader import get_sensor_size_35mm_equivalent
 
-from . fbloader import FBLoader
-from .utils import coords
 
 class FB_OT_Actor(Operator):
     bl_idname = Config.fb_actor_idname
@@ -58,14 +56,6 @@ class FB_OT_Actor(Operator):
         elif self.action == 'use_render_frame_size_scaled':
             # Allow converts scenes pinned on default cameras
             manipulate.use_render_frame_size_scaled()  # disabled in interface
-
-        elif self.action == 'reset_model_to_neutral':
-            settings = get_main_settings()
-            manipulate.reset_model_to_neutral(self.headnum)
-
-        elif self.action == 'load_expressions_to_model':
-            settings = get_main_settings()
-            manipulate.load_expressions_to_model(self.headnum, self.camnum)
 
         return {'FINISHED'}
 

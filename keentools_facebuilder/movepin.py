@@ -227,7 +227,7 @@ class FB_OT_MovePin(bpy.types.Operator):
         fb.move_pin(kid, pin_idx, coords.image_space_to_frame(x, y))
 
     def on_mouse_move(self, context, mouse_x, mouse_y):
-        logger = logging.getLogger(__name__)
+
         settings = get_main_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
@@ -239,22 +239,12 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         self._pin_drag(kid, context, mouse_x, mouse_y)
 
-        fb = FBLoader.get_builder()
-        FBLoader.rigidity_setup()
-        fb.set_focal_length_estimation(head.auto_focal_estimation)
-        fb.set_use_emotions(head.should_use_emotions())
-
-        try:
-            fb.solve_for_current_pins(kid)
-        except pkt.module().UnlicensedException:
-            logger.error("MOVE PIN LICENSE EXCEPTION")
-            settings.force_out_pinmode = True
-            settings.license_error = True
-            FBLoader.out_pinmode(headnum, camnum)
+        if not FBLoader.solve(headnum, camnum):
+            logger = logging.getLogger(__name__)
+            logger.error("MOVE PIN PROBLEM")
             return {'FINISHED'}
 
-        FBLoader.auto_focal_estimation_post(head, camobj)
-
+        fb = FBLoader.get_builder()
         # --------------
         # Pin lag solve
         # --------------
