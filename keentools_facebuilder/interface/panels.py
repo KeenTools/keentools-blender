@@ -313,8 +313,14 @@ class FB_PT_ViewsPanel(Panel):
             text='', icon='QUESTION')
 
     def _draw_pins_panel(self, headnum, camnum):
+        settings = get_main_settings()
         layout = self.layout
         box = layout.box()
+
+        if settings.get_head(headnum).should_use_emotions():
+            op = box.operator(Config.fb_reset_expression_idname)
+            op.headnum = headnum
+
         op = box.operator(Config.fb_center_geo_idname,
                           text="Reset camera")
         op.headnum = headnum
@@ -327,12 +333,20 @@ class FB_PT_ViewsPanel(Panel):
     def _draw_camera_list(self, headnum, layout):
         settings = get_main_settings()
         head = settings.get_head(headnum)
+
+        if not head.has_cameras():
+            return
+
         wrong_size_counter = 0
         fw = settings.frame_width
         fh = settings.frame_height
 
+        box = layout.box()
+        box.prop(settings.get_head(headnum), 'use_emotions')
+
+        box = layout.box()
         for i, camera in enumerate(head.cameras):
-            box = layout.box()
+
             row = box.row()
 
             w = camera.get_image_width()
@@ -421,9 +435,9 @@ class FB_PT_ViewsPanel(Panel):
                           text='', icon='SETTINGS')
         op.headnum = headnum
 
-        self._draw_camera_hint(layout, headnum)
-
         self._draw_exit_pinmode(layout)
+
+        self._draw_camera_hint(layout, headnum)
 
         # Large List of cameras
         self._draw_camera_list(headnum, layout)

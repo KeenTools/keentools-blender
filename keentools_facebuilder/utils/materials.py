@@ -137,6 +137,8 @@ def bake_tex(headnum, tex_name):
 
     FBLoader.load_only(headnum)
     fb = FBLoader.get_builder()
+    for i, m in enumerate(head.get_masks()):
+        fb.set_mask(i, m)
 
     mesh = head.headobj.data
     uvmap = get_mesh_uvmap(mesh)
@@ -166,6 +168,7 @@ def bake_tex(headnum, tex_name):
     imgs = []
     keyframes = []
     camnums = []
+    geos = []
     projections = []
 
     for i, cam in enumerate(head.cameras):
@@ -197,6 +200,7 @@ def bake_tex(headnum, tex_name):
                 imgs.append(img)
                 keyframes.append(cam.get_keyframe())
                 camnums.append(i)
+                geos.append(fb.applied_args_model_at(cam.get_keyframe()))
 
     wm.progress_end()
 
@@ -210,7 +214,6 @@ def bake_tex(headnum, tex_name):
         tb.set_equalize_brightness(settings.tex_equalize_brightness)
         tb.set_equalize_colour(settings.tex_equalize_colour)
 
-        geos = [geo for _ in keyframes]
         model_views = [head.cameras[x].get_model_mat() for x in camnums]
 
         texture = tb.build_texture(geos, imgs, model_views, projections)

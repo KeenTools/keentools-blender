@@ -97,14 +97,12 @@ class FBLoader:
             c.camobj.data.sensor_width = head.sensor_width
             c.camobj.data.sensor_height = head.sensor_height
 
-        # Setup Rigidity only for FaceBuilder
         FBLoader.rigidity_setup()
-        # Activate Focal Estimation
         fb.set_focal_length_estimation(head.auto_focal_estimation)
+        fb.set_use_emotions(head.should_use_emotions())
 
         if max_index >= 0:
             try:
-                # Solver
                 fb.solve_for_current_pins(max_index)
                 logger.debug("SOLVED {}".format(max_index))
 
@@ -116,8 +114,8 @@ class FBLoader:
                 logger.error("SOLVER PROBLEM")
                 settings.force_out_pinmode = True
 
-        # Head Mesh update
-        coords.update_head_mesh(fb, head.headobj)
+        coords.update_head_mesh(settings, fb, head)
+
         if settings.pinmode:
             cls.fb_redraw(headnum, settings.current_camnum)
         cls.update_all_camera_positions(headnum)
@@ -156,13 +154,13 @@ class FBLoader:
         return False
 
     @classmethod
-    def out_pinmode(cls, headnum, camnum):
+    def out_pinmode(cls, headnum):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
 
         vp = cls.viewport()
         vp.unregister_handlers()
-        # cls.fb_save(headnum, camnum)  # try to save only after pin move
+
         head = settings.get_head(headnum)
         headobj = head.headobj
         # Mark object by ver.
@@ -174,7 +172,8 @@ class FBLoader:
         vp.pins().reset_current_pin()
         cameras.show_all_cameras(headnum)
 
-        FBLoader.update_all_camera_focals(head)
+        cls.update_all_camera_focals(head)
+        coords.update_head_mesh_neutral(cls.get_builder(), headobj)
 
         # === Debug use only ===
         FBDebug.add_event_to_queue('OUT_PIN_MODE', 0, 0)
@@ -200,7 +199,7 @@ class FBLoader:
         fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.get_head(headnum)
-        coords.update_head_mesh(fb, head.headobj)
+        coords.update_head_mesh(settings, fb, head)
 
     @classmethod
     def fb_save(cls, headnum, camnum):
@@ -235,10 +234,8 @@ class FBLoader:
         headobj = head.headobj
         camobj = cam.camobj
         kid = settings.get_keyframe(headnum, camnum)
-        # Camera update
         cls.place_cameraobj(kid, camobj, headobj)
-        # Head Mesh update
-        coords.update_head_mesh(fb, headobj)
+        coords.update_head_mesh(settings, fb, head)
         # Load pins from model
         vp = cls.viewport()
         vp.pins().set_pins(vp.img_points(fb, kid))
@@ -475,6 +472,38 @@ class FBLoader:
         vp.pins().set_pins(vp.img_points(fb, kid))
         vp.pins().reset_current_pin()
         logger.debug("LOAD MODEL END")
+
+    @classmethod
+    def solve(cls, headnum, camnum):
+        def _exception_handling(headnum, msg):
+            logger = logging.getLogger(__name__)
+            logger.error(msg)
+            if settings.pinmode:
+                settings.force_out_pinmode = True
+                settings.license_error = True
+                cls.out_pinmode(headnum)
+
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        camera = head.get_camera(camnum)
+        kid = camera.get_keyframe()
+
+        cls.rigidity_setup()
+        fb = cls.get_builder()
+        fb.set_focal_length_estimation(head.auto_focal_estimation)
+        fb.set_use_emotions(head.should_use_emotions())
+
+        try:
+            fb.solve_for_current_pins(kid)
+        except pkt.module().UnlicensedException:
+            _exception_handling(headnum, "SOLVE LICENSE EXCEPTION")
+            return False
+        except Exception:
+            _exception_handling(headnum, "SOLVE EXCEPTION")
+            return False
+
+        cls.auto_focal_estimation_post(head, camera.camobj)
+        return True
 
     @classmethod
     def add_camera(cls, headnum, img=None):

@@ -19,6 +19,9 @@
 
 import bpy
 import numpy as np
+import logging
+
+
 from . fbloader import FBLoader
 from bpy.props import (
     BoolProperty,
@@ -31,9 +34,22 @@ from bpy.props import (
     EnumProperty
 )
 from bpy.types import PropertyGroup
+from .utils import coords, manipulate
 from . fbdebug import FBDebug
 from . config import Config, get_main_settings, get_operators
 from .utils.manipulate import what_is_state
+
+
+def update_emotions(self, context):
+    settings = get_main_settings()
+    if not settings.pinmode:
+        return
+    fb = FBLoader.get_builder()
+    head = settings.get_head(settings.current_headnum)
+    if head is not None:
+        head.need_update = True
+        coords.update_head_mesh(settings, fb, head)
+        FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
 
 
 def update_wireframe(self, context):
@@ -103,14 +119,11 @@ def update_mesh_parts(self, context):
         return
 
     head = settings.get_head(headnum)
-    masks = [head.check_ears, head.check_eyes, head.check_face,
-             head.check_headback, head.check_jaw, head.check_mouth,
-             head.check_neck, head.check_nose]
 
     old_mesh = head.headobj.data
     # Create new mesh
     mesh = FBLoader.get_builder_mesh(FBLoader.get_builder(), 'FBHead_mesh',
-                                     tuple(masks),
+                                     head.get_masks(),
                                      uv_set=head.tex_uv_shape)
     try:
         # Copy old material
@@ -300,6 +313,8 @@ class FBCameraItem(PropertyGroup):
 
 class FBHeadItem(PropertyGroup):
     mod_ver: IntProperty(name="Modifier Version", default=-1)
+    use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
+                                         default=False, update=update_emotions)
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
 
@@ -368,7 +383,7 @@ class FBHeadItem(PropertyGroup):
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
             return self.cameras[len(self.cameras) + camnum]
-        if 0 <= camnum <= len(self.cameras):
+        if 0 <= camnum < len(self.cameras):
             return self.cameras[camnum]
         else:
             return None
@@ -409,6 +424,9 @@ class FBHeadItem(PropertyGroup):
         else:
             return -1
 
+    def has_camera(self, camnum):
+        return 0 <= camnum < len(self.cameras)
+
     def has_cameras(self):
         return len(self.cameras) > 0
 
@@ -436,6 +454,14 @@ class FBHeadItem(PropertyGroup):
                 Config.reconstruct_frame_width_param[0]: render.resolution_x,
                 Config.reconstruct_frame_height_param[0]: render.resolution_y}
         self.headobj[Config.fb_camera_prop_name[0]] = d
+
+    def should_use_emotions(self):
+        return self.use_emotions
+
+    def get_masks(self):
+        return (self.check_ears, self.check_eyes, self.check_face,
+                self.check_headback, self.check_jaw, self.check_mouth,
+                self.check_neck, self.check_nose)
 
 
 class FBSceneSettings(PropertyGroup):

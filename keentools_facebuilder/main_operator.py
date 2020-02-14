@@ -26,7 +26,7 @@ from bpy.props import (
     IntProperty,
 )
 
-from .utils import cameras, manipulate, materials
+from .utils import cameras, manipulate, materials, coords
 from .utils.manipulate import check_settings
 from .utils.attrs import get_obj_collection, safe_delete_collection
 from .fbloader import FBLoader
@@ -101,8 +101,8 @@ class FB_OT_DeleteHead(Operator):
 
 class FB_OT_SelectCamera(Operator):
     bl_idname = Config.fb_select_camera_idname
-    bl_label = "Pin Mode"
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+    bl_label = "Pin Mode Select Camera"
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Switch to Pin mode for this view"
 
     headnum: IntProperty(default=0)
@@ -180,16 +180,12 @@ class FB_OT_CenterGeo(Operator):
         fb = FBLoader.get_builder()
         kid = settings.get_keyframe(headnum, camnum)
 
-        FBLoader.fb_save(headnum, camnum)
-        manipulate.push_head_state_in_undo_history(
-            settings.get_head(headnum), 'Before Reset Camera')
-
         fb.center_model_mat(kid)
         FBLoader.fb_save(headnum, camnum)
-        FBLoader.fb_redraw(headnum, camnum)
 
-        manipulate.push_head_state_in_undo_history(
-            settings.get_head(headnum), 'After Reset Camera')
+        manipulate.push_neutral_head_in_undo_history(
+            settings.get_head(headnum), kid, 'Reset Camera.')
+        FBLoader.fb_redraw(headnum, camnum)
         # === Debug only ===
         FBDebug.add_event_to_queue('CENTER_GEO', 0, 0)
         FBDebug.add_event_to_queue('FORCE_SNAPSHOT', 0, 0)
@@ -220,7 +216,7 @@ class FB_OT_Unmorph(Operator):
 
         fb = FBLoader.get_builder()
         FBLoader.fb_save(headnum, camnum)
-        manipulate.push_head_state_in_undo_history(
+        manipulate.push_head_in_undo_history(
             settings.get_head(headnum), 'Before Reset')
 
         fb.unmorph()
@@ -237,7 +233,7 @@ class FB_OT_Unmorph(Operator):
             FBLoader.update_mesh_only(headnum)
 
         FBLoader.fb_save(headnum, camnum)
-        manipulate.push_head_state_in_undo_history(
+        manipulate.push_head_in_undo_history(
             settings.get_head(headnum), 'After Reset')
 
         return {'FINISHED'}
@@ -267,17 +263,17 @@ class FB_OT_RemovePins(Operator):
         fb = FBLoader.get_builder()
         kid = settings.get_keyframe(headnum, camnum)
         FBLoader.fb_save(headnum, camnum)
-        manipulate.push_head_state_in_undo_history(
+        manipulate.push_head_in_undo_history(
             settings.get_head(headnum), 'Before Remove pins')
 
         fb.remove_pins(kid)
-        # Added but don't work
-        fb.solve_for_current_pins(kid)
+        FBLoader.solve(headnum, camnum)  # is it needed?
+
         FBLoader.fb_save(headnum, camnum)
         FBLoader.fb_redraw(headnum, camnum)
         FBLoader.update_pins_count(headnum, camnum)
 
-        manipulate.push_head_state_in_undo_history(
+        manipulate.push_head_in_undo_history(
             settings.get_head(headnum), 'After Remove pins')
 
         # === Debug only ===
@@ -829,6 +825,43 @@ class FB_OT_ResetImageRotation(Operator):
         return {'FINISHED'}
 
 
+class FB_OT_ResetExpression(Operator):
+    bl_idname = Config.fb_reset_expression_idname
+    bl_label = "Reset expression"
+    bl_options = {'REGISTER'}  # 'UNDO'
+    bl_description = "Reset expression"
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        head = settings.get_head(self.headnum)
+
+        if not settings.pinmode:
+            return {'CANCELLED'}
+        if head is None:
+            return {'CANCELLED'}
+        if not head.has_camera(settings.current_camnum):
+            return {'CANCELLED'}
+
+        FBLoader.load_only(self.headnum)
+        fb = FBLoader.get_builder()
+        fb.reset_to_neutral_emotions(
+            head.get_keyframe(settings.current_camnum))
+
+        FBLoader.save_only(self.headnum)
+        FBLoader.fb_redraw(self.headnum, settings.current_camnum)
+        coords.update_head_mesh_neutral(fb, head.headobj)
+
+        manipulate.push_head_in_undo_history(head, 'Reset Expression.')
+
+        return {'FINISHED'}
+
+
 class FB_OT_ShowTexture(Operator):
     bl_idname = Config.fb_show_tex_idname
     bl_label = "Show Texture"
@@ -846,8 +879,7 @@ class FB_OT_ShowTexture(Operator):
 
         settings = get_main_settings()
         if settings.pinmode:
-            FBLoader.out_pinmode(settings.current_headnum,
-                                 settings.current_camnum)
+            FBLoader.out_pinmode(settings.current_headnum)
 
         mat = materials.show_texture_in_mat(
             Config.tex_builder_filename, Config.tex_builder_matname)
@@ -874,8 +906,7 @@ class FB_OT_ShowSolid(Operator):
         logger.debug("SWITCH TO SOLID MODE")
         settings = get_main_settings()
         if settings.pinmode:
-            FBLoader.out_pinmode(settings.current_headnum,
-                                 settings.current_camnum)
+            FBLoader.out_pinmode(settings.current_headnum)
         materials.switch_to_mode('SOLID')
         return {'FINISHED'}
 
@@ -892,8 +923,7 @@ class FB_OT_ExitPinmode(Operator):
     def execute(self, context):
         settings = get_main_settings()
         if settings.pinmode:
-            FBLoader.out_pinmode(settings.current_headnum,
-                                 settings.current_camnum)
+            FBLoader.out_pinmode(settings.current_headnum)
             bpy.ops.view3d.view_camera()
         return {'FINISHED'}
 
@@ -947,6 +977,7 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_RotateImageCW,
                        FB_OT_RotateImageCCW,
                        FB_OT_ResetImageRotation,
+                       FB_OT_ResetExpression,
                        FB_OT_ShowTexture,
                        FB_OT_ShowSolid,
                        FB_OT_ExitPinmode,

@@ -21,10 +21,10 @@ from collections import Counter
 
 import bpy
 
-from .. fbloader import FBLoader
-from .. config import Config, get_main_settings, get_operators, \
+from ..fbloader import FBLoader
+from ..config import Config, get_main_settings, get_operators, \
     ErrorType, BuilderType
-from . import cameras, attrs
+from . import cameras, attrs, coords
 
 
 def _is_keentools_object(obj):
@@ -101,10 +101,19 @@ def force_undo_push(msg='KeenTools operation'):
     bpy.ops.ed.undo_push(message=msg)
 
 
-def push_head_state_in_undo_history(head, msg='KeenTools operation'):
+def push_head_in_undo_history(head, msg='KeenTools operation'):
     head.need_update = True
     force_undo_push(msg)
     head.need_update = False
+
+
+def push_neutral_head_in_undo_history(head, keyframe,
+                                      msg='KeenTools operation'):
+    fb = FBLoader.get_builder()
+    coords.update_head_mesh_neutral(fb, head.headobj)
+    push_head_in_undo_history(head, msg)
+    if head.should_use_emotions():
+        coords.update_head_mesh_emotions(fb, head.headobj, keyframe)
 
 
 def check_settings():
@@ -134,6 +143,8 @@ def get_operation():
 
 def unhide_head(headnum):
     settings = get_main_settings()
+    head = settings.get_head(headnum)
+    coords.update_head_mesh_neutral(FBLoader.get_builder(), head.headobj)
     settings.get_head(headnum).headobj.hide_set(False)
     settings.pinmode = False
 
@@ -210,6 +221,27 @@ def use_render_frame_size_scaled():
 
     settings.frame_width = rw
     settings.frame_height = rh
+
+
+def reset_model_to_neutral(headnum):
+    settings = get_main_settings()
+    FBLoader.load_only(headnum)
+    head = settings.get_head(headnum)
+    if head is None:
+        return
+    fb = FBLoader.get_builder()
+    coords.update_head_mesh_neutral(fb, head.headobj)
+
+
+def load_expressions_to_model(headnum, camnum):
+    settings = get_main_settings()
+    FBLoader.load_only(headnum)
+    head = settings.get_head(headnum)
+    if head is None:
+        return
+    fb = FBLoader.get_builder()
+    coords.update_head_mesh_emotions(fb, head.headobj,
+                                     head.get_keyframe(camnum))
 
 
 def reconstruct_by_head():

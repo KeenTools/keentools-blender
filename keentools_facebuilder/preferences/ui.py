@@ -356,7 +356,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
         if pkt.is_installed():
             self._draw_version(layout)
-            # self._draw_license_info(layout)
+            self._draw_license_info(layout)
         else:
             if pkt.loaded():
                 box = self._draw_please_restart(layout)

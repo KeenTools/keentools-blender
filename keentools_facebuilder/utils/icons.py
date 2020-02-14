@@ -23,7 +23,8 @@ import bpy.utils.previews
 
 
 _ICONS_DIR = "icons"
-_ICONS = (("cam_icon", "cam_icon.png"),)
+_ICONS = (("cam_icon", "cam_icon.png"),
+          ("expressions_icon", "expressions_icon.png"),)
 
 
 class FBIcons:
