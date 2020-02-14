@@ -326,7 +326,7 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         if event.type == "MOUSEMOVE" \
                 and FBLoader.viewport().pins().current_pin() is not None:
-            logger.debug("MOUSEMOVE")
+            logger.debug("MOUSEMOVE {} {}".format(mouse_x, mouse_y))
 
             FBDebug.add_event_to_queue(
                 'MOUSEMOVE', mouse_x, mouse_y,

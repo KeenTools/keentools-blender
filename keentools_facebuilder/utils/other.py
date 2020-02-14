@@ -142,7 +142,7 @@ class FBStopShaderTimer(FBTimer):
             cls.stop()
             logger.debug("STOP SHADER FORCE")
             return None
-        
+
         # Interval to next call
         return 1.0
 

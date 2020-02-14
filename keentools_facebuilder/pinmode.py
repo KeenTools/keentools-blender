@@ -237,25 +237,24 @@ class FB_OT_PinMode(bpy.types.Operator):
         # Hide geometry
         headobj.hide_set(True)
         cameras.hide_other_cameras(self.headnum, self.camnum)
-        # Start our shader
-        self._init_wireframer_colors(settings.overall_opacity)
 
+        logger.debug("START SHADERS")
+        self._init_wireframer_colors(settings.overall_opacity)
         vp = FBLoader.viewport()
         vp.create_batch_2d(context)
+        logger.debug("REGISTER SHADER HANDLERS")
         vp.register_handlers(args, context)
         context.window_manager.modal_handler_add(self)
 
         kid = settings.get_keyframe(self.headnum, self.camnum)
-        # Load 3D pins
-        vp.update_surface_points(
-            FBLoader.get_builder(), headobj, kid)
+        vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
 
         # Can start much more times when not out from pinmode
         if not settings.pinmode:
             logger.debug("STOPPER START")
             FBStopShaderTimer.start()
-        settings.pinmode = True
 
+        settings.pinmode = True
         manipulate.push_neutral_head_in_undo_history(head, kid,
                                                      'Pin Mode Start.')
         return {"RUNNING_MODAL"}
