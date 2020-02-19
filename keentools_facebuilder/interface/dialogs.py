@@ -47,14 +47,7 @@ class FB_OT_AddonWarning(Operator):
             layout.label(text=t)
 
     def execute(self, context):
-        # TODO: Remove this when Beta ends
-        # Go to download page
-        if self.msg == ErrorType.NoLicense:
-            bpy.ops.wm.url_open(url="https://www.keentools.io/download-blender")
-            return {"FINISHED"}
-
-        logger = logging.getLogger(__name__)
-        if self.msg != ErrorType.PktProblem:
+        if self.msg not in (ErrorType.PktProblem, ErrorType.NoLicense):
             return {"FINISHED"}
 
         op = getattr(get_operators(), Config.fb_addon_settings_callname)
@@ -75,7 +68,7 @@ class FB_OT_AddonWarning(Operator):
             # ])
             self.set_content([
                 "This Beta version is outdated",
-                "=================",
+                " ",
                 "The installed beta version ",
                 "of KeenTools FaceBuilder is outdated. ",
                 "Please download a new version ",
@@ -93,19 +86,19 @@ class FB_OT_AddonWarning(Operator):
         elif self.msg == ErrorType.SceneDamaged:
             self.set_content([
                 "Scene was damaged",
-                "===============",
+                " ",
                 "It looks like you manualy deleted",
                 "some FaceBuilder cameras.",
                 "It's not safe way.",
                 "Please use [X] button on tab.",
-                "===============",
+                " ",
                 "The scene was fixed.",
                 "Now everything is ok!"
             ])
         elif self.msg == ErrorType.BackgroundsDiffer:
             self.set_content([
                 "Different sizes",
-                "===============",
+                " ",
                 "Camera backgrounds",
                 "have different sizes.",
                 "Texture Builder can't bake"
@@ -113,19 +106,19 @@ class FB_OT_AddonWarning(Operator):
         elif self.msg == ErrorType.IllegalIndex:
             self.set_content([
                 "Object index is out of bounds",
-                "===============",
+                " ",
                 "Object index out of scene count"
             ])
         elif self.msg == ErrorType.CannotReconstruct:
             self.set_content([
                 "Can't reconstruct",
-                "===============",
+                " ",
                 "Object parameters are invalid or missing."
             ])
         elif self.msg == ErrorType.CannotCreateObject:
             self.set_content([
                 "Can't create Object",
-                "===============",
+                " ",
                 "An error occurred while creating object.",
                 "This addon version can't create",
                 "objects of this type."
@@ -138,7 +131,7 @@ class FB_OT_AddonWarning(Operator):
         elif self.msg == ErrorType.AboutFrameSize:
             self.set_content([
                 "About Frame Sizes",
-                "===============",
+                " ",
                 "All frames used as a background image ",
                 "must be the same size. This size should ",
                 "be specified as the Render Size ",
@@ -150,14 +143,14 @@ class FB_OT_AddonWarning(Operator):
         elif self.msg == ErrorType.MeshCorrupted:
             self.set_content([
                 "Mesh is corrupted",
-                "===============",
+                " ",
                 "It looks like the mesh is damaged. ",
                 "Addon cannot work with the wrong topology"
             ])
         elif self.msg == ErrorType.PktModelProblem:
             self.set_content([
                 "Can't load Model data",
-                "===============",
+                " ",
                 "You need to reinstall ",
                 "KeenTools FaceBuilder add-on",
                 "because the Model data was corrupted."

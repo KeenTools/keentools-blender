@@ -19,7 +19,6 @@
 
 import bpy
 import numpy as np
-import logging
 
 
 from . fbloader import FBLoader
@@ -121,6 +120,7 @@ def update_mesh_parts(self, context):
     head = settings.get_head(headnum)
 
     old_mesh = head.headobj.data
+    FBLoader.load_only(headnum)
     # Create new mesh
     mesh = FBLoader.get_builder_mesh(FBLoader.get_builder(), 'FBHead_mesh',
                                      head.get_masks(),
@@ -520,7 +520,7 @@ class FBSceneSettings(PropertyGroup):
     pin_sensitivity: FloatProperty(
         description="Set pin handle radius in pixels",
         name="Pin handle radius",
-        default=Config.default_POINT_SENSITIVITY, min=1.0, max=100.0,
+        default=Config.default_point_sensitivity, min=1.0, max=100.0,
         update=update_pin_sensitivity)
 
     # Other settings
@@ -709,3 +709,6 @@ class FBSceneSettings(PropertyGroup):
         if head is None:
             return -1
         return head.get_last_camnum()
+
+    def headnum_exists(self, headnum):
+        return 0 <= headnum <= self.get_last_headnum()

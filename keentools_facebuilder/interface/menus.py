@@ -41,22 +41,28 @@ class FB_MT_ProperViewMenu(Menu):
         layout.operator(Config.fb_single_filebrowser_exec_idname,
                         text="Open file", icon='FILEBROWSER')
 
-        op = layout.operator(Config.fb_rotate_image_cw_idname,
-                        text='Rotate CW', icon='LOOP_FORWARDS')
-        op.headnum = settings.tmp_headnum
-        op.camnum = settings.tmp_camnum
+        layout.separator()
 
-        op = layout.operator(Config.fb_rotate_image_ccw_idname,
-                        text='Rotate CCW', icon='LOOP_BACK')
-        op.headnum = settings.tmp_headnum
-        op.camnum = settings.tmp_camnum
+        if settings.pinmode:
+            op = layout.operator(Config.fb_rotate_image_cw_idname,
+                                 text='Rotate CW', icon='LOOP_FORWARDS')
+            op.headnum = settings.tmp_headnum
+            op.camnum = settings.tmp_camnum
 
-        op = layout.operator(Config.fb_reset_image_rotation_idname,
-                             text='Reset Orientation',
-                             icon='OUTLINER_OB_IMAGE')
-        op.headnum = settings.tmp_headnum
-        op.camnum = settings.tmp_camnum
+            op = layout.operator(Config.fb_rotate_image_ccw_idname,
+                                 text='Rotate CCW', icon='LOOP_BACK')
+            op.headnum = settings.tmp_headnum
+            op.camnum = settings.tmp_camnum
 
+            op = layout.operator(Config.fb_reset_image_rotation_idname,
+                                 text='Reset Orientation',
+                                 icon='OUTLINER_OB_IMAGE')
+            op.headnum = settings.tmp_headnum
+            op.camnum = settings.tmp_camnum
+        else:
+            layout.label(text='Rotate CW', icon='LOOP_FORWARDS')
+            layout.label(text='Rotate CCW', icon='LOOP_BACK')
+            layout.label(text='Reset Orientation', icon='OUTLINER_OB_IMAGE')
 
 
 class FB_MT_ImproperViewMenu(Menu):

@@ -133,7 +133,8 @@ class PREF_OT_OpenManualInstallPage(bpy.types.Operator):
     bl_description = 'Open license activation webpage in browser'
 
     def execute(self, context):
-        bpy.ops.wm.url_open(url=Config.manual_install_url)
+        hardware_id = pkt.module().FaceBuilder.license_manager().hardware_id()
+        bpy.ops.wm.url_open(url=Config.manual_install_url + '#' + hardware_id)
         return {'FINISHED'}
 
 
