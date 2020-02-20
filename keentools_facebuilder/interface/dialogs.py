@@ -62,7 +62,8 @@ class FB_OT_AddonWarning(Operator):
             self.set_content([
                 "License is not found",
                 " ",
-                "Your trial is over and there is no license installed",
+                "You have 0 days of trial left and there is no license "
+                "installed",
                 "or something wrong has happened with the installed license.",
                 "Please check the license settings."
             ])
