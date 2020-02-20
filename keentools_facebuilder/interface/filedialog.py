@@ -262,9 +262,9 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
         """ Selected files processing"""
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
-        if len(settings.heads) <= self.headnum:
-            warn = getattr(get_operators(), Config.fb_warning_callname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.IllegalIndex)
+        if not settings.is_proper_headnum(self.headnum):
+            logger.error("WRONG HEADNUM: {}/{}".format(
+                self.headnum, settings.get_last_headnum()))
             return {'CANCELLED'}
 
         # if Settings structure is broken

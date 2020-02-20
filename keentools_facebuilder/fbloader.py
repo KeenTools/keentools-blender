@@ -27,7 +27,8 @@ from .utils.other import FBStopShaderTimer, restore_ui_elements
 
 from .builder import UniBuilder
 from .fbdebug import FBDebug
-from .config import Config, get_main_settings, BuilderType
+from .config import (Config, get_main_settings, get_operators,
+                     BuilderType, ErrorType)
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
@@ -108,6 +109,11 @@ class FBLoader:
 
             except pkt.module().UnlicensedException:
                 logger.error("LICENSE PROBLEM")
+
+                if not settings.pinmode and not settings.license_error:
+                    warn = getattr(get_operators(), Config.fb_warning_callname)
+                    warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+
                 settings.force_out_pinmode = True
                 settings.license_error = True
             except Exception:

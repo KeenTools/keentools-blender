@@ -71,6 +71,6 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
     @classmethod
     def new_head(cls):
         mesh = FBLoader.universal_mesh_loader(
-            BuilderType.FaceBuilder, 'Head_mesh')
-        obj = bpy.data.objects.new('FaceBuilderHead', mesh)
+            BuilderType.FaceBuilder, Config.default_fb_mesh_name)
+        obj = bpy.data.objects.new(Config.default_fb_object_name, mesh)
         return obj

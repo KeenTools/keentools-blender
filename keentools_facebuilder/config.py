@@ -42,6 +42,10 @@ class Config:
     addon_name = __package__  # the same as module name
     addon_human_readable_name = 'FaceBuilder'
 
+    default_fb_object_name = 'FaceBuilderHead'
+    default_fb_mesh_name = 'FaceBuilderHead_mesh'
+    default_fb_collection_name = 'FaceBuilderCol'
+
     addon_search = 'KeenTools'
     addon_global_var_name = prefix + '_settings'
     addon_full_name = 'Keentools FaceBuilder for Blender'
@@ -300,8 +304,7 @@ class Config:
     # Constants
     default_pin_size = 7.0
     surf_pin_size_scale = 0.85
-    default_POINT_SENSITIVITY = 16.0
-    default_FB_COLLECTION_NAME = 'FaceBuilderCol'
+    default_point_sensitivity = 16.0
     text_scale_y = 0.75
 
     viewport_redraw_interval = 0.1
@@ -366,11 +369,8 @@ class ErrorType:
     CustomMessage = 0
     NoLicense = 1
     SceneDamaged = 2
-    BackgroundsDiffer = 3
-    IllegalIndex = 4
-    CannotReconstruct = 5
-    CannotCreateObject = 6
-    PktProblem = 7
-    AboutFrameSize = 8
-    MeshCorrupted = 9
-    PktModelProblem = 10
+    CannotReconstruct = 3
+    CannotCreateObject = 4
+    MeshCorrupted = 5
+    PktProblem = 6
+    PktModelProblem = 7

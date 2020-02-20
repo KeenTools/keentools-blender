@@ -40,21 +40,14 @@ class FB_OT_AddonWarning(Operator):
         self.content.append(" ")  # Additional line at end
 
     def draw(self, context):
-        layout = self.layout
+        layout = self.layout.column()
         layout.scale_y = Config.text_scale_y
 
         for t in self.content:
             layout.label(text=t)
 
     def execute(self, context):
-        # TODO: Remove this when Beta ends
-        # Go to download page
-        if self.msg == ErrorType.NoLicense:
-            bpy.ops.wm.url_open(url="https://www.keentools.io/download-blender")
-            return {"FINISHED"}
-
-        logger = logging.getLogger(__name__)
-        if self.msg != ErrorType.PktProblem:
+        if self.msg not in (ErrorType.PktProblem, ErrorType.NoLicense):
             return {"FINISHED"}
 
         op = getattr(get_operators(), Config.fb_addon_settings_callname)
@@ -64,105 +57,55 @@ class FB_OT_AddonWarning(Operator):
     def invoke(self, context, event):
         if self.msg == ErrorType.CustomMessage:
             self.set_content(re.split("\r\n|\n", self.msg_content))
-            return context.window_manager.invoke_props_dialog(self, width=300)
+            return context.window_manager.invoke_props_dialog(self, width=400)
         elif self.msg == ErrorType.NoLicense:
-            # self.set_content([
-            #     "License is not detected",
-            #     "===============",
-            #     "Go to Addon preferences:",
-            #     "Edit > Preferences --> Addons",
-            #     "Use 'KeenTools' word in search field"
-            # ])
             self.set_content([
-                "This Beta version is outdated",
-                "=================",
-                "The installed beta version ",
-                "of KeenTools FaceBuilder is outdated. ",
-                "Please download a new version ",
-                "from our site and re-install the add-on ",
-                "(you'll need to relaunch Blender ",
-                "after installation). ",
-                "While in beta, we kindly ask our users ",
-                "to not stick with outdated versions ",
-                "and update the add-on frequently. ",
-                "Thank you for understanding!",
+                "License is not found",
                 " ",
-                "The new version of add-on is available ",
-                "here: https://keentools.io"
+                "Your trial is over and there is no license installed",
+                "or something wrong has happened with the installed license.",
+                "Please check the license settings."
             ])
+
         elif self.msg == ErrorType.SceneDamaged:
             self.set_content([
                 "Scene was damaged",
-                "===============",
-                "It looks like you manualy deleted",
-                "some FaceBuilder cameras.",
-                "It's not safe way.",
-                "Please use [X] button on tab.",
-                "===============",
-                "The scene was fixed.",
-                "Now everything is ok!"
-            ])
-        elif self.msg == ErrorType.BackgroundsDiffer:
-            self.set_content([
-                "Different sizes",
-                "===============",
-                "Camera backgrounds",
-                "have different sizes.",
-                "Texture Builder can't bake"
-            ])
-        elif self.msg == ErrorType.IllegalIndex:
-            self.set_content([
-                "Object index is out of bounds",
-                "===============",
-                "Object index out of scene count"
+                " ",
+                "Some objects created by FaceBuilder were missing "
+                "from the scene.",
+                "The scene was restored automatically."
             ])
         elif self.msg == ErrorType.CannotReconstruct:
             self.set_content([
-                "Can't reconstruct",
-                "===============",
+                "Reconstruction is impossible",
+                " ",
                 "Object parameters are invalid or missing."
             ])
         elif self.msg == ErrorType.CannotCreateObject:
             self.set_content([
-                "Can't create Object",
-                "===============",
-                "An error occurred while creating object.",
-                "This addon version can't create",
-                "objects of this type."
-            ])
-        elif self.msg == ErrorType.PktProblem:
-            self.set_content([
-                "You need to install KeenTools Core library",
-                "before using FaceBuilder."
-            ])
-        elif self.msg == ErrorType.AboutFrameSize:
-            self.set_content([
-                "About Frame Sizes",
-                "===============",
-                "All frames used as a background image ",
-                "must be the same size. This size should ",
-                "be specified as the Render Size ",
-                "in the scene.",
-                "You will receive a warning if these ",
-                "sizes are different. You can fix them ",
-                "by choosing commands from this menu."
+                "Cannot create object",
+                " ",
+                "An error occurred while creating an object."
             ])
         elif self.msg == ErrorType.MeshCorrupted:
             self.set_content([
-                "Mesh is corrupted",
-                "===============",
-                "It looks like the mesh is damaged. ",
-                "Addon cannot work with the wrong topology"
+                "Wrong topology",
+                " ",
+                "The FaceBuilder mesh is damaged and cannot be used."
             ])
+        elif self.msg == ErrorType.PktProblem:
+            self.set_content([
+                "You need to install KeenTools Core library "
+                "before using FaceBuilder."
+        ])
         elif self.msg == ErrorType.PktModelProblem:
             self.set_content([
-                "Can't load Model data",
-                "===============",
-                "You need to reinstall ",
-                "KeenTools FaceBuilder add-on",
-                "because the Model data was corrupted."
+                "KeenTools Core corrupted",
+                " ",
+                "Model data cannot be loaded. You need to reinstall "
+                "FaceBuilder."
             ])
-        return context.window_manager.invoke_props_dialog(self, width=300)
+        return context.window_manager.invoke_props_dialog(self, width=400)
 
 
 class FB_OT_TexSelector(Operator):
