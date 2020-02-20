@@ -369,11 +369,8 @@ class ErrorType:
     CustomMessage = 0
     NoLicense = 1
     SceneDamaged = 2
-    BackgroundsDiffer = 3
-    IllegalIndex = 4
-    CannotReconstruct = 5
-    CannotCreateObject = 6
-    PktProblem = 7
-    AboutFrameSize = 8
-    MeshCorrupted = 9
-    PktModelProblem = 10
+    CannotReconstruct = 3
+    CannotCreateObject = 4
+    MeshCorrupted = 5
+    PktProblem = 6
+    PktModelProblem = 7

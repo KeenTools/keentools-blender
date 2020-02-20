@@ -710,5 +710,5 @@ class FBSceneSettings(PropertyGroup):
             return -1
         return head.get_last_camnum()
 
-    def headnum_exists(self, headnum):
+    def is_proper_headnum(self, headnum):
         return 0 <= headnum <= self.get_last_headnum()

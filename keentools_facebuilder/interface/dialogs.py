@@ -40,7 +40,7 @@ class FB_OT_AddonWarning(Operator):
         self.content.append(" ")  # Additional line at end
 
     def draw(self, context):
-        layout = self.layout
+        layout = self.layout.column()
         layout.scale_y = Config.text_scale_y
 
         for t in self.content:
@@ -95,20 +95,6 @@ class FB_OT_AddonWarning(Operator):
                 "The scene was fixed.",
                 "Now everything is ok!"
             ])
-        elif self.msg == ErrorType.BackgroundsDiffer:
-            self.set_content([
-                "Different sizes",
-                " ",
-                "Camera backgrounds",
-                "have different sizes.",
-                "Texture Builder can't bake"
-            ])
-        elif self.msg == ErrorType.IllegalIndex:
-            self.set_content([
-                "Object index is out of bounds",
-                " ",
-                "Object index out of scene count"
-            ])
         elif self.msg == ErrorType.CannotReconstruct:
             self.set_content([
                 "Can't reconstruct",
@@ -123,23 +109,6 @@ class FB_OT_AddonWarning(Operator):
                 "This addon version can't create",
                 "objects of this type."
             ])
-        elif self.msg == ErrorType.PktProblem:
-            self.set_content([
-                "You need to install KeenTools Core library",
-                "before using FaceBuilder."
-            ])
-        elif self.msg == ErrorType.AboutFrameSize:
-            self.set_content([
-                "About Frame Sizes",
-                " ",
-                "All frames used as a background image ",
-                "must be the same size. This size should ",
-                "be specified as the Render Size ",
-                "in the scene.",
-                "You will receive a warning if these ",
-                "sizes are different. You can fix them ",
-                "by choosing commands from this menu."
-            ])
         elif self.msg == ErrorType.MeshCorrupted:
             self.set_content([
                 "Mesh is corrupted",
@@ -147,6 +116,11 @@ class FB_OT_AddonWarning(Operator):
                 "It looks like the mesh is damaged. ",
                 "Addon cannot work with the wrong topology"
             ])
+        elif self.msg == ErrorType.PktProblem:
+            self.set_content([
+                "You need to install KeenTools Core library",
+                "before using FaceBuilder."
+        ])
         elif self.msg == ErrorType.PktModelProblem:
             self.set_content([
                 "Can't load Model data",
