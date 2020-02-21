@@ -36,6 +36,10 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         heads_deleted, cams_deleted = settings.fix_heads()
         try:
             obj = self.new_head()
+        except ModuleNotFoundError:
+            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
+            return {'CANCELLED'}
         except pkt.module().ModelLoadingException:
             warn = getattr(get_operators(), Config.fb_warning_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktModelProblem)
