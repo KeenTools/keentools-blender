@@ -734,6 +734,7 @@ class FB_OT_BakeTexture(Operator):
         settings = get_main_settings()
         tex_name = materials.bake_tex(
             self.headnum, Config.tex_builder_filename)
+        head = settings.get_head(self.headnum)
 
         if tex_name is None:
             return {'CANCELLED'}
@@ -741,12 +742,13 @@ class FB_OT_BakeTexture(Operator):
         if settings.tex_auto_preview:
             mat = materials.show_texture_in_mat(
                 tex_name, Config.tex_builder_matname)
-            materials.assign_mat(
-                settings.get_head(self.headnum).headobj, mat)
+            materials.assign_mat(head.headobj, mat)
             materials.toggle_mode(('MATERIAL',))
 
             if settings.pinmode:
                 settings.force_out_pinmode = True
+                if head.should_use_emotions():
+                    bpy.ops.view3d.view_camera()
 
         return {'FINISHED'}
 
