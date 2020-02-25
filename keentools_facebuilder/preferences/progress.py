@@ -119,7 +119,7 @@ class InstallationProgress:
     @classmethod
     def _final_callback(cls):
         cls._on_finish_download(
-            'Core library has been downloaded and installed successfully.')
+            'The core library has been downloaded and installed successfully.')
 
     @classmethod
     def _error_callback(cls, err):
@@ -168,5 +168,5 @@ class InstallationProgress:
             logger.debug("UNPACK CORE ERROR" + str(error))
         else:
             cls._on_finish_download(
-                'Core library has been installed successfully.')
+                'The core library has been installed successfully.')
             logger.debug("UNPACK CORE FINISH")

@@ -28,10 +28,14 @@ from ..utils.materials import find_tex_by_name
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
-def _show_all_panels():
-    state, _ = what_is_state()
+def _state_valid_to_show(state):
     # RECONSTRUCT, NO_HEADS, THIS_HEAD, ONE_HEAD, MANY_HEADS, PINMODE
     return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
+
+
+def _show_all_panels():
+    state, _ = what_is_state()
+    return _state_valid_to_show(state)
 
 
 class FB_PT_HeaderPanel(Panel):
@@ -216,11 +220,7 @@ class FB_PT_CameraPanel(Panel):
 
         head = settings.get_head(headnum)
 
-        row = layout.row()
-        row.prop(head, 'sensor_width')
-        row.operator(
-            Config.fb_sensor_size_window_idname,
-            text='', icon='SETTINGS')
+        layout.prop(head, 'auto_focal_estimation')
 
         col = layout.column()
         if head.auto_focal_estimation:
@@ -233,7 +233,11 @@ class FB_PT_CameraPanel(Panel):
             text='', icon='SETTINGS')
 
         row = layout.row()
-        row.prop(head, 'auto_focal_estimation')
+        row.prop(head, 'sensor_width')
+        row.operator(
+            Config.fb_sensor_size_window_idname,
+            text='', icon='SETTINGS')
+
 
 
 class FB_PT_ExifPanel(Panel):
@@ -246,7 +250,10 @@ class FB_PT_ExifPanel(Panel):
 
     @classmethod
     def poll(cls, context):
-        return _show_all_panels()
+        state, headnum = what_is_state()
+        if not _state_valid_to_show(state):
+            return False
+        return get_main_settings().head_has_cameras(headnum)
 
     def draw_header_preset(self, context):
         layout = self.layout
@@ -265,10 +272,6 @@ class FB_PT_ExifPanel(Panel):
 
         if head is None:
             return
-
-        op = layout.operator(Config.fb_read_exif_menu_exec_idname,
-                             text='Read EXIF')
-        op.headnum = headnum
 
         # Show EXIF info message
         if len(head.exif.info_message) > 0:
@@ -310,26 +313,40 @@ class FB_PT_ViewsPanel(Panel):
             text='', icon='QUESTION')
 
     def _draw_pins_panel(self, headnum, camnum):
+        settings = get_main_settings()
         layout = self.layout
         box = layout.box()
+
+        if settings.get_head(headnum).should_use_emotions():
+            op = box.operator(Config.fb_reset_expression_idname)
+            op.headnum = headnum
+
         op = box.operator(Config.fb_center_geo_idname,
                           text="Reset camera")
         op.headnum = headnum
         op.camnum = camnum
         op = box.operator(
-            Config.fb_remove_pins_idname, text="Remove pins")
+            Config.fb_remove_pins_idname, text="Remove all pins")
         op.headnum = headnum
         op.camnum = camnum
 
     def _draw_camera_list(self, headnum, layout):
         settings = get_main_settings()
         head = settings.get_head(headnum)
+
+        if not head.has_cameras():
+            return
+
         wrong_size_counter = 0
         fw = settings.frame_width
         fh = settings.frame_height
 
+        box = layout.box()
+        box.prop(settings.get_head(headnum), 'use_emotions')
+
+        box = layout.box()
         for i, camera in enumerate(head.cameras):
-            box = layout.box()
+
             row = box.row()
 
             w = camera.get_image_width()
@@ -418,9 +435,9 @@ class FB_PT_ViewsPanel(Panel):
                           text='', icon='SETTINGS')
         op.headnum = headnum
 
-        self._draw_camera_hint(layout, headnum)
-
         self._draw_exit_pinmode(layout)
+
+        self._draw_camera_hint(layout, headnum)
 
         # Large List of cameras
         self._draw_camera_list(headnum, layout)

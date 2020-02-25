@@ -280,17 +280,10 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         self._draw_problem_library(layout)
 
     def _draw_version(self, layout):
-        box = layout.box()
-        try:
-            arr = ["Version {}, built {}".format(pkt.module().__version__,
-                                                 pkt.module().build_time),
-                   'The core library have been installed successfully']
-            draw_warning_labels(box, arr, alert=False, icon='INFO')
-            return box
-        except Exception:
-            self._draw_pkt_detail_error_report(box)
-            draw_system_info(layout)
-            return box
+        arr = ["Version {}, built {}".format(pkt.module().__version__,
+                                             pkt.module().build_time),
+               'The core library has been installed successfully']
+        draw_warning_labels(layout, arr, alert=False, icon='INFO')
 
     def _draw_old_addon(self, layout):
         box = layout.box()
@@ -340,12 +333,6 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         col.scale_y = Config.text_scale_y
         draw_long_labels(col, info, 120)
 
-    def _draw_please_restart(self, layout):
-        box = layout.box()
-        draw_warning_labels(
-            box, USER_MESSAGES['RESTART_BLENDER_TO_UNLOAD_CORE'])
-        return box
-
     def draw(self, context):
         layout = self.layout
 
@@ -355,11 +342,18 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             return
 
         if pkt.is_installed():
-            self._draw_version(layout)
-            # self._draw_license_info(layout)
+            box = layout.box()
+            try:
+                self._draw_version(box)
+                self._draw_license_info(layout)
+            except Exception:
+                self._draw_pkt_detail_error_report(box)
+                draw_system_info(layout)
         else:
             if pkt.loaded():
-                box = self._draw_please_restart(layout)
+                box = layout.box()
+                draw_warning_labels(
+                    box, USER_MESSAGES['RESTART_BLENDER_TO_UNLOAD_CORE'])
                 self._draw_problem_library(box)
                 draw_system_info(layout)
                 return

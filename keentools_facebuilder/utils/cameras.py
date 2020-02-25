@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import logging
+import math
+
 import bpy
 
 from .. config import get_main_settings, Config
@@ -88,3 +90,32 @@ def get_camera_params(obj):
     except Exception:
         return None
     return params
+
+
+def get_camera_background(camera):
+    camobj = camera.camobj
+    c = camobj.data
+    if len(c.background_images) == 0:
+        return None
+    else:
+        return c.background_images[0]
+
+
+def reset_background_image_rotation(camera):
+    background_image = get_camera_background(camera)
+    if background_image is None:
+        return
+    background_image.rotation = 0
+    camera.orientation = 0
+
+def rotate_background_image(camera, delta=1):
+    background_image = get_camera_background(camera)
+    if background_image is None:
+        return
+
+    camera.orientation += delta
+    if camera.orientation < 0:
+        camera.orientation += 4
+    if camera.orientation >= 4:
+        camera.orientation += -4
+    background_image.rotation = camera.orientation * math.pi / 2

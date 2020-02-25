@@ -32,7 +32,7 @@ class BuilderType:
 
 class Config:
     # Version dependent
-    addon_version = '1.5.8 (Beta)'
+    addon_version = '2.0.0'
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83))
     minimal_blender_api = (2, 80, 60)
 
@@ -41,6 +41,10 @@ class Config:
     operators = _company + '_facebuilder'
     addon_name = __package__  # the same as module name
     addon_human_readable_name = 'FaceBuilder'
+
+    default_fb_object_name = 'FaceBuilderHead'
+    default_fb_mesh_name = 'FaceBuilderHead_mesh'
+    default_fb_collection_name = 'FaceBuilderCol'
 
     addon_search = 'KeenTools'
     addon_global_var_name = prefix + '_settings'
@@ -127,6 +131,19 @@ class Config:
 
     fb_delete_texture_callname = 'delete_texture'
     fb_delete_texture_idname = operators + '.' + fb_delete_texture_callname
+
+    fb_rotate_image_cw_callname = 'rotate_image_cw'
+    fb_rotate_image_cw_idname = operators + '.' + fb_rotate_image_cw_callname
+
+    fb_rotate_image_ccw_callname = 'rotate_image_ccw'
+    fb_rotate_image_ccw_idname = operators + '.' + fb_rotate_image_ccw_callname
+
+    fb_reset_image_rotation_callname = 'reset_image_rotation'
+    fb_reset_image_rotation_idname = \
+        operators + '.' + fb_reset_image_rotation_callname
+
+    fb_reset_expression_callname = 'reset_expression'
+    fb_reset_expression_idname = operators + '.' + fb_reset_expression_callname
 
     fb_bake_tex_callname = 'bake_tex'
     fb_bake_tex_idname = operators + '.' + fb_bake_tex_callname
@@ -287,8 +304,7 @@ class Config:
     # Constants
     default_pin_size = 7.0
     surf_pin_size_scale = 0.85
-    default_POINT_SENSITIVITY = 16.0
-    default_FB_COLLECTION_NAME = 'FaceBuilderCol'
+    default_point_sensitivity = 16.0
     text_scale_y = 0.75
 
     viewport_redraw_interval = 0.1
@@ -353,10 +369,8 @@ class ErrorType:
     CustomMessage = 0
     NoLicense = 1
     SceneDamaged = 2
-    BackgroundsDiffer = 3
-    IllegalIndex = 4
-    CannotReconstruct = 5
-    CannotCreateObject = 6
-    PktProblem = 7
-    AboutFrameSize = 8
-    MeshCorrupted = 9
+    CannotReconstruct = 3
+    CannotCreateObject = 4
+    MeshCorrupted = 5
+    PktProblem = 6
+    PktModelProblem = 7

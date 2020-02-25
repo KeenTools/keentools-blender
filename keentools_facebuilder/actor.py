@@ -25,7 +25,7 @@ from bpy.props import (
 )
 from bpy.types import Operator
 
-from .utils import manipulate, materials
+from .utils import manipulate
 from .config import Config, get_main_settings
 from .utils.exif_reader import get_sensor_size_35mm_equivalent
 
@@ -47,8 +47,6 @@ class FB_OT_Actor(Operator):
         logger = logging.getLogger(__name__)
         logger.debug("Actor: {}".format(self.action))
 
-        settings = get_main_settings()
-
         if self.action == 'reconstruct_by_head':
             manipulate.reconstruct_by_head()
 
@@ -58,24 +56,6 @@ class FB_OT_Actor(Operator):
         elif self.action == 'use_render_frame_size_scaled':
             # Allow converts scenes pinned on default cameras
             manipulate.use_render_frame_size_scaled()  # disabled in interface
-
-        elif self.action == 'delete_camera_image':
-            camera = settings.get_camera(self.headnum, self.camnum)
-            if camera is not None:
-                camera.cam_image = None
-
-        elif self.action == 'save_tex':
-            src_context = bpy.context.copy()
-            area = bpy.context.area
-            type = area.type
-            area.type = 'IMAGE_EDITOR'
-            tex = materials.find_tex_by_name(Config.tex_builder_filename)
-            if tex is not None:
-                src_context['edit_image'] = tex
-                area.spaces[0].image = tex
-                # area.type = type
-                op = bpy.ops.image.save_as
-                op('INVOKE_DEFAULT')  # src_context, 'INVOKE_DEFAULT'
 
         return {'FINISHED'}
 

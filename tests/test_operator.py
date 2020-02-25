@@ -1,12 +1,12 @@
 import bpy
 from bpy.types import Panel, Operator
-from bpy.props import StringProperty
+from bpy.props import StringProperty, IntProperty
 
 import keentools_facebuilder
 from keentools_facebuilder.config import Config, get_main_settings, \
-    get_operators
+    get_operators, ErrorType
 import keentools_facebuilder.utils.coords as coords
-from keentools_facebuilder.utils.fake_context import get_area
+from keentools_facebuilder.utils.fake_context import get_area, get_region, get_fake_context
 
 
 class TestsOperator(Operator):
@@ -16,6 +16,7 @@ class TestsOperator(Operator):
     bl_description = "Start test"
 
     action: StringProperty(name="Action Name")
+    error_type: IntProperty(name="Error Type")
 
     def draw(self, context):
         """ No need to show panel so empty draw"""
@@ -32,6 +33,9 @@ class TestsOperator(Operator):
             test_delete_last_camera()
         elif self.action == "test_duplicate_and_reconstruct":
             test_duplicate_and_reconstruct()
+        elif self.action == "test_error_message":
+            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn('INVOKE_DEFAULT', msg=self.error_type)
         return {'FINISHED'}
 
 
@@ -40,8 +44,22 @@ class TestsPanel(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_label = "Integration Tests"
-    bl_category = "Face Builder"
+    bl_category = Config.fb_tab_category
     bl_context = "objectmode"
+
+
+    def _draw_error_buttons(self, layout):
+        layout.label(text='Error Messages')
+        for err in dir(ErrorType):
+            if not callable(getattr(ErrorType, err)) and \
+                    not err.startswith('__'):
+                name = "{}".format(err)
+                value = getattr(ErrorType, err)
+                op = layout.operator('object.keentools_fb_tests',
+                                     text="{}: {}".format(value, name))
+                op.action = "test_error_message"
+                op.error_type = getattr(ErrorType, name)
+
 
     # Face Builder Tests Panel Draw
     def draw(self, context):
@@ -65,6 +83,9 @@ class TestsPanel(Panel):
         op = layout.operator('object.keentools_fb_tests',
                              text="test_duplicate_and_reconstruct")
         op.action = "test_duplicate_and_reconstruct"
+
+        box = layout.box()
+        self._draw_error_buttons(box)
 
 
 _classes = (
@@ -178,14 +199,7 @@ def test_move_pins():
     # Switch to PinMode
     select_camera(0, 0)
 
-    area = get_area()
-    region_3d = area.spaces[0].region_3d
-
-    fake_context = lambda: None
-    fake_context.area = area
-    fake_context.space_data = lambda: None
-    fake_context.space_data.region_3d = region_3d
-    fake_context.scene = bpy.context.scene
+    fake_context = get_fake_context()
 
     brect = tuple(coords.get_camera_border(fake_context))
     arect = (396.5, -261.9, 1189.5, 1147.9)
@@ -201,9 +215,7 @@ def test_move_pins():
 
 
 def test_duplicate_and_reconstruct():
-    headnum = get_last_headnum()
     bpy.ops.object.select_all(action='DESELECT')
-    headobj = select_by_headnum(headnum)
     bpy.ops.object.duplicate_move(
         OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
         TRANSFORM_OT_translate={"value": (-3.0, 0, 0)})

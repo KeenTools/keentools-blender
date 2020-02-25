@@ -23,7 +23,7 @@ from . utils import attrs
 from . fbloader import FBLoader
 from . config import Config, get_main_settings, get_operators, \
     BuilderType, ErrorType
-
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 class MESH_OT_FBAddHead(bpy.types.Operator):
     """ Add FaceBuilder Head into scene"""
@@ -36,6 +36,14 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         heads_deleted, cams_deleted = settings.fix_heads()
         try:
             obj = self.new_head()
+        except ModuleNotFoundError:
+            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
+            return {'CANCELLED'}
+        except pkt.module().ModelLoadingException:
+            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.PktModelProblem)
+            return {'CANCELLED'}
         except Exception:
             warn = getattr(get_operators(), Config.fb_warning_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
@@ -67,6 +75,6 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
     @classmethod
     def new_head(cls):
         mesh = FBLoader.universal_mesh_loader(
-            BuilderType.FaceBuilder, 'Head_mesh')
-        obj = bpy.data.objects.new('FaceBuilderHead', mesh)
+            BuilderType.FaceBuilder, Config.default_fb_mesh_name)
+        obj = bpy.data.objects.new(Config.default_fb_object_name, mesh)
         return obj

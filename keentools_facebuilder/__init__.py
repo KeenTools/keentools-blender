@@ -18,7 +18,7 @@
 
 
 bl_info = {
-    "name": "KeenTools FaceBuilder 1.5.8 (Beta)",
+    "name": "KeenTools FaceBuilder 2.0.0",
     "author": "KeenTools",
     "description": "Creates Head and Face geometry with a few "
                    "reference photos",
@@ -37,6 +37,7 @@ import logging.config
 
 import bpy
 
+# Only minimal imports are performed to check the start
 from .config import Config
 from .messages import (ERROR_MESSAGES, draw_warning_labels, draw_system_info,
                        draw_long_label, draw_long_labels)
@@ -49,6 +50,10 @@ def _is_platform_64bit():
 
 def _is_python_64bit():
     return sys.maxsize > 4294967296  # 2**32
+
+
+def _is_config_latest():
+    return Config.addon_version == '2.0.0'
 
 
 def _is_blender_too_old():
@@ -65,7 +70,8 @@ def _check_libraries():
 
 def _can_load():
     return _is_platform_64bit() and _is_python_64bit() and \
-           not _is_blender_too_old() and _check_libraries()
+           _is_config_latest() and not _is_blender_too_old() and \
+           _check_libraries()
 
 
 if not _can_load():
@@ -85,6 +91,13 @@ if not _can_load():
             if not _is_python_64bit():
                 draw_warning_labels(box, ERROR_MESSAGES['BLENDER_32_BIT'],
                                     alert=True, icon='ERROR')
+                draw_system_info(layout)
+                return
+
+            if not _is_config_latest():
+                msg = ['Before installing a new add-on version you need '
+                       'to relaunch Blender.']
+                draw_warning_labels(box, msg, alert=True, icon='ERROR')
                 draw_system_info(layout)
                 return
 

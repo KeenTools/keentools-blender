@@ -106,6 +106,5 @@ def get_obj_collection(obj):
 
 
 def add_to_fb_collection(obj):
-    # fb_col = get_collection_by_name(Config.default_FB_COLLECTION_NAME)
-    fb_col = new_collection(Config.default_FB_COLLECTION_NAME)
+    fb_col = new_collection(Config.default_fb_collection_name)
     fb_col.objects.link(obj)
