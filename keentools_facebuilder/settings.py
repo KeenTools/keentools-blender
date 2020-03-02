@@ -118,7 +118,7 @@ def update_mesh_parts(self, context):
         return
 
     head = settings.get_head(headnum)
-    if settings.pinmode:
+    if settings.pinmode and head.should_use_emotions():
         keyframe = head.get_keyframe(settings.current_camnum)
     else:
         keyframe = -1

@@ -365,9 +365,9 @@ class FBLoader:
             builder.select_uv_set(3)
 
         if keyframe >= 0:
-            geo = builder.applied_args_model()
-        else:
             geo = builder.applied_args_model_at(keyframe)
+        else:
+            geo = builder.applied_args_model()
         me = geo.mesh(0)
 
         v_count = me.points_count()
