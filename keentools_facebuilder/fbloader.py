@@ -350,7 +350,7 @@ class FBLoader:
 
     @classmethod
     def get_builder_mesh(cls, builder, mesh_name='keentools_mesh',
-                         masks=(), uv_set='uv0'):
+                         masks=(), uv_set='uv0', keyframe=-1):
         for i, m in enumerate(masks):
             builder.set_mask(i, m)
 
@@ -364,7 +364,10 @@ class FBLoader:
         if uv_set == 'uv3':
             builder.select_uv_set(3)
 
-        geo = builder.applied_args_model()
+        if keyframe >= 0:
+            geo = builder.applied_args_model()
+        else:
+            geo = builder.applied_args_model_at(keyframe)
         me = geo.mesh(0)
 
         v_count = me.points_count()
