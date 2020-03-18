@@ -136,11 +136,15 @@ if not _can_load():
 
 
     def register():
+        logger = logging.getLogger(__name__)
         bpy.utils.register_class(FBCannotLoadPreferences)
+        logger.debug("CANNOT LOAD PREFERENCES REGISTERED")
 
 
     def unregister():
+        logger = logging.getLogger(__name__)
         bpy.utils.unregister_class(FBCannotLoadPreferences)
+        logger.debug("CANNOT LOAD PREFERENCES UNREGISTERED")
 
 else:
     from .preferences import CLASSES_TO_REGISTER as PREFERENCES_CLASSES
@@ -188,21 +192,34 @@ else:
 
     # Blender predefined methods
     def register():
+        logger = logging.getLogger(__name__)
+        logger.debug("START REGISTER CLASSES")
         for cls in CLASSES_TO_REGISTER:
+            logger.debug("REGISTER CLASS: {}".format(str(cls)))
             bpy.utils.register_class(cls)
+
         bpy.types.VIEW3D_MT_mesh_add.append(menu_func)
+        logger.debug("MENU REGISTERED")
         _add_addon_settings_var()
+        logger.debug("MAIN VAR REGISTERED")
 
         FBIcons.register()
+        logger.debug("ICONS REGISTERED")
 
 
     def unregister():
+        logger = logging.getLogger(__name__)
+        logger.debug("START UNREGISTER CLASSES")
         for cls in reversed(CLASSES_TO_REGISTER):
+            logger.debug("UNREGISTER CLASS: {}".format(str(cls)))
             bpy.utils.unregister_class(cls)
         bpy.types.VIEW3D_MT_mesh_add.remove(menu_func)
+        logger.debug("MENU UNREGISTERED")
         _remove_addon_settings_var()
+        logger.debug("MAIN VAR UNREGISTERED")
 
         FBIcons.unregister()
+        logger.debug("ICONS UNREGISTERED")
 
 
 if __name__ == "__main__":
