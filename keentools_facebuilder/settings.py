@@ -121,7 +121,7 @@ def update_mesh_parts(self, context):
     if settings.pinmode and head.should_use_emotions():
         keyframe = head.get_keyframe(settings.current_camnum)
     else:
-        keyframe = -1
+        keyframe = None
 
     old_mesh = head.headobj.data
     FBLoader.load_only(headnum)
