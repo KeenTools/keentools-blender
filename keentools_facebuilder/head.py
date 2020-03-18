@@ -70,6 +70,8 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
             a.spaces[0].show_region_ui = True
         except Exception:
             pass
+
+        pkt.reset_cached_is_installed()
         return {'FINISHED'}
 
     @classmethod
