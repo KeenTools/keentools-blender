@@ -120,6 +120,7 @@ class InstallationProgress:
     def _final_callback(cls):
         cls._on_finish_download(
             'The core library has been downloaded and installed successfully.')
+        pkt.reset_cached_is_installed()
 
     @classmethod
     def _error_callback(cls, err):

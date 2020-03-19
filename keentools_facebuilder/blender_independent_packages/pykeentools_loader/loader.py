@@ -21,7 +21,29 @@ import sys
 import os
 from .config import *
 from .install import is_installed, installation_path_exists
-__all__ = ['loaded', 'module', 'is_python_supported', 'installation_status']
+__all__ = ['loaded', 'module', 'is_python_supported', 'installation_status',
+           'cached_is_installed', 'reset_cached_is_installed']
+
+
+CACHED_IS_PYKEENTOOLS_INSTALLED = None
+
+
+def cached_is_installed():
+    global CACHED_IS_PYKEENTOOLS_INSTALLED
+    if CACHED_IS_PYKEENTOOLS_INSTALLED is None:
+        if not is_installed():
+            CACHED_IS_PYKEENTOOLS_INSTALLED = False
+            return False
+
+        state, status = installation_status()
+        CACHED_IS_PYKEENTOOLS_INSTALLED = status == 'PYKEENTOOLS_OK'
+
+    return CACHED_IS_PYKEENTOOLS_INSTALLED
+
+
+def reset_cached_is_installed():
+    global CACHED_IS_PYKEENTOOLS_INSTALLED
+    CACHED_IS_PYKEENTOOLS_INSTALLED = None
 
 
 def _do_pkt_shadow_copy():

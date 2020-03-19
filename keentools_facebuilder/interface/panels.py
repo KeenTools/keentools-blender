@@ -35,7 +35,7 @@ def _state_valid_to_show(state):
 
 def _show_all_panels():
     state, _ = what_is_state()
-    return _state_valid_to_show(state)
+    return _state_valid_to_show(state) and pkt.cached_is_installed()
 
 
 class FB_PT_HeaderPanel(Panel):
@@ -126,6 +126,11 @@ class FB_PT_HeaderPanel(Panel):
 
     def draw(self, context):
         layout = self.layout
+
+        if not pkt.cached_is_installed():
+            self._draw_start_panel(layout)
+            return
+
         state, headnum = what_is_state()
         # layout.label(text="{} {}".format(state, headnum))
 
@@ -239,7 +244,6 @@ class FB_PT_CameraPanel(Panel):
             text='', icon='SETTINGS')
 
 
-
 class FB_PT_ExifPanel(Panel):
     bl_idname = Config.fb_exif_panel_idname
     bl_space_type = "VIEW_3D"
@@ -251,7 +255,7 @@ class FB_PT_ExifPanel(Panel):
     @classmethod
     def poll(cls, context):
         state, headnum = what_is_state()
-        if not _state_valid_to_show(state):
+        if not _state_valid_to_show(state) or not pkt.cached_is_installed():
             return False
         return get_main_settings().head_has_cameras(headnum)
 
