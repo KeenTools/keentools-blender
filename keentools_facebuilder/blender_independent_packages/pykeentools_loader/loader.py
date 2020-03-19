@@ -25,35 +25,25 @@ __all__ = ['loaded', 'module', 'is_python_supported', 'installation_status',
            'cached_is_installed', 'reset_cached_is_installed']
 
 
-CACHED_IS_PYKEENTOOLS_INSTALLED = False
-CHECKED_PYKEENTOOLS_IS_INSTALLED = False
+CACHED_IS_PYKEENTOOLS_INSTALLED = None
 
 
 def cached_is_installed():
-    global CACHED_IS_PYKEENTOOLS_INSTALLED, CHECKED_PYKEENTOOLS_IS_INSTALLED
-    if not CHECKED_PYKEENTOOLS_IS_INSTALLED:
+    global CACHED_IS_PYKEENTOOLS_INSTALLED
+    if CACHED_IS_PYKEENTOOLS_INSTALLED is None:
         if not is_installed():
             CACHED_IS_PYKEENTOOLS_INSTALLED = False
-            CHECKED_PYKEENTOOLS_IS_INSTALLED = True
-            return CACHED_IS_PYKEENTOOLS_INSTALLED
+            return False
 
         state, status = installation_status()
-        if status == 'PYKEENTOOLS_OK':
-            CACHED_IS_PYKEENTOOLS_INSTALLED = True
-            CHECKED_PYKEENTOOLS_IS_INSTALLED = True
-            return CACHED_IS_PYKEENTOOLS_INSTALLED
-        else:
-            CACHED_IS_PYKEENTOOLS_INSTALLED = False
-            CHECKED_PYKEENTOOLS_IS_INSTALLED = True
-            return CACHED_IS_PYKEENTOOLS_INSTALLED
+        CACHED_IS_PYKEENTOOLS_INSTALLED = status == 'PYKEENTOOLS_OK'
 
     return CACHED_IS_PYKEENTOOLS_INSTALLED
 
 
 def reset_cached_is_installed():
-    global CACHED_IS_PYKEENTOOLS_INSTALLED, CHECKED_PYKEENTOOLS_IS_INSTALLED
-    CACHED_IS_PYKEENTOOLS_INSTALLED = False
-    CHECKED_PYKEENTOOLS_IS_INSTALLED = False
+    global CACHED_IS_PYKEENTOOLS_INSTALLED
+    CACHED_IS_PYKEENTOOLS_INSTALLED = None
 
 
 def _do_pkt_shadow_copy():
