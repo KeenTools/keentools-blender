@@ -22,27 +22,35 @@ import os
 from .config import *
 from .install import is_installed, installation_path_exists
 __all__ = ['loaded', 'module', 'is_python_supported', 'installation_status',
-           'cached_is_installed', 'reset_cached_is_installed']
+           'cached_is_installed', 'get_cached_installed_status',
+           'reset_cached_is_installed']
 
 
 CACHED_IS_PYKEENTOOLS_INSTALLED = None
-
+CACHED_INSTALLED_STATUS = 'NOT_REQUESTED'
 
 def cached_is_installed():
-    global CACHED_IS_PYKEENTOOLS_INSTALLED
+    global CACHED_IS_PYKEENTOOLS_INSTALLED, CACHED_INSTALLED_STATUS
     if CACHED_IS_PYKEENTOOLS_INSTALLED is None:
         if not is_installed():
             CACHED_IS_PYKEENTOOLS_INSTALLED = False
             return False
 
-        state, status = installation_status()
-        CACHED_IS_PYKEENTOOLS_INSTALLED = status == 'PYKEENTOOLS_OK'
+        CACHED_IS_PYKEENTOOLS_INSTALLED, CACHED_INSTALLED_STATUS = \
+            installation_status()
 
     return CACHED_IS_PYKEENTOOLS_INSTALLED
 
 
+def get_cached_installed_status():
+    global CACHED_INSTALLED_STATUS
+    state = cached_is_installed()
+    return CACHED_INSTALLED_STATUS
+
+
 def reset_cached_is_installed():
-    global CACHED_IS_PYKEENTOOLS_INSTALLED
+    global CACHED_IS_PYKEENTOOLS_INSTALLED, CACHED_INSTALLED_STATUS
+    CACHED_INSTALLED_STATUS = 'NOT_REQUESTED'
     CACHED_IS_PYKEENTOOLS_INSTALLED = None
 
 
