@@ -118,13 +118,18 @@ def update_mesh_parts(self, context):
         return
 
     head = settings.get_head(headnum)
+    if settings.pinmode and head.should_use_emotions():
+        keyframe = head.get_keyframe(settings.current_camnum)
+    else:
+        keyframe = None
 
     old_mesh = head.headobj.data
     FBLoader.load_only(headnum)
     # Create new mesh
-    mesh = FBLoader.get_builder_mesh(FBLoader.get_builder(), 'FBHead_mesh',
+    mesh = FBLoader.get_builder_mesh(FBLoader.get_builder(), 'FBHead_tmp_mesh',
                                      head.get_masks(),
-                                     uv_set=head.tex_uv_shape)
+                                     uv_set=head.tex_uv_shape,
+                                     keyframe=keyframe)
     try:
         # Copy old material
         if old_mesh.materials:
