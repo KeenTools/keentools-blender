@@ -25,19 +25,19 @@ __all__ = ['loaded', 'module', 'is_python_supported', 'installation_status',
            'cached_is_installed', 'reset_cached_is_installed']
 
 
-CACHED_PYKEENTOOLS_INSTALLATION_STATUS = (None, 'NOT_REQUESTED')
+CACHED_PYKEENTOOLS_INSTALLATION_STATUS = None
 
 
 def cached_is_installed():
     global CACHED_PYKEENTOOLS_INSTALLATION_STATUS
-    if CACHED_PYKEENTOOLS_INSTALLATION_STATUS[0] is None:
+    if CACHED_PYKEENTOOLS_INSTALLATION_STATUS is None:
         CACHED_PYKEENTOOLS_INSTALLATION_STATUS = installation_status()
     return CACHED_PYKEENTOOLS_INSTALLATION_STATUS[0]
 
 
 def reset_cached_is_installed():
     global CACHED_PYKEENTOOLS_INSTALLATION_STATUS
-    CACHED_PYKEENTOOLS_INSTALLATION_STATUS = (None, 'NOT_REQUESTED')
+    CACHED_PYKEENTOOLS_INSTALLATION_STATUS = None
 
 
 def _do_pkt_shadow_copy():
