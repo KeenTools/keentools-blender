@@ -4,6 +4,8 @@
 
 ## Release History
 
+2.0.1 - 24 March 2020
+
 2.0.0 - 26 February 2020
 
 1.5.8 - 20 January 2020
