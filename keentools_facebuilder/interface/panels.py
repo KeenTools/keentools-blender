@@ -86,7 +86,7 @@ class FB_PT_HeaderPanel(Panel):
             text='Install Core library', icon='PREFERENCES')
 
     def _draw_start_panel(self, layout):
-        if not pkt.is_installed():
+        if not pkt.cached_is_installed():
             self._pkt_install_offer(layout)
         else:
             self._head_creation_offer(layout)
