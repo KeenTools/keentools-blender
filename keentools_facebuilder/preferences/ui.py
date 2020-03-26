@@ -248,14 +248,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         if download_state['status'] is not None:
             col.label(text="{}".format(download_state['status']))
 
-    def _draw_pkt_detail_error_report(self, layout):
-        state, status = pkt.installation_status()
-        if status == 'PYKEENTOOLS_OK':
-            draw_warning_labels(
-                layout, USER_MESSAGES['PYKEENTOOLS_OK'],
-                alert=False, icon='INFO')
-            return
-
+    def _draw_pkt_detail_error_report(self, layout, status):
         status_to_errors = {
             'NOT_INSTALLED': 'CORE_NOT_INSTALLED',
             'INSTALLED_WRONG': 'INSTALLED_WRONG_INSTEAD_CORE',
@@ -276,8 +269,6 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                       'NO_VERSION', 'VERSION_PROBLEM'):
             # Core Uninstall button
             layout.operator(Config.fb_uninstall_core_idname)
-
-        self._draw_problem_library(layout)
 
     def _draw_version(self, layout):
         arr = ["Version {}, built {}".format(pkt.module().__version__,
@@ -341,15 +332,10 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             draw_system_info(layout)
             return
 
-        if pkt.is_installed():
-            box = layout.box()
-            try:
-                self._draw_version(box)
-                self._draw_license_info(layout)
-            except Exception:
-                self._draw_pkt_detail_error_report(box)
-                draw_system_info(layout)
-        else:
+        cached_status = pkt.cached_installation_status()
+        assert(cached_status is not None)
+
+        if cached_status[1] == 'NOT_INSTALLED':
             if pkt.loaded():
                 box = layout.box()
                 draw_warning_labels(
@@ -359,5 +345,23 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                 return
 
             self._draw_please_accept_license(layout)
+            self._draw_download_progress(layout)
+            return
+
+        box = layout.box()
+        if cached_status[1] == 'PYKEENTOOLS_OK':
+            try:
+                self._draw_version(box)
+                self._draw_license_info(layout)
+                return
+            except Exception:
+                cached_status[1] = 'NO_VERSION'
+
+        self._draw_pkt_detail_error_report(box, cached_status[1])
+        self._draw_problem_library(box)
+        draw_system_info(layout)
 
         self._draw_download_progress(layout)
+
+
+
