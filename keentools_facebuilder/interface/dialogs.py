@@ -46,6 +46,11 @@ class FB_OT_AddonWarning(Operator):
         for t in self.content:
             layout.label(text=t)
 
+        if self.msg == ErrorType.NoLicense:
+            op = self.layout.operator(Config.fb_open_url_idname,
+                                      text='Purchase a license')
+            op.url = Config.license_purchase_url
+
     def execute(self, context):
         if self.msg not in (ErrorType.PktProblem, ErrorType.NoLicense):
             return {"FINISHED"}
