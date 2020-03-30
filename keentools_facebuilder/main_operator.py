@@ -950,8 +950,12 @@ class FB_OT_UninstallCore(bpy.types.Operator):
     bl_description = 'Uninstall Core Library'
 
     def execute(self, context):
+        logger = logging.getLogger(__name__)
         import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+        logger.debug("START CORE UNINSTALL")
         pkt.uninstall()
+        logger.debug("FINISH CORE UNINSTALL")
+        pkt.reset_cached_is_installed()
         return {'FINISHED'}
 
 
