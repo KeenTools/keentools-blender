@@ -132,7 +132,7 @@ def bake_tex(headnum, tex_name):
         logger.debug("NO CAMERAS ON HEAD")
         return None
 
-    FBLoader.load_only(headnum)
+    FBLoader.load_model(headnum)
     fb = FBLoader.get_builder()
     for i, m in enumerate(head.get_masks()):
         fb.set_mask(i, m)

@@ -128,7 +128,7 @@ class FB_OT_SelectCamera(Operator):
 
         # Add Background Image
         c = camobj.data
-        c.lens = head.focal
+        c.lens = camera.focal  # fix
         c.show_background_images = True
         if len(c.background_images) == 0:
             b = c.background_images.new()
@@ -176,11 +176,14 @@ class FB_OT_CenterGeo(Operator):
         settings = get_main_settings()
         headnum = self.headnum
         camnum = self.camnum
-
-        fb = FBLoader.get_builder()
+        head = settings.get_head(headnum)
+        camera = head.get_camera(camnum)
         kid = settings.get_keyframe(headnum, camnum)
 
-        fb.center_model_mat(kid)
+        fb = FBLoader.get_builder()
+        proj = camera.get_projection_matrix()
+        # print(proj)
+        fb.center_model_mat(kid, proj)
         FBLoader.fb_save(headnum, camnum)
 
         manipulate.push_neutral_head_in_undo_history(
@@ -417,7 +420,7 @@ class FB_OT_AddCamera(Operator):
 
         # Warning! Loading camera may cause data loss
         if settings.get_head(headnum).cameras:
-            FBLoader.load_only(headnum)
+            FBLoader.load_model(headnum)
 
         camera = FBLoader.add_camera(headnum, None)
         FBLoader.set_keentools_version(camera.camobj)
@@ -785,7 +788,9 @@ class FB_OT_RotateImageCW(Operator):
     def execute(self, context):
         settings = get_main_settings()
         camera = settings.get_camera(self.headnum, self.camnum)
-        cameras.rotate_background_image(camera, 1)
+        camera.rotate_background_image(1)
+        camera.update_scene_frame_size()
+        camera.update_background_image_scale()
         return {'FINISHED'}
 
 
@@ -804,7 +809,9 @@ class FB_OT_RotateImageCCW(Operator):
     def execute(self, context):
         settings = get_main_settings()
         camera = settings.get_camera(self.headnum, self.camnum)
-        cameras.rotate_background_image(camera, -1)
+        camera.rotate_background_image(-1)
+        camera.update_scene_frame_size()
+        camera.update_background_image_scale()
         return {'FINISHED'}
 
 
@@ -823,7 +830,9 @@ class FB_OT_ResetImageRotation(Operator):
     def execute(self, context):
         settings = get_main_settings()
         camera = settings.get_camera(self.headnum, self.camnum)
-        cameras.reset_background_image_rotation(camera)
+        camera.reset_background_image_rotation()
+        camera.update_scene_frame_size()
+        camera.update_background_image_scale()
         return {'FINISHED'}
 
 
@@ -850,7 +859,7 @@ class FB_OT_ResetExpression(Operator):
         if not head.has_camera(settings.current_camnum):
             return {'CANCELLED'}
 
-        FBLoader.load_only(self.headnum)
+        FBLoader.load_model(self.headnum)
         fb = FBLoader.get_builder()
         fb.reset_to_neutral_emotions(
             head.get_keyframe(settings.current_camnum))

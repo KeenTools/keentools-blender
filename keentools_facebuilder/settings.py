@@ -19,6 +19,8 @@
 
 import bpy
 import numpy as np
+import logging
+import math
 
 
 from . fbloader import FBLoader
@@ -37,6 +39,16 @@ from .utils import coords, manipulate
 from . fbdebug import FBDebug
 from . config import Config, get_main_settings, get_operators
 from .utils.manipulate import what_is_state
+
+
+def update_focal_length_mode(self, context):
+    print("value: ", context)
+    print("mode:", self.focal_estimation_mode)
+    fb = FBLoader.get_builder()
+    fb.set_focal_length_estimation_mode(self.focal_estimation_mode)
+    print(fb.focal_length_estimation_mode())
+    settings = get_main_settings()
+    FBLoader.save_only(settings.current_headnum)
 
 
 def update_emotions(self, context):
@@ -85,13 +97,27 @@ def update_sensor_height(self, context):
 
 
 def update_focal(self, context):
+    logger = logging.getLogger(__name__)
+    logger.debug("UPDATE_HEAD_FOCAL")
     settings = get_main_settings()
     if not settings.pinmode:
-        FBLoader.update_all_camera_focals(self)
+        FBLoader.update_head_camera_focals(self)
 
         state, headnum = what_is_state()
         head = settings.get_head(headnum)
         head.auto_focal_estimation = False
+
+
+def update_camera_focal(self, context):
+    logger = logging.getLogger(__name__)
+    logger.debug("UPDATE_CAMERA_FOCAL")
+    settings = get_main_settings()
+    self.camobj.data.lens = self.focal
+
+    if not settings.pinmode:
+        state, headnum = what_is_state()
+        head = settings.get_head(headnum)
+        # head.auto_focal_estimation = False
 
 
 def update_blue_camera_button(self, context):
@@ -124,7 +150,7 @@ def update_mesh_parts(self, context):
         keyframe = None
 
     old_mesh = head.headobj.data
-    FBLoader.load_only(headnum)
+    FBLoader.load_model(headnum)
     # Create new mesh
     mesh = FBLoader.get_builder_mesh(FBLoader.get_builder(), 'FBHead_tmp_mesh',
                                      head.get_masks(),
@@ -211,6 +237,103 @@ class FBCameraItem(PropertyGroup):
     exif: PointerProperty(type=FBExifItem)
 
     orientation: IntProperty(default=0)  # angle = orientation * Pi/2
+
+    focal: FloatProperty(
+        description="CAMERA Focal length in millimetres",
+        name="CFocal Length (mm)", default=50,
+        min=0.1, update=update_camera_focal)
+
+    background_scale: FloatProperty(
+        description="CAMERA background image scale",
+        name="Cam BGScale", default=1.0,
+        min=0.0001)
+
+    auto_focal_estimation: BoolProperty(
+        name="CFocal Length Estimation",
+        description="When turned on, FaceBuilder will try to estimate "
+                    "focal length based on the position of the model "
+                    "in the frame",
+        default=True)
+
+    image_group: IntProperty(default=0)
+
+    def update_scene_frame_size(self):
+        if self.image_width > 0 and self.image_height > 0:
+            if (self.orientation % 2) == 0:
+                render = bpy.context.scene.render
+                render.resolution_x = self.image_width
+                render.resolution_y = self.image_height
+            else:
+                render = bpy.context.scene.render
+                render.resolution_x = self.image_height
+                render.resolution_y = self.image_width
+
+    def get_camera_background(self):
+        c = self.camobj.data
+        if len(c.background_images) == 0:
+            return None
+        else:
+            return c.background_images[0]
+
+    def get_background_size(self):
+        img = self.get_camera_background()
+        if img is not None:
+            return img.image.size
+        else:
+            return -1, -1
+
+    def reset_background_image_rotation(self):
+        background_image = self.get_camera_background()
+        if background_image is None:
+            return
+        background_image.rotation = 0
+        self.orientation = 0
+
+    def rotate_background_image(self, delta=1):
+        background_image = self.get_camera_background()
+        if background_image is None:
+            return
+
+        self.orientation += delta
+        if self.orientation < 0:
+            self.orientation += 4
+        if self.orientation >= 4:
+            self.orientation += -4
+        background_image.rotation = self.orientation * math.pi / 2
+
+    def calculate_background_scale(self):
+        if self.image_width <= 0 or self.image_height <= 0:
+            return 1.0
+        if (self.orientation % 2) == 0:
+            return 1.0
+        else:
+            if self.image_width >= self.image_height:
+                return self.image_height / self.image_width
+            else:
+                return self.image_width / self.image_height
+
+    def update_background_image_scale(self):
+        self.background_scale = self.calculate_background_scale()
+        background = self.get_camera_background()
+        if background is None:
+            return False
+        background.scale = self.background_scale
+        return True
+
+    def compensate_view_scale(self):
+        if self.image_width <= 0 or self.image_height <= 0:
+            return 1.0
+
+        if (self.orientation % 2) == 0:
+            if self.image_width >= self.image_height:
+                return 1.0
+            else:
+                return self.image_width / self.image_height
+
+        if self.image_width >= self.image_height:
+            return self.image_height / self.image_width
+        else:
+            return 1.0
 
     @staticmethod
     def convert_matrix_to_str(arr):
@@ -315,6 +438,12 @@ class FBCameraItem(PropertyGroup):
         else:
             return 'N/A'
 
+    def get_projection_matrix(self):
+        projection = coords.projection_matrix(
+            self.image_width, self.image_height, self.focal, 36.0,
+            0.1, 1000)
+        return projection
+
 
 class FBHeadItem(PropertyGroup):
     mod_ver: IntProperty(name="Modifier Version", default=-1)
@@ -326,18 +455,18 @@ class FBHeadItem(PropertyGroup):
     sensor_width: FloatProperty(
         description="The length of the longest side "
                     "of the camera sensor in millimetres",
-        name="Sensor Width (mm)", default=36,
+        name="HSensor Width (mm)", default=36,
         min=0.1, update=update_sensor_width)
     sensor_height: FloatProperty(
         description="Secondary parameter. "
                     "Set it according to the real camera specification."
                     "This parameter is not used if Sensor Width is greater",
-        name="Sensor Height (mm)", default=24,
+        name="HSensor Height (mm)", default=24,
         min=0.1, update=update_sensor_height)
     focal: FloatProperty(
         description="Focal length in millimetres",
-        name="Focal Length (mm)", default=50,
-        min=0.1, update=update_focal)
+        name="HFocal Length (mm)", default=50,
+        min=0.1)
 
     auto_focal_estimation: BoolProperty(
         name="Focal Length Estimation",
@@ -384,6 +513,14 @@ class FBHeadItem(PropertyGroup):
         default=True)
 
     exif: PointerProperty(type=FBExifItem)
+
+    focal_estimation_mode: EnumProperty(name='Estimation Mode', items=[
+        ('FB_FIXED_FOCAL_LENGTH_ALL_FRAMES', 'No estimation', 'LINKED', 0),
+        ('FB_ESTIMATE_STATIC_FOCAL_LENGTH', 'One focus to all', 'LINKED', 1),
+        ('FB_ESTIMATE_VARYING_FOCAL_LENGTH', 'Varying', 'LINKED', 2)
+        ], description='Estimation Mode value',
+        default='FB_ESTIMATE_VARYING_FOCAL_LENGTH',
+        update=update_focal_length_mode)
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:

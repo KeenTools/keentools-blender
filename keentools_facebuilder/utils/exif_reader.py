@@ -178,6 +178,15 @@ def _orientation_to_index(data, name='image_orientation'):
     return orient_to_index[param]
 
 
+def _sensor_size_by_focals(focal, focal35mm):
+    w = -1.0
+    h = -1.0
+    if focal > 0 and focal35mm > 0:
+        w = 36.0 * focal / focal35mm
+        h = 24.0 * focal / focal35mm
+    return w, h
+
+
 def _init_exif_settings(exif, data):
     exif.units = _get_exif_units(data['exif_units'])
 
@@ -193,11 +202,27 @@ def _init_exif_settings(exif, data):
 
     exif.orientation = _orientation_to_index(data)
 
-    exif.sensor_width = _get_sensor_size(
-            exif.image_width, exif.focal_x_res, exif.units)
+    w, h = _sensor_size_by_focals(exif.focal, exif.focal35mm)
+    if w > 0 and h > 0:
+        exif.sensor_width = w
+        exif.sensor_length = h
+        return
 
-    exif.sensor_length = _get_sensor_size(
-            exif.image_length, exif.focal_y_res, exif.units)
+    w = _get_sensor_size(exif.image_width, exif.focal_x_res, exif.units)
+    if w > 0:
+        exif.sensor_width = w
+    else:
+        exif.sensor_width = _get_sensor_size(exif.exif_width,
+                                             exif.focal_x_res,
+                                             exif.units)
+
+    h = _get_sensor_size(exif.image_length, exif.focal_y_res, exif.units)
+    if h > 0:
+        exif.sensor_length = h
+    else:
+        exif.sensor_length = _get_sensor_size(exif.exif_length,
+                                              exif.focal_y_res,
+                                              exif.units)
 
 
 def _exif_info_message(exif, data):
@@ -321,12 +346,94 @@ def update_exif_sizes_message(headnum, image):
     return True
 
 
+def setup_camera_from_exif(camera):
+    real_w, real_h = camera.get_background_size()
+
+    if camera.exif.focal35mm > 0:
+        camera.sensor_width = 36.0
+        camera.sensor_height = 24.0
+        camera.focal = camera.exif.focal35mm
+        w, h = camera.exif.calculated_image_size()
+        camera.auto_focal_estimation = w != real_w or h != real_h
+        return
+
+    if camera.exif.focal > 0:
+        w, h = camera.exif.calculated_image_size()
+        if w == real_w and h == real_h:
+            camera.sensor_width = camera.exif.sensor_width
+            camera.sensor_height = camera.exif.sensor_length
+
+    camera.sensor_width = 36.0
+    camera.sensor_height = 24.0
+    camera.auto_focal_estimation = True
+
+
+def _copy_property_from_to(prop_name, from_obj, to_obj):
+    setattr(to_obj, prop_name, getattr(from_obj, prop_name))
+
+
+def _exif_fields():
+    return ('focal',
+            'focal35mm',
+            'focal_x_res',
+            'focal_y_res',
+            'units',
+            'sensor_width',
+            'sensor_length',
+            'image_width',
+            'image_length',
+            'orientation',
+            'exif_width',
+            'exif_length',
+            'real_width',
+            'real_length',
+            'info_message',
+            'sizes_message')
+
+
+def _exif_hash_string(exif):
+    return "#".join([
+        str(exif.focal),
+        str(exif.focal35mm),
+        str(exif.focal_x_res),
+        str(exif.focal_y_res),
+        str(exif.units),
+        str(exif.image_width),
+        str(exif.image_length),
+        str(exif.exif_width),
+        str(exif.exif_length)
+    ])
+
+
+def _image_size_hash_string(camera):
+    w, h = camera.get_background_size()
+    if h > w:
+        w, h = h, w
+    return "{}:{}".format(w, h)
+
+
+def _exif_and_size_hash_string(camera):
+    return "{}#{}".format(_exif_hash_string(camera.exif),
+                          _image_size_hash_string(camera))
+
+
+def _all_fields_dump(exif):
+    return "\n".join(["{}:{}".format(p, getattr(exif, p)) for p in _exif_fields()])
+
+
 def copy_exif_parameters_from_camera_to_head(camera, head):
-    head.exif.info_message = camera.exif.info_message
-    head.exif.image_width = camera.exif.image_width
-    head.exif.image_length = camera.exif.image_length
-    head.exif.exif_width = camera.exif.exif_width
-    head.exif.exif_length = camera.exif.exif_length
+    for p in _exif_fields():
+        _copy_property_from_to(p, camera.exif, head.exif)
+    # Debug only info
+    head.exif.info_message += "\n=====\n" + _all_fields_dump(camera.exif)
+
+
+def detect_image_groups_by_exif(head, hash_func=_exif_and_size_hash_string):
+    hashes = [hash_func(cam) for cam in head.cameras]
+    # unique_hashes = list(set(hashes))
+    unique_hashes = []
+    _ = [unique_hashes.append(x) for x in hashes if x not in unique_hashes]
+    return [unique_hashes.index(x) for x in hashes]
 
 
 def read_exif_from_camera(headnum, camnum):

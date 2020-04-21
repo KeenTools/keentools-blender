@@ -27,7 +27,9 @@ from ..fbloader import FBLoader
 from ..config import Config, get_main_settings, get_operators, ErrorType
 
 from ..utils.exif_reader import (read_exif_to_head, read_exif_to_camera,
-                                 update_exif_sizes_message)
+                                 update_exif_sizes_message,
+                                 detect_image_groups_by_exif,
+                                 setup_camera_from_exif)
 from ..utils.other import restore_ui_elements
 from ..utils.materials import find_tex_by_name
 
@@ -67,7 +69,7 @@ def load_single_image_file(headnum, camnum, filepath):
             head = settings.get_head(headnum)
             head.get_camera(camnum).cam_image = img
         except RuntimeError:
-            logger.error("FILE READ ERROR: {}".format(filepath))
+            logger.error('FILE READ ERROR: {}'.format(filepath))
             return {'CANCELLED'}
 
         read_exif_to_head(headnum, filepath)
@@ -317,4 +319,16 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
             settings.frame_width = w
             settings.frame_height = h
 
+        # New
+        fb = FBLoader.get_builder()
+        for camera in head.cameras:  # TODO: Not all cameras should change!
+            setup_camera_from_exif(camera)
+            projection_mat = camera.get_projection_matrix()
+            fb.center_model_mat(camera.get_keyframe(), projection_mat)
+
+        groups = detect_image_groups_by_exif(head)
+        for i, cam in enumerate(head.cameras):
+            cam.image_group = groups[i]
+        logger.debug('IMAGE GROUPS: {}'.format(str(groups)))
+        FBLoader.save_only(self.headnum)
         return {'FINISHED'}

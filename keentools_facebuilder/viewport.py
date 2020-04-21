@@ -348,7 +348,7 @@ class FBViewport:
 
         # ----------
         # Projection
-        projection = fb.projection_mat().T
+        projection = fb.projection_mat(keyframe).T  # Fix
 
         camobj = bpy.context.scene.camera
         m = camobj.matrix_world.inverted()

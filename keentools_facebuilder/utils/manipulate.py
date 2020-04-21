@@ -207,7 +207,7 @@ def use_render_frame_size_scaled():
     kx = rw / fw
     dy = 0.5 * (rh - fh * kx)
 
-    FBLoader.load_only(headnum)
+    FBLoader.load_model(headnum)
     fb = FBLoader.get_builder()
     for i, c in enumerate(head.cameras):
         if c.has_pins():
@@ -225,7 +225,7 @@ def use_render_frame_size_scaled():
 
 def reset_model_to_neutral(headnum):
     settings = get_main_settings()
-    FBLoader.load_only(headnum)
+    FBLoader.load_model(headnum)
     head = settings.get_head(headnum)
     if head is None:
         return
@@ -235,7 +235,7 @@ def reset_model_to_neutral(headnum):
 
 def load_expressions_to_model(headnum, camnum):
     settings = get_main_settings()
-    FBLoader.load_only(headnum)
+    FBLoader.load_model(headnum)
     head = settings.get_head(headnum)
     if head is None:
         return
