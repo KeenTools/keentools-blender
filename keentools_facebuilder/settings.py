@@ -449,8 +449,12 @@ class FBCameraItem(PropertyGroup):
         sc = 1.0 / self.compensate_view_scale()
 
         if (self.orientation % 2) == 0:
-            projection = coords.projection_matrix(
-            w, h, self.focal, 36.0, 0.1, 1000, scale=1.0)
+            if w >= h:
+                projection = coords.projection_matrix(
+                    w, h, self.focal, 36.0, 0.1, 1000, scale=1.0)
+            else:
+                projection = coords.projection_matrix(
+                    w, h, self.focal, 36.0, 0.1, 1000, scale=sc)
         else:
             projection = coords.projection_matrix(
                 h, w, self.focal, 36.0, 0.1, 1000, scale=sc)
