@@ -289,9 +289,9 @@ class FBLoader:
                 kid = cam.get_keyframe()
                 proj_mat = fb.projection_mat(kid)
                 focal = coords.focal_by_projection_matrix(
-                    proj_mat, head.sensor_width)
+                    proj_mat, 36.0)  # head.sensor_width
 
-                cam.focal = focal * cam.compensate_view_scale()
+                cam.focal = focal # * cam.compensate_view_scale()
 
     # --------------------
     @classmethod

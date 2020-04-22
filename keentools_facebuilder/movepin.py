@@ -180,6 +180,7 @@ class FB_OT_MovePin(bpy.types.Operator):
         headnum = self.get_headnum()
         camnum = self.get_camnum()
         head = settings.get_head(headnum)
+        camera = head.get_camera(camnum)
         kid = settings.get_keyframe(headnum, camnum)
 
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
@@ -196,7 +197,8 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         fb = FBLoader.get_builder()
         FBLoader.update_all_camera_positions(headnum)
-        FBLoader.update_all_camera_focals(headnum)
+        if FBLoader.auto_focal_enabled(head, camera):
+            FBLoader.update_all_camera_focals(headnum)
         FBLoader.fb_save(headnum, camnum)
         # ---------
         # PUSH Last

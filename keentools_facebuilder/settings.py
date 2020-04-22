@@ -114,6 +114,10 @@ def update_camera_focal(self, context):
     settings = get_main_settings()
     self.camobj.data.lens = self.focal
 
+    fb = FBLoader.get_builder()
+    fb.update_projection_mat(self.get_keyframe(), self.get_projection_matrix())
+    FBLoader.save_only(settings.current_headnum)
+
     if not settings.pinmode:
         state, headnum = what_is_state()
         head = settings.get_head(headnum)
@@ -442,21 +446,15 @@ class FBCameraItem(PropertyGroup):
         w = self.image_width
         h = self.image_height
 
-        if w >= h:
-            if (self.orientation % 2) == 0:
-                projection = coords.projection_matrix(
-                    w, h, self.focal, 36.0, 0.1, 1000)
-            else:
-                projection = coords.projection_matrix(
-                    h, w, self.focal, 36.0, 0.1, 1000)
-            return projection
+        sc = 1.0 / self.compensate_view_scale()
 
         if (self.orientation % 2) == 0:
             projection = coords.projection_matrix(
-            w, h, self.focal, 36.0, 0.1, 1000)
+            w, h, self.focal, 36.0, 0.1, 1000, scale=1.0)
         else:
             projection = coords.projection_matrix(
-                h, w, self.focal, 36.0, 0.1, 1000)
+                h, w, self.focal, 36.0, 0.1, 1000, scale=sc)
+
         return projection
 
 
