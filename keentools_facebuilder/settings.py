@@ -439,9 +439,24 @@ class FBCameraItem(PropertyGroup):
             return 'N/A'
 
     def get_projection_matrix(self):
-        projection = coords.projection_matrix(
-            self.image_width, self.image_height, self.focal, 36.0,
-            0.1, 1000)
+        w = self.image_width
+        h = self.image_height
+
+        if w >= h:
+            if (self.orientation % 2) == 0:
+                projection = coords.projection_matrix(
+                    w, h, self.focal, 36.0, 0.1, 1000)
+            else:
+                projection = coords.projection_matrix(
+                    h, w, self.focal, 36.0, 0.1, 1000)
+            return projection
+
+        if (self.orientation % 2) == 0:
+            projection = coords.projection_matrix(
+            w, h, self.focal, 36.0, 0.1, 1000)
+        else:
+            projection = coords.projection_matrix(
+                h, w, self.focal, 36.0, 0.1, 1000)
         return projection
 
 
