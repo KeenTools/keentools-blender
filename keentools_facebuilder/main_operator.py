@@ -30,7 +30,6 @@ from .utils import cameras, manipulate, materials, coords
 from .utils.manipulate import check_settings
 from .utils.attrs import get_obj_collection, safe_delete_collection
 from .fbloader import FBLoader
-from .fbdebug import FBDebug
 from .config import get_main_settings, get_operators, Config
 from .utils.exif_reader import (read_exif_from_camera,
                                 update_exif_sizes_message,
@@ -148,11 +147,6 @@ class FB_OT_SelectCamera(Operator):
         if not bpy.app.background:
             draw_op('INVOKE_DEFAULT', headnum=headnum, camnum=camnum)
 
-        # === Debug only ===
-        FBDebug.add_event_to_queue('SELECT_CAMERA', headnum, camnum)
-        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', headnum, camnum)
-        FBDebug.make_snapshot()
-        # === Debug only ===
         return {'FINISHED'}
 
 
@@ -189,10 +183,6 @@ class FB_OT_CenterGeo(Operator):
         manipulate.push_neutral_head_in_undo_history(
             settings.get_head(headnum), kid, 'Reset Camera.')
         FBLoader.fb_redraw(headnum, camnum)
-        # === Debug only ===
-        FBDebug.add_event_to_queue('CENTER_GEO', 0, 0)
-        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', 0, 0)
-        FBDebug.make_snapshot()
         return {'FINISHED'}
 
 
@@ -279,11 +269,6 @@ class FB_OT_RemovePins(Operator):
         manipulate.push_head_in_undo_history(
             settings.get_head(headnum), 'After Remove pins')
 
-        # === Debug only ===
-        FBDebug.add_event_to_queue('REMOVE_PINS', 0, 0)
-        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', 0, 0)
-        FBDebug.make_snapshot()
-        # === Debug only ===
         return {'FINISHED'}
 
 

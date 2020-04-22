@@ -22,7 +22,6 @@ import bpy
 
 from .utils import manipulate, coords, cameras
 from .config import Config, get_main_settings, get_operators, ErrorType
-from .fbdebug import FBDebug
 from .fbloader import FBLoader
 from .utils.other import FBStopShaderTimer, force_ui_redraw, hide_ui_elements
 
@@ -147,15 +146,8 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
         FBLoader.shader_update(head.headobj)
 
-        FBDebug.add_event_to_queue('UNDO_CALLED', 0, 0)
-        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', 0, 0)
-        FBDebug.make_snapshot()
 
     def _on_right_mouse_press(self, context, mouse_x, mouse_y):
-        FBDebug.add_event_to_queue(
-            'IN_PINMODE_PRESS_RIGHTMOUSE', mouse_x, mouse_y,
-            coords.get_raw_camera_2d_data(context))
-
         vp = FBLoader.viewport()
         vp.update_view_relative_pixel_size(context)
 
@@ -171,18 +163,10 @@ class FB_OT_PinMode(bpy.types.Operator):
     def _on_left_mouse_press(self, context, mouse_x, mouse_y):
         FBLoader.viewport().update_view_relative_pixel_size(context)
 
-        FBDebug.add_event_to_queue(
-            'DRAW_OPERATOR_PRESS_LEFTMOUSE',
-            (mouse_x, mouse_y), coords.get_raw_camera_2d_data(context))
-
         if not coords.is_in_area(context, mouse_x, mouse_y):
             return {'PASS_THROUGH'}
 
         if coords.is_safe_region(context, mouse_x, mouse_y):
-            FBDebug.add_event_to_queue(
-                'CALL_MOVE_PIN_OPERATOR', mouse_x, mouse_y,
-                coords.get_raw_camera_2d_data(context))
-
             settings = get_main_settings()
 
             # Movepin operator Call
@@ -235,9 +219,6 @@ class FB_OT_PinMode(bpy.types.Operator):
         camera.update_background_image_scale()
 
         logger.debug("PINMODE START H{} C{}".format(self.headnum, self.camnum))
-        FBDebug.add_event_to_queue(
-            'PINMODE_START', self.headnum, self.camnum,
-            coords.get_raw_camera_2d_data(context))
 
         FBLoader.load_model(self.headnum)
         FBLoader.place_camera(self.headnum, self.camnum)

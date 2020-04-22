@@ -22,11 +22,9 @@ import bpy
 
 from .utils import cameras, manipulate, coords
 from .fbloader import FBLoader
-from .fbdebug import FBDebug
 from .config import Config, get_main_settings
 
 from functools import wraps
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 # Decorator for profiling
@@ -82,10 +80,6 @@ class FB_OT_MovePin(bpy.types.Operator):
         )
         if pin is not None:
             logger.debug("ADD PIN")
-            FBDebug.add_event_to_queue(
-                'ADD_PIN', mouse_x, mouse_y,
-                coords.get_raw_camera_2d_data(context))
-
             vp = FBLoader.viewport()
             vp.pins().add_pin((x, y))
             vp.pins().set_current_pin_num_to_last()
@@ -95,10 +89,6 @@ class FB_OT_MovePin(bpy.types.Operator):
                 settings.get_head(headnum), kid, 'New Pin.')
         else:
             logger.debug("MISS MODEL")
-            FBDebug.add_event_to_queue(
-                'MISS_PIN', mouse_x, mouse_y,
-                coords.get_raw_camera_2d_data(context))
-
             FBLoader.viewport().pins().reset_current_pin()
             return {"FINISHED"}
         return None
@@ -140,9 +130,6 @@ class FB_OT_MovePin(bpy.types.Operator):
         nearest, dist2 = coords.nearest_point(x, y, vp.pins().arr())
 
         if nearest >= 0 and dist2 < vp.tolerance_dist2():
-            FBDebug.add_event_to_queue(
-                'PIN_FOUND', mouse_x, mouse_y,
-                coords.get_raw_camera_2d_data(context))
             vp.pins().set_current_pin_num(nearest)
         else:
             return self._new_pin(context, mouse_x, mouse_y)
@@ -321,21 +308,11 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         if event.value == "RELEASE" and event.type == "LEFTMOUSE":
             logger.debug("LEFT MOUSE RELEASE")
-
-            FBDebug.add_event_to_queue(
-                'RELEASE_LEFTMOUSE', mouse_x, mouse_y,
-                coords.get_raw_camera_2d_data(context))
-
             return self.on_left_mouse_release(context, mouse_x, mouse_y)
 
         if event.type == "MOUSEMOVE" \
                 and FBLoader.viewport().pins().current_pin() is not None:
             logger.debug("MOUSEMOVE {} {}".format(mouse_x, mouse_y))
-
-            FBDebug.add_event_to_queue(
-                'MOUSEMOVE', mouse_x, mouse_y,
-                coords.get_raw_camera_2d_data(context))
-
             return self.on_mouse_move(context, mouse_x, mouse_y)
 
         return self.on_default_modal()

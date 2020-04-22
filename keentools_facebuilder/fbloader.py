@@ -18,6 +18,7 @@
 
 import bpy
 import logging
+import math
 
 import numpy as np
 
@@ -26,7 +27,6 @@ from .utils import attrs, coords, cameras
 from .utils.other import FBStopShaderTimer, restore_ui_elements
 
 from .builder import UniBuilder
-from .fbdebug import FBDebug
 from .config import (Config, get_main_settings, get_operators,
                      BuilderType, ErrorType)
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
@@ -185,11 +185,6 @@ class FBLoader:
         cls.update_head_camera_focals(head)
         coords.update_head_mesh_neutral(cls.get_builder(), headobj)
 
-        # === Debug use only ===
-        FBDebug.add_event_to_queue('OUT_PIN_MODE', 0, 0)
-        FBDebug.output_event_queue()
-        FBDebug.clear_event_queue()
-        # === Debug use only ===
         FBStopShaderTimer.stop()
         logger.debug("STOPPER STOP")
 
@@ -417,7 +412,7 @@ class FBLoader:
 
         # Warning! our autosmooth settings work on Shading Flat!
         # mesh.use_auto_smooth = True
-        # mesh.auto_smooth_angle = 3.1415927410125732
+        # mesh.auto_smooth_angle = math.pi
 
         return mesh
 
@@ -518,10 +513,14 @@ class FBLoader:
         head = settings.get_head(headnum)
         camera = head.get_camera(camnum)
         kid = camera.get_keyframe()
+        fb = cls.get_builder()
 
         cls.rigidity_setup()
-        fb = cls.get_builder()
-        fb.set_focal_length_estimation_mode(head.focal_estimation_mode)
+        if cls.auto_focal_enabled(head, camera):
+            fb.set_focal_length_estimation_mode(head.focal_estimation_mode)
+        else:
+            cls.disable_auto_focal()
+
         fb.set_use_emotions(head.should_use_emotions())
 
         try:
@@ -533,7 +532,7 @@ class FBLoader:
             _exception_handling(headnum, "SOLVE EXCEPTION")
             return False
 
-        cls.auto_focal_estimation_post(head, camera, kid)
+        cls.auto_focal_estimation_post(headnum, camnum)
         return True
 
     @classmethod
@@ -548,7 +547,7 @@ class FBLoader:
         # create object camera data and insert the camera data
         cam_ob = bpy.data.objects.new("fbCamObj", cam_data)
 
-        cam_ob.rotation_euler = [3.1415927410125732 * 0.5, 0, 0]
+        cam_ob.rotation_euler = [math.pi * 0.5, 0, 0]
         camnum = len(head.cameras)
 
         cam_ob.location = [2 * camnum, -5 - headnum, 0.5]
@@ -613,18 +612,29 @@ class FBLoader:
         return img, camera
 
     @classmethod
-    def auto_focal_enabled(cls):
-        fb = cls.get_builder()
-        return 'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES' != fb.focal_length_estimation_mode()
+    def auto_focal_enabled(cls, head, camera):
+        return camera.auto_focal_estimation and \
+               'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES' != \
+               head.focal_estimation_mode
 
     @classmethod
-    def auto_focal_estimation_post(cls, head, camera, keyframe):
+    def disable_auto_focal(cls):
+        fb = cls.get_builder()
+        fb.set_focal_length_estimation_mode('FB_FIXED_FOCAL_LENGTH_ALL_FRAMES')
+
+    @classmethod
+    def auto_focal_estimation_post(cls, headnum, camnum):
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        camera = head.get_camera(camnum)
+        kid = camera.get_keyframe()
+
         logger = logging.getLogger(__name__)
         logger.debug("AUTO_FOCAL_ESTIMATION")
         fb = cls.get_builder()
         logger.debug("mode: {}".format(fb.focal_length_estimation_mode()))
-        if cls.auto_focal_enabled():
-            proj_mat = fb.projection_mat(keyframe)
+        if cls.auto_focal_enabled(head, camera):
+            proj_mat = fb.projection_mat(kid)
             focal = coords.focal_by_projection_matrix(
                 proj_mat, 36.0)  # default camera sensor size
 
