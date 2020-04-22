@@ -225,7 +225,8 @@ class FB_PT_CameraPanel(Panel):
 
         head = settings.get_head(headnum)
 
-        layout.prop(head, 'auto_focal_estimation')
+        layout.label(text='* Head parameters disabled')
+        # layout.prop(head, 'auto_focal_estimation')
 
         col = layout.column()
         if head.auto_focal_estimation:
@@ -243,11 +244,11 @@ class FB_PT_CameraPanel(Panel):
             Config.fb_sensor_size_window_idname,
             text='', icon='SETTINGS')
 
-        layout.prop(head, 'focal_estimation_mode', text='')
         if settings.current_camnum >= 0:
             camera = head.get_camera(settings.current_camnum)
             layout.label(text="Camera {}".format(settings.current_camnum))
             layout.prop(camera, 'auto_focal_estimation')
+            layout.prop(head, 'focal_estimation_mode', text='')
 
             col = layout.column()
             col.prop(camera, 'focal')
