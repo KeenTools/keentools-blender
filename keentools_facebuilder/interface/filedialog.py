@@ -59,7 +59,6 @@ def load_single_image_file(headnum, camnum, filepath):
         settings = get_main_settings()
         logger.info('Load image file: {}'.format(filepath))
 
-        # if Settings structure is broken
         if not settings.check_heads_and_cams():
             settings.fix_heads()  # Fix
             return {'CANCELLED'}
@@ -72,8 +71,8 @@ def load_single_image_file(headnum, camnum, filepath):
             logger.error('FILE READ ERROR: {}'.format(filepath))
             return {'CANCELLED'}
 
-        read_exif_to_head(headnum, filepath)
-        update_exif_sizes_message(headnum, img)
+        read_exif_to_camera(headnum, camnum, filepath)
+        # update_exif_sizes_message(headnum, img)
 
         return {'FINISHED'}
 
@@ -269,62 +268,28 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
                 self.headnum, settings.get_last_headnum()))
             return {'CANCELLED'}
 
-        # if Settings structure is broken
         if not settings.check_heads_and_cams():
             settings.fix_heads()  # Fix & Out
             return {'CANCELLED'}
 
-        # Flag to prevent EXIF load if the head already has cameras
-        exif_allready_read_once = settings.head_has_cameras(self.headnum)
-
         head = settings.get_head(self.headnum)
 
-        # Loaded image sizes
-        w = -1
-        h = -1
-        # Count image size changes over all files
-        changes = 0
         for f in self.files:
-            filepath = os.path.join(self.directory, f.name)
-            logger.debug("FILE: {}".format(filepath))
-
             try:
+                filepath = os.path.join(self.directory, f.name)
+                logger.debug("FILE: {}".format(filepath))
+
                 img, camera = FBLoader.add_camera_image(self.headnum, filepath)
-                if img.size[0] != w or img.size[1] != h:
-                    w, h = img.size
-                    changes += 1
-
-                    if not exif_allready_read_once \
-                            and img.size[0] > 0.0 and img.size[1] > 0.0:
-                        read_exif_to_head(self.headnum, filepath)
-                        update_exif_sizes_message(self.headnum, img)
-
-                        exif_allready_read_once = True
-
                 read_exif_to_camera(
                     self.headnum, head.get_last_camnum(), filepath)
-                camera = head.get_last_camera()
                 camera.orientation = camera.exif.orientation
 
             except RuntimeError as ex:
-                logger.error("FILE READ ERROR: {}".format(filepath))
+                logger.error("FILE READ ERROR: {}".format(f.name))
 
-        # We update Render Size in accordance to image size
-        # only if 1) all images have the same size and 2) user want it
-        if self.update_render_size == 'yes' \
-                and changes == 1 and w > 0.0 and h > 0.0:
-            render = bpy.context.scene.render
-            render.resolution_x = w
-            render.resolution_y = h
-            settings.frame_width = w
-            settings.frame_height = h
-
-        # New
-        fb = FBLoader.get_builder()
-        for camera in head.cameras:  # TODO: Not all cameras should change!
+        for i, camera in enumerate(head.cameras):  # TODO: Not all cameras should change!
             setup_camera_from_exif(camera)
-            projection_mat = camera.get_projection_matrix()
-            fb.center_model_mat(camera.get_keyframe(), projection_mat)
+            FBLoader.center_geo_camera_projection(self.headnum, i)
 
         groups = detect_image_groups_by_exif(head)
         for i, cam in enumerate(head.cameras):

@@ -442,6 +442,11 @@ class FBCameraItem(PropertyGroup):
         else:
             return 'N/A'
 
+    def get_complex_name(self):
+        auto = '*' if self.auto_focal_estimation else ''
+        return "{}[{}] {}".format(auto, self.image_group,
+                     self.get_image_name())
+
     def get_projection_matrix(self):
         w = self.image_width
         h = self.image_height
