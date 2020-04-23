@@ -293,6 +293,26 @@ class FBLoader:
 
                 cam.focal = focal * cam.compensate_view_scale()
 
+    @classmethod
+    def update_camera_projection(cls, headnum, camnum):
+        settings = get_main_settings()
+        camera = settings.get_camera(headnum, camnum)
+        if camera is None:
+            return
+        fb = FBLoader.get_builder()
+        projection = camera.get_projection_matrix()
+        fb.update_projection_mat(camera.get_keyframe(), projection)
+
+    @classmethod
+    def center_geo_camera_projection(cls, headnum, camnum):
+        settings = get_main_settings()
+        camera = settings.get_camera(headnum, camnum)
+        if camera is None:
+            return
+        fb = FBLoader.get_builder()
+        projection = camera.get_projection_matrix()
+        fb.center_model_mat(camera.get_keyframe(), projection)
+
     # --------------------
     @classmethod
     def place_cameraobj(cls, keyframe, camobj, headobj):

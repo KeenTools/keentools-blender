@@ -170,14 +170,9 @@ class FB_OT_CenterGeo(Operator):
         settings = get_main_settings()
         headnum = self.headnum
         camnum = self.camnum
-        head = settings.get_head(headnum)
-        camera = head.get_camera(camnum)
         kid = settings.get_keyframe(headnum, camnum)
 
-        fb = FBLoader.get_builder()
-        proj = camera.get_projection_matrix()
-        # print(proj)
-        fb.center_model_mat(kid, proj)
+        FBLoader.center_geo_camera_projection(headnum, camnum)
         FBLoader.fb_save(headnum, camnum)
 
         manipulate.push_neutral_head_in_undo_history(
@@ -776,6 +771,8 @@ class FB_OT_RotateImageCW(Operator):
         camera.rotate_background_image(1)
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
+        FBLoader.update_camera_projection(self.headnum, self.camnum)
+        FBLoader.fb_save(self.headnum, self.camnum)
         return {'FINISHED'}
 
 
@@ -797,6 +794,8 @@ class FB_OT_RotateImageCCW(Operator):
         camera.rotate_background_image(-1)
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
+        FBLoader.update_camera_projection(self.headnum, self.camnum)
+        FBLoader.fb_save(self.headnum, self.camnum)
         return {'FINISHED'}
 
 
@@ -818,6 +817,8 @@ class FB_OT_ResetImageRotation(Operator):
         camera.reset_background_image_rotation()
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
+        FBLoader.update_camera_projection(self.headnum, self.camnum)
+        FBLoader.fb_save(self.headnum, self.camnum)
         return {'FINISHED'}
 
 
