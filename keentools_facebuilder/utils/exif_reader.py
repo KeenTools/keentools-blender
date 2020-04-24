@@ -346,12 +346,12 @@ def update_exif_sizes_message(headnum, image):
     return True
 
 
-def setup_camera_from_exif(camera):
+def auto_setup_camera_from_exif(camera):
     real_w, real_h = camera.get_background_size()
 
     if camera.exif.focal35mm > 0:
-        camera.sensor_width = 36.0
-        camera.sensor_height = 24.0
+        camera.sensor_width = Config.default_sensor_width
+        camera.sensor_height = Config.default_sensor_height
         camera.focal = camera.exif.focal35mm
         w, h = camera.exif.calculated_image_size()
         camera.auto_focal_estimation = w != real_w or h != real_h
@@ -363,8 +363,8 @@ def setup_camera_from_exif(camera):
             camera.sensor_width = camera.exif.sensor_width
             camera.sensor_height = camera.exif.sensor_length
 
-    camera.sensor_width = 36.0
-    camera.sensor_height = 24.0
+    camera.sensor_width = Config.default_sensor_width
+    camera.sensor_height = Config.default_sensor_height
     camera.auto_focal_estimation = True
 
 

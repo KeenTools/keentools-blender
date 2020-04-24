@@ -354,10 +354,6 @@ class FB_PT_ViewsPanel(Panel):
         if not head.has_cameras():
             return
 
-        wrong_size_counter = 0
-        fw = settings.frame_width
-        fh = settings.frame_height
-
         box = layout.box()
         box.prop(settings.get_head(headnum), 'use_emotions')
 
@@ -365,14 +361,6 @@ class FB_PT_ViewsPanel(Panel):
         for i, camera in enumerate(head.cameras):
 
             row = box.row()
-
-            w = camera.get_image_width()
-            h = camera.get_image_height()
-            wrong_size_flag = w != fw or h != fh
-
-            if wrong_size_flag:
-                wrong_size_counter += 1
-
             view_icon = 'PINNED' if camera.has_pins() else 'HIDE_OFF'
 
             col = row.column()
@@ -392,11 +380,6 @@ class FB_PT_ViewsPanel(Panel):
                 op = col.operator(
                     Config.fb_improper_view_menu_exec_idname,
                     text='', icon='COLLAPSEMENU')
-            elif wrong_size_flag:
-                col.alert = True
-                op = col.operator(
-                    Config.fb_improper_view_menu_exec_idname,
-                    text='', icon='ERROR')
             else:
                 col.active = False
                 op = col.operator(

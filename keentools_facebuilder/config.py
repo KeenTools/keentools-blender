@@ -311,6 +311,9 @@ class Config:
     viewport_redraw_interval = 0.1
     unknown_mod_ver = -1
 
+    default_sensor_width = 36.0
+    default_sensor_height = 24.0
+
     # In Material
     image_node_layout_coord = (-300, 0)
 

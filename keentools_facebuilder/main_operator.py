@@ -115,29 +115,13 @@ class FB_OT_SelectCamera(Operator):
             return {'CANCELLED'}
 
         settings = get_main_settings()
-        headnum = self.headnum
-        camnum = self.camnum
-        head = settings.get_head(headnum)
-        camera = head.get_camera(camnum)
+        head = settings.get_head(self.headnum)
+        camera = head.get_camera(self.camnum)
 
-        # bpy.ops.object.select_all(action='DESELECT')
-        camobj = camera.camobj
+        cameras.switch_to_camera(camera.camobj)
+        camera.show_background_image()
 
-        cameras.switch_to_camera(camobj)
-
-        # Add Background Image
-        c = camobj.data
-        c.lens = camera.focal  # fix
-        c.show_background_images = True
-        if len(c.background_images) == 0:
-            b = c.background_images.new()
-        else:
-            b = c.background_images[0]
-        b.image = camera.cam_image
-        b.rotation = camera.orientation * math.pi / 2
-
-        headobj = head.headobj
-        bpy.context.view_layer.objects.active = headobj
+        bpy.context.view_layer.objects.active = head.headobj
 
         copy_exif_parameters_from_camera_to_head(camera, head)
         update_exif_sizes_message(self.headnum, camera.cam_image)
@@ -145,7 +129,7 @@ class FB_OT_SelectCamera(Operator):
         # Auto Call PinMode
         draw_op = getattr(get_operators(), Config.fb_pinmode_callname)
         if not bpy.app.background:
-            draw_op('INVOKE_DEFAULT', headnum=headnum, camnum=camnum)
+            draw_op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
 
         return {'FINISHED'}
 

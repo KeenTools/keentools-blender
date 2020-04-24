@@ -289,9 +289,9 @@ class FBLoader:
                 kid = cam.get_keyframe()
                 proj_mat = fb.projection_mat(kid)
                 focal = coords.focal_by_projection_matrix(
-                    proj_mat, 36.0)  # head.sensor_width
+                    proj_mat, Config.default_sensor_width)
 
-                cam.focal = focal * cam.compensate_view_scale()
+                cam.focal = focal * cam.compensate_view_scale()  # TODO: Check !!!
 
     @classmethod
     def update_camera_projection(cls, headnum, camnum):
@@ -617,7 +617,7 @@ class FBLoader:
         # Create new keyframe
         #fb.set_keyframe(num)
         projection = coords.projection_matrix(
-            w, h, head.focal, 36.0, 0.1, 1000.0)
+            w, h, head.focal, Config.default_sensor_width, 0.1, 1000.0)
         fb.center_model_mat(num, projection)
         logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
 

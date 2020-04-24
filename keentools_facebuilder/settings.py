@@ -305,6 +305,16 @@ class FBCameraItem(PropertyGroup):
             self.orientation += -4
         background_image.rotation = self.orientation * math.pi / 2
 
+    def show_background_image(self):
+        data = self.camobj.data
+        data.show_background_images = True
+        if len(data.background_images) == 0:
+            b = data.background_images.new()
+        else:
+            b = data.background_images[0]
+        b.image = self.cam_image
+        b.rotation = self.orientation * math.pi / 2
+
     def calculate_background_scale(self):
         if self.image_width <= 0 or self.image_height <= 0:
             return 1.0
@@ -451,18 +461,24 @@ class FBCameraItem(PropertyGroup):
         w = self.image_width
         h = self.image_height
 
+        near = 0.1
+        far = 1000.0
+
         sc = 1.0 / self.compensate_view_scale()
 
         if (self.orientation % 2) == 0:
             if w >= h:
                 projection = coords.projection_matrix(
-                    w, h, self.focal, 36.0, 0.1, 1000, scale=1.0)
+                    w, h, self.focal, Config.default_sensor_width,
+                    near, far, scale=1.0)
             else:
                 projection = coords.projection_matrix(
-                    w, h, self.focal, 36.0, 0.1, 1000, scale=sc)
+                    w, h, self.focal, Config.default_sensor_width,
+                    near, far, scale=sc)
         else:
             projection = coords.projection_matrix(
-                h, w, self.focal, 36.0, 0.1, 1000, scale=sc)
+                h, w, self.focal, Config.default_sensor_width,
+                near, far, scale=sc)
 
         return projection
 
