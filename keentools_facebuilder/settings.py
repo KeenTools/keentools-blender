@@ -259,6 +259,11 @@ class FBCameraItem(PropertyGroup):
                     "in the frame",
         default=True)
 
+    focal_estimation_mode: EnumProperty(name='CEstimation Mode', items=[
+        ('GROUP', 'Group', 'LINKED', 0),
+        ('SINGLE', 'Single', 'UNLINKED', 1)
+    ], description='CamEstimation Mode', default='GROUP')
+
     image_group: IntProperty(default=0)
 
     def update_scene_frame_size(self):
@@ -511,7 +516,7 @@ class FBHeadItem(PropertyGroup):
         description="When turned on, FaceBuilder will try to estimate "
                     "focal length based on the position of the model "
                     "in the frame",
-        default=True)
+        default=False)
 
     check_ears: BoolProperty(name="Ears", default=True,
                              update=update_mesh_parts)
@@ -553,12 +558,20 @@ class FBHeadItem(PropertyGroup):
     exif: PointerProperty(type=FBExifItem)
 
     focal_estimation_mode: EnumProperty(name='Estimation Mode', items=[
-        ('FB_FIXED_FOCAL_LENGTH_ALL_FRAMES', 'No estimation', 'LINKED', 0),
-        ('FB_ESTIMATE_STATIC_FOCAL_LENGTH', 'One focus to all', 'LINKED', 1),
-        ('FB_ESTIMATE_VARYING_FOCAL_LENGTH', 'Varying', 'LINKED', 2)
+        ('FB_FIXED_FOCAL_LENGTH_ALL_FRAMES', 'No estimation', '', 'LINKED', 0),
+        ('FB_ESTIMATE_STATIC_FOCAL_LENGTH', 'One focus to all', '', 'LINKED', 1),
+        ('FB_ESTIMATE_VARYING_FOCAL_LENGTH', 'Varying', '', 'LINKED', 2)
         ], description='Estimation Mode value',
         default='FB_ESTIMATE_VARYING_FOCAL_LENGTH',
         update=update_focal_length_mode)
+
+    custom_mode: EnumProperty(name='Estimation Mode override', items=[
+        ('all_different', 'All different estimation', '', 'UNLINKED', 0),
+        ('same_focus', 'Same focus estimation to all', '', 'LINKED', 1),
+        ('force_focal', 'Set fixed focal length to all', '', 'LOCKED', 2),
+        ('no_estimation', 'No Estimation', '', 'CANCEL', 3)
+        ], description='Force Estimation Mode value',
+        default='all_different')
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:

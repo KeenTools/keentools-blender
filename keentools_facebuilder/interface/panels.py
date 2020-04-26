@@ -225,37 +225,51 @@ class FB_PT_CameraPanel(Panel):
 
         head = settings.get_head(headnum)
 
-        layout.label(text='* Head parameters disabled')
-        # layout.prop(head, 'auto_focal_estimation')
+        layout.prop(head, 'auto_focal_estimation',
+                    invert_checkbox=True, text='Smart focal')
 
-        col = layout.column()
         if head.auto_focal_estimation:
-            col.active = False
-            col.enabled = True  # User can change inactive looking field
-        row = col.row()
-        row.prop(head, 'focal')
-        row.operator(
-            Config.fb_focal_length_menu_exec_idname,
-            text='', icon='SETTINGS')
+            layout.label(text='Override Focal Length settings:')
+            layout.prop(head, 'custom_mode', text='')
 
-        row = layout.row()
-        row.prop(head, 'sensor_width')
-        row.operator(
-            Config.fb_sensor_size_window_idname,
-            text='', icon='SETTINGS')
-        layout.label(text='* end of not working')
+        # layout.label(text='* Head parameters disabled *')
+        # # layout.prop(head, 'auto_focal_estimation')
+        #
+        # col = layout.column()
+        # if head.auto_focal_estimation:
+        #     col.active = False
+        #     col.enabled = True  # User can change inactive looking field
+        # row = col.row()
+        # row.prop(head, 'focal')
+        # row.operator(
+        #     Config.fb_focal_length_menu_exec_idname,
+        #     text='', icon='SETTINGS')
+        #
+        # row = layout.row()
+        # row.prop(head, 'sensor_width')
+        # row.operator(
+        #     Config.fb_sensor_size_window_idname,
+        #     text='', icon='SETTINGS')
+        # layout.label(text='* end of not working *')
 
         if settings.current_camnum >= 0:
             camera = head.get_camera(settings.current_camnum)
-            layout.label(text=camera.get_complex_name())
-            layout.prop(camera, 'auto_focal_estimation')
-            layout.prop(head, 'focal_estimation_mode', text='')
+            box = layout.box()
+            box.label(text='File: {}'.format(camera.get_complex_name()))
+            box.prop(camera, 'auto_focal_estimation')
+            if camera.auto_focal_estimation:
+                col = box.row()
+                col.prop(camera, 'focal_estimation_mode', expand=True)
+                box.label(text='Focal length: {:.2f} mm'.format(camera.focal))
+            else:
+                box.prop(camera, 'focal')
 
-            col = layout.column()
-            col.prop(camera, 'focal')
-            col.prop(camera, 'background_scale')
-            col.label(text='compensate_scale: {:.3f}'.format(camera.compensate_view_scale()))
+            # col.prop(camera, 'background_scale')
+            # col.label(text='compensate_scale: {:.3f}'.format(camera.compensate_view_scale()))
 
+        # layout.label(text='* Technical info *')
+        # layout.prop(head, 'focal_estimation_mode', text='')
+        layout.label(text=head.focal_estimation_mode)
 
 class FB_PT_ExifPanel(Panel):
     bl_idname = Config.fb_exif_panel_idname
@@ -427,13 +441,13 @@ class FB_PT_ViewsPanel(Panel):
         if headnum < 0:
             return
 
-        box = layout.box()
-        box.scale_y = 1.5
-        row = box.row()
-        row.label(text=info)
-        op = row.operator(Config.fb_fix_size_menu_exec_idname,
-                          text='', icon='SETTINGS')
-        op.headnum = headnum
+        # box = layout.box()
+        # box.scale_y = 1.5
+        # row = box.row()
+        # row.label(text=info)
+        # op = row.operator(Config.fb_fix_size_menu_exec_idname,
+        #                   text='', icon='SETTINGS')
+        # op.headnum = headnum
 
         self._draw_exit_pinmode(layout)
 
