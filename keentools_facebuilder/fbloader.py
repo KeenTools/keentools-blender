@@ -294,6 +294,31 @@ class FBLoader:
                 cam.focal = focal * cam.compensate_view_scale()  # TODO: Check !!!
 
     @classmethod
+    def setup_solve_mode(cls, headnum, camnum):
+        fb = cls.get_builder()
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        camera = head.get_camera(camnum)
+        if not head.auto_focal_estimation:
+            if camera.auto_focal_estimation:
+                if camera.focal_estimation_mode == 'SINGLE':
+                    # Fix all cameras except this
+                    for cam in head.cameras:
+                        fb.set_focal_length_fixed_at(cam.get_keyframe(), cam is camera)
+                    fb.set_focal_length_estimation_mode('FB_ESTIMATE_VARYING_FOCAL_LENGTH')
+                    head.focal_estimation_mode = 'FB_ESTIMATE_VARYING_FOCAL_LENGTH'
+                else:
+                    # GROUP
+                    for cam in head.cameras:
+                        fb.set_focal_length_fixed_at(cam.get_keyframe(),
+                                                     cam.image_group == camera.image_group)
+                    fb.set_focal_length_estimation_mode('FB_ESTIMATE_STATIC_FOCAL_LENGTH')
+                    head.focal_estimation_mode = 'FB_ESTIMATE_STATIC_FOCAL_LENGTH'
+            else:
+                fb.set_focal_length_estimation_mode('FB_FIXED_FOCAL_LENGTH_ALL_FRAMES')
+                head.focal_estimation_mode = 'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES'
+
+    @classmethod
     def update_camera_projection(cls, headnum, camnum):
         settings = get_main_settings()
         camera = settings.get_camera(headnum, camnum)

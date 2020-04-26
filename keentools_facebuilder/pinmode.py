@@ -169,6 +169,8 @@ class FB_OT_PinMode(bpy.types.Operator):
         if coords.is_safe_region(context, mouse_x, mouse_y):
             settings = get_main_settings()
 
+            FBLoader.setup_solve_mode(self.headnum, self.camnum)
+
             # Movepin operator Call
             op = getattr(get_operators(), Config.fb_movepin_callname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
