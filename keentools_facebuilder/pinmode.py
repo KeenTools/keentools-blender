@@ -169,7 +169,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         if coords.is_safe_region(context, mouse_x, mouse_y):
             settings = get_main_settings()
 
-            FBLoader.setup_solve_mode(self.headnum, self.camnum)
+            FBLoader.setup_solve_mode(settings.current_headnum, settings.current_camnum)
 
             # Movepin operator Call
             op = getattr(get_operators(), Config.fb_movepin_callname)

@@ -228,7 +228,7 @@ class FB_PT_CameraPanel(Panel):
         layout.prop(head, 'auto_focal_estimation',
                     invert_checkbox=True, text='Smart focal')
 
-        if head.auto_focal_estimation:
+        if not head.smart_mode():
             layout.label(text='Override Focal Length settings:')
             layout.prop(head, 'custom_mode', text='')
 
@@ -371,14 +371,24 @@ class FB_PT_ViewsPanel(Panel):
         box = layout.box()
         box.prop(settings.get_head(headnum), 'use_emotions')
 
+        fb = FBLoader.get_builder()
+
         box = layout.box()
         for i, camera in enumerate(head.cameras):
+            # Debug only
+            fix = fb.focal_length_fixed_at(camera.get_keyframe())
 
             row = box.row()
             view_icon = 'PINNED' if camera.has_pins() else 'HIDE_OFF'
 
+            # Debug
+            # if fix:
+            #     row.alert = True
+
             col = row.column()
-            cam_name = camera.get_complex_name()
+            cam_name = '{} {}'.format('Fix' if fix else '',
+                                      camera.get_complex_name())
+
             if settings.current_camnum == i and settings.pinmode:
                 col.prop(settings, 'blue_camera_button', toggle=1,
                          text=cam_name, icon=view_icon)

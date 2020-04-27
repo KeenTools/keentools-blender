@@ -42,7 +42,6 @@ from .utils.manipulate import what_is_state
 
 
 def update_focal_length_mode(self, context):
-    print("value: ", context)
     print("mode:", self.focal_estimation_mode)
     fb = FBLoader.get_builder()
     fb.set_focal_length_estimation_mode(self.focal_estimation_mode)
@@ -656,6 +655,8 @@ class FBHeadItem(PropertyGroup):
                 self.check_headback, self.check_jaw, self.check_mouth,
                 self.check_neck, self.check_nose)
 
+    def smart_mode(self):
+        return not self.auto_focal_estimation
 
 class FBSceneSettings(PropertyGroup):
     # ---------------------
