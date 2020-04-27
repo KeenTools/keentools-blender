@@ -298,22 +298,26 @@ class FBLoader:
         def _set_mode(fb, head, mode):
             fb.set_focal_length_estimation_mode(mode)
             head.focal_estimation_mode = mode
+
+        def _unfix_all(fb, head):
+            for cam in head.cameras:
+                fb.set_focal_length_fixed_at(cam.get_keyframe(), False)
+
         fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.get_head(headnum)
         camera = head.get_camera(camnum)
         kid = camera.get_keyframe()
+
         if head.smart_mode():
             if camera.auto_focal_estimation:
                 if camera.focal_estimation_mode == 'SINGLE':
-                    # Fix all cameras except this
                     for cam in head.cameras:
                         fb.set_focal_length_fixed_at(
                             cam.get_keyframe(),
-                            cam.get_keyframe() != kid)
+                            cam.get_keyframe() != kid and cam.focal_estimation_mode != 'SINGLE')
                     _set_mode(fb, head, 'FB_ESTIMATE_VARYING_FOCAL_LENGTH')
-                else:
-                    # GROUP
+                else:  # GROUP
                     for cam in head.cameras:
                         fb.set_focal_length_fixed_at(
                             cam.get_keyframe(),
@@ -323,6 +327,20 @@ class FBLoader:
                     _set_mode(fb, head, 'FB_ESTIMATE_STATIC_FOCAL_LENGTH')
             else:
                 _set_mode(fb, head, 'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES')
+        else:
+            # Override all
+            if head.custom_mode == 'no_estimation':
+                _unfix_all(fb, head)
+                _set_mode(fb, head, 'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES')
+            elif head.custom_mode == 'force_focal':
+                _unfix_all(fb, head)
+                _set_mode(fb, head, 'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES')
+            elif head.custom_mode == 'same_focus':
+                _unfix_all(fb, head)
+                _set_mode(fb, head, 'FB_ESTIMATE_STATIC_FOCAL_LENGTH')
+            elif head.custom_mode == 'all_different':
+                _unfix_all(fb, head)
+                _set_mode(fb, head, 'FB_ESTIMATE_VARYING_FOCAL_LENGTH')
 
     @classmethod
     def update_camera_projection(cls, headnum, camnum):
