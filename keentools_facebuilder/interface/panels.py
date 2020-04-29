@@ -228,7 +228,10 @@ class FB_PT_CameraPanel(Panel):
         layout.prop(head, 'auto_focal_estimation',
                     invert_checkbox=True, text='Smart focal')
 
-        if not head.smart_mode():
+        if head.smart_mode():
+            layout.prop(head, 'advanced_mode', text='Advanced mode',
+                        toggle=True)
+        else:
             layout.label(text='Override Focal Length settings:')
             layout.prop(head, 'custom_mode', text='')
 
@@ -252,7 +255,8 @@ class FB_PT_CameraPanel(Panel):
         #     text='', icon='SETTINGS')
         # layout.label(text='* end of not working *')
 
-        if settings.current_camnum >= 0:
+
+        if head.advanced_mode and settings.current_camnum >= 0:
             camera = head.get_camera(settings.current_camnum)
             box = layout.box()
             box.label(text='File: {}'.format(camera.get_complex_name()))

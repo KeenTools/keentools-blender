@@ -568,9 +568,14 @@ class FBHeadItem(PropertyGroup):
         ('all_different', 'All different estimation', '', 'UNLINKED', 0),
         ('same_focus', 'Same focus estimation to all', '', 'LINKED', 1),
         ('force_focal', 'Set fixed focal length to all', '', 'LOCKED', 2),
-        ('no_estimation', 'No Estimation', '', 'CANCEL', 3)
+        ('current_estimation', 'Only current frame estimation', '', 'HIDE_OFF', 3)
         ], description='Force Estimation Mode value',
         default='all_different')
+
+    advanced_mode: BoolProperty(
+        name="Use Advanced mode",
+        description="Advanced mode",
+        default=True)
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
