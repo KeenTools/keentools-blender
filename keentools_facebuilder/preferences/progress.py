@@ -170,4 +170,5 @@ class InstallationProgress:
         else:
             cls._on_finish_download(
                 'The core library has been installed successfully.')
+            pkt.reset_cached_is_installed()
             logger.debug("UNPACK CORE FINISH")

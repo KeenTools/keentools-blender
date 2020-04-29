@@ -32,7 +32,7 @@ class BuilderType:
 
 class Config:
     # Version dependent
-    addon_version = '2.0.1'
+    addon_version = '2.0.2'
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83))
     minimal_blender_api = (2, 80, 60)
 
@@ -58,6 +58,7 @@ class Config:
 
     manual_install_url = keentools_website_url + '/manual-installation'
     pykeentools_license_url = 'https://link.keentools.io/eula'
+    license_purchase_url = 'https://link.keentools.io/fb-lc-fbbmld?utm_source=fbb-missing-license-dialog'
     
     # Operators ids
     fb_select_head_callname = 'select_head'

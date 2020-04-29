@@ -22,17 +22,23 @@ import os
 from .config import *
 from .install import is_installed, installation_path_exists
 __all__ = ['loaded', 'module', 'is_python_supported', 'installation_status',
-           'cached_is_installed', 'reset_cached_is_installed']
+           'cached_installation_status','cached_is_installed',
+           'reset_cached_is_installed']
 
 
 CACHED_PYKEENTOOLS_INSTALLATION_STATUS = None
 
 
-def cached_is_installed():
+def cached_installation_status():
     global CACHED_PYKEENTOOLS_INSTALLATION_STATUS
     if CACHED_PYKEENTOOLS_INSTALLATION_STATUS is None:
         CACHED_PYKEENTOOLS_INSTALLATION_STATUS = installation_status()
-    return CACHED_PYKEENTOOLS_INSTALLATION_STATUS[0]
+    return CACHED_PYKEENTOOLS_INSTALLATION_STATUS
+
+
+def cached_is_installed():
+    status = cached_installation_status()
+    return status[0]
 
 
 def reset_cached_is_installed():
@@ -128,6 +134,6 @@ def installation_status():
         return (False, 'NO_VERSION')
 
     if ver < MINIMUM_VERSION_REQUIRED:
-        return (True, 'VERSION_PROBLEM')
+        return (False, 'VERSION_PROBLEM')
 
     return (True, 'PYKEENTOOLS_OK')

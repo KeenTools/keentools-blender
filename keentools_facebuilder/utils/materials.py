@@ -79,14 +79,11 @@ def get_mat_by_name(mat_name):
     return mat
 
 
-def get_shader_node(mat, find_name, create_name):
-    # Looking for node
-    nodnum = mat.node_tree.nodes.find(find_name)
-    if nodnum >= 0:
-        shader_node = mat.node_tree.nodes[nodnum]
-    else:
-        shader_node = mat.node_tree.nodes.new(create_name)
-    return shader_node
+def get_shader_node(mat, find_type, create_name):
+    for node in mat.node_tree.nodes:
+        if node.type == find_type:
+            return node
+    return mat.node_tree.nodes.new(create_name)
 
 
 def find_tex_by_name(tex_name):
@@ -114,9 +111,9 @@ def show_texture_in_mat(tex_name, mat_name):
     tex = find_tex_by_name(tex_name)
     mat = get_mat_by_name(mat_name)
     principled_node = get_shader_node(
-        mat, 'Principled BSDF', 'ShaderNodeBsdfPrincipled')
+        mat, 'BSDF_PRINCIPLED', 'ShaderNodeBsdfPrincipled')
     image_node = get_shader_node(
-        mat, 'Image Texture', 'ShaderNodeTexImage')
+        mat, 'TEX_IMAGE', 'ShaderNodeTexImage')
     image_node.image = tex
     image_node.location = Config.image_node_layout_coord
     principled_node.inputs['Specular'].default_value = 0.0
