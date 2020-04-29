@@ -27,8 +27,7 @@ from ..fbloader import FBLoader
 from ..config import Config, get_main_settings, get_operators, ErrorType
 
 from ..utils.exif_reader import (read_exif_to_head, read_exif_to_camera,
-                                 update_exif_sizes_message,
-                                 detect_image_groups_by_exif,
+                                 setup_image_groups_by_exif,
                                  auto_setup_camera_from_exif)
 from ..utils.other import restore_ui_elements
 from ..utils.materials import find_tex_by_name
@@ -71,9 +70,17 @@ def load_single_image_file(headnum, camnum, filepath):
             logger.error('FILE READ ERROR: {}'.format(filepath))
             return {'CANCELLED'}
 
-        read_exif_to_camera(headnum, camnum, filepath)
+        try:
+            read_exif_to_camera(headnum, camnum, filepath)
+        except RuntimeError:
+            logger.error('FILE EXIF READ ERROR: {}'.format(filepath))
+
+        setup_image_groups_by_exif(head)
+
         camera = head.get_camera(camnum)
         camera.show_background_image()
+
+        FBLoader.save_only(headnum)
         return {'FINISHED'}
 
 
@@ -273,6 +280,7 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
             return {'CANCELLED'}
 
         head = settings.get_head(self.headnum)
+        last_camnum = head.get_last_camnum()
 
         for f in self.files:
             try:
@@ -287,13 +295,13 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
             except RuntimeError as ex:
                 logger.error("FILE READ ERROR: {}".format(f.name))
 
-        for i, camera in enumerate(head.cameras):  # TODO: Not all cameras should change!
-            auto_setup_camera_from_exif(camera)
-            FBLoader.center_geo_camera_projection(self.headnum, i)
+        for i, camera in enumerate(head.cameras):
+            if i > last_camnum:
+                auto_setup_camera_from_exif(camera)
+                FBLoader.center_geo_camera_projection(self.headnum, i)
+                print(i)
 
-        groups = detect_image_groups_by_exif(head)
-        for i, cam in enumerate(head.cameras):
-            cam.image_group = groups[i]
-        logger.debug('IMAGE GROUPS: {}'.format(str(groups)))
+        setup_image_groups_by_exif(head)
+
         FBLoader.save_only(self.headnum)
         return {'FINISHED'}

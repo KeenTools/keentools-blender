@@ -350,8 +350,6 @@ def auto_setup_camera_from_exif(camera):
     real_w, real_h = camera.get_background_size()
 
     if camera.exif.focal35mm > 0:
-        camera.sensor_width = Config.default_sensor_width
-        camera.sensor_height = Config.default_sensor_height
         camera.focal = camera.exif.focal35mm
         w, h = camera.exif.calculated_image_size()
         camera.auto_focal_estimation = w != real_w or h != real_h
@@ -360,11 +358,13 @@ def auto_setup_camera_from_exif(camera):
     if camera.exif.focal > 0:
         w, h = camera.exif.calculated_image_size()
         if w == real_w and h == real_h:
-            camera.sensor_width = camera.exif.sensor_width
-            camera.sensor_height = camera.exif.sensor_length
+            sw = camera.exif.sensor_width
+            sh = camera.exif.sensor_length
+            if sh > sw:
+                sw = sh
+            if sw > 0:
+                camera.focal = camera.exif.focal * Config.default_sensor_width / sw
 
-    camera.sensor_width = Config.default_sensor_width
-    camera.sensor_height = Config.default_sensor_height
     camera.auto_focal_estimation = True
 
 
@@ -430,10 +430,15 @@ def copy_exif_parameters_from_camera_to_head(camera, head):
 
 def detect_image_groups_by_exif(head, hash_func=_exif_and_size_hash_string):
     hashes = [hash_func(cam) for cam in head.cameras]
-    # unique_hashes = list(set(hashes))
     unique_hashes = []
     _ = [unique_hashes.append(x) for x in hashes if x not in unique_hashes]
     return [unique_hashes.index(x) for x in hashes]
+
+
+def setup_image_groups_by_exif(head):
+    groups = detect_image_groups_by_exif(head)
+    for i, cam in enumerate(head.cameras):
+        cam.image_group = groups[i]
 
 
 def read_exif_from_camera(headnum, camnum):

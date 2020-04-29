@@ -291,7 +291,7 @@ class FBLoader:
                 focal = coords.focal_by_projection_matrix(
                     proj_mat, Config.default_sensor_width)
 
-                cam.focal = focal * cam.compensate_view_scale()  # TODO: Check !!!
+                cam.focal = focal * cam.compensate_view_scale()
 
     @classmethod
     def setup_solve_mode(cls, headnum, camnum):
