@@ -232,8 +232,11 @@ class FB_PT_CameraPanel(Panel):
             layout.prop(head, 'advanced_mode', text='Advanced mode',
                         toggle=True)
         else:
-            layout.label(text='Override Focal Length settings:')
+            layout.label(text='Override Focal Length mode:')
             layout.prop(head, 'custom_mode', text='')
+            if head.custom_mode in {'same_focus', 'force_focal'}:
+                layout.prop(head, 'focal')
+
 
         # layout.label(text='* Head parameters disabled *')
         # # layout.prop(head, 'auto_focal_estimation')
@@ -256,7 +259,7 @@ class FB_PT_CameraPanel(Panel):
         # layout.label(text='* end of not working *')
 
 
-        if head.advanced_mode and settings.current_camnum >= 0:
+        if head.smart_mode() and head.advanced_mode and settings.current_camnum >= 0:
             camera = head.get_camera(settings.current_camnum)
             box = layout.box()
             box.label(text='File: {}'.format(camera.get_complex_name()))
@@ -273,7 +276,8 @@ class FB_PT_CameraPanel(Panel):
 
         # layout.label(text='* Technical info *')
         # layout.prop(head, 'focal_estimation_mode', text='')
-        layout.label(text=head.focal_estimation_mode)
+
+        # layout.label(text=head.focal_estimation_mode)
 
 class FB_PT_ExifPanel(Panel):
     bl_idname = Config.fb_exif_panel_idname
