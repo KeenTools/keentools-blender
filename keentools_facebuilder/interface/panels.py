@@ -232,10 +232,11 @@ class FB_PT_CameraPanel(Panel):
             layout.prop(head, 'advanced_mode', text='Advanced mode',
                         toggle=True)
         else:
-            layout.label(text='Override Focal Length mode:')
-            layout.prop(head, 'custom_mode', text='')
+            box = layout.box()
+            box.label(text='Override Focal Length mode:')
+            box.prop(head, 'custom_mode', text='')
             if head.custom_mode in {'same_focus', 'force_focal'}:
-                layout.prop(head, 'focal')
+                box.prop(head, 'focal')
 
 
         # layout.label(text='* Head parameters disabled *')
@@ -262,7 +263,12 @@ class FB_PT_CameraPanel(Panel):
         if head.smart_mode() and head.advanced_mode and settings.current_camnum >= 0:
             camera = head.get_camera(settings.current_camnum)
             box = layout.box()
-            box.label(text='File: {}'.format(camera.get_complex_name()))
+            split = box.split(factor=0.15)
+            op = split.operator(Config.fb_actor_idname,
+                                text='{}'.format(camera.image_group))
+            op.action = 'group'
+
+            split.label(text='File: {}'.format(camera.get_complex_name()))
             box.prop(camera, 'auto_focal_estimation')
             if camera.auto_focal_estimation:
                 col = box.row()
