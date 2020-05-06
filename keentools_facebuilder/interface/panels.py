@@ -268,7 +268,7 @@ class FB_PT_CameraPanel(Panel):
                                 text='{}'.format(camera.image_group))
             op.action = 'group'
 
-            split.label(text='File: {}'.format(camera.get_complex_name()))
+            split.label(text='File: {}'.format(camera.get_image_name()))
             box.prop(camera, 'auto_focal_estimation')
             if camera.auto_focal_estimation:
                 col = box.row()
@@ -292,6 +292,7 @@ class FB_PT_ExifPanel(Panel):
     bl_label = "EXIF"
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
+    bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):
