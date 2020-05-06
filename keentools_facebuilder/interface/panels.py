@@ -401,18 +401,31 @@ class FB_PT_ViewsPanel(Panel):
             #     row.alert = True
 
             col = row.column()
-            cam_name = '{} {}'.format('Fix' if fix else '',
-                                      camera.get_complex_name())
+            # cam_name = '{} {}'.format('Fix' if fix else '',
+            #                           camera.get_complex_name())
+            cam_name = camera.get_image_name()
 
             if settings.current_camnum == i and settings.pinmode:
                 col.prop(settings, 'blue_camera_button', toggle=1,
                          text=cam_name, icon=view_icon)
             else:
-                op = col.operator(
+                if head.groups_counter > 1:
+                    split = col.split(factor=0.85)
+                else:
+                    split = col
+
+                op = split.operator(
                     Config.fb_select_camera_idname,
                     text=cam_name, icon=view_icon)
                 op.headnum = headnum
                 op.camnum = i
+
+                if head.groups_counter > 1:
+                    op = split.operator(
+                        Config.fb_actor_idname, text='{}{}'.format(
+                            '*' if camera.auto_focal_estimation else '',
+                            camera.image_group))
+                    op.action = 'group'
 
             col = row.column()
             if not camera.cam_image:

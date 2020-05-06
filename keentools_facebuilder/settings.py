@@ -577,6 +577,8 @@ class FBHeadItem(PropertyGroup):
         description="Advanced mode",
         default=False)
 
+    groups_counter: IntProperty(default=-1)
+
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
             return self.cameras[len(self.cameras) + camnum]
@@ -662,6 +664,16 @@ class FBHeadItem(PropertyGroup):
 
     def smart_mode(self):
         return not self.auto_focal_estimation
+
+    def groups_count(self):
+        if self.groups_counter <= 0:
+            groups = [cam.group for cam in self.cameras]
+            self.groups_counter = len(set(groups))
+        return self.groups_counter
+
+    def reset_groups_counter(self):
+        self.groups_counter = -1
+
 
 class FBSceneSettings(PropertyGroup):
     # ---------------------

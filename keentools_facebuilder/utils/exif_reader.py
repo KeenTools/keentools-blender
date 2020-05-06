@@ -19,6 +19,8 @@
 import logging
 import os
 
+import numpy as np
+
 from ..blender_independent_packages.exifread import process_file
 from ..blender_independent_packages.exifread import \
     DEFAULT_STOP_TAG, FIELD_TYPES
@@ -432,13 +434,20 @@ def detect_image_groups_by_exif(head, hash_func=_exif_and_size_hash_string):
     hashes = [hash_func(cam) for cam in head.cameras]
     unique_hashes = []
     _ = [unique_hashes.append(x) for x in hashes if x not in unique_hashes]
-    return [unique_hashes.index(x) for x in hashes]
+    return [unique_hashes.index(x) + 1 for x in hashes]
 
 
 def setup_image_groups_by_exif(head):
     groups = detect_image_groups_by_exif(head)
+    keys, count = np.unique(groups, return_counts=True)
+    keys = list(keys)
+
     for i, cam in enumerate(head.cameras):
-        cam.image_group = groups[i]
+        if count[keys.index(groups[i])] > 1:
+            cam.image_group = groups[i]
+        else:
+            cam.image_group = -groups[i]
+    head.groups_counter = len(groups)
 
 
 def read_exif_from_camera(headnum, camnum):

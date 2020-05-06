@@ -299,7 +299,6 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
             if i > last_camnum:
                 auto_setup_camera_from_exif(camera)
                 FBLoader.center_geo_camera_projection(self.headnum, i)
-                print(i)
 
         setup_image_groups_by_exif(head)
 
