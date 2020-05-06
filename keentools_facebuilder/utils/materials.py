@@ -178,13 +178,7 @@ def bake_tex(headnum, tex_name):
                     np.asarray(cam.cam_image.pixels[:]).reshape((h, w, 4)),
                     cam.orientation)  # Slow operation .pixels[:]
 
-                if w < h:  # Fix for Blender Camera Auto-mode
-                    sw = head.sensor_width * \
-                         settings.frame_width / settings.frame_height
-                else:
-                    sw = head.sensor_width
-                pm = projection_matrix(w, h, head.focal, sw,
-                                       near=0.1, far=1000.)
+                pm = cam.get_projection_matrix()
                 if cam.orientation % 2 > 0:
                     offset = np.array([[1., 0., 0., (h - w) * 0.5],
                                        [0., 1., 0., (w - h) * 0.5],

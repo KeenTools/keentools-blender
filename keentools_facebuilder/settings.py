@@ -575,7 +575,7 @@ class FBHeadItem(PropertyGroup):
     advanced_mode: BoolProperty(
         name="Use Advanced mode",
         description="Advanced mode",
-        default=True)
+        default=False)
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
