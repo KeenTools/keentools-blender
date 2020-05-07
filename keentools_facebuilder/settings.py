@@ -265,6 +265,8 @@ class FBCameraItem(PropertyGroup):
 
     image_group: IntProperty(default=0)
 
+    custom_group: IntProperty(default=0)
+
     def update_scene_frame_size(self):
         if self.image_width > 0 and self.image_height > 0:
             if (self.orientation % 2) == 0:

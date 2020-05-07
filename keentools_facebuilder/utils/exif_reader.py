@@ -393,6 +393,12 @@ def _exif_fields():
             'sizes_message')
 
 
+def _undefined_exif_hash_string(exif):
+    return "#".join([
+        str(-1) * 9
+    ])
+
+
 def _exif_hash_string(exif):
     return "#".join([
         str(exif.focal),
@@ -430,15 +436,43 @@ def copy_exif_parameters_from_camera_to_head(camera, head):
     head.exif.info_message += "\n=====\n" + _all_fields_dump(camera.exif)
 
 
-def detect_image_groups_by_exif(head, hash_func=_exif_and_size_hash_string):
+def _detect_image_groups_by_exif(head, hash_func=_exif_and_size_hash_string):
     hashes = [hash_func(cam) for cam in head.cameras]
     unique_hashes = []
     _ = [unique_hashes.append(x) for x in hashes if x not in unique_hashes]
     return [unique_hashes.index(x) + 1 for x in hashes]
 
 
+def _get_unique_vals(vec):
+    unique_vals = [0]
+    _ = [unique_vals.append(x) for x in vec if x not in unique_vals]
+    return unique_vals
+
+
+def _map_values(from_arr, map_arr):
+    return [map_arr.index(x) for x in from_arr]
+
+
+def _get_group_vectors(head):
+    return [cam.image_group for cam in head.cameras],\
+           [cam.custom_group for cam in head.cameras]
+
+
+def _renumbered_groups(head):
+    image_groups, custom_groups = _get_group_vectors(head)
+    unique_vals = _get_unique_vals(image_groups + custom_groups)
+    return _map_values(image_groups, unique_vals),\
+           _map_values(custom_groups, unique_vals)
+
+
+def _apply_groups(head, image_groups, custom_groups):
+    for i, cam in enumerate(head.cameras):
+        cam.image_group = image_groups[i]
+        cam.custom_group = custom_groups[i]
+
+
 def setup_image_groups_by_exif(head):
-    groups = detect_image_groups_by_exif(head)
+    groups = _detect_image_groups_by_exif(head)
     keys, count = np.unique(groups, return_counts=True)
     keys = list(keys)
 
