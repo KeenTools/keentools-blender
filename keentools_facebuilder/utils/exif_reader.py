@@ -566,6 +566,7 @@ def update_image_groups(head):
         cam.show_image_group = visible_groups[i]
 
     head.groups = len(keys)
+    head.show_image_groups = len(keys) != 1
 
 
 def read_exif_from_camera(headnum, camnum):
