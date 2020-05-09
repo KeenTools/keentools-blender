@@ -267,6 +267,8 @@ class FBCameraItem(PropertyGroup):
 
     custom_group: IntProperty(default=0)
 
+    show_image_group: BoolProperty(default=False)
+
     def update_scene_frame_size(self):
         if self.image_width > 0 and self.image_height > 0:
             if (self.orientation % 2) == 0:
@@ -452,6 +454,9 @@ class FBCameraItem(PropertyGroup):
         else:
             return None
 
+    def is_image_group_visible(self):
+        return self.show_image_group
+
     def get_image_name(self):
         if self.cam_image is not None:
             return self.cam_image.name
@@ -581,6 +586,8 @@ class FBHeadItem(PropertyGroup):
 
     groups_counter: IntProperty(default=-1)
 
+    show_image_groups: BoolProperty(default=True)
+
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
             return self.cameras[len(self.cameras) + camnum]
@@ -675,6 +682,16 @@ class FBHeadItem(PropertyGroup):
 
     def reset_groups_counter(self):
         self.groups_counter = -1
+
+    def are_image_groups_visible(self):
+        return self.show_image_groups
+
+    def is_image_group_visible(self, camnum):
+        camera = self.get_camera(camnum)
+        if camera is None:
+            return False
+        return self.are_image_groups_visible() and \
+               camera.is_image_group_visible()
 
 
 class FBSceneSettings(PropertyGroup):

@@ -454,9 +454,12 @@ def _map_values(from_arr, map_arr):
     return [map_arr.index(x) for x in from_arr]
 
 
-def _get_group_vectors(head):
-    return [cam.image_group for cam in head.cameras],\
-           [cam.custom_group for cam in head.cameras]
+def _get_image_groups(head):
+    return [cam.image_group for cam in head.cameras]
+
+
+def _get_custom_groups(head):
+    return [cam.custom_group for cam in head.cameras]
 
 
 def _get_non_zero_image_group_indices(head):
@@ -468,16 +471,21 @@ def _get_zero_image_group_indices(head):
 
 
 def _renumbered_groups(head):
-    image_groups, custom_groups = _get_group_vectors(head)
+    image_groups = _get_image_groups(head)
+    custom_groups = _get_custom_groups(head)
     unique_vals = _get_unique_vals(image_groups + custom_groups)
     return _map_values(image_groups, unique_vals),\
            _map_values(custom_groups, unique_vals)
 
 
-def _apply_groups(head, image_groups, custom_groups):
+def _apply_groups_to_head(head, image_groups, custom_groups):
     for i, cam in enumerate(head.cameras):
         cam.image_group = image_groups[i]
         cam.custom_group = custom_groups[i]
+
+
+def _apply_custom_groups(image_groups, custom_groups):
+    return [image_groups[i] if x == 0 else x for i, x in enumerate(custom_groups)]
 
 
 def setup_image_groups_by_exif(head):
@@ -494,7 +502,8 @@ def setup_image_groups_by_exif(head):
 
 
 def update_image_groups(head):
-    image_groups_old, custom_groups_old = _get_group_vectors(head)
+    image_groups_old = _get_image_groups(head)
+    custom_groups_old = _get_custom_groups(head)
     map_old_to_new = {}
 
     image_groups_new = [0 for _ in head.cameras]
@@ -536,10 +545,27 @@ def update_image_groups(head):
             unique_hashes.append(hash)
             image_groups_new[i] = len(unique_hashes)
 
-    _apply_groups(head, image_groups_new, custom_groups_new)
+    print('image_groups_new', image_groups_new)
+    print('custom_groups_new', custom_groups_new)
+    _apply_groups_to_head(head, image_groups_new, custom_groups_new)
 
+    # renumber
     image_groups, custom_groups = _renumbered_groups(head)
-    _apply_groups(head, image_groups, custom_groups)
+    _apply_groups_to_head(head, image_groups, custom_groups)
+
+    # find unique
+    keys, count = np.unique(image_groups, return_counts=True)
+    keys = list(keys)
+
+    calculated_groups = _apply_custom_groups(image_groups, custom_groups)
+    visible_groups = [count[keys.index(group)] > 1 for group in calculated_groups]
+
+    _apply_groups_to_head(head, image_groups, custom_groups)
+
+    for i, cam in enumerate(head.cameras):
+        cam.show_image_group = visible_groups[i]
+
+    head.groups = len(keys)
 
 
 def read_exif_from_camera(headnum, camnum):
