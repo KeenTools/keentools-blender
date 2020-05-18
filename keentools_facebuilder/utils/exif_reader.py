@@ -374,7 +374,7 @@ def _copy_property_from_to(prop_name, from_obj, to_obj):
     setattr(to_obj, prop_name, getattr(from_obj, prop_name))
 
 
-def _exif_fields():
+def _exif_class_fields():
     return ('focal',
             'focal35mm',
             'focal_x_res',
@@ -393,23 +393,25 @@ def _exif_fields():
             'sizes_message')
 
 
-def _undefined_exif_hash_string(exif, delimiter='#'):
-    return delimiter.join([
-        str(-1) * 9
-    ])
+def _exif_file_fields():
+    return ('focal',
+            'focal35mm',
+            'focal_x_res',
+            'focal_y_res',
+            'units',
+            'image_width',
+            'image_length',
+            'exif_width',
+            'exif_length')
 
 
 def _exif_hash_string(exif, delimiter='#'):
+    return delimiter.join([str(getattr(exif, p)) for p in _exif_file_fields()])
+
+
+def _undefined_exif_hash_string(delimiter='#'):
     return delimiter.join([
-        str(exif.focal),
-        str(exif.focal35mm),
-        str(exif.focal_x_res),
-        str(exif.focal_y_res),
-        str(exif.units),
-        str(exif.image_width),
-        str(exif.image_length),
-        str(exif.exif_width),
-        str(exif.exif_length)
+        str(-1) * len(_exif_file_fields())
     ])
 
 
@@ -427,11 +429,12 @@ def _exif_and_size_hash_string(camera, delimiter='#'):
 
 
 def _all_fields_dump(exif):
-    return "\n".join(["{}:{}".format(p, getattr(exif, p)) for p in _exif_fields()])
+    return "\n".join(["{}:{}".format(p, getattr(exif, p))
+                      for p in _exif_class_fields()])
 
 
 def copy_exif_parameters_from_camera_to_head(camera, head):
-    for p in _exif_fields():
+    for p in _exif_class_fields():
         _copy_property_from_to(p, camera.exif, head.exif)
     # Debug only info
     head.exif.info_message += "\n=====\n" + _all_fields_dump(camera.exif)
@@ -502,6 +505,41 @@ def setup_image_groups_by_exif(head):
 
 
 def update_image_groups(head):
+    def _perform_non_zero_image_groups():
+        non_zero_indices = _get_non_zero_image_group_indices(head)
+        for i in non_zero_indices:
+            hash = full_hashes[i]
+            if hash in unique_hashes:
+                image_groups_new[i] = unique_hashes.index(hash) + 1
+            else:
+                unique_hashes.append(hash)
+                indx = len(unique_hashes)
+                image_groups_new[i] = indx
+                used_indices.append(indx)
+                map_old_to_new[image_groups_old[i]] = indx
+
+    def _perform_custom_groups_for_non_zero():
+        for i, x in enumerate(custom_groups_old):
+            if x != 0:
+                if x in map_old_to_new.keys():
+                    custom_groups_new[i] = map_old_to_new[x]
+                else:
+                    unique_hashes.append('IGNORE_WHEN_FIND_HASH')
+                    indx = len(unique_hashes)
+                    image_groups_new[i] = indx
+                    used_indices.append(indx)
+                    map_old_to_new[x] = indx
+
+    def _perform_new_loaded_views():
+        zero_indices = _get_zero_image_group_indices(head)
+        for i in zero_indices:
+            hash = full_hashes[i]
+            if hash in unique_hashes:
+                image_groups_new[i] = unique_hashes.index(hash) + 1
+            else:
+                unique_hashes.append(hash)
+                image_groups_new[i] = len(unique_hashes)
+
     image_groups_old = _get_image_groups(head)
     custom_groups_old = _get_custom_groups(head)
     map_old_to_new = {}
@@ -512,38 +550,9 @@ def update_image_groups(head):
 
     full_hashes = [_exif_and_size_hash_string(cam) for cam in head.cameras]
     unique_hashes = []
-
-    non_zero_indices = _get_non_zero_image_group_indices(head)
-    for i in non_zero_indices:
-        hash = full_hashes[i]
-        if hash in unique_hashes:
-            image_groups_new[i] = unique_hashes.index(hash) + 1
-        else:
-            unique_hashes.append(hash)
-            indx = len(unique_hashes)
-            image_groups_new[i] = indx
-            used_indices.append(indx)
-            map_old_to_new[image_groups_old[i]] = indx
-
-    for i, x in enumerate(custom_groups_old):
-        if x != 0:
-            if x in map_old_to_new.keys():
-                custom_groups_new[i] = map_old_to_new[x]
-            else:
-                unique_hashes.append('invalid_hash')
-                indx = len(unique_hashes)
-                image_groups_new[i] = indx
-                used_indices.append(indx)
-                map_old_to_new[x] = indx
-
-    zero_indices = _get_zero_image_group_indices(head)
-    for i in zero_indices:
-        hash = full_hashes[i]
-        if hash in unique_hashes:
-            image_groups_new[i] = unique_hashes.index(hash) + 1
-        else:
-            unique_hashes.append(hash)
-            image_groups_new[i] = len(unique_hashes)
+    _perform_non_zero_image_groups()
+    _perform_custom_groups_for_non_zero()
+    _perform_new_loaded_views()
 
     print('image_groups_new', image_groups_new)
     print('custom_groups_new', custom_groups_new)

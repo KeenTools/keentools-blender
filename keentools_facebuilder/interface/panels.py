@@ -404,10 +404,12 @@ class FB_PT_ViewsPanel(Panel):
             # cam_name = '{} {}'.format('Fix' if fix else '',
             #                           camera.get_complex_name())
             # cam_name = camera.get_image_name()
-            cam_name = '{}{}'.format(
+            cam_name = '{}{}{}'.format(
                 camera.get_image_name(),
                 ' [{}]'.format(camera.image_group)
-                if head.is_image_group_visible(i) else '')
+                if head.is_image_group_visible(i) else '',
+                '*' if camera.auto_focal_estimation else ''
+            )
 
             if settings.current_camnum == i and settings.pinmode:
                 col.prop(settings, 'blue_camera_button', toggle=1,
