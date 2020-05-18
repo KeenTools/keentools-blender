@@ -215,60 +215,22 @@ class FB_PT_CameraPanel(Panel):
             text='', icon='QUESTION')
 
     def draw(self, context):
-        settings = get_main_settings()
-        layout = self.layout
-
-        state, headnum = what_is_state()
-
-        if headnum < 0:
-            return
-
-        head = settings.get_head(headnum)
-
-        layout.prop(head, 'auto_focal_estimation',
-                    invert_checkbox=True, text='Smart focal')
-
-        if head.smart_mode():
-            layout.prop(head, 'advanced_mode', text='Advanced mode',
-                        toggle=True)
-        else:
-            box = layout.box()
-            box.label(text='Override Focal Length mode:')
-            box.prop(head, 'custom_mode', text='')
-            if head.custom_mode in {'same_focus', 'force_focal'}:
-                box.prop(head, 'focal')
-
-
-        # layout.label(text='* Head parameters disabled *')
-        # # layout.prop(head, 'auto_focal_estimation')
-        #
-        # col = layout.column()
-        # if head.auto_focal_estimation:
-        #     col.active = False
-        #     col.enabled = True  # User can change inactive looking field
-        # row = col.row()
-        # row.prop(head, 'focal')
-        # row.operator(
-        #     Config.fb_focal_length_menu_exec_idname,
-        #     text='', icon='SETTINGS')
-        #
-        # row = layout.row()
-        # row.prop(head, 'sensor_width')
-        # row.operator(
-        #     Config.fb_sensor_size_window_idname,
-        #     text='', icon='SETTINGS')
-        # layout.label(text='* end of not working *')
-
-
-        if head.smart_mode() and head.advanced_mode and settings.current_camnum >= 0:
+        def _draw_advanced_mode():
             camera = head.get_camera(settings.current_camnum)
             box = layout.box()
-            split = box.split(factor=0.15)
-            op = split.operator(Config.fb_actor_idname,
-                                text='{}'.format(camera.image_group))
-            op.action = 'group'
+            row = box.row()
+            col = row.column()
+            col.scale_y = Config.text_scale_y
+            col.label(text='File: {}'.format(camera.get_image_name()))
+            col.label(text='Image Group: [{}]'.format(camera.image_group))
+            row.operator(Config.fb_image_group_menu_exec_idname,
+                         text='', icon='COLLAPSEMENU')
 
-            split.label(text='File: {}'.format(camera.get_image_name()))
+            # split = box.split(factor=0.15)
+            # op = split.operator(Config.fb_image_group_menu_exec_idname,
+            #                     text='{}'.format(camera.image_group))
+            #
+            # split.label(text='File: {}'.format(camera.get_image_name()))
             box.prop(camera, 'auto_focal_estimation')
             if camera.auto_focal_estimation:
                 col = box.row()
@@ -277,13 +239,48 @@ class FB_PT_CameraPanel(Panel):
             else:
                 box.prop(camera, 'focal')
 
-            # col.prop(camera, 'background_scale')
-            # col.label(text='compensate_scale: {:.3f}'.format(camera.compensate_view_scale()))
+            # box.label(text='Size: {}x{}px'.format(camera.get_image_width(),
+            #                                       camera.get_image_height()))
 
-        # layout.label(text='* Technical info *')
-        # layout.prop(head, 'focal_estimation_mode', text='')
+        def _draw_smart_mode():
+            if settings.current_camnum < 0:
+                return
 
-        # layout.label(text=head.focal_estimation_mode)
+            layout.prop(head, 'advanced_mode',
+                        text='Advanced mode', toggle=True)
+
+            if head.advanced_mode:
+                _draw_advanced_mode()
+
+        def _draw_override_mode():
+            box = layout.box()
+            box.label(text='Override Focal Length mode:')
+            box.prop(head, 'custom_mode', text='')
+            if head.custom_mode in {'same_focus', 'force_focal'}:
+                box.prop(head, 'focal')
+            if head.custom_mode == 'current_estimation':
+                camera = head.get_camera(settings.current_camnum)
+                box.label(text='Focal length: {:.2f} mm'.format(camera.focal))
+
+        settings = get_main_settings()
+        layout = self.layout
+        state, headnum = what_is_state()
+
+        if headnum < 0:
+            return
+        head = settings.get_head(headnum)
+
+        layout.prop(head, 'auto_focal_estimation',
+                    invert_checkbox=True, text='Smart focal')
+
+        if head.smart_mode():
+            _draw_smart_mode()
+        else:
+            _draw_override_mode()
+
+        # col.prop(camera, 'background_scale')
+        # col.label(text='compensate_scale: {:.3f}'.format(camera.compensate_view_scale()))
+
 
 class FB_PT_ExifPanel(Panel):
     bl_idname = Config.fb_exif_panel_idname

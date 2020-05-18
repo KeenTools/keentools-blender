@@ -473,9 +473,7 @@ def _get_zero_image_group_indices(head):
     return [i for i, cam in enumerate(head.cameras) if cam.image_group == 0]
 
 
-def _renumbered_groups(head):
-    image_groups = _get_image_groups(head)
-    custom_groups = _get_custom_groups(head)
+def _renumbered_groups(image_groups, custom_groups):
     unique_vals = _get_unique_vals(image_groups + custom_groups)
     return _map_values(image_groups, unique_vals),\
            _map_values(custom_groups, unique_vals)
@@ -487,8 +485,9 @@ def _apply_groups_to_head(head, image_groups, custom_groups):
         cam.custom_group = custom_groups[i]
 
 
-def _apply_custom_groups(image_groups, custom_groups):
-    return [image_groups[i] if x == 0 else x for i, x in enumerate(custom_groups)]
+def _applied_custom_groups(image_groups, custom_groups):
+    return [image_groups[i] if x == 0 else x
+            for i, x in enumerate(custom_groups)]
 
 
 def setup_image_groups_by_exif(head):
@@ -506,8 +505,7 @@ def setup_image_groups_by_exif(head):
 
 def update_image_groups(head):
     def _perform_non_zero_image_groups():
-        non_zero_indices = _get_non_zero_image_group_indices(head)
-        for i in non_zero_indices:
+        for i in _get_non_zero_image_group_indices(head):
             hash = full_hashes[i]
             if hash in unique_hashes:
                 image_groups_new[i] = unique_hashes.index(hash) + 1
@@ -518,21 +516,20 @@ def update_image_groups(head):
                 used_indices.append(indx)
                 map_old_to_new[image_groups_old[i]] = indx
 
-    def _perform_custom_groups_for_non_zero():
+    def _perform_non_zero_custom_groups():
         for i, x in enumerate(custom_groups_old):
             if x != 0:
                 if x in map_old_to_new.keys():
                     custom_groups_new[i] = map_old_to_new[x]
                 else:
-                    unique_hashes.append('IGNORE_WHEN_FIND_HASH')
+                    unique_hashes.append('IGNORE_THIS_WHEN_HASH_FINDING')
                     indx = len(unique_hashes)
                     image_groups_new[i] = indx
                     used_indices.append(indx)
                     map_old_to_new[x] = indx
 
     def _perform_new_loaded_views():
-        zero_indices = _get_zero_image_group_indices(head)
-        for i in zero_indices:
+        for i in _get_zero_image_group_indices(head):
             hash = full_hashes[i]
             if hash in unique_hashes:
                 image_groups_new[i] = unique_hashes.index(hash) + 1
@@ -544,32 +541,29 @@ def update_image_groups(head):
     custom_groups_old = _get_custom_groups(head)
     map_old_to_new = {}
 
-    image_groups_new = [0 for _ in head.cameras]
-    custom_groups_new = [0 for _ in head.cameras]
+    image_groups_new = [0 for _ in head.cameras]  # zero value mean new image
+    custom_groups_new = [0 for _ in head.cameras]  # only non zero affects on
     used_indices = []
 
     full_hashes = [_exif_and_size_hash_string(cam) for cam in head.cameras]
     unique_hashes = []
     _perform_non_zero_image_groups()
-    _perform_custom_groups_for_non_zero()
+    _perform_non_zero_custom_groups()
     _perform_new_loaded_views()
 
     print('image_groups_new', image_groups_new)
     print('custom_groups_new', custom_groups_new)
-    _apply_groups_to_head(head, image_groups_new, custom_groups_new)
 
-    # renumber
-    image_groups, custom_groups = _renumbered_groups(head)
+    image_groups, custom_groups = _renumbered_groups(image_groups_new,
+                                                     custom_groups_new)
     _apply_groups_to_head(head, image_groups, custom_groups)
 
     # find unique
     keys, count = np.unique(image_groups, return_counts=True)
     keys = list(keys)
 
-    calculated_groups = _apply_custom_groups(image_groups, custom_groups)
-    visible_groups = [count[keys.index(group)] > 1 for group in calculated_groups]
-
-    _apply_groups_to_head(head, image_groups, custom_groups)
+    visible_groups = [count[keys.index(group)] > 1
+        for group in _applied_custom_groups(image_groups, custom_groups)]
 
     for i, cam in enumerate(head.cameras):
         cam.show_image_group = visible_groups[i]

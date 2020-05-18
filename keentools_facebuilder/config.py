@@ -205,6 +205,10 @@ class Config:
     fb_read_exif_menu_exec_idname = \
         operators + '.' + fb_read_exif_menu_exec_callname
 
+    fb_image_group_menu_exec_callname = 'image_group_menu_exec'
+    fb_image_group_menu_exec_idname = \
+        operators + '.' + fb_image_group_menu_exec_callname
+
     fb_tex_selector_callname = 'tex_selector'
     fb_tex_selector_idname = operators + '.' + fb_tex_selector_callname
 
@@ -278,6 +282,7 @@ class Config:
 
     fb_read_exif_menu_idname = _MT + 'read_exif_menu'
 
+    fb_image_group_menu_idname = _MT + 'image_group_menu'
 
     # Standard names
     tex_builder_filename = 'kt_facebuilder_texture'

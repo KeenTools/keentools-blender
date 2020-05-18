@@ -134,6 +134,44 @@ class FB_MT_FrameSizeMenu(Menu):
             text="Use Scene render size", icon="OUTPUT")
 
 
+class FB_MT_ImageGroupMenu(Menu):
+    bl_label = "Image Group Menu"
+    bl_idname = Config.fb_image_group_menu_idname
+    bl_description = "Image Group Menu description"
+
+    def draw(self, context):
+        settings = get_main_settings()
+        layout = self.layout
+
+        op = layout.operator(
+            Config.fb_actor_idname,
+            text="Show groups info on buttons")
+        op.action = 'show_groups_info'
+        op.headnum = settings.tmp_headnum
+        op.camnum = settings.tmp_camnum
+
+        op = layout.operator(
+            Config.fb_actor_idname,
+            text="Make this image unique group")
+        op.action = 'show_groups_info'
+
+        op = layout.operator(
+            Config.fb_actor_idname,
+            text="Collect all same size images in group")
+        op.action = 'show_groups_info'
+
+        op = layout.operator(
+            Config.fb_actor_idname,
+            text="Reset this image group")
+        op.action = 'reset_image_group'
+
+        layout.separator()
+        op = layout.operator(
+            Config.fb_actor_idname,
+            text="Reset ALL image groups with default settings")
+        op.action = 'reset_all_image_groups'
+
+
 class FB_MT_ReadExifMenu(Menu):
     bl_label = "Select image to read EXIF"
     bl_idname = Config.fb_read_exif_menu_idname

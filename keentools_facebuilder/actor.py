@@ -60,6 +60,13 @@ class FB_OT_Actor(Operator):
         elif self.action == 'group':
             pass
 
+        elif self.action == 'show_groups_info':
+            settings = get_main_settings()
+            head = settings.get_head(self.headnum)
+            for cam in head.cameras:
+                cam.show_image_group = True
+            head.show_image_groups = True
+
         return {'FINISHED'}
 
 
