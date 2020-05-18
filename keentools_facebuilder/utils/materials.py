@@ -162,11 +162,44 @@ def bake_tex(headnum, tex_name):
     wm = bpy.context.window_manager
     wm.progress_begin(0, len(head.cameras) + 1.0)
 
-    imgs = []
-    keyframes = []
     camnums = []
-    geos = []
-    projections = []
+
+
+    def data_loader(kf_idx):
+        cam = head.cameras[camnums[kf_idx]]
+
+        assert cam.use_in_tex_baking
+        assert cam.cam_image
+        assert cam.has_pins()
+
+        w, h = cam.cam_image.size[:3]
+        assert w > 0 and h > 0  # Image data exists
+
+        img = np.rot90(
+            np.asarray(cam.cam_image.pixels[:]).reshape((h, w, 4)),
+            cam.orientation)  # Slow operation .pixels[:]
+
+        if w < h:  # Fix for Blender Camera Auto-mode
+            sw = head.sensor_width * \
+                 settings.frame_width / settings.frame_height
+        else:
+            sw = head.sensor_width
+        pm = projection_matrix(w, h, head.focal, sw,
+                               near=0.1, far=1000.)
+        if cam.orientation % 2 > 0:
+            offset = np.array([[1., 0., 0., (h - w) * 0.5],
+                               [0., 1., 0., (w - h) * 0.5],
+                               [0., 0., 1., 0.],
+                               [0., 0., 0., 1.]])
+            projection = offset @ pm
+        else:
+            projection = pm
+
+        geo = fb.applied_args_model_at(cam.get_keyframe())
+        model_view = cam.get_model_mat()
+
+        return geo, img, model_view, projection
+
 
     for i, cam in enumerate(head.cameras):
         wm.progress_update(i + 1.0)
@@ -174,35 +207,13 @@ def bake_tex(headnum, tex_name):
         if cam.use_in_tex_baking and cam.cam_image and cam.has_pins():
             w, h = cam.cam_image.size[:3]
             if w > 0 and h > 0:  # 4) Image data exists
-                img = np.rot90(
-                    np.asarray(cam.cam_image.pixels[:]).reshape((h, w, 4)),
-                    cam.orientation)  # Slow operation .pixels[:]
-
-                if w < h:  # Fix for Blender Camera Auto-mode
-                    sw = head.sensor_width * \
-                         settings.frame_width / settings.frame_height
-                else:
-                    sw = head.sensor_width
-                pm = projection_matrix(w, h, head.focal, sw,
-                                       near=0.1, far=1000.)
-                if cam.orientation % 2 > 0:
-                    offset = np.array([[1., 0., 0., (h - w) * 0.5],
-                                       [0., 1., 0., (w - h) * 0.5],
-                                       [0., 0., 1., 0.],
-                                       [0., 0., 0., 1.]])
-                    projections.append(offset @ pm)
-                else:
-                    projections.append(pm)
-
-                imgs.append(img)
-                keyframes.append(cam.get_keyframe())
                 camnums.append(i)
-                geos.append(fb.applied_args_model_at(cam.get_keyframe()))
 
     wm.progress_end()
 
+    frames_count = len(camnums)
     # Texture baking
-    if len(keyframes) > 0:
+    if frames_count > 0:
         tb = pkt.module().TextureBuilder()
         tb.set_output_texture_size((settings.tex_width, settings.tex_height))
         tb.set_face_angles_affection(settings.tex_face_angles_affection)
@@ -211,9 +222,7 @@ def bake_tex(headnum, tex_name):
         tb.set_equalize_brightness(settings.tex_equalize_brightness)
         tb.set_equalize_colour(settings.tex_equalize_colour)
 
-        model_views = [head.cameras[x].get_model_mat() for x in camnums]
-
-        texture = tb.build_texture(geos, imgs, model_views, projections)
+        texture = tb.build_texture(frames_count, data_loader)
 
         tex_num = bpy.data.images.find(tex_name)
 
