@@ -210,6 +210,9 @@ class FB_PT_CameraPanel(Panel):
         layout = self.layout
         row = layout.row()
         row.active = False
+        if get_main_settings().current_camnum != -1:
+            row.operator(Config.fb_image_group_menu_exec_idname,
+                         text='', icon='COLLAPSEMENU')
         row.operator(
             Config.fb_help_camera_idname,
             text='', icon='QUESTION')
@@ -222,7 +225,7 @@ class FB_PT_CameraPanel(Panel):
             col = row.column()
             col.scale_y = Config.text_scale_y
             col.label(text='File: {}'.format(camera.get_image_name()))
-            col.label(text='Image Group: [{}]'.format(camera.image_group))
+            col.label(text='Image Group: {}'.format(camera.image_group))
             row.operator(Config.fb_image_group_menu_exec_idname,
                          text='', icon='COLLAPSEMENU')
 
@@ -247,14 +250,14 @@ class FB_PT_CameraPanel(Panel):
                 return
 
             layout.prop(head, 'advanced_mode',
-                        text='Advanced mode', toggle=True)
+                        text='Advanced Settings', toggle=True)
 
             if head.advanced_mode:
                 _draw_advanced_mode()
 
         def _draw_override_mode():
             box = layout.box()
-            box.label(text='Override Focal Length mode:')
+            box.label(text='Override Focal Length settings:')
             box.prop(head, 'custom_mode', text='')
             if head.custom_mode in {'same_focus', 'force_focal'}:
                 box.prop(head, 'focal')
@@ -271,7 +274,7 @@ class FB_PT_CameraPanel(Panel):
         head = settings.get_head(headnum)
 
         layout.prop(head, 'auto_focal_estimation',
-                    invert_checkbox=True, text='Smart focal')
+                    invert_checkbox=True, text='Smart Focal Length')
 
         if head.smart_mode():
             _draw_smart_mode()

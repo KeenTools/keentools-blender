@@ -165,6 +165,11 @@ class FB_MT_ImageGroupMenu(Menu):
             text="Reset this image group")
         op.action = 'reset_image_group'
 
+        op = layout.operator(
+            Config.fb_actor_idname,
+            text="Make all images marked as unique group")
+        op.action = 'make_all_unique'
+
         layout.separator()
         op = layout.operator(
             Config.fb_actor_idname,
