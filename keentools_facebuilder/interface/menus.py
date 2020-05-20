@@ -177,6 +177,36 @@ class FB_MT_ImageGroupMenu(Menu):
         op.action = 'reset_all_image_groups'
 
 
+class FB_MT_CameraPanelMenu(Menu):
+    bl_label = "Camera Panel Menu"
+    bl_idname = Config.fb_camera_panel_menu_idname
+    bl_description = "Camera Panel Menu description"
+
+    def draw(self, context):
+        settings = get_main_settings()
+        layout = self.layout
+
+        op = layout.operator(
+            Config.fb_actor_idname,
+            text="Switch to Manual mode")
+        op.action = 'manual_mode'
+        op.headnum = settings.tmp_headnum
+        op.camnum = settings.tmp_camnum
+
+        layout.separator()
+
+        op = layout.operator(
+            Config.fb_actor_idname,
+            text="Make all images marked as unique group")
+        op.action = 'make_all_unique'
+
+        layout.separator()
+        op = layout.operator(
+            Config.fb_actor_idname,
+            text="Reset ALL image groups with default settings")
+        op.action = 'reset_all_image_groups'
+
+
 class FB_MT_ReadExifMenu(Menu):
     bl_label = "Select image to read EXIF"
     bl_idname = Config.fb_read_exif_menu_idname

@@ -210,9 +210,10 @@ class FB_PT_CameraPanel(Panel):
         layout = self.layout
         row = layout.row()
         row.active = False
-        if get_main_settings().current_camnum != -1:
-            row.operator(Config.fb_image_group_menu_exec_idname,
-                         text='', icon='COLLAPSEMENU')
+
+        row.operator(Config.fb_camera_panel_menu_exec_idname,
+                     text='', icon='COLLAPSEMENU')
+
         row.operator(
             Config.fb_help_camera_idname,
             text='', icon='QUESTION')
@@ -225,9 +226,19 @@ class FB_PT_CameraPanel(Panel):
             col = row.column()
             col.scale_y = Config.text_scale_y
             col.label(text='File: {}'.format(camera.get_image_name()))
-            col.label(text='Image Group: {}'.format(camera.image_group))
-            row.operator(Config.fb_image_group_menu_exec_idname,
-                         text='', icon='COLLAPSEMENU')
+            row2 = col.split(factor=0.6)
+            row2.label(text='Image Group:')
+
+            txt = camera.image_group
+            if camera.image_group == 0:
+                txt = 'Single'
+            if camera.image_group < 0:
+                txt = '--excluded--'
+
+            row2.operator(Config.fb_image_group_menu_exec_idname,
+                          text='{}'.format(txt))
+            # row.operator(Config.fb_image_group_menu_exec_idname,
+            #              text='', icon='COLLAPSEMENU')
 
             # split = box.split(factor=0.15)
             # op = split.operator(Config.fb_image_group_menu_exec_idname,
@@ -236,8 +247,8 @@ class FB_PT_CameraPanel(Panel):
             # split.label(text='File: {}'.format(camera.get_image_name()))
             box.prop(camera, 'auto_focal_estimation')
             if camera.auto_focal_estimation:
-                col = box.row()
-                col.prop(camera, 'focal_estimation_mode', expand=True)
+                # col = box.row()
+                # col.prop(camera, 'focal_estimation_mode', expand=True)
                 box.label(text='Focal length: {:.2f} mm'.format(camera.focal))
             else:
                 box.prop(camera, 'focal')
@@ -249,11 +260,11 @@ class FB_PT_CameraPanel(Panel):
             if settings.current_camnum < 0:
                 return
 
-            layout.prop(head, 'advanced_mode',
-                        text='Advanced Settings', toggle=True)
+            # layout.prop(head, 'advanced_mode',
+            #             text='Advanced Settings', toggle=True)
 
-            if head.advanced_mode:
-                _draw_advanced_mode()
+            # if head.advanced_mode:
+            _draw_advanced_mode()
 
         def _draw_override_mode():
             box = layout.box()
@@ -273,8 +284,8 @@ class FB_PT_CameraPanel(Panel):
             return
         head = settings.get_head(headnum)
 
-        layout.prop(head, 'auto_focal_estimation',
-                    invert_checkbox=True, text='Smart Focal Length')
+        # layout.prop(head, 'auto_focal_estimation',
+        #             invert_checkbox=True, text='Smart Focal Length')
 
         if head.smart_mode():
             _draw_smart_mode()
@@ -391,19 +402,12 @@ class FB_PT_ViewsPanel(Panel):
         box = layout.box()
         for i, camera in enumerate(head.cameras):
             # Debug only
-            fix = fb.focal_length_fixed_at(camera.get_keyframe())
+            # fix = fb.focal_length_fixed_at(camera.get_keyframe())
 
             row = box.row()
             view_icon = 'PINNED' if camera.has_pins() else 'HIDE_OFF'
 
-            # Debug
-            # if fix:
-            #     row.alert = True
-
             col = row.column()
-            # cam_name = '{} {}'.format('Fix' if fix else '',
-            #                           camera.get_complex_name())
-            # cam_name = camera.get_image_name()
             cam_name = '{}{}{}'.format(
                 camera.get_image_name(),
                 ' [{}]'.format(camera.image_group)
@@ -415,24 +419,12 @@ class FB_PT_ViewsPanel(Panel):
                 col.prop(settings, 'blue_camera_button', toggle=1,
                          text=cam_name, icon=view_icon)
             else:
-                # if camera.is_image_group_visible():
-                #     split = col.split(factor=0.85)
-                # else:
-                #     split = col
-
                 split = col
                 op = split.operator(
                     Config.fb_select_camera_idname,
                     text=cam_name, icon=view_icon)
                 op.headnum = headnum
                 op.camnum = i
-
-                # if camera.is_image_group_visible():
-                #     op = split.operator(
-                #         Config.fb_actor_idname, text='{}{}'.format(
-                #             '*' if camera.auto_focal_estimation else '',
-                #             camera.image_group))
-                #     op.action = 'group'
 
             col = row.column()
             if not camera.cam_image:

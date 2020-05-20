@@ -63,7 +63,12 @@ class FB_OT_Actor(Operator):
         elif self.action == 'show_groups_info':
             settings = get_main_settings()
             head = settings.get_head(self.headnum)
-            head.show_image_groups = True
+            head.show_image_groups = not head.show_image_groups
+
+        elif self.action == 'manual_mode':
+            settings = get_main_settings()
+            head = settings.get_head(self.headnum)
+            head.auto_focal_estimation = not head.auto_focal_estimation
 
         return {'FINISHED'}
 

@@ -606,6 +606,27 @@ class FB_OT_ImageGroupMenuExec(Operator):
         return {'FINISHED'}
 
 
+class FB_OT_CameraPanelMenuExec(Operator):
+    bl_idname = Config.fb_camera_panel_menu_exec_idname
+    bl_label = "Camera Panel Menu Caller"
+    bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
+    bl_description = "Camera Panel Menu Caller description"
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        settings.tmp_headnum = self.headnum
+        settings.tmp_camnum = self.camnum
+        bpy.ops.wm.call_menu(
+            'INVOKE_DEFAULT', name=Config.fb_camera_panel_menu_idname)
+        return {'FINISHED'}
+
+
 class FB_OT_ViewToFrameSize(Operator):
     bl_idname = Config.fb_view_to_frame_size_idname
     bl_label = "Set the Frame size using this view"
@@ -976,6 +997,7 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_MostFrequentFrameSize,
                        FB_OT_RenderSizeToFrameSize,
                        FB_OT_ImageGroupMenuExec,
+                       FB_OT_CameraPanelMenuExec,
                        FB_OT_ReadExif,
                        FB_OT_ReadExifMenuExec,
                        FB_OT_DeleteCamera,
