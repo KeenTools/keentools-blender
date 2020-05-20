@@ -503,6 +503,83 @@ def setup_image_groups_by_exif(head):
     head.groups_counter = len(groups)
 
 
+def update_image_groups2(head):
+    in_group_counter = {}
+    exif_hashes = [_exif_hash_string(cam.exif) for cam in head.cameras]
+    full_hashes = [_exif_and_size_hash_string(cam) for cam in head.cameras]
+    image_groups_old = _get_image_groups(head)
+    image_groups_new = [0 for _ in head.cameras]
+    empty_exif_hash = _undefined_exif_hash_string()
+    used_full_hashes = {}
+
+    # defined groups
+    for i, group_num in enumerate(image_groups_old):
+        if group_num <= 0:
+            continue
+        if group_num not in in_group_counter.keys():
+            in_group_counter[group_num] = 1
+            if exif_hashes[i] != empty_exif_hash:
+                if full_hashes[i] not in used_full_hashes.keys():
+                    used_full_hashes[full_hashes[i]] = group_num
+        else:
+            in_group_counter[group_num] += 1
+            if full_hashes[i] not in used_full_hashes:
+                used_full_hashes[full_hashes[i]] = group_num
+
+    # undefined groups
+    if len(in_group_counter) > 0:
+        current_group_num = max(in_group_counter.keys()) + 1
+    else:
+        current_group_num = 1
+    for i, group_num in enumerate(image_groups_old):
+        if group_num == -1:
+            image_groups_new[i] = -1
+            continue
+        if group_num !=0:
+            image_groups_new = group_num
+            continue
+        if exif_hashes[i] == empty_exif_hash:
+            image_groups_new[i] = current_group_num
+            in_group_counter[current_group_num] = 1
+            current_group_num += 1
+        else:
+            if full_hashes[i] in used_full_hashes.keys():
+                group = used_full_hashes[full_hashes[i]]
+                image_groups_new[i] = group
+                in_group_counter[group] += 1
+            else:
+                image_groups_new[i] = current_group_num
+                used_full_hashes[full_hashes[i]] = current_group_num
+                in_group_counter[current_group_num] = 1
+                current_group_num += 1
+
+    print('used_full_hashes', used_full_hashes)
+    print('image_groups_new', image_groups_new)
+    print('in_group_counter', in_group_counter)
+
+    # renumber
+    current_group_num = 1
+    used_group_nums = {}
+    for i, group_num in enumerate(image_groups_new):
+        if group_num == -1:
+            continue
+        if in_group_counter[group_num] <= 1:
+            image_groups_new[i] = 0
+        else:
+            if group_num in used_group_nums.keys():
+                image_groups_new[i] = used_group_nums[group_num]
+            else:
+                image_groups_new[i] = current_group_num
+                used_group_nums[group_num] = current_group_num
+                current_group_num += 1
+
+    print('image_groups_new', image_groups_new)
+    print('used_group_nums', used_group_nums)
+
+    for i, cam in enumerate(head.cameras):
+        cam.image_group = image_groups_new[i]
+
+
 def update_image_groups(head):
     def _perform_non_zero_image_groups():
         for i in _get_non_zero_image_group_indices(head):
