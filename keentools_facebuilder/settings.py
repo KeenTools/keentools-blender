@@ -690,8 +690,7 @@ class FBHeadItem(PropertyGroup):
         camera = self.get_camera(camnum)
         if camera is None:
             return False
-        return self.are_image_groups_visible() and \
-               camera.is_image_group_visible()
+        return self.are_image_groups_visible() and camera.image_group > 0
 
 
 class FBSceneSettings(PropertyGroup):
