@@ -34,7 +34,8 @@ from .config import get_main_settings, get_operators, Config
 from .utils.exif_reader import (read_exif_from_camera,
                                 update_exif_sizes_message,
                                 get_sensor_size_35mm_equivalent,
-                                copy_exif_parameters_from_camera_to_head)
+                                copy_exif_parameters_from_camera_to_head,
+                                update_image_groups)
 
 
 class FB_OT_SelectHead(Operator):
@@ -358,6 +359,7 @@ class FB_OT_DeleteCamera(Operator):
             settings.current_camnum = -1
 
         FBLoader.fb_save(headnum, settings.current_camnum)
+        update_image_groups(head)
 
         logger = logging.getLogger(__name__)
         logger.debug("CAMERA H:{} C:{} REMOVED".format(headnum, camnum))

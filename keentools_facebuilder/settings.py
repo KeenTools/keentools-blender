@@ -265,10 +265,6 @@ class FBCameraItem(PropertyGroup):
 
     image_group: IntProperty(default=0)
 
-    custom_group: IntProperty(default=0)
-
-    show_image_group: BoolProperty(default=False)
-
     def update_scene_frame_size(self):
         if self.image_width > 0 and self.image_height > 0:
             if (self.orientation % 2) == 0:
@@ -454,9 +450,6 @@ class FBCameraItem(PropertyGroup):
         else:
             return None
 
-    def is_image_group_visible(self):
-        return self.show_image_group
-
     def get_image_name(self):
         if self.cam_image is not None:
             return self.cam_image.name
@@ -583,8 +576,6 @@ class FBHeadItem(PropertyGroup):
         name="Use Advanced mode",
         description="Advanced mode",
         default=False)
-
-    groups_counter: IntProperty(default=-1)
 
     show_image_groups: BoolProperty(default=True)
 

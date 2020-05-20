@@ -460,7 +460,7 @@ def setup_image_groups_by_exif(head):
     head.groups_counter = len(groups)
 
 
-def update_image_groups2(head):
+def update_image_groups(head):
     def _perform_already_defined_groups():
         for i, group_num in enumerate(image_groups_old):
             if group_num <= 0:
