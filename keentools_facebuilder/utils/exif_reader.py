@@ -437,7 +437,7 @@ def copy_exif_parameters_from_camera_to_head(camera, head):
     for p in _exif_class_fields():
         _copy_property_from_to(p, camera.exif, head.exif)
     # Debug only info
-    head.exif.info_message += "\n=====\n" + _all_fields_dump(camera.exif)
+    # head.exif.info_message += "\n=====\n" + _all_fields_dump(camera.exif)
 
 
 def _detect_image_groups_by_exif(head, hash_func=_exif_and_size_hash_string):
@@ -445,19 +445,6 @@ def _detect_image_groups_by_exif(head, hash_func=_exif_and_size_hash_string):
     unique_hashes = []
     _ = [unique_hashes.append(x) for x in hashes if x not in unique_hashes]
     return [unique_hashes.index(x) + 1 for x in hashes]
-
-
-def setup_image_groups_by_exif(head):
-    groups = _detect_image_groups_by_exif(head)
-    keys, count = np.unique(groups, return_counts=True)
-    keys = list(keys)
-
-    for i, cam in enumerate(head.cameras):
-        if count[keys.index(groups[i])] > 1:
-            cam.image_group = groups[i]
-        else:
-            cam.image_group = -groups[i]
-    head.groups_counter = len(groups)
 
 
 def update_image_groups(head):

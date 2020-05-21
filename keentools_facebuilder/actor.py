@@ -70,7 +70,7 @@ class FB_OT_Actor(Operator):
         elif self.action == 'manual_mode':
             settings = get_main_settings()
             head = settings.get_head(self.headnum)
-            head.auto_focal_estimation = not head.auto_focal_estimation
+            head.smart_mode_toggle()
 
         elif self.action == 'reset_image_group':
             settings = get_main_settings()

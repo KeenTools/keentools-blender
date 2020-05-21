@@ -21,6 +21,7 @@ from bpy.types import Panel
 
 from .updater import FBUpdater
 from ..config import Config, get_main_settings
+from ..messages import draw_labels
 import re
 from ..fbloader import FBLoader
 from ..utils.manipulate import what_is_state
@@ -200,7 +201,7 @@ class FB_PT_CameraPanel(Panel):
     bl_label = Config.fb_camera_panel_label
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
-    bl_option = {'DEFAULT_CLOSED'}
+    bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):
@@ -219,7 +220,7 @@ class FB_PT_CameraPanel(Panel):
             text='', icon='QUESTION')
 
     def draw(self, context):
-        def _draw_advanced_mode():
+        def _draw_default_mode():
             camera = head.get_camera(settings.current_camnum)
             box = layout.box()
             row = box.row()
@@ -237,42 +238,51 @@ class FB_PT_CameraPanel(Panel):
 
             row2.operator(Config.fb_image_group_menu_exec_idname,
                           text='{}'.format(txt))
-            # row.operator(Config.fb_image_group_menu_exec_idname,
-            #              text='', icon='COLLAPSEMENU')
 
-            # split = box.split(factor=0.15)
-            # op = split.operator(Config.fb_image_group_menu_exec_idname,
-            #                     text='{}'.format(camera.image_group))
-            #
-            # split.label(text='File: {}'.format(camera.get_image_name()))
             box.prop(camera, 'auto_focal_estimation')
             if camera.auto_focal_estimation:
-                # col = box.row()
-                # col.prop(camera, 'focal_estimation_mode', expand=True)
                 box.label(text='Focal length: {:.2f} mm'.format(camera.focal))
             else:
                 box.prop(camera, 'focal')
 
-            # box.label(text='Size: {}x{}px'.format(camera.get_image_width(),
-            #                                       camera.get_image_height()))
-
-        def _draw_smart_mode():
-            if settings.current_camnum < 0:
-                return
-
-            # layout.prop(head, 'advanced_mode',
-            #             text='Advanced Settings', toggle=True)
-
-            # if head.advanced_mode:
-            _draw_advanced_mode()
+        def _draw_mode_comment(layout, mode):
+            if mode == 'all_different':
+                txt = ['The focal length of each view',
+                       'will be different, but',
+                       'estimation process will',
+                       'happen across all pinned',
+                       'views simultaneously.']
+            elif mode == 'current_estimation':
+                txt = ['The focal length of each view',
+                       'will be different and it',
+                       'will be estimated only',
+                       'for current view.']
+            elif mode == 'same_focus':
+                txt = ['The focal length will be',
+                       'the same for each view,',
+                       'estimation will happen',
+                       'across all pinned views',
+                       'simultaneously.']
+            elif mode == 'force_focal':
+                txt = ['The focal length will be',
+                       'the same for every view,',
+                       'estimation will be turned off,',
+                       'you can enter the focal',
+                       'length manually.']
+            else:
+                txt =[]
+            draw_labels(layout, txt)
 
         def _draw_override_mode():
             box = layout.box()
             box.label(text='Override Focal Length settings:')
-            box.prop(head, 'custom_mode', text='')
-            if head.custom_mode in {'same_focus', 'force_focal'}:
+            box.prop(head, 'manual_estimation_mode', text='')
+            col = box.column()
+            col.scale_y = Config.text_scale_y
+            _draw_mode_comment(col, head.manual_estimation_mode)
+            if head.manual_estimation_mode in {'same_focus', 'force_focal'}:
                 box.prop(head, 'focal')
-            if head.custom_mode == 'current_estimation':
+            if head.manual_estimation_mode == 'current_estimation':
                 camera = head.get_camera(settings.current_camnum)
                 box.label(text='Focal length: {:.2f} mm'.format(camera.focal))
 
@@ -288,7 +298,8 @@ class FB_PT_CameraPanel(Panel):
         #             invert_checkbox=True, text='Smart Focal Length')
 
         if head.smart_mode():
-            _draw_smart_mode()
+            if settings.current_camnum >= 0:
+                _draw_default_mode()
         else:
             _draw_override_mode()
 
@@ -408,11 +419,11 @@ class FB_PT_ViewsPanel(Panel):
             view_icon = 'PINNED' if camera.has_pins() else 'HIDE_OFF'
 
             col = row.column()
-            cam_name = '{}{}{}'.format(
+            cam_name = '{}{}'.format(
                 camera.get_image_name(),
                 ' [{}]'.format(camera.image_group)
-                if head.is_image_group_visible(i) else '',
-                '*' if camera.auto_focal_estimation else ''
+                if head.is_image_group_visible(i) else ''
+                # '*' if camera.auto_focal_estimation else ''
             )
 
             if settings.current_camnum == i and settings.pinmode:

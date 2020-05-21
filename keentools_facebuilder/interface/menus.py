@@ -180,34 +180,24 @@ class FB_MT_CameraPanelMenu(Menu):
         settings = get_main_settings()
         layout = self.layout
 
-        op = layout.operator(
-            Config.fb_actor_idname,
-            text="Switch to Manual mode")
-        op.action = 'manual_mode'
-        op.headnum = settings.tmp_headnum
-        op.camnum = settings.tmp_camnum
+        head = settings.get_head(settings.current_headnum)
+        if head is not None:
+            txt = 'Switch to Manual mode' if head.smart_mode() \
+                else 'Switch to Default mode'
+            op = layout.operator(
+                Config.fb_actor_idname,
+                text=txt)
+            op.action = 'manual_mode'
+            op.headnum = settings.tmp_headnum
+            op.camnum = settings.tmp_camnum
 
-        # layout.separator()
-
-        # op = layout.operator(
-        #     Config.fb_actor_idname,
-        #     text="Show/Hide group info on buttons")
-        # op.action = 'show_groups_info'
-        # op.headnum = settings.tmp_headnum
-        # op.camnum = settings.tmp_camnum
+        layout.separator()
 
         op = layout.operator(
             Config.fb_actor_idname,
             text='Exclude all images from grouping')
         op.action = 'make_all_unique'
 
-        # layout.separator()
-        # op = layout.operator(
-        #     Config.fb_actor_idname,
-        #     text="Collect all same size images in group")
-        # op.action = 'collect_group'
-
-        # layout.separator()
         op = layout.operator(
             Config.fb_actor_idname,
             text="Reset groups for all images")

@@ -27,7 +27,6 @@ from ..fbloader import FBLoader
 from ..config import Config, get_main_settings, get_operators, ErrorType
 
 from ..utils.exif_reader import (read_exif_to_head, read_exif_to_camera,
-                                 setup_image_groups_by_exif,
                                  update_image_groups,
                                  auto_setup_camera_from_exif)
 from ..utils.other import restore_ui_elements

@@ -35,17 +35,15 @@ from bpy.props import (
     EnumProperty
 )
 from bpy.types import PropertyGroup
-from .utils import coords, manipulate
+from .utils import coords
 from . fbdebug import FBDebug
 from . config import Config, get_main_settings, get_operators
 from .utils.manipulate import what_is_state
 
 
 def update_focal_length_mode(self, context):
-    print("mode:", self.focal_estimation_mode)
     fb = FBLoader.get_builder()
     fb.set_focal_length_estimation_mode(self.focal_estimation_mode)
-    print(fb.focal_length_estimation_mode())
     settings = get_main_settings()
     FBLoader.save_only(settings.current_headnum)
 
@@ -564,18 +562,23 @@ class FBHeadItem(PropertyGroup):
         default='FB_ESTIMATE_VARYING_FOCAL_LENGTH',
         update=update_focal_length_mode)
 
-    custom_mode: EnumProperty(name='Estimation Mode override', items=[
-        ('all_different', 'Varying FL, Multi-frame Estimation', '', 'UNLINKED', 0),
-        ('current_estimation', 'Varying FL, Single-frame Estimation', '', 'HIDE_OFF', 1),
-        ('same_focus', 'Single FL, Multi-frame Estimation', '', 'LINKED', 2),
-        ('force_focal', 'Single Manual FL', '', 'LOCKED', 3),
-        ], description='Force Estimation Mode value',
-        default='all_different')
+    manual_estimation_mode: EnumProperty(
+        name='Estimation Mode override', items=[
+            ('all_different', 'Varying FL, Multi-frame Estimation', '',
+             'RENDERLAYERS', 0),
+            ('current_estimation', 'Varying FL, Single-frame Estimation', '',
+             'IMAGE_RGB', 1),
+            ('same_focus', 'Single FL, Multi-frame Estimation', '',
+             'PIVOT_CURSOR', 2),
+            ('force_focal', 'Single Manual FL', '',
+             'MODIFIER', 3),
+        ], description='Force Estimation Mode', default='all_different')
 
-    advanced_mode: BoolProperty(
-        name="Use Advanced mode",
-        description="Advanced mode",
-        default=False)
+    view_mode: EnumProperty(
+        name='Camera Info View Mode', items=[
+            ('smart', 'Smart Mode', '', '', 0),
+            ('manual', 'Manual Mode', '', '', 1),
+        ], default='smart')
 
     show_image_groups: BoolProperty(default=True)
 
@@ -663,7 +666,13 @@ class FBHeadItem(PropertyGroup):
                 self.check_neck, self.check_nose)
 
     def smart_mode(self):
-        return not self.auto_focal_estimation
+        return self.view_mode == 'smart'
+
+    def smart_mode_toggle(self):
+        if self.view_mode == 'smart':
+            self.view_mode = 'manual'
+        else:
+            self.view_mode = 'smart'
 
     def groups_count(self):
         if self.groups_counter <= 0:

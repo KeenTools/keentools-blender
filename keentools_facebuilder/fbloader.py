@@ -329,18 +329,18 @@ class FBLoader:
                 _set_mode(fb, head, 'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES')
         else:
             # Override all
-            if head.custom_mode == 'current_estimation':
+            if head.manual_estimation_mode == 'current_estimation':
                 for cam in head.cameras:
                     fb.set_focal_length_fixed_at(cam.get_keyframe(),
                         cam.get_keyframe() != kid)
                 _set_mode(fb, head, 'FB_ESTIMATE_VARYING_FOCAL_LENGTH')
-            elif head.custom_mode == 'force_focal':
+            elif head.manual_estimation_mode == 'force_focal':
                 _unfix_all(fb, head)
                 _set_mode(fb, head, 'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES')
-            elif head.custom_mode == 'same_focus':
+            elif head.manual_estimation_mode == 'same_focus':
                 _unfix_all(fb, head)
                 _set_mode(fb, head, 'FB_ESTIMATE_STATIC_FOCAL_LENGTH')
-            elif head.custom_mode == 'all_different':
+            elif head.manual_estimation_mode == 'all_different':
                 _unfix_all(fb, head)
                 _set_mode(fb, head, 'FB_ESTIMATE_VARYING_FOCAL_LENGTH')
 

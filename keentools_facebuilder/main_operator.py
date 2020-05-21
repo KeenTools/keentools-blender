@@ -608,9 +608,9 @@ class FB_OT_ImageGroupMenuExec(Operator):
 
 class FB_OT_CameraPanelMenuExec(Operator):
     bl_idname = Config.fb_camera_panel_menu_exec_idname
-    bl_label = "Camera Panel Menu Caller"
-    bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
-    bl_description = "Camera Panel Menu Caller description"
+    bl_label = "Advanced Camera Settings"
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = "Advanced Camera Settings"
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
