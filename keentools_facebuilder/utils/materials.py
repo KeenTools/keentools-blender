@@ -232,11 +232,15 @@ def bake_tex(headnum, tex_name):
     fb = _get_fb_for_bake_tex(headnum, head)
     frame_data_loader = _create_frame_data_loader(
         settings, head, camnums, fb)
-    # TODO proper progress
-    # wm = bpy.context.window_manager
-    # wm.progress_begin(0, len(head.cameras) + 1.0)
-    # wm.progress_end()
-    built_texture = tb.build_texture(frames_count, frame_data_loader)
+
+    def progress_callback(progress):
+        bpy.context.window_manager.progress_update(progress)
+        return False
+
+    bpy.context.window_manager.progress_begin(0, 1)
+    built_texture = tb.build_texture(
+        frames_count, frame_data_loader, progress_callback)
+    bpy.context.window_manager.progress_end()
 
     _create_bpy_texture_from_img(built_texture, tex_name)
     return True
