@@ -145,30 +145,49 @@ class FB_MT_ImageGroupMenu(Menu):
 
         op = layout.operator(
             Config.fb_actor_idname,
-            text="Show groups info on buttons")
+            text="Show/Hide groups info on buttons")
         op.action = 'show_groups_info'
         op.headnum = settings.tmp_headnum
         op.camnum = settings.tmp_camnum
 
         op = layout.operator(
             Config.fb_actor_idname,
-            text="Make this image unique group")
-        op.action = 'show_groups_info'
+            text="Reset this image group")
+        op.action = 'reset_image_group'
 
+        layout.separator()
         op = layout.operator(
             Config.fb_actor_idname,
             text="Collect all same size images in group")
-        op.action = 'show_groups_info'
-
-        op = layout.operator(
-            Config.fb_actor_idname,
-            text="Reset this image group")
-        op.action = 'reset_image_group'
+        op.action = 'collect_group'
 
         op = layout.operator(
             Config.fb_actor_idname,
             text="Make all images marked as unique group")
         op.action = 'make_all_unique'
+
+        layout.separator()
+        op = layout.operator(
+            Config.fb_actor_idname,
+            text="Mark isolated")
+        op.action = 'make_unique'
+
+        layout.separator()
+        head = settings.get_head(settings.current_headnum)
+        groups = set([x.image_group for x in head.cameras])
+        for group in groups:
+            if group == 0 or group == -1:
+                continue
+            op = layout.operator(
+                Config.fb_actor_idname,
+                text="Group {}".format(group))
+            op.action = 'to_image_group'
+            op.num = group
+
+        op = layout.operator(
+            Config.fb_actor_idname,
+            text="New group")
+        op.action = 'new_image_group'
 
         layout.separator()
         op = layout.operator(

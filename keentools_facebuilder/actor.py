@@ -27,7 +27,8 @@ from bpy.types import Operator
 
 from .utils import manipulate
 from .config import Config, get_main_settings
-from .utils.exif_reader import get_sensor_size_35mm_equivalent
+from .utils.exif_reader import (get_sensor_size_35mm_equivalent,
+                                update_image_groups)
 
 
 class FB_OT_Actor(Operator):
@@ -39,6 +40,7 @@ class FB_OT_Actor(Operator):
     action: StringProperty(name="Action Name")
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
+    num: IntProperty(default=0)
 
     def draw(self, context):
         pass
@@ -69,6 +71,45 @@ class FB_OT_Actor(Operator):
             settings = get_main_settings()
             head = settings.get_head(self.headnum)
             head.auto_focal_estimation = not head.auto_focal_estimation
+
+        elif self.action == 'reset_image_group':
+            settings = get_main_settings()
+            head = settings.get_head(settings.current_headnum)
+            camera = head.get_camera(settings.current_camnum)
+            camera.image_group = 0
+            update_image_groups(head)
+
+        elif self.action == 'new_image_group':
+            settings = get_main_settings()
+            head = settings.get_head(settings.current_headnum)
+            camera = head.get_camera(settings.current_camnum)
+            groups = [x.image_group for x in head.cameras]
+            if len(groups) > 0:
+                camera.image_group = max(groups) + 1
+            else:
+                camera.image_group = 1
+            # update_image_groups(head)
+
+        elif self.action == 'to_image_group':
+            settings = get_main_settings()
+            head = settings.get_head(settings.current_headnum)
+            camera = head.get_camera(settings.current_camnum)
+            camera.image_group = self.num
+            # update_image_groups(head)
+
+        elif self.action == 'make_unique':
+            settings = get_main_settings()
+            head = settings.get_head(settings.current_headnum)
+            camera = head.get_camera(settings.current_camnum)
+            camera.image_group = -1
+            # update_image_groups(head)
+
+        elif self.action == 'reset_all_image_groups':
+            settings = get_main_settings()
+            head = settings.get_head(settings.current_headnum)
+            for camera in head.cameras:
+                camera.image_group = 0
+            update_image_groups(head)
 
         return {'FINISHED'}
 
