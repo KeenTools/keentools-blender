@@ -83,11 +83,12 @@ class FB_OT_Actor(Operator):
             settings = get_main_settings()
             head = settings.get_head(settings.current_headnum)
             camera = head.get_camera(settings.current_camnum)
-            groups = [x.image_group for x in head.cameras]
+            groups = [x.image_group for x in head.cameras if x.image_group > 0]
             if len(groups) > 0:
                 camera.image_group = max(groups) + 1
             else:
                 camera.image_group = 1
+
             # update_image_groups(head)
 
         elif self.action == 'to_image_group':
@@ -102,6 +103,13 @@ class FB_OT_Actor(Operator):
             head = settings.get_head(settings.current_headnum)
             camera = head.get_camera(settings.current_camnum)
             camera.image_group = -1
+            # update_image_groups(head)
+
+        elif self.action == 'make_all_unique':
+            settings = get_main_settings()
+            head = settings.get_head(settings.current_headnum)
+            for camera in head.cameras:
+                camera.image_group = -1
             # update_image_groups(head)
 
         elif self.action == 'reset_all_image_groups':

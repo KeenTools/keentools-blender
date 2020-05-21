@@ -565,10 +565,10 @@ class FBHeadItem(PropertyGroup):
         update=update_focal_length_mode)
 
     custom_mode: EnumProperty(name='Estimation Mode override', items=[
-        ('all_different', 'Multi-frame Independent Estimation', '', 'UNLINKED', 0),
-        ('same_focus', 'Single Focal Length Estimation', '', 'LINKED', 1),
-        ('force_focal', 'Single Fixed Focal Length', '', 'LOCKED', 2),
-        ('current_estimation', 'Single-frame Focal Length Estimation', '', 'HIDE_OFF', 3)
+        ('all_different', 'Varying FL, Multi-frame Estimation', '', 'UNLINKED', 0),
+        ('current_estimation', 'Varying FL, Single-frame Estimation', '', 'HIDE_OFF', 1),
+        ('same_focus', 'Single FL, Multi-frame Estimation', '', 'LINKED', 2),
+        ('force_focal', 'Single Manual FL', '', 'LOCKED', 3),
         ], description='Force Estimation Mode value',
         default='all_different')
 

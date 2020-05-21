@@ -135,42 +135,13 @@ class FB_MT_FrameSizeMenu(Menu):
 
 
 class FB_MT_ImageGroupMenu(Menu):
-    bl_label = "Image Group Menu"
+    bl_label = "Image Group"
     bl_idname = Config.fb_image_group_menu_idname
-    bl_description = "Image Group Menu description"
+    bl_description = "Image Group"
 
     def draw(self, context):
         settings = get_main_settings()
         layout = self.layout
-
-        op = layout.operator(
-            Config.fb_actor_idname,
-            text="Show/Hide groups info on buttons")
-        op.action = 'show_groups_info'
-        op.headnum = settings.tmp_headnum
-        op.camnum = settings.tmp_camnum
-
-        op = layout.operator(
-            Config.fb_actor_idname,
-            text="Reset this image group")
-        op.action = 'reset_image_group'
-
-        layout.separator()
-        op = layout.operator(
-            Config.fb_actor_idname,
-            text="Collect all same size images in group")
-        op.action = 'collect_group'
-
-        op = layout.operator(
-            Config.fb_actor_idname,
-            text="Make all images marked as unique group")
-        op.action = 'make_all_unique'
-
-        layout.separator()
-        op = layout.operator(
-            Config.fb_actor_idname,
-            text="Mark isolated")
-        op.action = 'make_unique'
 
         layout.separator()
         head = settings.get_head(settings.current_headnum)
@@ -192,12 +163,16 @@ class FB_MT_ImageGroupMenu(Menu):
         layout.separator()
         op = layout.operator(
             Config.fb_actor_idname,
-            text="Reset ALL image groups with default settings")
-        op.action = 'reset_all_image_groups'
+            text="Reset group")
+        op.action = 'reset_image_group'
 
+        op = layout.operator(
+            Config.fb_actor_idname,
+            text="Exclude from grouping")
+        op.action = 'make_unique'
 
 class FB_MT_CameraPanelMenu(Menu):
-    bl_label = "Camera Panel Menu"
+    bl_label = "Advanced Camera settings"
     bl_idname = Config.fb_camera_panel_menu_idname
     bl_description = "Camera Panel Menu description"
 
@@ -212,17 +187,30 @@ class FB_MT_CameraPanelMenu(Menu):
         op.headnum = settings.tmp_headnum
         op.camnum = settings.tmp_camnum
 
-        layout.separator()
+        # layout.separator()
+
+        # op = layout.operator(
+        #     Config.fb_actor_idname,
+        #     text="Show/Hide group info on buttons")
+        # op.action = 'show_groups_info'
+        # op.headnum = settings.tmp_headnum
+        # op.camnum = settings.tmp_camnum
 
         op = layout.operator(
             Config.fb_actor_idname,
-            text="Make all images marked as unique group")
+            text='Exclude all images from grouping')
         op.action = 'make_all_unique'
 
-        layout.separator()
+        # layout.separator()
+        # op = layout.operator(
+        #     Config.fb_actor_idname,
+        #     text="Collect all same size images in group")
+        # op.action = 'collect_group'
+
+        # layout.separator()
         op = layout.operator(
             Config.fb_actor_idname,
-            text="Reset ALL image groups with default settings")
+            text="Reset groups for all images")
         op.action = 'reset_all_image_groups'
 
 

@@ -589,7 +589,7 @@ class FB_OT_ImageGroupMenuExec(Operator):
     bl_idname = Config.fb_image_group_menu_exec_idname
     bl_label = "Image Group Menu Caller"
     bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
-    bl_description = "Image Group Menu Caller description"
+    bl_description = "Image Group"
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)

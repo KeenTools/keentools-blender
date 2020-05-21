@@ -231,9 +231,9 @@ class FB_PT_CameraPanel(Panel):
 
             txt = camera.image_group
             if camera.image_group == 0:
-                txt = 'Single'
+                txt = '—'
             if camera.image_group < 0:
-                txt = '--excluded--'
+                txt = 'Excluded'
 
             row2.operator(Config.fb_image_group_menu_exec_idname,
                           text='{}'.format(txt))
