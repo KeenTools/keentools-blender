@@ -169,7 +169,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         if coords.is_safe_region(context, mouse_x, mouse_y):
             settings = get_main_settings()
 
-            FBLoader.setup_solve_mode(settings.current_headnum, settings.current_camnum)
+            # FBLoader.setup_solve_mode(settings.current_headnum, settings.current_camnum)
 
             # Movepin operator Call
             op = getattr(get_operators(), Config.fb_movepin_callname)
@@ -226,15 +226,6 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.place_camera(self.headnum, self.camnum)
         FBLoader.load_pins(self.headnum, self.camnum)
         coords.update_head_mesh(settings, FBLoader.get_builder(), head)
-
-        # Fix
-        fb = FBLoader.get_builder()
-        # mode = fb.focal_length_estimation_mode()
-        # head.focal_estimation_mode = mode
-        mode = head.focal_estimation_mode
-        fb.set_focal_length_estimation_mode(mode)
-        logger.debug("focal estimation mode: {}".format(mode))
-        # Fix
 
         # Hide geometry
         headobj.hide_set(True)

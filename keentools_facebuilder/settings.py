@@ -41,13 +41,6 @@ from . config import Config, get_main_settings, get_operators
 from .utils.manipulate import what_is_state
 
 
-def update_focal_length_mode(self, context):
-    fb = FBLoader.get_builder()
-    fb.set_focal_length_estimation_mode(self.focal_estimation_mode)
-    settings = get_main_settings()
-    FBLoader.save_only(settings.current_headnum)
-
-
 def update_emotions(self, context):
     settings = get_main_settings()
     if not settings.pinmode:
@@ -84,25 +77,16 @@ def update_cam_image(self, context):
     FBLoader.update_cam_image_size(self)
 
 
-def update_sensor_width(self, context):
-    self.sensor_height = self.sensor_width * 0.666666667
-    FBLoader.update_camera_params(self)
-
-
-def update_sensor_height(self, context):
-    FBLoader.update_camera_params(self)
-
-
-def update_focal(self, context):
+def update_head_focal(self, context):
     logger = logging.getLogger(__name__)
     logger.debug("UPDATE_HEAD_FOCAL")
     settings = get_main_settings()
+
+    for c in self.cameras:
+        c.camobj.data.lens = self.focal
+
     if not settings.pinmode:
         FBLoader.update_head_camera_focals(self)
-
-        state, headnum = what_is_state()
-        head = settings.get_head(headnum)
-        head.auto_focal_estimation = False
 
 
 def update_camera_focal(self, context):
@@ -115,10 +99,10 @@ def update_camera_focal(self, context):
     fb.update_projection_mat(self.get_keyframe(), self.get_projection_matrix())
     FBLoader.save_only(settings.current_headnum)
 
-    if not settings.pinmode:
-        state, headnum = what_is_state()
-        head = settings.get_head(headnum)
-        # head.auto_focal_estimation = False
+    # if not settings.pinmode:
+    #     state, headnum = what_is_state()
+    #     head = settings.get_head(headnum)
+    #     head.auto_focal_estimation = False
 
 
 def update_blue_camera_button(self, context):
@@ -255,11 +239,6 @@ class FBCameraItem(PropertyGroup):
                     "focal length based on the position of the model "
                     "in the frame",
         default=True)
-
-    focal_estimation_mode: EnumProperty(name='CEstimation Mode', items=[
-        ('GROUP', 'Group', 'LINKED', 0),
-        ('SINGLE', 'Single', 'UNLINKED', 1)
-    ], description='CamEstimation Mode', default='GROUP')
 
     image_group: IntProperty(default=0)
 
@@ -459,7 +438,7 @@ class FBCameraItem(PropertyGroup):
         return "{}[{}] {}".format(auto, self.image_group,
                      self.get_image_name())
 
-    def get_projection_matrix(self):
+    def get_custom_projection_matrix(self, focal):
         w = self.image_width
         h = self.image_height
 
@@ -471,18 +450,27 @@ class FBCameraItem(PropertyGroup):
         if (self.orientation % 2) == 0:
             if w >= h:
                 projection = coords.projection_matrix(
-                    w, h, self.focal, Config.default_sensor_width,
+                    w, h, focal, Config.default_sensor_width,
                     near, far, scale=1.0)
             else:
                 projection = coords.projection_matrix(
-                    w, h, self.focal, Config.default_sensor_width,
+                    w, h, focal, Config.default_sensor_width,
                     near, far, scale=sc)
         else:
             projection = coords.projection_matrix(
-                h, w, self.focal, Config.default_sensor_width,
+                h, w, focal, Config.default_sensor_width,
                 near, far, scale=sc)
 
         return projection
+
+    def get_projection_matrix(self):
+        return self.get_custom_projection_matrix(self.focal)
+
+    def is_in_group(self):
+        return self.image_group > 0
+
+    def is_excluded(self):
+        return self.image_group == -1
 
 
 class FBHeadItem(PropertyGroup):
@@ -496,17 +484,17 @@ class FBHeadItem(PropertyGroup):
         description="The length of the longest side "
                     "of the camera sensor in millimetres",
         name="HSensor Width (mm)", default=36,
-        min=0.1, update=update_sensor_width)
+        min=0.1)
     sensor_height: FloatProperty(
         description="Secondary parameter. "
                     "Set it according to the real camera specification."
                     "This parameter is not used if Sensor Width is greater",
         name="HSensor Height (mm)", default=24,
-        min=0.1, update=update_sensor_height)
+        min=0.1)
     focal: FloatProperty(
         description="Focal length in millimetres",
         name="HFocal Length (mm)", default=50,
-        min=0.1)
+        min=0.1, update=update_head_focal)
 
     auto_focal_estimation: BoolProperty(
         name="Focal Length Estimation",
@@ -554,13 +542,13 @@ class FBHeadItem(PropertyGroup):
 
     exif: PointerProperty(type=FBExifItem)
 
-    focal_estimation_mode: EnumProperty(name='Estimation Mode', items=[
-        ('FB_FIXED_FOCAL_LENGTH_ALL_FRAMES', 'No estimation', '', 'LINKED', 0),
-        ('FB_ESTIMATE_STATIC_FOCAL_LENGTH', 'One focus to all', '', 'LINKED', 1),
-        ('FB_ESTIMATE_VARYING_FOCAL_LENGTH', 'Varying', '', 'LINKED', 2)
-        ], description='Estimation Mode value',
-        default='FB_ESTIMATE_VARYING_FOCAL_LENGTH',
-        update=update_focal_length_mode)
+    # focal_estimation_mode: EnumProperty(name='Estimation Mode', items=[
+    #     ('FB_FIXED_FOCAL_LENGTH_ALL_FRAMES', 'No estimation', '', 'LINKED', 0),
+    #     ('FB_ESTIMATE_STATIC_FOCAL_LENGTH', 'One focus to all', '', 'LINKED', 1),
+    #     ('FB_ESTIMATE_VARYING_FOCAL_LENGTH', 'Varying', '', 'LINKED', 2)
+    #     ], description='Estimation Mode value',
+    #     default='FB_ESTIMATE_VARYING_FOCAL_LENGTH',
+    #     update=update_focal_length_mode)
 
     manual_estimation_mode: EnumProperty(
         name='Estimation Mode override', items=[

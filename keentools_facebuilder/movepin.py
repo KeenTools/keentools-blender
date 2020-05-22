@@ -197,8 +197,8 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         fb = FBLoader.get_builder()
         FBLoader.update_all_camera_positions(headnum)
-        if FBLoader.auto_focal_enabled(head, camera):
-            FBLoader.update_all_camera_focals(headnum)
+        # if FBLoader.auto_focal_enabled(head, camera):
+        FBLoader.update_all_camera_focals(headnum)
         FBLoader.fb_save(headnum, camnum)
         # ---------
         # PUSH Last

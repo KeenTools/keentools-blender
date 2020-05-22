@@ -194,35 +194,6 @@ def auto_detect_frame_size():
         settings.frame_height = el[1]
 
 
-def use_render_frame_size_scaled():
-    # Allow converts scenes pinned on default cameras
-    scene = bpy.context.scene
-    settings = get_main_settings()
-    headnum = settings.current_headnum
-    head = settings.get_head(headnum)
-    rw = scene.render.resolution_x
-    rh = scene.render.resolution_y
-    fw = settings.frame_width
-    fh = settings.frame_height
-    kx = rw / fw
-    dy = 0.5 * (rh - fh * kx)
-
-    FBLoader.load_model(headnum)
-    fb = FBLoader.get_builder()
-    for i, c in enumerate(head.cameras):
-        if c.has_pins():
-            kid = settings.get_keyframe(headnum, i)
-            for n in range(fb.pins_count(kid)):
-                p = fb.pin(kid, n)
-                fb.move_pin(
-                    kid, n, (kx * p.img_pos[0], kx * p.img_pos[1] + dy))
-            fb.solve_for_current_pins(kid)
-    FBLoader.save_only(headnum)
-
-    settings.frame_width = rw
-    settings.frame_height = rh
-
-
 def reset_model_to_neutral(headnum):
     settings = get_main_settings()
     FBLoader.load_model(headnum)

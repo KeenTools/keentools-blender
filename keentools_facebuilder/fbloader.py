@@ -53,8 +53,6 @@ class FBLoader:
 
     @classmethod
     def update_head_camera_focals(cls, head):
-        # for c in head.cameras:
-        #     c.camobj.data.lens = head.focal
         logger = logging.getLogger(__name__)
         for i, c in enumerate(head.cameras):
             c.camobj.data.lens = c.focal
@@ -294,57 +292,6 @@ class FBLoader:
                 cam.focal = focal * cam.compensate_view_scale()
 
     @classmethod
-    def setup_solve_mode(cls, headnum, camnum):
-        def _set_mode(fb, head, mode):
-            fb.set_focal_length_estimation_mode(mode)
-            head.focal_estimation_mode = mode
-
-        def _unfix_all(fb, head):
-            for cam in head.cameras:
-                fb.set_focal_length_fixed_at(cam.get_keyframe(), False)
-
-        fb = cls.get_builder()
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-        camera = head.get_camera(camnum)
-        kid = camera.get_keyframe()
-
-        if head.smart_mode():
-            if camera.auto_focal_estimation:
-                if camera.focal_estimation_mode == 'SINGLE':
-                    for cam in head.cameras:
-                        fb.set_focal_length_fixed_at(
-                            cam.get_keyframe(),
-                            cam.get_keyframe() != kid and cam.focal_estimation_mode != 'SINGLE')
-                    _set_mode(fb, head, 'FB_ESTIMATE_VARYING_FOCAL_LENGTH')
-                else:  # GROUP
-                    for cam in head.cameras:
-                        fb.set_focal_length_fixed_at(
-                            cam.get_keyframe(),
-                            cam.image_group != camera.image_group
-                            or not cam.auto_focal_estimation
-                            or cam.focal_estimation_mode != 'GROUP')
-                    _set_mode(fb, head, 'FB_ESTIMATE_STATIC_FOCAL_LENGTH')
-            else:
-                _set_mode(fb, head, 'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES')
-        else:
-            # Override all
-            if head.manual_estimation_mode == 'current_estimation':
-                for cam in head.cameras:
-                    fb.set_focal_length_fixed_at(cam.get_keyframe(),
-                        cam.get_keyframe() != kid)
-                _set_mode(fb, head, 'FB_ESTIMATE_VARYING_FOCAL_LENGTH')
-            elif head.manual_estimation_mode == 'force_focal':
-                _unfix_all(fb, head)
-                _set_mode(fb, head, 'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES')
-            elif head.manual_estimation_mode == 'same_focus':
-                _unfix_all(fb, head)
-                _set_mode(fb, head, 'FB_ESTIMATE_STATIC_FOCAL_LENGTH')
-            elif head.manual_estimation_mode == 'all_different':
-                _unfix_all(fb, head)
-                _set_mode(fb, head, 'FB_ESTIMATE_VARYING_FOCAL_LENGTH')
-
-    @classmethod
     def update_camera_projection(cls, headnum, camnum):
         settings = get_main_settings()
         camera = settings.get_camera(headnum, camnum)
@@ -515,7 +462,6 @@ class FBLoader:
     @classmethod
     def load_all(cls, headnum, camnum):
         logger = logging.getLogger(__name__)
-        scene = bpy.context.scene
         settings = get_main_settings()
         head = settings.get_head(headnum)
         cam = head.get_camera(camnum)
@@ -527,20 +473,6 @@ class FBLoader:
         if not fb.deserialize(head.get_serial_str()):
             logger.warning('DESERIALIZE ERROR: {}'.format(
                 head.get_serial_str()))
-
-        # rx = scene.render.resolution_x
-        # ry = scene.render.resolution_y
-        # cls.set_camera_projection(head.focal, head.sensor_width, rx, ry)
-        #
-        # # Update all cameras model_mat
-        # for i, c in enumerate(head.cameras):
-        #     kid = c.get_keyframe()
-        #     pins_count = fb.pins_count(kid)
-        #     if pins_count == 0:
-        #         if c.is_model_mat_empty():
-        #             fb.center_model_mat(kid)  # Center if no pins on camera
-        #     else:
-        #         fb.set_model_mat(kid, c.get_model_mat())
 
         kid = settings.get_keyframe(headnum, camnum)
         cls.place_cameraobj(kid, camobj, headobj)
@@ -580,6 +512,22 @@ class FBLoader:
                 settings.license_error = True
                 cls.out_pinmode(headnum)
 
+        def _unfix_all(fb, head):
+            for cam in head.cameras:
+                fb.set_focal_length_fixed_at(cam.get_keyframe(), False)
+
+        def _fix_all_except_this(fb, head, exclude_kid):
+            for cam in head.cameras:
+                fb.set_focal_length_fixed_at(cam.get_keyframe(),
+                                             cam.get_keyframe() != exclude_kid)
+
+        def _unfix_not_in_groups(fb, head):
+            for cam in head.cameras:
+                fb.set_focal_length_fixed_at(
+                    cam.get_keyframe(),
+                    cam.is_in_group()
+                    or not cam.auto_focal_estimation)
+
         settings = get_main_settings()
         head = settings.get_head(headnum)
         camera = head.get_camera(camnum)
@@ -587,12 +535,45 @@ class FBLoader:
         fb = cls.get_builder()
 
         cls.rigidity_setup()
-        if cls.auto_focal_enabled(head, camera):
-            fb.set_focal_length_estimation_mode(head.focal_estimation_mode)
-        else:
-            cls.disable_auto_focal()
-
         fb.set_use_emotions(head.should_use_emotions())
+
+        mode = 'FB_ESTIMATE_VARYING_FOCAL_LENGTH'
+        if head.smart_mode():
+            if camera.auto_focal_estimation:
+                if camera.is_in_group():
+                    for cam in head.cameras:
+                        fb.set_focal_length_fixed_at(
+                            cam.get_keyframe(),
+                            cam.image_group != camera.image_group
+                            or not cam.auto_focal_estimation)
+                    mode = 'FB_ESTIMATE_STATIC_FOCAL_LENGTH'
+                else:  # image_group in (-1, 0)
+                    for cam in head.cameras:
+                        fb.set_focal_length_fixed_at(
+                            cam.get_keyframe(),
+                            cam.image_group > 0
+                            or not cam.auto_focal_estimation)
+                    mode = 'FB_ESTIMATE_VARYING_FOCAL_LENGTH'
+            else:
+                _unfix_not_in_groups(fb, head)
+                mode = 'FB_ESTIMATE_VARYING_FOCAL_LENGTH'
+        else:  # Override all
+            if head.manual_estimation_mode == 'all_different':
+                _unfix_all(fb, head)
+                mode = 'FB_ESTIMATE_VARYING_FOCAL_LENGTH'
+            elif head.manual_estimation_mode == 'current_estimation':
+                _fix_all_except_this(fb, head, kid)
+                mode = 'FB_ESTIMATE_VARYING_FOCAL_LENGTH'
+            elif head.manual_estimation_mode == 'same_focus':
+                _unfix_all(fb, head)
+                mode = 'FB_ESTIMATE_STATIC_FOCAL_LENGTH'
+            elif head.manual_estimation_mode == 'force_focal':
+                for cam in head.cameras:
+                    fb.update_projection_mat(cam.get_keyframe(),
+                        cam.get_custom_projection_matrix(head.focal))
+                mode = 'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES'
+
+        fb.set_focal_length_estimation_mode(mode)
 
         try:
             fb.solve_for_current_pins(kid)
@@ -683,17 +664,6 @@ class FBLoader:
         return img, camera
 
     @classmethod
-    def auto_focal_enabled(cls, head, camera):
-        return camera.auto_focal_estimation and \
-               'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES' != \
-               head.focal_estimation_mode
-
-    @classmethod
-    def disable_auto_focal(cls):
-        fb = cls.get_builder()
-        fb.set_focal_length_estimation_mode('FB_FIXED_FOCAL_LENGTH_ALL_FRAMES')
-
-    @classmethod
     def auto_focal_estimation_post(cls, headnum, camnum):
         settings = get_main_settings()
         head = settings.get_head(headnum)
@@ -704,10 +674,10 @@ class FBLoader:
         logger.debug("AUTO_FOCAL_ESTIMATION")
         fb = cls.get_builder()
         logger.debug("mode: {}".format(fb.focal_length_estimation_mode()))
-        if cls.auto_focal_enabled(head, camera):
+        if camera.auto_focal_estimation:
             proj_mat = fb.projection_mat(kid)
             focal = coords.focal_by_projection_matrix(
-                proj_mat, 36.0)  # default camera sensor size
+                proj_mat, Config.default_sensor_width)
 
             # Fix for Vertical camera (because Blender has Auto in sensor)
             rx, ry = coords.render_frame()

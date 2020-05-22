@@ -55,10 +55,6 @@ class FB_OT_Actor(Operator):
         elif self.action == 'unhide_head':
             manipulate.unhide_head(self.headnum)
 
-        elif self.action == 'use_render_frame_size_scaled':
-            # Allow converts scenes pinned on default cameras
-            manipulate.use_render_frame_size_scaled()  # disabled in interface
-
         elif self.action == 'group':
             pass
 
