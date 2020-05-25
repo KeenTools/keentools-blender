@@ -91,18 +91,14 @@ def update_head_focal(self, context):
 
 def update_camera_focal(self, context):
     logger = logging.getLogger(__name__)
-    logger.debug("UPDATE_CAMERA_FOCAL")
     settings = get_main_settings()
+    kid = self.get_keyframe()
     self.camobj.data.lens = self.focal
+    logger.debug('UPDATE_CAMERA_FOCAL: K:{} F:{}'.format(kid, self.focal))
 
     fb = FBLoader.get_builder()
     fb.update_projection_mat(self.get_keyframe(), self.get_projection_matrix())
     FBLoader.save_only(settings.current_headnum)
-
-    # if not settings.pinmode:
-    #     state, headnum = what_is_state()
-    #     head = settings.get_head(headnum)
-    #     head.auto_focal_estimation = False
 
 
 def update_blue_camera_button(self, context):

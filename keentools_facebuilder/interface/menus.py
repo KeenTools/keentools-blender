@@ -78,30 +78,30 @@ class FB_MT_ImageGroupMenu(Menu):
             if group == 0 or group == -1:
                 continue
             op = layout.operator(
-                Config.fb_actor_idname,
+                Config.fb_camera_actor_idname,
                 text="Group {}".format(group))
             op.action = 'to_image_group'
             op.num = group
 
         op = layout.operator(
-            Config.fb_actor_idname,
+            Config.fb_camera_actor_idname,
             text="New group")
         op.action = 'new_image_group'
 
         layout.separator()
         op = layout.operator(
-            Config.fb_actor_idname,
+            Config.fb_camera_actor_idname,
             text="Reset group")
         op.action = 'reset_image_group'
 
         op = layout.operator(
-            Config.fb_actor_idname,
+            Config.fb_camera_actor_idname,
             text="Exclude from grouping")
         op.action = 'make_unique'
 
         layout.separator()
         op = layout.operator(
-            Config.fb_actor_idname,
+            Config.fb_camera_actor_idname,
             text="Get settings from EXIF")
         op.action = 'settings_by_exif'
 
@@ -120,7 +120,7 @@ class FB_MT_CameraPanelMenu(Menu):
             txt = 'Switch to Manual mode' if head.smart_mode() \
                 else 'Switch to Default mode'
             op = layout.operator(
-                Config.fb_actor_idname,
+                Config.fb_camera_actor_idname,
                 text=txt)
             op.action = 'manual_mode'
             op.headnum = settings.tmp_headnum
@@ -129,19 +129,19 @@ class FB_MT_CameraPanelMenu(Menu):
         layout.separator()
 
         op = layout.operator(
-            Config.fb_actor_idname,
+            Config.fb_camera_actor_idname,
             text='Exclude all images from grouping')
         op.action = 'make_all_unique'
 
         op = layout.operator(
-            Config.fb_actor_idname,
-            text="Reset groups for all images")
+            Config.fb_camera_actor_idname,
+            text='Reset groups for all images')
         op.action = 'reset_all_image_groups'
 
         layout.separator()
         op = layout.operator(
-            Config.fb_actor_idname,
-            text="Reset all camera settings")
+            Config.fb_camera_actor_idname,
+            text='Reset all camera settings')
         op.action = 'reset_all_camera_settings'
 
 
