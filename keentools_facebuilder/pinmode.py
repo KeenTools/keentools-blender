@@ -225,6 +225,11 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.load_pins(self.headnum, self.camnum)
         coords.update_head_mesh(settings, FBLoader.get_builder(), head)
 
+        kid = settings.get_keyframe(self.headnum, self.camnum)
+        focal = FBLoader.get_keyframe_focal(kid)
+        camera.camobj.data.lens = focal
+        camera.focal = focal
+
         # Hide geometry
         headobj.hide_set(True)
         cameras.hide_other_cameras(self.headnum, self.camnum)
@@ -237,7 +242,6 @@ class FB_OT_PinMode(bpy.types.Operator):
         vp.register_handlers(args, context)
         context.window_manager.modal_handler_add(self)
 
-        kid = settings.get_keyframe(self.headnum, self.camnum)
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
 
         # Can start much more times when not out from pinmode
