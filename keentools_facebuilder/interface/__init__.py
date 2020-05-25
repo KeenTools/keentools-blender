@@ -24,11 +24,7 @@ from .helps import *
 from .updater import *
 
 
-CLASSES_TO_REGISTER = (FB_MT_FrameSizeMenu,  # menus
-                       FB_MT_ProperViewMenu,
-                       FB_MT_ImproperViewMenu,
-                       FB_MT_SensorWidthMenu,
-                       FB_MT_FocalLengthMenu,
+CLASSES_TO_REGISTER = (FB_MT_ProperViewMenu, # menus
                        FB_MT_ReadExifMenu,
                        FB_MT_ImageGroupMenu,
                        FB_MT_CameraPanelMenu,

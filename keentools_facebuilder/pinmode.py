@@ -39,8 +39,6 @@ class FB_OT_PinMode(bpy.types.Operator):
     camnum: bpy.props.IntProperty(default=0)
 
     _shift_pressed = False
-
-
     _prev_camera_state = ()
 
     @classmethod

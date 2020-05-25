@@ -542,14 +542,6 @@ class FBHeadItem(PropertyGroup):
 
     exif: PointerProperty(type=FBExifItem)
 
-    # focal_estimation_mode: EnumProperty(name='Estimation Mode', items=[
-    #     ('FB_FIXED_FOCAL_LENGTH_ALL_FRAMES', 'No estimation', '', 'LINKED', 0),
-    #     ('FB_ESTIMATE_STATIC_FOCAL_LENGTH', 'One focus to all', '', 'LINKED', 1),
-    #     ('FB_ESTIMATE_VARYING_FOCAL_LENGTH', 'Varying', '', 'LINKED', 2)
-    #     ], description='Estimation Mode value',
-    #     default='FB_ESTIMATE_VARYING_FOCAL_LENGTH',
-    #     update=update_focal_length_mode)
-
     manual_estimation_mode: EnumProperty(
         name='Estimation Mode override', items=[
             ('all_different', 'Varying FL, Multi-frame Estimation', '',

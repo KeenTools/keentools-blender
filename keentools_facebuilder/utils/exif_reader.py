@@ -317,16 +317,6 @@ def _exif_sizes_message(headnum, image):
     return message
 
 
-def read_exif_to_head(headnum, filepath):
-    settings = get_main_settings()
-    head = settings.get_head(headnum)
-
-    exif_data = _read_exif(filepath)
-    _init_exif_settings(head.exif, exif_data)
-    head.exif.info_message = _exif_info_message(head.exif, exif_data)
-    return exif_data['status']
-
-
 def read_exif_to_camera(headnum, camnum, filepath):
     settings = get_main_settings()
     camera = settings.get_camera(headnum, camnum)
@@ -436,8 +426,6 @@ def _all_fields_dump(exif):
 def copy_exif_parameters_from_camera_to_head(camera, head):
     for p in _exif_class_fields():
         _copy_property_from_to(p, camera.exif, head.exif)
-    # Debug only info
-    # head.exif.info_message += "\n=====\n" + _all_fields_dump(camera.exif)
 
 
 def _detect_image_groups_by_exif(head, hash_func=_exif_and_size_hash_string):
@@ -526,7 +514,6 @@ def update_image_groups(head):
 
     unique_groups = np.unique([x for x in image_groups_new if x >=0],
                               return_counts=False)
-    print('unique_groups', unique_groups)
     head.show_image_groups = len(list(unique_groups)) > 1
 
 
@@ -544,6 +531,6 @@ def read_exif_from_camera(headnum, camnum):
     if abspath is None:
         return False
 
-    status = read_exif_to_head(headnum, abspath)
+    status = read_exif_to_camera(headnum, camnum, abspath)
     update_exif_sizes_message(headnum, camera.cam_image)
     return status

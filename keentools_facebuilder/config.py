@@ -91,41 +91,13 @@ class Config:
     fb_add_camera_callname = 'add_camera'
     fb_add_camera_idname = operators + '.' + fb_add_camera_callname
 
-    fb_fix_size_menu_exec_callname = 'fix_size_menu_exec'
-    fb_fix_size_menu_exec_idname = \
-        operators + '.' + fb_fix_size_menu_exec_callname
-
-    fb_set_sensor_width_callname = 'set_sensor_width'
-    fb_set_sensor_width_idname = \
-        operators + '.' + fb_set_sensor_width_callname
-
-    fb_sensor_size_window_callname = 'sensor_width_window'
-    fb_sensor_size_window_idname = \
-        operators + '.' + fb_sensor_size_window_callname
-
-    fb_focal_length_menu_exec_callname = 'set_focal_length_menu_exec'
-    fb_focal_length_menu_exec_idname = \
-        operators + '.' + fb_focal_length_menu_exec_callname
-
     fb_proper_view_menu_exec_callname = 'proper_view_menu_exec'
     fb_proper_view_menu_exec_idname = \
         operators + '.' + fb_proper_view_menu_exec_callname
 
-    fb_improper_view_menu_exec_callname = 'improper_view_menu_exec'
-    fb_improper_view_menu_exec_idname = \
-        operators + '.' + fb_improper_view_menu_exec_callname
-
     fb_view_to_frame_size_callname = 'view_to_frame_size'
     fb_view_to_frame_size_idname = \
         operators + '.' + fb_view_to_frame_size_callname
-
-    fb_most_frequent_frame_size_callname = 'most_frequent_frame_size'
-    fb_most_frequent_frame_size_idname = \
-        operators + '.' + fb_most_frequent_frame_size_callname
-
-    fb_render_size_to_frame_size_callname = 'render_size_to_frame_size'
-    fb_render_size_to_frame_size_idname = \
-        operators + '.' + fb_render_size_to_frame_size_callname
 
     fb_addon_settings_callname = 'addon_settings'
     fb_addon_settings_idname = operators + '.' + fb_addon_settings_callname
@@ -276,13 +248,7 @@ class Config:
     fb_uninstall_core_idname = operators + '.' + fb_uninstall_core_callname
 
     # Menu ids
-    fb_fix_frame_size_menu_idname = _MT + 'fix_frame_size_menu'
-
     fb_proper_view_menu_idname = _MT + 'proper_view_menu'
-    fb_improper_view_menu_idname = _MT + 'improper_view_menu'
-
-    fb_focal_length_menu_idname = _MT + 'focal_length_menu'
-    fb_sensor_width_menu_idname = _MT + 'sensor_width_menu'
 
     fb_read_exif_menu_idname = _MT + 'read_exif_menu'
 

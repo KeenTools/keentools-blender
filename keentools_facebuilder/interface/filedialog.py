@@ -24,9 +24,9 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bpy.types import Operator
 
 from ..fbloader import FBLoader
-from ..config import Config, get_main_settings, get_operators, ErrorType
+from ..config import Config, get_main_settings, get_operators
 
-from ..utils.exif_reader import (read_exif_to_head, read_exif_to_camera,
+from ..utils.exif_reader import (read_exif_to_camera,
                                  update_image_groups,
                                  auto_setup_camera_from_exif)
 from ..utils.other import restore_ui_elements
@@ -61,6 +61,8 @@ def load_single_image_file(headnum, camnum, filepath):
         if not settings.check_heads_and_cams():
             settings.fix_heads()  # Fix
             return {'CANCELLED'}
+
+        FBLoader.load_model(headnum)
 
         try:
             img = bpy.data.images.load(filepath)
@@ -99,24 +101,8 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
     headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
     camnum: bpy.props.IntProperty(name='Camera index', default=0)
 
-    update_render_size: bpy.props.EnumProperty(name="Update Size", items=[
-        ('yes', 'Update', 'Update render size to images resolution', 0),
-        ('no', 'Leave unchanged', 'Leave the render size unchanged', 1),
-    ], description="Update Render size")
-
     def draw(self, context):
-        layout = self.layout
-
-        layout.label(text='Update Scene Render size')
-        layout.prop(self, 'update_render_size', expand=True)
-
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-        txt = ['Please keep in mind that',
-               'all frames for FaceBuilder',
-               'should have the same size.']
-        for t in txt:
-            col.label(text=t)
+        pass
 
     def execute(self, context):
         return load_single_image_file(self.headnum, self.camnum, self.filepath)
@@ -204,12 +190,9 @@ class FB_OT_MultipleFilebrowserExec(Operator):
     bl_label = "Open Images"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Load images and create views. " \
-                     "All images must be of the same size. " \
                      "You can select multiple images at once"
 
     headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
-    auto_update_frame_size: bpy.props.BoolProperty(
-        name='Auto update frame size', default=True)
 
     def draw(self, context):
         pass
@@ -217,10 +200,8 @@ class FB_OT_MultipleFilebrowserExec(Operator):
     def execute(self, context):
         restore_ui_elements()
 
-        auto_update = 'yes' if self.auto_update_frame_size else 'no'
         op = getattr(get_operators(), Config.fb_multiple_filebrowser_callname)
-        op('INVOKE_DEFAULT', headnum=self.headnum,
-           update_render_size=auto_update)
+        op('INVOKE_DEFAULT', headnum=self.headnum)
 
         return {'FINISHED'}
 
@@ -229,7 +210,6 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
     bl_idname = Config.fb_multiple_filebrowser_idname
     bl_label = "Open Images"
     bl_description = "Load images and create views. " \
-                     "All images must be of the same size. " \
                      "You can select multiple images at once"
 
     filter_glob: bpy.props.StringProperty(
@@ -248,24 +228,10 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
 
     headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
 
-    update_render_size: bpy.props.EnumProperty(name="Update Size", items=[
-        ('yes', 'Update', 'Update render size to images resolution', 0),
-        ('no', 'Leave unchanged', 'Leave the render size unchanged', 1),
-    ], description="Update Render size")
-
     def draw(self, context):
         layout = self.layout
-
-        layout.label(text='Update Scene Render size')
-        layout.prop(self, 'update_render_size', expand=True)
-
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-        txt = ['Please keep in mind that',
-               'all frames for FaceBuilder',
-               'should have the same size.']
-        for t in txt:
-            col.label(text=t)
+        layout.label(text='Load images and create views. ')
+        layout.label(text='You can select multiple images at once')
 
     def execute(self, context):
         """ Selected files processing"""
@@ -279,6 +245,8 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
         if not settings.check_heads_and_cams():
             settings.fix_heads()  # Fix & Out
             return {'CANCELLED'}
+
+        FBLoader.load_model(self.headnum)
 
         head = settings.get_head(self.headnum)
         last_camnum = head.get_last_camnum()
