@@ -171,6 +171,13 @@ class FB_MT_ImageGroupMenu(Menu):
             text="Exclude from grouping")
         op.action = 'make_unique'
 
+        layout.separator()
+        op = layout.operator(
+            Config.fb_actor_idname,
+            text="Get settings from EXIF")
+        op.action = 'settings_by_exif'
+
+
 class FB_MT_CameraPanelMenu(Menu):
     bl_label = "Advanced Camera settings"
     bl_idname = Config.fb_camera_panel_menu_idname
@@ -202,6 +209,12 @@ class FB_MT_CameraPanelMenu(Menu):
             Config.fb_actor_idname,
             text="Reset groups for all images")
         op.action = 'reset_all_image_groups'
+
+        layout.separator()
+        op = layout.operator(
+            Config.fb_actor_idname,
+            text="Reset all camera settings")
+        op.action = 'reset_all_camera_settings'
 
 
 class FB_MT_ReadExifMenu(Menu):

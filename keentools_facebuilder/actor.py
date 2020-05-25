@@ -28,7 +28,8 @@ from bpy.types import Operator
 from .utils import manipulate
 from .config import Config, get_main_settings
 from .utils.exif_reader import (get_sensor_size_35mm_equivalent,
-                                update_image_groups)
+                                update_image_groups,
+                                auto_setup_camera_from_exif)
 
 
 class FB_OT_Actor(Operator):
@@ -54,9 +55,6 @@ class FB_OT_Actor(Operator):
 
         elif self.action == 'unhide_head':
             manipulate.unhide_head(self.headnum)
-
-        elif self.action == 'group':
-            pass
 
         elif self.action == 'show_groups_info':
             settings = get_main_settings()
@@ -85,34 +83,47 @@ class FB_OT_Actor(Operator):
             else:
                 camera.image_group = 1
 
-            # update_image_groups(head)
-
         elif self.action == 'to_image_group':
             settings = get_main_settings()
             head = settings.get_head(settings.current_headnum)
             camera = head.get_camera(settings.current_camnum)
             camera.image_group = self.num
-            # update_image_groups(head)
 
         elif self.action == 'make_unique':
             settings = get_main_settings()
             head = settings.get_head(settings.current_headnum)
             camera = head.get_camera(settings.current_camnum)
             camera.image_group = -1
-            # update_image_groups(head)
 
         elif self.action == 'make_all_unique':
             settings = get_main_settings()
             head = settings.get_head(settings.current_headnum)
             for camera in head.cameras:
                 camera.image_group = -1
-            # update_image_groups(head)
 
         elif self.action == 'reset_all_image_groups':
             settings = get_main_settings()
             head = settings.get_head(settings.current_headnum)
             for camera in head.cameras:
                 camera.image_group = 0
+            update_image_groups(head)
+
+        elif self.action == 'settings_by_exif':
+            settings = get_main_settings()
+            head = settings.get_head(settings.current_headnum)
+            camera = head.get_camera(settings.current_camnum)
+            camera.image_group = 0
+            auto_setup_camera_from_exif(camera)
+            update_image_groups(head)
+
+        elif self.action == 'reset_all_camera_settings':
+            settings = get_main_settings()
+            head = settings.get_head(settings.current_headnum)
+            for camera in head.cameras:
+                camera.image_group = 0
+                auto_setup_camera_from_exif(camera)
+            if not head.smart_mode():
+                head.smart_mode_toggle()
             update_image_groups(head)
 
         return {'FINISHED'}

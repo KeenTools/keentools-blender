@@ -518,13 +518,8 @@ def update_image_groups(head):
     _perform_already_defined_groups()
     image_groups_new = _perform_all_groups()
 
-    print('image_groups_new', image_groups_new)
-    print('in_group_counter', in_group_counter)
-
     _renumber()
 
-    print('image_groups_new', image_groups_new)
-    print('used_group_nums', used_group_nums)
 
     for i, cam in enumerate(head.cameras):
         cam.image_group = image_groups_new[i]

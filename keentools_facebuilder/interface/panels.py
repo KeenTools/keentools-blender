@@ -280,7 +280,7 @@ class FB_PT_CameraPanel(Panel):
             col = box.column()
             col.scale_y = Config.text_scale_y
             _draw_mode_comment(col, head.manual_estimation_mode)
-            if head.manual_estimation_mode in {'same_focus', 'force_focal'}:
+            if head.manual_estimation_mode in {'force_focal'}:
                 box.prop(head, 'focal')
 
             if settings.current_camnum < 0:
@@ -299,17 +299,11 @@ class FB_PT_CameraPanel(Panel):
             return
         head = settings.get_head(headnum)
 
-        # layout.prop(head, 'auto_focal_estimation',
-        #             invert_checkbox=True, text='Smart Focal Length')
-
         if head.smart_mode():
             if settings.current_camnum >= 0:
                 _draw_default_mode()
         else:
             _draw_override_mode()
-
-        # col.prop(camera, 'background_scale')
-        # col.label(text='compensate_scale: {:.3f}'.format(camera.compensate_view_scale()))
 
 
 class FB_PT_ExifPanel(Panel):
