@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+import math
 import bpy
 
 
@@ -290,6 +291,12 @@ class Config:
 
     default_sensor_width = 36.0
     default_sensor_height = 24.0
+    default_camera_display_size = 0.75
+
+    default_camera_rotation = (math.pi * 0.5, 0, 0)
+    camera_x_step = 2.0
+    camera_y_step = 5
+    camera_z_step = 0.5
 
     # In Material
     image_node_layout_coord = (-300, 0)

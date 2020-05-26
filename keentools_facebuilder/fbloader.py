@@ -78,9 +78,6 @@ class FBLoader:
         if headnum < 0:
             return
 
-        rx = scene.render.resolution_x
-        ry = scene.render.resolution_y
-
         # NoneBuilder for auto-select builder class
         fb = cls.new_builder(BuilderType.NoneBuilder, head.mod_ver)
         cls.load_model(headnum)
@@ -89,19 +86,16 @@ class FBLoader:
         max_pins = -1
         for i, c in enumerate(head.cameras):
             kid = c.get_keyframe()
-            # cls.set_camera_projection(
-            #     head.focal, head.sensor_width, rx, ry)
             # We are looking for keyframe that has maximum pins
             if c.has_pins():
                 if max_pins < c.pins_count:
                     max_index = kid
                     max_pins = c.pins_count
             c.camobj.data.lens = c.focal  # fix
-            c.camobj.data.sensor_width = head.sensor_width
-            c.camobj.data.sensor_height = head.sensor_height
+            c.camobj.data.sensor_width = Config.default_sensor_width
+            c.camobj.data.sensor_height = Config.default_sensor_height
 
         FBLoader.rigidity_setup()
-        # fb.set_focal_length_estimation(head.auto_focal_estimation)
         fb.set_use_emotions(head.should_use_emotions())
 
         if max_index >= 0:
@@ -575,8 +569,7 @@ class FBLoader:
                 elif head.manual_estimation_mode == 'force_focal':
                     for cam in head.cameras:
                         fb.update_projection_mat(cam.get_keyframe(),
-                                                 cam.get_custom_projection_matrix(
-                                                     head.focal))
+                            cam.get_custom_projection_matrix(head.focal))
                     mode = 'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES'
                 else:
                     assert(False), 'Unknown mode: {}'.format(
@@ -624,10 +617,12 @@ class FBLoader:
         # create object camera data and insert the camera data
         cam_ob = bpy.data.objects.new("fbCamObj", cam_data)
 
-        cam_ob.rotation_euler = [math.pi * 0.5, 0, 0]
+        cam_ob.rotation_euler = Config.default_camera_rotation
         camnum = len(head.cameras)
 
-        cam_ob.location = [2 * camnum, -5 - headnum, 0.5]
+        cam_ob.location = (Config.camera_x_step * camnum,
+                           - Config.camera_y_step - headnum,
+                           Config.camera_z_step)
 
         # place camera object to our list
         camera = head.cameras.add()
@@ -642,10 +637,10 @@ class FBLoader:
             bpy.context.scene.collection.objects.link(cam_ob)  # Link to Scene
 
         # Add Background Image
-        cam_data.display_size = 0.75  # Camera Size
+        cam_data.display_size = Config.default_camera_display_size
         cam_data.lens = head.focal  # From Interface
-        cam_data.sensor_width = head.sensor_width
-        cam_data.sensor_height = head.sensor_height
+        cam_data.sensor_width = Config.default_sensor_width
+        cam_data.sensor_height = Config.default_sensor_height
         cam_data.show_background_images = True
 
         if len(cam_data.background_images) == 0:
@@ -671,14 +666,13 @@ class FBLoader:
 
         num = cls.get_next_keyframe()
         camera.set_keyframe(num)
+
         # Create new keyframe
-        #fb.set_keyframe(num)
         projection = coords.projection_matrix(
             w, h, head.focal, Config.default_sensor_width, 0.1, 1000.0)
         fb.center_model_mat(num, projection)
         logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
 
-        # We added new keyframe, so update serial string
         FBLoader.save_only(headnum)
         return camera
 

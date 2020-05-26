@@ -479,13 +479,13 @@ class FBHeadItem(PropertyGroup):
     sensor_width: FloatProperty(
         description="The length of the longest side "
                     "of the camera sensor in millimetres",
-        name="HSensor Width (mm)", default=36,
+        name="Sensor Width (mm)", default=0,
         min=0.1)
     sensor_height: FloatProperty(
         description="Secondary parameter. "
                     "Set it according to the real camera specification."
                     "This parameter is not used if Sensor Width is greater",
-        name="HSensor Height (mm)", default=24,
+        name="Sensor Height (mm)", default=0,
         min=0.1)
     focal: FloatProperty(
         description="Focal length in millimetres",
