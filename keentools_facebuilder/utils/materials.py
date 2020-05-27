@@ -179,14 +179,7 @@ def bake_tex(headnum, tex_name):
                     cam.orientation)  # Slow operation .pixels[:]
 
                 pm = cam.get_projection_matrix()
-                if cam.orientation % 2 > 0:
-                    offset = np.array([[1., 0., 0., (h - w) * 0.5],
-                                       [0., 1., 0., (w - h) * 0.5],
-                                       [0., 0., 1., 0.],
-                                       [0., 0., 0., 1.]])
-                    projections.append(offset @ pm)
-                else:
-                    projections.append(pm)
+                projections.append(pm)
 
                 imgs.append(img)
                 keyframes.append(cam.get_keyframe())

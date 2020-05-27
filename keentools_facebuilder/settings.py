@@ -79,14 +79,10 @@ def update_cam_image(self, context):
 
 def update_head_focal(self, context):
     logger = logging.getLogger(__name__)
-    logger.debug("UPDATE_HEAD_FOCAL")
-    settings = get_main_settings()
+    logger.debug('UPDATE_HEAD_FOCAL: {}'.format(self.focal))
 
     for c in self.cameras:
-        c.camobj.data.lens = self.focal
-
-    if not settings.pinmode:
-        FBLoader.update_head_camera_focals(self)
+        c.focal = self.focal
 
 
 def update_camera_focal(self, context):
@@ -97,8 +93,9 @@ def update_camera_focal(self, context):
     logger.debug('UPDATE_CAMERA_FOCAL: K:{} F:{}'.format(kid, self.focal))
 
     fb = FBLoader.get_builder()
-    fb.update_projection_mat(self.get_keyframe(), self.get_projection_matrix())
-    FBLoader.save_only(settings.current_headnum)
+    if fb.is_key_at(kid):
+        fb.update_projection_mat(kid, self.get_projection_matrix())
+        FBLoader.save_only(settings.current_headnum)
 
 
 def update_blue_camera_button(self, context):
@@ -431,8 +428,12 @@ class FBCameraItem(PropertyGroup):
 
     def get_complex_name(self):
         auto = '*' if self.auto_focal_estimation else ''
-        return "{}[{}] {}".format(auto, self.image_group,
-                     self.get_image_name())
+        return "{}[{}]{}".format(self.get_image_name(), self.image_group, auto)
+
+    def reset_camera_sensor(self):
+        if self.camobj:
+            self.camobj.data.sensor_width = Config.default_sensor_width
+            self.camobj.data.sensor_height = Config.default_sensor_height
 
     def get_custom_projection_matrix(self, focal):
         w = self.image_width
@@ -479,18 +480,16 @@ class FBHeadItem(PropertyGroup):
     sensor_width: FloatProperty(
         description="The length of the longest side "
                     "of the camera sensor in millimetres",
-        name="Sensor Width (mm)", default=0,
-        min=0.1)
+        name="Sensor Width (mm)", default=-1)
     sensor_height: FloatProperty(
         description="Secondary parameter. "
                     "Set it according to the real camera specification."
                     "This parameter is not used if Sensor Width is greater",
-        name="Sensor Height (mm)", default=0,
-        min=0.1)
+        name="Sensor Height (mm)", default=-1)
     focal: FloatProperty(
         description="Focal length in millimetres",
         name="HFocal Length (mm)", default=50,
-        min=0.1, update=update_head_focal)
+        min=0.01, update=update_head_focal)
 
     auto_focal_estimation: BoolProperty(
         name="Focal Length Estimation",
@@ -667,6 +666,10 @@ class FBHeadItem(PropertyGroup):
         if camera is None:
             return False
         return self.are_image_groups_visible() and camera.image_group > 0
+
+    def reset_sensor_size(self):
+        self.sensor_width = 0
+        self.sensor_height = 0
 
 
 class FBSceneSettings(PropertyGroup):

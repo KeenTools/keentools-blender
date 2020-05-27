@@ -25,6 +25,7 @@ import numpy as np
 from .viewport import FBViewport
 from .utils import attrs, coords, cameras
 from .utils.other import FBStopShaderTimer, restore_ui_elements
+from .utils.exif_reader import update_image_groups
 
 from .builder import UniBuilder
 from .config import (Config, get_main_settings, get_operators,
@@ -303,7 +304,7 @@ class FBLoader:
             return
         fb = FBLoader.get_builder()
         projection = camera.get_projection_matrix()
-        fb.center_model_mat(camera.get_keyframe(), projection)
+        fb.set_centered_geo_keyframe(camera.get_keyframe(), projection)
 
     # --------------------
     @classmethod
@@ -437,21 +438,27 @@ class FBLoader:
 
         mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set,
                                     keyframe=None)
-
         # Restore builder
         cls.new_builder(stored_builder_type, stored_builder_version)
         return mesh
 
     @classmethod
-    def load_model(cls, headnum):
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-        # Load serialized data
+    def load_model_from_head(cls, head):
         fb = cls.get_builder()
         if not fb.deserialize(head.get_serial_str()):
             logger = logging.getLogger(__name__)
             logger.warning('DESERIALIZE ERROR: {}'.format(
                 head.get_serial_str()))
+            return False
+        return True
+
+    @classmethod
+    def load_model(cls, headnum):
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        if head is None:
+            return False
+        return cls.load_model_from_head(head)
 
     @classmethod
     def load_all(cls, headnum, camnum):
@@ -459,16 +466,13 @@ class FBLoader:
         settings = get_main_settings()
         head = settings.get_head(headnum)
         cam = head.get_camera(camnum)
+        kid = cam.get_keyframe()
         camobj = cam.camobj
         headobj = head.headobj
 
-        # Load serialized data
+        cls.load_model_from_head(head)
         fb = cls.get_builder()
-        if not fb.deserialize(head.get_serial_str()):
-            logger.warning('DESERIALIZE ERROR: {}'.format(
-                head.get_serial_str()))
 
-        kid = settings.get_keyframe(headnum, camnum)
         cls.place_cameraobj(kid, camobj, headobj)
         # Load pins from model
         vp = cls.viewport()
@@ -606,6 +610,51 @@ class FBLoader:
         return True
 
     @classmethod
+    def size_from_projection(cls, keyframe_id):
+        fb = cls.get_builder()
+        proj = fb.projection_mat(keyframe_id)
+        return 2 * (-proj[0][2]), 2 * (-proj[1][2])
+
+    @classmethod
+    def update_cameras_from_old_version(cls, head):
+        if head.sensor_width == 0:
+            return
+
+        sensor_width = head.sensor_width if head.sensor_width != -1 \
+            else Config.default_sensor_width
+
+        logger = logging.getLogger(__name__)
+        logger.debug('UPDATE_OLD_MODEL')
+
+        cls.load_model_from_head(head)
+        fb = cls.get_builder()
+
+        for cam in head.cameras:
+            if cam.orientation % 2 == 0:
+                continue
+            kid = cam.get_keyframe()
+            w, h = cls.size_from_projection(kid)
+            logger.debug('IMAGE_SIZE_BY_PROJECTION: {}x{}'.format(w, h))
+            dx = (h - w) * 0.5
+            dy = (w - h) * 0.5
+            for i in range(fb.pins_count(kid)):
+                pin = fb.pin(kid, i)
+                x, y = pin.img_pos
+                fb.move_pin(kid, i, (x + dx, y + dy))
+        # Save info
+        head.set_serial_str(fb.serialize())
+
+        focal = head.focal * Config.default_sensor_width / sensor_width
+        head.reset_sensor_size()
+        for cam in head.cameras:
+            cam.focal = focal
+            cam.auto_focal_estimation = head.auto_focal_estimation
+            cam.reset_camera_sensor()
+            cam.image_group = 0
+
+        update_image_groups(head)
+
+    @classmethod
     def add_camera(cls, headnum, img=None):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
@@ -670,7 +719,7 @@ class FBLoader:
         # Create new keyframe
         projection = coords.projection_matrix(
             w, h, head.focal, Config.default_sensor_width, 0.1, 1000.0)
-        fb.center_model_mat(num, projection)
+        fb.set_centered_geo_keyframe(num, projection)
         logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
 
         FBLoader.save_only(headnum)

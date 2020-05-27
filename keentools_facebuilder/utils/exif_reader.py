@@ -25,7 +25,7 @@ from ..blender_independent_packages.exifread import process_file
 from ..blender_independent_packages.exifread import \
     DEFAULT_STOP_TAG, FIELD_TYPES
 
-from ..config import Config, get_main_settings, ErrorType
+from ..config import Config, get_main_settings
 
 
 # Convert frac record like '16384/32768' to float 0.5
@@ -401,7 +401,7 @@ def _exif_hash_string(exif, delimiter='#'):
 
 def _undefined_exif_hash_string(delimiter='#'):
     return delimiter.join([
-        str(-1) * len(_exif_file_fields())
+        str(-1) for _ in range(len(_exif_file_fields()))
     ])
 
 
@@ -507,7 +507,6 @@ def update_image_groups(head):
     image_groups_new = _perform_all_groups()
 
     _renumber()
-
 
     for i, cam in enumerate(head.cameras):
         cam.image_group = image_groups_new[i]
