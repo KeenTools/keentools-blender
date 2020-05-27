@@ -66,7 +66,7 @@ def _get_exif_units(tag):
     elif tag == 2.0:
         return 'inch'
     else:
-        return 'undefined'
+        return str(-1.0)
 
 
 def _get_units_scale_in_mm(exif_units):
@@ -401,7 +401,7 @@ def _exif_hash_string(exif, delimiter='#'):
 
 def _undefined_exif_hash_string(delimiter='#'):
     return delimiter.join([
-        str(-1) for _ in range(len(_exif_file_fields()))
+        str(-1.0) for _ in range(len(_exif_file_fields()))
     ])
 
 
