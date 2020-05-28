@@ -256,7 +256,8 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
                 filepath = os.path.join(self.directory, f.name)
                 logger.debug("FILE: {}".format(filepath))
 
-                img, camera = FBLoader.add_camera_image(self.headnum, filepath)
+                img, camera = FBLoader.add_new_camera_with_image(self.headnum,
+                                                                 filepath)
                 read_exif_to_camera(
                     self.headnum, head.get_last_camnum(), filepath)
                 camera.orientation = camera.exif.orientation

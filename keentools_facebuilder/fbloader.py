@@ -25,7 +25,7 @@ import numpy as np
 from .viewport import FBViewport
 from .utils import attrs, coords, cameras
 from .utils.other import FBStopShaderTimer, restore_ui_elements
-from .utils.exif_reader import update_image_groups
+from .utils.exif_reader import update_image_groups, reload_all_camera_exif
 
 from .builder import UniBuilder
 from .config import (Config, get_main_settings, get_operators,
@@ -633,7 +633,9 @@ class FBLoader:
         return 2 * (-proj[0][2]), 2 * (-proj[1][2])
 
     @classmethod
-    def update_cameras_from_old_version(cls, head):
+    def update_cameras_from_old_version(cls, headnum):
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
         if head.sensor_width == 0:
             return
 
@@ -669,46 +671,44 @@ class FBLoader:
             cam.reset_camera_sensor()
             cam.image_group = 0
 
+        reload_all_camera_exif(headnum)
         update_image_groups(head)
 
     @classmethod
-    def add_camera(cls, headnum, img=None):
-        logger = logging.getLogger(__name__)
+    def create_camera_object(cls, headnum, camnum):
         settings = get_main_settings()
         head = settings.get_head(headnum)
-        fb = cls.get_builder()
 
-        # create camera data
-        cam_data = bpy.data.cameras.new("fbCam")
-        # create object camera data and insert the camera data
-        cam_ob = bpy.data.objects.new("fbCamObj", cam_data)
-
+        cam_data = bpy.data.cameras.new(Config.default_fb_camera_data_name)
+        cam_ob = bpy.data.objects.new(Config.default_fb_camera_name, cam_data)
         cam_ob.rotation_euler = Config.default_camera_rotation
-        camnum = len(head.cameras)
-
         cam_ob.location = (Config.camera_x_step * camnum,
                            - Config.camera_y_step - headnum,
                            Config.camera_z_step)
 
-        # place camera object to our list
-        camera = head.cameras.add()
-        camera.camobj = cam_ob
-
-        # link camera into scene
-        col = attrs.get_obj_collection(head.headobj)
-        if col is not None:
-            col.objects.link(cam_ob)
-        else:
-            logger.error("ERROR IN COLLECTIONS")
-            bpy.context.scene.collection.objects.link(cam_ob)  # Link to Scene
-
-        # Add Background Image
         cam_data.display_size = Config.default_camera_display_size
-        cam_data.lens = head.focal  # From Interface
+        cam_data.lens = head.focal  # TODO: need a better choise in future
         cam_data.sensor_width = Config.default_sensor_width
         cam_data.sensor_height = Config.default_sensor_height
         cam_data.show_background_images = True
 
+        col = attrs.get_obj_collection(head.headobj)
+        if col is not None:
+            col.objects.link(cam_ob)  # link to headobj collection
+        else:
+            logger = logging.getLogger(__name__)
+            logger.error("ERROR IN COLLECTIONS")
+            bpy.context.scene.collection.objects.link(cam_ob)  # Link to Scene
+
+        return cam_ob
+
+    @classmethod
+    def add_background_to_camera(cls, headnum, camnum, img):
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        camera = head.get_camera(camnum)
+
+        cam_data = camera.camobj.data
         if len(cam_data.background_images) == 0:
             b = cam_data.background_images.new()
         else:
@@ -729,21 +729,45 @@ class FBLoader:
 
         camera.set_image_width(w)
         camera.set_image_height(h)
+        return w, h
 
-        num = cls.get_next_keyframe()
-        camera.set_keyframe(num)
+    @classmethod
+    def add_camera(cls, headnum, img=None):
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
 
-        # Create new keyframe
-        projection = coords.projection_matrix(
-            w, h, head.focal, Config.default_sensor_width, 0.1, 1000.0)
-        fb.set_centered_geo_keyframe(num, projection)
-        logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
+        camnum = len(head.cameras)
+        cam_ob = cls.create_camera_object(headnum, camnum)
 
-        FBLoader.save_only(headnum)
+        camera = head.cameras.add()
+        camera.camobj = cam_ob
+
+        w, h = cls.add_background_to_camera(headnum, camnum, img)
         return camera
 
     @classmethod
-    def add_camera_image(cls, headnum, img_path):
+    def add_new_camera_with_image(cls, headnum, img_path):
+        logger = logging.getLogger(__name__)
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+
         img = bpy.data.images.load(img_path)
-        camera = cls.add_camera(headnum, img)
+
+        camnum = len(head.cameras)
+        cam_ob = cls.create_camera_object(headnum, camnum)
+
+        camera = head.cameras.add()
+        camera.camobj = cam_ob
+
+        w, h = cls.add_background_to_camera(headnum, camnum, img)
+
+        fb = cls.get_builder()
+        kid = cls.get_next_keyframe()
+        camera.set_keyframe(kid)
+        projection = coords.projection_matrix(
+            w, h, head.focal, Config.default_sensor_width, 0.1, 1000.0)
+        fb.set_centered_geo_keyframe(kid, projection)
+
+        logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
+
         return img, camera

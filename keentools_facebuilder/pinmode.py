@@ -207,7 +207,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             FBLoader.builder().sync_version(head.mod_ver)
             head.mod_ver = FBLoader.get_builder_version()
 
-            FBLoader.update_cameras_from_old_version(head)
+            FBLoader.update_cameras_from_old_version(self.headnum)
 
         settings.current_headnum = self.headnum
         settings.current_camnum = self.camnum

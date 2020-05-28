@@ -366,34 +366,6 @@ class FB_OT_DeleteCamera(Operator):
         return {'FINISHED'}
 
 
-class FB_OT_AddCamera(Operator):
-    bl_idname = Config.fb_add_camera_idname
-    bl_label = "Add Empty Camera"
-    bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Add new camera without image (Not recommended). \n" \
-                     "Use 'Add Camera Image(s)' button instead"
-    headnum: IntProperty(default=0)
-
-    def draw(self, context):
-        pass
-
-    def execute(self, context):
-        if not check_settings():
-            return {'CANCELLED'}
-
-        settings = get_main_settings()
-        headnum = self.headnum
-
-        # Warning! Loading camera may cause data loss
-        if settings.get_head(headnum).cameras:
-            FBLoader.load_model(headnum)
-
-        camera = FBLoader.add_camera(headnum, None)
-        FBLoader.set_keentools_version(camera.camobj)
-        FBLoader.save_only(headnum)
-        return {'FINISHED'}
-
-
 class FB_OT_ProperViewMenuExec(Operator):
     bl_idname = Config.fb_proper_view_menu_exec_idname
     bl_label = "View operations"
@@ -799,7 +771,6 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ReadExif,
                        FB_OT_ReadExifMenuExec,
                        FB_OT_DeleteCamera,
-                       FB_OT_AddCamera,
                        FB_OT_AddonSettings,
                        FB_OT_BakeTexture,
                        FB_OT_DeleteTexture,

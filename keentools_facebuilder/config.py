@@ -46,6 +46,8 @@ class Config:
     default_fb_object_name = 'FaceBuilderHead'
     default_fb_mesh_name = 'FaceBuilderHead_mesh'
     default_fb_collection_name = 'FaceBuilderCol'
+    default_fb_camera_data_name = 'fbCamData'
+    default_fb_camera_name = 'fbCamera'
 
     addon_search = 'KeenTools'
     addon_global_var_name = prefix + '_settings'
@@ -88,9 +90,6 @@ class Config:
 
     fb_delete_camera_callname = 'delete_camera'
     fb_delete_camera_idname = operators + '.' + fb_delete_camera_callname
-
-    fb_add_camera_callname = 'add_camera'
-    fb_add_camera_idname = operators + '.' + fb_add_camera_callname
 
     fb_proper_view_menu_exec_callname = 'proper_view_menu_exec'
     fb_proper_view_menu_exec_idname = \

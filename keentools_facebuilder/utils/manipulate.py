@@ -25,6 +25,7 @@ from ..fbloader import FBLoader
 from ..config import Config, get_main_settings, get_operators, \
     ErrorType, BuilderType
 from . import cameras, attrs, coords
+from .exif_reader import read_exif_to_camera, auto_setup_camera_from_exif
 
 
 def _is_keentools_object(obj):
@@ -272,63 +273,66 @@ def reconstruct_by_head():
         dir_name = ""
     logger.debug("DIR_NAME: {}".format(dir_name))
 
-    # Get Image Names
     images = _get_image_names(obj)
     if type(images) is not list:
         images = []
     logger.debug("IMAGES: {}".format(images))
     logger.debug("PARAMETERS LOADED. START HEAD CREATION")
-    # -------------------
-    settings.fix_heads()
 
+    settings.fix_heads()
     headnum = len(settings.heads)
     head = settings.heads.add()
     head.headobj = obj
 
     try:
-        # Copy serial string from object custom property
         head.set_serial_str(serial_str)
         fb = FBLoader.new_builder(obj_type, mod_ver)
         head.mod_ver = FBLoader.get_builder_version()
-        settings.current_head = headnum
-        settings.current_camnum = 0
         logger.debug("CREATED MOD_VER {}".format(head.mod_ver))
 
         head.sensor_width = params['sensor_width']
         head.sensor_height = params['sensor_height']
         head.focal = params['focal']
+        head.use_emotions = False
         scene.render.resolution_x = params['frame_width']
         scene.render.resolution_y = params['frame_height']
 
-        # New head shape
         fb.deserialize(head.get_serial_str())
-        # Now reconstruct cameras
+        logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
+
         for i, kid in enumerate(fb.keyframes()):
-            c = FBLoader.add_camera(headnum, None)
-            FBLoader.set_keentools_version(c.camobj)
-            c.set_keyframe(kid)
+            cam_ob = FBLoader.create_camera_object(headnum, i)
+            camera = head.cameras.add()
+            camera.camobj = cam_ob
+            camera.set_keyframe(kid)
+
+            filename = images[i]
+            logger.debug("IMAGE {} {}".format(i, filename))
+            img = bpy.data.images.new(filename, 0, 0)
+            img.source = 'FILE'
+            img.filepath = filename
+
+            w, h = FBLoader.add_background_to_camera(headnum, i, img)
+
+            read_exif_to_camera(headnum, i, filename)
+            camera.orientation = camera.exif.orientation
+            auto_setup_camera_from_exif(camera)
+
+            FBLoader.set_keentools_version(camera.camobj)
+            camera.set_keyframe(kid)
             logger.debug("CAMERA CREATED {}".format(kid))
-            FBLoader.place_cameraobj(kid, c.camobj, obj)
-            c.set_model_mat(fb.model_mat(kid))
+            FBLoader.place_cameraobj(kid, camera.camobj, obj)
+            camera.set_model_mat(fb.model_mat(kid))
             FBLoader.update_pins_count(headnum, i)
 
-        # load background images
-        for i, f in enumerate(images):
-            logger.debug("IMAGE {} {}".format(i, f))
-            img = bpy.data.images.new(f, 0, 0)
-            img.source = 'FILE'
-            img.filepath = f
-            head.get_camera(i).cam_image = img
-
         FBLoader.update_camera_params(head)
+        FBLoader.update_cameras_from_old_version(headnum)
 
     except Exception:
         logger.error("WRONG PARAMETERS")
         for i, c in enumerate(reversed(head.cameras)):
             if c.camobj is not None:
-                # Delete camera object from scene
                 bpy.data.objects.remove(c.camobj, do_unlink=True)
-            # Delete link from list
             head.cameras.remove(i)
         settings.heads.remove(headnum)
         scene.render.resolution_x = rx

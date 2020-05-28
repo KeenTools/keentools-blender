@@ -317,6 +317,15 @@ def _exif_sizes_message(headnum, image):
     return message
 
 
+def reload_all_camera_exif(headnum):
+    settings = get_main_settings()
+    head = settings.get_head(headnum)
+    for i, camera in enumerate(head.cameras):
+        filepath = camera.get_abspath()
+        if filepath:
+            read_exif_to_camera(headnum, i, filepath)
+
+
 def read_exif_to_camera(headnum, camnum, filepath):
     settings = get_main_settings()
     camera = settings.get_camera(headnum, camnum)
@@ -355,7 +364,8 @@ def auto_setup_camera_from_exif(camera):
             if sh > sw:
                 sw = sh
             if sw > 0:
-                camera.focal = camera.exif.focal * Config.default_sensor_width / sw
+                camera.focal = camera.exif.focal * \
+                               Config.default_sensor_width / sw
 
     camera.auto_focal_estimation = True
 
