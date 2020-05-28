@@ -157,31 +157,41 @@ class FBLoader:
         return False
 
     @classmethod
-    def out_pinmode(cls, headnum):
+    def save_pinmode_state(cls, headnum):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
-
-        vp = cls.viewport()
-        vp.unregister_handlers()
-
         head = settings.get_head(headnum)
         headobj = head.headobj
-        # Mark object by ver.
-        cls.set_keentools_version(headobj)
-        # Show geometry
-        headobj.hide_set(False)
-        settings.pinmode = False
 
+        cls.save_fb_on_headobj(headnum)
+
+        vp = cls.viewport()
         vp.pins().reset_current_pin()
-        cameras.show_all_cameras(headnum)
 
         cls.update_head_camera_focals(head)
         coords.update_head_mesh_neutral(cls.get_builder(), headobj)
+        logger.debug("SAVE PINMODE STATE")
+
+    @classmethod
+    def out_pinmode(cls, headnum):
+        logger = logging.getLogger(__name__)
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        headobj = head.headobj
+
+        cls.save_pinmode_state(headnum)
+
+        vp = cls.viewport()
+        vp.unregister_handlers()
 
         FBStopShaderTimer.stop()
         logger.debug("STOPPER STOP")
 
         restore_ui_elements()
+
+        cameras.show_all_cameras(headnum)
+        headobj.hide_set(False)
+        settings.pinmode = False
         logger.debug("OUT PINMODE")
 
     @classmethod
@@ -193,11 +203,16 @@ class FBLoader:
         head.set_serial_str(fb.serialize())
 
     @classmethod
-    def update_mesh_only(cls, headnum):
+    def save_fb_on_headobj(cls, headnum):
         fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.get_head(headnum)
-        coords.update_head_mesh(settings, fb, head)
+
+        head.set_serial_str(fb.serialize())
+
+        head.save_images_src()
+        head.save_cam_settings()
+        cls.set_keentools_version(head.headobj)
 
     @classmethod
     def fb_save(cls, headnum, camnum):
@@ -207,15 +222,17 @@ class FBLoader:
         head = settings.get_head(headnum)
         cam = head.get_camera(camnum)
 
-        # Save block
-        head.set_serial_str(fb.serialize())
-
         if cam is not None:
-            kid = settings.get_keyframe(headnum, camnum)
-            cam.set_model_mat(fb.model_mat(kid))
-        # Save images list on headobj
-        head.save_images_src()
-        head.save_cam_settings()
+            cam.set_model_mat(fb.model_mat(cam.get_keyframe()))
+
+        cls.save_fb_on_headobj(headnum)
+
+    @classmethod
+    def update_mesh_only(cls, headnum):
+        fb = cls.get_builder()
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        coords.update_head_mesh(settings, fb, head)
 
     @classmethod
     def shader_update(cls, headobj):

@@ -166,9 +166,6 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         if coords.is_safe_region(context, mouse_x, mouse_y):
             settings = get_main_settings()
-
-            # FBLoader.setup_solve_mode(settings.current_headnum, settings.current_camnum)
-
             # Movepin operator Call
             op = getattr(get_operators(), Config.fb_movepin_callname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
@@ -184,9 +181,14 @@ class FB_OT_PinMode(bpy.types.Operator):
         settings = get_main_settings()
         head = settings.get_head(self.headnum)
         headobj = head.headobj
+        first_start = True
 
         logger.debug("PINMODE ENTER: CH{} CC{}".format(
             settings.current_headnum, settings.current_camnum))
+
+        if not settings.check_heads_and_cams():
+            self._fix_heads_with_warning()
+            return {'CANCELLED'}
 
         if not FBLoader.check_mesh(headobj):
             logger.error("MESH IS CORRUPTED")
@@ -194,66 +196,68 @@ class FB_OT_PinMode(bpy.types.Operator):
             warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
             return {'CANCELLED'}
 
-        # We had to finish last operation if we are in Pinmode
-        if settings.pinmode:
-            if settings.current_headnum >= 0 and settings.current_camnum >= 0:
-                FBLoader.out_pinmode(settings.current_headnum)
-                logger.debug("PINMODE FORCE FINISH: H{} C{}".format(
-                    settings.current_headnum, settings.current_camnum))
+        # We have to fix last operation if we are in Pinmode
+        if settings.pinmode and \
+                settings.current_headnum >= 0 and settings.current_camnum >= 0:
+            FBLoader.save_pinmode_state(settings.current_headnum)
+            logger.debug("PINMODE FORCE FINISH: H{} C{}".format(
+                settings.current_headnum, settings.current_camnum))
+            first_start = False
         else:
             FBLoader.builder().sync_version(head.mod_ver)
             head.mod_ver = FBLoader.get_builder_version()
 
             FBLoader.update_cameras_from_old_version(head)
 
-        if not settings.check_heads_and_cams():
-            self._fix_heads_with_warning()
-            return {'FINISHED'}
-
-        hide_ui_elements()
-
-        # Current headnum & camnum in global settings object
         settings.current_headnum = self.headnum
         settings.current_camnum = self.camnum
+        settings.pinmode = True
 
-        camera = head.get_camera(self.camnum)
+        camera = head.get_camera(settings.current_camnum)
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
 
-        logger.debug("PINMODE START H{} C{}".format(self.headnum, self.camnum))
+        logger.debug("PINMODE START H{} C{}".format(settings.current_headnum,
+                                                    settings.current_camnum))
 
-        FBLoader.load_model(self.headnum)
-        FBLoader.place_camera(self.headnum, self.camnum)
-        FBLoader.load_pins(self.headnum, self.camnum)
+        FBLoader.load_model(settings.current_headnum)
+        FBLoader.place_camera(settings.current_headnum, settings.current_camnum)
+        FBLoader.load_pins(settings.current_headnum, settings.current_camnum)
         coords.update_head_mesh(settings, FBLoader.get_builder(), head)
 
-        kid = settings.get_keyframe(self.headnum, self.camnum)
+        kid = camera.get_keyframe()
         focal = FBLoader.get_keyframe_focal(kid)
         camera.camobj.data.lens = focal
         camera.focal = focal
 
         # Hide geometry
         headobj.hide_set(True)
-        cameras.hide_other_cameras(self.headnum, self.camnum)
+        cameras.hide_other_cameras(settings.current_headnum,
+                                   settings.current_camnum)
 
-        logger.debug("START SHADERS")
-        self._init_wireframer_colors(settings.overall_opacity)
         vp = FBLoader.viewport()
-        vp.create_batch_2d(context)
-        logger.debug("REGISTER SHADER HANDLERS")
-        vp.register_handlers(args, context)
-        context.window_manager.modal_handler_add(self)
+        if first_start:
+            hide_ui_elements()
 
-        vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
+            logger.debug("START SHADERS")
+            self._init_wireframer_colors(settings.overall_opacity)
+            vp.create_batch_2d(context)
+            logger.debug("REGISTER SHADER HANDLERS")
+            vp.register_handlers(args, context)
 
-        # Can start much more times when not out from pinmode
-        if not settings.pinmode:
+            context.window_manager.modal_handler_add(self)
+
             logger.debug("STOPPER START")
             FBStopShaderTimer.start()
 
-        settings.pinmode = True
+        vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
         manipulate.push_neutral_head_in_undo_history(head, kid,
                                                      'Pin Mode Start.')
+        if not first_start:
+            logger.debug('PINMODE SWITCH ONLY')
+            return {'FINISHED'}
+
+        logger.debug('PINMODE STARTED')
         return {"RUNNING_MODAL"}
 
     def _wireframe_view_toggle(self):
@@ -320,6 +324,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         headnum = settings.current_headnum
         head = settings.get_head(headnum)
 
+        # logger.debug('PINMODE MODAL C:{}'.format(settings.current_camnum))
         if self._modal_should_finish(context, event):
             return {'FINISHED'}
 
