@@ -22,10 +22,11 @@ from collections import Counter
 import bpy
 
 from ..fbloader import FBLoader
-from ..config import Config, get_main_settings, get_operators, \
-    ErrorType, BuilderType
+from ..config import (Config, get_main_settings, get_operators,
+                      ErrorType, BuilderType)
 from . import cameras, attrs, coords
-from .exif_reader import read_exif_to_camera, auto_setup_camera_from_exif
+from .exif_reader import (read_exif_to_camera, auto_setup_camera_from_exif,
+                          update_image_groups)
 
 
 def _is_keentools_object(obj):
@@ -298,7 +299,7 @@ def reconstruct_by_head():
         scene.render.resolution_y = params['frame_height']
 
         fb.deserialize(head.get_serial_str())
-        logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
+        logger.debug("RECONSTRUCT KEYFRAMES {}".format(str(fb.keyframes())))
 
         for i, kid in enumerate(fb.keyframes()):
             cam_ob = FBLoader.create_camera_object(headnum, i)
@@ -312,20 +313,21 @@ def reconstruct_by_head():
             img.source = 'FILE'
             img.filepath = filename
 
-            w, h = FBLoader.add_background_to_camera(headnum, i, img)
+            FBLoader.add_background_to_camera(headnum, i, img)
 
             read_exif_to_camera(headnum, i, filename)
             camera.orientation = camera.exif.orientation
+
             auto_setup_camera_from_exif(camera)
 
-            FBLoader.set_keentools_version(camera.camobj)
-            camera.set_keyframe(kid)
             logger.debug("CAMERA CREATED {}".format(kid))
             FBLoader.place_cameraobj(kid, camera.camobj, obj)
             camera.set_model_mat(fb.model_mat(kid))
             FBLoader.update_pins_count(headnum, i)
 
-        FBLoader.update_camera_params(head)
+            attrs.mark_keentools_object(camera.camobj)
+
+        update_image_groups(head)
         FBLoader.update_cameras_from_old_version(headnum)
 
     except Exception:

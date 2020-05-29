@@ -60,71 +60,6 @@ class FBLoader:
             logger.debug("camera: {} focal: {}".format(i, c.focal))
 
     @classmethod
-    def update_camera_params(cls, head):
-        """ Update when some camera parameters changes """
-        logger = logging.getLogger(__name__)
-        logger.debug("UPDATE CAMERA PARAMETERS")
-
-        settings = get_main_settings()
-        scene = bpy.context.scene
-
-        # Check scene consistency
-        heads_deleted, cams_deleted = settings.fix_heads()
-
-        headnum = -1
-        for i, h in enumerate(settings.heads):
-            if head == h:
-                headnum = i
-
-        if headnum < 0:
-            return
-
-        # NoneBuilder for auto-select builder class
-        fb = cls.new_builder(BuilderType.NoneBuilder, head.mod_ver)
-        cls.load_model(headnum)
-
-        max_index = -1
-        max_pins = -1
-        for i, c in enumerate(head.cameras):
-            kid = c.get_keyframe()
-            # We are looking for keyframe that has maximum pins
-            if c.has_pins():
-                if max_pins < c.pins_count:
-                    max_index = kid
-                    max_pins = c.pins_count
-            c.camobj.data.lens = c.focal  # fix
-            c.camobj.data.sensor_width = Config.default_sensor_width
-            c.camobj.data.sensor_height = Config.default_sensor_height
-
-        FBLoader.rigidity_setup()
-        fb.set_use_emotions(head.should_use_emotions())
-
-        if max_index >= 0:
-            try:
-                fb.solve_for_current_pins(max_index)
-                logger.debug("SOLVED {}".format(max_index))
-
-            except pkt.module().UnlicensedException:
-                logger.error("LICENSE PROBLEM")
-
-                if not settings.pinmode and not settings.license_error:
-                    warn = getattr(get_operators(), Config.fb_warning_callname)
-                    warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
-
-                settings.force_out_pinmode = True
-                settings.license_error = True
-            except Exception:
-                logger.error("SOLVER PROBLEM")
-                settings.force_out_pinmode = True
-
-        coords.update_head_mesh(settings, fb, head)
-
-        if settings.pinmode:
-            cls.fb_redraw(headnum, settings.current_camnum)
-        cls.update_all_camera_positions(headnum)
-        cls.save_only(headnum)
-
-    @classmethod
     def get_builder(cls):
         return cls.builder().get_builder()
 
@@ -721,53 +656,45 @@ class FBLoader:
         b.show_on_foreground = False
         b.alpha = 1.0
 
+        w = 0
+        h = 0
         if img is not None:
             w, h = img.size
-        else:
+
+        if w == 0 and h == 0:
             w = bpy.context.scene.render.resolution_x
             h = bpy.context.scene.render.resolution_y
 
         camera.set_image_width(w)
         camera.set_image_height(h)
-        return w, h
 
     @classmethod
-    def add_camera(cls, headnum, img=None):
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-
-        camnum = len(head.cameras)
-        cam_ob = cls.create_camera_object(headnum, camnum)
-
-        camera = head.cameras.add()
-        camera.camobj = cam_ob
-
-        w, h = cls.add_background_to_camera(headnum, camnum, img)
-        return camera
-
-    @classmethod
-    def add_new_camera_with_image(cls, headnum, img_path):
+    def add_new_camera(cls, headnum, img):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         head = settings.get_head(headnum)
 
-        img = bpy.data.images.load(img_path)
-
         camnum = len(head.cameras)
         cam_ob = cls.create_camera_object(headnum, camnum)
 
         camera = head.cameras.add()
         camera.camobj = cam_ob
 
-        w, h = cls.add_background_to_camera(headnum, camnum, img)
+        cls.add_background_to_camera(headnum, camnum, img)
 
         fb = cls.get_builder()
         kid = cls.get_next_keyframe()
         camera.set_keyframe(kid)
-        projection = coords.projection_matrix(
-            w, h, head.focal, Config.default_sensor_width, 0.1, 1000.0)
+        projection = camera.get_projection_matrix()
+
         fb.set_centered_geo_keyframe(kid, projection)
 
         logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
 
-        return img, camera
+        attrs.mark_keentools_object(camera.camobj)
+        return camera
+
+    @classmethod
+    def add_new_camera_with_image(cls, headnum, img_path):
+        img = bpy.data.images.load(img_path)
+        return cls.add_new_camera(headnum, img)

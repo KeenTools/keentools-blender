@@ -256,9 +256,9 @@ class FBCameraItem(PropertyGroup):
     def get_background_size(self):
         img = self.get_camera_background()
         if img is not None:
-            return img.image.size
-        else:
-            return -1, -1
+            if img.image:
+                return img.image.size
+        return -1, -1
 
     def reset_background_image_rotation(self):
         background_image = self.get_camera_background()
@@ -618,6 +618,8 @@ class FBHeadItem(PropertyGroup):
         for c in self.cameras:
             if c.cam_image:
                 res.append(c.cam_image.filepath)
+            else:
+                res.append('')
         self.headobj[Config.fb_images_prop_name[0]] = res
         # Dir name of current scene
         self.headobj[Config.fb_dir_prop_name[0]] = bpy.path.abspath("//")

@@ -207,12 +207,15 @@ class FB_PT_CameraPanel(Panel):
         return _show_all_panels()
 
     def draw_header_preset(self, context):
+        state, headnum = what_is_state()
+
         layout = self.layout
         row = layout.row()
         row.active = False
 
-        row.operator(Config.fb_camera_panel_menu_exec_idname,
+        op = row.operator(Config.fb_camera_panel_menu_exec_idname,
                      text='', icon='COLLAPSEMENU')
+        op.headnum = headnum
 
         row.operator(
             Config.fb_help_camera_idname,

@@ -48,6 +48,8 @@ class FB_OT_Actor(bpy.types.Operator):
     def execute(self, context):
         logger = logging.getLogger(__name__)
         logger.debug("Actor: {}".format(self.action))
+        logger.debug('headnum: {} camnum: {} num: {}'.format(
+            self.headnum, self.camnum, self.num))
 
         if self.action == 'reconstruct_by_head':
             manipulate.reconstruct_by_head()
@@ -75,6 +77,8 @@ class FB_OT_CameraActor(bpy.types.Operator):
     def execute(self, context):
         logger = logging.getLogger(__name__)
         logger.debug('Camera Actor: {}'.format(self.action))
+        logger.debug('headnum: {} camnum: {} num: {}'.format(
+            self.headnum, self.camnum, self.num))
 
         settings = get_main_settings()
         head = settings.get_head(self.headnum)
@@ -96,12 +100,15 @@ class FB_OT_CameraActor(bpy.types.Operator):
                 camera.image_group = max(groups) + 1
             else:
                 camera.image_group = 1
+            head.show_image_groups = True
 
         elif self.action == 'to_image_group':
             camera.image_group = self.num
+            head.show_image_groups = True
 
         elif self.action == 'make_unique':
             camera.image_group = -1
+            head.show_image_groups = True
 
         elif self.action == 'make_all_unique':
             for camera in head.cameras:

@@ -324,7 +324,6 @@ class FB_OT_PinMode(bpy.types.Operator):
         headnum = settings.current_headnum
         head = settings.get_head(headnum)
 
-        # logger.debug('PINMODE MODAL C:{}'.format(settings.current_camnum))
         if self._modal_should_finish(context, event):
             return {'FINISHED'}
 

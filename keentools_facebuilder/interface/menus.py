@@ -40,7 +40,9 @@ class FB_MT_ProperViewMenu(Menu):
 
         layout.separator()
 
-        if settings.pinmode:
+        if settings.pinmode and \
+                settings.tmp_headnum == settings.current_headnum and \
+                settings.tmp_camnum == settings.current_camnum:
             op = layout.operator(Config.fb_rotate_image_cw_idname,
                                  text='Rotate CW', icon='LOOP_FORWARDS')
             op.headnum = settings.tmp_headnum
@@ -124,7 +126,6 @@ class FB_MT_CameraPanelMenu(Menu):
                 text=txt)
             op.action = 'manual_mode'
             op.headnum = settings.tmp_headnum
-            op.camnum = settings.tmp_camnum
 
         layout.separator()
 
@@ -132,17 +133,20 @@ class FB_MT_CameraPanelMenu(Menu):
             Config.fb_camera_actor_idname,
             text='Exclude all images from grouping')
         op.action = 'make_all_unique'
+        op.headnum = settings.tmp_headnum
 
         op = layout.operator(
             Config.fb_camera_actor_idname,
             text='Reset groups for all images')
         op.action = 'reset_all_image_groups'
+        op.headnum = settings.tmp_headnum
 
         layout.separator()
         op = layout.operator(
             Config.fb_camera_actor_idname,
             text='Reset all camera settings')
         op.action = 'reset_all_camera_settings'
+        op.headnum = settings.tmp_headnum
 
 
 class FB_MT_ReadExifMenu(Menu):
