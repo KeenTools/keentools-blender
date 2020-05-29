@@ -33,8 +33,7 @@ def create_head():
 
 
 def create_empty_camera(headnum):
-    op = getattr(get_operators(), Config.fb_add_camera_callname)
-    op('EXEC_DEFAULT', headnum=headnum)
+    FBLoader.add_new_camera(headnum, None)
 
 
 def create_camera_from_image(headnum, camnum, filename):
@@ -83,3 +82,7 @@ def wireframe_coloring(action='wireframe_green'):
 
 def new_scene():
     bpy.ops.scene.new(type='NEW')
+
+
+def save_scene(filepath):
+    bpy.ops.wm.save_mainfile(filepath=filepath, check_existing=False)
