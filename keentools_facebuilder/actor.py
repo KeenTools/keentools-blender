@@ -84,7 +84,7 @@ class FB_OT_CameraActor(bpy.types.Operator):
         head = settings.get_head(self.headnum)
         camera = head.get_camera(settings.current_camnum)
 
-        if self.action == 'show_groups_info':
+        if self.action == 'show_group_info':
             head.show_image_groups = not head.show_image_groups
 
         elif self.action == 'manual_mode':

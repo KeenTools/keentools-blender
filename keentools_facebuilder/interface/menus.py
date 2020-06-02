@@ -148,6 +148,14 @@ class FB_MT_CameraPanelMenu(Menu):
         op.action = 'reset_all_camera_settings'
         op.headnum = settings.tmp_headnum
 
+        if head.show_image_groups:
+            layout.separator()
+            op = layout.operator(
+                Config.fb_camera_actor_idname,
+                text='Hide group info')
+            op.action = 'show_group_info'
+            op.headnum = settings.tmp_headnum
+
 
 class FB_MT_ReadExifMenu(Menu):
     bl_label = "Select image to read EXIF"

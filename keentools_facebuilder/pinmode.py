@@ -249,6 +249,9 @@ class FB_OT_PinMode(bpy.types.Operator):
 
             logger.debug("STOPPER START")
             FBStopShaderTimer.start()
+        else:
+            logger.debug("SHADER UPDATE ONLY")
+            self._init_wireframer_colors(settings.overall_opacity)
 
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
         manipulate.push_neutral_head_in_undo_history(head, kid,
