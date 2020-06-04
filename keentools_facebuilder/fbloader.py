@@ -256,7 +256,8 @@ class FBLoader:
             return
         fb = FBLoader.get_builder()
         projection = camera.get_projection_matrix()
-        fb.set_centered_geo_keyframe(camera.get_keyframe(), projection)
+        fb.set_centered_geo_keyframe(camera.get_keyframe(), projection,
+                                     camera.get_oriented_image_size())
 
     # --------------------
     @classmethod
@@ -687,7 +688,8 @@ class FBLoader:
         camera.set_keyframe(kid)
         projection = camera.get_projection_matrix()
 
-        fb.set_centered_geo_keyframe(kid, projection)
+        fb.set_centered_geo_keyframe(kid, projection,
+                                     camera.get_oriented_image_size())
 
         logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
 

@@ -370,6 +370,11 @@ class FBCameraItem(PropertyGroup):
             self.image_height = h
         return w, h
 
+    def get_oriented_image_size(self):
+        if (self.orientation % 2) == 0:
+            return (self.get_image_width(), self.get_image_height())
+        return (self.get_image_height(), self.get_image_width())
+
     def update_image_size(self):
         w, h = self.get_image_size()
         self.set_image_width(w)
