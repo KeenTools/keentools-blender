@@ -246,7 +246,9 @@ class FBLoader:
             return
         fb = FBLoader.get_builder()
         projection = camera.get_projection_matrix()
-        fb.update_projection_mat(camera.get_keyframe(), projection)
+        kid = camera.get_keyframe()
+        fb.update_projection_mat(kid, projection)
+        fb.update_image_size(kid, camera.get_oriented_image_size())
 
     @classmethod
     def center_geo_camera_projection(cls, headnum, camnum):
@@ -527,6 +529,8 @@ class FBLoader:
                     for cam in head.cameras:
                         fb.update_projection_mat(cam.get_keyframe(),
                             cam.get_custom_projection_matrix(head.focal))
+                        fb.update_image_size(cam.get_keyframe(),
+                                             self.get_oriented_image_size())
                     mode = 'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES'
                 else:
                     assert(False), 'Unknown mode: {}'.format(

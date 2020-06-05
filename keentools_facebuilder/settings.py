@@ -95,6 +95,7 @@ def update_camera_focal(self, context):
     fb = FBLoader.get_builder()
     if fb.is_key_at(kid):
         fb.update_projection_mat(kid, self.get_projection_matrix())
+        fb.update_image_size(kid, self.get_oriented_image_size())
         FBLoader.save_only(settings.current_headnum)
 
 
