@@ -230,7 +230,7 @@ class FB_PT_CameraPanel(Panel):
             col.scale_y = Config.text_scale_y
             col.label(text='File: {}'.format(camera.get_image_name()))
             row2 = col.split(factor=0.6)
-            row2.label(text='Image Group:')
+            row2.label(text='Camera Group:')
 
             txt = camera.image_group
             if camera.image_group == 0:
