@@ -25,10 +25,10 @@ from bpy.props import (
 )
 
 from .utils import manipulate
-from .config import Config, get_main_settings
-from .utils.exif_reader import (get_sensor_size_35mm_equivalent,
-                                update_image_groups,
-                                auto_setup_camera_from_exif)
+from .config import Config, get_main_settings, get_operators, ErrorType
+from .utils.exif_reader import (update_image_groups,
+                                auto_setup_camera_from_exif,
+                                is_size_compatible_with_group)
 
 
 class FB_OT_Actor(bpy.types.Operator):
@@ -84,7 +84,7 @@ class FB_OT_CameraActor(bpy.types.Operator):
         head = settings.get_head(self.headnum)
         camera = head.get_camera(settings.current_camnum)
 
-        if self.action == 'show_group_info':
+        if self.action == 'toggle_group_info':
             head.show_image_groups = not head.show_image_groups
 
         elif self.action == 'manual_mode':
@@ -103,8 +103,18 @@ class FB_OT_CameraActor(bpy.types.Operator):
             head.show_image_groups = True
 
         elif self.action == 'to_image_group':
-            camera.image_group = self.num
-            head.show_image_groups = True
+            if is_size_compatible_with_group(head, camera, self.num):
+                camera.image_group = self.num
+                head.show_image_groups = True
+            else:
+                error_message = "Wrong Image Size\n\n" \
+                    "This image {} can't be added into group {} \n" \
+                    "because they have different " \
+                    "dimensions.".format(camera.get_image_name(), self.num)
+
+                warn = getattr(get_operators(), Config.fb_warning_callname)
+                warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+                     msg_content=error_message)
 
         elif self.action == 'make_unique':
             camera.image_group = -1

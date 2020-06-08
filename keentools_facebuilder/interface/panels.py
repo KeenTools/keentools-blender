@@ -282,14 +282,14 @@ class FB_PT_CameraPanel(Panel):
             col = box.column()
             col.scale_y = Config.text_scale_y
             _draw_mode_comment(col, head.manual_estimation_mode)
-            if head.manual_estimation_mode in {'force_focal'}:
+            if head.manual_estimation_mode == 'force_focal':
                 box.prop(head, 'focal')
 
             if settings.current_camnum < 0:
                 return
             if head.manual_estimation_mode in {'current_estimation',
                                                'all_different',
-                                               'same_focus', 'force_focal'}:
+                                               'same_focus'}:
                 camera = head.get_camera(settings.current_camnum)
                 box.label(text='Focal length: {:.2f} mm'.format(camera.focal))
 

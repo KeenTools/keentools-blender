@@ -445,6 +445,18 @@ def _detect_image_groups_by_exif(head, hash_func=_exif_and_size_hash_string):
     return [unique_hashes.index(x) + 1 for x in hashes]
 
 
+def is_size_compatible_with_group(head, camera, groupnum):
+    def _group_size_hash(cur_head, gnum):
+        for cam in cur_head.cameras:
+            if cam.image_group == gnum:
+                return _image_size_hash_string(cam)
+        return None
+
+    current_hash = _image_size_hash_string(camera)
+    group_hash = _group_size_hash(head, groupnum)
+    return group_hash is None or group_hash == current_hash
+
+
 def update_image_groups(head):
     def _perform_already_defined_groups():
         for i, group_num in enumerate(image_groups_old):

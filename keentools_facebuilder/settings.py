@@ -98,6 +98,21 @@ def update_camera_focal(self, context):
         fb.update_image_size(kid, self.get_oriented_image_size())
         FBLoader.save_only(settings.current_headnum)
 
+    if FBLoader.in_pin_drag() or self.auto_focal_estimation or \
+            self.image_group <= 0 or \
+            settings.current_headnum < 0 or settings.current_camnum < 0:
+        return
+
+    head = settings.get_head(settings.current_headnum)
+    current_camera = head.get_camera(settings.current_camnum)
+    if current_camera.get_keyframe() != kid:
+        return
+
+    for cam in head.cameras:
+        if cam.get_keyframe() != kid and not cam.auto_focal_estimation and \
+                cam.image_group == self.image_group:
+            cam.focal = self.focal
+
 
 def update_blue_camera_button(self, context):
     settings = get_main_settings()

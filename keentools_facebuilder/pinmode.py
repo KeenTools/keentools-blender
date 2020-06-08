@@ -25,8 +25,6 @@ from .config import Config, get_main_settings, get_operators, ErrorType
 from .fbloader import FBLoader
 from .utils.other import FBStopShaderTimer, force_ui_redraw, hide_ui_elements
 
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
-
 
 class FB_OT_PinMode(bpy.types.Operator):
     """ On Screen Face Builder Draw Operator """
@@ -130,8 +128,6 @@ class FB_OT_PinMode(bpy.types.Operator):
         head = settings.get_head(headnum)
 
         head.need_update = False
-        # Reload pins surface points
-        # FBLoader.load_all(headnum, camnum)
         FBLoader.load_model(headnum)
         FBLoader.place_camera(headnum, camnum)
         FBLoader.load_pins(headnum, camnum)

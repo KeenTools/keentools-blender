@@ -92,6 +92,11 @@ class FBLoader:
         return False
 
     @classmethod
+    def in_pin_drag(cls):
+        vp = cls.viewport()
+        return vp.in_pin_drag()
+
+    @classmethod
     def save_pinmode_state(cls, headnum):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()

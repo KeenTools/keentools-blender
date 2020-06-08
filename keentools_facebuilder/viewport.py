@@ -136,6 +136,11 @@ class FBViewport:
     def tolerance_dist2(cls):  # squared distance
         return (cls.POINT_SENSITIVITY * cls.PIXEL_SIZE)**2
 
+    @classmethod
+    def in_pin_drag(cls):
+        pins = cls.pins()
+        return pins.current_pin_num() >= 0
+
     # --------
     # Handlers
     @classmethod

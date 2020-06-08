@@ -119,17 +119,21 @@ class FB_MT_CameraPanelMenu(Menu):
 
         head = settings.get_head(settings.current_headnum)
 
-        op = layout.operator(
-            Config.fb_camera_actor_idname,
-            text='Exclude all views from grouping')
-        op.action = 'make_all_unique'
-        op.headnum = settings.tmp_headnum
+        if head is None:
+            return
 
-        op = layout.operator(
-            Config.fb_camera_actor_idname,
-            text='Reset groups for all views')
-        op.action = 'reset_all_image_groups'
-        op.headnum = settings.tmp_headnum
+        if head.smart_mode():
+            op = layout.operator(
+                Config.fb_camera_actor_idname,
+                text='Exclude all views from grouping')
+            op.action = 'make_all_unique'
+            op.headnum = settings.tmp_headnum
+
+            op = layout.operator(
+                Config.fb_camera_actor_idname,
+                text='Reset groups for all views')
+            op.action = 'reset_all_image_groups'
+            op.headnum = settings.tmp_headnum
 
         layout.separator()
         op = layout.operator(
@@ -138,23 +142,14 @@ class FB_MT_CameraPanelMenu(Menu):
         op.action = 'reset_all_camera_settings'
         op.headnum = settings.tmp_headnum
 
-        # if head.show_image_groups:
-        #     layout.separator()
-        #     op = layout.operator(
-        #         Config.fb_camera_actor_idname,
-        #         text='Hide group info')
-        #     op.action = 'show_group_info'
-        #     op.headnum = settings.tmp_headnum
-
         layout.separator()
-        if head is not None:
-            txt = 'Switch to Manual mode' if head.smart_mode() \
-                else 'Switch to Default mode'
-            op = layout.operator(
-                Config.fb_camera_actor_idname,
-                text=txt)
-            op.action = 'manual_mode'
-            op.headnum = settings.tmp_headnum
+        txt = 'Switch to Manual mode' if head.smart_mode() \
+            else 'Switch to Default mode'
+        op = layout.operator(
+            Config.fb_camera_actor_idname,
+            text=txt)
+        op.action = 'manual_mode'
+        op.headnum = settings.tmp_headnum
 
 
 class FB_MT_ReadExifMenu(Menu):
