@@ -59,7 +59,7 @@ def load_single_image_file(headnum, camnum, filepath):
         logger.info('Load image file: {}'.format(filepath))
 
         if not settings.check_heads_and_cams():
-            settings.fix_heads()  # Fix
+            settings.fix_heads()
             return {'CANCELLED'}
 
         FBLoader.load_model(headnum)
@@ -243,7 +243,7 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
             return {'CANCELLED'}
 
         if not settings.check_heads_and_cams():
-            settings.fix_heads()  # Fix & Out
+            settings.fix_heads()
             return {'CANCELLED'}
 
         FBLoader.load_model(self.headnum)

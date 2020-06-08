@@ -447,10 +447,6 @@ class FBCameraItem(PropertyGroup):
         else:
             return 'N/A'
 
-    def get_complex_name(self):
-        auto = '*' if self.auto_focal_estimation else ''
-        return "{}[{}]{}".format(self.get_image_name(), self.image_group, auto)
-
     def reset_camera_sensor(self):
         if self.camobj:
             self.camobj.data.sensor_width = Config.default_sensor_width

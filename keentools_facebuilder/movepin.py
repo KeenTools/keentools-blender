@@ -115,7 +115,6 @@ class FB_OT_MovePin(bpy.types.Operator):
         vp = FBLoader.viewport()
         vp.update_view_relative_pixel_size(context)
 
-        #FBLoader.load_all(headnum, camnum)
         FBLoader.load_model(headnum)
         FBLoader.place_camera(headnum, camnum)
         FBLoader.load_pins(headnum, camnum)
@@ -152,7 +151,6 @@ class FB_OT_MovePin(bpy.types.Operator):
         if head.tmp_serial_str != '':
             cam.model_mat = cam.tmp_model_mat
             head.set_serial_str(head.get_tmp_serial_str())
-            # fb.set_model_mat(kid, cam.get_tmp_model_mat())
 
             if not fb.deserialize(head.get_serial_str()):
                 logger.warning('DESERIALIZE ERROR: ', head.get_serial_str())
@@ -165,7 +163,6 @@ class FB_OT_MovePin(bpy.types.Operator):
             # Restore last position
             head.set_serial_str(serial_str)
             cam.model_mat = model_mat
-            # fb.set_model_mat(kid, cam.get_model_mat())
 
             if not fb.deserialize(head.get_serial_str()):
                 logger.warning("DESERIALIZE ERROR: {}", head.get_serial_str())
