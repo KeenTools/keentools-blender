@@ -152,7 +152,7 @@ def _cam_image_data_exists(cam):
 
 def _get_fb_for_bake_tex(headnum, head):
     logger = logging.getLogger(__name__)
-    FBLoader.load_only(headnum)
+    FBLoader.load_model(headnum)
     fb = FBLoader.get_builder()
     for i, m in enumerate(head.get_masks()):
         fb.set_mask(i, m)
@@ -237,10 +237,39 @@ def bake_tex(headnum, tex_name):
         bpy.context.window_manager.progress_update(progress)
         return False
 
-    bpy.context.window_manager.progress_begin(0, 1)
-    built_texture = tb.build_texture(
-        frames_count, frame_data_loader, progress_callback)
-    bpy.context.window_manager.progress_end()
+    #-------------- New baking
+    # bpy.context.window_manager.progress_begin(0, 1)
+    # built_texture = tb.build_texture(
+    #     frames_count, frame_data_loader, progress_callback)
+    # bpy.context.window_manager.progress_end()
+
+    #-------------- Old baking
+    imgs = []
+    geos = []
+    projections = []
+    keyframes = []
+    model_views = [head.cameras[x].get_model_mat() for x in camnums]
+
+    for i, cam in enumerate(head.cameras):
+        if cam.use_in_tex_baking and cam.cam_image and cam.has_pins():
+            w, h = cam.cam_image.size[:3]
+            if w > 0 and h > 0:
+                img = np.rot90(
+                    np.asarray(cam.cam_image.pixels[:]).reshape((h, w, 4)),
+                    cam.orientation)
+
+                pm = cam.get_projection_matrix()
+                projections.append(pm)
+
+                imgs.append(img)
+                keyframes.append(cam.get_keyframe())
+                camnums.append(i)
+                geos.append(fb.applied_args_model_at(cam.get_keyframe()))
+
+    if len(keyframes) == 0:
+        return
+    built_texture = tb.build_texture(geos, imgs, model_views, projections)
+    #-------------- Old baking
 
     _create_bpy_texture_from_img(built_texture, tex_name)
     return True
