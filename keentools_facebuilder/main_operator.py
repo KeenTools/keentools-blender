@@ -517,17 +517,18 @@ class FB_OT_BakeTexture(Operator):
 
     def execute(self, context):
         settings = get_main_settings()
-        tex_name = materials.bake_tex(
+        texture_baked = materials.bake_tex(
             self.headnum, Config.tex_builder_filename)
         head = settings.get_head(self.headnum)
 
-        if tex_name is None:
+        if not texture_baked:
             return {'CANCELLED'}
 
         if settings.tex_auto_preview:
             mat = materials.show_texture_in_mat(
-                tex_name, Config.tex_builder_matname)
-            materials.assign_mat(head.headobj, mat)
+                Config.tex_builder_filename,
+                Config.tex_builder_matname)
+            materials.assign_material_to_object(head.headobj, mat)
             materials.toggle_mode(('MATERIAL',))
 
             if settings.pinmode:
@@ -682,7 +683,7 @@ class FB_OT_ShowTexture(Operator):
 
         mat = materials.show_texture_in_mat(
             Config.tex_builder_filename, Config.tex_builder_matname)
-        materials.assign_mat(
+        materials.assign_material_to_object(
             settings.get_head(settings.current_headnum).headobj, mat)
         materials.switch_to_mode('MATERIAL')
 
