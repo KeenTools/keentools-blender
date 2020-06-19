@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-
+import logging
 import bpy
 
 from . utils import attrs
@@ -32,6 +32,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
+        logger = logging.getLogger(__name__)
         settings = get_main_settings()
         heads_deleted, cams_deleted = settings.fix_heads()
         try:
@@ -60,6 +61,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         h = get_main_settings().heads.add()
         h.headobj = obj
         h.mod_ver = FBLoader.get_builder_version()
+        h.reset_sensor_size()
         h.save_cam_settings()
 
         settings.current_headnum = settings.get_last_headnum()
@@ -72,6 +74,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
             pass
 
         pkt.reset_cached_is_installed()
+        logger.debug('HEAD HAS BEEN SUCCESSFULLY CREATED')
         return {'FINISHED'}
 
     @classmethod

@@ -22,11 +22,9 @@ import bpy
 
 from .utils import cameras, manipulate, coords
 from .fbloader import FBLoader
-from .fbdebug import FBDebug
 from .config import Config, get_main_settings
 
 from functools import wraps
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 # Decorator for profiling
@@ -82,10 +80,6 @@ class FB_OT_MovePin(bpy.types.Operator):
         )
         if pin is not None:
             logger.debug("ADD PIN")
-            FBDebug.add_event_to_queue(
-                'ADD_PIN', mouse_x, mouse_y,
-                coords.get_raw_camera_2d_data(context))
-
             vp = FBLoader.viewport()
             vp.pins().add_pin((x, y))
             vp.pins().set_current_pin_num_to_last()
@@ -95,10 +89,6 @@ class FB_OT_MovePin(bpy.types.Operator):
                 settings.get_head(headnum), kid, 'New Pin.')
         else:
             logger.debug("MISS MODEL")
-            FBDebug.add_event_to_queue(
-                'MISS_PIN', mouse_x, mouse_y,
-                coords.get_raw_camera_2d_data(context))
-
             FBLoader.viewport().pins().reset_current_pin()
             return {"FINISHED"}
         return None
@@ -123,10 +113,12 @@ class FB_OT_MovePin(bpy.types.Operator):
         cam.tmp_model_mat = ''
 
         vp = FBLoader.viewport()
-
         vp.update_view_relative_pixel_size(context)
 
-        FBLoader.load_all(headnum, camnum)
+        FBLoader.load_model(headnum)
+        FBLoader.place_camera(headnum, camnum)
+        FBLoader.load_pins(headnum, camnum)
+
         vp.create_batch_2d(context)
         vp.register_handlers(args, context)
 
@@ -137,9 +129,6 @@ class FB_OT_MovePin(bpy.types.Operator):
         nearest, dist2 = coords.nearest_point(x, y, vp.pins().arr())
 
         if nearest >= 0 and dist2 < vp.tolerance_dist2():
-            FBDebug.add_event_to_queue(
-                'PIN_FOUND', mouse_x, mouse_y,
-                coords.get_raw_camera_2d_data(context))
             vp.pins().set_current_pin_num(nearest)
         else:
             return self._new_pin(context, mouse_x, mouse_y)
@@ -162,7 +151,6 @@ class FB_OT_MovePin(bpy.types.Operator):
         if head.tmp_serial_str != '':
             cam.model_mat = cam.tmp_model_mat
             head.set_serial_str(head.get_tmp_serial_str())
-            fb.set_model_mat(kid, cam.get_tmp_model_mat())
 
             if not fb.deserialize(head.get_serial_str()):
                 logger.warning('DESERIALIZE ERROR: ', head.get_serial_str())
@@ -175,7 +163,6 @@ class FB_OT_MovePin(bpy.types.Operator):
             # Restore last position
             head.set_serial_str(serial_str)
             cam.model_mat = model_mat
-            fb.set_model_mat(kid, cam.get_model_mat())
 
             if not fb.deserialize(head.get_serial_str()):
                 logger.warning("DESERIALIZE ERROR: {}", head.get_serial_str())
@@ -200,12 +187,13 @@ class FB_OT_MovePin(bpy.types.Operator):
             pins.arr()[pins.current_pin_num()] = (x, y)
 
         pins.reset_current_pin()
-        FBLoader.update_all_camera_focals(head)
+        FBLoader.update_head_camera_focals(head)
 
         self._push_previous_state()
 
         fb = FBLoader.get_builder()
         FBLoader.update_all_camera_positions(headnum)
+        FBLoader.update_all_camera_focals(headnum)
         FBLoader.fb_save(headnum, camnum)
         # ---------
         # PUSH Last
@@ -317,21 +305,11 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         if event.value == "RELEASE" and event.type == "LEFTMOUSE":
             logger.debug("LEFT MOUSE RELEASE")
-
-            FBDebug.add_event_to_queue(
-                'RELEASE_LEFTMOUSE', mouse_x, mouse_y,
-                coords.get_raw_camera_2d_data(context))
-
             return self.on_left_mouse_release(context, mouse_x, mouse_y)
 
         if event.type == "MOUSEMOVE" \
                 and FBLoader.viewport().pins().current_pin() is not None:
             logger.debug("MOUSEMOVE {} {}".format(mouse_x, mouse_y))
-
-            FBDebug.add_event_to_queue(
-                'MOUSEMOVE', mouse_x, mouse_y,
-                coords.get_raw_camera_2d_data(context))
-
             return self.on_mouse_move(context, mouse_x, mouse_y)
 
         return self.on_default_modal()

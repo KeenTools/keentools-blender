@@ -59,12 +59,12 @@ def update_head_mesh(settings, fb, head):
         update_head_mesh_neutral(fb, head.headobj)
 
 
-def projection_matrix(w, h, fl, sw, near, far):
+def projection_matrix(w, h, fl, sw, near, far, scale=1.0):
     z_diff = near - far
     fl_to_sw = fl / sw
     return np.array(
-        [[w * fl_to_sw, 0, 0, 0],
-         [0, w * fl_to_sw, 0, 0],
+        [[scale * w * fl_to_sw, 0, 0, 0],
+         [0, scale * w * fl_to_sw, 0, 0],
          [-w / 2, -h / 2, (near + far) / z_diff, -1],
          [0, 0, 2 * near * far / z_diff, 0]]
     ).transpose()

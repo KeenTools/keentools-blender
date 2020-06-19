@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+import math
 import bpy
 
 
@@ -45,6 +46,8 @@ class Config:
     default_fb_object_name = 'FaceBuilderHead'
     default_fb_mesh_name = 'FaceBuilderHead_mesh'
     default_fb_collection_name = 'FaceBuilderCol'
+    default_fb_camera_data_name = 'fbCamData'
+    default_fb_camera_name = 'fbCamera'
 
     addon_search = 'KeenTools'
     addon_global_var_name = prefix + '_settings'
@@ -88,44 +91,13 @@ class Config:
     fb_delete_camera_callname = 'delete_camera'
     fb_delete_camera_idname = operators + '.' + fb_delete_camera_callname
 
-    fb_add_camera_callname = 'add_camera'
-    fb_add_camera_idname = operators + '.' + fb_add_camera_callname
-
-    fb_fix_size_menu_exec_callname = 'fix_size_menu_exec'
-    fb_fix_size_menu_exec_idname = \
-        operators + '.' + fb_fix_size_menu_exec_callname
-
-    fb_set_sensor_width_callname = 'set_sensor_width'
-    fb_set_sensor_width_idname = \
-        operators + '.' + fb_set_sensor_width_callname
-
-    fb_sensor_size_window_callname = 'sensor_width_window'
-    fb_sensor_size_window_idname = \
-        operators + '.' + fb_sensor_size_window_callname
-
-    fb_focal_length_menu_exec_callname = 'set_focal_length_menu_exec'
-    fb_focal_length_menu_exec_idname = \
-        operators + '.' + fb_focal_length_menu_exec_callname
-
     fb_proper_view_menu_exec_callname = 'proper_view_menu_exec'
     fb_proper_view_menu_exec_idname = \
         operators + '.' + fb_proper_view_menu_exec_callname
 
-    fb_improper_view_menu_exec_callname = 'improper_view_menu_exec'
-    fb_improper_view_menu_exec_idname = \
-        operators + '.' + fb_improper_view_menu_exec_callname
-
     fb_view_to_frame_size_callname = 'view_to_frame_size'
     fb_view_to_frame_size_idname = \
         operators + '.' + fb_view_to_frame_size_callname
-
-    fb_most_frequent_frame_size_callname = 'most_frequent_frame_size'
-    fb_most_frequent_frame_size_idname = \
-        operators + '.' + fb_most_frequent_frame_size_callname
-
-    fb_render_size_to_frame_size_callname = 'render_size_to_frame_size'
-    fb_render_size_to_frame_size_idname = \
-        operators + '.' + fb_render_size_to_frame_size_callname
 
     fb_addon_settings_callname = 'addon_settings'
     fb_addon_settings_idname = operators + '.' + fb_addon_settings_callname
@@ -205,6 +177,14 @@ class Config:
     fb_read_exif_menu_exec_idname = \
         operators + '.' + fb_read_exif_menu_exec_callname
 
+    fb_image_group_menu_exec_callname = 'image_group_menu_exec'
+    fb_image_group_menu_exec_idname = \
+        operators + '.' + fb_image_group_menu_exec_callname
+
+    fb_camera_panel_menu_exec_callname = 'camera_panel_menu_exec'
+    fb_camera_panel_menu_exec_idname = \
+        operators + '.' + fb_camera_panel_menu_exec_callname
+
     fb_tex_selector_callname = 'tex_selector'
     fb_tex_selector_idname = operators + '.' + fb_tex_selector_callname
 
@@ -268,16 +248,13 @@ class Config:
     fb_uninstall_core_idname = operators + '.' + fb_uninstall_core_callname
 
     # Menu ids
-    fb_fix_frame_size_menu_idname = _MT + 'fix_frame_size_menu'
-
     fb_proper_view_menu_idname = _MT + 'proper_view_menu'
-    fb_improper_view_menu_idname = _MT + 'improper_view_menu'
-
-    fb_focal_length_menu_idname = _MT + 'focal_length_menu'
-    fb_sensor_width_menu_idname = _MT + 'sensor_width_menu'
 
     fb_read_exif_menu_idname = _MT + 'read_exif_menu'
 
+    fb_image_group_menu_idname = _MT + 'image_group_menu'
+
+    fb_camera_panel_menu_idname = _MT + 'camera_panel_menu'
 
     # Standard names
     tex_builder_filename = 'kt_facebuilder_texture'
@@ -310,6 +287,15 @@ class Config:
 
     viewport_redraw_interval = 0.1
     unknown_mod_ver = -1
+
+    default_sensor_width = 36.0
+    default_sensor_height = 24.0
+    default_camera_display_size = 0.75
+
+    default_camera_rotation = (math.pi * 0.5, 0, 0)
+    camera_x_step = 2.0
+    camera_y_step = 5
+    camera_z_step = 0.5
 
     # In Material
     image_node_layout_coord = (-300, 0)

@@ -103,7 +103,7 @@ class FB_OT_AddonWarning(Operator):
             self.set_content([
                 "You need to install KeenTools Core library "
                 "before using FaceBuilder."
-        ])
+            ])
         elif self.msg == ErrorType.PktModelProblem:
             self.set_content([
                 "KeenTools Core corrupted",

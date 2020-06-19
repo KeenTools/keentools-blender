@@ -22,11 +22,8 @@ import bpy
 
 from .utils import manipulate, coords, cameras
 from .config import Config, get_main_settings, get_operators, ErrorType
-from .fbdebug import FBDebug
 from .fbloader import FBLoader
 from .utils.other import FBStopShaderTimer, force_ui_redraw, hide_ui_elements
-
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 class FB_OT_PinMode(bpy.types.Operator):
@@ -40,8 +37,6 @@ class FB_OT_PinMode(bpy.types.Operator):
     camnum: bpy.props.IntProperty(default=0)
 
     _shift_pressed = False
-
-
     _prev_camera_state = ()
 
     @classmethod
@@ -133,8 +128,10 @@ class FB_OT_PinMode(bpy.types.Operator):
         head = settings.get_head(headnum)
 
         head.need_update = False
-        # Reload pins surface points
-        FBLoader.load_all(headnum, camnum)
+        FBLoader.load_model(headnum)
+        FBLoader.place_camera(headnum, camnum)
+        FBLoader.load_pins(headnum, camnum)
+
         kid = settings.get_keyframe(headnum, camnum)
         fb = FBLoader.get_builder()
 
@@ -143,15 +140,8 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
         FBLoader.shader_update(head.headobj)
 
-        FBDebug.add_event_to_queue('UNDO_CALLED', 0, 0)
-        FBDebug.add_event_to_queue('FORCE_SNAPSHOT', 0, 0)
-        FBDebug.make_snapshot()
 
     def _on_right_mouse_press(self, context, mouse_x, mouse_y):
-        FBDebug.add_event_to_queue(
-            'IN_PINMODE_PRESS_RIGHTMOUSE', mouse_x, mouse_y,
-            coords.get_raw_camera_2d_data(context))
-
         vp = FBLoader.viewport()
         vp.update_view_relative_pixel_size(context)
 
@@ -167,20 +157,11 @@ class FB_OT_PinMode(bpy.types.Operator):
     def _on_left_mouse_press(self, context, mouse_x, mouse_y):
         FBLoader.viewport().update_view_relative_pixel_size(context)
 
-        FBDebug.add_event_to_queue(
-            'DRAW_OPERATOR_PRESS_LEFTMOUSE',
-            (mouse_x, mouse_y), coords.get_raw_camera_2d_data(context))
-
         if not coords.is_in_area(context, mouse_x, mouse_y):
             return {'PASS_THROUGH'}
 
         if coords.is_safe_region(context, mouse_x, mouse_y):
-            FBDebug.add_event_to_queue(
-                'CALL_MOVE_PIN_OPERATOR', mouse_x, mouse_y,
-                coords.get_raw_camera_2d_data(context))
-
             settings = get_main_settings()
-
             # Movepin operator Call
             op = getattr(get_operators(), Config.fb_movepin_callname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
@@ -196,9 +177,14 @@ class FB_OT_PinMode(bpy.types.Operator):
         settings = get_main_settings()
         head = settings.get_head(self.headnum)
         headobj = head.headobj
+        first_start = True
 
         logger.debug("PINMODE ENTER: CH{} CC{}".format(
             settings.current_headnum, settings.current_camnum))
+
+        if not settings.check_heads_and_cams():
+            self._fix_heads_with_warning()
+            return {'CANCELLED'}
 
         if not FBLoader.check_mesh(headobj):
             logger.error("MESH IS CORRUPTED")
@@ -206,57 +192,71 @@ class FB_OT_PinMode(bpy.types.Operator):
             warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
             return {'CANCELLED'}
 
-        # We had to finish last operation if we are in Pinmode
-        if settings.pinmode:
-            if settings.current_headnum >= 0 and settings.current_camnum >= 0:
-                FBLoader.out_pinmode(settings.current_headnum)
-                logger.debug("PINMODE FORCE FINISH: H{} C{}".format(
-                    settings.current_headnum, settings.current_camnum))
+        # We have to fix last operation if we are in Pinmode
+        if settings.pinmode and \
+                settings.current_headnum >= 0 and settings.current_camnum >= 0:
+            FBLoader.save_pinmode_state(settings.current_headnum)
+            logger.debug("PINMODE FORCE FINISH: H{} C{}".format(
+                settings.current_headnum, settings.current_camnum))
+            first_start = False
         else:
             FBLoader.builder().sync_version(head.mod_ver)
             head.mod_ver = FBLoader.get_builder_version()
 
-        if not settings.check_heads_and_cams():
-            self._fix_heads_with_warning()
-            return {'FINISHED'}
+            FBLoader.update_cameras_from_old_version(self.headnum)
 
-        hide_ui_elements()
-
-        # Current headnum & camnum in global settings object
         settings.current_headnum = self.headnum
         settings.current_camnum = self.camnum
+        settings.pinmode = True
 
-        logger.debug("PINMODE START H{} C{}".format(self.headnum, self.camnum))
-        FBDebug.add_event_to_queue(
-            'PINMODE_START', self.headnum, self.camnum,
-            coords.get_raw_camera_2d_data(context))
+        camera = head.get_camera(settings.current_camnum)
+        camera.update_scene_frame_size()
+        camera.update_background_image_scale()
 
-        FBLoader.load_all(self.headnum, self.camnum)
+        logger.debug("PINMODE START H{} C{}".format(settings.current_headnum,
+                                                    settings.current_camnum))
+
+        FBLoader.load_model(settings.current_headnum)
+        FBLoader.place_camera(settings.current_headnum, settings.current_camnum)
+        FBLoader.load_pins(settings.current_headnum, settings.current_camnum)
         coords.update_head_mesh(settings, FBLoader.get_builder(), head)
+
+        kid = camera.get_keyframe()
+        focal = FBLoader.get_keyframe_focal(kid)
+        camera.camobj.data.lens = focal
+        camera.focal = focal
 
         # Hide geometry
         headobj.hide_set(True)
-        cameras.hide_other_cameras(self.headnum, self.camnum)
+        cameras.hide_other_cameras(settings.current_headnum,
+                                   settings.current_camnum)
 
-        logger.debug("START SHADERS")
-        self._init_wireframer_colors(settings.overall_opacity)
         vp = FBLoader.viewport()
-        vp.create_batch_2d(context)
-        logger.debug("REGISTER SHADER HANDLERS")
-        vp.register_handlers(args, context)
-        context.window_manager.modal_handler_add(self)
+        if first_start:
+            hide_ui_elements()
 
-        kid = settings.get_keyframe(self.headnum, self.camnum)
-        vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
+            logger.debug("START SHADERS")
+            self._init_wireframer_colors(settings.overall_opacity)
+            vp.create_batch_2d(context)
+            logger.debug("REGISTER SHADER HANDLERS")
+            vp.register_handlers(args, context)
 
-        # Can start much more times when not out from pinmode
-        if not settings.pinmode:
+            context.window_manager.modal_handler_add(self)
+
             logger.debug("STOPPER START")
             FBStopShaderTimer.start()
+        else:
+            logger.debug("SHADER UPDATE ONLY")
+            self._init_wireframer_colors(settings.overall_opacity)
 
-        settings.pinmode = True
+        vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
         manipulate.push_neutral_head_in_undo_history(head, kid,
                                                      'Pin Mode Start.')
+        if not first_start:
+            logger.debug('PINMODE SWITCH ONLY')
+            return {'FINISHED'}
+
+        logger.debug('PINMODE STARTED')
         return {"RUNNING_MODAL"}
 
     def _wireframe_view_toggle(self):
