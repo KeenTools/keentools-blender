@@ -180,28 +180,12 @@ def _create_frame_data_loader(settings, head, camnums, fb):
             np.asarray(cam.cam_image.pixels[:]).reshape((h, w, 4)),
             cam.orientation)
 
-        if w < h:  # Fix for Blender Camera Auto-mode
-            sw = head.sensor_width * \
-                 settings.frame_width / settings.frame_height
-        else:
-            sw = head.sensor_width
-        pm = projection_matrix(w, h, head.focal, sw,
-                               near=0.1, far=1000.)
-        if cam.orientation % 2 > 0:
-            offset = np.array([[1., 0., 0., (h - w) * 0.5],
-                               [0., 1., 0., (w - h) * 0.5],
-                               [0., 0., 1., 0.],
-                               [0., 0., 0., 1.]])
-            projection = offset @ pm
-        else:
-            projection = pm
-
         frame_data = pkt.module().TextureBuilder.FrameData()
         frame_data.geo = fb.applied_args_model_at(cam.get_keyframe())
         frame_data.image = img
         frame_data.model = cam.get_model_mat()
         frame_data.view = np.eye(4)
-        frame_data.projection = projection
+        frame_data.projection = cam.get_projection_matrix()
 
         return frame_data
 
@@ -237,39 +221,10 @@ def bake_tex(headnum, tex_name):
         bpy.context.window_manager.progress_update(progress)
         return False
 
-    #-------------- New baking
-    # bpy.context.window_manager.progress_begin(0, 1)
-    # built_texture = tb.build_texture(
-    #     frames_count, frame_data_loader, progress_callback)
-    # bpy.context.window_manager.progress_end()
-
-    #-------------- Old baking
-    imgs = []
-    geos = []
-    projections = []
-    keyframes = []
-    model_views = [head.cameras[x].get_model_mat() for x in camnums]
-
-    for i, cam in enumerate(head.cameras):
-        if cam.use_in_tex_baking and cam.cam_image and cam.has_pins():
-            w, h = cam.cam_image.size[:3]
-            if w > 0 and h > 0:
-                img = np.rot90(
-                    np.asarray(cam.cam_image.pixels[:]).reshape((h, w, 4)),
-                    cam.orientation)
-
-                pm = cam.get_projection_matrix()
-                projections.append(pm)
-
-                imgs.append(img)
-                keyframes.append(cam.get_keyframe())
-                camnums.append(i)
-                geos.append(fb.applied_args_model_at(cam.get_keyframe()))
-
-    if len(keyframes) == 0:
-        return
-    built_texture = tb.build_texture(geos, imgs, model_views, projections)
-    #-------------- Old baking
+    bpy.context.window_manager.progress_begin(0, 1)
+    built_texture = tb.build_texture(
+        frames_count, frame_data_loader, progress_callback)
+    bpy.context.window_manager.progress_end()
 
     _create_bpy_texture_from_img(built_texture, tex_name)
     return True
