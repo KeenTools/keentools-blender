@@ -236,11 +236,12 @@ class FB_OT_PinMode(bpy.types.Operator):
         if not self._check_keyframes(fb, head):
             logger.debug("PINMODE NO KEYFRAME")
             for cam in head.cameras:
-                logger.debug("UPDATE KEYFRAME: {}".format(
-                    cam.get_keyframe()))
-                fb.set_keyframe(cam.get_keyframe(), cam.get_model_mat(),
-                                cam.get_projection_matrix(),
-                                cam.get_oriented_image_size())
+                kfnum = cam.get_keyframe()
+                logger.debug("UPDATE KEYFRAME: {}".format(kfnum))
+                if not fb.is_key_at(kfnum):
+                    fb.set_keyframe(kfnum, cam.get_model_mat(),
+                                    cam.get_projection_matrix(),
+                                    cam.get_oriented_image_size())
 
         try:
             FBLoader.place_camera(settings.current_headnum,

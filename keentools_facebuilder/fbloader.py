@@ -562,16 +562,16 @@ class FBLoader:
         try:
             fb.solve_for_current_pins(kid)
         except pkt.module().UnlicensedException:
-            _exception_handling(headnum, "SOLVE LICENSE EXCEPTION")
+            _exception_handling(headnum, 'SOLVE LICENSE EXCEPTION')
             return False
         except pkt.module().InvalidArgumentException:
-            _exception_handling(headnum, "SOLVE NO KEYFRAME EXCEPTION",
+            _exception_handling(headnum, 'SOLVE NO KEYFRAME EXCEPTION',
                                 license_err=False)
             return False
         except Exception as err:
-            logger = logging.getLogger(__name__)
-            logger.debug('UNHANDLED SOLVE EXCEPTION: {}'.format(err))
-            _exception_handling(headnum, "SOLVE EXCEPTION")
+            _exception_handling(headnum,
+                                'SOLVE UNKNOWN EXCEPTION: {}'.format(str(err)),
+                                license_err=False)
             return False
 
         _update_camera_focal_post()
