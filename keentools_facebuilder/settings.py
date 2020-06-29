@@ -708,6 +708,7 @@ class FBSceneSettings(PropertyGroup):
         name="Debug Log active", default=False, update=update_debug_log)
 
     pinmode: BoolProperty(name="Pin Mode", default=False)
+    pinmode_id: StringProperty(name="Unique pinmode ID")
     force_out_pinmode: BoolProperty(name="Pin Mode", default=False)
     license_error: BoolProperty(name="License Error", default=False)
 
