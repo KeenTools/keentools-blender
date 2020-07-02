@@ -163,12 +163,14 @@ class FB_OT_TexSelector(Operator):
         col = layout.column()
         col.scale_y = Config.text_scale_y
 
-        if not checked_views:
+        if checked_views:
+            col.label(text="Please note: texture creation is very "
+                           "time consuming.")
+        else:
             special = col.row()
             special.alert = True
             special.label(text="You need at least one image to create texture.")
 
-        col.label(text="Please note: texture creation is very time consuming.")
         layout.prop(settings, 'tex_auto_preview')
 
 
