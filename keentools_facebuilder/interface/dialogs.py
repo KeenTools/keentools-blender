@@ -133,11 +133,15 @@ class FB_OT_TexSelector(Operator):
             return
 
         box = layout.box()
+        checked_views = False
         for camera in head.cameras:
             row = box.row()
             if camera.has_pins():
                 row.prop(camera, 'use_in_tex_baking', text='')
+                if camera.use_in_tex_baking:
+                    checked_views = True
             else:
+                row.active = False
                 row.label(text='', icon='CHECKBOX_DEHLT')
 
             image_icon = 'PINNED' if camera.has_pins() else 'FILE_IMAGE'
@@ -147,18 +151,23 @@ class FB_OT_TexSelector(Operator):
                 row.label(text='-- empty --', icon='LIBRARY_DATA_BROKEN')
 
         row = box.row()
-        # Select All cameras for baking Button
+
         op = row.operator(Config.fb_filter_cameras_idname, text='All')
         op.action = 'select_all_cameras'
         op.headnum = self.headnum
-        # Deselect All cameras
+
         op = row.operator(Config.fb_filter_cameras_idname, text='None')
         op.action = 'deselect_all_cameras'
         op.headnum = self.headnum
 
         col = layout.column()
         col.scale_y = Config.text_scale_y
-        col.label(text="Images without pins will be ignored.")
+
+        if not checked_views:
+            special = col.row()
+            special.alert = True
+            special.label(text="You need at least one image to create texture.")
+
         col.label(text="Please note: texture creation is very time consuming.")
         layout.prop(settings, 'tex_auto_preview')
 
