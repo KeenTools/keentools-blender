@@ -49,9 +49,10 @@ ERROR_MESSAGES = {
         'of Blender downloaded from their site: www.blender.org'],
 
     'BLENDER_WITH_UNSUPPORTED_PYTHON': [
-        'Error (1040): you are probably using Blender with an unsupported ',
-        'version of Python built in. Please install an official ',
-        'version of Blender. '],
+        'Error (1040): you are using Blender with an unsupported ',
+        'version of Python built in. This may happen when you install ',
+        'Blender from Linux repositories. Please install an official ',
+        'version of Blender downloaded from www.blender.org website.'],
 
     'OLD_ADDON': [
         'Error (1050): you have most likely installed an outdated ',
