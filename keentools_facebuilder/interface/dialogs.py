@@ -135,8 +135,10 @@ class FB_OT_TexSelector(Operator):
         box = layout.box()
         for camera in head.cameras:
             row = box.row()
-            # Use in Tex Baking
-            row.prop(camera, 'use_in_tex_baking', text='')
+            if camera.has_pins():
+                row.prop(camera, 'use_in_tex_baking', text='')
+            else:
+                row.label(text='', icon='CHECKBOX_DEHLT')
 
             image_icon = 'PINNED' if camera.has_pins() else 'FILE_IMAGE'
             if camera.cam_image:
