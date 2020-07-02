@@ -167,9 +167,9 @@ class FB_OT_TexSelector(Operator):
             col.label(text="Please note: texture creation is very "
                            "time consuming.")
         else:
-            special = col.row()
-            special.alert = True
-            special.label(text="You need at least one image to create texture.")
+            col.alert = True
+            col.label(text="You need to select at least one image "
+                           "to create texture.")
 
         layout.prop(settings, 'tex_auto_preview')
 
