@@ -475,12 +475,12 @@ class FBLoader:
 
     @classmethod
     def solve(cls, headnum, camnum):
-        def _exception_handling(headnum, msg):
+        def _exception_handling(headnum, msg, license_err=True):
             logger = logging.getLogger(__name__)
             logger.error(msg)
             if settings.pinmode:
                 settings.force_out_pinmode = True
-                settings.license_error = True
+                settings.license_error = license_err
                 cls.out_pinmode(headnum)
 
         def _unfix_all(fb, head):
@@ -535,7 +535,7 @@ class FBLoader:
                         fb.update_projection_mat(cam.get_keyframe(),
                             cam.get_custom_projection_matrix(head.focal))
                         fb.update_image_size(cam.get_keyframe(),
-                                             self.get_oriented_image_size())
+                                             cam.get_oriented_image_size())
                     mode = 'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES'
                 else:
                     assert(False), 'Unknown mode: {}'.format(
@@ -562,10 +562,16 @@ class FBLoader:
         try:
             fb.solve_for_current_pins(kid)
         except pkt.module().UnlicensedException:
-            _exception_handling(headnum, "SOLVE LICENSE EXCEPTION")
+            _exception_handling(headnum, 'SOLVE LICENSE EXCEPTION')
             return False
-        except Exception:
-            _exception_handling(headnum, "SOLVE EXCEPTION")
+        except pkt.module().InvalidArgumentException:
+            _exception_handling(headnum, 'SOLVE NO KEYFRAME EXCEPTION',
+                                license_err=False)
+            return False
+        except Exception as err:
+            _exception_handling(headnum,
+                                'SOLVE UNKNOWN EXCEPTION: {}'.format(str(err)),
+                                license_err=False)
             return False
 
         _update_camera_focal_post()

@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+from uuid import uuid4
 
 import bpy
 
@@ -171,6 +172,12 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         return {'PASS_THROUGH'}
 
+    def _check_keyframes(self, fb, head):
+        for cam in head.cameras:
+            if not fb.is_key_at(cam.get_keyframe()):
+                return False
+        return True
+
     def invoke(self, context, event):
         logger = logging.getLogger(__name__)
         args = (self, context)
@@ -192,9 +199,15 @@ class FB_OT_PinMode(bpy.types.Operator):
             warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
             return {'CANCELLED'}
 
+        vp = FBLoader.viewport()
+        # Stopped shaders means that we need to restart pinmode
+        if not vp.wireframer().is_working():
+            settings.pinmode = False
+
         # We have to fix last operation if we are in Pinmode
         if settings.pinmode and \
                 settings.current_headnum >= 0 and settings.current_camnum >= 0:
+
             FBLoader.save_pinmode_state(settings.current_headnum)
             logger.debug("PINMODE FORCE FINISH: H{} C{}".format(
                 settings.current_headnum, settings.current_camnum))
@@ -212,16 +225,34 @@ class FB_OT_PinMode(bpy.types.Operator):
         camera = head.get_camera(settings.current_camnum)
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
+        kid = camera.get_keyframe()
 
         logger.debug("PINMODE START H{} C{}".format(settings.current_headnum,
                                                     settings.current_camnum))
 
         FBLoader.load_model(settings.current_headnum)
-        FBLoader.place_camera(settings.current_headnum, settings.current_camnum)
+
+        fb = FBLoader.get_builder()
+        if not self._check_keyframes(fb, head):
+            logger.debug("PINMODE NO KEYFRAME")
+            for cam in head.cameras:
+                kfnum = cam.get_keyframe()
+                logger.debug("UPDATE KEYFRAME: {}".format(kfnum))
+                if not fb.is_key_at(kfnum):
+                    fb.set_keyframe(kfnum, cam.get_model_mat(),
+                                    cam.get_projection_matrix(),
+                                    cam.get_oriented_image_size())
+
+        try:
+            FBLoader.place_camera(settings.current_headnum,
+                                  settings.current_camnum)
+        except Exception:
+            logger.debug("UPDATE KEYFRAME PROBLEM")
+            return {'CANCELLED'}
+
         FBLoader.load_pins(settings.current_headnum, settings.current_camnum)
         coords.update_head_mesh(settings, FBLoader.get_builder(), head)
 
-        kid = camera.get_keyframe()
         focal = FBLoader.get_keyframe_focal(kid)
         camera.camobj.data.lens = focal
         camera.focal = focal
@@ -231,7 +262,6 @@ class FB_OT_PinMode(bpy.types.Operator):
         cameras.hide_other_cameras(settings.current_headnum,
                                    settings.current_camnum)
 
-        vp = FBLoader.viewport()
         if first_start:
             hide_ui_elements()
 
@@ -244,7 +274,8 @@ class FB_OT_PinMode(bpy.types.Operator):
             context.window_manager.modal_handler_add(self)
 
             logger.debug("STOPPER START")
-            FBStopShaderTimer.start()
+            settings.pinmode_id = str(uuid4())
+            FBStopShaderTimer.start(settings.pinmode_id)
         else:
             logger.debug("SHADER UPDATE ONLY")
             self._init_wireframer_colors(settings.overall_opacity)
