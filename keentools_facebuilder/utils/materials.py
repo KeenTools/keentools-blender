@@ -22,7 +22,8 @@ import numpy as np
 
 from .. config import Config, get_main_settings, get_operators, ErrorType
 from .. fbloader import FBLoader
-from ..utils.coords import projection_matrix
+from .. utils.coords import projection_matrix
+from .. utils.images import load_rgba
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
@@ -175,10 +176,8 @@ def _create_frame_data_loader(settings, head, camnums, fb):
     def frame_data_loader(kf_idx):
         cam = head.cameras[camnums[kf_idx]]
 
-        w, h = cam.cam_image.size[:2]
-        img = np.rot90(
-            np.asarray(cam.cam_image.pixels[:]).reshape((h, w, 4)),
-            cam.orientation)
+        img = load_rgba(cam)
+        assert (img is not None)
 
         frame_data = pkt.module().TextureBuilder.FrameData()
         frame_data.geo = fb.applied_args_model_at(cam.get_keyframe())
