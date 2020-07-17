@@ -107,17 +107,6 @@ def show_texture_in_mat(tex_name, mat_name):
     return mat
 
 
-def _create_texture_builder_from_settings(settings):
-    tb = pkt.module().TextureBuilder()
-    tb.set_output_texture_size((settings.tex_width, settings.tex_height))
-    tb.set_face_angles_affection(settings.tex_face_angles_affection)
-    tb.set_uv_expand_percents(settings.tex_uv_expand_percents)
-    tb.set_back_face_culling(settings.tex_back_face_culling)
-    tb.set_equalize_brightness(settings.tex_equalize_brightness)
-    tb.set_equalize_colour(settings.tex_equalize_colour)
-    return tb
-
-
 def _remove_bpy_texture_if_exists(tex_name):
     logger = logging.getLogger(__name__)
     tex_num = bpy.data.images.find(tex_name)
@@ -180,7 +169,7 @@ def _create_frame_data_loader(settings, head, camnums, fb):
             np.asarray(cam.cam_image.pixels[:]).reshape((h, w, 4)),
             cam.orientation)
 
-        frame_data = pkt.module().TextureBuilder.FrameData()
+        frame_data = pkt.module().texture_builder.FrameData()
         frame_data.geo = fb.applied_args_model_at(cam.get_keyframe())
         frame_data.image = img
         frame_data.model = cam.get_model_mat()
@@ -210,20 +199,24 @@ def bake_tex(headnum, tex_name):
     if frames_count == 0:
         logger.debug("NO FRAMES FOR TEXTURE BUILDING")
         return False
-
-    tb = _create_texture_builder_from_settings(settings)
-
+    
     fb = _get_fb_for_bake_tex(headnum, head)
     frame_data_loader = _create_frame_data_loader(
         settings, head, camnums, fb)
 
-    def progress_callback(progress):
-        bpy.context.window_manager.progress_update(progress)
-        return False
-
     bpy.context.window_manager.progress_begin(0, 1)
-    built_texture = tb.build_texture(
-        frames_count, frame_data_loader, progress_callback)
+
+    class ProgressCallBack(pkt.module().ProgressCallback):
+        def set_progress_and_check_abort(self, progress):
+            bpy.context.window_manager.progress_update(progress)
+            return False
+
+    progress_callBack = ProgressCallBack()
+    built_texture = pkt.module().texture_builder.build_texture(
+        frames_count, frame_data_loader, progress_callBack,
+        settings.tex_height, settings.tex_width, settings.tex_face_angles_affection,
+        settings.tex_uv_expand_percents, settings.tex_back_face_culling,
+        settings.tex_equalize_brightness, settings.tex_equalize_colour)
     bpy.context.window_manager.progress_end()
 
     _create_bpy_texture_from_img(built_texture, tex_name)
