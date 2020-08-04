@@ -29,17 +29,16 @@ def show_all_cameras(headnum):
     settings = get_main_settings()
     head = settings.get_head(headnum)
     for i, c in enumerate(head.cameras):
-        # Unhide camera
         c.camobj.hide_set(False)
 
 
 def hide_other_cameras(headnum, camnum):
     settings = get_main_settings()
     head = settings.get_head(headnum)
+    if head is None:
+        return
     for i, c in enumerate(head.cameras):
-        if i != camnum:
-            # Hide camera
-            c.camobj.hide_set(True)
+        c.camobj.hide_set(i != camnum)
 
 
 def switch_to_camera(camobj):

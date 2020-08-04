@@ -92,11 +92,15 @@ class FaceBuilderTest(unittest.TestCase):
         settings = get_main_settings()
         headnum = settings.get_last_headnum()
         test_utils.deselect_all()
+        test_utils.select_camera(headnum, 0)
+        test_utils.out_pinmode()
+
         headobj = test_utils.select_by_headnum(headnum)
         bpy.ops.object.duplicate_move(
             OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
-            TRANSFORM_OT_translate={"value": (-3.0, 0, 0)})
+            TRANSFORM_OT_translate={"value": (-4.0, 0, 0)})
         op = getattr(get_operators(), Config.fb_actor_callname)
+        test_utils.save_scene(filepath="c:\\Sure\\temp\\before.blend")
         op('EXEC_DEFAULT', action='reconstruct_by_head', headnum=-1, camnum=-1)
         headnum2 = settings.get_last_headnum()
         head_new = settings.get_head(headnum2)
@@ -122,10 +126,11 @@ class FaceBuilderTest(unittest.TestCase):
         self.assertEqual(new_focal, camobj.data.lens)
         new_sensor_width = 15
         head.sensor_width = new_sensor_width
-        self.assertEqual(new_sensor_width, camobj.data.sensor_width)
+        # Config.default_sensor_width instead cutom new_sensor_width!
+        self.assertEqual(Config.default_sensor_width, camobj.data.sensor_width)
         new_sensor_width = 20
         head.sensor_width = new_sensor_width
-        self.assertEqual(new_sensor_width, camobj.data.sensor_width)
+        self.assertEqual(Config.default_sensor_width, camobj.data.sensor_width)
 
     def test_load_images_and_bake_texture(self):
         test_utils.new_scene()
@@ -140,9 +145,10 @@ class FaceBuilderTest(unittest.TestCase):
             headnum=headnum, camnum=camnum, filename=filename)
         self.assertEqual(res, {'FINISHED'})
         head = settings.get_head(headnum)
+        camera = head.get_camera(camnum)
         # Test EXIF read
-        self.assertEqual(head.exif.focal, 50.0)
-        self.assertEqual(head.exif.focal35mm, 75.0)
+        self.assertEqual(camera.exif.focal, 50.0)
+        self.assertEqual(camera.exif.focal35mm, 75.0)
 
         camnum = 2
         filename = os.path.join(dir, 'images/ana_blue_24x16.tif')

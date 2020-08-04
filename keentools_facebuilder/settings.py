@@ -19,6 +19,8 @@
 
 import bpy
 import numpy as np
+import logging
+import math
 
 
 from . fbloader import FBLoader
@@ -33,7 +35,7 @@ from bpy.props import (
     EnumProperty
 )
 from bpy.types import PropertyGroup
-from .utils import coords, manipulate
+from .utils import coords
 from . fbdebug import FBDebug
 from . config import Config, get_main_settings, get_operators
 from .utils.manipulate import what_is_state
@@ -75,23 +77,41 @@ def update_cam_image(self, context):
     FBLoader.update_cam_image_size(self)
 
 
-def update_sensor_width(self, context):
-    self.sensor_height = self.sensor_width * 0.666666667
-    FBLoader.update_camera_params(self)
+def update_head_focal(self, context):
+    logger = logging.getLogger(__name__)
+    logger.debug('UPDATE_HEAD_FOCAL: {}'.format(self.focal))
+
+    for c in self.cameras:
+        c.focal = self.focal
 
 
-def update_sensor_height(self, context):
-    FBLoader.update_camera_params(self)
-
-
-def update_focal(self, context):
+def update_camera_focal(self, context):
+    logger = logging.getLogger(__name__)
     settings = get_main_settings()
-    if not settings.pinmode:
-        FBLoader.update_all_camera_focals(self)
+    kid = self.get_keyframe()
+    self.camobj.data.lens = self.focal
+    logger.debug('UPDATE_CAMERA_FOCAL: K:{} F:{}'.format(kid, self.focal))
 
-        state, headnum = what_is_state()
-        head = settings.get_head(headnum)
-        head.auto_focal_estimation = False
+    fb = FBLoader.get_builder()
+    if fb.is_key_at(kid):
+        fb.update_projection_mat(kid, self.get_projection_matrix())
+        fb.update_image_size(kid, self.get_oriented_image_size())
+        FBLoader.save_only(settings.current_headnum)
+
+    if FBLoader.in_pin_drag() or self.auto_focal_estimation or \
+            self.image_group <= 0 or \
+            settings.current_headnum < 0 or settings.current_camnum < 0:
+        return
+
+    head = settings.get_head(settings.current_headnum)
+    current_camera = head.get_camera(settings.current_camnum)
+    if current_camera.get_keyframe() != kid:
+        return
+
+    for cam in head.cameras:
+        if cam.get_keyframe() != kid and not cam.auto_focal_estimation and \
+                cam.image_group == self.image_group:
+            cam.focal = self.focal
 
 
 def update_blue_camera_button(self, context):
@@ -124,7 +144,7 @@ def update_mesh_parts(self, context):
         keyframe = None
 
     old_mesh = head.headobj.data
-    FBLoader.load_only(headnum)
+    FBLoader.load_model(headnum)
     # Create new mesh
     mesh = FBLoader.get_builder_mesh(FBLoader.get_builder(), 'FBHead_tmp_mesh',
                                      head.get_masks(),
@@ -212,6 +232,113 @@ class FBCameraItem(PropertyGroup):
 
     orientation: IntProperty(default=0)  # angle = orientation * Pi/2
 
+    focal: FloatProperty(
+        description="CAMERA Focal length in millimetres",
+        name="Focal Length (mm)", default=50,
+        min=0.1, update=update_camera_focal)
+
+    background_scale: FloatProperty(
+        description="CAMERA background image scale",
+        name="Cam BGScale", default=1.0,
+        min=0.0001)
+
+    auto_focal_estimation: BoolProperty(
+        name="Focal Length Estimation",
+        description="When turned on, FaceBuilder will try to estimate "
+                    "focal length based on the position of the model "
+                    "in the frame",
+        default=True)
+
+    image_group: IntProperty(default=0)
+
+    def update_scene_frame_size(self):
+        if self.image_width > 0 and self.image_height > 0:
+            if (self.orientation % 2) == 0:
+                render = bpy.context.scene.render
+                render.resolution_x = self.image_width
+                render.resolution_y = self.image_height
+            else:
+                render = bpy.context.scene.render
+                render.resolution_x = self.image_height
+                render.resolution_y = self.image_width
+
+    def get_camera_background(self):
+        c = self.camobj.data
+        if len(c.background_images) == 0:
+            return None
+        else:
+            return c.background_images[0]
+
+    def get_background_size(self):
+        img = self.get_camera_background()
+        if img is not None:
+            if img.image:
+                return img.image.size
+        return -1, -1
+
+    def reset_background_image_rotation(self):
+        background_image = self.get_camera_background()
+        if background_image is None:
+            return
+        background_image.rotation = 0
+        self.orientation = 0
+
+    def rotate_background_image(self, delta=1):
+        background_image = self.get_camera_background()
+        if background_image is None:
+            return
+
+        self.orientation += delta
+        if self.orientation < 0:
+            self.orientation += 4
+        if self.orientation >= 4:
+            self.orientation += -4
+        background_image.rotation = self.orientation * math.pi / 2
+
+    def show_background_image(self):
+        data = self.camobj.data
+        data.show_background_images = True
+        if len(data.background_images) == 0:
+            b = data.background_images.new()
+        else:
+            b = data.background_images[0]
+        b.image = self.cam_image
+        b.rotation = self.orientation * math.pi / 2
+
+    def calculate_background_scale(self):
+        if self.image_width <= 0 or self.image_height <= 0:
+            return 1.0
+        if (self.orientation % 2) == 0:
+            return 1.0
+        else:
+            if self.image_width >= self.image_height:
+                return self.image_height / self.image_width
+            else:
+                return self.image_width / self.image_height
+
+    def update_background_image_scale(self):
+        self.background_scale = self.calculate_background_scale()
+        background = self.get_camera_background()
+        if background is None:
+            return False
+        background.scale = self.background_scale
+        return True
+
+    def compensate_view_scale(self):
+        if self.image_width <= 0 or self.image_height <= 0:
+            return 1.0
+
+        if (self.orientation % 2) == 0:
+            if self.image_width >= self.image_height:
+                return 1.0
+            else:
+                return self.image_width / self.image_height
+
+        if self.image_width >= self.image_height:
+            return self.image_height / self.image_width
+        else:
+            return 1.0
+
     @staticmethod
     def convert_matrix_to_str(arr):
         b = arr.tobytes()
@@ -258,6 +385,11 @@ class FBCameraItem(PropertyGroup):
             self.image_width = w
             self.image_height = h
         return w, h
+
+    def get_oriented_image_size(self):
+        if (self.orientation % 2) == 0:
+            return (self.get_image_width(), self.get_image_height())
+        return (self.get_image_height(), self.get_image_width())
 
     def update_image_size(self):
         w, h = self.get_image_size()
@@ -315,6 +447,45 @@ class FBCameraItem(PropertyGroup):
         else:
             return 'N/A'
 
+    def reset_camera_sensor(self):
+        if self.camobj:
+            self.camobj.data.sensor_width = Config.default_sensor_width
+            self.camobj.data.sensor_height = Config.default_sensor_height
+
+    def get_custom_projection_matrix(self, focal):
+        w = self.image_width
+        h = self.image_height
+
+        near = 0.1
+        far = 1000.0
+
+        sc = 1.0 / self.compensate_view_scale()
+
+        if (self.orientation % 2) == 0:
+            if w >= h:
+                projection = coords.projection_matrix(
+                    w, h, focal, Config.default_sensor_width,
+                    near, far, scale=1.0)
+            else:
+                projection = coords.projection_matrix(
+                    w, h, focal, Config.default_sensor_width,
+                    near, far, scale=sc)
+        else:
+            projection = coords.projection_matrix(
+                h, w, focal, Config.default_sensor_width,
+                near, far, scale=sc)
+
+        return projection
+
+    def get_projection_matrix(self):
+        return self.get_custom_projection_matrix(self.focal)
+
+    def is_in_group(self):
+        return self.image_group > 0
+
+    def is_excluded(self):
+        return self.image_group == -1
+
 
 class FBHeadItem(PropertyGroup):
     mod_ver: IntProperty(name="Modifier Version", default=-1)
@@ -326,25 +497,23 @@ class FBHeadItem(PropertyGroup):
     sensor_width: FloatProperty(
         description="The length of the longest side "
                     "of the camera sensor in millimetres",
-        name="Sensor Width (mm)", default=36,
-        min=0.1, update=update_sensor_width)
+        name="Sensor Width (mm)", default=-1)
     sensor_height: FloatProperty(
         description="Secondary parameter. "
                     "Set it according to the real camera specification."
                     "This parameter is not used if Sensor Width is greater",
-        name="Sensor Height (mm)", default=24,
-        min=0.1, update=update_sensor_height)
+        name="Sensor Height (mm)", default=-1)
     focal: FloatProperty(
         description="Focal length in millimetres",
         name="Focal Length (mm)", default=50,
-        min=0.1, update=update_focal)
+        min=0.01, update=update_head_focal)
 
     auto_focal_estimation: BoolProperty(
         name="Focal Length Estimation",
         description="When turned on, FaceBuilder will try to estimate "
                     "focal length based on the position of the model "
                     "in the frame",
-        default=True)
+        default=False)
 
     check_ears: BoolProperty(name="Ears", default=True,
                              update=update_mesh_parts)
@@ -384,6 +553,26 @@ class FBHeadItem(PropertyGroup):
         default=True)
 
     exif: PointerProperty(type=FBExifItem)
+
+    manual_estimation_mode: EnumProperty(
+        name='Estimation Mode override', items=[
+            ('all_different', 'Varying FL, Multi-frame Estimation', '',
+             'RENDERLAYERS', 0),
+            ('current_estimation', 'Varying FL, Single-frame Estimation', '',
+             'IMAGE_RGB', 1),
+            ('same_focus', 'Single FL, Multi-frame Estimation', '',
+             'PIVOT_CURSOR', 2),
+            ('force_focal', 'Single Manual FL', '',
+             'MODIFIER', 3),
+        ], description='Force Estimation Mode', default='all_different')
+
+    view_mode: EnumProperty(
+        name='Camera Info View Mode', items=[
+            ('smart', 'Smart Mode', '', '', 0),
+            ('manual', 'Manual Mode', '', '', 1),
+        ], default='smart')
+
+    show_image_groups: BoolProperty(default=True)
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
@@ -446,6 +635,8 @@ class FBHeadItem(PropertyGroup):
         for c in self.cameras:
             if c.cam_image:
                 res.append(c.cam_image.filepath)
+            else:
+                res.append('')
         self.headobj[Config.fb_images_prop_name[0]] = res
         # Dir name of current scene
         self.headobj[Config.fb_dir_prop_name[0]] = bpy.path.abspath("//")
@@ -468,6 +659,37 @@ class FBHeadItem(PropertyGroup):
                 self.check_headback, self.check_jaw, self.check_mouth,
                 self.check_neck, self.check_nose)
 
+    def smart_mode(self):
+        return self.view_mode == 'smart'
+
+    def smart_mode_toggle(self):
+        if self.view_mode == 'smart':
+            self.view_mode = 'manual'
+        else:
+            self.view_mode = 'smart'
+
+    def groups_count(self):
+        if self.groups_counter <= 0:
+            groups = [cam.group for cam in self.cameras]
+            self.groups_counter = len(set(groups))
+        return self.groups_counter
+
+    def reset_groups_counter(self):
+        self.groups_counter = -1
+
+    def are_image_groups_visible(self):
+        return self.show_image_groups
+
+    def is_image_group_visible(self, camnum):
+        camera = self.get_camera(camnum)
+        if camera is None:
+            return False
+        return self.are_image_groups_visible() and camera.image_group > 0
+
+    def reset_sensor_size(self):
+        self.sensor_width = 0
+        self.sensor_height = 0
+
 
 class FBSceneSettings(PropertyGroup):
     # ---------------------
@@ -486,6 +708,7 @@ class FBSceneSettings(PropertyGroup):
         name="Debug Log active", default=False, update=update_debug_log)
 
     pinmode: BoolProperty(name="Pin Mode", default=False)
+    pinmode_id: StringProperty(name="Unique pinmode ID")
     force_out_pinmode: BoolProperty(name="Pin Mode", default=False)
     license_error: BoolProperty(name="License Error", default=False)
 

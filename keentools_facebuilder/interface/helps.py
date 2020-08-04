@@ -34,30 +34,45 @@ class HELP_OT_CameraHelp(bpy.types.Operator):
         col = layout.column()
         col.scale_y = Config.text_scale_y
         content = [
-            "In order to get a quality model you need to know two things:",
-            "sensor size and focal length. Both in millimetres.",
-            "Of the sensor size you need to know the length "
-            "of the longest side.",
-            "Of the focal length — you need to know the real focal length,",
-            "not the 35mm equivalent.",
+            "To get a quality model you need to know one important thing about",
+            "your photos — the 35mm equivalent focal length the photos "
+            "were taken with.",
+            "Usually we can automatically get this data from EXIF of the "
+            "loaded pictures.",
             " ",
-            "If you don't know either the sensor width or the focal length,",
-            "it's better to switch on the automatic focal length estimation —",
-            "it usually gives pretty good results. ",
-            "The sensor size in such case can be anything, "
-            "but it still is going to be used",
-            "in estimation. The estimation happens every "
-            "time you change pins.",
+            "Unfortunately it's not a rare case when this data is stripped "
+            "out of the photos.",
+            "In this case you still can get a quality model manually "
+            "setting up the focal",
+            "length if you know it. In all other cases we recommend using "
+            "focal length estimation.",
             " ",
-            "You can also try getting camera settings from EXIF "
-            "when it's available.",
-            "It can be found on corresponding panel below.",
+            "If you don't know the focal length, we recommend you to not "
+            "change anything. ",
+            "Please rely on automatic settings, that should provide you "
+            "the best possible results.",
             " ",
-            "Different ways of using EXIF information "
-            "for Sensor width and Focal length",
-            "can be found in corresponding menus (buttons with gear icons) "
-            "on this tab, ",
-            "on the right side of fields."]
+            "If you know the focal length and want to check that "
+            "everything's correct,",
+            "you can open this panel and see the detected 35mm equiv. "
+            "focal length. ",
+            "You can change it if you swtich into manual mode using "
+            "the advanced setting menu",
+            "in the header of the camera settings panel.",
+            " ",
+            "When we detect similar 35mm equiv. focal length across a number "
+            "of photographs",
+            "we add them into one group, it helps our face morphing algorithm "
+            "in cases ",
+            "when there are more than one groups with different focal lengths. "
+            "You can also ",
+            "add different pictures with unknown focal length into one "
+            "group manually,",
+            "so the FL estimation algorithm will treat them all as if they "
+            "were taken with ",
+            "the same 35mm equiv. focal length, but we recommend to only do "
+            "so if you really ",
+            "know what you're doing."]
 
         for c in content:
             col.label(text=c)

@@ -24,10 +24,11 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bpy.types import Operator
 
 from ..fbloader import FBLoader
-from ..config import Config, get_main_settings, get_operators, ErrorType
+from ..config import Config, get_main_settings, get_operators
 
-from ..utils.exif_reader import (read_exif_to_head, read_exif_to_camera,
-                                 update_exif_sizes_message)
+from ..utils.exif_reader import (read_exif_to_camera,
+                                 update_image_groups,
+                                 auto_setup_camera_from_exif)
 from ..utils.other import restore_ui_elements
 from ..utils.materials import find_tex_by_name
 
@@ -57,22 +58,32 @@ def load_single_image_file(headnum, camnum, filepath):
         settings = get_main_settings()
         logger.info('Load image file: {}'.format(filepath))
 
-        # if Settings structure is broken
         if not settings.check_heads_and_cams():
-            settings.fix_heads()  # Fix
+            settings.fix_heads()
             return {'CANCELLED'}
+
+        FBLoader.load_model(headnum)
 
         try:
             img = bpy.data.images.load(filepath)
             head = settings.get_head(headnum)
             head.get_camera(camnum).cam_image = img
         except RuntimeError:
-            logger.error("FILE READ ERROR: {}".format(filepath))
+            logger.error('FILE READ ERROR: {}'.format(filepath))
             return {'CANCELLED'}
 
-        read_exif_to_head(headnum, filepath)
-        update_exif_sizes_message(headnum, img)
+        try:
+            read_exif_to_camera(headnum, camnum, filepath)
+        except RuntimeError:
+            logger.error('FILE EXIF READ ERROR: {}'.format(filepath))
 
+        update_image_groups(head)
+
+        camera = head.get_camera(camnum)
+        camera.show_background_image()
+        auto_setup_camera_from_exif(camera)
+
+        FBLoader.save_only(headnum)
         return {'FINISHED'}
 
 
@@ -90,24 +101,8 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
     headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
     camnum: bpy.props.IntProperty(name='Camera index', default=0)
 
-    update_render_size: bpy.props.EnumProperty(name="Update Size", items=[
-        ('yes', 'Update', 'Update render size to images resolution', 0),
-        ('no', 'Leave unchanged', 'Leave the render size unchanged', 1),
-    ], description="Update Render size")
-
     def draw(self, context):
-        layout = self.layout
-
-        layout.label(text='Update Scene Render size')
-        layout.prop(self, 'update_render_size', expand=True)
-
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-        txt = ['Please keep in mind that',
-               'all frames for FaceBuilder',
-               'should have the same size.']
-        for t in txt:
-            col.label(text=t)
+        pass
 
     def execute(self, context):
         return load_single_image_file(self.headnum, self.camnum, self.filepath)
@@ -195,12 +190,9 @@ class FB_OT_MultipleFilebrowserExec(Operator):
     bl_label = "Open Images"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Load images and create views. " \
-                     "All images must be of the same size. " \
                      "You can select multiple images at once"
 
     headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
-    auto_update_frame_size: bpy.props.BoolProperty(
-        name='Auto update frame size', default=True)
 
     def draw(self, context):
         pass
@@ -208,10 +200,8 @@ class FB_OT_MultipleFilebrowserExec(Operator):
     def execute(self, context):
         restore_ui_elements()
 
-        auto_update = 'yes' if self.auto_update_frame_size else 'no'
         op = getattr(get_operators(), Config.fb_multiple_filebrowser_callname)
-        op('INVOKE_DEFAULT', headnum=self.headnum,
-           update_render_size=auto_update)
+        op('INVOKE_DEFAULT', headnum=self.headnum)
 
         return {'FINISHED'}
 
@@ -220,7 +210,6 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
     bl_idname = Config.fb_multiple_filebrowser_idname
     bl_label = "Open Images"
     bl_description = "Load images and create views. " \
-                     "All images must be of the same size. " \
                      "You can select multiple images at once"
 
     filter_glob: bpy.props.StringProperty(
@@ -239,24 +228,10 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
 
     headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
 
-    update_render_size: bpy.props.EnumProperty(name="Update Size", items=[
-        ('yes', 'Update', 'Update render size to images resolution', 0),
-        ('no', 'Leave unchanged', 'Leave the render size unchanged', 1),
-    ], description="Update Render size")
-
     def draw(self, context):
         layout = self.layout
-
-        layout.label(text='Update Scene Render size')
-        layout.prop(self, 'update_render_size', expand=True)
-
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-        txt = ['Please keep in mind that',
-               'all frames for FaceBuilder',
-               'should have the same size.']
-        for t in txt:
-            col.label(text=t)
+        layout.label(text='Load images and create views. ')
+        layout.label(text='You can select multiple images at once')
 
     def execute(self, context):
         """ Selected files processing"""
@@ -267,54 +242,35 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
                 self.headnum, settings.get_last_headnum()))
             return {'CANCELLED'}
 
-        # if Settings structure is broken
         if not settings.check_heads_and_cams():
-            settings.fix_heads()  # Fix & Out
+            settings.fix_heads()
             return {'CANCELLED'}
 
-        # Flag to prevent EXIF load if the head already has cameras
-        exif_allready_read_once = settings.head_has_cameras(self.headnum)
+        FBLoader.load_model(self.headnum)
 
         head = settings.get_head(self.headnum)
+        last_camnum = head.get_last_camnum()
 
-        # Loaded image sizes
-        w = -1
-        h = -1
-        # Count image size changes over all files
-        changes = 0
         for f in self.files:
-            filepath = os.path.join(self.directory, f.name)
-            logger.debug("FILE: {}".format(filepath))
-
             try:
-                img, camera = FBLoader.add_camera_image(self.headnum, filepath)
-                if img.size[0] != w or img.size[1] != h:
-                    w, h = img.size
-                    changes += 1
+                filepath = os.path.join(self.directory, f.name)
+                logger.debug("IMAGE FILE: {}".format(filepath))
 
-                    if not exif_allready_read_once \
-                            and img.size[0] > 0.0 and img.size[1] > 0.0:
-                        read_exif_to_head(self.headnum, filepath)
-                        update_exif_sizes_message(self.headnum, img)
-
-                        exif_allready_read_once = True
-
+                camera = FBLoader.add_new_camera_with_image(self.headnum,
+                                                            filepath)
                 read_exif_to_camera(
                     self.headnum, head.get_last_camnum(), filepath)
-                camera = head.get_last_camera()
                 camera.orientation = camera.exif.orientation
 
             except RuntimeError as ex:
-                logger.error("FILE READ ERROR: {}".format(filepath))
+                logger.error("FILE READ ERROR: {}".format(f.name))
 
-        # We update Render Size in accordance to image size
-        # only if 1) all images have the same size and 2) user want it
-        if self.update_render_size == 'yes' \
-                and changes == 1 and w > 0.0 and h > 0.0:
-            render = bpy.context.scene.render
-            render.resolution_x = w
-            render.resolution_y = h
-            settings.frame_width = w
-            settings.frame_height = h
+        for i, camera in enumerate(head.cameras):
+            if i > last_camnum:
+                auto_setup_camera_from_exif(camera)
+                FBLoader.center_geo_camera_projection(self.headnum, i)
 
+        update_image_groups(head)
+
+        FBLoader.save_only(self.headnum)
         return {'FINISHED'}

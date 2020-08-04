@@ -21,6 +21,7 @@ from bpy.types import Panel
 
 from .updater import FBUpdater
 from ..config import Config, get_main_settings
+from ..messages import draw_labels
 import re
 from ..fbloader import FBLoader
 from ..utils.manipulate import what_is_state
@@ -132,7 +133,6 @@ class FB_PT_HeaderPanel(Panel):
             return
 
         state, headnum = what_is_state()
-        # layout.label(text="{} {}".format(state, headnum))
 
         if state == 'PINMODE':
             # Unhide Button if Head is hidden in pinmode (by ex. after Undo)
@@ -200,48 +200,112 @@ class FB_PT_CameraPanel(Panel):
     bl_label = Config.fb_camera_panel_label
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
-    bl_option = {'DEFAULT_CLOSED'}
+    bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):
         return _show_all_panels()
 
     def draw_header_preset(self, context):
+        state, headnum = what_is_state()
+
         layout = self.layout
         row = layout.row()
         row.active = False
+
+        op = row.operator(Config.fb_camera_panel_menu_exec_idname,
+                     text='', icon='COLLAPSEMENU')
+        op.headnum = headnum
+
         row.operator(
             Config.fb_help_camera_idname,
             text='', icon='QUESTION')
 
     def draw(self, context):
+        def _draw_default_mode():
+            camera = head.get_camera(settings.current_camnum)
+            box = layout.box()
+            row = box.row()
+            col = row.column()
+            col.scale_y = Config.text_scale_y
+            col.label(text='File: {}'.format(camera.get_image_name()))
+            row2 = col.split(factor=0.6)
+            row2.label(text='Camera Group:')
+
+            txt = camera.image_group
+            if camera.image_group == 0:
+                txt = '—'
+            if camera.image_group < 0:
+                txt = 'Excluded'
+
+            row2.operator(Config.fb_image_group_menu_exec_idname,
+                          text='{}'.format(txt))
+
+            box.prop(camera, 'auto_focal_estimation')
+            if camera.auto_focal_estimation:
+                box.label(text='Focal length: {:.2f} mm'.format(camera.focal))
+            else:
+                box.prop(camera, 'focal')
+
+        def _draw_mode_comment(layout, mode):
+            if mode == 'all_different':
+                txt = ['The focal length of each view',
+                       'will be different, but',
+                       'estimation process will',
+                       'happen across all pinned',
+                       'views simultaneously.']
+            elif mode == 'current_estimation':
+                txt = ['The focal length of each view',
+                       'will be different and it',
+                       'will be estimated only',
+                       'for current view.']
+            elif mode == 'same_focus':
+                txt = ['The focal length will be',
+                       'the same for each view,',
+                       'estimation will happen',
+                       'across all pinned views',
+                       'simultaneously.']
+            elif mode == 'force_focal':
+                txt = ['The focal length will be',
+                       'the same for every view,',
+                       'estimation will be turned off,',
+                       'you can enter the focal',
+                       'length manually.']
+            else:
+                txt =[]
+            draw_labels(layout, txt)
+
+        def _draw_override_mode():
+            box = layout.box()
+            box.label(text='Override Focal Length settings:')
+            box.prop(head, 'manual_estimation_mode', text='')
+            col = box.column()
+            col.scale_y = Config.text_scale_y
+            _draw_mode_comment(col, head.manual_estimation_mode)
+            if head.manual_estimation_mode == 'force_focal':
+                box.prop(head, 'focal')
+
+            if settings.current_camnum < 0:
+                return
+            if head.manual_estimation_mode in {'current_estimation',
+                                               'all_different',
+                                               'same_focus'}:
+                camera = head.get_camera(settings.current_camnum)
+                box.label(text='Focal length: {:.2f} mm'.format(camera.focal))
+
         settings = get_main_settings()
         layout = self.layout
-
         state, headnum = what_is_state()
 
         if headnum < 0:
             return
-
         head = settings.get_head(headnum)
 
-        layout.prop(head, 'auto_focal_estimation')
-
-        col = layout.column()
-        if head.auto_focal_estimation:
-            col.active = False
-            col.enabled = True  # User can change inactive looking field
-        row = col.row()
-        row.prop(head, 'focal')
-        row.operator(
-            Config.fb_focal_length_menu_exec_idname,
-            text='', icon='SETTINGS')
-
-        row = layout.row()
-        row.prop(head, 'sensor_width')
-        row.operator(
-            Config.fb_sensor_size_window_idname,
-            text='', icon='SETTINGS')
+        if head.smart_mode():
+            if settings.current_camnum >= 0:
+                _draw_default_mode()
+        else:
+            _draw_override_mode()
 
 
 class FB_PT_ExifPanel(Panel):
@@ -251,6 +315,7 @@ class FB_PT_ExifPanel(Panel):
     bl_label = "EXIF"
     bl_category = Config.fb_tab_category
     bl_context = "objectmode"
+    bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):
@@ -341,54 +406,37 @@ class FB_PT_ViewsPanel(Panel):
         if not head.has_cameras():
             return
 
-        wrong_size_counter = 0
-        fw = settings.frame_width
-        fh = settings.frame_height
-
         box = layout.box()
         box.prop(settings.get_head(headnum), 'use_emotions')
 
         box = layout.box()
         for i, camera in enumerate(head.cameras):
-
             row = box.row()
-
-            w = camera.get_image_width()
-            h = camera.get_image_height()
-            wrong_size_flag = w != fw or h != fh
-
-            if wrong_size_flag:
-                wrong_size_counter += 1
-
             view_icon = 'PINNED' if camera.has_pins() else 'HIDE_OFF'
 
             col = row.column()
-            cam_name = camera.get_image_name()
+            cam_name = '{}{}'.format(
+                camera.get_image_name(),
+                ' [{}]'.format(camera.image_group)
+                if head.is_image_group_visible(i) else ''
+            )
+
             if settings.current_camnum == i and settings.pinmode:
                 col.prop(settings, 'blue_camera_button', toggle=1,
                          text=cam_name, icon=view_icon)
             else:
-                op = col.operator(
+                split = col
+                op = split.operator(
                     Config.fb_select_camera_idname,
                     text=cam_name, icon=view_icon)
                 op.headnum = headnum
                 op.camnum = i
 
             col = row.column()
-            if not camera.cam_image:
-                op = col.operator(
-                    Config.fb_improper_view_menu_exec_idname,
-                    text='', icon='COLLAPSEMENU')
-            elif wrong_size_flag:
-                col.alert = True
-                op = col.operator(
-                    Config.fb_improper_view_menu_exec_idname,
-                    text='', icon='ERROR')
-            else:
-                col.active = False
-                op = col.operator(
-                    Config.fb_proper_view_menu_exec_idname,
-                    text='', icon='COLLAPSEMENU')
+            col.active = not camera.cam_image
+            op = col.operator(
+                Config.fb_proper_view_menu_exec_idname,
+                text='', icon='COLLAPSEMENU')
             op.headnum = headnum
             op.camnum = i
 
@@ -410,50 +458,27 @@ class FB_PT_ViewsPanel(Panel):
         if settings.pinmode:
             col = layout.column()
             col.scale_y = 2.0
-            op = col.operator(Config.fb_exit_pinmode_idname,
-                              text="Exit Pin mode", icon='LOOP_BACK')
+            col.operator(Config.fb_exit_pinmode_idname,
+                         text="Exit Pin mode", icon='LOOP_BACK')
 
     def draw(self, context):
         settings = get_main_settings()
         layout = self.layout
 
-        # Output current Frame Size
-        if settings.frame_width > 0 and settings.frame_height > 0:
-            info = 'Frame size: {}x{}px'.format(
-                settings.frame_width, settings.frame_height)
-        else:
-            x = bpy.context.scene.render.resolution_x
-            y = bpy.context.scene.render.resolution_y
-            info = 'Frame size: {}x{}px'.format(x, y)
-
         state, headnum = what_is_state()
-
         if headnum < 0:
             return
 
-        box = layout.box()
-        box.scale_y = 1.5
-        row = box.row()
-        row.label(text=info)
-        op = row.operator(Config.fb_fix_size_menu_exec_idname,
-                          text='', icon='SETTINGS')
-        op.headnum = headnum
-
         self._draw_exit_pinmode(layout)
-
         self._draw_camera_hint(layout, headnum)
-
-        # Large List of cameras
         self._draw_camera_list(headnum, layout)
 
         # Open sequence Button (large x2)
         col = layout.column()
         col.scale_y = 2.0
-
         op = col.operator(Config.fb_multiple_filebrowser_exec_idname,
                           text="Add Images", icon='OUTLINER_OB_IMAGE')
         op.headnum = headnum
-        op.auto_update_frame_size = settings.get_last_camnum(headnum) < 0
 
         # Camera buttons Reset camera, Remove pins
         if settings.pinmode and \
@@ -484,7 +509,6 @@ class FB_PT_Model(Panel):
 
     def draw(self, context):
         layout = self.layout
-        obj = context.object
         settings = get_main_settings()
 
         state, headnum = what_is_state()
@@ -683,5 +707,3 @@ class FB_PT_PinSettingsPanel(Panel):
         box = layout.box()
         box.prop(settings, 'pin_size', slider=True)
         box.prop(settings, 'pin_sensitivity', slider=True)
-
-        # layout.prop(settings, 'debug_active', text="Debug Log Active", toggle=1)

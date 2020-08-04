@@ -23,14 +23,15 @@ from bpy.props import (
     StringProperty,
     IntProperty,
 )
-from bpy.types import Operator
 
 from .utils import manipulate
-from .config import Config, get_main_settings
-from .utils.exif_reader import get_sensor_size_35mm_equivalent
+from .config import Config, get_main_settings, get_operators, ErrorType
+from .utils.exif_reader import (update_image_groups,
+                                auto_setup_camera_from_exif,
+                                is_size_compatible_with_group)
 
 
-class FB_OT_Actor(Operator):
+class FB_OT_Actor(bpy.types.Operator):
     bl_idname = Config.fb_actor_idname
     bl_label = "FaceBuilder in Action"
     bl_options = {'REGISTER'}
@@ -39,6 +40,7 @@ class FB_OT_Actor(Operator):
     action: StringProperty(name="Action Name")
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
+    num: IntProperty(default=0)
 
     def draw(self, context):
         pass
@@ -46,6 +48,8 @@ class FB_OT_Actor(Operator):
     def execute(self, context):
         logger = logging.getLogger(__name__)
         logger.debug("Actor: {}".format(self.action))
+        logger.debug('headnum: {} camnum: {} num: {}'.format(
+            self.headnum, self.camnum, self.num))
 
         if self.action == 'reconstruct_by_head':
             manipulate.reconstruct_by_head()
@@ -53,16 +57,10 @@ class FB_OT_Actor(Operator):
         elif self.action == 'unhide_head':
             manipulate.unhide_head(self.headnum)
 
-        elif self.action == 'use_render_frame_size_scaled':
-            # Allow converts scenes pinned on default cameras
-            manipulate.use_render_frame_size_scaled()  # disabled in interface
-
         return {'FINISHED'}
 
 
-class FB_OT_CameraActor(Operator):
-    """ Camera Action
-    """
+class FB_OT_CameraActor(bpy.types.Operator):
     bl_idname = Config.fb_camera_actor_idname
     bl_label = "Camera parameters"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
@@ -71,78 +69,77 @@ class FB_OT_CameraActor(Operator):
     action: StringProperty(name="Action Name")
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
+    num: IntProperty(default=0)
 
     def draw(self, context):
         pass
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
+        logger.debug('Camera Actor: {}'.format(self.action))
+        logger.debug('headnum: {} camnum: {} num: {}'.format(
+            self.headnum, self.camnum, self.num))
+
         settings = get_main_settings()
-
         head = settings.get_head(self.headnum)
+        camera = head.get_camera(settings.current_camnum)
 
-        if self.action == 'sensor_36x24mm':
-            head.sensor_width = 36.0
-            head.sensor_height = 24.0
+        if self.action == 'toggle_group_info':
+            head.show_image_groups = not head.show_image_groups
 
-        elif self.action == 'focal_50mm':
-            head.focal = 50.0
+        elif self.action == 'manual_mode':
+            head.smart_mode_toggle()
 
-        elif self.action == 'auto_focal_on':
-            head.auto_focal_estimation = True
+        elif self.action == 'reset_image_group':
+            camera.image_group = 0
+            update_image_groups(head)
 
-        elif self.action == 'auto_focal_off':
-            head.auto_focal_estimation = False
+        elif self.action == 'new_image_group':
+            groups = [x.image_group for x in head.cameras if x.image_group > 0]
+            if len(groups) > 0:
+                camera.image_group = max(groups) + 1
+            else:
+                camera.image_group = 1
+            head.show_image_groups = True
 
-        elif self.action == 'exif_focal':
-            if head.exif.focal > 0.0:
-                head.focal = head.exif.focal
+        elif self.action == 'to_image_group':
+            if is_size_compatible_with_group(head, camera, self.num):
+                camera.image_group = self.num
+                head.show_image_groups = True
+            else:
+                error_message = "Wrong Image Size\n\n" \
+                    "This image {} can't be added into group {} \n" \
+                    "because they have different " \
+                    "dimensions.".format(camera.get_image_name(), self.num)
 
-        elif self.action == 'exif_focal35mm':
-            if head.exif.focal35mm > 0.0:
-                head.focal = head.exif.focal35mm
+                warn = getattr(get_operators(), Config.fb_warning_callname)
+                warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+                     msg_content=error_message)
 
-        # ------------------
-        # Menu: Sensor Settings
-        # ------------------
-        elif self.action == 'exif_sensor_and_focal':
-            # Get Sensor & Focal from EXIF
-            if head.exif.focal > 0.0 and head.exif.sensor_width > 0.0 and \
-                    head.exif.sensor_length > 0.0:
-                head.focal = head.exif.focal
-                head.sensor_width = head.exif.sensor_width
-                head.sensor_height = head.exif.sensor_length
+        elif self.action == 'make_unique':
+            camera.image_group = -1
+            head.show_image_groups = True
 
-        elif self.action == 'exif_focal_and_sensor_via_35mm':
-            # Get Sensor & Focal from EXIF 35mm equiv.
-            if head.exif.focal > 0.0 and head.exif.focal35mm > 0.0:
-                w, h = get_sensor_size_35mm_equivalent(head)
-                head.sensor_width = w
-                head.sensor_height = h
-                head.focal = head.exif.focal
+        elif self.action == 'make_all_unique':
+            for camera in head.cameras:
+                camera.image_group = -1
 
-        elif self.action == 'standard_sensor_and_exif_focal35mm':
-            # 35 mm Sensor & EXIF Focal 35mm equiv.
-            if head.exif.focal35mm > 0.0:
-                w = 36.0
-                h = 24.0
-                head.sensor_width = w
-                head.sensor_height = h
-                head.focal = head.exif.focal35mm
+        elif self.action == 'reset_all_image_groups':
+            for camera in head.cameras:
+                camera.image_group = 0
+            update_image_groups(head)
 
-        # ------------------
-        elif self.action == 'exif_sensor':
-            # EXIF --> Sensor Size
-            if head.exif.sensor_width > 0.0 and head.exif.sensor_length > 0.0:
-                head.sensor_width = head.exif.sensor_width
-                head.sensor_height = head.exif.sensor_length
+        elif self.action == 'settings_by_exif':
+            camera.image_group = 0
+            auto_setup_camera_from_exif(camera)
+            update_image_groups(head)
 
-        elif self.action == 'exif_sensor_via_35mm':
-            # EXIF 35mm --> calc. Sensor Size
-            if head.exif.focal35mm > 0.0:
-                w, h = get_sensor_size_35mm_equivalent(head)
-                head.sensor_width = w
-                head.sensor_height = h
+        elif self.action == 'reset_all_camera_settings':
+            for camera in head.cameras:
+                camera.image_group = 0
+                auto_setup_camera_from_exif(camera)
+            if not head.smart_mode():
+                head.smart_mode_toggle()
+            update_image_groups(head)
 
-        logger.debug("Camera Actor: {}".format(self.action))
         return {'FINISHED'}
