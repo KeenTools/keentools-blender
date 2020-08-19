@@ -37,10 +37,10 @@ class UniBuilder:
     def init_facebuilder(self, ver=Config.unknown_mod_ver):
         latest_version = pkt.module().FaceBuilder.latest_face_version()
         if ver == Config.unknown_mod_ver or ver > latest_version:
-            self.builder = pkt.module().FaceBuilder(latest_version)
+            self.builder = pkt.module().FaceBuilder()
             self.version = latest_version
         else:
-            self.builder = pkt.module().FaceBuilder(ver)
+            self.builder = pkt.module().FaceBuilder()
             self.version = ver
         self.builder_type = BuilderType.FaceBuilder
 
