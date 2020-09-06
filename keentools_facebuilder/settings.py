@@ -69,6 +69,12 @@ def update_pin_size(self, context):
     FBLoader.viewport().update_pin_size()
 
 
+def update_scale(self, context):
+    fb = FBLoader.get_builder()
+    settings = get_main_settings()
+    fb.set_scale(settings.scale)
+
+
 def update_debug_log(self, value):
     FBDebug.set_active(value)
 
@@ -758,6 +764,12 @@ class FBSceneSettings(PropertyGroup):
     check_auto_rigidity: BoolProperty(
         description="Automatic Rigidity calculation",
         name="Auto rigidity", default=True)
+
+    # Scale
+    scale: FloatProperty(
+        description="Geometry input scale. All operations are performed with the scaled geometry.",
+        name="Scale", default=1.0, min=0.01, max=100.0,
+        update=update_scale)
 
     # Internal use only
     current_headnum: IntProperty(name="Current Head Number", default=-1)
