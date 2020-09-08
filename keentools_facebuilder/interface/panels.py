@@ -523,11 +523,7 @@ class FB_PT_Model(Panel):
         op.camnum = settings.current_camnum
 
         box = layout.box()
-        row = box.split(factor=0.65)
-        col = row.column()
-        col.prop(settings, 'rigidity')
-        col.active = not settings.check_auto_rigidity
-        row.prop(settings, 'check_auto_rigidity', text="Auto")
+        box.prop(settings, 'rigidity')
 
         box = layout.box()
         box.label(text='Model parts:')

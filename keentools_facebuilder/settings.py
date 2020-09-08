@@ -755,9 +755,6 @@ class FBSceneSettings(PropertyGroup):
     rigidity: FloatProperty(
         description="Change how much pins affect the model shape",
         name="Rigidity", default=1.0, min=0.001, max=1000.0)
-    check_auto_rigidity: BoolProperty(
-        description="Automatic Rigidity calculation",
-        name="Auto rigidity", default=True)
 
     # Internal use only
     current_headnum: IntProperty(name="Current Head Number", default=-1)
