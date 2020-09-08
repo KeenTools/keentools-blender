@@ -245,7 +245,6 @@ class FB_OT_MovePin(bpy.types.Operator):
         cam.set_model_mat(fb.model_mat(kid))
         # --------------
 
-        FBLoader.rigidity_post()
         FBLoader.place_cameraobj(kid, camobj, headobj)
         coords.update_head_mesh(settings, fb, head)
 
