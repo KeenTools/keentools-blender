@@ -77,19 +77,13 @@ def update_scale(self, context):
     fb = FBLoader.get_builder()
     fb.set_scale(settings.scale)
     head = settings.get_head(headnum)
-    headobj = head.headobj
 
     coords.update_head_mesh(settings, fb, head)
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
 
     if settings.pinmode:
-        FBLoader.viewport().wireframer().init_geom_data(headobj)
-        FBLoader.viewport().wireframer().init_edge_indices(headobj)
-        FBLoader.viewport().update_wireframe(
-            FBLoader.get_builder_type(), headobj)
-        kid = self.get_keyframe(headnum, settings.current_camnum)
-        FBLoader.viewport().update_surface_points(fb, headobj, kid)
+        FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
 
 
 def update_debug_log(self, value):
