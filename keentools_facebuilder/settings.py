@@ -70,9 +70,26 @@ def update_pin_size(self, context):
 
 
 def update_scale(self, context):
-    fb = FBLoader.get_builder()
     settings = get_main_settings()
+    state, headnum = what_is_state()
+    if headnum < 0:
+        return
+    fb = FBLoader.get_builder()
     fb.set_scale(settings.scale)
+    head = settings.get_head(headnum)
+    headobj = head.headobj
+
+    coords.update_head_mesh(settings, fb, head)
+    FBLoader.update_all_camera_positions(headnum)
+    FBLoader.update_all_camera_focals(headnum)
+
+    if settings.pinmode:
+        FBLoader.viewport().wireframer().init_geom_data(headobj)
+        FBLoader.viewport().wireframer().init_edge_indices(headobj)
+        FBLoader.viewport().update_wireframe(
+            FBLoader.get_builder_type(), headobj)
+        kid = self.get_keyframe(headnum, settings.current_camnum)
+        FBLoader.viewport().update_surface_points(fb, headobj, kid)
 
 
 def update_debug_log(self, value):
