@@ -526,6 +526,10 @@ class FB_PT_Model(Panel):
         box.prop(settings, 'rigidity')
 
         box = layout.box()
+        row = box.row()
+        row.prop(settings, 'scale')
+
+        box = layout.box()
         box.label(text='Model parts:')
         row = box.row()
         row.prop(head, 'check_ears')
