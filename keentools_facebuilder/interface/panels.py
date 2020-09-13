@@ -627,6 +627,7 @@ class FB_PT_TexturePanel(Panel):
         box.prop(settings, 'tex_uv_expand_percents')
         box.prop(settings, 'tex_equalize_brightness')
         box.prop(settings, 'tex_equalize_colour')
+        box.prop(settings, 'tex_fill_gaps')
 
 
 class FB_PT_WireframeSettingsPanel(Panel):
