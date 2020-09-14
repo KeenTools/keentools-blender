@@ -523,7 +523,10 @@ class FB_PT_Model(Panel):
         op.camnum = settings.current_camnum
 
         box = layout.box()
-        box.prop(settings, 'rigidity')
+        box.prop(settings, 'shape_rigidity')
+        expressions_rigidity_row = box.row()
+        expressions_rigidity_row.prop(settings, 'expressions_rigidity')  
+        expressions_rigidity_row.active = head.should_use_emotions()
 
         box = layout.box()
         row = box.row()

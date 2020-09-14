@@ -769,9 +769,12 @@ class FBSceneSettings(PropertyGroup):
         update=update_pin_sensitivity)
 
     # Other settings
-    rigidity: FloatProperty(
+    shape_rigidity: FloatProperty(
         description="Change how much pins affect the model shape",
-        name="Rigidity", default=1.0, min=0.001, max=1000.0)
+        name="Shape rigidity", default=1.0, min=0.001, max=1000.0)
+    expressions_rigidity: FloatProperty(
+        description="Change how much pins affect the model expressions",
+        name="Expressions rigidity", default=1.0, min=0.001, max=1000.0)
 
     # Scale
     scale: FloatProperty(
