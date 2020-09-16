@@ -69,14 +69,14 @@ def update_pin_size(self, context):
     FBLoader.viewport().update_pin_size()
 
 
-def update_scale(self, context):
+def update_model_scale(self, context):
     settings = get_main_settings()
     state, headnum = what_is_state()
     if headnum < 0:
         return
-    fb = FBLoader.get_builder()
-    fb.set_scale(settings.scale)
     head = settings.get_head(headnum)
+    fb = FBLoader.get_builder()
+    fb.set_scale(head.model_scale)
 
     coords.update_head_mesh(settings, fb, head)
     FBLoader.update_all_camera_positions(headnum)
@@ -591,6 +591,12 @@ class FBHeadItem(PropertyGroup):
 
     show_image_groups: BoolProperty(default=True)
 
+    model_scale: FloatProperty(
+        description="Geometry input scale. "
+                    "All operations are performed with the scaled geometry.",
+        name="Scale", default=1.0, min=0.01, max=100.0,
+        update=update_model_scale)
+
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
             return self.cameras[len(self.cameras) + camnum]
@@ -775,12 +781,6 @@ class FBSceneSettings(PropertyGroup):
     expressions_rigidity: FloatProperty(
         description="Change how much pins affect the model expressions",
         name="Expressions rigidity", default=1.0, min=0.001, max=1000.0)
-
-    # Scale
-    scale: FloatProperty(
-        description="Geometry input scale. All operations are performed with the scaled geometry.",
-        name="Scale", default=1.0, min=0.01, max=100.0,
-        update=update_scale)
 
     # Internal use only
     current_headnum: IntProperty(name="Current Head Number", default=-1)

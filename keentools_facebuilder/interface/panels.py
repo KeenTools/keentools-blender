@@ -530,7 +530,7 @@ class FB_PT_Model(Panel):
 
         box = layout.box()
         row = box.row()
-        row.prop(settings, 'scale')
+        row.prop(head, 'model_scale')
 
         box = layout.box()
         box.label(text='Model parts:')
