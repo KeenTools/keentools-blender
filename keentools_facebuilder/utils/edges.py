@@ -259,6 +259,9 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
     def _gamma_color(self, col, power=2.2):
         return [(x / 255) ** power for x in col]
 
+    def _inverse_gamma_color(self, col, power=2.2):
+        return self._gamma_color([x * 255 for x in col], 1.0 / power)
+
     def __init__(self):
         self.coloring_image = None
         self.coloring_image_name = None
@@ -341,7 +344,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         if self.use_simple_shader:
             self.line_shader.bind()
             self.line_shader.uniform_float('color',
-                                           (*self.color1[:3], self.opacity))
+                self._inverse_gamma_color((*self.color1[:3], self.opacity)))
         else:
             # Special code
             bgl.glActiveTexture(bgl.GL_TEXTURE0)

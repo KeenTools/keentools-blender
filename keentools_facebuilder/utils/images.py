@@ -51,7 +51,7 @@ def safe_image_loading(blender_name, path):
         image.name = blender_name
     except Exception:
         logger = logging.getLogger(__name__)
-        logger.error('Texture "{}" '
+        logger.error('Source texture for "{}" '
                      'is not found on path: {}'.format(blender_name, path))
         return None
     if not check_image_size(image):
@@ -74,6 +74,9 @@ def safe_image_in_scene_loading(blender_name, path):
                      'is not found on path: {}'.format(blender_name, path))
         return None
     if not check_image_size(image):
+        bpy.data.images.remove(image)
+        logger.error('Source texture "{}" '
+                     'has wrong format on path: {}'.format(blender_name, path))
         return None
 
     tex = bpy.data.images.new(blender_name,
