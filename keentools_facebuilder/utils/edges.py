@@ -26,6 +26,7 @@ from . shaders import (simple_fill_vertex_shader,
                        residual_fragment_shader, raster_image_vertex_shader,
                        raster_image_fragment_shader)
 from ..config import Config
+from ..utils.images import safe_image_in_scene_loading
 
 
 class FBEdgeShaderBase:
@@ -270,8 +271,8 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         self.test_color1 = self._gamma_color(Config.texture_test_color1)
         self.test_color2 = self._gamma_color(Config.texture_test_color2)
         self.test_thresholds = Config.texture_test_thresholds
+        self.use_simple_shader = False
         super().__init__()
-
 
     def init_colors(self, col1, col2, opacity):
         self.color1 = (*col1[:], opacity)
@@ -279,15 +280,15 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         self.opacity = opacity
 
     def load_coloring_image(self, blender_name, path):
-        self.coloring_image_name = blender_name
-        if blender_name not in bpy.data.images.keys():
-            if path is not None:
-                self.coloring_image = bpy.data.images.load(path)
-                self.coloring_image.name = blender_name
-                self.coloring_image_path = path
-        else:
-            self.coloring_image = bpy.data.images[blender_name]
-        return True
+        image = safe_image_in_scene_loading(blender_name, path)
+        if image is not None:
+            self.coloring_image_name = blender_name
+            self.coloring_image = image
+            self.coloring_image_path = path
+            return True
+        self.use_simple_shader = True
+        self.line_shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+        return False
 
     def init_coloring_image(self):
         if self.coloring_image.gl_load():
@@ -304,16 +305,17 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
             self.unregister_handler()
             return
 
-        # Texture image first loading
-        if self.coloring_image is None:
-            self.unregister_handler()  # TODO: Replace custom shader with default
-            return
+        if not self.use_simple_shader:
+            if self.coloring_image is None:
+                self.unregister_handler()
+                return
 
-        if self.coloring_image.bindcode == 0:
-            self.load_coloring_image(self.coloring_image_name,
-                                     self.coloring_image_path)
-            self.init_coloring_image()
-            print('OpenGL init image')
+            if self.coloring_image.bindcode == 0:
+                if (not self.load_coloring_image(self.coloring_image_name,
+                                                 self.coloring_image_path)):
+                    self.unregister_handler()
+                    return
+                self.init_coloring_image()
 
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
@@ -334,20 +336,25 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
 
         bgl.glDepthMask(bgl.GL_FALSE)
         bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_LINE)
-
-        # Special code
-        bgl.glActiveTexture(bgl.GL_TEXTURE0)
-        bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.coloring_image.bindcode)
         bgl.glEnable(bgl.GL_DEPTH_TEST)
 
-        self.line_shader.bind()
-        self.line_shader.uniform_int('image', 0)
-        self.line_shader.uniform_float("colThresholds", self.test_thresholds)
-        self.line_shader.uniform_float("baseColor", self.color1)
-        self.line_shader.uniform_float("accentColor", self.color2)
-        self.line_shader.uniform_float("color1", self.test_color1)
-        self.line_shader.uniform_float("color2", self.test_color2)
-        self.line_shader.uniform_float("opacity", self.opacity)
+        if self.use_simple_shader:
+            self.line_shader.bind()
+            self.line_shader.uniform_float('color',
+                                           (*self.color1[:3], self.opacity))
+        else:
+            # Special code
+            bgl.glActiveTexture(bgl.GL_TEXTURE0)
+            bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.coloring_image.bindcode)
+
+            self.line_shader.bind()
+            self.line_shader.uniform_int('image', 0)
+            self.line_shader.uniform_float('colThresholds', self.test_thresholds)
+            self.line_shader.uniform_float('baseColor', self.color1)
+            self.line_shader.uniform_float('accentColor', self.color2)
+            self.line_shader.uniform_float('color1', self.test_color1)
+            self.line_shader.uniform_float('color2', self.test_color2)
+            self.line_shader.uniform_float('opacity', self.opacity)
 
         self.line_batch.draw(self.line_shader)
 
@@ -365,11 +372,16 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
                 )
 
         # Our shader batch
-        self.line_batch = batch_for_shader(
-            self.line_shader, 'LINES',
-            {'pos': self.edges_vertices, 'texCoord': self.edges_uvs},
-            # indices=self.edges_indices
-        )
+        if not self.use_simple_shader:
+            self.line_batch = batch_for_shader(
+                self.line_shader, 'LINES',
+                {'pos': self.edges_vertices, 'texCoord': self.edges_uvs}
+            )
+        else:
+            self.line_batch = batch_for_shader(
+                self.line_shader, 'LINES',
+                {'pos': self.edges_vertices},
+            )
 
     def init_shaders(self):
         self.fill_shader = gpu.types.GPUShader(

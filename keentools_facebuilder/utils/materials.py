@@ -24,6 +24,7 @@ from .. config import Config, get_main_settings, get_operators, ErrorType
 from .. fbloader import FBLoader
 from ..utils.coords import projection_matrix
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from ..utils.images import find_tex_by_name, remove_tex_by_name
 
 
 def switch_to_mode(mode='MATERIAL'):
@@ -70,19 +71,6 @@ def get_shader_node(mat, find_type, create_name):
         if node.type == find_type:
             return node
     return mat.node_tree.nodes.new(create_name)
-
-
-def find_tex_by_name(tex_name):
-    tex_num = bpy.data.images.find(tex_name)
-    if tex_num >= 0:
-        return bpy.data.images[tex_num]
-    return None
-
-
-def remove_tex_by_name(name):
-    tex = find_tex_by_name(name)
-    if tex is not None:
-        bpy.data.images.remove(tex)
 
 
 def remove_mat_by_name(name):
