@@ -276,9 +276,9 @@ class FB_OT_PinMode(bpy.types.Operator):
 
             logger.debug("START SHADERS")
             self._init_wireframer_colors(
-                settings.overall_opacity, 'keentools_face_scheme',
+                settings.overall_opacity, Config.coloring_texture_name,
                 os.path.join(pkt.loader.pkt_installation_dir(),
-                    'pykeentools_installation/data/face_data/tex.tga'))
+                             Config.coloring_texture_path))
             vp.create_batch_2d(context)
             logger.debug("REGISTER SHADER HANDLERS")
             vp.register_handlers(args, context)

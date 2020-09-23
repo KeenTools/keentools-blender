@@ -177,12 +177,12 @@ def raster_image_fragment_shader():
     uniform sampler2D image;
     uniform float opacity;
 
-    float color_dist(vec4 col1, vec4 col2)
+    float colorDist(vec4 col1, vec4 col2)
     {
         return 0.33333 * (abs(col1.r - col2.r) + abs(col1.g - col2.g) + abs(col1.b - col2.b));
     }
 
-    float cutter(float val, float threshold)
+    float limitter(float val, float threshold)
     {
         if (val < threshold){
             return 0.0;
@@ -194,15 +194,12 @@ def raster_image_fragment_shader():
     void main()
     {
         vec4 texCol = texture(image, texCoord_interp);
-        float dist1 = cutter(color_dist(texCol, color1), colThresholds.x);
-        float dist2 = cutter(color_dist(texCol, color2), colThresholds.y);
-        float dist = max(dist1, dist2);
+        float dist1 = limitter(colorDist(texCol, color1), colThresholds.x);
+        float dist2 = limitter(colorDist(texCol, color2), colThresholds.y);
+        float dist = min(dist1, dist2);
 
-        if (dist1 <= dist2){
-            fragColor = baseColor + (1.0 - dist1) * (accentColor - baseColor);
-        } else {
-            fragColor = baseColor + (1.0 - dist2) * (accentColor - baseColor);
-        }
+        fragColor = baseColor + (1.0 - dist) * (accentColor - baseColor);
+
         fragColor.a = opacity;
     }
     '''

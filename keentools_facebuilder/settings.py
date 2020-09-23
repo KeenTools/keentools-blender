@@ -739,7 +739,7 @@ class FBSceneSettings(PropertyGroup):
     wireframe_opacity: FloatProperty(
         description="From 0.0 to 1.0",
         name="Wireframe opacity",
-        default=0.18, min=0.0, max=1.0,
+        default=0.3, min=0.0, max=1.0,
         update=update_wireframe)
     wireframe_color: FloatVectorProperty(
         description="Color of mesh wireframe in pin-mode",

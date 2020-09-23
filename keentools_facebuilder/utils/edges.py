@@ -25,6 +25,7 @@ from . shaders import (simple_fill_vertex_shader,
                        black_fill_fragment_shader, residual_vertex_shader,
                        residual_fragment_shader, raster_image_vertex_shader,
                        raster_image_fragment_shader)
+from ..config import Config
 
 
 class FBEdgeShaderBase:
@@ -254,7 +255,7 @@ class FBEdgeShader3D(FBEdgeShaderBase):
 
 class FBRasterEdgeShader3D(FBEdgeShaderBase):
     """ Another Wireframe drawing class """
-    def gamma_color(self, col, power=2.2):
+    def _gamma_color(self, col, power=2.2):
         return [(x / 255) ** power for x in col]
 
     def __init__(self):
@@ -266,8 +267,9 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         self.color1 = (1, 0, 0, 0.5)
         self.color2 = (0, 1, 0, 0.5)
         self.opacity = 0.3
-        self.test_color1 = self.gamma_color((0, 0, 217, 255))
-        self.test_color2 = self.gamma_color((104, 104, 19, 255))
+        self.test_color1 = self._gamma_color(Config.texture_test_color1)
+        self.test_color2 = self._gamma_color(Config.texture_test_color2)
+        self.test_thresholds = Config.texture_test_thresholds
         super().__init__()
 
 
@@ -340,7 +342,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
 
         self.line_shader.bind()
         self.line_shader.uniform_int('image', 0)
-        self.line_shader.uniform_float("colThresholds", (0.05, 0.04))
+        self.line_shader.uniform_float("colThresholds", self.test_thresholds)
         self.line_shader.uniform_float("baseColor", self.color1)
         self.line_shader.uniform_float("accentColor", self.color2)
         self.line_shader.uniform_float("color1", self.test_color1)

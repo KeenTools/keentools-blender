@@ -36,6 +36,7 @@ def force_ui_redraw(area_type="PREFERENCES"):
 def force_stop_shaders():
     FBEdgeShader2D.handler_list = []
     FBEdgeShader3D.handler_list = []
+    FBRasterEdgeShader3D.handler_list = []
     FBText.handler_list = []
     FBPoints2D.handler_list = []
     FBPoints3D.handler_list = []
