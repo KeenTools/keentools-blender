@@ -146,3 +146,63 @@ def residual_fragment_shader():
         fragColor = finalColor;
     }
     '''
+
+
+def raster_image_vertex_shader():
+    return '''
+    uniform mat4 ModelViewProjectionMatrix;
+
+    in vec2 texCoord;
+    in vec3 pos;
+    out vec2 texCoord_interp;
+
+    void main()
+    {
+      gl_Position = ModelViewProjectionMatrix * vec4(pos, 1.0f);
+      texCoord_interp = texCoord;
+    }
+    '''
+
+
+def raster_image_fragment_shader():
+    return '''
+    in vec2 texCoord_interp;
+    out vec4 fragColor;
+
+    uniform vec4 baseColor;
+    uniform vec4 accentColor;
+    uniform vec2 colThresholds;
+    uniform vec4 color1;
+    uniform vec4 color2;
+    uniform sampler2D image;
+    uniform float opacity;
+
+    float color_dist(vec4 col1, vec4 col2)
+    {
+        return 0.33333 * (abs(col1.r - col2.r) + abs(col1.g - col2.g) + abs(col1.b - col2.b));
+    }
+
+    float cutter(float val, float threshold)
+    {
+        if (val < threshold){
+            return 0.0;
+        } else {
+            return min((val - threshold) / threshold, 1.0);
+        }
+    }
+
+    void main()
+    {
+        vec4 texCol = texture(image, texCoord_interp);
+        float dist1 = cutter(color_dist(texCol, color1), colThresholds.x);
+        float dist2 = cutter(color_dist(texCol, color2), colThresholds.y);
+        float dist = max(dist1, dist2);
+
+        if (dist1 <= dist2){
+            fragColor = baseColor + (1.0 - dist1) * (accentColor - baseColor);
+        } else {
+            fragColor = baseColor + (1.0 - dist2) * (accentColor - baseColor);
+        }
+        fragColor.a = opacity;
+    }
+    '''

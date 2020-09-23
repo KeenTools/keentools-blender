@@ -21,7 +21,7 @@ import time
 import bpy
 import blf
 
-from . edges import FBEdgeShader2D, FBEdgeShader3D
+from . edges import FBEdgeShader2D, FBEdgeShader3D, FBRasterEdgeShader3D
 from . points import FBPoints2D, FBPoints3D
 from .. config import get_main_settings
 

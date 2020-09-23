@@ -18,6 +18,7 @@
 
 import logging
 from uuid import uuid4
+import os
 
 import bpy
 
@@ -25,6 +26,7 @@ from .utils import manipulate, coords, cameras
 from .config import Config, get_main_settings, get_operators, ErrorType
 from .fbloader import FBLoader
 from .utils.other import FBStopShaderTimer, force_ui_redraw, hide_ui_elements
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 class FB_OT_PinMode(bpy.types.Operator):
@@ -78,17 +80,24 @@ class FB_OT_PinMode(bpy.types.Operator):
             FBLoader.viewport().wireframer().init_special_areas(
                 headobj.data, special_indices, special_color)
 
-    def _init_wireframer_colors(self, opacity):
+    def _init_wireframer_colors(self, opacity, tex_name=None, tex_path=None):
         settings = get_main_settings()
         head = settings.get_head(settings.current_headnum)
         headobj = head.headobj
 
-        FBLoader.viewport().wireframer().init_geom_data(headobj)
-        FBLoader.viewport().wireframer().init_edge_indices(headobj)
+        wf = FBLoader.viewport().wireframer()
+        wf.init_colors(settings.wireframe_color,
+                       settings.wireframe_special_color,
+                       settings.wireframe_opacity)
+        if tex_name is not None:
+            wf.load_coloring_image(blender_name=tex_name,
+                                   path=tex_path)
+        wf.init_geom_data(headobj)
+        wf.init_edge_indices(FBLoader.get_builder()) # headobj
 
-        FBLoader.viewport().wireframer().init_color_data(
-            (*settings.wireframe_color, opacity * settings.wireframe_opacity))
-        self._coloring_special_parts(headobj, opacity)
+        # FBLoader.viewport().wireframer().init_color_data(
+        #     (*settings.wireframe_color, opacity * settings.wireframe_opacity))
+        # self._coloring_special_parts(headobj, opacity)
 
         FBLoader.viewport().wireframer().create_batches()
 
@@ -266,7 +275,10 @@ class FB_OT_PinMode(bpy.types.Operator):
             hide_ui_elements()
 
             logger.debug("START SHADERS")
-            self._init_wireframer_colors(settings.overall_opacity)
+            self._init_wireframer_colors(
+                settings.overall_opacity, 'keentools_face_scheme',
+                os.path.join(pkt.loader.pkt_installation_dir(),
+                    'pykeentools_installation/data/face_data/tex.tga'))
             vp.create_batch_2d(context)
             logger.debug("REGISTER SHADER HANDLERS")
             vp.register_handlers(args, context)

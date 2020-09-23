@@ -21,9 +21,10 @@ import bpy
 import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
-from . shaders import simple_fill_vertex_shader, \
-    black_fill_fragment_shader, residual_vertex_shader, \
-    residual_fragment_shader
+from . shaders import (simple_fill_vertex_shader,
+                       black_fill_fragment_shader, residual_vertex_shader,
+                       residual_fragment_shader, raster_image_vertex_shader,
+                       raster_image_fragment_shader)
 
 
 class FBEdgeShaderBase:
@@ -249,3 +250,184 @@ class FBEdgeShader3D(FBEdgeShaderBase):
     def init_edge_indices(self, obj):
         self.edges_indices = np.arange(len(self.edges_vertices) * 2).reshape(
             len(self.edges_vertices), 2).tolist()
+
+
+class FBRasterEdgeShader3D(FBEdgeShaderBase):
+    """ Another Wireframe drawing class """
+    def gamma_color(self, col, power=2.2):
+        return [(x / 255) ** power for x in col]
+
+    def __init__(self):
+        self.coloring_image = None
+        self.coloring_image_name = None
+        self.coloring_image_path = None
+        self.edges_indices = None
+        self.edges_uvs = None
+        self.color1 = (1, 0, 0, 0.5)
+        self.color2 = (0, 1, 0, 0.5)
+        self.opacity = 0.3
+        self.test_color1 = self.gamma_color((0, 0, 217, 255))
+        self.test_color2 = self.gamma_color((104, 104, 19, 255))
+        super().__init__()
+
+
+    def init_colors(self, col1, col2, opacity):
+        self.color1 = (*col1[:], opacity)
+        self.color2 = (*col2[:], opacity)
+        self.opacity = opacity
+
+    def load_coloring_image(self, blender_name, path):
+        self.coloring_image_name = blender_name
+        if blender_name not in bpy.data.images.keys():
+            if path is not None:
+                self.coloring_image = bpy.data.images.load(path)
+                self.coloring_image.name = blender_name
+                self.coloring_image_path = path
+        else:
+            self.coloring_image = bpy.data.images[blender_name]
+        return True
+
+    def init_coloring_image(self):
+        if self.coloring_image.gl_load():
+            raise Exception()
+        self.coloring_image.gl_touch()
+
+    def deactivate_coloring_image(self):
+        if self.coloring_image is not None:
+            self.coloring_image.gl_free()
+
+    def draw_callback(self, op, context):
+        # Force Stop
+        if self.is_handler_list_empty():
+            self.unregister_handler()
+            return
+
+        # Texture image first loading
+        if self.coloring_image is None:
+            self.unregister_handler()  # TODO: Replace custom shader with default
+            return
+
+        if self.coloring_image.bindcode == 0:
+            self.load_coloring_image(self.coloring_image_name,
+                                     self.coloring_image_path)
+            self.init_coloring_image()
+            print('OpenGL init image')
+
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glEnable(bgl.GL_LINE_SMOOTH)
+        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
+        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
+
+        bgl.glEnable(bgl.GL_DEPTH_TEST)
+        bgl.glEnable(bgl.GL_POLYGON_OFFSET_FILL)
+        bgl.glPolygonOffset(1.0, 1.0)
+
+        bgl.glColorMask(bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE)
+        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_FILL)
+
+        self.fill_batch.draw(self.fill_shader)
+
+        bgl.glColorMask(bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE)
+        bgl.glDisable(bgl.GL_POLYGON_OFFSET_FILL)
+
+        bgl.glDepthMask(bgl.GL_FALSE)
+        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_LINE)
+
+        # Special code
+        bgl.glActiveTexture(bgl.GL_TEXTURE0)
+        bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.coloring_image.bindcode)
+        bgl.glEnable(bgl.GL_DEPTH_TEST)
+
+        self.line_shader.bind()
+        self.line_shader.uniform_int('image', 0)
+        self.line_shader.uniform_float("colThresholds", (0.05, 0.04))
+        self.line_shader.uniform_float("baseColor", self.color1)
+        self.line_shader.uniform_float("accentColor", self.color2)
+        self.line_shader.uniform_float("color1", self.test_color1)
+        self.line_shader.uniform_float("color2", self.test_color2)
+        self.line_shader.uniform_float("opacity", self.opacity)
+
+        self.line_batch.draw(self.line_shader)
+
+        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_FILL)
+        bgl.glDepthMask(bgl.GL_TRUE)
+        bgl.glDisable(bgl.GL_DEPTH_TEST)
+
+    def create_batches(self):
+        if bpy.app.background:
+            return
+        self.fill_batch = batch_for_shader(
+                    self.fill_shader, 'TRIS',
+                    {'pos': self.vertices},
+                    indices=self.indices,
+                )
+
+        # Our shader batch
+        self.line_batch = batch_for_shader(
+            self.line_shader, 'LINES',
+            {'pos': self.edges_vertices, 'texCoord': self.edges_uvs},
+            # indices=self.edges_indices
+        )
+
+    def init_shaders(self):
+        self.fill_shader = gpu.types.GPUShader(
+            simple_fill_vertex_shader(), black_fill_fragment_shader())
+
+        self.line_shader = gpu.types.GPUShader(
+            raster_image_vertex_shader(), raster_image_fragment_shader())
+
+    def init_geom_data(self, obj):
+        mesh = obj.data
+        mesh.calc_loop_triangles()
+
+        verts = np.empty((len(mesh.vertices), 3), 'f')
+        indices = np.empty((len(mesh.loop_triangles), 3), 'i')
+
+        mesh.vertices.foreach_get(
+            "co", np.reshape(verts, len(mesh.vertices) * 3))
+        mesh.loop_triangles.foreach_get(
+            "vertices", np.reshape(indices, len(mesh.loop_triangles) * 3))
+
+        # Object matrix usage
+        m = np.array(obj.matrix_world, dtype=np.float32).transpose()
+        vv = np.ones((len(mesh.vertices), 4), dtype=np.float32)
+        vv[:, :-1] = verts
+        vv = vv @ m
+        # Transformed vertices
+        verts = vv[:, :3]
+
+        self.vertices = verts
+        self.indices = indices
+
+    def init_edge_indices(self, builder):
+        uv_set = builder.selected_uv_set()
+        builder.select_uv_set(1)
+
+        geo = builder.applied_args_model()
+        me = geo.mesh(0)
+        face_counts = [me.face_size(x) for x in range(me.faces_count())]
+        indices = np.empty((sum(face_counts), 2), 'i')
+        tex_coords = np.empty((sum(face_counts) * 2, 2), 'f')
+
+        i = 0
+        for face, count in enumerate(face_counts):
+            tex_coords[i * 2] = me.uv(face, count - 1)
+            tex_coords[i * 2 + 1] = me.uv(face, 0)
+            indices[i] = (me.face_point(face, count - 1),
+                          me.face_point(face, 0))
+            i += 1
+            for k in range(1, count):
+                tex_coords[i * 2] = me.uv(face, k - 1)
+                tex_coords[i * 2 +1] = me.uv(face, k)
+                indices[i] = (me.face_point(face, k - 1),
+                              me.face_point(face, k))
+                i += 1
+
+        builder.select_uv_set(uv_set)
+
+        self.edges_indices = indices
+        self.edges_uvs = tex_coords
+        self.update_edges_vertices()
+
+    def update_edges_vertices(self):
+        self.edges_vertices = self.vertices[self.edges_indices.ravel()]

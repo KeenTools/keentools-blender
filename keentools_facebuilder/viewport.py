@@ -24,7 +24,7 @@ import numpy as np
 from . import const
 from . config import Config, get_main_settings, BuilderType
 from . utils import coords
-from . utils.edges import FBEdgeShader3D, FBEdgeShader2D
+from . utils.edges import FBEdgeShader3D, FBEdgeShader2D, FBRasterEdgeShader3D
 from . utils.other import FBText
 from . utils.points import FBPoints2D, FBPoints3D
 
@@ -87,7 +87,7 @@ class FBViewport:
     # Text output in Modal mode
     _texter = FBText()
     # Wireframe shader object
-    _wireframer = FBEdgeShader3D()
+    _wireframer = FBRasterEdgeShader3D()# FBEdgeShader3D()
     # Update timer
     _draw_timer_handler = None
 
@@ -198,7 +198,15 @@ class FBViewport:
         cls.points3d().create_batch()
 
     @classmethod
-    def update_wireframe(cls, builder_type, obj):
+    def update_wireframe(cls):
+        settings = get_main_settings()
+        cls.wireframer().init_colors(settings.wireframe_color,
+                                     settings.wireframe_special_color,
+                                     settings.wireframe_opacity)
+        cls.wireframer().create_batches()
+
+    @classmethod
+    def update_wireframe_edges(cls, builder_type, obj):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         main_color = settings.wireframe_color
