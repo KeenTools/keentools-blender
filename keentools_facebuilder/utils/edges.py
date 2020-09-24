@@ -163,97 +163,6 @@ class FBEdgeShader2D(FBEdgeShaderBase):
         self.add_handler_list(self.draw_handler)
 
 
-class FBEdgeShader3D(FBEdgeShaderBase):
-    """ Wireframe drawing class """
-    def draw_callback(self, op, context):
-        # Force Stop
-        if self.is_handler_list_empty():
-            self.unregister_handler()
-            return
-
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-
-        bgl.glEnable(bgl.GL_DEPTH_TEST)
-        bgl.glEnable(bgl.GL_POLYGON_OFFSET_FILL)
-        bgl.glPolygonOffset(1.0, 1.0)
-
-        bgl.glColorMask(bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE)
-        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_FILL)
-
-        self.fill_batch.draw(self.fill_shader)
-
-        bgl.glColorMask(bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE)
-        bgl.glDisable(bgl.GL_POLYGON_OFFSET_FILL)
-
-        bgl.glDepthMask(bgl.GL_FALSE)
-        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_LINE)
-
-        self.line_batch.draw(self.line_shader)
-
-        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_FILL)
-        bgl.glDepthMask(bgl.GL_TRUE)
-        bgl.glDisable(bgl.GL_DEPTH_TEST)
-
-    def create_batches(self):
-        if bpy.app.background:
-            return
-        self.fill_batch = batch_for_shader(
-                    self.fill_shader, 'TRIS',
-                    {"pos": self.vertices},
-                    indices=self.indices,
-                )
-
-        # Our shader batch
-        self.line_batch = batch_for_shader(
-            self.line_shader, 'LINES',
-            {"pos": self.edges_vertices, "color": self.edges_colors},
-            indices=self.edges_indices)
-
-    def init_shaders(self):
-        self.fill_shader = gpu.types.GPUShader(
-            simple_fill_vertex_shader(), black_fill_fragment_shader())
-
-        self.line_shader = gpu.shader.from_builtin('3D_SMOOTH_COLOR')
-
-    def init_geom_data(self, obj):
-        mesh = obj.data
-        mesh.calc_loop_triangles()
-
-        verts = np.empty((len(mesh.vertices), 3), 'f')
-        indices = np.empty((len(mesh.loop_triangles), 3), 'i')
-
-        mesh.vertices.foreach_get(
-            "co", np.reshape(verts, len(mesh.vertices) * 3))
-        mesh.loop_triangles.foreach_get(
-            "vertices", np.reshape(indices, len(mesh.loop_triangles) * 3))
-
-        # Object matrix usage
-        m = np.array(obj.matrix_world, dtype=np.float32).transpose()
-        vv = np.ones((len(mesh.vertices), 4), dtype=np.float32)
-        vv[:, :-1] = verts
-        vv = vv @ m
-        # Transformed vertices
-        verts = vv[:, :3]
-
-        self.vertices = verts
-        self.indices = indices
-
-        edges = np.empty((len(mesh.edges), 2), 'i')
-        mesh.edges.foreach_get(
-            "vertices", np.reshape(edges, len(mesh.edges) * 2))
-
-        self.edges_vertices = self.vertices[edges.ravel()]
-        # self.init_edge_indices(obj)
-
-    # Separated to
-    def init_edge_indices(self, obj):
-        self.edges_indices = np.arange(len(self.edges_vertices) * 2).reshape(
-            len(self.edges_vertices), 2).tolist()
-
-
 class FBRasterEdgeShader3D(FBEdgeShaderBase):
     """ Another Wireframe drawing class """
     def _gamma_color(self, col, power=2.2):
@@ -277,9 +186,12 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         self.use_simple_shader = False
         super().__init__()
 
-    def init_colors(self, col1, col2, opacity):
+    def init_colors(self, col1, col2, opacity, show_special):
         self.color1 = (*col1[:], opacity)
-        self.color2 = (*col2[:], opacity)
+        if show_special:
+            self.color2 = (*col2[:], opacity)
+        else:
+            self.color2 = self.color1
         self.opacity = opacity
 
     def load_coloring_image(self, blender_name, path):
@@ -302,23 +214,23 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         if self.coloring_image is not None:
             self.coloring_image.gl_free()
 
-    def draw_callback(self, op, context):
-        # Force Stop
-        if self.is_handler_list_empty():
-            self.unregister_handler()
-            return
-
+    def _check_coloring_image(self):
         if not self.use_simple_shader:
             if self.coloring_image is None:
-                self.unregister_handler()
-                return
+                return False
 
             if self.coloring_image.bindcode == 0:
                 if (not self.load_coloring_image(self.coloring_image_name,
                                                  self.coloring_image_path)):
-                    self.unregister_handler()
-                    return
+                    return False
                 self.init_coloring_image()
+        return True
+
+    def draw_callback(self, op, context):
+        # Force Stop
+        if self.is_handler_list_empty() or not self._check_coloring_image():
+            self.unregister_handler()
+            return
 
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
@@ -346,7 +258,9 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
             self.line_shader.uniform_float('color',
                 self._inverse_gamma_color((*self.color1[:3], self.opacity)))
         else:
-            # Special code
+            # coloring_image.bindcode should not be zero
+            # if we don't want to destroy video driver in Blender
+            assert (self.coloring_image.bindcode != 0)
             bgl.glActiveTexture(bgl.GL_TEXTURE0)
             bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.coloring_image.bindcode)
 
@@ -374,16 +288,15 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
                     indices=self.indices,
                 )
 
-        # Our shader batch
-        if not self.use_simple_shader:
+        if self.use_simple_shader:
             self.line_batch = batch_for_shader(
                 self.line_shader, 'LINES',
-                {'pos': self.edges_vertices, 'texCoord': self.edges_uvs}
+                {'pos': self.edges_vertices},
             )
         else:
             self.line_batch = batch_for_shader(
                 self.line_shader, 'LINES',
-                {'pos': self.edges_vertices},
+                {'pos': self.edges_vertices, 'texCoord': self.edges_uvs}
             )
 
     def init_shaders(self):

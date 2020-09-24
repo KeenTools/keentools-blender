@@ -84,5 +84,6 @@ def safe_image_in_scene_loading(blender_name, path):
                               alpha=True, float_buffer=False)
     tex.pixels[:] = image.pixels[:]
     tex.pack()
+    tex.use_fake_user = True
     bpy.data.images.remove(image)
     return tex

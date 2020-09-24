@@ -70,36 +70,21 @@ class FB_OT_PinMode(bpy.types.Operator):
             warn = getattr(get_operators(), Config.fb_warning_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
 
-    def _coloring_special_parts(self, headobj, opacity):
-        settings = get_main_settings()
-        if settings.show_specials:
-            special_indices = FBLoader.viewport().get_special_indices(
-                FBLoader.get_builder_type())
-            special_color = (*settings.wireframe_special_color,
-                             opacity * settings.wireframe_opacity)
-            FBLoader.viewport().wireframer().init_special_areas(
-                headobj.data, special_indices, special_color)
-
     def _init_wireframer_colors(self, opacity, tex_name=None, tex_path=None):
         settings = get_main_settings()
         head = settings.get_head(settings.current_headnum)
-        headobj = head.headobj
 
         wf = FBLoader.viewport().wireframer()
         wf.init_colors(settings.wireframe_color,
                        settings.wireframe_special_color,
-                       settings.wireframe_opacity)
+                       settings.wireframe_opacity * opacity,
+                       settings.show_specials)
         if tex_name is not None:
             wf.load_coloring_image(blender_name=tex_name,
                                    path=tex_path)
-        wf.init_geom_data(headobj)
-        wf.init_edge_indices(FBLoader.get_builder()) # headobj
-
-        # FBLoader.viewport().wireframer().init_color_data(
-        #     (*settings.wireframe_color, opacity * settings.wireframe_opacity))
-        # self._coloring_special_parts(headobj, opacity)
-
-        FBLoader.viewport().wireframer().create_batches()
+        wf.init_geom_data(head.headobj)
+        wf.init_edge_indices(FBLoader.get_builder())
+        wf.create_batches()
 
     def _delete_found_pin(self, nearest, context):
         settings = get_main_settings()

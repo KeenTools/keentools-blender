@@ -325,7 +325,7 @@ class Config:
     yellow_scheme1 = (0.2, 0.2, 0.0)
     yellow_scheme2 = (0.0, 0.0, 0.4)
     black_color = (0.0, 0.0, 0.0)
-    black_scheme1 = (0.2, 0.2, 0.2)
+    black_scheme1 = (0.05, 0.05, 0.05)
     black_scheme2 = (0.0, 0.0, 1.0)
     white_color = (1.0, 1.0, 1.0)
     white_scheme1 = (1.0, 1.0, 1.0)
