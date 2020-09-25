@@ -127,7 +127,7 @@ class InstallationProgress:
         cls._on_finish_download('Downloading error: {}'.format(str(err)))
 
     @classmethod
-    def start_download(cls, install_type):
+    def start_download(cls):
         logger = logging.getLogger(__name__)
 
         if cls._check_another_download_active():
@@ -136,20 +136,12 @@ class InstallationProgress:
 
         cls._on_start_download()
         FBUpdateProgressTimer.start()
-        if install_type == 'nightly':
-            logger.debug("START NIGHTLY CORE LIBRARY DOWNLOAD")
-            pkt.install_from_download_async(
-                nightly=True,
-                progress_callback=cls._progress_callback,
-                final_callback=cls._final_callback,
-                error_callback=cls._error_callback)
-        elif install_type == 'default':
-            logger.debug("START DEFAULT CORE LIBRARY DOWNLOAD")
-            pkt.install_from_download_async(
-                version=pkt.MINIMUM_VERSION_REQUIRED,
-                progress_callback=cls._progress_callback,
-                final_callback=cls._final_callback,
-                error_callback=cls._error_callback)
+        logger.debug("START CORE LIBRARY DOWNLOAD")
+        pkt.install_from_download_async(
+            version=pkt.MINIMUM_VERSION_REQUIRED,
+            progress_callback=cls._progress_callback,
+            final_callback=cls._final_callback,
+            error_callback=cls._error_callback)
 
     @classmethod
     def start_zip_install(cls, filepath):

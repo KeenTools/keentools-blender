@@ -45,35 +45,18 @@ class PREF_OT_InstallPkt(bpy.types.Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Install Core library from website'
 
-    install_type: bpy.props.EnumProperty(
-        name='Version',
-        items=(
-            ('default', 'Latest Stable',
-             'Install the latest stable version', 0),
-            ('nightly', 'Nightly',
-             'Install latest nightly build available. '
-             'Be ready to experience bugs and glitches. '
-             'Please report them', 1)
-        ),
-        default= 'default'
-    )
-
     license_accepted: bpy.props.BoolProperty()
 
     def invoke(self, context, event):
         if self.license_accepted:
-            return context.window_manager.invoke_props_dialog(self)
+            return self.execute(context)
         else:
             self.report({'ERROR'}, _please_accept_eula)
             return {'FINISHED'}
 
     def execute(self, context):
-        InstallationProgress.start_download(self.install_type)
+        InstallationProgress.start_download()
         return {'FINISHED'}
-
-    def draw(self, context):
-        layout = self.layout
-        layout.prop(self, 'install_type')
 
 
 class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
