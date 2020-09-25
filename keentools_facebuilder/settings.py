@@ -82,7 +82,7 @@ def update_model_scale(self, context):
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
 
-    if settings.pinmode:
+    if settings.pinmode and FBLoader.viewport().wireframer().is_working():
         FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
 
 
