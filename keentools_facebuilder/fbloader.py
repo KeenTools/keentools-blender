@@ -49,6 +49,10 @@ class FBLoader:
         return cls.builder_instance
 
     @classmethod
+    def is_not_loaded(cls):
+        return cls.builder_instance is None
+
+    @classmethod
     def update_cam_image_size(cls, cam_item):
         cam_item.update_image_size()
 

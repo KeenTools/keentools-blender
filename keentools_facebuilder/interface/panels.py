@@ -134,6 +134,9 @@ class FB_PT_HeaderPanel(Panel):
 
         state, headnum = what_is_state()
 
+        if headnum >= 0 and FBLoader.is_not_loaded():
+            FBLoader.load_model(headnum)
+
         if state == 'PINMODE':
             # Unhide Button if Head is hidden in pinmode (by ex. after Undo)
             if not FBLoader.viewport().wireframer().is_working():
@@ -144,8 +147,6 @@ class FB_PT_HeaderPanel(Panel):
                                   text='Show Head', icon='HIDE_OFF')
                 op.action = 'unhide_head'
                 op.headnum = headnum
-
-                FBLoader.load_model(headnum)  # to prevent undefined fb
             return
 
         elif state == 'RECONSTRUCT':
