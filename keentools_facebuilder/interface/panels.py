@@ -144,6 +144,8 @@ class FB_PT_HeaderPanel(Panel):
                                   text='Show Head', icon='HIDE_OFF')
                 op.action = 'unhide_head'
                 op.headnum = headnum
+
+                FBLoader.load_model(headnum)  # to prevent undefined fb
             return
 
         elif state == 'RECONSTRUCT':
