@@ -527,9 +527,9 @@ class FB_PT_Model(Panel):
 
         box = layout.box()
         box.prop(settings, 'shape_rigidity')
-        expressions_rigidity_row = box.row()
-        expressions_rigidity_row.prop(settings, 'expressions_rigidity')  
-        expressions_rigidity_row.active = head.should_use_emotions()
+        expression_rigidity_row = box.row()
+        expression_rigidity_row.prop(settings, 'expression_rigidity')  
+        expression_rigidity_row.active = head.should_use_emotions()
 
         box = layout.box()
         row = box.row()
