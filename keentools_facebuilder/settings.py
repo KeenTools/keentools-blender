@@ -780,7 +780,7 @@ class FBSceneSettings(PropertyGroup):
         name="Shape rigidity", default=1.0, min=0.001, max=1000.0)
     expression_rigidity: FloatProperty(
         description="Change how much pins affect the model expressions",
-        name="Expression rigidity", default=1.0, min=0.001, max=1000.0)
+        name="Expression rigidity", default=2.0, min=0.001, max=1000.0)
 
     # Internal use only
     current_headnum: IntProperty(name="Current Head Number", default=-1)
