@@ -125,6 +125,7 @@ def _create_bpy_texture_from_img(img, tex_name):
     tex = bpy.data.images.new(
             tex_name, width=img.shape[1], height=img.shape[0],
             alpha=True, float_buffer=False)
+    tex.colorspace_settings.name = 'Linear'
     assert(tex.name == tex_name)
     tex.pixels[:] = img.ravel()
     tex.pack()
@@ -160,6 +161,13 @@ def _get_fb_for_bake_tex(headnum, head):
     return fb
 
 
+def _sRGB_to_linear(img):
+    img_rgb = img[:, :, :3]
+    img_rgb[img_rgb < 0.04045] = 25 * img_rgb[img_rgb < 0.04045] / 323
+    img_rgb[img_rgb >= 0.04045] = ((200 * img_rgb[img_rgb >= 0.04045] + 11) / 211) ** (12 / 5)
+    return img
+
+
 def _create_frame_data_loader(settings, head, camnums, fb):
     def frame_data_loader(kf_idx):
         cam = head.cameras[camnums[kf_idx]]
@@ -168,6 +176,7 @@ def _create_frame_data_loader(settings, head, camnums, fb):
         img = np.rot90(
             np.asarray(cam.cam_image.pixels[:]).reshape((h, w, 4)),
             cam.orientation)
+        img = _sRGB_to_linear(img)
 
         frame_data = pkt.module().texture_builder.FrameData()
         frame_data.geo = fb.applied_args_model_at(cam.get_keyframe())

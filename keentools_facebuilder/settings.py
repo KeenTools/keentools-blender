@@ -82,7 +82,7 @@ def update_model_scale(self, context):
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
 
-    if settings.pinmode:
+    if settings.pinmode and FBLoader.viewport().wireframer().is_working():
         FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
 
 
@@ -778,9 +778,9 @@ class FBSceneSettings(PropertyGroup):
     shape_rigidity: FloatProperty(
         description="Change how much pins affect the model shape",
         name="Shape rigidity", default=1.0, min=0.001, max=1000.0)
-    expressions_rigidity: FloatProperty(
+    expression_rigidity: FloatProperty(
         description="Change how much pins affect the model expressions",
-        name="Expressions rigidity", default=1.0, min=0.001, max=1000.0)
+        name="Expression rigidity", default=2.0, min=0.001, max=1000.0)
 
     # Internal use only
     current_headnum: IntProperty(name="Current Head Number", default=-1)

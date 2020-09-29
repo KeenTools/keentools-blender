@@ -134,6 +134,9 @@ class FB_PT_HeaderPanel(Panel):
 
         state, headnum = what_is_state()
 
+        if headnum >= 0 and FBLoader.is_not_loaded():
+            FBLoader.load_model(headnum)
+
         if state == 'PINMODE':
             # Unhide Button if Head is hidden in pinmode (by ex. after Undo)
             if not FBLoader.viewport().wireframer().is_working():
@@ -524,9 +527,9 @@ class FB_PT_Model(Panel):
 
         box = layout.box()
         box.prop(settings, 'shape_rigidity')
-        expressions_rigidity_row = box.row()
-        expressions_rigidity_row.prop(settings, 'expressions_rigidity')  
-        expressions_rigidity_row.active = head.should_use_emotions()
+        expression_rigidity_row = box.row()
+        expression_rigidity_row.prop(settings, 'expression_rigidity')  
+        expression_rigidity_row.active = head.should_use_emotions()
 
         box = layout.box()
         row = box.row()
