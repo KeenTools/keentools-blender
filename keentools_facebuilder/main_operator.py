@@ -753,7 +753,6 @@ class FB_OT_UninstallCore(bpy.types.Operator):
         logger.debug("START CORE UNINSTALL")
         pkt.uninstall()
         logger.debug("FINISH CORE UNINSTALL")
-        pkt.reset_cached_is_installed()
         return {'FINISHED'}
 
 

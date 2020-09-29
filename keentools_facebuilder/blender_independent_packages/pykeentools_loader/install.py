@@ -18,12 +18,15 @@
 
 
 import os
+import sys
 from threading import Thread, Lock
 
 from .config import *
 
-__all__ = ['is_installed', 'installation_path_exists', 'install_from_download',
-           'install_from_download_async', 'uninstall', 'install_from_file']
+
+__all__ = ['is_installed', 'uninstall', 'installation_status',
+           'install_from_download', 'install_from_download_async',
+           'install_from_file', 'loaded', 'module']
 
 
 _unpack_mutex = Lock()
@@ -33,15 +36,16 @@ def _is_installed_not_locked():
     return os.path.exists(pkt_installation_dir())
 
 
-def installation_path_exists():
+def _installation_path_exists():
     _unpack_mutex.acquire()
     try:
-        return os.path.exists(os.path.join(pkt_installation_dir(), RELATIVE_LIB_DIRECTORY))
+        return os.path.exists(
+            os.path.join(pkt_installation_dir(),RELATIVE_LIB_DIRECTORY))
     finally:
         _unpack_mutex.release()
 
 
-def is_installed():
+def _is_installed_impl():
     _unpack_mutex.acquire()
     try:
         return _is_installed_not_locked()
@@ -59,6 +63,7 @@ def uninstall():
     _unpack_mutex.acquire()
     try:
         _uninstall_not_locked()
+        _reset_cached_installation_status()
     finally:
         _unpack_mutex.release()
 
@@ -74,6 +79,7 @@ def _install_from_stream(file_like_object):
         import zipfile
         with zipfile.ZipFile(file_like_object) as archive:
             archive.extractall(target_path)
+        _reset_cached_installation_status()
     except Exception:
         _uninstall_not_locked()
         raise
@@ -155,3 +161,108 @@ def install_from_file(path):
     """
     with open(path, mode='rb') as file:
         _install_from_stream(file)
+
+
+def _import_pykeentools():
+    try:
+        pk = module()
+        return True
+    except ImportError:
+        return False
+
+
+def _get_pykeentools_version():
+    try:
+        pk = module()
+        ver = pk.version
+        return (ver.major, ver.minor, ver.patch)
+    except AttributeError:
+        return None
+
+
+def _installation_status_impl():
+    if not _is_installed_impl():
+        return (False, 'NOT_INSTALLED')
+
+    if not _installation_path_exists():
+        return (False, 'INSTALLED_WRONG')
+
+    if not _import_pykeentools():
+        return (False, 'CANNOT_IMPORT')
+
+    ver = _get_pykeentools_version()
+    if ver is None:
+        return (False, 'NO_VERSION')
+
+    if ver < MINIMUM_VERSION_REQUIRED:
+        return (False, 'VERSION_PROBLEM')
+
+    return (True, 'PYKEENTOOLS_OK')
+
+
+_CACHED_PYKEENTOOLS_INSTALLATION_STATUS = None
+
+
+def _reset_cached_installation_status():
+    global _CACHED_PYKEENTOOLS_INSTALLATION_STATUS
+    _CACHED_PYKEENTOOLS_INSTALLATION_STATUS = None
+
+
+def installation_status(force_recheck=False):
+    if force_recheck:
+        _reset_cached_installation_status()
+
+    global _CACHED_PYKEENTOOLS_INSTALLATION_STATUS
+    if _CACHED_PYKEENTOOLS_INSTALLATION_STATUS is None:
+        _CACHED_PYKEENTOOLS_INSTALLATION_STATUS = _installation_status_impl()
+    return _CACHED_PYKEENTOOLS_INSTALLATION_STATUS
+
+
+def is_installed(force_recheck=False):
+    return installation_status(force_recheck)[0]
+
+
+def _do_pkt_shadow_copy():
+    import tempfile
+    import shutil
+
+    shutil.rmtree(SHADOW_COPIES_DIRECTORY, ignore_errors=True)
+    os.makedirs(SHADOW_COPIES_DIRECTORY, exist_ok=True)
+
+    shadow_copy_base_dir = tempfile.mkdtemp(dir=SHADOW_COPIES_DIRECTORY)
+    shadow_copy_dir = os.path.join(shadow_copy_base_dir, 'pykeentools')
+
+    shutil.copytree(pkt_installation_dir(), shadow_copy_dir)
+
+    return shadow_copy_dir
+
+
+def _add_pykeentools_to_sys_path():
+    if os_name() == 'windows':
+        pkt_directory = _do_pkt_shadow_copy()
+    else:
+        pkt_directory = pkt_installation_dir()
+
+    pkt_lib_directory = os.path.join(pkt_directory, RELATIVE_LIB_DIRECTORY)
+    if pkt_lib_directory not in sys.path:
+        sys.path.append(pkt_lib_directory)
+    else:
+        import importlib
+        importlib.invalidate_caches()
+
+
+def loaded():
+    return 'pykeentools' in sys.modules
+
+
+def module():
+    """
+    A function to load pykeentools library
+    :raises ImportError
+    :return: pykeentools module
+    """
+    if not loaded() and _is_installed_impl():
+        _add_pykeentools_to_sys_path()
+
+    import pykeentools
+    return pykeentools

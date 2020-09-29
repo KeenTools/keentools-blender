@@ -73,7 +73,6 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         except Exception:
             pass
 
-        pkt.reset_cached_is_installed()
         logger.debug('HEAD HAS BEEN SUCCESSFULLY CREATED')
         return {'FINISHED'}
 
