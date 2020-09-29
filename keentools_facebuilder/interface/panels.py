@@ -134,6 +134,9 @@ class FB_PT_HeaderPanel(Panel):
 
         state, headnum = what_is_state()
 
+        if headnum >= 0 and FBLoader.is_not_loaded():
+            FBLoader.load_model(headnum)
+
         if state == 'PINMODE':
             # Unhide Button if Head is hidden in pinmode (by ex. after Undo)
             if not FBLoader.viewport().wireframer().is_working():
@@ -523,11 +526,14 @@ class FB_PT_Model(Panel):
         op.camnum = settings.current_camnum
 
         box = layout.box()
-        row = box.split(factor=0.65)
-        col = row.column()
-        col.prop(settings, 'rigidity')
-        col.active = not settings.check_auto_rigidity
-        row.prop(settings, 'check_auto_rigidity', text="Auto")
+        box.prop(settings, 'shape_rigidity')
+        expression_rigidity_row = box.row()
+        expression_rigidity_row.prop(settings, 'expression_rigidity')  
+        expression_rigidity_row.active = head.should_use_emotions()
+
+        box = layout.box()
+        row = box.row()
+        row.prop(head, 'model_scale')
 
         box = layout.box()
         box.label(text='Model parts:')
@@ -627,6 +633,7 @@ class FB_PT_TexturePanel(Panel):
         box.prop(settings, 'tex_uv_expand_percents')
         box.prop(settings, 'tex_equalize_brightness')
         box.prop(settings, 'tex_equalize_colour')
+        box.prop(settings, 'tex_fill_gaps')
 
 
 class FB_PT_WireframeSettingsPanel(Panel):

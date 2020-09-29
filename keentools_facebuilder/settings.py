@@ -69,6 +69,23 @@ def update_pin_size(self, context):
     FBLoader.viewport().update_pin_size()
 
 
+def update_model_scale(self, context):
+    settings = get_main_settings()
+    state, headnum = what_is_state()
+    if headnum < 0:
+        return
+    head = settings.get_head(headnum)
+    fb = FBLoader.get_builder()
+    fb.set_scale(head.model_scale)
+
+    coords.update_head_mesh(settings, fb, head)
+    FBLoader.update_all_camera_positions(headnum)
+    FBLoader.update_all_camera_focals(headnum)
+
+    if settings.pinmode and FBLoader.viewport().wireframer().is_working():
+        FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
+
+
 def update_debug_log(self, value):
     FBDebug.set_active(value)
 
@@ -574,6 +591,12 @@ class FBHeadItem(PropertyGroup):
 
     show_image_groups: BoolProperty(default=True)
 
+    model_scale: FloatProperty(
+        description="Geometry input scale. "
+                    "All operations are performed with the scaled geometry.",
+        name="Scale", default=1.0, min=0.01, max=100.0,
+        update=update_model_scale)
+
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
             return self.cameras[len(self.cameras) + camnum]
@@ -752,12 +775,12 @@ class FBSceneSettings(PropertyGroup):
         update=update_pin_sensitivity)
 
     # Other settings
-    rigidity: FloatProperty(
+    shape_rigidity: FloatProperty(
         description="Change how much pins affect the model shape",
-        name="Rigidity", default=1.0, min=0.001, max=1000.0)
-    check_auto_rigidity: BoolProperty(
-        description="Automatic Rigidity calculation",
-        name="Auto rigidity", default=True)
+        name="Shape rigidity", default=1.0, min=0.001, max=1000.0)
+    expression_rigidity: FloatProperty(
+        description="Change how much pins affect the model expressions",
+        name="Expression rigidity", default=2.0, min=0.001, max=1000.0)
 
     # Internal use only
     current_headnum: IntProperty(name="Current Head Number", default=-1)
@@ -797,6 +820,11 @@ class FBSceneSettings(PropertyGroup):
         description="Experimental. Automatically equalize "
                     "colors across images",
         name="Equalize color", default=False)
+    tex_fill_gaps: BoolProperty(
+        description="Experimental. Tries automatically fill "
+                    "holes in face texture with appropriate "
+                    "color",
+        name="Autofill", default=False)
 
     tex_auto_preview: BoolProperty(
         description="Automatically apply the created texture",
