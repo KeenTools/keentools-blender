@@ -208,7 +208,7 @@ class FBLoader:
         settings = get_main_settings()
         if FBLoader.get_builder_type() == BuilderType.FaceBuilder:
             fb.set_shape_rigidity(settings.shape_rigidity)
-            fb.set_expressions_rigidity(settings.expressions_rigidity)
+            fb.set_expressions_rigidity(settings.expression_rigidity)
 
     @classmethod
     def update_all_camera_positions(cls, headnum):
