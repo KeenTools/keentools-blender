@@ -36,7 +36,7 @@ def _state_valid_to_show(state):
 
 def _show_all_panels():
     state, _ = what_is_state()
-    return _state_valid_to_show(state) and pkt.cached_is_installed()
+    return _state_valid_to_show(state) and pkt.is_installed()
 
 
 class FB_PT_HeaderPanel(Panel):
@@ -87,7 +87,7 @@ class FB_PT_HeaderPanel(Panel):
             text='Install Core library', icon='PREFERENCES')
 
     def _draw_start_panel(self, layout):
-        if not pkt.cached_is_installed():
+        if not pkt.is_installed():
             self._pkt_install_offer(layout)
         else:
             self._head_creation_offer(layout)
@@ -128,7 +128,7 @@ class FB_PT_HeaderPanel(Panel):
     def draw(self, context):
         layout = self.layout
 
-        if not pkt.cached_is_installed():
+        if not pkt.is_installed():
             self._draw_start_panel(layout)
             return
 
@@ -323,7 +323,7 @@ class FB_PT_ExifPanel(Panel):
     @classmethod
     def poll(cls, context):
         state, headnum = what_is_state()
-        if not _state_valid_to_show(state) or not pkt.cached_is_installed():
+        if not _state_valid_to_show(state) or not pkt.is_installed():
             return False
         return get_main_settings().head_has_cameras(headnum)
 
