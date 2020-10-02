@@ -71,8 +71,7 @@ class FB_OT_PinMode(bpy.types.Operator):
     def _coloring_special_parts(self, headobj, opacity):
         settings = get_main_settings()
         if settings.show_specials:
-            special_indices = FBLoader.viewport().get_special_indices(
-                FBLoader.get_builder_type())
+            special_indices = FBLoader.viewport().get_special_indices()
             special_color = (*settings.wireframe_special_color,
                              opacity * settings.wireframe_opacity)
             FBLoader.viewport().wireframer().init_special_areas(
@@ -213,9 +212,6 @@ class FB_OT_PinMode(bpy.types.Operator):
                 settings.current_headnum, settings.current_camnum))
             first_start = False
         else:
-            FBLoader.get_builder().sync_version(head.mod_ver)
-            head.mod_ver = FBLoader.get_builder_version()
-
             FBLoader.update_cameras_from_old_version(self.headnum)
 
         settings.current_headnum = self.headnum

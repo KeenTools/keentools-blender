@@ -33,15 +33,6 @@ def _is_keentools_object(obj):
     return Config.version_prop_name[0] in obj.keys()
 
 
-def _get_object_type(obj):
-    return attrs.get_safe_custom_attribute(
-        obj, Config.object_type_prop_name[0])
-
-
-def _get_mod_version(obj):
-    return attrs.get_safe_custom_attribute(obj, Config.fb_mod_ver_prop_name[0])
-
-
 def _get_serial(obj):
     return attrs.get_safe_custom_attribute(obj, Config.fb_serial_prop_name[0])
 
@@ -240,22 +231,6 @@ def reconstruct_by_head():
 
     logger.info("START RECONSTRUCT")
 
-    obj_type = _get_object_type(obj)
-    if obj_type is None:
-        obj_type = BuilderType.FaceBuilder
-    logger.debug("OBJ_TYPE: {}".format(obj_type))
-
-    if obj_type != BuilderType.FaceBuilder:
-        warn = getattr(get_operators(), Config.fb_warning_callname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
-             msg_content=error_message + 'Object Type')
-        return
-
-    mod_ver = _get_mod_version(obj)
-    if mod_ver is None:
-        mod_ver = Config.unknown_mod_ver
-    logger.debug("MOD_VER {}".format(mod_ver))
-
     params = cameras.get_camera_params(obj)
     if params is None:
         warn = getattr(get_operators(), Config.fb_warning_callname)
@@ -287,10 +262,7 @@ def reconstruct_by_head():
 
     try:
         head.set_serial_str(serial_str)
-        fb = FBLoader.new_builder(obj_type, mod_ver)
-        head.mod_ver = FBLoader.get_builder_version()
-        logger.debug("CREATED MOD_VER {}".format(head.mod_ver))
-
+        fb = FBLoader.new_builder()
         head.sensor_width = params['sensor_width']
         head.sensor_height = params['sensor_height']
         head.focal = params['focal']

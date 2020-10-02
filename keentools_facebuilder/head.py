@@ -38,14 +38,17 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         try:
             obj = self.new_head()
         except ModuleNotFoundError:
+            logger.debug('ADD_HEAD_ERROR: ModuleNotFoundError')
             warn = getattr(get_operators(), Config.fb_warning_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
         except pkt.module().ModelLoadingException:
+            logger.debug('ADD_HEAD_ERROR: ModelLoadingException')
             warn = getattr(get_operators(), Config.fb_warning_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktModelProblem)
             return {'CANCELLED'}
         except Exception:
+            logger.debug('ADD_HEAD_ERROR: Exception')
             warn = getattr(get_operators(), Config.fb_warning_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
@@ -60,7 +63,6 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         # bpy.ops.object.shade_smooth()
         h = get_main_settings().heads.add()
         h.headobj = obj
-        h.mod_ver = FBLoader.get_builder_version()
         h.reset_sensor_size()
         h.save_cam_settings()
 
@@ -78,7 +80,6 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
 
     @classmethod
     def new_head(cls):
-        mesh = FBLoader.universal_mesh_loader(
-            BuilderType.FaceBuilder, Config.default_fb_mesh_name)
+        mesh = FBLoader.universal_mesh_loader(Config.default_fb_mesh_name)
         obj = bpy.data.objects.new(Config.default_fb_object_name, mesh)
         return obj

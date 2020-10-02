@@ -198,7 +198,7 @@ class FBViewport:
         cls.points3d().create_batch()
 
     @classmethod
-    def update_wireframe(cls, builder_type, obj):
+    def update_wireframe(cls, obj):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         main_color = settings.wireframe_color
@@ -211,7 +211,7 @@ class FBViewport:
             # Check to prevent shader problem
             if len(mesh.edges) * 2 == len(cls.wireframer().edges_colors):
                 logger.debug("COLORING")
-                special_indices = cls.get_special_indices(builder_type)
+                special_indices = cls.get_special_indices()
                 cls.wireframer().init_special_areas(
                     obj.data, special_indices, (*comp_color,
                                                 settings.wireframe_opacity))
@@ -220,19 +220,15 @@ class FBViewport:
         cls.wireframer().create_batches()
 
     @classmethod
-    def get_special_indices(cls, builder_type):
-        if builder_type == BuilderType.FaceBuilder:
-            pairs = const.get_eyes_indices()
-            pairs = pairs.union(const.get_eyebrows_indices())
-            pairs = pairs.union(const.get_nose_indices())
-            pairs = pairs.union(const.get_mouth_indices())
-            pairs = pairs.union(const.get_ears_indices())
-            pairs = pairs.union(const.get_half_indices())
-            # pairs = pairs.union(const.get_jaw_indices2())
-            return pairs
-        elif builder_type == BuilderType.BodyBuilder:
-            return const.get_bodybuilder_highlight_indices()
-        return {}
+    def get_special_indices(cls):
+        pairs = const.get_eyes_indices()
+        pairs = pairs.union(const.get_eyebrows_indices())
+        pairs = pairs.union(const.get_nose_indices())
+        pairs = pairs.union(const.get_mouth_indices())
+        pairs = pairs.union(const.get_ears_indices())
+        pairs = pairs.union(const.get_half_indices())
+        # pairs = pairs.union(const.get_jaw_indices2())
+        return pairs
 
     @classmethod
     def update_pin_sensitivity(cls):

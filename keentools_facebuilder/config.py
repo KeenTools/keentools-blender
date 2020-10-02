@@ -25,10 +25,7 @@ _MT = 'FACEBUILDER_MT_'
 
 
 class BuilderType:
-    """ Types for Builder selection """
-    NoneBuilder = -1
     FaceBuilder = 1
-    BodyBuilder = 2
 
 
 class Config:
@@ -55,7 +52,6 @@ class Config:
     fb_views_panel_label = 'Views'
     fb_camera_panel_label = 'Camera'
     fb_tab_category = addon_human_readable_name
-    default_builder = BuilderType.FaceBuilder
     keentools_website_url = 'https://keentools.io'
     core_download_website_url = keentools_website_url + '/download/core'
 
