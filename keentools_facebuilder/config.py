@@ -24,10 +24,6 @@ _PT = 'FACEBUILDER_PT_'
 _MT = 'FACEBUILDER_MT_'
 
 
-class BuilderType:
-    FaceBuilder = 1
-
-
 class Config:
     # Version dependent
     addon_version = '2.1.1'
@@ -261,7 +257,6 @@ class Config:
     # if they have different names (from old scenes by ex. or if they will be
     # renamed in future).
     # Only first value in tuple is used for new custom property creation.
-    object_type_prop_name = (_company + '_type',)
     version_prop_name = (_company + '_version',)
     fb_serial_prop_name = (prefix + '_serial',)
     fb_images_prop_name = (prefix + '_images',)

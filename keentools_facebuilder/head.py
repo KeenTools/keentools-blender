@@ -21,8 +21,7 @@ import bpy
 
 from . utils import attrs
 from . fbloader import FBLoader
-from . config import Config, get_main_settings, get_operators, \
-    BuilderType, ErrorType
+from . config import Config, get_main_settings, get_operators, ErrorType
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 class MESH_OT_FBAddHead(bpy.types.Operator):

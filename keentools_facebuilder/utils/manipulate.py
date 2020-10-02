@@ -22,8 +22,7 @@ from collections import Counter
 import bpy
 
 from ..fbloader import FBLoader
-from ..config import (Config, get_main_settings, get_operators,
-                      ErrorType, BuilderType)
+from ..config import Config, get_main_settings, get_operators, ErrorType
 from . import cameras, attrs, coords
 from .exif_reader import (read_exif_to_camera, auto_setup_camera_from_exif,
                           update_image_groups)

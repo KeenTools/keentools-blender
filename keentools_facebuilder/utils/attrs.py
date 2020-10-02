@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
-from .. config import Config, BuilderType
+from .. config import Config
 
 
 # Functions for Custom Attributes perform
@@ -57,12 +57,6 @@ def has_keentools_attributes(obj):
 
 def mark_keentools_object(obj):
     set_custom_attribute(obj, Config.version_prop_name[0], Config.addon_version)
-
-
-def set_keentools_version(obj):
-    mark_keentools_object(obj)
-    set_custom_attribute(obj, Config.object_type_prop_name[0],
-                         BuilderType.FaceBuilder)
 
 
 def get_attr_variant_named(data, attr_names):

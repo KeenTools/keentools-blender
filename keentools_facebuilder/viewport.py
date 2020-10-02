@@ -22,7 +22,7 @@ import bpy
 import numpy as np
 
 from . import const
-from . config import Config, get_main_settings, BuilderType
+from . config import Config, get_main_settings
 from . utils import coords
 from . utils.edges import FBEdgeShader3D, FBEdgeShader2D
 from . utils.other import FBText

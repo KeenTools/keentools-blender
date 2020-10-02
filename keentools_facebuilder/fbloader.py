@@ -67,7 +67,7 @@ class FBLoader:
 
     @classmethod
     def set_keentools_version(cls, obj):
-        attrs.set_keentools_version(obj)
+        attrs.mark_keentools_object(obj)
 
     @classmethod
     def check_mesh(cls, headobj):
