@@ -66,7 +66,7 @@ class FBLoader:
             logger.debug("camera: {} focal: {}".format(i, c.focal))
 
     @classmethod
-    def set_keentools_version(cls, obj):
+    def set_keentools_attributes(cls, obj):
         attrs.mark_keentools_object(obj)
 
     @classmethod
@@ -135,12 +135,9 @@ class FBLoader:
         fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.get_head(headnum)
-
         head.set_serial_str(fb.serialize())
-
         head.save_images_src()
-        head.save_cam_settings()
-        cls.set_keentools_version(head.headobj)
+        cls.set_keentools_attributes(head.headobj)
 
     @classmethod
     def fb_save(cls, headnum, camnum):

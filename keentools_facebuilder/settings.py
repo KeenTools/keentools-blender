@@ -656,15 +656,6 @@ class FBHeadItem(PropertyGroup):
         # Dir name of current scene
         self.headobj[Config.fb_dir_prop_name[0]] = bpy.path.abspath("//")
 
-    def save_cam_settings(self):
-        render = bpy.context.scene.render
-        d = {
-                Config.reconstruct_sensor_width_param[0]: self.sensor_width,
-                Config.reconstruct_sensor_height_param[0]: self.sensor_height,
-                Config.reconstruct_focal_param[0]: self.focal,
-                Config.reconstruct_frame_width_param[0]: render.resolution_x,
-                Config.reconstruct_frame_height_param[0]: render.resolution_y}
-        self.headobj[Config.fb_camera_prop_name[0]] = d
 
     def should_use_emotions(self):
         return self.use_emotions

@@ -223,20 +223,13 @@ def reconstruct_by_head():
     if not _is_keentools_object(obj):
         return
 
-    error_message = "===============\n" \
-                    "Can't reconstruct\n" \
-                    "===============\n" \
-                    "Object parameters are invalid or missing:\n"
-
-    logger.info("START RECONSTRUCT")
+    logger.debug('START RECONSTRUCT')
 
     params = cameras.get_camera_params(obj)
     if params is None:
-        warn = getattr(get_operators(), Config.fb_warning_callname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
-             msg_content=error_message + 'camera')
-        return
-    logger.debug("PARAMS: {}".format(params))
+        params = cameras.default_camera_params()
+        logger.debug('DEFAULT CAMERA PARAMETERS GENERATED')
+    logger.debug('PARAMS: {}'.format(params))
 
     serial_str = _get_serial(obj)
     if serial_str is None:
