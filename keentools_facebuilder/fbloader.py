@@ -45,14 +45,10 @@ class FBLoader:
         return cls._builder_instance
 
     @classmethod
-    def _builder(cls):
+    def get_builder(cls):
         if cls._builder_instance is not None:
             return cls._builder_instance
         return cls.new_builder()
-
-    @classmethod
-    def get_builder(cls):
-        return cls._builder()
 
     @classmethod
     def is_not_loaded(cls):
