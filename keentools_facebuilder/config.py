@@ -24,13 +24,6 @@ _PT = 'FACEBUILDER_PT_'
 _MT = 'FACEBUILDER_MT_'
 
 
-class BuilderType:
-    """ Types for Builder selection """
-    NoneBuilder = -1
-    FaceBuilder = 1
-    BodyBuilder = 2
-
-
 class Config:
     # Version dependent
     addon_version = '2.1.1'
@@ -55,7 +48,6 @@ class Config:
     fb_views_panel_label = 'Views'
     fb_camera_panel_label = 'Camera'
     fb_tab_category = addon_human_readable_name
-    default_builder = BuilderType.FaceBuilder
     keentools_website_url = 'https://keentools.io'
     core_download_website_url = keentools_website_url + '/download/core'
 
@@ -265,7 +257,6 @@ class Config:
     # if they have different names (from old scenes by ex. or if they will be
     # renamed in future).
     # Only first value in tuple is used for new custom property creation.
-    object_type_prop_name = (_company + '_type',)
     version_prop_name = (_company + '_version',)
     fb_serial_prop_name = (prefix + '_serial',)
     fb_images_prop_name = (prefix + '_images',)

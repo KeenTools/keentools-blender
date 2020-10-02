@@ -27,15 +27,12 @@ from .utils import attrs, coords, cameras
 from .utils.other import FBStopShaderTimer, restore_ui_elements
 from .utils.exif_reader import update_image_groups, reload_all_camera_exif
 
-from .builder import UniBuilder
-from .config import (Config, get_main_settings, get_operators,
-                     BuilderType, ErrorType)
+from .config import Config, get_main_settings
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 class FBLoader:
-    # Builder selection: FaceBuilder or BodyBuilder
-    builder_instance = None
+    _builder_instance = None
     _viewport = FBViewport()
 
     @classmethod
@@ -43,14 +40,19 @@ class FBLoader:
         return cls._viewport
 
     @classmethod
-    def builder(cls):
-        if cls.builder_instance is None:
-            cls.builder_instance = UniBuilder(Config.default_builder)
-        return cls.builder_instance
+    def new_builder(cls):
+        cls._builder_instance = pkt.module().FaceBuilder()
+        return cls._builder_instance
+
+    @classmethod
+    def get_builder(cls):
+        if cls._builder_instance is not None:
+            return cls._builder_instance
+        return cls.new_builder()
 
     @classmethod
     def is_not_loaded(cls):
-        return cls.builder_instance is None
+        return cls._builder_instance is None
 
     @classmethod
     def update_cam_image_size(cls, cam_item):
@@ -64,26 +66,8 @@ class FBLoader:
             logger.debug("camera: {} focal: {}".format(i, c.focal))
 
     @classmethod
-    def get_builder(cls):
-        return cls.builder().get_builder()
-
-    @classmethod
-    def new_builder(cls, builder_type=BuilderType.NoneBuilder,
-                    ver=Config.unknown_mod_ver):
-        return cls.builder().new_builder(builder_type, ver)
-
-    @classmethod
-    def get_builder_type(cls):
-        return cls.builder().get_builder_type()
-
-    @classmethod
-    def get_builder_version(cls):
-        return cls.builder().get_version()
-
-    @classmethod
     def set_keentools_version(cls, obj):
-        attrs.set_keentools_version(obj, cls.get_builder_type(),
-                                    cls.get_builder_version())
+        attrs.mark_keentools_object(obj)
 
     @classmethod
     def check_mesh(cls, headobj):
@@ -206,9 +190,8 @@ class FBLoader:
     def rigidity_setup(cls):
         fb = cls.get_builder()
         settings = get_main_settings()
-        if FBLoader.get_builder_type() == BuilderType.FaceBuilder:
-            fb.set_shape_rigidity(settings.shape_rigidity)
-            fb.set_expressions_rigidity(settings.expression_rigidity)
+        fb.set_shape_rigidity(settings.shape_rigidity)
+        fb.set_expressions_rigidity(settings.expression_rigidity)
 
     @classmethod
     def update_all_camera_positions(cls, headnum):
@@ -385,16 +368,11 @@ class FBLoader:
         return mesh
 
     @classmethod
-    def universal_mesh_loader(cls, builder_type, mesh_name='keentools_mesh',
+    def universal_mesh_loader(cls, mesh_name='keentools_mesh',
                               masks=(), uv_set='uv0'):
-        stored_builder_type = FBLoader.get_builder_type()
-        stored_builder_version = FBLoader.get_builder_version()
-        builder = cls.new_builder(builder_type, Config.unknown_mod_ver)
-
+        builder = cls.new_builder()
         mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set,
                                     keyframe=None)
-        # Restore builder
-        cls.new_builder(stored_builder_type, stored_builder_version)
         return mesh
 
     @classmethod

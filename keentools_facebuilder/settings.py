@@ -56,8 +56,7 @@ def update_wireframe(self, context):
     settings = get_main_settings()
     headnum = settings.current_headnum
     head = settings.get_head(headnum)
-    FBLoader.viewport().update_wireframe(
-        FBLoader.get_builder_type(), head.headobj)
+    FBLoader.viewport().update_wireframe(head.headobj)
 
 
 def update_pin_sensitivity(self, context):
@@ -173,8 +172,7 @@ def update_mesh_parts(self, context):
         # Update wireframe structures
         FBLoader.viewport().wireframer().init_geom_data(head.headobj)
         FBLoader.viewport().wireframer().init_edge_indices(head.headobj)
-        FBLoader.viewport().update_wireframe(
-            FBLoader.get_builder_type(), head.headobj)
+        FBLoader.viewport().update_wireframe(head.headobj)
 
     mesh_name = old_mesh.name
     # Delete old mesh
@@ -500,7 +498,6 @@ class FBCameraItem(PropertyGroup):
 
 
 class FBHeadItem(PropertyGroup):
-    mod_ver: IntProperty(name="Modifier Version", default=-1)
     use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
                                          default=False, update=update_emotions)
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
