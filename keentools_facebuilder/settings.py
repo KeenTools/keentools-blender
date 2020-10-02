@@ -36,7 +36,6 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 from .utils import coords
-from . fbdebug import FBDebug
 from . config import Config, get_main_settings, get_operators
 from .utils.manipulate import what_is_state
 
@@ -83,10 +82,6 @@ def update_model_scale(self, context):
 
     if settings.pinmode and FBLoader.viewport().wireframer().is_working():
         FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
-
-
-def update_debug_log(self, value):
-    FBDebug.set_active(value)
 
 
 def update_cam_image(self, context):
@@ -721,15 +716,10 @@ class FBSceneSettings(PropertyGroup):
     # ---------------------
     # Operational settings
     # ---------------------
-    opnum: IntProperty(name="Operation Number", default=0)  # Test purpose
-    debug_active: BoolProperty(
-        description="Not recommended. "
-                    "Can extremely enlarge your scene file size",
-        name="Debug Log active", default=False, update=update_debug_log)
-
+    opnum: IntProperty(name="Operation Number", default=0)
     pinmode: BoolProperty(name="Pin Mode", default=False)
     pinmode_id: StringProperty(name="Unique pinmode ID")
-    force_out_pinmode: BoolProperty(name="Pin Mode", default=False)
+    force_out_pinmode: BoolProperty(name="Pin Mode Out", default=False)
     license_error: BoolProperty(name="License Error", default=False)
 
     # ---------------------
