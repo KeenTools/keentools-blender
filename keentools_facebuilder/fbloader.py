@@ -137,7 +137,6 @@ class FBLoader:
         head = settings.get_head(headnum)
         head.set_serial_str(fb.serialize())
         head.save_images_src()
-        # head.save_cam_settings()
         cls.set_keentools_attributes(head.headobj)
 
     @classmethod
