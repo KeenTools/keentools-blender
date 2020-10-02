@@ -53,7 +53,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
             return {'CANCELLED'}
 
         attrs.add_to_fb_collection(obj)  # link to FB objects collection
-        FBLoader.set_keentools_version(obj)  # Mark Keentools attribute
+        FBLoader.set_keentools_attributes(obj)
 
         bpy.ops.object.select_all(action='DESELECT')
         obj.select_set(state=True)
@@ -63,7 +63,6 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         h = get_main_settings().heads.add()
         h.headobj = obj
         h.reset_sensor_size()
-        h.save_cam_settings()
 
         settings.current_headnum = settings.get_last_headnum()
 

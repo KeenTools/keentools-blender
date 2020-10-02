@@ -65,6 +65,14 @@ def switch_to_camera(camobj):
             bpy.ops.view3d.object_as_camera(override)
 
 
+def default_camera_params():
+    return {'focal': Config.default_focal_length,
+            'sensor_width': Config.default_sensor_width,
+            'sensor_height': Config.default_sensor_height,
+            'frame_width': Config.default_frame_width,
+            'frame_height': Config.default_frame_height}
+
+
 def get_camera_params(obj):
     logger = logging.getLogger(__name__)
     # Init camera parameters

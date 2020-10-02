@@ -279,8 +279,11 @@ class Config:
     viewport_redraw_interval = 0.1
     unknown_mod_ver = -1
 
+    default_focal_length = 50.0
     default_sensor_width = 36.0
     default_sensor_height = 24.0
+    default_frame_width = 1920
+    default_frame_height = 1080
     default_camera_display_size = 0.75
 
     default_camera_rotation = (math.pi * 0.5, 0, 0)
