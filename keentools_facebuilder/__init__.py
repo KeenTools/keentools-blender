@@ -151,7 +151,6 @@ else:
     from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
     from .main_operator import CLASSES_TO_REGISTER as OPERATOR_CLASSES
     from .head import MESH_OT_FBAddHead
-    from .body import MESH_OT_FBAddBody
     from .settings import FBExifItem, FBCameraItem, FBHeadItem, FBSceneSettings
     from .pinmode import FB_OT_PinMode
     from .movepin import FB_OT_MovePin
@@ -160,7 +159,6 @@ else:
     from .utils.icons import FBIcons
 
     CLASSES_TO_REGISTER = (MESH_OT_FBAddHead,
-                           MESH_OT_FBAddBody,
                            FBExifItem,
                            FBCameraItem,
                            FBHeadItem,

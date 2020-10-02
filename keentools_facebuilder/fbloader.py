@@ -34,8 +34,7 @@ import keentools_facebuilder.blender_independent_packages.pykeentools_loader as 
 
 
 class FBLoader:
-    # Builder selection: FaceBuilder or BodyBuilder
-    builder_instance = None
+    _builder_instance = None
     _viewport = FBViewport()
 
     @classmethod
@@ -43,14 +42,14 @@ class FBLoader:
         return cls._viewport
 
     @classmethod
-    def builder(cls):
-        if cls.builder_instance is None:
-            cls.builder_instance = UniBuilder(Config.default_builder)
-        return cls.builder_instance
+    def _builder(cls):
+        if cls._builder_instance is None:
+            cls._builder_instance = pkt.module().FaceBuilder()
+        return cls._builder_instance
 
     @classmethod
     def is_not_loaded(cls):
-        return cls.builder_instance is None
+        return cls._builder_instance is None
 
     @classmethod
     def update_cam_image_size(cls, cam_item):
@@ -65,20 +64,20 @@ class FBLoader:
 
     @classmethod
     def get_builder(cls):
-        return cls.builder().get_builder()
+        return cls._builder()
 
     @classmethod
     def new_builder(cls, builder_type=BuilderType.NoneBuilder,
                     ver=Config.unknown_mod_ver):
-        return cls.builder().new_builder(builder_type, ver)
+        return cls._builder().new_builder(builder_type, ver)
 
     @classmethod
     def get_builder_type(cls):
-        return cls.builder().get_builder_type()
+        return cls._builder().__get_builder_type()
 
     @classmethod
     def get_builder_version(cls):
-        return cls.builder().get_version()
+        return cls._builder().get_version()
 
     @classmethod
     def set_keentools_version(cls, obj):
