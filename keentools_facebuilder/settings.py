@@ -141,7 +141,8 @@ def update_blue_head_button(self, context):
         settings.blue_head_button = True
 
 
-def update_mesh_parts(self, context):
+def update_mesh_geometry(self, context):
+    logger = logging.getLogger(__name__)
     settings = get_main_settings()
     state, headnum = what_is_state()
 
@@ -156,8 +157,17 @@ def update_mesh_parts(self, context):
 
     old_mesh = head.headobj.data
     FBLoader.load_model(headnum)
+
+    fb = FBLoader.get_builder()
+    levels = fb.models_list()
+    assert(head.model_level in levels)
+
+    level = levels.index(head.model_level)
+    fb.select_model(level)
+    logger.debug('MODEL_LEVEL: {} {}'.format(level, head.model_level))
+
     # Create new mesh
-    mesh = FBLoader.get_builder_mesh(FBLoader.get_builder(), 'FBHead_tmp_mesh',
+    mesh = FBLoader.get_builder_mesh(fb, 'FBHead_tmp_mesh',
                                      head.get_masks(),
                                      uv_set=head.tex_uv_shape,
                                      keyframe=keyframe)
@@ -168,6 +178,8 @@ def update_mesh_parts(self, context):
     except Exception:
         pass
     head.headobj.data = mesh
+    FBLoader.save_only(headnum)
+
     if settings.pinmode:
         # Update wireframe structures
         FBLoader.viewport().wireframer().init_geom_data(head.headobj)
@@ -178,41 +190,6 @@ def update_mesh_parts(self, context):
     # Delete old mesh
     bpy.data.meshes.remove(old_mesh, do_unlink=True)
     mesh.name = mesh_name
-
-
-def update_model_level(self, context):
-    logger = logging.getLogger(__name__)
-    settings = get_main_settings()
-    state, headnum = what_is_state()
-    if headnum < 0:
-        return
-    head = settings.get_head(headnum)
-
-    old_mesh = head.headobj.data
-
-    FBLoader.load_model(headnum)
-    fb = FBLoader.get_builder()
-    levels = fb.models_list()
-
-    assert(head.model_level in levels)
-
-    level = levels.index(head.model_level)
-    fb.select_model(level)
-    logger.info('MODEL_LEVEL: {} {}'.format(level, head.model_level))
-
-    # Create new mesh
-    mesh = FBLoader.get_builder_mesh(fb, 'FBHead_tmp_mesh',
-                                     head.get_masks(),
-                                     uv_set=head.tex_uv_shape,
-                                     keyframe=None)
-    try:
-        # Copy old material
-        if old_mesh.materials:
-            mesh.materials.append(old_mesh.materials[0])
-    except Exception:
-        pass
-    head.headobj.data = mesh
-    FBLoader.save_only(headnum)
 
 
 class FBExifItem(PropertyGroup):
@@ -560,21 +537,21 @@ class FBHeadItem(PropertyGroup):
         default=False)
 
     check_ears: BoolProperty(name="Ears", default=True,
-                             update=update_mesh_parts)
+                             update=update_mesh_geometry)
     check_eyes: BoolProperty(name="Eyes", default=True,
-                             update=update_mesh_parts)
+                             update=update_mesh_geometry)
     check_face: BoolProperty(name="Face", default=True,
-                             update=update_mesh_parts)
+                             update=update_mesh_geometry)
     check_headback: BoolProperty(name="Headback", default=True,
-                                 update=update_mesh_parts)
+                                 update=update_mesh_geometry)
     check_jaw: BoolProperty(name="Jaw", default=True,
-                            update=update_mesh_parts)
+                            update=update_mesh_geometry)
     check_mouth: BoolProperty(name="Mouth", default=True,
-                              update=update_mesh_parts)
+                              update=update_mesh_geometry)
     check_neck: BoolProperty(name="Neck", default=True,
-                             update=update_mesh_parts)
+                             update=update_mesh_geometry)
     check_nose: BoolProperty(name="Nose", default=True,
-                             update=update_mesh_parts)
+                             update=update_mesh_geometry)
 
     serial_str: StringProperty(name="Serialization string", default="")
     tmp_serial_str: StringProperty(name="Temporary Serialization", default="")
@@ -588,7 +565,7 @@ class FBHeadItem(PropertyGroup):
                 ('uv2', 'Spherical', 'A wrap-around layout', 'UV', 2),
                 ('uv3', 'Maxface',
                  'Maximum face resolution, low uniformness', 'UV', 3),
-                ], description="UV Layout", update=update_mesh_parts)
+                ], description="UV Layout", update=update_mesh_geometry)
 
     use_exif: BoolProperty(
         name="Use EXIF if available in file",
@@ -624,11 +601,11 @@ class FBHeadItem(PropertyGroup):
         name="Scale", default=1.0, min=0.01, max=100.0,
         update=update_model_scale)
 
-    model_level: EnumProperty(name="Model", items=[
-        ('HIGH_POLY', 'High-poly model', 'SHADING_WIRE', 0),
+    model_level: EnumProperty(name='Model', items=[
+        ('HIGH_POLY', 'High-poly', 'High-poly model', 'SHADING_WIRE', 0),
         ('MID_POLY', 'Mid-poly', 'Middle-poly model', 'MESH_UVSPHERE', 1),
         ('LOW_POLY', 'Low-poly', 'Low-poly model', 'MESH_CIRCLE', 2),
-    ], description='Model selector', update=update_model_level)
+    ], description='Model selector', update=update_mesh_geometry)
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
