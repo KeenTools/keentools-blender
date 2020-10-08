@@ -180,6 +180,41 @@ def update_mesh_parts(self, context):
     mesh.name = mesh_name
 
 
+def update_model_level(self, context):
+    logger = logging.getLogger(__name__)
+    settings = get_main_settings()
+    state, headnum = what_is_state()
+    if headnum < 0:
+        return
+    head = settings.get_head(headnum)
+
+    old_mesh = head.headobj.data
+
+    FBLoader.load_model(headnum)
+    fb = FBLoader.get_builder()
+    levels = fb.models_list()
+
+    assert(head.model_level in levels)
+
+    level = levels.index(head.model_level)
+    fb.select_model(level)
+    logger.info('MODEL_LEVEL: {} {}'.format(level, head.model_level))
+
+    # Create new mesh
+    mesh = FBLoader.get_builder_mesh(fb, 'FBHead_tmp_mesh',
+                                     head.get_masks(),
+                                     uv_set=head.tex_uv_shape,
+                                     keyframe=None)
+    try:
+        # Copy old material
+        if old_mesh.materials:
+            mesh.materials.append(old_mesh.materials[0])
+    except Exception:
+        pass
+    head.headobj.data = mesh
+    FBLoader.save_only(headnum)
+
+
 class FBExifItem(PropertyGroup):
     info_message: StringProperty(name="EXIF Info Message", default="")
     sizes_message: StringProperty(name="EXIF Sizes Message", default="")
@@ -588,6 +623,12 @@ class FBHeadItem(PropertyGroup):
                     "All operations are performed with the scaled geometry.",
         name="Scale", default=1.0, min=0.01, max=100.0,
         update=update_model_scale)
+
+    model_level: EnumProperty(name="Model", items=[
+        ('HIGH_POLY', 'High-poly model', 'SHADING_WIRE', 0),
+        ('MID_POLY', 'Mid-poly', 'Middle-poly model', 'MESH_UVSPHERE', 1),
+        ('LOW_POLY', 'Low-poly', 'Low-poly model', 'MESH_CIRCLE', 2),
+    ], description='Model selector', update=update_model_level)
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
