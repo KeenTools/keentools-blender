@@ -32,7 +32,8 @@ from bpy.props import (
     FloatVectorProperty,
     PointerProperty,
     CollectionProperty,
-    EnumProperty
+    EnumProperty,
+    BoolVectorProperty
 )
 from bpy.types import PropertyGroup
 from .utils import coords
@@ -551,22 +552,11 @@ class FBHeadItem(PropertyGroup):
                     "in the frame",
         default=False)
 
-    check_ears: BoolProperty(name="Ears", default=True,
-                             update=update_mesh_parts)
-    check_eyes: BoolProperty(name="Eyes", default=True,
-                             update=update_mesh_parts)
-    check_face: BoolProperty(name="Face", default=True,
-                             update=update_mesh_parts)
-    check_headback: BoolProperty(name="Headback", default=True,
-                                 update=update_mesh_parts)
-    check_jaw: BoolProperty(name="Jaw", default=True,
-                            update=update_mesh_parts)
-    check_mouth: BoolProperty(name="Mouth", default=True,
+    masks: BoolVectorProperty(name='Masks', description='Head parts visibility',
+                              size=12, subtype='NONE',
+                              default=(True, True, True, True, True, True,
+                                       True, True, True, True, True, True),
                               update=update_mesh_parts)
-    check_neck: BoolProperty(name="Neck", default=True,
-                             update=update_mesh_parts)
-    check_nose: BoolProperty(name="Nose", default=True,
-                             update=update_mesh_parts)
 
     serial_str: StringProperty(name="Serialization string", default="")
     tmp_serial_str: StringProperty(name="Temporary Serialization", default="")
@@ -677,14 +667,13 @@ class FBHeadItem(PropertyGroup):
         # Dir name of current scene
         self.headobj[Config.fb_dir_prop_name[0]] = bpy.path.abspath("//")
 
-
     def should_use_emotions(self):
         return self.use_emotions
 
     def get_masks(self):
-        return (self.check_ears, self.check_eyes, self.check_face,
-                self.check_headback, self.check_jaw, self.check_mouth,
-                self.check_neck, self.check_nose)
+        assert(not FBLoader.is_not_loaded())
+        fb = FBLoader.get_builder()
+        return self.masks[:len(fb.masks())]
 
     def smart_mode(self):
         return self.view_mode == 'smart'
