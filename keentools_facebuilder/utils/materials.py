@@ -141,23 +141,12 @@ def _cam_image_data_exists(cam):
 
 
 def _get_fb_for_bake_tex(headnum, head):
-    logger = logging.getLogger(__name__)
     FBLoader.load_model(headnum)
     fb = FBLoader.get_builder()
     for i, m in enumerate(head.get_masks()):
         fb.set_mask(i, m)
 
-    uv_shape = head.tex_uv_shape
-    logger.debug("UV_TYPE: {}".format(uv_shape))
-    if uv_shape == 'uv1':
-        fb.select_uv_set(1)
-    elif uv_shape == 'uv2':
-        fb.select_uv_set(2)
-    elif uv_shape == 'uv3':
-        fb.select_uv_set(3)
-    else:
-        fb.select_uv_set(0)
-
+    FBLoader.select_uv_set(fb, head.tex_uv_shape)
     return fb
 
 
