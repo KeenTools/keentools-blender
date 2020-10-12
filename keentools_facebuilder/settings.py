@@ -652,7 +652,6 @@ class FBHeadItem(PropertyGroup):
         return self.use_emotions
 
     def get_masks(self):
-        assert(not FBLoader.is_not_loaded())
         fb = FBLoader.get_builder()
         return self.masks[:len(fb.masks())]
 
