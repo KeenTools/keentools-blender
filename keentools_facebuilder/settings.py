@@ -498,31 +498,12 @@ class FBCameraItem(PropertyGroup):
         return self.image_group == -1
 
 
-
-def create_uv_list():
+def uv_items_callback(self, context):
     fb = FBLoader.get_builder()
     res = []
     for i, name in enumerate(fb.uv_sets_list()):
         res.append(('uv{}'.format(i), name, '', 'UV', i))
     return res
-
-
-def uv_items_callback(self, context):
-    if FBLoader.is_not_loaded():
-        return [
-            ('uv0', 'Butterfly', 'A one-seam layout for common use',
-            'UV', 0),]
-    return create_uv_list()
-
-    # return [
-    #     ('uv0', 'Butterfly', 'A one-seam layout for common use',
-    #      'UV', 0),
-    #     ('uv1', 'Legacy',
-    #      'A layout with minimal distortions but many seams', 'UV', 1),
-    #     ('uv2', 'Spherical', 'A wrap-around layout', 'UV', 2),
-    #     ('uv3', 'Maxface',
-    #      'Maximum face resolution, low uniformness', 'UV', 3),
-    # ]
 
 
 class FBHeadItem(PropertyGroup):
