@@ -518,6 +518,20 @@ def uv_items_callback(self, context):
     return res
 
 
+def model_level_callback(self, context):
+    fb = FBLoader.get_builder()
+    known = {'HIGH_POLY':('High-poly', 'High-poly model', 'SHADING_WIRE'),
+             'MID_POLY':('Mid-poly', 'Middle-poly model', 'MESH_UVSPHERE'),
+             'LOW_POLY':('Low-poly', 'Low-poly model', 'MESH_CIRCLE')}
+    res = []
+    for i, name in enumerate(fb.models_list()):
+        if name in known:
+            res.append((name, *known[name], i))
+        else:
+            res.append((name, name, '', 'MESH_UVSPHERE', i))
+    return res
+
+
 class FBHeadItem(PropertyGroup):
     use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
                                          default=False, update=update_emotions)
@@ -593,11 +607,9 @@ class FBHeadItem(PropertyGroup):
         name="Scale", default=1.0, min=0.01, max=100.0,
         update=update_model_scale)
 
-    model_level: EnumProperty(name='Model', items=[
-        ('HIGH_POLY', 'High-poly', 'High-poly model', 'SHADING_WIRE', 0),
-        ('MID_POLY', 'Mid-poly', 'Middle-poly model', 'MESH_UVSPHERE', 1),
-        ('LOW_POLY', 'Low-poly', 'Low-poly model', 'MESH_CIRCLE', 2),
-    ], description='Model selector', update=update_mesh_geometry)
+    model_level: EnumProperty(name='Model', items=model_level_callback,
+                              description='Model selector',
+                              update=update_mesh_geometry)
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
