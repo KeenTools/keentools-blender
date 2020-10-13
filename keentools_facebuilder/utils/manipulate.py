@@ -136,6 +136,7 @@ def get_operation():
 def unhide_head(headnum):
     settings = get_main_settings()
     head = settings.get_head(headnum)
+    # FBLoader.load_model(headnum)
     coords.update_head_mesh_neutral(FBLoader.get_builder(), head.headobj)
     settings.get_head(headnum).headobj.hide_set(False)
     settings.pinmode = False
