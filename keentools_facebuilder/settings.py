@@ -32,7 +32,8 @@ from bpy.props import (
     FloatVectorProperty,
     PointerProperty,
     CollectionProperty,
-    EnumProperty
+    EnumProperty,
+    BoolVectorProperty
 )
 from bpy.types import PropertyGroup
 from .utils import coords
@@ -497,6 +498,14 @@ class FBCameraItem(PropertyGroup):
         return self.image_group == -1
 
 
+def uv_items_callback(self, context):
+    fb = FBLoader.get_builder()
+    res = []
+    for i, name in enumerate(fb.uv_sets_list()):
+        res.append(('uv{}'.format(i), name, '', 'UV', i))
+    return res
+
+
 class FBHeadItem(PropertyGroup):
     use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
                                          default=False, update=update_emotions)
@@ -524,36 +533,19 @@ class FBHeadItem(PropertyGroup):
                     "in the frame",
         default=False)
 
-    check_ears: BoolProperty(name="Ears", default=True,
-                             update=update_mesh_parts)
-    check_eyes: BoolProperty(name="Eyes", default=True,
-                             update=update_mesh_parts)
-    check_face: BoolProperty(name="Face", default=True,
-                             update=update_mesh_parts)
-    check_headback: BoolProperty(name="Headback", default=True,
-                                 update=update_mesh_parts)
-    check_jaw: BoolProperty(name="Jaw", default=True,
-                            update=update_mesh_parts)
-    check_mouth: BoolProperty(name="Mouth", default=True,
+    masks: BoolVectorProperty(name='Masks', description='Head parts visibility',
+                              size=12, subtype='NONE',
+                              default=(True, True, True, True, True, True,
+                                       True, True, True, True, True, True),
                               update=update_mesh_parts)
-    check_neck: BoolProperty(name="Neck", default=True,
-                             update=update_mesh_parts)
-    check_nose: BoolProperty(name="Nose", default=True,
-                             update=update_mesh_parts)
 
     serial_str: StringProperty(name="Serialization string", default="")
     tmp_serial_str: StringProperty(name="Temporary Serialization", default="")
     need_update: BoolProperty(name="Mesh need update", default=False)
 
-    tex_uv_shape: EnumProperty(name="UV", items=[
-                ('uv0', 'Butterfly', 'A one-seam layout for common use',
-                 'UV', 0),
-                ('uv1', 'Legacy',
-                 'A layout with minimal distortions but many seams', 'UV', 1),
-                ('uv2', 'Spherical', 'A wrap-around layout', 'UV', 2),
-                ('uv3', 'Maxface',
-                 'Maximum face resolution, low uniformness', 'UV', 3),
-                ], description="UV Layout", update=update_mesh_parts)
+    tex_uv_shape: EnumProperty(name="UV", items=uv_items_callback,
+                               description="UV Layout",
+                               update=update_mesh_parts)
 
     use_exif: BoolProperty(
         name="Use EXIF if available in file",
@@ -656,14 +648,12 @@ class FBHeadItem(PropertyGroup):
         # Dir name of current scene
         self.headobj[Config.fb_dir_prop_name[0]] = bpy.path.abspath("//")
 
-
     def should_use_emotions(self):
         return self.use_emotions
 
     def get_masks(self):
-        return (self.check_ears, self.check_eyes, self.check_face,
-                self.check_headback, self.check_jaw, self.check_mouth,
-                self.check_neck, self.check_nose)
+        fb = FBLoader.get_builder()
+        return self.masks[:len(fb.masks())]
 
     def smart_mode(self):
         return self.view_mode == 'smart'
