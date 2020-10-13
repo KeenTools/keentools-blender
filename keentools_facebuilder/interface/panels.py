@@ -537,20 +537,16 @@ class FB_PT_Model(Panel):
 
         box.prop(head, 'model_level')
 
+        if FBLoader.is_not_loaded():
+            return
+        fb = FBLoader.get_builder()
         box = layout.box()
         box.label(text='Model parts:')
-        row = box.row()
-        row.prop(head, 'check_ears')
-        row.prop(head, 'check_eyes')
-        row = box.row()
-        row.prop(head, 'check_face')
-        row.prop(head, 'check_headback')
-        row = box.row()
-        row.prop(head, 'check_jaw')
-        row.prop(head, 'check_mouth')
-        row = box.row()
-        row.prop(head, 'check_neck')
-        row.prop(head, 'check_nose')
+        names = fb.mask_names()
+        for i, mask in enumerate(fb.masks()):
+            if i % 2 == 0:
+                row = box.row()
+            row.prop(head, 'masks', index=i, text=names[i])
 
 
 class FB_PT_TexturePanel(Panel):

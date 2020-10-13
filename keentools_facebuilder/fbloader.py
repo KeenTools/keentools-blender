@@ -298,20 +298,26 @@ class FBLoader:
         return 1
 
     @classmethod
+    def select_uv_set(cls, builder, uv_set):
+        try:
+            uv_num = int(uv_set[2:])
+            builder.select_uv_set(uv_num)
+        except ValueError:
+            raise ValueError('Incompatible UV number')
+        except pkt.module().InvalidArgumentException:
+            raise ValueError('Invalid UV index is out of bounds')
+        except TypeError:
+            raise TypeError('Invalid UV index')
+        except Exception:
+            raise Exception('Unknown error in UV selector')
+
+    @classmethod
     def get_builder_mesh(cls, builder, mesh_name='keentools_mesh',
                          masks=(), uv_set='uv0', keyframe=None):
         for i, m in enumerate(masks):
             builder.set_mask(i, m)
 
-        # change UV in accordance to selected UV set
-        # Blender can't use integer as key in enum property
-        builder.select_uv_set(0)
-        if uv_set == 'uv1':
-            builder.select_uv_set(1)
-        if uv_set == 'uv2':
-            builder.select_uv_set(2)
-        if uv_set == 'uv3':
-            builder.select_uv_set(3)
+        cls.select_uv_set(builder, uv_set)
 
         if keyframe is not None:
             geo = builder.applied_args_model_at(keyframe)
