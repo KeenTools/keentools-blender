@@ -36,7 +36,7 @@ def _state_valid_to_show(state):
 
 def _show_all_panels():
     state, _ = what_is_state()
-    return _state_valid_to_show(state) and pkt.cached_is_installed()
+    return _state_valid_to_show(state) and pkt.is_installed()
 
 
 class FB_PT_HeaderPanel(Panel):
@@ -87,7 +87,7 @@ class FB_PT_HeaderPanel(Panel):
             text='Install Core library', icon='PREFERENCES')
 
     def _draw_start_panel(self, layout):
-        if not pkt.cached_is_installed():
+        if not pkt.is_installed():
             self._pkt_install_offer(layout)
         else:
             self._head_creation_offer(layout)
@@ -128,11 +128,14 @@ class FB_PT_HeaderPanel(Panel):
     def draw(self, context):
         layout = self.layout
 
-        if not pkt.cached_is_installed():
+        if not pkt.is_installed():
             self._draw_start_panel(layout)
             return
 
         state, headnum = what_is_state()
+
+        if headnum >= 0 and FBLoader.is_not_loaded():
+            FBLoader.load_model(headnum)
 
         if state == 'PINMODE':
             # Unhide Button if Head is hidden in pinmode (by ex. after Undo)
@@ -320,7 +323,7 @@ class FB_PT_ExifPanel(Panel):
     @classmethod
     def poll(cls, context):
         state, headnum = what_is_state()
-        if not _state_valid_to_show(state) or not pkt.cached_is_installed():
+        if not _state_valid_to_show(state) or not pkt.is_installed():
             return False
         return get_main_settings().head_has_cameras(headnum)
 
@@ -523,26 +526,25 @@ class FB_PT_Model(Panel):
         op.camnum = settings.current_camnum
 
         box = layout.box()
-        row = box.split(factor=0.65)
-        col = row.column()
-        col.prop(settings, 'rigidity')
-        col.active = not settings.check_auto_rigidity
-        row.prop(settings, 'check_auto_rigidity', text="Auto")
+        box.prop(settings, 'shape_rigidity')
+        expression_rigidity_row = box.row()
+        expression_rigidity_row.prop(settings, 'expression_rigidity')  
+        expression_rigidity_row.active = head.should_use_emotions()
 
         box = layout.box()
+        row = box.row()
+        row.prop(head, 'model_scale')
+
+        if FBLoader.is_not_loaded():
+            return
+        fb = FBLoader.get_builder()
+        box = layout.box()
         box.label(text='Model parts:')
-        row = box.row()
-        row.prop(head, 'check_ears')
-        row.prop(head, 'check_eyes')
-        row = box.row()
-        row.prop(head, 'check_face')
-        row.prop(head, 'check_headback')
-        row = box.row()
-        row.prop(head, 'check_jaw')
-        row.prop(head, 'check_mouth')
-        row = box.row()
-        row.prop(head, 'check_neck')
-        row.prop(head, 'check_nose')
+        names = fb.mask_names()
+        for i, mask in enumerate(fb.masks()):
+            if i % 2 == 0:
+                row = box.row()
+            row.prop(head, 'masks', index=i, text=names[i])
 
 
 class FB_PT_TexturePanel(Panel):
@@ -627,6 +629,7 @@ class FB_PT_TexturePanel(Panel):
         box.prop(settings, 'tex_uv_expand_percents')
         box.prop(settings, 'tex_equalize_brightness')
         box.prop(settings, 'tex_equalize_colour')
+        box.prop(settings, 'tex_fill_gaps')
 
 
 class FB_PT_WireframeSettingsPanel(Panel):

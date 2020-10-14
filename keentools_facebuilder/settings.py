@@ -32,11 +32,11 @@ from bpy.props import (
     FloatVectorProperty,
     PointerProperty,
     CollectionProperty,
-    EnumProperty
+    EnumProperty,
+    BoolVectorProperty
 )
 from bpy.types import PropertyGroup
 from .utils import coords
-from . fbdebug import FBDebug
 from . config import Config, get_main_settings, get_operators
 from .utils.manipulate import what_is_state
 
@@ -57,8 +57,7 @@ def update_wireframe(self, context):
     settings = get_main_settings()
     headnum = settings.current_headnum
     head = settings.get_head(headnum)
-    FBLoader.viewport().update_wireframe(
-        FBLoader.get_builder_type(), head.headobj)
+    FBLoader.viewport().update_wireframe(head.headobj)
 
 
 def update_pin_sensitivity(self, context):
@@ -69,8 +68,21 @@ def update_pin_size(self, context):
     FBLoader.viewport().update_pin_size()
 
 
-def update_debug_log(self, value):
-    FBDebug.set_active(value)
+def update_model_scale(self, context):
+    settings = get_main_settings()
+    state, headnum = what_is_state()
+    if headnum < 0:
+        return
+    head = settings.get_head(headnum)
+    fb = FBLoader.get_builder()
+    fb.set_scale(head.model_scale)
+
+    coords.update_head_mesh(settings, fb, head)
+    FBLoader.update_all_camera_positions(headnum)
+    FBLoader.update_all_camera_focals(headnum)
+
+    if settings.pinmode and FBLoader.viewport().wireframer().is_working():
+        FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
 
 
 def update_cam_image(self, context):
@@ -161,8 +173,7 @@ def update_mesh_parts(self, context):
         # Update wireframe structures
         FBLoader.viewport().wireframer().init_geom_data(head.headobj)
         FBLoader.viewport().wireframer().init_edge_indices(head.headobj)
-        FBLoader.viewport().update_wireframe(
-            FBLoader.get_builder_type(), head.headobj)
+        FBLoader.viewport().update_wireframe(head.headobj)
 
     mesh_name = old_mesh.name
     # Delete old mesh
@@ -487,8 +498,15 @@ class FBCameraItem(PropertyGroup):
         return self.image_group == -1
 
 
+def uv_items_callback(self, context):
+    fb = FBLoader.get_builder()
+    res = []
+    for i, name in enumerate(fb.uv_sets_list()):
+        res.append(('uv{}'.format(i), name, '', 'UV', i))
+    return res
+
+
 class FBHeadItem(PropertyGroup):
-    mod_ver: IntProperty(name="Modifier Version", default=-1)
     use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
                                          default=False, update=update_emotions)
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
@@ -515,36 +533,19 @@ class FBHeadItem(PropertyGroup):
                     "in the frame",
         default=False)
 
-    check_ears: BoolProperty(name="Ears", default=True,
-                             update=update_mesh_parts)
-    check_eyes: BoolProperty(name="Eyes", default=True,
-                             update=update_mesh_parts)
-    check_face: BoolProperty(name="Face", default=True,
-                             update=update_mesh_parts)
-    check_headback: BoolProperty(name="Headback", default=True,
-                                 update=update_mesh_parts)
-    check_jaw: BoolProperty(name="Jaw", default=True,
-                            update=update_mesh_parts)
-    check_mouth: BoolProperty(name="Mouth", default=True,
+    masks: BoolVectorProperty(name='Masks', description='Head parts visibility',
+                              size=12, subtype='NONE',
+                              default=(True, True, True, True, True, True,
+                                       True, True, True, True, True, True),
                               update=update_mesh_parts)
-    check_neck: BoolProperty(name="Neck", default=True,
-                             update=update_mesh_parts)
-    check_nose: BoolProperty(name="Nose", default=True,
-                             update=update_mesh_parts)
 
     serial_str: StringProperty(name="Serialization string", default="")
     tmp_serial_str: StringProperty(name="Temporary Serialization", default="")
     need_update: BoolProperty(name="Mesh need update", default=False)
 
-    tex_uv_shape: EnumProperty(name="UV", items=[
-                ('uv0', 'Butterfly', 'A one-seam layout for common use',
-                 'UV', 0),
-                ('uv1', 'Legacy',
-                 'A layout with minimal distortions but many seams', 'UV', 1),
-                ('uv2', 'Spherical', 'A wrap-around layout', 'UV', 2),
-                ('uv3', 'Maxface',
-                 'Maximum face resolution, low uniformness', 'UV', 3),
-                ], description="UV Layout", update=update_mesh_parts)
+    tex_uv_shape: EnumProperty(name="UV", items=uv_items_callback,
+                               description="UV Layout",
+                               update=update_mesh_parts)
 
     use_exif: BoolProperty(
         name="Use EXIF if available in file",
@@ -573,6 +574,12 @@ class FBHeadItem(PropertyGroup):
         ], default='smart')
 
     show_image_groups: BoolProperty(default=True)
+
+    model_scale: FloatProperty(
+        description="Geometry input scale. "
+                    "All operations are performed with the scaled geometry.",
+        name="Scale", default=1.0, min=0.01, max=100.0,
+        update=update_model_scale)
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
@@ -641,23 +648,12 @@ class FBHeadItem(PropertyGroup):
         # Dir name of current scene
         self.headobj[Config.fb_dir_prop_name[0]] = bpy.path.abspath("//")
 
-    def save_cam_settings(self):
-        render = bpy.context.scene.render
-        d = {
-                Config.reconstruct_sensor_width_param[0]: self.sensor_width,
-                Config.reconstruct_sensor_height_param[0]: self.sensor_height,
-                Config.reconstruct_focal_param[0]: self.focal,
-                Config.reconstruct_frame_width_param[0]: render.resolution_x,
-                Config.reconstruct_frame_height_param[0]: render.resolution_y}
-        self.headobj[Config.fb_camera_prop_name[0]] = d
-
     def should_use_emotions(self):
         return self.use_emotions
 
     def get_masks(self):
-        return (self.check_ears, self.check_eyes, self.check_face,
-                self.check_headback, self.check_jaw, self.check_mouth,
-                self.check_neck, self.check_nose)
+        fb = FBLoader.get_builder()
+        return self.masks[:len(fb.masks())]
 
     def smart_mode(self):
         return self.view_mode == 'smart'
@@ -701,15 +697,10 @@ class FBSceneSettings(PropertyGroup):
     # ---------------------
     # Operational settings
     # ---------------------
-    opnum: IntProperty(name="Operation Number", default=0)  # Test purpose
-    debug_active: BoolProperty(
-        description="Not recommended. "
-                    "Can extremely enlarge your scene file size",
-        name="Debug Log active", default=False, update=update_debug_log)
-
+    opnum: IntProperty(name="Operation Number", default=0)
     pinmode: BoolProperty(name="Pin Mode", default=False)
     pinmode_id: StringProperty(name="Unique pinmode ID")
-    force_out_pinmode: BoolProperty(name="Pin Mode", default=False)
+    force_out_pinmode: BoolProperty(name="Pin Mode Out", default=False)
     license_error: BoolProperty(name="License Error", default=False)
 
     # ---------------------
@@ -752,12 +743,12 @@ class FBSceneSettings(PropertyGroup):
         update=update_pin_sensitivity)
 
     # Other settings
-    rigidity: FloatProperty(
+    shape_rigidity: FloatProperty(
         description="Change how much pins affect the model shape",
-        name="Rigidity", default=1.0, min=0.001, max=1000.0)
-    check_auto_rigidity: BoolProperty(
-        description="Automatic Rigidity calculation",
-        name="Auto rigidity", default=True)
+        name="Shape rigidity", default=1.0, min=0.001, max=1000.0)
+    expression_rigidity: FloatProperty(
+        description="Change how much pins affect the model expressions",
+        name="Expression rigidity", default=2.0, min=0.001, max=1000.0)
 
     # Internal use only
     current_headnum: IntProperty(name="Current Head Number", default=-1)
@@ -797,6 +788,11 @@ class FBSceneSettings(PropertyGroup):
         description="Experimental. Automatically equalize "
                     "colors across images",
         name="Equalize color", default=False)
+    tex_fill_gaps: BoolProperty(
+        description="Experimental. Tries automatically fill "
+                    "holes in face texture with appropriate "
+                    "color",
+        name="Autofill", default=False)
 
     tex_auto_preview: BoolProperty(
         description="Automatically apply the created texture",

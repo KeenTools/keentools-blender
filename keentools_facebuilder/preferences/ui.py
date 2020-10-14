@@ -332,7 +332,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             draw_system_info(layout)
             return
 
-        cached_status = pkt.cached_installation_status()
+        cached_status = pkt.installation_status()
         assert(cached_status is not None)
 
         if cached_status[1] == 'NOT_INSTALLED':

@@ -27,15 +27,12 @@ from .utils import attrs, coords, cameras
 from .utils.other import FBStopShaderTimer, restore_ui_elements
 from .utils.exif_reader import update_image_groups, reload_all_camera_exif
 
-from .builder import UniBuilder
-from .config import (Config, get_main_settings, get_operators,
-                     BuilderType, ErrorType)
+from .config import Config, get_main_settings
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 class FBLoader:
-    # Builder selection: FaceBuilder or BodyBuilder
-    builder_instance = None
+    _builder_instance = None
     _viewport = FBViewport()
 
     @classmethod
@@ -43,10 +40,19 @@ class FBLoader:
         return cls._viewport
 
     @classmethod
-    def builder(cls):
-        if cls.builder_instance is None:
-            cls.builder_instance = UniBuilder(Config.default_builder)
-        return cls.builder_instance
+    def new_builder(cls):
+        cls._builder_instance = pkt.module().FaceBuilder()
+        return cls._builder_instance
+
+    @classmethod
+    def get_builder(cls):
+        if cls._builder_instance is not None:
+            return cls._builder_instance
+        return cls.new_builder()
+
+    @classmethod
+    def is_not_loaded(cls):
+        return cls._builder_instance is None
 
     @classmethod
     def update_cam_image_size(cls, cam_item):
@@ -60,26 +66,8 @@ class FBLoader:
             logger.debug("camera: {} focal: {}".format(i, c.focal))
 
     @classmethod
-    def get_builder(cls):
-        return cls.builder().get_builder()
-
-    @classmethod
-    def new_builder(cls, builder_type=BuilderType.NoneBuilder,
-                    ver=Config.unknown_mod_ver):
-        return cls.builder().new_builder(builder_type, ver)
-
-    @classmethod
-    def get_builder_type(cls):
-        return cls.builder().get_builder_type()
-
-    @classmethod
-    def get_builder_version(cls):
-        return cls.builder().get_version()
-
-    @classmethod
-    def set_keentools_version(cls, obj):
-        attrs.set_keentools_version(obj, cls.get_builder_type(),
-                                    cls.get_builder_version())
+    def set_keentools_attributes(cls, obj):
+        attrs.mark_keentools_object(obj)
 
     @classmethod
     def check_mesh(cls, headobj):
@@ -147,12 +135,9 @@ class FBLoader:
         fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.get_head(headnum)
-
         head.set_serial_str(fb.serialize())
-
         head.save_images_src()
-        head.save_cam_settings()
-        cls.set_keentools_version(head.headobj)
+        cls.set_keentools_attributes(head.headobj)
 
     @classmethod
     def fb_save(cls, headnum, camnum):
@@ -202,18 +187,8 @@ class FBLoader:
     def rigidity_setup(cls):
         fb = cls.get_builder()
         settings = get_main_settings()
-        if FBLoader.get_builder_type() == BuilderType.FaceBuilder:
-            fb.set_auto_rigidity(settings.check_auto_rigidity)
-            fb.set_rigidity(settings.rigidity)
-
-    @classmethod
-    def rigidity_post(cls):
-        fb = cls.get_builder()
-        settings = get_main_settings()
-        if settings.check_auto_rigidity and (
-                FBLoader.get_builder_type() == BuilderType.FaceBuilder):
-            rg = fb.current_rigidity()
-            settings.rigidity = rg
+        fb.set_shape_rigidity(settings.shape_rigidity)
+        fb.set_expressions_rigidity(settings.expression_rigidity)
 
     @classmethod
     def update_all_camera_positions(cls, headnum):
@@ -318,20 +293,26 @@ class FBLoader:
         return 1
 
     @classmethod
+    def select_uv_set(cls, builder, uv_set):
+        try:
+            uv_num = int(uv_set[2:])
+            builder.select_uv_set(uv_num)
+        except ValueError:
+            raise ValueError('Incompatible UV number')
+        except pkt.module().InvalidArgumentException:
+            raise ValueError('Invalid UV index is out of bounds')
+        except TypeError:
+            raise TypeError('Invalid UV index')
+        except Exception:
+            raise Exception('Unknown error in UV selector')
+
+    @classmethod
     def get_builder_mesh(cls, builder, mesh_name='keentools_mesh',
                          masks=(), uv_set='uv0', keyframe=None):
         for i, m in enumerate(masks):
             builder.set_mask(i, m)
 
-        # change UV in accordance to selected UV set
-        # Blender can't use integer as key in enum property
-        builder.select_uv_set(0)
-        if uv_set == 'uv1':
-            builder.select_uv_set(1)
-        if uv_set == 'uv2':
-            builder.select_uv_set(2)
-        if uv_set == 'uv3':
-            builder.select_uv_set(3)
+        cls.select_uv_set(builder, uv_set)
 
         if keyframe is not None:
             geo = builder.applied_args_model_at(keyframe)
@@ -390,16 +371,11 @@ class FBLoader:
         return mesh
 
     @classmethod
-    def universal_mesh_loader(cls, builder_type, mesh_name='keentools_mesh',
+    def universal_mesh_loader(cls, mesh_name='keentools_mesh',
                               masks=(), uv_set='uv0'):
-        stored_builder_type = FBLoader.get_builder_type()
-        stored_builder_version = FBLoader.get_builder_version()
-        builder = cls.new_builder(builder_type, Config.unknown_mod_ver)
-
+        builder = cls.new_builder()
         mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set,
                                     keyframe=None)
-        # Restore builder
-        cls.new_builder(stored_builder_type, stored_builder_version)
         return mesh
 
     @classmethod

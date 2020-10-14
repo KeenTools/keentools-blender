@@ -82,8 +82,9 @@ ERROR_MESSAGES = {
 
     'CORE_CANNOT_IMPORT': [
         'Error (1090): the installed Core is corrupted. ',
-        'You can try to uninstall it using the button bellow, ',
-        'and then download and install the Core again.'],
+        'The file you\'ve tried to install seemed to be corrupted. ',
+        'Please try to download and install it again. Note that ',
+        'versions of the add-on and the Core library should match.'],
 
     'CORE_HAS_NO_VERSION': [
         'Error (1100): the loaded Core library seems to be corrupted.',
