@@ -160,16 +160,16 @@ def update_mesh_geometry(self, context):
     FBLoader.load_model(headnum)
 
     fb = FBLoader.get_builder()
-    levels = fb.models_list()
-    if (head.model_level in levels):
-        level = levels.index(head.model_level)
+    models = fb.models_list()
+    if (head.model_type in models):
+        model_index = models.index(head.model_type)
     else:
-        logger.error('MODEL_LEVEL_NOT_FOUND (Reset to default)')
-        level = 0
-        head.model_level = levels[level]
+        logger.error('MODEL_TYPE_NOT_FOUND (Reset to default)')
+        model_index = 0
+        head.model_type = models[model_index]
 
-    fb.select_model(level)
-    logger.debug('MODEL_LEVEL: {}'.format(level))
+    fb.select_model(model_index)
+    logger.debug('MODEL_TYPE: [{}] {}'.format(model_index, head.model_type))
 
     # Create new mesh
     mesh = FBLoader.get_builder_mesh(fb, 'FBHead_tmp_mesh',
@@ -522,17 +522,12 @@ def uv_items_callback(self, context):
     return res
 
 
-def model_level_callback(self, context):
+def model_type_callback(self, context):
+    icons = ('SHADING_WIRE', 'MESH_UVSPHERE', 'MESH_CIRCLE')
     fb = FBLoader.get_builder()
-    known = {'HIGH_POLY':('High-poly', 'High-poly model', 'SHADING_WIRE'),
-             'MID_POLY':('Mid-poly', 'Middle-poly model', 'MESH_UVSPHERE'),
-             'LOW_POLY':('Low-poly', 'Low-poly model', 'MESH_CIRCLE')}
     res = []
     for i, name in enumerate(fb.models_list()):
-        if name in known:
-            res.append((name, *known[name], i))
-        else:
-            res.append((name, name, '', 'MESH_UVSPHERE', i))
+        res.append((name, name, '', icons[i % len(icons)], i))
     return res
 
 
@@ -611,7 +606,7 @@ class FBHeadItem(PropertyGroup):
         name="Scale", default=1.0, min=0.01, max=100.0,
         update=update_model_scale)
 
-    model_level: EnumProperty(name='Model', items=model_level_callback,
+    model_type: EnumProperty(name='Model', items=model_type_callback,
                               description='Model selector',
                               update=update_mesh_geometry)
 
