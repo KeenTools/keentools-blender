@@ -535,7 +535,7 @@ class FB_PT_Model(Panel):
         row = box.row()
         row.prop(head, 'model_scale')
 
-        box.prop(head, 'model_level')
+        box.prop(head, 'model_type')
 
         if FBLoader.is_not_loaded():
             return
