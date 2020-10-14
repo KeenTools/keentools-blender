@@ -523,12 +523,8 @@ def uv_items_callback(self, context):
 
 
 def model_type_callback(self, context):
-    icons = ('SHADING_WIRE', 'MESH_UVSPHERE', 'MESH_CIRCLE')
-    fb = FBLoader.get_builder()
-    res = []
-    for i, name in enumerate(fb.models_list()):
-        res.append((name, name, '', icons[i % len(icons)], i))
-    return res
+    return [(name, name, '', 'MESH_UVSPHERE', i)
+            for i, name in enumerate(FBLoader.get_builder().models_list())]
 
 
 class FBHeadItem(PropertyGroup):
