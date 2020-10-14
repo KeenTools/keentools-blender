@@ -161,11 +161,15 @@ def update_mesh_geometry(self, context):
 
     fb = FBLoader.get_builder()
     levels = fb.models_list()
-    assert(head.model_level in levels)
+    if (head.model_level in levels):
+        level = levels.index(head.model_level)
+    else:
+        logger.error('MODEL_LEVEL_NOT_FOUND (Reset to default)')
+        level = 0
+        head.model_level = levels[level]
 
-    level = levels.index(head.model_level)
     fb.select_model(level)
-    logger.debug('MODEL_LEVEL: {} {}'.format(level, head.model_level))
+    logger.debug('MODEL_LEVEL: {}'.format(level))
 
     # Create new mesh
     mesh = FBLoader.get_builder_mesh(fb, 'FBHead_tmp_mesh',
