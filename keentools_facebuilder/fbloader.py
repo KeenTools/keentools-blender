@@ -237,9 +237,14 @@ class FBLoader:
         if camera is None:
             return
         fb = FBLoader.get_builder()
+        kid = camera.get_keyframe()
         projection = camera.get_projection_matrix()
-        fb.set_centered_geo_keyframe(camera.get_keyframe(), projection,
-                                     camera.get_oriented_image_size())
+        if not fb.is_key_at(kid):
+            fb.set_centered_geo_keyframe(kid, projection,
+                                         camera.get_oriented_image_size())
+        else:
+            fb.update_projection_mat(kid, projection)
+            fb.center_geo(kid)
 
     # --------------------
     @classmethod
