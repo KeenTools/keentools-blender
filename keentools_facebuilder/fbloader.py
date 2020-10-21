@@ -16,22 +16,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy
 import logging
-import math
 
+import bpy
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 import numpy as np
 
-from .viewport import FBViewport
-from .utils import attrs, coords, cameras
-from .utils.other import FBStopShaderTimer, restore_ui_elements
-from .utils.exif_reader import update_image_groups, reload_all_camera_exif
-
 from .config import Config, get_main_settings
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from .utils import attrs, coords, cameras
+from .utils.exif_reader import update_image_groups, reload_all_camera_exif
+from .utils.other import FBStopShaderTimer, restore_ui_elements
+from .viewport import FBViewport
 
 
 class FBLoader:
+    _camera_input = None
     _builder_instance = None
     _viewport = FBViewport()
 
@@ -41,7 +40,9 @@ class FBLoader:
 
     @classmethod
     def new_builder(cls):
-        cls._builder_instance = pkt.module().FaceBuilder()
+        from .camera_input import FaceBuilderCameraInput
+        cls._camera_input = FaceBuilderCameraInput()
+        cls._builder_instance = pkt.module().FaceBuilder(cls._camera_input)
         return cls._builder_instance
 
     @classmethod
@@ -219,27 +220,13 @@ class FBLoader:
                 cam.focal = focal * cam.compensate_view_scale()
 
     @classmethod
-    def update_camera_projection(cls, headnum, camnum):
-        settings = get_main_settings()
-        camera = settings.get_camera(headnum, camnum)
-        if camera is None:
-            return
-        fb = FBLoader.get_builder()
-        projection = camera.get_projection_matrix()
-        kid = camera.get_keyframe()
-        fb.update_projection_mat(kid, projection)
-        fb.update_image_size(kid, camera.get_oriented_image_size())
-
-    @classmethod
     def center_geo_camera_projection(cls, headnum, camnum):
         settings = get_main_settings()
         camera = settings.get_camera(headnum, camnum)
         if camera is None:
             return
         fb = FBLoader.get_builder()
-        projection = camera.get_projection_matrix()
-        fb.set_centered_geo_keyframe(camera.get_keyframe(), projection,
-                                     camera.get_oriented_image_size())
+        fb.set_centered_geo_keyframe(camera.get_keyframe())
 
     # --------------------
     @classmethod
@@ -507,14 +494,9 @@ class FBLoader:
                     _unfix_all(fb, head)
                     mode = 'FB_ESTIMATE_STATIC_FOCAL_LENGTH'
                 elif head.manual_estimation_mode == 'force_focal':
-                    for cam in head.cameras:
-                        fb.update_projection_mat(cam.get_keyframe(),
-                            cam.get_custom_projection_matrix(head.focal))
-                        fb.update_image_size(cam.get_keyframe(),
-                                             cam.get_oriented_image_size())
                     mode = 'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES'
                 else:
-                    assert(False), 'Unknown mode: {}'.format(
+                    assert False, 'Unknown mode: {}'.format(
                         head.manual_estimation_mode)
             return mode
 
@@ -677,10 +659,8 @@ class FBLoader:
         fb = cls.get_builder()
         kid = cls.get_next_keyframe()
         camera.set_keyframe(kid)
-        projection = camera.get_projection_matrix()
 
-        fb.set_centered_geo_keyframe(kid, projection,
-                                     camera.get_oriented_image_size())
+        fb.set_centered_geo_keyframe(kid)
 
         logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
 

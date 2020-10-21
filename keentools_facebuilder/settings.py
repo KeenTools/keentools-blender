@@ -17,13 +17,11 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-import bpy
-import numpy as np
 import logging
 import math
 
-
-from . fbloader import FBLoader
+import bpy
+import numpy as np
 from bpy.props import (
     BoolProperty,
     IntProperty,
@@ -36,8 +34,10 @@ from bpy.props import (
     BoolVectorProperty
 )
 from bpy.types import PropertyGroup
+
+from .config import Config, get_main_settings, get_operators
+from .fbloader import FBLoader
 from .utils import coords
-from . config import Config, get_main_settings, get_operators
 from .utils.manipulate import what_is_state
 
 
@@ -106,8 +106,6 @@ def update_camera_focal(self, context):
 
     fb = FBLoader.get_builder()
     if fb.is_key_at(kid):
-        fb.update_projection_mat(kid, self.get_projection_matrix())
-        fb.update_image_size(kid, self.get_oriented_image_size())
         FBLoader.save_only(settings.current_headnum)
 
     if FBLoader.in_pin_drag() or self.auto_focal_estimation or \
