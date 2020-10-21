@@ -173,9 +173,8 @@ class FBLoader:
         head = settings.get_head(headnum)
         cam = head.get_camera(camnum)
         headobj = head.headobj
-        camobj = cam.camobj
         kid = settings.get_keyframe(headnum, camnum)
-        cls.place_cameraobj(kid, camobj, headobj)
+        cls.place_camera(headnum, camnum)
         coords.update_head_mesh(settings, fb, head)
         # Load pins from model
         vp = cls.viewport()
@@ -196,13 +195,12 @@ class FBLoader:
         fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.get_head(headnum)
-        headobj = head.headobj
 
-        for i, cam in enumerate(head.cameras):
-            if cam.has_pins():
-                kid = cam.get_keyframe()
-                cls.place_cameraobj(kid, cam.camobj, headobj)
-                cam.set_model_mat(fb.model_mat(kid))
+        for camnum, camera in enumerate(head.cameras):
+            if camera.has_pins():
+                cls.place_camera(headnum, camnum)
+                keyframe = camera.get_keyframe()
+                camera.set_model_mat(fb.model_mat(keyframe))
 
     @classmethod
     def update_all_camera_focals(cls, headnum):
@@ -229,16 +227,6 @@ class FBLoader:
         fb.set_centered_geo_keyframe(camera.get_keyframe())
 
     # --------------------
-    @classmethod
-    def place_cameraobj(cls, keyframe, camobj, headobj):
-        fb = cls.get_builder()
-        mat = coords.calc_model_mat(
-            fb.model_mat(keyframe),
-            headobj.matrix_world
-        )
-        if mat is not None:
-            camobj.matrix_world = mat
-
     @classmethod
     def set_camera_projection(cls, fl, sw, rx, ry,
                               near_clip=0.1, far_clip=1000.0):
@@ -390,13 +378,11 @@ class FBLoader:
         head = settings.get_head(headnum)
         cam = head.get_camera(camnum)
         kid = cam.get_keyframe()
-        camobj = cam.camobj
-        headobj = head.headobj
 
         cls.load_model_from_head(head)
         fb = cls.get_builder()
 
-        cls.place_cameraobj(kid, camobj, headobj)
+        cls.place_camera(headnum, camnum)
         # Load pins from model
         vp = cls.viewport()
         vp.pins().set_pins(vp.img_points(fb, kid))
@@ -410,8 +396,15 @@ class FBLoader:
         camera = head.get_camera(camnum)
         camobj = camera.camobj
         headobj = head.headobj
-        kid = settings.get_keyframe(headnum, camnum)
-        cls.place_cameraobj(kid, camobj, headobj)
+
+        fb = cls.get_builder()
+        keyframe = camera.get_keyframe()
+
+        mat = coords.calc_model_mat(
+            fb.model_mat(keyframe),
+            headobj.matrix_world)
+        if mat is not None:
+            camobj.matrix_world = mat
 
     @classmethod
     def load_pins(cls, headnum, camnum):
