@@ -20,10 +20,11 @@ import logging
 from uuid import uuid4
 
 import bpy
+import numpy as np
 
-from .utils import manipulate, coords, cameras
 from .config import Config, get_main_settings, get_operators, ErrorType
 from .fbloader import FBLoader
+from .utils import manipulate, coords, cameras
 from .utils.other import FBStopShaderTimer, force_ui_redraw, hide_ui_elements
 
 
@@ -237,7 +238,6 @@ class FB_OT_PinMode(bpy.types.Operator):
                 kfnum = cam.get_keyframe()
                 logger.debug("UPDATE KEYFRAME: {}".format(kfnum))
                 if not fb.is_key_at(kfnum):
-                    import numpy as np
                     fb.set_keyframe(kfnum, np.eye(4))
 
         try:

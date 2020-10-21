@@ -18,12 +18,13 @@
 import logging
 import time
 
-import bpy
 import blf
+import bpy
+import numpy as np
 
-from . edges import FBEdgeShader2D, FBEdgeShader3D
-from . points import FBPoints2D, FBPoints3D
-from .. config import get_main_settings
+from .edges import FBEdgeShader2D, FBEdgeShader3D
+from .points import FBPoints2D, FBPoints3D
+from ..config import get_main_settings
 
 
 def force_ui_redraw(area_type="PREFERENCES"):
@@ -293,8 +294,6 @@ class FPSMeter:
 
 
 def fb_to_camera(fb, camera):
-    import numpy as np
-
     keyframe = camera.get_keyframe()
     view = camera.get_model_mat() @ fb.model_mat(keyframe)
     fb.update_model_mat(keyframe, np.eye(4))
