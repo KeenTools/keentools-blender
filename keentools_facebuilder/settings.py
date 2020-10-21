@@ -350,7 +350,7 @@ class FBCameraItem(PropertyGroup):
 
     @staticmethod
     def convert_matrix_to_str(arr):
-        b = arr.tobytes()
+        b = arr.astype(np.float32).tobytes()
         return b.hex()
 
     @staticmethod

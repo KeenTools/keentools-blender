@@ -25,7 +25,7 @@ import numpy as np
 from .config import Config, get_main_settings
 from .utils import attrs, coords, cameras
 from .utils.exif_reader import update_image_groups, reload_all_camera_exif
-from .utils.other import FBStopShaderTimer, restore_ui_elements
+from .utils.other import FBStopShaderTimer, restore_ui_elements, fb_to_camera
 from .viewport import FBViewport
 
 
@@ -143,14 +143,6 @@ class FBLoader:
     @classmethod
     def fb_save(cls, headnum, camnum):
         """ Face Builder Serialize Model Info """
-        fb = cls.get_builder()
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-        cam = head.get_camera(camnum)
-
-        if cam is not None:
-            cam.set_model_mat(fb.model_mat(cam.get_keyframe()))
-
         cls.save_fb_on_headobj(headnum)
 
     @classmethod
@@ -198,9 +190,7 @@ class FBLoader:
 
         for camnum, camera in enumerate(head.cameras):
             if camera.has_pins():
-                cls.place_camera(headnum, camnum)
-                keyframe = camera.get_keyframe()
-                camera.set_model_mat(fb.model_mat(keyframe))
+                fb_to_camera(fb, camera)
 
     @classmethod
     def update_all_camera_focals(cls, headnum):
@@ -225,6 +215,7 @@ class FBLoader:
             return
         fb = FBLoader.get_builder()
         fb.set_centered_geo_keyframe(camera.get_keyframe())
+        fb_to_camera(fb, camera)
 
     # --------------------
     @classmethod
@@ -523,6 +514,10 @@ class FBLoader:
             return False
 
         _update_camera_focal_post()
+
+        for camera in head.cameras:
+            fb_to_camera(fb, camera)
+
         return True
 
     @classmethod
@@ -651,6 +646,7 @@ class FBLoader:
         camera.set_keyframe(kid)
 
         fb.set_centered_geo_keyframe(kid)
+        fb_to_camera(fb, camera)
 
         logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
 

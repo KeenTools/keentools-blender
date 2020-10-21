@@ -290,3 +290,12 @@ class FPSMeter:
         self.head = self.next_index(self.head)
         self.buffer[self.head] = time.time()
         self.counter += 1
+
+
+def fb_to_camera(fb, camera):
+    import numpy as np
+
+    keyframe = camera.get_keyframe()
+    view = camera.get_model_mat() @ fb.model_mat(keyframe)
+    fb.update_model_mat(keyframe, np.eye(4))
+    camera.set_model_mat(view)

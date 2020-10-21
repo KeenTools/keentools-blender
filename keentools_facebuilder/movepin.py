@@ -17,14 +17,13 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+from functools import wraps
 
 import bpy
 
-from .utils import cameras, manipulate, coords
-from .fbloader import FBLoader
 from .config import Config, get_main_settings
-
-from functools import wraps
+from .fbloader import FBLoader
+from .utils import manipulate, coords
 
 
 # Decorator for profiling
@@ -170,7 +169,6 @@ class FB_OT_MovePin(bpy.types.Operator):
             # There was only one click
             # Save current state
             head.set_serial_str(fb.serialize())
-            cam.set_model_mat(fb.model_mat(kid))
 
     def on_left_mouse_release(self, context, mouse_x, mouse_y):
         settings = get_main_settings()
@@ -215,7 +213,6 @@ class FB_OT_MovePin(bpy.types.Operator):
         fb.move_pin(kid, pin_idx, coords.image_space_to_frame(x, y))
 
     def on_mouse_move(self, context, mouse_x, mouse_y):
-
         settings = get_main_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
@@ -241,7 +238,6 @@ class FB_OT_MovePin(bpy.types.Operator):
         cam.tmp_model_mat = cam.model_mat
         # Save current state
         head.set_serial_str(fb.serialize())
-        cam.set_model_mat(fb.model_mat(kid))
         # --------------
 
         FBLoader.place_camera(headnum, camnum)
