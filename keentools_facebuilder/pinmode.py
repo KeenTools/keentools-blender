@@ -193,7 +193,9 @@ class FB_OT_PinMode(bpy.types.Operator):
             return {'CANCELLED'}
 
         if not FBLoader.check_mesh(headobj):
-            logger.error("MESH IS CORRUPTED")
+            fb = FBLoader.get_builder()
+            logger.error('MESH IS CORRUPTED {} != {}'.format(
+                len(headobj.data.vertices), len(fb.applied_args_vertices())))
             warn = getattr(get_operators(), Config.fb_warning_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
             return {'CANCELLED'}
