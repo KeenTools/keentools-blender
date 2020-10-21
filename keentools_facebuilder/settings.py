@@ -522,9 +522,16 @@ def uv_items_callback(self, context):
     return res
 
 
+def _get_icon_by_lod(level_of_detail):
+    icons = ('SHADING_WIRE', 'MESH_UVSPHERE', 'META_BALL')
+    if level_of_detail < len(icons) and level_of_detail >= 0:
+        return icons[level_of_detail]
+    return 'BLANK1'
+
+
 def model_type_callback(self, context):
-    return [(name, name, '', 'MESH_UVSPHERE', i)
-            for i, name in enumerate(FBLoader.get_builder().models_list())]
+    return [(x.name, x.name, '', _get_icon_by_lod(0), i)
+            for i, x in enumerate(FBLoader.get_builder().models_list())]
 
 
 class FBHeadItem(PropertyGroup):
@@ -602,9 +609,9 @@ class FBHeadItem(PropertyGroup):
         name="Scale", default=1.0, min=0.01, max=100.0,
         update=update_model_scale)
 
-    model_type: EnumProperty(name='Model', items=model_type_callback,
-                              description='Model selector',
-                              update=update_mesh_geometry)
+    model_type: EnumProperty(name='Topology', items=model_type_callback,
+                             description='Model selector',
+                             update=update_mesh_geometry)
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
