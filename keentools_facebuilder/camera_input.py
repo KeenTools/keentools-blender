@@ -1,3 +1,4 @@
+import numpy as np
 from pykeentools import FaceBuilderCameraInputI
 
 from . import FBCameraItem
@@ -14,7 +15,7 @@ class FaceBuilderCameraInput(FaceBuilderCameraInputI):
         return self._camera_at(frame).get_projection_matrix()
 
     def view(self, frame):
-        return self._camera_at(frame).get_model_mat()
+        return np.eye(4)
 
     def image_size(self, frame):
         return self._camera_at(frame).get_image_size()
