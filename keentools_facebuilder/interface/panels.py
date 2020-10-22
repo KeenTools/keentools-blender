@@ -712,3 +712,44 @@ class FB_PT_PinSettingsPanel(Panel):
         box = layout.box()
         box.prop(settings, 'pin_size', slider=True)
         box.prop(settings, 'pin_sensitivity', slider=True)
+
+
+class FB_PT_BlendShapesPanel(Panel):
+    bl_idname = Config.fb_blendshapes_panel_idname
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_label = 'Blendshapes/FACS'
+    bl_category = Config.fb_tab_category
+    bl_context = 'objectmode'
+
+    @classmethod
+    def poll(cls, context):
+        return _show_all_panels()
+
+    def draw_header_preset(self, context):
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        row.operator(
+            Config.fb_help_blendshapes_idname,
+            text='', icon='QUESTION')
+
+    def draw(self, context):
+        layout = self.layout
+
+        box = layout.box()
+        box.label(text='FACS Blendshapes')
+        op = box.operator(
+            Config.fb_actor_idname,
+            text='Generate FACS-Blendshapes')
+        op.action = 'generate_facs_blendshapes'
+
+        op = box.operator(
+            Config.fb_actor_idname,
+            text='Generate Control Panel')
+        op.action = 'generate_blendshapes_sliders'
+
+        op = box.operator(
+            Config.fb_actor_idname,
+            text='Load animation from CSV')
+        op.action = 'load_csv_animation'

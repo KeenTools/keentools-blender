@@ -37,6 +37,7 @@ CLASSES_TO_REGISTER = (FB_MT_ProperViewMenu, # menus
                        FB_PT_PinSettingsPanel,
                        FB_PT_WireframeSettingsPanel,
                        FB_PT_TexturePanel,
+                       FB_PT_BlendShapesPanel,
                        FB_OT_RemindLater, FB_OT_SkipVersion,
                        HELP_OT_CameraHelp,  # helps
                        HELP_OT_ExifHelp,
@@ -45,11 +46,13 @@ CLASSES_TO_REGISTER = (FB_MT_ProperViewMenu, # menus
                        HELP_OT_PinSettingsHelp,
                        HELP_OT_WireframeSettingsHelp,
                        HELP_OT_TextureHelp,
+                       HELP_OT_BlendshapesHelp,
                        FB_OT_AddonWarning,  # dialogs
                        FB_OT_ExifSelector,
                        FB_OT_TexSelector,
                        FB_OT_SingleFilebrowser,  # filedialog
                        FB_OT_SingleFilebrowserExec,
                        FB_OT_TextureFileExport,
+                       FB_OT_AnimationFilebrowser,
                        FB_OT_MultipleFilebrowser,
                        FB_OT_MultipleFilebrowserExec)

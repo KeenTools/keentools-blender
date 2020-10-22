@@ -144,6 +144,10 @@ class Config:
     fb_texture_file_export_idname = \
         operators + '.' + fb_texture_file_export_callname
 
+    fb_animation_filebrowser_callname = 'open_animation_filebrowser'
+    fb_animation_filebrowser_idname = \
+        operators + '.' + fb_animation_filebrowser_callname
+
     fb_pinmode_callname = 'pinmode'
     fb_pinmode_idname = operators + '.' + fb_pinmode_callname
 
@@ -202,6 +206,7 @@ class Config:
     fb_colors_panel_idname = _PT + 'colors_panel'
     fb_model_panel_idname = _PT + 'model_panel'
     fb_pin_settings_panel_idname = _PT + 'pin_settings_panel'
+    fb_blendshapes_panel_idname = _PT + 'blendshapes_panel'
 
     # Help ids
     fb_help_camera_callname = 'help_camera'
@@ -226,6 +231,9 @@ class Config:
 
     fb_help_texture_callname = 'help_texture'
     fb_help_texture_idname = operators + '.' + fb_help_texture_callname
+
+    fb_help_blendshapes_callname = 'help_blendshapes'
+    fb_help_blendshapes_idname = operators + '.' + fb_help_blendshapes_callname
 
     fb_open_url_callname = 'open_url'
     fb_open_url_idname = operators + '.' + fb_open_url_callname

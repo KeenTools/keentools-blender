@@ -17,6 +17,8 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+import math
+
 
 import bpy
 from bpy.props import (
@@ -29,6 +31,9 @@ from .config import Config, get_main_settings, get_operators, ErrorType
 from .utils.exif_reader import (update_image_groups,
                                 auto_setup_camera_from_exif,
                                 is_size_compatible_with_group)
+from .utils.blendshapes import (default_blendshape_names,
+                                create_fake_blendshapes,
+                                create_blendshape_controls, make_control_panel)
 
 
 class FB_OT_Actor(bpy.types.Operator):
@@ -56,6 +61,37 @@ class FB_OT_Actor(bpy.types.Operator):
 
         elif self.action == 'unhide_head':
             manipulate.unhide_head(self.headnum)
+
+        elif self.action == 'generate_facs_blendshapes':
+            settings = get_main_settings()
+            obj = context.object
+            headnum = settings.head_by_obj(obj)
+            if headnum >= 0:
+                head = settings.get_head(headnum)
+                counter = create_fake_blendshapes(head.headobj,
+                                                  default_blendshape_names())
+                self.report({'INFO'}, '{} Blendshapes created'.format(counter))
+
+        elif self.action == 'generate_blendshapes_sliders':
+            settings = get_main_settings()
+            obj = context.object
+            headnum = settings.head_by_obj(obj)
+            head = settings.get_head(headnum)
+            controls = create_blendshape_controls(head.headobj)
+            control_panel = make_control_panel(controls)
+            head.headobj.data.update()  # update drivers affection
+            control_panel.location = (2, 0, 0)
+            control_panel.rotation_euler = (0.5 * math.pi, 0, 0)
+            bpy.context.space_data.overlay.show_relationship_lines = False
+
+        elif self.action == 'load_csv_animation':
+            settings = get_main_settings()
+            obj = context.object
+            headnum = settings.head_by_obj(obj)
+            if headnum >= 0:
+                op = getattr(get_operators(),
+                             Config.fb_animation_filebrowser_callname)
+                op('INVOKE_DEFAULT', headnum=headnum)
 
         return {'FINISHED'}
 

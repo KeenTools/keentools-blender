@@ -31,6 +31,7 @@ from ..utils.exif_reader import (read_exif_to_camera,
                                  auto_setup_camera_from_exif)
 from ..utils.other import restore_ui_elements
 from ..utils.materials import find_tex_by_name
+from ..utils.blendshapes import load_csv_animation
 
 
 class FB_OT_SingleFilebrowserExec(Operator):
@@ -273,4 +274,27 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
         update_image_groups(head)
 
         FBLoader.save_only(self.headnum)
+        return {'FINISHED'}
+
+
+class FB_OT_AnimationFilebrowser(Operator, ImportHelper):
+    bl_idname = Config.fb_animation_filebrowser_idname
+    bl_label = 'Open animation file'
+    bl_description = 'Open animation file'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    filter_glob: bpy.props.StringProperty(
+        default='*.csv;*.*',
+        options={'HIDDEN'}
+    )
+
+    headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        head = settings.get_head(self.headnum)
+        load_csv_animation(head.headobj, self.filepath)
         return {'FINISHED'}
