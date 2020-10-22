@@ -188,7 +188,9 @@ class FB_OT_PinMode(bpy.types.Operator):
             return {'CANCELLED'}
 
         if not FBLoader.check_mesh(headobj):
-            logger.error("MESH IS CORRUPTED")
+            fb = FBLoader.get_builder()
+            logger.error('MESH IS CORRUPTED {} != {}'.format(
+                len(headobj.data.vertices), len(fb.applied_args_vertices())))
             warn = getattr(get_operators(), Config.fb_warning_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
             return {'CANCELLED'}
@@ -207,9 +209,6 @@ class FB_OT_PinMode(bpy.types.Operator):
                 settings.current_headnum, settings.current_camnum))
             first_start = False
         else:
-            FBLoader.builder().sync_version(head.mod_ver)
-            head.mod_ver = FBLoader.get_builder_version()
-
             FBLoader.update_cameras_from_old_version(self.headnum)
 
         settings.current_headnum = self.headnum
@@ -262,7 +261,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.debug("START SHADERS")
             self._init_wireframer_colors(
                 settings.overall_opacity, Config.coloring_texture_name,
-                os.path.join(pkt.loader.pkt_installation_dir(),
+                os.path.join(pkt.config.pkt_installation_dir(),
                              Config.coloring_texture_path))
             vp.create_batch_2d(context)
             logger.debug("REGISTER SHADER HANDLERS")

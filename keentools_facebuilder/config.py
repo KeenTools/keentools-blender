@@ -24,17 +24,10 @@ _PT = 'FACEBUILDER_PT_'
 _MT = 'FACEBUILDER_MT_'
 
 
-class BuilderType:
-    """ Types for Builder selection """
-    NoneBuilder = -1
-    FaceBuilder = 1
-    BodyBuilder = 2
-
-
 class Config:
     # Version dependent
-    addon_version = '2.1.0'
-    supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83))
+    addon_version = '2.1.1'
+    supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83), (2, 90))
     minimal_blender_api = (2, 80, 60)
 
     # Version independent
@@ -55,7 +48,6 @@ class Config:
     fb_views_panel_label = 'Views'
     fb_camera_panel_label = 'Camera'
     fb_tab_category = addon_human_readable_name
-    default_builder = BuilderType.FaceBuilder
     keentools_website_url = 'https://keentools.io'
     core_download_website_url = keentools_website_url + '/download/core'
 
@@ -270,7 +262,6 @@ class Config:
     # if they have different names (from old scenes by ex. or if they will be
     # renamed in future).
     # Only first value in tuple is used for new custom property creation.
-    object_type_prop_name = (_company + '_type',)
     version_prop_name = (_company + '_version',)
     fb_serial_prop_name = (prefix + '_serial',)
     fb_images_prop_name = (prefix + '_images',)
@@ -293,8 +284,11 @@ class Config:
     viewport_redraw_interval = 0.1
     unknown_mod_ver = -1
 
+    default_focal_length = 50.0
     default_sensor_width = 36.0
     default_sensor_height = 24.0
+    default_frame_width = 1920
+    default_frame_height = 1080
     default_camera_display_size = 0.75
 
     default_camera_rotation = (math.pi * 0.5, 0, 0)

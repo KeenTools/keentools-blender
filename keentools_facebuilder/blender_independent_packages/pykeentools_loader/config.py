@@ -22,7 +22,7 @@ import inspect
 import tempfile
 __all__ = ['SHADOW_COPIES_DIRECTORY', 'RELATIVE_LIB_DIRECTORY',
            'pkt_installation_dir', 'MINIMUM_VERSION_REQUIRED',
-           'SUPPORTED_PYTHON_VERSIONS',
+           'is_python_supported',
            'os_name', 'download_path']
 
 
@@ -40,8 +40,17 @@ def pkt_installation_dir():
     return os.path.abspath(installation_dir)
 
 
-MINIMUM_VERSION_REQUIRED = (2, 1, 0)  # 2.1.0
-SUPPORTED_PYTHON_VERSIONS = ((3, 7),)
+MINIMUM_VERSION_REQUIRED = (2, 1, 1)  # 2.1.1
+_SUPPORTED_PYTHON_VERSIONS = ((3, 7),)
+
+
+def is_python_supported():
+    import sys
+    ver = sys.version_info[0:3]
+    for supported_ver in _SUPPORTED_PYTHON_VERSIONS:
+        if ver[:len(supported_ver)] == supported_ver:
+            return True
+    return False
 
 
 def os_name():
