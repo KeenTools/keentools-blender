@@ -521,7 +521,7 @@ class FB_PT_Model(Panel):
 
         head = settings.get_head(headnum)
 
-        op = layout.operator(Config.fb_unmorph_idname, text="Reset")
+        op = layout.operator(Config.fb_unmorph_idname, text='Reset')
         op.headnum = headnum
         op.camnum = settings.current_camnum
 
@@ -534,6 +534,8 @@ class FB_PT_Model(Panel):
         box = layout.box()
         row = box.row()
         row.prop(head, 'model_scale')
+
+        box.prop(head, 'model_type')
 
         if FBLoader.is_not_loaded():
             return

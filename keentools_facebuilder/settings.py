@@ -140,7 +140,8 @@ def update_blue_head_button(self, context):
         settings.blue_head_button = True
 
 
-def update_mesh_parts(self, context):
+def update_mesh_geometry(self, context):
+    logger = logging.getLogger(__name__)
     settings = get_main_settings()
     state, headnum = what_is_state()
 
@@ -155,8 +156,21 @@ def update_mesh_parts(self, context):
 
     old_mesh = head.headobj.data
     FBLoader.load_model(headnum)
+
+    fb = FBLoader.get_builder()
+    models = fb.models_list()
+    if (head.model_type in models):
+        model_index = models.index(head.model_type)
+    else:
+        logger.error('MODEL_TYPE_NOT_FOUND (Reset to default)')
+        model_index = 0
+        head.model_type = models[model_index]
+
+    fb.select_model(model_index)
+    logger.debug('MODEL_TYPE: [{}] {}'.format(model_index, head.model_type))
+
     # Create new mesh
-    mesh = FBLoader.get_builder_mesh(FBLoader.get_builder(), 'FBHead_tmp_mesh',
+    mesh = FBLoader.get_builder_mesh(fb, 'FBHead_tmp_mesh',
                                      head.get_masks(),
                                      uv_set=head.tex_uv_shape,
                                      keyframe=keyframe)
@@ -167,6 +181,8 @@ def update_mesh_parts(self, context):
     except Exception:
         pass
     head.headobj.data = mesh
+    FBLoader.save_only(headnum)
+
     if settings.pinmode:
         # Update wireframe structures
         FBLoader.viewport().wireframer().init_geom_data(head.headobj)
@@ -504,6 +520,11 @@ def uv_items_callback(self, context):
     return res
 
 
+def model_type_callback(self, context):
+    return [(name, name, '', 'MESH_UVSPHERE', i)
+            for i, name in enumerate(FBLoader.get_builder().models_list())]
+
+
 class FBHeadItem(PropertyGroup):
     use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
                                          default=False, update=update_emotions)
@@ -535,7 +556,7 @@ class FBHeadItem(PropertyGroup):
                               size=12, subtype='NONE',
                               default=(True, True, True, True, True, True,
                                        True, True, True, True, True, True),
-                              update=update_mesh_parts)
+                              update=update_mesh_geometry)
 
     serial_str: StringProperty(name="Serialization string", default="")
     tmp_serial_str: StringProperty(name="Temporary Serialization", default="")
@@ -543,7 +564,7 @@ class FBHeadItem(PropertyGroup):
 
     tex_uv_shape: EnumProperty(name="UV", items=uv_items_callback,
                                description="UV Layout",
-                               update=update_mesh_parts)
+                               update=update_mesh_geometry)
 
     use_exif: BoolProperty(
         name="Use EXIF if available in file",
@@ -578,6 +599,10 @@ class FBHeadItem(PropertyGroup):
                     "All operations are performed with the scaled geometry.",
         name="Scale", default=1.0, min=0.01, max=100.0,
         update=update_model_scale)
+
+    model_type: EnumProperty(name='Model', items=model_type_callback,
+                              description='Model selector',
+                              update=update_mesh_geometry)
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:

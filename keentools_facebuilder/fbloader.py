@@ -224,7 +224,11 @@ class FBLoader:
         if camera is None:
             return
         fb = FBLoader.get_builder()
-        fb.set_centered_geo_keyframe(camera.get_keyframe())
+        keyframe = camera.get_keyframe()
+        if not fb.is_key_at(keyframe):
+            fb.set_centered_geo_keyframe(keyframe)
+        else:
+            fb.center_geo(keyframe)
 
     # --------------------
     @classmethod

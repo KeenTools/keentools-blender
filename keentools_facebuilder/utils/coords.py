@@ -34,6 +34,7 @@ def nearest_point(x, y, points, dist=4000000):  # dist squared
 
 def update_head_mesh_geom(obj, geom):
     mesh = obj.data
+    assert(len(geom) == len(mesh.vertices))
     rot = np.array([[1., 0., 0.], [0., 0., 1.], [0., -1., 0]])
     npbuffer = geom @ rot
     mesh.vertices.foreach_set('co', npbuffer.ravel())
