@@ -1,15 +1,15 @@
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 import numpy as np
-from pykeentools import FaceBuilderCameraInputI
 
-from . import FBCameraItem
-from .settings import get_main_settings, FBSceneSettings
+from .config import get_main_settings
 
 
-class FaceBuilderCameraInput(FaceBuilderCameraInputI):
+class FaceBuilderCameraInput(pkt.module().FaceBuilderCameraInputI):
     @staticmethod
-    def _camera_at(frame) -> FBCameraItem:
-        settings: FBSceneSettings = get_main_settings()
-        return settings.get_camera(settings.current_headnum, frame - 1)
+    def _camera_at(frame):
+        settings = get_main_settings()
+        head = settings.get_current_head()
+        return head.get_camera_by_keyframe(frame)
 
     def projection(self, frame):
         return self._camera_at(frame).get_projection_matrix()
@@ -18,4 +18,4 @@ class FaceBuilderCameraInput(FaceBuilderCameraInputI):
         return np.eye(4)
 
     def image_size(self, frame):
-        return self._camera_at(frame).get_image_size()
+        return self._camera_at(frame).get_oriented_image_size()

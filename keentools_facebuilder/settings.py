@@ -612,6 +612,12 @@ class FBHeadItem(PropertyGroup):
         else:
             return None
 
+    def get_camera_by_keyframe(self, keyframe):
+        for camera in self.cameras:
+            if camera.get_keyframe() == keyframe:
+                return camera
+        return None
+
     def get_last_camera(self):
         return self.get_camera(self.get_last_camnum())
 
@@ -839,6 +845,9 @@ class FBSceneSettings(PropertyGroup):
             return self.heads[headnum]
         else:
             return None
+
+    def get_current_head(self):
+        return self.heads[self.current_headnum]
 
     def get_camera(self, headnum, camnum):
         head = self.get_head(headnum)
