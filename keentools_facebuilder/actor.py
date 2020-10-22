@@ -33,7 +33,12 @@ from .utils.exif_reader import (update_image_groups,
                                 is_size_compatible_with_group)
 from .utils.blendshapes import (default_blendshape_names,
                                 create_fake_blendshapes,
-                                create_blendshape_controls, make_control_panel)
+                                create_blendshape_controls,
+                                make_control_panel,
+                                convert_control_animation_to_blendshape,
+                                remove_blendshape_drivers,
+                                get_control_panel,
+                                delete_with_children)
 
 
 class FB_OT_Actor(bpy.types.Operator):
@@ -64,34 +69,52 @@ class FB_OT_Actor(bpy.types.Operator):
 
         elif self.action == 'generate_facs_blendshapes':
             settings = get_main_settings()
-            obj = context.object
-            headnum = settings.head_by_obj(obj)
+            headnum = manipulate.get_current_headnum()
             if headnum >= 0:
                 head = settings.get_head(headnum)
                 counter = create_fake_blendshapes(head.headobj,
                                                   default_blendshape_names())
                 self.report({'INFO'}, '{} Blendshapes created'.format(counter))
 
-        elif self.action == 'generate_blendshapes_sliders':
+        elif self.action == 'generate_control_panel':
             settings = get_main_settings()
-            obj = context.object
-            headnum = settings.head_by_obj(obj)
-            head = settings.get_head(headnum)
-            controls = create_blendshape_controls(head.headobj)
-            control_panel = make_control_panel(controls)
-            head.headobj.data.update()  # update drivers affection
-            control_panel.location = (2, 0, 0)
-            control_panel.rotation_euler = (0.5 * math.pi, 0, 0)
-            bpy.context.space_data.overlay.show_relationship_lines = False
+            headnum = manipulate.get_current_headnum()
+            if headnum >= 0:
+                head = settings.get_head(headnum)
+                controls = create_blendshape_controls(head.headobj)
+                control_panel = make_control_panel(controls)
+                # TODO: remove hardcoded position and orientation
+                control_panel.location = (2, 0, 0)
+                control_panel.rotation_euler = (0.5 * math.pi, 0, 0)
+                bpy.context.space_data.overlay.show_relationship_lines = False
+                head.headobj.data.update()  # update for drivers affection
 
         elif self.action == 'load_csv_animation':
-            settings = get_main_settings()
-            obj = context.object
-            headnum = settings.head_by_obj(obj)
+            headnum = manipulate.get_current_headnum()
             if headnum >= 0:
                 op = getattr(get_operators(),
                              Config.fb_animation_filebrowser_callname)
                 op('INVOKE_DEFAULT', headnum=headnum)
+
+        elif self.action == 'convert_controls_to_blendshapes':
+            settings = get_main_settings()
+            headnum = manipulate.get_current_headnum()
+            if headnum >= 0:
+                head = settings.get_head(headnum)
+                control_panel = get_control_panel(head.headobj)
+                convert_control_animation_to_blendshape(head.headobj)
+                remove_blendshape_drivers(head.headobj)
+                if control_panel:
+                    delete_with_children(control_panel)
+
+        elif self.action == 'delete_control_panel':
+            settings = get_main_settings()
+            headnum = manipulate.get_current_headnum()
+            if headnum >= 0:
+                head = settings.get_head(headnum)
+                control_panel = get_control_panel(head.headobj)
+                if control_panel:
+                    delete_with_children(control_panel)
 
         return {'FINISHED'}
 

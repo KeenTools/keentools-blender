@@ -88,6 +88,11 @@ def what_is_state():
     return _how_many_heads()
 
 
+def get_current_headnum():
+    state, headnum = what_is_state()
+    return headnum
+
+
 def force_undo_push(msg='KeenTools operation'):
     inc_operation()
     bpy.ops.ed.undo_push(message=msg)

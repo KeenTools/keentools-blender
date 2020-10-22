@@ -142,3 +142,97 @@ def make_control_panel(controls_dict):
 
 def load_csv_animation(obj, filepath):
     pass
+
+
+def get_blendshapes_drivers(obj):
+    drivers_dict = {}
+    for drv in obj.data.shape_keys.animation_data.drivers:
+        blendshape_name = drv.data_path.split('"')[1]
+        drivers_dict[blendshape_name] = {
+            'driver': drv, 'slider': drv.driver.variables[0].targets[0].id}
+    return drivers_dict
+
+
+def get_safe_blendshapes_action(obj):
+    if not obj.data.shape_keys:
+        return None
+    anim_data = obj.data.shape_keys.animation_data
+    if not anim_data:
+        anim_data = obj.data.shape_keys.animation_data_create()
+        if not anim_data:
+            return None
+    if not anim_data.action:
+        anim_data.action = bpy.data.actions.new('fbBlendShapesAction')
+    return anim_data.action
+
+
+def get_action_fcurve(action, data_path, index=0):
+    return action.fcurves.find(data_path, index=index)
+
+
+def get_safe_action_fcurve(action, data_path, index=0):
+    fcurve = get_action_fcurve(action, data_path, index=index)
+    if fcurve:
+        return fcurve
+    return action.fcurves.new(data_path, index=index)
+
+
+def get_fcurve_data(fcurve):
+    if not fcurve:
+        return []
+    return [p.co for p in fcurve.keyframe_points]
+
+
+def clear_fcurve(fcurve):
+    for p in reversed(fcurve.keyframe_points):
+        fcurve.keyframe_points.remove(p)
+
+
+def put_anim_data_in_fcurve(fcurve, anim_data):
+    if not fcurve:
+        return
+    start_index = len(fcurve.keyframe_points)
+    fcurve.keyframe_points.add(len(anim_data))
+    for i, point in enumerate(anim_data):
+        fcurve.keyframe_points[start_index + i].co = point
+
+
+def convert_control_animation_to_blendshape(obj):
+    all_dict = get_blendshapes_drivers(obj)
+    blend_action = get_safe_blendshapes_action(obj)
+    if not blend_action:
+        return
+    for name in all_dict:
+        item = all_dict[name]
+        control_action = item['slider'].animation_data.action
+        control_fcurve = get_action_fcurve(control_action, 'location', index=0)
+        anim_data = get_fcurve_data(control_fcurve)
+        fcurve = get_safe_action_fcurve(blend_action,
+                                        'key_blocks["{}"].value'.format(name),
+                                        index=0)
+        clear_fcurve(fcurve)
+        put_anim_data_in_fcurve(fcurve, anim_data)
+
+
+def remove_blendshape_drivers(obj):
+    all_dict = get_blendshapes_drivers(obj)
+    for name in all_dict:
+        obj.data.shape_keys.animation_data.drivers.remove(all_dict[name]['driver'])
+
+
+def delete_with_children(obj):
+    for child in reversed(obj.children):
+        delete_with_children(child)
+    bpy.ops.object.delete({'selected_objects': [obj]})
+
+
+def get_control_panel(obj):
+    drivers_dict = get_blendshapes_drivers(obj)
+    if len(drivers_dict) == 0:
+        return None
+    name = [*drivers_dict.keys()][0]
+    print(drivers_dict)
+    rect = drivers_dict[name]['slider'].parent
+    if not rect:
+        return None
+    return rect.parent

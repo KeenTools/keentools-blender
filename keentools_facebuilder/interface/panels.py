@@ -747,9 +747,19 @@ class FB_PT_BlendShapesPanel(Panel):
         op = box.operator(
             Config.fb_actor_idname,
             text='Generate Control Panel')
-        op.action = 'generate_blendshapes_sliders'
+        op.action = 'generate_control_panel'
 
         op = box.operator(
             Config.fb_actor_idname,
             text='Load animation from CSV')
         op.action = 'load_csv_animation'
+
+        op = box.operator(
+            Config.fb_actor_idname,
+            text='Sliders -> Blendshapes')
+        op.action = 'convert_controls_to_blendshapes'
+
+        op = box.operator(
+            Config.fb_actor_idname,
+            text='Delete Control Panel')
+        op.action = 'delete_control_panel'
