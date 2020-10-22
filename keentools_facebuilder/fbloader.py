@@ -22,7 +22,6 @@ import bpy
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 import numpy as np
 
-from .camera_input import FaceBuilderCameraInput
 from .config import Config, get_main_settings
 from .utils import attrs, coords, cameras
 from .utils.exif_reader import update_image_groups, reload_all_camera_exif
@@ -41,6 +40,7 @@ class FBLoader:
 
     @classmethod
     def new_builder(cls):
+        from .camera_input import FaceBuilderCameraInput
         cls._camera_input = FaceBuilderCameraInput()
         cls._builder_instance = pkt.module().FaceBuilder(cls._camera_input)
         return cls._builder_instance
