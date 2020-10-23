@@ -164,6 +164,21 @@ def raster_image_vertex_shader():
     '''
 
 
+def simple_raster_image_fragment_shader():
+    return '''
+    in vec2 texCoord_interp;
+    out vec4 fragColor;
+    uniform sampler2D image;
+    uniform float opacity;
+
+    void main()
+    {
+        fragColor = texture(image, texCoord_interp);
+        fragColor.a = opacity;
+    }
+    '''
+
+
 def raster_image_fragment_shader():
     return '''
     in vec2 texCoord_interp;

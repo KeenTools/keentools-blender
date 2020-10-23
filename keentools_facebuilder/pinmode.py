@@ -79,9 +79,11 @@ class FB_OT_PinMode(bpy.types.Operator):
                        settings.wireframe_special_color,
                        settings.wireframe_opacity * opacity,
                        settings.show_specials)
-        if tex_name is not None:
-            wf.load_coloring_image(blender_name=tex_name,
-                                   path=tex_path)
+
+        if not wf.fb_coloring_image(FBLoader.get_builder(),
+                                    blender_name=tex_name):
+            wf.switch_to_simple_shader()
+
         wf.init_geom_data(head.headobj)
         wf.init_edge_indices(FBLoader.get_builder())
         wf.create_batches()

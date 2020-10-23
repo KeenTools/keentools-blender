@@ -24,7 +24,7 @@ from gpu_extras.batch import batch_for_shader
 from . shaders import (simple_fill_vertex_shader,
                        black_fill_fragment_shader, residual_vertex_shader,
                        residual_fragment_shader, raster_image_vertex_shader,
-                       raster_image_fragment_shader)
+                       simple_raster_image_fragment_shader)
 from ..config import Config
 from ..utils.images import safe_image_in_scene_loading
 
@@ -174,16 +174,14 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
     def __init__(self):
         self.coloring_image = None
         self.coloring_image_name = None
-        self.coloring_image_path = None
         self.edges_indices = None
         self.edges_uvs = None
-        self.color1 = (1, 0, 0, 0.5)
-        self.color2 = (0, 1, 0, 0.5)
+        self.color1 = (1, 0, 0, 1)
+        self.color2 = (0, 1, 0, 1)
+        self.color3 = (0, 0, 1, 1)
         self.opacity = 0.3
-        self.test_color1 = self._gamma_color(Config.texture_test_color1)
-        self.test_color2 = self._gamma_color(Config.texture_test_color2)
-        self.test_thresholds = Config.texture_test_thresholds
         self.use_simple_shader = False
+        self.face_texture_hash = None
         super().__init__()
 
     def init_colors(self, col1, col2, opacity, show_special):
@@ -194,36 +192,43 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
             self.color2 = self.color1
         self.opacity = opacity
 
-    def load_coloring_image(self, blender_name, path):
-        image = safe_image_in_scene_loading(blender_name, path)
-        if image is not None:
-            self.coloring_image_name = blender_name
-            self.coloring_image = image
-            self.coloring_image_path = path
-            return True
+    def switch_to_simple_shader(self):
         self.use_simple_shader = True
         self.line_shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+
+    def fb_coloring_image(self, fb, blender_name):
+        if not fb.face_texture_available():
+            return False
+        image_data = fb.face_texture()
+        image = bpy.data.images.new(blender_name,
+                                    width=image_data.shape[0],
+                                    height=image_data.shape[1],
+                                    alpha=True, float_buffer=False)
+        if image is not None:
+            rgba = np.dstack((image_data, np.ones(image_data.shape[:2])))
+            image.pixels[:] = rgba.ravel()
+            self.coloring_image_name = blender_name
+            self.coloring_image = image
+            return True
         return False
 
-    def init_coloring_image(self):
+    def _activate_coloring_image(self):
         if self.coloring_image.gl_load():
             raise Exception()
         self.coloring_image.gl_touch()
 
-    def deactivate_coloring_image(self):
+    def _deactivate_coloring_image(self):
         if self.coloring_image is not None:
             self.coloring_image.gl_free()
 
     def _check_coloring_image(self):
-        if not self.use_simple_shader:
-            if self.coloring_image is None:
-                return False
+        if self.use_simple_shader:
+            return True
+        if self.coloring_image is None:
+            return False
 
-            if self.coloring_image.bindcode == 0:
-                if (not self.load_coloring_image(self.coloring_image_name,
-                                                 self.coloring_image_path)):
-                    return False
-                self.init_coloring_image()
+        if self.coloring_image.bindcode == 0:
+            self._activate_coloring_image()
         return True
 
     def draw_callback(self, op, context):
@@ -266,11 +271,6 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
 
             self.line_shader.bind()
             self.line_shader.uniform_int('image', 0)
-            self.line_shader.uniform_float('colThresholds', self.test_thresholds)
-            self.line_shader.uniform_float('baseColor', self.color1)
-            self.line_shader.uniform_float('accentColor', self.color2)
-            self.line_shader.uniform_float('color1', self.test_color1)
-            self.line_shader.uniform_float('color2', self.test_color2)
             self.line_shader.uniform_float('opacity', self.opacity)
 
         self.line_batch.draw(self.line_shader)
@@ -304,7 +304,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
             simple_fill_vertex_shader(), black_fill_fragment_shader())
 
         self.line_shader = gpu.types.GPUShader(
-            raster_image_vertex_shader(), raster_image_fragment_shader())
+            raster_image_vertex_shader(), simple_raster_image_fragment_shader())
 
     def init_geom_data(self, obj):
         mesh = obj.data
@@ -323,17 +323,13 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         vv = np.ones((len(mesh.vertices), 4), dtype=np.float32)
         vv[:, :-1] = verts
         vv = vv @ m
-        # Transformed vertices
-        verts = vv[:, :3]
 
-        self.vertices = verts
+        self.vertices = vv[:, :3]  # Transformed vertices
         self.indices = indices
 
     def init_edge_indices(self, builder):
-        uv_set = builder.selected_uv_set()
-        builder.select_uv_set(1)
-
-        geo = builder.applied_args_model()
+        kid = builder.keyframes()[0]
+        geo = builder.applied_args_replaced_uvs_model_at(kid)
         me = geo.mesh(0)
         face_counts = [me.face_size(x) for x in range(me.faces_count())]
         indices = np.empty((sum(face_counts), 2), 'i')
@@ -352,8 +348,6 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
                 indices[i] = (me.face_point(face, k - 1),
                               me.face_point(face, k))
                 i += 1
-
-        builder.select_uv_set(uv_set)
 
         self.edges_indices = indices
         self.edges_uvs = tex_coords
