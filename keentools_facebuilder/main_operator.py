@@ -17,25 +17,23 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
-import math
 
 import bpy
-from bpy.types import Operator
 from bpy.props import (
     StringProperty,
     IntProperty,
 )
+from bpy.types import Operator
 
-from .utils import cameras, manipulate, materials, coords
-from .utils.manipulate import check_settings
-from .utils.attrs import get_obj_collection, safe_delete_collection
-from .fbloader import FBLoader
 from .config import get_main_settings, get_operators, Config
+from .fbloader import FBLoader
+from .utils import cameras, manipulate, materials, coords
+from .utils.attrs import get_obj_collection, safe_delete_collection
 from .utils.exif_reader import (read_exif_from_camera,
                                 update_exif_sizes_message,
-                                get_sensor_size_35mm_equivalent,
                                 copy_exif_parameters_from_camera_to_head,
                                 update_image_groups)
+from .utils.manipulate import check_settings
 
 
 class FB_OT_SelectHead(Operator):
@@ -574,7 +572,6 @@ class FB_OT_RotateImageCW(Operator):
         camera.rotate_background_image(1)
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
-        FBLoader.update_camera_projection(self.headnum, self.camnum)
         FBLoader.fb_save(self.headnum, self.camnum)
         return {'FINISHED'}
 
@@ -597,7 +594,6 @@ class FB_OT_RotateImageCCW(Operator):
         camera.rotate_background_image(-1)
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
-        FBLoader.update_camera_projection(self.headnum, self.camnum)
         FBLoader.fb_save(self.headnum, self.camnum)
         return {'FINISHED'}
 
@@ -620,7 +616,6 @@ class FB_OT_ResetImageRotation(Operator):
         camera.reset_background_image_rotation()
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
-        FBLoader.update_camera_projection(self.headnum, self.camnum)
         FBLoader.fb_save(self.headnum, self.camnum)
         return {'FINISHED'}
 
