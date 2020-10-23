@@ -158,7 +158,7 @@ def update_mesh_geometry(self, context):
     FBLoader.load_model(headnum)
 
     fb = FBLoader.get_builder()
-    models = fb.models_list()
+    models = [x.name for x in fb.models_list()]
     if (head.model_type in models):
         model_index = models.index(head.model_type)
     else:
@@ -521,14 +521,16 @@ def uv_items_callback(self, context):
 
 
 def _get_icon_by_lod(level_of_detail):
-    icons = ('SHADING_WIRE', 'MESH_UVSPHERE', 'META_BALL')
-    if level_of_detail < len(icons) and level_of_detail >= 0:
+    icons = {'HIGH_POLY': 'SHADING_WIRE',
+             'MID_POLY': 'MESH_UVSPHERE',
+             'LOW_POLY': 'META_BALL'}
+    if level_of_detail in icons.keys():
         return icons[level_of_detail]
     return 'BLANK1'
 
 
 def model_type_callback(self, context):
-    return [(x.name, x.name, '', _get_icon_by_lod(0), i)
+    return [(x.name, x.name, '', _get_icon_by_lod(x.level_of_detail), i)
             for i, x in enumerate(FBLoader.get_builder().models_list())]
 
 
