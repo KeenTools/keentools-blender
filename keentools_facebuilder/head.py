@@ -46,6 +46,11 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
             warn = getattr(get_operators(), Config.fb_warning_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktModelProblem)
             return {'CANCELLED'}
+        except TypeError:
+            logger.debug('ADD_HEAD_ERROR: TypeError')
+            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.CannotCreateObject)
+            return {'CANCELLED'}
         except Exception:
             logger.debug('ADD_HEAD_ERROR: Exception')
             warn = getattr(get_operators(), Config.fb_warning_callname)
