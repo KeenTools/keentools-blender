@@ -53,9 +53,14 @@ def update_emotions(self, context):
         FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
 
 
+def update_wireframe_image(self, context):
+    settings = get_main_settings()
+    vp = FBLoader.viewport()
+    vp.wireframer().init_wireframe_image(FBLoader.get_builder(), settings)
+    vp.update_wireframe()
+
 def update_wireframe(self, context):
     FBLoader.viewport().update_wireframe()
-
 
 def update_pin_sensitivity(self, context):
     FBLoader.viewport().update_pin_sensitivity()
@@ -741,6 +746,9 @@ class FBSceneSettings(PropertyGroup):
     # ---------------------
     # Model View parameters
     # ---------------------
+    wireframe_image: PointerProperty(
+        name="Wireframe texture", type=bpy.types.Image
+    )
     wireframe_opacity: FloatProperty(
         description="From 0.0 to 1.0",
         name="Wireframe opacity",
@@ -750,16 +758,21 @@ class FBSceneSettings(PropertyGroup):
         description="Color of mesh wireframe in pin-mode",
         name="Wireframe Color", subtype='COLOR',
         default=Config.default_scheme1, min=0.0, max=1.0,
-        update=update_wireframe)
+        update=update_wireframe_image)
     wireframe_special_color: FloatVectorProperty(
         description="Color of special parts in pin-mode",
         name="Wireframe Special Color", subtype='COLOR',
         default=Config.default_scheme2, min=0.0, max=1.0,
-        update=update_wireframe)
+        update=update_wireframe_image)
+    wireframe_midline_color: FloatVectorProperty(
+        description="Color of midline in pin-mode",
+        name="Wireframe Midline Color", subtype='COLOR',
+        default=Config.default_scheme3, min=0.0, max=1.0,
+        update=update_wireframe_image)
     show_specials: BoolProperty(
         description="Use different colors for important head parts "
                     "on the mesh",
-        name="Special face parts", default=True, update=update_wireframe)
+        name="Special face parts", default=True, update=update_wireframe_image)
     overall_opacity: FloatProperty(
         description="Overall opacity in pin-mode.",
         name="Overall opacity",

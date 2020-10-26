@@ -327,6 +327,7 @@ class Config:
 
     default_scheme1 = (0.05, 0.05, 0.1)
     default_scheme2 = (0.0, 0.0, 1.0)
+    default_scheme3 = (0.9, 0.0, 1.0)
 
     pin_color = (1.0, 0.0, 0.0, 1.0)
     current_pin_color = (1.0, 0.0, 1.0, 1.0)

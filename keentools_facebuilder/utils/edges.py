@@ -57,7 +57,7 @@ class FBEdgeShaderBase:
         self.indices = []
         # Edge vertices
         self.edges_vertices = []
-        self.edges_indices = []
+        self._edges_indices = []
         self.edges_colors = []
         self.vertices_colors = []
         # Check if blender started in background mode
@@ -172,62 +172,70 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         return self._gamma_color([x * 255 for x in col], 1.0 / power)
 
     def __init__(self):
-        self.coloring_image = None
-        self.coloring_image_name = None
-        self.edges_indices = None
-        self.edges_uvs = None
-        self.color1 = (1, 0, 0, 1)
-        self.color2 = (0, 1, 0, 1)
-        self.color3 = (0, 0, 1, 1)
+        self._edges_indices = None
+        self._edges_uvs = None
+        self.color1 = (1, 0, 0)
+        self.color2 = (0, 1, 0)
+        self.color3 = (0, 0, 1)
         self.opacity = 0.3
-        self.use_simple_shader = False
-        self.face_texture_hash = None
+        self._use_simple_shader = False
+        self._wireframe_image = None
+        self._face_texture_hash = None
         super().__init__()
 
-    def init_colors(self, col1, col2, opacity, show_special):
-        self.color1 = (*col1[:], opacity)
+    def init_colors(self, col1, col2, col3, opacity, show_special):
+        self.color1 = (*col1[:],)
         if show_special:
-            self.color2 = (*col2[:], opacity)
+            self.color2 = (*col2[:],)
+            self.color3 = (*col3[:],)
         else:
             self.color2 = self.color1
+            self.color3 = self.color1
         self.opacity = opacity
 
     def switch_to_simple_shader(self):
-        self.use_simple_shader = True
+        self._use_simple_shader = True
         self.line_shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
-    def fb_coloring_image(self, fb, blender_name):
+    def init_wireframe_image(self, fb, settings):
         if not fb.face_texture_available():
             return False
+        fb.set_face_texture_colors((settings.wireframe_color,
+                                    settings.wireframe_special_color,
+                                    settings.wireframe_midline_color))
         image_data = fb.face_texture()
-        image = bpy.data.images.new(blender_name,
-                                    width=image_data.shape[0],
-                                    height=image_data.shape[1],
-                                    alpha=True, float_buffer=False)
+        if not settings.wireframe_image:
+            image = bpy.data.images.new('fbWireframeTex',
+                                        width=image_data.shape[0],
+                                        height=image_data.shape[1],
+                                        alpha=True, float_buffer=False)
+        else:
+            image = settings.wireframe_image
+        self._wireframe_image = image
+        settings.wireframe_image = image
         if image is not None:
             rgba = np.dstack((image_data, np.ones(image_data.shape[:2])))
             image.pixels[:] = rgba.ravel()
-            self.coloring_image_name = blender_name
-            self.coloring_image = image
+            self._wireframe_image = image
             return True
         return False
 
     def _activate_coloring_image(self):
-        if self.coloring_image.gl_load():
+        if self._wireframe_image.gl_load():
             raise Exception()
-        self.coloring_image.gl_touch()
+        self._wireframe_image.gl_touch()
 
     def _deactivate_coloring_image(self):
-        if self.coloring_image is not None:
-            self.coloring_image.gl_free()
+        if self._wireframe_image is not None:
+            self._wireframe_image.gl_free()
 
     def _check_coloring_image(self):
-        if self.use_simple_shader:
+        if self._use_simple_shader:
             return True
-        if self.coloring_image is None:
+        if self._wireframe_image is None:
             return False
 
-        if self.coloring_image.bindcode == 0:
+        if self._wireframe_image.bindcode == 0:
             self._activate_coloring_image()
         return True
 
@@ -258,16 +266,16 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_LINE)
         bgl.glEnable(bgl.GL_DEPTH_TEST)
 
-        if self.use_simple_shader:
+        if self._use_simple_shader:
             self.line_shader.bind()
             self.line_shader.uniform_float('color',
                 self._inverse_gamma_color((*self.color1[:3], self.opacity)))
         else:
             # coloring_image.bindcode should not be zero
             # if we don't want to destroy video driver in Blender
-            assert (self.coloring_image.bindcode != 0)
+            assert (self._wireframe_image.bindcode != 0)
             bgl.glActiveTexture(bgl.GL_TEXTURE0)
-            bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.coloring_image.bindcode)
+            bgl.glBindTexture(bgl.GL_TEXTURE_2D, self._wireframe_image.bindcode)
 
             self.line_shader.bind()
             self.line_shader.uniform_int('image', 0)
@@ -288,7 +296,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
                     indices=self.indices,
                 )
 
-        if self.use_simple_shader:
+        if self._use_simple_shader:
             self.line_batch = batch_for_shader(
                 self.line_shader, 'LINES',
                 {'pos': self.edges_vertices},
@@ -296,7 +304,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         else:
             self.line_batch = batch_for_shader(
                 self.line_shader, 'LINES',
-                {'pos': self.edges_vertices, 'texCoord': self.edges_uvs}
+                {'pos': self.edges_vertices, 'texCoord': self._edges_uvs}
             )
 
     def init_shaders(self):
@@ -349,9 +357,9 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
                               me.face_point(face, k))
                 i += 1
 
-        self.edges_indices = indices
-        self.edges_uvs = tex_coords
+        self._edges_indices = indices
+        self._edges_uvs = tex_coords
         self.update_edges_vertices()
 
     def update_edges_vertices(self):
-        self.edges_vertices = self.vertices[self.edges_indices.ravel()]
+        self.edges_vertices = self.vertices[self._edges_indices.ravel()]

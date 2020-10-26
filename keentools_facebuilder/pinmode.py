@@ -70,18 +70,18 @@ class FB_OT_PinMode(bpy.types.Operator):
             warn = getattr(get_operators(), Config.fb_warning_callname)
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
 
-    def _init_wireframer_colors(self, opacity, tex_name=None, tex_path=None):
+    def _init_wireframer_colors(self, opacity):
         settings = get_main_settings()
         head = settings.get_head(settings.current_headnum)
 
         wf = FBLoader.viewport().wireframer()
         wf.init_colors(settings.wireframe_color,
                        settings.wireframe_special_color,
+                       settings.wireframe_midline_color,
                        settings.wireframe_opacity * opacity,
                        settings.show_specials)
 
-        if not wf.fb_coloring_image(FBLoader.get_builder(),
-                                    blender_name=tex_name):
+        if not wf.init_wireframe_image(FBLoader.get_builder(), settings):
             wf.switch_to_simple_shader()
 
         wf.init_geom_data(head.headobj)
@@ -259,10 +259,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             hide_ui_elements()
 
             logger.debug("START SHADERS")
-            self._init_wireframer_colors(
-                settings.overall_opacity, Config.coloring_texture_name,
-                os.path.join(pkt.config.pkt_installation_dir(),
-                             Config.coloring_texture_path))
+            self._init_wireframer_colors(settings.overall_opacity)
             vp.create_batch_2d(context)
             logger.debug("REGISTER SHADER HANDLERS")
             vp.register_handlers(args, context)

@@ -201,6 +201,7 @@ class FBViewport:
         settings = get_main_settings()
         cls.wireframer().init_colors(settings.wireframe_color,
                                      settings.wireframe_special_color,
+                                     settings.wireframe_midline_color,
                                      settings.wireframe_opacity,
                                      settings.show_specials)
         cls.wireframer().create_batches()
