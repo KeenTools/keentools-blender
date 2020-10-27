@@ -26,9 +26,10 @@ from . shaders import (simple_fill_vertex_shader,
                        residual_fragment_shader, raster_image_vertex_shader,
                        raster_image_fragment_shader)
 from ..config import Config
-from ..utils.images import (check_image_same_size,
-                            remove_image, add_alpha_channel,
-                            store_image_in_scene)
+from ..utils.images import (check_bpy_image_has_same_size,
+                            find_bpy_image_by_name,
+                            remove_bpy_image, add_alpha_channel,
+                            store_bpy_image_in_scene)
 
 
 class FBEdgeShaderBase:
@@ -166,10 +167,12 @@ class FBEdgeShader2D(FBEdgeShaderBase):
 
 
 class FBRasterEdgeShader3D(FBEdgeShaderBase):
-    def _gamma_color(self, col, power=2.2):
+    @staticmethod
+    def _gamma_color(col, power=2.2):
         return [x ** power for x in col]
 
-    def _inverse_gamma_color(self, col, power=2.2):
+    @staticmethod
+    def _inverse_gamma_color(col, power=2.2):
         return [x ** (1.0 / power) for x in col]
 
     def __init__(self):
@@ -177,7 +180,6 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         self._edges_uvs = []
         self._colors = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
         self._opacity = 0.3
-        self._wireframe_image = None
         self._use_simple_shader = False
         super().__init__()
 
@@ -192,13 +194,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         self._use_simple_shader = False
 
     def init_wireframe_image(self, fb, show_specials):
-        image_name = Config.coloring_texture_name
-        if not show_specials:
-            self.switch_to_simple_shader()
-            return False
-
-        if not fb.face_texture_available():
-            self._wireframe_image = None
+        if not show_specials or not fb.face_texture_available():
             self.switch_to_simple_shader()
             return False
 
@@ -206,45 +202,49 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         image_data = fb.face_texture()[::2, ::2, :]  # sample down x0.5
         size = image_data.shape[:2]
         assert size[0] > 0 and size[1] > 0
-        if not check_image_same_size(self._wireframe_image, size):
-            remove_image(self._wireframe_image)
-            self._wireframe_image = bpy.data.images.new(image_name,
-                                                        width=size[1],
-                                                        height=size[0],
-                                                        alpha=True,
-                                                        float_buffer=False)
-
-        if self._wireframe_image is not None:
+        image_name = Config.coloring_texture_name
+        wireframe_image = find_bpy_image_by_name(image_name)
+        if wireframe_image is None or \
+                not check_bpy_image_has_same_size(wireframe_image, size):
+            remove_bpy_image(wireframe_image)
+            wireframe_image = bpy.data.images.new(image_name,
+                                                  width=size[1],
+                                                  height=size[0],
+                                                  alpha=True,
+                                                  float_buffer=False)
+        if wireframe_image:
             rgba = add_alpha_channel(image_data)
-            self._wireframe_image.pixels[:] = rgba.ravel()
-            store_image_in_scene(self._wireframe_image)
+            wireframe_image.pixels[:] = rgba.ravel()
+            wireframe_image.pack()
             self.switch_to_complex_shader()
             return True
         self.switch_to_simple_shader()
         return False
 
-    def _activate_coloring_image(self):
-        if self._wireframe_image.gl_load():
+    def _activate_coloring_image(self, image):
+        if image.gl_load():
             raise Exception()
-        self._wireframe_image.gl_touch()
+        image.gl_touch()
 
-    def _deactivate_coloring_image(self):
-        if self._wireframe_image is not None:
-            self._wireframe_image.gl_free()
+    def _deactivate_coloring_image(self, image):
+        if image is not None:
+            image.gl_free()
 
-    def _check_coloring_image(self):
+    def _check_coloring_image(self, image):
         if self._use_simple_shader:
             return True
-        if self._wireframe_image is None:
+        if image is None:
             return False
 
-        if self._wireframe_image.bindcode == 0:
-            self._activate_coloring_image()
+        if image.bindcode == 0:
+            self._activate_coloring_image(image)
         return True
 
     def draw_callback(self, op, context):
         # Force Stop
-        if self.is_handler_list_empty() or not self._check_coloring_image():
+        wireframe_image = find_bpy_image_by_name(Config.coloring_texture_name)
+        if self.is_handler_list_empty() or \
+                not self._check_coloring_image(wireframe_image):
             self.unregister_handler()
             return
 
@@ -272,12 +272,12 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         if not self._use_simple_shader:
             # coloring_image.bindcode should not be zero
             # if we don't want to destroy video driver in Blender
-            if not self._wireframe_image or self._wireframe_image.bindcode == 0:
+            if not wireframe_image or wireframe_image.bindcode == 0:
                 self.switch_to_simple_shader()
             else:
                 bgl.glActiveTexture(bgl.GL_TEXTURE0)
                 bgl.glBindTexture(bgl.GL_TEXTURE_2D,
-                                  self._wireframe_image.bindcode)
+                                  wireframe_image.bindcode)
                 self.line_shader.bind()
                 self.line_shader.uniform_int('image', 0)
                 self.line_shader.uniform_float('opacity', self._opacity)
@@ -297,9 +297,9 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         if bpy.app.background:
             return
         self.fill_batch = batch_for_shader(
-                    self.fill_shader, 'TRIS',
-                    {'pos': self.vertices},
-                    indices=self.indices,
+            self.fill_shader, 'TRIS',
+            {'pos': self.vertices},
+            indices=self.indices,
         )
 
         self.simple_line_batch = batch_for_shader(

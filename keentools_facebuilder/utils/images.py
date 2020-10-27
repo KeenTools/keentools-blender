@@ -20,25 +20,25 @@ import numpy as np
 import bpy
 
 
-def find_tex_by_name(tex_name):
-    tex_num = bpy.data.images.find(tex_name)
-    if tex_num >= 0:
-        return bpy.data.images[tex_num]
+def find_bpy_image_by_name(image_name):
+    image_num = bpy.data.images.find(image_name)
+    if image_num >= 0:
+        return bpy.data.images[image_num]
     return None
 
 
-def remove_tex_by_name(name):
-    tex = find_tex_by_name(name)
-    if tex is not None:
-        bpy.data.images.remove(tex)
-
-
-def remove_image(image):
+def remove_bpy_image(image):
     if image and image in bpy.data.images:
         bpy.data.images.remove(image)
 
 
-def store_image_in_scene(image):
+def remove_bpy_image_by_name(image_name):
+    image = find_bpy_image_by_name(image_name)
+    if image is not None:
+        bpy.data.images.remove(image)
+
+
+def store_bpy_image_in_scene(image):
     image.pack()
     image.use_fake_user = True
 
@@ -47,27 +47,27 @@ def add_alpha_channel(np_image_array):
     return np.dstack((np_image_array, np.ones(np_image_array.shape[:2])))
 
 
-def check_image_size(image):
+def check_bpy_image_size(image):
     if not image or not image.size:
         return False
     w, h = image.size[:2]
     return w > 0 and h > 0
 
 
-def check_image_same_size(image, size):
+def check_bpy_image_has_same_size(image, size):
     if not image or not image.size:
         return False
     w, h = image.size[:2]
     return w == size[0] and h == size[1]
 
 
-def safe_image_loading(blender_name, path):
-    tex = find_tex_by_name(blender_name)
+def safe_bpy_image_loading(blender_name, path):
+    tex = find_bpy_image_by_name(blender_name)
     if tex is not None:
-        if check_image_size(tex):
+        if check_bpy_image_size(tex):
             return tex
         else:
-            remove_tex_by_name(blender_name)
+            remove_bpy_image_by_name(blender_name)
     try:
         image = bpy.data.images.load(path)
         image.name = blender_name
@@ -76,26 +76,26 @@ def safe_image_loading(blender_name, path):
         logger.error('Source texture for "{}" '
                      'is not found on path: {}'.format(blender_name, path))
         return None
-    if not check_image_size(image):
+    if not check_bpy_image_size(image):
         return None
     return image
 
 
-def safe_image_in_scene_loading(blender_name, path):
+def safe_bpy_image_in_scene_loading(blender_name, path):
     logger = logging.getLogger(__name__)
-    tex = find_tex_by_name(blender_name)
+    tex = find_bpy_image_by_name(blender_name)
     if tex is not None:
-        if check_image_size(tex):
+        if check_bpy_image_size(tex):
             return tex
         else:
-            remove_tex_by_name(blender_name)
+            remove_bpy_image_by_name(blender_name)
     try:
         image = bpy.data.images.load(path)
     except Exception:
         logger.error('Source texture for "{}" '
                      'is not found on path: {}'.format(blender_name, path))
         return None
-    if not check_image_size(image):
+    if not check_bpy_image_size(image):
         bpy.data.images.remove(image)
         logger.error('Source texture "{}" '
                      'has wrong format on path: {}'.format(blender_name, path))
@@ -105,6 +105,6 @@ def safe_image_in_scene_loading(blender_name, path):
                               width=image.size[0], height=image.size[1],
                               alpha=True, float_buffer=False)
     tex.pixels[:] = image.pixels[:]
-    store_image_in_scene(tex)
+    store_bpy_image_in_scene(tex)
     bpy.data.images.remove(image)
     return tex

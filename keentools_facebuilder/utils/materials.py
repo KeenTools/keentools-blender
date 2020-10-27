@@ -20,11 +20,10 @@ import logging
 import bpy
 import numpy as np
 
-from .. config import Config, get_main_settings, get_operators, ErrorType
+from .. config import Config, get_main_settings
 from .. fbloader import FBLoader
-from ..utils.coords import projection_matrix
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
-from ..utils.images import find_tex_by_name, remove_tex_by_name
+from ..utils.images import find_bpy_image_by_name, remove_bpy_image_by_name
 
 
 def switch_to_mode(mode='MATERIAL'):
@@ -80,7 +79,7 @@ def remove_mat_by_name(name):
 
 
 def show_texture_in_mat(tex_name, mat_name):
-    tex = find_tex_by_name(tex_name)
+    tex = find_bpy_image_by_name(tex_name)
     mat = get_mat_by_name(mat_name)
     principled_node = get_shader_node(
         mat, 'BSDF_PRINCIPLED', 'ShaderNodeBsdfPrincipled')
