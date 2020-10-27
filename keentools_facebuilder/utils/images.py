@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import logging
+import numpy as np
 import bpy
 
 
@@ -32,11 +33,32 @@ def remove_tex_by_name(name):
         bpy.data.images.remove(tex)
 
 
+def remove_image(image):
+    if image and image in bpy.data.images:
+        bpy.data.images.remove(image)
+
+
+def store_image_in_scene(image):
+    image.pack()
+    image.use_fake_user = True
+
+
+def add_alpha_channel(np_image_array):
+    return np.dstack((np_image_array, np.ones(np_image_array.shape[:2])))
+
+
 def check_image_size(image):
     if not image or not image.size:
         return False
     w, h = image.size[:2]
     return w > 0 and h > 0
+
+
+def check_image_same_size(image, size):
+    if not image or not image.size:
+        return False
+    w, h = image.size[:2]
+    return w == size[0] and h == size[1]
 
 
 def safe_image_loading(blender_name, path):
@@ -83,7 +105,6 @@ def safe_image_in_scene_loading(blender_name, path):
                               width=image.size[0], height=image.size[1],
                               alpha=True, float_buffer=False)
     tex.pixels[:] = image.pixels[:]
-    tex.pack()
-    tex.use_fake_user = True
+    store_image_in_scene(tex)
     bpy.data.images.remove(image)
     return tex

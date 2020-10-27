@@ -75,13 +75,13 @@ class FB_OT_PinMode(bpy.types.Operator):
         head = settings.get_head(settings.current_headnum)
 
         wf = FBLoader.viewport().wireframer()
-        wf.init_colors(settings.wireframe_color,
+        wf.init_colors((settings.wireframe_color,
                        settings.wireframe_special_color,
-                       settings.wireframe_midline_color,
-                       settings.wireframe_opacity * opacity,
-                       settings.show_specials)
+                       settings.wireframe_midline_color),
+                       settings.wireframe_opacity * opacity)
 
-        if not wf.init_wireframe_image(FBLoader.get_builder(), settings):
+        if not wf.init_wireframe_image(FBLoader.get_builder(),
+                                       settings.show_specials):
             wf.switch_to_simple_shader()
 
         wf.init_geom_data(head.headobj)

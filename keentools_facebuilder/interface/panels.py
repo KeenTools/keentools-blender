@@ -659,10 +659,12 @@ class FB_PT_WireframeSettingsPanel(Panel):
         settings = get_main_settings()
 
         box = layout.box()
-        row = box.row()
+        split = box.split(factor=0.6)
+        row = split.row()
         row.prop(settings, 'wireframe_color', text='')
         row.prop(settings, 'wireframe_special_color', text='')
-        row.prop(settings, 'wireframe_opacity', text='', slider=True)
+        row.prop(settings, 'wireframe_midline_color', text='')
+        split.prop(settings, 'wireframe_opacity', text='', slider=True)
 
         row = box.row()
         op = row.operator(Config.fb_wireframe_color_idname, text="R")

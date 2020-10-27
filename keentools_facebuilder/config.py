@@ -54,7 +54,7 @@ class Config:
     manual_install_url = keentools_website_url + '/manual-installation'
     pykeentools_license_url = 'https://link.keentools.io/eula'
     license_purchase_url = 'https://link.keentools.io/fb-lc-fbbmld?utm_source=fbb-missing-license-dialog'
-    coloring_texture_name = 'keentools_face_scheme'
+    coloring_texture_name = 'ktWireframeTexture'
     coloring_texture_path = 'pykeentools_installation/data/face_data/tex.tga'
     texture_test_color1 = (0, 0, 220, 255)
     texture_test_color2 = (110, 110, 0, 255)

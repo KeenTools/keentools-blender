@@ -56,7 +56,12 @@ def update_emotions(self, context):
 def update_wireframe_image(self, context):
     settings = get_main_settings()
     vp = FBLoader.viewport()
-    vp.wireframer().init_wireframe_image(FBLoader.get_builder(), settings)
+    wf = vp.wireframer()
+    wf.init_colors((settings.wireframe_color,
+                    settings.wireframe_special_color,
+                    settings.wireframe_midline_color),
+                    settings.wireframe_opacity)
+    wf.init_wireframe_image(FBLoader.get_builder(), settings.show_specials)
     vp.update_wireframe()
 
 def update_wireframe(self, context):
@@ -746,9 +751,6 @@ class FBSceneSettings(PropertyGroup):
     # ---------------------
     # Model View parameters
     # ---------------------
-    wireframe_image: PointerProperty(
-        name="Wireframe texture", type=bpy.types.Image
-    )
     wireframe_opacity: FloatProperty(
         description="From 0.0 to 1.0",
         name="Wireframe opacity",
