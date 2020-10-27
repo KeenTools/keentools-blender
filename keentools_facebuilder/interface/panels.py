@@ -659,7 +659,7 @@ class FB_PT_WireframeSettingsPanel(Panel):
         settings = get_main_settings()
 
         box = layout.box()
-        split = box.split(factor=0.6)
+        split = box.split(factor=0.625)
         row = split.row()
         row.prop(settings, 'wireframe_color', text='')
         row.prop(settings, 'wireframe_special_color', text='')

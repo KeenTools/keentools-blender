@@ -759,17 +759,17 @@ class FBSceneSettings(PropertyGroup):
     wireframe_color: FloatVectorProperty(
         description="Color of mesh wireframe in pin-mode",
         name="Wireframe Color", subtype='COLOR',
-        default=Config.default_scheme1, min=0.0, max=1.0,
+        default=Config.color_schemes['default'][0], min=0.0, max=1.0,
         update=update_wireframe_image)
     wireframe_special_color: FloatVectorProperty(
         description="Color of special parts in pin-mode",
         name="Wireframe Special Color", subtype='COLOR',
-        default=Config.default_scheme2, min=0.0, max=1.0,
+        default=Config.color_schemes['default'][1], min=0.0, max=1.0,
         update=update_wireframe_image)
     wireframe_midline_color: FloatVectorProperty(
         description="Color of midline in pin-mode",
         name="Wireframe Midline Color", subtype='COLOR',
-        default=Config.default_scheme3, min=0.0, max=1.0,
+        default=Config.midline_color, min=0.0, max=1.0,
         update=update_wireframe_image)
     show_specials: BoolProperty(
         description="Use different colors for important head parts "
