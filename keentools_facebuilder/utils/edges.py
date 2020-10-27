@@ -24,7 +24,7 @@ from gpu_extras.batch import batch_for_shader
 from . shaders import (simple_fill_vertex_shader,
                        black_fill_fragment_shader, residual_vertex_shader,
                        residual_fragment_shader, raster_image_vertex_shader,
-                       simple_raster_image_fragment_shader)
+                       raster_image_fragment_shader)
 from ..config import Config
 from ..utils.images import (check_image_same_size,
                             remove_image, add_alpha_channel,
@@ -166,7 +166,6 @@ class FBEdgeShader2D(FBEdgeShaderBase):
 
 
 class FBRasterEdgeShader3D(FBEdgeShaderBase):
-    """ Another Wireframe drawing class """
     def _gamma_color(self, col, power=2.2):
         return [x ** power for x in col]
 
@@ -318,7 +317,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
             simple_fill_vertex_shader(), black_fill_fragment_shader())
 
         self.line_shader = gpu.types.GPUShader(
-            raster_image_vertex_shader(), simple_raster_image_fragment_shader())
+            raster_image_vertex_shader(), raster_image_fragment_shader())
 
         self.simple_line_shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 

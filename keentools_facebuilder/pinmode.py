@@ -26,7 +26,6 @@ from .utils import manipulate, coords, cameras
 from .config import Config, get_main_settings, get_operators, ErrorType
 from .fbloader import FBLoader
 from .utils.other import FBStopShaderTimer, force_ui_redraw, hide_ui_elements
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 class FB_OT_PinMode(bpy.types.Operator):

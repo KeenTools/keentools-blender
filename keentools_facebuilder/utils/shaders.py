@@ -164,7 +164,7 @@ def raster_image_vertex_shader():
     '''
 
 
-def simple_raster_image_fragment_shader():
+def raster_image_fragment_shader():
     return '''
     in vec2 texCoord_interp;
     out vec4 fragColor;
@@ -174,47 +174,6 @@ def simple_raster_image_fragment_shader():
     void main()
     {
         fragColor = texture(image, texCoord_interp);
-        fragColor.a = opacity;
-    }
-    '''
-
-
-def raster_image_fragment_shader():
-    return '''
-    in vec2 texCoord_interp;
-    out vec4 fragColor;
-
-    uniform vec4 baseColor;
-    uniform vec4 accentColor;
-    uniform vec2 colThresholds;
-    uniform vec4 color1;
-    uniform vec4 color2;
-    uniform sampler2D image;
-    uniform float opacity;
-
-    float colorDist(vec4 col1, vec4 col2)
-    {
-        return 0.33333 * (abs(col1.r - col2.r) + abs(col1.g - col2.g) + abs(col1.b - col2.b));
-    }
-
-    float limitter(float val, float threshold)
-    {
-        if (val < threshold){
-            return 0.0;
-        } else {
-            return min((val - threshold) / threshold, 1.0);
-        }
-    }
-
-    void main()
-    {
-        vec4 texCol = texture(image, texCoord_interp);
-        float dist1 = limitter(colorDist(texCol, color1), colThresholds.x);
-        float dist2 = limitter(colorDist(texCol, color2), colThresholds.y);
-        float dist = min(dist1, dist2);
-
-        fragColor = baseColor + (1.0 - dist) * (accentColor - baseColor);
-
         fragColor.a = opacity;
     }
     '''
