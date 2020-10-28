@@ -21,10 +21,9 @@ import bpy
 
 import numpy as np
 
-from . import const
 from . config import Config, get_main_settings
 from . utils import coords
-from . utils.edges import FBEdgeShader3D, FBEdgeShader2D
+from . utils.edges import FBEdgeShader2D, FBRasterEdgeShader3D
 from . utils.other import FBText
 from . utils.points import FBPoints2D, FBPoints3D
 
@@ -87,7 +86,7 @@ class FBViewport:
     # Text output in Modal mode
     _texter = FBText()
     # Wireframe shader object
-    _wireframer = FBEdgeShader3D()
+    _wireframer = FBRasterEdgeShader3D()
     # Update timer
     _draw_timer_handler = None
 
@@ -198,37 +197,13 @@ class FBViewport:
         cls.points3d().create_batch()
 
     @classmethod
-    def update_wireframe(cls, obj):
-        logger = logging.getLogger(__name__)
+    def update_wireframe(cls):
         settings = get_main_settings()
-        main_color = settings.wireframe_color
-        comp_color = settings.wireframe_special_color
-
-        cls.wireframer().init_color_data((*main_color,
-                                          settings.wireframe_opacity))
-        if settings.show_specials:
-            mesh = obj.data
-            # Check to prevent shader problem
-            if len(mesh.edges) * 2 == len(cls.wireframer().edges_colors):
-                logger.debug("COLORING")
-                special_indices = cls.get_special_indices()
-                cls.wireframer().init_special_areas(
-                    obj.data, special_indices, (*comp_color,
-                                                settings.wireframe_opacity))
-            else:
-                logging.warning("LISTS HAVE DIFFERENT SIZES")
+        cls.wireframer().init_colors((settings.wireframe_color,
+                                      settings.wireframe_special_color,
+                                      settings.wireframe_midline_color),
+                                     settings.wireframe_opacity)
         cls.wireframer().create_batches()
-
-    @classmethod
-    def get_special_indices(cls):
-        pairs = const.get_eyes_indices()
-        pairs = pairs.union(const.get_eyebrows_indices())
-        pairs = pairs.union(const.get_nose_indices())
-        pairs = pairs.union(const.get_mouth_indices())
-        pairs = pairs.union(const.get_ears_indices())
-        pairs = pairs.union(const.get_half_indices())
-        # pairs = pairs.union(const.get_jaw_indices2())
-        return pairs
 
     @classmethod
     def update_pin_sensitivity(cls):

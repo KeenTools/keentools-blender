@@ -30,7 +30,7 @@ from ..utils.exif_reader import (read_exif_to_camera,
                                  update_image_groups,
                                  auto_setup_camera_from_exif)
 from ..utils.other import restore_ui_elements
-from ..utils.materials import find_tex_by_name
+from ..utils.materials import find_bpy_image_by_name
 
 
 class FB_OT_SingleFilebrowserExec(Operator):
@@ -168,7 +168,7 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
     def execute(self, context):
         logger = logging.getLogger(__name__)
         logger.debug("START SAVE TEXTURE: {}".format(self.filepath))
-        tex = find_tex_by_name(Config.tex_builder_filename)
+        tex = find_bpy_image_by_name(Config.tex_builder_filename)
         if tex is None:
             return {'CANCELLED'}
         tex.filepath = self.filepath

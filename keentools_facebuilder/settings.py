@@ -53,12 +53,19 @@ def update_emotions(self, context):
         FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
 
 
-def update_wireframe(self, context):
+def update_wireframe_image(self, context):
     settings = get_main_settings()
-    headnum = settings.current_headnum
-    head = settings.get_head(headnum)
-    FBLoader.viewport().update_wireframe(head.headobj)
+    vp = FBLoader.viewport()
+    wf = vp.wireframer()
+    wf.init_colors((settings.wireframe_color,
+                    settings.wireframe_special_color,
+                    settings.wireframe_midline_color),
+                    settings.wireframe_opacity)
+    wf.init_wireframe_image(FBLoader.get_builder(), settings.show_specials)
+    vp.update_wireframe()
 
+def update_wireframe(self, context):
+    FBLoader.viewport().update_wireframe()
 
 def update_pin_sensitivity(self, context):
     FBLoader.viewport().update_pin_sensitivity()
@@ -186,8 +193,8 @@ def update_mesh_geometry(self, context):
     if settings.pinmode:
         # Update wireframe structures
         FBLoader.viewport().wireframer().init_geom_data(head.headobj)
-        FBLoader.viewport().wireframer().init_edge_indices(head.headobj)
-        FBLoader.viewport().update_wireframe(head.headobj)
+        FBLoader.viewport().wireframer().init_edge_indices(FBLoader.get_builder())
+        FBLoader.viewport().update_wireframe()
 
     mesh_name = old_mesh.name
     # Delete old mesh
@@ -747,22 +754,27 @@ class FBSceneSettings(PropertyGroup):
     wireframe_opacity: FloatProperty(
         description="From 0.0 to 1.0",
         name="Wireframe opacity",
-        default=0.35, min=0.0, max=1.0,
+        default=0.3, min=0.0, max=1.0,
         update=update_wireframe)
     wireframe_color: FloatVectorProperty(
         description="Color of mesh wireframe in pin-mode",
         name="Wireframe Color", subtype='COLOR',
-        default=Config.default_scheme1, min=0.0, max=1.0,
-        update=update_wireframe)
+        default=Config.color_schemes['default'][0], min=0.0, max=1.0,
+        update=update_wireframe_image)
     wireframe_special_color: FloatVectorProperty(
         description="Color of special parts in pin-mode",
         name="Wireframe Special Color", subtype='COLOR',
-        default=Config.default_scheme2, min=0.0, max=1.0,
-        update=update_wireframe)
+        default=Config.color_schemes['default'][1], min=0.0, max=1.0,
+        update=update_wireframe_image)
+    wireframe_midline_color: FloatVectorProperty(
+        description="Color of midline in pin-mode",
+        name="Wireframe Midline Color", subtype='COLOR',
+        default=Config.midline_color, min=0.0, max=1.0,
+        update=update_wireframe_image)
     show_specials: BoolProperty(
         description="Use different colors for important head parts "
                     "on the mesh",
-        name="Special face parts", default=True, update=update_wireframe)
+        name="Special face parts", default=True, update=update_wireframe_image)
     overall_opacity: FloatProperty(
         description="Overall opacity in pin-mode.",
         name="Overall opacity",

@@ -54,6 +54,7 @@ class Config:
     manual_install_url = keentools_website_url + '/manual-installation'
     pykeentools_license_url = 'https://link.keentools.io/eula'
     license_purchase_url = 'https://link.keentools.io/fb-lc-fbbmld?utm_source=fbb-missing-license-dialog'
+    coloring_texture_name = 'ktWireframeTexture'
     
     # Operators ids
     fb_select_head_callname = 'select_head'
@@ -295,33 +296,18 @@ class Config:
     image_node_layout_coord = (-300, 0)
 
     # Colors
-    red_color = (1.0, 0.0, 0.0)
-    red_scheme1 = (0.3, 0.0, 0.0)
-    red_scheme2 = (0.0, 0.4, 0.7)
-    green_color = (0.0, 1.0, 0.0)
-    green_scheme1 = (0.0, 0.2, 0.0)
-    green_scheme2 = (0.4, 0.0, 0.4)
-    blue_color = (0.0, 0.0, 1.0)
-    blue_scheme1 = (0.0, 0.0, 0.3)
-    blue_scheme2 = (0.4, 0.75, 0.0)
-    cyan_color = (0.0, 1.0, 1.0)
-    cyan_scheme1 = (0.0, 0.3, 0.3)
-    cyan_scheme2 = (0.4, 0.0, 0.0)
-    magenta_color = (1.0, 0.0, 1.0)
-    magenta_scheme1 = (0.3, 0.0, 0.3)
-    magenta_scheme2 = (0.0, 0.55, 0.0)
-    yellow_color = (1.0, 1.0, 0.0)
-    yellow_scheme1 = (0.2, 0.2, 0.0)
-    yellow_scheme2 = (0.0, 0.0, 0.4)
-    black_color = (0.0, 0.0, 0.0)
-    black_scheme1 = (0.2, 0.2, 0.2)
-    black_scheme2 = (0.0, 0.0, 1.0)
-    white_color = (1.0, 1.0, 1.0)
-    white_scheme1 = (1.0, 1.0, 1.0)
-    white_scheme2 = (0.0, 0.0, 0.4)
-
-    default_scheme1 = (0.05, 0.05, 0.1)
-    default_scheme2 = (0.0, 0.0, 1.0)
+    midline_color = (0.960784, 0.007843, 0.615686)
+    color_schemes = {
+        'red': ((0.3, 0.0, 0.0), (0.0, 0.4, 0.7)),
+        'green': ((0.0, 0.2, 0.0), (0.4, 0.0, 0.4)),
+        'blue': ((0.0, 0.0, 0.3), (0.4, 0.75, 0.0)),
+        'cyan': ((0.0, 0.3, 0.3), (0.4, 0.0, 0.0)),
+        'magenta': ((0.3, 0.0, 0.3), (0.0, 0.55, 0.0)),
+        'yellow': ((0.2, 0.2, 0.0), (0.0, 0.0, 0.4)),
+        'black': ((0.039, 0.04 , 0.039), (0.0, 0.0, 0.85098)),
+        'white': ((1.0, 1.0, 1.0), (0.0, 0.0, 0.4)),
+        'default': ((0.039, 0.04 , 0.039), (0.0, 0.0, 0.85098))
+    }
 
     pin_color = (1.0, 0.0, 0.0, 1.0)
     current_pin_color = (1.0, 0.0, 1.0, 1.0)

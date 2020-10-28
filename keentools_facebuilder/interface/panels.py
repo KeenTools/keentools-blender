@@ -25,7 +25,7 @@ from ..messages import draw_labels
 import re
 from ..fbloader import FBLoader
 from ..utils.manipulate import what_is_state
-from ..utils.materials import find_tex_by_name
+from ..utils.materials import find_bpy_image_by_name
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
@@ -603,7 +603,7 @@ class FB_PT_TexturePanel(Panel):
                           text="Create texture", icon='IMAGE')
         op.headnum = headnum
 
-        texture_exists = find_tex_by_name(Config.tex_builder_filename)
+        texture_exists = find_bpy_image_by_name(Config.tex_builder_filename)
         row = layout.row()
         if not texture_exists:
             row.active = False
@@ -659,10 +659,12 @@ class FB_PT_WireframeSettingsPanel(Panel):
         settings = get_main_settings()
 
         box = layout.box()
-        row = box.row()
+        split = box.split(factor=0.625)
+        row = split.row()
         row.prop(settings, 'wireframe_color', text='')
         row.prop(settings, 'wireframe_special_color', text='')
-        row.prop(settings, 'wireframe_opacity', text='', slider=True)
+        row.prop(settings, 'wireframe_midline_color', text='')
+        split.prop(settings, 'wireframe_opacity', text='', slider=True)
 
         row = box.row()
         op = row.operator(Config.fb_wireframe_color_idname, text="R")

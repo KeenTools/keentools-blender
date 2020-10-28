@@ -262,32 +262,27 @@ class FB_OT_WireframeColor(Operator):
         pass
 
     def execute(self, context):
-        settings = get_main_settings()
+        def _setup_colors_from_scheme(name):
+            settings = get_main_settings()
+            settings.wireframe_color = Config.color_schemes[name][0]
+            settings.wireframe_special_color = Config.color_schemes[name][1]
 
         if self.action == "wireframe_red":
-            settings.wireframe_color = Config.red_scheme1
-            settings.wireframe_special_color = Config.red_scheme2
+            _setup_colors_from_scheme('red')
         elif self.action == "wireframe_green":
-            settings.wireframe_color = Config.green_scheme1
-            settings.wireframe_special_color = Config.green_scheme2
+            _setup_colors_from_scheme('green')
         elif self.action == "wireframe_blue":
-            settings.wireframe_color = Config.blue_scheme1
-            settings.wireframe_special_color = Config.blue_scheme2
+            _setup_colors_from_scheme('blue')
         elif self.action == "wireframe_cyan":
-            settings.wireframe_color = Config.cyan_scheme1
-            settings.wireframe_special_color = Config.cyan_scheme2
+            _setup_colors_from_scheme('cyan')
         elif self.action == "wireframe_magenta":
-            settings.wireframe_color = Config.magenta_scheme1
-            settings.wireframe_special_color = Config.magenta_scheme2
+            _setup_colors_from_scheme('magenta')
         elif self.action == "wireframe_yellow":
-            settings.wireframe_color = Config.yellow_scheme1
-            settings.wireframe_special_color = Config.yellow_scheme2
+            _setup_colors_from_scheme('yellow')
         elif self.action == "wireframe_black":
-            settings.wireframe_color = Config.black_scheme1
-            settings.wireframe_special_color = Config.black_scheme2
+            _setup_colors_from_scheme('black')
         elif self.action == "wireframe_white":
-            settings.wireframe_color = Config.white_scheme1
-            settings.wireframe_special_color = Config.white_scheme2
+            _setup_colors_from_scheme('white')
 
         return {'FINISHED'}
 
@@ -547,7 +542,7 @@ class FB_OT_DeleteTexture(Operator):
         pass
 
     def execute(self, context):
-        materials.remove_tex_by_name(Config.tex_builder_filename)
+        materials.remove_bpy_image_by_name(Config.tex_builder_filename)
         materials.remove_mat_by_name(Config.tex_builder_matname)
         op = getattr(get_operators(), Config.fb_show_solid_callname)
         op('EXEC_DEFAULT')
@@ -668,7 +663,7 @@ class FB_OT_ShowTexture(Operator):
         pass
 
     def execute(self, context):
-        tex = materials.find_tex_by_name(Config.tex_builder_filename)
+        tex = materials.find_bpy_image_by_name(Config.tex_builder_filename)
         if tex is None:
             return {'CANCELLED'}
 

@@ -163,7 +163,7 @@ class FBLoader:
     @classmethod
     def shader_update(cls, headobj):
         cls.viewport().wireframer().init_geom_data(headobj)
-        cls.viewport().wireframer().init_edge_indices(headobj)
+        cls.viewport().wireframer().init_edge_indices(FBLoader.get_builder())
         cls.viewport().wireframer().create_batches()
 
     @classmethod

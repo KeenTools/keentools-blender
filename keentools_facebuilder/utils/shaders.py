@@ -146,3 +146,34 @@ def residual_fragment_shader():
         fragColor = finalColor;
     }
     '''
+
+
+def raster_image_vertex_shader():
+    return '''
+    uniform mat4 ModelViewProjectionMatrix;
+
+    in vec2 texCoord;
+    in vec3 pos;
+    out vec2 texCoord_interp;
+
+    void main()
+    {
+      gl_Position = ModelViewProjectionMatrix * vec4(pos, 1.0f);
+      texCoord_interp = texCoord;
+    }
+    '''
+
+
+def raster_image_fragment_shader():
+    return '''
+    in vec2 texCoord_interp;
+    out vec4 fragColor;
+    uniform sampler2D image;
+    uniform float opacity;
+
+    void main()
+    {
+        fragColor = texture(image, texCoord_interp);
+        fragColor.a = opacity;
+    }
+    '''
