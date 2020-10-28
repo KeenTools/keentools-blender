@@ -82,12 +82,15 @@ class FB_OT_Actor(bpy.types.Operator):
             if headnum >= 0:
                 head = settings.get_head(headnum)
                 controls = create_blendshape_controls(head.headobj)
-                control_panel = make_control_panel(controls)
-                # TODO: remove hardcoded position and orientation
-                control_panel.location = (2, 0, 0)
-                control_panel.rotation_euler = (0.5 * math.pi, 0, 0)
-                bpy.context.space_data.overlay.show_relationship_lines = False
-                head.headobj.data.update()  # update for drivers affection
+                if len(controls) > 0:
+                    control_panel = make_control_panel(controls)
+                    # TODO: remove hardcoded position and orientation
+                    control_panel.location = (2, 0, 0)
+                    control_panel.rotation_euler = (0.5 * math.pi, 0, 0)
+                    bpy.context.space_data.overlay.show_relationship_lines = False
+                    head.headobj.data.update()  # update for drivers affection
+                else:
+                    self.report({'ERROR'}, 'No Blendshapes found')
 
         elif self.action == 'load_csv_animation':
             headnum = manipulate.get_current_headnum()
@@ -102,10 +105,15 @@ class FB_OT_Actor(bpy.types.Operator):
             if headnum >= 0:
                 head = settings.get_head(headnum)
                 control_panel = get_control_panel(head.headobj)
-                convert_control_animation_to_blendshape(head.headobj)
-                remove_blendshape_drivers(head.headobj)
                 if control_panel:
-                    delete_with_children(control_panel)
+                    if not convert_control_animation_to_blendshape(head.headobj):
+                        self.report({'ERROR'}, 'Conversion could not be performed')
+                    else:
+                        remove_blendshape_drivers(head.headobj)
+                        delete_with_children(control_panel)
+                        self.report({'INFO'}, 'Conversion completed')
+                else:
+                    self.report({'ERROR'}, 'Control panel not found')
 
         elif self.action == 'delete_control_panel':
             settings = get_main_settings()
@@ -115,6 +123,8 @@ class FB_OT_Actor(bpy.types.Operator):
                 control_panel = get_control_panel(head.headobj)
                 if control_panel:
                     delete_with_children(control_panel)
+                else:
+                    self.report({'ERROR'}, 'Control panel not found')
 
         return {'FINISHED'}
 

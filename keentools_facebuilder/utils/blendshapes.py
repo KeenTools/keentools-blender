@@ -20,7 +20,7 @@ import math
 import bpy
 import numpy as np
 
-from ..utils.rig_slider import create_slider, create_rectangle
+from ..utils.rig_slider import create_slider, create_rectangle, create_label
 
 
 def _all_blendshape_names():
@@ -51,8 +51,12 @@ def default_blendshape_names():
     return _all_blendshape_names()[:52]
 
 
+def has_no_blendshapes(obj):
+    return not obj.data.shape_keys
+
+
 def _create_basis_blendshape(obj):
-    if not obj.data.shape_keys:
+    if has_no_blendshapes(obj):
         obj.shape_key_add(name='Basis')
 
 
@@ -78,7 +82,7 @@ def create_fake_blendshapes(obj, names):
 
 
 def get_all_blendshape_names(obj):
-    if not obj.data.shape_keys:
+    if has_no_blendshapes(obj):
         return []
     res = [kb.name for kb in obj.data.shape_keys.key_blocks]
     return res[1:]
@@ -96,8 +100,8 @@ def create_driver(target, control_obj, control_prop='location.x'):
 
 
 def create_blendshape_controls(obj):
-    if not obj.data.shape_keys:
-        return
+    if has_no_blendshapes(obj):
+        return {}
     blendshape_names = get_all_blendshape_names(obj)
     controls = {}
     for name in blendshape_names:
@@ -124,7 +128,12 @@ def make_control_panel(controls_dict):
     start_x = width * 0.5
     start_y = 0.5 * panel_height - 2 * height
 
-    main_rect = create_rectangle('rig', panel_width, panel_height)
+    name = 'ControlPanel'
+    main_rect = create_rectangle(name, panel_width, panel_height)
+    label = create_label(name, label=name, size=2 * height)
+    label.parent = main_rect
+    label.location = (0, 0.5 * panel_height + 0.5 * height, 0)
+
     i = 0
     j = 0
     for name in controls_dict:
@@ -145,6 +154,8 @@ def load_csv_animation(obj, filepath):
 
 
 def get_blendshapes_drivers(obj):
+    if has_no_blendshapes(obj):
+        return {}
     drivers_dict = {}
     for drv in obj.data.shape_keys.animation_data.drivers:
         blendshape_name = drv.data_path.split('"')[1]
@@ -154,7 +165,7 @@ def get_blendshapes_drivers(obj):
 
 
 def get_safe_blendshapes_action(obj):
-    if not obj.data.shape_keys:
+    if has_no_blendshapes(obj):
         return None
     anim_data = obj.data.shape_keys.animation_data
     if not anim_data:
@@ -198,10 +209,12 @@ def put_anim_data_in_fcurve(fcurve, anim_data):
 
 
 def convert_control_animation_to_blendshape(obj):
+    if has_no_blendshapes(obj):
+        return False
     all_dict = get_blendshapes_drivers(obj)
     blend_action = get_safe_blendshapes_action(obj)
     if not blend_action:
-        return
+        return False
     for name in all_dict:
         item = all_dict[name]
         control_action = item['slider'].animation_data.action
@@ -212,6 +225,7 @@ def convert_control_animation_to_blendshape(obj):
                                         index=0)
         clear_fcurve(fcurve)
         put_anim_data_in_fcurve(fcurve, anim_data)
+    return True
 
 
 def remove_blendshape_drivers(obj):
