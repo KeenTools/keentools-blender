@@ -17,25 +17,23 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
-import math
 
 import bpy
-from bpy.types import Operator
 from bpy.props import (
     StringProperty,
     IntProperty,
 )
+from bpy.types import Operator
 
-from .utils import cameras, manipulate, materials, coords
-from .utils.manipulate import check_settings
-from .utils.attrs import get_obj_collection, safe_delete_collection
-from .fbloader import FBLoader
 from .config import get_main_settings, get_operators, Config
+from .fbloader import FBLoader
+from .utils import cameras, manipulate, materials, coords
+from .utils.attrs import get_obj_collection, safe_delete_collection
 from .utils.exif_reader import (read_exif_from_camera,
                                 update_exif_sizes_message,
-                                get_sensor_size_35mm_equivalent,
                                 copy_exif_parameters_from_camera_to_head,
                                 update_image_groups)
+from .utils.manipulate import check_settings
 
 
 class FB_OT_SelectHead(Operator):
@@ -264,32 +262,27 @@ class FB_OT_WireframeColor(Operator):
         pass
 
     def execute(self, context):
-        settings = get_main_settings()
+        def _setup_colors_from_scheme(name):
+            settings = get_main_settings()
+            settings.wireframe_color = Config.color_schemes[name][0]
+            settings.wireframe_special_color = Config.color_schemes[name][1]
 
         if self.action == "wireframe_red":
-            settings.wireframe_color = Config.red_scheme1
-            settings.wireframe_special_color = Config.red_scheme2
+            _setup_colors_from_scheme('red')
         elif self.action == "wireframe_green":
-            settings.wireframe_color = Config.green_scheme1
-            settings.wireframe_special_color = Config.green_scheme2
+            _setup_colors_from_scheme('green')
         elif self.action == "wireframe_blue":
-            settings.wireframe_color = Config.blue_scheme1
-            settings.wireframe_special_color = Config.blue_scheme2
+            _setup_colors_from_scheme('blue')
         elif self.action == "wireframe_cyan":
-            settings.wireframe_color = Config.cyan_scheme1
-            settings.wireframe_special_color = Config.cyan_scheme2
+            _setup_colors_from_scheme('cyan')
         elif self.action == "wireframe_magenta":
-            settings.wireframe_color = Config.magenta_scheme1
-            settings.wireframe_special_color = Config.magenta_scheme2
+            _setup_colors_from_scheme('magenta')
         elif self.action == "wireframe_yellow":
-            settings.wireframe_color = Config.yellow_scheme1
-            settings.wireframe_special_color = Config.yellow_scheme2
+            _setup_colors_from_scheme('yellow')
         elif self.action == "wireframe_black":
-            settings.wireframe_color = Config.black_scheme1
-            settings.wireframe_special_color = Config.black_scheme2
+            _setup_colors_from_scheme('black')
         elif self.action == "wireframe_white":
-            settings.wireframe_color = Config.white_scheme1
-            settings.wireframe_special_color = Config.white_scheme2
+            _setup_colors_from_scheme('white')
 
         return {'FINISHED'}
 
@@ -549,7 +542,7 @@ class FB_OT_DeleteTexture(Operator):
         pass
 
     def execute(self, context):
-        materials.remove_tex_by_name(Config.tex_builder_filename)
+        materials.remove_bpy_image_by_name(Config.tex_builder_filename)
         materials.remove_mat_by_name(Config.tex_builder_matname)
         op = getattr(get_operators(), Config.fb_show_solid_callname)
         op('EXEC_DEFAULT')
@@ -574,7 +567,6 @@ class FB_OT_RotateImageCW(Operator):
         camera.rotate_background_image(1)
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
-        FBLoader.update_camera_projection(self.headnum, self.camnum)
         FBLoader.fb_save(self.headnum, self.camnum)
         return {'FINISHED'}
 
@@ -597,7 +589,6 @@ class FB_OT_RotateImageCCW(Operator):
         camera.rotate_background_image(-1)
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
-        FBLoader.update_camera_projection(self.headnum, self.camnum)
         FBLoader.fb_save(self.headnum, self.camnum)
         return {'FINISHED'}
 
@@ -620,7 +611,6 @@ class FB_OT_ResetImageRotation(Operator):
         camera.reset_background_image_rotation()
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
-        FBLoader.update_camera_projection(self.headnum, self.camnum)
         FBLoader.fb_save(self.headnum, self.camnum)
         return {'FINISHED'}
 
@@ -673,7 +663,7 @@ class FB_OT_ShowTexture(Operator):
         pass
 
     def execute(self, context):
-        tex = materials.find_tex_by_name(Config.tex_builder_filename)
+        tex = materials.find_bpy_image_by_name(Config.tex_builder_filename)
         if tex is None:
             return {'CANCELLED'}
 

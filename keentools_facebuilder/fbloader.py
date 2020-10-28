@@ -16,22 +16,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy
 import logging
-import math
 
+import bpy
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 import numpy as np
 
-from .viewport import FBViewport
-from .utils import attrs, coords, cameras
-from .utils.other import FBStopShaderTimer, restore_ui_elements
-from .utils.exif_reader import update_image_groups, reload_all_camera_exif
-
 from .config import Config, get_main_settings
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from .utils import attrs, coords, cameras
+from .utils.exif_reader import update_image_groups, reload_all_camera_exif
+from .utils.other import FBStopShaderTimer, restore_ui_elements
+from .viewport import FBViewport
 
 
 class FBLoader:
+    _camera_input = None
     _builder_instance = None
     _viewport = FBViewport()
 
@@ -41,7 +40,9 @@ class FBLoader:
 
     @classmethod
     def new_builder(cls):
-        cls._builder_instance = pkt.module().FaceBuilder()
+        from .camera_input import FaceBuilderCameraInput
+        cls._camera_input = FaceBuilderCameraInput()
+        cls._builder_instance = pkt.module().FaceBuilder(cls._camera_input)
         return cls._builder_instance
 
     @classmethod
@@ -162,7 +163,7 @@ class FBLoader:
     @classmethod
     def shader_update(cls, headobj):
         cls.viewport().wireframer().init_geom_data(headobj)
-        cls.viewport().wireframer().init_edge_indices(headobj)
+        cls.viewport().wireframer().init_edge_indices(FBLoader.get_builder())
         cls.viewport().wireframer().create_batches()
 
     @classmethod
@@ -172,9 +173,8 @@ class FBLoader:
         head = settings.get_head(headnum)
         cam = head.get_camera(camnum)
         headobj = head.headobj
-        camobj = cam.camobj
         kid = settings.get_keyframe(headnum, camnum)
-        cls.place_cameraobj(kid, camobj, headobj)
+        cls.place_camera(headnum, camnum)
         coords.update_head_mesh(settings, fb, head)
         # Load pins from model
         vp = cls.viewport()
@@ -195,13 +195,12 @@ class FBLoader:
         fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.get_head(headnum)
-        headobj = head.headobj
 
-        for i, cam in enumerate(head.cameras):
-            if cam.has_pins():
-                kid = cam.get_keyframe()
-                cls.place_cameraobj(kid, cam.camobj, headobj)
-                cam.set_model_mat(fb.model_mat(kid))
+        for camnum, camera in enumerate(head.cameras):
+            if camera.has_pins():
+                cls.place_camera(headnum, camnum)
+                keyframe = camera.get_keyframe()
+                camera.set_model_mat(fb.model_mat(keyframe))
 
     @classmethod
     def update_all_camera_focals(cls, headnum):
@@ -219,44 +218,19 @@ class FBLoader:
                 cam.focal = focal * cam.compensate_view_scale()
 
     @classmethod
-    def update_camera_projection(cls, headnum, camnum):
-        settings = get_main_settings()
-        camera = settings.get_camera(headnum, camnum)
-        if camera is None:
-            return
-        fb = FBLoader.get_builder()
-        projection = camera.get_projection_matrix()
-        kid = camera.get_keyframe()
-        fb.update_projection_mat(kid, projection)
-        fb.update_image_size(kid, camera.get_oriented_image_size())
-
-    @classmethod
     def center_geo_camera_projection(cls, headnum, camnum):
         settings = get_main_settings()
         camera = settings.get_camera(headnum, camnum)
         if camera is None:
             return
         fb = FBLoader.get_builder()
-        kid = camera.get_keyframe()
-        projection = camera.get_projection_matrix()
-        if not fb.is_key_at(kid):
-            fb.set_centered_geo_keyframe(kid, projection,
-                                         camera.get_oriented_image_size())
+        keyframe = camera.get_keyframe()
+        if not fb.is_key_at(keyframe):
+            fb.set_centered_geo_keyframe(keyframe)
         else:
-            fb.update_projection_mat(kid, projection)
-            fb.center_geo(kid)
+            fb.center_geo(keyframe)
 
     # --------------------
-    @classmethod
-    def place_cameraobj(cls, keyframe, camobj, headobj):
-        fb = cls.get_builder()
-        mat = coords.calc_model_mat(
-            fb.model_mat(keyframe),
-            headobj.matrix_world
-        )
-        if mat is not None:
-            camobj.matrix_world = mat
-
     @classmethod
     def set_camera_projection(cls, fl, sw, rx, ry,
                               near_clip=0.1, far_clip=1000.0):
@@ -408,13 +382,11 @@ class FBLoader:
         head = settings.get_head(headnum)
         cam = head.get_camera(camnum)
         kid = cam.get_keyframe()
-        camobj = cam.camobj
-        headobj = head.headobj
 
         cls.load_model_from_head(head)
         fb = cls.get_builder()
 
-        cls.place_cameraobj(kid, camobj, headobj)
+        cls.place_camera(headnum, camnum)
         # Load pins from model
         vp = cls.viewport()
         vp.pins().set_pins(vp.img_points(fb, kid))
@@ -428,8 +400,15 @@ class FBLoader:
         camera = head.get_camera(camnum)
         camobj = camera.camobj
         headobj = head.headobj
-        kid = settings.get_keyframe(headnum, camnum)
-        cls.place_cameraobj(kid, camobj, headobj)
+
+        fb = cls.get_builder()
+        keyframe = camera.get_keyframe()
+
+        mat = coords.calc_model_mat(
+            fb.model_mat(keyframe),
+            headobj.matrix_world)
+        if mat is not None:
+            camobj.matrix_world = mat
 
     @classmethod
     def load_pins(cls, headnum, camnum):
@@ -512,14 +491,9 @@ class FBLoader:
                     _unfix_all(fb, head)
                     mode = 'FB_ESTIMATE_STATIC_FOCAL_LENGTH'
                 elif head.manual_estimation_mode == 'force_focal':
-                    for cam in head.cameras:
-                        fb.update_projection_mat(cam.get_keyframe(),
-                            cam.get_custom_projection_matrix(head.focal))
-                        fb.update_image_size(cam.get_keyframe(),
-                                             cam.get_oriented_image_size())
                     mode = 'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES'
                 else:
-                    assert(False), 'Unknown mode: {}'.format(
+                    assert False, 'Unknown mode: {}'.format(
                         head.manual_estimation_mode)
             return mode
 
@@ -682,10 +656,8 @@ class FBLoader:
         fb = cls.get_builder()
         kid = cls.get_next_keyframe()
         camera.set_keyframe(kid)
-        projection = camera.get_projection_matrix()
 
-        fb.set_centered_geo_keyframe(kid, projection,
-                                     camera.get_oriented_image_size())
+        fb.set_centered_geo_keyframe(kid)
 
         logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
 

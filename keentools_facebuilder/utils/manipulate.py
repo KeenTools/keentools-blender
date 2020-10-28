@@ -291,7 +291,7 @@ def reconstruct_by_head():
             auto_setup_camera_from_exif(camera)
 
             logger.debug("CAMERA CREATED {}".format(kid))
-            FBLoader.place_cameraobj(kid, camera.camobj, obj)
+            FBLoader.place_camera(headnum, i)
             camera.set_model_mat(fb.model_mat(kid))
             FBLoader.update_pins_count(headnum, i)
 
