@@ -93,6 +93,14 @@ def get_current_headnum():
     return headnum
 
 
+def get_current_head():
+    headnum = get_current_headnum()
+    if headnum >= 0:
+        settings = get_main_settings()
+        return settings.get_head(headnum)
+    return None
+
+
 def force_undo_push(msg='KeenTools operation'):
     inc_operation()
     bpy.ops.ed.undo_push(message=msg)

@@ -130,7 +130,7 @@ def make_control_panel(controls_dict):
 
     name = 'ControlPanel'
     main_rect = create_rectangle(name, panel_width, panel_height)
-    label = create_label(name, label=name, size=2 * height)
+    label = create_label(name, label='Blendshape controls', size=2 * height)
     label.parent = main_rect
     label.location = (0, 0.5 * panel_height + 0.5 * height, 0)
 
@@ -240,13 +240,21 @@ def delete_with_children(obj):
     bpy.ops.object.delete({'selected_objects': [obj]})
 
 
-def get_control_panel(obj):
+def get_control_panel_by_drivers(obj):
     drivers_dict = get_blendshapes_drivers(obj)
     if len(drivers_dict) == 0:
         return None
     name = [*drivers_dict.keys()][0]
-    print(drivers_dict)
     rect = drivers_dict[name]['slider'].parent
     if not rect:
         return None
     return rect.parent
+
+
+def blendshapes_have_animation(obj):
+    if has_no_blendshapes(obj):
+        return False
+    anim_data = obj.data.shape_keys.animation_data
+    if not anim_data:
+        return False
+    return True

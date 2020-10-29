@@ -765,3 +765,10 @@ class FB_PT_BlendShapesPanel(Panel):
             Config.fb_actor_idname,
             text='Delete Control Panel')
         op.action = 'delete_control_panel'
+
+        box = layout.box()
+        box.label(text='Export Head to FBX')
+        op = box.operator(
+            Config.fb_actor_idname,
+            text='Export Blendshapes only')
+        op.action = 'export_blendshapes_to_fbx'

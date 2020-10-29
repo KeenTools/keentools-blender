@@ -18,6 +18,7 @@
 
 import logging
 import math
+import numpy as np
 
 
 import bpy
@@ -37,7 +38,6 @@ from .utils.blendshapes import (default_blendshape_names,
                                 make_control_panel,
                                 convert_control_animation_to_blendshape,
                                 remove_blendshape_drivers,
-                                get_control_panel,
                                 delete_with_children)
 
 
@@ -68,29 +68,36 @@ class FB_OT_Actor(bpy.types.Operator):
             manipulate.unhide_head(self.headnum)
 
         elif self.action == 'generate_facs_blendshapes':
-            settings = get_main_settings()
-            headnum = manipulate.get_current_headnum()
-            if headnum >= 0:
-                head = settings.get_head(headnum)
+            head = manipulate.get_current_head()
+            if head:
                 counter = create_fake_blendshapes(head.headobj,
                                                   default_blendshape_names())
                 self.report({'INFO'}, '{} Blendshapes created'.format(counter))
 
         elif self.action == 'generate_control_panel':
-            settings = get_main_settings()
-            headnum = manipulate.get_current_headnum()
-            if headnum >= 0:
-                head = settings.get_head(headnum)
+            head = manipulate.get_current_head()
+            if head:
                 controls = create_blendshape_controls(head.headobj)
                 if len(controls) > 0:
                     control_panel = make_control_panel(controls)
-                    # TODO: remove hardcoded position and orientation
-                    control_panel.location = (2, 0, 0)
-                    control_panel.rotation_euler = (0.5 * math.pi, 0, 0)
+                    # Positioning control panel near head
+                    offset = np.eye(4)
+                    offset[3][0] = 2  # Step on X
+                    rot = np.array([[1., 0., 0., 0.],
+                                    [0., 0., 1., 0.],
+                                    [0., -1., 0., 0.],
+                                    [0., 0., 0., 1.]])
+                    control_panel.matrix_world = offset @ rot @ \
+                        np.array(head.headobj.matrix_world).transpose()
+
+                    # Hide dashed lines between parented objects
                     bpy.context.space_data.overlay.show_relationship_lines = False
                     head.headobj.data.update()  # update for drivers affection
+
+                    head.blendshapes_control_panel = control_panel
                 else:
-                    self.report({'ERROR'}, 'No Blendshapes found')
+                    self.report({'ERROR'}, 'No Blendshapes found. '
+                                           'Create blendshapes first')
 
         elif self.action == 'load_csv_animation':
             headnum = manipulate.get_current_headnum()
@@ -100,31 +107,24 @@ class FB_OT_Actor(bpy.types.Operator):
                 op('INVOKE_DEFAULT', headnum=headnum)
 
         elif self.action == 'convert_controls_to_blendshapes':
-            settings = get_main_settings()
-            headnum = manipulate.get_current_headnum()
-            if headnum >= 0:
-                head = settings.get_head(headnum)
-                control_panel = get_control_panel(head.headobj)
-                if control_panel:
-                    if not convert_control_animation_to_blendshape(head.headobj):
-                        self.report({'ERROR'}, 'Conversion could not be performed')
-                    else:
-                        remove_blendshape_drivers(head.headobj)
-                        delete_with_children(control_panel)
-                        self.report({'INFO'}, 'Conversion completed')
+            head = manipulate.get_current_head()
+            if head and head.control_panel_exists():
+                if not convert_control_animation_to_blendshape(head.headobj):
+                    self.report({'ERROR'}, 'Conversion could not be performed')
                 else:
-                    self.report({'ERROR'}, 'Control panel not found')
+                    remove_blendshape_drivers(head.headobj)
+                    delete_with_children(head.blendshapes_control_panel)
+                    self.report({'INFO'}, 'Conversion completed')
+            else:
+                self.report({'ERROR'}, 'Control panel not found')
 
         elif self.action == 'delete_control_panel':
-            settings = get_main_settings()
-            headnum = manipulate.get_current_headnum()
-            if headnum >= 0:
-                head = settings.get_head(headnum)
-                control_panel = get_control_panel(head.headobj)
-                if control_panel:
-                    delete_with_children(control_panel)
-                else:
-                    self.report({'ERROR'}, 'Control panel not found')
+            head = manipulate.get_current_head()
+            if head and head.control_panel_exists():
+                remove_blendshape_drivers(head.headobj)
+                delete_with_children(head.blendshapes_control_panel)
+            else:
+                self.report({'ERROR'}, 'Control panel not found')
 
         return {'FINISHED'}
 

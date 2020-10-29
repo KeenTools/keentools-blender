@@ -545,6 +545,8 @@ class FBHeadItem(PropertyGroup):
     use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
                                          default=False, update=update_emotions)
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
+    blendshapes_control_panel: PointerProperty(name="Blendshapes Control Panel",
+                                               type=bpy.types.Object)
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
 
     sensor_width: FloatProperty(
@@ -659,6 +661,17 @@ class FBHeadItem(PropertyGroup):
             return False
         except AttributeError:
             return True
+
+    def control_panel_exists(self):
+        if self.blendshapes_control_panel is None:
+            return False
+        try:
+            if not hasattr(self.blendshapes_control_panel, 'users_scene') or \
+                    len(self.blendshapes_control_panel.users_scene) == 0:
+                return False
+            return True
+        except AttributeError:
+            return False
 
     def get_last_camnum(self):
         return len(self.cameras) - 1
@@ -800,7 +813,8 @@ class FBSceneSettings(PropertyGroup):
         description="Change how much pins affect the model expressions",
         name="Expression rigidity", default=2.0, min=0.001, max=1000.0)
 
-    # Internal use only
+    # Internal use only.
+    # Warning! current_headnum and current_camnum work only in Pinmode!
     current_headnum: IntProperty(name="Current Head Number", default=-1)
     current_camnum: IntProperty(name="Current Camera Number", default=-1)
 
