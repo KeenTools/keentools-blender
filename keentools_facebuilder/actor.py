@@ -32,8 +32,7 @@ from .config import Config, get_main_settings, get_operators, ErrorType
 from .utils.exif_reader import (update_image_groups,
                                 auto_setup_camera_from_exif,
                                 is_size_compatible_with_group)
-from .utils.blendshapes import (default_blendshape_names,
-                                create_fake_blendshapes,
+from .utils.blendshapes import (create_facs_blendshapes,
                                 create_blendshape_controls,
                                 make_control_panel,
                                 convert_control_animation_to_blendshape,
@@ -70,8 +69,7 @@ class FB_OT_Actor(bpy.types.Operator):
         elif self.action == 'generate_facs_blendshapes':
             head = manipulate.get_current_head()
             if head:
-                counter = create_fake_blendshapes(head.headobj,
-                                                  default_blendshape_names())
+                counter = create_facs_blendshapes(head.headobj)
                 self.report({'INFO'}, '{} Blendshapes created'.format(counter))
 
         elif self.action == 'generate_control_panel':
@@ -82,7 +80,7 @@ class FB_OT_Actor(bpy.types.Operator):
                     control_panel = make_control_panel(controls)
                     # Positioning control panel near head
                     offset = np.eye(4)
-                    offset[3][0] = 2  # Step on X
+                    offset[3][0] = 2 * head.model_scale # Step on X
                     rot = np.array([[1., 0., 0., 0.],
                                     [0., 0., 1., 0.],
                                     [0., -1., 0., 0.],
@@ -125,6 +123,15 @@ class FB_OT_Actor(bpy.types.Operator):
                 delete_with_children(head.blendshapes_control_panel)
             else:
                 self.report({'ERROR'}, 'Control panel not found')
+
+        elif self.action == 'export_blendshapes_to_fbx':
+            head = manipulate.get_current_head()
+            if head:
+                manipulate.select_object_only(head.headobj)
+                bpy.ops.export_scene.fbx('INVOKE_DEFAULT',
+                                         use_selection=True,
+                                         bake_anim_use_all_actions=False,
+                                         bake_anim_use_nla_strips=False)
 
         return {'FINISHED'}
 

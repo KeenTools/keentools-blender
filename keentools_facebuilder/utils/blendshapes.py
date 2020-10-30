@@ -21,6 +21,8 @@ import bpy
 import numpy as np
 
 from ..utils.rig_slider import create_slider, create_rectangle, create_label
+from ..fbloader import FBLoader
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 def _all_blendshape_names():
@@ -78,6 +80,26 @@ def create_fake_blendshapes(obj, names):
             phi = np.random.uniform(0, np.pi * 2)
             vec = np.array((np.cos(phi), 0, np.sin(phi)))
             _move_vertices(shape, vec)
+    return counter
+
+
+def create_facs_blendshapes(obj):
+    fb = FBLoader.get_builder()
+    geo = fb.applied_args_model()
+    pc = pkt.module().ProgressCallback()
+    fe = pkt.module().FacsExecutor(geo, pc)
+    if not fe.facs_enabled():
+        return 0
+
+    _create_basis_blendshape(obj)
+    counter = 0
+    for i, name in enumerate(fe.facs_names):
+        if obj.data.shape_keys.key_blocks.find(name) < 0:
+            shape = obj.shape_key_add(name=name)
+            counter += 1
+            verts = fe.get_facs_blendshape(i)
+            rot = np.array([[1., 0., 0.], [0., 0., 1.], [0., -1., 0]])
+            shape.data.foreach_set('co', (verts @ rot).ravel())
     return counter
 
 

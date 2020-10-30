@@ -53,10 +53,7 @@ class FB_OT_SelectHead(Operator):
 
         settings = get_main_settings()
         head = settings.get_head(self.headnum)
-
-        bpy.ops.object.select_all(action='DESELECT')
-        head.headobj.select_set(state=True)
-        bpy.context.view_layer.objects.active = head.headobj
+        manipulate.select_object_only(head.headobj)
         return {'FINISHED'}
 
 

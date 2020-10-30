@@ -38,7 +38,7 @@ from bpy.types import PropertyGroup
 from .config import Config, get_main_settings, get_operators
 from .fbloader import FBLoader
 from .utils import coords
-from .utils.manipulate import what_is_state
+from .utils.manipulate import get_current_headnum
 
 
 def update_emotions(self, context):
@@ -76,10 +76,11 @@ def update_pin_size(self, context):
 
 
 def update_model_scale(self, context):
-    settings = get_main_settings()
-    state, headnum = what_is_state()
+    headnum = get_current_headnum()
     if headnum < 0:
         return
+
+    settings = get_main_settings()
     head = settings.get_head(headnum)
     fb = FBLoader.get_builder()
     fb.set_scale(head.model_scale)
@@ -147,14 +148,32 @@ def update_blue_head_button(self, context):
         settings.blue_head_button = True
 
 
-def update_mesh_geometry(self, context):
-    logger = logging.getLogger(__name__)
-    settings = get_main_settings()
-    state, headnum = what_is_state()
-
+def update_mesh_geometry2(self, context):
+    headnum = get_current_headnum()
     if headnum < 0:
         return
 
+    warn = getattr(get_operators(), Config.fb_blendshapes_warning_callname)
+    warn('INVOKE_DEFAULT')
+
+
+def set_mesh_geometry(self, value):
+    print('self:', self.model_type)
+    print('Setter: ', value)
+    types = model_type_callback(None, None)
+    res = [x[0] for x in types if x[4] == value]
+    print(res)
+    self['model_type'] = res[0]
+    print(self.keys())
+
+
+def update_mesh_geometry(self, context):
+    headnum = get_current_headnum()
+    if headnum < 0:
+        return
+
+    logger = logging.getLogger(__name__)
+    settings = get_main_settings()
     head = settings.get_head(headnum)
     if settings.pinmode and head.should_use_emotions():
         keyframe = head.get_keyframe(settings.current_camnum)
@@ -620,7 +639,7 @@ class FBHeadItem(PropertyGroup):
 
     model_type: EnumProperty(name='Topology', items=model_type_callback,
                              description='Model selector',
-                             update=update_mesh_geometry)
+                             update=update_mesh_geometry)  # set=set_mesh_geometry
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:

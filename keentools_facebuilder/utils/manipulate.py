@@ -146,6 +146,12 @@ def get_operation():
 # --------------------
 
 
+def select_object_only(obj):
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(state=True)
+    bpy.context.view_layer.objects.active = obj
+
+
 def unhide_head(headnum):
     settings = get_main_settings()
     head = settings.get_head(headnum)

@@ -23,6 +23,7 @@ import bpy
 from bpy.types import Panel, Operator
 
 from ..config import Config, get_main_settings, get_operators, ErrorType
+from ..callbacks import update_mesh_geometry
 
 
 class FB_OT_AddonWarning(Operator):
@@ -111,6 +112,49 @@ class FB_OT_AddonWarning(Operator):
                 "Model data cannot be loaded. You need to reinstall "
                 "FaceBuilder."
             ])
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+
+class FB_OT_BlendshapesWarning(Operator):
+    bl_idname = Config.fb_blendshapes_warning_idname
+    bl_label = ""
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    msg: bpy.props.IntProperty(default=ErrorType.Unknown)
+    msg_content: bpy.props.StringProperty(default="Some mesh warning")
+    accept: bpy.props.BoolProperty(name='Yes, delete blendshapes', default=False)
+
+    content = []
+
+    def set_content(self, txt_list):
+        self.content = txt_list
+        self.content.append(" ")  # Additional line at end
+
+    def draw(self, context):
+        layout = self.layout.column()
+        layout.scale_y = Config.text_scale_y
+
+        layout.prop(self, 'accept')
+        box = layout.box()
+
+        for t in self.content:
+            row = box.row()
+            row.alert = True
+            row.label(text=t)
+
+        if self.msg == ErrorType.NoLicense:
+            op = self.layout.operator(Config.fb_open_url_idname,
+                                      text='Purchase a license')
+            op.url = Config.license_purchase_url
+
+    def execute(self, context):
+        if self.accept:
+            update_mesh_geometry()
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        self.msg_content = 'Warning! Your mesh contains blendshapes so if you change topology you will lost it'
+        self.set_content(re.split("\r\n|\n", self.msg_content))
         return context.window_manager.invoke_props_dialog(self, width=400)
 
 

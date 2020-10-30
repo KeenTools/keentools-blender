@@ -164,6 +164,10 @@ class Config:
     fb_warning_callname = 'addon_warning'
     fb_warning_idname = operators + '.' + fb_warning_callname
 
+    fb_blendshapes_warning_callname = 'blendshapes_warning'
+    fb_blendshapes_warning_idname = \
+        operators + '.' + fb_blendshapes_warning_callname
+
     fb_exif_selector_callname = 'exif_selector'
     fb_exif_selector_idname = operators + '.' + fb_exif_selector_callname
 
