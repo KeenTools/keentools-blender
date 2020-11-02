@@ -23,7 +23,8 @@ from .fbloader import FBLoader
 from .utils.manipulate import get_current_headnum
 
 
-def update_mesh_geometry():
+def update_mesh_geometry(accepted):
+    print('callbacks.update_mesh_geometry')
     headnum = get_current_headnum()
     if headnum < 0:
         return
@@ -35,6 +36,16 @@ def update_mesh_geometry():
         keyframe = head.get_keyframe(settings.current_camnum)
     else:
         keyframe = None
+
+    if not head.model_changed():
+        return
+
+    if not accepted:
+        print('discard')
+        head.discard_model_changes()
+        return
+
+    head.apply_model_changes()
 
     old_mesh = head.headobj.data
     FBLoader.load_model(headnum)

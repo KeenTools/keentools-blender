@@ -148,8 +148,7 @@ class FB_OT_BlendshapesWarning(Operator):
             op.url = Config.license_purchase_url
 
     def execute(self, context):
-        if self.accept:
-            update_mesh_geometry()
+        update_mesh_geometry(self.accept)
         return {'FINISHED'}
 
     def invoke(self, context, event):

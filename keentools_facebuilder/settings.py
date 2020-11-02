@@ -149,25 +149,24 @@ def update_blue_head_button(self, context):
 
 
 def update_mesh_geometry2(self, context):
+    print('update_self:', self)
+    print('model_type:', self.model_type)
+    print('model_type_previous:', self.model_type_previous)
+
     headnum = get_current_headnum()
     if headnum < 0:
+        return
+
+    print('model_changed:', self.model_changed())
+    if not self.model_changed():
         return
 
     warn = getattr(get_operators(), Config.fb_blendshapes_warning_callname)
     warn('INVOKE_DEFAULT')
 
 
-def set_mesh_geometry(self, value):
-    print('self:', self.model_type)
-    print('Setter: ', value)
-    types = model_type_callback(None, None)
-    res = [x[0] for x in types if x[4] == value]
-    print(res)
-    self['model_type'] = res[0]
-    print(self.keys())
-
-
 def update_mesh_geometry(self, context):
+    print('update_mesh_geometry')
     headnum = get_current_headnum()
     if headnum < 0:
         return
@@ -591,9 +590,13 @@ class FBHeadItem(PropertyGroup):
 
     masks: BoolVectorProperty(name='Masks', description='Head parts visibility',
                               size=12, subtype='NONE',
-                              default=(True, True, True, True, True, True,
-                                       True, True, True, True, True, True),
-                              update=update_mesh_geometry)
+                              default=(True,) * 12,
+                              update=update_mesh_geometry2)
+
+    masks_previous: BoolVectorProperty(name='Actual Masks',
+                                       description='Head parts visibility',
+                                       size=12, subtype='NONE',
+                                       default=(True,) * 12)
 
     serial_str: StringProperty(name="Serialization string", default="")
     tmp_serial_str: StringProperty(name="Temporary Serialization", default="")
@@ -601,7 +604,11 @@ class FBHeadItem(PropertyGroup):
 
     tex_uv_shape: EnumProperty(name="UV", items=uv_items_callback,
                                description="UV Layout",
-                               update=update_mesh_geometry)
+                               update=update_mesh_geometry2)
+
+    tex_uv_shape_previous: EnumProperty(name="Actual UV",
+                                        items=uv_items_callback,
+                                        description="UV Layout")
 
     use_exif: BoolProperty(
         name="Use EXIF if available in file",
@@ -639,7 +646,42 @@ class FBHeadItem(PropertyGroup):
 
     model_type: EnumProperty(name='Topology', items=model_type_callback,
                              description='Model selector',
-                             update=update_mesh_geometry)  # set=set_mesh_geometry
+                             update=update_mesh_geometry2)
+
+    model_type_previous: EnumProperty(name='Actual Topology',
+                                    items=model_type_callback,
+                                    description='Model selector')
+
+    def masks_changed(self):
+        return len(self.masks) != sum(
+            [x[0] == x[1] for x in zip(self.masks, self.masks_previous)])
+
+    def model_type_changed(self):
+        print('model_type_changed:', self.model_type != self.model_type_previous)
+        return self.model_type != self.model_type_previous
+
+    def tex_uv_shape_changed(self):
+        return self.tex_uv_shape != self.tex_uv_shape_previous
+
+    def model_changed(self):
+        print('model_type_changed:', self.model_type_changed())
+        print('masks_changed:', self.masks_changed())
+        print('tex_uv_shape_changed:', self.tex_uv_shape_changed())
+        return self.masks_changed() or self.model_type_changed() \
+               or self.tex_uv_shape_changed()
+
+    def discard_model_changes(self):
+        if self.masks_changed():
+            self.masks = self.masks_previous
+        if self.model_type_changed():
+            self.model_type = self.model_type_previous
+        if self.tex_uv_shape_changed():
+            self.tex_uv_shape = self.tex_uv_shape_previous
+
+    def apply_model_changes(self):
+        self.masks_previous = self.masks
+        self.model_type_previous = self.model_type
+        self.tex_uv_shape_previous = self.tex_uv_shape
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
