@@ -256,10 +256,30 @@ def remove_blendshape_drivers(obj):
         obj.data.shape_keys.animation_data.drivers.remove(all_dict[name]['driver'])
 
 
+def _find_all_children(obj, obj_list):
+    for child in obj.children:
+        _find_all_children(child, obj_list)
+    obj_list.append(obj)
+
+
 def delete_with_children(obj):
-    for child in reversed(obj.children):
-        delete_with_children(child)
-    bpy.ops.object.delete({'selected_objects': [obj]})
+    arr = []
+    _find_all_children(obj, arr)
+    if arr:
+        bpy.ops.object.delete({'selected_objects': arr})
+
+
+def select_control_panel_sliders(panel_obj):
+    arr = []
+    _find_all_children(panel_obj, arr)
+    empties = [obj for obj in arr if obj.type == 'EMPTY']
+    counter = 0
+    if empties:
+        bpy.ops.object.select_all(action='DESELECT')
+        for obj in empties:
+            obj.select_set(state=True)
+            counter += 1
+    return counter
 
 
 def get_control_panel_by_drivers(obj):

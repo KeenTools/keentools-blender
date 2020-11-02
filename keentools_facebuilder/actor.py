@@ -37,7 +37,8 @@ from .utils.blendshapes import (create_facs_blendshapes,
                                 make_control_panel,
                                 convert_control_animation_to_blendshape,
                                 remove_blendshape_drivers,
-                                delete_with_children)
+                                delete_with_children,
+                                select_control_panel_sliders)
 
 
 class FB_OT_Actor(bpy.types.Operator):
@@ -132,6 +133,16 @@ class FB_OT_Actor(bpy.types.Operator):
                                          use_selection=True,
                                          bake_anim_use_all_actions=False,
                                          bake_anim_use_nla_strips=False)
+
+        elif self.action == 'select_control_panel_sliders':
+            head = manipulate.get_current_head()
+            if head and head.control_panel_exists():
+                counter = select_control_panel_sliders(
+                    head.blendshapes_control_panel)
+                self.report(
+                    {'INFO'}, '{} Sliders has been selected'.format(counter))
+            else:
+                self.report({'ERROR'}, 'Control panel not found')
 
         return {'FINISHED'}
 

@@ -766,6 +766,11 @@ class FB_PT_BlendShapesPanel(Panel):
             text='Delete Control Panel')
         op.action = 'delete_control_panel'
 
+        op = box.operator(
+            Config.fb_actor_idname,
+            text='Select sliders')
+        op.action = 'select_control_panel_sliders'
+
         box = layout.box()
         box.label(text='Export Head to FBX')
         op = box.operator(
