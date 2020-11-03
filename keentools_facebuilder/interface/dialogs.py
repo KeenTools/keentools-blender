@@ -142,14 +142,12 @@ class FB_OT_BlendshapesWarning(Operator):
             row.alert = True
             row.label(text=t)
 
-        if self.msg == ErrorType.NoLicense:
-            op = self.layout.operator(Config.fb_open_url_idname,
-                                      text='Purchase a license')
-            op.url = Config.license_purchase_url
-
     def execute(self, context):
         update_mesh_geometry(self.accept)
         return {'FINISHED'}
+
+    def cancel(self, context):
+        update_mesh_geometry(accepted=False)
 
     def invoke(self, context, event):
         self.msg_content = 'Warning! Your mesh contains blendshapes so if you change topology you will lost it'

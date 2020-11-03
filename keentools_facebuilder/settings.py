@@ -653,11 +653,9 @@ class FBHeadItem(PropertyGroup):
                                     description='Model selector')
 
     def masks_changed(self):
-        return len(self.masks) != sum(
-            [x[0] == x[1] for x in zip(self.masks, self.masks_previous)])
+        return [*self.masks] != [*self.masks_previous]
 
     def model_type_changed(self):
-        print('model_type_changed:', self.model_type != self.model_type_previous)
         return self.model_type != self.model_type_previous
 
     def tex_uv_shape_changed(self):
