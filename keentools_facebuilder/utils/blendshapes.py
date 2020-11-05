@@ -230,7 +230,7 @@ def put_anim_data_in_fcurve(fcurve, anim_data):
         fcurve.keyframe_points[start_index + i].co = point
 
 
-def convert_control_animation_to_blendshape(obj):
+def convert_controls_animation_to_blendshapes(obj):
     if has_no_blendshapes(obj):
         return False
     all_dict = get_blendshapes_drivers(obj)
@@ -242,11 +242,36 @@ def convert_control_animation_to_blendshape(obj):
         control_action = item['slider'].animation_data.action
         control_fcurve = get_action_fcurve(control_action, 'location', index=0)
         anim_data = get_fcurve_data(control_fcurve)
-        fcurve = get_safe_action_fcurve(blend_action,
-                                        'key_blocks["{}"].value'.format(name),
-                                        index=0)
-        clear_fcurve(fcurve)
-        put_anim_data_in_fcurve(fcurve, anim_data)
+        blendshape_fcurve = get_safe_action_fcurve(
+            blend_action, 'key_blocks["{}"].value'.format(name), index=0)
+        clear_fcurve(blendshape_fcurve)
+        put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
+    return True
+
+
+def convert_blendshapes_animation_to_controls(obj):
+    if has_no_blendshapes(obj):
+        return False
+    all_dict = get_blendshapes_drivers(obj)
+    blend_action = get_safe_blendshapes_action(obj)
+    if not blend_action:
+        return False
+    for name in all_dict:
+        blendshape_fcurve = get_action_fcurve(
+            blend_action, 'key_blocks["{}"].value'.format(name), index=0)
+        if not blendshape_fcurve:
+            continue
+        anim_data = get_fcurve_data(blendshape_fcurve)
+
+        item = all_dict[name]
+        if not item['slider'].animation_data:
+            item['slider'].animation_data_create()
+        if not item['slider'].animation_data.action:
+            item['slider'].animation_data.action = bpy.data.actions.new(name + 'Action')
+        control_action = item['slider'].animation_data.action
+        control_fcurve = get_safe_action_fcurve(control_action, 'location', index=0)
+        clear_fcurve(control_fcurve)
+        put_anim_data_in_fcurve(control_fcurve, anim_data)
     return True
 
 

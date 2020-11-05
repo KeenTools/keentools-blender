@@ -35,10 +35,12 @@ from .utils.exif_reader import (update_image_groups,
 from .utils.blendshapes import (create_facs_blendshapes,
                                 create_blendshape_controls,
                                 make_control_panel,
-                                convert_control_animation_to_blendshape,
+                                convert_controls_animation_to_blendshapes,
                                 remove_blendshape_drivers,
                                 delete_with_children,
-                                select_control_panel_sliders)
+                                select_control_panel_sliders,
+                                blendshapes_have_animation,
+                                convert_blendshapes_animation_to_controls)
 
 
 class FB_OT_Actor(bpy.types.Operator):
@@ -94,6 +96,8 @@ class FB_OT_Actor(bpy.types.Operator):
                     head.headobj.data.update()  # update for drivers affection
 
                     head.blendshapes_control_panel = control_panel
+                    if blendshapes_have_animation(head.headobj):
+                        convert_blendshapes_animation_to_controls(head.headobj)
                 else:
                     self.report({'ERROR'}, 'No Blendshapes found. '
                                            'Create blendshapes first')
@@ -108,7 +112,7 @@ class FB_OT_Actor(bpy.types.Operator):
         elif self.action == 'convert_controls_to_blendshapes':
             head = manipulate.get_current_head()
             if head and head.control_panel_exists():
-                if not convert_control_animation_to_blendshape(head.headobj):
+                if not convert_controls_animation_to_blendshapes(head.headobj):
                     self.report({'ERROR'}, 'Conversion could not be performed')
                 else:
                     remove_blendshape_drivers(head.headobj)
