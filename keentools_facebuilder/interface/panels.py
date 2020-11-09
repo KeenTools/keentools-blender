@@ -445,17 +445,17 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
     def _draw_camera_hint(self, layout, headnum):
         settings = get_main_settings()
         head = settings.get_head(headnum)
-        if not head.has_no_blendshapes():
-            col = layout.column()
-            col.alert = True
-            col.scale_y = Config.text_scale_y
-            col.label(text='Pinmode disabled', icon='INFO')
-            col.label(text='since head mesh has', icon='BLANK1')
-            col.label(text='blendshapes. You cannot', icon='BLANK1')
-            col.label(text='change mesh shape until', icon='BLANK1')
-            col.label(text='mesh uses blendshape', icon='BLANK1')
-            col.label(text='animation.', icon='BLANK1')
-            return
+        # if not head.has_no_blendshapes():
+        #     col = layout.column()
+        #     col.alert = True
+        #     col.scale_y = Config.text_scale_y
+        #     col.label(text='Pinmode disabled', icon='INFO')
+        #     col.label(text='since head mesh has', icon='BLANK1')
+        #     col.label(text='blendshapes. You cannot', icon='BLANK1')
+        #     col.label(text='change mesh shape until', icon='BLANK1')
+        #     col.label(text='mesh uses blendshape', icon='BLANK1')
+        #     col.label(text='animation.', icon='BLANK1')
+        #     return
 
         if not head.has_pins() \
                 and head.get_last_camnum() >= 0 \
@@ -522,17 +522,17 @@ class FB_PT_Model(AllVisibleClosed, Panel):
             return
 
         head = settings.get_head(headnum)
-        if not head.has_no_blendshapes():
-            col = layout.column()
-            col.alert = True
-            col.scale_y = Config.text_scale_y
-            col.label(text='This panel disabled', icon='INFO')
-            col.label(text='since head mesh has', icon='BLANK1')
-            col.label(text='blendshapes. You cannot', icon='BLANK1')
-            col.label(text='change mesh shape until', icon='BLANK1')
-            col.label(text='mesh uses blendshape', icon='BLANK1')
-            col.label(text='animation.', icon='BLANK1')
-            return
+        # if not head.has_no_blendshapes():
+        #     col = layout.column()
+        #     col.alert = True
+        #     col.scale_y = Config.text_scale_y
+        #     col.label(text='This panel disabled', icon='INFO')
+        #     col.label(text='since head mesh has', icon='BLANK1')
+        #     col.label(text='blendshapes. You cannot', icon='BLANK1')
+        #     col.label(text='change mesh shape until', icon='BLANK1')
+        #     col.label(text='mesh uses blendshape', icon='BLANK1')
+        #     col.label(text='animation.', icon='BLANK1')
+        #     return
 
         op = layout.operator(Config.fb_unmorph_idname, text='Reset')
         op.headnum = headnum

@@ -124,11 +124,11 @@ class FB_OT_SelectCamera(Operator):
 
         # Auto Call PinMode
         draw_op = getattr(get_operators(), Config.fb_pinmode_callname)
-        if not head.has_no_blendshapes():
-            logger = logging.getLogger(__name__)
-            logger.debug('BLENDSHAPES DETECTED. SKIP PINMODE')
-            self.report({'ERROR'}, 'Blendshapes detected')
-            return {'FINISHED'}
+        # if not head.has_no_blendshapes():
+        #     logger = logging.getLogger(__name__)
+        #     logger.debug('BLENDSHAPES DETECTED. SKIP PINMODE')
+        #     self.report({'ERROR'}, 'Blendshapes detected')
+        #     return {'FINISHED'}
         if not bpy.app.background:
             draw_op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
 

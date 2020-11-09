@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import logging
+import numpy as np
 import bpy
 
 from .config import get_main_settings
@@ -24,12 +25,34 @@ from .utils.manipulate import get_current_headnum
 
 
 def update_mesh_geometry(accepted):
-    print('callbacks.update_mesh_geometry')
+    logger = logging.getLogger(__name__)
+    logger.debug('callbacks.update_mesh_geometry')
     headnum = get_current_headnum()
     if headnum < 0:
         return
 
+    settings = get_main_settings()
+    head = settings.get_head(headnum)
+
+    if not head.model_changed():
+        return
+
+    if not accepted:
+        logger.debug('discard_model_changes')
+        head.discard_model_changes()
+        return
+
+    head.apply_model_changes()
+    update_mesh_now()
+
+
+def update_mesh_now():
     logger = logging.getLogger(__name__)
+    logger.debug('callbacks.update_mesh')
+    headnum = get_current_headnum()
+    if headnum < 0:
+        return
+
     settings = get_main_settings()
     head = settings.get_head(headnum)
     if settings.pinmode and head.should_use_emotions():
@@ -37,15 +60,7 @@ def update_mesh_geometry(accepted):
     else:
         keyframe = None
 
-    if not head.model_changed():
-        return
-
-    if not accepted:
-        print('discard')
-        head.discard_model_changes()
-        return
-
-    head.apply_model_changes()
+    logger.debug('create_mesh_for_update')
 
     old_mesh = head.headobj.data
     FBLoader.load_model(headnum)
@@ -67,6 +82,7 @@ def update_mesh_geometry(accepted):
                                      head.get_masks(),
                                      uv_set=head.tex_uv_shape,
                                      keyframe=keyframe)
+
     try:
         # Copy old material
         if old_mesh.materials:
@@ -75,6 +91,18 @@ def update_mesh_geometry(accepted):
         pass
     head.headobj.data = mesh
     FBLoader.save_only(headnum)
+
+    if old_mesh.shape_keys:
+        for kb in old_mesh.shape_keys.key_blocks:
+            shape = head.headobj.shape_key_add(name=kb.name)
+            count = len(kb.data)
+            verts = np.empty((count, 3), 'f')
+            kb.data.foreach_get('co', np.reshape(verts, count * 3))
+            shape.data.foreach_set('co', verts.ravel())
+            shape.value = kb.value
+        if old_mesh.shape_keys.animation_data and old_mesh.shape_keys.animation_data.action:
+            mesh.shape_keys.animation_data_create()
+            mesh.shape_keys.animation_data.action = old_mesh.shape_keys.animation_data.action
 
     if settings.pinmode:
         # Update wireframe structures

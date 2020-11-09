@@ -265,6 +265,9 @@ class Config:
     tex_builder_filename = 'kt_facebuilder_texture'
     tex_builder_matname = 'kt_facebuilder_material'
 
+    default_driver_name = 'FaceBuilderDriver'
+    default_blendshapes_action_name = 'fbBlendShapesAction'
+
     # Object Custom Properties
     # Tuples instead simple values are used to load custom properties
     # if they have different names (from old scenes by ex. or if they will be

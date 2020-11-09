@@ -74,7 +74,12 @@ class FB_OT_Actor(bpy.types.Operator):
             head = manipulate.get_current_head()
             if head:
                 counter = create_facs_blendshapes(head.headobj)
-                self.report({'INFO'}, '{} Blendshapes created'.format(counter))
+                if counter >=0:
+                    self.report({'INFO'},
+                                '{} Blendshapes created'.format(counter))
+                else:
+                    self.report({'ERROR'},
+                                'Facs Model Error')
 
         elif self.action == 'generate_control_panel':
             head = manipulate.get_current_head()

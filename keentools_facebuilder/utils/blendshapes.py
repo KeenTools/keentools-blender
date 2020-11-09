@@ -19,46 +19,20 @@
 import math
 import bpy
 import numpy as np
+import logging
 
+from ..config import Config
 from ..utils.rig_slider import create_slider, create_rectangle, create_label
 from ..fbloader import FBLoader
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
-def _all_blendshape_names():
-    return [
-        'eyeBlinkRight', 'eyeLookDownRight', 'eyeLookInRight',
-        'eyeLookOutRight', 'eyeLookUpRight', 'eyeSquintRight',
-        'eyeWideRight', 'eyeBlinkLeft', 'eyeLookDownLeft',
-        'eyeLookInLeft', 'eyeLookOutLeft', 'eyeLookUpLeft',
-        'eyeSquintLeft', 'eyeWideLeft', 'jawForward', 'jawRight',
-        'jawLeft', 'jawOpen', 'mouthClose', 'mouthFunnel',
-        'mouthPucker', 'mouthRight', 'mouthLeft', 'mouthSmileRight',
-        'mouthSmileLeft', 'mouthFrownRight', 'mouthFrownLeft',
-        'mouthDimpleRight', 'mouthDimpleLeft', 'mouthStretchRight',
-        'mouthStretchLeft', 'mouthRollLower', 'mouthRollUpper',
-        'mouthShrugLower', 'mouthShrugUpper', 'mouthPressRight',
-        'mouthPressLeft', 'mouthLowerDownRight', 'mouthLowerDownLeft',
-        'mouthUpperUpRight', 'mouthUpperUpLeft', 'browDownRight',
-        'browDownLeft', 'browInnerUp', 'browOuterUpRight',
-        'browOuterUpLeft', 'cheekPuff', 'cheekSquintRight',
-        'cheekSquintLeft', 'noseSneerRight', 'noseSneerLeft',
-        'tongueOut',
-        'HeadYaw', 'HeadPitch', 'HeadRoll',
-        'LeftEyeYaw', 'LeftEyePitch', 'LeftEyeRoll',
-        'RightEyeYaw', 'RightEyePitch', 'RightEyeRoll']
-
-
-def default_blendshape_names():
-    return _all_blendshape_names()[:52]
-
-
-def has_no_blendshapes(obj):
+def _has_no_blendshapes(obj):
     return not obj.data.shape_keys
 
 
 def _create_basis_blendshape(obj):
-    if has_no_blendshapes(obj):
+    if _has_no_blendshapes(obj):
         obj.shape_key_add(name='Basis')
 
 
@@ -87,7 +61,16 @@ def create_facs_blendshapes(obj):
     fb = FBLoader.get_builder()
     geo = fb.applied_args_model()
     pc = pkt.module().ProgressCallback()
-    fe = pkt.module().FacsExecutor(geo, pc)
+    try:
+        fe = pkt.module().FacsExecutor(geo, pc)
+    except pkt.module().FacsLoadingException:
+        logger = logging.getLogger(__name__)
+        logger.error('CANNOT_LOAD_FACS: FacsLoadingException')
+        return -1
+    except Exception:
+        logger = logging.getLogger(__name__)
+        logger.error('CANNOT_LOAD_FACS: Unknown Exception')
+        return -1
     if not fe.facs_enabled():
         return 0
 
@@ -104,17 +87,17 @@ def create_facs_blendshapes(obj):
 
 
 def get_all_blendshape_names(obj):
-    if has_no_blendshapes(obj):
+    if _has_no_blendshapes(obj):
         return []
     res = [kb.name for kb in obj.data.shape_keys.key_blocks]
     return res[1:]
 
 
-def create_driver(target, control_obj, control_prop='location.x'):
+def create_driver(target, control_obj, driver_name, control_prop='location.x'):
     res = target.driver_add('value')
     res.driver.type = 'AVERAGE'
     drv_var = res.driver.variables.new()
-    drv_var.name = 'DriverName'
+    drv_var.name = driver_name
     drv_var.type = 'SINGLE_PROP'
     drv_var.targets[0].id = control_obj
     drv_var.targets[0].data_path = control_prop
@@ -122,14 +105,15 @@ def create_driver(target, control_obj, control_prop='location.x'):
 
 
 def create_blendshape_controls(obj):
-    if has_no_blendshapes(obj):
+    if _has_no_blendshapes(obj):
         return {}
     blendshape_names = get_all_blendshape_names(obj)
     controls = {}
     for name in blendshape_names:
         slider_dict = create_slider(name, name, width=1.0, height=0.2)
         driver = create_driver(obj.data.shape_keys.key_blocks[name],
-                               slider_dict['slider'], 'location.x')
+                               slider_dict['slider'],
+                               Config.default_driver_name, 'location.x')
         controls[name] = {'control': slider_dict, 'driver': driver}
     return controls
 
@@ -176,7 +160,7 @@ def load_csv_animation(obj, filepath):
 
 
 def get_blendshapes_drivers(obj):
-    if has_no_blendshapes(obj):
+    if _has_no_blendshapes(obj):
         return {}
     drivers_dict = {}
     for drv in obj.data.shape_keys.animation_data.drivers:
@@ -187,7 +171,7 @@ def get_blendshapes_drivers(obj):
 
 
 def get_safe_blendshapes_action(obj):
-    if has_no_blendshapes(obj):
+    if _has_no_blendshapes(obj):
         return None
     anim_data = obj.data.shape_keys.animation_data
     if not anim_data:
@@ -195,7 +179,8 @@ def get_safe_blendshapes_action(obj):
         if not anim_data:
             return None
     if not anim_data.action:
-        anim_data.action = bpy.data.actions.new('fbBlendShapesAction')
+        anim_data.action = \
+            bpy.data.actions.new(Config.default_blendshapes_action_name)
     return anim_data.action
 
 
@@ -231,7 +216,7 @@ def put_anim_data_in_fcurve(fcurve, anim_data):
 
 
 def convert_controls_animation_to_blendshapes(obj):
-    if has_no_blendshapes(obj):
+    if _has_no_blendshapes(obj):
         return False
     all_dict = get_blendshapes_drivers(obj)
     blend_action = get_safe_blendshapes_action(obj)
@@ -250,7 +235,7 @@ def convert_controls_animation_to_blendshapes(obj):
 
 
 def convert_blendshapes_animation_to_controls(obj):
-    if has_no_blendshapes(obj):
+    if _has_no_blendshapes(obj):
         return False
     all_dict = get_blendshapes_drivers(obj)
     blend_action = get_safe_blendshapes_action(obj)
@@ -276,7 +261,7 @@ def convert_blendshapes_animation_to_controls(obj):
 
 
 def create_facs_test_animation(obj):
-    if has_no_blendshapes(obj):
+    if _has_no_blendshapes(obj):
         return False
     all_dict = get_blendshapes_drivers(obj)
     time = 1
@@ -293,6 +278,7 @@ def create_facs_test_animation(obj):
         time += dtime * 3
         put_anim_data_in_fcurve(control_fcurve, anim_data)
     return True
+
 
 def remove_blendshape_drivers(obj):
     all_dict = get_blendshapes_drivers(obj)
@@ -338,9 +324,11 @@ def get_control_panel_by_drivers(obj):
 
 
 def blendshapes_have_animation(obj):
-    if has_no_blendshapes(obj):
+    if _has_no_blendshapes(obj):
         return False
     anim_data = obj.data.shape_keys.animation_data
     if not anim_data:
+        return False
+    if not anim_data.action:
         return False
     return True

@@ -38,6 +38,8 @@ def update_head_mesh_geom(obj, geom):
     rot = np.array([[1., 0., 0.], [0., 0., 1.], [0., -1., 0]])
     npbuffer = geom @ rot
     mesh.vertices.foreach_set('co', npbuffer.ravel())
+    if mesh.shape_keys:
+        mesh.shape_keys.key_blocks[0].data.foreach_set('co', npbuffer.ravel())
     mesh.update()
 
 

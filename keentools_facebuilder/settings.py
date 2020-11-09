@@ -39,6 +39,7 @@ from .config import Config, get_main_settings, get_operators
 from .fbloader import FBLoader
 from .utils import coords
 from .utils.manipulate import get_current_headnum
+from .callbacks import update_mesh_now
 
 
 def update_emotions(self, context):
@@ -149,15 +150,14 @@ def update_blue_head_button(self, context):
 
 
 def update_mesh_geometry2(self, context):
-    print('update_self:', self)
-    print('model_type:', self.model_type)
-    print('model_type_previous:', self.model_type_previous)
+    logger = logging.getLogger(__name__)
+    logger.debug('update_mesh_geometry2')
 
     headnum = get_current_headnum()
     if headnum < 0:
         return
 
-    print('model_changed:', self.model_changed())
+    logger.debug('model_changed: {}'.format(self.model_changed()))
     if not self.model_changed():
         return
 
@@ -165,59 +165,10 @@ def update_mesh_geometry2(self, context):
     warn('INVOKE_DEFAULT')
 
 
-def update_mesh_geometry(self, context):
-    print('update_mesh_geometry')
-    headnum = get_current_headnum()
-    if headnum < 0:
-        return
-
+def update_mesh_geometry3(self, context):
     logger = logging.getLogger(__name__)
-    settings = get_main_settings()
-    head = settings.get_head(headnum)
-    if settings.pinmode and head.should_use_emotions():
-        keyframe = head.get_keyframe(settings.current_camnum)
-    else:
-        keyframe = None
-
-    old_mesh = head.headobj.data
-    FBLoader.load_model(headnum)
-
-    fb = FBLoader.get_builder()
-    models = [x.name for x in fb.models_list()]
-    if (head.model_type in models):
-        model_index = models.index(head.model_type)
-    else:
-        logger.error('MODEL_TYPE_NOT_FOUND (Reset to default)')
-        model_index = 0
-        head.model_type = models[model_index]
-
-    fb.select_model(model_index)
-    logger.debug('MODEL_TYPE: [{}] {}'.format(model_index, head.model_type))
-
-    # Create new mesh
-    mesh = FBLoader.get_builder_mesh(fb, 'FBHead_tmp_mesh',
-                                     head.get_masks(),
-                                     uv_set=head.tex_uv_shape,
-                                     keyframe=keyframe)
-    try:
-        # Copy old material
-        if old_mesh.materials:
-            mesh.materials.append(old_mesh.materials[0])
-    except Exception:
-        pass
-    head.headobj.data = mesh
-    FBLoader.save_only(headnum)
-
-    if settings.pinmode:
-        # Update wireframe structures
-        FBLoader.viewport().wireframer().init_geom_data(head.headobj)
-        FBLoader.viewport().wireframer().init_edge_indices(FBLoader.get_builder())
-        FBLoader.viewport().update_wireframe()
-
-    mesh_name = old_mesh.name
-    # Delete old mesh
-    bpy.data.meshes.remove(old_mesh, do_unlink=True)
-    mesh.name = mesh_name
+    logger.debug('update_mesh_geometry3')
+    update_mesh_now()
 
 
 class FBExifItem(PropertyGroup):
@@ -588,15 +539,15 @@ class FBHeadItem(PropertyGroup):
                     "in the frame",
         default=False)
 
+    blendshapes_actual: BoolProperty(
+        name="Blendshapes status",
+        description="When turned on then the blendshapes have actual state",
+        default=True)
+
     masks: BoolVectorProperty(name='Masks', description='Head parts visibility',
                               size=12, subtype='NONE',
                               default=(True,) * 12,
-                              update=update_mesh_geometry2)
-
-    masks_previous: BoolVectorProperty(name='Actual Masks',
-                                       description='Head parts visibility',
-                                       size=12, subtype='NONE',
-                                       default=(True,) * 12)
+                              update=update_mesh_geometry3)
 
     serial_str: StringProperty(name="Serialization string", default="")
     tmp_serial_str: StringProperty(name="Temporary Serialization", default="")
@@ -604,11 +555,7 @@ class FBHeadItem(PropertyGroup):
 
     tex_uv_shape: EnumProperty(name="UV", items=uv_items_callback,
                                description="UV Layout",
-                               update=update_mesh_geometry2)
-
-    tex_uv_shape_previous: EnumProperty(name="Actual UV",
-                                        items=uv_items_callback,
-                                        description="UV Layout")
+                               update=update_mesh_geometry3)
 
     use_exif: BoolProperty(
         name="Use EXIF if available in file",
@@ -662,24 +609,25 @@ class FBHeadItem(PropertyGroup):
         return self.tex_uv_shape != self.tex_uv_shape_previous
 
     def model_changed(self):
-        print('model_type_changed:', self.model_type_changed())
-        print('masks_changed:', self.masks_changed())
-        print('tex_uv_shape_changed:', self.tex_uv_shape_changed())
-        return self.masks_changed() or self.model_type_changed() \
-               or self.tex_uv_shape_changed()
+        # print('model_type_changed:', self.model_type_changed())
+        # print('masks_changed:', self.masks_changed())
+        # print('tex_uv_shape_changed:', self.tex_uv_shape_changed())
+        # return self.masks_changed() or self.model_type_changed() \
+        #        or self.tex_uv_shape_changed()
+        return self.model_type_changed()
 
     def discard_model_changes(self):
-        if self.masks_changed():
-            self.masks = self.masks_previous
+        # if self.masks_changed():
+        #     self.masks = self.masks_previous
         if self.model_type_changed():
             self.model_type = self.model_type_previous
-        if self.tex_uv_shape_changed():
-            self.tex_uv_shape = self.tex_uv_shape_previous
+        # if self.tex_uv_shape_changed():
+        #     self.tex_uv_shape = self.tex_uv_shape_previous
 
     def apply_model_changes(self):
-        self.masks_previous = self.masks
+        # self.masks_previous = self.masks
         self.model_type_previous = self.model_type
-        self.tex_uv_shape_previous = self.tex_uv_shape
+        # self.tex_uv_shape_previous = self.tex_uv_shape
 
     def has_no_blendshapes(self):
         return not self.headobj or not self.headobj.data or \
