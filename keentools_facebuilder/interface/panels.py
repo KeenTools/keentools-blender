@@ -39,14 +39,39 @@ def _show_all_panels():
     return _state_valid_to_show(state) and pkt.is_installed()
 
 
-class FB_PT_HeaderPanel(Panel):
-    bl_idname = Config.fb_header_panel_idname
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_label = "{} {}".format(
-            Config.addon_human_readable_name, Config.addon_version)
+def _show_all_panels_no_blendshapes():
+    state, headnum = what_is_state()
+    if not _state_valid_to_show(state) or not pkt.is_installed():
+        return False
+    settings = get_main_settings()
+    return settings.get_head(headnum).has_no_blendshapes()
+
+
+class Common:
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
     bl_category = Config.fb_tab_category
-    bl_context = "objectmode"
+    bl_context = 'objectmode'
+
+
+class CommonClosed(Common):
+    bl_options = {'DEFAULT_CLOSED'}
+
+
+class AllVisible(Common):
+    @classmethod
+    def poll(cls, context):
+        return _show_all_panels()
+
+
+class AllVisibleClosed(AllVisible):
+    bl_options = {'DEFAULT_CLOSED'}
+
+
+class FB_PT_HeaderPanel(Common, Panel):
+    bl_idname = Config.fb_header_panel_idname
+    bl_label = '{} {}'.format(
+            Config.addon_human_readable_name, Config.addon_version)
 
     def draw_header_preset(self, context):
         layout = self.layout
@@ -163,13 +188,9 @@ class FB_PT_HeaderPanel(Panel):
                 FBUpdater.init_updater()
 
 
-class FB_PT_UpdatePanel(Panel):
+class FB_PT_UpdatePanel(Common, Panel):
     bl_idname = Config.fb_update_panel_idname
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_label = "Update available"
-    bl_category = Config.fb_tab_category
-    bl_context = "objectmode"
+    bl_label = 'Update available'
 
     @classmethod
     def poll(cls, context):
@@ -196,18 +217,9 @@ class FB_PT_UpdatePanel(Panel):
         self._draw_response(layout)
 
 
-class FB_PT_CameraPanel(Panel):
+class FB_PT_CameraPanel(AllVisibleClosed, Panel):
     bl_idname = Config.fb_camera_panel_idname
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
     bl_label = Config.fb_camera_panel_label
-    bl_category = Config.fb_tab_category
-    bl_context = "objectmode"
-    bl_options = {'DEFAULT_CLOSED'}
-
-    @classmethod
-    def poll(cls, context):
-        return _show_all_panels()
 
     def draw_header_preset(self, context):
         state, headnum = what_is_state()
@@ -311,14 +323,9 @@ class FB_PT_CameraPanel(Panel):
             _draw_override_mode()
 
 
-class FB_PT_ExifPanel(Panel):
+class FB_PT_ExifPanel(CommonClosed, Panel):
     bl_idname = Config.fb_exif_panel_idname
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_label = "EXIF"
-    bl_category = Config.fb_tab_category
-    bl_context = "objectmode"
-    bl_options = {'DEFAULT_CLOSED'}
+    bl_label = 'EXIF'
 
     @classmethod
     def poll(cls, context):
@@ -364,17 +371,9 @@ class FB_PT_ExifPanel(Panel):
                 col.label(text=a)
 
 
-class FB_PT_ViewsPanel(Panel):
+class FB_PT_ViewsPanel(AllVisible, Panel):
     bl_idname = Config.fb_views_panel_idname
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
     bl_label = Config.fb_views_panel_label
-    bl_category = Config.fb_tab_category
-    bl_context = "objectmode"
-
-    @classmethod
-    def poll(cls, context):
-        return _show_all_panels()
 
     def draw_header_preset(self, context):
         layout = self.layout
@@ -446,6 +445,18 @@ class FB_PT_ViewsPanel(Panel):
     def _draw_camera_hint(self, layout, headnum):
         settings = get_main_settings()
         head = settings.get_head(headnum)
+        if not head.has_no_blendshapes():
+            col = layout.column()
+            col.alert = True
+            col.scale_y = Config.text_scale_y
+            col.label(text='Pinmode disabled', icon='INFO')
+            col.label(text='since head mesh has', icon='BLANK1')
+            col.label(text='blendshapes. You cannot', icon='BLANK1')
+            col.label(text='change mesh shape until', icon='BLANK1')
+            col.label(text='mesh uses blendshape', icon='BLANK1')
+            col.label(text='animation.', icon='BLANK1')
+            return
+
         if not head.has_pins() \
                 and head.get_last_camnum() >= 0 \
                 and not settings.pinmode:
@@ -489,18 +500,9 @@ class FB_PT_ViewsPanel(Panel):
             self._draw_pins_panel(headnum, settings.current_camnum)
 
 
-class FB_PT_Model(Panel):
+class FB_PT_Model(AllVisibleClosed, Panel):
     bl_idname = Config.fb_model_panel_idname
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_label = "Model"
-    bl_category = Config.fb_tab_category
-    bl_options = {'DEFAULT_CLOSED'}
-    bl_context = "objectmode"
-
-    @classmethod
-    def poll(cls, context):
-        return _show_all_panels()
+    bl_label = 'Model'
 
     def draw_header_preset(self, context):
         layout = self.layout
@@ -520,6 +522,17 @@ class FB_PT_Model(Panel):
             return
 
         head = settings.get_head(headnum)
+        if not head.has_no_blendshapes():
+            col = layout.column()
+            col.alert = True
+            col.scale_y = Config.text_scale_y
+            col.label(text='This panel disabled', icon='INFO')
+            col.label(text='since head mesh has', icon='BLANK1')
+            col.label(text='blendshapes. You cannot', icon='BLANK1')
+            col.label(text='change mesh shape until', icon='BLANK1')
+            col.label(text='mesh uses blendshape', icon='BLANK1')
+            col.label(text='animation.', icon='BLANK1')
+            return
 
         op = layout.operator(Config.fb_unmorph_idname, text='Reset')
         op.headnum = headnum
@@ -549,18 +562,9 @@ class FB_PT_Model(Panel):
             row.prop(head, 'masks', index=i, text=names[i])
 
 
-class FB_PT_TexturePanel(Panel):
+class FB_PT_TexturePanel(AllVisibleClosed, Panel):
     bl_idname = Config.fb_texture_panel_idname
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_label = "Texture"
-    bl_category = Config.fb_tab_category
-    bl_options = {'DEFAULT_CLOSED'}
-    bl_context = "objectmode"
-
-    @classmethod
-    def poll(cls, context):
-        return _show_all_panels()
+    bl_label = 'Texture'
 
     def draw_header_preset(self, context):
         layout = self.layout
@@ -634,17 +638,9 @@ class FB_PT_TexturePanel(Panel):
         box.prop(settings, 'tex_fill_gaps')
 
 
-class FB_PT_WireframeSettingsPanel(Panel):
+class FB_PT_WireframeSettingsPanel(AllVisible, Panel):
     bl_idname = Config.fb_colors_panel_idname
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_label = "Wireframe"
-    bl_category = Config.fb_tab_category
-    bl_context = "objectmode"
-
-    @classmethod
-    def poll(cls, context):
-        return _show_all_panels()
+    bl_label = 'Wireframe'
 
     def draw_header_preset(self, context):
         layout = self.layout
@@ -687,17 +683,9 @@ class FB_PT_WireframeSettingsPanel(Panel):
         layout.prop(settings, 'show_specials', text='Highlight head parts')
 
 
-class FB_PT_PinSettingsPanel(Panel):
+class FB_PT_PinSettingsPanel(AllVisible, Panel):
     bl_idname = Config.fb_pin_settings_panel_idname
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_label = "Pins"
-    bl_category = Config.fb_tab_category
-    bl_context = "objectmode"
-
-    @classmethod
-    def poll(cls, context):
-        return _show_all_panels()
+    bl_label = 'Pins'
 
     def draw_header_preset(self, context):
         layout = self.layout
@@ -716,17 +704,9 @@ class FB_PT_PinSettingsPanel(Panel):
         box.prop(settings, 'pin_sensitivity', slider=True)
 
 
-class FB_PT_BlendShapesPanel(Panel):
+class FB_PT_BlendShapesPanel(AllVisible, Panel):
     bl_idname = Config.fb_blendshapes_panel_idname
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
     bl_label = 'Blendshapes/FACS'
-    bl_category = Config.fb_tab_category
-    bl_context = 'objectmode'
-
-    @classmethod
-    def poll(cls, context):
-        return _show_all_panels()
 
     def draw_header_preset(self, context):
         layout = self.layout
@@ -745,6 +725,11 @@ class FB_PT_BlendShapesPanel(Panel):
             Config.fb_actor_idname,
             text='Generate FACS-Blendshapes')
         op.action = 'generate_facs_blendshapes'
+
+        op = box.operator(
+            Config.fb_actor_idname,
+            text='Generate Test animation')
+        op.action = 'generate_facs_test_animation'
 
         op = box.operator(
             Config.fb_actor_idname,

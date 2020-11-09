@@ -681,6 +681,10 @@ class FBHeadItem(PropertyGroup):
         self.model_type_previous = self.model_type
         self.tex_uv_shape_previous = self.tex_uv_shape
 
+    def has_no_blendshapes(self):
+        return not self.headobj or not self.headobj.data or \
+               not self.headobj.data.shape_keys
+
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
             return self.cameras[len(self.cameras) + camnum]

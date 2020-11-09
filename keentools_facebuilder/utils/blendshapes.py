@@ -275,6 +275,25 @@ def convert_blendshapes_animation_to_controls(obj):
     return True
 
 
+def create_facs_test_animation(obj):
+    if has_no_blendshapes(obj):
+        return False
+    all_dict = get_blendshapes_drivers(obj)
+    time = 1
+    dtime = 5
+    for name in all_dict:
+        item = all_dict[name]
+        if not item['slider'].animation_data:
+            item['slider'].animation_data_create()
+        if not item['slider'].animation_data.action:
+            item['slider'].animation_data.action = bpy.data.actions.new(name + 'Action')
+        control_action = item['slider'].animation_data.action
+        control_fcurve = get_safe_action_fcurve(control_action, 'location', index=0)
+        anim_data = [(time, 0.0), (time + dtime, 1.0), (time + 2 * dtime, 0)]
+        time += dtime * 3
+        put_anim_data_in_fcurve(control_fcurve, anim_data)
+    return True
+
 def remove_blendshape_drivers(obj):
     all_dict = get_blendshapes_drivers(obj)
     for name in all_dict:

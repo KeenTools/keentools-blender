@@ -40,7 +40,8 @@ from .utils.blendshapes import (create_facs_blendshapes,
                                 delete_with_children,
                                 select_control_panel_sliders,
                                 blendshapes_have_animation,
-                                convert_blendshapes_animation_to_controls)
+                                convert_blendshapes_animation_to_controls,
+                                create_facs_test_animation)
 
 
 class FB_OT_Actor(bpy.types.Operator):
@@ -147,6 +148,11 @@ class FB_OT_Actor(bpy.types.Operator):
                     {'INFO'}, '{} Sliders has been selected'.format(counter))
             else:
                 self.report({'ERROR'}, 'Control panel not found')
+
+        elif self.action == 'generate_facs_test_animation':
+            head = manipulate.get_current_head()
+            if head:
+                create_facs_test_animation(head.headobj)
 
         return {'FINISHED'}
 
