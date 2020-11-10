@@ -284,7 +284,7 @@ class FB_OT_AnimationFilebrowser(Operator, ImportHelper):
     bl_options = {'REGISTER', 'UNDO'}
 
     filter_glob: bpy.props.StringProperty(
-        default='*.csv;*.*',
+        default='*.csv',
         options={'HIDDEN'}
     )
 

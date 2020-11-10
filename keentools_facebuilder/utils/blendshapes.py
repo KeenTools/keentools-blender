@@ -60,9 +60,8 @@ def create_fake_blendshapes(obj, names):
 def create_facs_blendshapes(obj):
     fb = FBLoader.get_builder()
     geo = fb.applied_args_model()
-    pc = pkt.module().ProgressCallback()
     try:
-        fe = pkt.module().FacsExecutor(geo, pc)
+        fe = pkt.module().FacsExecutor(geo)
     except pkt.module().FacsLoadingException:
         logger = logging.getLogger(__name__)
         logger.error('CANNOT_LOAD_FACS: FacsLoadingException')
@@ -156,7 +155,29 @@ def make_control_panel(controls_dict):
 
 
 def load_csv_animation(obj, filepath):
-    pass
+    fan = pkt.module().FacsAnimation()
+    other = fan.load_from_csv_file(filepath)
+    fb = FBLoader.get_builder()
+    geo = fb.applied_args_model()
+    fe = pkt.module().FacsExecutor(geo)
+    blendshapes_action = get_safe_blendshapes_action(obj)
+
+    scene = bpy.context.scene
+    fps = scene.render.fps
+    start = scene.frame_current
+    if not fan.timecodes_enabled():
+        fps = 1
+    keyframes = [start + x * fps for x in fan.keyframes()]
+    for name in fe.facs_names:
+        blendshape_fcurve = get_safe_action_fcurve(
+            blendshapes_action, 'key_blocks["{}"].value'.format(name), index=0)
+        animation = fan.at_name(name)
+        anim_data = [x for x in zip(keyframes, animation)]
+        put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
+    obj.data.update()
+    if len(keyframes) > 0:
+        if scene.frame_end < keyframes[-1]:
+            scene.frame_end = keyframes[-1]
 
 
 def get_blendshapes_drivers(obj):
@@ -173,15 +194,15 @@ def get_blendshapes_drivers(obj):
 def get_safe_blendshapes_action(obj):
     if _has_no_blendshapes(obj):
         return None
-    anim_data = obj.data.shape_keys.animation_data
-    if not anim_data:
-        anim_data = obj.data.shape_keys.animation_data_create()
-        if not anim_data:
+    animation_data = obj.data.shape_keys.animation_data
+    if not animation_data:
+        animation_data = obj.data.shape_keys.animation_data_create()
+        if not animation_data:
             return None
-    if not anim_data.action:
-        anim_data.action = \
+    if not animation_data.action:
+        animation_data.action = \
             bpy.data.actions.new(Config.default_blendshapes_action_name)
-    return anim_data.action
+    return animation_data.action
 
 
 def get_action_fcurve(action, data_path, index=0):
