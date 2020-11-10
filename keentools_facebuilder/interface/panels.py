@@ -24,7 +24,7 @@ from ..config import Config, get_main_settings
 from ..messages import draw_labels
 import re
 from ..fbloader import FBLoader
-from ..utils.manipulate import what_is_state
+from ..utils.manipulate import what_is_state, get_current_head
 from ..utils.materials import find_bpy_image_by_name
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
@@ -215,6 +215,26 @@ class FB_PT_UpdatePanel(Common, Panel):
     def draw(self, context):
         layout = self.layout
         self._draw_response(layout)
+
+
+class FB_PT_InfoPanel(AllVisible, Panel):
+    bl_idname = Config.fb_info_panel_idname
+    bl_label = 'Info'
+
+    def draw(self, context):
+        layout = self.layout
+        head = get_current_head()
+        if not head:
+            return
+        if head.has_no_blendshapes():
+            layout.label(text='No blendshapes detected')
+            return
+        if head.blenshapes_are_relevant():
+            layout.label(text='Actual blendshapes')
+        else:
+            col = layout.column()
+            col.alert = True
+            col.label(text='Blendshapes need to be updated')
 
 
 class FB_PT_CameraPanel(AllVisibleClosed, Panel):
@@ -445,17 +465,6 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
     def _draw_camera_hint(self, layout, headnum):
         settings = get_main_settings()
         head = settings.get_head(headnum)
-        # if not head.has_no_blendshapes():
-        #     col = layout.column()
-        #     col.alert = True
-        #     col.scale_y = Config.text_scale_y
-        #     col.label(text='Pinmode disabled', icon='INFO')
-        #     col.label(text='since head mesh has', icon='BLANK1')
-        #     col.label(text='blendshapes. You cannot', icon='BLANK1')
-        #     col.label(text='change mesh shape until', icon='BLANK1')
-        #     col.label(text='mesh uses blendshape', icon='BLANK1')
-        #     col.label(text='animation.', icon='BLANK1')
-        #     return
 
         if not head.has_pins() \
                 and head.get_last_camnum() >= 0 \

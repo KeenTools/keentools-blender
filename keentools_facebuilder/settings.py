@@ -86,6 +86,9 @@ def update_model_scale(self, context):
     fb = FBLoader.get_builder()
     fb.set_scale(head.model_scale)
 
+    if not head.has_no_blendshapes():
+        head.set_blendshapes_status(False)
+
     coords.update_head_mesh(settings, fb, head)
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
@@ -576,6 +579,12 @@ class FBHeadItem(PropertyGroup):
     model_type_previous: EnumProperty(name='Current Topology',
                                       items=model_type_callback,
                                       description='Invisible Model selector')
+
+    def blenshapes_are_relevant(self):
+        return self.blendshapes_actual
+
+    def set_blendshapes_status(self, status):
+        self.blendshapes_actual = status
 
     def model_type_changed(self):
         return self.model_type != self.model_type_previous
