@@ -39,7 +39,7 @@ from .config import Config, get_main_settings, get_operators
 from .fbloader import FBLoader
 from .utils import coords
 from .utils.manipulate import get_current_headnum
-from .callbacks import update_mesh_now
+from .callbacks import update_mesh_with_dialog, update_mesh_simple
 
 
 def update_emotions(self, context):
@@ -147,28 +147,6 @@ def update_blue_head_button(self, context):
         op = getattr(get_operators(), Config.fb_select_head_callname)
         op('EXEC_DEFAULT')
         settings.blue_head_button = True
-
-
-def update_mesh_geometry2(self, context):
-    logger = logging.getLogger(__name__)
-    logger.debug('update_mesh_geometry2')
-
-    headnum = get_current_headnum()
-    if headnum < 0:
-        return
-
-    logger.debug('model_changed: {}'.format(self.model_changed()))
-    if not self.model_changed():
-        return
-
-    warn = getattr(get_operators(), Config.fb_blendshapes_warning_callname)
-    warn('INVOKE_DEFAULT')
-
-
-def update_mesh_geometry3(self, context):
-    logger = logging.getLogger(__name__)
-    logger.debug('update_mesh_geometry3')
-    update_mesh_now()
 
 
 class FBExifItem(PropertyGroup):
@@ -547,7 +525,7 @@ class FBHeadItem(PropertyGroup):
     masks: BoolVectorProperty(name='Masks', description='Head parts visibility',
                               size=12, subtype='NONE',
                               default=(True,) * 12,
-                              update=update_mesh_geometry3)
+                              update=update_mesh_simple)
 
     serial_str: StringProperty(name="Serialization string", default="")
     tmp_serial_str: StringProperty(name="Temporary Serialization", default="")
@@ -555,7 +533,7 @@ class FBHeadItem(PropertyGroup):
 
     tex_uv_shape: EnumProperty(name="UV", items=uv_items_callback,
                                description="UV Layout",
-                               update=update_mesh_geometry3)
+                               update=update_mesh_simple)
 
     use_exif: BoolProperty(
         name="Use EXIF if available in file",
@@ -593,41 +571,24 @@ class FBHeadItem(PropertyGroup):
 
     model_type: EnumProperty(name='Topology', items=model_type_callback,
                              description='Model selector',
-                             update=update_mesh_geometry2)
+                             update=update_mesh_with_dialog)
 
-    model_type_previous: EnumProperty(name='Actual Topology',
-                                    items=model_type_callback,
-                                    description='Model selector')
-
-    def masks_changed(self):
-        return [*self.masks] != [*self.masks_previous]
+    model_type_previous: EnumProperty(name='Current Topology',
+                                      items=model_type_callback,
+                                      description='Invisible Model selector')
 
     def model_type_changed(self):
         return self.model_type != self.model_type_previous
 
-    def tex_uv_shape_changed(self):
-        return self.tex_uv_shape != self.tex_uv_shape_previous
-
     def model_changed(self):
-        # print('model_type_changed:', self.model_type_changed())
-        # print('masks_changed:', self.masks_changed())
-        # print('tex_uv_shape_changed:', self.tex_uv_shape_changed())
-        # return self.masks_changed() or self.model_type_changed() \
-        #        or self.tex_uv_shape_changed()
         return self.model_type_changed()
 
     def discard_model_changes(self):
-        # if self.masks_changed():
-        #     self.masks = self.masks_previous
         if self.model_type_changed():
             self.model_type = self.model_type_previous
-        # if self.tex_uv_shape_changed():
-        #     self.tex_uv_shape = self.tex_uv_shape_previous
 
     def apply_model_changes(self):
-        # self.masks_previous = self.masks
         self.model_type_previous = self.model_type
-        # self.tex_uv_shape_previous = self.tex_uv_shape
 
     def has_no_blendshapes(self):
         return not self.headobj or not self.headobj.data or \

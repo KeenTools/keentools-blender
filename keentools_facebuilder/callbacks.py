@@ -19,12 +19,12 @@ import logging
 import numpy as np
 import bpy
 
-from .config import get_main_settings
+from .config import get_main_settings, get_operators, Config
 from .fbloader import FBLoader
 from .utils.manipulate import get_current_headnum
 
 
-def update_mesh_geometry(accepted):
+def update_mesh_if_accepted(accepted):
     logger = logging.getLogger(__name__)
     logger.debug('callbacks.update_mesh_geometry')
     headnum = get_current_headnum()
@@ -43,6 +43,30 @@ def update_mesh_geometry(accepted):
         return
 
     head.apply_model_changes()
+    update_mesh_now()
+
+
+def update_mesh_with_dialog(self, context):
+    logger = logging.getLogger(__name__)
+    logger.debug('update_mesh_geometry2')
+
+    headnum = get_current_headnum()
+    if headnum < 0:
+        return
+
+    logger.debug('model_changed: {}'.format(self.model_changed()))
+    if not self.model_changed():
+        return
+
+    if self.has_no_blendshapes():
+        update_mesh_now()
+        self.apply_model_changes()
+    else:
+        warn = getattr(get_operators(), Config.fb_blendshapes_warning_callname)
+        warn('INVOKE_DEFAULT')
+
+
+def update_mesh_simple(self, context):
     update_mesh_now()
 
 
@@ -92,6 +116,7 @@ def update_mesh_now():
     head.headobj.data = mesh
     FBLoader.save_only(headnum)
 
+    # Copy blendshapes and animation
     if old_mesh.shape_keys:
         for kb in old_mesh.shape_keys.key_blocks:
             shape = head.headobj.shape_key_add(name=kb.name)

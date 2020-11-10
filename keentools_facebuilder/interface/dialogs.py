@@ -23,7 +23,7 @@ import bpy
 from bpy.types import Panel, Operator
 
 from ..config import Config, get_main_settings, get_operators, ErrorType
-from ..callbacks import update_mesh_geometry
+from ..callbacks import update_mesh_if_accepted
 
 
 class FB_OT_AddonWarning(Operator):
@@ -117,18 +117,11 @@ class FB_OT_AddonWarning(Operator):
 
 class FB_OT_BlendshapesWarning(Operator):
     bl_idname = Config.fb_blendshapes_warning_idname
-    bl_label = ""
+    bl_label = ''
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    msg: bpy.props.IntProperty(default=ErrorType.Unknown)
-    msg_content: bpy.props.StringProperty(default="Some mesh warning")
     accept: bpy.props.BoolProperty(name='Yes, delete blendshapes', default=False)
-
     content = []
-
-    def set_content(self, txt_list):
-        self.content = txt_list
-        self.content.append(" ")  # Additional line at end
 
     def draw(self, context):
         layout = self.layout.column()
@@ -143,15 +136,15 @@ class FB_OT_BlendshapesWarning(Operator):
             row.label(text=t)
 
     def execute(self, context):
-        update_mesh_geometry(self.accept)
+        update_mesh_if_accepted(self.accept)
         return {'FINISHED'}
 
     def cancel(self, context):
-        update_mesh_geometry(accepted=False)
+        update_mesh_if_accepted(accepted=False)
 
     def invoke(self, context, event):
-        self.msg_content = 'Warning! Your mesh contains blendshapes so if you change topology you will lost it'
-        self.set_content(re.split("\r\n|\n", self.msg_content))
+        self.content = ['Warning! Your mesh contains blendshapes ',
+                       'so if you change topology you will lost it']
         return context.window_manager.invoke_props_dialog(self, width=400)
 
 
