@@ -23,7 +23,7 @@ import os
 import bpy
 
 from .utils import manipulate, coords, cameras
-from .config import Config, get_main_settings, get_operators, ErrorType
+from .config import Config, get_main_settings, get_operator, ErrorType
 from .fbloader import FBLoader
 from .utils.other import FBStopShaderTimer, force_ui_redraw, hide_ui_elements
 
@@ -66,7 +66,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         if heads_deleted > 0 or cams_deleted > 0:
             logger.warning("HEADS AND CAMERAS FIXED")
         if heads_deleted == 0:
-            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
 
     def _init_wireframer_colors(self, opacity):
@@ -159,7 +159,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         if coords.is_safe_region(context, mouse_x, mouse_y):
             settings = get_main_settings()
             # Movepin operator Call
-            op = getattr(get_operators(), Config.fb_movepin_callname)
+            op = get_operator(Config.fb_movepin_idname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
                headnum=settings.current_headnum,
                camnum=settings.current_camnum)
@@ -192,7 +192,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             fb = FBLoader.get_builder()
             logger.error('MESH IS CORRUPTED {} != {}'.format(
                 len(headobj.data.vertices), len(fb.applied_args_vertices())))
-            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
             return {'CANCELLED'}
 
@@ -316,7 +316,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             settings.force_out_pinmode = False
             if settings.license_error:
                 # Show License Warning
-                warn = getattr(get_operators(), Config.fb_warning_callname)
+                warn = get_operator(Config.fb_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
                 settings.license_error = False
             return True

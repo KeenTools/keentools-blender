@@ -24,7 +24,7 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bpy.types import Operator
 
 from ..fbloader import FBLoader
-from ..config import Config, get_main_settings, get_operators
+from ..config import Config, get_main_settings, get_operator
 
 from ..utils.exif_reader import (read_exif_to_camera,
                                  update_image_groups,
@@ -47,7 +47,7 @@ class FB_OT_SingleFilebrowserExec(Operator):
         settings = get_main_settings()
         restore_ui_elements()
 
-        op = getattr(get_operators(), Config.fb_single_filebrowser_callname)
+        op = get_operator(Config.fb_single_filebrowser_idname)
         op('INVOKE_DEFAULT', headnum=settings.tmp_headnum,
            camnum=settings.tmp_camnum)
 
@@ -201,7 +201,7 @@ class FB_OT_MultipleFilebrowserExec(Operator):
     def execute(self, context):
         restore_ui_elements()
 
-        op = getattr(get_operators(), Config.fb_multiple_filebrowser_callname)
+        op = get_operator(Config.fb_multiple_filebrowser_idname)
         op('INVOKE_DEFAULT', headnum=self.headnum)
 
         return {'FINISHED'}

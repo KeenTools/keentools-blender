@@ -22,7 +22,7 @@ from collections import Counter
 import bpy
 
 from ..fbloader import FBLoader
-from ..config import Config, get_main_settings, get_operators, ErrorType
+from ..config import Config, get_main_settings, get_operator, ErrorType
 from . import cameras, attrs, coords
 from .exif_reader import (read_exif_to_camera, auto_setup_camera_from_exif,
                           update_image_groups)
@@ -126,7 +126,7 @@ def check_settings():
     if not settings.check_heads_and_cams():
         heads_deleted, cams_deleted = settings.fix_heads()
         if heads_deleted == 0:
-            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
         return False
     return True
@@ -324,6 +324,6 @@ def reconstruct_by_head():
         scene.render.resolution_x = rx
         scene.render.resolution_y = ry
         logger.debug("SCENE PARAMETERS RESTORED")
-        warn = getattr(get_operators(), Config.fb_warning_callname)
+        warn = get_operator(Config.fb_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CannotReconstruct)
         return
