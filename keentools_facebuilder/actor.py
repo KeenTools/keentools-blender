@@ -110,10 +110,15 @@ class FB_OT_Actor(bpy.types.Operator):
 
         elif self.action == 'load_csv_animation':
             headnum = manipulate.get_current_headnum()
-            if headnum >= 0:
-                op = getattr(get_operators(),
-                             Config.fb_animation_filebrowser_callname)
-                op('INVOKE_DEFAULT', headnum=headnum)
+            settings = get_main_settings()
+            if headnum>=0:
+                head = settings.get_head(headnum)
+                if head.has_no_blendshapes():
+                    self.report({'ERROR'}, 'No blendshapes on object')
+                else:
+                    op = getattr(get_operators(),
+                                 Config.fb_animation_filebrowser_callname)
+                    op('INVOKE_DEFAULT', headnum=headnum)
 
         elif self.action == 'convert_controls_to_blendshapes':
             head = manipulate.get_current_head()

@@ -234,6 +234,7 @@ def put_anim_data_in_fcurve(fcurve, anim_data):
     fcurve.keyframe_points.add(len(anim_data))
     for i, point in enumerate(anim_data):
         fcurve.keyframe_points[start_index + i].co = point
+    fcurve.update()
 
 
 def convert_controls_animation_to_blendshapes(obj):
