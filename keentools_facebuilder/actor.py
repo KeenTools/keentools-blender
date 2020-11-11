@@ -41,7 +41,7 @@ from .utils.blendshapes import (create_facs_blendshapes,
                                 select_control_panel_sliders,
                                 blendshapes_have_animation,
                                 convert_blendshapes_animation_to_controls,
-                                create_facs_test_animation)
+                                create_facs_test_animation_on_blendshapes)
 
 
 class FB_OT_Actor(bpy.types.Operator):
@@ -161,7 +161,13 @@ class FB_OT_Actor(bpy.types.Operator):
         elif self.action == 'generate_facs_test_animation':
             head = manipulate.get_current_head()
             if head:
-                create_facs_test_animation(head.headobj)
+                counter = create_facs_test_animation_on_blendshapes(head.headobj)
+                if counter > 0:
+                    self.report({'INFO'}, 'Test animation created '
+                                          'at {} blendshapes'.format(counter))
+                else:
+                    self.report({'ERROR'}, 'Some error occured while '
+                                           'creating the test animation')
 
         return {'FINISHED'}
 

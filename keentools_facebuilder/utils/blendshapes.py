@@ -44,6 +44,12 @@ def _move_vertices(shape, vec):
     shape.data.foreach_set('co', verts.ravel())
 
 
+def _extend_scene_timeline(keyframe_num):
+    scene = bpy.context.scene
+    if scene.frame_end < keyframe_num:
+        scene.frame_end = keyframe_num
+
+
 def create_fake_blendshapes(obj, names):
     _create_basis_blendshape(obj)
     counter = 0
@@ -176,8 +182,7 @@ def load_csv_animation(obj, filepath):
         put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
     obj.data.update()
     if len(keyframes) > 0:
-        if scene.frame_end < keyframes[-1]:
-            scene.frame_end = keyframes[-1]
+        _extend_scene_timeline(keyframes[-1])
 
 
 def get_blendshapes_drivers(obj):
@@ -282,7 +287,28 @@ def convert_blendshapes_animation_to_controls(obj):
     return True
 
 
-def create_facs_test_animation(obj):
+def create_facs_test_animation_on_blendshapes(obj):
+    if _has_no_blendshapes(obj):
+        return -1
+    counter = 0
+    blendshapes_action = get_safe_blendshapes_action(obj)
+    time = 1
+    dtime = 5
+    for kb in obj.data.shape_keys.key_blocks[1:]:
+        blendshape_fcurve = get_safe_action_fcurve(
+            blendshapes_action,
+            'key_blocks["{}"].value'.format(kb.name),
+            index=0)
+        anim_data = [(time, 0.0), (time + dtime, 1.0), (time + 2 * dtime, 0)]
+        time += dtime * 3
+        put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
+        counter += 1
+    obj.data.update()
+    _extend_scene_timeline(time)
+    return counter
+
+
+def create_facs_test_animation_on_sliders(obj):
     if _has_no_blendshapes(obj):
         return False
     all_dict = get_blendshapes_drivers(obj)
