@@ -19,7 +19,7 @@ import logging
 import numpy as np
 import bpy
 
-from .config import get_main_settings, get_operators, Config
+from .config import get_main_settings, get_operator, Config
 from .fbloader import FBLoader
 from .utils.manipulate import get_current_headnum
 
@@ -62,7 +62,7 @@ def update_mesh_with_dialog(self, context):
         update_mesh_now()
         self.apply_model_changes()
     else:
-        warn = getattr(get_operators(), Config.fb_blendshapes_warning_callname)
+        warn = get_operator(Config.fb_blendshapes_warning_idname)
         warn('INVOKE_DEFAULT')
 
 

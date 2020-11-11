@@ -116,8 +116,7 @@ class FB_OT_Actor(bpy.types.Operator):
                 if head.has_no_blendshapes():
                     self.report({'ERROR'}, 'No blendshapes on object')
                 else:
-                    op = getattr(get_operators(),
-                                 Config.fb_animation_filebrowser_callname)
+                    op = get_operator(Config.fb_animation_filebrowser_idname)
                     op('INVOKE_DEFAULT', headnum=headnum)
 
         elif self.action == 'convert_controls_to_blendshapes':
