@@ -19,7 +19,7 @@
 import bpy
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader \
     as pkt
-from keentools_facebuilder.config import Config
+from keentools_facebuilder.config import Config, get_operators, ErrorType
 from .formatting import replace_newlines_with_spaces
 from keentools_facebuilder.preferences.progress import InstallationProgress
 
@@ -59,6 +59,36 @@ class PREF_OT_InstallPkt(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class PREF_OT_InstalFromFilePktWithWarning(bpy.types.Operator):
+    bl_idname = _ID_NAME_PREFIX + '_install_pkt_from_file_with_warning'
+    bl_label = "Please confirm installation"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    filepath: bpy.props.StringProperty()
+    filename: bpy.props.StringProperty()
+    warning: bpy.props.StringProperty()
+    confirm_install: bpy.props.BoolProperty(
+        name='Install anyway', default=False)
+
+    content = []
+
+    def draw(self, context):
+        layout = self.layout.column()
+        layout.label(text='You are trying to install "%s"' % self.filename)
+        layout.label(text=self.warning)
+        layout.prop(self, 'confirm_install')
+
+    def execute(self, context):
+        if not self.confirm_install:
+            return {'CANCELLED'}
+
+        InstallationProgress.start_zip_install(self.filepath)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+
 class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_install_pkt_from_file'
     bl_label = 'Install from file'
@@ -74,7 +104,7 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
     # can only have exactly that name
     filepath: bpy.props.StringProperty(
             name='',
-            description='absolute path to pykeentools zip file',
+            description='absolute path to keentools core zip file',
             default='',
             subtype='FILE_PATH'
     )
@@ -86,10 +116,11 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
         content = ["You can download",
                    "Core library from ",
                    "our site: keentools.io/downloads"]
+        import time
         col = layout.column()
         col.scale_y = Config.text_scale_y
         for c in content:
-            col.label(text=c)
+            col.label(text=str(self.filepath))
 
         op = layout.operator(
             PREF_OT_OpenURL.bl_idname,
@@ -105,6 +136,36 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
             return {'FINISHED'}
 
     def execute(self, context):
+        filename_info = pkt.core_filename_info(self.filepath)
+        warning = None
+
+        if not filename_info.is_zip:
+            warning = 'It is not a zip file'
+        elif not filename_info.is_keentools_core:
+            warning = 'It doesn\'t look like the core library installation file'
+        elif filename_info.version != pkt.MINIMUM_VERSION_REQUIRED:
+            def _version_to_string(version):
+                return str(version[0]) + '.' + str(version[1]) + '.' +str(version[2])
+            warning = 'Core library version %s doesn\'t match the addon version %s' %\
+                      (_version_to_string(filename_info.version),
+                       _version_to_string(pkt.MINIMUM_VERSION_REQUIRED))
+        elif filename_info.os != pkt.os_name():
+            warning = 'Your OS is %s, you\'re trying to install the core library for %s' %\
+                      (pkt.os_name(), filename_info.os)
+        elif filename_info.is_nightly:
+            warning = 'Are you sure you\'d like to install a nightly build?'
+
+        if warning is not None:
+            def _rgetattr(obj, attr, *args):
+                import functools
+                def _getattr(obj, attr):
+                    return getattr(obj, attr, *args)
+                return functools.reduce(_getattr, [obj] + attr.split('.'))
+            install_with_warning = _rgetattr(bpy.ops, PREF_OT_InstalFromFilePktWithWarning.bl_idname)
+            install_with_warning('INVOKE_DEFAULT',
+                filepath=self.filepath, filename=filename_info.filename, warning=warning)
+            return {'FINISHED'}
+
         InstallationProgress.start_zip_install(self.filepath)
         return {'FINISHED'}
 
