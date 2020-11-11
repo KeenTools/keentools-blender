@@ -25,7 +25,7 @@ from bpy.props import (
 )
 from bpy.types import Operator
 
-from .config import get_main_settings, get_operators, Config
+from .config import get_main_settings, get_operator, Config
 from .fbloader import FBLoader
 from .utils import cameras, manipulate, materials, coords
 from .utils.attrs import get_obj_collection, safe_delete_collection
@@ -126,7 +126,7 @@ class FB_OT_SelectCamera(Operator):
         update_exif_sizes_message(self.headnum, camera.cam_image)
 
         # Auto Call PinMode
-        draw_op = getattr(get_operators(), Config.fb_pinmode_callname)
+        draw_op = get_operator(Config.fb_pinmode_idname)
         if not bpy.app.background:
             draw_op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
 
@@ -544,7 +544,7 @@ class FB_OT_DeleteTexture(Operator):
     def execute(self, context):
         materials.remove_bpy_image_by_name(Config.tex_builder_filename)
         materials.remove_mat_by_name(Config.tex_builder_matname)
-        op = getattr(get_operators(), Config.fb_show_solid_callname)
+        op = get_operator(Config.fb_show_solid_idname)
         op('EXEC_DEFAULT')
         return {'FINISHED'}
 
