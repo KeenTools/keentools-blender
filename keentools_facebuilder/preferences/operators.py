@@ -86,7 +86,7 @@ class PREF_OT_InstalFromFilePktWithWarning(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=400)
+        return context.window_manager.invoke_props_dialog(self, width=600)
 
 
 class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
@@ -140,20 +140,21 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
         warning = None
 
         if not filename_info.is_zip:
-            warning = 'It is not a zip file'
+            warning = 'We distribute our Core Library as a ZIP-file. ' +\
+                      'The selected file appears to be of a different type'
         elif not filename_info.is_keentools_core:
-            warning = 'It doesn\'t look like the core library installation file'
+            warning = 'The selected file name appears to be different from Core library file name'
         elif filename_info.version != pkt.MINIMUM_VERSION_REQUIRED:
             def _version_to_string(version):
                 return str(version[0]) + '.' + str(version[1]) + '.' +str(version[2])
-            warning = 'Core library version %s doesn\'t match the addon version %s' %\
+            warning = 'Core library version %s doesn\'t match the add-on version %s' %\
                       (_version_to_string(filename_info.version),
                        _version_to_string(pkt.MINIMUM_VERSION_REQUIRED))
         elif filename_info.os != pkt.os_name():
             warning = 'Your OS is %s, you\'re trying to install the core library for %s' %\
                       (pkt.os_name(), filename_info.os)
         elif filename_info.is_nightly:
-            warning = 'Are you sure you\'d like to install a nightly build?'
+            warning = 'You\'re installing an unstable nightly build, is this what you really want?'
 
         if warning is not None:
             install_with_warning = get_operator(PREF_OT_InstalFromFilePktWithWarning.bl_idname)

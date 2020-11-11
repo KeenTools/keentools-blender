@@ -32,7 +32,7 @@ def _parse_installation_filename(filename):
 
 def core_filename_info(filepath):
     _, filename = os.path.split(filepath)
-    is_zip = filename.endswith('.zip')
+    is_zip = filename.lower().endswith('.zip')
     parse_result = _parse_installation_filename(filename)
     if parse_result is None:
         return CoreFilenameInfo(filename, is_zip, False, None, None, None, None)
