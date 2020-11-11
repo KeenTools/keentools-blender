@@ -28,7 +28,7 @@ from bpy.props import (
 )
 
 from .utils import manipulate
-from .config import Config, get_main_settings, get_operators, ErrorType
+from .config import Config, get_main_settings, get_operator, ErrorType
 from .utils.exif_reader import (update_image_groups,
                                 auto_setup_camera_from_exif,
                                 is_size_compatible_with_group)
@@ -219,7 +219,7 @@ class FB_OT_CameraActor(bpy.types.Operator):
                     "because they have different " \
                     "dimensions.".format(camera.get_image_name(), self.num)
 
-                warn = getattr(get_operators(), Config.fb_warning_callname)
+                warn = get_operator(Config.fb_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
                      msg_content=error_message)
 

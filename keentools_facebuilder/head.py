@@ -21,7 +21,7 @@ import bpy
 
 from . utils import attrs
 from . fbloader import FBLoader
-from . config import Config, get_main_settings, get_operators, ErrorType
+from . config import Config, get_main_settings, get_operator, ErrorType
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 class MESH_OT_FBAddHead(bpy.types.Operator):
@@ -38,22 +38,22 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
             obj = self.new_head()
         except ModuleNotFoundError:
             logger.debug('ADD_HEAD_ERROR: ModuleNotFoundError')
-            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
         except pkt.module().ModelLoadingException:
             logger.debug('ADD_HEAD_ERROR: ModelLoadingException')
-            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktModelProblem)
             return {'CANCELLED'}
         except TypeError:
             logger.debug('ADD_HEAD_ERROR: TypeError')
-            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.CannotCreateObject)
             return {'CANCELLED'}
         except Exception:
             logger.debug('ADD_HEAD_ERROR: Exception')
-            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
 

@@ -30,6 +30,7 @@ CLASSES_TO_REGISTER = (
     PREF_OT_CopyHardwareId,
     PREF_OT_InstallPkt,
     PREF_OT_OpenPktLicensePage,
+    PREF_OT_InstalFromFilePktWithWarning,
     PREF_OT_InstallFromFilePkt,
     PREF_OT_OpenManualInstallPage,
     PREF_OT_ShowURL,

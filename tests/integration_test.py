@@ -17,7 +17,7 @@ import test_utils
 
 from keentools_facebuilder.utils import coords, materials
 from keentools_facebuilder.config import Config, get_main_settings, \
-    get_operators
+    get_operator
 
 
 class FaceBuilderTest(unittest.TestCase):
@@ -83,7 +83,7 @@ class FaceBuilderTest(unittest.TestCase):
     def test_wireframe_coloring(self):
         test_utils.new_scene()
         self._head_and_cameras()
-        op = getattr(get_operators(), Config.fb_wireframe_color_callname)
+        op = get_operator(Config.fb_wireframe_color_idname)
         op('EXEC_DEFAULT', action='wireframe_green')
 
     def test_duplicate_and_reconstruct(self):
@@ -99,7 +99,7 @@ class FaceBuilderTest(unittest.TestCase):
         bpy.ops.object.duplicate_move(
             OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
             TRANSFORM_OT_translate={"value": (-4.0, 0, 0)})
-        op = getattr(get_operators(), Config.fb_actor_callname)
+        op = get_operator(Config.fb_actor_idname)
         test_utils.save_scene(filepath="c:\\Sure\\temp\\before.blend")
         op('EXEC_DEFAULT', action='reconstruct_by_head', headnum=-1, camnum=-1)
         headnum2 = settings.get_last_headnum()

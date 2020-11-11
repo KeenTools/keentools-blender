@@ -22,7 +22,7 @@ import re
 import bpy
 from bpy.types import Panel, Operator
 
-from ..config import Config, get_main_settings, get_operators, ErrorType
+from ..config import Config, get_main_settings, get_operator, ErrorType
 from ..callbacks import update_mesh_if_accepted
 
 
@@ -56,7 +56,7 @@ class FB_OT_AddonWarning(Operator):
         if self.msg not in (ErrorType.PktProblem, ErrorType.NoLicense):
             return {"FINISHED"}
 
-        op = getattr(get_operators(), Config.fb_addon_settings_callname)
+        op = get_operator(Config.fb_addon_settings_idname)
         op('EXEC_DEFAULT')
         return {"FINISHED"}
 
@@ -221,7 +221,7 @@ class FB_OT_TexSelector(Operator):
             return {'CANCELLED'}
 
         if head.has_cameras():
-            op = getattr(get_operators(), Config.fb_bake_tex_callname)
+            op = get_operator(Config.fb_bake_tex_idname)
             res = op('INVOKE_DEFAULT', headnum=self.headnum)
 
             if res == {'CANCELLED'}:

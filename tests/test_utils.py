@@ -1,7 +1,7 @@
 import bpy
 import keentools_facebuilder
 from keentools_facebuilder.config import Config, get_main_settings, \
-    get_operators
+    get_operator
 import keentools_facebuilder.utils.coords as coords
 from keentools_facebuilder.fbloader import FBLoader
 
@@ -28,7 +28,7 @@ def update_pins(headnum, camnum):
 # Operators call
 def create_head():
     # Create Head
-    op = getattr(get_operators(), Config.fb_add_head_operator_callname)
+    op = get_operator(Config.fb_add_head_operator_idname)
     op('EXEC_DEFAULT')
 
 
@@ -42,14 +42,14 @@ def create_camera_from_image(headnum, camnum, filename):
 
 
 def delete_camera(headnum, camnum):
-    op = getattr(get_operators(), Config.fb_delete_camera_callname)
+    op = get_operator(Config.fb_delete_camera_idname)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
 
 
 def move_pin(start_x, start_y, end_x, end_y, arect, brect,
              headnum=0, camnum=0):
     # Registered Operator call
-    op = getattr(get_operators(), Config.fb_movepin_callname)
+    op = get_operator(Config.fb_movepin_idname)
     # Move pin
     x, y = coords.region_to_image_space(start_x, start_y, *arect)
     px, py = coords.image_space_to_region(x, y, *brect)
@@ -67,7 +67,7 @@ def move_pin(start_x, start_y, end_x, end_y, arect, brect,
 
 
 def select_camera(headnum=0, camnum=0):
-    op = getattr(get_operators(), Config.fb_select_camera_callname)
+    op = get_operator(Config.fb_select_camera_idname)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
 
 
@@ -76,7 +76,7 @@ def deselect_all():
 
 
 def wireframe_coloring(action='wireframe_green'):
-    op = getattr(get_operators(), Config.fb_wireframe_color_callname)
+    op = get_operator(Config.fb_wireframe_color_idname)
     op('EXEC_DEFAULT', action=action)
 
 

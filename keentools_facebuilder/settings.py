@@ -35,7 +35,7 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 
-from .config import Config, get_main_settings, get_operators
+from .config import Config, get_main_settings, get_operator
 from .fbloader import FBLoader
 from .utils import coords
 from .utils.manipulate import get_current_headnum
@@ -139,7 +139,7 @@ def update_camera_focal(self, context):
 def update_blue_camera_button(self, context):
     settings = get_main_settings()
     if not settings.blue_camera_button:
-        op = getattr(get_operators(), Config.fb_exit_pinmode_callname)
+        op = get_operator(Config.fb_exit_pinmode_idname)
         op('EXEC_DEFAULT')
         settings.blue_camera_button = True
 
@@ -147,7 +147,7 @@ def update_blue_camera_button(self, context):
 def update_blue_head_button(self, context):
     settings = get_main_settings()
     if not settings.blue_head_button:
-        op = getattr(get_operators(), Config.fb_select_head_callname)
+        op = get_operator(Config.fb_select_head_idname)
         op('EXEC_DEFAULT')
         settings.blue_head_button = True
 
