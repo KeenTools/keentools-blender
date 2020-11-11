@@ -19,7 +19,7 @@
 import bpy
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader \
     as pkt
-from keentools_facebuilder.config import Config, get_operators, ErrorType
+from keentools_facebuilder.config import Config, get_operator
 from .formatting import replace_newlines_with_spaces
 from keentools_facebuilder.preferences.progress import InstallationProgress
 
@@ -156,12 +156,7 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
             warning = 'Are you sure you\'d like to install a nightly build?'
 
         if warning is not None:
-            def _rgetattr(obj, attr, *args):
-                import functools
-                def _getattr(obj, attr):
-                    return getattr(obj, attr, *args)
-                return functools.reduce(_getattr, [obj] + attr.split('.'))
-            install_with_warning = _rgetattr(bpy.ops, PREF_OT_InstalFromFilePktWithWarning.bl_idname)
+            install_with_warning = get_operator(PREF_OT_InstalFromFilePktWithWarning.bl_idname)
             install_with_warning('INVOKE_DEFAULT',
                 filepath=self.filepath, filename=filename_info.filename, warning=warning)
             return {'FINISHED'}
