@@ -116,11 +116,10 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
         content = ["You can download",
                    "Core library from ",
                    "our site: keentools.io/downloads"]
-        import time
         col = layout.column()
         col.scale_y = Config.text_scale_y
         for c in content:
-            col.label(text=str(self.filepath))
+            col.label(text=str(с))
 
         op = layout.operator(
             PREF_OT_OpenURL.bl_idname,
