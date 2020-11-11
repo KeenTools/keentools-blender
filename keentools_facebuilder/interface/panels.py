@@ -742,18 +742,27 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
 
         op = box.operator(
             Config.fb_actor_idname,
-            text='Generate Control Panel')
-        op.action = 'generate_control_panel'
-
-        op = box.operator(
-            Config.fb_actor_idname,
             text='Load animation from CSV')
         op.action = 'load_csv_animation'
 
+        box = layout.box()
+        box.label(text='Export Head to FBX')
         op = box.operator(
             Config.fb_actor_idname,
-            text='Sliders -> Blendshapes')
-        op.action = 'convert_controls_to_blendshapes'
+            text='Export Blendshapes only')
+        op.action = 'export_blendshapes_to_fbx'
+
+        box = layout.box()
+        box.label(text='Control Panel')
+        op = box.operator(
+            Config.fb_actor_idname,
+            text='Select sliders')
+        op.action = 'select_control_panel_sliders'
+
+        op = box.operator(
+            Config.fb_actor_idname,
+            text='Generate Control Panel')
+        op.action = 'generate_control_panel'
 
         op = box.operator(
             Config.fb_actor_idname,
@@ -762,12 +771,5 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
 
         op = box.operator(
             Config.fb_actor_idname,
-            text='Select sliders')
-        op.action = 'select_control_panel_sliders'
-
-        box = layout.box()
-        box.label(text='Export Head to FBX')
-        op = box.operator(
-            Config.fb_actor_idname,
-            text='Export Blendshapes only')
-        op.action = 'export_blendshapes_to_fbx'
+            text='Sliders -> Blendshapes')
+        op.action = 'convert_controls_to_blendshapes'
