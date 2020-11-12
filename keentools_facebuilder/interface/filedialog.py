@@ -296,5 +296,12 @@ class FB_OT_AnimationFilebrowser(Operator, ImportHelper):
     def execute(self, context):
         settings = get_main_settings()
         head = settings.get_head(self.headnum)
-        load_csv_animation_to_blendshapes(head.headobj, self.filepath)
+        res = load_csv_animation_to_blendshapes(head.headobj, self.filepath)
+        if res['status']:
+            info = 'CSV Animation loaded.'
+            if len(res['ignored']) > 0:
+                info += ' Ignored {} columns'.format(len(res['ignored']))
+            self.report({'INFO'}, info)
+        else:
+            self.report({'ERROR'}, res['message'])
         return {'FINISHED'}

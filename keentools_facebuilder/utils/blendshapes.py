@@ -193,8 +193,17 @@ def restore_facs_blendshapes(obj, restore_names):
 
 
 def load_csv_animation_to_blendshapes(obj, filepath):
-    fan = pkt.module().FacsAnimation()
-    other = fan.load_from_csv_file(filepath)
+    logger = logging.getLogger(__name__)
+    try:
+        fan = pkt.module().FacsAnimation()
+        other = fan.load_from_csv_file(filepath)
+    except pkt.module().FacsLoadingException as err:
+        logger.error('CANNOT_LOAD_CSV_ANIMATION: {}'.format(err))
+        return {'status': False, 'message': str(err), 'ignored': []}
+    except Exception as err:
+        logger.error('CANNOT_LOAD_CSV_ANIMATION!: {} {}'.format(type(err), err))
+        return {'status': False, 'message': str(err), 'ignored': []}
+
     fb = FBLoader.get_builder()
     geo = fb.applied_args_model()
     fe = pkt.module().FacsExecutor(geo)
@@ -215,6 +224,12 @@ def load_csv_animation_to_blendshapes(obj, filepath):
     obj.data.update()
     if len(keyframes) > 0:
         _extend_scene_timeline(keyframes[-1])
+
+    logger.info('FACS CSV-Animation file: {}'.format(filepath))
+    logger.info('Timecodes enabled: {}'.format(fan.timecodes_enabled()))
+    if len(other) > 0:
+        logger.info('Ignored columns: {}'.format(other))
+    return {'status': True, 'message': 'ok', 'ignored': other}
 
 
 def create_facs_test_animation_on_blendshapes(obj, start_time=1, dtime=4):
