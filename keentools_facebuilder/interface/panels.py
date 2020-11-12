@@ -236,6 +236,11 @@ class FB_PT_InfoPanel(AllVisible, Panel):
             col.alert = True
             col.label(text='Blendshapes need to be updated')
 
+            op = layout.operator(
+                Config.fb_history_actor_idname,
+                text='Update FACS-Blendshapes')
+            op.action = 'update_blendshapes'
+
 
 class FB_PT_CameraPanel(AllVisibleClosed, Panel):
     bl_idname = Config.fb_camera_panel_idname
@@ -529,19 +534,7 @@ class FB_PT_Model(AllVisibleClosed, Panel):
         # No registered models in scene
         if headnum < 0:
             return
-
         head = settings.get_head(headnum)
-        # if not head.has_no_blendshapes():
-        #     col = layout.column()
-        #     col.alert = True
-        #     col.scale_y = Config.text_scale_y
-        #     col.label(text='This panel disabled', icon='INFO')
-        #     col.label(text='since head mesh has', icon='BLANK1')
-        #     col.label(text='blendshapes. You cannot', icon='BLANK1')
-        #     col.label(text='change mesh shape until', icon='BLANK1')
-        #     col.label(text='mesh uses blendshape', icon='BLANK1')
-        #     col.label(text='animation.', icon='BLANK1')
-        #     return
 
         op = layout.operator(Config.fb_unmorph_idname, text='Reset')
         op.headnum = headnum
@@ -728,49 +721,91 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
     def draw(self, context):
         layout = self.layout
 
+        head = get_current_head()
+        if not head:
+            return
+
+        no_blendshapes = head.has_no_blendshapes()
+        has_blendshapes_action = head.has_blendshapes_action()
+
         box = layout.box()
         box.label(text='FACS Blendshapes')
         op = box.operator(
-            Config.fb_actor_idname,
+            Config.fb_history_actor_idname,
             text='Generate FACS-Blendshapes')
         op.action = 'generate_facs_blendshapes'
 
-        op = box.operator(
-            Config.fb_actor_idname,
-            text='Load animation from CSV')
-        op.action = 'load_csv_animation'
+        row = box.row()
+        op = row.operator(
+            Config.fb_history_actor_idname,
+            text='Delete all blendshapes')
+        if no_blendshapes:
+            row.active = False
+            op.action = 'none'
+        else:
+            op.action = 'delete_blendshapes'
 
-        op = box.operator(
-            Config.fb_actor_idname,
-            text='Generate Test animation')
-        op.action = 'generate_facs_test_animation'
+        box.label(text='Blendshapes Animation')
+
+        if not no_blendshapes:
+            op = box.operator(
+                Config.fb_history_actor_idname,
+                text='Load animation from CSV')
+            op.action = 'load_csv_animation'
+
+            row = box.row()
+            op = row.operator(
+                Config.fb_history_actor_idname,
+                text='Generate test animation')
+            if not has_blendshapes_action:
+                op.action = 'generate_facs_test_animation'
+            else:
+                row.active = False
+                op.action = 'none'
+
+            row = box.row()
+            op = row.operator(
+                Config.fb_history_actor_idname,
+                text='Delete blendshapes animation')
+            if has_blendshapes_action:
+                op.action = 'disconnect_blendshapes_action'
+            else:
+                row.active = False
+                op.action = 'none'
 
         box = layout.box()
-        box.label(text='Export Head to FBX')
+        col = box.column()
+        col.scale_y = Config.text_scale_y
+        col.label(text='Export to game engine')
+        col.label(text='(Unreal Engine or Unity)')
+
         op = box.operator(
-            Config.fb_actor_idname,
-            text='Export Blendshapes only')
+            Config.fb_history_actor_idname,
+            text='Export head to FBX')
         op.action = 'export_blendshapes_to_fbx'
 
-        # Functions for future
+        return
+
+        # Functions for future Animation Control Panel
         box = layout.box()
         box.label(text='Control Panel')
-        op = box.operator(
-            Config.fb_actor_idname,
-            text='Select sliders')
-        op.action = 'select_control_panel_sliders'
 
         op = box.operator(
-            Config.fb_actor_idname,
+            Config.fb_history_actor_idname,
             text='Generate Control Panel')
         op.action = 'generate_control_panel'
 
         op = box.operator(
-            Config.fb_actor_idname,
+            Config.fb_history_actor_idname,
             text='Delete Control Panel')
         op.action = 'delete_control_panel'
 
         op = box.operator(
-            Config.fb_actor_idname,
+            Config.fb_history_actor_idname,
+            text='Select sliders')
+        op.action = 'select_control_panel_sliders'
+
+        op = box.operator(
+            Config.fb_history_actor_idname,
             text='Sliders -> Blendshapes')
         op.action = 'convert_controls_to_blendshapes'

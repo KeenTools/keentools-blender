@@ -100,14 +100,22 @@ def _put_anim_data_in_fcurve(fcurve, anim_data):
     fcurve.update()
 
 
+def remove_blendshapes(obj):
+    if _has_no_blendshapes(obj):
+        return
+    for blendshape in reversed([kb for kb in obj.data.shape_keys.key_blocks]):
+        obj.shape_key_remove(blendshape)
+
+
 def disconnect_blendshapes_action(obj):
     if has_blendshapes_action(obj):
+        action = obj.data.shape_keys.animation_data.action
         obj.data.shape_keys.animation_data.action = None
-        return True
-    return False
+        return action
+    return None
 
 
-def create_facs_blendshapes(obj):
+def _get_facs_executor():
     fb = FBLoader.get_builder()
     geo = fb.applied_args_model()
     try:
@@ -115,25 +123,72 @@ def create_facs_blendshapes(obj):
     except pkt.module().FacsLoadingException:
         logger = logging.getLogger(__name__)
         logger.error('CANNOT_LOAD_FACS: FacsLoadingException')
-        return -1
+        return None
     except Exception:
         logger = logging.getLogger(__name__)
         logger.error('CANNOT_LOAD_FACS: Unknown Exception')
-        return -1
+        return None
     if not fe.facs_enabled():
         logger = logging.getLogger(__name__)
         logger.error('CANNOT_LOAD_FACS: FACS are not enabled')
-        return 0
+        return None
+    return fe
+
+
+def _update_blendshape_verts(shape, verts):
+    rot = np.array(((1., 0., 0.), (0., 0., 1.), (0., -1., 0)))
+    shape.data.foreach_set('co', (verts @ rot).ravel())
+
+
+def create_facs_blendshapes(obj):
+    facs_executor = _get_facs_executor()
+    if not facs_executor:
+        return -1
 
     _create_basis_blendshape(obj)
     counter = 0
-    for i, name in enumerate(fe.facs_names):
+    for i, name in enumerate(facs_executor.facs_names):
         if obj.data.shape_keys.key_blocks.find(name) < 0:
             shape = obj.shape_key_add(name=name)
+            verts = facs_executor.get_facs_blendshape(i)
+            _update_blendshape_verts(shape, verts)
             counter += 1
-            verts = fe.get_facs_blendshape(i)
-            rot = np.array([[1., 0., 0.], [0., 0., 1.], [0., -1., 0]])
-            shape.data.foreach_set('co', (verts @ rot).ravel())
+    return counter
+
+
+def update_facs_blendshapes(obj):
+    assert not _has_no_blendshapes(obj)
+    facs_executor = _get_facs_executor()
+    if not facs_executor:
+        return -1
+
+    counter = 0
+    for i, name in enumerate(facs_executor.facs_names):
+        index = obj.data.shape_keys.key_blocks.find(name)
+        if index >= 0:
+            shape = obj.data.shape_keys.key_blocks[index]
+            verts = facs_executor.get_facs_blendshape(i)
+            _update_blendshape_verts(shape, verts)
+            counter += 1
+    obj.data.update()
+    return counter
+
+
+def restore_facs_blendshapes(obj, restore_names):
+    _create_basis_blendshape(obj)
+    facs_executor = _get_facs_executor()
+    if not facs_executor:
+        return -1
+
+    counter = 0
+    for i, name in enumerate(facs_executor.facs_names):
+        if obj.data.shape_keys.key_blocks.find(name) < 0 \
+                and (name in restore_names):
+            shape = obj.shape_key_add(name=name)
+            verts = facs_executor.get_facs_blendshape(i)
+            _update_blendshape_verts(shape, verts)
+            counter += 1
+    obj.data.update()
     return counter
 
 

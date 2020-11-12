@@ -42,36 +42,27 @@ from .utils.blendshapes import (create_facs_blendshapes,
                                 has_blendshapes_action,
                                 convert_blendshapes_animation_to_controls,
                                 create_facs_test_animation_on_blendshapes,
-                                disconnect_blendshapes_action)
+                                disconnect_blendshapes_action,
+                                remove_blendshapes,
+                                update_facs_blendshapes)
 
 
-class FB_OT_Actor(bpy.types.Operator):
-    bl_idname = Config.fb_actor_idname
-    bl_label = "FaceBuilder in Action"
-    bl_options = {'REGISTER'}
-    bl_description = "FaceBuilder"
+class FB_OT_HistoryActor(bpy.types.Operator):
+    bl_idname = Config.fb_history_actor_idname
+    bl_label = 'FaceBuilder Action'
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = 'FaceBuilder'
 
-    action: StringProperty(name="Action Name")
-    headnum: IntProperty(default=0)
-    camnum: IntProperty(default=0)
-    num: IntProperty(default=0)
+    action: StringProperty(name='Action Name')
 
     def draw(self, context):
         pass
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
-        logger.debug("Actor: {}".format(self.action))
-        logger.debug('headnum: {} camnum: {} num: {}'.format(
-            self.headnum, self.camnum, self.num))
+        logger.debug('History Actor: {}'.format(self.action))
 
-        if self.action == 'reconstruct_by_head':
-            manipulate.reconstruct_by_head()
-
-        elif self.action == 'unhide_head':
-            manipulate.unhide_head(self.headnum)
-
-        elif self.action == 'generate_facs_blendshapes':
+        if self.action == 'generate_facs_blendshapes':
             head = manipulate.get_current_head()
             if head:
                 counter = create_facs_blendshapes(head.headobj)
@@ -79,8 +70,7 @@ class FB_OT_Actor(bpy.types.Operator):
                     self.report({'INFO'},
                                 '{} Blendshapes created'.format(counter))
                 else:
-                    self.report({'ERROR'},
-                                'Facs Model Error')
+                    self.report({'ERROR'}, 'Facs Model Error')
 
         elif self.action == 'generate_control_panel':
             head = manipulate.get_current_head()
@@ -171,6 +161,7 @@ class FB_OT_Actor(bpy.types.Operator):
                 else:
                     self.report({'ERROR'}, 'Some error occured while '
                                            'creating the test animation')
+
         elif self.action == 'disconnect_blendshapes_action':
             head = manipulate.get_current_head()
             if head:
@@ -178,6 +169,50 @@ class FB_OT_Actor(bpy.types.Operator):
                     self.report({'INFO'}, 'Animation Action disconnected')
                 else:
                     self.report({'INFO'}, 'Blendshapes Action not found')
+
+        elif self.action == 'delete_blendshapes':
+            head = manipulate.get_current_head()
+            if head:
+                remove_blendshapes(head.headobj)
+                self.report({'INFO'}, 'Blendshapes have been removed')
+
+        elif self.action == 'update_blendshapes':
+            head = manipulate.get_current_head()
+            if head:
+                update_facs_blendshapes(head.headobj)
+                head.set_blendshapes_status(actual=True)
+
+        else:
+            return {'CANCELLED'}
+
+        return {'FINISHED'}
+
+
+class FB_OT_Actor(bpy.types.Operator):
+    bl_idname = Config.fb_actor_idname
+    bl_label = 'FaceBuilder in Action'
+    bl_options = {'REGISTER'}
+    bl_description = 'FaceBuilder'
+
+    action: StringProperty(name="Action Name")
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+    num: IntProperty(default=0)
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        logger = logging.getLogger(__name__)
+        logger.debug("Actor: {}".format(self.action))
+        logger.debug('headnum: {} camnum: {} num: {}'.format(
+            self.headnum, self.camnum, self.num))
+
+        if self.action == 'reconstruct_by_head':
+            manipulate.reconstruct_by_head()
+
+        elif self.action == 'unhide_head':
+            manipulate.unhide_head(self.headnum)
 
         return {'FINISHED'}
 

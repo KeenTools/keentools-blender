@@ -119,6 +119,8 @@ class Config:
 
     fb_actor_idname = operators + '.' + 'actor'
 
+    fb_history_actor_idname = operators + '.' + 'history_actor'
+
     fb_camera_actor_idname = operators + '.' + 'camera_actor'
 
     fb_warning_idname = operators + '.' + 'addon_warning'

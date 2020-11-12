@@ -21,10 +21,12 @@ import bpy
 
 from .config import get_main_settings, get_operator, Config
 from .fbloader import FBLoader
-from .utils.manipulate import get_current_headnum
+from .utils.manipulate import get_current_headnum, get_current_head
+from .utils.blendshapes import (restore_facs_blendshapes,
+                                disconnect_blendshapes_action)
 
 
-def update_mesh_if_accepted(accepted):
+def mesh_update_accepted():
     logger = logging.getLogger(__name__)
     logger.debug('callbacks.update_mesh_geometry')
     headnum = get_current_headnum()
@@ -37,18 +39,34 @@ def update_mesh_if_accepted(accepted):
     if not head.model_changed():
         return
 
-    if not accepted:
-        logger.debug('discard_model_changes')
-        head.discard_model_changes()
-        return
-
     head.apply_model_changes()
-    update_mesh_now()
+
+    if not head.has_no_blendshapes():
+        names = [kb.name for kb in head.headobj.data.shape_keys.key_blocks[1:]]
+        action = disconnect_blendshapes_action(head.headobj)
+        logger.debug('blendshapes: {}'.format(names))
+        _update_mesh_now()
+        counter = restore_facs_blendshapes(head.headobj, names)
+        logger.debug('blendshapes_restored: {}'.format(counter))
+        if action:
+            head.headobj.data.shape_keys.animation_data_create()
+            head.headobj.data.shape_keys.animation_data.action = action
+    else:
+        _update_mesh_now()
+
+
+def mesh_update_canceled():
+    logger = logging.getLogger(__name__)
+    logger.debug('callbacks.mesh_update_canceled')
+    head = get_current_head()
+    if not head:
+        return
+    head.discard_model_changes()
 
 
 def update_mesh_with_dialog(self, context):
     logger = logging.getLogger(__name__)
-    logger.debug('update_mesh_geometry2')
+    logger.debug('update_mesh_with_dialog')
 
     headnum = get_current_headnum()
     if headnum < 0:
@@ -59,7 +77,7 @@ def update_mesh_with_dialog(self, context):
         return
 
     if self.has_no_blendshapes():
-        update_mesh_now()
+        _update_mesh_now()
         self.apply_model_changes()
     else:
         warn = get_operator(Config.fb_blendshapes_warning_idname)
@@ -67,10 +85,10 @@ def update_mesh_with_dialog(self, context):
 
 
 def update_mesh_simple(self, context):
-    update_mesh_now()
+    _update_mesh_now()
 
 
-def update_mesh_now():
+def _update_mesh_now():
     logger = logging.getLogger(__name__)
     logger.debug('callbacks.update_mesh')
     headnum = get_current_headnum()
@@ -117,7 +135,7 @@ def update_mesh_now():
     FBLoader.save_only(headnum)
 
     # Copy blendshapes and animation
-    if old_mesh.shape_keys:
+    if old_mesh.shape_keys and len(old_mesh.vertices) == len(mesh.vertices):
         for kb in old_mesh.shape_keys.key_blocks:
             shape = head.headobj.shape_key_add(name=kb.name)
             count = len(kb.data)

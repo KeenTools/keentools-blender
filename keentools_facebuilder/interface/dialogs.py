@@ -23,7 +23,7 @@ import bpy
 from bpy.types import Panel, Operator
 
 from ..config import Config, get_main_settings, get_operator, ErrorType
-from ..callbacks import update_mesh_if_accepted
+from ..callbacks import mesh_update_accepted, mesh_update_canceled
 
 
 class FB_OT_AddonWarning(Operator):
@@ -136,11 +136,14 @@ class FB_OT_BlendshapesWarning(Operator):
             row.label(text=t)
 
     def execute(self, context):
-        update_mesh_if_accepted(self.accept)
+        if (self.accept):
+            mesh_update_accepted()
+        else:
+            mesh_update_canceled()
         return {'FINISHED'}
 
     def cancel(self, context):
-        update_mesh_if_accepted(accepted=False)
+        mesh_update_canceled()
 
     def invoke(self, context, event):
         self.content = ['Warning! Your mesh contains blendshapes ',

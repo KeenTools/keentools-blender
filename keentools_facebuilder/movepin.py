@@ -202,6 +202,8 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         # Load 3D pins
         vp.update_surface_points(fb, head.headobj, kid)
+        if not head.has_no_blendshapes():
+            head.set_blendshapes_status(actual=False)
         return {'FINISHED'}
 
     @staticmethod

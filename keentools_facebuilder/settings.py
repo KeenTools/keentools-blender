@@ -87,7 +87,7 @@ def update_model_scale(self, context):
     fb.set_scale(head.model_scale)
 
     if not head.has_no_blendshapes():
-        head.set_blendshapes_status(False)
+        head.set_blendshapes_status(actual=False)
 
     coords.update_head_mesh(settings, fb, head)
     FBLoader.update_all_camera_positions(headnum)
@@ -583,8 +583,8 @@ class FBHeadItem(PropertyGroup):
     def blenshapes_are_relevant(self):
         return self.blendshapes_actual
 
-    def set_blendshapes_status(self, status):
-        self.blendshapes_actual = status
+    def set_blendshapes_status(self, actual):
+        self.blendshapes_actual = actual
 
     def model_type_changed(self):
         return self.model_type != self.model_type_previous
@@ -602,6 +602,11 @@ class FBHeadItem(PropertyGroup):
     def has_no_blendshapes(self):
         return not self.headobj or not self.headobj.data or \
                not self.headobj.data.shape_keys
+
+    def has_blendshapes_action(self):
+        return self.headobj and self.headobj.data.shape_keys \
+               and self.headobj.data.shape_keys.animation_data \
+               and self.headobj.data.shape_keys.animation_data.action
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
