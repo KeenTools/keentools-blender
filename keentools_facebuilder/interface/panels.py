@@ -745,9 +745,9 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
         else:
             op.action = 'delete_blendshapes'
 
-        box.label(text='Blendshapes Animation')
-
         if not no_blendshapes:
+            box.label(text='Blendshapes Animation')
+
             op = box.operator(
                 Config.fb_history_actor_idname,
                 text='Load animation from CSV')

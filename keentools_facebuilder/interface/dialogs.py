@@ -117,23 +117,27 @@ class FB_OT_AddonWarning(Operator):
 
 class FB_OT_BlendshapesWarning(Operator):
     bl_idname = Config.fb_blendshapes_warning_idname
-    bl_label = ''
+    bl_label = 'Convertation warning'
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    accept: bpy.props.BoolProperty(name='Yes, delete blendshapes', default=False)
+    accept: bpy.props.BoolProperty(name='Yes, change topolgy and '
+                                        'convert the blendshapes',
+                                   default=False)
     content = []
 
     def draw(self, context):
         layout = self.layout.column()
-        layout.scale_y = Config.text_scale_y
 
-        layout.prop(self, 'accept')
-        box = layout.box()
+        box = layout.column()
+        box.scale_y = Config.text_scale_y
 
-        for t in self.content:
+        for txt in self.content:
             row = box.row()
             row.alert = True
-            row.label(text=t)
+            row.label(text=txt)
+
+        layout.prop(self, 'accept')
+        layout.label(text='')
 
     def execute(self, context):
         if (self.accept):
@@ -146,8 +150,12 @@ class FB_OT_BlendshapesWarning(Operator):
         mesh_update_canceled()
 
     def invoke(self, context, event):
-        self.content = ['Warning! Your mesh contains blendshapes ',
-                       'so if you change topology you will lost it']
+        self.content = ['Warning! Your mesh contains blendshapes.',
+                        'So if you change topology now you will lose',
+                        'any custom blendshapes and animations on it.',
+                        'Only our FACS-blendshapes will be regenerated.',
+                        'But we strongly recommend '
+                        'that you save your scene before.']
         return context.window_manager.invoke_props_dialog(self, width=400)
 
 
