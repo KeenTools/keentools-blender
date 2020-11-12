@@ -31,17 +31,35 @@ def _has_no_blendshapes(obj):
     return not obj.data.shape_keys
 
 
+def has_blendshapes_action(obj):
+    return obj.data.shape_keys and obj.data.shape_keys.animation_data and \
+           obj.data.shape_keys.animation_data.action
+
+
 def _create_basis_blendshape(obj):
     if _has_no_blendshapes(obj):
         obj.shape_key_add(name='Basis')
 
 
-def _move_vertices(shape, vec):
-    count = len(shape.data)
-    verts = np.empty((count, 3), 'f')
-    shape.data.foreach_get('co', np.reshape(verts, count * 3))
-    verts += vec
-    shape.data.foreach_set('co', verts.ravel())
+def _get_all_blendshape_names(obj):
+    if _has_no_blendshapes(obj):
+        return []
+    res = [kb.name for kb in obj.data.shape_keys.key_blocks]
+    return res[1:]
+
+
+def _get_safe_blendshapes_action(obj):
+    if _has_no_blendshapes(obj):
+        return None
+    animation_data = obj.data.shape_keys.animation_data
+    if not animation_data:
+        animation_data = obj.data.shape_keys.animation_data_create()
+        if not animation_data:
+            return None
+    if not animation_data.action:
+        animation_data.action = \
+            bpy.data.actions.new(Config.default_blendshapes_action_name)
+    return animation_data.action
 
 
 def _extend_scene_timeline(keyframe_num):
@@ -50,17 +68,43 @@ def _extend_scene_timeline(keyframe_num):
         scene.frame_end = keyframe_num
 
 
-def create_fake_blendshapes(obj, names):
-    _create_basis_blendshape(obj)
-    counter = 0
-    for name in names:
-        if obj.data.shape_keys.key_blocks.find(name) < 0:
-            shape = obj.shape_key_add(name=name)
-            counter += 1
-            phi = np.random.uniform(0, np.pi * 2)
-            vec = np.array((np.cos(phi), 0, np.sin(phi)))
-            _move_vertices(shape, vec)
-    return counter
+def _get_action_fcurve(action, data_path, index=0):
+    return action.fcurves.find(data_path, index=index)
+
+
+def _get_safe_action_fcurve(action, data_path, index=0):
+    fcurve = _get_action_fcurve(action, data_path, index=index)
+    if fcurve:
+        return fcurve
+    return action.fcurves.new(data_path, index=index)
+
+
+def _get_fcurve_data(fcurve):
+    if not fcurve:
+        return []
+    return [p.co for p in fcurve.keyframe_points]
+
+
+def _clear_fcurve(fcurve):
+    for p in reversed(fcurve.keyframe_points):
+        fcurve.keyframe_points.remove(p)
+
+
+def _put_anim_data_in_fcurve(fcurve, anim_data):
+    if not fcurve:
+        return
+    start_index = len(fcurve.keyframe_points)
+    fcurve.keyframe_points.add(len(anim_data))
+    for i, point in enumerate(anim_data):
+        fcurve.keyframe_points[start_index + i].co = point
+    fcurve.update()
+
+
+def disconnect_blendshapes_action(obj):
+    if has_blendshapes_action(obj):
+        obj.data.shape_keys.animation_data.action = None
+        return True
+    return False
 
 
 def create_facs_blendshapes(obj):
@@ -77,6 +121,8 @@ def create_facs_blendshapes(obj):
         logger.error('CANNOT_LOAD_FACS: Unknown Exception')
         return -1
     if not fe.facs_enabled():
+        logger = logging.getLogger(__name__)
+        logger.error('CANNOT_LOAD_FACS: FACS are not enabled')
         return 0
 
     _create_basis_blendshape(obj)
@@ -91,14 +137,52 @@ def create_facs_blendshapes(obj):
     return counter
 
 
-def get_all_blendshape_names(obj):
+def load_csv_animation_to_blendshapes(obj, filepath):
+    fan = pkt.module().FacsAnimation()
+    other = fan.load_from_csv_file(filepath)
+    fb = FBLoader.get_builder()
+    geo = fb.applied_args_model()
+    fe = pkt.module().FacsExecutor(geo)
+    blendshapes_action = _get_safe_blendshapes_action(obj)
+
+    scene = bpy.context.scene
+    fps = scene.render.fps
+    start = scene.frame_current
+    if not fan.timecodes_enabled():
+        fps = 1
+    keyframes = [start + x * fps for x in fan.keyframes()]
+    for name in fe.facs_names:
+        blendshape_fcurve = _get_safe_action_fcurve(
+            blendshapes_action, 'key_blocks["{}"].value'.format(name), index=0)
+        animation = fan.at_name(name)
+        anim_data = [x for x in zip(keyframes, animation)]
+        _put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
+    obj.data.update()
+    if len(keyframes) > 0:
+        _extend_scene_timeline(keyframes[-1])
+
+
+def create_facs_test_animation_on_blendshapes(obj, start_time=1, dtime=4):
     if _has_no_blendshapes(obj):
-        return []
-    res = [kb.name for kb in obj.data.shape_keys.key_blocks]
-    return res[1:]
+        return -1
+    counter = 0
+    blendshapes_action = _get_safe_blendshapes_action(obj)
+    time = start_time
+    for kb in obj.data.shape_keys.key_blocks[1:]:
+        blendshape_fcurve = _get_safe_action_fcurve(
+            blendshapes_action,
+            'key_blocks["{}"].value'.format(kb.name),
+            index=0)
+        anim_data = [(time, 0.0), (time + dtime, 1.0), (time + 2 * dtime, 0)]
+        time += dtime * 2
+        _put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
+        counter += 1
+    obj.data.update()
+    _extend_scene_timeline(time)
+    return counter
 
 
-def create_driver(target, control_obj, driver_name, control_prop='location.x'):
+def _create_driver(target, control_obj, driver_name, control_prop='location.x'):
     res = target.driver_add('value')
     res.driver.type = 'AVERAGE'
     drv_var = res.driver.variables.new()
@@ -112,13 +196,13 @@ def create_driver(target, control_obj, driver_name, control_prop='location.x'):
 def create_blendshape_controls(obj):
     if _has_no_blendshapes(obj):
         return {}
-    blendshape_names = get_all_blendshape_names(obj)
+    blendshape_names = _get_all_blendshape_names(obj)
     controls = {}
     for name in blendshape_names:
         slider_dict = create_slider(name, name, width=1.0, height=0.2)
-        driver = create_driver(obj.data.shape_keys.key_blocks[name],
-                               slider_dict['slider'],
-                               Config.default_driver_name, 'location.x')
+        driver = _create_driver(obj.data.shape_keys.key_blocks[name],
+                                slider_dict['slider'],
+                                Config.default_driver_name, 'location.x')
         controls[name] = {'control': slider_dict, 'driver': driver}
     return controls
 
@@ -160,176 +244,8 @@ def make_control_panel(controls_dict):
     return main_rect
 
 
-def load_csv_animation(obj, filepath):
-    fan = pkt.module().FacsAnimation()
-    other = fan.load_from_csv_file(filepath)
-    fb = FBLoader.get_builder()
-    geo = fb.applied_args_model()
-    fe = pkt.module().FacsExecutor(geo)
-    blendshapes_action = get_safe_blendshapes_action(obj)
-
-    scene = bpy.context.scene
-    fps = scene.render.fps
-    start = scene.frame_current
-    if not fan.timecodes_enabled():
-        fps = 1
-    keyframes = [start + x * fps for x in fan.keyframes()]
-    for name in fe.facs_names:
-        blendshape_fcurve = get_safe_action_fcurve(
-            blendshapes_action, 'key_blocks["{}"].value'.format(name), index=0)
-        animation = fan.at_name(name)
-        anim_data = [x for x in zip(keyframes, animation)]
-        put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
-    obj.data.update()
-    if len(keyframes) > 0:
-        _extend_scene_timeline(keyframes[-1])
-
-
-def get_blendshapes_drivers(obj):
-    if _has_no_blendshapes(obj):
-        return {}
-    drivers_dict = {}
-    for drv in obj.data.shape_keys.animation_data.drivers:
-        blendshape_name = drv.data_path.split('"')[1]
-        drivers_dict[blendshape_name] = {
-            'driver': drv, 'slider': drv.driver.variables[0].targets[0].id}
-    return drivers_dict
-
-
-def get_safe_blendshapes_action(obj):
-    if _has_no_blendshapes(obj):
-        return None
-    animation_data = obj.data.shape_keys.animation_data
-    if not animation_data:
-        animation_data = obj.data.shape_keys.animation_data_create()
-        if not animation_data:
-            return None
-    if not animation_data.action:
-        animation_data.action = \
-            bpy.data.actions.new(Config.default_blendshapes_action_name)
-    return animation_data.action
-
-
-def get_action_fcurve(action, data_path, index=0):
-    return action.fcurves.find(data_path, index=index)
-
-
-def get_safe_action_fcurve(action, data_path, index=0):
-    fcurve = get_action_fcurve(action, data_path, index=index)
-    if fcurve:
-        return fcurve
-    return action.fcurves.new(data_path, index=index)
-
-
-def get_fcurve_data(fcurve):
-    if not fcurve:
-        return []
-    return [p.co for p in fcurve.keyframe_points]
-
-
-def clear_fcurve(fcurve):
-    for p in reversed(fcurve.keyframe_points):
-        fcurve.keyframe_points.remove(p)
-
-
-def put_anim_data_in_fcurve(fcurve, anim_data):
-    if not fcurve:
-        return
-    start_index = len(fcurve.keyframe_points)
-    fcurve.keyframe_points.add(len(anim_data))
-    for i, point in enumerate(anim_data):
-        fcurve.keyframe_points[start_index + i].co = point
-    fcurve.update()
-
-
-def convert_controls_animation_to_blendshapes(obj):
-    if _has_no_blendshapes(obj):
-        return False
-    all_dict = get_blendshapes_drivers(obj)
-    blend_action = get_safe_blendshapes_action(obj)
-    if not blend_action:
-        return False
-    for name in all_dict:
-        item = all_dict[name]
-        control_action = item['slider'].animation_data.action
-        control_fcurve = get_action_fcurve(control_action, 'location', index=0)
-        anim_data = get_fcurve_data(control_fcurve)
-        blendshape_fcurve = get_safe_action_fcurve(
-            blend_action, 'key_blocks["{}"].value'.format(name), index=0)
-        clear_fcurve(blendshape_fcurve)
-        put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
-    return True
-
-
-def convert_blendshapes_animation_to_controls(obj):
-    if _has_no_blendshapes(obj):
-        return False
-    all_dict = get_blendshapes_drivers(obj)
-    blend_action = get_safe_blendshapes_action(obj)
-    if not blend_action:
-        return False
-    for name in all_dict:
-        blendshape_fcurve = get_action_fcurve(
-            blend_action, 'key_blocks["{}"].value'.format(name), index=0)
-        if not blendshape_fcurve:
-            continue
-        anim_data = get_fcurve_data(blendshape_fcurve)
-
-        item = all_dict[name]
-        if not item['slider'].animation_data:
-            item['slider'].animation_data_create()
-        if not item['slider'].animation_data.action:
-            item['slider'].animation_data.action = bpy.data.actions.new(name + 'Action')
-        control_action = item['slider'].animation_data.action
-        control_fcurve = get_safe_action_fcurve(control_action, 'location', index=0)
-        clear_fcurve(control_fcurve)
-        put_anim_data_in_fcurve(control_fcurve, anim_data)
-    return True
-
-
-def create_facs_test_animation_on_blendshapes(obj):
-    if _has_no_blendshapes(obj):
-        return -1
-    counter = 0
-    blendshapes_action = get_safe_blendshapes_action(obj)
-    time = 1
-    dtime = 5
-    for kb in obj.data.shape_keys.key_blocks[1:]:
-        blendshape_fcurve = get_safe_action_fcurve(
-            blendshapes_action,
-            'key_blocks["{}"].value'.format(kb.name),
-            index=0)
-        anim_data = [(time, 0.0), (time + dtime, 1.0), (time + 2 * dtime, 0)]
-        time += dtime * 3
-        put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
-        counter += 1
-    obj.data.update()
-    _extend_scene_timeline(time)
-    return counter
-
-
-def create_facs_test_animation_on_sliders(obj):
-    if _has_no_blendshapes(obj):
-        return False
-    all_dict = get_blendshapes_drivers(obj)
-    time = 1
-    dtime = 5
-    for name in all_dict:
-        item = all_dict[name]
-        if not item['slider'].animation_data:
-            item['slider'].animation_data_create()
-        if not item['slider'].animation_data.action:
-            item['slider'].animation_data.action = bpy.data.actions.new(name + 'Action')
-        control_action = item['slider'].animation_data.action
-        control_fcurve = get_safe_action_fcurve(control_action, 'location', index=0)
-        anim_data = [(time, 0.0), (time + dtime, 1.0), (time + 2 * dtime, 0)]
-        time += dtime * 3
-        put_anim_data_in_fcurve(control_fcurve, anim_data)
-    return True
-
-
 def remove_blendshape_drivers(obj):
-    all_dict = get_blendshapes_drivers(obj)
+    all_dict = _get_blendshapes_drivers(obj)
     for name in all_dict:
         obj.data.shape_keys.animation_data.drivers.remove(all_dict[name]['driver'])
 
@@ -360,8 +276,19 @@ def select_control_panel_sliders(panel_obj):
     return counter
 
 
+def _get_blendshapes_drivers(obj):
+    if _has_no_blendshapes(obj):
+        return {}
+    drivers_dict = {}
+    for drv in obj.data.shape_keys.animation_data.drivers:
+        blendshape_name = drv.data_path.split('"')[1]
+        drivers_dict[blendshape_name] = {
+            'driver': drv, 'slider': drv.driver.variables[0].targets[0].id}
+    return drivers_dict
+
+
 def get_control_panel_by_drivers(obj):
-    drivers_dict = get_blendshapes_drivers(obj)
+    drivers_dict = _get_blendshapes_drivers(obj)
     if len(drivers_dict) == 0:
         return None
     name = [*drivers_dict.keys()][0]
@@ -371,12 +298,65 @@ def get_control_panel_by_drivers(obj):
     return rect.parent
 
 
-def blendshapes_have_animation(obj):
+def convert_controls_animation_to_blendshapes(obj):
     if _has_no_blendshapes(obj):
         return False
-    anim_data = obj.data.shape_keys.animation_data
-    if not anim_data:
+    all_dict = _get_blendshapes_drivers(obj)
+    blend_action = _get_safe_blendshapes_action(obj)
+    if not blend_action:
         return False
-    if not anim_data.action:
+    for name in all_dict:
+        item = all_dict[name]
+        control_action = item['slider'].animation_data.action
+        control_fcurve = _get_action_fcurve(control_action, 'location', index=0)
+        anim_data = _get_fcurve_data(control_fcurve)
+        blendshape_fcurve = _get_safe_action_fcurve(
+            blend_action, 'key_blocks["{}"].value'.format(name), index=0)
+        _clear_fcurve(blendshape_fcurve)
+        _put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
+    return True
+
+
+def convert_blendshapes_animation_to_controls(obj):
+    if _has_no_blendshapes(obj):
         return False
+    all_dict = _get_blendshapes_drivers(obj)
+    blend_action = _get_safe_blendshapes_action(obj)
+    if not blend_action:
+        return False
+    for name in all_dict:
+        blendshape_fcurve = _get_action_fcurve(
+            blend_action, 'key_blocks["{}"].value'.format(name), index=0)
+        if not blendshape_fcurve:
+            continue
+        anim_data = _get_fcurve_data(blendshape_fcurve)
+
+        item = all_dict[name]
+        if not item['slider'].animation_data:
+            item['slider'].animation_data_create()
+        if not item['slider'].animation_data.action:
+            item['slider'].animation_data.action = bpy.data.actions.new(name + 'Action')
+        control_action = item['slider'].animation_data.action
+        control_fcurve = _get_safe_action_fcurve(control_action, 'location', index=0)
+        _clear_fcurve(control_fcurve)
+        _put_anim_data_in_fcurve(control_fcurve, anim_data)
+    return True
+
+
+def create_facs_test_animation_on_sliders(obj, start_time=1, dtime=4):
+    if _has_no_blendshapes(obj):
+        return False
+    all_dict = _get_blendshapes_drivers(obj)
+    time = start_time
+    for name in all_dict:
+        item = all_dict[name]
+        if not item['slider'].animation_data:
+            item['slider'].animation_data_create()
+        if not item['slider'].animation_data.action:
+            item['slider'].animation_data.action = bpy.data.actions.new(name + 'Action')
+        control_action = item['slider'].animation_data.action
+        control_fcurve = _get_safe_action_fcurve(control_action, 'location', index=0)
+        anim_data = [(time, 0.0), (time + dtime, 1.0), (time + 2 * dtime, 0)]
+        time += dtime * 2
+        _put_anim_data_in_fcurve(control_fcurve, anim_data)
     return True

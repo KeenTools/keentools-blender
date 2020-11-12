@@ -39,9 +39,10 @@ from .utils.blendshapes import (create_facs_blendshapes,
                                 remove_blendshape_drivers,
                                 delete_with_children,
                                 select_control_panel_sliders,
-                                blendshapes_have_animation,
+                                has_blendshapes_action,
                                 convert_blendshapes_animation_to_controls,
-                                create_facs_test_animation_on_blendshapes)
+                                create_facs_test_animation_on_blendshapes,
+                                disconnect_blendshapes_action)
 
 
 class FB_OT_Actor(bpy.types.Operator):
@@ -102,7 +103,7 @@ class FB_OT_Actor(bpy.types.Operator):
                     head.headobj.data.update()  # update for drivers affection
 
                     head.blendshapes_control_panel = control_panel
-                    if blendshapes_have_animation(head.headobj):
+                    if has_blendshapes_action(head.headobj):
                         convert_blendshapes_animation_to_controls(head.headobj)
                 else:
                     self.report({'ERROR'}, 'No Blendshapes found. '
@@ -162,12 +163,21 @@ class FB_OT_Actor(bpy.types.Operator):
             head = manipulate.get_current_head()
             if head:
                 counter = create_facs_test_animation_on_blendshapes(head.headobj)
-                if counter > 0:
+                if counter < 0:
+                    self.report({'ERROR'}, 'No blendshapes on object')
+                elif counter > 0:
                     self.report({'INFO'}, 'Test animation created '
                                           'at {} blendshapes'.format(counter))
                 else:
                     self.report({'ERROR'}, 'Some error occured while '
                                            'creating the test animation')
+        elif self.action == 'disconnect_blendshapes_action':
+            head = manipulate.get_current_head()
+            if head:
+                if disconnect_blendshapes_action(head.headobj):
+                    self.report({'INFO'}, 'Animation Action disconnected')
+                else:
+                    self.report({'INFO'}, 'Blendshapes Action not found')
 
         return {'FINISHED'}
 

@@ -737,13 +737,13 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
 
         op = box.operator(
             Config.fb_actor_idname,
-            text='Generate Test animation')
-        op.action = 'generate_facs_test_animation'
+            text='Load animation from CSV')
+        op.action = 'load_csv_animation'
 
         op = box.operator(
             Config.fb_actor_idname,
-            text='Load animation from CSV')
-        op.action = 'load_csv_animation'
+            text='Generate Test animation')
+        op.action = 'generate_facs_test_animation'
 
         box = layout.box()
         box.label(text='Export Head to FBX')
@@ -752,6 +752,7 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
             text='Export Blendshapes only')
         op.action = 'export_blendshapes_to_fbx'
 
+        # Functions for future
         box = layout.box()
         box.label(text='Control Panel')
         op = box.operator(

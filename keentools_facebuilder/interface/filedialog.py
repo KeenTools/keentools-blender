@@ -31,7 +31,7 @@ from ..utils.exif_reader import (read_exif_to_camera,
                                  auto_setup_camera_from_exif)
 from ..utils.other import restore_ui_elements
 from ..utils.materials import find_bpy_image_by_name
-from ..utils.blendshapes import load_csv_animation
+from ..utils.blendshapes import load_csv_animation_to_blendshapes
 
 
 class FB_OT_SingleFilebrowserExec(Operator):
@@ -296,5 +296,5 @@ class FB_OT_AnimationFilebrowser(Operator, ImportHelper):
     def execute(self, context):
         settings = get_main_settings()
         head = settings.get_head(self.headnum)
-        load_csv_animation(head.headobj, self.filepath)
+        load_csv_animation_to_blendshapes(head.headobj, self.filepath)
         return {'FINISHED'}
