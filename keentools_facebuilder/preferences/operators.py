@@ -118,8 +118,8 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
                    "our site: keentools.io/downloads"]
         col = layout.column()
         col.scale_y = Config.text_scale_y
-        for c in content:
-            col.label(text=str(с))
+        for txt_row in content:
+            col.label(text=str(txt_row))
 
         op = layout.operator(
             PREF_OT_OpenURL.bl_idname,
