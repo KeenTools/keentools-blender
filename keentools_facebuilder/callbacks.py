@@ -19,11 +19,12 @@ import logging
 import numpy as np
 import bpy
 
-from .config import get_main_settings, get_operator, Config
+from .config import get_main_settings, get_operator, Config, ErrorType
 from .fbloader import FBLoader
 from .utils.manipulate import get_current_headnum, get_current_head
 from .utils.blendshapes import (restore_facs_blendshapes,
                                 disconnect_blendshapes_action)
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 def mesh_update_accepted():
@@ -46,8 +47,17 @@ def mesh_update_accepted():
         action = disconnect_blendshapes_action(head.headobj)
         logger.debug('blendshapes: {}'.format(names))
         _update_mesh_now()
-        counter = restore_facs_blendshapes(head.headobj, names)
-        logger.debug('blendshapes_restored: {}'.format(counter))
+
+        try:
+            counter = restore_facs_blendshapes(head.headobj, names)
+            logger.debug('blendshapes_restored: {}'.format(counter))
+        except pkt.module().UnlicensedException:
+            logger.error('UnlicensedException restore_facs_blendshapes')
+            warn = get_operator(Config.fb_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        except Exception:
+            logger.error('UNKNOWN EXCEPTION restore_facs_blendshapes')
+
         if action:
             head.headobj.data.shape_keys.animation_data_create()
             head.headobj.data.shape_keys.animation_data.action = action

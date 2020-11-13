@@ -45,6 +45,7 @@ from .utils.blendshapes import (create_facs_blendshapes,
                                 disconnect_blendshapes_action,
                                 remove_blendshapes,
                                 update_facs_blendshapes)
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 class FB_OT_HistoryActor(bpy.types.Operator):
@@ -65,11 +66,24 @@ class FB_OT_HistoryActor(bpy.types.Operator):
         if self.action == 'generate_facs_blendshapes':
             head = manipulate.get_current_head()
             if head:
-                counter = create_facs_blendshapes(head.headobj)
+                try:
+                    counter = create_facs_blendshapes(head.headobj)
+                except pkt.module().UnlicensedException:
+                    logger.error('UnlicensedException generate_facs_blendshapes')
+                    warn = get_operator(Config.fb_warning_idname)
+                    warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+                    return {'CANCELLED'}
+                except Exception:
+                    logger.error('UNKNOWN EXCEPTION generate_facs_blendshapes')
+                    self.report({'ERROR'}, 'Unknown error (see console window)')
+                    return {'CANCELLED'}
+
                 if counter >=0:
+                    logger.info('{} Blendshapes created'.format(counter))
                     self.report({'INFO'},
                                 '{} Blendshapes created'.format(counter))
                 else:
+                    logger.error('Facs Model Error')
                     self.report({'ERROR'}, 'Facs Model Error')
 
         elif self.action == 'generate_control_panel':
@@ -179,7 +193,17 @@ class FB_OT_HistoryActor(bpy.types.Operator):
         elif self.action == 'update_blendshapes':
             head = manipulate.get_current_head()
             if head:
-                update_facs_blendshapes(head.headobj)
+                try:
+                    update_facs_blendshapes(head.headobj)
+                except pkt.module().UnlicensedException:
+                    logger.error('UnlicensedException update_blendshapes')
+                    warn = get_operator(Config.fb_warning_idname)
+                    warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+                    return {'CANCELLED'}
+                except Exception:
+                    logger.error('UNKNOWN EXCEPTION update_blendshapes')
+                    self.report({'ERROR'}, 'Unknown error (see console window)')
+                    return {'CANCELLED'}
                 head.set_blendshapes_status(actual=True)
 
         else:

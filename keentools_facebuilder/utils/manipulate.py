@@ -88,6 +88,14 @@ def what_is_state():
     return _how_many_heads()
 
 
+def update_fbloader_from_obj(obj):
+    settings = get_main_settings()
+    headnum = settings.head_by_obj(obj)
+    if headnum < 0:
+        return
+    FBLoader.load_model(headnum)
+
+
 def get_current_headnum():
     state, headnum = what_is_state()
     return headnum
