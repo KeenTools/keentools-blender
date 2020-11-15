@@ -120,6 +120,7 @@ class FB_OT_BlendshapesWarning(Operator):
     bl_label = 'Convertation warning'
     bl_options = {'REGISTER', 'INTERNAL'}
 
+    headnum: bpy.props.IntProperty(default=0)
     accept: bpy.props.BoolProperty(name='Yes, change topolgy and '
                                         'convert the blendshapes',
                                    default=False)
@@ -141,9 +142,9 @@ class FB_OT_BlendshapesWarning(Operator):
 
     def execute(self, context):
         if (self.accept):
-            mesh_update_accepted()
+            mesh_update_accepted(self.headnum)
         else:
-            mesh_update_canceled()
+            mesh_update_canceled(self.headnum)
         return {'FINISHED'}
 
     def cancel(self, context):

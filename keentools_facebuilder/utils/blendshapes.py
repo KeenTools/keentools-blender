@@ -25,7 +25,6 @@ from ..config import Config
 from ..utils.rig_slider import create_slider, create_rectangle, create_label
 from ..fbloader import FBLoader
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
-from ..utils.manipulate import update_fbloader_from_obj
 
 
 def _has_no_blendshapes(obj):
@@ -144,7 +143,6 @@ def _update_blendshape_verts(shape, verts):
 
 
 def create_facs_blendshapes(obj):
-    update_fbloader_from_obj(obj)
     facs_executor = _get_facs_executor()
     if not facs_executor:
         return -1
@@ -161,7 +159,6 @@ def create_facs_blendshapes(obj):
 
 
 def update_facs_blendshapes(obj):
-    update_fbloader_from_obj(obj)
     assert not _has_no_blendshapes(obj)
     facs_executor = _get_facs_executor()
     if not facs_executor:
@@ -180,7 +177,6 @@ def update_facs_blendshapes(obj):
 
 
 def restore_facs_blendshapes(obj, restore_names):
-    update_fbloader_from_obj(obj)
     _create_basis_blendshape(obj)
     facs_executor = _get_facs_executor()
     if not facs_executor:
@@ -210,7 +206,6 @@ def load_csv_animation_to_blendshapes(obj, filepath):
         logger.error('CANNOT_LOAD_CSV_ANIMATION!: {} {}'.format(type(err), err))
         return {'status': False, 'message': str(err), 'ignored': []}
 
-    update_fbloader_from_obj(obj)
     fb = FBLoader.get_builder()
     geo = fb.applied_args_model()
     fe = pkt.module().FacsExecutor(geo)

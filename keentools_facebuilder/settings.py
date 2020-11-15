@@ -77,9 +77,8 @@ def update_pin_size(self, context):
 
 
 def update_model_scale(self, context):
-    headnum = get_current_headnum()
-    if headnum < 0:
-        return
+    headnum = self.get_headnum()
+    FBLoader.load_model(headnum)
 
     settings = get_main_settings()
     head = settings.get_head(headnum)
@@ -730,6 +729,13 @@ class FBHeadItem(PropertyGroup):
     def reset_sensor_size(self):
         self.sensor_width = 0
         self.sensor_height = 0
+
+    def get_headnum(self):
+        settings = get_main_settings()
+        for i, head in enumerate(settings.heads):
+            if head == self:
+                return i
+        return -1
 
 
 class FBSceneSettings(PropertyGroup):

@@ -27,17 +27,15 @@ from .utils.blendshapes import (restore_facs_blendshapes,
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
-def mesh_update_accepted():
+def mesh_update_accepted(headnum):
     logger = logging.getLogger(__name__)
     logger.debug('callbacks.update_mesh_geometry')
-    headnum = get_current_headnum()
-    if headnum < 0:
-        return
 
     settings = get_main_settings()
     head = settings.get_head(headnum)
 
-    if not head.model_changed():
+    if not head or not head.model_changed():
+        logger.debug('WRONG_HEAD OR MODEL NOT CHANGED')
         return
 
     head.apply_model_changes()
@@ -46,7 +44,7 @@ def mesh_update_accepted():
         names = [kb.name for kb in head.headobj.data.shape_keys.key_blocks[1:]]
         action = disconnect_blendshapes_action(head.headobj)
         logger.debug('blendshapes: {}'.format(names))
-        _update_mesh_now()
+        _update_mesh_now(headnum)
 
         try:
             counter = restore_facs_blendshapes(head.headobj, names)
@@ -62,14 +60,16 @@ def mesh_update_accepted():
             head.headobj.data.shape_keys.animation_data_create()
             head.headobj.data.shape_keys.animation_data.action = action
     else:
-        _update_mesh_now()
+        _update_mesh_now(headnum)
 
 
-def mesh_update_canceled():
+def mesh_update_canceled(headnum):
     logger = logging.getLogger(__name__)
     logger.debug('callbacks.mesh_update_canceled')
-    head = get_current_head()
+    settings = get_main_settings()
+    head = settings.get_head(headnum)
     if not head:
+        logger.debug('WRONG_HEAD')
         return
     head.discard_model_changes()
 
@@ -78,35 +78,38 @@ def update_mesh_with_dialog(self, context):
     logger = logging.getLogger(__name__)
     logger.debug('update_mesh_with_dialog')
 
-    headnum = get_current_headnum()
-    if headnum < 0:
-        return
+    headnum = self.get_headnum()
+    FBLoader.load_model(headnum)
 
     logger.debug('model_changed: {}'.format(self.model_changed()))
     if not self.model_changed():
         return
 
     if self.has_no_blendshapes():
-        _update_mesh_now()
+        _update_mesh_now(headnum)
         self.apply_model_changes()
     else:
         warn = get_operator(Config.fb_blendshapes_warning_idname)
+        warn.headnum = headnum
         warn('INVOKE_DEFAULT')
 
 
 def update_mesh_simple(self, context):
-    _update_mesh_now()
+    headnum = self.get_headnum()
+    FBLoader.load_model(headnum)
+    _update_mesh_now(headnum)
 
 
-def _update_mesh_now():
+def _update_mesh_now(headnum):
     logger = logging.getLogger(__name__)
     logger.debug('callbacks.update_mesh')
-    headnum = get_current_headnum()
-    if headnum < 0:
-        return
 
     settings = get_main_settings()
     head = settings.get_head(headnum)
+    if not head:
+        logger.debug('WRONG_HEAD')
+        return
+
     if settings.pinmode and head.should_use_emotions():
         keyframe = head.get_keyframe(settings.current_camnum)
     else:

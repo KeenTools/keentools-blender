@@ -46,6 +46,7 @@ from .utils.blendshapes import (create_facs_blendshapes,
                                 remove_blendshapes,
                                 update_facs_blendshapes)
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from .fbloader import FBLoader
 
 
 class FB_OT_HistoryActor(bpy.types.Operator):
@@ -66,6 +67,7 @@ class FB_OT_HistoryActor(bpy.types.Operator):
         if self.action == 'generate_facs_blendshapes':
             head = manipulate.get_current_head()
             if head:
+                FBLoader.load_model(head.get_headnum())
                 try:
                     counter = create_facs_blendshapes(head.headobj)
                 except pkt.module().UnlicensedException:
@@ -193,6 +195,7 @@ class FB_OT_HistoryActor(bpy.types.Operator):
         elif self.action == 'update_blendshapes':
             head = manipulate.get_current_head()
             if head:
+                FBLoader.load_model(head.get_headnum())
                 try:
                     update_facs_blendshapes(head.headobj)
                 except pkt.module().UnlicensedException:
