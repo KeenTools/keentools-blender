@@ -125,9 +125,6 @@ def _get_facs_executor():
     except pkt.module().FacsLoadingException:
         logger.error('CANNOT_LOAD_FACS: FacsLoadingException')
         return None
-    except pkt.module().UnlicensedException:
-        logger.error('FACS LICENSE EXCEPTION')
-        raise pkt.module().UnlicensedException
     except Exception:
         logger.error('CANNOT_LOAD_FACS: Unknown Exception')
         return None
@@ -198,7 +195,7 @@ def load_csv_animation_to_blendshapes(obj, filepath):
     logger = logging.getLogger(__name__)
     try:
         fan = pkt.module().FacsAnimation()
-        other = fan.load_from_csv_file(filepath)
+        red_facs, ignored_columns = fan.load_from_csv_file(filepath)
     except pkt.module().FacsLoadingException as err:
         logger.error('CANNOT_LOAD_CSV_ANIMATION: {}'.format(err))
         return {'status': False, 'message': str(err), 'ignored': []}
@@ -229,9 +226,12 @@ def load_csv_animation_to_blendshapes(obj, filepath):
 
     logger.info('FACS CSV-Animation file: {}'.format(filepath))
     logger.info('Timecodes enabled: {}'.format(fan.timecodes_enabled()))
-    if len(other) > 0:
-        logger.info('Ignored columns: {}'.format(other))
-    return {'status': True, 'message': 'ok', 'ignored': other}
+    if len(ignored_columns) > 0:
+        logger.info('Ignored columns: {}'.format(ignored_columns))
+    if len(red_facs) > 0:
+        logger.info('Red facs: {}'.format(red_facs))
+    return {'status': True, 'message': 'ok',
+            'ignored': ignored_columns, 'red_facs': red_facs}
 
 
 def create_facs_test_animation_on_blendshapes(obj, start_time=1, dtime=4):
