@@ -154,7 +154,7 @@ else:
     from .settings import FBExifItem, FBCameraItem, FBHeadItem, FBSceneSettings
     from .pinmode import FB_OT_PinMode
     from .movepin import FB_OT_MovePin
-    from .actor import FB_OT_Actor, FB_OT_CameraActor
+    from .actor import FB_OT_HistoryActor, FB_OT_Actor, FB_OT_CameraActor
 
     from .utils.icons import FBIcons
 
@@ -166,6 +166,7 @@ else:
                            FB_OT_PinMode,
                            FB_OT_MovePin,
                            FB_OT_Actor,
+                           FB_OT_HistoryActor,
                            FB_OT_CameraActor) + OPERATOR_CLASSES + \
                            INTERFACE_CLASSES + PREFERENCES_CLASSES
 
@@ -185,7 +186,6 @@ else:
 
     def menu_func(self, context):
         self.layout.operator(MESH_OT_FBAddHead.bl_idname, icon='USER')
-        # self.layout.operator(MESH_OT_FBAddBody.bl_idname, icon='ARMATURE_DATA')
 
 
     # Blender predefined methods

@@ -17,6 +17,9 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+import math
+import numpy as np
+
 
 import bpy
 from bpy.props import (
@@ -29,13 +32,194 @@ from .config import Config, get_main_settings, get_operator, ErrorType
 from .utils.exif_reader import (update_image_groups,
                                 auto_setup_camera_from_exif,
                                 is_size_compatible_with_group)
+from .utils.blendshapes import (create_facs_blendshapes,
+                                create_blendshape_controls,
+                                make_control_panel,
+                                convert_controls_animation_to_blendshapes,
+                                remove_blendshape_drivers,
+                                delete_with_children,
+                                select_control_panel_sliders,
+                                has_blendshapes_action,
+                                convert_blendshapes_animation_to_controls,
+                                create_facs_test_animation_on_blendshapes,
+                                disconnect_blendshapes_action,
+                                remove_blendshapes,
+                                update_facs_blendshapes)
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from .fbloader import FBLoader
+
+
+class FB_OT_HistoryActor(bpy.types.Operator):
+    bl_idname = Config.fb_history_actor_idname
+    bl_label = 'FaceBuilder Action'
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = 'FaceBuilder'
+
+    action: StringProperty(name='Action Name')
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        logger = logging.getLogger(__name__)
+        logger.debug('History Actor: {}'.format(self.action))
+
+        if self.action == 'generate_facs_blendshapes':
+            head = manipulate.get_current_head()
+            if head:
+                FBLoader.load_model(head.get_headnum())
+                try:
+                    counter = create_facs_blendshapes(head.headobj)
+                except pkt.module().UnlicensedException:
+                    logger.error('UnlicensedException generate_facs_blendshapes')
+                    warn = get_operator(Config.fb_warning_idname)
+                    warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+                    return {'CANCELLED'}
+                except Exception:
+                    logger.error('UNKNOWN EXCEPTION generate_facs_blendshapes')
+                    self.report({'ERROR'}, 'Unknown error (see console window)')
+                    return {'CANCELLED'}
+
+                if counter >=0:
+                    logger.info('{} Blendshapes created'.format(counter))
+                    self.report({'INFO'},
+                                '{} Blendshapes created'.format(counter))
+                else:
+                    logger.error('Facs Model Error')
+                    self.report({'ERROR'}, 'Facs Model Error')
+
+        elif self.action == 'generate_control_panel':
+            head = manipulate.get_current_head()
+            if head:
+                controls = create_blendshape_controls(head.headobj)
+                if len(controls) > 0:
+                    control_panel = make_control_panel(controls)
+                    # Positioning control panel near head
+                    offset = np.eye(4)
+                    offset[3][0] = 2 * head.model_scale # Step on X
+                    rot = np.array([[1., 0., 0., 0.],
+                                    [0., 0., 1., 0.],
+                                    [0., -1., 0., 0.],
+                                    [0., 0., 0., 1.]])
+                    control_panel.matrix_world = offset @ rot @ \
+                        np.array(head.headobj.matrix_world).transpose()
+
+                    # Hide dashed lines between parented objects
+                    bpy.context.space_data.overlay.show_relationship_lines = False
+                    head.headobj.data.update()  # update for drivers affection
+
+                    head.blendshapes_control_panel = control_panel
+                    if has_blendshapes_action(head.headobj):
+                        convert_blendshapes_animation_to_controls(head.headobj)
+                else:
+                    self.report({'ERROR'}, 'No Blendshapes found. '
+                                           'Create blendshapes first')
+
+        elif self.action == 'load_csv_animation':
+            headnum = manipulate.get_current_headnum()
+            settings = get_main_settings()
+            if headnum>=0:
+                head = settings.get_head(headnum)
+                if head.has_no_blendshapes():
+                    self.report({'ERROR'}, 'No blendshapes on object')
+                else:
+                    op = get_operator(Config.fb_animation_filebrowser_idname)
+                    op('INVOKE_DEFAULT', headnum=headnum)
+
+        elif self.action == 'convert_controls_to_blendshapes':
+            head = manipulate.get_current_head()
+            if head and head.control_panel_exists():
+                if not convert_controls_animation_to_blendshapes(head.headobj):
+                    self.report({'ERROR'}, 'Conversion could not be performed')
+                else:
+                    remove_blendshape_drivers(head.headobj)
+                    delete_with_children(head.blendshapes_control_panel)
+                    self.report({'INFO'}, 'Conversion completed')
+            else:
+                self.report({'ERROR'}, 'Control panel not found')
+
+        elif self.action == 'delete_control_panel':
+            head = manipulate.get_current_head()
+            if head and head.control_panel_exists():
+                remove_blendshape_drivers(head.headobj)
+                delete_with_children(head.blendshapes_control_panel)
+            else:
+                self.report({'ERROR'}, 'Control panel not found')
+
+        elif self.action == 'export_blendshapes_to_fbx':
+            head = manipulate.get_current_head()
+            if head:
+                manipulate.select_object_only(head.headobj)
+                bpy.ops.export_scene.fbx('INVOKE_DEFAULT',
+                                         use_selection=True,
+                                         bake_anim_use_all_actions=False,
+                                         bake_anim_use_nla_strips=False)
+
+        elif self.action == 'select_control_panel_sliders':
+            head = manipulate.get_current_head()
+            if head and head.control_panel_exists():
+                counter = select_control_panel_sliders(
+                    head.blendshapes_control_panel)
+                self.report(
+                    {'INFO'}, '{} Sliders has been selected'.format(counter))
+            else:
+                self.report({'ERROR'}, 'Control panel not found')
+
+        elif self.action == 'generate_facs_test_animation':
+            head = manipulate.get_current_head()
+            if head:
+                counter = create_facs_test_animation_on_blendshapes(head.headobj)
+                if counter < 0:
+                    self.report({'ERROR'}, 'No blendshapes on object')
+                elif counter > 0:
+                    self.report({'INFO'}, 'Test animation created '
+                                          'at {} blendshapes'.format(counter))
+                else:
+                    self.report({'ERROR'}, 'Some error occured while '
+                                           'creating the test animation')
+
+        elif self.action == 'disconnect_blendshapes_action':
+            head = manipulate.get_current_head()
+            if head:
+                if disconnect_blendshapes_action(head.headobj):
+                    self.report({'INFO'}, 'Animation Action disconnected')
+                else:
+                    self.report({'INFO'}, 'Blendshapes Action not found')
+
+        elif self.action == 'delete_blendshapes':
+            head = manipulate.get_current_head()
+            if head:
+                remove_blendshapes(head.headobj)
+                self.report({'INFO'}, 'Blendshapes have been removed')
+
+        elif self.action == 'update_blendshapes':
+            head = manipulate.get_current_head()
+            if head:
+                FBLoader.load_model(head.get_headnum())
+                try:
+                    update_facs_blendshapes(head.headobj)
+                except pkt.module().UnlicensedException:
+                    logger.error('UnlicensedException update_blendshapes')
+                    warn = get_operator(Config.fb_warning_idname)
+                    warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+                    return {'CANCELLED'}
+                except Exception:
+                    logger.error('UNKNOWN EXCEPTION update_blendshapes')
+                    self.report({'ERROR'}, 'Unknown error (see console window)')
+                    return {'CANCELLED'}
+                head.set_blendshapes_status(actual=True)
+
+        else:
+            return {'CANCELLED'}
+
+        return {'FINISHED'}
 
 
 class FB_OT_Actor(bpy.types.Operator):
     bl_idname = Config.fb_actor_idname
-    bl_label = "FaceBuilder in Action"
+    bl_label = 'FaceBuilder in Action'
     bl_options = {'REGISTER'}
-    bl_description = "FaceBuilder"
+    bl_description = 'FaceBuilder'
 
     action: StringProperty(name="Action Name")
     headnum: IntProperty(default=0)

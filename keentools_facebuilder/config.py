@@ -111,15 +111,21 @@ class Config:
 
     fb_texture_file_export_idname = operators + '.' + 'texture_file_export'
 
+    fb_animation_filebrowser_idname = operators + '.' + 'open_animation_filebrowser'
+
     fb_pinmode_idname = operators + '.' + 'pinmode'
 
     fb_movepin_idname = operators + '.' + 'movepin'
 
     fb_actor_idname = operators + '.' + 'actor'
 
+    fb_history_actor_idname = operators + '.' + 'history_actor'
+
     fb_camera_actor_idname = operators + '.' + 'camera_actor'
 
     fb_warning_idname = operators + '.' + 'addon_warning'
+
+    fb_blendshapes_warning_idname = operators + '.' + 'blendshapes_warning'
 
     fb_exif_selector_idname = operators + '.' + 'exif_selector'
 
@@ -143,6 +149,7 @@ class Config:
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
     fb_camera_panel_idname = _PT + 'camera_panel'
+    fb_info_panel_idname = _PT + 'info_panel'
     fb_update_panel_idname = _PT + 'update_panel'
     fb_views_panel_idname = _PT + 'views_panel'
     fb_exif_panel_idname = _PT + 'exif_panel'
@@ -150,6 +157,7 @@ class Config:
     fb_colors_panel_idname = _PT + 'colors_panel'
     fb_model_panel_idname = _PT + 'model_panel'
     fb_pin_settings_panel_idname = _PT + 'pin_settings_panel'
+    fb_blendshapes_panel_idname = _PT + 'blendshapes_panel'
 
     # Help ids
     fb_help_camera_idname = operators + '.' + 'help_camera'
@@ -165,6 +173,8 @@ class Config:
     fb_help_wireframe_settings_idname = operators + '.' + 'help_wireframe_settings'
 
     fb_help_texture_idname = operators + '.' + 'help_texture'
+
+    fb_help_blendshapes_idname = operators + '.' + 'help_blendshapes'
 
     fb_open_url_idname = operators + '.' + 'open_url'
 
@@ -186,6 +196,9 @@ class Config:
     # Standard names
     tex_builder_filename = 'kt_facebuilder_texture'
     tex_builder_matname = 'kt_facebuilder_material'
+
+    default_driver_name = 'FaceBuilderDriver'
+    default_blendshapes_action_name = 'fbBlendShapesAction'
 
     # Object Custom Properties
     # Tuples instead simple values are used to load custom properties

@@ -38,7 +38,8 @@ from bpy.types import PropertyGroup
 from .config import Config, get_main_settings, get_operator
 from .fbloader import FBLoader
 from .utils import coords
-from .utils.manipulate import what_is_state
+from .utils.manipulate import get_current_headnum
+from .callbacks import update_mesh_with_dialog, update_mesh_simple
 
 
 def update_emotions(self, context):
@@ -76,17 +77,21 @@ def update_pin_size(self, context):
 
 
 def update_model_scale(self, context):
+    headnum = self.get_headnum()
+    FBLoader.load_model(headnum)
+
     settings = get_main_settings()
-    state, headnum = what_is_state()
-    if headnum < 0:
-        return
     head = settings.get_head(headnum)
     fb = FBLoader.get_builder()
     fb.set_scale(head.model_scale)
 
+    if not head.has_no_blendshapes():
+        head.set_blendshapes_status(actual=False)
+
     coords.update_head_mesh(settings, fb, head)
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
+    FBLoader.save_only(headnum)
 
     if settings.pinmode and FBLoader.viewport().wireframer().is_working():
         FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
@@ -145,61 +150,6 @@ def update_blue_head_button(self, context):
         op = get_operator(Config.fb_select_head_idname)
         op('EXEC_DEFAULT')
         settings.blue_head_button = True
-
-
-def update_mesh_geometry(self, context):
-    logger = logging.getLogger(__name__)
-    settings = get_main_settings()
-    state, headnum = what_is_state()
-
-    if headnum < 0:
-        return
-
-    head = settings.get_head(headnum)
-    if settings.pinmode and head.should_use_emotions():
-        keyframe = head.get_keyframe(settings.current_camnum)
-    else:
-        keyframe = None
-
-    old_mesh = head.headobj.data
-    FBLoader.load_model(headnum)
-
-    fb = FBLoader.get_builder()
-    models = [x.name for x in fb.models_list()]
-    if (head.model_type in models):
-        model_index = models.index(head.model_type)
-    else:
-        logger.error('MODEL_TYPE_NOT_FOUND (Reset to default)')
-        model_index = 0
-        head.model_type = models[model_index]
-
-    fb.select_model(model_index)
-    logger.debug('MODEL_TYPE: [{}] {}'.format(model_index, head.model_type))
-
-    # Create new mesh
-    mesh = FBLoader.get_builder_mesh(fb, 'FBHead_tmp_mesh',
-                                     head.get_masks(),
-                                     uv_set=head.tex_uv_shape,
-                                     keyframe=keyframe)
-    try:
-        # Copy old material
-        if old_mesh.materials:
-            mesh.materials.append(old_mesh.materials[0])
-    except Exception:
-        pass
-    head.headobj.data = mesh
-    FBLoader.save_only(headnum)
-
-    if settings.pinmode:
-        # Update wireframe structures
-        FBLoader.viewport().wireframer().init_geom_data(head.headobj)
-        FBLoader.viewport().wireframer().init_edge_indices(FBLoader.get_builder())
-        FBLoader.viewport().update_wireframe()
-
-    mesh_name = old_mesh.name
-    # Delete old mesh
-    bpy.data.meshes.remove(old_mesh, do_unlink=True)
-    mesh.name = mesh_name
 
 
 class FBExifItem(PropertyGroup):
@@ -545,6 +495,8 @@ class FBHeadItem(PropertyGroup):
     use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
                                          default=False, update=update_emotions)
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
+    blendshapes_control_panel: PointerProperty(name="Blendshapes Control Panel",
+                                               type=bpy.types.Object)
     cameras: CollectionProperty(name="Cameras", type=FBCameraItem)
 
     sensor_width: FloatProperty(
@@ -568,11 +520,15 @@ class FBHeadItem(PropertyGroup):
                     "in the frame",
         default=False)
 
+    blendshapes_actual: BoolProperty(
+        name="Blendshapes status",
+        description="When turned on then the blendshapes have actual state",
+        default=True)
+
     masks: BoolVectorProperty(name='Masks', description='Head parts visibility',
                               size=12, subtype='NONE',
-                              default=(True, True, True, True, True, True,
-                                       True, True, True, True, True, True),
-                              update=update_mesh_geometry)
+                              default=(True,) * 12,
+                              update=update_mesh_simple)
 
     serial_str: StringProperty(name="Serialization string", default="")
     tmp_serial_str: StringProperty(name="Temporary Serialization", default="")
@@ -580,7 +536,7 @@ class FBHeadItem(PropertyGroup):
 
     tex_uv_shape: EnumProperty(name="UV", items=uv_items_callback,
                                description="UV Layout",
-                               update=update_mesh_geometry)
+                               update=update_mesh_simple)
 
     use_exif: BoolProperty(
         name="Use EXIF if available in file",
@@ -618,7 +574,39 @@ class FBHeadItem(PropertyGroup):
 
     model_type: EnumProperty(name='Topology', items=model_type_callback,
                              description='Model selector',
-                             update=update_mesh_geometry)
+                             update=update_mesh_with_dialog)
+
+    model_type_previous: EnumProperty(name='Current Topology',
+                                      items=model_type_callback,
+                                      description='Invisible Model selector')
+
+    def blenshapes_are_relevant(self):
+        return self.blendshapes_actual
+
+    def set_blendshapes_status(self, actual):
+        self.blendshapes_actual = actual
+
+    def model_type_changed(self):
+        return self.model_type != self.model_type_previous
+
+    def model_changed(self):
+        return self.model_type_changed()
+
+    def discard_model_changes(self):
+        if self.model_type_changed():
+            self.model_type = self.model_type_previous
+
+    def apply_model_changes(self):
+        self.model_type_previous = self.model_type
+
+    def has_no_blendshapes(self):
+        return not self.headobj or not self.headobj.data or \
+               not self.headobj.data.shape_keys
+
+    def has_blendshapes_action(self):
+        return self.headobj and self.headobj.data.shape_keys \
+               and self.headobj.data.shape_keys.animation_data \
+               and self.headobj.data.shape_keys.animation_data.action
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:
@@ -659,6 +647,17 @@ class FBHeadItem(PropertyGroup):
             return False
         except AttributeError:
             return True
+
+    def control_panel_exists(self):
+        if self.blendshapes_control_panel is None:
+            return False
+        try:
+            if not hasattr(self.blendshapes_control_panel, 'users_scene') or \
+                    len(self.blendshapes_control_panel.users_scene) == 0:
+                return False
+            return True
+        except AttributeError:
+            return False
 
     def get_last_camnum(self):
         return len(self.cameras) - 1
@@ -731,6 +730,13 @@ class FBHeadItem(PropertyGroup):
         self.sensor_width = 0
         self.sensor_height = 0
 
+    def get_headnum(self):
+        settings = get_main_settings()
+        for i, head in enumerate(settings.heads):
+            if head == self:
+                return i
+        return -1
+
 
 class FBSceneSettings(PropertyGroup):
     # ---------------------
@@ -800,7 +806,8 @@ class FBSceneSettings(PropertyGroup):
         description="Change how much pins affect the model expressions",
         name="Expression rigidity", default=2.0, min=0.001, max=1000.0)
 
-    # Internal use only
+    # Internal use only.
+    # Warning! current_headnum and current_camnum work only in Pinmode!
     current_headnum: IntProperty(name="Current Head Number", default=-1)
     current_camnum: IntProperty(name="Current Camera Number", default=-1)
 

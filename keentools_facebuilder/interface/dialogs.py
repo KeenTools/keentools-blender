@@ -23,6 +23,7 @@ import bpy
 from bpy.types import Panel, Operator
 
 from ..config import Config, get_main_settings, get_operator, ErrorType
+from ..callbacks import mesh_update_accepted, mesh_update_canceled
 
 
 class FB_OT_AddonWarning(Operator):
@@ -111,6 +112,51 @@ class FB_OT_AddonWarning(Operator):
                 "Model data cannot be loaded. You need to reinstall "
                 "FaceBuilder."
             ])
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+
+class FB_OT_BlendshapesWarning(Operator):
+    bl_idname = Config.fb_blendshapes_warning_idname
+    bl_label = 'Convertation warning'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    headnum: bpy.props.IntProperty(default=0)
+    accept: bpy.props.BoolProperty(name='Yes, change topolgy and '
+                                        'convert the blendshapes',
+                                   default=False)
+    content = []
+
+    def draw(self, context):
+        layout = self.layout.column()
+
+        box = layout.column()
+        box.scale_y = Config.text_scale_y
+
+        for txt in self.content:
+            row = box.row()
+            row.alert = True
+            row.label(text=txt)
+
+        layout.prop(self, 'accept')
+        layout.label(text='')
+
+    def execute(self, context):
+        if (self.accept):
+            mesh_update_accepted(self.headnum)
+        else:
+            mesh_update_canceled(self.headnum)
+        return {'FINISHED'}
+
+    def cancel(self, context):
+        mesh_update_canceled()
+
+    def invoke(self, context, event):
+        self.content = ['Warning! Your mesh contains blendshapes.',
+                        'So if you change topology now you will lose',
+                        'any custom blendshapes and animations on it.',
+                        'Only our FACS-blendshapes will be regenerated.',
+                        'But we strongly recommend '
+                        'that you save your scene before.']
         return context.window_manager.invoke_props_dialog(self, width=400)
 
 

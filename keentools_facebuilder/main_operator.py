@@ -53,10 +53,7 @@ class FB_OT_SelectHead(Operator):
 
         settings = get_main_settings()
         head = settings.get_head(self.headnum)
-
-        bpy.ops.object.select_all(action='DESELECT')
-        head.headobj.select_set(state=True)
-        bpy.context.view_layer.objects.active = head.headobj
+        manipulate.select_object_only(head.headobj)
         return {'FINISHED'}
 
 
@@ -127,6 +124,7 @@ class FB_OT_SelectCamera(Operator):
 
         # Auto Call PinMode
         draw_op = get_operator(Config.fb_pinmode_idname)
+
         if not bpy.app.background:
             draw_op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
 

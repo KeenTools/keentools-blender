@@ -304,3 +304,28 @@ class HELP_OT_TextureHelp(bpy.types.Operator):
 
     def execute(self, context):
         return {'FINISHED'}
+
+
+class HELP_OT_BlendshapesHelp(bpy.types.Operator):
+    bl_idname = Config.fb_help_blendshapes_idname
+    bl_label = 'Blendshapes'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Show help information about Blendshapes panel'
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        content = [
+            "About Blendshapes panel"]
+
+        for c in content:
+            col.label(text=c)
+        layout.separator()
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(
+            self, width=_help_window_width)
+
+    def execute(self, context):
+        return {'FINISHED'}

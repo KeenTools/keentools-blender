@@ -88,6 +88,19 @@ def what_is_state():
     return _how_many_heads()
 
 
+def get_current_headnum():
+    state, headnum = what_is_state()
+    return headnum
+
+
+def get_current_head():
+    headnum = get_current_headnum()
+    if headnum >= 0:
+        settings = get_main_settings()
+        return settings.get_head(headnum)
+    return None
+
+
 def force_undo_push(msg='KeenTools operation'):
     inc_operation()
     bpy.ops.ed.undo_push(message=msg)
@@ -131,6 +144,12 @@ def get_operation():
     settings = get_main_settings()
     return settings.opnum
 # --------------------
+
+
+def select_object_only(obj):
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(state=True)
+    bpy.context.view_layer.objects.active = obj
 
 
 def unhide_head(headnum):
