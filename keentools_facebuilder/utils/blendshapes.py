@@ -131,9 +131,9 @@ def zero_all_blendshape_weights(obj):
 def _get_facs_executor():
     logger = logging.getLogger(__name__)
     fb = FBLoader.get_builder()
-    geo = fb.applied_args_model()
     try:
-        fe = pkt.module().FacsExecutor(geo)
+        fe = pkt.module().FacsExecutor(
+            fb.applied_args_model(), fb.current_scale())
     except pkt.module().FacsLoadingException:
         logger.error('CANNOT_LOAD_FACS: FacsLoadingException')
         return None
@@ -218,9 +218,8 @@ def load_csv_animation_to_blendshapes(obj, filepath):
                 'ignored': [], 'read_facs': []}
 
     fb = FBLoader.get_builder()
-    geo = fb.applied_args_model()
-    fe = pkt.module().FacsExecutor(geo)
-
+    fe = pkt.module().FacsExecutor(
+        fb.applied_args_model(), fb.current_scale())
     action_name = os.path.splitext(os.path.basename(filepath))[0]
     blendshapes_action = _get_safe_blendshapes_action(obj, action_name)
 
