@@ -311,8 +311,7 @@ class FBLoader:
         faces = np.empty(f_count, dtype=np.object)
 
         for i in range(f_count):
-            face_size = me.face_size(i)
-            faces[i] = tuple(me.face_point(i, j) for j in range(face_size))
+            faces[i] = tuple(me.face_point(i, j) for j in range(me.face_size(i)))
 
         mesh = bpy.data.meshes.new(mesh_name)
         mesh.from_pydata(vertices2, [], faces.tolist())
