@@ -44,7 +44,8 @@ from .utils.blendshapes import (create_facs_blendshapes,
                                 create_facs_test_animation_on_blendshapes,
                                 disconnect_blendshapes_action,
                                 remove_blendshapes,
-                                update_facs_blendshapes)
+                                update_facs_blendshapes,
+                                zero_all_blendshape_weights)
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 from .fbloader import FBLoader
 
@@ -178,11 +179,22 @@ class FB_OT_HistoryActor(bpy.types.Operator):
                     self.report({'ERROR'}, 'Some error occured while '
                                            'creating the test animation')
 
+        elif self.action == 'zero_all_blendshapes':
+            head = manipulate.get_current_head()
+            if head:
+                counter = zero_all_blendshape_weights(head.headobj)
+                if counter < 0:
+                    self.report({'ERROR'}, 'No blendshapes on object')
+                else:
+                    self.report({'INFO'}, '{} blendshape values has been '
+                                          'changed to zero'.format(counter))
+
         elif self.action == 'disconnect_blendshapes_action':
             head = manipulate.get_current_head()
             if head:
                 if disconnect_blendshapes_action(head.headobj):
                     self.report({'INFO'}, 'Animation Action disconnected')
+                    zero_all_blendshape_weights(head.headobj)
                 else:
                     self.report({'INFO'}, 'Blendshapes Action not found')
 
