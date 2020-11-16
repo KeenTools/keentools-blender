@@ -304,8 +304,8 @@ class FB_OT_AnimationFilebrowser(Operator, ImportHelper):
             info = 'CSV Animation loaded.'
             if len(res['ignored']) > 0:
                 info += ' Ignored {} columns'.format(len(res['ignored']))
-            if len(res['red_facs']) > 0:
-                info += ' Red {} facs'.format(len(res['red_facs']))
+            if len(res['read_facs']) > 0:
+                info += ' Read {} facs'.format(len(res['read_facs']))
             self.report({'INFO'}, info)
         else:
             self.report({'ERROR'}, res['message'])

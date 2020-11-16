@@ -205,13 +205,15 @@ def load_csv_animation_to_blendshapes(obj, filepath):
     logger = logging.getLogger(__name__)
     try:
         fan = pkt.module().FacsAnimation()
-        red_facs, ignored_columns = fan.load_from_csv_file(filepath)
+        read_facs, ignored_columns = fan.load_from_csv_file(filepath)
     except pkt.module().FacsLoadingException as err:
         logger.error('CANNOT_LOAD_CSV_ANIMATION: {}'.format(err))
-        return {'status': False, 'message': str(err), 'ignored': []}
+        return {'status': False, 'message': str(err),
+                'ignored': [], 'read_facs': []}
     except Exception as err:
         logger.error('CANNOT_LOAD_CSV_ANIMATION!: {} {}'.format(type(err), err))
-        return {'status': False, 'message': str(err), 'ignored': []}
+        return {'status': False, 'message': str(err),
+                'ignored': [], 'read_facs': []}
 
     fb = FBLoader.get_builder()
     geo = fb.applied_args_model()
@@ -238,10 +240,10 @@ def load_csv_animation_to_blendshapes(obj, filepath):
     logger.info('Timecodes enabled: {}'.format(fan.timecodes_enabled()))
     if len(ignored_columns) > 0:
         logger.info('Ignored columns: {}'.format(ignored_columns))
-    if len(red_facs) > 0:
-        logger.info('Red facs: {}'.format(red_facs))
+    if len(read_facs) > 0:
+        logger.info('Read facs: {}'.format(read_facs))
     return {'status': True, 'message': 'ok',
-            'ignored': ignored_columns, 'red_facs': red_facs}
+            'ignored': ignored_columns, 'read_facs': read_facs}
 
 
 def create_facs_test_animation_on_blendshapes(obj, start_time=1, dtime=4):
