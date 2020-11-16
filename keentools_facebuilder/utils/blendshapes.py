@@ -119,9 +119,9 @@ def disconnect_blendshapes_action(obj):
 def _get_facs_executor():
     logger = logging.getLogger(__name__)
     fb = FBLoader.get_builder()
-    geo = fb.applied_args_model()
     try:
-        fe = pkt.module().FacsExecutor(geo)
+        fe = pkt.module().FacsExecutor(
+            fb.applied_args_model(), fb.current_scale())
     except pkt.module().FacsLoadingException:
         logger.error('CANNOT_LOAD_FACS: FacsLoadingException')
         return None
@@ -204,8 +204,8 @@ def load_csv_animation_to_blendshapes(obj, filepath):
         return {'status': False, 'message': str(err), 'ignored': []}
 
     fb = FBLoader.get_builder()
-    geo = fb.applied_args_model()
-    fe = pkt.module().FacsExecutor(geo)
+    fe = pkt.module().FacsExecutor(
+        fb.applied_args_model(), fb.current_scale())
     blendshapes_action = _get_safe_blendshapes_action(obj)
 
     scene = bpy.context.scene
