@@ -20,6 +20,7 @@ import math
 import bpy
 import numpy as np
 import logging
+import os
 
 from ..config import Config
 from ..utils.rig_slider import create_slider, create_rectangle, create_label
@@ -48,7 +49,8 @@ def _get_all_blendshape_names(obj):
     return res[1:]
 
 
-def _get_safe_blendshapes_action(obj):
+def _get_safe_blendshapes_action(
+        obj, action_name=Config.default_blendshapes_action_name):
     if _has_no_blendshapes(obj):
         return None
     animation_data = obj.data.shape_keys.animation_data
@@ -58,7 +60,7 @@ def _get_safe_blendshapes_action(obj):
             return None
     if not animation_data.action:
         animation_data.action = \
-            bpy.data.actions.new(Config.default_blendshapes_action_name)
+            bpy.data.actions.new(action_name)
     return animation_data.action
 
 
@@ -218,7 +220,9 @@ def load_csv_animation_to_blendshapes(obj, filepath):
     fb = FBLoader.get_builder()
     geo = fb.applied_args_model()
     fe = pkt.module().FacsExecutor(geo)
-    blendshapes_action = _get_safe_blendshapes_action(obj)
+
+    action_name = os.path.splitext(os.path.basename(filepath))[0]
+    blendshapes_action = _get_safe_blendshapes_action(obj, action_name)
 
     scene = bpy.context.scene
     fps = scene.render.fps
