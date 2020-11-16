@@ -116,6 +116,16 @@ def disconnect_blendshapes_action(obj):
     return None
 
 
+def zero_all_blendshape_weights(obj):
+    if _has_no_blendshapes(obj):
+        return -1
+    counter = 0
+    for kb in obj.data.shape_keys.key_blocks[1:]:
+        kb.value = 0
+        counter += 1
+    return counter
+
+
 def _get_facs_executor():
     logger = logging.getLogger(__name__)
     fb = FBLoader.get_builder()

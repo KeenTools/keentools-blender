@@ -763,6 +763,11 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
                 row.active = False
                 op.action = 'none'
 
+            op = box.operator(
+                Config.fb_history_actor_idname,
+                text='Zero all blendshape values')
+            op.action = 'zero_all_blendshapes'
+
             row = box.row()
             op = row.operator(
                 Config.fb_history_actor_idname,
