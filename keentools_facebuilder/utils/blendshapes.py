@@ -20,6 +20,7 @@ import math
 import bpy
 import numpy as np
 import logging
+import os
 
 from ..config import Config
 from ..utils.rig_slider import create_slider, create_rectangle, create_label
@@ -48,7 +49,8 @@ def _get_all_blendshape_names(obj):
     return res[1:]
 
 
-def _get_safe_blendshapes_action(obj):
+def _get_safe_blendshapes_action(
+        obj, action_name=Config.default_blendshapes_action_name):
     if _has_no_blendshapes(obj):
         return None
     animation_data = obj.data.shape_keys.animation_data
@@ -58,7 +60,7 @@ def _get_safe_blendshapes_action(obj):
             return None
     if not animation_data.action:
         animation_data.action = \
-            bpy.data.actions.new(Config.default_blendshapes_action_name)
+            bpy.data.actions.new(action_name)
     return animation_data.action
 
 
@@ -114,6 +116,16 @@ def disconnect_blendshapes_action(obj):
         obj.data.update()
         return action
     return None
+
+
+def zero_all_blendshape_weights(obj):
+    if _has_no_blendshapes(obj):
+        return -1
+    counter = 0
+    for kb in obj.data.shape_keys.key_blocks[1:]:
+        kb.value = 0
+        counter += 1
+    return counter
 
 
 def _get_facs_executor():
@@ -195,18 +207,21 @@ def load_csv_animation_to_blendshapes(obj, filepath):
     logger = logging.getLogger(__name__)
     try:
         fan = pkt.module().FacsAnimation()
-        red_facs, ignored_columns = fan.load_from_csv_file(filepath)
+        read_facs, ignored_columns = fan.load_from_csv_file(filepath)
     except pkt.module().FacsLoadingException as err:
         logger.error('CANNOT_LOAD_CSV_ANIMATION: {}'.format(err))
-        return {'status': False, 'message': str(err), 'ignored': []}
+        return {'status': False, 'message': str(err),
+                'ignored': [], 'read_facs': []}
     except Exception as err:
         logger.error('CANNOT_LOAD_CSV_ANIMATION!: {} {}'.format(type(err), err))
-        return {'status': False, 'message': str(err), 'ignored': []}
+        return {'status': False, 'message': str(err),
+                'ignored': [], 'read_facs': []}
 
     fb = FBLoader.get_builder()
     fe = pkt.module().FacsExecutor(
         fb.applied_args_model(), fb.current_scale())
-    blendshapes_action = _get_safe_blendshapes_action(obj)
+    action_name = os.path.splitext(os.path.basename(filepath))[0]
+    blendshapes_action = _get_safe_blendshapes_action(obj, action_name)
 
     scene = bpy.context.scene
     fps = scene.render.fps
@@ -228,10 +243,10 @@ def load_csv_animation_to_blendshapes(obj, filepath):
     logger.info('Timecodes enabled: {}'.format(fan.timecodes_enabled()))
     if len(ignored_columns) > 0:
         logger.info('Ignored columns: {}'.format(ignored_columns))
-    if len(red_facs) > 0:
-        logger.info('Red facs: {}'.format(red_facs))
+    if len(read_facs) > 0:
+        logger.info('Read facs: {}'.format(read_facs))
     return {'status': True, 'message': 'ok',
-            'ignored': ignored_columns, 'red_facs': red_facs}
+            'ignored': ignored_columns, 'read_facs': read_facs}
 
 
 def create_facs_test_animation_on_blendshapes(obj, start_time=1, dtime=4):
