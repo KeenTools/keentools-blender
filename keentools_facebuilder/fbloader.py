@@ -300,33 +300,29 @@ class FBLoader:
         me = geo.mesh(0)
 
         v_count = me.points_count()
-        vertices = []
-        for i in range(0, v_count):
-            vertices.append(me.point(i))
+        vertices = np.empty((v_count, 3), 'f')
+        for i in range(v_count):
+            vertices[i] = me.point(i)
 
         rot = np.array([[1., 0., 0.], [0., 0., 1.], [0., -1., 0]])
         vertices2 = vertices @ rot
-        # vertices2 = vertices
 
         f_count = me.faces_count()
-        faces = []
+        faces = np.empty(f_count, dtype=np.object)
 
-        # Normals are not in use yet
-        normals = []
-        n = 0
-        for i in range(0, f_count):
-            row = []
-            for j in range(0, me.face_size(i)):
-                row.append(me.face_point(i, j))
-                normal = me.normal(i, j) @ rot
-                normals.append(tuple(normal))
-                n += 1
-            faces.append(tuple(row))
+        for i in range(f_count):
+            face_size = me.face_size(i)
+            row = np.empty(face_size, 'i')
+            for j in range(face_size):
+                row[j] = me.face_point(i, j)
+            faces[i] = tuple(row)
 
         mesh = bpy.data.meshes.new(mesh_name)
-        mesh.from_pydata(vertices2, [], faces)
+        mesh.from_pydata(vertices2, [], faces.tolist())
 
-        # Init Custom Normals (work on Shading Flat!)
+        # Normals are not in use yet
+        # Init Custom Normals (work on Shading Flat only!)
+        # normals = [tuple(me.normal(i) @ rot) for i in range(me.normals_count())]
         # mesh.calc_normals_split()
         # mesh.normals_split_custom_set(normals)
 
