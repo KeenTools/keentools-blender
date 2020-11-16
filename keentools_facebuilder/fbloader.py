@@ -300,7 +300,7 @@ class FBLoader:
         me = geo.mesh(0)
 
         v_count = me.points_count()
-        vertices = np.empty((v_count, 3), 'f')
+        vertices = np.empty((v_count, 3), dtype=np.float32)
         for i in range(v_count):
             vertices[i] = me.point(i)
 
@@ -311,7 +311,7 @@ class FBLoader:
         faces = np.empty(f_count, dtype=np.object)
 
         for i in range(f_count):
-            faces[i] = tuple(me.face_point(i, j) for j in range(me.face_size(i)))
+            faces[i] = [me.face_point(i, j) for j in range(me.face_size(i))]
 
         mesh = bpy.data.meshes.new(mesh_name)
         mesh.from_pydata(vertices2, [], faces.tolist())
