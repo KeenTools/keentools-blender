@@ -708,7 +708,7 @@ class FB_PT_PinSettingsPanel(AllVisible, Panel):
 
 class FB_PT_BlendShapesPanel(AllVisible, Panel):
     bl_idname = Config.fb_blendshapes_panel_idname
-    bl_label = 'Blendshapes/FACS'
+    bl_label = 'Blendshapes'
 
     def draw_header_preset(self, context):
         layout = self.layout
@@ -729,16 +729,16 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
         has_blendshapes_action = head.has_blendshapes_action()
 
         box = layout.box()
-        box.label(text='FACS Blendshapes')
+        # box.label(text='FACS Blendshapes')
         op = box.operator(
             Config.fb_history_actor_idname,
-            text='Generate FACS-Blendshapes')
+            text='Create')
         op.action = 'generate_facs_blendshapes'
 
         row = box.row()
         op = row.operator(
             Config.fb_history_actor_idname,
-            text='Delete all blendshapes')
+            text='Delete')
         if no_blendshapes:
             row.active = False
             op.action = 'none'
@@ -746,7 +746,8 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
             op.action = 'delete_blendshapes'
 
         if not no_blendshapes:
-            box.label(text='Blendshapes Animation')
+            box = layout.box()
+            box.label(text='Animation')
 
             op = box.operator(
                 Config.fb_history_actor_idname,
@@ -756,7 +757,7 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
             row = box.row()
             op = row.operator(
                 Config.fb_history_actor_idname,
-                text='Generate test animation')
+                text='Create example animation')
             if not has_blendshapes_action:
                 op.action = 'generate_facs_test_animation'
             else:
@@ -765,13 +766,13 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
 
             op = box.operator(
                 Config.fb_history_actor_idname,
-                text='Zero all blendshape values')
+                text='Reset blendshape values')
             op.action = 'zero_all_blendshapes'
 
             row = box.row()
             op = row.operator(
                 Config.fb_history_actor_idname,
-                text='Delete blendshapes animation')
+                text='Clear animation')
             if has_blendshapes_action:
                 op.action = 'disconnect_blendshapes_action'
             else:
@@ -779,11 +780,6 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
                 op.action = 'none'
 
         box = layout.box()
-        col = box.column()
-        col.scale_y = Config.text_scale_y
-        col.label(text='Export to game engine')
-        col.label(text='(Unreal Engine or Unity)')
-
         op = box.operator(
             Config.fb_history_actor_idname,
             text='Export head to FBX')

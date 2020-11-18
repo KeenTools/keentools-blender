@@ -301,11 +301,11 @@ class FB_OT_AnimationFilebrowser(Operator, ImportHelper):
         res = load_csv_animation_to_blendshapes(head.headobj, self.filepath)
 
         if res['status']:
-            info = 'CSV Animation loaded.'
+            info = 'Loaded animation.'
             if len(res['ignored']) > 0:
                 info += ' Ignored {} columns'.format(len(res['ignored']))
             if len(res['read_facs']) > 0:
-                info += ' Read {} facs'.format(len(res['read_facs']))
+                info += ' Recognized {} blendshapes'.format(len(res['read_facs']))
             self.report({'INFO'}, info)
         else:
             self.report({'ERROR'}, res['message'])

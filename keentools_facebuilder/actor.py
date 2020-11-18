@@ -82,12 +82,12 @@ class FB_OT_HistoryActor(bpy.types.Operator):
                     return {'CANCELLED'}
 
                 if counter >=0:
-                    logger.info('{} Blendshapes created'.format(counter))
+                    logger.info('Created {} blendshapes'.format(counter))
                     self.report({'INFO'},
-                                '{} Blendshapes created'.format(counter))
+                                'Created {} blendshapes'.format(counter))
                 else:
-                    logger.error('Facs Model Error')
-                    self.report({'ERROR'}, 'Facs Model Error')
+                    logger.error('Cannot create blendshapes (FACS Model)')
+                    self.report({'ERROR'}, 'Cannot create blendshapes')
 
         elif self.action == 'generate_control_panel':
             head = manipulate.get_current_head()
@@ -122,7 +122,7 @@ class FB_OT_HistoryActor(bpy.types.Operator):
             if headnum>=0:
                 head = settings.get_head(headnum)
                 if head.has_no_blendshapes():
-                    self.report({'ERROR'}, 'No blendshapes on object')
+                    self.report({'ERROR'}, 'The head has no blendshapes')
                 else:
                     op = get_operator(Config.fb_animation_filebrowser_idname)
                     op('INVOKE_DEFAULT', headnum=headnum)
@@ -171,32 +171,33 @@ class FB_OT_HistoryActor(bpy.types.Operator):
             if head:
                 counter = create_facs_test_animation_on_blendshapes(head.headobj)
                 if counter < 0:
-                    self.report({'ERROR'}, 'No blendshapes on object')
+                    self.report({'ERROR'}, 'The head has no blendshapes')
                 elif counter > 0:
-                    self.report({'INFO'}, 'Test animation created '
-                                          'at {} blendshapes'.format(counter))
+                    self.report({'INFO'}, 'Created animation '
+                                          'for {} blendshapes'.format(counter))
                 else:
-                    self.report({'ERROR'}, 'Some error occured while '
-                                           'creating the test animation')
+                    self.report({'ERROR'}, 'An error occured while '
+                                           'creating animation')
 
         elif self.action == 'zero_all_blendshapes':
             head = manipulate.get_current_head()
             if head:
                 counter = zero_all_blendshape_weights(head.headobj)
                 if counter < 0:
-                    self.report({'ERROR'}, 'No blendshapes on object')
+                    self.report({'ERROR'}, 'The head has no blendshapes')
                 else:
                     self.report({'INFO'}, '{} blendshape values has been '
-                                          'changed to zero'.format(counter))
+                                          'set to 0'.format(counter))
 
         elif self.action == 'disconnect_blendshapes_action':
             head = manipulate.get_current_head()
             if head:
                 if disconnect_blendshapes_action(head.headobj):
-                    self.report({'INFO'}, 'Animation Action disconnected')
+                    self.report({'INFO'}, 'Animation action has been unlinked')
                     zero_all_blendshape_weights(head.headobj)
                 else:
-                    self.report({'INFO'}, 'Blendshapes Action not found')
+                    self.report({'INFO'}, 'Blendshape animation action '
+                                          'has not been found')
 
         elif self.action == 'delete_blendshapes':
             head = manipulate.get_current_head()
