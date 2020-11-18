@@ -47,6 +47,18 @@ def _show_all_panels_no_blendshapes():
     return settings.get_head(headnum).has_no_blendshapes()
 
 
+def _draw_update_blendshapes_panel(layout):
+    box = layout.box()
+    col = box.column()
+    col.alert = True
+    col.scale_y = Config.text_scale_y
+    col.label(text='The shape has been changed,')
+    col.label(text='blendshapes need to be updated')
+
+    op = box.operator(Config.fb_history_actor_idname, text='Update')
+    op.action = 'update_blendshapes'
+
+
 class Common:
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -215,31 +227,6 @@ class FB_PT_UpdatePanel(Common, Panel):
     def draw(self, context):
         layout = self.layout
         self._draw_response(layout)
-
-
-class FB_PT_InfoPanel(AllVisible, Panel):
-    bl_idname = Config.fb_info_panel_idname
-    bl_label = 'Info'
-
-    def draw(self, context):
-        layout = self.layout
-        head = get_current_head()
-        if not head:
-            return
-        if head.has_no_blendshapes():
-            layout.label(text='No blendshapes detected')
-            return
-        if head.blenshapes_are_relevant():
-            layout.label(text='Actual blendshapes')
-        else:
-            col = layout.column()
-            col.alert = True
-            col.label(text='Blendshapes need to be updated')
-
-            op = layout.operator(
-                Config.fb_history_actor_idname,
-                text='Update FACS-Blendshapes')
-            op.action = 'update_blendshapes'
 
 
 class FB_PT_CameraPanel(AllVisibleClosed, Panel):
@@ -499,6 +486,10 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
 
         self._draw_exit_pinmode(layout)
         self._draw_camera_hint(layout, headnum)
+
+        head = settings.get_head(headnum)
+        if not head.blenshapes_are_relevant() and head.model_changed_by_pinmode:
+            _draw_update_blendshapes_panel(layout)
         self._draw_camera_list(headnum, layout)
 
         # Open sequence Button (large x2)
@@ -549,6 +540,9 @@ class FB_PT_Model(AllVisibleClosed, Panel):
         box = layout.box()
         row = box.row()
         row.prop(head, 'model_scale')
+
+        if not head.blenshapes_are_relevant() and head.model_changed_by_scale:
+            _draw_update_blendshapes_panel(box)
 
         box.prop(head, 'model_type')
 

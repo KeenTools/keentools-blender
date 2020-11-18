@@ -149,7 +149,6 @@ class Config:
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
     fb_camera_panel_idname = _PT + 'camera_panel'
-    fb_info_panel_idname = _PT + 'info_panel'
     fb_update_panel_idname = _PT + 'update_panel'
     fb_views_panel_idname = _PT + 'views_panel'
     fb_exif_panel_idname = _PT + 'exif_panel'

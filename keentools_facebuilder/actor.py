@@ -220,7 +220,7 @@ class FB_OT_HistoryActor(bpy.types.Operator):
                     logger.error('UNKNOWN EXCEPTION update_blendshapes')
                     self.report({'ERROR'}, 'Unknown error (see console window)')
                     return {'CANCELLED'}
-                head.set_blendshapes_status(actual=True)
+                head.clear_model_changed_status()
 
         else:
             return {'CANCELLED'}
