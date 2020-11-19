@@ -522,11 +522,6 @@ class FBHeadItem(PropertyGroup):
                     "in the frame",
         default=False)
 
-    model_changed_by_pinmode: BoolProperty(
-        name="Blendshapes status",
-        description="When turned on then the blendshapes have actual state",
-        default=False)
-
     masks: BoolVectorProperty(name='Masks', description='Head parts visibility',
                               size=12, subtype='NONE',
                               default=(True,) * 12,
@@ -575,6 +570,11 @@ class FBHeadItem(PropertyGroup):
         update=update_model_scale)
 
     model_changed_by_scale: BoolProperty(default=False)
+
+    model_changed_by_pinmode: BoolProperty(
+        name="Blendshapes status",
+        description="When turned on then the blendshapes have actual state",
+        default=False)
 
     model_type: EnumProperty(name='Topology', items=model_type_callback,
                              description='Model selector',

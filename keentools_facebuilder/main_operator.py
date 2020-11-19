@@ -35,6 +35,14 @@ from .utils.exif_reader import (read_exif_from_camera,
                                 copy_exif_parameters_from_camera_to_head,
                                 update_image_groups)
 from .utils.manipulate import check_settings
+from .utils.operator_action import (create_blendshapes,
+                                    delete_blendshapes,
+                                    load_animation_from_csv,
+                                    create_example_animation,
+                                    reset_blendshape_values,
+                                    clear_animation,
+                                    export_head_to_fbx,
+                                    update_blendshapes)
 
 
 class ButtonOperator:
@@ -762,9 +770,7 @@ class FB_OT_CreateBlendshapes(ButtonOperator, Operator):
     bl_description = 'Create FACS blendshapes'
 
     def execute(self, context):
-        op = get_operator(Config.fb_history_actor_idname)
-        op('EXEC_DEFAULT', action='generate_facs_blendshapes')
-        return {'FINISHED'}
+        return create_blendshapes(self)
 
 
 class FB_OT_DeleteBlendshapes(ActiveButtonOperator, Operator):
@@ -775,9 +781,7 @@ class FB_OT_DeleteBlendshapes(ActiveButtonOperator, Operator):
     def execute(self, context):
         if not self.active_button:
             return {'CANCELLED'}
-        op = get_operator(Config.fb_history_actor_idname)
-        op('EXEC_DEFAULT', action='delete_blendshapes')
-        return {'FINISHED'}
+        return delete_blendshapes(self)
 
 
 class FB_OT_LoadAnimationFromCSV(ButtonOperator, Operator):
@@ -787,9 +791,7 @@ class FB_OT_LoadAnimationFromCSV(ButtonOperator, Operator):
                      '(LiveLinkFace format)'
 
     def execute(self, context):
-        op = get_operator(Config.fb_history_actor_idname)
-        op('EXEC_DEFAULT', action='load_csv_animation')
-        return {'FINISHED'}
+        return load_animation_from_csv(self)
 
 
 class FB_OT_CreateExampleAnimation(ActiveButtonOperator, Operator):
@@ -800,9 +802,7 @@ class FB_OT_CreateExampleAnimation(ActiveButtonOperator, Operator):
     def execute(self, context):
         if not self.active_button:
             return {'CANCELLED'}
-        op = get_operator(Config.fb_history_actor_idname)
-        op('EXEC_DEFAULT', action='generate_facs_test_animation')
-        return {'FINISHED'}
+        return create_example_animation(self)
 
 
 class FB_OT_ResetBlendshapeValues(ButtonOperator, Operator):
@@ -812,9 +812,7 @@ class FB_OT_ResetBlendshapeValues(ButtonOperator, Operator):
                      'Does not affect animation keyframes'
 
     def execute(self, context):
-        op = get_operator(Config.fb_history_actor_idname)
-        op('EXEC_DEFAULT', action='zero_all_blendshapes')
-        return {'FINISHED'}
+        return reset_blendshape_values(self)
 
 
 class FB_OT_ClearAnimation(ActiveButtonOperator, Operator):
@@ -825,9 +823,7 @@ class FB_OT_ClearAnimation(ActiveButtonOperator, Operator):
     def execute(self, context):
         if not self.active_button:
             return {'CANCELLED'}
-        op = get_operator(Config.fb_history_actor_idname)
-        op('EXEC_DEFAULT', action='disconnect_blendshapes_action')
-        return {'FINISHED'}
+        return clear_animation(self)
 
 
 class FB_OT_ExportHeadToFBX(ButtonOperator, Operator):
@@ -838,9 +834,16 @@ class FB_OT_ExportHeadToFBX(ButtonOperator, Operator):
                      'for game engines (UE4, Unity, etc.)'
 
     def execute(self, context):
-        op = get_operator(Config.fb_history_actor_idname)
-        op('EXEC_DEFAULT', action='export_blendshapes_to_fbx')
-        return {'FINISHED'}
+        return export_head_to_fbx(self)
+
+
+class FB_OT_UpdateBlendshapes(ButtonOperator, Operator):
+    bl_idname = Config.fb_update_blendshapes_idname
+    bl_label = 'Update'
+    bl_description = 'Update blendshapes'
+
+    def execute(self, context):
+        return update_blendshapes(self)
 
 
 CLASSES_TO_REGISTER = (FB_OT_SelectHead,
@@ -876,4 +879,5 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_CreateExampleAnimation,
                        FB_OT_ResetBlendshapeValues,
                        FB_OT_ClearAnimation,
-                       FB_OT_ExportHeadToFBX)
+                       FB_OT_ExportHeadToFBX,
+                       FB_OT_UpdateBlendshapes)

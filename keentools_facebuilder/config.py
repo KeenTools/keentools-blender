@@ -155,6 +155,8 @@ class Config:
 
     fb_export_head_to_fbx_idname = operators + '.export_head_to_fbx'
 
+    fb_update_blendshapes_idname = operators + '.update_blendshapes'
+
     # Add Mesh commands
     fb_add_head_operator_idname = operators + '.add_head'
 

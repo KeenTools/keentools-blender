@@ -54,9 +54,7 @@ def _draw_update_blendshapes_panel(layout):
     col.scale_y = Config.text_scale_y
     col.label(text='The shape has been changed,')
     col.label(text='blendshapes need to be updated')
-
-    op = box.operator(Config.fb_history_actor_idname, text='Update')
-    op.action = 'update_blendshapes'
+    box.operator(Config.fb_update_blendshapes_idname)
 
 
 class Common:
