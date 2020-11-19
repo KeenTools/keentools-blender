@@ -181,8 +181,6 @@ class Config:
 
     fb_help_views_idname = operators + '.' + 'help_view'
 
-    fb_help_exif_idname = operators + '.' + 'help_exif'
-
     fb_help_model_idname = operators + '.' + 'help_model'
 
     fb_help_pin_settings_idname = operators + '.' + 'help_pin_settings'

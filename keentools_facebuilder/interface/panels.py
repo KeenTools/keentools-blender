@@ -239,7 +239,7 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
             text='', icon='QUESTION')
 
     def draw(self, context):
-        def _draw_default_mode():
+        def _draw_default_mode(layout, settings, head):
             camera = head.get_camera(settings.current_camnum)
             box = layout.box()
             row = box.row()
@@ -292,7 +292,7 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
                 txt =[]
             draw_labels(layout, txt)
 
-        def _draw_override_mode():
+        def _draw_override_mode(layout, settings, head):
             box = layout.box()
             box.label(text='Override Focal Length settings:')
             box.prop(head, 'manual_estimation_mode', text='')
@@ -310,67 +310,39 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
                 camera = head.get_camera(settings.current_camnum)
                 box.label(text='Focal length: {:.2f} mm'.format(camera.focal))
 
-        settings = get_main_settings()
-        layout = self.layout
-        state, headnum = what_is_state()
+        def _draw_exif(layout, head):
+            # Show EXIF info message
+            if len(head.exif.info_message) > 0:
+                box = layout.box()
+                arr = re.split("\r\n|\n", head.exif.info_message)
+                col = box.column()
+                col.scale_y = Config.text_scale_y
+                for a in arr:
+                    col.label(text=a)
 
-        if headnum < 0:
+            # Show EXIF sizes message
+            if len(head.exif.sizes_message) > 0:
+                box = layout.box()
+                arr = re.split("\r\n|\n", head.exif.sizes_message)
+                col = box.column()
+                col.scale_y = Config.text_scale_y
+                for a in arr:
+                    col.label(text=a)
+
+        layout = self.layout
+        settings = get_main_settings()
+        head = get_current_head()
+
+        if not head:
             return
-        head = settings.get_head(headnum)
 
         if head.smart_mode():
             if settings.current_camnum >= 0:
-                _draw_default_mode()
+                _draw_default_mode(layout, settings, head)
         else:
-            _draw_override_mode()
+            _draw_override_mode(layout, settings, head)
 
-
-class FB_PT_ExifPanel(CommonClosed, Panel):
-    bl_idname = Config.fb_exif_panel_idname
-    bl_label = 'EXIF'
-
-    @classmethod
-    def poll(cls, context):
-        state, headnum = what_is_state()
-        if not _state_valid_to_show(state) or not pkt.is_installed():
-            return False
-        return get_main_settings().head_has_cameras(headnum)
-
-    def draw_header_preset(self, context):
-        layout = self.layout
-        row = layout.row()
-        row.active = False
-        row.operator(
-            Config.fb_help_exif_idname,
-            text='', icon='QUESTION')
-
-    def draw(self, context):
-        settings = get_main_settings()
-        layout = self.layout
-        state, headnum = what_is_state()
-
-        head = settings.get_head(headnum)
-
-        if head is None:
-            return
-
-        # Show EXIF info message
-        if len(head.exif.info_message) > 0:
-            box = layout.box()
-            arr = re.split("\r\n|\n", head.exif.info_message)
-            col = box.column()
-            col.scale_y = Config.text_scale_y
-            for a in arr:
-                col.label(text=a)
-
-        # Show EXIF sizes message
-        if len(head.exif.sizes_message) > 0:
-            box = layout.box()
-            arr = re.split("\r\n|\n", head.exif.sizes_message)
-            col = box.column()
-            col.scale_y = Config.text_scale_y
-            for a in arr:
-                col.label(text=a)
+        _draw_exif(layout, head)
 
 
 class FB_PT_ViewsPanel(AllVisible, Panel):
