@@ -788,7 +788,7 @@ class FB_OT_DeleteBlendshapes(ActiveButtonOperator, Operator):
 
 class FB_OT_LoadAnimationFromCSV(ButtonOperator, Operator):
     bl_idname = Config.fb_load_animation_from_csv_idname
-    bl_label = 'Load animation from CSV'
+    bl_label = 'Load CSV'
     bl_description = 'Load animation keyframes from a CSV file ' \
                      '(LiveLinkFace format)'
 
@@ -798,7 +798,7 @@ class FB_OT_LoadAnimationFromCSV(ButtonOperator, Operator):
 
 class FB_OT_CreateExampleAnimation(ActiveButtonOperator, Operator):
     bl_idname = Config.fb_create_example_animation_idname
-    bl_label = 'Create example animation'
+    bl_label = 'Create example'
     bl_description = 'Create example animation keyframes for each blendshape'
 
     def execute(self, context):
@@ -809,7 +809,7 @@ class FB_OT_CreateExampleAnimation(ActiveButtonOperator, Operator):
 
 class FB_OT_ResetBlendshapeValues(ButtonOperator, Operator):
     bl_idname = Config.fb_reset_blendshape_values_idname
-    bl_label = 'Reset blendshape values'
+    bl_label = 'Reset values'
     bl_description = 'Set all blendshape values to zero. ' \
                      'Does not affect animation keyframes'
 
@@ -830,7 +830,7 @@ class FB_OT_ClearAnimation(ActiveButtonOperator, Operator):
 
 class FB_OT_ExportHeadToFBX(ButtonOperator, Operator):
     bl_idname = Config.fb_export_head_to_fbx_idname
-    bl_label = 'Export head to FBX'
+    bl_label = 'Export as FBX'
     bl_description = 'Export geometry with all blendshapes ' \
                      'and animation to FBX suitable ' \
                      'for game engines (UE4, Unity, etc.)'

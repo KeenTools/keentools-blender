@@ -723,6 +723,9 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
         op.active_button = not no_blendshapes
 
         if not no_blendshapes:
+            box.operator(Config.fb_reset_blendshape_values_idname)
+
+        if not no_blendshapes:
             box = layout.box()
             box.label(text='Animation')
 
@@ -733,8 +736,6 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
                 row.active = False
             op = row.operator(Config.fb_create_example_animation_idname)
             op.active_button = not has_blendshapes_action
-
-            box.operator(Config.fb_reset_blendshape_values_idname)
 
             row = box.row()
             if not has_blendshapes_action:
