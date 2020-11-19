@@ -90,8 +90,7 @@ def update_mesh_with_dialog(self, context):
         self.apply_model_changes()
     else:
         warn = get_operator(Config.fb_blendshapes_warning_idname)
-        warn.headnum = headnum
-        warn('INVOKE_DEFAULT')
+        warn('INVOKE_DEFAULT', headnum=headnum)
 
 
 def update_mesh_simple(self, context):

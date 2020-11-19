@@ -117,28 +117,32 @@ class FB_OT_AddonWarning(Operator):
 
 class FB_OT_BlendshapesWarning(Operator):
     bl_idname = Config.fb_blendshapes_warning_idname
-    bl_label = 'Convertation warning'
+    bl_label = 'Warning'
     bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: bpy.props.IntProperty(default=0)
-    accept: bpy.props.BoolProperty(name='Yes, change topolgy and '
-                                        'convert the blendshapes',
+    accept: bpy.props.BoolProperty(name='Change the topology and '
+                                        'recreate blendshapes',
                                    default=False)
-    content = []
+    content_red = []
+    content_white = []
+
+    def output_text(self, layout, content, red=False):
+        for txt in content:
+            row = layout.row()
+            row.alert = red
+            row.label(text=txt)
 
     def draw(self, context):
         layout = self.layout.column()
 
-        box = layout.column()
-        box.scale_y = Config.text_scale_y
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
 
-        for txt in self.content:
-            row = box.row()
-            row.alert = True
-            row.label(text=txt)
+        self.output_text(col, self.content_red, red=True)
+        self.output_text(col, self.content_white, red=False)
 
         layout.prop(self, 'accept')
-        layout.label(text='')
 
     def execute(self, context):
         if (self.accept):
@@ -151,12 +155,22 @@ class FB_OT_BlendshapesWarning(Operator):
         mesh_update_canceled()
 
     def invoke(self, context, event):
-        self.content = ['Warning! Your mesh contains blendshapes.',
-                        'So if you change topology now you will lose',
-                        'any custom blendshapes and animations on it.',
-                        'Only our FACS-blendshapes will be regenerated.',
-                        'But we strongly recommend '
-                        'that you save your scene before.']
+        self.content_red = [
+            'Your model has FaceBuilder FACS blendshapes attached to it.',
+            'Once you change the topology, the blendshapes will be recreated.',
+            'All modifications added to the standard blendshapes, ',
+            'as well as all custom blendshapes are going to be lost.',
+            ' ']
+        self.content_white = [
+            'If you have animated the model using old blendshapes, ',
+            'the new ones will be linked to the same Action track,',
+            'so you\'re not going to lose your animation.',
+            'If you have deleted some of the standard FaceBuilder '
+            'FACS blendshapes, ',
+            'they\'re not going to be recreated again.',
+            ' ',
+            'We recommend saving a backup file before changing the topology.',
+            ' ']
         return context.window_manager.invoke_props_dialog(self, width=400)
 
 
