@@ -317,7 +317,45 @@ class HELP_OT_BlendshapesHelp(bpy.types.Operator):
         col = layout.column()
         col.scale_y = Config.text_scale_y
         content = [
-            "About Blendshapes panel"]
+            'On this panel you can create FACS ARKit-compatible blendshapes '
+            'for the head ',
+            'you\'ve built, load animation from a CSV file and export the head '
+            'with all blendshapes ',
+            'and animation to a game engine.',
+            ' ',
+            'Once you press "Create" button, 52 blendshapes will be created. '
+            'You can change ',
+            'how they affect the shape of the head here: '
+            'Object Data Properties > Shape Keys.',
+            'If you change the topology, the blendshapes will be recreated. '
+            'When you change ',
+            'the shape of the head using pins in Pin Mode, and also when you '
+            'change the scale ',
+            'of the model, you\'ll be asked if you want to update '
+            'the blendshapes, note that ',
+            'the old blendshapes become useless once you make such changes.',
+            ' ',
+            'The blendshapes are fully compatible with the ARKit '
+            'specifications, which can found ',
+            'at Apple Developer portal.',
+            ' ',
+            'You can animate the blendshapes manually creating keyframes '
+            'for each Shape Key.',
+            ' ',
+            'If you have LiveLinkFace (or similar) application, you can record '
+            'the facial animation ',
+            'using the iOS device with the True Depth sensor (iPhone X '
+            'and newer), ',
+            'export a CSV file and then import it here.',
+            ' ',
+            'To export the head with all its blendshapes and animation, '
+            'you need to know ',
+            'where you want to import this 3D model to. In most cases '
+            'the Export button ',
+            'presented here will work for Unreal Engine and Unity, it will '
+            'pre-setup the Blender ',
+            'export dialog for you. Your free to change the settings before '
+            'saving the file if you need.']
 
         for c in content:
             col.label(text=c)
