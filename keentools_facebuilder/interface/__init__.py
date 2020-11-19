@@ -30,9 +30,7 @@ CLASSES_TO_REGISTER = (FB_MT_ProperViewMenu, # menus
                        FB_MT_CameraPanelMenu,
                        FB_PT_HeaderPanel,  # panels
                        FB_PT_UpdatePanel,
-                       FB_PT_InfoPanel,
                        FB_PT_CameraPanel,
-                       FB_PT_ExifPanel,
                        FB_PT_ViewsPanel,
                        FB_PT_Model,
                        FB_PT_PinSettingsPanel,
@@ -41,7 +39,6 @@ CLASSES_TO_REGISTER = (FB_MT_ProperViewMenu, # menus
                        FB_PT_BlendShapesPanel,
                        FB_OT_RemindLater, FB_OT_SkipVersion,
                        HELP_OT_CameraHelp,  # helps
-                       HELP_OT_ExifHelp,
                        HELP_OT_ViewsHelp,
                        HELP_OT_ModelHelp,
                        HELP_OT_PinSettingsHelp,

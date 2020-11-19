@@ -85,8 +85,7 @@ def update_model_scale(self, context):
     fb = FBLoader.get_builder()
     fb.set_scale(head.model_scale)
 
-    if not head.has_no_blendshapes():
-        head.set_blendshapes_status(actual=False)
+    head.mark_model_changed_by_scale()
 
     coords.update_head_mesh(settings, fb, head)
     FBLoader.update_all_camera_positions(headnum)
@@ -487,8 +486,11 @@ def _get_icon_by_lod(level_of_detail):
 
 
 def model_type_callback(self, context):
-    return [(x.name, x.name, '', _get_icon_by_lod(x.level_of_detail), i)
-            for i, x in enumerate(FBLoader.get_builder().models_list())]
+    res = [(x.name, x.name, '', _get_icon_by_lod(x.level_of_detail), i)
+           for i, x in enumerate(FBLoader.get_builder().models_list())]
+    if len(res) == 0 or (len(res) == 1 and res[0][0] == ''):
+        return [('', 'old topology', '', _get_icon_by_lod('HIGH_POLY'), 0)]
+    return res
 
 
 class FBHeadItem(PropertyGroup):
@@ -519,11 +521,6 @@ class FBHeadItem(PropertyGroup):
                     "focal length based on the position of the model "
                     "in the frame",
         default=False)
-
-    blendshapes_actual: BoolProperty(
-        name="Blendshapes status",
-        description="When turned on then the blendshapes have actual state",
-        default=True)
 
     masks: BoolVectorProperty(name='Masks', description='Head parts visibility',
                               size=12, subtype='NONE',
@@ -572,6 +569,13 @@ class FBHeadItem(PropertyGroup):
         name="Scale", default=1.0, min=0.01, max=100.0,
         update=update_model_scale)
 
+    model_changed_by_scale: BoolProperty(default=False)
+
+    model_changed_by_pinmode: BoolProperty(
+        name="Blendshapes status",
+        description="When turned on then the blendshapes have actual state",
+        default=False)
+
     model_type: EnumProperty(name='Topology', items=model_type_callback,
                              description='Model selector',
                              update=update_mesh_with_dialog)
@@ -581,10 +585,22 @@ class FBHeadItem(PropertyGroup):
                                       description='Invisible Model selector')
 
     def blenshapes_are_relevant(self):
-        return self.blendshapes_actual
+        if self.has_no_blendshapes():
+            return True
+        return not self.model_changed_by_pinmode and \
+               not self.model_changed_by_scale
 
-    def set_blendshapes_status(self, actual):
-        self.blendshapes_actual = actual
+    def clear_model_changed_status(self):
+        self.model_changed_by_pinmode = False
+        self.model_changed_by_scale = False
+
+    def mark_model_changed_by_pinmode(self):
+        if not self.has_no_blendshapes():
+            self.model_changed_by_pinmode = True
+
+    def mark_model_changed_by_scale(self):
+        if not self.has_no_blendshapes():
+            self.model_changed_by_scale = True
 
     def model_type_changed(self):
         return self.model_type != self.model_type_previous
@@ -604,9 +620,11 @@ class FBHeadItem(PropertyGroup):
                not self.headobj.data.shape_keys
 
     def has_blendshapes_action(self):
-        return self.headobj and self.headobj.data.shape_keys \
+        if self.headobj and self.headobj.data.shape_keys \
                and self.headobj.data.shape_keys.animation_data \
-               and self.headobj.data.shape_keys.animation_data.action
+               and self.headobj.data.shape_keys.animation_data.action:
+            return True
+        return False
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:

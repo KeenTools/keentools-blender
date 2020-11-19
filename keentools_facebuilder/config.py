@@ -117,8 +117,6 @@ class Config:
 
     fb_movepin_idname = operators + '.' + 'movepin'
 
-    fb_actor_idname = operators + '.' + 'actor'
-
     fb_history_actor_idname = operators + '.' + 'history_actor'
 
     fb_camera_actor_idname = operators + '.' + 'camera_actor'
@@ -137,19 +135,38 @@ class Config:
 
     fb_camera_panel_menu_exec_idname = operators + '.' + 'camera_panel_menu_exec'
 
-    fb_tex_selector_idname = operators + '.' + 'tex_selector'
+    fb_tex_selector_idname = operators + '.tex_selector'
 
-    fb_exit_pinmode_idname = operators + '.' + 'exit_pinmode'
+    fb_exit_pinmode_idname = operators + '.exit_pinmode'
+
+    fb_create_blendshapes_idname = operators + '.create_blendshapes'
+
+    fb_delete_blendshapes_idname = operators + '.delete_blendshapes'
+
+    fb_load_animation_from_csv_idname = operators + '.load_animation_from_csv'
+
+    fb_create_example_animation_idname = operators + '.create_example_animation'
+
+    fb_reset_blendshape_values_idname = operators + '.reset_blendshape_values'
+
+    fb_clear_animation_idname = operators + '.clear_animation'
+
+    fb_export_head_to_fbx_idname = operators + '.export_head_to_fbx'
+
+    fb_update_blendshapes_idname = operators + '.update_blendshapes'
+
+    fb_unhide_head_idname = operators + '.unhide_head'
+
+    fb_reconstruct_head_idname = operators + '.reconstruct_head'
 
     # Add Mesh commands
-    fb_add_head_operator_idname = operators + '.' + 'add_head'
+    fb_add_head_operator_idname = operators + '.add_head'
 
-    fb_add_body_operator_idname = operators + '.' + 'add_body'
+    fb_add_body_operator_idname = operators + '.add_body'
 
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
     fb_camera_panel_idname = _PT + 'camera_panel'
-    fb_info_panel_idname = _PT + 'info_panel'
     fb_update_panel_idname = _PT + 'update_panel'
     fb_views_panel_idname = _PT + 'views_panel'
     fb_exif_panel_idname = _PT + 'exif_panel'
@@ -163,8 +180,6 @@ class Config:
     fb_help_camera_idname = operators + '.' + 'help_camera'
 
     fb_help_views_idname = operators + '.' + 'help_view'
-
-    fb_help_exif_idname = operators + '.' + 'help_exif'
 
     fb_help_model_idname = operators + '.' + 'help_model'
 

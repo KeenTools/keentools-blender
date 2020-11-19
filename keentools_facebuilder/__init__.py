@@ -154,7 +154,7 @@ else:
     from .settings import FBExifItem, FBCameraItem, FBHeadItem, FBSceneSettings
     from .pinmode import FB_OT_PinMode
     from .movepin import FB_OT_MovePin
-    from .actor import FB_OT_HistoryActor, FB_OT_Actor, FB_OT_CameraActor
+    from .actor import FB_OT_HistoryActor, FB_OT_CameraActor
 
     from .utils.icons import FBIcons
 
@@ -165,7 +165,6 @@ else:
                            FBSceneSettings,
                            FB_OT_PinMode,
                            FB_OT_MovePin,
-                           FB_OT_Actor,
                            FB_OT_HistoryActor,
                            FB_OT_CameraActor) + OPERATOR_CLASSES + \
                            INTERFACE_CLASSES + PREFERENCES_CLASSES
