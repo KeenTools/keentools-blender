@@ -293,7 +293,7 @@ class HELP_OT_BlendshapesHelp(bpy.types.Operator):
             'with all blendshapes ',
             'and animation to a game engine.',
             ' ',
-            'Once you press "Create" button, 52 blendshapes will be created. '
+            'Once you press "Create" button, 51 blendshapes will be created. '
             'You can change ',
             'how they affect the shape of the head here: '
             'Object Data Properties > Shape Keys.',
