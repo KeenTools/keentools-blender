@@ -42,7 +42,9 @@ from .utils.operator_action import (create_blendshapes,
                                     reset_blendshape_values,
                                     clear_animation,
                                     export_head_to_fbx,
-                                    update_blendshapes)
+                                    update_blendshapes,
+                                    unhide_head,
+                                    reconstruct_by_mesh)
 
 
 class ButtonOperator:
@@ -846,6 +848,24 @@ class FB_OT_UpdateBlendshapes(ButtonOperator, Operator):
         return update_blendshapes(self)
 
 
+class FB_OT_UnhideHead(ButtonOperator, Operator):
+    bl_idname = Config.fb_unhide_head_idname
+    bl_label = 'Show Head'
+    bl_description = 'Show Head'
+
+    def execute(self, context):
+        return unhide_head(self)
+
+
+class FB_OT_ReconstructHead(ButtonOperator, Operator):
+    bl_idname = Config.fb_reconstruct_head_idname
+    bl_label = 'Reconstruct!'
+    bl_description = 'Reconstruct head by KeenTools attributes on mesh'
+
+    def execute(self, context):
+        return reconstruct_by_mesh(self)
+
+
 CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_DeleteHead,
                        FB_OT_SelectCamera,
@@ -880,4 +900,6 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ResetBlendshapeValues,
                        FB_OT_ClearAnimation,
                        FB_OT_ExportHeadToFBX,
-                       FB_OT_UpdateBlendshapes)
+                       FB_OT_UpdateBlendshapes,
+                       FB_OT_UnhideHead,
+                       FB_OT_ReconstructHead)

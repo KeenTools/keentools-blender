@@ -128,14 +128,9 @@ class FB_PT_HeaderPanel(Common, Panel):
             self._head_creation_offer(layout)
 
     def _draw_reconstruct(self, layout):
-        # Need for reconstruction
         row = layout.row()
         row.scale_y = 3.0
-        op = row.operator(
-            Config.fb_actor_idname, text='Reconstruct!')
-        op.action = 'reconstruct_by_head'
-        op.headnum = -1
-        op.camnum = -1
+        row.operator(Config.fb_reconstruct_head_idname)
 
     def _draw_many_heads(self, layout):
         # Output List of all heads in Scene
@@ -178,10 +173,7 @@ class FB_PT_HeaderPanel(Common, Panel):
                 row = layout.row()
                 row.scale_y = 2.0
                 row.alert = True
-                op = row.operator(Config.fb_actor_idname,
-                                  text='Show Head', icon='HIDE_OFF')
-                op.action = 'unhide_head'
-                op.headnum = headnum
+                row.operator(Config.fb_unhide_head_idname, icon='HIDE_OFF')
             return
 
         elif state == 'RECONSTRUCT':

@@ -117,8 +117,6 @@ class Config:
 
     fb_movepin_idname = operators + '.' + 'movepin'
 
-    fb_actor_idname = operators + '.' + 'actor'
-
     fb_history_actor_idname = operators + '.' + 'history_actor'
 
     fb_camera_actor_idname = operators + '.' + 'camera_actor'
@@ -156,6 +154,10 @@ class Config:
     fb_export_head_to_fbx_idname = operators + '.export_head_to_fbx'
 
     fb_update_blendshapes_idname = operators + '.update_blendshapes'
+
+    fb_unhide_head_idname = operators + '.unhide_head'
+
+    fb_reconstruct_head_idname = operators + '.reconstruct_head'
 
     # Add Mesh commands
     fb_add_head_operator_idname = operators + '.add_head'

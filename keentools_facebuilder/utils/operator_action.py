@@ -155,3 +155,16 @@ def update_blendshapes(operator):
         head.clear_model_changed_status()
         return {'FINISHED'}
     return {'CANCELLED'}
+
+
+def unhide_head(operator):
+    headnum = manipulate.get_current_headnum()
+    if headnum >= 0:
+        manipulate.unhide_head(headnum)
+        return {'FINISHED'}
+    return {'CANCELLED'}
+
+
+def reconstruct_by_mesh(operator):
+    manipulate.reconstruct_by_head()
+    return {'FINISHED'}

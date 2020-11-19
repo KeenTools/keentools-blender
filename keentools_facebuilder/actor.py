@@ -83,6 +83,7 @@ class FB_OT_HistoryActor(bpy.types.Operator):
                 else:
                     self.report({'ERROR'}, 'No Blendshapes found. '
                                            'Create blendshapes first')
+                return {'FINISHED'}
 
         elif self.action == 'delete_control_panel':
             head = manipulate.get_current_head()
@@ -91,6 +92,7 @@ class FB_OT_HistoryActor(bpy.types.Operator):
                 delete_with_children(head.blendshapes_control_panel)
             else:
                 self.report({'ERROR'}, 'Control panel not found')
+            return {'FINISHED'}
 
         elif self.action == 'select_control_panel_sliders':
             head = manipulate.get_current_head()
@@ -101,6 +103,7 @@ class FB_OT_HistoryActor(bpy.types.Operator):
                     {'INFO'}, '{} Sliders has been selected'.format(counter))
             else:
                 self.report({'ERROR'}, 'Control panel not found')
+            return {'FINISHED'}
 
         elif self.action == 'convert_controls_to_blendshapes':
             head = manipulate.get_current_head()
@@ -113,40 +116,9 @@ class FB_OT_HistoryActor(bpy.types.Operator):
                     self.report({'INFO'}, 'Conversion completed')
             else:
                 self.report({'ERROR'}, 'Control panel not found')
-
-        else:
-            return {'CANCELLED'}
+            return {'FINISHED'}
 
         return {'CANCELLED'}
-
-
-class FB_OT_Actor(bpy.types.Operator):
-    bl_idname = Config.fb_actor_idname
-    bl_label = 'FaceBuilder in Action'
-    bl_options = {'REGISTER'}
-    bl_description = 'FaceBuilder'
-
-    action: StringProperty(name="Action Name")
-    headnum: IntProperty(default=0)
-    camnum: IntProperty(default=0)
-    num: IntProperty(default=0)
-
-    def draw(self, context):
-        pass
-
-    def execute(self, context):
-        logger = logging.getLogger(__name__)
-        logger.debug("Actor: {}".format(self.action))
-        logger.debug('headnum: {} camnum: {} num: {}'.format(
-            self.headnum, self.camnum, self.num))
-
-        if self.action == 'reconstruct_by_head':
-            manipulate.reconstruct_by_head()
-
-        elif self.action == 'unhide_head':
-            manipulate.unhide_head(self.headnum)
-
-        return {'FINISHED'}
 
 
 class FB_OT_CameraActor(bpy.types.Operator):
