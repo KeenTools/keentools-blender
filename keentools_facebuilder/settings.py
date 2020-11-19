@@ -620,9 +620,11 @@ class FBHeadItem(PropertyGroup):
                not self.headobj.data.shape_keys
 
     def has_blendshapes_action(self):
-        return self.headobj and self.headobj.data.shape_keys \
+        if self.headobj and self.headobj.data.shape_keys \
                and self.headobj.data.shape_keys.animation_data \
-               and self.headobj.data.shape_keys.animation_data.action
+               and self.headobj.data.shape_keys.animation_data.action:
+            return True
+        return False
 
     def get_camera(self, camnum):
         if camnum < 0 and len(self.cameras) + camnum >= 0:

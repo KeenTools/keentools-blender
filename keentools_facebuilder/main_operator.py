@@ -22,6 +22,7 @@ import bpy
 from bpy.props import (
     StringProperty,
     IntProperty,
+    BoolProperty
 )
 from bpy.types import Operator
 
@@ -34,6 +35,17 @@ from .utils.exif_reader import (read_exif_from_camera,
                                 copy_exif_parameters_from_camera_to_head,
                                 update_image_groups)
 from .utils.manipulate import check_settings
+
+
+class ButtonOperator:
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def draw(self, context):
+        pass
+
+
+class ActiveButtonOperator(ButtonOperator):
+    active_button: BoolProperty(default=True)
 
 
 class FB_OT_SelectHead(Operator):
@@ -744,6 +756,93 @@ class FB_OT_UninstallCore(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class FB_OT_CreateBlendshapes(ButtonOperator, Operator):
+    bl_idname = Config.fb_create_blendshapes_idname
+    bl_label = 'Create'
+    bl_description = 'Create FACS blendshapes'
+
+    def execute(self, context):
+        op = get_operator(Config.fb_history_actor_idname)
+        op('EXEC_DEFAULT', action='generate_facs_blendshapes')
+        return {'FINISHED'}
+
+
+class FB_OT_DeleteBlendshapes(ActiveButtonOperator, Operator):
+    bl_idname = Config.fb_delete_blendshapes_idname
+    bl_label = 'Delete'
+    bl_description = 'Delete all blendshapes (Shape Keys), unlink animation'
+
+    def execute(self, context):
+        if not self.active_button:
+            return {'CANCELLED'}
+        op = get_operator(Config.fb_history_actor_idname)
+        op('EXEC_DEFAULT', action='delete_blendshapes')
+        return {'FINISHED'}
+
+
+class FB_OT_LoadAnimationFromCSV(ButtonOperator, Operator):
+    bl_idname = Config.fb_load_animation_from_csv_idname
+    bl_label = 'Load animation from CSV'
+    bl_description = 'Load animation keyframes from a CSV file ' \
+                     '(LiveLinkFace format)'
+
+    def execute(self, context):
+        op = get_operator(Config.fb_history_actor_idname)
+        op('EXEC_DEFAULT', action='load_csv_animation')
+        return {'FINISHED'}
+
+
+class FB_OT_CreateExampleAnimation(ActiveButtonOperator, Operator):
+    bl_idname = Config.fb_create_example_animation_idname
+    bl_label = 'Create example animation'
+    bl_description = 'Create example animation keyframes for each blendshape'
+
+    def execute(self, context):
+        if not self.active_button:
+            return {'CANCELLED'}
+        op = get_operator(Config.fb_history_actor_idname)
+        op('EXEC_DEFAULT', action='generate_facs_test_animation')
+        return {'FINISHED'}
+
+
+class FB_OT_ResetBlendshapeValues(ButtonOperator, Operator):
+    bl_idname = Config.fb_reset_blendshape_values_idname
+    bl_label = 'Reset blendshape values'
+    bl_description = 'Set all blendshape values to zero. ' \
+                     'Does not affect animation keyframes'
+
+    def execute(self, context):
+        op = get_operator(Config.fb_history_actor_idname)
+        op('EXEC_DEFAULT', action='zero_all_blendshapes')
+        return {'FINISHED'}
+
+
+class FB_OT_ClearAnimation(ActiveButtonOperator, Operator):
+    bl_idname = Config.fb_clear_animation_idname
+    bl_label = 'Clear animation'
+    bl_description = 'Unlink animation from blendshapes (Shape Keys)'
+
+    def execute(self, context):
+        if not self.active_button:
+            return {'CANCELLED'}
+        op = get_operator(Config.fb_history_actor_idname)
+        op('EXEC_DEFAULT', action='disconnect_blendshapes_action')
+        return {'FINISHED'}
+
+
+class FB_OT_ExportHeadToFBX(ButtonOperator, Operator):
+    bl_idname = Config.fb_export_head_to_fbx_idname
+    bl_label = 'Export head to FBX'
+    bl_description = 'Export geometry with all blendshapes ' \
+                     'and animation to FBX suitable ' \
+                     'for game engines (UE4, Unity, etc.)'
+
+    def execute(self, context):
+        op = get_operator(Config.fb_history_actor_idname)
+        op('EXEC_DEFAULT', action='export_blendshapes_to_fbx')
+        return {'FINISHED'}
+
+
 CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_DeleteHead,
                        FB_OT_SelectCamera,
@@ -770,4 +869,11 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ShowSolid,
                        FB_OT_ExitPinmode,
                        FB_OT_OpenURL,
-                       FB_OT_UninstallCore)
+                       FB_OT_UninstallCore,
+                       FB_OT_CreateBlendshapes,
+                       FB_OT_DeleteBlendshapes,
+                       FB_OT_LoadAnimationFromCSV,
+                       FB_OT_CreateExampleAnimation,
+                       FB_OT_ResetBlendshapeValues,
+                       FB_OT_ClearAnimation,
+                       FB_OT_ExportHeadToFBX)

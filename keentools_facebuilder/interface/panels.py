@@ -538,13 +538,14 @@ class FB_PT_Model(AllVisibleClosed, Panel):
         expression_rigidity_row.active = head.should_use_emotions()
 
         box = layout.box()
-        row = box.row()
-        row.prop(head, 'model_scale')
+        box.prop(head, 'model_scale')
 
         if not head.blenshapes_are_relevant() and head.model_changed_by_scale:
             _draw_update_blendshapes_panel(box)
 
-        box.prop(head, 'model_type')
+        row = box.split(factor=0.35)
+        row.label(text='Topology')
+        row.prop(head, 'model_type', text='')
 
         if FBLoader.is_not_loaded():
             return
@@ -723,61 +724,36 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
         has_blendshapes_action = head.has_blendshapes_action()
 
         box = layout.box()
-        # box.label(text='FACS Blendshapes')
-        op = box.operator(
-            Config.fb_history_actor_idname,
-            text='Create')
-        op.action = 'generate_facs_blendshapes'
+        box.operator(Config.fb_create_blendshapes_idname)
 
         row = box.row()
-        op = row.operator(
-            Config.fb_history_actor_idname,
-            text='Delete')
         if no_blendshapes:
             row.active = False
-            op.action = 'none'
-        else:
-            op.action = 'delete_blendshapes'
+        op = row.operator(Config.fb_delete_blendshapes_idname)
+        op.active_button = not no_blendshapes
 
         if not no_blendshapes:
             box = layout.box()
             box.label(text='Animation')
 
-            op = box.operator(
-                Config.fb_history_actor_idname,
-                text='Load animation from CSV')
-            op.action = 'load_csv_animation'
+            box.operator(Config.fb_load_animation_from_csv_idname)
 
             row = box.row()
-            op = row.operator(
-                Config.fb_history_actor_idname,
-                text='Create example animation')
-            if not has_blendshapes_action:
-                op.action = 'generate_facs_test_animation'
-            else:
-                row.active = False
-                op.action = 'none'
-
-            op = box.operator(
-                Config.fb_history_actor_idname,
-                text='Reset blendshape values')
-            op.action = 'zero_all_blendshapes'
-
-            row = box.row()
-            op = row.operator(
-                Config.fb_history_actor_idname,
-                text='Clear animation')
             if has_blendshapes_action:
-                op.action = 'disconnect_blendshapes_action'
-            else:
                 row.active = False
-                op.action = 'none'
+            op = row.operator(Config.fb_create_example_animation_idname)
+            op.active_button = not has_blendshapes_action
+
+            box.operator(Config.fb_reset_blendshape_values_idname)
+
+            row = box.row()
+            if not has_blendshapes_action:
+                row.active = False
+            op = row.operator(Config.fb_clear_animation_idname)
+            op.active_button = has_blendshapes_action
 
         box = layout.box()
-        op = box.operator(
-            Config.fb_history_actor_idname,
-            text='Export head to FBX')
-        op.action = 'export_blendshapes_to_fbx'
+        box.operator(Config.fb_export_head_to_fbx_idname)
 
         return
 

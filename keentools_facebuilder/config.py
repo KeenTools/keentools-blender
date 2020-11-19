@@ -137,14 +137,28 @@ class Config:
 
     fb_camera_panel_menu_exec_idname = operators + '.' + 'camera_panel_menu_exec'
 
-    fb_tex_selector_idname = operators + '.' + 'tex_selector'
+    fb_tex_selector_idname = operators + '.tex_selector'
 
-    fb_exit_pinmode_idname = operators + '.' + 'exit_pinmode'
+    fb_exit_pinmode_idname = operators + '.exit_pinmode'
+
+    fb_create_blendshapes_idname = operators + '.create_blendshapes'
+
+    fb_delete_blendshapes_idname = operators + '.delete_blendshapes'
+
+    fb_load_animation_from_csv_idname = operators + '.load_animation_from_csv'
+
+    fb_create_example_animation_idname = operators + '.create_example_animation'
+
+    fb_reset_blendshape_values_idname = operators + '.reset_blendshape_values'
+
+    fb_clear_animation_idname = operators + '.clear_animation'
+
+    fb_export_head_to_fbx_idname = operators + '.export_head_to_fbx'
 
     # Add Mesh commands
-    fb_add_head_operator_idname = operators + '.' + 'add_head'
+    fb_add_head_operator_idname = operators + '.add_head'
 
-    fb_add_body_operator_idname = operators + '.' + 'add_body'
+    fb_add_body_operator_idname = operators + '.add_body'
 
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
