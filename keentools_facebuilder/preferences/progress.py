@@ -151,14 +151,14 @@ class InstallationProgress:
             return
 
         cls._on_start_download()
-        logger.debug("START UNPACK CORE LIBRARY DOWNLOAD")
+        logger.info("START UNPACK CORE LIBRARY DOWNLOAD")
         try:
             pkt.install_from_file(filepath)
         except Exception as error:
             cls._on_finish_download(
                 'Failed to install Core library from file. ' + str(error))
-            logger.debug("UNPACK CORE ERROR" + str(error))
+            logger.error("UNPACK CORE ERROR" + str(error))
         else:
             cls._on_finish_download(
                 'The core library has been installed successfully.')
-            logger.debug("UNPACK CORE FINISH")
+            logger.info("UNPACK CORE FINISH")

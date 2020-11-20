@@ -37,22 +37,22 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         try:
             obj = self.new_head()
         except ModuleNotFoundError:
-            logger.debug('ADD_HEAD_ERROR: ModuleNotFoundError')
+            logger.error('ADD_HEAD_ERROR: ModuleNotFoundError')
             warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
         except pkt.module().ModelLoadingException:
-            logger.debug('ADD_HEAD_ERROR: ModelLoadingException')
+            logger.error('ADD_HEAD_ERROR: ModelLoadingException')
             warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktModelProblem)
             return {'CANCELLED'}
         except TypeError:
-            logger.debug('ADD_HEAD_ERROR: TypeError')
+            logger.error('ADD_HEAD_ERROR: TypeError')
             warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.CannotCreateObject)
             return {'CANCELLED'}
         except Exception:
-            logger.debug('ADD_HEAD_ERROR: Exception')
+            logger.error('ADD_HEAD_ERROR: Exception')
             warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
