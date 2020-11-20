@@ -26,7 +26,7 @@ _MT = 'FACEBUILDER_MT_'
 
 class Config:
     # Version dependent
-    addon_version = '2.1.1'
+    addon_version = '2020.1.0'
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83), (2, 90))
     minimal_blender_api = (2, 80, 60)
 
