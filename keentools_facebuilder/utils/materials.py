@@ -112,7 +112,7 @@ def _create_bpy_texture_from_img(img, tex_name):
     tex = bpy.data.images.new(
             tex_name, width=img.shape[1], height=img.shape[0],
             alpha=True, float_buffer=False)
-    tex.colorspace_settings.name = 'Linear'
+    tex.colorspace_settings.name = 'sRGB'
     assert(tex.name == tex_name)
     tex.pixels[:] = img.ravel()
     tex.pack()
@@ -152,7 +152,6 @@ def _create_frame_data_loader(settings, head, camnums, fb):
         img = np.rot90(
             np.asarray(cam.cam_image.pixels[:]).reshape((h, w, 4)),
             cam.orientation)
-        img = _sRGB_to_linear(img)
 
         frame_data = pkt.module().texture_builder.FrameData()
         frame_data.geo = fb.applied_args_model_at(cam.get_keyframe())

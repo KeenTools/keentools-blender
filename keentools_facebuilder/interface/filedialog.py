@@ -176,7 +176,7 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
         # Blender doesn't change file_format after filepath assigning, so
         fix_for_blender_bug = tex.file_format  # Do not remove!
         tex.file_format = self.file_format
-        tex.save_render(tex.filepath)
+        tex.save()
         logger.debug("SAVED TEXTURE: {} {}".format(tex.file_format,
                                                    self.filepath))
         return {'FINISHED'}
