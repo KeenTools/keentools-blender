@@ -130,7 +130,9 @@ def export_head_to_fbx(operator):
         bpy.ops.export_scene.fbx('INVOKE_DEFAULT',
                                  use_selection=True,
                                  bake_anim_use_all_actions=False,
-                                 bake_anim_use_nla_strips=False)
+                                 bake_anim_use_nla_strips=False,
+                                 add_leaf_bones=False,
+                                 mesh_smooth_type='FACE')
         return {'FINISHED'}
     return {'CANCELLED'}
 
