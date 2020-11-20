@@ -323,7 +323,7 @@ def reconstruct_by_head():
         settings.heads.remove(headnum)
         scene.render.resolution_x = rx
         scene.render.resolution_y = ry
-        logger.debug("SCENE PARAMETERS RESTORED")
+        logger.info("SCENE PARAMETERS RESTORED")
         warn = get_operator(Config.fb_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CannotReconstruct)
         return
