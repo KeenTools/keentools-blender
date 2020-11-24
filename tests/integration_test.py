@@ -4,16 +4,14 @@
 # blender -b -P /full_path_to/test_file.py
 # -------
 import unittest
-
-import bpy
 import sys
 import os
+
+import bpy
 
 # Import test functions used in unit-tests started from any location
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import test_utils
-# import tests.test_utils as test_utils
-
 
 from keentools_facebuilder.utils import coords, materials
 from keentools_facebuilder.config import Config, get_main_settings, \

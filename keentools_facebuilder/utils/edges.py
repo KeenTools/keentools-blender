@@ -28,8 +28,7 @@ from . shaders import (simple_fill_vertex_shader,
 from ..config import Config
 from ..utils.images import (check_bpy_image_has_same_size,
                             find_bpy_image_by_name,
-                            remove_bpy_image, add_alpha_channel,
-                            store_bpy_image_in_scene)
+                            remove_bpy_image, add_alpha_channel)
 
 
 class FBEdgeShaderBase:

@@ -2,7 +2,7 @@ import keentools_facebuilder.blender_independent_packages.pykeentools_loader as 
 import numpy as np
 
 from .config import get_main_settings
-from .utils.manipulate import get_current_head
+
 
 class FaceBuilderCameraInput(pkt.module().FaceBuilderCameraInputI):
     @classmethod

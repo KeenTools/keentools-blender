@@ -17,7 +17,6 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-import logging
 import math
 
 import bpy
