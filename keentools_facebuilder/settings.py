@@ -51,6 +51,7 @@ from .callbacks import (update_mesh_with_dialog,
                         update_camera_focal,
                         update_blue_camera_button,
                         update_blue_head_button)
+from .utils.manipulate import get_current_head
 
 
 class FBExifItem(PropertyGroup):
@@ -796,7 +797,12 @@ class FBSceneSettings(PropertyGroup):
             return None
 
     def get_current_head(self):
-        return self.heads[self.current_headnum]
+        if self.pinmode:
+            assert self.current_headnum >= 0
+            head = self.get_head(self.current_headnum)
+        else:
+            head = get_current_head()
+        return head
 
     def get_camera(self, headnum, camnum):
         head = self.get_head(headnum)
