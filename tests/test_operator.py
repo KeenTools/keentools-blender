@@ -1,3 +1,4 @@
+import os
 import bpy
 from bpy.types import Panel, Operator
 from bpy.props import StringProperty, IntProperty
@@ -6,13 +7,14 @@ import keentools_facebuilder
 from keentools_facebuilder.config import Config, get_main_settings, \
     get_operator, ErrorType
 import keentools_facebuilder.utils.coords as coords
-from keentools_facebuilder.utils.fake_context import get_area, get_region, get_fake_context
+from keentools_facebuilder.utils.fake_context import get_fake_context
+from keentools_facebuilder.fbloader import FBLoader
 
 
 class TestsOperator(Operator):
     bl_idname = 'object.keentools_fb_tests'
     bl_label = "Run Test"
-    bl_options = {'REGISTER'}  # 'UNDO'
+    bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Start test"
 
     action: StringProperty(name="Action Name")
@@ -134,9 +136,15 @@ def get_last_camnum(headnum):
     return camnum
 
 
-def create_empty_camera():
-    op = get_operator(Config.fb_add_camera_idname)
-    op('EXEC_DEFAULT')
+def create_empty_camera(headnum):
+    FBLoader.add_new_camera(headnum, None)
+
+
+def create_camera(dir, filename):
+    headnum = get_last_headnum()
+    op = get_operator(Config.fb_multiple_filebrowser_idname)
+    op('EXEC_DEFAULT', headnum=headnum, directory=dir,
+       files=({'name': filename},))
 
 
 def delete_camera(headnum, camnum):
@@ -179,9 +187,10 @@ def test_print_work():
 
 def test_create_head_and_cameras():
     create_head()
-    create_empty_camera()
-    create_empty_camera()
-    create_empty_camera()
+    headnum = get_last_headnum()
+    create_empty_camera(headnum)
+    create_empty_camera(headnum)
+    create_empty_camera(headnum)
 
 
 def test_delete_last_camera():
@@ -220,5 +229,5 @@ def test_duplicate_and_reconstruct():
         OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
         TRANSFORM_OT_translate={"value": (-3.0, 0, 0)})
 
-    op = get_operator(Config.fb_actor_idname)
-    op('EXEC_DEFAULT', action='reconstruct_by_head', headnum=-1, camnum=-1)
+    op = get_operator(Config.fb_history_actor_idname)
+    op('EXEC_DEFAULT', action='reconstruct_by_head')
