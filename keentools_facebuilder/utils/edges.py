@@ -28,8 +28,7 @@ from . shaders import (simple_fill_vertex_shader,
 from ..config import Config
 from ..utils.images import (check_bpy_image_has_same_size,
                             find_bpy_image_by_name,
-                            remove_bpy_image, add_alpha_channel,
-                            store_bpy_image_in_scene)
+                            remove_bpy_image, add_alpha_channel)
 
 
 class FBEdgeShaderBase:
@@ -176,7 +175,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         return [x ** (1.0 / power) for x in col]
 
     def __init__(self):
-        self._edges_indices = []
+        self._edges_indices = np.array([], dtype=np.int)
         self._edges_uvs = []
         self._colors = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
         self._opacity = 0.3
@@ -343,7 +342,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         self.indices = indices
 
     def _clear_edge_indices(self):
-        self._edges_indices = []
+        self._edges_indices = np.array([], dtype=np.int)
         self._edges_uvs = []
 
     def init_edge_indices(self, builder):

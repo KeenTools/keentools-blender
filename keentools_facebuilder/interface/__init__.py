@@ -47,7 +47,6 @@ CLASSES_TO_REGISTER = (FB_MT_ProperViewMenu, # menus
                        HELP_OT_BlendshapesHelp,
                        FB_OT_AddonWarning,  # dialogs
                        FB_OT_BlendshapesWarning,
-                       FB_OT_ExifSelector,
                        FB_OT_TexSelector,
                        FB_OT_SingleFilebrowser,  # filedialog
                        FB_OT_SingleFilebrowserExec,

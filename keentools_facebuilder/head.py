@@ -24,6 +24,7 @@ from . fbloader import FBLoader
 from . config import Config, get_main_settings, get_operator, ErrorType
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
+
 class MESH_OT_FBAddHead(bpy.types.Operator):
     """ Add FaceBuilder Head into scene"""
     bl_idname = Config.fb_add_head_operator_idname

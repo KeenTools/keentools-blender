@@ -21,7 +21,7 @@ import bpy
 
 from .config import get_main_settings, get_operator, Config, ErrorType
 from .fbloader import FBLoader
-from .utils.manipulate import get_current_headnum, get_current_head
+from .utils import coords
 from .utils.blendshapes import (restore_facs_blendshapes,
                                 disconnect_blendshapes_action)
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
@@ -169,3 +169,114 @@ def _update_mesh_now(headnum):
     # Delete old mesh
     bpy.data.meshes.remove(old_mesh, do_unlink=True)
     mesh.name = mesh_name
+
+
+def update_expressions(self, context):
+    settings = get_main_settings()
+    if not settings.pinmode:
+        return
+    fb = FBLoader.get_builder()
+    head = settings.get_head(settings.current_headnum)
+    if head is not None:
+        head.need_update = True
+        coords.update_head_mesh(settings, fb, head)
+        FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
+
+
+def update_wireframe_image(self, context):
+    settings = get_main_settings()
+    vp = FBLoader.viewport()
+    wf = vp.wireframer()
+    wf.init_colors((settings.wireframe_color,
+                    settings.wireframe_special_color,
+                    settings.wireframe_midline_color),
+                    settings.wireframe_opacity)
+    wf.init_wireframe_image(FBLoader.get_builder(), settings.show_specials)
+    vp.update_wireframe()
+
+
+def update_wireframe(self, context):
+    FBLoader.viewport().update_wireframe()
+
+
+def update_pin_sensitivity(self, context):
+    FBLoader.viewport().update_pin_sensitivity()
+
+
+def update_pin_size(self, context):
+    FBLoader.viewport().update_pin_size()
+
+
+def update_model_scale(self, context):
+    headnum = self.get_headnum()
+    FBLoader.load_model(headnum)
+
+    settings = get_main_settings()
+    head = settings.get_head(headnum)
+    fb = FBLoader.get_builder()
+    fb.set_scale(head.model_scale)
+
+    head.mark_model_changed_by_scale()
+
+    coords.update_head_mesh(settings, fb, head)
+    FBLoader.update_all_camera_positions(headnum)
+    FBLoader.update_all_camera_focals(headnum)
+    FBLoader.save_only(headnum)
+
+    if settings.pinmode and FBLoader.viewport().wireframer().is_working():
+        FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
+
+
+def update_cam_image(self, context):
+    FBLoader.update_cam_image_size(self)
+
+
+def update_head_focal(self, context):
+    logger = logging.getLogger(__name__)
+    logger.debug('UPDATE_HEAD_FOCAL: {}'.format(self.focal))
+
+    for c in self.cameras:
+        c.focal = self.focal
+
+
+def update_camera_focal(self, context):
+    logger = logging.getLogger(__name__)
+    settings = get_main_settings()
+    kid = self.get_keyframe()
+    self.camobj.data.lens = self.focal
+    logger.debug('UPDATE_CAMERA_FOCAL: K:{} F:{}'.format(kid, self.focal))
+
+    fb = FBLoader.get_builder()
+    if fb.is_key_at(kid):
+        FBLoader.save_only(settings.current_headnum)
+
+    if FBLoader.in_pin_drag() or self.auto_focal_estimation or \
+            self.image_group <= 0 or \
+            settings.current_headnum < 0 or settings.current_camnum < 0:
+        return
+
+    head = settings.get_head(settings.current_headnum)
+    current_camera = head.get_camera(settings.current_camnum)
+    if current_camera.get_keyframe() != kid:
+        return
+
+    for cam in head.cameras:
+        if cam.get_keyframe() != kid and not cam.auto_focal_estimation and \
+                cam.image_group == self.image_group:
+            cam.focal = self.focal
+
+
+def update_blue_camera_button(self, context):
+    settings = get_main_settings()
+    if not settings.blue_camera_button:
+        op = get_operator(Config.fb_exit_pinmode_idname)
+        op('EXEC_DEFAULT')
+        settings.blue_camera_button = True
+
+
+def update_blue_head_button(self, context):
+    settings = get_main_settings()
+    if not settings.blue_head_button:
+        op = get_operator(Config.fb_select_head_idname)
+        op('EXEC_DEFAULT')
+        settings.blue_head_button = True

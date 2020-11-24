@@ -23,7 +23,7 @@ import numpy as np
 from .. config import Config, get_main_settings
 from .. fbloader import FBLoader
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
-from ..utils.images import find_bpy_image_by_name, remove_bpy_image_by_name
+from ..utils.images import find_bpy_image_by_name
 
 
 def switch_to_mode(mode='MATERIAL'):
