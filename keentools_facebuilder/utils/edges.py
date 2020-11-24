@@ -176,7 +176,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         return [x ** (1.0 / power) for x in col]
 
     def __init__(self):
-        self._edges_indices = []
+        self._edges_indices = np.array([], dtype=np.int)
         self._edges_uvs = []
         self._colors = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
         self._opacity = 0.3
@@ -343,7 +343,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         self.indices = indices
 
     def _clear_edge_indices(self):
-        self._edges_indices = []
+        self._edges_indices = np.array([], dtype=np.int)
         self._edges_uvs = []
 
     def init_edge_indices(self, builder):
