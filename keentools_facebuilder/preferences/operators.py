@@ -61,7 +61,7 @@ class PREF_OT_InstallPkt(bpy.types.Operator):
 
 class PREF_OT_InstalFromFilePktWithWarning(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_install_pkt_from_file_with_warning'
-    bl_label = "Please confirm installation"
+    bl_label = 'Please confirm installation'
     bl_options = {'REGISTER', 'INTERNAL'}
 
     filepath: bpy.props.StringProperty()
@@ -72,17 +72,28 @@ class PREF_OT_InstalFromFilePktWithWarning(bpy.types.Operator):
 
     content = []
 
+    def _report_canceled(self):
+        self.report({'ERROR'}, 'Installation has been canceled '
+                               'since it was not accepted')
+
     def draw(self, context):
         layout = self.layout.column()
-        layout.label(text='You are trying to install "%s"' % self.filename)
-        layout.label(text=self.warning)
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        col.alert = True
+        col.label(text='You are trying to install "{}"'.format(self.filename))
+        col.label(text=self.warning)
+        col.label(text=' ')
         layout.prop(self, 'confirm_install')
 
     def execute(self, context):
         if not self.confirm_install:
+            self._report_canceled()
             return {'CANCELLED'}
 
         InstallationProgress.start_zip_install(self.filepath)
+        self.report({'INFO'}, 'The core library has been '
+                              'installed successfully.')
         return {'FINISHED'}
 
     def invoke(self, context, event):

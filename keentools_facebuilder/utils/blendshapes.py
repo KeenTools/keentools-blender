@@ -24,7 +24,8 @@ import os
 
 from ..config import Config
 from ..utils.rig_slider import create_slider, create_rectangle, create_label
-from ..fbloader import FBLoader
+from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
+                            xz_to_xy_rotation_matrix_3x3)
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
@@ -128,17 +129,31 @@ def zero_all_blendshape_weights(obj):
     return counter
 
 
-def _get_facs_executor():
+def _get_pykeentools_geo_from_mesh(obj):
+    mesh = obj.data
+    verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
+    mesh.vertices.foreach_get('co', np.reshape(verts, len(mesh.vertices) * 3))
+
+    mb = pkt.module().MeshBuilder()
+    mb.add_points(verts @ xz_to_xy_rotation_matrix_3x3())
+    me = mb.mesh()
+    geo = pkt.module().Geo()
+    geo.add_mesh(me)
+    return geo
+
+
+def _get_facs_executor(obj, scale):
     logger = logging.getLogger(__name__)
-    fb = FBLoader.get_builder()
+    model = _get_pykeentools_geo_from_mesh(obj)
+
     try:
-        fe = pkt.module().FacsExecutor(
-            fb.applied_args_model(), fb.current_scale())
+        fe = pkt.module().FacsExecutor(model, scale)
     except pkt.module().FacsLoadingException:
         logger.error('CANNOT_LOAD_FACS: FacsLoadingException')
         return None
-    except Exception:
+    except Exception as error:
         logger.error('CANNOT_LOAD_FACS: Unknown Exception')
+        logger.error('info: {} -- {}'.format(type(error), error))
         return None
     if not fe.facs_enabled():
         logger.error('CANNOT_LOAD_FACS: FACS are not enabled')
@@ -147,12 +162,12 @@ def _get_facs_executor():
 
 
 def _update_blendshape_verts(shape, verts):
-    rot = np.array(((1., 0., 0.), (0., 0., 1.), (0., -1., 0)))
-    shape.data.foreach_set('co', (verts @ rot).ravel())
+    shape.data.foreach_set(
+        'co', (verts @ xy_to_xz_rotation_matrix_3x3()).ravel())
 
 
-def create_facs_blendshapes(obj):
-    facs_executor = _get_facs_executor()
+def create_facs_blendshapes(obj, scale):
+    facs_executor = _get_facs_executor(obj, scale)
     if not facs_executor:
         return -1
 
@@ -167,9 +182,9 @@ def create_facs_blendshapes(obj):
     return counter
 
 
-def update_facs_blendshapes(obj):
+def update_facs_blendshapes(obj, scale):
     assert not _has_no_blendshapes(obj)
-    facs_executor = _get_facs_executor()
+    facs_executor = _get_facs_executor(obj, scale)
     if not facs_executor:
         return -1
 
@@ -185,9 +200,9 @@ def update_facs_blendshapes(obj):
     return counter
 
 
-def restore_facs_blendshapes(obj, restore_names):
+def restore_facs_blendshapes(obj, scale, restore_names):
     _create_basis_blendshape(obj)
-    facs_executor = _get_facs_executor()
+    facs_executor = _get_facs_executor(obj, scale)
     if not facs_executor:
         return -1
 
@@ -208,6 +223,7 @@ def load_csv_animation_to_blendshapes(obj, filepath):
     try:
         fan = pkt.module().FacsAnimation()
         read_facs, ignored_columns = fan.load_from_csv_file(filepath)
+        facs_names = pkt.module().FacsExecutor.facs_names
     except pkt.module().FacsLoadingException as err:
         logger.error('CANNOT_LOAD_CSV_ANIMATION: {}'.format(err))
         return {'status': False, 'message': str(err),
@@ -217,9 +233,6 @@ def load_csv_animation_to_blendshapes(obj, filepath):
         return {'status': False, 'message': str(err),
                 'ignored': [], 'read_facs': []}
 
-    fb = FBLoader.get_builder()
-    fe = pkt.module().FacsExecutor(
-        fb.applied_args_model(), fb.current_scale())
     action_name = os.path.splitext(os.path.basename(filepath))[0]
     blendshapes_action = _get_safe_blendshapes_action(obj, action_name)
 
@@ -229,7 +242,7 @@ def load_csv_animation_to_blendshapes(obj, filepath):
     if not fan.timecodes_enabled():
         fps = 1
     keyframes = [start + x * fps for x in fan.keyframes()]
-    for name in fe.facs_names:
+    for name in facs_names:
         blendshape_fcurve = _get_safe_action_fcurve(
             blendshapes_action, 'key_blocks["{}"].value'.format(name), index=0)
         animation = fan.at_name(name)
@@ -253,7 +266,8 @@ def create_facs_test_animation_on_blendshapes(obj, start_time=1, dtime=4):
     if _has_no_blendshapes(obj):
         return -1
     counter = 0
-    blendshapes_action = _get_safe_blendshapes_action(obj)
+    blendshapes_action = _get_safe_blendshapes_action(
+        obj, Config.example_animation_action_name)
     time = start_time
     for kb in obj.data.shape_keys.key_blocks[1:]:
         blendshape_fcurve = _get_safe_action_fcurve(

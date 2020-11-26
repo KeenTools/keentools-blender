@@ -47,7 +47,8 @@ def mesh_update_accepted(headnum):
         _update_mesh_now(headnum)
 
         try:
-            counter = restore_facs_blendshapes(head.headobj, names)
+            counter = restore_facs_blendshapes(head.headobj,
+                                               head.model_scale, names)
             logger.debug('blendshapes_restored: {}'.format(counter))
         except pkt.module().UnlicensedException:
             logger.error('UnlicensedException restore_facs_blendshapes')

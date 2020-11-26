@@ -152,7 +152,7 @@ class FB_OT_BlendshapesWarning(Operator):
         return {'FINISHED'}
 
     def cancel(self, context):
-        mesh_update_canceled()
+        mesh_update_canceled(self.headnum)
 
     def invoke(self, context, event):
         self.content_red = [

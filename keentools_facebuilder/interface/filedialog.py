@@ -288,17 +288,16 @@ class FB_OT_AnimationFilebrowser(Operator, ImportHelper):
         options={'HIDDEN'}
     )
 
-    headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
+    obj_name: bpy.props.StringProperty(name='Object Name in scene')
 
     def draw(self, context):
         pass
 
     def execute(self, context):
-        settings = get_main_settings()
-        head = settings.get_head(self.headnum)
+        obj = bpy.data.objects[self.obj_name]
+        assert obj.type == 'MESH'
 
-        FBLoader.load_model(self.headnum)
-        res = load_csv_animation_to_blendshapes(head.headobj, self.filepath)
+        res = load_csv_animation_to_blendshapes(obj, self.filepath)
 
         if res['status']:
             info = 'Loaded animation.'
