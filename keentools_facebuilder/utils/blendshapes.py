@@ -213,6 +213,13 @@ def restore_facs_blendshapes(obj, scale, restore_names):
     return counter
 
 
+def _cleanup_keys_in_interval(fcurve, start_keyframe, end_keyframe):
+    for p in reversed(fcurve.keyframe_points):
+        if start_keyframe <= p.co[0] <= end_keyframe:
+            fcurve.keyframe_points.remove(p)
+    fcurve.update()
+
+
 def load_csv_animation_to_blendshapes(obj, filepath):
     logger = logging.getLogger(__name__)
     try:
@@ -237,9 +244,20 @@ def load_csv_animation_to_blendshapes(obj, filepath):
     if not fan.timecodes_enabled():
         fps = 1
     keyframes = [start + x * fps for x in fan.keyframes()]
+    if len(keyframes) > 0:
+        start_keyframe = keyframes[0]
+        end_keyframe = keyframes[-1]
+    else:
+        start_keyframe = 0
+        end_keyframe = -1
+
     for name in facs_names:
         blendshape_fcurve = _get_safe_action_fcurve(
             blendshapes_action, 'key_blocks["{}"].value'.format(name), index=0)
+
+        _cleanup_keys_in_interval(blendshape_fcurve,
+                                  start_keyframe, end_keyframe)
+
         animation = fan.at_name(name)
         anim_data = [x for x in zip(keyframes, animation)]
         _put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
