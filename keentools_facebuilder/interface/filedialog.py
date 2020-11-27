@@ -279,7 +279,7 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
 
 class FB_OT_AnimationFilebrowser(Operator, ImportHelper):
     bl_idname = Config.fb_animation_filebrowser_idname
-    bl_label = 'Open animation file'
+    bl_label = 'Load animation'
     bl_description = 'Open animation file'
     bl_options = {'REGISTER', 'UNDO'}
 
