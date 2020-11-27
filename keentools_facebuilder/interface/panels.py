@@ -684,6 +684,7 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
         if not pkt.is_installed():
             return False
         state, _ = what_is_state()
+        print('state:', state)
         return _state_valid_to_show(state) or state == 'FACS_HEAD'
 
     def draw_header_preset(self, context):
@@ -697,13 +698,20 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
     def draw(self, context):
         layout = self.layout
 
-        head = get_current_head()
-        if not head and not _is_it_our_mesh(context):
+        state, headnum = what_is_state()
+        if headnum >= 0:
+            settings = get_main_settings()
+            head = settings.get_head(headnum)
+            obj = head.headobj
+        else:
+            if not _is_it_our_mesh(context):
                 return
+            else:
+                obj = context.object
 
-        obj = context.object
-        # no_blendshapes = head.has_no_blendshapes()
-        # has_blendshapes_action = head.has_blendshapes_action()
+        if not obj:
+            return
+
         no_blendshapes = has_no_blendshape(obj)
         has_blendshapes_act = has_blendshapes_action(obj)
 

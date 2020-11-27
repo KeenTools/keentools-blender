@@ -50,8 +50,10 @@ def _get_obj_from_context():
 
 def create_blendshapes(operator):
     logger = logging.getLogger(__name__)
+    logger.debug('create_blendshapes call')
     obj, scale = _get_obj_from_context()
     if not obj:
+        logger.debug('no object')
         return {'CANCELLED'}
 
     try:
@@ -76,76 +78,104 @@ def create_blendshapes(operator):
 
 
 def delete_blendshapes(operator):
+    logger = logging.getLogger(__name__)
+    logger.debug('delete_blendshapes call')
     obj, scale = _get_obj_from_context()
     if not obj:
+        logger.debug('no object')
         return {'CANCELLED'}
 
     remove_blendshapes(obj)
+    logger.debug('blendshapes removed')
     operator.report({'INFO'}, 'Blendshapes have been removed')
     return {'FINISHED'}
 
 
 def load_animation_from_csv(operator):
+    logger = logging.getLogger(__name__)
+    logger.debug('load_animation_from_csv call')
     obj, scale = _get_obj_from_context()
     if not obj:
+        logger.debug('no object')
         return {'CANCELLED'}
 
     if manipulate.has_no_blendshape(obj):
+        logger.debug('no blendshapes')
         operator.report({'ERROR'}, 'The object has no blendshapes')
     else:
         op = get_operator(Config.fb_animation_filebrowser_idname)
         op('INVOKE_DEFAULT', obj_name=obj.name)
+        logger.debug('filebrowser called')
     return {'FINISHED'}
 
 
 def create_example_animation(operator):
+    logger = logging.getLogger(__name__)
+    logger.debug('create_example_animation call')
     obj, scale = _get_obj_from_context()
     if not obj:
+        logger.debug('no object')
         return {'CANCELLED'}
 
     counter = create_facs_test_animation_on_blendshapes(obj)
     if counter < 0:
+        logger.debug('no blendshapes')
         operator.report({'ERROR'}, 'The object has no blendshapes')
     elif counter > 0:
+        logger.debug('{} animated'.format(counter))
         operator.report({'INFO'}, 'Created animation '
                                   'for {} blendshapes'.format(counter))
     else:
+        logger.debug('zero animated error')
         operator.report({'ERROR'}, 'An error occured while '
                                    'creating animation')
     return {'FINISHED'}
 
 
 def reset_blendshape_values(operator):
+    logger = logging.getLogger(__name__)
+    logger.debug('reset_blendshape_values call')
     obj, scale = _get_obj_from_context()
     if not obj:
+        logger.debug('no object')
         return {'CANCELLED'}
 
     counter = zero_all_blendshape_weights(obj)
     if counter < 0:
+        logger.debug('no blendshapes')
         operator.report({'ERROR'}, 'The object has no blendshapes')
     else:
+        logger.debug('reset {} blendshapes'.format(counter))
         operator.report({'INFO'}, '{} blendshape values has been '
                                   'set to 0'.format(counter))
     return {'FINISHED'}
 
 
 def clear_animation(operator):
+    logger = logging.getLogger(__name__)
+    logger.debug('clear_animation call')
     obj, scale = _get_obj_from_context()
     if not obj:
+        logger.debug('no object')
         return {'CANCELLED'}
 
     if disconnect_blendshapes_action(obj):
+        logger.debug('action disconnected')
         operator.report({'INFO'}, 'Animation action has been unlinked')
         zero_all_blendshape_weights(obj)
     else:
+        logger.debug('action not found')
         operator.report({'INFO'}, 'Blendshape animation action '
                                   'has not been found')
     return {'FINISHED'}
 
 
 def export_head_to_fbx(operator):
+    logger = logging.getLogger(__name__)
+    logger.debug('export_head_to_fbx call')
     obj, scale = _get_obj_from_context()
     if not obj:
+        logger.debug('no object')
         return {'CANCELLED'}
 
     manipulate.select_object_only(obj)
@@ -155,15 +185,19 @@ def export_head_to_fbx(operator):
                              bake_anim_use_nla_strips=False,
                              add_leaf_bones=False,
                              mesh_smooth_type='FACE')
+    logger.debug('fbx operator called')
     return {'FINISHED'}
 
 
 def update_blendshapes(operator):
+    logger = logging.getLogger(__name__)
+    logger.debug('update_blendshapes call')
     head = manipulate.get_current_head()
     if head:
         FBLoader.load_model(head.get_headnum())
         try:
             update_facs_blendshapes(head.headobj, head.model_scale)
+            logger.debug('update_facs_blendshapes performed')
         except pkt.module().UnlicensedException:
             logger = logging.getLogger(__name__)
             logger.error('UnlicensedException update_blendshapes')
@@ -177,17 +211,26 @@ def update_blendshapes(operator):
             return {'CANCELLED'}
         head.clear_model_changed_status()
         return {'FINISHED'}
+    else:
+        logger.debug('head not found')
     return {'CANCELLED'}
 
 
 def unhide_head(operator):
+    logger = logging.getLogger(__name__)
+    logger.debug('unhide_head call')
     headnum = manipulate.get_current_headnum()
     if headnum >= 0:
         manipulate.unhide_head(headnum)
+        logger.debug('head revealed')
         return {'FINISHED'}
+    logger.debug('no head')
     return {'CANCELLED'}
 
 
 def reconstruct_by_mesh(operator):
+    logger = logging.getLogger(__name__)
+    logger.debug('reconstruct_by_mesh call')
     manipulate.reconstruct_by_head()
+    logger.debug('reconstruction finished')
     return {'FINISHED'}
