@@ -684,7 +684,6 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
         if not pkt.is_installed():
             return False
         state, _ = what_is_state()
-        print('state:', state)
         return _state_valid_to_show(state) or state == 'FACS_HEAD'
 
     def draw_header_preset(self, context):

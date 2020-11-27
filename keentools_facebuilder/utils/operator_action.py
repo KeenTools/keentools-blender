@@ -31,27 +31,10 @@ from .blendshapes import (create_facs_blendshapes,
                           zero_all_blendshape_weights)
 
 
-def _get_obj_from_context():
-    state, headnum = manipulate.what_is_state()
-    if state == 'FACS_HEAD':
-        return bpy.context.object, 1.0
-    else:
-        if headnum < 0:
-            return None, 1.0
-
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-        if not head:
-            return None, 1.0
-
-        FBLoader.load_model(headnum)
-        return head.headobj, head.model_scale
-
-
 def create_blendshapes(operator):
     logger = logging.getLogger(__name__)
     logger.debug('create_blendshapes call')
-    obj, scale = _get_obj_from_context()
+    obj, scale = manipulate.get_obj_from_context(bpy.context)
     if not obj:
         logger.debug('no object')
         return {'CANCELLED'}
@@ -80,7 +63,7 @@ def create_blendshapes(operator):
 def delete_blendshapes(operator):
     logger = logging.getLogger(__name__)
     logger.debug('delete_blendshapes call')
-    obj, scale = _get_obj_from_context()
+    obj, scale = manipulate.get_obj_from_context(bpy.context)
     if not obj:
         logger.debug('no object')
         return {'CANCELLED'}
@@ -94,7 +77,7 @@ def delete_blendshapes(operator):
 def load_animation_from_csv(operator):
     logger = logging.getLogger(__name__)
     logger.debug('load_animation_from_csv call')
-    obj, scale = _get_obj_from_context()
+    obj, scale = manipulate.get_obj_from_context(bpy.context)
     if not obj:
         logger.debug('no object')
         return {'CANCELLED'}
@@ -112,7 +95,7 @@ def load_animation_from_csv(operator):
 def create_example_animation(operator):
     logger = logging.getLogger(__name__)
     logger.debug('create_example_animation call')
-    obj, scale = _get_obj_from_context()
+    obj, scale = manipulate.get_obj_from_context(bpy.context)
     if not obj:
         logger.debug('no object')
         return {'CANCELLED'}
@@ -135,7 +118,7 @@ def create_example_animation(operator):
 def reset_blendshape_values(operator):
     logger = logging.getLogger(__name__)
     logger.debug('reset_blendshape_values call')
-    obj, scale = _get_obj_from_context()
+    obj, scale = manipulate.get_obj_from_context(bpy.context)
     if not obj:
         logger.debug('no object')
         return {'CANCELLED'}
@@ -154,7 +137,7 @@ def reset_blendshape_values(operator):
 def clear_animation(operator):
     logger = logging.getLogger(__name__)
     logger.debug('clear_animation call')
-    obj, scale = _get_obj_from_context()
+    obj, scale = manipulate.get_obj_from_context(bpy.context)
     if not obj:
         logger.debug('no object')
         return {'CANCELLED'}
@@ -173,7 +156,7 @@ def clear_animation(operator):
 def export_head_to_fbx(operator):
     logger = logging.getLogger(__name__)
     logger.debug('export_head_to_fbx call')
-    obj, scale = _get_obj_from_context()
+    obj, scale = manipulate.get_obj_from_context(bpy.context)
     if not obj:
         logger.debug('no object')
         return {'CANCELLED'}

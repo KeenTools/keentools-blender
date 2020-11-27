@@ -133,6 +133,24 @@ def has_blendshapes_action(obj):
     return False
 
 
+def get_obj_from_context(context, force_fbloader=True):
+    state, headnum = what_is_state()
+    if state == 'FACS_HEAD':
+        return context.object, 1.0
+    else:
+        if headnum < 0:
+            return None, 1.0
+
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        if not head:
+            return None, 1.0
+
+        if force_fbloader:
+            FBLoader.load_model(headnum)
+        return head.headobj, head.model_scale
+
+
 def force_undo_push(msg='KeenTools operation'):
     inc_operation()
     bpy.ops.ed.undo_push(message=msg)
