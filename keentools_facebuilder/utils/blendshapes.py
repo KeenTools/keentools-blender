@@ -129,25 +129,20 @@ def zero_all_blendshape_weights(obj):
     return counter
 
 
-def _get_pykeentools_geo_from_mesh(obj):
+def _get_obj_verts(obj):
+    assert obj.type == 'MESH'
     mesh = obj.data
     verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
     mesh.vertices.foreach_get('co', np.reshape(verts, len(mesh.vertices) * 3))
-
-    mb = pkt.module().MeshBuilder()
-    mb.add_points(verts @ xz_to_xy_rotation_matrix_3x3())
-    me = mb.mesh()
-    geo = pkt.module().Geo()
-    geo.add_mesh(me)
-    return geo
+    return verts @ xz_to_xy_rotation_matrix_3x3()
 
 
 def _get_facs_executor(obj, scale):
     logger = logging.getLogger(__name__)
-    model = _get_pykeentools_geo_from_mesh(obj)
+    verts = _get_obj_verts(obj)
 
     try:
-        fe = pkt.module().FacsExecutor(model, scale)
+        fe = pkt.module().FacsExecutor(verts, scale)
     except pkt.module().FacsLoadingException:
         logger.error('CANNOT_LOAD_FACS: FacsLoadingException')
         return None

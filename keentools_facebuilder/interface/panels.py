@@ -39,10 +39,6 @@ def _state_valid_to_show(state):
     return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
 
 
-def _is_it_our_mesh(context):
-    return is_it_our_mesh(context.object)
-
-
 def _show_all_panels():
     if not pkt.is_installed():
         return False
