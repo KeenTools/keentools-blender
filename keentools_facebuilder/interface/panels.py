@@ -26,6 +26,7 @@ import re
 from ..fbloader import FBLoader
 from ..utils.manipulate import (what_is_state,
                                 get_current_head,
+                                get_obj_from_context,
                                 has_no_blendshape,
                                 has_blendshapes_action,
                                 is_it_our_mesh)
@@ -697,17 +698,7 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
     def draw(self, context):
         layout = self.layout
 
-        state, headnum = what_is_state()
-        if headnum >= 0:
-            settings = get_main_settings()
-            head = settings.get_head(headnum)
-            obj = head.headobj
-        else:
-            if not _is_it_our_mesh(context):
-                return
-            else:
-                obj = context.object
-
+        obj, scale = get_obj_from_context(context, force_fbloader=False)
         if not obj:
             return
 
