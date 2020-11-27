@@ -23,6 +23,7 @@ import keentools_facebuilder.blender_independent_packages.pykeentools_loader as 
 import numpy as np
 
 from .config import Config, get_main_settings
+from .utils.coords import xy_to_xz_rotation_matrix_3x3
 from .utils import attrs, coords, cameras
 from .utils.exif_reader import update_image_groups, reload_all_camera_exif
 from .utils.other import FBStopShaderTimer, restore_ui_elements
@@ -304,8 +305,7 @@ class FBLoader:
         for i in range(v_count):
             vertices[i] = me.point(i)
 
-        rot = np.array([[1., 0., 0.], [0., 0., 1.], [0., -1., 0]])
-        vertices2 = vertices @ rot
+        vertices2 = vertices @ xy_to_xz_rotation_matrix_3x3()
 
         f_count = me.faces_count()
         faces = np.empty(f_count, dtype=np.object)

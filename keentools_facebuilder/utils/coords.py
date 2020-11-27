@@ -32,11 +32,36 @@ def nearest_point(x, y, points, dist=4000000):  # dist squared
     return nearest, dist2
 
 
+def xy_to_xz_rotation_matrix_3x3():
+    return np.array([[1., 0., 0.],
+                     [0., 0., 1.],
+                     [0., -1., 0.]], dtype=np.float32)
+
+
+def xz_to_xy_rotation_matrix_3x3():
+    return np.array([[1., 0., 0.],
+                     [0., 0., -1.],
+                     [0., 1., 0.]], dtype=np.float32)
+
+
+def xy_to_xz_rotation_matrix_4x4():
+    return np.array([[1., 0., 0., 0.],
+                     [0., 0., 1., 0.],
+                     [0., -1., 0., 0.],
+                     [0., 0., 0., 1.]], dtype=np.float32)
+
+
+def xz_to_xy_rotation_matrix_4x4():
+    return np.array([[1., 0., 0., 0.],
+                     [0., 0., -1., 0.],
+                     [0., 1., 0., 0.],
+                     [0., 0., 0., 1.]], dtype=np.float32)
+
+
 def update_head_mesh_geom(obj, geom):
     mesh = obj.data
     assert(len(geom) == len(mesh.vertices))
-    rot = np.array([[1., 0., 0.], [0., 0., 1.], [0., -1., 0]])
-    npbuffer = geom @ rot
+    npbuffer = geom @ xy_to_xz_rotation_matrix_3x3()
     mesh.vertices.foreach_set('co', npbuffer.ravel())
     if mesh.shape_keys:
         mesh.shape_keys.key_blocks[0].data.foreach_set('co', npbuffer.ravel())
@@ -133,11 +158,7 @@ def pin_to_xyz(pin, headobj):
 
 def calc_model_mat(model_mat, head_mat):
     """ Convert model matrix to camera matrix """
-    rot_mat = np.array([
-        [1., 0., 0., 0.],
-        [0., 0., 1., 0.],
-        [0., -1., 0., 0.],
-        [0., 0., 0., 1.]])
+    rot_mat = xy_to_xz_rotation_matrix_4x4()
 
     try:
         nm = np.array(model_mat @ rot_mat) @ np.linalg.inv(head_mat)

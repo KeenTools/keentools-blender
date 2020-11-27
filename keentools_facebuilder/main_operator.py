@@ -273,7 +273,7 @@ class FB_OT_RemovePins(Operator):
 class FB_OT_WireframeColor(Operator):
     bl_idname = Config.fb_wireframe_color_idname
     bl_label = "Wireframe color"
-    bl_options = {'REGISTER', 'INTERNAL'}  # 'UNDO'
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}  #
     bl_description = "Choose the wireframe coloring scheme"
 
     action: StringProperty(name="Action Name")

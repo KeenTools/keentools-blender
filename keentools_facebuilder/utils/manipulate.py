@@ -26,6 +26,7 @@ from ..config import Config, get_main_settings, get_operator, ErrorType
 from . import cameras, attrs, coords
 from .exif_reader import (read_exif_to_camera, auto_setup_camera_from_exif,
                           update_image_groups)
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 def _is_keentools_object(obj):
@@ -42,6 +43,17 @@ def _get_dir_name(obj):
 
 def _get_image_names(obj):
     return attrs.get_safe_custom_attribute(obj, Config.fb_images_prop_name[0])
+
+
+def _check_facs_available(count):
+    return pkt.module().FacsExecutor.facs_available(count)
+
+
+def is_it_our_mesh(obj):
+    if not obj or obj.type != 'MESH':
+        return False
+
+    return _check_facs_available(len(obj.data.vertices))
 
 
 # Scene States and Head number. All States are:
@@ -66,9 +78,15 @@ def what_is_state():
     if settings.pinmode:
         return 'PINMODE', settings.current_headnum
 
-    obj = context.active_object
+    obj = context.object
 
-    if not obj or not _is_keentools_object(obj):
+    if not obj:
+        return _how_many_heads()
+
+    if not _is_keentools_object(obj):
+        if obj.type == 'MESH':
+            if _check_facs_available(len(obj.data.vertices)):
+                return 'FACS_HEAD', unknown_headnum
         return _how_many_heads()
 
     if obj.type == 'MESH':
@@ -99,6 +117,38 @@ def get_current_head():
         settings = get_main_settings()
         return settings.get_head(headnum)
     return None
+
+
+def has_no_blendshape(obj):
+    return not obj or obj.type != 'MESH' or not obj.data or \
+           not obj.data.shape_keys
+
+
+def has_blendshapes_action(obj):
+    if obj and obj.type == 'MESH' \
+           and obj.data.shape_keys \
+           and obj.data.shape_keys.animation_data \
+           and obj.data.shape_keys.animation_data.action:
+        return True
+    return False
+
+
+def get_obj_from_context(context, force_fbloader=True):
+    state, headnum = what_is_state()
+    if state == 'FACS_HEAD':
+        return context.object, 1.0
+    else:
+        if headnum < 0:
+            return None, 1.0
+
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        if not head:
+            return None, 1.0
+
+        if force_fbloader:
+            FBLoader.load_model(headnum)
+        return head.headobj, head.model_scale
 
 
 def force_undo_push(msg='KeenTools operation'):

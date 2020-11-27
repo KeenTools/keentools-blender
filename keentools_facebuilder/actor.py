@@ -28,6 +28,7 @@ from bpy.props import (
 )
 
 from .utils import manipulate
+from .utils.coords import xy_to_xz_rotation_matrix_4x4
 from .config import Config, get_main_settings, get_operator, ErrorType
 from .utils.exif_reader import (update_image_groups,
                                 auto_setup_camera_from_exif,
@@ -66,10 +67,7 @@ class FB_OT_HistoryActor(bpy.types.Operator):
                     # Positioning control panel near head
                     offset = np.eye(4)
                     offset[3][0] = 2 * head.model_scale # Step on X
-                    rot = np.array([[1., 0., 0., 0.],
-                                    [0., 0., 1., 0.],
-                                    [0., -1., 0., 0.],
-                                    [0., 0., 0., 1.]])
+                    rot = xy_to_xz_rotation_matrix_4x4()
                     control_panel.matrix_world = offset @ rot @ \
                         np.array(head.headobj.matrix_world).transpose()
 

@@ -27,7 +27,8 @@ _MT = 'FACEBUILDER_MT_'
 class Config:
     # Version dependent
     addon_version = '2020.1.0'
-    supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83), (2, 90))
+    supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
+                                  (2, 90), (2.91))
     minimal_blender_api = (2, 80, 60)
 
     # Version independent
@@ -214,6 +215,7 @@ class Config:
 
     default_driver_name = 'FaceBuilderDriver'
     default_blendshapes_action_name = 'fbBlendShapesAction'
+    example_animation_action_name = 'ExampleAnimAction'
 
     # Object Custom Properties
     # Tuples instead simple values are used to load custom properties

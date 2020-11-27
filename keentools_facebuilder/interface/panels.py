@@ -24,24 +24,33 @@ from ..config import Config, get_main_settings
 from ..messages import draw_labels
 import re
 from ..fbloader import FBLoader
-from ..utils.manipulate import what_is_state, get_current_head
+from ..utils.manipulate import (what_is_state,
+                                get_current_head,
+                                get_obj_from_context,
+                                has_no_blendshape,
+                                has_blendshapes_action,
+                                is_it_our_mesh)
 from ..utils.materials import find_bpy_image_by_name
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 
 
 def _state_valid_to_show(state):
-    # RECONSTRUCT, NO_HEADS, THIS_HEAD, ONE_HEAD, MANY_HEADS, PINMODE
+    # RECONSTRUCT, NO_HEADS, THIS_HEAD, ONE_HEAD, MANY_HEADS, PINMODE, FACS_HEAD
     return state in {'THIS_HEAD', 'ONE_HEAD', 'PINMODE'}
 
 
 def _show_all_panels():
+    if not pkt.is_installed():
+        return False
     state, _ = what_is_state()
-    return _state_valid_to_show(state) and pkt.is_installed()
+    return _state_valid_to_show(state)
 
 
 def _show_all_panels_no_blendshapes():
+    if not pkt.is_installed():
+        return False
     state, headnum = what_is_state()
-    if not _state_valid_to_show(state) or not pkt.is_installed():
+    if not _state_valid_to_show(state):
         return False
     settings = get_main_settings()
     return settings.get_head(headnum).has_no_blendshapes()
@@ -667,6 +676,13 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
     bl_idname = Config.fb_blendshapes_panel_idname
     bl_label = 'Blendshapes'
 
+    @classmethod
+    def poll(cls, context):
+        if not pkt.is_installed():
+            return False
+        state, _ = what_is_state()
+        return _state_valid_to_show(state) or state == 'FACS_HEAD'
+
     def draw_header_preset(self, context):
         layout = self.layout
         row = layout.row()
@@ -678,12 +694,12 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
     def draw(self, context):
         layout = self.layout
 
-        head = get_current_head()
-        if not head:
+        obj, scale = get_obj_from_context(context, force_fbloader=False)
+        if not obj:
             return
 
-        no_blendshapes = head.has_no_blendshapes()
-        has_blendshapes_action = head.has_blendshapes_action()
+        no_blendshapes = has_no_blendshape(obj)
+        has_blendshapes_act = has_blendshapes_action(obj)
 
         box = layout.box()
         box.operator(Config.fb_create_blendshapes_idname)
@@ -704,16 +720,16 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
             box.operator(Config.fb_load_animation_from_csv_idname)
 
             row = box.row()
-            if has_blendshapes_action:
+            if has_blendshapes_act:
                 row.active = False
             op = row.operator(Config.fb_create_example_animation_idname)
-            op.active_button = not has_blendshapes_action
+            op.active_button = not has_blendshapes_act
 
             row = box.row()
-            if not has_blendshapes_action:
+            if not has_blendshapes_act:
                 row.active = False
             op = row.operator(Config.fb_clear_animation_idname)
-            op.active_button = has_blendshapes_action
+            op.active_button = has_blendshapes_act
 
         box = layout.box()
         box.operator(Config.fb_export_head_to_fbx_idname)
