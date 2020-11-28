@@ -798,7 +798,7 @@ class FB_OT_LoadAnimationFromCSV(ButtonOperator, Operator):
 
 class FB_OT_CreateExampleAnimation(ActiveButtonOperator, Operator):
     bl_idname = Config.fb_create_example_animation_idname
-    bl_label = 'Create example'
+    bl_label = 'Example keyframes'
     bl_description = 'Create example animation keyframes for each blendshape'
 
     def execute(self, context):
@@ -810,8 +810,11 @@ class FB_OT_CreateExampleAnimation(ActiveButtonOperator, Operator):
 class FB_OT_ResetBlendshapeValues(ButtonOperator, Operator):
     bl_idname = Config.fb_reset_blendshape_values_idname
     bl_label = 'Reset values'
-    bl_description = 'Set all blendshape values to zero. ' \
-                     'Does not affect animation keyframes'
+    bl_description = 'Reset the values of blendshapes (Shape Keys), ' \
+                     'so the model will be in the neutral state. ' \
+                     'This doesn\'t affect any of the existing keyframes. ' \
+                     'If you want to store the neutral state to a keyframe, ' \
+                     'you need to do it manually'
 
     def execute(self, context):
         return reset_blendshape_values(self)
@@ -820,7 +823,11 @@ class FB_OT_ResetBlendshapeValues(ButtonOperator, Operator):
 class FB_OT_ClearAnimation(ActiveButtonOperator, Operator):
     bl_idname = Config.fb_clear_animation_idname
     bl_label = 'Clear animation'
-    bl_description = 'Unlink animation from blendshapes (Shape Keys)'
+    bl_description = 'Unlink animation from blendshapes (Shape Keys). ' \
+                     'Effectively, removes the model animation. ' \
+                     'You can "reattach" the animation to the head ' \
+                     'until you close the project. Once the project is closed ' \
+                     'all unlinked animation is lost'
 
     def execute(self, context):
         if not self.active_button:
