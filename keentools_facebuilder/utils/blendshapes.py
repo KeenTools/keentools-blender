@@ -220,6 +220,12 @@ def _cleanup_keys_in_interval(fcurve, start_keyframe, end_keyframe):
     fcurve.update()
 
 
+def _add_zero_keys_at_start_and_end(fcurve, start_keyframe, end_keyframe):
+    anim_data = [(start_keyframe, 0), (end_keyframe,0)]
+    _put_anim_data_in_fcurve(fcurve, anim_data)
+    fcurve.update()
+
+
 def load_csv_animation_to_blendshapes(obj, filepath):
     logger = logging.getLogger(__name__)
     try:
@@ -254,13 +260,14 @@ def load_csv_animation_to_blendshapes(obj, filepath):
     for name in facs_names:
         blendshape_fcurve = _get_safe_action_fcurve(
             blendshapes_action, 'key_blocks["{}"].value'.format(name), index=0)
-
         _cleanup_keys_in_interval(blendshape_fcurve,
                                   start_keyframe, end_keyframe)
-
-        animation = fan.at_name(name)
-        anim_data = [x for x in zip(keyframes, animation)]
-        _put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
+        if name in read_facs:
+            anim_data = [x for x in zip(keyframes, fan.at_name(name))]
+            _put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
+        else:
+            _add_zero_keys_at_start_and_end(blendshape_fcurve,
+                                            start_keyframe, end_keyframe)
     obj.data.update()
     if len(keyframes) > 0:
         _extend_scene_timeline(keyframes[-1])
