@@ -213,6 +213,14 @@ def restore_facs_blendshapes(obj, scale, restore_names):
     return counter
 
 
+def _cleanup_interval(start_keyframe, end_keyframe):
+    return min(start_keyframe, round(start_keyframe)), end_keyframe
+
+
+def _animation_interval(start_keyframe, end_keyframe):
+    return round(start_keyframe), math.floor(end_keyframe)
+
+
 def _cleanup_keys_in_interval(fcurve, start_keyframe, end_keyframe):
     for p in reversed(fcurve.keyframe_points):
         if start_keyframe <= p.co[0] <= end_keyframe:
@@ -221,9 +229,18 @@ def _cleanup_keys_in_interval(fcurve, start_keyframe, end_keyframe):
 
 
 def _add_zero_keys_at_start_and_end(fcurve, start_keyframe, end_keyframe):
-    anim_data = [(start_keyframe, 0), (end_keyframe,0)]
+    left_keyframe, right_keyframe = _animation_interval(start_keyframe,
+                                                        end_keyframe)
+    anim_data = [(left_keyframe, 0), (right_keyframe,0)]
     _put_anim_data_in_fcurve(fcurve, anim_data)
-    fcurve.update()
+
+
+def _snap_keys_in_interval(fcurve, start_keyframe, end_keyframe):
+    anim_data = [(x, fcurve.evaluate(x)) for x in
+                 range(*_animation_interval(start_keyframe, end_keyframe))]
+    _cleanup_keys_in_interval(fcurve, *_cleanup_interval(start_keyframe,
+                                                         end_keyframe))
+    _put_anim_data_in_fcurve(fcurve, anim_data)
 
 
 def load_csv_animation_to_blendshapes(obj, filepath):
@@ -265,6 +282,8 @@ def load_csv_animation_to_blendshapes(obj, filepath):
         if name in read_facs:
             anim_data = [x for x in zip(keyframes, fan.at_name(name))]
             _put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
+            _snap_keys_in_interval(blendshape_fcurve,
+                                   start_keyframe, end_keyframe)
         else:
             _add_zero_keys_at_start_and_end(blendshape_fcurve,
                                             start_keyframe, end_keyframe)
