@@ -89,25 +89,23 @@ class FBLoader:
     @classmethod
     def save_pinmode_state(cls, headnum):
         logger = logging.getLogger(__name__)
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-        headobj = head.headobj
 
         cls.save_fb_on_headobj(headnum)
 
         vp = cls.viewport()
         vp.pins().reset_current_pin()
 
-        cls.update_head_camera_focals(head)
-        coords.update_head_mesh_neutral(cls.get_builder(), headobj)
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        if head:
+            cls.update_head_camera_focals(head)
+            if head.headobj:
+                coords.update_head_mesh_neutral(cls.get_builder(), head.headobj)
         logger.debug("SAVE PINMODE STATE")
 
     @classmethod
     def out_pinmode(cls, headnum):
         logger = logging.getLogger(__name__)
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-        headobj = head.headobj
 
         cls.save_pinmode_state(headnum)
 
@@ -120,7 +118,11 @@ class FBLoader:
         restore_ui_elements()
 
         cameras.show_all_cameras(headnum)
-        headobj.hide_set(False)
+
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        if head and head.headobj:
+            head.headobj.hide_set(False)
         settings.pinmode = False
         logger.debug("OUT PINMODE")
 
@@ -137,9 +139,11 @@ class FBLoader:
         fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.get_head(headnum)
-        head.set_serial_str(fb.serialize())
-        head.save_images_src()
-        cls.set_keentools_attributes(head.headobj)
+        if head:
+            head.set_serial_str(fb.serialize())
+            head.save_images_src()
+            if head.headobj:
+                cls.set_keentools_attributes(head.headobj)
 
     @classmethod
     def fb_save(cls, headnum, camnum):
