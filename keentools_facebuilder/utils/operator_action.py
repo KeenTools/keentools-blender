@@ -167,7 +167,13 @@ def export_head_to_fbx(operator):
                              bake_anim_use_all_actions=False,
                              bake_anim_use_nla_strips=False,
                              add_leaf_bones=False,
-                             mesh_smooth_type='FACE')
+                             mesh_smooth_type='FACE',
+                             # Default directions for axis export
+                             axis_forward='-Z',
+                             axis_up='Y',
+                             # Warning! Option marked as experimental in docs
+                             # but we need it for same UX in UE4/Unity imports
+                             bake_space_transform=True)
     logger.debug('fbx operator called')
     return {'FINISHED'}
 
