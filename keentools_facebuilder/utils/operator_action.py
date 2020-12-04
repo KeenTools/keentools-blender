@@ -168,7 +168,7 @@ def export_head_to_fbx(operator):
                              bake_anim_use_nla_strips=False,
                              add_leaf_bones=False,
                              mesh_smooth_type='FACE',
-                             # Default directions for axis export
+                             # Default directions for axes in FBX
                              axis_forward='-Z',
                              axis_up='Y',
                              # Warning! Option marked as experimental in docs
