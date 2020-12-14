@@ -28,7 +28,7 @@ from bpy.types import Operator
 
 from .config import get_main_settings, get_operator, Config
 from .fbloader import FBLoader
-from .utils import cameras, manipulate, materials, coords
+from .utils import cameras, manipulate, materials, coords, images
 from .utils.attrs import get_obj_collection, safe_delete_collection
 from .utils.exif_reader import (read_exif_from_camera,
                                 update_exif_sizes_message,
@@ -562,7 +562,7 @@ class FB_OT_DeleteTexture(Operator):
         pass
 
     def execute(self, context):
-        materials.remove_bpy_image_by_name(Config.tex_builder_filename)
+        images.remove_bpy_image_by_name(Config.tex_builder_filename)
         materials.remove_mat_by_name(Config.tex_builder_matname)
         op = get_operator(Config.fb_show_solid_idname)
         op('EXEC_DEFAULT')
