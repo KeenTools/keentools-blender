@@ -459,7 +459,10 @@ class FBLoader:
             if head.smart_mode():
                 if camera.auto_focal_estimation:
                     if camera.is_in_group():
-                        fb.set_static_focal_length_estimation(settings.get_projection_matrix()[0][0])
+                        sensor_width = head.sensor_width if head.sensor_width != -1 \
+                            else Config.default_sensor_width
+                        proj_mat = settings.get_projection_matrix()
+                        fb.set_static_focal_length_estimation(coords.focal_by_projection_matrix(proj_mat, sensor_width))
                     else:  # image_group in (-1, 0)
                         fb.set_varying_focal_length_estimation()
                         for cam in head.cameras:
@@ -478,7 +481,7 @@ class FBLoader:
                     fb.set_varying_focal_length_estimation()
                     _fix_all_except_this(fb, head, kid)
                 elif head.manual_estimation_mode == 'same_focus':
-                    fb.set_static_focal_length_estimation(settings.get_projection_matrix()[0][0])
+                    fb.set_static_focal_length_estimation(camera.focal)
                 elif head.manual_estimation_mode == 'force_focal':
                     fb.disable_focal_length_estimation()
                 else:
