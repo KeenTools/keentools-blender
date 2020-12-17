@@ -18,7 +18,7 @@
 
 
 bl_info = {
-    "name": "KeenTools FaceBuilder 2020.1.0",
+    "name": "KeenTools FaceBuilder 2021.1.0",
     "author": "KeenTools",
     "description": "Creates Head and Face geometry with a few "
                    "reference photos",
@@ -53,7 +53,7 @@ def _is_python_64bit():
 
 
 def _is_config_latest():
-    return Config.addon_version == '2020.1.0'
+    return Config.addon_version == '2021.1.0'
 
 
 def _is_blender_too_old():
