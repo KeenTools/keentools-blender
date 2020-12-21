@@ -18,11 +18,12 @@
 
 import logging
 from uuid import uuid4
+import os
 
 import bpy
 
 from .utils import manipulate, coords, cameras
-from .config import Config, get_main_settings, get_operators, ErrorType
+from .config import Config, get_main_settings, get_operator, ErrorType
 from .fbloader import FBLoader
 from .utils.other import FBStopShaderTimer, force_ui_redraw, hide_ui_elements
 
@@ -65,32 +66,26 @@ class FB_OT_PinMode(bpy.types.Operator):
         if heads_deleted > 0 or cams_deleted > 0:
             logger.warning("HEADS AND CAMERAS FIXED")
         if heads_deleted == 0:
-            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
-
-    def _coloring_special_parts(self, headobj, opacity):
-        settings = get_main_settings()
-        if settings.show_specials:
-            special_indices = FBLoader.viewport().get_special_indices(
-                FBLoader.get_builder_type())
-            special_color = (*settings.wireframe_special_color,
-                             opacity * settings.wireframe_opacity)
-            FBLoader.viewport().wireframer().init_special_areas(
-                headobj.data, special_indices, special_color)
 
     def _init_wireframer_colors(self, opacity):
         settings = get_main_settings()
         head = settings.get_head(settings.current_headnum)
-        headobj = head.headobj
 
-        FBLoader.viewport().wireframer().init_geom_data(headobj)
-        FBLoader.viewport().wireframer().init_edge_indices(headobj)
+        wf = FBLoader.viewport().wireframer()
+        wf.init_colors((settings.wireframe_color,
+                       settings.wireframe_special_color,
+                       settings.wireframe_midline_color),
+                       settings.wireframe_opacity * opacity)
 
-        FBLoader.viewport().wireframer().init_color_data(
-            (*settings.wireframe_color, opacity * settings.wireframe_opacity))
-        self._coloring_special_parts(headobj, opacity)
+        if not wf.init_wireframe_image(FBLoader.get_builder(),
+                                       settings.show_specials):
+            wf.switch_to_simple_shader()
 
-        FBLoader.viewport().wireframer().create_batches()
+        wf.init_geom_data(head.headobj)
+        wf.init_edge_indices(FBLoader.get_builder())
+        wf.create_batches()
 
     def _delete_found_pin(self, nearest, context):
         settings = get_main_settings()
@@ -164,7 +159,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         if coords.is_safe_region(context, mouse_x, mouse_y):
             settings = get_main_settings()
             # Movepin operator Call
-            op = getattr(get_operators(), Config.fb_movepin_callname)
+            op = get_operator(Config.fb_movepin_idname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
                headnum=settings.current_headnum,
                camnum=settings.current_camnum)
@@ -194,8 +189,10 @@ class FB_OT_PinMode(bpy.types.Operator):
             return {'CANCELLED'}
 
         if not FBLoader.check_mesh(headobj):
-            logger.error("MESH IS CORRUPTED")
-            warn = getattr(get_operators(), Config.fb_warning_callname)
+            fb = FBLoader.get_builder()
+            logger.error('MESH IS CORRUPTED {} != {}'.format(
+                len(headobj.data.vertices), len(fb.applied_args_vertices())))
+            warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
             return {'CANCELLED'}
 
@@ -213,9 +210,6 @@ class FB_OT_PinMode(bpy.types.Operator):
                 settings.current_headnum, settings.current_camnum))
             first_start = False
         else:
-            FBLoader.builder().sync_version(head.mod_ver)
-            head.mod_ver = FBLoader.get_builder_version()
-
             FBLoader.update_cameras_from_old_version(self.headnum)
 
         settings.current_headnum = self.headnum
@@ -239,9 +233,7 @@ class FB_OT_PinMode(bpy.types.Operator):
                 kfnum = cam.get_keyframe()
                 logger.debug("UPDATE KEYFRAME: {}".format(kfnum))
                 if not fb.is_key_at(kfnum):
-                    fb.set_keyframe(kfnum, cam.get_model_mat(),
-                                    cam.get_projection_matrix(),
-                                    cam.get_oriented_image_size())
+                    fb.set_keyframe(kfnum, cam.get_model_mat())
 
         try:
             FBLoader.place_camera(settings.current_headnum,
@@ -324,7 +316,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             settings.force_out_pinmode = False
             if settings.license_error:
                 # Show License Warning
-                warn = getattr(get_operators(), Config.fb_warning_callname)
+                warn = get_operator(Config.fb_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
                 settings.license_error = False
             return True

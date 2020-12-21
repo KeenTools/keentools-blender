@@ -20,7 +20,7 @@ import logging
 
 import bpy
 
-from .utils import cameras, manipulate, coords
+from .utils import manipulate, coords
 from .fbloader import FBLoader
 from .config import Config, get_main_settings
 
@@ -122,7 +122,8 @@ class FB_OT_MovePin(bpy.types.Operator):
         vp.create_batch_2d(context)
         vp.register_handlers(args, context)
 
-        settings.pinmode = True
+        assert settings.pinmode
+
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
         vp.pins().set_current_pin((x, y))
 
@@ -202,6 +203,7 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         # Load 3D pins
         vp.update_surface_points(fb, head.headobj, kid)
+        head.mark_model_changed_by_pinmode()
         return {'FINISHED'}
 
     @staticmethod
@@ -222,7 +224,6 @@ class FB_OT_MovePin(bpy.types.Operator):
         head = settings.get_head(headnum)
         headobj = head.headobj
         cam = head.get_camera(camnum)
-        camobj = cam.camobj
         kid = settings.get_keyframe(headnum, camnum)
 
         self._pin_drag(kid, context, mouse_x, mouse_y)
@@ -245,18 +246,20 @@ class FB_OT_MovePin(bpy.types.Operator):
         cam.set_model_mat(fb.model_mat(kid))
         # --------------
 
-        FBLoader.place_cameraobj(kid, camobj, headobj)
+        FBLoader.place_camera(headnum, camnum)
         coords.update_head_mesh(settings, fb, head)
 
-        FBLoader.viewport().wireframer().init_geom_data(headobj)
-        FBLoader.viewport().wireframer().create_batches()
-        FBLoader.viewport().create_batch_2d(context)
+        vp = FBLoader.viewport()
+        vp.wireframer().init_geom_data(headobj)
+        vp.wireframer().update_edges_vertices()
+        vp.wireframer().create_batches()
+        vp.create_batch_2d(context)
         # Try to redraw
         if not bpy.app.background:
             context.area.tag_redraw()
 
         # Load 3D pins
-        FBLoader.viewport().update_surface_points(fb, headobj, kid)
+        vp.update_surface_points(fb, headobj, kid)
 
         return self.on_default_modal()
 

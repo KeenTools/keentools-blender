@@ -18,7 +18,7 @@
 
 
 bl_info = {
-    "name": "KeenTools FaceBuilder 2.1.1",
+    "name": "KeenTools FaceBuilder 2021.1.0",
     "author": "KeenTools",
     "description": "Creates Head and Face geometry with a few "
                    "reference photos",
@@ -53,7 +53,7 @@ def _is_python_64bit():
 
 
 def _is_config_latest():
-    return Config.addon_version == '2.1.1'
+    return Config.addon_version == '2021.1.0'
 
 
 def _is_blender_too_old():
@@ -138,36 +138,34 @@ if not _can_load():
     def register():
         logger = logging.getLogger(__name__)
         bpy.utils.register_class(FBCannotLoadPreferences)
-        logger.debug("CANNOT LOAD PREFERENCES REGISTERED")
+        logger.error("CANNOT LOAD PREFERENCES REGISTERED")
 
 
     def unregister():
         logger = logging.getLogger(__name__)
         bpy.utils.unregister_class(FBCannotLoadPreferences)
-        logger.debug("CANNOT LOAD PREFERENCES UNREGISTERED")
+        logger.error("CANNOT LOAD PREFERENCES UNREGISTERED")
 
 else:
     from .preferences import CLASSES_TO_REGISTER as PREFERENCES_CLASSES
     from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
     from .main_operator import CLASSES_TO_REGISTER as OPERATOR_CLASSES
     from .head import MESH_OT_FBAddHead
-    from .body import MESH_OT_FBAddBody
     from .settings import FBExifItem, FBCameraItem, FBHeadItem, FBSceneSettings
     from .pinmode import FB_OT_PinMode
     from .movepin import FB_OT_MovePin
-    from .actor import FB_OT_Actor, FB_OT_CameraActor
+    from .actor import FB_OT_HistoryActor, FB_OT_CameraActor
 
     from .utils.icons import FBIcons
 
     CLASSES_TO_REGISTER = (MESH_OT_FBAddHead,
-                           MESH_OT_FBAddBody,
                            FBExifItem,
                            FBCameraItem,
                            FBHeadItem,
                            FBSceneSettings,
                            FB_OT_PinMode,
                            FB_OT_MovePin,
-                           FB_OT_Actor,
+                           FB_OT_HistoryActor,
                            FB_OT_CameraActor) + OPERATOR_CLASSES + \
                            INTERFACE_CLASSES + PREFERENCES_CLASSES
 
@@ -187,7 +185,6 @@ else:
 
     def menu_func(self, context):
         self.layout.operator(MESH_OT_FBAddHead.bl_idname, icon='USER')
-        # self.layout.operator(MESH_OT_FBAddBody.bl_idname, icon='ARMATURE_DATA')
 
 
     # Blender predefined methods

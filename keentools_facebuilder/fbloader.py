@@ -16,26 +16,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy
 import logging
-import math
 
+import bpy
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 import numpy as np
 
-from .viewport import FBViewport
+from .config import Config, get_main_settings
+from .utils.coords import xy_to_xz_rotation_matrix_3x3
 from .utils import attrs, coords, cameras
-from .utils.other import FBStopShaderTimer, restore_ui_elements
 from .utils.exif_reader import update_image_groups, reload_all_camera_exif
-
-from .builder import UniBuilder
-from .config import (Config, get_main_settings, get_operators,
-                     BuilderType, ErrorType)
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from .utils.other import FBStopShaderTimer, restore_ui_elements
+from .viewport import FBViewport
 
 
 class FBLoader:
-    # Builder selection: FaceBuilder or BodyBuilder
-    builder_instance = None
+    _camera_input = None
+    _builder_instance = None
     _viewport = FBViewport()
 
     @classmethod
@@ -43,14 +40,21 @@ class FBLoader:
         return cls._viewport
 
     @classmethod
-    def builder(cls):
-        if cls.builder_instance is None:
-            cls.builder_instance = UniBuilder(Config.default_builder)
-        return cls.builder_instance
+    def new_builder(cls):
+        from .camera_input import FaceBuilderCameraInput
+        cls._camera_input = FaceBuilderCameraInput()
+        cls._builder_instance = pkt.module().FaceBuilder(cls._camera_input)
+        return cls._builder_instance
+
+    @classmethod
+    def get_builder(cls):
+        if cls._builder_instance is not None:
+            return cls._builder_instance
+        return cls.new_builder()
 
     @classmethod
     def is_not_loaded(cls):
-        return cls.builder_instance is None
+        return cls._builder_instance is None
 
     @classmethod
     def update_cam_image_size(cls, cam_item):
@@ -64,26 +68,8 @@ class FBLoader:
             logger.debug("camera: {} focal: {}".format(i, c.focal))
 
     @classmethod
-    def get_builder(cls):
-        return cls.builder().get_builder()
-
-    @classmethod
-    def new_builder(cls, builder_type=BuilderType.NoneBuilder,
-                    ver=Config.unknown_mod_ver):
-        return cls.builder().new_builder(builder_type, ver)
-
-    @classmethod
-    def get_builder_type(cls):
-        return cls.builder().get_builder_type()
-
-    @classmethod
-    def get_builder_version(cls):
-        return cls.builder().get_version()
-
-    @classmethod
-    def set_keentools_version(cls, obj):
-        attrs.set_keentools_version(obj, cls.get_builder_type(),
-                                    cls.get_builder_version())
+    def set_keentools_attributes(cls, obj):
+        attrs.mark_keentools_object(obj)
 
     @classmethod
     def check_mesh(cls, headobj):
@@ -103,25 +89,23 @@ class FBLoader:
     @classmethod
     def save_pinmode_state(cls, headnum):
         logger = logging.getLogger(__name__)
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-        headobj = head.headobj
 
         cls.save_fb_on_headobj(headnum)
 
         vp = cls.viewport()
         vp.pins().reset_current_pin()
 
-        cls.update_head_camera_focals(head)
-        coords.update_head_mesh_neutral(cls.get_builder(), headobj)
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        if head:
+            cls.update_head_camera_focals(head)
+            if head.headobj:
+                coords.update_head_mesh_neutral(cls.get_builder(), head.headobj)
         logger.debug("SAVE PINMODE STATE")
 
     @classmethod
     def out_pinmode(cls, headnum):
         logger = logging.getLogger(__name__)
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-        headobj = head.headobj
 
         cls.save_pinmode_state(headnum)
 
@@ -134,7 +118,11 @@ class FBLoader:
         restore_ui_elements()
 
         cameras.show_all_cameras(headnum)
-        headobj.hide_set(False)
+
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        if head and head.headobj:
+            head.headobj.hide_set(False)
         settings.pinmode = False
         logger.debug("OUT PINMODE")
 
@@ -151,12 +139,11 @@ class FBLoader:
         fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.get_head(headnum)
-
-        head.set_serial_str(fb.serialize())
-
-        head.save_images_src()
-        head.save_cam_settings()
-        cls.set_keentools_version(head.headobj)
+        if head:
+            head.set_serial_str(fb.serialize())
+            head.save_images_src()
+            if head.headobj:
+                cls.set_keentools_attributes(head.headobj)
 
     @classmethod
     def fb_save(cls, headnum, camnum):
@@ -181,7 +168,7 @@ class FBLoader:
     @classmethod
     def shader_update(cls, headobj):
         cls.viewport().wireframer().init_geom_data(headobj)
-        cls.viewport().wireframer().init_edge_indices(headobj)
+        cls.viewport().wireframer().init_edge_indices(FBLoader.get_builder())
         cls.viewport().wireframer().create_batches()
 
     @classmethod
@@ -191,9 +178,8 @@ class FBLoader:
         head = settings.get_head(headnum)
         cam = head.get_camera(camnum)
         headobj = head.headobj
-        camobj = cam.camobj
         kid = settings.get_keyframe(headnum, camnum)
-        cls.place_cameraobj(kid, camobj, headobj)
+        cls.place_camera(headnum, camnum)
         coords.update_head_mesh(settings, fb, head)
         # Load pins from model
         vp = cls.viewport()
@@ -206,22 +192,20 @@ class FBLoader:
     def rigidity_setup(cls):
         fb = cls.get_builder()
         settings = get_main_settings()
-        if FBLoader.get_builder_type() == BuilderType.FaceBuilder:
-            fb.set_shape_rigidity(settings.shape_rigidity)
-            fb.set_expressions_rigidity(settings.expression_rigidity)
+        fb.set_shape_rigidity(settings.shape_rigidity)
+        fb.set_expressions_rigidity(settings.expression_rigidity)
 
     @classmethod
     def update_all_camera_positions(cls, headnum):
         fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.get_head(headnum)
-        headobj = head.headobj
 
-        for i, cam in enumerate(head.cameras):
-            if cam.has_pins():
-                kid = cam.get_keyframe()
-                cls.place_cameraobj(kid, cam.camobj, headobj)
-                cam.set_model_mat(fb.model_mat(kid))
+        for camnum, camera in enumerate(head.cameras):
+            if camera.has_pins():
+                cls.place_camera(headnum, camnum)
+                keyframe = camera.get_keyframe()
+                camera.set_model_mat(fb.model_mat(keyframe))
 
     @classmethod
     def update_all_camera_focals(cls, headnum):
@@ -239,39 +223,19 @@ class FBLoader:
                 cam.focal = focal * cam.compensate_view_scale()
 
     @classmethod
-    def update_camera_projection(cls, headnum, camnum):
-        settings = get_main_settings()
-        camera = settings.get_camera(headnum, camnum)
-        if camera is None:
-            return
-        fb = FBLoader.get_builder()
-        projection = camera.get_projection_matrix()
-        kid = camera.get_keyframe()
-        fb.update_projection_mat(kid, projection)
-        fb.update_image_size(kid, camera.get_oriented_image_size())
-
-    @classmethod
     def center_geo_camera_projection(cls, headnum, camnum):
         settings = get_main_settings()
         camera = settings.get_camera(headnum, camnum)
         if camera is None:
             return
         fb = FBLoader.get_builder()
-        projection = camera.get_projection_matrix()
-        fb.set_centered_geo_keyframe(camera.get_keyframe(), projection,
-                                     camera.get_oriented_image_size())
+        keyframe = camera.get_keyframe()
+        if not fb.is_key_at(keyframe):
+            fb.set_centered_geo_keyframe(keyframe)
+        else:
+            fb.center_geo(keyframe)
 
     # --------------------
-    @classmethod
-    def place_cameraobj(cls, keyframe, camobj, headobj):
-        fb = cls.get_builder()
-        mat = coords.calc_model_mat(
-            fb.model_mat(keyframe),
-            headobj.matrix_world
-        )
-        if mat is not None:
-            camobj.matrix_world = mat
-
     @classmethod
     def set_camera_projection(cls, fl, sw, rx, ry,
                               near_clip=0.1, far_clip=1000.0):
@@ -313,20 +277,26 @@ class FBLoader:
         return 1
 
     @classmethod
+    def select_uv_set(cls, builder, uv_set):
+        try:
+            uv_num = int(uv_set[2:])
+            builder.select_uv_set(uv_num)
+        except ValueError:
+            raise ValueError('Incompatible UV number')
+        except pkt.module().InvalidArgumentException:
+            raise ValueError('Invalid UV index is out of bounds')
+        except TypeError:
+            raise TypeError('Invalid UV index')
+        except Exception:
+            raise Exception('Unknown error in UV selector')
+
+    @classmethod
     def get_builder_mesh(cls, builder, mesh_name='keentools_mesh',
                          masks=(), uv_set='uv0', keyframe=None):
         for i, m in enumerate(masks):
             builder.set_mask(i, m)
 
-        # change UV in accordance to selected UV set
-        # Blender can't use integer as key in enum property
-        builder.select_uv_set(0)
-        if uv_set == 'uv1':
-            builder.select_uv_set(1)
-        if uv_set == 'uv2':
-            builder.select_uv_set(2)
-        if uv_set == 'uv3':
-            builder.select_uv_set(3)
+        cls.select_uv_set(builder, uv_set)
 
         if keyframe is not None:
             geo = builder.applied_args_model_at(keyframe)
@@ -335,33 +305,24 @@ class FBLoader:
         me = geo.mesh(0)
 
         v_count = me.points_count()
-        vertices = []
-        for i in range(0, v_count):
-            vertices.append(me.point(i))
+        vertices = np.empty((v_count, 3), dtype=np.float32)
+        for i in range(v_count):
+            vertices[i] = me.point(i)
 
-        rot = np.array([[1., 0., 0.], [0., 0., 1.], [0., -1., 0]])
-        vertices2 = vertices @ rot
-        # vertices2 = vertices
+        vertices2 = vertices @ xy_to_xz_rotation_matrix_3x3()
 
         f_count = me.faces_count()
-        faces = []
+        faces = np.empty(f_count, dtype=np.object)
 
-        # Normals are not in use yet
-        normals = []
-        n = 0
-        for i in range(0, f_count):
-            row = []
-            for j in range(0, me.face_size(i)):
-                row.append(me.face_point(i, j))
-                normal = me.normal(i, j) @ rot
-                normals.append(tuple(normal))
-                n += 1
-            faces.append(tuple(row))
+        for i in range(f_count):
+            faces[i] = [me.face_point(i, j) for j in range(me.face_size(i))]
 
         mesh = bpy.data.meshes.new(mesh_name)
-        mesh.from_pydata(vertices2, [], faces)
+        mesh.from_pydata(vertices2, [], faces.tolist())
 
-        # Init Custom Normals (work on Shading Flat!)
+        # Normals are not in use yet
+        # Init Custom Normals (work on Shading Flat only!)
+        # normals = [tuple(me.normal(i) @ rot) for i in range(me.normals_count())]
         # mesh.calc_normals_split()
         # mesh.normals_split_custom_set(normals)
 
@@ -385,16 +346,11 @@ class FBLoader:
         return mesh
 
     @classmethod
-    def universal_mesh_loader(cls, builder_type, mesh_name='keentools_mesh',
+    def universal_mesh_loader(cls, mesh_name='keentools_mesh',
                               masks=(), uv_set='uv0'):
-        stored_builder_type = FBLoader.get_builder_type()
-        stored_builder_version = FBLoader.get_builder_version()
-        builder = cls.new_builder(builder_type, Config.unknown_mod_ver)
-
+        builder = cls.new_builder()
         mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set,
                                     keyframe=None)
-        # Restore builder
-        cls.new_builder(stored_builder_type, stored_builder_version)
         return mesh
 
     @classmethod
@@ -422,13 +378,11 @@ class FBLoader:
         head = settings.get_head(headnum)
         cam = head.get_camera(camnum)
         kid = cam.get_keyframe()
-        camobj = cam.camobj
-        headobj = head.headobj
 
         cls.load_model_from_head(head)
         fb = cls.get_builder()
 
-        cls.place_cameraobj(kid, camobj, headobj)
+        cls.place_camera(headnum, camnum)
         # Load pins from model
         vp = cls.viewport()
         vp.pins().set_pins(vp.img_points(fb, kid))
@@ -442,8 +396,15 @@ class FBLoader:
         camera = head.get_camera(camnum)
         camobj = camera.camobj
         headobj = head.headobj
-        kid = settings.get_keyframe(headnum, camnum)
-        cls.place_cameraobj(kid, camobj, headobj)
+
+        fb = cls.get_builder()
+        keyframe = camera.get_keyframe()
+
+        mat = coords.calc_model_mat(
+            fb.model_mat(keyframe),
+            headobj.matrix_world)
+        if mat is not None:
+            camobj.matrix_world = mat
 
     @classmethod
     def load_pins(cls, headnum, camnum):
@@ -526,14 +487,9 @@ class FBLoader:
                     _unfix_all(fb, head)
                     mode = 'FB_ESTIMATE_STATIC_FOCAL_LENGTH'
                 elif head.manual_estimation_mode == 'force_focal':
-                    for cam in head.cameras:
-                        fb.update_projection_mat(cam.get_keyframe(),
-                            cam.get_custom_projection_matrix(head.focal))
-                        fb.update_image_size(cam.get_keyframe(),
-                                             cam.get_oriented_image_size())
                     mode = 'FB_FIXED_FOCAL_LENGTH_ALL_FRAMES'
                 else:
-                    assert(False), 'Unknown mode: {}'.format(
+                    assert False, 'Unknown mode: {}'.format(
                         head.manual_estimation_mode)
             return mode
 
@@ -696,10 +652,8 @@ class FBLoader:
         fb = cls.get_builder()
         kid = cls.get_next_keyframe()
         camera.set_keyframe(kid)
-        projection = camera.get_projection_matrix()
 
-        fb.set_centered_geo_keyframe(kid, projection,
-                                     camera.get_oriented_image_size())
+        fb.set_centered_geo_keyframe(kid)
 
         logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
 

@@ -22,6 +22,6 @@ This module is designed to operate with pykeentools library:
 - import
 """
 
-from .loader import *
 from .install import *
-from .config import MINIMUM_VERSION_REQUIRED, SUPPORTED_PYTHON_VERSIONS
+from .keentools_core_filename_info import *
+from .config import MINIMUM_VERSION_REQUIRED, is_python_supported, os_name

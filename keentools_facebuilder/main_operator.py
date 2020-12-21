@@ -17,25 +17,45 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
-import math
 
 import bpy
-from bpy.types import Operator
 from bpy.props import (
     StringProperty,
     IntProperty,
+    BoolProperty
 )
+from bpy.types import Operator
 
-from .utils import cameras, manipulate, materials, coords
-from .utils.manipulate import check_settings
-from .utils.attrs import get_obj_collection, safe_delete_collection
+from .config import get_main_settings, get_operator, Config
 from .fbloader import FBLoader
-from .config import get_main_settings, get_operators, Config
+from .utils import cameras, manipulate, materials, coords, images
+from .utils.attrs import get_obj_collection, safe_delete_collection
 from .utils.exif_reader import (read_exif_from_camera,
                                 update_exif_sizes_message,
-                                get_sensor_size_35mm_equivalent,
                                 copy_exif_parameters_from_camera_to_head,
                                 update_image_groups)
+from .utils.manipulate import check_settings
+from .utils.operator_action import (create_blendshapes,
+                                    delete_blendshapes,
+                                    load_animation_from_csv,
+                                    create_example_animation,
+                                    reset_blendshape_values,
+                                    clear_animation,
+                                    export_head_to_fbx,
+                                    update_blendshapes,
+                                    unhide_head,
+                                    reconstruct_by_mesh)
+
+
+class ButtonOperator:
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def draw(self, context):
+        pass
+
+
+class ActiveButtonOperator(ButtonOperator):
+    active_button: BoolProperty(default=True)
 
 
 class FB_OT_SelectHead(Operator):
@@ -55,10 +75,7 @@ class FB_OT_SelectHead(Operator):
 
         settings = get_main_settings()
         head = settings.get_head(self.headnum)
-
-        bpy.ops.object.select_all(action='DESELECT')
-        head.headobj.select_set(state=True)
-        bpy.context.view_layer.objects.active = head.headobj
+        manipulate.select_object_only(head.headobj)
         return {'FINISHED'}
 
 
@@ -128,7 +145,8 @@ class FB_OT_SelectCamera(Operator):
         update_exif_sizes_message(self.headnum, camera.cam_image)
 
         # Auto Call PinMode
-        draw_op = getattr(get_operators(), Config.fb_pinmode_callname)
+        draw_op = get_operator(Config.fb_pinmode_idname)
+
         if not bpy.app.background:
             draw_op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
 
@@ -255,7 +273,7 @@ class FB_OT_RemovePins(Operator):
 class FB_OT_WireframeColor(Operator):
     bl_idname = Config.fb_wireframe_color_idname
     bl_label = "Wireframe color"
-    bl_options = {'REGISTER', 'INTERNAL'}  # 'UNDO'
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}  #
     bl_description = "Choose the wireframe coloring scheme"
 
     action: StringProperty(name="Action Name")
@@ -264,32 +282,27 @@ class FB_OT_WireframeColor(Operator):
         pass
 
     def execute(self, context):
-        settings = get_main_settings()
+        def _setup_colors_from_scheme(name):
+            settings = get_main_settings()
+            settings.wireframe_color = Config.color_schemes[name][0]
+            settings.wireframe_special_color = Config.color_schemes[name][1]
 
         if self.action == "wireframe_red":
-            settings.wireframe_color = Config.red_scheme1
-            settings.wireframe_special_color = Config.red_scheme2
+            _setup_colors_from_scheme('red')
         elif self.action == "wireframe_green":
-            settings.wireframe_color = Config.green_scheme1
-            settings.wireframe_special_color = Config.green_scheme2
+            _setup_colors_from_scheme('green')
         elif self.action == "wireframe_blue":
-            settings.wireframe_color = Config.blue_scheme1
-            settings.wireframe_special_color = Config.blue_scheme2
+            _setup_colors_from_scheme('blue')
         elif self.action == "wireframe_cyan":
-            settings.wireframe_color = Config.cyan_scheme1
-            settings.wireframe_special_color = Config.cyan_scheme2
+            _setup_colors_from_scheme('cyan')
         elif self.action == "wireframe_magenta":
-            settings.wireframe_color = Config.magenta_scheme1
-            settings.wireframe_special_color = Config.magenta_scheme2
+            _setup_colors_from_scheme('magenta')
         elif self.action == "wireframe_yellow":
-            settings.wireframe_color = Config.yellow_scheme1
-            settings.wireframe_special_color = Config.yellow_scheme2
+            _setup_colors_from_scheme('yellow')
         elif self.action == "wireframe_black":
-            settings.wireframe_color = Config.black_scheme1
-            settings.wireframe_special_color = Config.black_scheme2
+            _setup_colors_from_scheme('black')
         elif self.action == "wireframe_white":
-            settings.wireframe_color = Config.white_scheme1
-            settings.wireframe_special_color = Config.white_scheme2
+            _setup_colors_from_scheme('white')
 
         return {'FINISHED'}
 
@@ -549,9 +562,9 @@ class FB_OT_DeleteTexture(Operator):
         pass
 
     def execute(self, context):
-        materials.remove_tex_by_name(Config.tex_builder_filename)
+        images.remove_bpy_image_by_name(Config.tex_builder_filename)
         materials.remove_mat_by_name(Config.tex_builder_matname)
-        op = getattr(get_operators(), Config.fb_show_solid_callname)
+        op = get_operator(Config.fb_show_solid_idname)
         op('EXEC_DEFAULT')
         return {'FINISHED'}
 
@@ -574,7 +587,6 @@ class FB_OT_RotateImageCW(Operator):
         camera.rotate_background_image(1)
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
-        FBLoader.update_camera_projection(self.headnum, self.camnum)
         FBLoader.fb_save(self.headnum, self.camnum)
         return {'FINISHED'}
 
@@ -597,7 +609,6 @@ class FB_OT_RotateImageCCW(Operator):
         camera.rotate_background_image(-1)
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
-        FBLoader.update_camera_projection(self.headnum, self.camnum)
         FBLoader.fb_save(self.headnum, self.camnum)
         return {'FINISHED'}
 
@@ -620,7 +631,6 @@ class FB_OT_ResetImageRotation(Operator):
         camera.reset_background_image_rotation()
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
-        FBLoader.update_camera_projection(self.headnum, self.camnum)
         FBLoader.fb_save(self.headnum, self.camnum)
         return {'FINISHED'}
 
@@ -673,7 +683,7 @@ class FB_OT_ShowTexture(Operator):
         pass
 
     def execute(self, context):
-        tex = materials.find_tex_by_name(Config.tex_builder_filename)
+        tex = materials.find_bpy_image_by_name(Config.tex_builder_filename)
         if tex is None:
             return {'CANCELLED'}
 
@@ -753,8 +763,114 @@ class FB_OT_UninstallCore(bpy.types.Operator):
         logger.debug("START CORE UNINSTALL")
         pkt.uninstall()
         logger.debug("FINISH CORE UNINSTALL")
-        pkt.reset_cached_is_installed()
         return {'FINISHED'}
+
+
+class FB_OT_CreateBlendshapes(ButtonOperator, Operator):
+    bl_idname = Config.fb_create_blendshapes_idname
+    bl_label = 'Create'
+    bl_description = 'Create FACS blendshapes'
+
+    def execute(self, context):
+        return create_blendshapes(self)
+
+
+class FB_OT_DeleteBlendshapes(ActiveButtonOperator, Operator):
+    bl_idname = Config.fb_delete_blendshapes_idname
+    bl_label = 'Delete'
+    bl_description = 'Delete all blendshapes (Shape Keys), unlink animation'
+
+    def execute(self, context):
+        if not self.active_button:
+            return {'CANCELLED'}
+        return delete_blendshapes(self)
+
+
+class FB_OT_LoadAnimationFromCSV(ButtonOperator, Operator):
+    bl_idname = Config.fb_load_animation_from_csv_idname
+    bl_label = 'Load CSV'
+    bl_description = 'Load animation keyframes from a CSV file ' \
+                     '(LiveLinkFace format)'
+
+    def execute(self, context):
+        return load_animation_from_csv(self)
+
+
+class FB_OT_CreateExampleAnimation(ActiveButtonOperator, Operator):
+    bl_idname = Config.fb_create_example_animation_idname
+    bl_label = 'Example keyframes'
+    bl_description = 'Create example animation keyframes for each blendshape'
+
+    def execute(self, context):
+        if not self.active_button:
+            return {'CANCELLED'}
+        return create_example_animation(self)
+
+
+class FB_OT_ResetBlendshapeValues(ButtonOperator, Operator):
+    bl_idname = Config.fb_reset_blendshape_values_idname
+    bl_label = 'Reset values'
+    bl_description = 'Reset the values of blendshapes (Shape Keys), ' \
+                     'so the model will be in the neutral state. ' \
+                     'This doesn\'t affect any of the existing keyframes. ' \
+                     'If you want to store the neutral state to a keyframe, ' \
+                     'you need to do it manually'
+
+    def execute(self, context):
+        return reset_blendshape_values(self)
+
+
+class FB_OT_ClearAnimation(ActiveButtonOperator, Operator):
+    bl_idname = Config.fb_clear_animation_idname
+    bl_label = 'Clear animation'
+    bl_description = 'Unlink animation from blendshapes (Shape Keys). ' \
+                     'Effectively, removes the model animation. ' \
+                     'You can "reattach" the animation to the head ' \
+                     'until you close the project. Once the project is closed ' \
+                     'all unlinked animation is lost'
+
+    def execute(self, context):
+        if not self.active_button:
+            return {'CANCELLED'}
+        return clear_animation(self)
+
+
+class FB_OT_ExportHeadToFBX(ButtonOperator, Operator):
+    bl_idname = Config.fb_export_head_to_fbx_idname
+    bl_label = 'Export as FBX'
+    bl_description = 'Export geometry with all blendshapes ' \
+                     'and animation to FBX suitable ' \
+                     'for game engines (UE4, Unity, etc.)'
+
+    def execute(self, context):
+        return export_head_to_fbx(self)
+
+
+class FB_OT_UpdateBlendshapes(ButtonOperator, Operator):
+    bl_idname = Config.fb_update_blendshapes_idname
+    bl_label = 'Update'
+    bl_description = 'Update blendshapes'
+
+    def execute(self, context):
+        return update_blendshapes(self)
+
+
+class FB_OT_UnhideHead(ButtonOperator, Operator):
+    bl_idname = Config.fb_unhide_head_idname
+    bl_label = 'Show Head'
+    bl_description = 'Show Head'
+
+    def execute(self, context):
+        return unhide_head(self)
+
+
+class FB_OT_ReconstructHead(ButtonOperator, Operator):
+    bl_idname = Config.fb_reconstruct_head_idname
+    bl_label = 'Reconstruct!'
+    bl_description = 'Reconstruct head by KeenTools attributes on mesh'
+
+    def execute(self, context):
+        return reconstruct_by_mesh(self)
 
 
 CLASSES_TO_REGISTER = (FB_OT_SelectHead,
@@ -783,4 +899,14 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ShowSolid,
                        FB_OT_ExitPinmode,
                        FB_OT_OpenURL,
-                       FB_OT_UninstallCore)
+                       FB_OT_UninstallCore,
+                       FB_OT_CreateBlendshapes,
+                       FB_OT_DeleteBlendshapes,
+                       FB_OT_LoadAnimationFromCSV,
+                       FB_OT_CreateExampleAnimation,
+                       FB_OT_ResetBlendshapeValues,
+                       FB_OT_ClearAnimation,
+                       FB_OT_ExportHeadToFBX,
+                       FB_OT_UpdateBlendshapes,
+                       FB_OT_UnhideHead,
+                       FB_OT_ReconstructHead)

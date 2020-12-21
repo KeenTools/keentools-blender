@@ -59,12 +59,6 @@ def mark_keentools_object(obj):
     set_custom_attribute(obj, Config.version_prop_name[0], Config.addon_version)
 
 
-def set_keentools_version(obj, obj_type, ver):
-    mark_keentools_object(obj)
-    set_custom_attribute(obj, Config.fb_mod_ver_prop_name[0], ver)
-    set_custom_attribute(obj, Config.object_type_prop_name[0], obj_type)
-
-
 def get_attr_variant_named(data, attr_names):
     for attribute in attr_names:
         if attribute in data.keys():

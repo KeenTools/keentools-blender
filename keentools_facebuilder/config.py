@@ -24,17 +24,11 @@ _PT = 'FACEBUILDER_PT_'
 _MT = 'FACEBUILDER_MT_'
 
 
-class BuilderType:
-    """ Types for Builder selection """
-    NoneBuilder = -1
-    FaceBuilder = 1
-    BodyBuilder = 2
-
-
 class Config:
     # Version dependent
-    addon_version = '2.1.1'
-    supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83), (2, 90))
+    addon_version = '2021.1.0'
+    supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
+                                  (2, 90), (2.91))
     minimal_blender_api = (2, 80, 60)
 
     # Version independent
@@ -55,150 +49,121 @@ class Config:
     fb_views_panel_label = 'Views'
     fb_camera_panel_label = 'Camera'
     fb_tab_category = addon_human_readable_name
-    default_builder = BuilderType.FaceBuilder
     keentools_website_url = 'https://keentools.io'
     core_download_website_url = keentools_website_url + '/download/core'
 
     manual_install_url = keentools_website_url + '/manual-installation'
     pykeentools_license_url = 'https://link.keentools.io/eula'
     license_purchase_url = 'https://link.keentools.io/fb-lc-fbbmld?utm_source=fbb-missing-license-dialog'
+    coloring_texture_name = 'ktWireframeTexture'
     
     # Operators ids
-    fb_select_head_callname = 'select_head'
-    fb_select_head_idname = operators + '.' + fb_select_head_callname
+    fb_select_head_idname = operators + '.' + 'select_head'
 
-    fb_delete_head_callname = 'delete_head'
-    fb_delete_head_idname = operators + '.' + fb_delete_head_callname
+    fb_delete_head_idname = operators + '.' + 'delete_head'
 
-    fb_select_camera_callname = 'select_camera'
-    fb_select_camera_idname = operators + '.' + fb_select_camera_callname
+    fb_select_camera_idname = operators + '.' + 'select_camera'
 
-    fb_center_geo_callname = 'center_geo'
-    fb_center_geo_idname = operators + '.' + fb_center_geo_callname
+    fb_center_geo_idname = operators + '.' + 'center_geo'
 
-    fb_unmorph_callname = 'unmorph'
-    fb_unmorph_idname = operators + '.' + fb_unmorph_callname
+    fb_unmorph_idname = operators + '.' + 'unmorph'
 
-    fb_remove_pins_callname = 'remove_pins'
-    fb_remove_pins_idname = operators + '.' + fb_remove_pins_callname
+    fb_remove_pins_idname = operators + '.' + 'remove_pins'
 
-    fb_wireframe_color_callname = 'wireframe_color'
-    fb_wireframe_color_idname = operators + '.' + fb_wireframe_color_callname
+    fb_wireframe_color_idname = operators + '.' + 'wireframe_color'
 
-    fb_filter_cameras_callname = 'filter_cameras'
-    fb_filter_cameras_idname = operators + '.' + fb_filter_cameras_callname
+    fb_filter_cameras_idname = operators + '.' + 'filter_cameras'
 
-    fb_delete_camera_callname = 'delete_camera'
-    fb_delete_camera_idname = operators + '.' + fb_delete_camera_callname
+    fb_delete_camera_idname = operators + '.' + 'delete_camera'
 
-    fb_proper_view_menu_exec_callname = 'proper_view_menu_exec'
-    fb_proper_view_menu_exec_idname = \
-        operators + '.' + fb_proper_view_menu_exec_callname
+    fb_proper_view_menu_exec_idname = operators + '.' + 'proper_view_menu_exec'
 
-    fb_view_to_frame_size_callname = 'view_to_frame_size'
-    fb_view_to_frame_size_idname = \
-        operators + '.' + fb_view_to_frame_size_callname
+    fb_view_to_frame_size_idname = operators + '.' + 'view_to_frame_size'
 
-    fb_addon_settings_callname = 'addon_settings'
-    fb_addon_settings_idname = operators + '.' + fb_addon_settings_callname
+    fb_addon_settings_idname = operators + '.' + 'addon_settings'
 
-    fb_delete_texture_callname = 'delete_texture'
-    fb_delete_texture_idname = operators + '.' + fb_delete_texture_callname
+    fb_delete_texture_idname = operators + '.' + 'delete_texture'
 
-    fb_rotate_image_cw_callname = 'rotate_image_cw'
-    fb_rotate_image_cw_idname = operators + '.' + fb_rotate_image_cw_callname
+    fb_rotate_image_cw_idname = operators + '.' + 'rotate_image_cw'
 
-    fb_rotate_image_ccw_callname = 'rotate_image_ccw'
-    fb_rotate_image_ccw_idname = operators + '.' + fb_rotate_image_ccw_callname
+    fb_rotate_image_ccw_idname = operators + '.' + 'rotate_image_ccw'
 
-    fb_reset_image_rotation_callname = 'reset_image_rotation'
-    fb_reset_image_rotation_idname = \
-        operators + '.' + fb_reset_image_rotation_callname
+    fb_reset_image_rotation_idname = operators + '.' + 'reset_image_rotation'
 
-    fb_reset_expression_callname = 'reset_expression'
-    fb_reset_expression_idname = operators + '.' + fb_reset_expression_callname
+    fb_reset_expression_idname = operators + '.' + 'reset_expression'
 
-    fb_bake_tex_callname = 'bake_tex'
-    fb_bake_tex_idname = operators + '.' + fb_bake_tex_callname
+    fb_bake_tex_idname = operators + '.' + 'bake_tex'
 
-    fb_show_tex_callname = 'show_tex'
-    fb_show_tex_idname = operators + '.' + fb_show_tex_callname
+    fb_show_tex_idname = operators + '.' + 'show_tex'
 
-    fb_show_solid_callname = 'show_solid'
-    fb_show_solid_idname = operators + '.' + fb_show_solid_callname
+    fb_show_solid_idname = operators + '.' + 'show_solid'
 
     # Not in use
-    fb_default_sensor_callname = 'default_sensor'
-    fb_default_sensor_idname = operators + '.' + fb_default_sensor_callname
+    fb_default_sensor_idname = operators + '.' + 'default_sensor'
     # Not in use
 
-    fb_multiple_filebrowser_callname = 'open_multiple_filebrowser'
-    fb_multiple_filebrowser_idname = \
-        operators + '.' + fb_multiple_filebrowser_callname
+    fb_multiple_filebrowser_idname = operators + '.' + 'open_multiple_filebrowser'
 
-    fb_multiple_filebrowser_exec_callname = 'open_multiple_filebrowser_exec'
-    fb_multiple_filebrowser_exec_idname = \
-        operators + '.' + fb_multiple_filebrowser_exec_callname
+    fb_multiple_filebrowser_exec_idname = operators + '.' + 'open_multiple_filebrowser_exec'
 
-    fb_single_filebrowser_callname = 'open_single_filebrowser'
-    fb_single_filebrowser_idname = \
-        operators + '.' + fb_single_filebrowser_callname
+    fb_single_filebrowser_idname = operators + '.' + 'open_single_filebrowser'
 
-    fb_single_filebrowser_exec_callname = 'open_single_filebrowser_exec'
-    fb_single_filebrowser_exec_idname = \
-        operators + '.' + fb_single_filebrowser_exec_callname
+    fb_single_filebrowser_exec_idname = operators + '.' + 'open_single_filebrowser_exec'
 
-    fb_texture_file_export_callname = 'texture_file_export'
-    fb_texture_file_export_idname = \
-        operators + '.' + fb_texture_file_export_callname
+    fb_texture_file_export_idname = operators + '.' + 'texture_file_export'
 
-    fb_pinmode_callname = 'pinmode'
-    fb_pinmode_idname = operators + '.' + fb_pinmode_callname
+    fb_animation_filebrowser_idname = operators + '.' + 'open_animation_filebrowser'
 
-    fb_movepin_callname = 'movepin'
-    fb_movepin_idname = operators + '.' + fb_movepin_callname
+    fb_pinmode_idname = operators + '.' + 'pinmode'
 
-    fb_actor_callname = 'actor'
-    fb_actor_idname = operators + '.' + fb_actor_callname
+    fb_movepin_idname = operators + '.' + 'movepin'
 
-    fb_camera_actor_callname = 'camera_actor'
-    fb_camera_actor_idname = operators + '.' + fb_camera_actor_callname
+    fb_history_actor_idname = operators + '.' + 'history_actor'
 
-    fb_warning_callname = 'addon_warning'
-    fb_warning_idname = operators + '.' + fb_warning_callname
+    fb_camera_actor_idname = operators + '.' + 'camera_actor'
 
-    fb_exif_selector_callname = 'exif_selector'
-    fb_exif_selector_idname = operators + '.' + fb_exif_selector_callname
+    fb_warning_idname = operators + '.' + 'addon_warning'
 
-    fb_read_exif_callname = 'read_exif'
-    fb_read_exif_idname = operators + '.' + fb_read_exif_callname
+    fb_blendshapes_warning_idname = operators + '.' + 'blendshapes_warning'
 
-    fb_read_exif_menu_exec_callname = 'read_exif_menu_exec'
-    fb_read_exif_menu_exec_idname = \
-        operators + '.' + fb_read_exif_menu_exec_callname
+    fb_exif_selector_idname = operators + '.' + 'exif_selector'
 
-    fb_image_group_menu_exec_callname = 'image_group_menu_exec'
-    fb_image_group_menu_exec_idname = \
-        operators + '.' + fb_image_group_menu_exec_callname
+    fb_read_exif_idname = operators + '.' + 'read_exif'
 
-    fb_camera_panel_menu_exec_callname = 'camera_panel_menu_exec'
-    fb_camera_panel_menu_exec_idname = \
-        operators + '.' + fb_camera_panel_menu_exec_callname
+    fb_read_exif_menu_exec_idname = operators + '.' + 'read_exif_menu_exec'
 
-    fb_tex_selector_callname = 'tex_selector'
-    fb_tex_selector_idname = operators + '.' + fb_tex_selector_callname
+    fb_image_group_menu_exec_idname = operators + '.' + 'image_group_menu_exec'
 
-    fb_exit_pinmode_callname = 'exit_pinmode'
-    fb_exit_pinmode_idname = operators + '.' + fb_exit_pinmode_callname
+    fb_camera_panel_menu_exec_idname = operators + '.' + 'camera_panel_menu_exec'
+
+    fb_tex_selector_idname = operators + '.tex_selector'
+
+    fb_exit_pinmode_idname = operators + '.exit_pinmode'
+
+    fb_create_blendshapes_idname = operators + '.create_blendshapes'
+
+    fb_delete_blendshapes_idname = operators + '.delete_blendshapes'
+
+    fb_load_animation_from_csv_idname = operators + '.load_animation_from_csv'
+
+    fb_create_example_animation_idname = operators + '.create_example_animation'
+
+    fb_reset_blendshape_values_idname = operators + '.reset_blendshape_values'
+
+    fb_clear_animation_idname = operators + '.clear_animation'
+
+    fb_export_head_to_fbx_idname = operators + '.export_head_to_fbx'
+
+    fb_update_blendshapes_idname = operators + '.update_blendshapes'
+
+    fb_unhide_head_idname = operators + '.unhide_head'
+
+    fb_reconstruct_head_idname = operators + '.reconstruct_head'
 
     # Add Mesh commands
-    fb_add_head_operator_callname = 'add_head'
-    fb_add_head_operator_idname = \
-        operators + '.' + fb_add_head_operator_callname
+    fb_add_head_operator_idname = operators + '.add_head'
 
-    fb_add_body_operator_callname = 'add_body'
-    fb_add_body_operator_idname = \
-        operators + '.' + fb_add_body_operator_callname
+    fb_add_body_operator_idname = operators + '.add_body'
 
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
@@ -210,42 +175,30 @@ class Config:
     fb_colors_panel_idname = _PT + 'colors_panel'
     fb_model_panel_idname = _PT + 'model_panel'
     fb_pin_settings_panel_idname = _PT + 'pin_settings_panel'
+    fb_blendshapes_panel_idname = _PT + 'blendshapes_panel'
 
     # Help ids
-    fb_help_camera_callname = 'help_camera'
-    fb_help_camera_idname = operators + '.' + fb_help_camera_callname
+    fb_help_camera_idname = operators + '.' + 'help_camera'
 
-    fb_help_views_callname = 'help_view'
-    fb_help_views_idname = operators + '.' + fb_help_views_callname
+    fb_help_views_idname = operators + '.' + 'help_view'
 
-    fb_help_exif_callname = 'help_exif'
-    fb_help_exif_idname = operators + '.' + fb_help_exif_callname
+    fb_help_model_idname = operators + '.' + 'help_model'
 
-    fb_help_model_callname = 'help_model'
-    fb_help_model_idname = operators + '.' + fb_help_model_callname
+    fb_help_pin_settings_idname = operators + '.' + 'help_pin_settings'
 
-    fb_help_pin_settings_callname = 'help_pin_settings'
-    fb_help_pin_settings_idname = operators + '.' \
-                                  + fb_help_pin_settings_callname
+    fb_help_wireframe_settings_idname = operators + '.' + 'help_wireframe_settings'
 
-    fb_help_wireframe_settings_callname = 'help_wireframe_settings'
-    fb_help_wireframe_settings_idname = \
-        operators + '.' + fb_help_wireframe_settings_callname
+    fb_help_texture_idname = operators + '.' + 'help_texture'
 
-    fb_help_texture_callname = 'help_texture'
-    fb_help_texture_idname = operators + '.' + fb_help_texture_callname
+    fb_help_blendshapes_idname = operators + '.' + 'help_blendshapes'
 
-    fb_open_url_callname = 'open_url'
-    fb_open_url_idname = operators + '.' + fb_open_url_callname
+    fb_open_url_idname = operators + '.' + 'open_url'
 
-    fb_remind_later_callname = 'remind_later'
-    fb_remind_later_idname = operators + '.' + fb_remind_later_callname
+    fb_remind_later_idname = operators + '.' + 'remind_later'
 
-    fb_skip_version_callname = 'skip_version'
-    fb_skip_version_idname = operators + '.' + fb_skip_version_callname
+    fb_skip_version_idname = operators + '.' + 'skip_version'
 
-    fb_uninstall_core_callname = 'uninstall_core'
-    fb_uninstall_core_idname = operators + '.' + fb_uninstall_core_callname
+    fb_uninstall_core_idname = operators + '.' + 'uninstall_core'
 
     # Menu ids
     fb_proper_view_menu_idname = _MT + 'proper_view_menu'
@@ -260,12 +213,15 @@ class Config:
     tex_builder_filename = 'kt_facebuilder_texture'
     tex_builder_matname = 'kt_facebuilder_material'
 
+    default_driver_name = 'FaceBuilderDriver'
+    default_blendshapes_action_name = 'fbBlendShapesAction'
+    example_animation_action_name = 'ExampleAnimAction'
+
     # Object Custom Properties
     # Tuples instead simple values are used to load custom properties
     # if they have different names (from old scenes by ex. or if they will be
     # renamed in future).
     # Only first value in tuple is used for new custom property creation.
-    object_type_prop_name = (_company + '_type',)
     version_prop_name = (_company + '_version',)
     fb_serial_prop_name = (prefix + '_serial',)
     fb_images_prop_name = (prefix + '_images',)
@@ -288,8 +244,11 @@ class Config:
     viewport_redraw_interval = 0.1
     unknown_mod_ver = -1
 
+    default_focal_length = 50.0
     default_sensor_width = 36.0
     default_sensor_height = 24.0
+    default_frame_width = 1920
+    default_frame_height = 1080
     default_camera_display_size = 0.75
 
     default_camera_rotation = (math.pi * 0.5, 0, 0)
@@ -301,33 +260,18 @@ class Config:
     image_node_layout_coord = (-300, 0)
 
     # Colors
-    red_color = (1.0, 0.0, 0.0)
-    red_scheme1 = (0.3, 0.0, 0.0)
-    red_scheme2 = (0.0, 0.4, 0.7)
-    green_color = (0.0, 1.0, 0.0)
-    green_scheme1 = (0.0, 0.2, 0.0)
-    green_scheme2 = (0.4, 0.0, 0.4)
-    blue_color = (0.0, 0.0, 1.0)
-    blue_scheme1 = (0.0, 0.0, 0.3)
-    blue_scheme2 = (0.4, 0.75, 0.0)
-    cyan_color = (0.0, 1.0, 1.0)
-    cyan_scheme1 = (0.0, 0.3, 0.3)
-    cyan_scheme2 = (0.4, 0.0, 0.0)
-    magenta_color = (1.0, 0.0, 1.0)
-    magenta_scheme1 = (0.3, 0.0, 0.3)
-    magenta_scheme2 = (0.0, 0.55, 0.0)
-    yellow_color = (1.0, 1.0, 0.0)
-    yellow_scheme1 = (0.2, 0.2, 0.0)
-    yellow_scheme2 = (0.0, 0.0, 0.4)
-    black_color = (0.0, 0.0, 0.0)
-    black_scheme1 = (0.2, 0.2, 0.2)
-    black_scheme2 = (0.0, 0.0, 1.0)
-    white_color = (1.0, 1.0, 1.0)
-    white_scheme1 = (1.0, 1.0, 1.0)
-    white_scheme2 = (0.0, 0.0, 0.4)
-
-    default_scheme1 = (0.05, 0.05, 0.1)
-    default_scheme2 = (0.0, 0.0, 1.0)
+    midline_color = (0.960784, 0.007843, 0.615686)
+    color_schemes = {
+        'red': ((0.3, 0.0, 0.0), (0.0, 0.4, 0.7)),
+        'green': ((0.0, 0.2, 0.0), (0.4, 0.0, 0.4)),
+        'blue': ((0.0, 0.0, 0.3), (0.4, 0.75, 0.0)),
+        'cyan': ((0.0, 0.3, 0.3), (0.4, 0.0, 0.0)),
+        'magenta': ((0.3, 0.0, 0.3), (0.0, 0.55, 0.0)),
+        'yellow': ((0.2, 0.2, 0.0), (0.0, 0.0, 0.4)),
+        'black': ((0.039, 0.04 , 0.039), (0.0, 0.0, 0.85098)),
+        'white': ((1.0, 1.0, 1.0), (0.0, 0.0, 0.4)),
+        'default': ((0.039, 0.04 , 0.039), (0.0, 0.0, 0.85098))
+    }
 
     pin_color = (1.0, 0.0, 0.0, 1.0)
     current_pin_color = (1.0, 0.0, 1.0, 1.0)
@@ -347,8 +291,13 @@ def get_main_settings():
     return getattr(bpy.context.scene, Config.addon_global_var_name)
 
 
-def get_operators():
-    return getattr(bpy.ops, Config.operators)
+def get_operator(operator_id_name):
+    def _rgetattr(obj, attr, *args):
+        import functools
+        def _getattr(obj, attr):
+            return getattr(obj, attr, *args)
+        return functools.reduce(_getattr, [obj] + attr.split('.'))
+    return _rgetattr(bpy.ops, operator_id_name)
 
 
 class ErrorType:

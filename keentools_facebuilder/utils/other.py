@@ -21,7 +21,7 @@ import time
 import bpy
 import blf
 
-from . edges import FBEdgeShader2D, FBEdgeShader3D
+from . edges import FBEdgeShader2D, FBRasterEdgeShader3D
 from . points import FBPoints2D, FBPoints3D
 from .. config import get_main_settings
 
@@ -35,7 +35,7 @@ def force_ui_redraw(area_type="PREFERENCES"):
 
 def force_stop_shaders():
     FBEdgeShader2D.handler_list = []
-    FBEdgeShader3D.handler_list = []
+    FBRasterEdgeShader3D.handler_list = []
     FBText.handler_list = []
     FBPoints2D.handler_list = []
     FBPoints3D.handler_list = []

@@ -21,9 +21,9 @@ import bpy
 
 from . utils import attrs
 from . fbloader import FBLoader
-from . config import Config, get_main_settings, get_operators, \
-    BuilderType, ErrorType
+from . config import Config, get_main_settings, get_operator, ErrorType
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+
 
 class MESH_OT_FBAddHead(bpy.types.Operator):
     """ Add FaceBuilder Head into scene"""
@@ -38,20 +38,28 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         try:
             obj = self.new_head()
         except ModuleNotFoundError:
-            warn = getattr(get_operators(), Config.fb_warning_callname)
+            logger.error('ADD_HEAD_ERROR: ModuleNotFoundError')
+            warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
         except pkt.module().ModelLoadingException:
-            warn = getattr(get_operators(), Config.fb_warning_callname)
+            logger.error('ADD_HEAD_ERROR: ModelLoadingException')
+            warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktModelProblem)
             return {'CANCELLED'}
+        except TypeError:
+            logger.error('ADD_HEAD_ERROR: TypeError')
+            warn = get_operator(Config.fb_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.CannotCreateObject)
+            return {'CANCELLED'}
         except Exception:
-            warn = getattr(get_operators(), Config.fb_warning_callname)
+            logger.error('ADD_HEAD_ERROR: Exception')
+            warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
 
         attrs.add_to_fb_collection(obj)  # link to FB objects collection
-        FBLoader.set_keentools_version(obj)  # Mark Keentools attribute
+        FBLoader.set_keentools_attributes(obj)
 
         bpy.ops.object.select_all(action='DESELECT')
         obj.select_set(state=True)
@@ -60,11 +68,10 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         # bpy.ops.object.shade_smooth()
         h = get_main_settings().heads.add()
         h.headobj = obj
-        h.mod_ver = FBLoader.get_builder_version()
         h.reset_sensor_size()
-        h.save_cam_settings()
 
         settings.current_headnum = settings.get_last_headnum()
+        FBLoader.save_fb_on_headobj(settings.current_headnum)
 
         try:
             a = context.area
@@ -73,13 +80,11 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         except Exception:
             pass
 
-        pkt.reset_cached_is_installed()
         logger.debug('HEAD HAS BEEN SUCCESSFULLY CREATED')
         return {'FINISHED'}
 
     @classmethod
     def new_head(cls):
-        mesh = FBLoader.universal_mesh_loader(
-            BuilderType.FaceBuilder, Config.default_fb_mesh_name)
+        mesh = FBLoader.universal_mesh_loader(Config.default_fb_mesh_name)
         obj = bpy.data.objects.new(Config.default_fb_object_name, mesh)
         return obj

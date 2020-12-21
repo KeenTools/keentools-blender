@@ -20,10 +20,10 @@ import logging
 import bpy
 import numpy as np
 
-from .. config import Config, get_main_settings, get_operators, ErrorType
+from .. config import Config, get_main_settings
 from .. fbloader import FBLoader
-from ..utils.coords import projection_matrix
 import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from ..utils.images import find_bpy_image_by_name
 
 
 def switch_to_mode(mode='MATERIAL'):
@@ -72,19 +72,6 @@ def get_shader_node(mat, find_type, create_name):
     return mat.node_tree.nodes.new(create_name)
 
 
-def find_tex_by_name(tex_name):
-    tex_num = bpy.data.images.find(tex_name)
-    if tex_num >= 0:
-        return bpy.data.images[tex_num]
-    return None
-
-
-def remove_tex_by_name(name):
-    tex = find_tex_by_name(name)
-    if tex is not None:
-        bpy.data.images.remove(tex)
-
-
 def remove_mat_by_name(name):
     mat_num = bpy.data.materials.find(name)
     if mat_num >= 0:
@@ -92,7 +79,7 @@ def remove_mat_by_name(name):
 
 
 def show_texture_in_mat(tex_name, mat_name):
-    tex = find_tex_by_name(tex_name)
+    tex = find_bpy_image_by_name(tex_name)
     mat = get_mat_by_name(mat_name)
     principled_node = get_shader_node(
         mat, 'BSDF_PRINCIPLED', 'ShaderNodeBsdfPrincipled')
@@ -125,7 +112,7 @@ def _create_bpy_texture_from_img(img, tex_name):
     tex = bpy.data.images.new(
             tex_name, width=img.shape[1], height=img.shape[0],
             alpha=True, float_buffer=False)
-    tex.colorspace_settings.name = 'Linear'
+    tex.colorspace_settings.name = 'sRGB'
     assert(tex.name == tex_name)
     tex.pixels[:] = img.ravel()
     tex.pack()
@@ -141,23 +128,12 @@ def _cam_image_data_exists(cam):
 
 
 def _get_fb_for_bake_tex(headnum, head):
-    logger = logging.getLogger(__name__)
     FBLoader.load_model(headnum)
     fb = FBLoader.get_builder()
     for i, m in enumerate(head.get_masks()):
         fb.set_mask(i, m)
 
-    uv_shape = head.tex_uv_shape
-    logger.debug("UV_TYPE: {}".format(uv_shape))
-    if uv_shape == 'uv1':
-        fb.select_uv_set(1)
-    elif uv_shape == 'uv2':
-        fb.select_uv_set(2)
-    elif uv_shape == 'uv3':
-        fb.select_uv_set(3)
-    else:
-        fb.select_uv_set(0)
-
+    FBLoader.select_uv_set(fb, head.tex_uv_shape)
     return fb
 
 
@@ -176,7 +152,6 @@ def _create_frame_data_loader(settings, head, camnums, fb):
         img = np.rot90(
             np.asarray(cam.cam_image.pixels[:]).reshape((h, w, 4)),
             cam.orientation)
-        img = _sRGB_to_linear(img)
 
         frame_data = pkt.module().texture_builder.FrameData()
         frame_data.geo = fb.applied_args_model_at(cam.get_keyframe())

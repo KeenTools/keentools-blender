@@ -4,20 +4,29 @@
 # blender -b -P /full_path_to/test_file.py
 # -------
 import unittest
-
-import bpy
 import sys
 import os
+
+import bpy
 
 # Import test functions used in unit-tests started from any location
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import test_utils
-# import tests.test_utils as test_utils
-
 
 from keentools_facebuilder.utils import coords, materials
 from keentools_facebuilder.config import Config, get_main_settings, \
-    get_operators
+    get_operator
+
+
+class DataHolder:
+    image_files = []
+    @classmethod
+    def get_image_file_names(cls):
+        return cls.image_files
+
+    @classmethod
+    def set_image_file_names(cls, image_files):
+        cls.image_files = image_files
 
 
 class FaceBuilderTest(unittest.TestCase):
@@ -31,9 +40,9 @@ class FaceBuilderTest(unittest.TestCase):
         # No cameras
         head = settings.get_head(headnum)
         self.assertTrue(head is not None)
-        test_utils.create_empty_camera(headnum)
-        test_utils.create_empty_camera(headnum)
-        test_utils.create_empty_camera(headnum)
+        files = DataHolder.get_image_file_names()
+        for filepath in files:
+            test_utils.create_camera(headnum, filepath)
         # Cameras counter
         self.assertEqual(3, len(settings.get_head(headnum).cameras))
 
@@ -83,7 +92,7 @@ class FaceBuilderTest(unittest.TestCase):
     def test_wireframe_coloring(self):
         test_utils.new_scene()
         self._head_and_cameras()
-        op = getattr(get_operators(), Config.fb_wireframe_color_callname)
+        op = get_operator(Config.fb_wireframe_color_idname)
         op('EXEC_DEFAULT', action='wireframe_green')
 
     def test_duplicate_and_reconstruct(self):
@@ -99,9 +108,10 @@ class FaceBuilderTest(unittest.TestCase):
         bpy.ops.object.duplicate_move(
             OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
             TRANSFORM_OT_translate={"value": (-4.0, 0, 0)})
-        op = getattr(get_operators(), Config.fb_actor_callname)
-        test_utils.save_scene(filepath="c:\\Sure\\temp\\before.blend")
-        op('EXEC_DEFAULT', action='reconstruct_by_head', headnum=-1, camnum=-1)
+        test_utils.save_scene(filename='before.blend')
+
+        op = get_operator(Config.fb_reconstruct_head_idname)
+        op('EXEC_DEFAULT')
         headnum2 = settings.get_last_headnum()
         head_new = settings.get_head(headnum2)
         # Two heads in scene
@@ -160,7 +170,16 @@ class FaceBuilderTest(unittest.TestCase):
         self.assertTrue(tex_name is not None)
 
 
+def prepare_test_environment():
+    test_utils.clear_test_dir()
+    test_utils.create_test_dir()
+    images = test_utils.create_test_images()
+    DataHolder.set_image_file_names([image.filepath for image in images])
+
+
 if __name__ == "__main__":
+    prepare_test_environment()
+
     # unittest.main()  # -- Doesn't work with Blender, so we use Suite
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(FaceBuilderTest)
     unittest.TextTestRunner().run(suite)
