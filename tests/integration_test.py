@@ -7,6 +7,7 @@ import unittest
 import sys
 import os
 import logging
+import numpy as np
 
 import bpy
 
@@ -14,10 +15,9 @@ import bpy
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import test_utils
 
-import keentools_facebuilder
+from keentools_facebuilder.settings import model_type_callback, uv_items_callback
 from keentools_facebuilder.utils import coords, materials
-from keentools_facebuilder.config import Config, get_main_settings, \
-    get_operator
+from keentools_facebuilder.config import Config, get_main_settings, get_operator
 
 
 class DataHolder:
@@ -29,6 +29,10 @@ class DataHolder:
     @classmethod
     def set_image_file_names(cls, image_files):
         cls.image_files = image_files
+
+
+def _get_models():
+    return [x[0] for x in model_type_callback(None, None)]
 
 
 class FaceBuilderTest(unittest.TestCase):
@@ -172,9 +176,6 @@ class FaceBuilderTest(unittest.TestCase):
         self.assertTrue(tex_name is not None)
 
     def test_models_and_parts(self):
-        def _get_models():
-            return [x[0] for x in keentools_facebuilder.settings.model_type_callback(None, None)]
-
         def _check_models(head):
             previous_polycount = 1.0e+6
             for level_of_detail in _get_models():
@@ -235,6 +236,34 @@ class FaceBuilderTest(unittest.TestCase):
 
         test_utils.delete_blendshapes()
         self.assertTrue(headobj.data.shape_keys is None)
+
+    def test_uv_switch(self):
+        def _get_uv_names():
+            return [x[0] for x in uv_items_callback(None, None)]
+        def _get_uvs_in_np_array(obj):
+            uv_map = obj.data.uv_layers.active
+            uv_count = len(uv_map.data)
+            np_uvs = np.empty((uv_count, 2), dtype=np.float32)
+            uv_map.data.foreach_get('uv', np.reshape(np_uvs, uv_count * 2))
+            return np_uvs
+
+        test_utils.new_scene()
+        self._head_cams_and_pins()
+        settings = get_main_settings()
+        headnum = settings.get_last_headnum()
+        head = settings.get_head(headnum)
+        headobj = head.headobj
+
+        for level_of_detail in _get_models():
+            head.model_type = level_of_detail
+
+            previous = []
+            for uv_name in _get_uv_names():
+                head.tex_uv_shape = uv_name
+                np_uvs = _get_uvs_in_np_array(headobj)
+                for member in previous:
+                    self.assertFalse(np.array_equal(np_uvs, member))
+                previous.append(np_uvs)
 
 
 def prepare_test_environment():
