@@ -166,3 +166,18 @@ def new_scene():
 def save_scene(filename):
     filepath = os.path.join(test_dir(), filename)
     bpy.ops.wm.save_mainfile(filepath=filepath, check_existing=False)
+
+
+def create_blendshapes():
+    op = get_operator(Config.fb_create_blendshapes_idname)
+    op('EXEC_DEFAULT')
+
+
+def delete_blendshapes():
+    op = get_operator(Config.fb_delete_blendshapes_idname)
+    op('EXEC_DEFAULT')
+
+
+def create_example_animation():
+    op = get_operator(Config.fb_create_example_animation_idname)
+    op('EXEC_DEFAULT')

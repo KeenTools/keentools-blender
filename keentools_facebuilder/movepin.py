@@ -122,8 +122,6 @@ class FB_OT_MovePin(bpy.types.Operator):
         vp.create_batch_2d(context)
         vp.register_handlers(args, context)
 
-        assert settings.pinmode
-
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
         vp.pins().set_current_pin((x, y))
 
