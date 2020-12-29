@@ -59,55 +59,30 @@ class Config:
     
     # Operators ids
     fb_select_head_idname = operators + '.select_head'
-
     fb_delete_head_idname = operators + '.delete_head'
-
     fb_select_camera_idname = operators + '.select_camera'
-
     fb_center_geo_idname = operators + '.center_geo'
-
     fb_unmorph_idname = operators + '.unmorph'
-
     fb_remove_pins_idname = operators + '.remove_pins'
-
     fb_wireframe_color_idname = operators + '.wireframe_color'
-
     fb_filter_cameras_idname = operators + '.filter_cameras'
-
     fb_delete_camera_idname = operators + '.delete_camera'
-
     fb_proper_view_menu_exec_idname = operators + '.proper_view_menu_exec'
-
-    fb_view_to_frame_size_idname = operators + '.view_to_frame_size'
-
     fb_addon_settings_idname = operators + '.addon_settings'
-
     fb_delete_texture_idname = operators + '.delete_texture'
 
     fb_rotate_image_cw_idname = operators + '.rotate_image_cw'
-
     fb_rotate_image_ccw_idname = operators + '.rotate_image_ccw'
-
     fb_reset_image_rotation_idname = operators + '.reset_image_rotation'
 
     fb_reset_expression_idname = operators + '.reset_expression'
-
     fb_bake_tex_idname = operators + '.bake_tex'
-
     fb_show_tex_idname = operators + '.show_tex'
-
     fb_show_solid_idname = operators + '.show_solid'
 
-    # Not in use
-    fb_default_sensor_idname = operators + '.default_sensor'
-    # Not in use
-
     fb_multiple_filebrowser_idname = operators + '.open_multiple_filebrowser'
-
     fb_multiple_filebrowser_exec_idname = operators + '.open_multiple_filebrowser_exec'
-
     fb_single_filebrowser_idname = operators + '.open_single_filebrowser'
-
     fb_single_filebrowser_exec_idname = operators + '.open_single_filebrowser_exec'
 
     fb_texture_file_export_idname = operators + '.texture_file_export'
@@ -115,55 +90,32 @@ class Config:
     fb_animation_filebrowser_idname = operators + '.open_animation_filebrowser'
 
     fb_pinmode_idname = operators + '.pinmode'
-
     fb_movepin_idname = operators + '.movepin'
-
     fb_history_actor_idname = operators + '.history_actor'
-
     fb_camera_actor_idname = operators + '.camera_actor'
 
     fb_warning_idname = operators + '.addon_warning'
-
     fb_blendshapes_warning_idname = operators + '.blendshapes_warning'
 
-    fb_exif_selector_idname = operators + '.exif_selector'
-
-    fb_read_exif_idname = operators + '.read_exif'
-
-    fb_read_exif_menu_exec_idname = operators + '.read_exif_menu_exec'
-
     fb_image_group_menu_exec_idname = operators + '.image_group_menu_exec'
-
     fb_camera_panel_menu_exec_idname = operators + '.camera_panel_menu_exec'
 
     fb_tex_selector_idname = operators + '.tex_selector'
-
     fb_exit_pinmode_idname = operators + '.exit_pinmode'
 
     fb_create_blendshapes_idname = operators + '.create_blendshapes'
-
     fb_delete_blendshapes_idname = operators + '.delete_blendshapes'
-
     fb_load_animation_from_csv_idname = operators + '.load_animation_from_csv'
-
     fb_create_example_animation_idname = operators + '.create_example_animation'
-
     fb_reset_blendshape_values_idname = operators + '.reset_blendshape_values'
-
     fb_clear_animation_idname = operators + '.clear_animation'
-
+    fb_update_blendshapes_idname = operators + '.update_blendshapes'
     fb_export_head_to_fbx_idname = operators + '.export_head_to_fbx'
 
-    fb_update_blendshapes_idname = operators + '.update_blendshapes'
-
     fb_unhide_head_idname = operators + '.unhide_head'
-
     fb_reconstruct_head_idname = operators + '.reconstruct_head'
 
-    # Add Mesh commands
     fb_add_head_operator_idname = operators + '.add_head'
-
-    fb_add_body_operator_idname = operators + '.add_body'
 
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
@@ -179,34 +131,22 @@ class Config:
 
     # Help ids
     fb_help_camera_idname = operators + '.help_camera'
-
     fb_help_views_idname = operators + '.help_view'
-
     fb_help_model_idname = operators + '.help_model'
-
     fb_help_pin_settings_idname = operators + '.help_pin_settings'
-
     fb_help_wireframe_settings_idname = operators + '.help_wireframe_settings'
-
     fb_help_texture_idname = operators + '.help_texture'
-
     fb_help_blendshapes_idname = operators + '.help_blendshapes'
 
     fb_open_url_idname = operators + '.open_url'
-
     fb_remind_later_idname = operators + '.remind_later'
-
     fb_skip_version_idname = operators + '.skip_version'
 
     fb_uninstall_core_idname = operators + '.uninstall_core'
 
     # Menu ids
     fb_proper_view_menu_idname = _MT + 'proper_view_menu'
-
-    fb_read_exif_menu_idname = _MT + 'read_exif_menu'
-
     fb_image_group_menu_idname = _MT + 'image_group_menu'
-
     fb_camera_panel_menu_idname = _MT + 'camera_panel_menu'
 
     # Standard names
