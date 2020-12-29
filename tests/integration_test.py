@@ -278,12 +278,8 @@ if __name__ == "__main__":
     try:
         from teamcity import is_running_under_teamcity
         from teamcity.unittestpy import TeamcityTestRunner
-        if is_running_under_teamcity():
-            runner = TeamcityTestRunner()
-            logger.info('Teamcity TeamcityTestRunner is active')
-        else:
-            runner = unittest.TextTestRunner()
-            logger.error('Unittest TextTestRunner is active')
+        runner = TeamcityTestRunner()
+        logger.info('Teamcity TeamcityTestRunner is active')
     except ImportError:
         logger.error('ImportError: Teamcity is not installed')
         runner = unittest.TextTestRunner()
