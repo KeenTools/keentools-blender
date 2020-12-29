@@ -274,11 +274,21 @@ def prepare_test_environment():
 
 
 if __name__ == "__main__":
+    if 'teamcity' in sys.modules:
+        from teamcity import is_running_under_teamcity
+        from teamcity.unittestpy import TeamcityTestRunner
+        if is_running_under_teamcity():
+            runner = TeamcityTestRunner()
+        else:
+            runner = unittest.TextTestRunner()
+    else:
+        runner = unittest.TextTestRunner()
+
     prepare_test_environment()
 
     # unittest.main()  # -- Doesn't work with Blender, so we use Suite
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(FaceBuilderTest)
-    result = unittest.TextTestRunner().run(suite)
+    result = runner.run(suite)
 
     logger = logging.getLogger(__name__)
     logger.info('Results: {}'.format(result))
