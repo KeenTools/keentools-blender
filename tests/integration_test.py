@@ -275,8 +275,7 @@ def prepare_test_environment():
 
 if __name__ == "__main__":
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    if 'teamcity' in sys.modules:
+    try:
         from teamcity import is_running_under_teamcity
         from teamcity.unittestpy import TeamcityTestRunner
         if is_running_under_teamcity():
@@ -285,8 +284,12 @@ if __name__ == "__main__":
         else:
             runner = unittest.TextTestRunner()
             logger.error('Unittest TextTestRunner is active')
-    else:
-        logger.error('Teamcity is not installed')
+    except ImportError:
+        logger.error('ImportError: Teamcity is not installed')
+        runner = unittest.TextTestRunner()
+        logger.error('Unittest TextTestRunner is active')
+    except Exception:
+        logger.error('Unhandled error with Teamcity')
         runner = unittest.TextTestRunner()
         logger.error('Unittest TextTestRunner is active')
 
