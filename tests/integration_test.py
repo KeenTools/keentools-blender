@@ -6,6 +6,8 @@
 import unittest
 import sys
 import os
+import logging
+import numpy as np
 
 import bpy
 
@@ -13,9 +15,9 @@ import bpy
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import test_utils
 
+from keentools_facebuilder.settings import model_type_callback, uv_items_callback
 from keentools_facebuilder.utils import coords, materials
-from keentools_facebuilder.config import Config, get_main_settings, \
-    get_operator
+from keentools_facebuilder.config import Config, get_main_settings, get_operator
 
 
 class DataHolder:
@@ -27,6 +29,10 @@ class DataHolder:
     @classmethod
     def set_image_file_names(cls, image_files):
         cls.image_files = image_files
+
+
+def _get_models():
+    return [x[0] for x in model_type_callback(None, None)]
 
 
 class FaceBuilderTest(unittest.TestCase):
@@ -169,6 +175,96 @@ class FaceBuilderTest(unittest.TestCase):
         tex_name = materials.bake_tex(headnum=0, tex_name='bake_texture_name')
         self.assertTrue(tex_name is not None)
 
+    def test_models_and_parts(self):
+        def _check_models(head):
+            previous_polycount = 1.0e+6
+            for level_of_detail in _get_models():
+                head.model_type = level_of_detail
+                poly_count = len(head.headobj.data.polygons)
+                logger.debug('Model_count mask {}: {}'.format(level_of_detail,
+                                                              poly_count))
+                self.assertTrue(previous_polycount > poly_count)
+                previous_polycount = poly_count
+
+        def _check_masks(head, fb_masks_count):
+            max_poly_count = len(head.headobj.data.polygons)
+            logger.debug('Max_poly_count: {}'.format(max_poly_count))
+
+            for i in range(len(head.masks)):
+                head.masks[i] = False
+                poly_count = len(head.headobj.data.polygons)
+                logger.debug('Poly_count mask {}: {}'.format(i, poly_count))
+                if i < FB_MASKS_COUNT:
+                    self.assertTrue(max_poly_count > poly_count)
+                else:
+                    self.assertTrue(max_poly_count == poly_count)
+                head.masks[i] = True
+                poly_count = len(head.headobj.data.polygons)
+                self.assertTrue(max_poly_count == poly_count)
+
+        logger = logging.getLogger(__name__)
+        test_utils.new_scene()
+        self._head_cams_and_pins()
+        settings = get_main_settings()
+        headnum = settings.get_last_headnum()
+        head = settings.get_head(headnum)
+
+        _check_models(head)
+
+        FB_MASKS_COUNT = 8
+        for level_of_detail in _get_models():
+            head.model_type = level_of_detail
+            _check_masks(head, FB_MASKS_COUNT)
+
+    def test_create_blendshapes_and_animation(self):
+        test_utils.new_scene()
+        self._head_cams_and_pins()
+        settings = get_main_settings()
+        headnum = settings.get_last_headnum()
+        head = settings.get_head(headnum)
+        headobj = head.headobj
+
+        test_utils.create_blendshapes()
+        self.assertTrue(headobj.data.shape_keys is not None)
+        blendshapes = headobj.data.shape_keys.key_blocks
+        self.assertEqual(len(blendshapes), 52)  # 51 FACS + Basic
+
+        test_utils.create_example_animation()
+        self.assertTrue(headobj.data.shape_keys and
+                        headobj.data.shape_keys.animation_data and \
+                        headobj.data.shape_keys.animation_data.action)
+
+        test_utils.delete_blendshapes()
+        self.assertTrue(headobj.data.shape_keys is None)
+
+    def test_uv_switch(self):
+        def _get_uv_names():
+            return [x[0] for x in uv_items_callback(None, None)]
+        def _get_uvs_in_np_array(obj):
+            uv_map = obj.data.uv_layers.active
+            uv_count = len(uv_map.data)
+            np_uvs = np.empty((uv_count, 2), dtype=np.float32)
+            uv_map.data.foreach_get('uv', np.reshape(np_uvs, uv_count * 2))
+            return np_uvs
+
+        test_utils.new_scene()
+        self._head_cams_and_pins()
+        settings = get_main_settings()
+        headnum = settings.get_last_headnum()
+        head = settings.get_head(headnum)
+        headobj = head.headobj
+
+        for level_of_detail in _get_models():
+            head.model_type = level_of_detail
+
+            previous = []
+            for uv_name in _get_uv_names():
+                head.tex_uv_shape = uv_name
+                np_uvs = _get_uvs_in_np_array(headobj)
+                for member in previous:
+                    self.assertFalse(np.array_equal(np_uvs, member))
+                previous.append(np_uvs)
+
 
 def prepare_test_environment():
     test_utils.clear_test_dir()
@@ -182,4 +278,12 @@ if __name__ == "__main__":
 
     # unittest.main()  # -- Doesn't work with Blender, so we use Suite
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(FaceBuilderTest)
-    unittest.TextTestRunner().run(suite)
+    result = unittest.TextTestRunner().run(suite)
+
+    logger = logging.getLogger(__name__)
+    logger.info('Results: {}'.format(result))
+    if len(result.errors) != 0 or len(result.failures) != 0:
+        # For non-zero blender exit code in conjuction with command line option
+        # --python-exit-code <code>
+        raise Exception('Test errors: {} failures: {}'.format(result.errors,
+                                                              result.failures))

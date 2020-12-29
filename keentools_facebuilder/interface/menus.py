@@ -150,32 +150,3 @@ class FB_MT_CameraPanelMenu(Menu):
             text=txt)
         op.action = 'manual_mode'
         op.headnum = settings.tmp_headnum
-
-
-class FB_MT_ReadExifMenu(Menu):
-    bl_label = "Select image to read EXIF"
-    bl_idname = Config.fb_read_exif_menu_idname
-    bl_description = "Select image to read EXIF"
-
-    def draw(self, context):
-        settings = get_main_settings()
-        headnum = settings.tmp_headnum
-        head = settings.get_head(headnum)
-        layout = self.layout
-
-        if not head.has_cameras():
-            layout.label(text='No images found', icon='ERROR')
-            layout.label(text='You need at least one image to read EXIF.')
-            return
-
-        for i, camera in enumerate(head.cameras):
-            image_icon = 'PINNED' if camera.has_pins() else 'FILE_IMAGE'
-            if camera.cam_image:
-                op = layout.operator(Config.fb_read_exif_idname,
-                                     text=camera.get_image_name(),
-                                     icon=image_icon)
-                op.headnum = headnum
-                op.camnum = i
-
-            else:
-                layout.label(text='-- empty --', icon='LIBRARY_DATA_BROKEN')

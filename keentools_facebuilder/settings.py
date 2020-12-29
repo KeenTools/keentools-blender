@@ -710,12 +710,12 @@ class FBSceneSettings(PropertyGroup):
     # Initial pin_size state in FBShaderPoints class
     pin_size: FloatProperty(
         description="Set pin size in pixels",
-        name="Pin size",
+        name="Size",
         default=Config.default_pin_size, min=1.0, max=100.0,
         update=update_pin_size)
     pin_sensitivity: FloatProperty(
-        description="Set pin handle radius in pixels",
-        name="Pin handle radius",
+        description="Set active area in pixels",
+        name="Active area",
         default=Config.default_point_sensitivity, min=1.0, max=100.0,
         update=update_pin_sensitivity)
 

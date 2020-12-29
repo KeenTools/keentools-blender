@@ -119,7 +119,7 @@ class FB_OT_DeleteHead(Operator):
 class FB_OT_SelectCamera(Operator):
     bl_idname = Config.fb_select_camera_idname
     bl_label = "Pin Mode Select Camera"
-    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Switch to Pin mode for this view"
 
     headnum: IntProperty(default=0)
@@ -156,7 +156,7 @@ class FB_OT_SelectCamera(Operator):
 class FB_OT_CenterGeo(Operator):
     bl_idname = Config.fb_center_geo_idname
     bl_label = "Reset Camera"
-    bl_options = {'REGISTER', 'INTERNAL'}  # 'UNDO'
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Place the camera so the model will be centred " \
                      "in the view"
 
@@ -187,7 +187,7 @@ class FB_OT_CenterGeo(Operator):
 class FB_OT_Unmorph(Operator):
     bl_idname = Config.fb_unmorph_idname
     bl_label = "Reset"
-    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Reset shape deformations to the default state. " \
                      "It will remove all pins as well"
 
@@ -233,7 +233,7 @@ class FB_OT_Unmorph(Operator):
 class FB_OT_RemovePins(Operator):
     bl_idname = Config.fb_remove_pins_idname
     bl_label = "Remove pins"
-    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Remove all pins on this view"
 
     headnum: IntProperty(default=0)
@@ -310,7 +310,7 @@ class FB_OT_WireframeColor(Operator):
 class FB_OT_FilterCameras(Operator):
     bl_idname = Config.fb_filter_cameras_idname
     bl_label = "Camera Filter"
-    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Select cameras to use for texture baking"
 
     action: StringProperty(name="Action Name")
@@ -403,7 +403,7 @@ class FB_OT_ProperViewMenuExec(Operator):
 class FB_OT_ImageGroupMenuExec(Operator):
     bl_idname = Config.fb_image_group_menu_exec_idname
     bl_label = "Camera Group Menu Caller"
-    bl_options = {'REGISTER', 'INTERNAL'}  # UNDO
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Camera Group"
 
     headnum: IntProperty(default=0)
@@ -424,7 +424,7 @@ class FB_OT_ImageGroupMenuExec(Operator):
 class FB_OT_CameraPanelMenuExec(Operator):
     bl_idname = Config.fb_camera_panel_menu_exec_idname
     bl_label = "Advanced Camera Settings"
-    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Advanced Camera Settings"
 
     headnum: IntProperty(default=0)
@@ -439,66 +439,6 @@ class FB_OT_CameraPanelMenuExec(Operator):
         settings.tmp_camnum = self.camnum
         bpy.ops.wm.call_menu(
             'INVOKE_DEFAULT', name=Config.fb_camera_panel_menu_idname)
-        return {'FINISHED'}
-
-
-class FB_OT_ViewToFrameSize(Operator):
-    bl_idname = Config.fb_view_to_frame_size_idname
-    bl_label = "Set the Frame size using this view"
-    bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Set the Frame size using this view"
-
-    headnum: IntProperty(default=0)
-    camnum: IntProperty(default=0)
-
-    def draw(self, context):
-        pass
-
-    def execute(self, context):
-        # Current camera Background --> Render size
-        manipulate.use_camera_frame_size(self.headnum, self.camnum)
-        return {'FINISHED'}
-
-
-class FB_OT_ReadExif(Operator):
-    bl_idname = Config.fb_read_exif_idname
-    bl_label = "Read EXIF"
-    bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Read EXIF"
-
-    headnum: IntProperty(default=0)
-    camnum: IntProperty(default=0)
-
-    def draw(self, context):
-        pass
-
-    def execute(self, context):
-        status = read_exif_from_camera(self.headnum, self.camnum)
-
-        if status:
-            self.report({'INFO'}, 'EXIF read success')
-        else:
-            self.report({'ERROR'},
-                        'EXIF read failed. File is damaged or missing')
-        return {'FINISHED'}
-
-
-class FB_OT_ReadExifMenuExec(Operator):
-    bl_idname = Config.fb_read_exif_menu_exec_idname
-    bl_label = "Read EXIF"
-    bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Select image to read EXIF"
-
-    headnum: IntProperty(default=0)
-
-    def draw(self, context):
-        pass
-
-    def execute(self, context):
-        settings = get_main_settings()
-        settings.tmp_headnum = self.headnum
-        bpy.ops.wm.call_menu(
-            'INVOKE_DEFAULT', name=Config.fb_read_exif_menu_idname)
         return {'FINISHED'}
 
 
@@ -638,7 +578,7 @@ class FB_OT_ResetImageRotation(Operator):
 class FB_OT_ResetExpression(Operator):
     bl_idname = Config.fb_reset_expression_idname
     bl_label = "Reset expression"
-    bl_options = {'REGISTER'}  # 'UNDO'
+    bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Reset expression"
 
     headnum: IntProperty(default=0)
@@ -882,11 +822,8 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_WireframeColor,
                        FB_OT_FilterCameras,
                        FB_OT_ProperViewMenuExec,
-                       FB_OT_ViewToFrameSize,
                        FB_OT_ImageGroupMenuExec,
                        FB_OT_CameraPanelMenuExec,
-                       FB_OT_ReadExif,
-                       FB_OT_ReadExifMenuExec,
                        FB_OT_DeleteCamera,
                        FB_OT_AddonSettings,
                        FB_OT_BakeTexture,
