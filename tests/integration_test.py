@@ -278,4 +278,12 @@ if __name__ == "__main__":
 
     # unittest.main()  # -- Doesn't work with Blender, so we use Suite
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(FaceBuilderTest)
-    unittest.TextTestRunner().run(suite)
+    result = unittest.TextTestRunner().run(suite)
+
+    logger = logging.getLogger(__name__)
+    logger.info('Results: {}'.format(result))
+    if len(result.errors) != 0 or len(result.failures) != 0:
+        # For non-zero blender exit code in conjuction with command line option
+        # --python-exit-code <code>
+        raise Exception('Test errors: {} failures: {}'.format(result.errors,
+                                                              result.failures))
