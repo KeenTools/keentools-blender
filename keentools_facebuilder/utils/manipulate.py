@@ -26,7 +26,7 @@ from ..config import Config, get_main_settings, get_operator, ErrorType
 from . import cameras, attrs, coords
 from .exif_reader import (read_exif_to_camera, auto_setup_camera_from_exif,
                           update_image_groups)
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 def _is_keentools_object(obj):
@@ -46,7 +46,7 @@ def _get_image_names(obj):
 
 
 def _check_facs_available(count):
-    return pkt.module().FacsExecutor.facs_available(count)
+    return pkt_module().FacsExecutor.facs_available(count)
 
 
 def is_it_our_mesh(obj):

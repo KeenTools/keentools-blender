@@ -19,8 +19,22 @@
 import sys
 
 import bpy
-import keentools_facebuilder.preferences.operators as preferences_operators
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from ..preferences.operators import (
+    PREF_OT_InstallPkt,
+    PREF_OT_InstallFromFilePkt,
+    PREF_OT_InstallLicenseOnline,
+    PREF_OT_OpenManualInstallPage,
+    PREF_OT_CopyHardwareId,
+    PREF_OT_InstallLicenseOffline,
+    PREF_OT_DownloadsURL,
+    PREF_OT_FloatingConnect,
+    PREF_OT_OpenPktLicensePage)
+from ..blender_independent_packages.pykeentools_loader import (
+    module as pkt_module,
+    is_installed as pkt_is_installed,
+    is_python_supported as pkt_is_python_supported,
+    installation_status as pkt_installation_status,
+    loaded as pkt_loaded)
 from ..config import (Config, is_blender_supported)
 from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
@@ -104,13 +118,13 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     )
 
     def _license_was_accepted(self):
-        return pkt.is_installed() or self.license_accepted
+        return pkt_is_installed() or self.license_accepted
 
     def _draw_license_info(self, layout):
         layout.label(text='License info:')
         box = layout.box()
 
-        lm = pkt.module().FaceBuilder.license_manager()
+        lm = pkt_module().FaceBuilder.license_manager()
 
         _multi_line_text_to_output_labels(box, lm.license_status_text(force_check=False))
 
@@ -120,7 +134,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             box = layout.box()
             row = box.split(factor=0.85)
             row.prop(self, "license_id")
-            install_online_op = row.operator(preferences_operators.PREF_OT_InstallLicenseOnline.bl_idname)
+            install_online_op = row.operator(PREF_OT_InstallLicenseOnline.bl_idname)
             install_online_op.license_id = self.license_id
 
         elif self.lic_type == 'OFFLINE':
@@ -129,21 +143,21 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             row = layout.split(factor=0.65)
             row.label(text="Get an activated license file at our site:")
             row.operator(
-                preferences_operators.PREF_OT_OpenManualInstallPage.bl_idname,
+                PREF_OT_OpenManualInstallPage.bl_idname,
                 icon='URL')
 
             box = layout.box()
             row = box.split(factor=0.85)
             row.prop(self, "hardware_id")
-            row.operator(preferences_operators.PREF_OT_CopyHardwareId.bl_idname)
+            row.operator(PREF_OT_CopyHardwareId.bl_idname)
 
             row = box.split(factor=0.85)
             row.prop(self, "lic_path")
-            install_offline_op = row.operator(preferences_operators.PREF_OT_InstallLicenseOffline.bl_idname)
+            install_offline_op = row.operator(PREF_OT_InstallLicenseOffline.bl_idname)
             install_offline_op.lic_path = self.lic_path
 
         elif self.lic_type == 'FLOATING':
-            env = pkt.module().LicenseManager.env_server_info()
+            env = pkt_module().LicenseManager.env_server_info()
             if env is not None:
                 self.license_server = env[0]
                 self.license_server_port = env[1]
@@ -170,7 +184,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                 box.prop(self, "license_server_auto",
                          text="Auto server/port settings")
 
-            floating_install_op = row.operator(preferences_operators.PREF_OT_FloatingConnect.bl_idname)
+            floating_install_op = row.operator(PREF_OT_FloatingConnect.bl_idname)
             floating_install_op.license_server = self.license_server
             floating_install_op.license_server_port = self.license_server_port
 
@@ -193,7 +207,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             # row2.alert = True
 
         op = row2.operator(
-            preferences_operators.PREF_OT_InstallPkt.bl_idname,
+            PREF_OT_InstallPkt.bl_idname,
             text='Install online', icon='WORLD')
         op.license_accepted = self._license_was_accepted()
 
@@ -204,12 +218,12 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             # row2.alert = True
 
         op = row2.operator(
-            preferences_operators.PREF_OT_InstallFromFilePkt.bl_idname,
+            PREF_OT_InstallFromFilePkt.bl_idname,
             text='Install from disk', icon='FILEBROWSER')
         op.license_accepted = self._license_was_accepted()
 
         op = row2.operator(
-            preferences_operators.PREF_OT_DownloadsURL.bl_idname,
+            PREF_OT_DownloadsURL.bl_idname,
             text='Download', icon='URL')
         op.url = Config.core_download_website_url
 
@@ -222,7 +236,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         row.prop(self, 'license_accepted')
 
         row.operator(
-            preferences_operators.PREF_OT_OpenPktLicensePage.bl_idname,
+            PREF_OT_OpenPktLicensePage.bl_idname,
             text='Read', icon='URL'
         )
 
@@ -234,7 +248,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         row = box.split(factor=0.75)
         row.label(text='KeenTools End-User License Agreement [accepted]')
         row.operator(
-            preferences_operators.PREF_OT_OpenPktLicensePage.bl_idname,
+            PREF_OT_OpenPktLicensePage.bl_idname,
             text='Read', icon='URL')
         return box
 
@@ -271,8 +285,8 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             layout.operator(Config.fb_uninstall_core_idname)
 
     def _draw_version(self, layout):
-        arr = ["Version {}, built {}".format(pkt.module().__version__,
-                                             pkt.module().build_time),
+        arr = ["Version {}, built {}".format(pkt_module().__version__,
+                                             pkt_module().build_time),
                'The core library has been installed successfully']
         draw_warning_labels(layout, arr, alert=False, icon='INFO')
 
@@ -294,7 +308,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             self._draw_old_addon(layout)
             row = layout.split(factor=0.35)
             op = row.operator(
-                preferences_operators.PREF_OT_DownloadsURL.bl_idname,
+                PREF_OT_DownloadsURL.bl_idname,
                 text='Download', icon='URL')
             op.url = Config.core_download_website_url
 
@@ -327,16 +341,16 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
 
-        if not pkt.is_python_supported():
+        if not pkt_is_python_supported():
             self._draw_unsupported_python(layout)
             draw_system_info(layout)
             return
 
-        cached_status = pkt.installation_status()
+        cached_status = pkt_installation_status()
         assert(cached_status is not None)
 
         if cached_status[1] == 'NOT_INSTALLED':
-            if pkt.loaded():
+            if pkt_loaded():
                 box = layout.box()
                 draw_warning_labels(
                     box, USER_MESSAGES['RESTART_BLENDER_TO_UNLOAD_CORE'])
@@ -362,6 +376,3 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         draw_system_info(layout)
 
         self._draw_download_progress(layout)
-
-
-

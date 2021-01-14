@@ -21,8 +21,8 @@ import logging
 import bpy
 
 from ..config import Config
-from keentools_facebuilder.blender_independent_packages import \
-    pykeentools_loader as pkt
+from ..blender_independent_packages.pykeentools_loader import (
+    module as pkt_module, is_installed as pkt_is_installed)
 from ..utils.html import parse_html, skip_new_lines_and_spaces, render_main
 
 
@@ -39,7 +39,7 @@ def mock_response():
                        "<li>minor fixes and improvements</li>\n" \
                        "</ul>\n<br />\n"
     response.plugin_name = 'FaceBuilder'
-    response.version = pkt.module().Version(1, 5, 9)
+    response.version = pkt_module().Version(1, 5, 9)
     return response
 
 
@@ -81,7 +81,7 @@ class FBUpdater:
 
     @classmethod
     def get_update_checker(cls):
-        pykeentools = pkt.module()
+        pykeentools = pkt_module()
         platform = 'Blender'
         ver = pykeentools.Version(*bpy.app.version)
         uc = pykeentools.UpdatesChecker.instance(platform, ver)
@@ -89,7 +89,7 @@ class FBUpdater:
 
     @classmethod
     def init_updater(cls):
-        if cls.has_response_message() or not pkt.is_installed():
+        if cls.has_response_message() or not pkt_is_installed():
             return
 
         uc = cls.get_update_checker()

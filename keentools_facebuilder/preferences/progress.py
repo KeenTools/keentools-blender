@@ -19,7 +19,10 @@
 import logging
 from threading import Lock
 
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from ..blender_independent_packages.pykeentools_loader import (
+    install_from_download_async as pkt_install_from_download_async,
+    install_from_file as pkt_install_from_file,
+    MINIMUM_VERSION_REQUIRED as pkt_MINIMUM_VERSION_REQUIRED)
 from ..utils.other import FBTimer, force_ui_redraw
 
 
@@ -136,8 +139,8 @@ class InstallationProgress:
         cls._on_start_download()
         FBUpdateProgressTimer.start()
         logger.debug("START CORE LIBRARY DOWNLOAD")
-        pkt.install_from_download_async(
-            version=pkt.MINIMUM_VERSION_REQUIRED,
+        pkt_install_from_download_async(
+            version=pkt_MINIMUM_VERSION_REQUIRED,
             progress_callback=cls._progress_callback,
             final_callback=cls._final_callback,
             error_callback=cls._error_callback)
@@ -153,7 +156,7 @@ class InstallationProgress:
         cls._on_start_download()
         logger.info("START UNPACK CORE LIBRARY DOWNLOAD")
         try:
-            pkt.install_from_file(filepath)
+            pkt_install_from_file(filepath)
         except Exception as error:
             cls._on_finish_download(
                 'Failed to install Core library from file. ' + str(error))

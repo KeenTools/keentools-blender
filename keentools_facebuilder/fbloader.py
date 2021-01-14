@@ -19,7 +19,6 @@
 import logging
 
 import bpy
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 import numpy as np
 
 from .config import Config, get_main_settings
@@ -28,6 +27,7 @@ from .utils import attrs, coords, cameras
 from .utils.exif_reader import update_image_groups, reload_all_camera_exif
 from .utils.other import FBStopShaderTimer, restore_ui_elements
 from .viewport import FBViewport
+from .blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 class FBLoader:
@@ -43,7 +43,7 @@ class FBLoader:
     def new_builder(cls):
         from .camera_input import FaceBuilderCameraInput
         cls._camera_input = FaceBuilderCameraInput()
-        cls._builder_instance = pkt.module().FaceBuilder(cls._camera_input)
+        cls._builder_instance = pkt_module().FaceBuilder(cls._camera_input)
         return cls._builder_instance
 
     @classmethod
@@ -283,7 +283,7 @@ class FBLoader:
             builder.select_uv_set(uv_num)
         except ValueError:
             raise ValueError('Incompatible UV number')
-        except pkt.module().InvalidArgumentException:
+        except pkt_module().InvalidArgumentException:
             raise ValueError('Invalid UV index is out of bounds')
         except TypeError:
             raise TypeError('Invalid UV index')
@@ -505,10 +505,10 @@ class FBLoader:
 
         try:
             fb.solve_for_current_pins(kid)
-        except pkt.module().UnlicensedException:
+        except pkt_module().UnlicensedException:
             _exception_handling(headnum, 'SOLVE LICENSE EXCEPTION')
             return False
-        except pkt.module().InvalidArgumentException:
+        except pkt_module().InvalidArgumentException:
             _exception_handling(headnum, 'SOLVE NO KEYFRAME EXCEPTION',
                                 license_err=False)
             return False

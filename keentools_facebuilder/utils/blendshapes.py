@@ -26,7 +26,7 @@ from ..config import Config
 from ..utils.rig_slider import create_slider, create_rectangle, create_label
 from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
                             xz_to_xy_rotation_matrix_3x3)
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 def _has_no_blendshapes(obj):
@@ -142,8 +142,8 @@ def _get_facs_executor(obj, scale):
     verts = _get_obj_verts(obj)
 
     try:
-        fe = pkt.module().FacsExecutor(verts, scale)
-    except pkt.module().FacsLoadingException:
+        fe = pkt_module().FacsExecutor(verts, scale)
+    except pkt_module().FacsLoadingException:
         logger.error('CANNOT_LOAD_FACS: FacsLoadingException')
         return None
     except Exception as error:
@@ -246,10 +246,10 @@ def _snap_keys_in_interval(fcurve, start_keyframe, end_keyframe):
 def load_csv_animation_to_blendshapes(obj, filepath):
     logger = logging.getLogger(__name__)
     try:
-        fan = pkt.module().FacsAnimation()
+        fan = pkt_module().FacsAnimation()
         read_facs, ignored_columns = fan.load_from_csv_file(filepath)
-        facs_names = pkt.module().FacsExecutor.facs_names
-    except pkt.module().FacsLoadingException as err:
+        facs_names = pkt_module().FacsExecutor.facs_names
+    except pkt_module().FacsLoadingException as err:
         logger.error('CANNOT_LOAD_CSV_ANIMATION: {}'.format(err))
         return {'status': False, 'message': str(err),
                 'ignored': [], 'read_facs': []}
