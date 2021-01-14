@@ -22,7 +22,7 @@ import numpy as np
 
 from .. config import Config, get_main_settings
 from .. fbloader import FBLoader
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..utils.images import find_bpy_image_by_name
 
 
@@ -153,7 +153,7 @@ def _create_frame_data_loader(settings, head, camnums, fb):
             np.asarray(cam.cam_image.pixels[:]).reshape((h, w, 4)),
             cam.orientation)
 
-        frame_data = pkt.module().texture_builder.FrameData()
+        frame_data = pkt_module().texture_builder.FrameData()
         frame_data.geo = fb.applied_args_model_at(cam.get_keyframe())
         frame_data.image = img
         frame_data.model = cam.get_model_mat()
@@ -190,13 +190,13 @@ def bake_tex(headnum, tex_name):
 
     bpy.context.window_manager.progress_begin(0, 1)
 
-    class ProgressCallBack(pkt.module().ProgressCallback):
+    class ProgressCallBack(pkt_module().ProgressCallback):
         def set_progress_and_check_abort(self, progress):
             bpy.context.window_manager.progress_update(progress)
             return False
 
     progress_callBack = ProgressCallBack()
-    built_texture = pkt.module().texture_builder.build_texture(
+    built_texture = pkt_module().texture_builder.build_texture(
         frames_count, frame_data_loader, progress_callBack,
         settings.tex_height, settings.tex_width, settings.tex_face_angles_affection,
         settings.tex_uv_expand_percents, settings.tex_back_face_culling,

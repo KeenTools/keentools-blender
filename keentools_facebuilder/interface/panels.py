@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy
 from bpy.types import Panel
 
 from .updater import FBUpdater
@@ -28,10 +27,9 @@ from ..utils.manipulate import (what_is_state,
                                 get_current_head,
                                 get_obj_from_context,
                                 has_no_blendshape,
-                                has_blendshapes_action,
-                                is_it_our_mesh)
+                                has_blendshapes_action)
 from ..utils.materials import find_bpy_image_by_name
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from ..blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 
 
 def _state_valid_to_show(state):
@@ -40,14 +38,14 @@ def _state_valid_to_show(state):
 
 
 def _show_all_panels():
-    if not pkt.is_installed():
+    if not pkt_is_installed():
         return False
     state, _ = what_is_state()
     return _state_valid_to_show(state)
 
 
 def _show_all_panels_no_blendshapes():
-    if not pkt.is_installed():
+    if not pkt_is_installed():
         return False
     state, headnum = what_is_state()
     if not _state_valid_to_show(state):
@@ -131,7 +129,7 @@ class FB_PT_HeaderPanel(Common, Panel):
             text='Install Core library', icon='PREFERENCES')
 
     def _draw_start_panel(self, layout):
-        if not pkt.is_installed():
+        if not pkt_is_installed():
             self._pkt_install_offer(layout)
         else:
             self._head_creation_offer(layout)
@@ -167,7 +165,7 @@ class FB_PT_HeaderPanel(Common, Panel):
     def draw(self, context):
         layout = self.layout
 
-        if not pkt.is_installed():
+        if not pkt_is_installed():
             self._draw_start_panel(layout)
             return
 
@@ -678,7 +676,7 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
 
     @classmethod
     def poll(cls, context):
-        if not pkt.is_installed():
+        if not pkt_is_installed():
             return False
         state, _ = what_is_state()
         return _state_valid_to_show(state) or state == 'FACS_HEAD'

@@ -24,7 +24,7 @@ from .fbloader import FBLoader
 from .utils import coords
 from .utils.blendshapes import (restore_facs_blendshapes,
                                 disconnect_blendshapes_action)
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from .blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 def mesh_update_accepted(headnum):
@@ -50,7 +50,7 @@ def mesh_update_accepted(headnum):
             counter = restore_facs_blendshapes(head.headobj,
                                                head.model_scale, names)
             logger.debug('blendshapes_restored: {}'.format(counter))
-        except pkt.module().UnlicensedException:
+        except pkt_module().UnlicensedException:
             logger.error('UnlicensedException restore_facs_blendshapes')
             warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)

@@ -19,10 +19,10 @@
 import logging
 import bpy
 
-from ..config import Config, get_main_settings, get_operator, ErrorType
+from ..config import Config, get_operator, ErrorType
 from . import manipulate
 from ..fbloader import FBLoader
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from .blendshapes import (create_facs_blendshapes,
                           create_facs_test_animation_on_blendshapes,
                           disconnect_blendshapes_action,
@@ -41,7 +41,7 @@ def create_blendshapes(operator):
 
     try:
         counter = create_facs_blendshapes(obj, scale)
-    except pkt.module().UnlicensedException:
+    except pkt_module().UnlicensedException:
         logger.error('UnlicensedException generate_facs_blendshapes')
         warn = get_operator(Config.fb_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
@@ -187,7 +187,7 @@ def update_blendshapes(operator):
         try:
             update_facs_blendshapes(head.headobj, head.model_scale)
             logger.debug('update_facs_blendshapes performed')
-        except pkt.module().UnlicensedException:
+        except pkt_module().UnlicensedException:
             logger = logging.getLogger(__name__)
             logger.error('UnlicensedException update_blendshapes')
             warn = get_operator(Config.fb_warning_idname)

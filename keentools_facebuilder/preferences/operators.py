@@ -17,11 +17,14 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader \
-    as pkt
-from keentools_facebuilder.config import Config, get_operator
+from ..blender_independent_packages.pykeentools_loader import (
+    module as pkt_module,
+    core_filename_info as pkt_core_filename_info,
+    MINIMUM_VERSION_REQUIRED as pkt_MINIMUM_VERSION_REQUIRED,
+    os_name as pkt_os_name)
+from ..config import Config, get_operator
 from .formatting import replace_newlines_with_spaces
-from keentools_facebuilder.preferences.progress import InstallationProgress
+from ..preferences.progress import InstallationProgress
 
 
 _ID_NAME_PREFIX = 'preferences.' + Config.prefix
@@ -146,7 +149,7 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
             return {'FINISHED'}
 
     def execute(self, context):
-        filename_info = pkt.core_filename_info(self.filepath)
+        filename_info = pkt_core_filename_info(self.filepath)
         warning = None
 
         if not filename_info.is_zip:
@@ -154,15 +157,15 @@ class PREF_OT_InstallFromFilePkt(bpy.types.Operator):
                       'The selected file appears to be of a different type'
         elif not filename_info.is_keentools_core:
             warning = 'The selected file name appears to be different from Core library file name'
-        elif filename_info.version != pkt.MINIMUM_VERSION_REQUIRED:
+        elif filename_info.version != pkt_MINIMUM_VERSION_REQUIRED:
             def _version_to_string(version):
                 return str(version[0]) + '.' + str(version[1]) + '.' +str(version[2])
             warning = 'Core library version %s doesn\'t match the add-on version %s' %\
                       (_version_to_string(filename_info.version),
-                       _version_to_string(pkt.MINIMUM_VERSION_REQUIRED))
-        elif filename_info.os != pkt.os_name():
+                       _version_to_string(pkt_MINIMUM_VERSION_REQUIRED))
+        elif filename_info.os != pkt_os_name():
             warning = 'Your OS is %s, you\'re trying to install the core library for %s' %\
-                      (pkt.os_name(), filename_info.os)
+                      (pkt_os_name(), filename_info.os)
         elif filename_info.is_nightly:
             warning = 'You\'re installing an unstable nightly build, is this what you really want?'
 
@@ -183,7 +186,7 @@ class PREF_OT_OpenManualInstallPage(bpy.types.Operator):
     bl_description = 'Open license activation webpage in browser'
 
     def execute(self, context):
-        hardware_id = pkt.module().FaceBuilder.license_manager().hardware_id()
+        hardware_id = pkt_module().FaceBuilder.license_manager().hardware_id()
         bpy.ops.wm.url_open(url=Config.manual_install_url + '#' + hardware_id)
         return {'FINISHED'}
 
@@ -195,7 +198,7 @@ class PREF_OT_CopyHardwareId(bpy.types.Operator):
     bl_description = 'Copy Hardware ID to clipboard'
 
     def execute(self, context):
-        hardware_id = pkt.module().FaceBuilder.license_manager().hardware_id()
+        hardware_id = pkt_module().FaceBuilder.license_manager().hardware_id()
         context.window_manager.clipboard = hardware_id
         self.report({'INFO'}, 'Hardware ID is in clipboard!')
         return {'FINISHED'}
@@ -210,7 +213,7 @@ class PREF_OT_InstallLicenseOnline(bpy.types.Operator):
     license_id: bpy.props.StringProperty()
 
     def execute(self, context):
-        lm = pkt.module().FaceBuilder.license_manager()
+        lm = pkt_module().FaceBuilder.license_manager()
         res = lm.install_license_online(self.license_id)
 
         if res is not None:
@@ -229,7 +232,7 @@ class PREF_OT_InstallLicenseOffline(bpy.types.Operator):
     lic_path: bpy.props.StringProperty()
 
     def execute(self, context):
-        lm = pkt.module().FaceBuilder.license_manager()
+        lm = pkt_module().FaceBuilder.license_manager()
         res = lm.install_license_offline(self.lic_path)
 
         if res is not None:
@@ -249,7 +252,7 @@ class PREF_OT_FloatingConnect(bpy.types.Operator):
     license_server_port: bpy.props.IntProperty()
 
     def execute(self, context):
-        lm = pkt.module().FaceBuilder.license_manager()
+        lm = pkt_module().FaceBuilder.license_manager()
         res = lm.install_floating_license(self.license_server,
                                           self.license_server_port)
         if res is not None:
