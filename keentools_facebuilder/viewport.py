@@ -23,7 +23,7 @@ import numpy as np
 
 from . config import Config, get_main_settings
 from . utils import coords
-from . utils.edges import FBEdgeShader2D, FBRasterEdgeShader3D
+from . utils.edges import FBEdgeShader2D, FBRasterEdgeShader3D, FBRectangleShader2D
 from . utils.other import FBText
 from . utils.points import FBPoints2D, FBPoints3D
 
@@ -81,6 +81,8 @@ class FBViewport:
 
     # Current View Pins draw
     _points2d = FBPoints2D()
+    # Rectangles for Face picking
+    _rectangler = FBRectangleShader2D()
     # Surface points draw
     _points3d = FBPoints3D()
     # Text output in Modal mode
@@ -123,6 +125,10 @@ class FBViewport:
         return cls._residuals
 
     @classmethod
+    def rectangler(cls):
+        return cls._rectangler
+
+    @classmethod
     def update_view_relative_pixel_size(cls, context):
         ps = coords.get_pixel_relative_size(context)
         cls.PIXEL_SIZE = ps
@@ -147,6 +153,7 @@ class FBViewport:
         cls.unregister_handlers()  # Experimental
 
         cls.residuals().register_handler(args)
+        cls.rectangler().register_handler(args)
 
         cls.points3d().register_handler(args)
         cls.points2d().register_handler(args)
@@ -170,6 +177,7 @@ class FBViewport:
         cls.points2d().unregister_handler()
         cls.points3d().unregister_handler()
 
+        cls.rectangler().unregister_handler()
         cls.residuals().unregister_handler()
     # --------
 
@@ -296,6 +304,30 @@ class FBViewport:
 
         cls.points2d().set_vertices_colors(points, vertex_colors)
         cls.points2d().create_batch()
+
+        # Rectangles test
+        rectangler = cls.rectangler()
+        rectangler.clear_rectangles()
+
+        dx = 0.52
+        dy = asp * 0.52
+        rectangler.add_rectangle(
+            *coords.image_space_to_region(-dx, -dy, x1, y1, x2, y2),
+            *coords.image_space_to_region(dx, dy, x1, y1, x2, y2),
+            (0.0, 0.5, 0.0, 0.8)
+        )
+
+        dx = 0.42
+        dy = asp * 0.42
+        rectangler.add_rectangle(
+            *coords.image_space_to_region(-dx, -dy, x1, y1, x2, y2),
+            *coords.image_space_to_region(dx, dy, x1, y1, x2, y2),
+            (1.0, 0.0, 0.0, 0.8)
+        )
+        rectangler.prepare_data()
+        rectangler.create_batch()
+        # End rectangles test
+
 
     @classmethod
     def update_residuals(cls, fb, context, headobj, keyframe):

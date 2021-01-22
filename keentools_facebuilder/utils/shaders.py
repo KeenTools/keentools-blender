@@ -148,6 +148,34 @@ def residual_fragment_shader():
     '''
 
 
+def solid_line_vertex_shader():
+    return '''
+    uniform mat4 ModelViewProjectionMatrix;
+    in vec2 pos;
+
+    in vec4 color;
+    flat out vec4 finalColor;
+
+    void main()
+    {
+        gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0f);
+        finalColor = color;
+    }
+    '''
+
+
+def solid_line_fragment_shader():
+    return '''
+    flat in vec4 finalColor;
+    out vec4 fragColor;
+
+    void main()
+    {
+        fragColor = finalColor;
+    }
+    '''
+
+
 def raster_image_vertex_shader():
     return '''
     uniform mat4 ModelViewProjectionMatrix;

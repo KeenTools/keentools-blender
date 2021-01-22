@@ -24,7 +24,8 @@ from gpu_extras.batch import batch_for_shader
 from . shaders import (simple_fill_vertex_shader,
                        black_fill_fragment_shader, residual_vertex_shader,
                        residual_fragment_shader, raster_image_vertex_shader,
-                       raster_image_fragment_shader)
+                       raster_image_fragment_shader,
+                       solid_line_vertex_shader, solid_line_fragment_shader)
 from ..config import Config
 from ..utils.images import (check_bpy_image_has_same_size,
                             find_bpy_image_by_name,
@@ -163,6 +164,63 @@ class FBEdgeShader2D(FBEdgeShaderBase):
         self.draw_handler = bpy.types.SpaceView3D.draw_handler_add(
             self.draw_callback, args, "WINDOW", "POST_PIXEL")
         self.add_handler_list(self.draw_handler)
+
+
+class FBRectangleShader2D(FBEdgeShader2D):
+    def __init__(self):
+        self._rectangles = []
+        super().__init__()
+
+    def add_rectangle(self, x1, y1, x2, y2, col):
+        self._rectangles.append((x1, y1, x2, y2, col))
+
+    def clear_rectangles(self):
+        self._rectangles = []
+
+    def prepare_data(self):
+        rect_points = []
+        rect_colors = []
+
+        for x1, y1, x2, y2, col in self._rectangles:
+            points = [(x1, y1), (x1, y2), (x2, y2), (x2, y1)]
+            previous_p = points[-1]
+            for p in points:
+                rect_points.append((*previous_p,))
+                rect_colors.append(col)
+                rect_points.append((*p,))
+                rect_colors.append(col)
+                previous_p = p
+
+        self.set_vertices_colors(rect_points, rect_colors)
+
+    def init_shaders(self):
+        self.line_shader = gpu.types.GPUShader(
+            solid_line_vertex_shader(), solid_line_fragment_shader())
+
+    def draw_callback(self, op, context):
+        # Force Stop
+        if self.is_handler_list_empty():
+            self.unregister_handler()
+            return
+
+        if self.line_shader is None or self.line_batch is None:
+            return
+
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glEnable(bgl.GL_LINE_SMOOTH)
+        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
+        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
+        bgl.glLineWidth(3.0)
+
+        self.line_shader.bind()
+        self.line_batch.draw(self.line_shader)
+
+    def create_batch(self):
+        # Our shader batch
+        self.line_batch = batch_for_shader(
+            self.line_shader, 'LINES',
+            {'pos': self.vertices, 'color': self.vertices_colors}
+        )
 
 
 class FBRasterEdgeShader3D(FBEdgeShaderBase):
