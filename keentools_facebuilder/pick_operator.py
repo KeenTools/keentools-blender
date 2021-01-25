@@ -62,11 +62,10 @@ class FB_OT_PickMode(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
-        print('MODAL PICKMODE: ', event.type)
+        vp = FBLoader.viewport()
+        rectangler = vp.rectangler()
         if event.type == 'MOUSEMOVE':
             mouse_x, mouse_y = coords.get_image_space_coord(event.mouse_region_x, event.mouse_region_y, context)
-            vp = FBLoader.viewport()
-            rectangler = vp.rectangler()
             rectangler.active_rectangle(mouse_x, mouse_y, (1.0, 0.0, 0.0, 1.0))
             rectangler.prepare_data(context)
             rectangler.create_batch()
@@ -74,8 +73,17 @@ class FB_OT_PickMode(bpy.types.Operator):
         logger = logging.getLogger(__name__)
         if event.type == 'ESC':
             self.report({'INFO'}, 'Operator finish')
+            rectangler.clear_rectangles()
+            rectangler.prepare_data(context)
+            rectangler.create_batch()
+            context.area.tag_redraw()
             return {'FINISHED'}
         if event.value == 'PRESS' and event.type == 'LEFTMOUSE':
             self.report({'INFO'}, 'Operator result selected')
+            self.report({'INFO'}, 'Operator finish')
+            rectangler.clear_rectangles()
+            rectangler.prepare_data(context)
+            rectangler.create_batch()
+            context.area.tag_redraw()
             return {'FINISHED'}
         return {'PASS_THROUGH'}
