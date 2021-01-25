@@ -305,29 +305,10 @@ class FBViewport:
         cls.points2d().set_vertices_colors(points, vertex_colors)
         cls.points2d().create_batch()
 
-        # Rectangles test
+        # Rectangles drawing
         rectangler = cls.rectangler()
-        rectangler.clear_rectangles()
-
-        dx = 0.52
-        dy = asp * 0.52
-        rectangler.add_rectangle(
-            *coords.image_space_to_region(-dx, -dy, x1, y1, x2, y2),
-            *coords.image_space_to_region(dx, dy, x1, y1, x2, y2),
-            (0.0, 0.5, 0.0, 0.8)
-        )
-
-        dx = 0.42
-        dy = asp * 0.42
-        rectangler.add_rectangle(
-            *coords.image_space_to_region(-dx, -dy, x1, y1, x2, y2),
-            *coords.image_space_to_region(dx, dy, x1, y1, x2, y2),
-            (1.0, 0.0, 0.0, 0.8)
-        )
-        rectangler.prepare_data()
+        rectangler.prepare_data(context)
         rectangler.create_batch()
-        # End rectangles test
-
 
     @classmethod
     def update_residuals(cls, fb, context, headobj, keyframe):

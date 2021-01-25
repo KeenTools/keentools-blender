@@ -30,6 +30,7 @@ from ..config import Config
 from ..utils.images import (check_bpy_image_has_same_size,
                             find_bpy_image_by_name,
                             remove_bpy_image, add_alpha_channel)
+from ..utils import coords
 
 
 class FBEdgeShaderBase:
@@ -171,24 +172,43 @@ class FBRectangleShader2D(FBEdgeShader2D):
         self._rectangles = []
         super().__init__()
 
-    def add_rectangle(self, x1, y1, x2, y2, col):
-        self._rectangles.append((x1, y1, x2, y2, col))
+    def add_rectangle(self, x1, y1, x2, y2, w, h, col):
+        self._rectangles.append([
+            *coords.frame_to_image_space(x1, y1, w, h),
+            *coords.frame_to_image_space(x2, y2, w, h),
+            w, h, (*col,), (*col,)])
+
+    def active_rectangle(self, mouse_x, mouse_y, col):
+        current_index = -1
+        dist2 = 1000000.0
+        for i, rect in enumerate(self._rectangles):
+            x1, y1, x2, y2, w, h, col1, col2 = rect
+            rect[6] = (*rect[7],)
+            if x1 < mouse_x < x2 and y1 < mouse_y < y2:
+                d2 = (mouse_x - (x1 + x2) * 0.5) ** 2 + (mouse_y - (y1 + y2) * 0.5) ** 2
+                if d2 < dist2:
+                    dist2 = d2
+                    current_index = i
+        if current_index >= 0:
+            self._rectangles[current_index][6] = (*col,)
 
     def clear_rectangles(self):
         self._rectangles = []
 
-    def prepare_data(self):
+    def prepare_data(self, context):
         rect_points = []
         rect_colors = []
 
-        for x1, y1, x2, y2, col in self._rectangles:
+        rx1, ry1, rx2, ry2 = coords.get_camera_border(context)
+
+        for x1, y1, x2, y2, w, h, col1, col2 in self._rectangles:
             points = [(x1, y1), (x1, y2), (x2, y2), (x2, y1)]
             previous_p = points[-1]
             for p in points:
-                rect_points.append((*previous_p,))
-                rect_colors.append(col)
-                rect_points.append((*p,))
-                rect_colors.append(col)
+                rect_points.append(coords.image_space_to_region(*previous_p, rx1, ry1, rx2, ry2))
+                rect_colors.append(col1)
+                rect_points.append(coords.image_space_to_region(*p, rx1, ry1, rx2, ry2))
+                rect_colors.append(col1)
                 previous_p = p
 
         self.set_vertices_colors(rect_points, rect_colors)

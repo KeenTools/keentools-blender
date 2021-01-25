@@ -153,6 +153,7 @@ else:
     from .head import MESH_OT_FBAddHead
     from .settings import FBExifItem, FBCameraItem, FBHeadItem, FBSceneSettings
     from .pinmode import FB_OT_PinMode
+    from .pick_operator import FB_OT_PickMode
     from .movepin import FB_OT_MovePin
     from .actor import FB_OT_HistoryActor, FB_OT_CameraActor
 
@@ -164,6 +165,7 @@ else:
                            FBHeadItem,
                            FBSceneSettings,
                            FB_OT_PinMode,
+                           FB_OT_PickMode,
                            FB_OT_MovePin,
                            FB_OT_HistoryActor,
                            FB_OT_CameraActor) + OPERATOR_CLASSES + \
