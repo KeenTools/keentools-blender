@@ -172,30 +172,33 @@ class FBRectangleShader2D(FBEdgeShader2D):
         self._rectangles = []
         super().__init__()
 
-    def add_rectangle(self, x1, y1, x2, y2, w, h, col):
-        self._rectangles.append([
-            *coords.frame_to_image_space(x1, y1, w, h),
-            *coords.frame_to_image_space(x2, y2, w, h),
-            w, h, (*col,), (*col,)])
-
-    def active_rectangle(self, mouse_x, mouse_y, col):
-        current_index = -1
-        dist2 = 1000000.0
-        for i, rect in enumerate(self._rectangles):
-            x1, y1, x2, y2, w, h, col1, col2 = rect
-            rect[6] = (*rect[7],)
-            if x1 < mouse_x < x2 and y1 < mouse_y < y2:
-                d2 = (mouse_x - (x1 + x2) * 0.5) ** 2 + (mouse_y - (y1 + y2) * 0.5) ** 2
-                if d2 < dist2:
-                    dist2 = d2
-                    current_index = i
-        if current_index >= 0:
-            self._rectangles[current_index][6] = (*col,)
-
     def clear_rectangles(self):
         self._rectangles = []
 
-    def prepare_data(self, context):
+    def add_rectangle(self, x1, y1, x2, y2, frame_w, frame_h, color):
+        self._rectangles.append([
+            *coords.frame_to_image_space(x1, y1, frame_w, frame_h),
+            *coords.frame_to_image_space(x2, y2, frame_w, frame_h),
+            frame_w, frame_h, (*color,), (*color,)])
+
+    def active_rectangle_index(self, mouse_x, mouse_y):
+        current_index = -1
+        dist_squared = 10000000.0
+        for i, rect in enumerate(self._rectangles):
+            x1, y1, x2, y2 = rect[:4]
+            if x1 <= mouse_x <= x2 and y1 <= mouse_y <= y2:
+                d2 = (mouse_x - (x1 + x2) * 0.5) ** 2 + \
+                     (mouse_y - (y1 + y2) * 0.5) ** 2
+                if d2 < dist_squared:
+                    dist_squared = d2
+                    current_index = i
+        return current_index
+
+    def highlight_rectangle(self, index=-1, color=(1.0, 0.0, 0.0, 1.0)):
+        for i, rect in enumerate(self._rectangles):
+            rect[6] = (*color,) if i == index else (*rect[7],)
+
+    def prepare_shader_data(self, context):
         rect_points = []
         rect_colors = []
 
@@ -205,9 +208,13 @@ class FBRectangleShader2D(FBEdgeShader2D):
             points = [(x1, y1), (x1, y2), (x2, y2), (x2, y1)]
             previous_p = points[-1]
             for p in points:
-                rect_points.append(coords.image_space_to_region(*previous_p, rx1, ry1, rx2, ry2))
+                rect_points.append(coords.image_space_to_region(*previous_p,
+                                                                rx1, ry1,
+                                                                rx2, ry2))
                 rect_colors.append(col1)
-                rect_points.append(coords.image_space_to_region(*p, rx1, ry1, rx2, ry2))
+                rect_points.append(coords.image_space_to_region(*p,
+                                                                rx1, ry1,
+                                                                rx2, ry2))
                 rect_colors.append(col1)
                 previous_p = p
 
@@ -230,13 +237,12 @@ class FBRectangleShader2D(FBEdgeShader2D):
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-        bgl.glLineWidth(3.0)
+        bgl.glLineWidth(3.0)  # Rectangle Width
 
         self.line_shader.bind()
         self.line_batch.draw(self.line_shader)
 
     def create_batch(self):
-        # Our shader batch
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
             {'pos': self.vertices, 'color': self.vertices_colors}

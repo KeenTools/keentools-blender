@@ -423,9 +423,6 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             op.headnum = headnum
             op.camnum = i
 
-        layout.operator(Config.fb_pickmode_idname,
-                        text='Pick face')
-
     def _draw_camera_hint(self, layout, headnum):
         settings = get_main_settings()
         head = settings.get_head(headnum)

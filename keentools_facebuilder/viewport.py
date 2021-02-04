@@ -307,7 +307,7 @@ class FBViewport:
 
         # Rectangles drawing
         rectangler = cls.rectangler()
-        rectangler.prepare_data(context)
+        rectangler.prepare_shader_data(context)
         rectangler.create_batch()
 
     @classmethod
