@@ -16,10 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import numpy as np
 import logging
 import bpy
 
-from .config import Config, get_main_settings
+from .config import Config, get_main_settings, get_operator
 from .fbloader import FBLoader
 from .utils import coords
 
@@ -30,21 +31,9 @@ class FB_OT_PickMode(bpy.types.Operator):
     bl_description = 'Operator for in-Viewport picking'
     bl_options = {'REGISTER', 'UNDO'}
 
-    def _test_rectangles(self, context):
+    def _init_rectangler(self, context):
         vp = FBLoader.viewport()
         rectangler = vp.rectangler()
-        rectangler.clear_rectangles()
-
-        rectangler.add_rectangle(
-            20, 20, 960, 1060, 1920, 1080,
-            (0.0, 0.5, 0.0, 0.8)
-        )
-
-        rectangler.add_rectangle(
-            960, 20, 1900, 1060, 1920, 1080,
-            (0.0, 0.0, 0.5, 0.8)
-        )
-
         rectangler.prepare_shader_data(context)
         rectangler.create_batch()
         vp.create_batch_2d(context)
@@ -58,8 +47,7 @@ class FB_OT_PickMode(bpy.types.Operator):
             self.report({'INFO'}, 'Not in pinmode')
             return {'FINISHED'}
 
-        # TODO: init real face rectangles here
-        self._test_rectangles(context)
+        self._init_rectangler(context)
 
         context.window_manager.modal_handler_add(self)
         logger.debug('PICKMODE STARTED')
@@ -75,6 +63,8 @@ class FB_OT_PickMode(bpy.types.Operator):
         context.area.tag_redraw()
 
     def _before_operator_stop(self, context):
+        logger = logging.getLogger(__name__)
+        logger.debug('_before_operator_stop')
         rectangler = self._get_rectangler()
         rectangler.clear_rectangles()
         self._update_rectangler_shader(context)
@@ -98,6 +88,7 @@ class FB_OT_PickMode(bpy.types.Operator):
             mouse_x, mouse_y = coords.get_image_space_coord(
                 event.mouse_region_x, event.mouse_region_y, context)
             index = rectangler.active_rectangle_index(mouse_x, mouse_y)
+            logger.debug('active_rectangle_index: {}'.format(index))
             rectangler.highlight_rectangle(index, selected_rectangle_color)
             self._update_rectangler_shader(context)
 
@@ -118,3 +109,49 @@ class FB_OT_PickMode(bpy.types.Operator):
             return {'FINISHED'}
 
         return {'RUNNING_MODAL'}
+
+
+class FB_OT_PickModeStarter(bpy.types.Operator):
+    bl_idname = Config.fb_pickmode_starter_idname
+    bl_label = 'FaceBuilder Pick Face mode starter'
+    bl_description = 'Operator for in-Viewport picking'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    headnum: bpy.props.IntProperty(default=0)
+    camnum: bpy.props.IntProperty(default=0)
+
+    def invoke(self, context, event):
+        logger = logging.getLogger(__name__)
+        logger.debug('PickModeStarter call')
+
+        settings = get_main_settings()
+        if not settings.pinmode:
+            self.report({'INFO'}, 'Not in pinmode')
+            return {'FINISHED'}
+
+        head = settings.get_head(self.headnum)
+        camera = head.get_camera(self.camnum)
+
+        image = camera.cam_image
+        w, h = image.size[:2]
+        img = np.asarray(image.pixels[:]).reshape((h, w, 4))
+        fb = FBLoader.get_builder()
+        faces = fb.detect_faces(img)
+
+        vp = FBLoader.viewport()
+        rectangler = vp.rectangler()
+        rectangler.clear_rectangles()
+        for face in faces:
+            x1, y1 = face.xy_min
+            x2, y2 = face.xy_max
+            if x2 < x1:
+                x1, x2 = x2, x1
+            if y2 < y1:
+                y1, y2 = y2, y1
+
+            rectangler.add_rectangle(x1, y1, x2, y2, w, h, (0, 1, 0, 1))
+
+        op = get_operator(Config.fb_pickmode_idname)
+        op('INVOKE_DEFAULT')
+
+        return {'FINISHED'}
