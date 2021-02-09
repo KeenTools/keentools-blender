@@ -25,11 +25,43 @@ from .fbloader import FBLoader
 from .utils import coords
 
 
+_DETECTED_FACES = None
+
+
+def _get_np_image(headnum, camnum):
+    settings = get_main_settings()
+    head = settings.get_head(headnum)
+    camera = head.get_camera(camnum)
+
+    image = camera.cam_image
+    w, h = image.size[:2]
+    return np.asarray(image.pixels[:]).reshape((h, w, 4))
+
+
+def _get_detected_faces():
+    global _DETECTED_FACES
+    return _DETECTED_FACES
+
+
+def _set_detected_faces(img):
+    global _DETECTED_FACES
+    fb = FBLoader.get_builder()
+    _DETECTED_FACES = fb.detect_faces(img)
+
+
+def _reset_detected_faces():
+    global _DETECTED_FACES
+    _DETECTED_FACES = None
+
+
 class FB_OT_PickMode(bpy.types.Operator):
     bl_idname = Config.fb_pickmode_idname
     bl_label = 'FaceBuilder Pick Face mode'
     bl_description = 'Operator for in-Viewport picking'
     bl_options = {'REGISTER', 'UNDO'}
+
+    headnum: bpy.props.IntProperty(default=0)
+    camnum: bpy.props.IntProperty(default=0)
 
     def _init_rectangler(self, context):
         vp = FBLoader.viewport()
@@ -69,6 +101,12 @@ class FB_OT_PickMode(bpy.types.Operator):
         rectangler.clear_rectangles()
         self._update_rectangler_shader(context)
 
+    def _selected_rectangle(self, context, event):
+        rectangler = self._get_rectangler()
+        mouse_x, mouse_y = coords.get_image_space_coord(
+            event.mouse_region_x, event.mouse_region_y, context)
+        return rectangler.active_rectangle_index(mouse_x, mouse_y)
+
     def modal(self, context, event):
         logger = logging.getLogger(__name__)
         vp = FBLoader.viewport()
@@ -105,6 +143,28 @@ class FB_OT_PickMode(bpy.types.Operator):
             self.report({'INFO'}, message)
             logger.debug(message)
 
+            index = self._selected_rectangle(context, event)
+            if index >= 0:
+                fb = FBLoader.get_builder()
+                faces = _get_detected_faces()
+
+                settings = get_main_settings()
+                kid = settings.get_keyframe(self.headnum, self.camnum)
+
+                fb.remove_pins(kid)
+                fb.detect_face_pose(kid, faces[index])
+                pins = fb.add_preset_pins(kid)
+                for pin in pins:
+                    pos = pin.img_pos
+                    fb.add_pin(kid, (*pos,))
+                logger.debug('pins_added kid: {}'.format(kid))
+                logger.debug(pins)
+                logger.debug(fb.serialize())
+                FBLoader.save_only(self.headnum)
+
+                FBLoader.fb_redraw(self.headnum, self.camnum)
+                FBLoader.update_pins_count(self.headnum, self.camnum)
+
             self._before_operator_stop(context)
             return {'FINISHED'}
 
@@ -129,14 +189,11 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
             self.report({'INFO'}, 'Not in pinmode')
             return {'FINISHED'}
 
-        head = settings.get_head(self.headnum)
-        camera = head.get_camera(self.camnum)
+        img = _get_np_image(self.headnum, self.camnum)
+        h, w, _ = img.shape
 
-        image = camera.cam_image
-        w, h = image.size[:2]
-        img = np.asarray(image.pixels[:]).reshape((h, w, 4))
-        fb = FBLoader.get_builder()
-        faces = fb.detect_faces(img)
+        _set_detected_faces(img)
+        faces = _get_detected_faces()
 
         vp = FBLoader.viewport()
         rectangler = vp.rectangler()
@@ -152,6 +209,6 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
             rectangler.add_rectangle(x1, y1, x2, y2, w, h, (0, 1, 0, 1))
 
         op = get_operator(Config.fb_pickmode_idname)
-        op('INVOKE_DEFAULT')
+        op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
 
         return {'FINISHED'}
