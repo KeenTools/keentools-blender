@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import contextlib
 import numpy as np
 import logging
 import bpy
@@ -23,6 +24,7 @@ import bpy
 from .config import Config, get_main_settings, get_operator
 from .fbloader import FBLoader
 from .utils import coords
+from .utils.focal_length import auto_focal_configuration_and_update
 
 
 _DETECTED_FACES = None
@@ -89,18 +91,29 @@ def _reset_detected_faces():
     _DETECTED_FACES = None
 
 
-def _add_pins_to_face(headnum, camnum, index):
+@contextlib.contextmanager
+def _new_preset_pins(fb, kid):
+    fb.remove_pins(kid)
+    yield
+    fb.add_preset_pins(kid)
     logger = logging.getLogger(__name__)
+    logger.debug('auto_pins_added kid: {}'.format(kid))
+
+
+def _add_pins_to_face(headnum, camnum, index):
     fb = FBLoader.get_builder()
     faces = _get_detected_faces()
 
     settings = get_main_settings()
     kid = settings.get_keyframe(headnum, camnum)
+    head = settings.get_head(headnum)
 
-    fb.remove_pins(kid)
-    fb.detect_face_pose(kid, faces[index])
-    fb.add_preset_pins(kid)
-    logger.debug('auto_pins_added kid: {}'.format(kid))
+    fb.set_use_emotions(head.should_use_emotions())
+
+    with _new_preset_pins(fb, kid):
+        with auto_focal_configuration_and_update(fb, headnum, camnum):
+            fb.detect_face_pose(kid, faces[index])
+
     FBLoader.save_only(headnum)
 
     FBLoader.fb_redraw(headnum, camnum)
