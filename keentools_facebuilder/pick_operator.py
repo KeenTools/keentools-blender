@@ -92,6 +92,8 @@ def _add_pins_to_face(headnum, camnum, index):
 
     FBLoader.fb_redraw(headnum, camnum)
     FBLoader.update_pins_count(headnum, camnum)
+    FBLoader.update_all_camera_positions(headnum)
+    FBLoader.update_all_camera_focals(headnum)
 
 
 class FB_OT_PickMode(bpy.types.Operator):
@@ -230,6 +232,6 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
         elif len(rects) == 1:
             _add_pins_to_face(self.headnum, self.camnum, 0)
         else:
-            self.report({'ERROR', 'Cannot find face on image'})
+            self.report({'ERROR'}, 'Cannot find face on image')
 
         return {'FINISHED'}
