@@ -243,6 +243,8 @@ class FBRectangleShader2D(FBEdgeShader2D):
         self.line_batch.draw(self.line_shader)
 
     def create_batch(self):
+        if bpy.app.background:
+            return
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
             {'pos': self.vertices, 'color': self.vertices_colors}
