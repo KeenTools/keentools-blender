@@ -220,6 +220,9 @@ class Config:
     surface_point_color = (0.0, 1.0, 1.0, 0.5)
     residual_color = (0.0, 1.0, 1.0, 0.5)
 
+    selected_rectangle_color = (1.0, 0.0, 0.0, 1.0)
+    regular_rectangle_color = (0.0, 1.0, 0.0, 1.0)
+
 
 def is_blender_supported():
     ver = bpy.app.version

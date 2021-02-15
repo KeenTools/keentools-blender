@@ -426,7 +426,9 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         if settings.pinmode:
             op = layout.operator(
                 Config.fb_pickmode_starter_idname,
-                text='Detect faces', icon='USER')
+                text='Detect face(s)', icon='USER')
+            op.headnum = settings.current_headnum
+            op.camnum = settings.current_camnum
 
     def _draw_camera_hint(self, layout, headnum):
         settings = get_main_settings()

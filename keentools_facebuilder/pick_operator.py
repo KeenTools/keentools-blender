@@ -49,9 +49,49 @@ def _set_detected_faces(img):
     _DETECTED_FACES = fb.detect_faces(img)
 
 
+def _get_detected_faces_rectangles():
+    faces = _get_detected_faces()
+    rects = []
+    for i, face in enumerate(faces):
+        x1, y1 = face.xy_min
+        x2, y2 = face.xy_max
+        if x2 < x1:
+            x1, x2 = x2, x1
+        if y2 < y1:
+            y1, y2 = y2, y1
+        rects.append((x1, y1, x2, y2, i))
+    return rects
+
+
+def _sort_detected_faces():
+    global _DETECTED_FACES
+    rects = _get_detected_faces_rectangles()
+    rects.sort(key=lambda x: x[0])  # order by x1
+    _DETECTED_FACES = [_DETECTED_FACES[x[4]] for x in rects]
+    return rects
+
+
 def _reset_detected_faces():
     global _DETECTED_FACES
     _DETECTED_FACES = None
+
+
+def _add_pins_to_face(headnum, camnum, index):
+    logger = logging.getLogger(__name__)
+    fb = FBLoader.get_builder()
+    faces = _get_detected_faces()
+
+    settings = get_main_settings()
+    kid = settings.get_keyframe(headnum, camnum)
+
+    fb.remove_pins(kid)
+    fb.detect_face_pose(kid, faces[index])
+    fb.add_preset_pins(kid)
+    logger.debug('auto_pins_added kid: {}'.format(kid))
+    FBLoader.save_only(headnum)
+
+    FBLoader.fb_redraw(headnum, camnum)
+    FBLoader.update_pins_count(headnum, camnum)
 
 
 class FB_OT_PickMode(bpy.types.Operator):
@@ -121,13 +161,12 @@ class FB_OT_PickMode(bpy.types.Operator):
             return {'PASS_THROUGH'}
 
         if event.type == 'MOUSEMOVE':
-            # TODO: move color value to Config
-            selected_rectangle_color = (1.0, 0.0, 0.0, 1.0)
             mouse_x, mouse_y = coords.get_image_space_coord(
                 event.mouse_region_x, event.mouse_region_y, context)
             index = rectangler.active_rectangle_index(mouse_x, mouse_y)
             logger.debug('active_rectangle_index: {}'.format(index))
-            rectangler.highlight_rectangle(index, selected_rectangle_color)
+            rectangler.highlight_rectangle(index,
+                                           Config.selected_rectangle_color)
             self._update_rectangler_shader(context)
 
         if event.type == 'ESC':
@@ -145,25 +184,7 @@ class FB_OT_PickMode(bpy.types.Operator):
 
             index = self._selected_rectangle(context, event)
             if index >= 0:
-                fb = FBLoader.get_builder()
-                faces = _get_detected_faces()
-
-                settings = get_main_settings()
-                kid = settings.get_keyframe(self.headnum, self.camnum)
-
-                fb.remove_pins(kid)
-                fb.detect_face_pose(kid, faces[index])
-                pins = fb.add_preset_pins(kid)
-                for pin in pins:
-                    pos = pin.img_pos
-                    fb.add_pin(kid, (*pos,))
-                logger.debug('pins_added kid: {}'.format(kid))
-                logger.debug(pins)
-                logger.debug(fb.serialize())
-                FBLoader.save_only(self.headnum)
-
-                FBLoader.fb_redraw(self.headnum, self.camnum)
-                FBLoader.update_pins_count(self.headnum, self.camnum)
+                _add_pins_to_face(self.headnum, self.camnum, index)
 
             self._before_operator_stop(context)
             return {'FINISHED'}
@@ -193,22 +214,22 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
         h, w, _ = img.shape
 
         _set_detected_faces(img)
-        faces = _get_detected_faces()
+        rects = _sort_detected_faces()
 
         vp = FBLoader.viewport()
         rectangler = vp.rectangler()
         rectangler.clear_rectangles()
-        for face in faces:
-            x1, y1 = face.xy_min
-            x2, y2 = face.xy_max
-            if x2 < x1:
-                x1, x2 = x2, x1
-            if y2 < y1:
-                y1, y2 = y2, y1
 
-            rectangler.add_rectangle(x1, y1, x2, y2, w, h, (0, 1, 0, 1))
+        if len(rects) > 1:
+            for x1, y1, x2, y2, _ in rects:
+                rectangler.add_rectangle(x1, y1, x2, y2, w, h,
+                                         Config.regular_rectangle_color)
 
-        op = get_operator(Config.fb_pickmode_idname)
-        op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
+            op = get_operator(Config.fb_pickmode_idname)
+            op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
+        elif len(rects) == 1:
+            _add_pins_to_face(self.headnum, self.camnum, 0)
+        else:
+            self.report({'ERROR', 'Cannot find face on image'})
 
         return {'FINISHED'}
