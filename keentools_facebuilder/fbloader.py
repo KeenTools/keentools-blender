@@ -104,17 +104,18 @@ class FBLoader:
         logger.debug("SAVE PINMODE STATE")
 
     @classmethod
-    def out_pinmode(cls, headnum):
-        logger = logging.getLogger(__name__)
-
-        cls.save_pinmode_state(headnum)
-
+    def stop_viewport_shaders(cls):
         vp = cls.viewport()
         vp.unregister_handlers()
-
         FBStopShaderTimer.stop()
-        logger.debug("STOPPER STOP")
+        logger = logging.getLogger(__name__)
+        logger.debug('VIEWPORT SHADERS/STOPPER HAS BEEN STOPPED')
 
+    @classmethod
+    def out_pinmode(cls, headnum):
+        logger = logging.getLogger(__name__)
+        cls.save_pinmode_state(headnum)
+        cls.stop_viewport_shaders()
         restore_ui_elements()
 
         cameras.show_all_cameras(headnum)

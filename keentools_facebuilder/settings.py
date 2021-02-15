@@ -787,10 +787,16 @@ class FBSceneSettings(PropertyGroup):
         name="Blue head button", default=True,
         update=update_blue_head_button)
 
+    def reset_pinmode_id(self):
+        self.pinmode_id = 'stop'
+
+    def wrong_pinmode_id(self):
+        return self.pinmode_id in {'', 'stop'}
+
     def get_head(self, headnum):
         if headnum < 0 and len(self.heads) + headnum >= 0:
             return self.heads[len(self.heads) + headnum]
-        if 0 <= headnum <= len(self.heads):
+        if 0 <= headnum < len(self.heads):
             return self.heads[headnum]
         else:
             return None
