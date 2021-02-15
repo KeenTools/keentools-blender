@@ -38,6 +38,8 @@ class FB_OT_PinMode(bpy.types.Operator):
     headnum: bpy.props.IntProperty(default=0)
     camnum: bpy.props.IntProperty(default=0)
 
+    pinmode_id: bpy.props.StringProperty(default='')
+
     _shift_pressed = False
     _prev_camera_state = ()
 
@@ -177,28 +179,27 @@ class FB_OT_PinMode(bpy.types.Operator):
         logger = logging.getLogger(__name__)
         args = (self, context)
         settings = get_main_settings()
-        head = settings.get_head(self.headnum)
-        headobj = head.headobj
-        first_start = True
 
-        logger.debug("PINMODE ENTER: CH{} CC{}".format(
+        logger.debug('PINMODE ENTER. CURRENT_HEAD: {} CURRENT_CAM: {}'.format(
             settings.current_headnum, settings.current_camnum))
 
         if not settings.check_heads_and_cams():
             self._fix_heads_with_warning()
             return {'CANCELLED'}
 
-        if not FBLoader.check_mesh(headobj):
-            fb = FBLoader.get_builder()
-            logger.error('MESH IS CORRUPTED {} != {}'.format(
-                len(headobj.data.vertices), len(fb.applied_args_vertices())))
-            warn = get_operator(Config.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
+        head = settings.get_head(self.headnum)
+        if not head or not head.headobj:
+            logger.error('CANNOT FIND head or headobj')
             return {'CANCELLED'}
+        headobj = head.headobj
+        first_start = True
 
         vp = FBLoader.viewport()
         # Stopped shaders means that we need to restart pinmode
         if not vp.wireframer().is_working():
+            settings.pinmode = False
+
+        if settings.wrong_pinmode_id():
             settings.pinmode = False
 
         # We have to fix last operation if we are in Pinmode
@@ -224,7 +225,16 @@ class FB_OT_PinMode(bpy.types.Operator):
         logger.debug("PINMODE START H{} C{}".format(settings.current_headnum,
                                                     settings.current_camnum))
 
+        # Start working with current model
         FBLoader.load_model(settings.current_headnum)
+
+        if not FBLoader.check_mesh(headobj):
+            fb = FBLoader.get_builder()
+            logger.error('MESH IS CORRUPTED {} != {}'.format(
+                len(headobj.data.vertices), len(fb.applied_args_vertices())))
+            warn = get_operator(Config.fb_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
+            return {'CANCELLED'}
 
         fb = FBLoader.get_builder()
         if not self._check_keyframes(fb, head):
@@ -265,9 +275,11 @@ class FB_OT_PinMode(bpy.types.Operator):
 
             context.window_manager.modal_handler_add(self)
 
-            logger.debug("STOPPER START")
-            settings.pinmode_id = str(uuid4())
-            FBStopShaderTimer.start(settings.pinmode_id)
+            logger.debug("SHADER STOPPER START")
+            self.pinmode_id = str(uuid4())
+            settings.pinmode_id = self.pinmode_id
+            FBStopShaderTimer.start(self.pinmode_id)
+            logger.debug('pinmode_id: {}'.format(self.pinmode_id))
         else:
             logger.debug("SHADER UPDATE ONLY")
             self._init_wireframer_colors(settings.overall_opacity)
@@ -342,6 +354,11 @@ class FB_OT_PinMode(bpy.types.Operator):
     def modal(self, context, event):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
+
+        if self.pinmode_id != settings.pinmode_id:
+            logger.error('Extreme pinmode operator stop')
+            logger.error('{} != {}'.format(self.pinmode_id, settings.pinmode_id))
+            return {'FINISHED'}
 
         headnum = settings.current_headnum
         head = settings.get_head(headnum)
