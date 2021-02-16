@@ -30,10 +30,12 @@ _DETECTED_FACES = None
 
 def _get_np_image(headnum, camnum):
     settings = get_main_settings()
-    head = settings.get_head(headnum)
-    camera = head.get_camera(camnum)
-
+    camera = settings.get_camera(headnum, camnum)
+    if camera is None:
+        return None
     image = camera.cam_image
+    if not image:
+        return None
     w, h = image.size[:2]
     return np.asarray(image.pixels[:]).reshape((h, w, 4))
 
@@ -43,10 +45,21 @@ def _get_detected_faces():
     return _DETECTED_FACES
 
 
-def _set_detected_faces(img):
+def _set_detected_faces(headnum, camnum):
     global _DETECTED_FACES
+    settings = get_main_settings()
+    head = settings.get_head(headnum)
+    if head is None:
+        return None
+    img = _get_np_image(headnum, camnum)
+    if img is None:
+        return None
+
+    FBLoader.load_model(headnum)
     fb = FBLoader.get_builder()
+    fb.set_use_emotions(head.use_emotions)
     _DETECTED_FACES = fb.detect_faces(img)
+    return img
 
 
 def _get_detected_faces_rectangles():
@@ -212,10 +225,12 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
             self.report({'INFO'}, 'Not in pinmode')
             return {'FINISHED'}
 
-        img = _get_np_image(self.headnum, self.camnum)
-        h, w, _ = img.shape
+        img = _set_detected_faces(self.headnum, self.camnum)
+        if img is None:
+            self.report({'ERROR'}, 'Cannot use camera image')
+            return {'CANCELLED'}
 
-        _set_detected_faces(img)
+        h, w, _ = img.shape
         rects = _sort_detected_faces()
 
         vp = FBLoader.viewport()
