@@ -25,6 +25,7 @@ from .config import Config, get_main_settings, get_operator
 from .fbloader import FBLoader
 from .utils import coords
 from .utils.focal_length import auto_focal_configuration_and_update
+from .utils.manipulate import push_neutral_head_in_undo_history
 
 
 _DETECTED_FACES = None
@@ -116,6 +117,7 @@ def _add_pins_to_face(headnum, camnum, rectangle_index):
             fb.detect_face_pose(kid, faces[rectangle_index])
 
     FBLoader.save_only(headnum)
+    push_neutral_head_in_undo_history(head, kid, 'Add auto-pins')
 
     FBLoader.fb_redraw(headnum, camnum)
     FBLoader.update_pins_count(headnum, camnum)
@@ -127,7 +129,7 @@ class FB_OT_PickMode(bpy.types.Operator):
     bl_idname = Config.fb_pickmode_idname
     bl_label = 'FaceBuilder Pick Face mode'
     bl_description = 'Operator for in-Viewport picking'
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: bpy.props.IntProperty(default=0)
     camnum: bpy.props.IntProperty(default=0)
@@ -227,7 +229,7 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
     bl_idname = Config.fb_pickmode_starter_idname
     bl_label = 'FaceBuilder Pick Face mode starter'
     bl_description = 'Operator for in-Viewport picking'
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: bpy.props.IntProperty(default=0)
     camnum: bpy.props.IntProperty(default=0)
