@@ -92,6 +92,7 @@ class Config:
     fb_pinmode_idname = operators + '.pinmode'
     fb_movepin_idname = operators + '.movepin'
     fb_pickmode_idname = operators + '.pickmode'
+    fb_pickmode_starter_idname = operators + '.pickmode_starter'
     fb_history_actor_idname = operators + '.history_actor'
     fb_camera_actor_idname = operators + '.camera_actor'
 
@@ -218,6 +219,9 @@ class Config:
     current_pin_color = (1.0, 0.0, 1.0, 1.0)
     surface_point_color = (0.0, 1.0, 1.0, 0.5)
     residual_color = (0.0, 1.0, 1.0, 0.5)
+
+    selected_rectangle_color = (1.0, 0.0, 0.0, 1.0)
+    regular_rectangle_color = (0.0, 1.0, 0.0, 1.0)
 
 
 def is_blender_supported():

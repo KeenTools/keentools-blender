@@ -23,6 +23,7 @@ import numpy as np
 
 from .config import Config, get_main_settings
 from .utils.coords import xy_to_xz_rotation_matrix_3x3
+from .utils.focal_length import auto_focal_configuration_and_update
 from .utils import attrs, coords, cameras
 from .utils.exif_reader import update_image_groups, reload_all_camera_exif
 from .utils.other import FBStopShaderTimer, restore_ui_elements
@@ -418,19 +419,6 @@ class FBLoader:
         vp.pins().reset_current_pin()
 
     @classmethod
-    def get_keyframe_focal(cls, keyframe_id):
-        fb = cls.get_builder()
-        proj_mat = fb.projection_mat(keyframe_id)
-        focal = coords.focal_by_projection_matrix_mm(
-            proj_mat, Config.default_sensor_width)
-
-        # Fix for Vertical camera (because Blender has Auto in sensor)
-        rx, ry = coords.render_frame()
-        if ry > rx:
-            focal = focal * rx / ry
-        return focal
-
-    @classmethod
     def solve(cls, headnum, camnum):
         def _exception_handling(headnum, msg, license_err=True):
             logger = logging.getLogger(__name__)
@@ -439,59 +427,6 @@ class FBLoader:
                 settings.force_out_pinmode = True
                 settings.license_error = license_err
                 cls.out_pinmode(headnum)
-
-        def _unfix_all(fb, head):
-            for cam in head.cameras:
-                fb.set_focal_length_fixed_at(cam.get_keyframe(), False)
-
-        def _fix_all_except_this(fb, head, exclude_kid):
-            for cam in head.cameras:
-                fb.set_focal_length_fixed_at(cam.get_keyframe(),
-                                             cam.get_keyframe() != exclude_kid)
-
-        def _unfix_not_in_groups(fb, head):
-            for cam in head.cameras:
-                fb.set_focal_length_fixed_at(
-                    cam.get_keyframe(),
-                    cam.is_in_group()
-                    or not cam.auto_focal_estimation)
-
-        def _auto_focal_estimation_mode_and_fixes():
-            if head.smart_mode():
-                if camera.auto_focal_estimation:
-                    if camera.is_in_group():
-                        proj_mat = camera.get_projection_matrix()
-                        fb.set_static_focal_length_estimation(coords.focal_by_projection_matrix_px(proj_mat))
-                    else:  # image_group in (-1, 0)
-                        fb.set_varying_focal_length_estimation()
-                        for cam in head.cameras:
-                            fb.set_focal_length_fixed_at(
-                                cam.get_keyframe(),
-                                cam.image_group > 0
-                                or not cam.auto_focal_estimation)
-                else:
-                    fb.set_varying_focal_length_estimation()
-                    _unfix_not_in_groups(fb, head)
-            else:  # Override all
-                if head.manual_estimation_mode == 'all_different':
-                    fb.set_varying_focal_length_estimation()
-                    _unfix_all(fb, head)
-                elif head.manual_estimation_mode == 'current_estimation':
-                    fb.set_varying_focal_length_estimation()
-                    _fix_all_except_this(fb, head, kid)
-                elif head.manual_estimation_mode == 'same_focus':
-                    proj_mat = camera.get_projection_matrix()
-                    fb.set_static_focal_length_estimation(coords.focal_by_projection_matrix_px(proj_mat))
-                elif head.manual_estimation_mode == 'force_focal':
-                    fb.disable_focal_length_estimation()
-                else:
-                    assert False, 'Unknown mode: {}'.format(
-                        head.manual_estimation_mode)
-
-        def _update_camera_focal_post():
-            focal = cls.get_keyframe_focal(kid)
-            camera.camobj.data.lens = focal
-            camera.focal = focal
 
         settings = get_main_settings()
         head = settings.get_head(headnum)
@@ -502,24 +437,23 @@ class FBLoader:
         cls.rigidity_setup()
         fb.set_use_emotions(head.should_use_emotions())
 
-        _auto_focal_estimation_mode_and_fixes()
-
-        try:
-            fb.solve_for_current_pins(kid)
-        except pkt_module().UnlicensedException:
-            _exception_handling(headnum, 'SOLVE LICENSE EXCEPTION')
-            return False
-        except pkt_module().InvalidArgumentException:
-            _exception_handling(headnum, 'SOLVE NO KEYFRAME EXCEPTION',
-                                license_err=False)
-            return False
-        except Exception as err:
-            _exception_handling(headnum,
-                                'SOLVE UNKNOWN EXCEPTION: {}'.format(str(err)),
-                                license_err=False)
-            return False
-
-        _update_camera_focal_post()
+        with auto_focal_configuration_and_update(fb, headnum, camnum):
+            try:
+                fb.solve_for_current_pins(kid)
+            except pkt_module().UnlicensedException:
+                _exception_handling(headnum, 'SOLVE LICENSE EXCEPTION')
+                return False
+            except pkt_module().InvalidArgumentException:
+                _exception_handling(headnum, 'SOLVE NO KEYFRAME EXCEPTION',
+                                    license_err=False)
+                return False
+            except Exception as err:
+                _exception_handling(
+                    headnum,
+                    'SOLVE UNKNOWN EXCEPTION: {}'.format(str(err)),
+                    license_err=False
+                )
+                return False
         return True
 
     @classmethod

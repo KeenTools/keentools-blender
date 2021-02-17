@@ -392,6 +392,15 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         box = layout.box()
         box.prop(settings.get_head(headnum), 'use_emotions')
 
+        if settings.pinmode:
+            row = box.row()
+            row.scale_y = 2.0
+            op = row.operator(
+                Config.fb_pickmode_starter_idname,
+                text='Detect face(s)', icon='USER')
+            op.headnum = settings.current_headnum
+            op.camnum = settings.current_camnum
+
         box = layout.box()
         for i, camera in enumerate(head.cameras):
             row = box.row()
@@ -422,6 +431,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
                 text='', icon='COLLAPSEMENU')
             op.headnum = headnum
             op.camnum = i
+
 
     def _draw_camera_hint(self, layout, headnum):
         settings = get_main_settings()

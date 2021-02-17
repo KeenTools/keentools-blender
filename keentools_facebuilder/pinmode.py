@@ -25,6 +25,7 @@ import bpy
 from .utils import manipulate, coords, cameras
 from .config import Config, get_main_settings, get_operator, ErrorType
 from .fbloader import FBLoader
+from .utils.focal_length import update_camera_focal
 from .utils.other import FBStopShaderTimer, force_ui_redraw, hide_ui_elements
 
 
@@ -255,9 +256,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.load_pins(settings.current_headnum, settings.current_camnum)
         coords.update_head_mesh(settings, FBLoader.get_builder(), head)
 
-        focal = FBLoader.get_keyframe_focal(kid)
-        camera.camobj.data.lens = focal
-        camera.focal = focal
+        update_camera_focal(camera, fb)
 
         # Hide geometry
         headobj.hide_set(True)
