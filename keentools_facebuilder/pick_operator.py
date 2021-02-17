@@ -59,7 +59,8 @@ def _set_detected_faces(headnum, camnum):
 
     FBLoader.load_model(headnum)
     fb = FBLoader.get_builder()
-    fb.set_use_emotions(head.use_emotions)
+
+    fb.set_use_emotions(head.should_use_emotions())
     _DETECTED_FACES = fb.detect_faces(img)
     return img
 
@@ -100,7 +101,7 @@ def _new_preset_pins(fb, kid):
     logger.debug('auto_pins_added kid: {}'.format(kid))
 
 
-def _add_pins_to_face(headnum, camnum, index):
+def _add_pins_to_face(headnum, camnum, rectangle_index):
     fb = FBLoader.get_builder()
     faces = _get_detected_faces()
 
@@ -112,7 +113,7 @@ def _add_pins_to_face(headnum, camnum, index):
 
     with _new_preset_pins(fb, kid):
         with auto_focal_configuration_and_update(fb, headnum, camnum):
-            fb.detect_face_pose(kid, faces[index])
+            fb.detect_face_pose(kid, faces[rectangle_index])
 
     FBLoader.save_only(headnum)
 
@@ -192,7 +193,6 @@ class FB_OT_PickMode(bpy.types.Operator):
             mouse_x, mouse_y = coords.get_image_space_coord(
                 event.mouse_region_x, event.mouse_region_y, context)
             index = rectangler.active_rectangle_index(mouse_x, mouse_y)
-            logger.debug('active_rectangle_index: {}'.format(index))
             rectangler.highlight_rectangle(index,
                                            Config.selected_rectangle_color)
             self._update_rectangler_shader(context)
@@ -206,13 +206,16 @@ class FB_OT_PickMode(bpy.types.Operator):
             return {'FINISHED'}
 
         if event.value == 'PRESS' and event.type in {'LEFTMOUSE', 'RIGHTMOUSE'}:
-            message = 'Rectangle selected'
-            self.report({'INFO'}, message)
-            logger.debug(message)
-
             index = self._selected_rectangle(context, event)
             if index >= 0:
+                message = 'Face rectangle has been selected'
+                self.report({'INFO'}, message)
+                logger.debug(message)
                 _add_pins_to_face(self.headnum, self.camnum, index)
+            else:
+                message = 'No face rectangle has been selected'
+                self.report({'INFO'}, message)
+                logger.debug(message)
 
             self._before_operator_stop(context)
             return {'FINISHED'}
@@ -235,12 +238,16 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
 
         settings = get_main_settings()
         if not settings.pinmode:
-            self.report({'INFO'}, 'Not in pinmode')
+            message = 'Not in pinmode call'
+            self.report({'ERROR'}, message)
+            logger.error(message)
             return {'FINISHED'}
 
         img = _set_detected_faces(self.headnum, self.camnum)
         if img is None:
-            self.report({'ERROR'}, 'Cannot use camera image')
+            message = 'Cannot use camera image'
+            self.report({'ERROR'}, message)
+            logger.error(message)
             return {'CANCELLED'}
 
         h, w, _ = img.shape
@@ -254,12 +261,16 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
             for x1, y1, x2, y2, _ in rects:
                 rectangler.add_rectangle(x1, y1, x2, y2, w, h,
                                          Config.regular_rectangle_color)
-
             op = get_operator(Config.fb_pickmode_idname)
             op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
         elif len(rects) == 1:
-            _add_pins_to_face(self.headnum, self.camnum, 0)
+            _add_pins_to_face(self.headnum, self.camnum, rectangle_index=0)
+            message = 'The only face pins have been added'
+            self.report({'INFO'}, message)
+            logger.debug(message)
         else:
-            self.report({'ERROR'}, 'Cannot find face on image')
+            message = 'Cannot find face on image'
+            self.report({'ERROR'}, message)
+            logger.error(message)
 
         return {'FINISHED'}
