@@ -69,7 +69,7 @@ def configure_focal_mode_and_fixes(fb, head, camera):
             _unfix_all(fb, head)
         elif head.manual_estimation_mode == 'current_estimation':
             fb.set_varying_focal_length_estimation()
-            _fix_all_except_this(fb, head, kid)
+            _fix_all_except_this(fb, head, camera.get_keyframe())
         elif head.manual_estimation_mode == 'same_focus':
             proj_mat = camera.get_projection_matrix()
             fb.set_static_focal_length_estimation(coords.focal_by_projection_matrix_px(proj_mat))
