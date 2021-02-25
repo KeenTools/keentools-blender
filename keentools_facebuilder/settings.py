@@ -369,6 +369,15 @@ class FBCameraItem(PropertyGroup):
     def is_excluded(self):
         return self.image_group == -1
 
+    def np_image(self):
+        w, h = self.get_image_size()
+        if w < 0:
+            return None
+        img = np.rot90(
+            np.asarray(self.cam_image.pixels[:]).reshape((h, w, 4)),
+            self.orientation)
+        return img
+
 
 def uv_items_callback(self, context):
     fb = FBLoader.get_builder()
