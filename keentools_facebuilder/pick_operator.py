@@ -19,7 +19,7 @@
 import logging
 import bpy
 
-from .config import Config, get_main_settings, get_operator
+from .config import Config, ErrorType, get_main_settings, get_operator
 from .fbloader import FBLoader
 from .utils import coords
 from .utils.focal_length import auto_focal_configuration_and_update
@@ -116,13 +116,25 @@ def _add_pins_to_face(headnum, camnum, rectangle_index):
     FBLoader.update_all_camera_focals(headnum)
 
     FBLoader.save_only(headnum)
-    push_neutral_head_in_undo_history(head, kid, 'Add auto-pins')
+    history_name = 'Add face auto-pins' if result_flag else 'No auto-pins'
+    push_neutral_head_in_undo_history(head, kid, history_name)
+    return result_flag
+
+
+def _not_enough_face_features_warning():
+    error_message = 'Sorry, could not find enough facial features \n' \
+                    'to pin the model! Please, try another picture.'
+    warn = get_operator(Config.fb_warning_idname)
+    warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+         msg_content=error_message)
+    logger = logging.getLogger(__name__)
+    logger.error('could not find enough facial features')
 
 
 class FB_OT_PickMode(bpy.types.Operator):
     bl_idname = Config.fb_pickmode_idname
     bl_label = 'FaceBuilder Pick Face mode'
-    bl_description = 'Operator for in-Viewport picking'
+    bl_description = 'Modal Operator for Pick Face mode'
     bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: bpy.props.IntProperty(default=0)
@@ -178,6 +190,10 @@ class FB_OT_PickMode(bpy.types.Operator):
         rectangler = vp.rectangler()
 
         if event.type == 'WINDOW_DEACTIVATE':
+            message = 'Face detection was aborted by context changing'
+            self.report({'INFO'}, message)
+            logger.debug(message)
+
             self._before_operator_stop(context)
             return {'FINISHED'}
 
@@ -194,7 +210,7 @@ class FB_OT_PickMode(bpy.types.Operator):
             self._update_rectangler_shader(context)
 
         if event.type == 'ESC':
-            message = 'Operator stopped by ESC'
+            message = 'Face detection was aborted with Esc'
             self.report({'INFO'}, message)
             logger.debug(message)
 
@@ -204,12 +220,13 @@ class FB_OT_PickMode(bpy.types.Operator):
         if event.value == 'PRESS' and event.type in {'LEFTMOUSE', 'RIGHTMOUSE'}:
             index = self._selected_rectangle(context, event)
             if index >= 0:
-                message = 'Face rectangle has been selected'
+                message = 'A face was chosen'
                 self.report({'INFO'}, message)
                 logger.debug(message)
-                _add_pins_to_face(self.headnum, self.camnum, index)
+                if not _add_pins_to_face(self.headnum, self.camnum, index):
+                    _not_enough_face_features_warning()
             else:
-                message = 'No face rectangle has been selected'
+                message = 'Face selection was aborted'
                 self.report({'INFO'}, message)
                 logger.debug(message)
 
@@ -222,7 +239,8 @@ class FB_OT_PickMode(bpy.types.Operator):
 class FB_OT_PickModeStarter(bpy.types.Operator):
     bl_idname = Config.fb_pickmode_starter_idname
     bl_label = 'FaceBuilder Pick Face mode starter'
-    bl_description = 'Operator for in-Viewport picking'
+    bl_description = 'Detect a face on the photo ' \
+                     'and pin the model to the selected face'
     bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: bpy.props.IntProperty(default=0)
@@ -244,7 +262,7 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
 
         img = init_detected_faces(fb, self.headnum, self.camnum)
         if img is None:
-            message = 'Cannot use camera image'
+            message = 'Face detection failed because of a corrupted image'
             self.report({'ERROR'}, message)
             logger.error(message)
             return {'CANCELLED'}
@@ -263,12 +281,14 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
             op = get_operator(Config.fb_pickmode_idname)
             op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
         elif len(rects) == 1:
-            _add_pins_to_face(self.headnum, self.camnum, rectangle_index=0)
-            message = 'The only face pins have been added'
+            message = 'A face was detected and pinned'
             self.report({'INFO'}, message)
             logger.debug(message)
+            if not _add_pins_to_face(self.headnum, self.camnum,
+                                     rectangle_index=0):
+                _not_enough_face_features_warning()
         else:
-            message = 'Cannot find face on image'
+            message = 'Could not detect a face'
             self.report({'ERROR'}, message)
             logger.error(message)
 
