@@ -123,7 +123,7 @@ def _add_pins_to_face(headnum, camnum, rectangle_index):
 
 def _not_enough_face_features_warning():
     error_message = 'Sorry, could not find enough facial features \n' \
-                    'to pin the model! Please, try another picture.'
+                    'to pin the model! Please try pinning the model manually.'
     warn = get_operator(Config.fb_warning_idname)
     warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
          msg_content=error_message)
