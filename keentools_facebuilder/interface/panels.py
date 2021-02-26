@@ -397,7 +397,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             row.scale_y = 2.0
             op = row.operator(
                 Config.fb_pickmode_starter_idname,
-                text='Detect face(s)', icon='USER')
+                text='Detect face', icon='USER')
             op.headnum = settings.current_headnum
             op.camnum = settings.current_camnum
 

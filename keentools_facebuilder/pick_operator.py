@@ -123,7 +123,7 @@ def _add_pins_to_face(headnum, camnum, rectangle_index):
 
 def _not_enough_face_features_warning():
     error_message = 'Sorry, could not find enough facial features \n' \
-                    'to pin the model! Please, try another picture.'
+                    'to pin the model! Please try pinning the model manually.'
     warn = get_operator(Config.fb_warning_idname)
     warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
          msg_content=error_message)
@@ -220,11 +220,14 @@ class FB_OT_PickMode(bpy.types.Operator):
         if event.value == 'PRESS' and event.type in {'LEFTMOUSE', 'RIGHTMOUSE'}:
             index = self._selected_rectangle(context, event)
             if index >= 0:
-                message = 'A face was chosen'
-                self.report({'INFO'}, message)
-                logger.debug(message)
                 if not _add_pins_to_face(self.headnum, self.camnum, index):
+                    message = 'A face was chosen but not pinned'
+                    logger.debug(message)
                     _not_enough_face_features_warning()
+                else:
+                    message = 'A face was chosen and pinned'
+                    self.report({'INFO'}, message)
+                    logger.debug(message)
             else:
                 message = 'Face selection was aborted'
                 self.report({'INFO'}, message)
@@ -281,12 +284,15 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
             op = get_operator(Config.fb_pickmode_idname)
             op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
         elif len(rects) == 1:
-            message = 'A face was detected and pinned'
-            self.report({'INFO'}, message)
-            logger.debug(message)
             if not _add_pins_to_face(self.headnum, self.camnum,
                                      rectangle_index=0):
+                message = 'A face was detected but not pinned'
+                logger.debug(message)
                 _not_enough_face_features_warning()
+            else:
+                message = 'A face was detected and pinned'
+                self.report({'INFO'}, message)
+                logger.debug(message)
         else:
             message = 'Could not detect a face'
             self.report({'ERROR'}, message)
