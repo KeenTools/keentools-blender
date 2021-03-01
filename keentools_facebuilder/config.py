@@ -28,7 +28,7 @@ class Config:
     # Version dependent
     addon_version = '2021.1.0'
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
-                                  (2, 90), (2.91))
+                                  (2, 90), (2, 91), (2, 92))
     minimal_blender_api = (2, 80, 60)
 
     # Version independent
@@ -220,8 +220,8 @@ class Config:
     surface_point_color = (0.0, 1.0, 1.0, 0.5)
     residual_color = (0.0, 1.0, 1.0, 0.5)
 
-    selected_rectangle_color = (1.0, 0.0, 0.0, 1.0)
-    regular_rectangle_color = (0.0, 1.0, 0.0, 1.0)
+    selected_rectangle_color = (0.871, 0.107, 0.001, 1.0)
+    regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
 
 
 def is_blender_supported():
