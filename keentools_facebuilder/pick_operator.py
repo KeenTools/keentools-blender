@@ -34,7 +34,7 @@ def _reset_detected_faces():
     _DETECTED_FACES = []
 
 
-def _get_detected_faces():
+def get_detected_faces():
     global _DETECTED_FACES
     return _DETECTED_FACES
 
@@ -47,7 +47,7 @@ def _set_detected_faces(faces_info):
 
 
 def _get_detected_faces_rectangles():
-    faces = _get_detected_faces()
+    faces = get_detected_faces()
     logger = logging.getLogger(__name__)
     logger.debug('_get_detected_faces: {}'.format(faces))
     rects = []
@@ -81,7 +81,7 @@ def init_detected_faces(fb, headnum, camnum):
 
 
 def sort_detected_faces():
-    faces = _get_detected_faces()
+    faces = get_detected_faces()
     rects = _get_detected_faces_rectangles()
     logger = logging.getLogger(__name__)
     logger.debug('RECTS BEFORE: {}'.format(rects))
@@ -94,7 +94,7 @@ def sort_detected_faces():
 def _add_pins_to_face(headnum, camnum, rectangle_index):
     logger = logging.getLogger(__name__)
     fb = FBLoader.get_builder()
-    faces = _get_detected_faces()
+    faces = get_detected_faces()
 
     settings = get_main_settings()
     head = settings.get_head(headnum)
