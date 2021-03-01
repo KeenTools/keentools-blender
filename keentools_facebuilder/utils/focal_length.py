@@ -47,29 +47,24 @@ def _unfix_not_in_groups(fb, head):
             or not cam.auto_focal_estimation)
 
 
+def _fix_all_except_given_img_group(fb, head, img_group):
+    for cam in head.cameras:
+        fb.set_focal_length_fixed_at(
+            cam.get_keyframe(),
+            cam.image_group != img_group or not cam.auto_focal_estimation)
+
+
 def configure_focal_mode_and_fixes(fb, head, camera):
     if head.smart_mode():
-        if camera.auto_focal_estimation:
-            if camera.is_in_group():
-                proj_mat = camera.get_projection_matrix()
-                fb.set_static_focal_length_estimation(coords.focal_by_projection_matrix_px(proj_mat))
-            else:  # image_group in (-1, 0)
-                fb.set_varying_focal_length_estimation()
-                for cam in head.cameras:
-                    fb.set_focal_length_fixed_at(
-                        cam.get_keyframe(),
-                        cam.image_group > 0
-                        or not cam.auto_focal_estimation)
-        else:
             fb.set_varying_focal_length_estimation()
-            _unfix_not_in_groups(fb, head)
+            _fix_all_except_given_img_group(fb, head, camera.image_group)
     else:  # Override all
         if head.manual_estimation_mode == 'all_different':
             fb.set_varying_focal_length_estimation()
             _unfix_all(fb, head)
         elif head.manual_estimation_mode == 'current_estimation':
             fb.set_varying_focal_length_estimation()
-            _fix_all_except_this(fb, head, kid)
+            _fix_all_except_this(fb, head, camera.get_keyframe())
         elif head.manual_estimation_mode == 'same_focus':
             proj_mat = camera.get_projection_matrix()
             fb.set_static_focal_length_estimation(coords.focal_by_projection_matrix_px(proj_mat))
