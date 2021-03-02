@@ -29,7 +29,7 @@ from .utils.manipulate import push_neutral_head_in_undo_history
 _DETECTED_FACES = []
 
 
-def _reset_detected_faces():
+def reset_detected_faces():
     global _DETECTED_FACES
     _DETECTED_FACES = []
 
@@ -249,19 +249,18 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
     headnum: bpy.props.IntProperty(default=0)
     camnum: bpy.props.IntProperty(default=0)
 
-    def invoke(self, context, event):
+    def _action(self, context, event, invoked=True):
         logger = logging.getLogger(__name__)
-        logger.debug('PickModeStarter call')
-
-        settings = get_main_settings()
-        if not settings.pinmode:
-            message = 'Not in pinmode call'
-            self.report({'ERROR'}, message)
-            logger.error(message)
-            return {'FINISHED'}
+        logger.debug('PickModeStarter action call')
 
         FBLoader.load_model(self.headnum)
         fb = FBLoader.get_builder()
+
+        if not fb.is_face_detector_available():
+            message = 'Face detector is not available'
+            self.report({'ERROR'}, message)
+            logger.error(message)
+            return {'CANCELLED'}
 
         img = init_detected_faces(fb, self.headnum, self.camnum)
         if img is None:
@@ -281,8 +280,9 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
             for x1, y1, x2, y2, _ in rects:
                 rectangler.add_rectangle(x1, y1, x2, y2, w, h,
                                          Config.regular_rectangle_color)
-            op = get_operator(Config.fb_pickmode_idname)
-            op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
+            if invoked:
+                op = get_operator(Config.fb_pickmode_idname)
+                op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
         elif len(rects) == 1:
             if not _add_pins_to_face(self.headnum, self.camnum,
                                      rectangle_index=0):
@@ -299,3 +299,19 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
             logger.error(message)
 
         return {'FINISHED'}
+
+    def invoke(self, context, event):
+        logger = logging.getLogger(__name__)
+        logger.debug('PickModeStarter invoke call')
+        settings = get_main_settings()
+        if not settings.pinmode:
+            message = 'Not in pinmode call'
+            self.report({'ERROR'}, message)
+            logger.error(message)
+            return {'CANCELLED'}
+        return self._action(context, event, invoked=True)
+
+    def execute(self, context):  # Used only for integration testing
+        logger = logging.getLogger(__name__)
+        logger.debug('PickModeStarter execute call')
+        return self._action(context, event=None, invoked=False)

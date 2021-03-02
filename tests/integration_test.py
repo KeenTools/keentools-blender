@@ -18,6 +18,19 @@ import test_utils
 from keentools_facebuilder.settings import model_type_callback, uv_items_callback
 from keentools_facebuilder.utils import coords, materials
 from keentools_facebuilder.config import Config, get_main_settings, get_operator
+from keentools_facebuilder.fbloader import FBLoader
+from keentools_facebuilder.pick_operator import reset_detected_faces, get_detected_faces
+
+
+class TestConfig:
+    facs_blendshapes_count = 51
+    fb_mask_count = 8
+    skip_heavy_tests_flag = False
+    heavy_tests = ('test_uv_switch', 'test_models_and_parts')
+
+    @classmethod
+    def skip_this_test(cls, name):
+        return cls.skip_heavy_tests_flag and name in cls.heavy_tests
 
 
 class DataHolder:
@@ -50,7 +63,7 @@ class FaceBuilderTest(unittest.TestCase):
         for filepath in files:
             test_utils.create_camera(headnum, filepath)
         # Cameras counter
-        self.assertEqual(3, len(settings.get_head(headnum).cameras))
+        self.assertEqual(len(files), len(settings.get_head(headnum).cameras))
 
     def _head_cams_and_pins(self):
         self._head_and_cameras()
@@ -84,12 +97,13 @@ class FaceBuilderTest(unittest.TestCase):
         self._head_and_cameras()
         settings = get_main_settings()
         headnum = settings.get_last_headnum()
-        test_utils.create_empty_camera(headnum)
-        self.assertEqual(4, len(settings.get_head(headnum).cameras))
+
+        filenames = DataHolder.get_image_file_names()
+        self.assertEqual(len(filenames), len(settings.get_head(headnum).cameras))
         test_utils.delete_camera(headnum, 2)
-        self.assertEqual(3, len(settings.get_head(headnum).cameras))
+        self.assertEqual(len(filenames) - 1, len(settings.get_head(headnum).cameras))
         test_utils.delete_camera(headnum, 2)
-        self.assertEqual(2, len(settings.get_head(headnum).cameras))
+        self.assertEqual(len(filenames) - 2, len(settings.get_head(headnum).cameras))
 
     def test_move_pins(self):
         test_utils.new_scene()
@@ -106,6 +120,7 @@ class FaceBuilderTest(unittest.TestCase):
         self._head_and_cameras()
         settings = get_main_settings()
         headnum = settings.get_last_headnum()
+        head1 = settings.get_head(headnum)
         test_utils.deselect_all()
         test_utils.select_camera(headnum, 0)
         test_utils.out_pinmode()
@@ -119,11 +134,10 @@ class FaceBuilderTest(unittest.TestCase):
         op = get_operator(Config.fb_reconstruct_head_idname)
         op('EXEC_DEFAULT')
         headnum2 = settings.get_last_headnum()
-        head_new = settings.get_head(headnum2)
+        head2 = settings.get_head(headnum2)
         # Two heads in scene
-        self.assertEqual(1, settings.get_last_headnum())
-        # Three cameras created
-        self.assertEqual(2, head_new.get_last_camnum())
+        self.assertEqual(2, len(settings.heads))
+        self.assertEqual(len(head1.cameras), len(head2.cameras))
 
     def test_change_camera_params(self):
         test_utils.new_scene()
@@ -176,6 +190,8 @@ class FaceBuilderTest(unittest.TestCase):
         self.assertTrue(tex_name is not None)
 
     def test_models_and_parts(self):
+        if TestConfig.skip_this_test('test_models_and_parts'):
+            return
         def _check_models(head):
             previous_polycount = 1.0e+6
             for level_of_detail in _get_models():
@@ -194,7 +210,7 @@ class FaceBuilderTest(unittest.TestCase):
                 head.masks[i] = False
                 poly_count = len(head.headobj.data.polygons)
                 logger.debug('Poly_count mask {}: {}'.format(i, poly_count))
-                if i < FB_MASKS_COUNT:
+                if i < TestConfig.fb_mask_count:
                     self.assertTrue(max_poly_count > poly_count)
                 else:
                     self.assertTrue(max_poly_count == poly_count)
@@ -211,10 +227,9 @@ class FaceBuilderTest(unittest.TestCase):
 
         _check_models(head)
 
-        FB_MASKS_COUNT = 8
         for level_of_detail in _get_models():
             head.model_type = level_of_detail
-            _check_masks(head, FB_MASKS_COUNT)
+            _check_masks(head, TestConfig.fb_mask_count)
 
     def test_create_blendshapes_and_animation(self):
         test_utils.new_scene()
@@ -227,7 +242,8 @@ class FaceBuilderTest(unittest.TestCase):
         test_utils.create_blendshapes()
         self.assertTrue(headobj.data.shape_keys is not None)
         blendshapes = headobj.data.shape_keys.key_blocks
-        self.assertEqual(len(blendshapes), 52)  # 51 FACS + Basic
+        self.assertEqual(len(blendshapes),
+                         TestConfig.facs_blendshapes_count + 1)  # FACS + Basic
 
         test_utils.create_example_animation()
         self.assertTrue(headobj.data.shape_keys and
@@ -238,6 +254,8 @@ class FaceBuilderTest(unittest.TestCase):
         self.assertTrue(headobj.data.shape_keys is None)
 
     def test_uv_switch(self):
+        if TestConfig.skip_this_test('test_uv_switch'):
+            return
         def _get_uv_names():
             return [x[0] for x in uv_items_callback(None, None)]
         def _get_uvs_in_np_array(obj):
@@ -265,12 +283,37 @@ class FaceBuilderTest(unittest.TestCase):
                     self.assertFalse(np.array_equal(np_uvs, member))
                 previous.append(np_uvs)
 
+    def test_detect_faces(self):
+        test_utils.new_scene()
+        self._head_and_cameras()
+        fb = FBLoader.get_builder()
+        self.assertTrue(fb.is_face_detector_available())
+        settings = get_main_settings()
+        headnum = settings.get_last_headnum()
+        head = settings.get_head(headnum)
+        camnum = head.get_last_camnum()
+
+        test_utils.select_camera(headnum, camnum - 1)
+        reset_detected_faces()
+        test_utils.pickmode_start(headnum=headnum, camnum=camnum - 1)
+        faces = get_detected_faces()
+        self.assertEqual(1, len(faces))
+
+        test_utils.select_camera(headnum, camnum)
+        reset_detected_faces()
+        test_utils.pickmode_start(headnum=headnum, camnum=camnum)
+        faces = get_detected_faces()
+        self.assertEqual(3, len(faces))
+        test_utils.out_pinmode()
+
 
 def prepare_test_environment():
     test_utils.clear_test_dir()
     test_utils.create_test_dir()
     images = test_utils.create_test_images()
-    DataHolder.set_image_file_names([image.filepath for image in images])
+    render_images = test_utils.create_head_images()
+    DataHolder.set_image_file_names([image.filepath for image
+                                     in images] + render_images)
 
 
 if __name__ == "__main__":
