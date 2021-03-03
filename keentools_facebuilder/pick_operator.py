@@ -200,7 +200,7 @@ class FB_OT_PickMode(bpy.types.Operator):
         else:
             message = '_add_pins_to_face success'
             self.report({'INFO'}, message)
-            logger.error(message)
+            logger.debug(message)
 
         return {'FINISHED'}
 
