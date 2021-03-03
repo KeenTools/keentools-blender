@@ -189,6 +189,11 @@ def pickmode_start(headnum, camnum):
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
 
 
+def pickmode_select(headnum, camnum, selected):
+    op = get_operator(Config.fb_pickmode_idname)
+    op('EXEC_DEFAULT', headnum=headnum, camnum=camnum, selected=selected)
+
+
 def create_head_images():
     logger = logging.getLogger(__name__)
     new_scene()

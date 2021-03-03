@@ -25,6 +25,7 @@ from keentools_facebuilder.pick_operator import reset_detected_faces, get_detect
 class TestConfig:
     facs_blendshapes_count = 51
     fb_mask_count = 8
+    faces_on_test_render = 3
     skip_heavy_tests_flag = False
     heavy_tests = ('test_uv_switch', 'test_models_and_parts')
 
@@ -303,7 +304,10 @@ class FaceBuilderTest(unittest.TestCase):
         reset_detected_faces()
         test_utils.pickmode_start(headnum=headnum, camnum=camnum)
         faces = get_detected_faces()
-        self.assertEqual(3, len(faces))
+        self.assertEqual(TestConfig.faces_on_test_render, len(faces))
+        for i in range(len(faces)):
+            test_utils.pickmode_select(headnum=headnum, camnum=camnum,
+                                       selected=i)
         test_utils.out_pinmode()
 
 
