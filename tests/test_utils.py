@@ -4,6 +4,7 @@ import shutil
 import logging
 import numpy as np
 import random
+import math
 
 import bpy
 import keentools_facebuilder
@@ -181,3 +182,59 @@ def delete_blendshapes():
 def create_example_animation():
     op = get_operator(Config.fb_create_example_animation_idname)
     op('EXEC_DEFAULT')
+
+
+def pickmode_start(headnum, camnum):
+    op = get_operator(Config.fb_pickmode_starter_idname)
+    op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
+
+
+def pickmode_select(headnum, camnum, selected):
+    op = get_operator(Config.fb_pickmode_idname)
+    op('EXEC_DEFAULT', headnum=headnum, camnum=camnum, selected=selected)
+
+
+def create_head_images():
+    logger = logging.getLogger(__name__)
+    new_scene()
+    create_head()
+    settings = get_main_settings()
+    headnum = settings.get_last_headnum()
+    head = settings.get_head(headnum)
+    headobj = head.headobj
+    create_empty_camera(headnum)
+    camnum = head.get_last_camnum()
+    select_camera(headnum, camnum)
+    out_pinmode()
+    headobj.rotation_euler = (math.pi * 0.1, 0, math.pi * 0.1)
+    headobj.location = (0, 10, 0)
+
+    scene = bpy.context.scene
+    scene.render.image_settings.file_format = 'JPEG'
+    scene.world = bpy.data.worlds['World']
+    scene.world.color = (0.9, 0.9, 0.9)
+    bpy.ops.object.light_add(type='SUN', align='WORLD', location=(0, 0, 0),
+                             rotation=(math.pi * 0.45, 0.0, math.pi * 0.3),
+                             scale=(1, 1, 1))
+
+    filename1 = 'head_render1.jpg'
+    filepath1 = os.path.join(test_dir(), filename1)
+    scene.render.filepath = filepath1
+    bpy.ops.render.render(write_still=True)
+    logger.info('Rendered by {}: {}'.format(scene.render.engine, filepath1))
+
+    headobj = select_by_headnum(headnum)
+    bpy.ops.object.duplicate_move(
+        OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
+        TRANSFORM_OT_translate={"value": (-4.0, 0, 0)})
+
+    bpy.ops.object.duplicate_move(
+        OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
+        TRANSFORM_OT_translate={"value": (6.0, 0, 0)})
+
+    filename2 = 'head_render2.jpg'
+    filepath2 = os.path.join(test_dir(), filename2)
+    scene.render.filepath = filepath2
+    bpy.ops.render.render(write_still=True)
+    logger.info('Rendered by {}: {}'.format(scene.render.engine, filepath2))
+    return [filepath1, filepath2]

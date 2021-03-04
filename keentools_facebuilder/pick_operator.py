@@ -29,7 +29,7 @@ from .utils.manipulate import push_neutral_head_in_undo_history
 _DETECTED_FACES = []
 
 
-def _reset_detected_faces():
+def reset_detected_faces():
     global _DETECTED_FACES
     _DETECTED_FACES = []
 
@@ -139,6 +139,7 @@ class FB_OT_PickMode(bpy.types.Operator):
 
     headnum: bpy.props.IntProperty(default=0)
     camnum: bpy.props.IntProperty(default=0)
+    selected: bpy.props.IntProperty(default=-1)
 
     def _init_rectangler(self, context):
         vp = FBLoader.viewport()
@@ -146,21 +147,6 @@ class FB_OT_PickMode(bpy.types.Operator):
         rectangler.prepare_shader_data(context)
         rectangler.create_batch()
         vp.create_batch_2d(context)
-
-    def invoke(self, context, event):
-        logger = logging.getLogger(__name__)
-        logger.debug('PickMode call')
-
-        settings = get_main_settings()
-        if not settings.pinmode:
-            self.report({'INFO'}, 'Not in pinmode')
-            return {'FINISHED'}
-
-        self._init_rectangler(context)
-
-        context.window_manager.modal_handler_add(self)
-        logger.debug('PICKMODE STARTED')
-        return {'RUNNING_MODAL'}
 
     def _get_rectangler(self):
         return FBLoader.viewport().rectangler()
@@ -183,6 +169,40 @@ class FB_OT_PickMode(bpy.types.Operator):
         mouse_x, mouse_y = coords.get_image_space_coord(
             event.mouse_region_x, event.mouse_region_y, context)
         return rectangler.active_rectangle_index(mouse_x, mouse_y)
+
+    def invoke(self, context, event):
+        logger = logging.getLogger(__name__)
+        logger.debug('PickMode invoke call')
+
+        settings = get_main_settings()
+        if not settings.pinmode:
+            self.report({'INFO'}, 'Not in pinmode')
+            return {'FINISHED'}
+
+        self._init_rectangler(context)
+
+        context.window_manager.modal_handler_add(self)
+        logger.debug('PICKMODE STARTED')
+        return {'RUNNING_MODAL'}
+
+    def execute(self, context):  # Testing purpose only
+        logger = logging.getLogger(__name__)
+        logger.debug('PickMode execute call')
+        if self.selected < 0:
+            message = 'No selected rectangle index'
+            self.report({'ERROR'}, message)
+            logger.error(message)
+            return {'CANCELLED'}
+        if not _add_pins_to_face(self.headnum, self.camnum, self.selected):
+            message = '_add_pins_to_face fail'
+            self.report({'INFO'}, message)
+            logger.error(message)
+        else:
+            message = '_add_pins_to_face success'
+            self.report({'INFO'}, message)
+            logger.debug(message)
+
+        return {'FINISHED'}
 
     def modal(self, context, event):
         logger = logging.getLogger(__name__)
@@ -249,19 +269,18 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
     headnum: bpy.props.IntProperty(default=0)
     camnum: bpy.props.IntProperty(default=0)
 
-    def invoke(self, context, event):
+    def _action(self, context, event, invoked=True):
         logger = logging.getLogger(__name__)
-        logger.debug('PickModeStarter call')
-
-        settings = get_main_settings()
-        if not settings.pinmode:
-            message = 'Not in pinmode call'
-            self.report({'ERROR'}, message)
-            logger.error(message)
-            return {'FINISHED'}
+        logger.debug('PickModeStarter action call')
 
         FBLoader.load_model(self.headnum)
         fb = FBLoader.get_builder()
+
+        if not fb.is_face_detector_available():
+            message = 'Face detector is not available'
+            self.report({'ERROR'}, message)
+            logger.error(message)
+            return {'CANCELLED'}
 
         img = init_detected_faces(fb, self.headnum, self.camnum)
         if img is None:
@@ -281,8 +300,9 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
             for x1, y1, x2, y2, _ in rects:
                 rectangler.add_rectangle(x1, y1, x2, y2, w, h,
                                          Config.regular_rectangle_color)
-            op = get_operator(Config.fb_pickmode_idname)
-            op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
+            if invoked:
+                op = get_operator(Config.fb_pickmode_idname)
+                op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
         elif len(rects) == 1:
             if not _add_pins_to_face(self.headnum, self.camnum,
                                      rectangle_index=0):
@@ -299,3 +319,19 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
             logger.error(message)
 
         return {'FINISHED'}
+
+    def invoke(self, context, event):
+        logger = logging.getLogger(__name__)
+        logger.debug('PickModeStarter invoke call')
+        settings = get_main_settings()
+        if not settings.pinmode:
+            message = 'Not in pinmode call'
+            self.report({'ERROR'}, message)
+            logger.error(message)
+            return {'CANCELLED'}
+        return self._action(context, event, invoked=True)
+
+    def execute(self, context):  # Used only for integration testing
+        logger = logging.getLogger(__name__)
+        logger.debug('PickModeStarter execute call')
+        return self._action(context, event=None, invoked=False)
