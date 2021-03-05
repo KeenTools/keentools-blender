@@ -210,12 +210,15 @@ def create_head_images():
     headobj.location = (0, 10, 0)
 
     scene = bpy.context.scene
+    scene.render.engine = 'CYCLES'
+    scene.render.cycles.samples = 32  # low quality
     scene.render.image_settings.file_format = 'JPEG'
     scene.world = bpy.data.worlds['World']
     scene.world.color = (0.9, 0.9, 0.9)
     bpy.ops.object.light_add(type='SUN', align='WORLD', location=(0, 0, 0),
                              rotation=(math.pi * 0.45, 0.0, math.pi * 0.3),
                              scale=(1, 1, 1))
+    bpy.ops.object.select_all(action='DESELECT')
 
     filename1 = 'head_render1.jpg'
     filepath1 = os.path.join(test_dir(), filename1)

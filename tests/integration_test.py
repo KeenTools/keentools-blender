@@ -316,6 +316,7 @@ def prepare_test_environment():
     test_utils.create_test_dir()
     images = test_utils.create_test_images()
     render_images = test_utils.create_head_images()
+    test_utils.save_scene(filename='render.blend')
     DataHolder.set_image_file_names([image.filepath for image
                                      in images] + render_images)
 
