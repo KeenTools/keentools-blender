@@ -211,7 +211,7 @@ def create_head_images():
 
     scene = bpy.context.scene
     scene.render.engine = 'CYCLES'
-    scene.render.cycles.samples = 32  # low quality
+    scene.cycles.samples = 32  # low quality
     scene.render.image_settings.file_format = 'JPEG'
     scene.world = bpy.data.worlds['World']
     scene.world.color = (0.9, 0.9, 0.9)
