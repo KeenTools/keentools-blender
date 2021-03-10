@@ -26,7 +26,7 @@ from .utils.coords import xy_to_xz_rotation_matrix_3x3
 from .utils.focal_length import (configure_focal_mode_and_fixes,
                                  update_camera_focal)
 from .utils import attrs, coords, cameras
-from .utils.exif_reader import update_image_groups, reload_all_camera_exif
+from .utils.exif_reader import reload_all_camera_exif
 from .utils.other import FBStopShaderTimer, restore_ui_elements
 from .viewport import FBViewport
 from .blender_independent_packages.pykeentools_loader import module as pkt_module
@@ -522,10 +522,8 @@ class FBLoader:
             cam.focal = focal
             cam.auto_focal_estimation = head.auto_focal_estimation
             cam.reset_camera_sensor()
-            cam.image_group = 0
 
         reload_all_camera_exif(headnum)
-        update_image_groups(head)
 
     @classmethod
     def create_camera_object(cls, headnum, camnum):

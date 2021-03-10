@@ -363,12 +363,6 @@ class FBCameraItem(PropertyGroup):
     def get_projection_matrix(self):
         return self.get_custom_projection_matrix(self.focal)
 
-    def is_in_group(self):
-        return self.image_group > 0
-
-    def is_excluded(self):
-        return self.image_group == -1
-
     def np_image(self):
         w, h = self.get_image_size()
         if w < 0:
@@ -659,15 +653,6 @@ class FBHeadItem(PropertyGroup):
 
     def reset_groups_counter(self):
         self.groups_counter = -1
-
-    def are_image_groups_visible(self):
-        return self.show_image_groups
-
-    def is_image_group_visible(self, camnum):
-        camera = self.get_camera(camnum)
-        if camera is None:
-            return False
-        return self.are_image_groups_visible() and camera.image_group > 0
 
     def reset_sensor_size(self):
         self.sensor_width = 0

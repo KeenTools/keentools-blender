@@ -30,8 +30,7 @@ from .config import get_main_settings, get_operator, Config
 from .fbloader import FBLoader
 from .utils import cameras, manipulate, materials, coords, images
 from .utils.attrs import get_obj_collection, safe_delete_collection
-from .utils.exif_reader import (read_exif_from_camera,
-                                update_exif_sizes_message,
+from .utils.exif_reader import (update_exif_sizes_message,
                                 copy_exif_parameters_from_camera_to_head)
 from .utils.manipulate import check_settings
 from .utils.operator_action import (create_blendshapes,
@@ -371,7 +370,6 @@ class FB_OT_DeleteCamera(Operator):
             settings.current_camnum = -1
 
         FBLoader.fb_save(headnum, settings.current_camnum)
-        # update_image_groups(head)
 
         logger = logging.getLogger(__name__)
         logger.debug("CAMERA H:{} C:{} REMOVED".format(headnum, camnum))
