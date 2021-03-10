@@ -24,8 +24,7 @@ import bpy
 from ..fbloader import FBLoader
 from ..config import Config, get_main_settings, get_operator, ErrorType
 from . import cameras, attrs, coords
-from .exif_reader import (read_exif_to_camera, auto_setup_camera_from_exif,
-                          update_image_groups)
+from .exif_reader import (read_exif_to_camera, auto_setup_camera_from_exif)
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
@@ -361,7 +360,6 @@ def reconstruct_by_head():
 
             attrs.mark_keentools_object(camera.camobj)
 
-        update_image_groups(head)
         FBLoader.update_cameras_from_old_version(headnum)
 
     except Exception:

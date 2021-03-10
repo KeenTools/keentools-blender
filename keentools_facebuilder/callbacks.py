@@ -25,6 +25,7 @@ from .utils import coords
 from .utils.blendshapes import (restore_facs_blendshapes,
                                 disconnect_blendshapes_action)
 from .blender_independent_packages.pykeentools_loader import module as pkt_module
+from .utils.focal_length import configure_focal_mode_and_fixes
 
 
 def mesh_update_accepted(headnum):
@@ -241,30 +242,29 @@ def update_head_focal(self, context):
 
 
 def update_camera_focal(self, context):
+    def _check_current_selection_is_not_actual(headnum, camnum):
+        settings = get_main_settings()
+        return headnum < 0 or headnum != settings.current_headnum \
+                or camnum != settings.current_camnum
+
     logger = logging.getLogger(__name__)
-    settings = get_main_settings()
     kid = self.get_keyframe()
     self.camobj.data.lens = self.focal
     logger.debug('UPDATE_CAMERA_FOCAL: K:{} F:{}'.format(kid, self.focal))
 
+    if FBLoader.in_pin_drag():
+        return
+
+    headnum, camnum = self.get_headnum_camnum()
+    if _check_current_selection_is_not_actual(headnum, camnum):
+        return
+
     fb = FBLoader.get_builder()
     if fb.is_key_at(kid):
-        FBLoader.save_only(settings.current_headnum)
-
-    if FBLoader.in_pin_drag() or self.auto_focal_estimation or \
-            self.image_group <= 0 or \
-            settings.current_headnum < 0 or settings.current_camnum < 0:
-        return
-
-    head = settings.get_head(settings.current_headnum)
-    current_camera = head.get_camera(settings.current_camnum)
-    if current_camera.get_keyframe() != kid:
-        return
-
-    for cam in head.cameras:
-        if cam.get_keyframe() != kid and not cam.auto_focal_estimation and \
-                cam.image_group == self.image_group:
-            cam.focal = self.focal
+        fb.set_varying_focal_length_estimation()
+        fb.set_focal_length_at(
+            kid, self.get_focal_length_in_pixels_coef() * self.focal)
+        FBLoader.save_only(headnum)
 
 
 def update_blue_camera_button(self, context):

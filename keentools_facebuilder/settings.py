@@ -378,6 +378,19 @@ class FBCameraItem(PropertyGroup):
             self.orientation)
         return img
 
+    def get_headnum_camnum(self):
+        settings = get_main_settings()
+        for i, head in enumerate(settings.heads):
+            for j, camera in enumerate(head.cameras):
+                if camera == self:
+                    return i, j
+        return -1, -1
+
+    def get_focal_length_in_pixels_coef(self):
+        w, _ = self.get_oriented_image_size()
+        sc = 1.0 / self.compensate_view_scale()
+        return sc * w / Config.default_sensor_width
+
 
 def uv_items_callback(self, context):
     fb = FBLoader.get_builder()
