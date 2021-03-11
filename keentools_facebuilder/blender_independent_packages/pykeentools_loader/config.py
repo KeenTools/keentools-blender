@@ -41,7 +41,7 @@ def pkt_installation_dir():
 
 
 MINIMUM_VERSION_REQUIRED = (2021, 1, 0)  # 2021.1.0
-_SUPPORTED_PYTHON_VERSIONS = ((3, 7),)
+_SUPPORTED_PYTHON_VERSIONS = ((3, 7), (3, 9))
 
 
 def is_python_supported():
