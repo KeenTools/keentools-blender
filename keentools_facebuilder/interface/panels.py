@@ -226,20 +226,14 @@ class FB_PT_UpdatePanel(Common, Panel):
         self._draw_response(layout)
 
 
-class FB_PT_CameraPanel(AllVisible, Panel):
+class FB_PT_CameraPanel(AllVisibleClosed, Panel):
     bl_idname = Config.fb_camera_panel_idname
     bl_label = Config.fb_camera_panel_label
 
     def draw_header_preset(self, context):
-        state, headnum = what_is_state()
-
         layout = self.layout
         row = layout.row()
         row.active = False
-
-        op = row.operator(Config.fb_camera_panel_menu_exec_idname,
-                     text='', icon='COLLAPSEMENU')
-        op.headnum = headnum
 
         row.operator(
             Config.fb_help_camera_idname,
@@ -259,52 +253,6 @@ class FB_PT_CameraPanel(AllVisible, Panel):
                 box.label(text='Focal length: {:.2f} mm'.format(camera.focal))
             else:
                 box.prop(camera, 'focal')
-
-        def _draw_mode_comment(layout, mode):
-            if mode == 'all_different':
-                txt = ['The focal length of each view',
-                       'will be different, but',
-                       'estimation process will',
-                       'happen across all pinned',
-                       'views simultaneously.']
-            elif mode == 'current_estimation':
-                txt = ['The focal length of each view',
-                       'will be different and it',
-                       'will be estimated only',
-                       'for current view.']
-            elif mode == 'same_focus':
-                txt = ['The focal length will be',
-                       'the same for each view,',
-                       'estimation will happen',
-                       'across all pinned views',
-                       'simultaneously.']
-            elif mode == 'force_focal':
-                txt = ['The focal length will be',
-                       'the same for every view,',
-                       'estimation will be turned off,',
-                       'you can enter the focal',
-                       'length manually.']
-            else:
-                txt =[]
-            draw_labels(layout, txt)
-
-        def _draw_override_mode(layout, settings, head):
-            box = layout.box()
-            box.label(text='Override Focal Length settings:')
-            box.prop(head, 'manual_estimation_mode', text='')
-            col = box.column()
-            col.scale_y = Config.text_scale_y
-            _draw_mode_comment(col, head.manual_estimation_mode)
-            if head.manual_estimation_mode == 'force_focal':
-                box.prop(head, 'focal')
-
-            if settings.current_camnum < 0:
-                return
-            if head.manual_estimation_mode in {'current_estimation',
-                                               'all_different',
-                                               'same_focus'}:
-                camera = head.get_camera(settings.current_camnum)
-                box.label(text='Focal length: {:.2f} mm'.format(camera.focal))
 
         def _draw_exif(layout, head):
             # Show EXIF info message
@@ -332,13 +280,9 @@ class FB_PT_CameraPanel(AllVisible, Panel):
         if not head:
             return
 
-        if head.smart_mode():
-            if settings.current_camnum >= 0:
-                _draw_default_mode(layout, settings, head)
-        else:
-            _draw_override_mode(layout, settings, head)
-
-        _draw_exif(layout, head)
+        if settings.current_camnum >= 0:
+            _draw_default_mode(layout, settings, head)
+            _draw_exif(layout, head)
 
 
 class FB_PT_ViewsPanel(AllVisible, Panel):

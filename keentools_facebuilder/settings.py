@@ -116,7 +116,7 @@ class FBCameraItem(PropertyGroup):
     orientation: IntProperty(default=0)  # angle = orientation * Pi/2
 
     focal: FloatProperty(
-        description="CAMERA Focal length in millimetres",
+        description="35mm equivalent focal length (mm)",
         name="Focal Length (mm)", default=50,
         min=0.1, update=update_camera_focal)
 
@@ -460,24 +460,6 @@ class FBHeadItem(PropertyGroup):
 
     exif: PointerProperty(type=FBExifItem)
 
-    manual_estimation_mode: EnumProperty(
-        name='Estimation Mode override', items=[
-            ('all_different', 'Varying FL, Multi-frame Estimation', '',
-             'RENDERLAYERS', 0),
-            ('current_estimation', 'Varying FL, Single-frame Estimation', '',
-             'IMAGE_RGB', 1),
-            ('same_focus', 'Single FL, Multi-frame Estimation', '',
-             'PIVOT_CURSOR', 2),
-            ('force_focal', 'Single Manual FL', '',
-             'MODIFIER', 3),
-        ], description='Force Estimation Mode', default='all_different')
-
-    view_mode: EnumProperty(
-        name='Camera Info View Mode', items=[
-            ('smart', 'Smart Mode', '', '', 0),
-            ('manual', 'Manual Mode', '', '', 1),
-        ], default='smart')
-
     model_scale: FloatProperty(
         description="Geometry input scale. "
                     "All operations are performed with the scaled geometry.",
@@ -631,15 +613,6 @@ class FBHeadItem(PropertyGroup):
     def get_masks(self):
         fb = FBLoader.get_builder()
         return self.masks[:len(fb.masks())]
-
-    def smart_mode(self):
-        return self.view_mode == 'smart'
-
-    def smart_mode_toggle(self):
-        if self.view_mode == 'smart':
-            self.view_mode = 'manual'
-        else:
-            self.view_mode = 'smart'
 
     def groups_count(self):
         if self.groups_counter <= 0:

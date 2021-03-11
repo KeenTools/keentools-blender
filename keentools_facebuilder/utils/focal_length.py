@@ -24,45 +24,17 @@ __all__ = [
 
 import logging
 
-from . import coords
-
 
 def _unfix_all(fb, head):
     for cam in head.cameras:
         fb.set_focal_length_fixed_at(cam.get_keyframe(), False)
 
 
-def _fix_all_except_this(fb, head, exclude_kid):
-    for cam in head.cameras:
-        fb.set_focal_length_fixed_at(cam.get_keyframe(),
-                                     cam.get_keyframe() != exclude_kid)
-
-
-def _fix_all_with_known_focuses(fb, head):
+def configure_focal_mode_and_fixes(fb, head):
+    fb.set_varying_focal_length_estimation()
     for cam in head.cameras:
         fb.set_focal_length_fixed_at(cam.get_keyframe(),
                                      not cam.auto_focal_estimation)
-
-
-def configure_focal_mode_and_fixes(fb, head, camera):
-    if head.smart_mode():
-        fb.set_varying_focal_length_estimation()
-        _fix_all_with_known_focuses(fb, head)
-    else:  # Override all
-        if head.manual_estimation_mode == 'all_different':
-            fb.set_varying_focal_length_estimation()
-            _unfix_all(fb, head)
-        elif head.manual_estimation_mode == 'current_estimation':
-            fb.set_varying_focal_length_estimation()
-            _fix_all_except_this(fb, head, camera.get_keyframe())
-        elif head.manual_estimation_mode == 'same_focus':
-            proj_mat = camera.get_projection_matrix()
-            fb.set_static_focal_length_estimation(coords.focal_by_projection_matrix_px(proj_mat))
-        elif head.manual_estimation_mode == 'force_focal':
-            fb.disable_focal_length_estimation()
-        else:
-            assert False, 'Unknown mode: {}'.format(
-                head.manual_estimation_mode)
 
 
 def update_camera_focal(camera, fb):

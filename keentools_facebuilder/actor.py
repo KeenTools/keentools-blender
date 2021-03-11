@@ -141,16 +141,11 @@ class FB_OT_CameraActor(bpy.types.Operator):
         head = settings.get_head(self.headnum)
         camera = head.get_camera(settings.current_camnum)
 
-        if self.action == 'manual_mode':
-            head.smart_mode_toggle()
-
-        elif self.action == 'settings_by_exif':
+        if self.action == 'settings_by_exif':
             auto_setup_camera_from_exif(camera)
 
         elif self.action == 'reset_all_camera_settings':
             for camera in head.cameras:
                 auto_setup_camera_from_exif(camera)
-            if not head.smart_mode():
-                head.smart_mode_toggle()
 
         return {'FINISHED'}
