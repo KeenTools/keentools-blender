@@ -23,9 +23,10 @@ import numpy as np
 
 from .config import Config, get_main_settings
 from .utils.coords import xy_to_xz_rotation_matrix_3x3
-from .utils.focal_length import auto_focal_configuration_and_update
+from .utils.focal_length import (configure_focal_mode_and_fixes,
+                                 update_camera_focal)
 from .utils import attrs, coords, cameras
-from .utils.exif_reader import update_image_groups, reload_all_camera_exif
+from .utils.exif_reader import reload_all_camera_exif
 from .utils.other import FBStopShaderTimer, restore_ui_elements
 from .viewport import FBViewport
 from .blender_independent_packages.pykeentools_loader import module as pkt_module
@@ -62,8 +63,9 @@ class FBLoader:
         cam_item.update_image_size()
 
     @classmethod
-    def update_head_camera_focals(cls, head):
+    def update_head_camobj_focals(cls, head):
         logger = logging.getLogger(__name__)
+        logger.debug('update_head_camobj_focals call')
         for i, c in enumerate(head.cameras):
             c.camobj.data.lens = c.focal
             logger.debug("camera: {} focal: {}".format(i, c.focal))
@@ -99,7 +101,7 @@ class FBLoader:
         settings = get_main_settings()
         head = settings.get_head(headnum)
         if head:
-            cls.update_head_camera_focals(head)
+            cls.update_head_camobj_focals(head)
             if head.headobj:
                 coords.update_head_mesh_neutral(cls.get_builder(), head.headobj)
         logger.debug("SAVE PINMODE STATE")
@@ -198,6 +200,16 @@ class FBLoader:
         fb.set_expressions_rigidity(settings.expression_rigidity)
 
     @classmethod
+    def update_one_camera_position(cls, headnum, camnum):
+        fb = cls.get_builder()
+        settings = get_main_settings()
+        camera = settings.get_camera(headnum, camnum)
+
+        cls.place_camera(headnum, camnum)
+        keyframe = camera.get_keyframe()
+        camera.set_model_mat(fb.model_mat(keyframe))
+
+    @classmethod
     def update_all_camera_positions(cls, headnum):
         fb = cls.get_builder()
         settings = get_main_settings()
@@ -210,19 +222,27 @@ class FBLoader:
                 camera.set_model_mat(fb.model_mat(keyframe))
 
     @classmethod
+    def update_one_camera_focal(cls, camera):
+        if camera.has_pins():
+            fb = cls.get_builder()
+            kid = camera.get_keyframe()
+            proj_mat = fb.projection_mat(kid)
+            focal = coords.focal_by_projection_matrix_mm(
+                proj_mat, Config.default_sensor_width)
+            camera.focal = focal * camera.compensate_view_scale()
+
+    @classmethod
     def update_all_camera_focals(cls, headnum):
-        fb = cls.get_builder()
+        logger = logging.getLogger(__name__)
+        logger.debug('update_all_camera_focals')
         settings = get_main_settings()
         head = settings.get_head(headnum)
+        if not head:
+            return
 
         for i, cam in enumerate(head.cameras):
-            if cam.has_pins():
-                kid = cam.get_keyframe()
-                proj_mat = fb.projection_mat(kid)
-                focal = coords.focal_by_projection_matrix_mm(
-                    proj_mat, Config.default_sensor_width)
-
-                cam.focal = focal * cam.compensate_view_scale()
+            cls.update_one_camera_focal(cam)
+            logger.debug('cam.focal: {} {}'.format(i, cam.focal))
 
     @classmethod
     def center_geo_camera_projection(cls, headnum, camnum):
@@ -428,6 +448,8 @@ class FBLoader:
                 settings.license_error = license_err
                 cls.out_pinmode(headnum)
 
+        logger = logging.getLogger(__name__)
+        logger.debug('FBloader.solve called')
         settings = get_main_settings()
         head = settings.get_head(headnum)
         camera = head.get_camera(camnum)
@@ -437,23 +459,24 @@ class FBLoader:
         cls.rigidity_setup()
         fb.set_use_emotions(head.should_use_emotions())
 
-        with auto_focal_configuration_and_update(fb, headnum, camnum):
-            try:
-                fb.solve_for_current_pins(kid)
-            except pkt_module().UnlicensedException:
-                _exception_handling(headnum, 'SOLVE LICENSE EXCEPTION')
-                return False
-            except pkt_module().InvalidArgumentException:
-                _exception_handling(headnum, 'SOLVE NO KEYFRAME EXCEPTION',
-                                    license_err=False)
-                return False
-            except Exception as err:
-                _exception_handling(
-                    headnum,
-                    'SOLVE UNKNOWN EXCEPTION: {}'.format(str(err)),
-                    license_err=False
-                )
-                return False
+        configure_focal_mode_and_fixes(fb, head, camera)
+        try:
+            fb.solve_for_current_pins(kid)
+            update_camera_focal(camera, fb)
+        except pkt_module().UnlicensedException:
+            _exception_handling(headnum, 'SOLVE LICENSE EXCEPTION')
+            return False
+        except pkt_module().InvalidArgumentException:
+            _exception_handling(headnum, 'SOLVE NO KEYFRAME EXCEPTION',
+                                license_err=False)
+            return False
+        except Exception as err:
+            _exception_handling(
+                headnum,
+                'SOLVE UNKNOWN EXCEPTION: {}'.format(str(err)),
+                license_err=False
+            )
+            return False
         return True
 
     @classmethod
@@ -499,10 +522,8 @@ class FBLoader:
             cam.focal = focal
             cam.auto_focal_estimation = head.auto_focal_estimation
             cam.reset_camera_sensor()
-            cam.image_group = 0
 
         reload_all_camera_exif(headnum)
-        update_image_groups(head)
 
     @classmethod
     def create_camera_object(cls, headnum, camnum):

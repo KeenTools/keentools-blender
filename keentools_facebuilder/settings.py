@@ -132,8 +132,6 @@ class FBCameraItem(PropertyGroup):
                     "in the frame",
         default=True)
 
-    image_group: IntProperty(default=0)
-
     def update_scene_frame_size(self):
         if self.image_width > 0 and self.image_height > 0:
             if (self.orientation % 2) == 0:
@@ -363,12 +361,6 @@ class FBCameraItem(PropertyGroup):
     def get_projection_matrix(self):
         return self.get_custom_projection_matrix(self.focal)
 
-    def is_in_group(self):
-        return self.image_group > 0
-
-    def is_excluded(self):
-        return self.image_group == -1
-
     def np_image(self):
         w, h = self.get_image_size()
         if w < 0:
@@ -377,6 +369,19 @@ class FBCameraItem(PropertyGroup):
             np.asarray(self.cam_image.pixels[:]).reshape((h, w, 4)),
             self.orientation)
         return img
+
+    def get_headnum_camnum(self):
+        settings = get_main_settings()
+        for i, head in enumerate(settings.heads):
+            for j, camera in enumerate(head.cameras):
+                if camera == self:
+                    return i, j
+        return -1, -1
+
+    def get_focal_length_in_pixels_coef(self):
+        w, _ = self.get_oriented_image_size()
+        sc = 1.0 / self.compensate_view_scale()
+        return sc * w / Config.default_sensor_width
 
 
 def uv_items_callback(self, context):
@@ -472,8 +477,6 @@ class FBHeadItem(PropertyGroup):
             ('smart', 'Smart Mode', '', '', 0),
             ('manual', 'Manual Mode', '', '', 1),
         ], default='smart')
-
-    show_image_groups: BoolProperty(default=True)
 
     model_scale: FloatProperty(
         description="Geometry input scale. "
@@ -646,15 +649,6 @@ class FBHeadItem(PropertyGroup):
 
     def reset_groups_counter(self):
         self.groups_counter = -1
-
-    def are_image_groups_visible(self):
-        return self.show_image_groups
-
-    def is_image_group_visible(self, camnum):
-        camera = self.get_camera(camnum)
-        if camera is None:
-            return False
-        return self.are_image_groups_visible() and camera.image_group > 0
 
     def reset_sensor_size(self):
         self.sensor_width = 0

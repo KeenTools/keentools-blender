@@ -64,50 +64,6 @@ class FB_MT_ProperViewMenu(Menu):
             layout.label(text='Reset Orientation', icon='OUTLINER_OB_IMAGE')
 
 
-class FB_MT_ImageGroupMenu(Menu):
-    bl_label = "Camera Group"
-    bl_idname = Config.fb_image_group_menu_idname
-    bl_description = "Camera Group"
-
-    def draw(self, context):
-        settings = get_main_settings()
-        layout = self.layout
-
-        layout.separator()
-        head = settings.get_head(settings.current_headnum)
-        groups = set([x.image_group for x in head.cameras])
-        for group in groups:
-            if group == 0 or group == -1:
-                continue
-            op = layout.operator(
-                Config.fb_camera_actor_idname,
-                text="Group {}".format(group))
-            op.action = 'to_image_group'
-            op.num = group
-
-        op = layout.operator(
-            Config.fb_camera_actor_idname,
-            text="New group")
-        op.action = 'new_image_group'
-
-        layout.separator()
-        op = layout.operator(
-            Config.fb_camera_actor_idname,
-            text="Reset group")
-        op.action = 'reset_image_group'
-
-        op = layout.operator(
-            Config.fb_camera_actor_idname,
-            text="Exclude from grouping")
-        op.action = 'make_unique'
-
-        layout.separator()
-        op = layout.operator(
-            Config.fb_camera_actor_idname,
-            text="Get settings from EXIF")
-        op.action = 'settings_by_exif'
-
-
 class FB_MT_CameraPanelMenu(Menu):
     bl_label = "Advanced Camera settings"
     bl_idname = Config.fb_camera_panel_menu_idname
@@ -121,19 +77,6 @@ class FB_MT_CameraPanelMenu(Menu):
 
         if head is None:
             return
-
-        if head.smart_mode():
-            op = layout.operator(
-                Config.fb_camera_actor_idname,
-                text='Exclude all views from grouping')
-            op.action = 'make_all_unique'
-            op.headnum = settings.tmp_headnum
-
-            op = layout.operator(
-                Config.fb_camera_actor_idname,
-                text='Reset groups for all views')
-            op.action = 'reset_all_image_groups'
-            op.headnum = settings.tmp_headnum
 
         layout.separator()
         op = layout.operator(

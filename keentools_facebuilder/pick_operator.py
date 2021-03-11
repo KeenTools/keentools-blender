@@ -22,7 +22,7 @@ import bpy
 from .config import Config, ErrorType, get_main_settings, get_operator
 from .fbloader import FBLoader
 from .utils import coords
-from .utils.focal_length import auto_focal_configuration_and_update
+from .utils.focal_length import configure_focal_mode_and_fixes
 from .utils.manipulate import push_neutral_head_in_undo_history
 
 
@@ -98,11 +98,13 @@ def _add_pins_to_face(headnum, camnum, rectangle_index):
 
     settings = get_main_settings()
     head = settings.get_head(headnum)
-    kid = settings.get_keyframe(headnum, camnum)
+    camera = head.get_camera(camnum)
+    kid = camera.get_keyframe()
 
     fb.set_use_emotions(head.should_use_emotions())
-    with auto_focal_configuration_and_update(fb, headnum, camnum):
-        result_flag = fb.detect_face_pose(kid, faces[rectangle_index])
+    configure_focal_mode_and_fixes(fb, head, camera)
+    result_flag = fb.detect_face_pose(kid, faces[rectangle_index])
+
     if result_flag:
         fb.remove_pins(kid)
         fb.add_preset_pins(kid)
@@ -110,10 +112,10 @@ def _add_pins_to_face(headnum, camnum, rectangle_index):
     else:
         logger.debug('detect_face_pose failed kid: {}'.format(kid))
 
-    FBLoader.fb_redraw(headnum, camnum)
     FBLoader.update_pins_count(headnum, camnum)
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
+    FBLoader.fb_redraw(headnum, camnum)
 
     FBLoader.save_only(headnum)
     history_name = 'Add face auto-pins' if result_flag else 'No auto-pins'

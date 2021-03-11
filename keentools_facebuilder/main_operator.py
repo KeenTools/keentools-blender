@@ -30,10 +30,8 @@ from .config import get_main_settings, get_operator, Config
 from .fbloader import FBLoader
 from .utils import cameras, manipulate, materials, coords, images
 from .utils.attrs import get_obj_collection, safe_delete_collection
-from .utils.exif_reader import (read_exif_from_camera,
-                                update_exif_sizes_message,
-                                copy_exif_parameters_from_camera_to_head,
-                                update_image_groups)
+from .utils.exif_reader import (update_exif_sizes_message,
+                                copy_exif_parameters_from_camera_to_head)
 from .utils.manipulate import check_settings
 from .utils.operator_action import (create_blendshapes,
                                     delete_blendshapes,
@@ -372,7 +370,6 @@ class FB_OT_DeleteCamera(Operator):
             settings.current_camnum = -1
 
         FBLoader.fb_save(headnum, settings.current_camnum)
-        update_image_groups(head)
 
         logger = logging.getLogger(__name__)
         logger.debug("CAMERA H:{} C:{} REMOVED".format(headnum, camnum))
@@ -397,27 +394,6 @@ class FB_OT_ProperViewMenuExec(Operator):
         settings.tmp_camnum = self.camnum
         bpy.ops.wm.call_menu(
             'INVOKE_DEFAULT', name=Config.fb_proper_view_menu_idname)
-        return {'FINISHED'}
-
-
-class FB_OT_ImageGroupMenuExec(Operator):
-    bl_idname = Config.fb_image_group_menu_exec_idname
-    bl_label = "Camera Group Menu Caller"
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
-    bl_description = "Camera Group"
-
-    headnum: IntProperty(default=0)
-    camnum: IntProperty(default=0)
-
-    def draw(self, context):
-        pass
-
-    def execute(self, context):
-        settings = get_main_settings()
-        settings.tmp_headnum = self.headnum
-        settings.tmp_camnum = self.camnum
-        bpy.ops.wm.call_menu(
-            'INVOKE_DEFAULT', name=Config.fb_image_group_menu_idname)
         return {'FINISHED'}
 
 
@@ -822,7 +798,6 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_WireframeColor,
                        FB_OT_FilterCameras,
                        FB_OT_ProperViewMenuExec,
-                       FB_OT_ImageGroupMenuExec,
                        FB_OT_CameraPanelMenuExec,
                        FB_OT_DeleteCamera,
                        FB_OT_AddonSettings,

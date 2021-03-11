@@ -226,7 +226,7 @@ class FB_PT_UpdatePanel(Common, Panel):
         self._draw_response(layout)
 
 
-class FB_PT_CameraPanel(AllVisibleClosed, Panel):
+class FB_PT_CameraPanel(AllVisible, Panel):
     bl_idname = Config.fb_camera_panel_idname
     bl_label = Config.fb_camera_panel_label
 
@@ -253,17 +253,6 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
             col = row.column()
             col.scale_y = Config.text_scale_y
             col.label(text='File: {}'.format(camera.get_image_name()))
-            row2 = col.split(factor=0.6)
-            row2.label(text='Camera Group:')
-
-            txt = camera.image_group
-            if camera.image_group == 0:
-                txt = '—'
-            if camera.image_group < 0:
-                txt = 'Excluded'
-
-            row2.operator(Config.fb_image_group_menu_exec_idname,
-                          text='{}'.format(txt))
 
             box.prop(camera, 'auto_focal_estimation')
             if camera.auto_focal_estimation:
@@ -407,20 +396,15 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             view_icon = 'PINNED' if camera.has_pins() else 'HIDE_OFF'
 
             col = row.column()
-            cam_name = '{}{}'.format(
-                camera.get_image_name(),
-                ' [{}]'.format(camera.image_group)
-                if head.is_image_group_visible(i) else ''
-            )
 
             if settings.current_camnum == i and settings.pinmode:
                 col.prop(settings, 'blue_camera_button', toggle=1,
-                         text=cam_name, icon=view_icon)
+                         text=camera.get_image_name(), icon=view_icon)
             else:
                 split = col
                 op = split.operator(
                     Config.fb_select_camera_idname,
-                    text=cam_name, icon=view_icon)
+                    text=camera.get_image_name(), icon=view_icon)
                 op.headnum = headnum
                 op.camnum = i
 
