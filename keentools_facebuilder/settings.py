@@ -413,6 +413,8 @@ class FBHeadItem(PropertyGroup):
     use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
                                          default=False,
                                          update=update_expressions)
+    reduce_pins: bpy.props.BoolProperty(name="Reduce pins",
+                                        default=False)
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
     blendshapes_control_panel: PointerProperty(name="Blendshapes Control Panel",
                                                type=bpy.types.Object)
@@ -609,6 +611,9 @@ class FBHeadItem(PropertyGroup):
 
     def should_use_emotions(self):
         return self.use_emotions
+
+    def should_reduce_pins(self):
+        return self.reduce_pins
 
     def get_masks(self):
         fb = FBLoader.get_builder()

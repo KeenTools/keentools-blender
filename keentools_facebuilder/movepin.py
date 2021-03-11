@@ -188,9 +188,11 @@ class FB_OT_MovePin(bpy.types.Operator):
         FBLoader.update_head_camobj_focals(head)
 
         fb = FBLoader.get_builder()
-        fb.reduce_pins()
-        FBLoader.save_only(headnum)
-        pins.set_pins(vp.img_points(fb, kid))
+
+        if head.should_reduce_pins():
+            fb.reduce_pins()
+            FBLoader.save_only(headnum)
+            pins.set_pins(vp.img_points(fb, kid))
 
         self._push_previous_state()
 
