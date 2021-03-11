@@ -99,8 +99,6 @@ class Config:
     fb_warning_idname = operators + '.addon_warning'
     fb_blendshapes_warning_idname = operators + '.blendshapes_warning'
 
-    fb_camera_panel_menu_exec_idname = operators + '.camera_panel_menu_exec'
-
     fb_tex_selector_idname = operators + '.tex_selector'
     fb_exit_pinmode_idname = operators + '.exit_pinmode'
 
@@ -147,7 +145,6 @@ class Config:
 
     # Menu ids
     fb_proper_view_menu_idname = _MT + 'proper_view_menu'
-    fb_camera_panel_menu_idname = _MT + 'camera_panel_menu'
 
     # Standard names
     tex_builder_filename = 'kt_facebuilder_texture'

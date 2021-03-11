@@ -102,7 +102,7 @@ def _add_pins_to_face(headnum, camnum, rectangle_index):
     kid = camera.get_keyframe()
 
     fb.set_use_emotions(head.should_use_emotions())
-    configure_focal_mode_and_fixes(fb, head, camera)
+    configure_focal_mode_and_fixes(fb, head)
     result_flag = fb.detect_face_pose(kid, faces[rectangle_index])
 
     if result_flag:

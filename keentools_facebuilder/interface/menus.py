@@ -62,34 +62,3 @@ class FB_MT_ProperViewMenu(Menu):
             layout.label(text='Rotate CW', icon='LOOP_FORWARDS')
             layout.label(text='Rotate CCW', icon='LOOP_BACK')
             layout.label(text='Reset Orientation', icon='OUTLINER_OB_IMAGE')
-
-
-class FB_MT_CameraPanelMenu(Menu):
-    bl_label = "Advanced Camera settings"
-    bl_idname = Config.fb_camera_panel_menu_idname
-    bl_description = "Advanced Camera settings"
-
-    def draw(self, context):
-        settings = get_main_settings()
-        layout = self.layout
-
-        head = settings.get_head(settings.current_headnum)
-
-        if head is None:
-            return
-
-        layout.separator()
-        op = layout.operator(
-            Config.fb_camera_actor_idname,
-            text='Reset cameras for all views')
-        op.action = 'reset_all_camera_settings'
-        op.headnum = settings.tmp_headnum
-
-        layout.separator()
-        txt = 'Switch to Manual mode' if head.smart_mode() \
-            else 'Switch to Default mode'
-        op = layout.operator(
-            Config.fb_camera_actor_idname,
-            text=txt)
-        op.action = 'manual_mode'
-        op.headnum = settings.tmp_headnum

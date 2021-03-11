@@ -459,7 +459,7 @@ class FBLoader:
         cls.rigidity_setup()
         fb.set_use_emotions(head.should_use_emotions())
 
-        configure_focal_mode_and_fixes(fb, head, camera)
+        configure_focal_mode_and_fixes(fb, head)
         try:
             fb.solve_for_current_pins(kid)
             update_camera_focal(camera, fb)
