@@ -64,6 +64,7 @@ class Config:
     fb_center_geo_idname = operators + '.center_geo'
     fb_unmorph_idname = operators + '.unmorph'
     fb_remove_pins_idname = operators + '.remove_pins'
+    fb_reduce_pins_idname = operators + '.reduce_pins'
     fb_simplify_pins_idname = operators + '.simplify_pins'
     fb_wireframe_color_idname = operators + '.wireframe_color'
     fb_filter_cameras_idname = operators + '.filter_cameras'

@@ -318,6 +318,10 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             Config.fb_simplify_pins_idname, text="Simplify pins")
         op.headnum = headnum
         op.camnum = camnum
+        op = box.operator(
+            Config.fb_reduce_pins_idname, text="Reduce pins")
+        op.headnum = headnum
+        op.camnum = camnum
 
     def _draw_camera_list(self, headnum, layout):
         settings = get_main_settings()

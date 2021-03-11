@@ -307,6 +307,44 @@ class FB_OT_SimplifyPins(Operator):
         return {'FINISHED'}
 
 
+class FB_OT_ReducePins(Operator):
+    bl_idname = Config.fb_reduce_pins_idname
+    bl_label = "Reduce pins"
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+    bl_description = "Reduce all pins"
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+
+        if not settings.pinmode:
+            return {'CANCELLED'}
+
+        headnum = self.headnum
+        camnum = self.camnum
+
+        fb = FBLoader.get_builder()
+        FBLoader.fb_save(headnum, camnum)
+        manipulate.push_head_in_undo_history(
+            settings.get_head(headnum), 'Before Reduce pins')
+
+        fb.reduce_pins()
+
+        FBLoader.fb_save(headnum, camnum)
+        FBLoader.fb_redraw(headnum, camnum)
+        FBLoader.update_pins_count(headnum, camnum)
+
+        manipulate.push_head_in_undo_history(
+            settings.get_head(headnum), 'After Reduce pins')
+
+        return {'FINISHED'}
+
+
 class FB_OT_WireframeColor(Operator):
     bl_idname = Config.fb_wireframe_color_idname
     bl_label = "Wireframe color"
@@ -814,6 +852,7 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_Unmorph,
                        FB_OT_RemovePins,
                        FB_OT_SimplifyPins,
+                       FB_OT_ReducePins,
                        FB_OT_WireframeColor,
                        FB_OT_FilterCameras,
                        FB_OT_ProperViewMenuExec,
