@@ -332,6 +332,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
 
         box = layout.box()
         box.prop(settings.get_head(headnum), 'use_emotions')
+        box.prop(settings.get_head(headnum), 'reduce_pins')
 
         if settings.pinmode:
             row = box.row()
