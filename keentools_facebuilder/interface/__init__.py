@@ -25,7 +25,6 @@ from .updater import *
 
 
 CLASSES_TO_REGISTER = (FB_MT_ProperViewMenu, # menus
-                       FB_MT_ImageGroupMenu,
                        FB_MT_CameraPanelMenu,
                        FB_PT_HeaderPanel,  # panels
                        FB_PT_UpdatePanel,

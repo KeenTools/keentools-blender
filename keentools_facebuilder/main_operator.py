@@ -397,27 +397,6 @@ class FB_OT_ProperViewMenuExec(Operator):
         return {'FINISHED'}
 
 
-class FB_OT_ImageGroupMenuExec(Operator):
-    bl_idname = Config.fb_image_group_menu_exec_idname
-    bl_label = "Camera Group Menu Caller"
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
-    bl_description = "Camera Group"
-
-    headnum: IntProperty(default=0)
-    camnum: IntProperty(default=0)
-
-    def draw(self, context):
-        pass
-
-    def execute(self, context):
-        settings = get_main_settings()
-        settings.tmp_headnum = self.headnum
-        settings.tmp_camnum = self.camnum
-        bpy.ops.wm.call_menu(
-            'INVOKE_DEFAULT', name=Config.fb_image_group_menu_idname)
-        return {'FINISHED'}
-
-
 class FB_OT_CameraPanelMenuExec(Operator):
     bl_idname = Config.fb_camera_panel_menu_exec_idname
     bl_label = "Advanced Camera Settings"
@@ -819,7 +798,6 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_WireframeColor,
                        FB_OT_FilterCameras,
                        FB_OT_ProperViewMenuExec,
-                       FB_OT_ImageGroupMenuExec,
                        FB_OT_CameraPanelMenuExec,
                        FB_OT_DeleteCamera,
                        FB_OT_AddonSettings,

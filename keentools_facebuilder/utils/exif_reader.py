@@ -19,8 +19,6 @@
 import logging
 import os
 
-import numpy as np
-
 from ..blender_independent_packages.exifread import process_file
 from ..blender_independent_packages.exifread import \
     DEFAULT_STOP_TAG, FIELD_TYPES
@@ -228,7 +226,7 @@ def _init_exif_settings(exif, data):
 
 
 def _exif_info_message(exif, data):
-    message = "Source file: {}".format(data['filepath'])
+    message = ""
 
     if exif.focal > 0.0:
         message += "\nFocal length: {:.2f}mm".format(exif.focal)

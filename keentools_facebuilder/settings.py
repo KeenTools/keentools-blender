@@ -132,8 +132,6 @@ class FBCameraItem(PropertyGroup):
                     "in the frame",
         default=True)
 
-    image_group: IntProperty(default=0)
-
     def update_scene_frame_size(self):
         if self.image_width > 0 and self.image_height > 0:
             if (self.orientation % 2) == 0:
@@ -479,8 +477,6 @@ class FBHeadItem(PropertyGroup):
             ('smart', 'Smart Mode', '', '', 0),
             ('manual', 'Manual Mode', '', '', 1),
         ], default='smart')
-
-    show_image_groups: BoolProperty(default=True)
 
     model_scale: FloatProperty(
         description="Geometry input scale. "

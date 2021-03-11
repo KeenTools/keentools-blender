@@ -99,7 +99,6 @@ class Config:
     fb_warning_idname = operators + '.addon_warning'
     fb_blendshapes_warning_idname = operators + '.blendshapes_warning'
 
-    fb_image_group_menu_exec_idname = operators + '.image_group_menu_exec'
     fb_camera_panel_menu_exec_idname = operators + '.camera_panel_menu_exec'
 
     fb_tex_selector_idname = operators + '.tex_selector'
@@ -148,7 +147,6 @@ class Config:
 
     # Menu ids
     fb_proper_view_menu_idname = _MT + 'proper_view_menu'
-    fb_image_group_menu_idname = _MT + 'image_group_menu'
     fb_camera_panel_menu_idname = _MT + 'camera_panel_menu'
 
     # Standard names

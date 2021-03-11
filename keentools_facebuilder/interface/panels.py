@@ -226,7 +226,7 @@ class FB_PT_UpdatePanel(Common, Panel):
         self._draw_response(layout)
 
 
-class FB_PT_CameraPanel(AllVisibleClosed, Panel):
+class FB_PT_CameraPanel(AllVisible, Panel):
     bl_idname = Config.fb_camera_panel_idname
     bl_label = Config.fb_camera_panel_label
 

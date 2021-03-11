@@ -64,22 +64,6 @@ class FB_MT_ProperViewMenu(Menu):
             layout.label(text='Reset Orientation', icon='OUTLINER_OB_IMAGE')
 
 
-class FB_MT_ImageGroupMenu(Menu):
-    bl_label = "Camera Group"
-    bl_idname = Config.fb_image_group_menu_idname
-    bl_description = "Camera Group"
-
-    def draw(self, context):
-        settings = get_main_settings()
-        layout = self.layout
-
-        layout.separator()
-        op = layout.operator(
-            Config.fb_camera_actor_idname,
-            text="Get settings from EXIF")
-        op.action = 'settings_by_exif'
-
-
 class FB_MT_CameraPanelMenu(Menu):
     bl_label = "Advanced Camera settings"
     bl_idname = Config.fb_camera_panel_menu_idname
