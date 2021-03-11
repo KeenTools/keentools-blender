@@ -250,7 +250,7 @@ def _exif_info_message(exif, data):
             make = "{} ".format(data['exif_make'])
         message += "\nCamera: {}{}".format(make, data['exif_model'])
 
-    return message
+    return message[1:]
 
 
 def _exif_sizes_message(headnum, image):
