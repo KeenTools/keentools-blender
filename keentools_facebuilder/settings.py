@@ -414,7 +414,7 @@ class FBHeadItem(PropertyGroup):
                                          default=False,
                                          update=update_expressions)
     reduce_pins: bpy.props.BoolProperty(name="Reduce pins",
-                                        default=False)
+                                        default=True)
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
     blendshapes_control_panel: PointerProperty(name="Blendshapes Control Panel",
                                                type=bpy.types.Object)
