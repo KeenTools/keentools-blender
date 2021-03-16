@@ -165,12 +165,27 @@ class FB_OT_PickMode(bpy.types.Operator):
         rectangler = self._get_rectangler()
         rectangler.clear_rectangles()
         self._update_rectangler_shader(context)
+        self._show_wireframe()
 
     def _selected_rectangle(self, context, event):
         rectangler = self._get_rectangler()
         mouse_x, mouse_y = coords.get_image_space_coord(
             event.mouse_region_x, event.mouse_region_y, context)
         return rectangler.active_rectangle_index(mouse_x, mouse_y)
+
+    def _hide_wireframe(self):
+        vp = FBLoader.viewport()
+        vp.wireframer().hide_shader()
+        vp.points2d().hide_shader()
+        vp.points3d().hide_shader()
+        vp.residuals().hide_shader()
+
+    def _show_wireframe(self):
+        vp = FBLoader.viewport()
+        vp.wireframer().unhide_shader()
+        vp.points2d().unhide_shader()
+        vp.points3d().unhide_shader()
+        vp.residuals().unhide_shader()
 
     def invoke(self, context, event):
         logger = logging.getLogger(__name__)
@@ -182,6 +197,7 @@ class FB_OT_PickMode(bpy.types.Operator):
             return {'FINISHED'}
 
         self._init_rectangler(context)
+        self._hide_wireframe()
 
         context.window_manager.modal_handler_add(self)
         logger.debug('PICKMODE STARTED')
@@ -231,14 +247,6 @@ class FB_OT_PickMode(bpy.types.Operator):
                                            Config.selected_rectangle_color)
             self._update_rectangler_shader(context)
 
-        if event.type == 'ESC':
-            message = 'Face detection was aborted with Esc'
-            self.report({'INFO'}, message)
-            logger.debug(message)
-
-            self._before_operator_stop(context)
-            return {'FINISHED'}
-
         if event.value == 'PRESS' and event.type in {'LEFTMOUSE', 'RIGHTMOUSE'}:
             index = self._selected_rectangle(context, event)
             if index >= 0:
@@ -257,6 +265,18 @@ class FB_OT_PickMode(bpy.types.Operator):
 
             self._before_operator_stop(context)
             return {'FINISHED'}
+
+        if event.type == 'ESC' and event.value == 'RELEASE':
+            message = 'Face detection was aborted with Esc'
+            self.report({'INFO'}, message)
+            logger.debug(message)
+
+            self._before_operator_stop(context)
+            return {'FINISHED'}
+
+        # Prevent camera rotation by user
+        if context.space_data.region_3d.view_perspective != 'CAMERA':
+            bpy.ops.view3d.view_camera()
 
         return {'RUNNING_MODAL'}
 

@@ -35,7 +35,16 @@ from ..utils import coords
 
 class FBEdgeShaderBase:
     """ Wireframe drawing class """
+    _is_visible = True
     handler_list = []
+
+    @classmethod
+    def is_visible(cls):
+        return cls._is_visible
+
+    @classmethod
+    def set_visible(cls, flag=True):
+        cls._is_visible = flag
 
     @classmethod
     def add_handler_list(cls, handler):
@@ -123,6 +132,12 @@ class FBEdgeShaderBase:
 
     def draw_callback(self, op, context):
         pass
+
+    def hide_shader(self):
+        self.set_visible(False)
+
+    def unhide_shader(self):
+        self.set_visible(True)
 
 
 class FBEdgeShader2D(FBEdgeShaderBase):
@@ -326,6 +341,8 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         return True
 
     def draw_callback(self, op, context):
+        if not self.is_visible():
+            return
         # Force Stop
         wireframe_image = find_bpy_image_by_name(Config.coloring_texture_name)
         if self.is_handler_list_empty() or \
