@@ -27,10 +27,19 @@ from .. config import Config
 
 class FBShaderPoints:
     """ Base class for Point Drawing Shaders """
+    _is_visible = True
     point_size = Config.default_pin_size
 
     # Store all draw handlers registered by class objects
     handler_list = []
+
+    @classmethod
+    def is_visible(cls):
+        return cls._is_visible
+
+    @classmethod
+    def set_visible(cls, flag=True):
+        cls._is_visible = flag
 
     @classmethod
     def add_handler_list(cls, handler):
@@ -132,6 +141,8 @@ class FBShaderPoints:
         self.vertices_colors = []
 
     def draw_callback(self, op, context):
+        if not self.is_visible():
+            return
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
@@ -143,6 +154,12 @@ class FBShaderPoints:
             self.shader.bind()
             self.batch.draw(self.shader)
             bgl.glDisable(bgl.GL_BLEND)
+
+    def hide_shader(self):
+        self.set_visible(False)
+
+    def unhide_shader(self):
+        self.set_visible(True)
 
 
 class FBPoints2D(FBShaderPoints):
