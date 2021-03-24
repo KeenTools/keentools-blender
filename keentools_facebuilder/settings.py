@@ -116,7 +116,7 @@ class FBCameraItem(PropertyGroup):
     orientation: IntProperty(default=0)  # angle = orientation * Pi/2
 
     focal: FloatProperty(
-        description="CAMERA Focal length in millimetres",
+        description="35mm equivalent focal length (mm)",
         name="Focal Length (mm)", default=50,
         min=0.1, update=update_camera_focal)
 
@@ -131,8 +131,6 @@ class FBCameraItem(PropertyGroup):
                     "focal length based on the position of the model "
                     "in the frame",
         default=True)
-
-    image_group: IntProperty(default=0)
 
     def update_scene_frame_size(self):
         if self.image_width > 0 and self.image_height > 0:
@@ -363,11 +361,27 @@ class FBCameraItem(PropertyGroup):
     def get_projection_matrix(self):
         return self.get_custom_projection_matrix(self.focal)
 
-    def is_in_group(self):
-        return self.image_group > 0
+    def np_image(self):
+        w, h = self.get_image_size()
+        if w < 0:
+            return None
+        img = np.rot90(
+            np.asarray(self.cam_image.pixels[:]).reshape((h, w, 4)),
+            self.orientation)
+        return img
 
-    def is_excluded(self):
-        return self.image_group == -1
+    def get_headnum_camnum(self):
+        settings = get_main_settings()
+        for i, head in enumerate(settings.heads):
+            for j, camera in enumerate(head.cameras):
+                if camera == self:
+                    return i, j
+        return -1, -1
+
+    def get_focal_length_in_pixels_coef(self):
+        w, _ = self.get_oriented_image_size()
+        sc = 1.0 / self.compensate_view_scale()
+        return sc * w / Config.default_sensor_width
 
 
 def uv_items_callback(self, context):
@@ -445,26 +459,6 @@ class FBHeadItem(PropertyGroup):
         default=True)
 
     exif: PointerProperty(type=FBExifItem)
-
-    manual_estimation_mode: EnumProperty(
-        name='Estimation Mode override', items=[
-            ('all_different', 'Varying FL, Multi-frame Estimation', '',
-             'RENDERLAYERS', 0),
-            ('current_estimation', 'Varying FL, Single-frame Estimation', '',
-             'IMAGE_RGB', 1),
-            ('same_focus', 'Single FL, Multi-frame Estimation', '',
-             'PIVOT_CURSOR', 2),
-            ('force_focal', 'Single Manual FL', '',
-             'MODIFIER', 3),
-        ], description='Force Estimation Mode', default='all_different')
-
-    view_mode: EnumProperty(
-        name='Camera Info View Mode', items=[
-            ('smart', 'Smart Mode', '', '', 0),
-            ('manual', 'Manual Mode', '', '', 1),
-        ], default='smart')
-
-    show_image_groups: BoolProperty(default=True)
 
     model_scale: FloatProperty(
         description="Geometry input scale. "
@@ -620,15 +614,6 @@ class FBHeadItem(PropertyGroup):
         fb = FBLoader.get_builder()
         return self.masks[:len(fb.masks())]
 
-    def smart_mode(self):
-        return self.view_mode == 'smart'
-
-    def smart_mode_toggle(self):
-        if self.view_mode == 'smart':
-            self.view_mode = 'manual'
-        else:
-            self.view_mode = 'smart'
-
     def groups_count(self):
         if self.groups_counter <= 0:
             groups = [cam.group for cam in self.cameras]
@@ -637,15 +622,6 @@ class FBHeadItem(PropertyGroup):
 
     def reset_groups_counter(self):
         self.groups_counter = -1
-
-    def are_image_groups_visible(self):
-        return self.show_image_groups
-
-    def is_image_group_visible(self, camnum):
-        camera = self.get_camera(camnum)
-        if camera is None:
-            return False
-        return self.are_image_groups_visible() and camera.image_group > 0
 
     def reset_sensor_size(self):
         self.sensor_width = 0
@@ -710,12 +686,12 @@ class FBSceneSettings(PropertyGroup):
     # Initial pin_size state in FBShaderPoints class
     pin_size: FloatProperty(
         description="Set pin size in pixels",
-        name="Pin size",
+        name="Size",
         default=Config.default_pin_size, min=1.0, max=100.0,
         update=update_pin_size)
     pin_sensitivity: FloatProperty(
-        description="Set pin handle radius in pixels",
-        name="Pin handle radius",
+        description="Set active area in pixels",
+        name="Active area",
         default=Config.default_point_sensitivity, min=1.0, max=100.0,
         update=update_pin_sensitivity)
 
@@ -787,10 +763,16 @@ class FBSceneSettings(PropertyGroup):
         name="Blue head button", default=True,
         update=update_blue_head_button)
 
+    def reset_pinmode_id(self):
+        self.pinmode_id = 'stop'
+
+    def wrong_pinmode_id(self):
+        return self.pinmode_id in {'', 'stop'}
+
     def get_head(self, headnum):
         if headnum < 0 and len(self.heads) + headnum >= 0:
             return self.heads[len(self.heads) + headnum]
-        if 0 <= headnum <= len(self.heads):
+        if 0 <= headnum < len(self.heads):
             return self.heads[headnum]
         else:
             return None

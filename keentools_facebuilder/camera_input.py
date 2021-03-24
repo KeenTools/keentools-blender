@@ -1,10 +1,11 @@
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 import numpy as np
+from .blender_independent_packages.pykeentools_loader import module as pkt_module
+
 
 from .config import get_main_settings
 
 
-class FaceBuilderCameraInput(pkt.module().FaceBuilderCameraInputI):
+class FaceBuilderCameraInput(pkt_module().FaceBuilderCameraInputI):
     @classmethod
     def _camera_at(cls, keyframe):
         settings = get_main_settings()

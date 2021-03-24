@@ -29,10 +29,8 @@ from bpy.props import (
 
 from .utils import manipulate
 from .utils.coords import xy_to_xz_rotation_matrix_4x4
-from .config import Config, get_main_settings, get_operator, ErrorType
-from .utils.exif_reader import (update_image_groups,
-                                auto_setup_camera_from_exif,
-                                is_size_compatible_with_group)
+from .config import Config, get_main_settings
+from .utils.exif_reader import auto_setup_camera_from_exif
 from .utils.blendshapes import (create_blendshape_controls,
                                 make_control_panel,
                                 convert_controls_animation_to_blendshapes,
@@ -143,62 +141,11 @@ class FB_OT_CameraActor(bpy.types.Operator):
         head = settings.get_head(self.headnum)
         camera = head.get_camera(settings.current_camnum)
 
-        if self.action == 'toggle_group_info':
-            head.show_image_groups = not head.show_image_groups
-
-        elif self.action == 'manual_mode':
-            head.smart_mode_toggle()
-
-        elif self.action == 'reset_image_group':
-            camera.image_group = 0
-            update_image_groups(head)
-
-        elif self.action == 'new_image_group':
-            groups = [x.image_group for x in head.cameras if x.image_group > 0]
-            if len(groups) > 0:
-                camera.image_group = max(groups) + 1
-            else:
-                camera.image_group = 1
-            head.show_image_groups = True
-
-        elif self.action == 'to_image_group':
-            if is_size_compatible_with_group(head, camera, self.num):
-                camera.image_group = self.num
-                head.show_image_groups = True
-            else:
-                error_message = "Wrong Image Size\n\n" \
-                    "This image {} can't be added into group {} \n" \
-                    "because they have different " \
-                    "dimensions.".format(camera.get_image_name(), self.num)
-
-                warn = get_operator(Config.fb_warning_idname)
-                warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
-                     msg_content=error_message)
-
-        elif self.action == 'make_unique':
-            camera.image_group = -1
-            head.show_image_groups = True
-
-        elif self.action == 'make_all_unique':
-            for camera in head.cameras:
-                camera.image_group = -1
-
-        elif self.action == 'reset_all_image_groups':
-            for camera in head.cameras:
-                camera.image_group = 0
-            update_image_groups(head)
-
-        elif self.action == 'settings_by_exif':
-            camera.image_group = 0
+        if self.action == 'settings_by_exif':
             auto_setup_camera_from_exif(camera)
-            update_image_groups(head)
 
         elif self.action == 'reset_all_camera_settings':
             for camera in head.cameras:
-                camera.image_group = 0
                 auto_setup_camera_from_exif(camera)
-            if not head.smart_mode():
-                head.smart_mode_toggle()
-            update_image_groups(head)
 
         return {'FINISHED'}

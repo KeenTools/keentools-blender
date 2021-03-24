@@ -19,10 +19,10 @@
 import logging
 import bpy
 
-from . utils import attrs
-from . fbloader import FBLoader
-from . config import Config, get_main_settings, get_operator, ErrorType
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from .utils import attrs
+from .fbloader import FBLoader
+from .config import Config, get_main_settings, get_operator, ErrorType
+from .blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 class MESH_OT_FBAddHead(bpy.types.Operator):
@@ -42,7 +42,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
             warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
-        except pkt.module().ModelLoadingException:
+        except pkt_module().ModelLoadingException:
             logger.error('ADD_HEAD_ERROR: ModelLoadingException')
             warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktModelProblem)

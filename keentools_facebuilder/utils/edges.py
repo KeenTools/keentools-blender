@@ -24,16 +24,27 @@ from gpu_extras.batch import batch_for_shader
 from . shaders import (simple_fill_vertex_shader,
                        black_fill_fragment_shader, residual_vertex_shader,
                        residual_fragment_shader, raster_image_vertex_shader,
-                       raster_image_fragment_shader)
+                       raster_image_fragment_shader,
+                       solid_line_vertex_shader, solid_line_fragment_shader)
 from ..config import Config
 from ..utils.images import (check_bpy_image_has_same_size,
                             find_bpy_image_by_name,
                             remove_bpy_image, add_alpha_channel)
+from ..utils import coords
 
 
 class FBEdgeShaderBase:
     """ Wireframe drawing class """
+    _is_visible = True
     handler_list = []
+
+    @classmethod
+    def is_visible(cls):
+        return cls._is_visible
+
+    @classmethod
+    def set_visible(cls, flag=True):
+        cls._is_visible = flag
 
     @classmethod
     def add_handler_list(cls, handler):
@@ -122,6 +133,12 @@ class FBEdgeShaderBase:
     def draw_callback(self, op, context):
         pass
 
+    def hide_shader(self):
+        self.set_visible(False)
+
+    def unhide_shader(self):
+        self.set_visible(True)
+
 
 class FBEdgeShader2D(FBEdgeShaderBase):
     def __init__(self):
@@ -163,6 +180,90 @@ class FBEdgeShader2D(FBEdgeShaderBase):
         self.draw_handler = bpy.types.SpaceView3D.draw_handler_add(
             self.draw_callback, args, "WINDOW", "POST_PIXEL")
         self.add_handler_list(self.draw_handler)
+
+
+class FBRectangleShader2D(FBEdgeShader2D):
+    def __init__(self):
+        self._rectangles = []
+        super().__init__()
+
+    def clear_rectangles(self):
+        self._rectangles = []
+
+    def add_rectangle(self, x1, y1, x2, y2, frame_w, frame_h, color):
+        self._rectangles.append([
+            *coords.frame_to_image_space(x1, y1, frame_w, frame_h),
+            *coords.frame_to_image_space(x2, y2, frame_w, frame_h),
+            frame_w, frame_h, (*color,), (*color,)])
+
+    def active_rectangle_index(self, mouse_x, mouse_y):
+        current_index = -1
+        dist_squared = 10000000.0
+        for i, rect in enumerate(self._rectangles):
+            x1, y1, x2, y2 = rect[:4]
+            if x1 <= mouse_x <= x2 and y1 <= mouse_y <= y2:
+                d2 = (mouse_x - (x1 + x2) * 0.5) ** 2 + \
+                     (mouse_y - (y1 + y2) * 0.5) ** 2
+                if d2 < dist_squared:
+                    dist_squared = d2
+                    current_index = i
+        return current_index
+
+    def highlight_rectangle(self, index=-1, color=(1.0, 0.0, 0.0, 1.0)):
+        for i, rect in enumerate(self._rectangles):
+            rect[6] = (*color,) if i == index else (*rect[7],)
+
+    def prepare_shader_data(self, context):
+        rect_points = []
+        rect_colors = []
+
+        rx1, ry1, rx2, ry2 = coords.get_camera_border(context)
+
+        for x1, y1, x2, y2, w, h, col1, col2 in self._rectangles:
+            points = [(x1, y1), (x1, y2), (x2, y2), (x2, y1)]
+            previous_p = points[-1]
+            for p in points:
+                rect_points.append(coords.image_space_to_region(*previous_p,
+                                                                rx1, ry1,
+                                                                rx2, ry2))
+                rect_colors.append(col1)
+                rect_points.append(coords.image_space_to_region(*p,
+                                                                rx1, ry1,
+                                                                rx2, ry2))
+                rect_colors.append(col1)
+                previous_p = p
+
+        self.set_vertices_colors(rect_points, rect_colors)
+
+    def init_shaders(self):
+        self.line_shader = gpu.types.GPUShader(
+            solid_line_vertex_shader(), solid_line_fragment_shader())
+
+    def draw_callback(self, op, context):
+        # Force Stop
+        if self.is_handler_list_empty():
+            self.unregister_handler()
+            return
+
+        if self.line_shader is None or self.line_batch is None:
+            return
+
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glEnable(bgl.GL_LINE_SMOOTH)
+        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
+        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
+        bgl.glLineWidth(3.0)  # Rectangle Width
+
+        self.line_shader.bind()
+        self.line_batch.draw(self.line_shader)
+
+    def create_batch(self):
+        if bpy.app.background:
+            return
+        self.line_batch = batch_for_shader(
+            self.line_shader, 'LINES',
+            {'pos': self.vertices, 'color': self.vertices_colors}
+        )
 
 
 class FBRasterEdgeShader3D(FBEdgeShaderBase):
@@ -240,6 +341,8 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         return True
 
     def draw_callback(self, op, context):
+        if not self.is_visible():
+            return
         # Force Stop
         wireframe_image = find_bpy_image_by_name(Config.coloring_texture_name)
         if self.is_handler_list_empty() or \

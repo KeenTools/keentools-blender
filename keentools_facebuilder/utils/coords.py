@@ -98,8 +98,16 @@ def projection_matrix(w, h, fl, sw, near, far, scale=1.0):
     ).transpose()
 
 
-def focal_by_projection_matrix(pm, sw):
+def focal_by_projection_matrix_mm(pm, sw):
     return - 0.5 * pm[0][0] * sw / pm[0][2]
+
+
+def focal_by_projection_matrix_px(pm):
+    return pm[0][0]
+
+
+def focal_mm_to_px(fl, sw, w):
+    return fl / sw * w
 
 
 def render_frame():

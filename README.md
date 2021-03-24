@@ -4,6 +4,8 @@
 
 ## Release History
 
+2021.2.0 - March 2021
+
 2021.1.0 - December 2020
 
 2.1.1 - 1 October 2020

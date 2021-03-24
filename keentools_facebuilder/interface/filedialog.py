@@ -27,7 +27,6 @@ from ..fbloader import FBLoader
 from ..config import Config, get_main_settings, get_operator
 
 from ..utils.exif_reader import (read_exif_to_camera,
-                                 update_image_groups,
                                  auto_setup_camera_from_exif)
 from ..utils.other import restore_ui_elements
 from ..utils.materials import find_bpy_image_by_name
@@ -77,8 +76,6 @@ def load_single_image_file(headnum, camnum, filepath):
             read_exif_to_camera(headnum, camnum, filepath)
         except RuntimeError:
             logger.error('FILE EXIF READ ERROR: {}'.format(filepath))
-
-        update_image_groups(head)
 
         camera = head.get_camera(camnum)
         camera.show_background_image()
@@ -270,8 +267,6 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
             if i > last_camnum:
                 auto_setup_camera_from_exif(camera)
                 FBLoader.center_geo_camera_projection(self.headnum, i)
-
-        update_image_groups(head)
 
         FBLoader.save_only(self.headnum)
         return {'FINISHED'}

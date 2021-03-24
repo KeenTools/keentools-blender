@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy
 from bpy.types import Panel
 
 from .updater import FBUpdater
@@ -28,10 +27,9 @@ from ..utils.manipulate import (what_is_state,
                                 get_current_head,
                                 get_obj_from_context,
                                 has_no_blendshape,
-                                has_blendshapes_action,
-                                is_it_our_mesh)
+                                has_blendshapes_action)
 from ..utils.materials import find_bpy_image_by_name
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from ..blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 
 
 def _state_valid_to_show(state):
@@ -40,14 +38,14 @@ def _state_valid_to_show(state):
 
 
 def _show_all_panels():
-    if not pkt.is_installed():
+    if not pkt_is_installed():
         return False
     state, _ = what_is_state()
     return _state_valid_to_show(state)
 
 
 def _show_all_panels_no_blendshapes():
-    if not pkt.is_installed():
+    if not pkt_is_installed():
         return False
     state, headnum = what_is_state()
     if not _state_valid_to_show(state):
@@ -131,7 +129,7 @@ class FB_PT_HeaderPanel(Common, Panel):
             text='Install Core library', icon='PREFERENCES')
 
     def _draw_start_panel(self, layout):
-        if not pkt.is_installed():
+        if not pkt_is_installed():
             self._pkt_install_offer(layout)
         else:
             self._head_creation_offer(layout)
@@ -167,7 +165,7 @@ class FB_PT_HeaderPanel(Common, Panel):
     def draw(self, context):
         layout = self.layout
 
-        if not pkt.is_installed():
+        if not pkt_is_installed():
             self._draw_start_panel(layout)
             return
 
@@ -233,15 +231,9 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
     bl_label = Config.fb_camera_panel_label
 
     def draw_header_preset(self, context):
-        state, headnum = what_is_state()
-
         layout = self.layout
         row = layout.row()
         row.active = False
-
-        op = row.operator(Config.fb_camera_panel_menu_exec_idname,
-                     text='', icon='COLLAPSEMENU')
-        op.headnum = headnum
 
         row.operator(
             Config.fb_help_camera_idname,
@@ -255,69 +247,12 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
             col = row.column()
             col.scale_y = Config.text_scale_y
             col.label(text='File: {}'.format(camera.get_image_name()))
-            row2 = col.split(factor=0.6)
-            row2.label(text='Camera Group:')
-
-            txt = camera.image_group
-            if camera.image_group == 0:
-                txt = '—'
-            if camera.image_group < 0:
-                txt = 'Excluded'
-
-            row2.operator(Config.fb_image_group_menu_exec_idname,
-                          text='{}'.format(txt))
 
             box.prop(camera, 'auto_focal_estimation')
             if camera.auto_focal_estimation:
                 box.label(text='Focal length: {:.2f} mm'.format(camera.focal))
             else:
                 box.prop(camera, 'focal')
-
-        def _draw_mode_comment(layout, mode):
-            if mode == 'all_different':
-                txt = ['The focal length of each view',
-                       'will be different, but',
-                       'estimation process will',
-                       'happen across all pinned',
-                       'views simultaneously.']
-            elif mode == 'current_estimation':
-                txt = ['The focal length of each view',
-                       'will be different and it',
-                       'will be estimated only',
-                       'for current view.']
-            elif mode == 'same_focus':
-                txt = ['The focal length will be',
-                       'the same for each view,',
-                       'estimation will happen',
-                       'across all pinned views',
-                       'simultaneously.']
-            elif mode == 'force_focal':
-                txt = ['The focal length will be',
-                       'the same for every view,',
-                       'estimation will be turned off,',
-                       'you can enter the focal',
-                       'length manually.']
-            else:
-                txt =[]
-            draw_labels(layout, txt)
-
-        def _draw_override_mode(layout, settings, head):
-            box = layout.box()
-            box.label(text='Override Focal Length settings:')
-            box.prop(head, 'manual_estimation_mode', text='')
-            col = box.column()
-            col.scale_y = Config.text_scale_y
-            _draw_mode_comment(col, head.manual_estimation_mode)
-            if head.manual_estimation_mode == 'force_focal':
-                box.prop(head, 'focal')
-
-            if settings.current_camnum < 0:
-                return
-            if head.manual_estimation_mode in {'current_estimation',
-                                               'all_different',
-                                               'same_focus'}:
-                camera = head.get_camera(settings.current_camnum)
-                box.label(text='Focal length: {:.2f} mm'.format(camera.focal))
 
         def _draw_exif(layout, head):
             # Show EXIF info message
@@ -345,13 +280,9 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
         if not head:
             return
 
-        if head.smart_mode():
-            if settings.current_camnum >= 0:
-                _draw_default_mode(layout, settings, head)
-        else:
-            _draw_override_mode(layout, settings, head)
-
-        _draw_exif(layout, head)
+        if settings.current_camnum >= 0:
+            _draw_default_mode(layout, settings, head)
+            _draw_exif(layout, head)
 
 
 class FB_PT_ViewsPanel(AllVisible, Panel):
@@ -394,26 +325,30 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         box = layout.box()
         box.prop(settings.get_head(headnum), 'use_emotions')
 
+        if settings.pinmode:
+            row = box.row()
+            row.scale_y = 2.0
+            op = row.operator(
+                Config.fb_pickmode_starter_idname,
+                text='Align face', icon='USER')
+            op.headnum = settings.current_headnum
+            op.camnum = settings.current_camnum
+
         box = layout.box()
         for i, camera in enumerate(head.cameras):
             row = box.row()
             view_icon = 'PINNED' if camera.has_pins() else 'HIDE_OFF'
 
             col = row.column()
-            cam_name = '{}{}'.format(
-                camera.get_image_name(),
-                ' [{}]'.format(camera.image_group)
-                if head.is_image_group_visible(i) else ''
-            )
 
             if settings.current_camnum == i and settings.pinmode:
                 col.prop(settings, 'blue_camera_button', toggle=1,
-                         text=cam_name, icon=view_icon)
+                         text=camera.get_image_name(), icon=view_icon)
             else:
                 split = col
                 op = split.operator(
                     Config.fb_select_camera_idname,
-                    text=cam_name, icon=view_icon)
+                    text=camera.get_image_name(), icon=view_icon)
                 op.headnum = headnum
                 op.camnum = i
 
@@ -424,6 +359,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
                 text='', icon='COLLAPSEMENU')
             op.headnum = headnum
             op.camnum = i
+
 
     def _draw_camera_hint(self, layout, headnum):
         settings = get_main_settings()
@@ -678,7 +614,7 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
 
     @classmethod
     def poll(cls, context):
-        if not pkt.is_installed():
+        if not pkt_is_installed():
             return False
         state, _ = what_is_state()
         return _state_valid_to_show(state) or state == 'FACS_HEAD'

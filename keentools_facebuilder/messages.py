@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from keentools_facebuilder.config import Config
+from .config import Config
 
 
 USER_MESSAGES = {
