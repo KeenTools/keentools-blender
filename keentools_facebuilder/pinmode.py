@@ -18,7 +18,6 @@
 
 import logging
 from uuid import uuid4
-import os
 
 import bpy
 
@@ -282,6 +281,9 @@ class FB_OT_PinMode(bpy.types.Operator):
         else:
             logger.debug("SHADER UPDATE ONLY")
             self._init_wireframer_colors(settings.overall_opacity)
+
+        cameras.set_camera_in_viewport(context, zoom=Config.default_view_zoom,
+                                       offset=(0, 0))
 
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
         manipulate.push_neutral_head_in_undo_history(head, kid,
