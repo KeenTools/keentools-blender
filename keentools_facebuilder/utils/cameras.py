@@ -117,6 +117,7 @@ def reset_background_image_rotation(camera):
     background_image.rotation = 0
     camera.orientation = 0
 
+
 def rotate_background_image(camera, delta=1):
     background_image = get_camera_background(camera)
     if background_image is None:
@@ -128,3 +129,9 @@ def rotate_background_image(camera, delta=1):
     if camera.orientation >= 4:
         camera.orientation += -4
     background_image.rotation = camera.orientation * math.pi / 2
+
+
+def set_camera_in_viewport(context, zoom=18.0, offset=(0, 0)):
+    rv3d = context.space_data.region_3d
+    rv3d.view_camera_zoom = zoom
+    rv3d.view_camera_offset = offset

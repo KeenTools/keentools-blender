@@ -193,6 +193,8 @@ class Config:
     camera_y_step = 5
     camera_z_step = 0.5
 
+    default_view_zoom = 18.0
+
     # In Material
     image_node_layout_coord = (-300, 0)
 
