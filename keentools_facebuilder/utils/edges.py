@@ -167,6 +167,8 @@ class FBEdgeShader2D(FBEdgeShaderBase):
         self.line_batch.draw(self.line_shader)
 
     def create_batch(self):
+        if bpy.app.background:
+            return
         # Our shader batch
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
