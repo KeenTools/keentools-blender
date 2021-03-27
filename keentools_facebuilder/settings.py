@@ -909,3 +909,6 @@ class FBSceneSettings(PropertyGroup):
 
     def is_proper_headnum(self, headnum):
         return 0 <= headnum <= self.get_last_headnum()
+
+    def preferences(self):
+        return bpy.context.preferences.addons[Config.addon_name].preferences

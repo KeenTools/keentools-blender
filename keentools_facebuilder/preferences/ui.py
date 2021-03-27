@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import sys
+import logging
 
 import bpy
 from ..preferences.operators import (
@@ -35,11 +36,12 @@ from ..blender_independent_packages.pykeentools_loader import (
     is_python_supported as pkt_is_python_supported,
     installation_status as pkt_installation_status,
     loaded as pkt_loaded)
-from ..config import (Config, is_blender_supported)
+from ..config import Config, is_blender_supported, get_main_settings
 from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
-                        draw_warning_labels, draw_long_label, draw_long_labels)
+                        draw_warning_labels, draw_long_labels)
+
 
 def _multi_line_text_to_output_labels(layout, txt):
     if txt is None:
@@ -52,6 +54,124 @@ def _multi_line_text_to_output_labels(layout, txt):
     col.scale_y = Config.text_scale_y
     for text_line in non_empty_lines:
         col.label(text=text_line)
+
+
+class UserPrefDict:
+    defaults = {
+        'pin_size': {'value': 7.0, 'type': 'float'},
+        'pin_sensitivity': {'value': 16.0, 'type': 'float'},
+        'prevent_view_rotation': {'value': True, 'type': 'bool'},
+    }
+    _mock_dict = {}
+
+    @classmethod
+    def get_dict(cls):
+        return cls._mock_dict
+
+    @classmethod
+    def get_value(cls, name, type='str'):
+        _dict = cls.get_dict()
+
+        if name in _dict.keys():
+            if type == 'int':
+                return int(_dict[name])
+            elif type == 'float':
+                return float(_dict[name])
+            elif type == 'bool':
+                return _dict[name] == 'True'
+            elif type == 'str':
+                return _dict[name]
+        elif name in cls.defaults.keys():
+            row = cls.defaults[name]
+            cls.set_value(name, row['value'])
+            return row['value']
+        return None
+
+    @classmethod
+    def set_value(cls, name, value):
+        _dict = cls.get_dict()
+        _dict[name] = str(value)
+        print(cls._mock_dict)
+
+    @classmethod
+    def clear_dict(cls):
+        _dict = cls.get_dict()
+        _dict.clear()
+
+    @classmethod
+    def reset_parameter_to_default(cls, name):
+        if name in cls.defaults.keys():
+            row = cls.defaults[name]
+            cls.set_value(name, row['value'])
+
+    @classmethod
+    def reset_all_to_defaults(cls):
+        cls.clear_dict()
+        for name in cls.defaults.keys():
+            cls.set_value(name, cls.defaults[name]['value'])
+
+
+def _reset_user_preferences_parameter_to_default(name):
+    UserPrefDict.reset_parameter_to_default(name)
+
+
+def _set_all_user_preferences_to_default():
+    UserPrefDict.reset_all_to_defaults()
+
+
+class FB_OT_UserPreferencesChanger(bpy.types.Operator):
+    bl_idname = 'keentools_facebuilder.user_preferences_changer'
+    bl_label = 'FaceBuilder Action'
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = 'FaceBuilder'
+
+    param_string: bpy.props.StringProperty(name='String parameter')
+    action: bpy.props.StringProperty(name='Action Name')
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        logger = logging.getLogger(__name__)
+        logger.debug('user_preferences_changer: {}'.format(self.action))
+
+        if self.action == 'revert_default':
+            _reset_user_preferences_parameter_to_default(self.param_string)
+            return {'FINISHED'}
+        elif self.action == 'reset_all_to_default':
+            _set_all_user_preferences_to_default()
+            return {'FINISHED'}
+        return {'CANCELLED'}
+
+
+def _update_user_preferences_pin_size(self, context):
+    settings = get_main_settings()
+    prefs = settings.preferences()
+    settings.pin_size = self.pin_size
+
+    if prefs.pin_sensitivity < self.pin_size:
+        prefs.pin_sensitivity = self.pin_size
+
+
+def _update_user_preferences_pin_sensitivity(self, context):
+    settings = get_main_settings()
+    prefs = settings.preferences()
+    settings.pin_sensitivity = self.pin_sensitivity
+
+    if prefs.pin_size > self.pin_sensitivity:
+        prefs.pin_size = self.pin_sensitivity
+
+
+def _universal_getter(name, type):
+    def _getter(self):
+        return UserPrefDict.get_value(name, type)
+    return _getter
+
+
+def _universal_setter(name):
+    def _setter(self, value):
+        UserPrefDict.set_value(name, value)
+    return _setter
 
 
 class FBAddonPreferences(bpy.types.AddonPreferences):
@@ -115,6 +235,31 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     more_info: bpy.props.BoolProperty(
         name='More Info',
         default=False
+    )
+
+    # User preferences
+    show_user_preferences: bpy.props.BoolProperty(
+        name='Addon User Preferences',
+        default=False
+    )
+    pin_size: bpy.props.FloatProperty(
+        description="Set pin size in pixels",
+        name="Size", min=1.0, max=100.0,
+        precision=1,
+        get=_universal_getter('pin_size', 'float'),
+        set=_universal_setter('pin_size'),
+        update=_update_user_preferences_pin_size)
+    pin_sensitivity: bpy.props.FloatProperty(
+        description="Set active area in pixels",
+        name="Active area", min=1.0, max=100.0,
+        precision=1,
+        get=_universal_getter('pin_sensitivity', 'float'),
+        set=_universal_setter('pin_sensitivity'),
+        update=_update_user_preferences_pin_sensitivity)
+    prevent_view_rotation: bpy.props.BoolProperty(
+        name='Prevent view rotation by middle mouse button in pinmode',
+        get=_universal_getter('prevent_view_rotation', 'bool'),
+        set=_universal_setter('prevent_view_rotation'),
     )
 
     def _license_was_accepted(self):
@@ -338,6 +483,39 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         col.scale_y = Config.text_scale_y
         draw_long_labels(col, info, 120)
 
+    def _draw_user_preferences(self, layout):
+        icon = 'TRIA_RIGHT' if not self.show_user_preferences else 'TRIA_DOWN'
+        main_box = layout.box()
+        if not self.show_user_preferences:
+            main_box.prop(self, 'show_user_preferences', icon=icon)
+            return
+        main_box.prop(self, 'show_user_preferences', icon=icon,
+                      invert_checkbox=True)  # emboss=False
+
+        op_name = 'keentools_facebuilder.user_preferences_changer'
+
+        box = main_box.box()
+        box.label(text='Pin size and sensitivity')
+        row = box.split(factor=0.7)
+        row.prop(self, 'pin_size', slider=True)
+        op = row.operator(op_name, text='Reset')
+        op.action = 'revert_default'
+        op.param_string = 'pin_size'
+
+        row = box.split(factor=0.7)
+        row.prop(self, 'pin_sensitivity', slider=True)
+        op = row.operator(op_name, text='Reset')
+        op.action = 'revert_default'
+        op.param_string = 'pin_sensitivity'
+
+        box = main_box.box()
+        box.label(text='User Interface')
+        row = box.row()
+        row.prop(self, 'prevent_view_rotation')
+
+        op = main_box.operator(op_name, text='Reset All to Defaults')
+        op.action = 'reset_all_to_default'
+
     def draw(self, context):
         layout = self.layout
 
@@ -367,9 +545,13 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             try:
                 self._draw_version(box)
                 self._draw_license_info(layout)
+                self._draw_user_preferences(layout)
                 return
-            except Exception:
-                cached_status[1] = 'NO_VERSION'
+            except Exception as error:
+                logger = logging.getLogger(__name__)
+                logger.error('UI error: Unknown Exception')
+                logger.error('info: {} -- {}'.format(type(error), error))
+                cached_status = (False, 'NO_VERSION')
 
         self._draw_pkt_detail_error_report(box, cached_status[1])
         self._draw_problem_library(box)
