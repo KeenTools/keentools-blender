@@ -454,12 +454,6 @@ class FBHeadItem(PropertyGroup):
                                description="UV Layout",
                                update=update_mesh_simple)
 
-    use_exif: BoolProperty(
-        name="Use EXIF if available in file",
-        description="Automatically detects Focal Length & Sensor Size "
-                    "from EXIF data in image file if available",
-        default=True)
-
     exif: PointerProperty(type=FBExifItem)
 
     model_scale: FloatProperty(
@@ -618,15 +612,6 @@ class FBHeadItem(PropertyGroup):
     def get_masks(self):
         fb = FBLoader.get_builder()
         return self.masks[:len(fb.masks())]
-
-    def groups_count(self):
-        if self.groups_counter <= 0:
-            groups = [cam.group for cam in self.cameras]
-            self.groups_counter = len(set(groups))
-        return self.groups_counter
-
-    def reset_groups_counter(self):
-        self.groups_counter = -1
 
     def reset_sensor_size(self):
         self.sensor_width = 0
