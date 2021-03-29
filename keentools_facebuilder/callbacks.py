@@ -22,10 +22,10 @@ import bpy
 from .config import get_main_settings, get_operator, Config, ErrorType
 from .fbloader import FBLoader
 from .utils import coords
+from .utils.manipulate import get_current_headnum
 from .utils.blendshapes import (restore_facs_blendshapes,
                                 disconnect_blendshapes_action)
 from .blender_independent_packages.pykeentools_loader import module as pkt_module
-from .utils.focal_length import configure_focal_mode_and_fixes
 
 
 def mesh_update_accepted(headnum):
@@ -113,6 +113,8 @@ def _update_mesh_now(headnum):
 
     if settings.pinmode and head.should_use_emotions():
         keyframe = head.get_keyframe(settings.current_camnum)
+        if keyframe == -1:
+            keyframe = None
     else:
         keyframe = None
 
@@ -279,5 +281,5 @@ def update_blue_head_button(self, context):
     settings = get_main_settings()
     if not settings.blue_head_button:
         op = get_operator(Config.fb_select_head_idname)
-        op('EXEC_DEFAULT')
+        op('EXEC_DEFAULT', headnum=get_current_headnum())
         settings.blue_head_button = True
