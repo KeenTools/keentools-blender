@@ -105,23 +105,14 @@ class FBEdgeShaderBase:
             self.remove_handler_list(self.draw_handler)
         self.draw_handler = None
 
-    def add_color_vertices(self, color, verts):
-        for i, v in enumerate(verts):
-            self.vertices.append(verts[i])
-            self.vertices_colors.append(color)
-
     def add_vertices_colors(self, verts, colors):
         for i, v in enumerate(verts):
             self.vertices.append(verts[i])
             self.vertices_colors.append(colors[i])
 
-    def set_color_vertices(self, color, verts):
-        self.clear_vertices()
-        self.add_color_vertices(color, verts)
-
     def set_vertices_colors(self, verts, colors):
-        self.clear_vertices()
-        self.add_vertices_colors(verts, colors)
+        self.vertices = verts
+        self.vertices_colors = colors
 
     def clear_vertices(self):
         self.vertices = []
@@ -425,12 +416,21 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
 
         self.simple_line_shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
-    def init_geom_data(self, obj):
+    def init_geom_data_from_fb(self, obj, fb, keyframe):
+        geom_verts = fb.applied_args_model_vertices_at(keyframe) @ \
+                     coords.xy_to_xz_rotation_matrix_3x3()
+        m = np.array(obj.matrix_world, dtype=np.float32).transpose()
+        vv = np.ones((len(geom_verts), 4), dtype=np.float32)
+        vv[:, :-1] = geom_verts
+        vv = vv @ m
+        self.vertices = vv[:, :3]
+
+    def init_geom_data_from_mesh(self, obj):
         mesh = obj.data
         mesh.calc_loop_triangles()
 
-        verts = np.empty((len(mesh.vertices), 3), 'f')
-        indices = np.empty((len(mesh.loop_triangles), 3), 'i')
+        verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
+        indices = np.empty((len(mesh.loop_triangles), 3), dtype=np.int)
 
         mesh.vertices.foreach_get(
             "co", np.reshape(verts, len(mesh.vertices) * 3))
