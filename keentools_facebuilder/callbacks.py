@@ -165,7 +165,7 @@ def _update_mesh_now(headnum):
 
     if settings.pinmode:
         # Update wireframe structures
-        FBLoader.viewport().wireframer().init_geom_data(head.headobj)
+        FBLoader.viewport().wireframer().init_geom_data_from_mesh(head.headobj)
         FBLoader.viewport().wireframer().init_edge_indices(FBLoader.get_builder())
         FBLoader.viewport().update_wireframe()
 

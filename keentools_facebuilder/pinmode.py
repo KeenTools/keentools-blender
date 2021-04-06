@@ -85,7 +85,7 @@ class FB_OT_PinMode(bpy.types.Operator):
                                        settings.show_specials):
             wf.switch_to_simple_shader()
 
-        wf.init_geom_data(head.headobj)
+        wf.init_geom_data_from_mesh(head.headobj)
         wf.init_edge_indices(FBLoader.get_builder())
         wf.create_batches()
 
@@ -133,7 +133,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         kid = settings.get_keyframe(headnum, camnum)
         fb = FBLoader.get_builder()
 
-        coords.update_head_mesh(settings, fb, head)
+        coords.update_head_mesh_neutral(fb, head.headobj)
 
         FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
         FBLoader.shader_update(head.headobj)
@@ -244,7 +244,6 @@ class FB_OT_PinMode(bpy.types.Operator):
                 logger.debug("UPDATE KEYFRAME: {}".format(kfnum))
                 if not fb.is_key_at(kfnum):
                     fb.set_keyframe(kfnum, cam.get_model_mat())
-
         try:
             FBLoader.place_camera(settings.current_headnum,
                                   settings.current_camnum)

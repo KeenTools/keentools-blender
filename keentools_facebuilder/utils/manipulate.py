@@ -166,8 +166,6 @@ def push_neutral_head_in_undo_history(head, keyframe,
     fb = FBLoader.get_builder()
     coords.update_head_mesh_neutral(fb, head.headobj)
     push_head_in_undo_history(head, msg)
-    if head.should_use_emotions():
-        coords.update_head_mesh_emotions(fb, head.headobj, keyframe)
 
 
 def check_settings():

@@ -171,9 +171,10 @@ class FBLoader:
 
     @classmethod
     def shader_update(cls, headobj):
-        cls.viewport().wireframer().init_geom_data(headobj)
-        cls.viewport().wireframer().init_edge_indices(FBLoader.get_builder())
-        cls.viewport().wireframer().create_batches()
+        wf = cls.viewport().wireframer()
+        wf.init_geom_data_from_mesh(headobj)
+        wf.init_edge_indices(FBLoader.get_builder())
+        wf.create_batches()
 
     @classmethod
     def fb_redraw(cls, headnum, camnum):
