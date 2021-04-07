@@ -153,7 +153,7 @@ class FB_OT_MovePin(bpy.types.Operator):
         FBLoader.fb_save(headnum, camnum)
         # ---------
         # PUSH Last
-        manipulate.push_neutral_head_in_undo_history(head, kid, 'Pin Result.')
+        manipulate.push_neutral_head_in_undo_history(head, kid, 'Pin Move')
         # ---------
 
         # Load 3D pins
