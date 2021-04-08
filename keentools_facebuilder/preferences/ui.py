@@ -57,16 +57,22 @@ def _multi_line_text_to_output_labels(layout, txt):
 
 
 class UserPrefDict:
+    _DICT_NAME = Config.user_preferences_dict_name
     defaults = {
         'pin_size': {'value': 7.0, 'type': 'float'},
         'pin_sensitivity': {'value': 16.0, 'type': 'float'},
         'prevent_view_rotation': {'value': True, 'type': 'bool'},
     }
-    _mock_dict = {}
 
     @classmethod
     def get_dict(cls):
-        return cls._mock_dict
+        _dict = pkt_module().utils.load_settings(cls._DICT_NAME)
+        return _dict
+
+    @classmethod
+    def print_dict(cls):
+        d = pkt_module().utils.load_settings(cls._DICT_NAME)
+        print(d)
 
     @classmethod
     def get_value(cls, name, type='str'):
@@ -91,12 +97,16 @@ class UserPrefDict:
     def set_value(cls, name, value):
         _dict = cls.get_dict()
         _dict[name] = str(value)
-        print(cls._mock_dict)
+        cls.save_dict(_dict)
 
     @classmethod
     def clear_dict(cls):
-        _dict = cls.get_dict()
-        _dict.clear()
+        pkt_module().utils.reset_settings(cls._DICT_NAME)
+
+    @classmethod
+    def save_dict(cls, dict_to_save):
+        pkt_module().utils.save_settings(cls._DICT_NAME, dict_to_save)
+        cls.print_dict()
 
     @classmethod
     def reset_parameter_to_default(cls, name):
