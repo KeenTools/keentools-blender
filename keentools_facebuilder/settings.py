@@ -49,7 +49,8 @@ from .callbacks import (update_mesh_with_dialog,
                         update_head_focal,
                         update_camera_focal,
                         update_blue_camera_button,
-                        update_blue_head_button)
+                        update_blue_head_button,
+                        universal_getter, universal_setter)
 from .utils.manipulate import get_current_head
 
 
@@ -693,12 +694,19 @@ class FBSceneSettings(PropertyGroup):
         description="Set pin size in pixels",
         name="Size",
         default=Config.default_pin_size, min=1.0, max=100.0,
-        update=update_pin_size)
+        precision=1,
+        update=update_pin_size,
+        get=universal_getter('pin_size', 'float'),
+        set=universal_setter('pin_size'))
     pin_sensitivity: FloatProperty(
         description="Set active area in pixels",
         name="Active area",
         default=Config.default_point_sensitivity, min=1.0, max=100.0,
-        update=update_pin_sensitivity)
+        precision=1,
+        update=update_pin_sensitivity,
+        get=universal_getter('pin_sensitivity', 'float'),
+        set=universal_setter('pin_sensitivity')
+    )
 
     # Other settings
     shape_rigidity: FloatProperty(
@@ -767,6 +775,10 @@ class FBSceneSettings(PropertyGroup):
         description="Current head",
         name="Blue head button", default=True,
         update=update_blue_head_button)
+
+    defaults_loaded: BoolProperty(
+        description='Defaults are loaded flag',
+        name='Defaults loaded', default=False)
 
     def reset_pinmode_id(self):
         self.pinmode_id = 'stop'

@@ -41,6 +41,7 @@ from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
                         draw_warning_labels, draw_long_labels)
+from ..preferences.user_pref_dict import UserPrefDict
 
 
 def _multi_line_text_to_output_labels(layout, txt):
@@ -54,71 +55,6 @@ def _multi_line_text_to_output_labels(layout, txt):
     col.scale_y = Config.text_scale_y
     for text_line in non_empty_lines:
         col.label(text=text_line)
-
-
-class UserPrefDict:
-    _DICT_NAME = Config.user_preferences_dict_name
-    defaults = {
-        'pin_size': {'value': 7.0, 'type': 'float'},
-        'pin_sensitivity': {'value': 16.0, 'type': 'float'},
-        'prevent_view_rotation': {'value': True, 'type': 'bool'},
-    }
-
-    @classmethod
-    def get_dict(cls):
-        _dict = pkt_module().utils.load_settings(cls._DICT_NAME)
-        return _dict
-
-    @classmethod
-    def print_dict(cls):
-        d = pkt_module().utils.load_settings(cls._DICT_NAME)
-        print(d)
-
-    @classmethod
-    def get_value(cls, name, type='str'):
-        _dict = cls.get_dict()
-
-        if name in _dict.keys():
-            if type == 'int':
-                return int(_dict[name])
-            elif type == 'float':
-                return float(_dict[name])
-            elif type == 'bool':
-                return _dict[name] == 'True'
-            elif type == 'str':
-                return _dict[name]
-        elif name in cls.defaults.keys():
-            row = cls.defaults[name]
-            cls.set_value(name, row['value'])
-            return row['value']
-        return None
-
-    @classmethod
-    def set_value(cls, name, value):
-        _dict = cls.get_dict()
-        _dict[name] = str(value)
-        cls.save_dict(_dict)
-
-    @classmethod
-    def clear_dict(cls):
-        pkt_module().utils.reset_settings(cls._DICT_NAME)
-
-    @classmethod
-    def save_dict(cls, dict_to_save):
-        pkt_module().utils.save_settings(cls._DICT_NAME, dict_to_save)
-        cls.print_dict()
-
-    @classmethod
-    def reset_parameter_to_default(cls, name):
-        if name in cls.defaults.keys():
-            row = cls.defaults[name]
-            cls.set_value(name, row['value'])
-
-    @classmethod
-    def reset_all_to_defaults(cls):
-        cls.clear_dict()
-        for name in cls.defaults.keys():
-            cls.set_value(name, cls.defaults[name]['value'])
 
 
 def _reset_user_preferences_parameter_to_default(name):

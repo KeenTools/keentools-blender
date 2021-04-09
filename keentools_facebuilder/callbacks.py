@@ -25,7 +25,7 @@ from .utils import coords
 from .utils.blendshapes import (restore_facs_blendshapes,
                                 disconnect_blendshapes_action)
 from .blender_independent_packages.pykeentools_loader import module as pkt_module
-from .utils.focal_length import configure_focal_mode_and_fixes
+from .preferences.user_pref_dict import UserPrefDict
 
 
 def mesh_update_accepted(headnum):
@@ -203,6 +203,21 @@ def update_wireframe(self, context):
 
 def update_pin_sensitivity(self, context):
     FBLoader.viewport().update_pin_sensitivity()
+
+
+def universal_getter(name, type):
+    def _getter(self):
+        if name in self.keys():
+            return self[name]
+        else:
+            return UserPrefDict.get_value(name, type)
+    return _getter
+
+
+def universal_setter(name):
+    def _setter(self, value):
+        self[name] = value
+    return _setter
 
 
 def update_pin_size(self, context):
