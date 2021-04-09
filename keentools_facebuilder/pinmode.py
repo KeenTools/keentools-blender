@@ -336,9 +336,13 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         # Quit when camera rotated by user
         if context.space_data.region_3d.view_perspective != 'CAMERA':
-            logger.debug("CAMERA ROTATED PINMODE OUT")
-            FBLoader.out_pinmode(headnum)
-            return True
+            if settings.preferences().prevent_view_rotation:
+                # Return back to the camera view
+                bpy.ops.view3d.view_camera()
+            else:
+                logger.debug("CAMERA ROTATED PINMODE OUT")
+                FBLoader.out_pinmode(headnum)
+                return True
 
         if event.type == 'ESC':
             FBLoader.out_pinmode(headnum)
