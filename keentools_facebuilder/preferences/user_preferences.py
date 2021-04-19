@@ -16,47 +16,57 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import logging
+
 from ..config import Config
 from ..blender_independent_packages.pykeentools_loader import (
-    module as pkt_module,
-    is_installed as pkt_is_installed)
+    module as pkt_module, is_installed as pkt_is_installed)
 
 
-class UserPrefDict:
+class UserPreferences:
     _DICT_NAME = Config.user_preferences_dict_name
-    defaults = {
-        'pin_size': {'value': 7.0, 'type': 'float'},
-        'pin_sensitivity': {'value': 16.0, 'type': 'float'},
-        'prevent_view_rotation': {'value': True, 'type': 'bool'},
-    }
+    _defaults = Config.default_user_preferences
+    type_float = 'float'
+    type_string = 'string'
+    type_int = 'int'
+    type_bool = 'bool'
+    type_color = 'color'
 
     @classmethod
     def get_dict(cls):
-        _dict = pkt_module().utils.load_settings(cls._DICT_NAME)
+        if pkt_is_installed():
+            _dict = pkt_module().utils.load_settings(cls._DICT_NAME)
+        else:
+            _dict = cls._defaults
         return _dict
 
     @classmethod
     def print_dict(cls):
         d = pkt_module().utils.load_settings(cls._DICT_NAME)
-        print(d)
+        logger = logging.getLogger(__name__)
+        logger.debug('UserPreferences: {}'.format(d))
 
     @classmethod
-    def get_value(cls, name, type='str'):
+    def get_value(cls, name, type):
         _dict = cls.get_dict()
 
         if name in _dict.keys():
-            if type == 'int':
+            if type == cls.type_int:
                 return int(_dict[name])
-            elif type == 'float':
+            elif type == cls.type_float:
                 return float(_dict[name])
-            elif type == 'bool':
+            elif type == cls.type_bool:
                 return _dict[name] == 'True'
-            elif type == 'str':
+            elif type == cls.type_string:
                 return _dict[name]
-        elif name in cls.defaults.keys():
-            row = cls.defaults[name]
+            elif type == cls.type_color:
+                return eval(_dict[name])
+        elif name in cls._defaults.keys():
+            row = cls._defaults[name]
             cls.set_value(name, row['value'])
             return row['value']
+        logger = logging.getLogger(__name__)
+        logger.error('UserPreferences problem: {} {}'.format(name, type))
         return None
 
     @classmethod
@@ -72,16 +82,16 @@ class UserPrefDict:
     @classmethod
     def save_dict(cls, dict_to_save):
         pkt_module().utils.save_settings(cls._DICT_NAME, dict_to_save)
-        cls.print_dict()
+        # cls.print_dict()  # Debug only call
 
     @classmethod
     def reset_parameter_to_default(cls, name):
-        if name in cls.defaults.keys():
-            row = cls.defaults[name]
+        if name in cls._defaults.keys():
+            row = cls._defaults[name]
             cls.set_value(name, row['value'])
 
     @classmethod
     def reset_all_to_defaults(cls):
         cls.clear_dict()
-        for name in cls.defaults.keys():
-            cls.set_value(name, cls.defaults[name]['value'])
+        for name in cls._defaults.keys():
+            cls.set_value(name, cls._defaults[name]['value'])

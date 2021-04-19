@@ -25,7 +25,7 @@ from .utils import coords
 from .utils.blendshapes import (restore_facs_blendshapes,
                                 disconnect_blendshapes_action)
 from .blender_independent_packages.pykeentools_loader import module as pkt_module
-from .preferences.user_pref_dict import UserPrefDict
+from .preferences.user_preferences import UserPreferences
 
 
 def mesh_update_accepted(headnum):
@@ -210,7 +210,7 @@ def universal_getter(name, type):
         if name in self.keys():
             return self[name]
         else:
-            return UserPrefDict.get_value(name, type)
+            return UserPreferences.get_value(name, type)
     return _getter
 
 

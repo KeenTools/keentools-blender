@@ -117,6 +117,7 @@ class Config:
     fb_reconstruct_head_idname = operators + '.reconstruct_head'
 
     fb_add_head_operator_idname = operators + '.add_head'
+    fb_user_preferences_changer = operators + '.user_preferences_changer'
 
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
@@ -175,9 +176,7 @@ class Config:
     reconstruct_frame_height_param = ('frame_height', 'height')
 
     # Constants
-    default_pin_size = 7.0
     surf_pin_size_scale = 0.85
-    default_point_sensitivity = 16.0
     text_scale_y = 0.75
 
     viewport_redraw_interval = 0.1
@@ -213,6 +212,7 @@ class Config:
         'white': ((1.0, 1.0, 1.0), (0.0, 0.0, 0.4)),
         'default': ((0.039, 0.04 , 0.039), (0.0, 0.0, 0.85098))
     }
+    wireframe_opacity = 0.45
 
     pin_color = (1.0, 0.0, 0.0, 1.0)
     current_pin_color = (1.0, 0.0, 1.0, 1.0)
@@ -222,6 +222,15 @@ class Config:
     selected_rectangle_color = (0.871, 0.107, 0.001, 1.0)
     regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
 
+    default_user_preferences = {
+        'pin_size': {'value': 7.0, 'type': 'float'},
+        'pin_sensitivity': {'value': 16.0, 'type': 'float'},
+        'prevent_view_rotation': {'value': True, 'type': 'bool'},
+        'wireframe_color': {'value': color_schemes['default'][0], 'type': 'color'},
+        'wireframe_special_color': {'value': color_schemes['default'][1], 'type': 'color'},
+        'wireframe_midline_color': {'value': midline_color, 'type': 'color'},
+        'wireframe_opacity': {'value': wireframe_opacity, 'type': 'float'}
+    }
 
 def is_blender_supported():
     ver = bpy.app.version

@@ -24,6 +24,7 @@ from .fbloader import FBLoader
 from .utils import coords
 from .utils.focal_length import configure_focal_mode_and_fixes
 from .utils.manipulate import push_neutral_head_in_undo_history
+from .blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 _DETECTED_FACES = []
@@ -103,7 +104,18 @@ def _add_pins_to_face(headnum, camnum, rectangle_index):
 
     fb.set_use_emotions(head.should_use_emotions())
     configure_focal_mode_and_fixes(fb, head)
-    result_flag = fb.detect_face_pose(kid, faces[rectangle_index])
+
+    try:
+        result_flag = fb.detect_face_pose(kid, faces[rectangle_index])
+    except pkt_module().UnlicensedException:
+        logger.error('UnlicensedException _add_pins_to_face')
+        warn = get_operator(Config.fb_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        return None
+    except Exception as err:
+        logger.error('UNKNOWN EXCEPTION detect_face_pose in _add_pins_to_face')
+        logger.error('Exception info: {}'.format(str(err)))
+        return None
 
     if result_flag:
         fb.remove_pins(kid)
@@ -211,7 +223,10 @@ class FB_OT_PickMode(bpy.types.Operator):
             self.report({'ERROR'}, message)
             logger.error(message)
             return {'CANCELLED'}
-        if not _add_pins_to_face(self.headnum, self.camnum, self.selected):
+        result = _add_pins_to_face(self.headnum, self.camnum, self.selected)
+        if result is None:
+            return {'CANCELLED'}
+        if not result:
             message = '_add_pins_to_face fail'
             self.report({'INFO'}, message)
             logger.error(message)
@@ -250,7 +265,10 @@ class FB_OT_PickMode(bpy.types.Operator):
         if event.value == 'PRESS' and event.type in {'LEFTMOUSE', 'RIGHTMOUSE'}:
             index = self._selected_rectangle(context, event)
             if index >= 0:
-                if not _add_pins_to_face(self.headnum, self.camnum, index):
+                result = _add_pins_to_face(self.headnum, self.camnum, index)
+                if result is None:
+                    return {'CANCELLED'}
+                if not result:
                     message = 'A face was chosen but not pinned'
                     logger.debug(message)
                     _not_enough_face_features_warning()
@@ -326,8 +344,11 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
                 op = get_operator(Config.fb_pickmode_idname)
                 op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
         elif len(rects) == 1:
-            if not _add_pins_to_face(self.headnum, self.camnum,
-                                     rectangle_index=0):
+            result = _add_pins_to_face(self.headnum, self.camnum,
+                                       rectangle_index=0)
+            if result is None:
+                return {'CANCELLED'}
+            if not result:
                 message = 'A face was detected but not pinned'
                 logger.debug(message)
                 _not_enough_face_features_warning()

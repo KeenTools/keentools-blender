@@ -41,7 +41,7 @@ from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
                         draw_warning_labels, draw_long_labels)
-from ..preferences.user_pref_dict import UserPrefDict
+from ..preferences.user_preferences import UserPreferences
 
 
 def _multi_line_text_to_output_labels(layout, txt):
@@ -58,15 +58,15 @@ def _multi_line_text_to_output_labels(layout, txt):
 
 
 def _reset_user_preferences_parameter_to_default(name):
-    UserPrefDict.reset_parameter_to_default(name)
+    UserPreferences.reset_parameter_to_default(name)
 
 
 def _set_all_user_preferences_to_default():
-    UserPrefDict.reset_all_to_defaults()
+    UserPreferences.reset_all_to_defaults()
 
 
 class FB_OT_UserPreferencesChanger(bpy.types.Operator):
-    bl_idname = 'keentools_facebuilder.user_preferences_changer'
+    bl_idname = Config.fb_user_preferences_changer
     bl_label = 'FaceBuilder Action'
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = 'FaceBuilder'
@@ -84,6 +84,19 @@ class FB_OT_UserPreferencesChanger(bpy.types.Operator):
         if self.action == 'revert_default':
             _reset_user_preferences_parameter_to_default(self.param_string)
             return {'FINISHED'}
+        elif self.action == 'revert_default_colors':
+            _reset_user_preferences_parameter_to_default('wireframe_color')
+            _reset_user_preferences_parameter_to_default('wireframe_special_color')
+            _reset_user_preferences_parameter_to_default('wireframe_midline_color')
+            _reset_user_preferences_parameter_to_default('wireframe_opacity')
+            return {'FINISHED'}
+        elif self.action == 'get_current_colors':
+            settings = get_main_settings()
+            preferences = settings.preferences()
+            preferences.wireframe_color = settings.wireframe_color
+            preferences.wireframe_special_color = settings.wireframe_special_color
+            preferences.wireframe_midline_color = settings.wireframe_midline_color
+            preferences.wireframe_opacity = settings.wireframe_opacity
         elif self.action == 'reset_all_to_default':
             _set_all_user_preferences_to_default()
             return {'FINISHED'}
@@ -110,13 +123,13 @@ def _update_user_preferences_pin_sensitivity(self, context):
 
 def _universal_getter(name, type):
     def _getter(self):
-        return UserPrefDict.get_value(name, type)
+        return UserPreferences.get_value(name, type)
     return _getter
 
 
 def _universal_setter(name):
     def _setter(self, value):
-        UserPrefDict.set_value(name, value)
+        UserPreferences.set_value(name, value)
     return _setter
 
 
@@ -206,6 +219,34 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         name='Prevent view rotation by middle mouse button in pinmode',
         get=_universal_getter('prevent_view_rotation', 'bool'),
         set=_universal_setter('prevent_view_rotation'),
+    )
+    wireframe_opacity: bpy.props.FloatProperty(
+        description="From 0.0 to 1.0",
+        name="Wireframe opacity",
+        default=Config.wireframe_opacity, min=0.0, max=1.0,
+        get=_universal_getter('wireframe_opacity', 'float'),
+        set=_universal_setter('wireframe_opacity')
+    )
+    wireframe_color: bpy.props.FloatVectorProperty(
+        description="Color of mesh wireframe in pin-mode",
+        name="Wireframe Color", subtype='COLOR',
+        default=Config.color_schemes['default'][0],
+        get=_universal_getter('wireframe_color', 'color'),
+        set=_universal_setter('wireframe_color')
+    )
+    wireframe_special_color: bpy.props.FloatVectorProperty(
+        description="Color of special parts in pin-mode",
+        name="Wireframe Special Color", subtype='COLOR',
+        default=Config.color_schemes['default'][1],
+        get=_universal_getter('wireframe_special_color', 'color'),
+        set=_universal_setter('wireframe_special_color')
+    )
+    wireframe_midline_color: bpy.props.FloatVectorProperty(
+        description="Color of midline in pin-mode",
+        name="Wireframe Midline Color", subtype='COLOR',
+        default=Config.midline_color,
+        get=_universal_getter('wireframe_midline_color', 'color'),
+        set=_universal_setter('wireframe_midline_color')
     )
 
     def _license_was_accepted(self):
@@ -438,28 +479,43 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         main_box.prop(self, 'show_user_preferences', icon=icon,
                       invert_checkbox=True)  # emboss=False
 
-        op_name = 'keentools_facebuilder.user_preferences_changer'
+        box = main_box.box()
+        box.prop(self, 'prevent_view_rotation')
 
         box = main_box.box()
         box.label(text='Pin size and sensitivity')
         row = box.split(factor=0.7)
         row.prop(self, 'pin_size', slider=True)
-        op = row.operator(op_name, text='Reset')
+        op = row.operator(Config.fb_user_preferences_changer, text='Reset')
         op.action = 'revert_default'
         op.param_string = 'pin_size'
 
         row = box.split(factor=0.7)
         row.prop(self, 'pin_sensitivity', slider=True)
-        op = row.operator(op_name, text='Reset')
+        op = row.operator(Config.fb_user_preferences_changer, text='Reset')
         op.action = 'revert_default'
         op.param_string = 'pin_sensitivity'
 
         box = main_box.box()
-        box.label(text='User Interface')
-        row = box.row()
-        row.prop(self, 'prevent_view_rotation')
+        split = box.split(factor=0.7)
+        split.label(text='Wireframe Default Colors')
+        op = split.operator(Config.fb_user_preferences_changer,
+                            text='Get current')
+        op.action = 'get_current_colors'
 
-        op = main_box.operator(op_name, text='Reset All to Defaults')
+        colors_row = box.split(factor=0.7)
+        row = colors_row.row()
+        row.prop(self, 'wireframe_color', text='')
+        row.prop(self, 'wireframe_special_color', text='')
+        row.prop(self, 'wireframe_midline_color', text='')
+        row.prop(self, 'wireframe_opacity', text='', slider=True)
+
+        op = colors_row.operator(Config.fb_user_preferences_changer,
+                                 text='Reset')
+        op.action = 'revert_default_colors'
+
+        op = main_box.operator(Config.fb_user_preferences_changer,
+                               text='Reset All to Defaults')
         op.action = 'reset_all_to_default'
 
     def draw(self, context):

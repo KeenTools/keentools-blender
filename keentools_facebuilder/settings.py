@@ -663,22 +663,26 @@ class FBSceneSettings(PropertyGroup):
     wireframe_opacity: FloatProperty(
         description="From 0.0 to 1.0",
         name="Wireframe opacity",
-        default=0.45, min=0.0, max=1.0,
+        default=Config.default_user_preferences['wireframe_opacity']['value'],
+        min=0.0, max=1.0,
         update=update_wireframe)
     wireframe_color: FloatVectorProperty(
         description="Color of mesh wireframe in pin-mode",
         name="Wireframe Color", subtype='COLOR',
-        default=Config.color_schemes['default'][0], min=0.0, max=1.0,
+        default=Config.default_user_preferences['wireframe_color']['value'],
+        min=0.0, max=1.0,
         update=update_wireframe_image)
     wireframe_special_color: FloatVectorProperty(
         description="Color of special parts in pin-mode",
         name="Wireframe Special Color", subtype='COLOR',
-        default=Config.color_schemes['default'][1], min=0.0, max=1.0,
+        default=Config.default_user_preferences['wireframe_special_color']['value'],
+        min=0.0, max=1.0,
         update=update_wireframe_image)
     wireframe_midline_color: FloatVectorProperty(
         description="Color of midline in pin-mode",
         name="Wireframe Midline Color", subtype='COLOR',
-        default=Config.midline_color, min=0.0, max=1.0,
+        default=Config.default_user_preferences['wireframe_midline_color']['value'],
+        min=0.0, max=1.0,
         update=update_wireframe_image)
     show_specials: BoolProperty(
         description="Use different colors for important head parts "
@@ -693,7 +697,8 @@ class FBSceneSettings(PropertyGroup):
     pin_size: FloatProperty(
         description="Set pin size in pixels",
         name="Size",
-        default=Config.default_pin_size, min=1.0, max=100.0,
+        default=Config.default_user_preferences['pin_size']['value'],
+        min=1.0, max=100.0,
         precision=1,
         update=update_pin_size,
         get=universal_getter('pin_size', 'float'),
@@ -701,7 +706,8 @@ class FBSceneSettings(PropertyGroup):
     pin_sensitivity: FloatProperty(
         description="Set active area in pixels",
         name="Active area",
-        default=Config.default_point_sensitivity, min=1.0, max=100.0,
+        default=Config.default_user_preferences['pin_sensitivity']['value'],
+        min=1.0, max=100.0,
         precision=1,
         update=update_pin_sensitivity,
         get=universal_getter('pin_sensitivity', 'float'),
@@ -924,3 +930,9 @@ class FBSceneSettings(PropertyGroup):
 
     def preferences(self):
         return bpy.context.preferences.addons[Config.addon_name].preferences
+
+    def show_user_preferences(self):
+        self.preferences().show_user_preferences = True
+
+    def hide_user_preferences(self):
+        self.preferences().show_user_preferences = False

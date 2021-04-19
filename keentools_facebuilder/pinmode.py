@@ -332,6 +332,7 @@ class FB_OT_PinMode(bpy.types.Operator):
                 warn = get_operator(Config.fb_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
                 settings.license_error = False
+                settings.hide_user_preferences()
             return True
 
         # Quit when camera rotated by user
