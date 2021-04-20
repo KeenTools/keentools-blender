@@ -20,15 +20,17 @@ import bpy
 import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
-from . shaders import flat_color_3d_vertex_shader, \
-    circular_dot_fragment_shader, flat_color_2d_vertex_shader
-from .. config import Config
+from .shaders import (flat_color_3d_vertex_shader,
+                      circular_dot_fragment_shader,
+                      flat_color_2d_vertex_shader)
+from ..config import Config
+from ..preferences.user_preferences import UserPreferences
 
 
 class FBShaderPoints:
     """ Base class for Point Drawing Shaders """
     _is_visible = True
-    point_size = Config.default_pin_size
+    _point_size = UserPreferences.get_value('pin_size', UserPreferences.type_float)
 
     # Store all draw handlers registered by class objects
     handler_list = []
@@ -67,7 +69,7 @@ class FBShaderPoints:
 
     @classmethod
     def set_point_size(cls, ps):
-        cls.point_size = ps
+        cls._point_size = ps
 
     def _create_batch(self, vertices, vertices_colors,
                       shadername='2D_FLAT_COLOR'):
@@ -143,7 +145,7 @@ class FBShaderPoints:
             return
 
         if self.shader is not None:
-            bgl.glPointSize(self.point_size)
+            bgl.glPointSize(self._point_size)
             bgl.glEnable(bgl.GL_BLEND)
             self.shader.bind()
             self.batch.draw(self.shader)
@@ -179,4 +181,5 @@ class FBPoints3D(FBShaderPoints):
     def __init__(self):
         super().__init__()
         self.set_point_size(
-            Config.default_pin_size * Config.surf_pin_size_scale)
+            UserPreferences.get_value('pin_size', UserPreferences.type_float) *
+            Config.surf_pin_size_scale)

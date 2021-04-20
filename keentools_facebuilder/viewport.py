@@ -16,16 +16,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import cProfile
-import logging
 import bpy
 
 import numpy as np
 
-from . config import Config, get_main_settings
-from . utils import coords
-from . utils.edges import FBEdgeShader2D, FBRasterEdgeShader3D, FBRectangleShader2D
-from . utils.other import FBText
-from . utils.points import FBPoints2D, FBPoints3D
+from .config import Config, get_main_settings
+from .preferences.user_preferences import UserPreferences
+from .utils import coords
+from .utils.edges import FBEdgeShader2D, FBRasterEdgeShader3D, FBRectangleShader2D
+from .utils.other import FBText
+from .utils.points import FBPoints2D, FBPoints3D
 
 
 class FBScreenPins:
@@ -101,7 +101,8 @@ class FBViewport:
     def pins(cls):
         return cls._pins
 
-    POINT_SENSITIVITY = Config.default_point_sensitivity
+    POINT_SENSITIVITY = UserPreferences.get_value('pin_sensitivity',
+                                                  UserPreferences.type_float)
     PIXEL_SIZE = 0.1  # Auto Calculated
 
     @classmethod

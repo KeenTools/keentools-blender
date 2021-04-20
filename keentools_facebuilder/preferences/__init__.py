@@ -21,7 +21,7 @@ This module contains everything connected with the addon preferences
 """
 
 from .operators import *
-from .ui import FBAddonPreferences
+from .ui import FB_OT_UserPreferencesChanger, FBAddonPreferences
 
 CLASSES_TO_REGISTER = (
     PREF_OT_InstallLicenseOnline,
@@ -37,5 +37,6 @@ CLASSES_TO_REGISTER = (
     PREF_OT_OpenURL,
     PREF_OT_DownloadsURL,
     PREF_OT_ShowWhy,
+    FB_OT_UserPreferencesChanger,
     FBAddonPreferences
 )

@@ -26,6 +26,7 @@ from .utils.manipulate import get_current_headnum
 from .utils.blendshapes import (restore_facs_blendshapes,
                                 disconnect_blendshapes_action)
 from .blender_independent_packages.pykeentools_loader import module as pkt_module
+from .preferences.user_preferences import UserPreferences
 
 
 def mesh_update_accepted(headnum):
@@ -205,6 +206,21 @@ def update_wireframe(self, context):
 
 def update_pin_sensitivity(self, context):
     FBLoader.viewport().update_pin_sensitivity()
+
+
+def universal_getter(name, type):
+    def _getter(self):
+        if name in self.keys():
+            return self[name]
+        else:
+            return UserPreferences.get_value(name, type)
+    return _getter
+
+
+def universal_setter(name):
+    def _setter(self, value):
+        self[name] = value
+    return _setter
 
 
 def update_pin_size(self, context):
