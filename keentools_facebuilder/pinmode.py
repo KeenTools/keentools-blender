@@ -33,7 +33,7 @@ class FB_OT_PinMode(bpy.types.Operator):
     bl_idname = Config.fb_pinmode_idname
     bl_label = "FaceBuilder Pinmode"
     bl_description = "Operator for in-Viewport drawing"
-    bl_options = {'REGISTER', 'INTERNAL'}  # 'UNDO'
+    bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: bpy.props.IntProperty(default=0)
     camnum: bpy.props.IntProperty(default=0)
@@ -85,7 +85,7 @@ class FB_OT_PinMode(bpy.types.Operator):
                                        settings.show_specials):
             wf.switch_to_simple_shader()
 
-        wf.init_geom_data(head.headobj)
+        wf.init_geom_data_from_mesh(head.headobj)
         wf.init_edge_indices(FBLoader.get_builder())
         wf.create_batches()
 
@@ -111,7 +111,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.update_all_camera_positions(headnum)
         # Save result
         FBLoader.fb_save(headnum, camnum)
-        manipulate.push_neutral_head_in_undo_history(head, kid, 'Pin remove.')
+        manipulate.push_neutral_head_in_undo_history(head, kid, 'Pin Remove')
 
         FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
         FBLoader.shader_update(head.headobj)
@@ -119,7 +119,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.viewport().create_batch_2d(context)
         return {"RUNNING_MODAL"}
 
-    def _undo_detected(self):
+    def _undo_detected(self, context):
         settings = get_main_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
@@ -133,10 +133,14 @@ class FB_OT_PinMode(bpy.types.Operator):
         kid = settings.get_keyframe(headnum, camnum)
         fb = FBLoader.get_builder()
 
-        coords.update_head_mesh(settings, fb, head)
+        vp = FBLoader.viewport()
+        wf = vp.wireframer()
+        wf.init_geom_data_from_fb(head.headobj, fb, kid)
+        wf.update_edges_vertices()
+        wf.create_batches()
 
-        FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
-        FBLoader.shader_update(head.headobj)
+        vp.create_batch_2d(context)
+        vp.update_surface_points(fb, head.headobj, kid)
 
 
     def _on_right_mouse_press(self, context, mouse_x, mouse_y):
@@ -244,7 +248,6 @@ class FB_OT_PinMode(bpy.types.Operator):
                 logger.debug("UPDATE KEYFRAME: {}".format(kfnum))
                 if not fb.is_key_at(kfnum):
                     fb.set_keyframe(kfnum, cam.get_model_mat())
-
         try:
             FBLoader.place_camera(settings.current_headnum,
                                   settings.current_camnum)
@@ -405,7 +408,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         if head.need_update:
             logger.debug("UNDO CALL DETECTED")
-            self._undo_detected()
+            self._undo_detected(context)
 
         vp = FBLoader.viewport()
         if not (vp.wireframer().is_working()):

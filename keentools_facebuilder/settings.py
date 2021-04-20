@@ -104,9 +104,6 @@ class FBCameraItem(PropertyGroup):
     model_mat: StringProperty(
         name="Model Matrix", default=""
     )
-    tmp_model_mat: StringProperty(
-        name="Temporary Model Matrix", default=""
-    )
     pins_count: IntProperty(
         name="Pins in Camera", default=0)
 
@@ -238,12 +235,6 @@ class FBCameraItem(PropertyGroup):
 
     def get_model_mat(self):
         return self.convert_str_to_matrix(self.model_mat)
-
-    def set_tmp_model_mat(self, arr):
-        self.tmp_model_mat = self.convert_matrix_to_str(arr)
-
-    def get_tmp_model_mat(self):
-        return self.convert_str_to_matrix(self.tmp_model_mat)
 
     # Simple getters/setters
     def get_image_width(self):
@@ -448,18 +439,11 @@ class FBHeadItem(PropertyGroup):
                               update=update_mesh_simple)
 
     serial_str: StringProperty(name="Serialization string", default="")
-    tmp_serial_str: StringProperty(name="Temporary Serialization", default="")
     need_update: BoolProperty(name="Mesh need update", default=False)
 
     tex_uv_shape: EnumProperty(name="UV", items=uv_items_callback,
                                description="UV Layout",
                                update=update_mesh_simple)
-
-    use_exif: BoolProperty(
-        name="Use EXIF if available in file",
-        description="Automatically detects Focal Length & Sensor Size "
-                    "from EXIF data in image file if available",
-        default=True)
 
     exif: PointerProperty(type=FBExifItem)
 
@@ -550,9 +534,6 @@ class FBHeadItem(PropertyGroup):
     def get_serial_str(self):
         return self.serial_str
 
-    def get_tmp_serial_str(self):
-        return self.tmp_serial_str
-
     def is_deleted(self):
         """ Checks that the list item references a non-existent object """
         if self.headobj is None:
@@ -619,15 +600,6 @@ class FBHeadItem(PropertyGroup):
     def get_masks(self):
         fb = FBLoader.get_builder()
         return self.masks[:len(fb.masks())]
-
-    def groups_count(self):
-        if self.groups_counter <= 0:
-            groups = [cam.group for cam in self.cameras]
-            self.groups_counter = len(set(groups))
-        return self.groups_counter
-
-    def reset_groups_counter(self):
-        self.groups_counter = -1
 
     def reset_sensor_size(self):
         self.sensor_width = 0

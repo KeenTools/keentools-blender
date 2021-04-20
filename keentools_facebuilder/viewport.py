@@ -187,20 +187,16 @@ class FBViewport:
     # --------------------
     @classmethod
     def update_surface_points(
-            cls, fb, headobj, keyframe=-1,
-            allcolor=(0, 0, 1, 0.15), selcolor=Config.surface_point_color):
-        # Load 3D pins
-        verts, colors = cls.surface_points(
-            fb, headobj, keyframe, allcolor, selcolor)
+            cls, fb, headobj, keyframe=-1, color=Config.surface_point_color):
+        verts = cls.surface_points_from_fb(fb, keyframe)
+        colors = [color] * len(verts)
 
         if len(verts) > 0:
-            # Object matrix usage
             m = np.array(headobj.matrix_world, dtype=np.float32).transpose()
             vv = np.ones((len(verts), 4), dtype=np.float32)
             vv[:, :-1] = verts
             vv = vv @ m
-            # Transformed vertices
-            verts = vv[:, :3]
+            verts = vv[:, :3]  # Transformed vertices
 
         cls.points3d().set_vertices_colors(verts, colors)
         cls.points3d().create_batch()
@@ -227,31 +223,26 @@ class FBViewport:
             settings.pin_size * Config.surf_pin_size_scale)
 
     @classmethod
-    def surface_points(cls, fb, headobj, keyframe=-1,
-                       allcolor=(0, 0, 1, 0.15), selcolor=(0, 1, 0, 1)):
+    def surface_points_from_mesh(cls, fb, headobj, keyframe=-1):
         verts = []
-        colors = []
-
-        for k in fb.keyframes():
-            for i in range(fb.pins_count(k)):
-                pin = fb.pin(k, i)
-                p = coords.pin_to_xyz(pin, headobj)
-                verts.append(p)
-                if k == keyframe:
-                    colors.append(selcolor)
-                else:
-                    colors.append(allcolor)
-        return verts, colors
-
-    @classmethod
-    def surface_points_only(cls, fb, headobj, keyframe=-1):
-        verts = []
-
         for i in range(fb.pins_count(keyframe)):
             pin = fb.pin(keyframe, i)
-            p = coords.pin_to_xyz(pin, headobj)
+            p = coords.pin_to_xyz_from_mesh(pin, headobj)
             verts.append(p)
         return verts
+
+    @classmethod
+    def surface_points_from_fb(cls, fb, keyframe=-1):
+        geo = fb.applied_args_model_at(keyframe)
+        geo_mesh = geo.mesh(0)
+        pins_count = fb.pins_count(keyframe)
+        verts = np.empty((pins_count, 3), dtype=np.float32)
+        for i in range(fb.pins_count(keyframe)):
+            pin = fb.pin(keyframe, i)
+            p = coords.pin_to_xyz_from_fb_geo_mesh(pin, geo_mesh)
+            verts[i] = p
+        # tolist() is needed by shader batch on Mac
+        return (verts @ coords.xy_to_xz_rotation_matrix_3x3()).tolist()
 
     @classmethod
     def img_points(cls, fb, keyframe):
@@ -270,7 +261,19 @@ class FBViewport:
 
     @classmethod
     def create_batch_2d(cls, context):
-        """ Main Pin Draw Batch"""
+        def _add_markers_at_camera_corners(points, vertex_colors):
+            points.append(
+                (coords.image_space_to_region(
+                    -0.5, -asp * 0.5, x1, y1, x2, y2))
+            )
+            points.append(
+                (coords.image_space_to_region(
+                    0.5, asp * 0.5,
+                    x1, y1, x2, y2))
+            )
+            vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # left camera corner
+            vertex_colors.append((1.0, 0, 1.0, 0.2))  # right camera corner
+
         points = cls.pins().arr().copy()
 
         scene = context.scene
@@ -290,18 +293,8 @@ class FBViewport:
         if pins.current_pin() and pins.current_pin_num() < len(vertex_colors):
             vertex_colors[pins.current_pin_num()] = Config.current_pin_color
 
-        # Camera corners
-        points.append(
-            (coords.image_space_to_region(
-                -0.5, -asp * 0.5, x1, y1, x2, y2))
-        )
-        points.append(
-            (coords.image_space_to_region(
-                0.5, asp * 0.5,
-                x1, y1, x2, y2))
-        )
-        vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # left camera corner
-        vertex_colors.append((1.0, 0, 1.0, 0.2))  # right camera corner
+        if Config.show_markers_at_camera_corners:
+            _add_markers_at_camera_corners(points, vertex_colors)
 
         cls.points2d().set_vertices_colors(points, vertex_colors)
         cls.points2d().create_batch()
@@ -320,7 +313,7 @@ class FBViewport:
         x1, y1, x2, y2 = coords.get_camera_border(context)
 
         p2d = cls.img_points(fb, keyframe)
-        p3d = cls.surface_points_only(fb, headobj, keyframe)
+        p3d = cls.points3d().get_vertices()
 
         wire = cls.residuals()
         wire.clear_vertices()

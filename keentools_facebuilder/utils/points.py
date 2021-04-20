@@ -64,6 +64,9 @@ class FBShaderPoints:
         self.vertices = []
         self.vertices_colors = []
 
+    def get_vertices(self):
+        return self.vertices
+
     @classmethod
     def set_point_size(cls, ps):
         cls._point_size = ps
@@ -120,23 +123,14 @@ class FBShaderPoints:
 
         self.draw_handler = None
 
-    def add_color_vertices(self, color, verts):
-        for i, v in enumerate(verts):
-            self.vertices.append(verts[i])
-            self.vertices_colors.append(color)
-
     def add_vertices_colors(self, verts, colors):
         for i, v in enumerate(verts):
             self.vertices.append(verts[i])
             self.vertices_colors.append(colors[i])
 
-    def set_color_vertices(self, color, verts):
-        self.clear_vertices()
-        self.add_color_vertices(color, verts)
-
     def set_vertices_colors(self, verts, colors):
-        self.clear_vertices()
-        self.add_vertices_colors(verts, colors)
+        self.vertices = verts
+        self.vertices_colors = colors
 
     def clear_vertices(self):
         self.vertices = []

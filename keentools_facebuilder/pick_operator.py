@@ -273,6 +273,9 @@ class FB_OT_PickMode(bpy.types.Operator):
                     logger.debug(message)
                     _not_enough_face_features_warning()
                 else:
+                    head = get_main_settings().get_head(self.headnum)
+                    head.mark_model_changed_by_pinmode()
+
                     message = 'A face was chosen and pinned'
                     self.report({'INFO'}, message)
                     logger.debug(message)
@@ -353,6 +356,9 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
                 logger.debug(message)
                 _not_enough_face_features_warning()
             else:
+                head = get_main_settings().get_head(self.headnum)
+                head.mark_model_changed_by_pinmode()
+
                 message = 'A face was detected and pinned'
                 self.report({'INFO'}, message)
                 logger.debug(message)
