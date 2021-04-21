@@ -42,4 +42,4 @@ Please contact us via team@keentools.io if you'd like to contribute to this proj
 
 ## Contact us
 
-[KeenTools contact us page)[https://keentools.io/contact]
+[KeenTools contact us page](https://keentools.io/contact)
