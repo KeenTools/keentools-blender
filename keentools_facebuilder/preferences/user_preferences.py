@@ -26,6 +26,8 @@ from ..blender_independent_packages.pykeentools_loader import (
 class UserPreferences:
     _DICT_NAME = Config.user_preferences_dict_name
     _defaults = Config.default_user_preferences
+    _str_defaults = {k: str(Config.default_user_preferences[k]['value'])
+                     for k in Config.default_user_preferences.keys()}
     type_float = 'float'
     type_string = 'string'
     type_int = 'int'
@@ -37,7 +39,7 @@ class UserPreferences:
         if pkt_is_installed():
             _dict = pkt_module().utils.load_settings(cls._DICT_NAME)
         else:
-            _dict = cls._defaults
+            _dict = cls._str_defaults
         return _dict
 
     @classmethod
