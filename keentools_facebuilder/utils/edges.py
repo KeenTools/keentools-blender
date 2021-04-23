@@ -73,6 +73,7 @@ class FBEdgeShaderBase:
         self.edges_indices = []
         self.edges_colors = []
         self.vertices_colors = []
+        self.working_area = None
         # Check if blender started in background mode
         if not bpy.app.background:
             self.init_shaders()
@@ -92,6 +93,8 @@ class FBEdgeShaderBase:
                 self.edges_colors[i * 2 + 1] = color
 
     def register_handler(self, args):
+        self.working_area = args[1].area
+
         if self.draw_handler is not None:
             self.unregister_handler()
         self.draw_handler = bpy.types.SpaceView3D.draw_handler_add(
@@ -149,6 +152,9 @@ class FBEdgeShader2D(FBEdgeShaderBase):
         if self.line_shader is None or self.line_batch is None:
             return
 
+        if self.working_area != context.area:
+            return
+
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
@@ -168,6 +174,8 @@ class FBEdgeShader2D(FBEdgeShaderBase):
         )
 
     def register_handler(self, args):
+        self.working_area = args[1].area
+
         if self.draw_handler is not None:
             self.unregister_handler()
         self.draw_handler = bpy.types.SpaceView3D.draw_handler_add(
@@ -239,6 +247,9 @@ class FBRectangleShader2D(FBEdgeShader2D):
             return
 
         if self.line_shader is None or self.line_batch is None:
+            return
+
+        if self.working_area != context.area:
             return
 
         bgl.glEnable(bgl.GL_BLEND)
@@ -336,6 +347,10 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
     def draw_callback(self, op, context):
         if not self.is_visible():
             return
+
+        if self.working_area != context.area:
+            return
+
         # Force Stop
         wireframe_image = find_bpy_image_by_name(Config.coloring_texture_name)
         if self.is_handler_list_empty() or \

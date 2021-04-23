@@ -64,6 +64,8 @@ class FBShaderPoints:
         self.vertices = []
         self.vertices_colors = []
 
+        self.working_area = None
+
     def get_vertices(self):
         return self.vertices
 
@@ -109,6 +111,8 @@ class FBShaderPoints:
         self._create_batch(self.vertices, self.vertices_colors)
 
     def register_handler(self, args):
+        self.working_area = args[1].area
+
         self.draw_handler = bpy.types.SpaceView3D.draw_handler_add(
             self.draw_callback, args, "WINDOW", "POST_VIEW")
         # Add to handler list
@@ -144,6 +148,9 @@ class FBShaderPoints:
             self.unregister_handler()
             return
 
+        if self.working_area != context.area:
+            return
+
         if self.shader is not None:
             bgl.glPointSize(self._point_size)
             bgl.glEnable(bgl.GL_BLEND)
@@ -166,6 +173,8 @@ class FBPoints2D(FBShaderPoints):
             self.vertices, self.vertices_colors, 'CUSTOM_2D')
 
     def register_handler(self, args):
+        self.working_area = args[1].area
+
         self.draw_handler = bpy.types.SpaceView3D.draw_handler_add(
             self.draw_callback, args, "WINDOW", "POST_PIXEL")
         # Add to handler list
