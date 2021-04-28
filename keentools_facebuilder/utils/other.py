@@ -189,13 +189,21 @@ class FBText:
     def is_handler_list_empty(cls):
         return len(cls.handler_list) == 0
 
-    def __init__(self):
+    def __init__(self, target_class=bpy.types.SpaceView3D):
         self.text_draw_handler = None
         self.message = [
             "Pin Mode ",  # line 1
             "ESC: Exit | LEFT CLICK: Create Pin | RIGHT CLICK: Delete Pin "
             "| TAB: Hide/Show"  # line 2
         ]
+        self._target_class = target_class
+        self._work_area = None
+
+    def get_target_class(self):
+        return self._target_class
+
+    def set_target_class(self, target_class):
+        self._target_class = target_class
 
     def set_message(self, msg):
         self.message = msg
@@ -238,14 +246,14 @@ class FBText:
             blf.draw(0, subtext)  # Text is on screen
 
     def register_handler(self, args):
-        self.text_draw_handler = bpy.types.SpaceView3D.draw_handler_add(
-            self.text_draw_callback, args, "WINDOW", "POST_PIXEL")
+        self.text_draw_handler = self.get_target_class().draw_handler_add(
+            self.text_draw_callback, args, 'WINDOW', 'POST_PIXEL')
         self.add_handler_list(self.text_draw_handler)
 
     def unregister_handler(self):
         if self.text_draw_handler is not None:
-            bpy.types.SpaceView3D.draw_handler_remove(
-                self.text_draw_handler, "WINDOW")
+            self.get_target_class().draw_handler_remove(
+                self.text_draw_handler, 'WINDOW')
             self.remove_handler_list(self.text_draw_handler)
         self.text_draw_handler = None
 

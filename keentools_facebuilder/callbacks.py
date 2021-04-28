@@ -156,7 +156,7 @@ def _update_mesh_now(headnum):
         for kb in old_mesh.shape_keys.key_blocks:
             shape = head.headobj.shape_key_add(name=kb.name)
             count = len(kb.data)
-            verts = np.empty((count, 3), 'f')
+            verts = np.empty((count, 3), dtype=np.float32)
             kb.data.foreach_get('co', np.reshape(verts, count * 3))
             shape.data.foreach_set('co', verts.ravel())
             shape.value = kb.value

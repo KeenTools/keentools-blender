@@ -80,19 +80,19 @@ class FBViewport:
     # --- PROFILING ---
 
     # Current View Pins draw
-    _points2d = FBPoints2D()
+    _points2d = FBPoints2D(bpy.types.SpaceView3D)
     # Rectangles for Face picking
-    _rectangler = FBRectangleShader2D()
+    _rectangler = FBRectangleShader2D(bpy.types.SpaceView3D)
     # Surface points draw
-    _points3d = FBPoints3D()
+    _points3d = FBPoints3D(bpy.types.SpaceView3D)
     # Text output in Modal mode
-    _texter = FBText()
+    _texter = FBText(bpy.types.SpaceView3D)
     # Wireframe shader object
-    _wireframer = FBRasterEdgeShader3D()
+    _wireframer = FBRasterEdgeShader3D(bpy.types.SpaceView3D)
     # Update timer
     _draw_timer_handler = None
 
-    _residuals = FBEdgeShader2D()
+    _residuals = FBEdgeShader2D(bpy.types.SpaceView3D)
 
     # Pins
     _pins = FBScreenPins()
@@ -207,7 +207,7 @@ class FBViewport:
         cls.wireframer().init_colors((settings.wireframe_color,
                                       settings.wireframe_special_color,
                                       settings.wireframe_midline_color),
-                                     settings.wireframe_opacity)
+                                      settings.wireframe_opacity)
         cls.wireframer().create_batches()
 
     @classmethod
