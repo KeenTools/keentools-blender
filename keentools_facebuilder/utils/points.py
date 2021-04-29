@@ -56,13 +56,22 @@ class FBShaderPoints:
     def is_handler_list_empty(cls):
         return len(cls.handler_list) == 0
 
-    def __init__(self):
+    def __init__(self, target_class=bpy.types.SpaceView3D):
         self.draw_handler = None  # for 3d shader
         self.shader = None
         self.batch = None
 
         self.vertices = []
         self.vertices_colors = []
+
+        self._target_class = target_class
+        self._work_area = None
+
+    def get_target_class(self):
+        return self._target_class
+
+    def set_target_class(self, target_class):
+        self._target_class = target_class
 
     def get_vertices(self):
         return self.vertices
@@ -109,14 +118,16 @@ class FBShaderPoints:
         self._create_batch(self.vertices, self.vertices_colors)
 
     def register_handler(self, args):
-        self.draw_handler = bpy.types.SpaceView3D.draw_handler_add(
-            self.draw_callback, args, "WINDOW", "POST_VIEW")
+        self._work_area = args[1].area
+
+        self.draw_handler = self.get_target_class().draw_handler_add(
+            self.draw_callback, args, 'WINDOW', 'POST_VIEW')
         # Add to handler list
         self.add_handler_list(self.draw_handler)
 
     def unregister_handler(self):
         if self.draw_handler is not None:
-            bpy.types.SpaceView3D.draw_handler_remove(
+            self.get_target_class().draw_handler_remove(
                 self.draw_handler, "WINDOW")
             # Remove from handler list
             self.remove_handler_list(self.draw_handler)
@@ -144,6 +155,9 @@ class FBShaderPoints:
             self.unregister_handler()
             return
 
+        if self._work_area != context.area:
+            return
+
         if self.shader is not None:
             bgl.glPointSize(self._point_size)
             bgl.glEnable(bgl.GL_BLEND)
@@ -166,8 +180,10 @@ class FBPoints2D(FBShaderPoints):
             self.vertices, self.vertices_colors, 'CUSTOM_2D')
 
     def register_handler(self, args):
-        self.draw_handler = bpy.types.SpaceView3D.draw_handler_add(
-            self.draw_callback, args, "WINDOW", "POST_PIXEL")
+        self._work_area = args[1].area
+
+        self.draw_handler = self.get_target_class().draw_handler_add(
+            self.draw_callback, args, 'WINDOW', 'POST_PIXEL')
         # Add to handler list
         self.add_handler_list(self.draw_handler)
 
@@ -178,8 +194,8 @@ class FBPoints3D(FBShaderPoints):
         # 3D_FLAT_COLOR
         self._create_batch(self.vertices, self.vertices_colors, 'CUSTOM_3D')
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, target_class):
+        super().__init__(target_class)
         self.set_point_size(
             UserPreferences.get_value('pin_size', UserPreferences.type_float) *
             Config.surf_pin_size_scale)
