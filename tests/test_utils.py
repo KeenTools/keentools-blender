@@ -151,6 +151,12 @@ def select_camera(headnum=0, camnum=0):
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
 
 
+def change_scene_camera(headnum, camnum):
+    settings = get_main_settings()
+    camera = settings.get_camera(headnum, camnum)
+    bpy.context.scene.camera = camera.camobj
+
+
 def deselect_all():
     bpy.ops.object.select_all(action='DESELECT')
 
@@ -204,8 +210,9 @@ def create_head_images():
     headobj = head.headobj
     create_empty_camera(headnum)
     camnum = head.get_last_camnum()
-    select_camera(headnum, camnum)
-    out_pinmode()
+
+    change_scene_camera(headnum, camnum)
+
     headobj.rotation_euler = (math.pi * 0.1, 0, math.pi * 0.1)
     headobj.location = (0, 10, 0)
 

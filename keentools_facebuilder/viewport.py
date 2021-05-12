@@ -334,6 +334,8 @@ class FBViewport:
         projection = fb.projection_mat(keyframe).T
 
         camobj = bpy.context.scene.camera
+        if not camobj:  # Fix for tests
+            return
         m = camobj.matrix_world.inverted()
 
         # Fill matrix in homogeneous coords
