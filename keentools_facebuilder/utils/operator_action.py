@@ -21,6 +21,7 @@ import bpy
 
 from ..config import Config, get_operator, ErrorType
 from . import manipulate
+from .cameras import show_all_cameras
 from ..fbloader import FBLoader
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from .blendshapes import (create_facs_blendshapes,
@@ -205,11 +206,15 @@ def update_blendshapes(operator):
     return {'CANCELLED'}
 
 
-def unhide_head(operator):
+def unhide_head(operator, context):
     logger = logging.getLogger(__name__)
     logger.debug('unhide_head call')
     headnum = manipulate.get_current_headnum()
     if headnum >= 0:
+        if context.space_data.local_view:
+            bpy.ops.view3d.localview()
+        else:
+            show_all_cameras(headnum)  # legacy scenes only
         manipulate.unhide_head(headnum)
         logger.debug('head revealed')
         return {'FINISHED'}

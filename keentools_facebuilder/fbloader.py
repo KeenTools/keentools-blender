@@ -121,8 +121,6 @@ class FBLoader:
         cls.stop_viewport_shaders()
         restore_ui_elements()
 
-        cameras.show_all_cameras(headnum)
-
         settings = get_main_settings()
         head = settings.get_head(headnum)
         if head and head.headobj:

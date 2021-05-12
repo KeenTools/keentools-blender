@@ -28,6 +28,25 @@ from .utils.focal_length import update_camera_focal
 from .utils.other import FBStopShaderTimer, force_ui_redraw, hide_ui_elements
 
 
+def _exit_localview(context):
+    if context.space_data.local_view:
+        bpy.ops.view3d.localview()
+
+
+def _enter_localview(context):
+    if not context.space_data.local_view:
+        bpy.ops.view3d.localview()
+
+
+def _switch_to_camera(camera, context):
+    camera.show_background_image()
+    _exit_localview(context)
+    camera.camobj.hide_set(False)
+    manipulate.select_object_only(camera.camobj)
+    _enter_localview(context)
+    bpy.ops.view3d.object_as_camera()
+
+
 class FB_OT_PinMode(bpy.types.Operator):
     """ On Screen Face Builder Draw Operator """
     bl_idname = Config.fb_pinmode_idname
@@ -226,6 +245,8 @@ class FB_OT_PinMode(bpy.types.Operator):
         camera.update_background_image_scale()
         kid = camera.get_keyframe()
 
+        _switch_to_camera(camera, context)
+
         logger.debug("PINMODE START H{} C{}".format(settings.current_headnum,
                                                     settings.current_camnum))
 
@@ -259,11 +280,6 @@ class FB_OT_PinMode(bpy.types.Operator):
         coords.update_head_mesh(settings, FBLoader.get_builder(), head)
 
         update_camera_focal(camera, fb)
-
-        # Hide geometry
-        headobj.hide_set(True)
-        cameras.hide_other_cameras(settings.current_headnum,
-                                   settings.current_camnum)
 
         if first_start:
             hide_ui_elements()
@@ -345,10 +361,11 @@ class FB_OT_PinMode(bpy.types.Operator):
                 bpy.ops.view3d.view_camera()
             else:
                 logger.debug("CAMERA ROTATED PINMODE OUT")
+                logger.debug(context.space_data.region_3d.view_perspective)
                 FBLoader.out_pinmode(headnum)
                 return True
 
-        if event.type == 'ESC':
+        if event.type == 'ESC' and event.value == 'RELEASE':
             FBLoader.out_pinmode(headnum)
             # --- PROFILING ---
             if FBLoader.viewport().profiling:
@@ -373,11 +390,8 @@ class FB_OT_PinMode(bpy.types.Operator):
         head = settings.get_head(headnum)
 
         if self._modal_should_finish(context, event):
+            _exit_localview(context)
             return {'FINISHED'}
-
-        if not head.headobj.hide_get():
-            logger.debug("FORCE MESH HIDE")
-            head.headobj.hide_set(True)
 
         if self._check_camera_state_changed(context.space_data.region_3d):
             logger.debug("FORCE TAG REDRAW")

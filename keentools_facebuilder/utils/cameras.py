@@ -18,11 +18,8 @@
 import logging
 import math
 
-import bpy
-
 from .. config import get_main_settings, Config
 from . import attrs
-from . fake_context import get_override_context
 
 
 def show_all_cameras(headnum):
@@ -41,30 +38,6 @@ def hide_other_cameras(headnum, camnum):
         return
     for i, c in enumerate(head.cameras):
         c.camobj.hide_set(i != camnum)
-
-
-def switch_to_camera(camobj):
-    """ Switch to camera context independently"""
-    scene = bpy.context.scene
-    settings = get_main_settings()
-
-    camobj.select_set(state=True)
-    bpy.context.view_layer.objects.active = camobj
-
-    # Switch to camera
-    if (scene.camera == camobj) and settings.pinmode:
-        if not bpy.app.background:
-            bpy.ops.view3d.view_camera()
-        else:
-            override = get_override_context()
-            bpy.ops.view3d.view_camera(override)
-    else:
-        camobj.hide_set(False)  # To allow switch
-        if not bpy.app.background:
-            bpy.ops.view3d.object_as_camera()
-        else:
-            override = get_override_context()
-            bpy.ops.view3d.object_as_camera(override)
 
 
 def default_camera_params():

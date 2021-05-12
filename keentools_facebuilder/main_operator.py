@@ -134,19 +134,12 @@ class FB_OT_SelectCamera(Operator):
         head = settings.get_head(self.headnum)
         camera = head.get_camera(self.camnum)
 
-        cameras.switch_to_camera(camera.camobj)
-        camera.show_background_image()
-
-        bpy.context.view_layer.objects.active = head.headobj
-
         copy_exif_parameters_from_camera_to_head(camera, head)
         update_exif_sizes_message(self.headnum, camera.cam_image)
 
-        # Auto Call PinMode
-        draw_op = get_operator(Config.fb_pinmode_idname)
-
+        pinmode_op = get_operator(Config.fb_pinmode_idname)
         if not bpy.app.background:
-            draw_op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
+            pinmode_op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
 
         return {'FINISHED'}
 
@@ -756,7 +749,7 @@ class FB_OT_UnhideHead(ButtonOperator, Operator):
     bl_description = 'Show Head'
 
     def execute(self, context):
-        return unhide_head(self)
+        return unhide_head(self, context)
 
 
 class FB_OT_ReconstructHead(ButtonOperator, Operator):
