@@ -622,7 +622,8 @@ class FB_OT_ExitPinmode(Operator):
         settings = get_main_settings()
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
-            bpy.ops.view3d.view_camera()
+            cameras.exit_localview(context)
+            cameras.leave_camera_view(context)
         return {'FINISHED'}
 
 
