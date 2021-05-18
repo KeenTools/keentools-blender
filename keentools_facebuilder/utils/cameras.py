@@ -115,6 +115,8 @@ def set_camera_in_viewport(context, zoom=18.0, offset=(0, 0)):
 def exit_localview(context):
     if context.space_data.local_view:
         bpy.ops.view3d.localview()
+        return True
+    return False
 
 
 def enter_localview(context):
