@@ -150,7 +150,7 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         FBLoader.update_all_camera_positions(headnum)
         FBLoader.update_all_camera_focals(headnum)
-        FBLoader.fb_save(headnum, camnum)
+        FBLoader.save_fb_on_headobj(headnum)
         # ---------
         # PUSH Last
         manipulate.push_neutral_head_in_undo_history(head, kid, 'Pin Move')

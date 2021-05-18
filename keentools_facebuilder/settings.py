@@ -218,24 +218,6 @@ class FBCameraItem(PropertyGroup):
         else:
             return 1.0
 
-    @staticmethod
-    def convert_matrix_to_str(arr):
-        b = arr.tobytes()
-        return b.hex()
-
-    @staticmethod
-    def convert_str_to_matrix(mat):
-        if len(mat) == 0:
-            return np.eye(4)
-        b = bytes.fromhex(mat)
-        return np.frombuffer(b, dtype=np.float32).reshape((4, 4))
-
-    def set_model_mat(self, arr):
-        self.model_mat = self.convert_matrix_to_str(arr)
-
-    def get_model_mat(self):
-        return self.convert_str_to_matrix(self.model_mat)
-
     # Simple getters/setters
     def get_image_width(self):
         return self.image_width

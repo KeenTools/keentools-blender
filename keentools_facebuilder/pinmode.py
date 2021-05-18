@@ -18,6 +18,7 @@
 
 import logging
 from uuid import uuid4
+import numpy as np
 
 import bpy
 
@@ -110,7 +111,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         FBLoader.update_all_camera_positions(headnum)
         # Save result
-        FBLoader.fb_save(headnum, camnum)
+        FBLoader.save_fb_on_headobj(headnum)
         manipulate.push_neutral_head_in_undo_history(head, kid, 'Pin Remove')
 
         FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
@@ -249,7 +250,8 @@ class FB_OT_PinMode(bpy.types.Operator):
                 kfnum = cam.get_keyframe()
                 logger.debug("UPDATE KEYFRAME: {}".format(kfnum))
                 if not fb.is_key_at(kfnum):
-                    fb.set_keyframe(kfnum, cam.get_model_mat())
+                    logger.error('\nUNKNOWN KEYFRAME: {}\n'.format(kfnum))
+                    fb.set_keyframe(kfnum, np.eye(4))
         try:
             FBLoader.place_camera(settings.current_headnum,
                                   settings.current_camnum)

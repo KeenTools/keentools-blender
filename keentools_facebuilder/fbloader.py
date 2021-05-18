@@ -148,19 +148,6 @@ class FBLoader:
                 cls.set_keentools_attributes(head.headobj)
 
     @classmethod
-    def fb_save(cls, headnum, camnum):
-        """ Face Builder Serialize Model Info """
-        fb = cls.get_builder()
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-        cam = head.get_camera(camnum)
-
-        if cam is not None:
-            cam.set_model_mat(fb.model_mat(cam.get_keyframe()))
-
-        cls.save_fb_on_headobj(headnum)
-
-    @classmethod
     def update_mesh_only(cls, headnum):
         fb = cls.get_builder()
         settings = get_main_settings()
@@ -199,26 +186,13 @@ class FBLoader:
         fb.set_expressions_rigidity(settings.expression_rigidity)
 
     @classmethod
-    def update_one_camera_position(cls, headnum, camnum):
-        fb = cls.get_builder()
-        settings = get_main_settings()
-        camera = settings.get_camera(headnum, camnum)
-
-        cls.place_camera(headnum, camnum)
-        keyframe = camera.get_keyframe()
-        camera.set_model_mat(fb.model_mat(keyframe))
-
-    @classmethod
     def update_all_camera_positions(cls, headnum):
-        fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.get_head(headnum)
 
         for camnum, camera in enumerate(head.cameras):
             if camera.has_pins():
                 cls.place_camera(headnum, camnum)
-                keyframe = camera.get_keyframe()
-                camera.set_model_mat(fb.model_mat(keyframe))
 
     @classmethod
     def update_one_camera_focal(cls, camera):
