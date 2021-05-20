@@ -149,7 +149,7 @@ def _update_mesh_now(headnum):
     except Exception:
         pass
     head.headobj.data = mesh
-    FBLoader.save_only(headnum)
+    FBLoader.save_fb_serial_str(headnum)
 
     # Copy blendshapes and animation
     if old_mesh.shape_keys and len(old_mesh.vertices) == len(mesh.vertices):
@@ -241,7 +241,7 @@ def update_model_scale(self, context):
     coords.update_head_mesh(settings, fb, head)
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
-    FBLoader.save_only(headnum)
+    FBLoader.save_fb_serial_str(headnum)
 
     if settings.pinmode and FBLoader.viewport().wireframer().is_working():
         FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
@@ -282,7 +282,7 @@ def update_camera_focal(self, context):
         fb.set_varying_focal_length_estimation()
         fb.set_focal_length_at(
             kid, self.get_focal_length_in_pixels_coef() * self.focal)
-        FBLoader.save_only(headnum)
+        FBLoader.save_fb_serial_str(headnum)
 
 
 def update_blue_camera_button(self, context):

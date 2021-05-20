@@ -509,12 +509,19 @@ class FBHeadItem(PropertyGroup):
     def get_last_camera(self):
         return self.get_camera(self.get_last_camnum())
 
-    def store_serial_str_in_head_and_on_headobj(self, value):
+    def store_serial_str_on_headobj(self):
+        if self.headobj:
+            self.headobj[Config.fb_serial_prop_name[0]] = self.serial_str
+
+    def set_serial_str(self, value):
         self.serial_str = value
-        self.headobj[Config.fb_serial_prop_name[0]] = value
 
     def get_serial_str(self):
         return self.serial_str
+
+    def store_serial_str_in_head_and_on_headobj(self, value):
+        self.set_serial_str(value)
+        self.store_serial_str_on_headobj()
 
     def is_deleted(self):
         """ Checks that the list item references a non-existent object """
@@ -569,6 +576,8 @@ class FBHeadItem(PropertyGroup):
                 res.append(c.cam_image.filepath)
             else:
                 res.append('')
+        if not self.headobj:
+            return
         self.headobj[Config.fb_images_prop_name[0]] = res
         # Dir name of current scene
         self.headobj[Config.fb_dir_prop_name[0]] = bpy.path.abspath("//")

@@ -130,7 +130,7 @@ class FB_OT_MovePin(bpy.types.Operator):
         headnum = self.get_headnum()
         camnum = self.get_camnum()
         head = settings.get_head(headnum)
-        kid = settings.get_keyframe(headnum, camnum)
+        kid = head.get_keyframe(camnum)
 
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
         vp = FBLoader.viewport()
@@ -139,22 +139,20 @@ class FB_OT_MovePin(bpy.types.Operator):
             # Move current 2D-pin
             pins.arr()[pins.current_pin_num()] = (x, y)
 
-        FBLoader.update_head_camobj_focals(head)
+        FBLoader.update_head_camobj_focals(headnum)
 
         fb = FBLoader.get_builder()
 
         if head.should_reduce_pins():
             fb.reduce_pins()
-            FBLoader.save_only(headnum)
+            FBLoader.save_fb_serial_str(headnum)
             pins.set_pins(vp.img_points(fb, kid))
 
         FBLoader.update_all_camera_positions(headnum)
         FBLoader.update_all_camera_focals(headnum)
-        FBLoader.save_fb_on_headobj(headnum)
-        # ---------
-        # PUSH Last
-        manipulate.push_neutral_head_in_undo_history(head, kid, 'Pin Move')
-        # ---------
+
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
+        manipulate.push_head_in_undo_history(head, 'Pin Move')
 
         # Load 3D pins
         vp.update_surface_points(fb, head.headobj, kid)

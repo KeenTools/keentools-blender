@@ -111,8 +111,8 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         FBLoader.update_all_camera_positions(headnum)
         # Save result
-        FBLoader.save_fb_on_headobj(headnum)
-        manipulate.push_neutral_head_in_undo_history(head, kid, 'Pin Remove')
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
+        manipulate.push_head_in_undo_history(head, 'Pin Remove')
 
         FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
         FBLoader.shader_update(head.headobj)
@@ -288,8 +288,7 @@ class FB_OT_PinMode(bpy.types.Operator):
                                        offset=(0, 0))
 
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
-        manipulate.push_neutral_head_in_undo_history(head, kid,
-                                                     'Pin Mode Start.')
+        manipulate.push_head_in_undo_history(head, 'Pin Mode Start.')
         if not first_start:
             logger.debug('PINMODE SWITCH ONLY')
             return {'FINISHED'}

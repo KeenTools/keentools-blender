@@ -167,10 +167,10 @@ class FB_OT_CenterGeo(Operator):
         kid = settings.get_keyframe(headnum, camnum)
 
         FBLoader.center_geo_camera_projection(headnum, camnum)
-        FBLoader.save_fb_on_headobj(headnum)
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
 
-        manipulate.push_neutral_head_in_undo_history(
-            settings.get_head(headnum), kid, 'Reset Camera.')
+        manipulate.push_head_in_undo_history(settings.get_head(headnum),
+                                             'Reset Camera.')
         FBLoader.fb_redraw(headnum, camnum)
         return {'FINISHED'}
 
@@ -197,7 +197,8 @@ class FB_OT_Unmorph(Operator):
         head = settings.get_head(headnum)
 
         fb = FBLoader.get_builder()
-        FBLoader.save_fb_on_headobj(headnum)
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
+
         manipulate.push_head_in_undo_history(head, 'Before Reset')
 
         fb.unmorph()
@@ -207,13 +208,13 @@ class FB_OT_Unmorph(Operator):
             camera.pins_count = 0
 
         if settings.pinmode:
-            FBLoader.save_fb_on_headobj(headnum)
+            FBLoader.save_fb_serial_and_image_pathes(headnum)
             FBLoader.fb_redraw(headnum, camnum)
         else:
-            FBLoader.save_only(headnum)
+            FBLoader.save_fb_serial_str(headnum)
             FBLoader.update_mesh_only(headnum)
 
-        FBLoader.save_fb_on_headobj(headnum)
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
         manipulate.push_head_in_undo_history(
             settings.get_head(headnum), 'After Reset')
 
@@ -243,14 +244,14 @@ class FB_OT_RemovePins(Operator):
 
         fb = FBLoader.get_builder()
         kid = settings.get_keyframe(headnum, camnum)
-        FBLoader.save_fb_on_headobj(headnum)
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
         manipulate.push_head_in_undo_history(
             settings.get_head(headnum), 'Before Remove pins')
 
         fb.remove_pins(kid)
         FBLoader.solve(headnum, camnum)  # is it needed?
 
-        FBLoader.save_fb_on_headobj(headnum)
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
         FBLoader.fb_redraw(headnum, camnum)
         FBLoader.update_pins_count(headnum, camnum)
 
@@ -361,7 +362,7 @@ class FB_OT_DeleteCamera(Operator):
         elif settings.current_camnum == camnum:
             settings.current_camnum = -1
 
-        FBLoader.save_fb_on_headobj(headnum)
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
 
         logger = logging.getLogger(__name__)
         logger.debug("CAMERA H:{} C:{} REMOVED".format(headnum, camnum))
@@ -474,7 +475,7 @@ class FB_OT_RotateImageCW(Operator):
         camera.rotate_background_image(1)
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
-        FBLoader.save_fb_on_headobj(self.headnum)
+        FBLoader.save_fb_serial_and_image_pathes(self.headnum)
         return {'FINISHED'}
 
 
@@ -496,7 +497,7 @@ class FB_OT_RotateImageCCW(Operator):
         camera.rotate_background_image(-1)
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
-        FBLoader.save_fb_on_headobj(self.headnum)
+        FBLoader.save_fb_serial_and_image_pathes(self.headnum)
         return {'FINISHED'}
 
 
@@ -518,7 +519,7 @@ class FB_OT_ResetImageRotation(Operator):
         camera.reset_background_image_rotation()
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
-        FBLoader.save_fb_on_headobj(self.headnum)
+        FBLoader.save_fb_serial_and_image_pathes(self.headnum)
         return {'FINISHED'}
 
 
@@ -550,7 +551,7 @@ class FB_OT_ResetExpression(Operator):
         fb.reset_to_neutral_emotions(
             head.get_keyframe(settings.current_camnum))
 
-        FBLoader.save_only(self.headnum)
+        FBLoader.save_fb_serial_str(self.headnum)
         FBLoader.fb_redraw(self.headnum, settings.current_camnum)
         coords.update_head_mesh_neutral(fb, head.headobj)
 

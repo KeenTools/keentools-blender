@@ -81,7 +81,7 @@ def load_single_image_file(headnum, camnum, filepath):
         camera.show_background_image()
         auto_setup_camera_from_exif(camera)
 
-        FBLoader.save_only(headnum)
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
         return {'FINISHED'}
 
 
@@ -268,7 +268,7 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
                 auto_setup_camera_from_exif(camera)
                 FBLoader.center_geo_camera_projection(self.headnum, i)
 
-        FBLoader.save_only(self.headnum)
+        FBLoader.save_fb_serial_and_image_pathes(self.headnum)
         return {'FINISHED'}
 
 
