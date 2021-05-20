@@ -509,7 +509,7 @@ class FBHeadItem(PropertyGroup):
     def get_last_camera(self):
         return self.get_camera(self.get_last_camnum())
 
-    def set_serial_str(self, value):
+    def store_serial_str_in_head_and_on_headobj(self, value):
         self.serial_str = value
         self.headobj[Config.fb_serial_prop_name[0]] = value
 
@@ -562,7 +562,7 @@ class FBHeadItem(PropertyGroup):
                 return True
         return False
 
-    def save_images_src(self):
+    def save_images_src_on_headobj(self):
         res = []
         for c in self.cameras:
             if c.cam_image:

@@ -311,7 +311,7 @@ def reconstruct_by_head():
     head.headobj = obj
 
     try:
-        head.set_serial_str(serial_str)
+        head.store_serial_str_in_head_and_on_headobj(serial_str)
         fb = FBLoader.new_builder()
         head.sensor_width = params['sensor_width']
         head.sensor_height = params['sensor_height']

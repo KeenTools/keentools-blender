@@ -134,18 +134,17 @@ class FBLoader:
         settings = get_main_settings()
         head = settings.get_head(headnum)
         # Save block
-        head.set_serial_str(fb.serialize())
+        head.store_serial_str_in_head_and_on_headobj(fb.serialize())
 
     @classmethod
     def save_fb_on_headobj(cls, headnum):
         fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.get_head(headnum)
-        if head:
-            head.set_serial_str(fb.serialize())
-            head.save_images_src()
-            if head.headobj:
-                cls.set_keentools_attributes(head.headobj)
+        if head and head.headobj:
+            head.store_serial_str_in_head_and_on_headobj(fb.serialize())
+            head.save_images_src_on_headobj()
+            cls.set_keentools_attributes(head.headobj)
 
     @classmethod
     def update_mesh_only(cls, headnum):
@@ -487,7 +486,7 @@ class FBLoader:
                 x, y = pin.img_pos
                 fb.move_pin(kid, i, (x + dx, y + dy))
         # Save info
-        head.set_serial_str(fb.serialize())
+        head.store_serial_str_in_head_and_on_headobj(fb.serialize())
 
         focal = head.focal * Config.default_sensor_width / sensor_width
         head.reset_sensor_size()
