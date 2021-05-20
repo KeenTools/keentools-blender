@@ -289,7 +289,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         return [x ** (1.0 / power) for x in col]
 
     def __init__(self, target_class):
-        self._edges_indices = np.array([], dtype=np.int)
+        self._edges_indices = np.array([], dtype=np.int32)
         self._edges_uvs = []
         self._colors = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
         self._opacity = 0.3
@@ -454,7 +454,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         mesh.calc_loop_triangles()
 
         verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
-        indices = np.empty((len(mesh.loop_triangles), 3), dtype=np.int)
+        indices = np.empty((len(mesh.loop_triangles), 3), dtype=np.int32)
 
         mesh.vertices.foreach_get(
             "co", np.reshape(verts, len(mesh.vertices) * 3))
@@ -471,7 +471,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         self.indices = indices
 
     def _clear_edge_indices(self):
-        self._edges_indices = np.array([], dtype=np.int)
+        self._edges_indices = np.array([], dtype=np.int32)
         self._edges_uvs = []
 
     def init_edge_indices(self, builder):
@@ -484,7 +484,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         geo = builder.applied_args_replaced_uvs_model_at(keyframes[0])
         me = geo.mesh(0)
         face_counts = [me.face_size(x) for x in range(me.faces_count())]
-        indices = np.empty((sum(face_counts), 2), dtype=np.int)
+        indices = np.empty((sum(face_counts), 2), dtype=np.int32)
         tex_coords = np.empty((sum(face_counts) * 2, 2), dtype=np.float32)
 
         i = 0
