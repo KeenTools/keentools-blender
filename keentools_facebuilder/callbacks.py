@@ -166,9 +166,11 @@ def _update_mesh_now(headnum):
 
     if settings.pinmode:
         # Update wireframe structures
-        FBLoader.viewport().wireframer().init_geom_data_from_mesh(head.headobj)
-        FBLoader.viewport().wireframer().init_edge_indices(FBLoader.get_builder())
-        FBLoader.viewport().update_wireframe()
+        vp = FBLoader.viewport()
+        wf = vp.wireframer()
+        wf.init_geom_data_from_fb(fb, head.headobj, keyframe)
+        wf.init_edge_indices(fb)
+        vp.update_wireframe()
 
     mesh_name = old_mesh.name
     # Delete old mesh
@@ -184,7 +186,7 @@ def update_expressions(self, context):
     head = settings.get_head(settings.current_headnum)
     if head is not None:
         head.need_update = True
-        coords.update_head_mesh(settings, fb, head)
+        coords.update_head_mesh_neutral(fb, head.headobj)
         FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
 
 
@@ -238,7 +240,7 @@ def update_model_scale(self, context):
 
     head.mark_model_changed_by_scale()
 
-    coords.update_head_mesh(settings, fb, head)
+    coords.update_head_mesh_neutral(fb, head.headobj)
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
     FBLoader.save_fb_serial_str(headnum)

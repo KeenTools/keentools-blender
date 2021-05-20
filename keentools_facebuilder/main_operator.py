@@ -212,7 +212,7 @@ class FB_OT_Unmorph(Operator):
             FBLoader.fb_redraw(headnum, camnum)
         else:
             FBLoader.save_fb_serial_str(headnum)
-            FBLoader.update_mesh_only(headnum)
+            coords.update_head_mesh_neutral(fb, head.headobj)
 
         FBLoader.save_fb_serial_and_image_pathes(headnum)
         manipulate.push_head_in_undo_history(

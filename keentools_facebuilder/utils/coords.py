@@ -73,20 +73,6 @@ def update_head_mesh_neutral(fb, headobj):
     update_head_mesh_geom(headobj, geom)
 
 
-def update_head_mesh_emotions(fb, headobj, keyframe):
-    geom = fb.applied_args_model_vertices_at(keyframe)
-    update_head_mesh_geom(headobj, geom)
-
-
-def update_head_mesh(settings, fb, head):
-    if head.should_use_emotions():
-        if settings.current_camnum >= 0:
-            update_head_mesh_emotions(
-                fb, head.headobj, head.get_keyframe(settings.current_camnum))
-    else:
-        update_head_mesh_neutral(fb, head.headobj)
-
-
 def projection_matrix(w, h, fl, sw, near, far, scale=1.0):
     z_diff = near - far
     fl_to_sw = fl / sw

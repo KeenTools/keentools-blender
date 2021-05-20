@@ -82,12 +82,13 @@ class FB_OT_PinMode(bpy.types.Operator):
                        settings.wireframe_midline_color),
                        settings.wireframe_opacity * opacity)
 
-        if not wf.init_wireframe_image(FBLoader.get_builder(),
-                                       settings.show_specials):
+        fb = FBLoader.get_builder()
+        if not wf.init_wireframe_image(fb, settings.show_specials):
             wf.switch_to_simple_shader()
 
-        wf.init_geom_data_from_mesh(head.headobj)
-        wf.init_edge_indices(FBLoader.get_builder())
+        wf.init_geom_data_from_fb(fb, head.headobj,
+                                  head.get_keyframe(settings.current_camnum))
+        wf.init_edge_indices(fb)
         wf.create_batches()
 
     def _delete_found_pin(self, nearest, context):
@@ -107,6 +108,10 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.error("DELETE PIN PROBLEM")
             return {'FINISHED'}
 
+        if head.should_reduce_pins():
+            fb.reduce_pins()
+
+        coords.update_head_mesh_neutral(fb, head.headobj)
         FBLoader.update_pins_count(headnum, camnum)
 
         FBLoader.update_all_camera_positions(headnum)
@@ -114,10 +119,14 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.save_fb_serial_and_image_pathes(headnum)
         manipulate.push_head_in_undo_history(head, 'Pin Remove')
 
-        FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
-        FBLoader.shader_update(head.headobj)
+        vp = FBLoader.viewport()
+        wf = vp.wireframer()
+        wf.init_geom_data_from_fb(fb, head.headobj, kid)
+        wf.init_edge_indices(fb)
+        wf.create_batches()
 
-        FBLoader.viewport().create_batch_2d(context)
+        vp.update_surface_points(fb, head.headobj, kid)
+        vp.create_batch_2d(context)
         return {"RUNNING_MODAL"}
 
     def _undo_detected(self, context):
@@ -136,7 +145,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         vp = FBLoader.viewport()
         wf = vp.wireframer()
-        wf.init_geom_data_from_fb(head.headobj, fb, kid)
+        wf.init_geom_data_from_fb(fb, head.headobj, kid)
         wf.update_edges_vertices()
         wf.create_batches()
 
@@ -260,7 +269,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             return {'CANCELLED'}
 
         FBLoader.load_pins(settings.current_headnum, settings.current_camnum)
-        coords.update_head_mesh(settings, FBLoader.get_builder(), head)
+        coords.update_head_mesh_neutral(FBLoader.get_builder(), head.headobj)
 
         update_camera_focal(camera, fb)
 

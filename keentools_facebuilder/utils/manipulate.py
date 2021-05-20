@@ -247,17 +247,6 @@ def reset_model_to_neutral(headnum):
     coords.update_head_mesh_neutral(fb, head.headobj)
 
 
-def load_expressions_to_model(headnum, camnum):
-    settings = get_main_settings()
-    FBLoader.load_model(headnum)
-    head = settings.get_head(headnum)
-    if head is None:
-        return
-    fb = FBLoader.get_builder()
-    coords.update_head_mesh_emotions(fb, head.headobj,
-                                     head.get_keyframe(camnum))
-
-
 def reconstruct_by_head():
     """ Reconstruct Cameras and Scene structures by serial """
     logger = logging.getLogger(__name__)

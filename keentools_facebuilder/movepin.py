@@ -145,8 +145,9 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         if head.should_reduce_pins():
             fb.reduce_pins()
-            FBLoader.save_fb_serial_str(headnum)
             pins.set_pins(vp.img_points(fb, kid))
+
+        coords.update_head_mesh_neutral(fb, head.headobj)
 
         FBLoader.update_all_camera_positions(headnum)
         FBLoader.update_all_camera_focals(headnum)
@@ -192,7 +193,7 @@ class FB_OT_MovePin(bpy.types.Operator):
         FBLoader.place_camera(headnum, camnum)
 
         vp = FBLoader.viewport()
-        vp.wireframer().init_geom_data_from_fb(headobj, fb, kid)
+        vp.wireframer().init_geom_data_from_fb(fb, headobj, kid)
         vp.wireframer().update_edges_vertices()
         vp.wireframer().create_batches()
         vp.create_batch_2d(context)

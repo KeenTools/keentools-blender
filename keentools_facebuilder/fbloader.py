@@ -150,34 +150,21 @@ class FBLoader:
         cls.save_fb_images_on_headobj(headnum)
 
     @classmethod
-    def update_mesh_only(cls, headnum):
-        fb = cls.get_builder()
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-        coords.update_head_mesh(settings, fb, head)
-
-    @classmethod
-    def shader_update(cls, headobj):
-        wf = cls.viewport().wireframer()
-        wf.init_geom_data_from_mesh(headobj)
-        wf.init_edge_indices(FBLoader.get_builder())
-        wf.create_batches()
-
-    @classmethod
     def fb_redraw(cls, headnum, camnum):
         fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.get_head(headnum)
         headobj = head.headobj
         kid = settings.get_keyframe(headnum, camnum)
+
         cls.place_camera(headnum, camnum)
-        coords.update_head_mesh(settings, fb, head)
-        # Load pins from model
         vp = cls.viewport()
         vp.pins().set_pins(vp.img_points(fb, kid))
         vp.update_surface_points(fb, headobj, kid)
-
-        cls.shader_update(headobj)
+        wf = vp.wireframer()
+        wf.init_geom_data_from_fb(fb, headobj, kid)
+        wf.init_edge_indices(FBLoader.get_builder())
+        wf.create_batches()
 
     @classmethod
     def rigidity_setup(cls):
@@ -294,10 +281,7 @@ class FBLoader:
 
         cls.select_uv_set(builder, uv_set)
 
-        if keyframe is not None:
-            geo = builder.applied_args_model_at(keyframe)
-        else:
-            geo = builder.applied_args_model()
+        geo = builder.applied_args_model()
         me = geo.mesh(0)
 
         v_count = me.points_count()
