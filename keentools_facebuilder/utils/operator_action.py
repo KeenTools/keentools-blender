@@ -228,3 +228,7 @@ def reconstruct_by_mesh(operator):
     manipulate.reconstruct_by_head()
     logger.debug('reconstruction finished')
     return {'FINISHED'}
+
+
+def update_addon(operator):
+    return {'FINISHED'}
