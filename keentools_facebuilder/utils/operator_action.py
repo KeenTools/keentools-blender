@@ -16,6 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import sys
+import subprocess
+import os.path
 import logging
 import bpy
 
@@ -24,6 +27,7 @@ from . import manipulate
 from .cameras import show_all_cameras
 from ..fbloader import FBLoader
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..blender_independent_packages.pykeentools_loader.config import pkt_installation_dir
 from .blendshapes import (create_facs_blendshapes,
                           create_facs_test_animation_on_blendshapes,
                           disconnect_blendshapes_action,
@@ -231,4 +235,13 @@ def reconstruct_by_mesh(operator):
 
 
 def update_addon(operator):
+    dir_path = os.path.dirname(os.path.abspath(__file__))
+    path = 'C:\\Users\\Nata\\Documents\\Visual Studio 2015\\Projects\\AddonUpdater\\Debug\\AddonUpdater.exe'
+    print('command line: ', sys.argv[0])
+    print(pkt_installation_dir())
+    pid = os.getpid()
+    subprocess.call([path, str(pid), sys.argv[0]])
+    # proc = subprocess.Popen([sys.executable, path, str(pid), sys.argv[0]],
+    #                         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
+    bpy.ops.wm.quit_blender()
     return {'FINISHED'}
