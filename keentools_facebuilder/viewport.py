@@ -101,8 +101,8 @@ class FBViewport:
     def pins(cls):
         return cls._pins
 
-    POINT_SENSITIVITY = UserPreferences.get_value('pin_sensitivity',
-                                                  UserPreferences.type_float)
+    POINT_SENSITIVITY = UserPreferences.get_value_safe(
+        'pin_sensitivity', UserPreferences.type_float)
     PIXEL_SIZE = 0.1  # Auto Calculated
 
     @classmethod

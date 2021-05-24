@@ -123,7 +123,7 @@ def _update_user_preferences_pin_sensitivity(self, context):
 
 def _universal_getter(name, type):
     def _getter(self):
-        return UserPreferences.get_value(name, type)
+        return UserPreferences.get_value_safe(name, type)
     return _getter
 
 

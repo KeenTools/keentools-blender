@@ -222,7 +222,7 @@ def universal_getter(name, type):
         if name in self.keys():
             return self[name]
         else:
-            return UserPreferences.get_value(name, type)
+            return UserPreferences.get_value_safe(name, type)
     return _getter
 
 
