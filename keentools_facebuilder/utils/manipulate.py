@@ -326,7 +326,7 @@ def reconstruct_by_head():
 
             logger.debug("CAMERA CREATED {}".format(kid))
             FBLoader.place_camera(headnum, i)
-            FBLoader.update_pins_count(headnum, i)
+            FBLoader.update_camera_pins_count(headnum, i)
 
             attrs.mark_keentools_object(camera.camobj)
 

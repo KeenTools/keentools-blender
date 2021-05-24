@@ -83,7 +83,7 @@ class FB_OT_MovePin(bpy.types.Operator):
             vp = FBLoader.viewport()
             vp.pins().add_pin((x, y))
             vp.pins().set_current_pin_num_to_last()
-            FBLoader.update_pins_count(headnum, camnum)
+            FBLoader.update_camera_pins_count(headnum, camnum)
         else:
             logger.debug("MISS MODEL")
             FBLoader.viewport().pins().reset_current_pin()
@@ -110,7 +110,7 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         FBLoader.load_model(headnum)
         FBLoader.place_camera(headnum, camnum)
-        FBLoader.load_pins(headnum, camnum)
+        FBLoader.load_pins_into_viewport(headnum, camnum)
 
         vp.create_batch_2d(context)
         vp.register_handlers(args, context)
@@ -157,7 +157,7 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         # Load 3D pins
         vp.update_surface_points(fb, head.headobj, kid)
-        vp.update_residuals(fb, context, head.headobj, kid)
+        vp.update_residuals(fb, head.headobj, kid, context)
         head.mark_model_changed_by_pinmode()
 
         pins.reset_current_pin()

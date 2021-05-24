@@ -440,13 +440,13 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
 
         self.simple_line_shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
-    def init_triangulation_indices(self, obj):
+    def _get_triangulation_indices(self, obj):
         mesh = obj.data
         mesh.calc_loop_triangles()
         indices = np.empty((len(mesh.loop_triangles), 3), dtype=np.int32)
         mesh.loop_triangles.foreach_get(
-            "vertices", np.reshape(indices, len(mesh.loop_triangles) * 3))
-        self.indices = indices
+            'vertices', np.reshape(indices, len(mesh.loop_triangles) * 3))
+        return indices
 
     def init_geom_data_from_fb(self, fb, obj, keyframe=None):
         if keyframe is not None:
@@ -461,21 +461,21 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         vv[:, :-1] = geom_verts
         vv = vv @ m
         self.vertices = vv[:, :3]
-        self.init_triangulation_indices(obj)
+        self.indices = self._get_triangulation_indices(obj)
 
     def init_geom_data_from_mesh(self, obj):
         mesh = obj.data
         verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
 
         mesh.vertices.foreach_get(
-            "co", np.reshape(verts, len(mesh.vertices) * 3))
+            'co', np.reshape(verts, len(mesh.vertices) * 3))
 
         m = np.array(obj.matrix_world, dtype=np.float32).transpose()
         vv = np.ones((len(mesh.vertices), 4), dtype=np.float32)
         vv[:, :-1] = verts
         vv = vv @ m
-        self.vertices = vv[:, :3]  # Transformed vertices
-        self.init_triangulation_indices(obj)
+        self.vertices = vv[:, :3]
+        self.indices = self._get_triangulation_indices(obj)
 
     def _clear_edge_indices(self):
         self._edges_indices = np.array([], dtype=np.int32)

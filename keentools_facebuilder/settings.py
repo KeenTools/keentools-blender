@@ -41,7 +41,7 @@ from .callbacks import (update_mesh_with_dialog,
                         update_mesh_simple,
                         update_expressions,
                         update_wireframe_image,
-                        update_wireframe,
+                        update_wireframe_func,
                         update_pin_sensitivity,
                         update_pin_size,
                         update_model_scale,
@@ -628,7 +628,7 @@ class FBSceneSettings(PropertyGroup):
         name="Wireframe opacity",
         default=Config.default_user_preferences['wireframe_opacity']['value'],
         min=0.0, max=1.0,
-        update=update_wireframe)
+        update=update_wireframe_func)
     wireframe_color: FloatVectorProperty(
         description="Color of mesh wireframe in pin-mode",
         name="Wireframe Color", subtype='COLOR',

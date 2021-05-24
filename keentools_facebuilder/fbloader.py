@@ -42,6 +42,10 @@ class FBLoader:
         return cls._viewport
 
     @classmethod
+    def viewport_is_active(cls):
+        return cls.viewport().wireframer().is_working()
+
+    @classmethod
     def new_builder(cls):
         from .camera_input import FaceBuilderCameraInput
         cls._camera_input = FaceBuilderCameraInput()
@@ -150,23 +154,6 @@ class FBLoader:
         cls.save_fb_images_on_headobj(headnum)
 
     @classmethod
-    def fb_redraw(cls, headnum, camnum):
-        fb = cls.get_builder()
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-        headobj = head.headobj
-        kid = settings.get_keyframe(headnum, camnum)
-
-        cls.place_camera(headnum, camnum)
-        vp = cls.viewport()
-        vp.pins().set_pins(vp.img_points(fb, kid))
-        vp.update_surface_points(fb, headobj, kid)
-        wf = vp.wireframer()
-        wf.init_geom_data_from_fb(fb, headobj, kid)
-        wf.init_edge_indices(FBLoader.get_builder())
-        wf.create_batches()
-
-    @classmethod
     def rigidity_setup(cls):
         fb = cls.get_builder()
         settings = get_main_settings()
@@ -239,7 +226,7 @@ class FBLoader:
         fb.set_projection_mat(projection)
 
     @classmethod
-    def update_pins_count(cls, headnum, camnum):
+    def update_camera_pins_count(cls, headnum, camnum):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         head = settings.get_head(headnum)
@@ -275,7 +262,7 @@ class FBLoader:
 
     @classmethod
     def get_builder_mesh(cls, builder, mesh_name='keentools_mesh',
-                         masks=(), uv_set='uv0', keyframe=None):
+                         masks=(), uv_set='uv0'):
         for i, m in enumerate(masks):
             builder.set_mask(i, m)
 
@@ -329,8 +316,7 @@ class FBLoader:
     def universal_mesh_loader(cls, mesh_name='keentools_mesh',
                               masks=(), uv_set='uv0'):
         builder = cls.new_builder()
-        mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set,
-                                    keyframe=None)
+        mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set)
         return mesh
 
     @classmethod
@@ -387,16 +373,6 @@ class FBLoader:
             camobj.matrix_world = mat
 
     @classmethod
-    def load_pins(cls, headnum, camnum):
-        settings = get_main_settings()
-        kid = settings.get_keyframe(headnum, camnum)
-        fb = cls.get_builder()
-        # Load pins from model
-        vp = cls.viewport()
-        vp.pins().set_pins(vp.img_points(fb, kid))
-        vp.pins().reset_current_pin()
-
-    @classmethod
     def solve(cls, headnum, camnum):
         def _exception_handling(headnum, msg, license_err=True):
             logger = logging.getLogger(__name__)
@@ -435,6 +411,7 @@ class FBLoader:
                 license_err=False
             )
             return False
+        logger.debug('FBloader.solve finished')
         return True
 
     @classmethod
@@ -571,3 +548,48 @@ class FBLoader:
     def add_new_camera_with_image(cls, headnum, img_path):
         img = bpy.data.images.load(img_path)
         return cls.add_new_camera(headnum, img)
+
+    @classmethod
+    def _update_wireframe(cls, obj, keyframe):
+        fb = cls.get_builder()
+        vp = cls.viewport()
+        wf = vp.wireframer()
+        wf.init_geom_data_from_fb(fb, obj, keyframe)
+        wf.init_edge_indices(fb)
+        wf.create_batches()
+
+    @classmethod
+    def _update_points_and_residuals(cls, context, obj, keyframe):
+        fb = cls.get_builder()
+        vp = cls.viewport()
+        vp.update_surface_points(fb, obj, keyframe)
+        vp.update_residuals(fb, obj, keyframe, context)
+        vp.create_batch_2d(context)
+
+    @classmethod
+    def update_viewport_shaders(cls, context, headnum, camnum):
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        if not head or not head.headobj:
+            return
+        kid = head.get_keyframe(camnum)
+        cls._update_wireframe(head.headobj, kid)
+        cls._update_points_and_residuals(context, head.headobj, kid)
+
+    @classmethod
+    def update_wireframe_shader_only(cls, headnum, camnum):
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        if not head or not head.headobj:
+            return
+        kid = head.get_keyframe(camnum)
+        cls._update_wireframe(head.headobj, kid)
+
+    @classmethod
+    def load_pins_into_viewport(cls, headnum, camnum):
+        settings = get_main_settings()
+        kid = settings.get_keyframe(headnum, camnum)
+        fb = cls.get_builder()
+        vp = cls.viewport()
+        vp.pins().set_pins(vp.img_points(fb, kid))
+        vp.pins().reset_current_pin()

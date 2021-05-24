@@ -202,7 +202,7 @@ class FBViewport:
         cls.points3d().create_batch()
 
     @classmethod
-    def update_wireframe(cls):
+    def update_wireframe_colors(cls):
         settings = get_main_settings()
         cls.wireframer().init_colors((settings.wireframe_color,
                                       settings.wireframe_special_color,
@@ -305,7 +305,7 @@ class FBViewport:
         rectangler.create_batch()
 
     @classmethod
-    def update_residuals(cls, fb, context, headobj, keyframe):
+    def update_residuals(cls, fb, headobj, keyframe, context):
         scene = bpy.context.scene
         rx = scene.render.resolution_x
         ry = scene.render.resolution_y

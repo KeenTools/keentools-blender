@@ -146,10 +146,10 @@ class FB_OT_SelectCamera(Operator):
 
 class FB_OT_CenterGeo(Operator):
     bl_idname = Config.fb_center_geo_idname
-    bl_label = "Reset Camera"
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
-    bl_description = "Place the camera so the model will be centred " \
-                     "in the view"
+    bl_label = 'Reset Camera'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Place the camera so the model will be centred ' \
+                     'in the view'
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
@@ -164,23 +164,24 @@ class FB_OT_CenterGeo(Operator):
         settings = get_main_settings()
         headnum = self.headnum
         camnum = self.camnum
-        kid = settings.get_keyframe(headnum, camnum)
 
         FBLoader.center_geo_camera_projection(headnum, camnum)
         FBLoader.save_fb_serial_and_image_pathes(headnum)
+        FBLoader.place_camera(headnum, camnum)
 
         manipulate.push_head_in_undo_history(settings.get_head(headnum),
                                              'Reset Camera.')
-        FBLoader.fb_redraw(headnum, camnum)
+
+        FBLoader.update_viewport_shaders(context, headnum, camnum)
         return {'FINISHED'}
 
 
 class FB_OT_Unmorph(Operator):
     bl_idname = Config.fb_unmorph_idname
-    bl_label = "Reset"
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
-    bl_description = "Reset shape deformations to the default state. " \
-                     "It will remove all pins as well"
+    bl_label = 'Reset'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Reset shape deformations to the default state. ' \
+                     'It will remove all pins as well'
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
@@ -197,24 +198,19 @@ class FB_OT_Unmorph(Operator):
         head = settings.get_head(headnum)
 
         fb = FBLoader.get_builder()
-        FBLoader.save_fb_serial_and_image_pathes(headnum)
-
-        manipulate.push_head_in_undo_history(head, 'Before Reset')
-
         fb.unmorph()
 
         for i, camera in enumerate(head.cameras):
             fb.remove_pins(camera.get_keyframe())
             camera.pins_count = 0
 
-        if settings.pinmode:
-            FBLoader.save_fb_serial_and_image_pathes(headnum)
-            FBLoader.fb_redraw(headnum, camnum)
-        else:
-            FBLoader.save_fb_serial_str(headnum)
-            coords.update_head_mesh_neutral(fb, head.headobj)
-
+        coords.update_head_mesh_neutral(fb, head.headobj)
         FBLoader.save_fb_serial_and_image_pathes(headnum)
+
+        if settings.pinmode:
+            FBLoader.load_pins_into_viewport(headnum, camnum)
+            FBLoader.update_viewport_shaders(context, headnum, camnum)
+
         manipulate.push_head_in_undo_history(
             settings.get_head(headnum), 'After Reset')
 
@@ -224,7 +220,7 @@ class FB_OT_Unmorph(Operator):
 class FB_OT_RemovePins(Operator):
     bl_idname = Config.fb_remove_pins_idname
     bl_label = "Remove pins"
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Remove all pins on this view"
 
     headnum: IntProperty(default=0)
@@ -244,19 +240,17 @@ class FB_OT_RemovePins(Operator):
 
         fb = FBLoader.get_builder()
         kid = settings.get_keyframe(headnum, camnum)
-        FBLoader.save_fb_serial_and_image_pathes(headnum)
-        manipulate.push_head_in_undo_history(
-            settings.get_head(headnum), 'Before Remove pins')
 
         fb.remove_pins(kid)
         FBLoader.solve(headnum, camnum)  # is it needed?
 
         FBLoader.save_fb_serial_and_image_pathes(headnum)
-        FBLoader.fb_redraw(headnum, camnum)
-        FBLoader.update_pins_count(headnum, camnum)
+        FBLoader.update_camera_pins_count(headnum, camnum)
+        FBLoader.load_pins_into_viewport(headnum, camnum)
+        FBLoader.update_viewport_shaders(context, headnum, camnum)
 
         manipulate.push_head_in_undo_history(
-            settings.get_head(headnum), 'After Remove pins')
+            settings.get_head(headnum), 'Remove pins')
 
         return {'FINISHED'}
 
@@ -548,12 +542,11 @@ class FB_OT_ResetExpression(Operator):
 
         FBLoader.load_model(self.headnum)
         fb = FBLoader.get_builder()
-        fb.reset_to_neutral_emotions(
-            head.get_keyframe(settings.current_camnum))
+        fb.reset_to_neutral_emotions(head.get_keyframe(self.camnum))
 
-        FBLoader.save_fb_serial_str(self.headnum)
-        FBLoader.fb_redraw(self.headnum, settings.current_camnum)
+        FBLoader.save_fb_serial_and_image_pathes(self.headnum)
         coords.update_head_mesh_neutral(fb, head.headobj)
+        FBLoader.update_viewport_shaders(context, self.headnum, self.camnum)
 
         manipulate.push_head_in_undo_history(head, 'Reset Expression.')
 

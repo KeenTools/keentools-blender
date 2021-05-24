@@ -93,7 +93,7 @@ def out_pinmode():
 
 
 def update_pins(headnum, camnum):
-    FBLoader.update_pins_count(headnum, camnum)
+    FBLoader.update_camera_pins_count(headnum, camnum)
 
 
 # --------------

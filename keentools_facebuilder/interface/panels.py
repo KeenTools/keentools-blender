@@ -305,6 +305,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         if settings.get_head(headnum).should_use_emotions():
             op = box.operator(Config.fb_reset_expression_idname)
             op.headnum = headnum
+            op.camnum = camnum
 
         op = box.operator(Config.fb_center_geo_idname,
                           text="Reset camera")
