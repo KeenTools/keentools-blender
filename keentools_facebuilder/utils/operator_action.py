@@ -236,12 +236,12 @@ def reconstruct_by_mesh(operator):
 
 def update_addon(operator):
     dir_path = os.path.dirname(os.path.abspath(__file__))
-    path = 'C:\\Users\\Nata\\Documents\\Visual Studio 2015\\Projects\\AddonUpdater\\Debug\\AddonUpdater.exe'
+    # path = 'C:\\Users\\Nata\\Documents\\Visual Studio 2015\\Projects\\AddonUpdater\\Debug\\AddonUpdater.exe'
     print('command line: ', sys.argv[0])
     print(pkt_installation_dir())
     pid = os.getpid()
     subprocess.call([path, str(pid), sys.argv[0]])
-    # proc = subprocess.Popen([sys.executable, path, str(pid), sys.argv[0]],
-    #                         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
+    proc = subprocess.Popen([sys.executable, path, str(pid), sys.argv[0]],
+                            creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
     bpy.ops.wm.quit_blender()
     return {'FINISHED'}

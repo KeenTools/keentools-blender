@@ -23,7 +23,7 @@ import tempfile
 __all__ = ['SHADOW_COPIES_DIRECTORY', 'RELATIVE_LIB_DIRECTORY',
            'pkt_installation_dir', 'MINIMUM_VERSION_REQUIRED',
            'is_python_supported',
-           'os_name', 'download_path']
+           'os_name', 'download_core_path']
 
 
 SHADOW_COPIES_DIRECTORY = os.path.join(tempfile.gettempdir(),
@@ -63,7 +63,7 @@ def os_name():
         return 'macos'
 
 
-def download_path(version=None, nightly=False):
+def download_core_path(version=None, nightly=False):
     if nightly:
         assert(version is None)
         return 'https://downloads.keentools.io/keentools-core-nightly-{}'.format(os_name())

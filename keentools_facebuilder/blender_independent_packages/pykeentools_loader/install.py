@@ -26,7 +26,7 @@ from .config import *
 
 __all__ = ['is_installed', 'uninstall', 'installation_status',
            'install_from_download', 'install_from_download_async',
-           'install_from_file', 'loaded', 'module']
+           'install_core_from_file', 'loaded', 'module']
 
 
 _unpack_mutex = Lock()
@@ -134,7 +134,7 @@ def install_from_download(version=None, nightly=False, progress_callback=None,
     :param nightly: latest nightly build will be installed if True. version should be None in that case
     """
     try:
-        url = download_path(version, nightly)
+        url = download_core_path(version, nightly)
         with _download_with_progress_callback(url,
                 progress_callback, max_callback_updates_count) as archive_data:
             _install_from_stream(archive_data)
@@ -154,7 +154,7 @@ def install_from_download_async(**kwargs):
     t.start()
 
 
-def install_from_file(path):
+def install_core_from_file(path):
     """
     Install pykeentools from selected archive
     :param path: a path to a pykeentools bundle zip archive

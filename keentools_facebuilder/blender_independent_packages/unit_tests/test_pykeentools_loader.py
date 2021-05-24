@@ -22,9 +22,9 @@ import keentools_facebuilder.blender_independent_packages.pykeentools_loader as 
 
 def test_wrong_installations():
     with pytest.raises(FileNotFoundError):
-        pkt.install_from_file('some/non/existing/file.zip')
+        pkt.install_core_from_file('some/non/existing/file.zip')
     with pytest.raises(Exception):
-        pkt.install_from_file(__file__)
+        pkt.install_core_from_file(__file__)
     assert(not pkt.is_installed())
 
 
