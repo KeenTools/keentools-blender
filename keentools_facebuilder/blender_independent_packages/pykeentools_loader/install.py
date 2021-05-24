@@ -20,16 +20,23 @@
 import os
 import sys
 from threading import Thread, Lock
+from enum import Enum
+import bpy
 
 from .config import *
 
 
 __all__ = ['is_installed', 'uninstall', 'installation_status',
            'install_from_download', 'install_from_download_async',
-           'install_core_from_file', 'loaded', 'module']
+           'install_core_from_file', 'install_addon_from_file', 'loaded', 'module']
 
 
 _unpack_mutex = Lock()
+
+
+class PartInstallation(Enum):
+    CORE = 1
+    ADDON = 2
 
 
 def _is_installed_not_locked():
@@ -53,11 +60,17 @@ def _is_installed_impl():
         _unpack_mutex.release()
 
 
-def _uninstall_not_locked():
-    if _is_installed_not_locked():
-        import shutil
-        shutil.rmtree(pkt_installation_dir(), ignore_errors=True)
-
+def _uninstall_not_locked(part_installation=PartInstallation.CORE):
+    if part_installation == PartInstallation.CORE:
+        if _is_installed_not_locked():
+            import shutil
+            shutil.rmtree(pkt_installation_dir(), ignore_errors=True)
+    else:
+        if _is_installed_not_locked():
+            import shutil
+            addons_path = bpy.utils.user_resource('SCRIPTS', "addons")
+            fb_path = os.path.join(addons_path, 'keentools_facebuilder')
+            shutil.rmtree(fb_path, ignore_errors=True)
 
 def uninstall():
     _unpack_mutex.acquire()
@@ -68,13 +81,19 @@ def uninstall():
         _unpack_mutex.release()
 
 
-def _install_from_stream(file_like_object):
+def _install_from_stream(file_like_object, part_installation):
     _unpack_mutex.acquire()
     try:
-        _uninstall_not_locked()
+        _uninstall_not_locked(part_installation)
 
-        target_path = pkt_installation_dir()
-        os.makedirs(target_path, exist_ok=False)
+        if part_installation == PartInstallation.CORE:
+            target_path = pkt_installation_dir()
+            os.makedirs(target_path, exist_ok=False)
+        else:
+            addons_path = bpy.utils.user_resource('SCRIPTS', "addons")
+            target_path = os.path.join(addons_path)
+        print("target path: ", target_path)
+        print("list dir: ", os.listdir(target_path))
 
         import zipfile
         with zipfile.ZipFile(file_like_object) as archive:
@@ -137,7 +156,7 @@ def install_from_download(version=None, nightly=False, progress_callback=None,
         url = download_core_path(version, nightly)
         with _download_with_progress_callback(url,
                 progress_callback, max_callback_updates_count) as archive_data:
-            _install_from_stream(archive_data)
+            _install_from_stream(archive_data, PartInstallation.CORE)
     except Exception as error:
         if error_callback is not None:
             error_callback(error)
@@ -160,7 +179,12 @@ def install_core_from_file(path):
     :param path: a path to a pykeentools bundle zip archive
     """
     with open(path, mode='rb') as file:
-        _install_from_stream(file)
+        _install_from_stream(file, PartInstallation.CORE)
+
+
+def install_addon_from_file(path):
+    with open(path, mode='rb') as file:
+        _install_from_stream(file, PartInstallation.ADDON)
 
 
 def _import_pykeentools():

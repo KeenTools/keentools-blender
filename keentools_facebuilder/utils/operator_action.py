@@ -28,6 +28,8 @@ from .cameras import show_all_cameras
 from ..fbloader import FBLoader
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..blender_independent_packages.pykeentools_loader.config import pkt_installation_dir
+from ..blender_independent_packages.pykeentools_loader.install import install_addon_from_file
+from ..blender_independent_packages.pykeentools_loader.install import install_core_from_file
 from .blendshapes import (create_facs_blendshapes,
                           create_facs_test_animation_on_blendshapes,
                           disconnect_blendshapes_action,
@@ -235,13 +237,9 @@ def reconstruct_by_mesh(operator):
 
 
 def update_addon(operator):
-    dir_path = os.path.dirname(os.path.abspath(__file__))
-    # path = 'C:\\Users\\Nata\\Documents\\Visual Studio 2015\\Projects\\AddonUpdater\\Debug\\AddonUpdater.exe'
-    print('command line: ', sys.argv[0])
-    print(pkt_installation_dir())
-    pid = os.getpid()
-    subprocess.call([path, str(pid), sys.argv[0]])
-    proc = subprocess.Popen([sys.executable, path, str(pid), sys.argv[0]],
-                            creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
+    addon_path = "C:\\Users\\Nata\\Downloads\\keentools_2021.2.0_facebuilder_for_blender.zip"
+    core_path = "C:\\Users\\Nata\\Downloads\\keentools-core-2021.2.0-windows.zip"
+    install_addon_from_file(addon_path)
+    install_core_from_file(core_path)
     bpy.ops.wm.quit_blender()
     return {'FINISHED'}
