@@ -117,7 +117,7 @@ class FB_OT_DeleteHead(Operator):
 class FB_OT_SelectCamera(Operator):
     bl_idname = Config.fb_select_camera_idname
     bl_label = "Pin Mode Select Camera"
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Switch to Pin mode for this view"
 
     headnum: IntProperty(default=0)
