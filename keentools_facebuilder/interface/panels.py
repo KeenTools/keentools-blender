@@ -553,6 +553,9 @@ class FB_PT_WireframeSettingsPanel(AllVisible, Panel):
         row = layout.row()
         row.active = False
         row.operator(
+            Config.fb_addon_setup_defaults_idname,
+            text='', icon='PREFERENCES')
+        row.operator(
             Config.fb_help_wireframe_settings_idname,
             text='', icon='QUESTION')
 
@@ -597,6 +600,9 @@ class FB_PT_PinSettingsPanel(AllVisible, Panel):
         layout = self.layout
         row = layout.row()
         row.active = False
+        row.operator(
+            Config.fb_addon_setup_defaults_idname,
+            text='', icon='PREFERENCES')
         row.operator(
             Config.fb_help_pin_settings_idname,
             text='', icon='QUESTION')

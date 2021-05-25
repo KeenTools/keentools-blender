@@ -628,25 +628,33 @@ class FBSceneSettings(PropertyGroup):
         name="Wireframe opacity",
         default=Config.default_user_preferences['wireframe_opacity']['value'],
         min=0.0, max=1.0,
-        update=update_wireframe_func)
+        update=update_wireframe_func,
+        get=universal_getter('wireframe_opacity', 'float'),
+        set=universal_setter('wireframe_opacity'))
     wireframe_color: FloatVectorProperty(
         description="Color of mesh wireframe in pin-mode",
         name="Wireframe Color", subtype='COLOR',
         default=Config.default_user_preferences['wireframe_color']['value'],
         min=0.0, max=1.0,
-        update=update_wireframe_image)
+        update=update_wireframe_image,
+        get=universal_getter('wireframe_color', 'color'),
+        set=universal_setter('wireframe_color'))
     wireframe_special_color: FloatVectorProperty(
         description="Color of special parts in pin-mode",
         name="Wireframe Special Color", subtype='COLOR',
         default=Config.default_user_preferences['wireframe_special_color']['value'],
         min=0.0, max=1.0,
-        update=update_wireframe_image)
+        update=update_wireframe_image,
+        get=universal_getter('wireframe_special_color', 'color'),
+        set=universal_setter('wireframe_special_color'))
     wireframe_midline_color: FloatVectorProperty(
         description="Color of midline in pin-mode",
         name="Wireframe Midline Color", subtype='COLOR',
         default=Config.default_user_preferences['wireframe_midline_color']['value'],
         min=0.0, max=1.0,
-        update=update_wireframe_image)
+        update=update_wireframe_image,
+        get=universal_getter('wireframe_midline_color', 'color'),
+        set=universal_setter('wireframe_midline_color'))
     show_specials: BoolProperty(
         description="Use different colors for important head parts "
                     "on the mesh",

@@ -398,6 +398,22 @@ class FB_OT_AddonSettings(Operator):
         return {'FINISHED'}
 
 
+class FB_OT_AddonSetupDefaults(Operator):
+    bl_idname = Config.fb_addon_setup_defaults_idname
+    bl_label = "Setup defaults"
+    bl_options = {'REGISTER'}
+    bl_description = "Open Addon Settings in Preferences window"
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        settings.show_user_preferences()
+        bpy.ops.preferences.addon_show(module=Config.addon_name)
+        return {'FINISHED'}
+
+
 class FB_OT_BakeTexture(Operator):
     bl_idname = Config.fb_bake_tex_idname
     bl_label = "Bake Texture"
@@ -766,6 +782,7 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ProperViewMenuExec,
                        FB_OT_DeleteCamera,
                        FB_OT_AddonSettings,
+                       FB_OT_AddonSetupDefaults,
                        FB_OT_BakeTexture,
                        FB_OT_DeleteTexture,
                        FB_OT_RotateImageCW,
