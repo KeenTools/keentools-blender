@@ -24,6 +24,7 @@ from .operators import *
 from .ui import (FB_OT_UserPreferencesChanger,
                  FB_OT_UserPreferencesGetColors,
                  FB_OT_UserPreferencesResetAll,
+                 FB_OT_UserPreferencesResetAllWarning,
                  FBAddonPreferences)
 
 CLASSES_TO_REGISTER = (
@@ -43,5 +44,6 @@ CLASSES_TO_REGISTER = (
     FB_OT_UserPreferencesChanger,
     FB_OT_UserPreferencesGetColors,
     FB_OT_UserPreferencesResetAll,
+    FB_OT_UserPreferencesResetAllWarning,
     FBAddonPreferences
 )

@@ -121,6 +121,8 @@ class Config:
     fb_user_preferences_changer = operators + '.user_preferences_changer'
     fb_user_preferences_reset_all = operators + '.user_preferences_reset_all'
     fb_user_preferences_get_colors = operators + '.user_preferences_get_colors'
+    fb_user_preferences_reset_all_warning_idname = \
+        operators + '.user_preferences_reset_all_warning'
 
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
