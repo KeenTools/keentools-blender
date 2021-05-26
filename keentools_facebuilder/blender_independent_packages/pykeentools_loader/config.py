@@ -23,7 +23,7 @@ import tempfile
 __all__ = ['SHADOW_COPIES_DIRECTORY', 'RELATIVE_LIB_DIRECTORY',
            'pkt_installation_dir', 'MINIMUM_VERSION_REQUIRED',
            'is_python_supported',
-           'os_name', 'download_core_path']
+           'os_name', 'download_core_path', 'download_addon_path']
 
 
 SHADOW_COPIES_DIRECTORY = os.path.join(tempfile.gettempdir(),
@@ -73,3 +73,15 @@ def download_core_path(version=None, nightly=False):
 
     return 'https://downloads.keentools.io/keentools-core-{}-{}'.format(
         '_'.join([str(x) for x in version]), os_name())
+
+
+def download_addon_path(version=None, nightly=False):
+    if nightly:
+        assert(version is None)
+        return 'https://downloads.keentools.io/keentools-facebuilder-nightly-for-blender'
+
+    if version is None:
+        return 'https://downloads.keentools.io/latest-keentools-facebuilder-for-blender'
+
+    return 'https://downloads.keentools.io/keentools-facebuilder-{}-for-blender'.format(
+        '_'.join([str(x) for x in version]))

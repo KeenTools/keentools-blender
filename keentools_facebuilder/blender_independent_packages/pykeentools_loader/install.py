@@ -22,13 +22,14 @@ import sys
 from threading import Thread, Lock
 from enum import Enum
 import bpy
-
+import zipfile
 from .config import *
 
 
 __all__ = ['is_installed', 'uninstall', 'installation_status',
            'install_from_download', 'install_from_download_async',
-           'install_core_from_file', 'install_addon_from_file', 'loaded', 'module']
+           'install_core_from_file', 'install_addon_from_file',
+           'download_file_name', 'pre_download', 'loaded', 'module']
 
 
 _unpack_mutex = Lock()
@@ -71,6 +72,7 @@ def _uninstall_not_locked(part_installation=PartInstallation.CORE):
             addons_path = bpy.utils.user_resource('SCRIPTS', "addons")
             fb_path = os.path.join(addons_path, 'keentools_facebuilder')
             shutil.rmtree(fb_path, ignore_errors=True)
+
 
 def uninstall():
     _unpack_mutex.acquire()
@@ -185,6 +187,30 @@ def install_core_from_file(path):
 def install_addon_from_file(path):
     with open(path, mode='rb') as file:
         _install_from_stream(file, PartInstallation.ADDON)
+
+
+def download_file_name(part_installation):
+    file_name = 'keentools_'
+    if part_installation == PartInstallation.CORE:
+        file_name += 'core'
+    else:
+        file_name += 'addon'
+    file_name += '.zip'
+    return file_name
+
+
+def pre_download(part_installation, version=None, nightly=False):
+    if part_installation == PartInstallation.CORE:
+        url = download_core_path(version, nightly)
+    else:
+        url = download_addon_path(version, nightly)
+    import requests
+    r = requests.get(url)
+    file_name = download_file_name(part_installation)
+    dir = module().utils.caches_dir()
+    file_path = os.path.join(dir, file_name)
+    with open(file_path, 'wb') as code:
+        code.write(r.content)
 
 
 def _import_pykeentools():

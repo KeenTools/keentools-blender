@@ -30,6 +30,9 @@ from ..blender_independent_packages.pykeentools_loader import module as pkt_modu
 from ..blender_independent_packages.pykeentools_loader.config import pkt_installation_dir
 from ..blender_independent_packages.pykeentools_loader.install import install_addon_from_file
 from ..blender_independent_packages.pykeentools_loader.install import install_core_from_file
+from ..blender_independent_packages.pykeentools_loader.install import pre_download
+from ..blender_independent_packages.pykeentools_loader.install import PartInstallation
+from ..blender_independent_packages.pykeentools_loader.install import download_file_name
 from .blendshapes import (create_facs_blendshapes,
                           create_facs_test_animation_on_blendshapes,
                           disconnect_blendshapes_action,
@@ -237,9 +240,14 @@ def reconstruct_by_mesh(operator):
 
 
 def update_addon(operator):
-    addon_path = "C:\\Users\\Nata\\Downloads\\keentools_2021.2.0_facebuilder_for_blender.zip"
-    core_path = "C:\\Users\\Nata\\Downloads\\keentools-core-2021.2.0-windows.zip"
+    pre_download(PartInstallation.CORE)
+    pre_download(PartInstallation.ADDON)
+    dir = pkt_module().utils.caches_dir()
+    addon_file = download_file_name(PartInstallation.ADDON)
+    addon_path = os.path.join(dir, addon_file)
     install_addon_from_file(addon_path)
+    core_file = download_file_name(PartInstallation.CORE)
+    core_path = os.path.join(dir, core_file)
     install_core_from_file(core_path)
     bpy.ops.wm.quit_blender()
     return {'FINISHED'}
