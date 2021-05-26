@@ -279,8 +279,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.debug("SHADER UPDATE ONLY")
             self._init_wireframer_colors(settings.overall_opacity)
 
-        cameras.set_camera_in_viewport(context, zoom=Config.default_view_zoom,
-                                       offset=(0, 0))
+        bpy.ops.view3d.view_center_camera()
 
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
         manipulate.push_head_in_undo_history(head, 'Pin Mode Start.')

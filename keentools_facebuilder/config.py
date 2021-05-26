@@ -199,7 +199,6 @@ class Config:
     camera_y_step = 5
     camera_z_step = 0.5
 
-    default_view_zoom = 18.0
     show_markers_at_camera_corners = False
 
     # In Material

@@ -106,12 +106,6 @@ def rotate_background_image(camera, delta=1):
     background_image.rotation = camera.orientation * math.pi / 2
 
 
-def set_camera_in_viewport(context, zoom=18.0, offset=(0, 0)):
-    rv3d = context.space_data.region_3d
-    rv3d.view_camera_zoom = zoom
-    rv3d.view_camera_offset = offset
-
-
 def exit_localview(context):
     if context.space_data.local_view:
         bpy.ops.view3d.localview()
