@@ -206,11 +206,13 @@ class FB_PT_UpdatePanel(Common, Panel):
 
     @classmethod
     def poll(cls, context):
-        return FBUpdater.has_response_message() and _show_all_panels()
+        return FBUpdater.is_active() and _show_all_panels()
 
     def _draw_response(self, layout):
         col = layout.column()
         col.scale_y = Config.text_scale_y
+        if not FBUpdater.is_active():
+            return
         FBUpdater.render_message(col)
 
         res = FBUpdater.get_response()
@@ -237,8 +239,8 @@ class FB_PT_UpdatesInstallationPanel(Common, Panel):
 
     @classmethod
     def poll(cls, context):
-        return not FBUpdater.has_response_message() and \
-               _show_all_panels() and FBInstallationReminder.is_active()
+        return FBInstallationReminder.is_active() and \
+               _show_all_panels()
 
     def _draw_response(self, layout):
         col = layout.column()

@@ -31,7 +31,8 @@ __all__ = ['PartInstallation', 'is_installed', 'uninstall', 'installation_status
            'install_core_from_file', 'install_addon_from_file',
            'download_file_name', 'pre_download', 'pre_download_async',
            'updates_downloaded', 'loaded', 'module', 'remove_download',
-           'install_download']
+           'install_download', 'download_file_version_path',
+           'downloaded_keentools_version']
 
 
 _unpack_mutex = Lock()
@@ -349,3 +350,12 @@ def remove_download(part_installation):
 
 def install_download(part_installation):
     install_from_file(download_file_path(part_installation), part_installation)
+
+
+def download_file_version_path():
+    return os.path.join(caches_dir_path, 'keentools_version.txt')
+
+
+def downloaded_keentools_version():
+    with open(str(download_file_version_path()), 'r') as f:
+        return str(f.readline().rstrip())
