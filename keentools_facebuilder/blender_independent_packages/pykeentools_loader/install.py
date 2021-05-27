@@ -22,14 +22,15 @@ import sys
 from threading import Thread, Lock
 from enum import Enum
 import bpy
-import zipfile
+
 from .config import *
 
 
-__all__ = ['is_installed', 'uninstall', 'installation_status',
+__all__ = ['PartInstallation', 'is_installed', 'uninstall', 'installation_status',
            'install_from_download', 'install_from_download_async',
            'install_core_from_file', 'install_addon_from_file',
-           'download_file_name', 'pre_download', 'loaded', 'module']
+           'download_file_name', 'pre_download', 'pre_download_async',
+           'updates_downloaded', 'loaded', 'module']
 
 
 _unpack_mutex = Lock()
@@ -92,8 +93,7 @@ def _install_from_stream(file_like_object, part_installation):
             target_path = pkt_installation_dir()
             os.makedirs(target_path, exist_ok=False)
         else:
-            addons_path = bpy.utils.user_resource('SCRIPTS', "addons")
-            target_path = os.path.join(addons_path)
+            target_path = bpy.utils.user_resource('SCRIPTS', "addons")
         print("target path: ", target_path)
         print("list dir: ", os.listdir(target_path))
 
@@ -206,11 +206,17 @@ def pre_download(part_installation, version=None, nightly=False):
         url = download_addon_path(version, nightly)
     import requests
     r = requests.get(url)
-    file_name = download_file_name(part_installation)
-    dir = module().utils.caches_dir()
-    file_path = os.path.join(dir, file_name)
+    file_path = download_file_path(part_installation)
     with open(file_path, 'wb') as code:
         code.write(r.content)
+
+
+def pre_download_async(**kwargs):
+    """
+    The same as :func:`pre_download`
+    """
+    t = Thread(target=pre_download, kwargs=kwargs)
+    t.start()
 
 
 def _import_pykeentools():
@@ -316,3 +322,16 @@ def module():
 
     import pykeentools
     return pykeentools
+
+
+caches_dir_path = module().utils.caches_dir()
+
+
+def download_file_path(part_installation):
+    file_name = download_file_name(part_installation)
+    return os.path.join(caches_dir_path, file_name)
+
+
+def updates_downloaded():
+    return os.path.exists(download_file_path(PartInstallation.CORE)) and \
+           os.path.exists(download_file_path(PartInstallation.ADDON))

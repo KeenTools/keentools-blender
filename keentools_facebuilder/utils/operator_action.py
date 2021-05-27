@@ -30,7 +30,7 @@ from ..blender_independent_packages.pykeentools_loader import module as pkt_modu
 from ..blender_independent_packages.pykeentools_loader.config import pkt_installation_dir
 from ..blender_independent_packages.pykeentools_loader.install import install_addon_from_file
 from ..blender_independent_packages.pykeentools_loader.install import install_core_from_file
-from ..blender_independent_packages.pykeentools_loader.install import pre_download
+from ..blender_independent_packages.pykeentools_loader.install import pre_download_async
 from ..blender_independent_packages.pykeentools_loader.install import PartInstallation
 from ..blender_independent_packages.pykeentools_loader.install import download_file_name
 from .blendshapes import (create_facs_blendshapes,
@@ -239,9 +239,16 @@ def reconstruct_by_mesh(operator):
     return {'FINISHED'}
 
 
+def download_the_update(operator):
+    pre_download_async(part_installation=PartInstallation.CORE)
+    pre_download_async(part_installation=PartInstallation.ADDON)
+    return {'FINISHED'}
+
+
 def update_addon(operator):
-    pre_download(PartInstallation.CORE)
-    pre_download(PartInstallation.ADDON)
+    version = (2, 1, 1)
+    pre_download_async(part_installation=PartInstallation.CORE, version=version)
+    pre_download_async(part_installation=PartInstallation.ADDON, version=version)
     dir = pkt_module().utils.caches_dir()
     addon_file = download_file_name(PartInstallation.ADDON)
     addon_path = os.path.join(dir, addon_file)

@@ -43,6 +43,7 @@ from .utils.operator_action import (create_blendshapes,
                                     update_blendshapes,
                                     unhide_head,
                                     reconstruct_by_mesh,
+                                    download_the_update,
                                     update_addon)
 
 
