@@ -30,7 +30,8 @@ __all__ = ['PartInstallation', 'is_installed', 'uninstall', 'installation_status
            'install_from_download', 'install_from_download_async',
            'install_core_from_file', 'install_addon_from_file',
            'download_file_name', 'pre_download', 'pre_download_async',
-           'updates_downloaded', 'loaded', 'module']
+           'updates_downloaded', 'loaded', 'module', 'remove_download',
+           'install_download']
 
 
 _unpack_mutex = Lock()
@@ -189,6 +190,11 @@ def install_addon_from_file(path):
         _install_from_stream(file, PartInstallation.ADDON)
 
 
+def install_from_file(path, part_installation):
+    with open(path, mode='rb') as file:
+        _install_from_stream(file, part_installation)
+
+
 def download_file_name(part_installation):
     file_name = 'keentools_'
     if part_installation == PartInstallation.CORE:
@@ -335,3 +341,11 @@ def download_file_path(part_installation):
 def updates_downloaded():
     return os.path.exists(download_file_path(PartInstallation.CORE)) and \
            os.path.exists(download_file_path(PartInstallation.ADDON))
+
+
+def remove_download(part_installation):
+    os.remove(download_file_path(part_installation))
+
+
+def install_download(part_installation):
+    install_from_file(download_file_path(part_installation), part_installation)

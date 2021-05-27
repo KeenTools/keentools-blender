@@ -245,6 +245,8 @@ class FB_PT_UpdatesInstallationPanel(Common, Panel):
         col.scale_y = Config.text_scale_y
         FBInstallationReminder.render_message(col)
 
+        if not FBInstallationReminder.is_active():
+            return
         layout.operator(Config.fb_install_updates_idname,
             text='Update and close blender', icon='FILE_REFRESH')
         layout.operator(Config.fb_remind_install_later_idname,

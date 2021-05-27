@@ -24,7 +24,8 @@ from ..config import Config
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed)
 from ..blender_independent_packages.pykeentools_loader.install import (
-    pre_download_async, PartInstallation, updates_downloaded)
+    pre_download_async, PartInstallation, updates_downloaded,
+    remove_download, install_download)
 
 from ..utils.html import parse_html, skip_new_lines_and_spaces, render_main
 
@@ -156,6 +157,7 @@ class FB_OT_SkipVersion(bpy.types.Operator):
 
 MIN_TIME_BETWEEN_REMINDERS = 86400  # 24 hours in seconds
 
+
 class FBInstallationReminder:
     _message_text = 'The update 2021.3 is ready to be installed. ' \
                     'Blender will be relaunched after installing the update automatically. ' \
@@ -164,17 +166,18 @@ class FBInstallationReminder:
 
     @classmethod
     def is_active(cls):
-        return updates_downloaded()
+        import time
+        return updates_downloaded() and (cls._last_reminder_time is None or
+                                         time.time() - cls._last_reminder_time > MIN_TIME_BETWEEN_REMINDERS)
 
-    import time
     @classmethod
     def render_message(cls, layout):
-        if cls._last_reminder_time is None or \
-                time.time() - cls._last_reminder_time > MIN_TIME_BETWEEN_REMINDERS:
+        if cls.is_active():
             render_main(layout, parse_html(cls._message_text))
 
     @classmethod
     def remind_later(cls):
+        import time
         cls._last_reminder_time = time.time()
 
 
@@ -185,6 +188,11 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
     bl_description = 'Install updates and close blender'
 
     def execute(self, context):
+        install_download(PartInstallation.ADDON)
+        install_download(PartInstallation.CORE)
+        remove_download(PartInstallation.ADDON)
+        remove_download(PartInstallation.CORE)
+        bpy.ops.wm.quit_blender()
         return {'FINISHED'}
 
 
@@ -195,6 +203,7 @@ class FB_OT_RemindInstallLater(bpy.types.Operator):
     bl_description = 'Remind install tommorow'
 
     def execute(self, context):
+        FBInstallationReminder.remind_later()
         return {'FINISHED'}
 
 
@@ -205,4 +214,6 @@ class FB_OT_SkipInstallation(bpy.types.Operator):
     bl_description = 'Skip installation'
 
     def execute(self, context):
+        remove_download(PartInstallation.ADDON)
+        remove_download(PartInstallation.CORE)
         return {'FINISHED'}
