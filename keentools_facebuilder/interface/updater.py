@@ -24,7 +24,7 @@ from ..config import Config
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed)
 from ..blender_independent_packages.pykeentools_loader.install import (
-    pre_download_async, PartInstallation, updates_downloaded,
+    download_zip_async, PartInstallation, updates_downloaded,
     remove_download, install_download, download_file_version_path,
     downloaded_keentools_version)
 
@@ -50,13 +50,17 @@ def mock_response():
 
 class FBUpdater:
     _response = None
-    _response = mock_response()  # Mock for testing (1/2)
+    # _response = mock_response()  # Mock for testing (1/2)
     _parsed_response_content = None
 
     @classmethod
     def is_active(cls):
-        return cls.has_response_message() and (not updates_downloaded() or
-                                               downloaded_keentools_version() != str(cls.version()))
+        return cls.has_response() and (not updates_downloaded() or
+                                       downloaded_keentools_version() < str(cls.version()))
+
+    @classmethod
+    def has_response(cls):
+        return cls._response is not None
 
     @classmethod
     def has_response_message(cls):
@@ -108,7 +112,7 @@ class FBUpdater:
 
         uc = cls.get_update_checker()
         res = uc.check_for_updates('FaceBuilder')
-        res = cls.get_response()  # Mock (2/2)
+        # res = cls.get_response()  # Mock (2/2)
         if res is not None:
             cls.set_response(res)
             parsed = parse_html(skip_new_lines_and_spaces(res.message))
@@ -122,8 +126,8 @@ class FB_OT_DownloadTheUpdate(bpy.types.Operator):
     bl_description = 'Download the latest version of addon and core'
 
     def execute(self, context):
-        pre_download_async(part_installation=PartInstallation.CORE)
-        pre_download_async(part_installation=PartInstallation.ADDON)
+        download_zip_async(part_installation=PartInstallation.CORE)
+        download_zip_async(part_installation=PartInstallation.ADDON)
         with open(str(download_file_version_path()), 'w') as f:
             print(FBUpdater.version(), file=f)
         return {'FINISHED'}
@@ -167,23 +171,25 @@ MIN_TIME_BETWEEN_REMINDERS = 86400  # 24 hours in seconds
 
 
 class FBInstallationReminder:
-    _message_text = 'The update {} is ready to be installed. ' \
-                    'Blender will be relaunched after installing the update automatically. ' \
-                    'Please save your project before continuing. Proceed?'.format(FBUpdater.version())
     _last_reminder_time = None
 
     @classmethod
     def is_active(cls):
         import time
-        return not FBUpdater.is_active() and updates_downloaded() and \
+        return updates_downloaded() and \
+               downloaded_keentools_version() > Config.addon_version and \
                (cls._last_reminder_time is None or
-                time.time() - cls._last_reminder_time > MIN_TIME_BETWEEN_REMINDERS) and \
-               downloaded_keentools_version() != Config.addon_version
+                time.time() - cls._last_reminder_time > MIN_TIME_BETWEEN_REMINDERS)
+
 
     @classmethod
     def render_message(cls, layout):
         if cls.is_active():
-            render_main(layout, parse_html(cls._message_text))
+            _message_text = 'The update {} is ready to be installed. ' \
+                            'Blender will be relaunched after installing the update automatically. ' \
+                            'Please save your project before continuing. Proceed?'.\
+                format(downloaded_keentools_version())
+            render_main(layout, parse_html(_message_text))
 
     @classmethod
     def remind_later(cls):

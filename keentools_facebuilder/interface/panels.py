@@ -114,10 +114,6 @@ class FB_PT_HeaderPanel(Common, Panel):
         col.label(text="a new head using:")
         col.label(text="Add > Mesh > FaceBuilder")
 
-        row = layout.row()
-        row.operator(Config.fb_update_addon,
-                     text='Update addon', icon='USER')
-
     def _pkt_install_offer(self, layout):
         col = layout.column()
         col.scale_y = Config.text_scale_y

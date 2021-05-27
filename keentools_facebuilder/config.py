@@ -119,8 +119,6 @@ class Config:
     fb_add_head_operator_idname = operators + '.add_head'
     fb_user_preferences_changer = operators + '.user_preferences_changer'
 
-    fb_update_addon = operators + '.update_addon'
-
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
     fb_camera_panel_idname = _PT + 'camera_panel'

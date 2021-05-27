@@ -16,9 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import sys
-import subprocess
-import os.path
+
 import logging
 import bpy
 
@@ -27,12 +25,6 @@ from . import manipulate
 from .cameras import show_all_cameras
 from ..fbloader import FBLoader
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
-from ..blender_independent_packages.pykeentools_loader.config import pkt_installation_dir
-from ..blender_independent_packages.pykeentools_loader.install import install_addon_from_file
-from ..blender_independent_packages.pykeentools_loader.install import install_core_from_file
-from ..blender_independent_packages.pykeentools_loader.install import pre_download_async
-from ..blender_independent_packages.pykeentools_loader.install import PartInstallation
-from ..blender_independent_packages.pykeentools_loader.install import download_file_name
 from .blendshapes import (create_facs_blendshapes,
                           create_facs_test_animation_on_blendshapes,
                           disconnect_blendshapes_action,
@@ -236,25 +228,4 @@ def reconstruct_by_mesh(operator):
     logger.debug('reconstruct_by_mesh call')
     manipulate.reconstruct_by_head()
     logger.debug('reconstruction finished')
-    return {'FINISHED'}
-
-
-def download_the_update(operator):
-    pre_download_async(part_installation=PartInstallation.CORE)
-    pre_download_async(part_installation=PartInstallation.ADDON)
-    return {'FINISHED'}
-
-
-def update_addon(operator):
-    version = (2, 1, 1)
-    pre_download_async(part_installation=PartInstallation.CORE, version=version)
-    pre_download_async(part_installation=PartInstallation.ADDON, version=version)
-    dir = pkt_module().utils.caches_dir()
-    addon_file = download_file_name(PartInstallation.ADDON)
-    addon_path = os.path.join(dir, addon_file)
-    install_addon_from_file(addon_path)
-    core_file = download_file_name(PartInstallation.CORE)
-    core_path = os.path.join(dir, core_file)
-    install_core_from_file(core_path)
-    bpy.ops.wm.quit_blender()
     return {'FINISHED'}

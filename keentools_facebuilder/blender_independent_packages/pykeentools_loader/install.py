@@ -29,7 +29,7 @@ from .config import *
 __all__ = ['PartInstallation', 'is_installed', 'uninstall', 'installation_status',
            'install_from_download', 'install_from_download_async',
            'install_core_from_file', 'install_addon_from_file',
-           'download_file_name', 'pre_download', 'pre_download_async',
+           'download_file_name', 'download_zip', 'download_zip_async',
            'updates_downloaded', 'loaded', 'module', 'remove_download',
            'install_download', 'download_file_version_path',
            'downloaded_keentools_version']
@@ -96,8 +96,6 @@ def _install_from_stream(file_like_object, part_installation):
             os.makedirs(target_path, exist_ok=False)
         else:
             target_path = bpy.utils.user_resource('SCRIPTS', "addons")
-        print("target path: ", target_path)
-        print("list dir: ", os.listdir(target_path))
 
         import zipfile
         with zipfile.ZipFile(file_like_object) as archive:
@@ -206,7 +204,7 @@ def download_file_name(part_installation):
     return file_name
 
 
-def pre_download(part_installation, version=None, nightly=False):
+def download_zip(part_installation, version=None, nightly=False):
     if part_installation == PartInstallation.CORE:
         url = download_core_path(version, nightly)
     else:
@@ -218,11 +216,11 @@ def pre_download(part_installation, version=None, nightly=False):
         code.write(r.content)
 
 
-def pre_download_async(**kwargs):
+def download_zip_async(**kwargs):
     """
-    The same as :func:`pre_download`
+    The same as :func:`download_zip`
     """
-    t = Thread(target=pre_download, kwargs=kwargs)
+    t = Thread(target=download_zip, kwargs=kwargs)
     t.start()
 
 

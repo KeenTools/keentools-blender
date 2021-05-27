@@ -42,9 +42,7 @@ from .utils.operator_action import (create_blendshapes,
                                     export_head_to_fbx,
                                     update_blendshapes,
                                     unhide_head,
-                                    reconstruct_by_mesh,
-                                    download_the_update,
-                                    update_addon)
+                                    reconstruct_by_mesh)
 
 
 class ButtonOperator:
@@ -763,19 +761,6 @@ class FB_OT_ReconstructHead(ButtonOperator, Operator):
         return reconstruct_by_mesh(self)
 
 
-class FB_OT_UpdateAddon(Operator):
-    bl_idname = Config.fb_update_addon
-    bl_label = 'Update addon'
-    bl_options = {'REGISTER', 'UNDO'}
-    bl_description = 'Update addon'
-
-    def draw(self, context):
-        pass
-
-    def execute(self, context):
-        return update_addon(self)
-
-
 CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_DeleteHead,
                        FB_OT_SelectCamera,
@@ -807,5 +792,4 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ExportHeadToFBX,
                        FB_OT_UpdateBlendshapes,
                        FB_OT_UnhideHead,
-                       FB_OT_ReconstructHead,
-                       FB_OT_UpdateAddon)
+                       FB_OT_ReconstructHead)
