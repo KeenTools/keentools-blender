@@ -125,6 +125,7 @@ class Config:
     fb_header_panel_idname = _PT + 'header_panel'
     fb_camera_panel_idname = _PT + 'camera_panel'
     fb_update_panel_idname = _PT + 'update_panel'
+    fb_updates_installation_panel_idname = _PT + 'updates_installation_panel'
     fb_views_panel_idname = _PT + 'views_panel'
     fb_exif_panel_idname = _PT + 'exif_panel'
     fb_texture_panel_idname = _PT + 'texture_panel'
@@ -142,9 +143,14 @@ class Config:
     fb_help_texture_idname = operators + '.help_texture'
     fb_help_blendshapes_idname = operators + '.help_blendshapes'
 
+    fb_download_the_update_idname = operators + '.download_the_update'
     fb_open_url_idname = operators + '.open_url'
     fb_remind_later_idname = operators + '.remind_later'
     fb_skip_version_idname = operators + '.skip_version'
+
+    fb_install_updates_idname = operators + '.install_updates'
+    fb_remind_install_later_idname = operators + '.remind_install_later'
+    fb_skip_installation_idname = operators + '.skip_installation'
 
     fb_uninstall_core_idname = operators + '.uninstall_core'
 

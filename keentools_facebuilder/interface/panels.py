@@ -18,7 +18,7 @@
 
 from bpy.types import Panel
 
-from .updater import FBUpdater
+from .updater import (FBUpdater, FBInstallationReminder)
 from ..config import Config, get_main_settings
 from ..messages import draw_labels
 import re
@@ -216,6 +216,8 @@ class FB_PT_UpdatePanel(Common, Panel):
         res = FBUpdater.get_response()
         if res is None:
             return
+        layout.operator(Config.fb_download_the_update_idname,
+            text='Download the update', icon='IMPORT')
         op = layout.operator(Config.fb_open_url_idname,
             text='Open downloads page', icon='URL')
         op.url = res.download_url
@@ -226,7 +228,32 @@ class FB_PT_UpdatePanel(Common, Panel):
 
     def draw(self, context):
         layout = self.layout
-        # TODO FB_update_addon
+        self._draw_response(layout)
+
+
+class FB_PT_UpdatesInstallationPanel(Common, Panel):
+    bl_idname = Config.fb_updates_installation_panel_idname
+    bl_label = 'Update installation'
+
+    @classmethod
+    def poll(cls, context):
+        return not FBUpdater.has_response_message() and \
+               _show_all_panels() and FBInstallationReminder.is_active()
+
+    def _draw_response(self, layout):
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        FBInstallationReminder.render_message(col)
+
+        layout.operator(Config.fb_install_updates_idname,
+            text='Update and close blender', icon='FILE_REFRESH')
+        layout.operator(Config.fb_remind_install_later_idname,
+            text='Remind tomorrow', icon='RECOVER_LAST')
+        layout.operator(Config.fb_skip_installation_idname,
+            text='Skip installation', icon='X')
+
+    def draw(self, context):
+        layout = self.layout
         self._draw_response(layout)
 
 

@@ -23,6 +23,9 @@ import bpy
 from ..config import Config
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed)
+from ..blender_independent_packages.pykeentools_loader.install import (
+    pre_download_async, PartInstallation, updates_downloaded)
+
 from ..utils.html import parse_html, skip_new_lines_and_spaces, render_main
 
 
@@ -39,13 +42,13 @@ def mock_response():
                        "<li>minor fixes and improvements</li>\n" \
                        "</ul>\n<br />\n"
     response.plugin_name = 'FaceBuilder'
-    response.version = pkt_module().Version(1, 5, 9)
+    response.version = pkt_module().Version(2021, 2, 0)
     return response
 
 
 class FBUpdater:
     _response = None
-    # _response = mock_response()  # Mock for testing (1/2)
+    _response = mock_response()  # Mock for testing (1/2)
     _parsed_response_content = None
 
     @classmethod
@@ -94,11 +97,27 @@ class FBUpdater:
 
         uc = cls.get_update_checker()
         res = uc.check_for_updates('FaceBuilder')
-        # res = cls.get_response()  # Mock (2/2)
+        res = cls.get_response()  # Mock (2/2)
         if res is not None:
             cls.set_response(res)
             parsed = parse_html(skip_new_lines_and_spaces(res.message))
             cls.set_parsed(parsed)
+
+
+class FB_OT_DownloadTheUpdate(bpy.types.Operator):
+    bl_idname = Config.fb_download_the_update_idname
+    bl_label = 'Download the update'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Download the latest version of addon and core'
+
+    def execute(self, context):
+        uc = FBUpdater.get_update_checker()
+        res = FBUpdater.get_response()
+        uc.skip_update(res.plugin_name, res.version)
+        FBUpdater.clear_message()
+        pre_download_async(part_installation=PartInstallation.CORE)
+        pre_download_async(part_installation=PartInstallation.ADDON)
+        return {'FINISHED'}
 
 
 class FB_OT_RemindLater(bpy.types.Operator):
@@ -132,4 +151,58 @@ class FB_OT_SkipVersion(bpy.types.Operator):
         res = FBUpdater.get_response()
         uc.skip_update(res.plugin_name, res.version)
         FBUpdater.clear_message()
+        return {'FINISHED'}
+
+
+MIN_TIME_BETWEEN_REMINDERS = 86400  # 24 hours in seconds
+
+class FBInstallationReminder:
+    _message_text = 'The update 2021.3 is ready to be installed. ' \
+                    'Blender will be relaunched after installing the update automatically. ' \
+                    'Please save your project before continuing. Proceed?'
+    _last_reminder_time = None
+
+    @classmethod
+    def is_active(cls):
+        return updates_downloaded()
+
+    import time
+    @classmethod
+    def render_message(cls, layout):
+        if cls._last_reminder_time is None or \
+                time.time() - cls._last_reminder_time > MIN_TIME_BETWEEN_REMINDERS:
+            render_main(layout, parse_html(cls._message_text))
+
+    @classmethod
+    def remind_later(cls):
+        cls._last_reminder_time = time.time()
+
+
+class FB_OT_InstallUpdates(bpy.types.Operator):
+    bl_idname = Config.fb_install_updates_idname
+    bl_label = 'Install updates and close blender'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Install updates and close blender'
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+
+class FB_OT_RemindInstallLater(bpy.types.Operator):
+    bl_idname = Config.fb_remind_install_later_idname
+    bl_label = 'Remind install tommorow'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Remind install tommorow'
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+
+class FB_OT_SkipInstallation(bpy.types.Operator):
+    bl_idname = Config.fb_skip_installation_idname
+    bl_label = 'Skip installation'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Skip installation'
+
+    def execute(self, context):
         return {'FINISHED'}
