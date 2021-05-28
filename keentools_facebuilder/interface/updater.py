@@ -35,7 +35,7 @@ def mock_response():
     response = lambda: None
     response.description_url = 'https://keentools.io/downloads'
     response.download_url = 'https://keentools.io/downloads'
-    response.message = "<h3>What's New in KeenTools 1.5.9</h3>\n" \
+    response.message = "<h3>What's New in KeenTools 2021.2.1</h3>\n" \
                        "<ul>\n  " \
                        "<li>fixed performance issues in Nuke 12;</li>\n  " \
                        "<li>pintooling performance improvements;</li>\n  " \
@@ -44,13 +44,13 @@ def mock_response():
                        "<li>minor fixes and improvements</li>\n" \
                        "</ul>\n<br />\n"
     response.plugin_name = 'FaceBuilder'
-    response.version = pkt_module().Version(1, 5, 9)
+    response.version = pkt_module().Version(2021, 2, 1)
     return response
 
 
 class FBUpdater:
     _response = None
-    # _response = mock_response()  # Mock for testing (1/2)
+    _response = mock_response()  # Mock for testing (1/2)
     _parsed_response_content = None
 
     @classmethod
@@ -112,7 +112,7 @@ class FBUpdater:
 
         uc = cls.get_update_checker()
         res = uc.check_for_updates('FaceBuilder')
-        # res = cls.get_response()  # Mock (2/2)
+        res = cls.get_response()  # Mock (2/2)
         if res is not None:
             cls.set_response(res)
             parsed = parse_html(skip_new_lines_and_spaces(res.message))
@@ -199,7 +199,7 @@ class FBInstallationReminder:
 
 class FB_OT_InstallUpdates(bpy.types.Operator):
     bl_idname = Config.fb_install_updates_idname
-    bl_label = 'Install updates and close blender'
+    bl_label = 'The blender will close, save your changes before'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Install updates and close blender'
 
@@ -208,8 +208,16 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
         install_download(PartInstallation.CORE)
         remove_download(PartInstallation.CORE)
         remove_download(PartInstallation.ADDON)
-        bpy.ops.wm.quit_blender()
+        bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
         return {'FINISHED'}
+
+    # def invoke(self, context, event):
+    #     if not bpy.data.filepath:
+    #         bpy.ops.wm.save_mainfile('INVOKE_AREA')
+    #     else:
+    #         bpy.ops.wm.save_mainfile()
+    #     self.report({'INFO'}, 'File saved.')
+    #     return context.window_manager.invoke_confirm(self, event)
 
 
 class FB_OT_RemindInstallLater(bpy.types.Operator):
