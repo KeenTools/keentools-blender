@@ -466,7 +466,6 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
     def init_geom_data_from_mesh(self, obj):
         mesh = obj.data
         verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
-
         mesh.vertices.foreach_get(
             'co', np.reshape(verts, len(mesh.vertices) * 3))
 
