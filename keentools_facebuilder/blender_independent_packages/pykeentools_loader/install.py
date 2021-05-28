@@ -37,6 +37,8 @@ __all__ = ['PartInstallation', 'is_installed', 'uninstall', 'installation_status
 
 _unpack_mutex = Lock()
 
+_caches_dir_path = None
+
 
 class PartInstallation(Enum):
     CORE = 1
@@ -329,12 +331,16 @@ def module():
     return pykeentools
 
 
-caches_dir_path = module().utils.caches_dir()
+def get_caches_dir():
+    global _caches_dir_path
+    if _caches_dir_path is None:
+        _caches_dir_path = module().utils.caches_dir()
+    return _caches_dir_path
 
 
 def download_file_path(part_installation):
     file_name = download_file_name(part_installation)
-    return os.path.join(caches_dir_path, file_name)
+    return os.path.join(get_caches_dir(), file_name)
 
 
 def updates_downloaded():
@@ -351,7 +357,7 @@ def install_download(part_installation):
 
 
 def download_file_version_path():
-    return os.path.join(caches_dir_path, 'keentools_version.txt')
+    return os.path.join(get_caches_dir(), 'keentools_version.txt')
 
 
 def downloaded_keentools_version():
