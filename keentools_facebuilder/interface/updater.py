@@ -50,7 +50,7 @@ def mock_response():
 
 class FBUpdater:
     _response = None
-    _response = mock_response()  # Mock for testing (1/2)
+    # _response = mock_response()  # Mock for testing (1/3)
     _parsed_response_content = None
 
     @classmethod
@@ -60,7 +60,7 @@ class FBUpdater:
 
     @classmethod
     def has_response(cls):
-        return cls._response is not None
+        return cls.get_response() is not None
 
     @classmethod
     def has_response_message(cls):
@@ -68,10 +68,13 @@ class FBUpdater:
 
     @classmethod
     def set_response(cls, val):
+        response = cls.get_response()
         cls._response = val
 
     @classmethod
     def get_response(cls):
+        if cls._response is None:
+            cls._response = mock_response()  # Mock for testing (2/3)
         return cls._response
 
     @classmethod
@@ -112,7 +115,7 @@ class FBUpdater:
 
         uc = cls.get_update_checker()
         res = uc.check_for_updates('FaceBuilder')
-        res = cls.get_response()  # Mock (2/2)
+        res = cls.get_response()  # Mock for testing (3/3)
         if res is not None:
             cls.set_response(res)
             parsed = parse_html(skip_new_lines_and_spaces(res.message))
