@@ -30,7 +30,7 @@ from ..preferences.user_preferences import UserPreferences
 class FBShaderPoints:
     """ Base class for Point Drawing Shaders """
     _is_visible = True
-    _point_size = UserPreferences.get_value('pin_size', UserPreferences.type_float)
+    _point_size = UserPreferences.get_value_safe('pin_size', UserPreferences.type_float)
 
     # Store all draw handlers registered by class objects
     handler_list = []
@@ -197,5 +197,5 @@ class FBPoints3D(FBShaderPoints):
     def __init__(self, target_class):
         super().__init__(target_class)
         self.set_point_size(
-            UserPreferences.get_value('pin_size', UserPreferences.type_float) *
+            UserPreferences.get_value_safe('pin_size', UserPreferences.type_float) *
             Config.surf_pin_size_scale)

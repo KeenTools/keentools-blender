@@ -18,6 +18,8 @@
 import logging
 import math
 
+import bpy
+
 from .. config import get_main_settings, Config
 from . import attrs
 
@@ -104,7 +106,34 @@ def rotate_background_image(camera, delta=1):
     background_image.rotation = camera.orientation * math.pi / 2
 
 
-def set_camera_in_viewport(context, zoom=18.0, offset=(0, 0)):
-    rv3d = context.space_data.region_3d
-    rv3d.view_camera_zoom = zoom
-    rv3d.view_camera_offset = offset
+def exit_localview(context):
+    if context.space_data.local_view:
+        bpy.ops.view3d.localview()
+        return True
+    return False
+
+
+def enter_localview(context):
+    if not context.space_data.local_view:
+        bpy.ops.view3d.localview()
+
+
+def switch_to_fb_camera(camera, context):
+    camera.show_background_image()
+    exit_localview(context)
+    camera.camobj.hide_set(False)
+
+    bpy.ops.object.select_all(action='DESELECT')
+    camera.camobj.select_set(state=True)
+    bpy.context.view_layer.objects.active = camera.camobj
+
+    enter_localview(context)
+    bpy.ops.view3d.object_as_camera()
+
+
+def leave_camera_view(context):
+    try:
+        if context.space_data.region_3d.view_perspective == 'CAMERA':
+            bpy.ops.view3d.view_camera()
+    except Exception as err:
+        pass

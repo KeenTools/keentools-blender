@@ -23,7 +23,7 @@ from .config import Config, ErrorType, get_main_settings, get_operator
 from .fbloader import FBLoader
 from .utils import coords
 from .utils.focal_length import configure_focal_mode_and_fixes
-from .utils.manipulate import push_neutral_head_in_undo_history
+from .utils.manipulate import push_head_in_undo_history
 from .blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
@@ -92,7 +92,7 @@ def sort_detected_faces():
     return rects
 
 
-def _add_pins_to_face(headnum, camnum, rectangle_index):
+def _add_pins_to_face(headnum, camnum, rectangle_index, context):
     logger = logging.getLogger(__name__)
     fb = FBLoader.get_builder()
     faces = get_detected_faces()
@@ -124,14 +124,16 @@ def _add_pins_to_face(headnum, camnum, rectangle_index):
     else:
         logger.debug('detect_face_pose failed kid: {}'.format(kid))
 
-    FBLoader.update_pins_count(headnum, camnum)
+    FBLoader.update_camera_pins_count(headnum, camnum)
+    FBLoader.load_pins_into_viewport(headnum, camnum)
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
-    FBLoader.fb_redraw(headnum, camnum)
+    FBLoader.update_viewport_shaders(context, headnum, camnum)
 
-    FBLoader.save_only(headnum)
+    FBLoader.save_fb_serial_and_image_pathes(headnum)
+
     history_name = 'Add face auto-pins' if result_flag else 'No auto-pins'
-    push_neutral_head_in_undo_history(head, kid, history_name)
+    push_head_in_undo_history(head, history_name)
     return result_flag
 
 
@@ -223,7 +225,7 @@ class FB_OT_PickMode(bpy.types.Operator):
             self.report({'ERROR'}, message)
             logger.error(message)
             return {'CANCELLED'}
-        result = _add_pins_to_face(self.headnum, self.camnum, self.selected)
+        result = _add_pins_to_face(self.headnum, self.camnum, self.selected, context)
         if result is None:
             return {'CANCELLED'}
         if not result:
@@ -265,7 +267,8 @@ class FB_OT_PickMode(bpy.types.Operator):
         if event.value == 'PRESS' and event.type in {'LEFTMOUSE', 'RIGHTMOUSE'}:
             index = self._selected_rectangle(context, event)
             if index >= 0:
-                result = _add_pins_to_face(self.headnum, self.camnum, index)
+                result = _add_pins_to_face(self.headnum, self.camnum, index,
+                                           context)
                 if result is None:
                     return {'CANCELLED'}
                 if not result:
@@ -348,7 +351,7 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
                 op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
         elif len(rects) == 1:
             result = _add_pins_to_face(self.headnum, self.camnum,
-                                       rectangle_index=0)
+                                       rectangle_index=0, context=context)
             if result is None:
                 return {'CANCELLED'}
             if not result:

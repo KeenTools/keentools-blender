@@ -71,6 +71,7 @@ class Config:
     fb_delete_camera_idname = operators + '.delete_camera'
     fb_proper_view_menu_exec_idname = operators + '.proper_view_menu_exec'
     fb_addon_settings_idname = operators + '.addon_settings'
+    fb_addon_setup_defaults_idname = operators + '.addon_setup_defaults'
     fb_delete_texture_idname = operators + '.delete_texture'
 
     fb_rotate_image_cw_idname = operators + '.rotate_image_cw'
@@ -118,6 +119,10 @@ class Config:
 
     fb_add_head_operator_idname = operators + '.add_head'
     fb_user_preferences_changer = operators + '.user_preferences_changer'
+    fb_user_preferences_reset_all = operators + '.user_preferences_reset_all'
+    fb_user_preferences_get_colors = operators + '.user_preferences_get_colors'
+    fb_user_preferences_reset_all_warning_idname = \
+        operators + '.user_preferences_reset_all_warning'
 
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
@@ -194,7 +199,6 @@ class Config:
     camera_y_step = 5
     camera_z_step = 0.5
 
-    default_view_zoom = 18.0
     show_markers_at_camera_corners = False
 
     # In Material

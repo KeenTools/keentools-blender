@@ -49,7 +49,7 @@ class UserPreferences:
         logger.debug('UserPreferences: {}'.format(d))
 
     @classmethod
-    def get_value(cls, name, type):
+    def _get_value(cls, name, type):
         _dict = cls.get_dict()
 
         if name in _dict.keys():
@@ -70,6 +70,21 @@ class UserPreferences:
         logger = logging.getLogger(__name__)
         logger.error('UserPreferences problem: {} {}'.format(name, type))
         return None
+
+    @classmethod
+    def get_value_safe(cls, name, type):
+        try:
+            return cls._get_value(name, type)
+        except Exception as err:
+            logger = logging.getLogger(__name__)
+            logger.error('UserPreferences Exception info: {}'.format(str(err)))
+            if name in cls._defaults.keys():
+                row = cls._defaults[name]
+                cls.set_value(name, row['value'])
+                return row['value']
+            else:
+                logger.error('Property error: {} {}'.format(name, type))
+                return None
 
     @classmethod
     def set_value(cls, name, value):

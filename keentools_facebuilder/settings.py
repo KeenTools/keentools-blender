@@ -41,7 +41,7 @@ from .callbacks import (update_mesh_with_dialog,
                         update_mesh_simple,
                         update_expressions,
                         update_wireframe_image,
-                        update_wireframe,
+                        update_wireframe_func,
                         update_pin_sensitivity,
                         update_pin_size,
                         update_model_scale,
@@ -217,24 +217,6 @@ class FBCameraItem(PropertyGroup):
             return self.image_height / self.image_width
         else:
             return 1.0
-
-    @staticmethod
-    def convert_matrix_to_str(arr):
-        b = arr.tobytes()
-        return b.hex()
-
-    @staticmethod
-    def convert_str_to_matrix(mat):
-        if len(mat) == 0:
-            return np.eye(4)
-        b = bytes.fromhex(mat)
-        return np.frombuffer(b, dtype=np.float32).reshape((4, 4))
-
-    def set_model_mat(self, arr):
-        self.model_mat = self.convert_matrix_to_str(arr)
-
-    def get_model_mat(self):
-        return self.convert_str_to_matrix(self.model_mat)
 
     # Simple getters/setters
     def get_image_width(self):
@@ -527,12 +509,19 @@ class FBHeadItem(PropertyGroup):
     def get_last_camera(self):
         return self.get_camera(self.get_last_camnum())
 
+    def store_serial_str_on_headobj(self):
+        if self.headobj:
+            self.headobj[Config.fb_serial_prop_name[0]] = self.serial_str
+
     def set_serial_str(self, value):
         self.serial_str = value
-        self.headobj[Config.fb_serial_prop_name[0]] = value
 
     def get_serial_str(self):
         return self.serial_str
+
+    def store_serial_str_in_head_and_on_headobj(self, value):
+        self.set_serial_str(value)
+        self.store_serial_str_on_headobj()
 
     def is_deleted(self):
         """ Checks that the list item references a non-existent object """
@@ -580,13 +569,15 @@ class FBHeadItem(PropertyGroup):
                 return True
         return False
 
-    def save_images_src(self):
+    def save_images_src_on_headobj(self):
         res = []
         for c in self.cameras:
             if c.cam_image:
                 res.append(c.cam_image.filepath)
             else:
                 res.append('')
+        if not self.headobj:
+            return
         self.headobj[Config.fb_images_prop_name[0]] = res
         # Dir name of current scene
         self.headobj[Config.fb_dir_prop_name[0]] = bpy.path.abspath("//")
@@ -637,25 +628,33 @@ class FBSceneSettings(PropertyGroup):
         name="Wireframe opacity",
         default=Config.default_user_preferences['wireframe_opacity']['value'],
         min=0.0, max=1.0,
-        update=update_wireframe)
+        update=update_wireframe_func,
+        get=universal_getter('wireframe_opacity', 'float'),
+        set=universal_setter('wireframe_opacity'))
     wireframe_color: FloatVectorProperty(
         description="Color of mesh wireframe in pin-mode",
         name="Wireframe Color", subtype='COLOR',
         default=Config.default_user_preferences['wireframe_color']['value'],
         min=0.0, max=1.0,
-        update=update_wireframe_image)
+        update=update_wireframe_image,
+        get=universal_getter('wireframe_color', 'color'),
+        set=universal_setter('wireframe_color'))
     wireframe_special_color: FloatVectorProperty(
         description="Color of special parts in pin-mode",
         name="Wireframe Special Color", subtype='COLOR',
         default=Config.default_user_preferences['wireframe_special_color']['value'],
         min=0.0, max=1.0,
-        update=update_wireframe_image)
+        update=update_wireframe_image,
+        get=universal_getter('wireframe_special_color', 'color'),
+        set=universal_setter('wireframe_special_color'))
     wireframe_midline_color: FloatVectorProperty(
         description="Color of midline in pin-mode",
         name="Wireframe Midline Color", subtype='COLOR',
         default=Config.default_user_preferences['wireframe_midline_color']['value'],
         min=0.0, max=1.0,
-        update=update_wireframe_image)
+        update=update_wireframe_image,
+        get=universal_getter('wireframe_midline_color', 'color'),
+        set=universal_setter('wireframe_midline_color'))
     show_specials: BoolProperty(
         description="Use different colors for important head parts "
                     "on the mesh",

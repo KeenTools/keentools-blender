@@ -139,8 +139,7 @@ def _update_mesh_now(headnum):
     # Create new mesh
     mesh = FBLoader.get_builder_mesh(fb, 'FBHead_tmp_mesh',
                                      head.get_masks(),
-                                     uv_set=head.tex_uv_shape,
-                                     keyframe=keyframe)
+                                     uv_set=head.tex_uv_shape)
 
     try:
         # Copy old material
@@ -149,7 +148,7 @@ def _update_mesh_now(headnum):
     except Exception:
         pass
     head.headobj.data = mesh
-    FBLoader.save_only(headnum)
+    FBLoader.save_fb_serial_str(headnum)
 
     # Copy blendshapes and animation
     if old_mesh.shape_keys and len(old_mesh.vertices) == len(mesh.vertices):
@@ -166,9 +165,11 @@ def _update_mesh_now(headnum):
 
     if settings.pinmode:
         # Update wireframe structures
-        FBLoader.viewport().wireframer().init_geom_data_from_mesh(head.headobj)
-        FBLoader.viewport().wireframer().init_edge_indices(FBLoader.get_builder())
-        FBLoader.viewport().update_wireframe()
+        vp = FBLoader.viewport()
+        wf = vp.wireframer()
+        wf.init_geom_data_from_fb(fb, head.headobj, keyframe)
+        wf.init_edge_indices(fb)
+        vp.update_wireframe_colors()
 
     mesh_name = old_mesh.name
     # Delete old mesh
@@ -177,15 +178,23 @@ def _update_mesh_now(headnum):
 
 
 def update_expressions(self, context):
+    logger = logging.getLogger(__name__)
     settings = get_main_settings()
+    headnum = self.get_headnum()
+    if headnum < 0:
+        logger.debug('WRONG HEADNUM {}'.format(headnum))
+        return
+    logger.debug('EXPRESSIONS HEADNUM {}'.format(headnum))
+    fb = FBLoader.get_builder()
+    fb.set_use_emotions(self.should_use_emotions())
+    logger.debug('EXPRESSIONS: {}'.format(self.should_use_emotions()))
+
     if not settings.pinmode:
         return
-    fb = FBLoader.get_builder()
-    head = settings.get_head(settings.current_headnum)
-    if head is not None:
-        head.need_update = True
-        coords.update_head_mesh(settings, fb, head)
-        FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
+
+    coords.update_head_mesh_neutral(fb, self.headobj)
+    FBLoader.update_wireframe_shader_only(settings.current_headnum,
+                                          settings.current_camnum)
 
 
 def update_wireframe_image(self, context):
@@ -197,11 +206,11 @@ def update_wireframe_image(self, context):
                     settings.wireframe_midline_color),
                     settings.wireframe_opacity)
     wf.init_wireframe_image(FBLoader.get_builder(), settings.show_specials)
-    vp.update_wireframe()
+    vp.update_wireframe_colors()
 
 
-def update_wireframe(self, context):
-    FBLoader.viewport().update_wireframe()
+def update_wireframe_func(self, context):
+    FBLoader.viewport().update_wireframe_colors()
 
 
 def update_pin_sensitivity(self, context):
@@ -213,7 +222,7 @@ def universal_getter(name, type):
         if name in self.keys():
             return self[name]
         else:
-            return UserPreferences.get_value(name, type)
+            return UserPreferences.get_value_safe(name, type)
     return _getter
 
 
@@ -238,13 +247,10 @@ def update_model_scale(self, context):
 
     head.mark_model_changed_by_scale()
 
-    coords.update_head_mesh(settings, fb, head)
+    coords.update_head_mesh_neutral(fb, head.headobj)
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
-    FBLoader.save_only(headnum)
-
-    if settings.pinmode and FBLoader.viewport().wireframer().is_working():
-        FBLoader.fb_redraw(settings.current_headnum, settings.current_camnum)
+    FBLoader.save_fb_serial_str(headnum)
 
 
 def update_cam_image(self, context):
@@ -282,7 +288,7 @@ def update_camera_focal(self, context):
         fb.set_varying_focal_length_estimation()
         fb.set_focal_length_at(
             kid, self.get_focal_length_in_pixels_coef() * self.focal)
-        FBLoader.save_only(headnum)
+        FBLoader.save_fb_serial_str(headnum)
 
 
 def update_blue_camera_button(self, context):
