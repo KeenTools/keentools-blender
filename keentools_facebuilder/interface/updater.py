@@ -197,6 +197,15 @@ class FBInstallationReminder:
         cls._last_reminder_time = time.time()
 
 
+def start_new_blender(cmd_line):
+    import subprocess
+    install_download(PartInstallation.ADDON)
+    install_download(PartInstallation.CORE)
+    remove_download(PartInstallation.CORE)
+    remove_download(PartInstallation.ADDON)
+    subprocess.call([cmd_line])
+
+
 class FB_OT_InstallUpdates(bpy.types.Operator):
     bl_idname = Config.fb_install_updates_idname
     bl_label = 'The blender will close, save your changes before'
@@ -204,10 +213,9 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
     bl_description = 'Install updates and close blender'
 
     def execute(self, context):
-        install_download(PartInstallation.ADDON)
-        install_download(PartInstallation.CORE)
-        remove_download(PartInstallation.CORE)
-        remove_download(PartInstallation.ADDON)
+        import sys
+        import atexit
+        atexit.register(start_new_blender, sys.argv[0])
         bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
         return {'FINISHED'}
 
