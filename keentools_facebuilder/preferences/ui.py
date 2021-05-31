@@ -136,6 +136,10 @@ def _universal_setter(name):
 class FBAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = Config.addon_name
 
+    downloaded_version: bpy.props.StringProperty(
+        name="Downloaded version", default=""
+    )
+
     license_accepted: bpy.props.BoolProperty(
         name='I have read and I agree to KeenTools End-user License Agreement',
         default=False

@@ -20,7 +20,7 @@ import logging
 
 import bpy
 
-from ..config import Config
+from ..config import get_main_settings, Config
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed)
 from ..blender_independent_packages.pykeentools_loader.install import (
@@ -55,8 +55,7 @@ class FBUpdater:
 
     @classmethod
     def is_active(cls):
-        return cls.has_response() and (not updates_downloaded() or
-                                       downloaded_keentools_version() < str(cls.version()))
+        return cls.has_response() and (Config.addon_version < str(cls.version()))
 
     @classmethod
     def has_response(cls):
@@ -131,6 +130,8 @@ class FB_OT_DownloadTheUpdate(bpy.types.Operator):
     def execute(self, context):
         download_zip_async(part_installation=PartInstallation.CORE)
         download_zip_async(part_installation=PartInstallation.ADDON)
+        settings = get_main_settings()
+        settings.preferences().downloaded_version = str(FBUpdater.version())
         with open(str(download_file_version_path()), 'w') as f:
             print(FBUpdater.version(), file=f)
         return {'FINISHED'}
@@ -179,8 +180,8 @@ class FBInstallationReminder:
     @classmethod
     def is_active(cls):
         import time
-        return updates_downloaded() and \
-               downloaded_keentools_version() > Config.addon_version and \
+        settings = get_main_settings()
+        return settings.preferences().downloaded_version > Config.addon_version and \
                (cls._last_reminder_time is None or
                 time.time() - cls._last_reminder_time > MIN_TIME_BETWEEN_REMINDERS)
 
