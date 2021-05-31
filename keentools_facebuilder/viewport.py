@@ -336,17 +336,13 @@ class FBViewport:
         camobj = bpy.context.scene.camera
         if not camobj:  # Fix for tests
             return
-        m = camobj.matrix_world.inverted()
 
         # Fill matrix in homogeneous coords
         vv = np.ones((len(p3d), 4), dtype=np.float32)
         vv[:, :-1] = p3d
 
-        # Object transform, inverse camera, projection apply -> numpy
-        transform = np.array(
-            headobj.matrix_world.transposed() @ m.transposed()) @ projection
-        # Calc projection
-        vv = vv @ transform
+        # No object transform, just inverse camera, then projection apply
+        vv = vv @ np.array(camobj.matrix_world.inverted().transposed()) @ projection
         vv = (vv.T / vv[:, 3]).T
 
         verts2 = []
