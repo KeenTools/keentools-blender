@@ -28,7 +28,6 @@ from ..config import Config, get_main_settings, get_operator
 
 from ..utils.exif_reader import (read_exif_to_camera,
                                  auto_setup_camera_from_exif)
-from ..utils.other import restore_ui_elements
 from ..utils.materials import find_bpy_image_by_name
 from ..utils.blendshapes import load_csv_animation_to_blendshapes
 
@@ -44,7 +43,6 @@ class FB_OT_SingleFilebrowserExec(Operator):
 
     def execute(self, context):
         settings = get_main_settings()
-        restore_ui_elements()
 
         op = get_operator(Config.fb_single_filebrowser_idname)
         op('INVOKE_DEFAULT', headnum=settings.tmp_headnum,
@@ -196,8 +194,6 @@ class FB_OT_MultipleFilebrowserExec(Operator):
         pass
 
     def execute(self, context):
-        restore_ui_elements()
-
         op = get_operator(Config.fb_multiple_filebrowser_idname)
         op('INVOKE_DEFAULT', headnum=self.headnum)
 

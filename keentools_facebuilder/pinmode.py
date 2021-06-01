@@ -26,7 +26,8 @@ from .utils import manipulate, coords, cameras
 from .config import Config, get_main_settings, get_operator, ErrorType
 from .fbloader import FBLoader
 from .utils.focal_length import update_camera_focal
-from .utils.other import FBStopShaderTimer, force_ui_redraw, hide_ui_elements
+from .utils.other import (FBStopShaderTimer, force_ui_redraw,
+                          hide_viewport_ui_elements_and_store_on_object)
 
 
 class FB_OT_PinMode(bpy.types.Operator):
@@ -260,7 +261,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         update_camera_focal(camera, fb)
 
         if first_start:
-            hide_ui_elements()
+            hide_viewport_ui_elements_and_store_on_object(headobj)
 
             logger.debug("START SHADERS")
             self._init_wireframer_colors(settings.overall_opacity)

@@ -25,9 +25,9 @@ from .config import Config, get_main_settings
 from .utils.coords import xy_to_xz_rotation_matrix_3x3
 from .utils.focal_length import (configure_focal_mode_and_fixes,
                                  update_camera_focal)
-from .utils import attrs, coords, cameras
+from .utils import attrs, coords
 from .utils.exif_reader import reload_all_camera_exif
-from .utils.other import FBStopShaderTimer, restore_ui_elements
+from .utils.other import FBStopShaderTimer, unhide_viewport_ui_element_from_object
 from .viewport import FBViewport
 from .blender_independent_packages.pykeentools_loader import module as pkt_module
 
@@ -122,12 +122,12 @@ class FBLoader:
         logger = logging.getLogger(__name__)
         cls.save_pinmode_state(headnum)
         cls.stop_viewport_shaders()
-        restore_ui_elements()
 
         settings = get_main_settings()
         head = settings.get_head(headnum)
         if head and head.headobj:
             head.headobj.hide_set(False)
+            unhide_viewport_ui_element_from_object(head.headobj)
         settings.pinmode = False
         logger.debug("OUT PINMODE")
 
@@ -141,17 +141,18 @@ class FBLoader:
         head.store_serial_str_in_head_and_on_headobj(fb.serialize())
 
     @classmethod
-    def save_fb_images_on_headobj(cls, headnum):
+    def _save_fb_images_and_keentools_attribute_on_headobj(cls, headnum):
         settings = get_main_settings()
         head = settings.get_head(headnum)
         if not head or not head.headobj:
             return
         head.save_images_src_on_headobj()
+        cls.set_keentools_attributes(head.headobj)  # to update by current ver.
 
     @classmethod
     def save_fb_serial_and_image_pathes(cls, headnum):
         cls.save_fb_serial_str(headnum)
-        cls.save_fb_images_on_headobj(headnum)
+        cls._save_fb_images_and_keentools_attribute_on_headobj(headnum)
 
     @classmethod
     def rigidity_setup(cls):
