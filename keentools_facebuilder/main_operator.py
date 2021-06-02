@@ -626,19 +626,6 @@ class FB_OT_ExitPinmode(Operator):
         return {'FINISHED'}
 
 
-class FB_OT_OpenURL(bpy.types.Operator):
-    bl_idname = Config.fb_open_url_idname
-    bl_label = 'Open URL'
-    bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Open URL in web browser'
-
-    url: bpy.props.StringProperty(name='URL', default='')
-
-    def execute(self, context):
-        bpy.ops.wm.url_open(url=self.url)
-        return {'FINISHED'}
-
-
 class FB_OT_UninstallCore(bpy.types.Operator):
     bl_idname = Config.fb_uninstall_core_idname
     bl_label = 'Uninstall Core'
@@ -781,7 +768,6 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ShowTexture,
                        FB_OT_ShowSolid,
                        FB_OT_ExitPinmode,
-                       FB_OT_OpenURL,
                        FB_OT_UninstallCore,
                        FB_OT_CreateBlendshapes,
                        FB_OT_DeleteBlendshapes,

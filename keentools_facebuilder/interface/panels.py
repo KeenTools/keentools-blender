@@ -188,6 +188,8 @@ class FB_PT_HeaderPanel(Common, Panel):
 
         elif state == 'NO_HEADS':
             self._draw_start_panel(layout)
+            # if not FBUpdater.is_active():
+            #     FBUpdater.init_updater()
             return
 
         else:
@@ -216,9 +218,6 @@ class FB_PT_UpdatePanel(Common, Panel):
             return
         layout.operator(Config.fb_download_the_update_idname,
             text='Download the update', icon='IMPORT')
-        op = layout.operator(Config.fb_open_url_idname,
-            text='Open downloads page', icon='URL')
-        op.url = res.download_url
         layout.operator(Config.fb_remind_later_idname,
             text='Remind tomorrow', icon='RECOVER_LAST')
         layout.operator(Config.fb_skip_version_idname,
