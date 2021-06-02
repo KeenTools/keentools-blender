@@ -137,7 +137,11 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = Config.addon_name
 
     downloaded_version: bpy.props.StringProperty(
-        name="Downloaded version", default=""
+        name='Downloaded version', default=''
+    )
+
+    downloaded_parts: bpy.props.IntProperty(
+        name='Downloaded installation parts', default=0, min=0, max=2
     )
 
     license_accepted: bpy.props.BoolProperty(
@@ -302,6 +306,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                 self.license_server_lock = False
 
             box = layout.box()
+            box.prop(self, 'downloaded_version')
             row = box.split(factor=0.35)
             row.label(text="License Server host/IP")
             if self.license_server_lock and self.license_server_auto:

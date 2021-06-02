@@ -29,15 +29,12 @@ from .config import *
 __all__ = ['PartInstallation', 'is_installed', 'uninstall', 'installation_status',
            'install_from_download', 'install_from_download_async',
            'install_core_from_file', 'install_addon_from_file',
-           'download_file_name', 'download_zip', 'download_zip_async',
+           'download_file_name', 'download_zip_async',
            'updates_downloaded', 'loaded', 'module', 'remove_download',
-           'install_download', 'download_file_version_path',
-           'downloaded_keentools_version']
+           'install_download']
 
 
 _unpack_mutex = Lock()
-
-_caches_dir_path = None
 
 
 class PartInstallation(Enum):
@@ -206,7 +203,7 @@ def download_file_name(part_installation):
     return file_name
 
 
-def download_zip(part_installation, version=None, nightly=False):
+def _download_zip(part_installation, version=None, nightly=False, final_callback=None):
     if part_installation == PartInstallation.CORE:
         url = download_core_path(version, nightly)
     else:
@@ -216,13 +213,15 @@ def download_zip(part_installation, version=None, nightly=False):
     file_path = download_file_path(part_installation)
     with open(file_path, 'wb') as code:
         code.write(r.content)
+    if final_callback is not None:
+        final_callback()
 
 
 def download_zip_async(**kwargs):
     """
     The same as :func:`download_zip`
     """
-    t = Thread(target=download_zip, kwargs=kwargs)
+    t = Thread(target=_download_zip, kwargs=kwargs)
     t.start()
 
 
@@ -331,16 +330,9 @@ def module():
     return pykeentools
 
 
-def get_caches_dir():
-    global _caches_dir_path
-    if _caches_dir_path is None:
-        _caches_dir_path = module().utils.caches_dir()
-    return _caches_dir_path
-
-
 def download_file_path(part_installation):
     file_name = download_file_name(part_installation)
-    return os.path.join(get_caches_dir(), file_name)
+    return os.path.join(module().utils.caches_dir(), file_name)
 
 
 def updates_downloaded():
@@ -354,12 +346,3 @@ def remove_download(part_installation):
 
 def install_download(part_installation):
     install_from_file(download_file_path(part_installation), part_installation)
-
-
-def download_file_version_path():
-    return os.path.join(get_caches_dir(), 'keentools_version.txt')
-
-
-def downloaded_keentools_version():
-    with open(str(download_file_version_path()), 'r') as f:
-        return str(f.readline().rstrip())

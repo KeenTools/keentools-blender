@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+from threading import Lock
 
 import bpy
 
@@ -25,8 +26,7 @@ from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed)
 from ..blender_independent_packages.pykeentools_loader.install import (
     download_zip_async, PartInstallation, updates_downloaded,
-    remove_download, install_download, download_file_version_path,
-    downloaded_keentools_version)
+    remove_download, install_download)
 
 from ..utils.html import parse_html, skip_new_lines_and_spaces, render_main
 
@@ -55,7 +55,8 @@ class FBUpdater:
 
     @classmethod
     def is_active(cls):
-        return cls.has_response() and (Config.addon_version < str(cls.version()))
+        return cls.has_response() and \
+               DownloadedVersionExecutor.get_downloaded_version() < str(cls.version())
 
     @classmethod
     def has_response(cls):
@@ -121,6 +122,55 @@ class FBUpdater:
             cls.set_parsed(parsed)
 
 
+class DownloadedVersionExecutor:
+    _state_mutex = Lock()
+
+    @classmethod
+    def get_downloaded_version(cls):
+        cls._state_mutex.acquire()
+        try:
+            settings = get_main_settings()
+            return settings.preferences().downloaded_version
+        finally:
+            cls._state_mutex.release()
+
+    @classmethod
+    def write_version(cls):
+        cls._state_mutex.acquire()
+        try:
+            settings = get_main_settings()
+            settings.preferences().downloaded_version = str(FBUpdater.version())
+        finally:
+            cls._state_mutex.release()
+
+
+class DownloadedPartsExecutor:
+    _state_mutex = Lock()
+
+    @classmethod
+    def get_downloaded_parts_count(cls):
+        cls._state_mutex.acquire()
+        try:
+            settings = get_main_settings()
+            return settings.preferences().downloaded_parts
+        finally:
+            cls._state_mutex.release()
+
+    @classmethod
+    def inc_downloaded_parts_count(cls):
+        cls._state_mutex.acquire()
+        try:
+            settings = get_main_settings()
+            settings.preferences().downloaded_parts += 1
+        finally:
+            cls._state_mutex.release()
+
+
+def update_download_info():
+    DownloadedVersionExecutor.write_version()
+    DownloadedPartsExecutor.inc_downloaded_parts_count()
+
+
 class FB_OT_DownloadTheUpdate(bpy.types.Operator):
     bl_idname = Config.fb_download_the_update_idname
     bl_label = 'Download the update'
@@ -128,12 +178,10 @@ class FB_OT_DownloadTheUpdate(bpy.types.Operator):
     bl_description = 'Download the latest version of addon and core'
 
     def execute(self, context):
-        download_zip_async(part_installation=PartInstallation.CORE)
-        download_zip_async(part_installation=PartInstallation.ADDON)
-        settings = get_main_settings()
-        settings.preferences().downloaded_version = str(FBUpdater.version())
-        with open(str(download_file_version_path()), 'w') as f:
-            print(FBUpdater.version(), file=f)
+        download_zip_async(part_installation=PartInstallation.CORE,
+                           final_callback=update_download_info)
+        download_zip_async(part_installation=PartInstallation.ADDON,
+                           final_callback=update_download_info)
         return {'FINISHED'}
 
 
@@ -180,8 +228,8 @@ class FBInstallationReminder:
     @classmethod
     def is_active(cls):
         import time
-        settings = get_main_settings()
-        return settings.preferences().downloaded_version > Config.addon_version and \
+        return DownloadedVersionExecutor.get_downloaded_version() > Config.addon_version and \
+               DownloadedPartsExecutor.get_downloaded_parts_count() == 2 and \
                (cls._last_reminder_time is None or
                 time.time() - cls._last_reminder_time > MIN_TIME_BETWEEN_REMINDERS)
 
@@ -192,7 +240,7 @@ class FBInstallationReminder:
             _message_text = 'The update {} is ready to be installed. ' \
                             'Blender will be relaunched after installing the update automatically. ' \
                             'Please save your project before continuing. Proceed?'.\
-                format(downloaded_keentools_version())
+                format(DownloadedVersionExecutor.get_downloaded_version())
             render_main(layout, parse_html(_message_text))
 
     @classmethod
@@ -220,16 +268,8 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
         import sys
         import atexit
         atexit.register(start_new_blender, sys.argv[0])
-        bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
+        res = bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
         return {'FINISHED'}
-
-    # def invoke(self, context, event):
-    #     if not bpy.data.filepath:
-    #         bpy.ops.wm.save_mainfile('INVOKE_AREA')
-    #     else:
-    #         bpy.ops.wm.save_mainfile()
-    #     self.report({'INFO'}, 'File saved.')
-    #     return context.window_manager.invoke_confirm(self, event)
 
 
 class FB_OT_RemindInstallLater(bpy.types.Operator):
