@@ -188,8 +188,8 @@ class FB_PT_HeaderPanel(Common, Panel):
 
         elif state == 'NO_HEADS':
             self._draw_start_panel(layout)
-            # if not FBUpdater.is_active():
-            #     FBUpdater.init_updater()
+            if not FBUpdater.has_response_message():
+                FBUpdater.init_updater()
             return
 
         else:
@@ -204,7 +204,7 @@ class FB_PT_UpdatePanel(Common, Panel):
 
     @classmethod
     def poll(cls, context):
-        return FBUpdater.is_active() and _show_all_panels()
+        return FBUpdater.is_active()
 
     def _draw_response(self, layout):
         col = layout.column()
@@ -234,8 +234,7 @@ class FB_PT_UpdatesInstallationPanel(Common, Panel):
 
     @classmethod
     def poll(cls, context):
-        return FBInstallationReminder.is_active() and \
-               _show_all_panels()
+        return FBInstallationReminder.is_active()
 
     def _draw_response(self, layout):
         col = layout.column()
