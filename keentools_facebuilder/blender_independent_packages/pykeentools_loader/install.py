@@ -26,12 +26,13 @@ import bpy
 from .config import *
 
 
-__all__ = ['PartInstallation', 'is_installed', 'uninstall', 'installation_status',
+__all__ = ['is_installed', 'uninstall', 'installation_status',
            'install_from_download', 'install_from_download_async',
            'install_core_from_file', 'install_addon_from_file',
-           'download_file_name', 'download_zip_async',
-           'updates_downloaded', 'loaded', 'module', 'remove_download',
-           'install_download']
+           'download_addon_zip_async', 'download_core_zip_async',
+           'updates_downloaded', 'loaded', 'module',
+           'remove_addon_zip', 'remove_core_zip',
+           'install_downloaded_addon', 'install_downloaded_core']
 
 
 _unpack_mutex = Lock()
@@ -193,7 +194,7 @@ def install_from_file(path, part_installation):
         _install_from_stream(file, part_installation)
 
 
-def download_file_name(part_installation):
+def _download_file_name(part_installation):
     file_name = 'keentools_'
     if part_installation == PartInstallation.CORE:
         file_name += 'core'
@@ -210,17 +211,21 @@ def _download_zip(part_installation, version=None, nightly=False, final_callback
         url = download_addon_path(version, nightly)
     import requests
     r = requests.get(url)
-    file_path = download_file_path(part_installation)
+    file_path = _download_file_path(part_installation)
     with open(file_path, 'wb') as code:
         code.write(r.content)
     if final_callback is not None:
         final_callback()
 
 
-def download_zip_async(**kwargs):
-    """
-    The same as :func:`download_zip`
-    """
+def download_addon_zip_async(**kwargs):
+    kwargs['part_installation'] = PartInstallation.ADDON
+    t = Thread(target=_download_zip, kwargs=kwargs)
+    t.start()
+
+
+def download_core_zip_async(**kwargs):
+    kwargs['part_installation'] = PartInstallation.CORE
     t = Thread(target=_download_zip, kwargs=kwargs)
     t.start()
 
@@ -330,19 +335,37 @@ def module():
     return pykeentools
 
 
-def download_file_path(part_installation):
-    file_name = download_file_name(part_installation)
+def _download_file_path(part_installation):
+    file_name = _download_file_name(part_installation)
     return os.path.join(module().utils.caches_dir(), file_name)
 
 
 def updates_downloaded():
-    return os.path.exists(download_file_path(PartInstallation.CORE)) and \
-           os.path.exists(download_file_path(PartInstallation.ADDON))
+    return os.path.exists(_download_file_path(PartInstallation.CORE)) and \
+           os.path.exists(_download_file_path(PartInstallation.ADDON))
 
 
-def remove_download(part_installation):
-    os.remove(download_file_path(part_installation))
+def _remove_download(part_installation):
+    os.remove(_download_file_path(part_installation))
 
 
-def install_download(part_installation):
-    install_from_file(download_file_path(part_installation), part_installation)
+def remove_addon_zip():
+    _remove_download(PartInstallation.ADDON)
+
+
+def remove_core_zip():
+    _remove_download(PartInstallation.CORE)
+
+
+def _install_download(part_installation, remove_zip=False):
+    install_from_file(_download_file_path(part_installation), part_installation)
+    if remove_zip:
+        _remove_download(part_installation)
+
+
+def install_downloaded_addon(remove_zip):
+    _install_download(PartInstallation.ADDON, remove_zip)
+
+
+def install_downloaded_core(remove_zip):
+    _install_download(PartInstallation.CORE, remove_zip)

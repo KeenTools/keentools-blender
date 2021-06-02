@@ -25,8 +25,9 @@ from ..config import get_main_settings, Config
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed)
 from ..blender_independent_packages.pykeentools_loader.install import (
-    download_zip_async, PartInstallation, updates_downloaded,
-    remove_download, install_download)
+    download_addon_zip_async, download_core_zip_async,
+    remove_addon_zip, remove_core_zip,
+    install_downloaded_addon, install_downloaded_core)
 
 from ..utils.html import parse_html, skip_new_lines_and_spaces, render_main
 
@@ -165,6 +166,15 @@ class DownloadedPartsExecutor:
         finally:
             cls._state_mutex.release()
 
+    @classmethod
+    def nullify_downloaded_parts_count(cls):
+        cls._state_mutex.acquire()
+        try:
+            settings = get_main_settings()
+            settings.preferences().downloaded_parts = 0
+        finally:
+            cls._state_mutex.release()
+
 
 def update_download_info():
     DownloadedVersionExecutor.write_version()
@@ -178,10 +188,8 @@ class FB_OT_DownloadTheUpdate(bpy.types.Operator):
     bl_description = 'Download the latest version of addon and core'
 
     def execute(self, context):
-        download_zip_async(part_installation=PartInstallation.CORE,
-                           final_callback=update_download_info)
-        download_zip_async(part_installation=PartInstallation.ADDON,
-                           final_callback=update_download_info)
+        download_core_zip_async(final_callback=update_download_info)
+        download_addon_zip_async(final_callback=update_download_info)
         return {'FINISHED'}
 
 
@@ -251,10 +259,8 @@ class FBInstallationReminder:
 
 def start_new_blender(cmd_line):
     import subprocess
-    install_download(PartInstallation.ADDON)
-    install_download(PartInstallation.CORE)
-    remove_download(PartInstallation.CORE)
-    remove_download(PartInstallation.ADDON)
+    install_downloaded_addon(True)
+    install_downloaded_core(True)
     subprocess.call([cmd_line])
 
 
@@ -290,6 +296,7 @@ class FB_OT_SkipInstallation(bpy.types.Operator):
     bl_description = 'Skip installation'
 
     def execute(self, context):
-        remove_download(PartInstallation.ADDON)
-        remove_download(PartInstallation.CORE)
+        remove_addon_zip()
+        remove_core_zip()
+        DownloadedPartsExecutor.nullify_downloaded_parts_count()
         return {'FINISHED'}
