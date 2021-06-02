@@ -305,8 +305,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             else:
                 self.license_server_lock = False
 
-            # box = layout.box()
-            # box.prop(self, 'downloaded_version')
+            box = layout.box()
             row = box.split(factor=0.35)
             row.label(text="License Server host/IP")
             if self.license_server_lock and self.license_server_auto:
