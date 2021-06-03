@@ -101,8 +101,8 @@ class FBViewport:
     def pins(cls):
         return cls._pins
 
-    POINT_SENSITIVITY = UserPreferences.get_value('pin_sensitivity',
-                                                  UserPreferences.type_float)
+    POINT_SENSITIVITY = UserPreferences.get_value_safe(
+        'pin_sensitivity', UserPreferences.type_float)
     PIXEL_SIZE = 0.1  # Auto Calculated
 
     @classmethod
@@ -202,7 +202,7 @@ class FBViewport:
         cls.points3d().create_batch()
 
     @classmethod
-    def update_wireframe(cls):
+    def update_wireframe_colors(cls):
         settings = get_main_settings()
         cls.wireframer().init_colors((settings.wireframe_color,
                                       settings.wireframe_special_color,
@@ -305,7 +305,7 @@ class FBViewport:
         rectangler.create_batch()
 
     @classmethod
-    def update_residuals(cls, fb, context, headobj, keyframe):
+    def update_residuals(cls, fb, headobj, keyframe, context):
         scene = bpy.context.scene
         rx = scene.render.resolution_x
         ry = scene.render.resolution_y
@@ -336,17 +336,13 @@ class FBViewport:
         camobj = bpy.context.scene.camera
         if not camobj:  # Fix for tests
             return
-        m = camobj.matrix_world.inverted()
 
         # Fill matrix in homogeneous coords
         vv = np.ones((len(p3d), 4), dtype=np.float32)
         vv[:, :-1] = p3d
 
-        # Object transform, inverse camera, projection apply -> numpy
-        transform = np.array(
-            headobj.matrix_world.transposed() @ m.transposed()) @ projection
-        # Calc projection
-        vv = vv @ transform
+        # No object transform, just inverse camera, then projection apply
+        vv = vv @ np.array(camobj.matrix_world.inverted().transposed()) @ projection
         vv = (vv.T / vv[:, 3]).T
 
         verts2 = []

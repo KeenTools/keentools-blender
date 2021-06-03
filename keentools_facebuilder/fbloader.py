@@ -25,9 +25,9 @@ from .config import Config, get_main_settings
 from .utils.coords import xy_to_xz_rotation_matrix_3x3
 from .utils.focal_length import (configure_focal_mode_and_fixes,
                                  update_camera_focal)
-from .utils import attrs, coords, cameras
+from .utils import attrs, coords
 from .utils.exif_reader import reload_all_camera_exif
-from .utils.other import FBStopShaderTimer, restore_ui_elements
+from .utils.other import FBStopShaderTimer, unhide_viewport_ui_element_from_object
 from .viewport import FBViewport
 from .blender_independent_packages.pykeentools_loader import module as pkt_module
 
@@ -40,6 +40,10 @@ class FBLoader:
     @classmethod
     def viewport(cls):
         return cls._viewport
+
+    @classmethod
+    def viewport_is_active(cls):
+        return cls.viewport().wireframer().is_working()
 
     @classmethod
     def new_builder(cls):
@@ -63,16 +67,21 @@ class FBLoader:
         cam_item.update_image_size()
 
     @classmethod
-    def update_head_camobj_focals(cls, head):
+    def update_head_camobj_focals(cls, headnum):
         logger = logging.getLogger(__name__)
         logger.debug('update_head_camobj_focals call')
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        if not head:
+            return
         for i, c in enumerate(head.cameras):
             c.camobj.data.lens = c.focal
-            logger.debug("camera: {} focal: {}".format(i, c.focal))
+            logger.debug('camera: {} focal: {}'.format(i, c.focal))
 
     @classmethod
     def set_keentools_attributes(cls, obj):
-        attrs.mark_keentools_object(obj)
+        if obj:
+            attrs.mark_keentools_object(obj)
 
     @classmethod
     def check_mesh(cls, headobj):
@@ -92,19 +101,13 @@ class FBLoader:
     @classmethod
     def save_pinmode_state(cls, headnum):
         logger = logging.getLogger(__name__)
-
-        cls.save_fb_on_headobj(headnum)
+        cls.save_fb_serial_and_image_pathes(headnum)
 
         vp = cls.viewport()
         vp.pins().reset_current_pin()
 
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-        if head:
-            cls.update_head_camobj_focals(head)
-            if head.headobj:
-                coords.update_head_mesh_neutral(cls.get_builder(), head.headobj)
-        logger.debug("SAVE PINMODE STATE")
+        cls.update_head_camobj_focals(headnum)
+        logger.debug('SAVE PINMODE STATE')
 
     @classmethod
     def stop_viewport_shaders(cls):
@@ -119,77 +122,37 @@ class FBLoader:
         logger = logging.getLogger(__name__)
         cls.save_pinmode_state(headnum)
         cls.stop_viewport_shaders()
-        restore_ui_elements()
 
         settings = get_main_settings()
         head = settings.get_head(headnum)
         if head and head.headobj:
             head.headobj.hide_set(False)
+            unhide_viewport_ui_element_from_object(head.headobj)
         settings.pinmode = False
         logger.debug("OUT PINMODE")
 
     @classmethod
-    def save_only(cls, headnum):
-        fb = cls.get_builder()
+    def save_fb_serial_str(cls, headnum):
         settings = get_main_settings()
         head = settings.get_head(headnum)
-        # Save block
-        head.set_serial_str(fb.serialize())
+        if not head:
+            return
+        fb = cls.get_builder()
+        head.store_serial_str_in_head_and_on_headobj(fb.serialize())
 
     @classmethod
-    def save_fb_on_headobj(cls, headnum):
-        fb = cls.get_builder()
+    def _save_fb_images_and_keentools_attribute_on_headobj(cls, headnum):
         settings = get_main_settings()
         head = settings.get_head(headnum)
-        if head:
-            head.set_serial_str(fb.serialize())
-            head.save_images_src()
-            if head.headobj:
-                cls.set_keentools_attributes(head.headobj)
+        if not head or not head.headobj:
+            return
+        head.save_images_src_on_headobj()
+        cls.set_keentools_attributes(head.headobj)  # to update by current ver.
 
     @classmethod
-    def fb_save(cls, headnum, camnum):
-        """ Face Builder Serialize Model Info """
-        fb = cls.get_builder()
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-        cam = head.get_camera(camnum)
-
-        if cam is not None:
-            cam.set_model_mat(fb.model_mat(cam.get_keyframe()))
-
-        cls.save_fb_on_headobj(headnum)
-
-    @classmethod
-    def update_mesh_only(cls, headnum):
-        fb = cls.get_builder()
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-        coords.update_head_mesh(settings, fb, head)
-
-    @classmethod
-    def shader_update(cls, headobj):
-        wf = cls.viewport().wireframer()
-        wf.init_geom_data_from_mesh(headobj)
-        wf.init_edge_indices(FBLoader.get_builder())
-        wf.create_batches()
-
-    @classmethod
-    def fb_redraw(cls, headnum, camnum):
-        fb = cls.get_builder()
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-        cam = head.get_camera(camnum)
-        headobj = head.headobj
-        kid = settings.get_keyframe(headnum, camnum)
-        cls.place_camera(headnum, camnum)
-        coords.update_head_mesh(settings, fb, head)
-        # Load pins from model
-        vp = cls.viewport()
-        vp.pins().set_pins(vp.img_points(fb, kid))
-        vp.update_surface_points(fb, headobj, kid)
-
-        cls.shader_update(headobj)
+    def save_fb_serial_and_image_pathes(cls, headnum):
+        cls.save_fb_serial_str(headnum)
+        cls._save_fb_images_and_keentools_attribute_on_headobj(headnum)
 
     @classmethod
     def rigidity_setup(cls):
@@ -199,26 +162,13 @@ class FBLoader:
         fb.set_expressions_rigidity(settings.expression_rigidity)
 
     @classmethod
-    def update_one_camera_position(cls, headnum, camnum):
-        fb = cls.get_builder()
-        settings = get_main_settings()
-        camera = settings.get_camera(headnum, camnum)
-
-        cls.place_camera(headnum, camnum)
-        keyframe = camera.get_keyframe()
-        camera.set_model_mat(fb.model_mat(keyframe))
-
-    @classmethod
     def update_all_camera_positions(cls, headnum):
-        fb = cls.get_builder()
         settings = get_main_settings()
         head = settings.get_head(headnum)
 
         for camnum, camera in enumerate(head.cameras):
             if camera.has_pins():
                 cls.place_camera(headnum, camnum)
-                keyframe = camera.get_keyframe()
-                camera.set_model_mat(fb.model_mat(keyframe))
 
     @classmethod
     def update_one_camera_focal(cls, camera):
@@ -277,7 +227,7 @@ class FBLoader:
         fb.set_projection_mat(projection)
 
     @classmethod
-    def update_pins_count(cls, headnum, camnum):
+    def update_camera_pins_count(cls, headnum, camnum):
         logger = logging.getLogger(__name__)
         settings = get_main_settings()
         head = settings.get_head(headnum)
@@ -313,16 +263,13 @@ class FBLoader:
 
     @classmethod
     def get_builder_mesh(cls, builder, mesh_name='keentools_mesh',
-                         masks=(), uv_set='uv0', keyframe=None):
+                         masks=(), uv_set='uv0'):
         for i, m in enumerate(masks):
             builder.set_mask(i, m)
 
         cls.select_uv_set(builder, uv_set)
 
-        if keyframe is not None:
-            geo = builder.applied_args_model_at(keyframe)
-        else:
-            geo = builder.applied_args_model()
+        geo = builder.applied_args_model()
         me = geo.mesh(0)
 
         v_count = me.points_count()
@@ -370,8 +317,7 @@ class FBLoader:
     def universal_mesh_loader(cls, mesh_name='keentools_mesh',
                               masks=(), uv_set='uv0'):
         builder = cls.new_builder()
-        mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set,
-                                    keyframe=None)
+        mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set)
         return mesh
 
     @classmethod
@@ -428,16 +374,6 @@ class FBLoader:
             camobj.matrix_world = mat
 
     @classmethod
-    def load_pins(cls, headnum, camnum):
-        settings = get_main_settings()
-        kid = settings.get_keyframe(headnum, camnum)
-        fb = cls.get_builder()
-        # Load pins from model
-        vp = cls.viewport()
-        vp.pins().set_pins(vp.img_points(fb, kid))
-        vp.pins().reset_current_pin()
-
-    @classmethod
     def solve(cls, headnum, camnum):
         def _exception_handling(headnum, msg, license_err=True):
             logger = logging.getLogger(__name__)
@@ -476,6 +412,7 @@ class FBLoader:
                 license_err=False
             )
             return False
+        logger.debug('FBloader.solve finished')
         return True
 
     @classmethod
@@ -513,7 +450,7 @@ class FBLoader:
                 x, y = pin.img_pos
                 fb.move_pin(kid, i, (x + dx, y + dy))
         # Save info
-        head.set_serial_str(fb.serialize())
+        head.store_serial_str_in_head_and_on_headobj(fb.serialize())
 
         focal = head.focal * Config.default_sensor_width / sensor_width
         head.reset_sensor_size()
@@ -612,3 +549,48 @@ class FBLoader:
     def add_new_camera_with_image(cls, headnum, img_path):
         img = bpy.data.images.load(img_path)
         return cls.add_new_camera(headnum, img)
+
+    @classmethod
+    def _update_wireframe(cls, obj, keyframe):
+        fb = cls.get_builder()
+        vp = cls.viewport()
+        wf = vp.wireframer()
+        wf.init_geom_data_from_fb(fb, obj, keyframe)
+        wf.init_edge_indices(fb)
+        wf.create_batches()
+
+    @classmethod
+    def _update_points_and_residuals(cls, context, obj, keyframe):
+        fb = cls.get_builder()
+        vp = cls.viewport()
+        vp.update_surface_points(fb, obj, keyframe)
+        vp.update_residuals(fb, obj, keyframe, context)
+        vp.create_batch_2d(context)
+
+    @classmethod
+    def update_viewport_shaders(cls, context, headnum, camnum):
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        if not head or not head.headobj:
+            return
+        kid = head.get_keyframe(camnum)
+        cls._update_wireframe(head.headobj, kid)
+        cls._update_points_and_residuals(context, head.headobj, kid)
+
+    @classmethod
+    def update_wireframe_shader_only(cls, headnum, camnum):
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        if not head or not head.headobj:
+            return
+        kid = head.get_keyframe(camnum)
+        cls._update_wireframe(head.headobj, kid)
+
+    @classmethod
+    def load_pins_into_viewport(cls, headnum, camnum):
+        settings = get_main_settings()
+        kid = settings.get_keyframe(headnum, camnum)
+        fb = cls.get_builder()
+        vp = cls.viewport()
+        vp.pins().set_pins(vp.img_points(fb, kid))
+        vp.pins().reset_current_pin()

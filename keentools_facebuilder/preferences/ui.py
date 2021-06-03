@@ -36,7 +36,8 @@ from ..blender_independent_packages.pykeentools_loader import (
     is_python_supported as pkt_is_python_supported,
     installation_status as pkt_installation_status,
     loaded as pkt_loaded)
-from ..config import Config, is_blender_supported, get_main_settings
+from ..config import (Config, is_blender_supported,
+                      get_main_settings, get_operator)
 from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
@@ -65,11 +66,50 @@ def _set_all_user_preferences_to_default():
     UserPreferences.reset_all_to_defaults()
 
 
+class FB_OT_UserPreferencesResetAll(bpy.types.Operator):
+    bl_idname = Config.fb_user_preferences_reset_all
+    bl_label = 'Reset All'
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = 'Reset All'
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        logger = logging.getLogger(__name__)
+        logger.debug('user_preferences_reset_all call')
+        warn = get_operator(Config.fb_user_preferences_reset_all_warning_idname)
+        warn('INVOKE_DEFAULT')
+        return {'FINISHED'}
+
+
+class FB_OT_UserPreferencesGetColors(bpy.types.Operator):
+    bl_idname = Config.fb_user_preferences_get_colors
+    bl_label = 'Get from scene'
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = 'Get color settings from the current scene'
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        logger = logging.getLogger(__name__)
+        logger.debug('user_preferences_get_colors')
+
+        settings = get_main_settings()
+        preferences = settings.preferences()
+        preferences.wireframe_color = settings.wireframe_color
+        preferences.wireframe_special_color = settings.wireframe_special_color
+        preferences.wireframe_midline_color = settings.wireframe_midline_color
+        preferences.wireframe_opacity = settings.wireframe_opacity
+        return {'FINISHED'}
+
+
 class FB_OT_UserPreferencesChanger(bpy.types.Operator):
     bl_idname = Config.fb_user_preferences_changer
     bl_label = 'FaceBuilder Action'
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = 'FaceBuilder'
+    bl_description = 'Reset'
 
     param_string: bpy.props.StringProperty(name='String parameter')
     action: bpy.props.StringProperty(name='Action Name')
@@ -90,17 +130,37 @@ class FB_OT_UserPreferencesChanger(bpy.types.Operator):
             _reset_user_preferences_parameter_to_default('wireframe_midline_color')
             _reset_user_preferences_parameter_to_default('wireframe_opacity')
             return {'FINISHED'}
-        elif self.action == 'get_current_colors':
-            settings = get_main_settings()
-            preferences = settings.preferences()
-            preferences.wireframe_color = settings.wireframe_color
-            preferences.wireframe_special_color = settings.wireframe_special_color
-            preferences.wireframe_midline_color = settings.wireframe_midline_color
-            preferences.wireframe_opacity = settings.wireframe_opacity
-        elif self.action == 'reset_all_to_default':
-            _set_all_user_preferences_to_default()
-            return {'FINISHED'}
+
         return {'CANCELLED'}
+
+
+class FB_OT_UserPreferencesResetAllWarning(bpy.types.Operator):
+    bl_idname = Config.fb_user_preferences_reset_all_warning_idname
+    bl_label = 'Reset All'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    accept: bpy.props.BoolProperty(name='Yes, I really want '
+                                        'to reset all settings',
+                                   default=False)
+
+    def draw(self, context):
+        layout = self.layout.column()
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        layout.prop(self, 'accept')
+
+    def execute(self, context):
+        if (self.accept):
+            logger = logging.getLogger(__name__)
+            logger.debug('user_preferences_reset_all')
+            _set_all_user_preferences_to_default()
+        return {'FINISHED'}
+
+    def cancel(self, context):
+        return
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=400)
 
 
 def _update_user_preferences_pin_size(self, context):
@@ -123,7 +183,7 @@ def _update_user_preferences_pin_sensitivity(self, context):
 
 def _universal_getter(name, type):
     def _getter(self):
-        return UserPreferences.get_value(name, type)
+        return UserPreferences.get_value_safe(name, type)
     return _getter
 
 
@@ -206,7 +266,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
     # User preferences
     show_user_preferences: bpy.props.BoolProperty(
-        name='Addon User Preferences',
+        name='Addon Settings',
         default=False
     )
     pin_size: bpy.props.FloatProperty(
@@ -224,7 +284,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         set=_universal_setter('pin_sensitivity'),
         update=_update_user_preferences_pin_sensitivity)
     prevent_view_rotation: bpy.props.BoolProperty(
-        name='Prevent view rotation by middle mouse button in pinmode',
+        name='Prevent accidental exit from Pin Mode',
         get=_universal_getter('prevent_view_rotation', 'bool'),
         set=_universal_setter('prevent_view_rotation'),
     )
@@ -491,7 +551,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         box.prop(self, 'prevent_view_rotation')
 
         box = main_box.box()
-        box.label(text='Pin size and sensitivity')
+        box.label(text='Default pin settings')
         row = box.split(factor=0.7)
         row.prop(self, 'pin_size', slider=True)
         op = row.operator(Config.fb_user_preferences_changer, text='Reset')
@@ -506,10 +566,8 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
         box = main_box.box()
         split = box.split(factor=0.7)
-        split.label(text='Wireframe Default Colors')
-        op = split.operator(Config.fb_user_preferences_changer,
-                            text='Get current')
-        op.action = 'get_current_colors'
+        split.label(text='Default wireframe colors')
+        split.operator(Config.fb_user_preferences_get_colors)
 
         colors_row = box.split(factor=0.7)
         row = colors_row.row()
@@ -522,9 +580,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                                  text='Reset')
         op.action = 'revert_default_colors'
 
-        op = main_box.operator(Config.fb_user_preferences_changer,
-                               text='Reset All to Defaults')
-        op.action = 'reset_all_to_default'
+        main_box.operator(Config.fb_user_preferences_reset_all)
 
     def draw(self, context):
         layout = self.layout

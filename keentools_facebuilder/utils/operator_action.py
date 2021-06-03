@@ -20,9 +20,11 @@
 import logging
 import bpy
 
-from ..config import Config, get_operator, ErrorType
+from ..config import Config, get_operator, ErrorType, get_main_settings
 from . import manipulate
-from .cameras import show_all_cameras
+from .coords import update_head_mesh_neutral
+from .cameras import show_all_cameras, exit_localview
+from .other import unhide_viewport_ui_element_from_object
 from ..fbloader import FBLoader
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from .blendshapes import (create_facs_blendshapes,
@@ -212,11 +214,19 @@ def unhide_head(operator, context):
     logger.debug('unhide_head call')
     headnum = manipulate.get_current_headnum()
     if headnum >= 0:
-        if context.space_data.local_view:
-            bpy.ops.view3d.localview()
-        else:
+        settings = get_main_settings()
+        head = settings.get_head(headnum)
+        FBLoader.load_model(headnum)
+        update_head_mesh_neutral(FBLoader.get_builder(), head.headobj)
+
+        if not exit_localview(context):
             show_all_cameras(headnum)  # legacy scenes only
-        manipulate.unhide_head(headnum)
+            head.headobj.hide_set(False)
+
+        if head.headobj:
+            unhide_viewport_ui_element_from_object(head.headobj)
+        settings.pinmode = False
+
         logger.debug('head revealed')
         return {'FINISHED'}
     logger.debug('no head')

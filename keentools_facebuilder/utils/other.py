@@ -23,7 +23,8 @@ import blf
 
 from . edges import FBEdgeShader2D, FBRasterEdgeShader3D
 from . points import FBPoints2D, FBPoints3D
-from .. config import get_main_settings
+from .. config import Config, get_main_settings
+from ..utils.attrs import set_custom_attribute, get_safe_custom_attribute
 
 
 def force_ui_redraw(area_type="PREFERENCES"):
@@ -42,56 +43,76 @@ def force_stop_shaders():
     force_ui_redraw('VIEW_3D')
 
 
-def _setup_ui_elements(*args):
-    try:
-        bpy.context.space_data.overlay.show_floor = args[0]
-        bpy.context.space_data.overlay.show_axis_x = args[1]
-        bpy.context.space_data.overlay.show_axis_y = args[2]
-        bpy.context.space_data.overlay.show_cursor = args[3]
-    except Exception:
-        pass
+def _viewport_ui_attribute_names():
+    return ['show_floor', 'show_axis_x', 'show_axis_y', 'show_cursor']
 
 
-def hide_ui_elements():
-    state = UserState.get_state()
-    if state is not None:
+def _setup_viewport_ui_state(state_dict):
+    python_obj = bpy.context.space_data.overlay
+    attr_names = _viewport_ui_attribute_names()
+    for name in attr_names:
+        if name in state_dict.keys() and hasattr(python_obj, name):
+            try:
+                setattr(python_obj, name, state_dict[name])
+            except Exception as err:
+                logger = logging.getLogger(__name__)
+                logger.error('EXCEPTION _setup_viewport_ui_state')
+                logger.error('Exception info: {}'.format(str(err)))
+
+
+def _get_viewport_ui_state():
+    python_obj = bpy.context.space_data.overlay
+    attr_names = _viewport_ui_attribute_names()
+    res = {}
+    for name in attr_names:
+        if hasattr(python_obj, name):
+            try:
+                res[name] = getattr(python_obj, name)
+            except Exception as err:
+                logger = logging.getLogger(__name__)
+                logger.error('EXCEPTION _get_viewport_ui_state')
+                logger.error('Exception info: {}'.format(str(err)))
+    return res
+
+
+def _force_show_ui_elements():
+    _setup_viewport_ui_state({'show_floor': 1, 'show_axis_x': 1,
+                              'show_axis_y': 1, 'show_cursor': 1})
+
+
+def _force_hide_ui_elements():
+    _setup_viewport_ui_state({'show_floor': 0, 'show_axis_x': 0,
+                              'show_axis_y': 0, 'show_cursor': 0})
+
+
+def hide_viewport_ui_elements_and_store_on_object(obj):
+    state = _get_viewport_ui_state()
+    set_custom_attribute(obj, Config.viewport_state_prop_name[0], state)
+    _force_hide_ui_elements()
+
+
+def unhide_viewport_ui_element_from_object(obj):
+    def _unpack_state(states):
+        attr_names = _viewport_ui_attribute_names()
+        values = {}
+        for name in attr_names:
+            if name in states.keys():
+                values[name] = states[name]
+        return values
+
+    attr_value = get_safe_custom_attribute(obj, Config.viewport_state_prop_name[0])
+    if attr_value is None:
+        _force_show_ui_elements()  # For old version compatibility
         return
 
     try:
-        UserState.put_state(bpy.context.space_data.overlay.show_floor,
-                            bpy.context.space_data.overlay.show_axis_x,
-                            bpy.context.space_data.overlay.show_axis_y,
-                            bpy.context.space_data.overlay.show_cursor)
-    except Exception:
-        pass
-    _setup_ui_elements(False, False, False, False)
-
-
-def restore_ui_elements():
-    state = UserState.get_state()
-    if state is None:
+        attr_dict = attr_value.to_dict()
+    except Exception as err:
+        _force_show_ui_elements()
         return
-    try:
-        _setup_ui_elements(*state)
-        UserState.reset_state()
-    except AttributeError:
-        pass
 
-
-class UserState:
-    _state = None
-
-    @classmethod
-    def put_state(cls, *args):
-        cls._state = (*args,)
-
-    @classmethod
-    def get_state(cls):
-        return cls._state
-
-    @classmethod
-    def reset_state(cls):
-        cls._state = None
+    res = _unpack_state(attr_dict)
+    _setup_viewport_ui_state(res)
 
 
 class FBTimer:

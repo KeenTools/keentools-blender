@@ -440,35 +440,41 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
 
         self.simple_line_shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
-    def init_geom_data_from_fb(self, obj, fb, keyframe):
-        geom_verts = fb.applied_args_model_vertices_at(keyframe) @ \
-                     coords.xy_to_xz_rotation_matrix_3x3()
+    def _get_triangulation_indices(self, obj):
+        mesh = obj.data
+        mesh.calc_loop_triangles()
+        indices = np.empty((len(mesh.loop_triangles), 3), dtype=np.int32)
+        mesh.loop_triangles.foreach_get(
+            'vertices', np.reshape(indices, len(mesh.loop_triangles) * 3))
+        return indices
+
+    def init_geom_data_from_fb(self, fb, obj, keyframe=None):
+        if keyframe is not None:
+            geom_verts = fb.applied_args_model_vertices_at(keyframe) @ \
+                         coords.xy_to_xz_rotation_matrix_3x3()
+        else:
+            geom_verts = fb.applied_args_vertices() @ \
+                         coords.xy_to_xz_rotation_matrix_3x3()
+
         m = np.array(obj.matrix_world, dtype=np.float32).transpose()
         vv = np.ones((len(geom_verts), 4), dtype=np.float32)
         vv[:, :-1] = geom_verts
         vv = vv @ m
         self.vertices = vv[:, :3]
+        self.indices = self._get_triangulation_indices(obj)
 
     def init_geom_data_from_mesh(self, obj):
         mesh = obj.data
-        mesh.calc_loop_triangles()
-
         verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
-        indices = np.empty((len(mesh.loop_triangles), 3), dtype=np.int32)
-
         mesh.vertices.foreach_get(
-            "co", np.reshape(verts, len(mesh.vertices) * 3))
-        mesh.loop_triangles.foreach_get(
-            "vertices", np.reshape(indices, len(mesh.loop_triangles) * 3))
+            'co', np.reshape(verts, len(mesh.vertices) * 3))
 
-        # Object matrix usage
         m = np.array(obj.matrix_world, dtype=np.float32).transpose()
         vv = np.ones((len(mesh.vertices), 4), dtype=np.float32)
         vv[:, :-1] = verts
         vv = vv @ m
-
-        self.vertices = vv[:, :3]  # Transformed vertices
-        self.indices = indices
+        self.vertices = vv[:, :3]
+        self.indices = self._get_triangulation_indices(obj)
 
     def _clear_edge_indices(self):
         self._edges_indices = np.array([], dtype=np.int32)

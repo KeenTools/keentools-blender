@@ -334,6 +334,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         if settings.get_head(headnum).should_use_emotions():
             op = box.operator(Config.fb_reset_expression_idname)
             op.headnum = headnum
+            op.camnum = camnum
 
         op = box.operator(Config.fb_center_geo_idname,
                           text="Reset camera")
@@ -581,6 +582,9 @@ class FB_PT_WireframeSettingsPanel(AllVisible, Panel):
         row = layout.row()
         row.active = False
         row.operator(
+            Config.fb_addon_setup_defaults_idname,
+            text='', icon='PREFERENCES')
+        row.operator(
             Config.fb_help_wireframe_settings_idname,
             text='', icon='QUESTION')
 
@@ -625,6 +629,9 @@ class FB_PT_PinSettingsPanel(AllVisible, Panel):
         layout = self.layout
         row = layout.row()
         row.active = False
+        row.operator(
+            Config.fb_addon_setup_defaults_idname,
+            text='', icon='PREFERENCES')
         row.operator(
             Config.fb_help_pin_settings_idname,
             text='', icon='QUESTION')
