@@ -274,7 +274,8 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
         import sys
         import atexit
         atexit.register(start_new_blender, sys.argv[0])
-        res = bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
+        bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
+        bpy.ops.wm.window_close()
         return {'FINISHED'}
 
 
