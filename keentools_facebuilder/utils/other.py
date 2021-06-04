@@ -49,7 +49,7 @@ def _viewport_ui_attribute_names():
 
 def _get_ui_space_data():
     if hasattr(bpy.context, 'space_data') and hasattr(bpy.context.space_data, 'overlay'):
-        return bpy.context.space_data
+        return bpy.context.space_data.overlay
     return None
 
 
