@@ -47,8 +47,18 @@ def _viewport_ui_attribute_names():
     return ['show_floor', 'show_axis_x', 'show_axis_y', 'show_cursor']
 
 
+def _get_ui_space_data():
+    if hasattr(bpy.context, 'space_data') and hasattr(bpy.context.space_data, 'overlay'):
+        return bpy.context.space_data
+    return None
+
+
 def _setup_viewport_ui_state(state_dict):
-    python_obj = bpy.context.space_data.overlay
+    python_obj = _get_ui_space_data()
+    if python_obj is None:
+        logger = logging.getLogger(__name__)
+        logger.error('bpy.context.space_data.overlay does not exist')
+        return
     attr_names = _viewport_ui_attribute_names()
     for name in attr_names:
         if name in state_dict.keys() and hasattr(python_obj, name):
@@ -61,7 +71,7 @@ def _setup_viewport_ui_state(state_dict):
 
 
 def _get_viewport_ui_state():
-    python_obj = bpy.context.space_data.overlay
+    python_obj = _get_ui_space_data()
     attr_names = _viewport_ui_attribute_names()
     res = {}
     for name in attr_names:
