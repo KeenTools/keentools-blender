@@ -18,7 +18,7 @@
 
 from bpy.types import Panel
 
-from .updater import (FBUpdater, FBInstallationReminder)
+from .updater import (FBUpdater, FBDownloadNotification, FBInstallationReminder)
 from ..config import Config, get_main_settings
 from ..messages import draw_labels
 import re
@@ -222,6 +222,24 @@ class FB_PT_UpdatePanel(Common, Panel):
             text='Remind tomorrow', icon='RECOVER_LAST')
         layout.operator(Config.fb_skip_version_idname,
             text='Skip this version', icon='X')
+
+    def draw(self, context):
+        layout = self.layout
+        self._draw_response(layout)
+
+
+class FB_PT_DownloadNotification(Common, Panel):
+    bl_idname = Config.fb_download_notification_panel_idname
+    bl_label = 'Download notification'
+
+    @classmethod
+    def poll(cls, context):
+        return FBDownloadNotification.is_active()
+
+    def _draw_response(self, layout):
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        FBDownloadNotification.render_message(col)
 
     def draw(self, context):
         layout = self.layout

@@ -197,11 +197,15 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = Config.addon_name
 
     downloaded_version: bpy.props.StringProperty(
-        name='Downloaded version', default=''
+        name='Downloaded version', default='',
+        get=_universal_getter('downloaded_version', 'string'),
+        set=_universal_setter('downloaded_version'),
     )
 
     downloaded_parts: bpy.props.IntProperty(
-        name='Downloaded installation parts', default=0, min=0, max=2
+        name='Downloaded installation parts', default=0, min=0, max=2,
+        get=_universal_getter('downloaded_parts', 'int'),
+        set=_universal_setter('downloaded_parts'),
     )
 
     license_accepted: bpy.props.BoolProperty(

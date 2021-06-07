@@ -128,6 +128,7 @@ class Config:
     fb_header_panel_idname = _PT + 'header_panel'
     fb_camera_panel_idname = _PT + 'camera_panel'
     fb_update_panel_idname = _PT + 'update_panel'
+    fb_download_notification_panel_idname = _PT + 'download_notification'
     fb_updates_installation_panel_idname = _PT + 'updates_installation_panel'
     fb_views_panel_idname = _PT + 'views_panel'
     fb_exif_panel_idname = _PT + 'exif_panel'
@@ -235,6 +236,8 @@ class Config:
     regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
 
     default_user_preferences = {
+        'downloaded_version': {'value': '', 'type': 'string'},
+        'downloaded_parts': {'value': 0, 'type': 'int'},
         'pin_size': {'value': 7.0, 'type': 'float'},
         'pin_sensitivity': {'value': 16.0, 'type': 'float'},
         'prevent_view_rotation': {'value': True, 'type': 'bool'},

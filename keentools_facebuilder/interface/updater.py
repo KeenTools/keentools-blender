@@ -49,6 +49,17 @@ def mock_response():
     return response
 
 
+def _version_to_tuple(version):
+    if type(version).__name__ == 'str':
+        if version == "":
+            return tuple([0, 0, 0])
+        l = version.split('.')
+        return tuple(map(int, l))
+    if type(version).__name__ == 'Version':
+        return tuple([version.major, version.minor, version.patch])
+    return version
+
+
 class FBUpdater:
     _response = None
     # _response = mock_response()  # Mock for testing (1/3)
@@ -57,7 +68,7 @@ class FBUpdater:
     @classmethod
     def is_active(cls):
         return cls.has_response() and \
-               DownloadedVersionExecutor.get_downloaded_version() < str(cls.version())
+               _version_to_tuple(DownloadedVersionExecutor.get_downloaded_version()) < _version_to_tuple(cls.version())
 
     @classmethod
     def has_response(cls):
@@ -188,6 +199,9 @@ class FB_OT_DownloadTheUpdate(bpy.types.Operator):
     bl_description = 'Download the latest version of addon and core'
 
     def execute(self, context):
+        settings = get_main_settings()
+        settings.preferences().downloaded_version = str(FBUpdater.version())
+        DownloadedPartsExecutor.nullify_downloaded_parts_count()
         download_core_zip_async(final_callback=update_download_info)
         download_addon_zip_async(final_callback=update_download_info)
         return {'FINISHED'}
@@ -227,7 +241,21 @@ class FB_OT_SkipVersion(bpy.types.Operator):
         return {'FINISHED'}
 
 
-MIN_TIME_BETWEEN_REMINDERS = 86400  # 24 hours in seconds
+class FBDownloadNotification:
+    @classmethod
+    def is_active(cls):
+        return _version_to_tuple(DownloadedVersionExecutor.get_downloaded_version()) > _version_to_tuple(Config.addon_version) and \
+              DownloadedPartsExecutor.get_downloaded_parts_count() < 2
+
+    @classmethod
+    def render_message(cls, layout):
+        if cls.is_active():
+            _message_text = 'Updates are downloading. ' \
+                            'We will let you know when they are ready for installation.'
+            render_main(layout, parse_html(_message_text))
+
+
+_MIN_TIME_BETWEEN_REMINDERS = 86400  # 24 hours in seconds
 
 
 class FBInstallationReminder:
@@ -236,11 +264,10 @@ class FBInstallationReminder:
     @classmethod
     def is_active(cls):
         import time
-        return DownloadedVersionExecutor.get_downloaded_version() > Config.addon_version and \
+        return _version_to_tuple(DownloadedVersionExecutor.get_downloaded_version()) > _version_to_tuple(Config.addon_version) and \
                DownloadedPartsExecutor.get_downloaded_parts_count() == 2 and \
                (cls._last_reminder_time is None or
-                time.time() - cls._last_reminder_time > MIN_TIME_BETWEEN_REMINDERS)
-
+                time.time() - cls._last_reminder_time > _MIN_TIME_BETWEEN_REMINDERS)
 
     @classmethod
     def render_message(cls, layout):
@@ -266,16 +293,15 @@ def start_new_blender(cmd_line):
 
 class FB_OT_InstallUpdates(bpy.types.Operator):
     bl_idname = Config.fb_install_updates_idname
-    bl_label = 'The blender will close, save your changes before'
+    bl_label = 'The blender will restart, save your changes before'
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Install updates and close blender'
+    bl_description = 'Install updates and restart blender'
 
     def execute(self, context):
         import sys
         import atexit
         atexit.register(start_new_blender, sys.argv[0])
         bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
-        bpy.ops.wm.window_close()
         return {'FINISHED'}
 
 
