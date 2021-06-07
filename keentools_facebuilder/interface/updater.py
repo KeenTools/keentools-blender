@@ -287,15 +287,12 @@ class FBInstallationReminder:
 def start_new_blender(cmd_line, pid):
     import platform
     import os
-    import time
     if platform.system().lower() == 'linux':
         while True:
             try:
                 os.kill(pid, 0)
             except OSError:
                 break
-            else:
-                time.sleep(5)
     import subprocess
     install_downloaded_addon(True)
     install_downloaded_core(True)
