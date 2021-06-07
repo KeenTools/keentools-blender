@@ -284,15 +284,7 @@ class FBInstallationReminder:
         cls._last_reminder_time = time.time()
 
 
-def start_new_blender(cmd_line, pid):
-    import platform
-    import os
-    if platform.system().lower() == 'linux':
-        while True:
-            try:
-                os.kill(pid, 0)
-            except OSError:
-                break
+def start_new_blender(cmd_line):
     import subprocess
     install_downloaded_addon(True)
     install_downloaded_core(True)
@@ -306,12 +298,19 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
     bl_description = 'Install updates and restart blender'
 
     def execute(self, context):
-        import os
         import sys
-        import atexit
-        pid = os.getpid()
-        atexit.register(start_new_blender, sys.argv[0], pid)
-        bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
+        import os
+        import platform
+        if platform.system() == 'Linux':
+            new_ref = os.fork()
+            if new_ref == 0:
+                start_new_blender(sys.argv[0])
+            else:
+                bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
+        else:
+            import atexit
+            atexit.register(start_new_blender, sys.argv[0])
+            bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
         return {'FINISHED'}
 
 
