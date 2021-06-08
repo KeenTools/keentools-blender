@@ -285,10 +285,17 @@ class FBInstallationReminder:
 
 
 def start_new_blender(cmd_line):
+    import platform
+    import os
     import subprocess
     install_downloaded_addon(True)
     install_downloaded_core(True)
-    subprocess.call([cmd_line])
+    if platform.system() == 'Linux':
+        new_ref = os.fork()
+        if new_ref == 0:
+            subprocess.call([cmd_line])
+    else:
+        subprocess.call([cmd_line])
 
 
 class FB_OT_InstallUpdates(bpy.types.Operator):
@@ -299,18 +306,9 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
 
     def execute(self, context):
         import sys
-        import os
-        import platform
-        if platform.system() == 'Linux':
-            new_ref = os.fork()
-            if new_ref == 0:
-                start_new_blender(sys.argv[0])
-            else:
-                bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
-        else:
-            import atexit
-            atexit.register(start_new_blender, sys.argv[0])
-            bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
+        import atexit
+        atexit.register(start_new_blender, sys.argv[0])
+        bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
         return {'FINISHED'}
 
 
