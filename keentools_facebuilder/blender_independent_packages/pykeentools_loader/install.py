@@ -69,7 +69,7 @@ def _uninstall_not_locked(part_installation=PartInstallation.CORE):
         if _is_installed_not_locked():
             import shutil
             shutil.rmtree(pkt_installation_dir(), ignore_errors=True)
-    else:
+    elif part_installation == PartInstallation.ADDON:
         if _is_installed_not_locked():
             import shutil
             addons_path = bpy.utils.user_resource('SCRIPTS', "addons")
@@ -94,7 +94,7 @@ def _install_from_stream(file_like_object, part_installation):
         if part_installation == PartInstallation.CORE:
             target_path = pkt_installation_dir()
             os.makedirs(target_path, exist_ok=False)
-        else:
+        elif part_installation == PartInstallation.ADDON:
             target_path = bpy.utils.user_resource('SCRIPTS', "addons")
 
         import zipfile
@@ -198,16 +198,17 @@ def _download_file_name(part_installation):
     file_name = 'keentools_'
     if part_installation == PartInstallation.CORE:
         file_name += 'core'
-    else:
+    elif part_installation == PartInstallation.ADDON:
         file_name += 'addon'
     file_name += '.zip'
     return file_name
 
 
 def _download_zip(part_installation, version=None, nightly=False, final_callback=None):
+    url = None
     if part_installation == PartInstallation.CORE:
         url = download_core_path(version, nightly)
-    else:
+    elif part_installation == PartInstallation.ADDON:
         url = download_addon_path(version, nightly)
     import requests
     r = requests.get(url)
