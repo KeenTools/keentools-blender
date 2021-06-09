@@ -25,6 +25,7 @@ from ..config import get_main_settings, Config
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed)
 from ..blender_independent_packages.pykeentools_loader.install import (
+    updates_downloaded,
     download_addon_zip_async, download_core_zip_async,
     remove_addon_zip, remove_core_zip,
     install_downloaded_addon, install_downloaded_core)
@@ -284,7 +285,7 @@ class FBInstallationReminder:
         cls._last_reminder_time = time.time()
 
 
-def start_new_blender(cmd_line):
+def _start_new_blender(cmd_line):
     import platform
     import os
     import subprocess
@@ -298,6 +299,9 @@ def start_new_blender(cmd_line):
         subprocess.call([cmd_line])
 
 
+_START_NEW_BLENDER_REGISTER = False
+
+
 class FB_OT_InstallUpdates(bpy.types.Operator):
     bl_idname = Config.fb_install_updates_idname
     bl_label = 'The blender will restart, save your changes before'
@@ -305,10 +309,14 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
     bl_description = 'Install updates and restart blender'
 
     def execute(self, context):
-        import sys
-        import atexit
-        atexit.register(start_new_blender, sys.argv[0])
-        bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
+        global _START_NEW_BLENDER_REGISTER
+        if _START_NEW_BLENDER_REGISTER is False:
+            _START_NEW_BLENDER_REGISTER = True
+            if updates_downloaded():
+                import sys
+                import atexit
+                atexit.register(_start_new_blender, sys.argv[0])
+                bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
         return {'FINISHED'}
 
 
@@ -330,6 +338,11 @@ class FB_OT_SkipInstallation(bpy.types.Operator):
     bl_description = 'Skip installation'
 
     def execute(self, context):
+        global _START_NEW_BLENDER_REGISTER
+        if _START_NEW_BLENDER_REGISTER is True:
+            import atexit
+            atexit.unregister(_start_new_blender)
+            _START_NEW_BLENDER_REGISTER = False
         remove_addon_zip()
         remove_core_zip()
         DownloadedPartsExecutor.nullify_downloaded_parts_count()
