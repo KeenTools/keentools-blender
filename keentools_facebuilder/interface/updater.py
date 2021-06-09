@@ -312,6 +312,11 @@ class FB_OT_RemindInstallLater(bpy.types.Operator):
     bl_description = 'Remind install tommorow'
 
     def execute(self, context):
+        global _START_NEW_BLENDER_REGISTER
+        if _START_NEW_BLENDER_REGISTER is True:
+            import atexit
+            atexit.unregister(_start_new_blender)
+            _START_NEW_BLENDER_REGISTER = False
         FBInstallationReminder.remind_later()
         return {'FINISHED'}
 
