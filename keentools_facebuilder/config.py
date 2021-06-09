@@ -238,6 +238,7 @@ class Config:
     default_user_preferences = {
         'downloaded_version': {'value': '', 'type': 'string'},
         'downloaded_parts': {'value': 0, 'type': 'int'},
+        'latest_skip_version': {'value': '', 'type': 'string'},
         'pin_size': {'value': 7.0, 'type': 'float'},
         'pin_sensitivity': {'value': 16.0, 'type': 'float'},
         'prevent_view_rotation': {'value': True, 'type': 'bool'},

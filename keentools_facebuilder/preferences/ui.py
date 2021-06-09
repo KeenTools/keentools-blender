@@ -208,6 +208,12 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         set=_universal_setter('downloaded_parts'),
     )
 
+    latest_skip_version: bpy.props.StringProperty(
+        name='Latest skip version', default='',
+        get=_universal_getter('latest_skip_version', 'string'),
+        set=_universal_setter('latest_skip_version'),
+    )
+
     license_accepted: bpy.props.BoolProperty(
         name='I have read and I agree to KeenTools End-user License Agreement',
         default=False

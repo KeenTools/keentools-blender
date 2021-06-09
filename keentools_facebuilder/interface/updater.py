@@ -61,6 +61,16 @@ def _version_to_tuple(version):
     return version
 
 
+def _downloaded_version():
+    settings = get_main_settings()
+    return settings.preferences().downloaded_version
+
+
+def _latest_skip_version():
+    settings = get_main_settings()
+    return settings.preferences().latest_skip_version
+
+
 class FBUpdater:
     _response = None
     # _response = mock_response()  # Mock for testing (1/3)
@@ -69,7 +79,7 @@ class FBUpdater:
     @classmethod
     def is_active(cls):
         return cls.has_response() and \
-               _version_to_tuple(DownloadedVersionExecutor.get_downloaded_version()) < _version_to_tuple(cls.version())
+               _version_to_tuple(_downloaded_version()) < _version_to_tuple(cls.version())
 
     @classmethod
     def has_response(cls):
@@ -135,28 +145,6 @@ class FBUpdater:
             cls.set_parsed(parsed)
 
 
-class DownloadedVersionExecutor:
-    _state_mutex = Lock()
-
-    @classmethod
-    def get_downloaded_version(cls):
-        cls._state_mutex.acquire()
-        try:
-            settings = get_main_settings()
-            return settings.preferences().downloaded_version
-        finally:
-            cls._state_mutex.release()
-
-    @classmethod
-    def write_version(cls):
-        cls._state_mutex.acquire()
-        try:
-            settings = get_main_settings()
-            settings.preferences().downloaded_version = str(FBUpdater.version())
-        finally:
-            cls._state_mutex.release()
-
-
 class DownloadedPartsExecutor:
     _state_mutex = Lock()
 
@@ -188,11 +176,6 @@ class DownloadedPartsExecutor:
             cls._state_mutex.release()
 
 
-def update_download_info():
-    DownloadedVersionExecutor.write_version()
-    DownloadedPartsExecutor.inc_downloaded_parts_count()
-
-
 class FB_OT_DownloadTheUpdate(bpy.types.Operator):
     bl_idname = Config.fb_download_the_update_idname
     bl_label = 'Download the update'
@@ -203,8 +186,8 @@ class FB_OT_DownloadTheUpdate(bpy.types.Operator):
         settings = get_main_settings()
         settings.preferences().downloaded_version = str(FBUpdater.version())
         DownloadedPartsExecutor.nullify_downloaded_parts_count()
-        download_core_zip_async(final_callback=update_download_info)
-        download_addon_zip_async(final_callback=update_download_info)
+        download_core_zip_async(final_callback=DownloadedPartsExecutor.inc_downloaded_parts_count)
+        download_addon_zip_async(final_callback=DownloadedPartsExecutor.inc_downloaded_parts_count)
         return {'FINISHED'}
 
 
@@ -245,8 +228,9 @@ class FB_OT_SkipVersion(bpy.types.Operator):
 class FBDownloadNotification:
     @classmethod
     def is_active(cls):
-        return _version_to_tuple(DownloadedVersionExecutor.get_downloaded_version()) > _version_to_tuple(Config.addon_version) and \
-              DownloadedPartsExecutor.get_downloaded_parts_count() < 2
+        return _version_to_tuple(_downloaded_version()) > _version_to_tuple(Config.addon_version) and \
+               _version_to_tuple(_downloaded_version()) != _version_to_tuple(_latest_skip_version()) and \
+               DownloadedPartsExecutor.get_downloaded_parts_count() < 2
 
     @classmethod
     def render_message(cls, layout):
@@ -265,7 +249,8 @@ class FBInstallationReminder:
     @classmethod
     def is_active(cls):
         import time
-        return _version_to_tuple(DownloadedVersionExecutor.get_downloaded_version()) > _version_to_tuple(Config.addon_version) and \
+        return _version_to_tuple(_downloaded_version()) > _version_to_tuple(Config.addon_version) and \
+               _version_to_tuple(_downloaded_version()) != _version_to_tuple(_latest_skip_version()) and \
                DownloadedPartsExecutor.get_downloaded_parts_count() == 2 and \
                (cls._last_reminder_time is None or
                 time.time() - cls._last_reminder_time > _MIN_TIME_BETWEEN_REMINDERS)
@@ -276,7 +261,7 @@ class FBInstallationReminder:
             _message_text = 'The update {} is ready to be installed. ' \
                             'Blender will be relaunched after installing the update automatically. ' \
                             'Please save your project before continuing. Proceed?'.\
-                format(DownloadedVersionExecutor.get_downloaded_version())
+                format(_downloaded_version())
             render_main(layout, parse_html(_message_text))
 
     @classmethod
@@ -343,6 +328,8 @@ class FB_OT_SkipInstallation(bpy.types.Operator):
             import atexit
             atexit.unregister(_start_new_blender)
             _START_NEW_BLENDER_REGISTER = False
+        settings = get_main_settings()
+        settings.preferences().latest_skip_version = settings.preferences().downloaded_version
         remove_addon_zip()
         remove_core_zip()
         DownloadedPartsExecutor.nullify_downloaded_parts_count()
