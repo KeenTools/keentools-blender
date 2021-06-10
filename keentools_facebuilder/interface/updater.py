@@ -54,8 +54,7 @@ def _version_to_tuple(version):
     if type(version).__name__ == 'str':
         if version == "":
             return tuple([0, 0, 0])
-        l = version.split('.')
-        return tuple(map(int, l))
+        return tuple(map(int, version.split('.')))
     if type(version).__name__ == 'Version':
         return tuple([version.major, version.minor, version.patch])
     return version
