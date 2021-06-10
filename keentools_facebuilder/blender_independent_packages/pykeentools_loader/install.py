@@ -27,8 +27,7 @@ from .config import *
 
 
 __all__ = ['is_installed', 'uninstall', 'installation_status',
-           'install_from_download', 'install_from_download_async',
-           'install_core_from_file', 'install_addon_from_file',
+           'install_from_download_async', 'install_core_from_file',
            'download_addon_zip_async', 'download_core_zip_async',
            'updates_downloaded', 'loaded', 'module',
            'remove_addon_zip', 'remove_core_zip',

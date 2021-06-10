@@ -21,7 +21,7 @@ from threading import Lock
 
 import bpy
 
-from ..config import get_main_settings, Config
+from ..config import get_operator, get_main_settings, Config, ErrorType
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed)
 from ..blender_independent_packages.pykeentools_loader.install import (
@@ -302,7 +302,12 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
                 import atexit
                 atexit.register(_start_new_blender, sys.argv[0])
                 bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
-        return {'FINISHED'}
+                return {'FINISHED'}
+            else:
+                warn = get_operator(Config.fb_warning_idname)
+                warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
+                return {'CANCELLED'}
+        return {'CANCELLED'}
 
 
 class FB_OT_RemindInstallLater(bpy.types.Operator):

@@ -279,3 +279,4 @@ class ErrorType:
     MeshCorrupted = 5
     PktProblem = 6
     PktModelProblem = 7
+    DownloadingProblem = 8

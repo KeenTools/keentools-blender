@@ -112,6 +112,11 @@ class FB_OT_AddonWarning(Operator):
                 "Model data cannot be loaded. You need to reinstall "
                 "FaceBuilder."
             ])
+        elif self.msg == ErrorType.DownloadingProblem:
+            self.set_content([
+                "Problems with downloading updates.",
+                "Try to install updates manually."
+            ])
         return context.window_manager.invoke_props_dialog(self, width=400)
 
 
