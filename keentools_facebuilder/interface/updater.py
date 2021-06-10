@@ -283,9 +283,6 @@ def _start_new_blender(cmd_line):
         subprocess.call([cmd_line])
 
 
-_START_NEW_BLENDER_REGISTER = False
-
-
 class FB_OT_InstallUpdates(bpy.types.Operator):
     bl_idname = Config.fb_install_updates_idname
     bl_label = 'The blender will restart, save your changes before'
@@ -293,21 +290,21 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
     bl_description = 'Install updates and restart blender'
 
     def execute(self, context):
-        global _START_NEW_BLENDER_REGISTER
-        if _START_NEW_BLENDER_REGISTER is False:
-            _START_NEW_BLENDER_REGISTER = True
-            if updates_downloaded():
-                import sys
-                import atexit
-                atexit.register(_start_new_blender, sys.argv[0])
-            else:
-                warn = get_operator(Config.fb_warning_idname)
-                warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
-                return {'CANCELLED'}
-        if updates_downloaded():
-            bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
-            return {'FINISHED'}
-        return {'CANCELLED'}
+        if not updates_downloaded():
+            warn = get_operator(Config.fb_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
+            return {'CANCELLED'}
+        if bpy.data.is_saved:
+            import sys
+            import atexit
+            atexit.register(_start_new_blender, sys.argv[0])
+            bpy.ops.wm.quit_blender()
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        if bpy.data.is_dirty:
+            return context.window_manager.invoke_confirm(self, event)
+        return self.execute(context)
 
 
 class FB_OT_RemindInstallLater(bpy.types.Operator):
