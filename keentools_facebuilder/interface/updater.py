@@ -301,12 +301,13 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
                 import sys
                 import atexit
                 atexit.register(_start_new_blender, sys.argv[0])
-                bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
-                return {'FINISHED'}
             else:
                 warn = get_operator(Config.fb_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
                 return {'CANCELLED'}
+        if updates_downloaded():
+            bpy.ops.wm.quit_blender('INVOKE_DEFAULT')
+            return {'FINISHED'}
         return {'CANCELLED'}
 
 
