@@ -42,7 +42,7 @@ from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
                         draw_warning_labels, draw_long_labels)
-from ..preferences.user_preferences import UserPreferences
+from ..preferences.user_preferences import UserPreferences, UpdaterPreferences
 from ..interface.updater import render_active_message, current_active_operator_info
 
 
@@ -194,25 +194,37 @@ def _universal_setter(name):
     return _setter
 
 
+def _universal_updater_getter(name, type):
+    def _getter(self):
+        return UpdaterPreferences.get_value_safe(name, type)
+    return _getter
+
+
+def _universal_updater_setter(name):
+    def _setter(self, value):
+        UpdaterPreferences.set_value(name, value)
+    return _setter
+
+
 class FBAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = Config.addon_name
 
     downloaded_version: bpy.props.StringProperty(
         name='Downloaded version', default='',
-        get=_universal_getter('downloaded_version', 'string'),
-        set=_universal_setter('downloaded_version'),
+        get=_universal_updater_getter('downloaded_version', 'string'),
+        set=_universal_updater_setter('downloaded_version'),
     )
 
     downloaded_parts: bpy.props.IntProperty(
         name='Downloaded installation parts', default=0, min=0, max=2,
-        get=_universal_getter('downloaded_parts', 'int'),
-        set=_universal_setter('downloaded_parts'),
+        get=_universal_updater_getter('downloaded_parts', 'int'),
+        set=_universal_updater_setter('downloaded_parts'),
     )
 
     latest_skip_version: bpy.props.StringProperty(
         name='Latest skip version', default='',
-        get=_universal_getter('latest_skip_version', 'string'),
-        set=_universal_setter('latest_skip_version'),
+        get=_universal_updater_getter('latest_skip_version', 'string'),
+        set=_universal_updater_setter('latest_skip_version'),
     )
 
     license_accepted: bpy.props.BoolProperty(

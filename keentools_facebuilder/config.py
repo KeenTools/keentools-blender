@@ -44,6 +44,7 @@ class Config:
     default_fb_camera_name = 'fbCamera'
 
     user_preferences_dict_name = 'keentools_facebuilder_addon'
+    updater_preferences_dict_name = 'keentools_updater'
 
     addon_search = 'KeenTools'
     addon_global_var_name = prefix + '_settings'
@@ -236,9 +237,6 @@ class Config:
     regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
 
     default_user_preferences = {
-        'downloaded_version': {'value': '', 'type': 'string'},
-        'downloaded_parts': {'value': 0, 'type': 'int'},
-        'latest_skip_version': {'value': '', 'type': 'string'},
         'pin_size': {'value': 7.0, 'type': 'float'},
         'pin_sensitivity': {'value': 16.0, 'type': 'float'},
         'prevent_view_rotation': {'value': True, 'type': 'bool'},
@@ -246,6 +244,12 @@ class Config:
         'wireframe_special_color': {'value': color_schemes['default'][1], 'type': 'color'},
         'wireframe_midline_color': {'value': midline_color, 'type': 'color'},
         'wireframe_opacity': {'value': wireframe_opacity, 'type': 'float'}
+    }
+
+    default_updater_preferences = {
+        'downloaded_version': {'value': '', 'type': 'string'},
+        'downloaded_parts': {'value': 0, 'type': 'int'},
+        'latest_skip_version': {'value': '', 'type': 'string'}
     }
 
 def is_blender_supported():
