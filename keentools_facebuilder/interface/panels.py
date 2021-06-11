@@ -262,7 +262,7 @@ class FB_PT_UpdatesInstallationPanel(Common, Panel):
         if not FBInstallationReminder.is_active():
             return
         layout.operator(Config.fb_install_updates_idname,
-            text='Update and close blender', icon='FILE_REFRESH')
+            text='Update and restart blender', icon='FILE_REFRESH')
         layout.operator(Config.fb_remind_install_later_idname,
             text='Remind tomorrow', icon='RECOVER_LAST')
         layout.operator(Config.fb_skip_installation_idname,

@@ -107,38 +107,38 @@ def text_from_element(el):
         return el
 
 
-def render_dict(layout, el):
+def render_dict(layout, el, limit=32):
     t = el['type']
     if t in {'h1', 'h2', 'h3', 'h4'}:
         txt = text_from_element(el['content'])
-        create_label(layout, txt)
+        create_label(layout, txt, limit)
 
     if t in {'ul', 'p'}:
-        render_main(layout, el['content'])
+        render_main(layout, el['content'], limit)
 
     elif t == 'text':
         txt = text_from_element(el['content'])
         if txt not in {'',' '}:
-            create_label(layout, txt)
+            create_label(layout, txt, limit)
 
     elif t == 'li':
         txt = text_from_element(el['content'])
-        create_label(layout, '— ' + txt)
+        create_label(layout, '— ' + txt, limit)
 
     elif t == 'br':
         return
 
 
-def render_list(layout, tree):
+def render_list(layout, tree, limit=32):
     for el in tree:
         if type(el) == list:
-            render_list(layout, el)
+            render_list(layout, el, limit)
         elif type(el) == dict:
-            render_dict(layout, el)
+            render_dict(layout, el, limit)
 
 
-def render_main(layout, el):
+def render_main(layout, el, limit=32):
     if type(el) == list:
-        return render_list(layout, el)
+        return render_list(layout, el, limit)
     elif type(el) == dict:
-        return render_dict(layout, el)
+        return render_dict(layout, el, limit)

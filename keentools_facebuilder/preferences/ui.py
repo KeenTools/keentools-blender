@@ -43,6 +43,7 @@ from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
                         draw_warning_labels, draw_long_labels)
 from ..preferences.user_preferences import UserPreferences
+from ..interface.updater import render_active_message, current_active_operator_info
 
 
 def _multi_line_text_to_output_labels(layout, txt):
@@ -500,6 +501,15 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                'The core library has been installed successfully']
         draw_warning_labels(layout, arr, alert=False, icon='INFO')
 
+    def _draw_updater_info(self, layout):
+        layout.label(text='Update info:')
+        box = layout.box()
+        render_active_message(box)
+        operator_info = current_active_operator_info()
+        if operator_info is not None:
+            box.operator(operator_info.idname,
+                         text=operator_info.text, icon=operator_info.icon)
+
     def _draw_old_addon(self, layout):
         box = layout.box()
         draw_warning_labels(box, ERROR_MESSAGES['OLD_ADDON'])
@@ -620,6 +630,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         if cached_status[1] == 'PYKEENTOOLS_OK':
             try:
                 self._draw_version(box)
+                self._draw_updater_info(layout)
                 self._draw_license_info(layout)
                 self._draw_user_preferences(layout)
                 return
