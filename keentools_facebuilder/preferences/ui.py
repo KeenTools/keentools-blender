@@ -215,12 +215,6 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         set=_universal_updater_setter('downloaded_version'),
     )
 
-    downloaded_parts: bpy.props.IntProperty(
-        name='Downloaded installation parts', default=0, min=0, max=2,
-        get=_universal_updater_getter('downloaded_parts', 'int'),
-        set=_universal_updater_setter('downloaded_parts'),
-    )
-
     latest_skip_version: bpy.props.StringProperty(
         name='Latest skip version', default='',
         get=_universal_updater_getter('latest_skip_version', 'string'),

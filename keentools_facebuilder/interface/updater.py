@@ -19,13 +19,14 @@
 import logging
 from threading import Lock
 from collections import namedtuple
+from enum import Enum
+import time
 
 import bpy
 
 from ..config import get_operator, get_main_settings, Config, ErrorType
 from ..blender_independent_packages.pykeentools_loader import (
-    module as pkt_module, is_installed as pkt_is_installed)
-from ..blender_independent_packages.pykeentools_loader.install import (
+    module as pkt_module, is_installed as pkt_is_installed,
     updates_downloaded,
     download_addon_zip_async, download_core_zip_async,
     remove_addon_zip, remove_core_zip,
@@ -90,6 +91,36 @@ def current_active_operator_info():
         return None
 
 
+class UpdateState(Enum):
+    INITIAL = 1
+    UPDATES_AVAILABLE = 2
+    DOWNLOADING = 3
+    INSTALL = 4
+
+
+class CurrentStateExecutor:
+    _CURRENT_STATE = UpdateState.INITIAL
+
+    @classmethod
+    def set_current_state(cls, state):
+        cls._CURRENT_STATE = state
+
+    @classmethod
+    def get_current_state(cls):
+        downloaded_version = _version_to_tuple(_downloaded_version())
+        if cls._CURRENT_STATE == UpdateState.INITIAL:
+            if FBUpdater.is_current_state():
+                cls._CURRENT_STATE = UpdateState.UPDATES_AVAILABLE
+            elif downloaded_version > _version_to_tuple(Config.addon_version) and \
+                    downloaded_version != _version_to_tuple(_latest_skip_version()) and \
+                    updates_downloaded() and FBInstallationReminder.is_available():
+                cls._CURRENT_STATE = UpdateState.INSTALL
+        elif cls._CURRENT_STATE == UpdateState.INSTALL:
+            if FBUpdater.is_current_state():
+                cls._CURRENT_STATE = UpdateState.UPDATES_AVAILABLE
+        return cls._CURRENT_STATE
+
+
 class FBUpdater:
     _response = None
     # _response = mock_response()  # Mock for testing (1/3)
@@ -97,8 +128,11 @@ class FBUpdater:
 
     @classmethod
     def is_active(cls):
-        return cls.has_response() and \
-               _version_to_tuple(_downloaded_version()) < _version_to_tuple(cls.version())
+        return CurrentStateExecutor.get_current_state() == UpdateState.UPDATES_AVAILABLE
+
+    @classmethod
+    def is_current_state(cls):
+        return cls.has_response() and _version_to_tuple(_downloaded_version()) < _version_to_tuple(FBUpdater.version())
 
     @classmethod
     def has_response(cls):
@@ -166,13 +200,13 @@ class FBUpdater:
 
 class DownloadedPartsExecutor:
     _state_mutex = Lock()
+    _downloaded_parts = 0
 
     @classmethod
     def get_downloaded_parts_count(cls):
         cls._state_mutex.acquire()
         try:
-            settings = get_main_settings()
-            return settings.preferences().downloaded_parts
+            return cls._downloaded_parts
         finally:
             cls._state_mutex.release()
 
@@ -180,8 +214,7 @@ class DownloadedPartsExecutor:
     def inc_downloaded_parts_count(cls):
         cls._state_mutex.acquire()
         try:
-            settings = get_main_settings()
-            settings.preferences().downloaded_parts += 1
+            cls._downloaded_parts += 1
         finally:
             cls._state_mutex.release()
 
@@ -189,10 +222,15 @@ class DownloadedPartsExecutor:
     def nullify_downloaded_parts_count(cls):
         cls._state_mutex.acquire()
         try:
-            settings = get_main_settings()
-            settings.preferences().downloaded_parts = 0
+            cls._downloaded_parts = 0
         finally:
             cls._state_mutex.release()
+
+
+def _set_installing():
+    DownloadedPartsExecutor.inc_downloaded_parts_count()
+    if DownloadedPartsExecutor.get_downloaded_parts_count() == 2:
+        CurrentStateExecutor.set_current_state(UpdateState.INSTALL)
 
 
 class FB_OT_DownloadTheUpdate(bpy.types.Operator):
@@ -202,11 +240,12 @@ class FB_OT_DownloadTheUpdate(bpy.types.Operator):
     bl_description = 'Download the latest version of addon and core'
 
     def execute(self, context):
+        CurrentStateExecutor.set_current_state(UpdateState.DOWNLOADING)
+        DownloadedPartsExecutor.nullify_downloaded_parts_count()
         settings = get_main_settings()
         settings.preferences().downloaded_version = str(FBUpdater.version())
-        DownloadedPartsExecutor.nullify_downloaded_parts_count()
-        download_core_zip_async(final_callback=DownloadedPartsExecutor.inc_downloaded_parts_count)
-        download_addon_zip_async(final_callback=DownloadedPartsExecutor.inc_downloaded_parts_count)
+        download_core_zip_async(final_callback=_set_installing)
+        download_addon_zip_async(final_callback=_set_installing)
         return {'FINISHED'}
 
 
@@ -217,9 +256,9 @@ class FB_OT_RemindLater(bpy.types.Operator):
     bl_description = 'Remind about this update tomorrow'
 
     def execute(self, context):
+        CurrentStateExecutor.set_current_state(UpdateState.INITIAL)
         logger = logging.getLogger(__name__)
         logger.debug('REMIND LATER')
-
         uc = FBUpdater.get_update_checker()
         res = FBUpdater.get_response()
         uc.pause_update(res.plugin_name, res.version)
@@ -234,9 +273,9 @@ class FB_OT_SkipVersion(bpy.types.Operator):
     bl_description = 'Skip this version'
 
     def execute(self, context):
+        CurrentStateExecutor.set_current_state(UpdateState.INITIAL)
         logger = logging.getLogger(__name__)
         logger.debug('SKIP THIS VERSION')
-
         uc = FBUpdater.get_update_checker()
         res = FBUpdater.get_response()
         uc.skip_update(res.plugin_name, res.version)
@@ -247,9 +286,7 @@ class FB_OT_SkipVersion(bpy.types.Operator):
 class FBDownloadNotification:
     @classmethod
     def is_active(cls):
-        return _version_to_tuple(_downloaded_version()) > _version_to_tuple(Config.addon_version) and \
-               _version_to_tuple(_downloaded_version()) != _version_to_tuple(_latest_skip_version()) and \
-               DownloadedPartsExecutor.get_downloaded_parts_count() < 2
+        return CurrentStateExecutor.get_current_state() == UpdateState.DOWNLOADING
 
     @classmethod
     def get_message(cls):
@@ -271,12 +308,13 @@ class FBInstallationReminder:
 
     @classmethod
     def is_active(cls):
-        import time
-        return _version_to_tuple(_downloaded_version()) > _version_to_tuple(Config.addon_version) and \
-               _version_to_tuple(_downloaded_version()) != _version_to_tuple(_latest_skip_version()) and \
-               DownloadedPartsExecutor.get_downloaded_parts_count() == 2 and \
-               (cls._last_reminder_time is None or
-                time.time() - cls._last_reminder_time > _MIN_TIME_BETWEEN_REMINDERS)
+        return CurrentStateExecutor.get_current_state() == UpdateState.INSTALL
+
+
+    @classmethod
+    def is_available(cls):
+        return cls._last_reminder_time is None or \
+               time.time() - cls._last_reminder_time > _MIN_TIME_BETWEEN_REMINDERS
 
     @classmethod
     def get_message(cls):
@@ -318,15 +356,15 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
     bl_description = 'Install updates and restart blender'
 
     def execute(self, context):
+        CurrentStateExecutor.set_current_state(UpdateState.INITIAL)
         if not updates_downloaded():
             warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
             return {'CANCELLED'}
-        if bpy.data.is_saved:
-            import sys
-            import atexit
-            atexit.register(_start_new_blender, sys.argv[0])
-            bpy.ops.wm.quit_blender()
+        import sys
+        import atexit
+        atexit.register(_start_new_blender, sys.argv[0])
+        bpy.ops.wm.quit_blender()
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -342,11 +380,7 @@ class FB_OT_RemindInstallLater(bpy.types.Operator):
     bl_description = 'Remind install tommorow'
 
     def execute(self, context):
-        global _START_NEW_BLENDER_REGISTER
-        if _START_NEW_BLENDER_REGISTER is True:
-            import atexit
-            atexit.unregister(_start_new_blender)
-            _START_NEW_BLENDER_REGISTER = False
+        CurrentStateExecutor.set_current_state(UpdateState.INITIAL)
         FBInstallationReminder.remind_later()
         return {'FINISHED'}
 
@@ -358,14 +392,9 @@ class FB_OT_SkipInstallation(bpy.types.Operator):
     bl_description = 'Skip installation'
 
     def execute(self, context):
-        global _START_NEW_BLENDER_REGISTER
-        if _START_NEW_BLENDER_REGISTER is True:
-            import atexit
-            atexit.unregister(_start_new_blender)
-            _START_NEW_BLENDER_REGISTER = False
+        CurrentStateExecutor.set_current_state(UpdateState.INITIAL)
         settings = get_main_settings()
         settings.preferences().latest_skip_version = settings.preferences().downloaded_version
         remove_addon_zip()
         remove_core_zip()
-        DownloadedPartsExecutor.nullify_downloaded_parts_count()
         return {'FINISHED'}
