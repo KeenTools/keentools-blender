@@ -351,20 +351,21 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
     bl_description = 'Install updates and restart blender'
 
     def execute(self, context):
-        CurrentStateExecutor.set_current_state(UpdateState.INITIAL)
-        if not updates_downloaded():
-            warn = get_operator(Config.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
-            return {'CANCELLED'}
-        import sys
-        import atexit
-        atexit.register(_start_new_blender, sys.argv[0])
-        bpy.ops.wm.quit_blender()
+        if not bpy.data.is_dirty:
+            CurrentStateExecutor.set_current_state(UpdateState.INITIAL)
+            if not updates_downloaded():
+                warn = get_operator(Config.fb_warning_idname)
+                warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
+                return {'CANCELLED'}
+            import sys
+            import atexit
+            atexit.register(_start_new_blender, sys.argv[0])
+            bpy.ops.wm.quit_blender()
         return {'FINISHED'}
 
     def invoke(self, context, event):
         if bpy.data.is_dirty:
-            return context.window_manager.invoke_confirm(self, event)
+            return context.window_manager.invoke_props_dialog(self, width=300)
         return self.execute(context)
 
 
