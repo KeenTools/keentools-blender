@@ -46,7 +46,10 @@ def mock_response():
                        "<li>minor fixes and improvements</li>\n" \
                        "</ul>\n<br />\n"
     response.plugin_name = 'FaceBuilder'
-    response.version = pkt_module().Version(2021, 2, 1)
+    try:
+        response.version = pkt_module().Version(2021, 2, 1)
+    except Exception:
+        response.version = None
     return response
 
 
@@ -121,7 +124,7 @@ class CurrentStateExecutor:
 
 class FBUpdater:
     _response = None
-    # _response = mock_response()  # Mock for testing (1/3)
+    _response = mock_response()  # Mock for testing (1/3)
     _parsed_response_content = None
 
     @classmethod
@@ -147,7 +150,7 @@ class FBUpdater:
 
     @classmethod
     def get_response(cls):
-        if cls._response is None:
+        if cls._response is not None and cls._response.version is None:
             cls._response = mock_response()  # Mock for testing (2/3)
         return cls._response
 
