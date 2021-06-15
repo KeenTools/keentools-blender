@@ -228,6 +228,8 @@ class DownloadedPartsExecutor:
 def _set_installing():
     DownloadedPartsExecutor.inc_downloaded_parts_count()
     if DownloadedPartsExecutor.get_downloaded_parts_count() == 2:
+        settings = get_main_settings()
+        settings.preferences().downloaded_version = str(FBUpdater.version())
         CurrentStateExecutor.set_current_state(UpdateState.INSTALL)
 
 
@@ -240,8 +242,6 @@ class FB_OT_DownloadTheUpdate(bpy.types.Operator):
     def execute(self, context):
         CurrentStateExecutor.set_current_state(UpdateState.DOWNLOADING)
         DownloadedPartsExecutor.nullify_downloaded_parts_count()
-        settings = get_main_settings()
-        settings.preferences().downloaded_version = str(FBUpdater.version())
         download_zips_async(final_callback=_set_installing)
         return {'FINISHED'}
 
