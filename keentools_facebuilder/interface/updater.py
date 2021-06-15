@@ -108,30 +108,30 @@ def _state_to_message(state):
 
 
 class CurrentStateExecutor:
-    _CURRENT_STATE = UpdateState.INITIAL
-    
+    _panel_updater_state = UpdateState.INITIAL
+
     @classmethod
-    def set_current_state(cls, state, change_message=True):
-        cls._CURRENT_STATE = state
-        if change_message:
+    def set_current_panel_updater_state(cls, state, set_preferences_updater_state=True):
+        cls._panel_updater_state = state
+        if set_preferences_updater_state:
             settings = get_main_settings()
             settings.preferences().updater_message = str(_state_to_message(state).encode().hex())
             settings.preferences().updater_state = state
 
     @classmethod
-    def get_current_state(cls):
+    def get_current_panel_updater_state(cls):
         downloaded_version = _version_to_tuple(_downloaded_version())
-        if cls._CURRENT_STATE == UpdateState.INITIAL:
+        if cls._panel_updater_state == UpdateState.INITIAL:
             if FBUpdater.is_current_state():
-                cls.set_current_state(UpdateState.UPDATES_AVAILABLE)
+                cls.set_current_panel_updater_state(UpdateState.UPDATES_AVAILABLE)
             elif downloaded_version > _version_to_tuple(Config.addon_version) and \
                     downloaded_version != _version_to_tuple(_latest_skip_version()) and \
                     updates_downloaded() and FBInstallationReminder.is_available():
-                cls.set_current_state(UpdateState.INSTALL)
-        elif cls._CURRENT_STATE == UpdateState.INSTALL:
+                cls.set_current_panel_updater_state(UpdateState.INSTALL)
+        elif cls._panel_updater_state == UpdateState.INSTALL:
             if FBUpdater.is_current_state():
-                cls.set_current_state(UpdateState.UPDATES_AVAILABLE)
-        return cls._CURRENT_STATE
+                cls.set_current_panel_updater_state(UpdateState.UPDATES_AVAILABLE)
+        return cls._panel_updater_state
 
 
 class FBUpdater:
@@ -141,7 +141,7 @@ class FBUpdater:
 
     @classmethod
     def is_active(cls):
-        return CurrentStateExecutor.get_current_state() == UpdateState.UPDATES_AVAILABLE
+        return CurrentStateExecutor.get_current_panel_updater_state() == UpdateState.UPDATES_AVAILABLE
 
     @classmethod
     def is_current_state(cls):
@@ -255,7 +255,7 @@ def _set_installing():
     if DownloadedPartsExecutor.get_downloaded_parts_count() == 2:
         settings = get_main_settings()
         settings.preferences().downloaded_version = settings.preferences().updates_version
-        CurrentStateExecutor.set_current_state(UpdateState.INSTALL)
+        CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INSTALL)
 
 
 class FB_OT_DownloadTheUpdate(bpy.types.Operator):
@@ -265,7 +265,7 @@ class FB_OT_DownloadTheUpdate(bpy.types.Operator):
     bl_description = 'Download the latest version of addon and core'
 
     def execute(self, context):
-        CurrentStateExecutor.set_current_state(UpdateState.DOWNLOADING)
+        CurrentStateExecutor.set_current_panel_updater_state(UpdateState.DOWNLOADING)
         DownloadedPartsExecutor.nullify_downloaded_parts_count()
         download_zips_async(final_callback=_set_installing)
         return {'FINISHED'}
@@ -278,7 +278,8 @@ class FB_OT_RemindLater(bpy.types.Operator):
     bl_description = 'Remind about this update tomorrow'
 
     def execute(self, context):
-        CurrentStateExecutor.set_current_state(UpdateState.INITIAL, change_message=False)
+        CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL,
+                                                             set_preferences_updater_state=False)
         logger = logging.getLogger(__name__)
         logger.debug('REMIND LATER')
         uc = FBUpdater.get_update_checker()
@@ -295,7 +296,8 @@ class FB_OT_SkipVersion(bpy.types.Operator):
     bl_description = 'Skip this version'
 
     def execute(self, context):
-        CurrentStateExecutor.set_current_state(UpdateState.INITIAL, change_message=False)
+        CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL,
+                                                             set_preferences_updater_state=False)
         logger = logging.getLogger(__name__)
         logger.debug('SKIP THIS VERSION')
         uc = FBUpdater.get_update_checker()
@@ -308,7 +310,7 @@ class FB_OT_SkipVersion(bpy.types.Operator):
 class FBDownloadNotification:
     @classmethod
     def is_active(cls):
-        return CurrentStateExecutor.get_current_state() == UpdateState.DOWNLOADING
+        return CurrentStateExecutor.get_current_panel_updater_state() == UpdateState.DOWNLOADING
 
     @classmethod
     def get_message(cls):
@@ -330,7 +332,7 @@ class FBInstallationReminder:
 
     @classmethod
     def is_active(cls):
-        return CurrentStateExecutor.get_current_state() == UpdateState.INSTALL
+        return CurrentStateExecutor.get_current_panel_updater_state() == UpdateState.INSTALL
 
 
     @classmethod
@@ -377,7 +379,7 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
 
     def execute(self, context):
         if not bpy.data.is_dirty:
-            CurrentStateExecutor.set_current_state(UpdateState.INITIAL)
+            CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL)
             if not updates_downloaded():
                 warn = get_operator(Config.fb_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
@@ -401,7 +403,8 @@ class FB_OT_RemindInstallLater(bpy.types.Operator):
     bl_description = 'Remind install tommorow'
 
     def execute(self, context):
-        CurrentStateExecutor.set_current_state(UpdateState.INITIAL, change_message=False)
+        CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL,
+                                                             set_preferences_updater_state=False)
         FBInstallationReminder.remind_later()
         return {'FINISHED'}
 
@@ -413,7 +416,8 @@ class FB_OT_SkipInstallation(bpy.types.Operator):
     bl_description = 'Skip installation'
 
     def execute(self, context):
-        CurrentStateExecutor.set_current_state(UpdateState.INITIAL, change_message=False)
+        CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL,
+                                                             set_preferences_updater_state=False)
         settings = get_main_settings()
         settings.preferences().latest_skip_version = settings.preferences().downloaded_version
         remove_downloaded_zips()
