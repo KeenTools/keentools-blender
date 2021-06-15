@@ -19,7 +19,7 @@
 import logging
 from threading import Lock
 from collections import namedtuple
-from enum import Enum
+from enum import IntEnum
 import time
 
 import bpy
@@ -73,52 +73,64 @@ def _latest_skip_version():
     return settings.preferences().latest_skip_version
 
 
-def render_active_message(layout):
-    if FBUpdater.is_active():
-        FBUpdater.render_message(layout, limit=64)
-    elif FBDownloadNotification.is_active():
-        FBDownloadNotification.render_message(layout, limit=64)
-    elif FBInstallationReminder.is_active():
-        FBInstallationReminder.render_message(layout, limit=64)
+def updater_message():
+    settings = get_main_settings()
+    return bytes.fromhex(settings.preferences().updater_message).decode()
 
 
 def current_active_operator_info():
+    settings = get_main_settings()
+    updater_state = settings.preferences().updater_state
     OperatorInfo = namedtuple('OperatorInfo', 'idname, text, icon')
-    if FBUpdater.is_active():
+    if updater_state == UpdateState.UPDATES_AVAILABLE:
         return OperatorInfo(Config.fb_download_the_update_idname, 'Download the update', 'IMPORT')
-    elif FBInstallationReminder.is_active():
+    elif updater_state == UpdateState.INSTALL:
         return OperatorInfo(Config.fb_install_updates_idname, 'Update and restart blender', 'FILE_REFRESH')
     else:
         return None
 
 
-class UpdateState(Enum):
+class UpdateState(IntEnum):
     INITIAL = 1
     UPDATES_AVAILABLE = 2
     DOWNLOADING = 3
     INSTALL = 4
 
 
+def _state_to_message(state):
+    if state == UpdateState.UPDATES_AVAILABLE:
+        return FBUpdater.get_message()
+    elif state == UpdateState.DOWNLOADING:
+        return FBDownloadNotification.get_message()
+    elif state == UpdateState.INSTALL:
+        return FBInstallationReminder.get_message()
+    return ''
+
+
 class CurrentStateExecutor:
     _CURRENT_STATE = UpdateState.INITIAL
-
+    
     @classmethod
-    def set_current_state(cls, state):
+    def set_current_state(cls, state, change_message=True):
         cls._CURRENT_STATE = state
+        if change_message:
+            settings = get_main_settings()
+            settings.preferences().updater_message = str(_state_to_message(state).encode().hex())
+            settings.preferences().updater_state = state
 
     @classmethod
     def get_current_state(cls):
         downloaded_version = _version_to_tuple(_downloaded_version())
         if cls._CURRENT_STATE == UpdateState.INITIAL:
             if FBUpdater.is_current_state():
-                cls._CURRENT_STATE = UpdateState.UPDATES_AVAILABLE
+                cls.set_current_state(UpdateState.UPDATES_AVAILABLE)
             elif downloaded_version > _version_to_tuple(Config.addon_version) and \
                     downloaded_version != _version_to_tuple(_latest_skip_version()) and \
                     updates_downloaded() and FBInstallationReminder.is_available():
-                cls._CURRENT_STATE = UpdateState.INSTALL
+                cls.set_current_state(UpdateState.INSTALL)
         elif cls._CURRENT_STATE == UpdateState.INSTALL:
             if FBUpdater.is_current_state():
-                cls._CURRENT_STATE = UpdateState.UPDATES_AVAILABLE
+                cls.set_current_state(UpdateState.UPDATES_AVAILABLE)
         return cls._CURRENT_STATE
 
 
@@ -145,8 +157,11 @@ class FBUpdater:
 
     @classmethod
     def set_response(cls, val):
-        response = cls.get_response()
         cls._response = val
+        if cls._response is not None:
+            settings = get_main_settings()
+            # for updater in preferences
+            settings.preferences().updates_version = str(cls.version())
 
     @classmethod
     def get_response(cls):
@@ -172,6 +187,13 @@ class FBUpdater:
         parsed = cls.get_parsed()
         if parsed is not None:
             render_main(layout, parsed, limit)
+
+    @classmethod
+    def get_message(cls):
+        res = cls.get_response()
+        if res is not None:
+            return skip_new_lines_and_spaces(res.message)
+        return ''
 
     @classmethod
     def get_update_checker(cls):
@@ -232,7 +254,7 @@ def _set_installing():
     DownloadedPartsExecutor.inc_downloaded_parts_count()
     if DownloadedPartsExecutor.get_downloaded_parts_count() == 2:
         settings = get_main_settings()
-        settings.preferences().downloaded_version = str(FBUpdater.version())
+        settings.preferences().downloaded_version = settings.preferences().updates_version
         CurrentStateExecutor.set_current_state(UpdateState.INSTALL)
 
 
@@ -256,7 +278,7 @@ class FB_OT_RemindLater(bpy.types.Operator):
     bl_description = 'Remind about this update tomorrow'
 
     def execute(self, context):
-        CurrentStateExecutor.set_current_state(UpdateState.INITIAL)
+        CurrentStateExecutor.set_current_state(UpdateState.INITIAL, change_message=False)
         logger = logging.getLogger(__name__)
         logger.debug('REMIND LATER')
         uc = FBUpdater.get_update_checker()
@@ -273,7 +295,7 @@ class FB_OT_SkipVersion(bpy.types.Operator):
     bl_description = 'Skip this version'
 
     def execute(self, context):
-        CurrentStateExecutor.set_current_state(UpdateState.INITIAL)
+        CurrentStateExecutor.set_current_state(UpdateState.INITIAL, change_message=False)
         logger = logging.getLogger(__name__)
         logger.debug('SKIP THIS VERSION')
         uc = FBUpdater.get_update_checker()
@@ -379,7 +401,7 @@ class FB_OT_RemindInstallLater(bpy.types.Operator):
     bl_description = 'Remind install tommorow'
 
     def execute(self, context):
-        CurrentStateExecutor.set_current_state(UpdateState.INITIAL)
+        CurrentStateExecutor.set_current_state(UpdateState.INITIAL, change_message=False)
         FBInstallationReminder.remind_later()
         return {'FINISHED'}
 
@@ -391,7 +413,7 @@ class FB_OT_SkipInstallation(bpy.types.Operator):
     bl_description = 'Skip installation'
 
     def execute(self, context):
-        CurrentStateExecutor.set_current_state(UpdateState.INITIAL)
+        CurrentStateExecutor.set_current_state(UpdateState.INITIAL, change_message=False)
         settings = get_main_settings()
         settings.preferences().latest_skip_version = settings.preferences().downloaded_version
         remove_downloaded_zips()

@@ -247,10 +247,13 @@ class Config:
     }
 
     default_updater_preferences = {
+        'updater_message': {'value': '', 'type': 'string'},
+        'updater_state': {'value': 1, 'type': 'int'},
+        'updates_version': {'value': '', 'type': 'string'},
         'downloaded_version': {'value': '', 'type': 'string'},
-        'downloaded_parts': {'value': 0, 'type': 'int'},
         'latest_skip_version': {'value': '', 'type': 'string'}
     }
+
 
 def is_blender_supported():
     ver = bpy.app.version
