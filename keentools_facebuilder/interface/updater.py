@@ -27,10 +27,8 @@ import bpy
 from ..config import get_operator, get_main_settings, Config, ErrorType
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed,
-    updates_downloaded,
-    download_addon_zip_async, download_core_zip_async,
-    remove_addon_zip, remove_core_zip,
-    install_downloaded_addon, install_downloaded_core)
+    updates_downloaded, download_zips_async, remove_downloaded_zips,
+    install_downloaded_zips)
 
 from ..utils.html import parse_html, skip_new_lines_and_spaces, render_main
 
@@ -244,8 +242,7 @@ class FB_OT_DownloadTheUpdate(bpy.types.Operator):
         DownloadedPartsExecutor.nullify_downloaded_parts_count()
         settings = get_main_settings()
         settings.preferences().downloaded_version = str(FBUpdater.version())
-        download_core_zip_async(final_callback=_set_installing)
-        download_addon_zip_async(final_callback=_set_installing)
+        download_zips_async(final_callback=_set_installing)
         return {'FINISHED'}
 
 
@@ -331,7 +328,6 @@ class FBInstallationReminder:
 
     @classmethod
     def remind_later(cls):
-        import time
         cls._last_reminder_time = time.time()
 
 
@@ -339,8 +335,7 @@ def _start_new_blender(cmd_line):
     import platform
     import os
     import subprocess
-    install_downloaded_addon(True)
-    install_downloaded_core(True)
+    install_downloaded_zips(True)
     if platform.system() == 'Linux':
         new_ref = os.fork()
         if new_ref == 0:
@@ -395,6 +390,5 @@ class FB_OT_SkipInstallation(bpy.types.Operator):
         CurrentStateExecutor.set_current_state(UpdateState.INITIAL)
         settings = get_main_settings()
         settings.preferences().latest_skip_version = settings.preferences().downloaded_version
-        remove_addon_zip()
-        remove_core_zip()
+        remove_downloaded_zips()
         return {'FINISHED'}

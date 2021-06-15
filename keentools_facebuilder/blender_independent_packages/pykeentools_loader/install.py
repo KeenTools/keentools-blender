@@ -28,10 +28,9 @@ from .config import *
 
 __all__ = ['is_installed', 'uninstall', 'installation_status',
            'install_from_download_async', 'install_core_from_file',
-           'download_addon_zip_async', 'download_core_zip_async',
+           'download_zips_async',
            'updates_downloaded', 'loaded', 'module',
-           'remove_addon_zip', 'remove_core_zip',
-           'install_downloaded_addon', 'install_downloaded_core']
+           'remove_downloaded_zips', 'install_downloaded_zips']
 
 
 _unpack_mutex = Lock()
@@ -218,6 +217,11 @@ def _download_zip(part_installation, version=None, nightly=False, final_callback
         final_callback()
 
 
+def download_zips_async(**kwargs):
+    download_addon_zip_async(**kwargs)
+    download_core_zip_async(**kwargs)
+
+
 def download_addon_zip_async(**kwargs):
     kwargs['part_installation'] = PartInstallation.ADDON
     t = Thread(target=_download_zip, kwargs=kwargs)
@@ -349,6 +353,11 @@ def _remove_download(part_installation):
     os.remove(_download_file_path(part_installation))
 
 
+def remove_downloaded_zips():
+    remove_addon_zip()
+    remove_core_zip()
+
+
 def remove_addon_zip():
     _remove_download(PartInstallation.ADDON)
 
@@ -361,6 +370,11 @@ def _install_download(part_installation, remove_zip=False):
     install_from_file(_download_file_path(part_installation), part_installation)
     if remove_zip:
         _remove_download(part_installation)
+
+
+def install_downloaded_zips(remove_zip):
+    install_downloaded_addon(remove_zip)
+    install_downloaded_core(remove_zip)
 
 
 def install_downloaded_addon(remove_zip):
