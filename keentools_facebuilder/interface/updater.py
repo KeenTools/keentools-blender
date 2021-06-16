@@ -418,6 +418,5 @@ class FB_OT_SkipInstallation(bpy.types.Operator):
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL,
                                                              set_preferences_updater_state=False)
         settings = get_main_settings()
-        settings.preferences().latest_skip_version = settings.preferences().downloaded_version
-        remove_downloaded_zips()
+        settings.preferences().latest_installation_skip_version = settings.preferences().downloaded_version
         return {'FINISHED'}
