@@ -189,7 +189,7 @@ def install_addon_from_file(path):
         _install_from_stream(file, PartInstallation.ADDON)
 
 
-def install_from_file(path, part_installation):
+def _install_from_file(path, part_installation):
     with open(path, mode='rb') as file:
         _install_from_stream(file, part_installation)
 
@@ -220,17 +220,17 @@ def _download_zip(part_installation, version=None, nightly=False, final_callback
 
 
 def download_zips_async(**kwargs):
-    download_addon_zip_async(**kwargs)
-    download_core_zip_async(**kwargs)
+    _download_addon_zip_async(**kwargs)
+    _download_core_zip_async(**kwargs)
 
 
-def download_addon_zip_async(**kwargs):
+def _download_addon_zip_async(**kwargs):
     kwargs['part_installation'] = PartInstallation.ADDON
     t = Thread(target=_download_zip, kwargs=kwargs)
     t.start()
 
 
-def download_core_zip_async(**kwargs):
+def _download_core_zip_async(**kwargs):
     kwargs['part_installation'] = PartInstallation.CORE
     t = Thread(target=_download_zip, kwargs=kwargs)
     t.start()
@@ -358,32 +358,16 @@ def _remove_download(part_installation):
 
 
 def remove_downloaded_zips():
-    remove_addon_zip()
-    remove_core_zip()
-
-
-def remove_addon_zip():
     _remove_download(PartInstallation.ADDON)
-
-
-def remove_core_zip():
     _remove_download(PartInstallation.CORE)
 
 
 def _install_download(part_installation, remove_zip=False):
-    install_from_file(_download_file_path(part_installation), part_installation)
+    _install_from_file(_download_file_path(part_installation), part_installation)
     if remove_zip:
         _remove_download(part_installation)
 
 
 def install_downloaded_zips(remove_zip):
-    install_downloaded_addon(remove_zip)
-    install_downloaded_core(remove_zip)
-
-
-def install_downloaded_addon(remove_zip):
     _install_download(PartInstallation.ADDON, remove_zip)
-
-
-def install_downloaded_core(remove_zip):
     _install_download(PartInstallation.CORE, remove_zip)
