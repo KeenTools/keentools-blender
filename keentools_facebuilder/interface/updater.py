@@ -68,17 +68,17 @@ def _downloaded_version():
     return settings.preferences().downloaded_version
 
 
-def _latest_skip_version():
+def _latest_installation_skip_version():
     settings = get_main_settings()
-    return settings.preferences().latest_skip_version
+    return settings.preferences().latest_installation_skip_version
 
 
-def updater_message():
+def preferences_updater_message():
     settings = get_main_settings()
     return bytes.fromhex(settings.preferences().updater_message).decode()
 
 
-def current_active_operator_info():
+def preferences_current_active_updater_operator_info():
     settings = get_main_settings()
     updater_state = settings.preferences().updater_state
     OperatorInfo = namedtuple('OperatorInfo', 'idname, text, icon')
@@ -125,7 +125,7 @@ class CurrentStateExecutor:
             if FBUpdater.is_current_state():
                 cls.set_current_panel_updater_state(UpdateState.UPDATES_AVAILABLE)
             elif downloaded_version > _version_to_tuple(Config.addon_version) and \
-                    downloaded_version != _version_to_tuple(_latest_skip_version()) and \
+                    downloaded_version != _version_to_tuple(_latest_installation_skip_version()) and \
                     updates_downloaded() and FBInstallationReminder.is_available():
                 cls.set_current_panel_updater_state(UpdateState.INSTALL)
         elif cls._panel_updater_state == UpdateState.INSTALL:

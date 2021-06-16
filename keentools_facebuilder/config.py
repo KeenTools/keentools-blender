@@ -251,7 +251,7 @@ class Config:
         'updater_state': {'value': 1, 'type': 'int'},
         'updates_version': {'value': '', 'type': 'string'},
         'downloaded_version': {'value': '', 'type': 'string'},
-        'latest_skip_version': {'value': '', 'type': 'string'},
+        'latest_installation_skip_version': {'value': '', 'type': 'string'},
         'latest_show_installation_reminder': {'value': '', 'type': 'string'}
     }
 

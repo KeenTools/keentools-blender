@@ -43,7 +43,7 @@ from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
                         draw_warning_labels, draw_long_labels)
 from ..preferences.user_preferences import UserPreferences, UpdaterPreferences
-from ..interface.updater import updater_message, current_active_operator_info
+from ..interface.updater import preferences_updater_message, preferences_current_active_updater_operator_info
 from ..utils.html import parse_html, render_main
 
 
@@ -234,10 +234,10 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         set=_universal_updater_setter('downloaded_version')
     )
 
-    latest_skip_version: bpy.props.StringProperty(
-        name='Latest skip version', default='',
-        get=_universal_updater_getter('latest_skip_version', 'string'),
-        set=_universal_updater_setter('latest_skip_version')
+    latest_installation_skip_version: bpy.props.StringProperty(
+        name='Latest installation skip version', default='',
+        get=_universal_updater_getter('latest_installation_skip_version', 'string'),
+        set=_universal_updater_setter('latest_installation_skip_version')
     )
 
     latest_show_installation_reminder: bpy.props.StringProperty(
@@ -533,12 +533,12 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         draw_warning_labels(layout, arr, alert=False, icon='INFO')
 
     def _draw_updater_info(self, layout):
-        message = updater_message()
+        message = preferences_updater_message()
         if message != '':
             layout.label(text='Update info:')
             box = layout.box()
             render_main(box, parse_html(message), limit=64)
-            operator_info = current_active_operator_info()
+            operator_info = preferences_current_active_updater_operator_info()
             if operator_info is not None:
                 box.operator(operator_info.idname,
                              text=operator_info.text, icon=operator_info.icon)
