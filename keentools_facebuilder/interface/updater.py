@@ -119,7 +119,7 @@ class CurrentStateExecutor:
             settings.preferences().updater_state = state
 
     @classmethod
-    def get_current_panel_updater_state(cls):
+    def compute_current_panel_updater_state(cls):
         downloaded_version = _version_to_tuple(_downloaded_version())
         if cls._panel_updater_state == UpdateState.INITIAL:
             if FBUpdater.is_current_state():
@@ -141,7 +141,7 @@ class FBUpdater:
 
     @classmethod
     def is_active(cls):
-        return CurrentStateExecutor.get_current_panel_updater_state() == UpdateState.UPDATES_AVAILABLE
+        return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.UPDATES_AVAILABLE
 
     @classmethod
     def is_current_state(cls):
@@ -310,7 +310,7 @@ class FB_OT_SkipVersion(bpy.types.Operator):
 class FBDownloadNotification:
     @classmethod
     def is_active(cls):
-        return CurrentStateExecutor.get_current_panel_updater_state() == UpdateState.DOWNLOADING
+        return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.DOWNLOADING
 
     @classmethod
     def get_message(cls):
@@ -327,7 +327,7 @@ class FBDownloadNotification:
 class FBInstallationReminder:
     @classmethod
     def is_active(cls):
-        return CurrentStateExecutor.get_current_panel_updater_state() == UpdateState.INSTALL
+        return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.INSTALL
 
     @classmethod
     def is_available(cls):
