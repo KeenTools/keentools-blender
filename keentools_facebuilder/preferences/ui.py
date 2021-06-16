@@ -240,6 +240,12 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         set=_universal_updater_setter('latest_skip_version')
     )
 
+    latest_show_installation_reminder: bpy.props.StringProperty(
+        name='Latest show installation reminder', default='',
+        get=_universal_updater_getter('latest_show_installation_reminder', 'string'),
+        set=_universal_updater_setter('latest_show_installation_reminder')
+    )
+
     license_accepted: bpy.props.BoolProperty(
         name='I have read and I agree to KeenTools End-user License Agreement',
         default=False

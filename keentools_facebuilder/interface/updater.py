@@ -20,7 +20,7 @@ import logging
 from threading import Lock
 from collections import namedtuple
 from enum import IntEnum
-import time
+from datetime import datetime, timedelta
 
 import bpy
 
@@ -324,21 +324,19 @@ class FBDownloadNotification:
             render_main(layout, parse_html(cls.get_message()), limit)
 
 
-_MIN_TIME_BETWEEN_REMINDERS = 86400  # 24 hours in seconds
-
-
 class FBInstallationReminder:
-    _last_reminder_time = None
-
     @classmethod
     def is_active(cls):
         return CurrentStateExecutor.get_current_panel_updater_state() == UpdateState.INSTALL
 
-
     @classmethod
     def is_available(cls):
-        return cls._last_reminder_time is None or \
-               time.time() - cls._last_reminder_time > _MIN_TIME_BETWEEN_REMINDERS
+        settings = get_main_settings()
+        previous_show_time_str = settings.preferences().latest_show_installation_reminder
+        if previous_show_time_str == '':
+            return True
+        previous_show_time = datetime.strptime(previous_show_time_str, '%d/%m/%y %H:%M:%S')
+        return (datetime.now() - previous_show_time).total_seconds() // 3600 >= 24
 
     @classmethod
     def get_message(cls):
@@ -355,7 +353,8 @@ class FBInstallationReminder:
 
     @classmethod
     def remind_later(cls):
-        cls._last_reminder_time = time.time()
+        settings = get_main_settings()
+        settings.preferences().latest_show_installation_reminder = datetime.now().strftime('%d/%m/%y %H:%M:%S')
 
 
 def _start_new_blender(cmd_line):
