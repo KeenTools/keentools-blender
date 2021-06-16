@@ -644,7 +644,7 @@ class FB_OT_UninstallCore(bpy.types.Operator):
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
-        from .blender_independent_packages.pykeentools_loader import uninstall as pkt_uninstall
+        from .blender_independent_packages.pykeentools_loader import uninstall_core as pkt_uninstall
         logger.debug("START CORE UNINSTALL")
         pkt_uninstall()
         logger.debug("FINISH CORE UNINSTALL")

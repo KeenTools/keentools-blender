@@ -26,7 +26,7 @@ import bpy
 from .config import *
 
 
-__all__ = ['is_installed', 'uninstall', 'installation_status',
+__all__ = ['is_installed', 'uninstall_core', 'installation_status',
            'install_from_download_async', 'install_core_from_file',
            'download_zips_async',
            'updates_downloaded', 'loaded', 'module',
@@ -41,8 +41,12 @@ class PartInstallation(Enum):
     ADDON = 2
 
 
-def _is_installed_not_locked():
+def _is_core_installed_not_locked():
     return os.path.exists(pkt_installation_dir())
+
+
+def _is_addon_installed_not_locked():
+    return os.path.exists(addon_installation_dir())
 
 
 def _installation_path_exists():
@@ -57,25 +61,23 @@ def _installation_path_exists():
 def _is_installed_impl():
     _unpack_mutex.acquire()
     try:
-        return _is_installed_not_locked()
+        return _is_core_installed_not_locked()
     finally:
         _unpack_mutex.release()
 
 
 def _uninstall_not_locked(part_installation=PartInstallation.CORE):
     if part_installation == PartInstallation.CORE:
-        if _is_installed_not_locked():
+        if _is_core_installed_not_locked():
             import shutil
             shutil.rmtree(pkt_installation_dir(), ignore_errors=True)
     elif part_installation == PartInstallation.ADDON:
-        if _is_installed_not_locked():
+        if _is_addon_installed_not_locked():
             import shutil
-            addons_path = bpy.utils.user_resource('SCRIPTS', "addons")
-            fb_path = os.path.join(addons_path, 'keentools_facebuilder')
-            shutil.rmtree(fb_path, ignore_errors=True)
+            shutil.rmtree(addon_installation_dir(), ignore_errors=True)
 
 
-def uninstall():
+def uninstall_core():
     _unpack_mutex.acquire()
     try:
         _uninstall_not_locked()
@@ -350,7 +352,9 @@ def updates_downloaded():
 
 
 def _remove_download(part_installation):
-    os.remove(_download_file_path(part_installation))
+    path = _download_file_path(part_installation)
+    if os.path.exists(path):
+        os.remove(path)
 
 
 def remove_downloaded_zips():

@@ -29,7 +29,7 @@ def test_wrong_installations():
 
 
 def test_uninstall():
-    pkt.uninstall()
+    pkt.uninstall_core()
     assert(not pkt.is_installed())
 
 
@@ -41,7 +41,7 @@ def test_download_non_existing_version():
 def test_non_loaded_uninstalled_load():
     if pkt.loaded():
         return
-    pkt.uninstall()
+    pkt.uninstall_core()
     with pytest.raises(ImportError):
         pkt.module()
 
@@ -69,4 +69,4 @@ def test_download_latest_nightly(use_progress_callback):
     assert(pkt.is_installed())
     pykeentools = pkt.module()
     assert(isinstance(pykeentools.__version__, str))
-    pkt.uninstall()
+    pkt.uninstall_core()
