@@ -378,11 +378,11 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
 
     def execute(self, context):
         if not bpy.data.is_dirty:
-            CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL)
             if not updates_downloaded():
                 warn = get_operator(Config.fb_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
                 return {'CANCELLED'}
+            CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL)
             import sys
             import atexit
             atexit.register(_start_new_blender, sys.argv[0])
