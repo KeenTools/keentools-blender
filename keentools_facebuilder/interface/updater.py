@@ -31,6 +31,7 @@ from ..blender_independent_packages.pykeentools_loader import (
     install_downloaded_zips)
 
 from ..utils.html import parse_html, skip_new_lines_and_spaces, render_main
+from ..utils.other import force_ui_redraw
 
 
 def mock_response():
@@ -256,6 +257,8 @@ def _set_installing():
         settings = get_main_settings()
         settings.preferences().downloaded_version = settings.preferences().updates_version
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INSTALL)
+        force_ui_redraw('VIEW_3D')
+        force_ui_redraw('PREFERENCES')
 
 
 class FB_OT_DownloadTheUpdate(bpy.types.Operator):
