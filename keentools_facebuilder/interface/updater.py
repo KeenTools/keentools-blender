@@ -275,6 +275,8 @@ class FB_OT_DownloadTheUpdate(bpy.types.Operator):
 
     def execute(self, context):
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.DOWNLOADING)
+        force_ui_redraw('VIEW_3D')
+        force_ui_redraw('PREFERENCES')
         DownloadedPartsExecutor.nullify_downloaded_parts_count()
         download_zips_async(final_callback=_set_installing)
         return {'FINISHED'}

@@ -266,7 +266,7 @@ class FB_PT_UpdatesInstallationPanel(Common, Panel):
         layout.operator(Config.fb_remind_install_later_idname,
             text='Remind tomorrow', icon='RECOVER_LAST')
         layout.operator(Config.fb_skip_installation_idname,
-            text='Skip installation', icon='X')
+            text='Skip this version', icon='X')
 
     def draw(self, context):
         layout = self.layout
