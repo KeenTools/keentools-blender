@@ -230,7 +230,7 @@ class FB_PT_UpdatePanel(Common, Panel):
 
 class FB_PT_DownloadNotification(Common, Panel):
     bl_idname = Config.fb_download_notification_panel_idname
-    bl_label = 'Download notification'
+    bl_label = 'Update available'
 
     @classmethod
     def poll(cls, context):
@@ -248,7 +248,7 @@ class FB_PT_DownloadNotification(Common, Panel):
 
 class FB_PT_UpdatesInstallationPanel(Common, Panel):
     bl_idname = Config.fb_updates_installation_panel_idname
-    bl_label = 'Update installation'
+    bl_label = 'Update available'
 
     @classmethod
     def poll(cls, context):
@@ -262,7 +262,7 @@ class FB_PT_UpdatesInstallationPanel(Common, Panel):
         if not FBInstallationReminder.is_active():
             return
         layout.operator(Config.fb_install_updates_idname,
-            text='Update and restart blender', icon='FILE_REFRESH')
+            text='Install and restart', icon='FILE_REFRESH')
         layout.operator(Config.fb_remind_install_later_idname,
             text='Remind tomorrow', icon='RECOVER_LAST')
         layout.operator(Config.fb_skip_installation_idname,

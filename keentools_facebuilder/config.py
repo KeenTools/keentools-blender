@@ -288,3 +288,4 @@ class ErrorType:
     PktProblem = 6
     PktModelProblem = 7
     DownloadingProblem = 8
+    NotSavingProblem = 9

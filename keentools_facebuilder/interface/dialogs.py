@@ -35,6 +35,7 @@ class FB_OT_AddonWarning(Operator):
     msg_content: bpy.props.StringProperty(default="")
 
     content = []
+    width = 400
 
     def set_content(self, txt_list):
         self.content = txt_list
@@ -113,11 +114,18 @@ class FB_OT_AddonWarning(Operator):
                 "FaceBuilder."
             ])
         elif self.msg == ErrorType.DownloadingProblem:
-            self.set_content([
-                "Problems with downloading updates.",
-                "Try to install updates manually."
-            ])
-        return context.window_manager.invoke_props_dialog(self, width=400)
+            self.set_content(["An unknown error encountered. The downloaded files might be corrupted. ",
+                              "You can try downloading them again, "
+                              "restarting Blender or installing the update manually.",
+                              "If you want to manually update the add-on: remove the old add-on, "
+                              "restart Blender and install the new version of the add-on."])
+            self.width = 650
+        elif self.msg == ErrorType.NotSavingProblem:
+            self.set_content(['The project has some unsaved changes. '
+                              'Please save the project and then try installing the update again.',
+                              'Please note that selecting something in the scene is considered a change in Blender.'])
+            self.width = 550
+        return context.window_manager.invoke_props_dialog(self, width=self.width)
 
 
 class FB_OT_BlendshapesWarning(Operator):

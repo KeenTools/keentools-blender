@@ -271,7 +271,7 @@ class FB_OT_DownloadTheUpdate(bpy.types.Operator):
     bl_idname = Config.fb_download_the_update_idname
     bl_label = 'Download the update'
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Download the latest version of addon and core'
+    bl_description = 'Download and install the latest version of FaceBuilder'
 
     def execute(self, context):
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.DOWNLOADING)
@@ -318,8 +318,8 @@ class FBDownloadNotification:
 
     @classmethod
     def render_message(cls, layout, limit=32):
-        _message_text = '<h3>Updates are downloading.</h3>' \
-                        '<h3>We will let you know when they are ready for installation.</h3>'
+        _message_text = "<h3>Downloading the update.</h3>" \
+                        "<h3>You'll be notified when it's ready to install.</h3>"
         if cls.is_active():
             render_main(layout, parse_html(_message_text), limit)
 
@@ -337,10 +337,9 @@ class FBInstallationReminder:
 
     @classmethod
     def render_message(cls, layout, limit=32):
-        _message_text = 'The update {} is ready to be installed.' \
-                        'Blender will be relaunched after installing the update automatically.' \
-                        'Please save your project before continuing. Proceed?'. \
-            format(_downloaded_version())
+        _message_text = 'The new version of FaceBuilder is ready to be installed. ' \
+                        'Blender will be relaunched automatically. ' \
+                        'Please save your project before proceeding.'
         render_main(layout, parse_html(_message_text), limit)
 
     @classmethod
@@ -370,9 +369,9 @@ def _clear_updater_info():
 
 class FB_OT_InstallUpdates(bpy.types.Operator):
     bl_idname = Config.fb_install_updates_idname
-    bl_label = 'The blender will restart, save your changes before'
+    bl_label = ''
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Install updates and restart blender'
+    bl_description = 'Press to install the update and relaunch Blender'
 
     def execute(self, context):
         if not bpy.data.is_dirty:
@@ -393,7 +392,8 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
 
     def invoke(self, context, event):
         if bpy.data.is_dirty:
-            return context.window_manager.invoke_props_dialog(self, width=300)
+            warn = get_operator(Config.fb_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.NotSavingProblem)
         return self.execute(context)
 
 

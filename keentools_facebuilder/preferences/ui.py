@@ -542,7 +542,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             CurrentStateExecutor.compute_current_panel_updater_state()
         settings = get_main_settings()
         if settings.preferences().updater_state != UpdateState.INITIAL:
-            layout.label(text='Update info:')
+            layout.label(text='Update available:')
             box = layout.box()
             render_active_message(box)
             operator_info = preferences_current_active_updater_operator_info()
