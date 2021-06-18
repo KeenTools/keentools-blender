@@ -363,6 +363,11 @@ def _start_new_blender(cmd_line):
         subprocess.call([cmd_line])
 
 
+def _clear_updater_info():
+    from ..preferences import reset_updater_preferences_to_default
+    reset_updater_preferences_to_default()
+
+
 class FB_OT_InstallUpdates(bpy.types.Operator):
     bl_idname = Config.fb_install_updates_idname
     bl_label = 'The blender will restart, save your changes before'
@@ -374,6 +379,10 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
             if not updates_downloaded():
                 warn = get_operator(Config.fb_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
+                _clear_updater_info()
+                CurrentStateExecutor.compute_current_panel_updater_state()
+                force_ui_redraw('VIEW_3D')
+                force_ui_redraw('PREFERENCES')
                 return {'CANCELLED'}
             CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL)
             import sys

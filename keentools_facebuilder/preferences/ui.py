@@ -68,6 +68,10 @@ def _set_all_user_preferences_to_default():
     UserPreferences.reset_all_to_defaults()
 
 
+def reset_updater_preferences_to_default():
+    UpdaterPreferences.reset_all_to_defaults()
+
+
 class FB_OT_UserPreferencesResetAll(bpy.types.Operator):
     bl_idname = Config.fb_user_preferences_reset_all
     bl_label = 'Reset All'

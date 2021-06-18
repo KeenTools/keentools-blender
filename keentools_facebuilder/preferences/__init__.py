@@ -21,7 +21,8 @@ This module contains everything connected with the addon preferences
 """
 
 from .operators import *
-from .ui import (FB_OT_UserPreferencesChanger,
+from .ui import (reset_updater_preferences_to_default,
+                 FB_OT_UserPreferencesChanger,
                  FB_OT_UserPreferencesGetColors,
                  FB_OT_UserPreferencesResetAll,
                  FB_OT_UserPreferencesResetAllWarning,
