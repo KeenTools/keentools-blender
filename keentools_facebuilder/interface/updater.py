@@ -74,9 +74,14 @@ def _latest_installation_skip_version():
     return settings.preferences().latest_installation_skip_version
 
 
-def preferences_updater_message():
-    settings = get_main_settings()
-    return bytes.fromhex(settings.preferences().updater_message).decode()
+_PREFERENCES_DATETIME_FORMAT = '%d/%m/%y %H:%M:%S'
+
+
+def _operator_available_time(previous_show_datetime_str):
+    if previous_show_datetime_str == '':
+        return True
+    previous_show_time = datetime.strptime(previous_show_datetime_str, _PREFERENCES_DATETIME_FORMAT)
+    return (datetime.now() - previous_show_time).total_seconds() // 3600 >= 24
 
 
 def preferences_current_active_updater_operator_info():
@@ -98,16 +103,6 @@ class UpdateState(IntEnum):
     INSTALL = 4
 
 
-def _state_to_message(state):
-    if state == UpdateState.UPDATES_AVAILABLE:
-        return FBUpdater.get_message()
-    elif state == UpdateState.DOWNLOADING:
-        return FBDownloadNotification.get_message()
-    elif state == UpdateState.INSTALL:
-        return FBInstallationReminder.get_message()
-    return ''
-
-
 class CurrentStateExecutor:
     _panel_updater_state = UpdateState.INITIAL
 
@@ -116,21 +111,20 @@ class CurrentStateExecutor:
         cls._panel_updater_state = state
         if set_preferences_updater_state:
             settings = get_main_settings()
-            settings.preferences().updater_message = str(_state_to_message(state).encode().hex())
             settings.preferences().updater_state = state
 
     @classmethod
     def compute_current_panel_updater_state(cls):
         downloaded_version = _version_to_tuple(_downloaded_version())
         if cls._panel_updater_state == UpdateState.INITIAL:
-            if FBUpdater.is_current_state():
+            if FBUpdater.is_available():
                 cls.set_current_panel_updater_state(UpdateState.UPDATES_AVAILABLE)
             elif downloaded_version > _version_to_tuple(Config.addon_version) and \
                     downloaded_version != _version_to_tuple(_latest_installation_skip_version()) and \
                     updates_downloaded() and FBInstallationReminder.is_available():
                 cls.set_current_panel_updater_state(UpdateState.INSTALL)
         elif cls._panel_updater_state == UpdateState.INSTALL:
-            if FBUpdater.is_current_state():
+            if FBUpdater.is_available():
                 cls.set_current_panel_updater_state(UpdateState.UPDATES_AVAILABLE)
         return cls._panel_updater_state
 
@@ -141,12 +135,17 @@ class FBUpdater:
     _parsed_response_content = None
 
     @classmethod
-    def is_active(cls):
-        return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.UPDATES_AVAILABLE
+    def is_available(cls):
+        settings = get_main_settings()
+        previous_show_time_str = settings.preferences().latest_show_datetime_update_reminder
+        latest_skip_version = settings.preferences().latest_update_skip_version
+        return _operator_available_time(previous_show_time_str) and cls.has_response() and \
+               _version_to_tuple(_downloaded_version()) < _version_to_tuple(cls.version()) and \
+               _version_to_tuple(latest_skip_version) != _version_to_tuple(cls.version())
 
     @classmethod
-    def is_current_state(cls):
-        return cls.has_response() and _version_to_tuple(_downloaded_version()) < _version_to_tuple(FBUpdater.version())
+    def is_active(cls):
+        return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.UPDATES_AVAILABLE
 
     @classmethod
     def has_response(cls):
@@ -159,10 +158,6 @@ class FBUpdater:
     @classmethod
     def set_response(cls, val):
         cls._response = val
-        if cls._response is not None:
-            settings = get_main_settings()
-            # for updater in preferences
-            settings.preferences().updates_version = str(cls.version())
 
     @classmethod
     def get_response(cls):
@@ -203,6 +198,12 @@ class FBUpdater:
         ver = pykeentools.Version(*bpy.app.version)
         uc = pykeentools.UpdatesChecker.instance(platform, ver)
         return uc
+
+    @classmethod
+    def remind_later(cls):
+        settings = get_main_settings()
+        settings.preferences().latest_show_datetime_update_reminder = \
+            datetime.now().strftime(_PREFERENCES_DATETIME_FORMAT)
 
     @classmethod
     def version(cls):
@@ -255,7 +256,7 @@ def _set_installing():
     DownloadedPartsExecutor.inc_downloaded_parts_count()
     if DownloadedPartsExecutor.get_downloaded_parts_count() == 2:
         settings = get_main_settings()
-        settings.preferences().downloaded_version = settings.preferences().updates_version
+        settings.preferences().downloaded_version = str(FBUpdater.version())
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INSTALL)
         force_ui_redraw('VIEW_3D')
         force_ui_redraw('PREFERENCES')
@@ -285,10 +286,7 @@ class FB_OT_RemindLater(bpy.types.Operator):
                                                              set_preferences_updater_state=False)
         logger = logging.getLogger(__name__)
         logger.debug('REMIND LATER')
-        uc = FBUpdater.get_update_checker()
-        res = FBUpdater.get_response()
-        uc.pause_update(res.plugin_name, res.version)
-        FBUpdater.clear_message()
+        FBUpdater.remind_later()
         return {'FINISHED'}
 
 
@@ -303,10 +301,8 @@ class FB_OT_SkipVersion(bpy.types.Operator):
                                                              set_preferences_updater_state=False)
         logger = logging.getLogger(__name__)
         logger.debug('SKIP THIS VERSION')
-        uc = FBUpdater.get_update_checker()
-        res = FBUpdater.get_response()
-        uc.skip_update(res.plugin_name, res.version)
-        FBUpdater.clear_message()
+        settings = get_main_settings()
+        settings.preferences().latest_update_skip_version = str(FBUpdater.version())
         return {'FINISHED'}
 
 
@@ -335,11 +331,8 @@ class FBInstallationReminder:
     @classmethod
     def is_available(cls):
         settings = get_main_settings()
-        previous_show_time_str = settings.preferences().latest_show_installation_reminder
-        if previous_show_time_str == '':
-            return True
-        previous_show_time = datetime.strptime(previous_show_time_str, '%d/%m/%y %H:%M:%S')
-        return (datetime.now() - previous_show_time).total_seconds() // 3600 >= 24
+        previous_show_time_str = settings.preferences().latest_show_datetime_installation_reminder
+        return _operator_available_time(previous_show_time_str)
 
     @classmethod
     def get_message(cls):
@@ -357,7 +350,8 @@ class FBInstallationReminder:
     @classmethod
     def remind_later(cls):
         settings = get_main_settings()
-        settings.preferences().latest_show_installation_reminder = datetime.now().strftime('%d/%m/%y %H:%M:%S')
+        settings.preferences().latest_show_datetime_installation_reminder = \
+            datetime.now().strftime(_PREFERENCES_DATETIME_FORMAT)
 
 
 def _start_new_blender(cmd_line):

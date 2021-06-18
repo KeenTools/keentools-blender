@@ -43,8 +43,8 @@ from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
                         draw_warning_labels, draw_long_labels)
 from ..preferences.user_preferences import UserPreferences, UpdaterPreferences
-from ..interface.updater import preferences_updater_message, \
-    preferences_current_active_updater_operator_info, FBUpdater, CurrentStateExecutor
+from ..interface.updater import preferences_current_active_updater_operator_info, \
+    FBUpdater, CurrentStateExecutor
 from ..utils.html import parse_html, render_main
 
 
@@ -211,22 +211,22 @@ def _universal_updater_setter(name):
 class FBAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = Config.addon_name
 
-    updater_message: bpy.props.StringProperty(
-        name='Updater message', default='',
-        get=_universal_updater_getter('updater_message', 'string'),
-        set=_universal_updater_setter('updater_message')
+    latest_show_datetime_update_reminder: bpy.props.StringProperty(
+        name='Latest show update reminder', default='',
+        get=_universal_updater_getter('latest_show_datetime_update_reminder', 'string'),
+        set=_universal_updater_setter('latest_show_datetime_update_reminder')
+    )
+
+    latest_update_skip_version: bpy.props.StringProperty(
+        name='Latest update skip version', default='',
+        get=_universal_updater_getter('latest_update_skip_version', 'string'),
+        set=_universal_updater_setter('latest_update_skip_version')
     )
 
     updater_state: bpy.props.IntProperty(
         name='Updater state', default=1,
         get=_universal_updater_getter('updater_state', 'int'),
         set=_universal_updater_setter('updater_state')
-    )
-
-    updates_version: bpy.props.StringProperty(
-        name='Updates version', default='',
-        get=_universal_updater_getter('updates_version', 'string'),
-        set=_universal_updater_setter('updates_version')
     )
 
     downloaded_version: bpy.props.StringProperty(
@@ -241,10 +241,10 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         set=_universal_updater_setter('latest_installation_skip_version')
     )
 
-    latest_show_installation_reminder: bpy.props.StringProperty(
+    latest_show_datetime_installation_reminder: bpy.props.StringProperty(
         name='Latest show installation reminder', default='',
-        get=_universal_updater_getter('latest_show_installation_reminder', 'string'),
-        set=_universal_updater_setter('latest_show_installation_reminder')
+        get=_universal_updater_getter('latest_show_datetime_installation_reminder', 'string'),
+        set=_universal_updater_setter('latest_show_datetime_installation_reminder')
     )
 
     license_accepted: bpy.props.BoolProperty(
