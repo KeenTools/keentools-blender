@@ -84,6 +84,18 @@ def _operator_available_time(previous_show_datetime_str):
     return (datetime.now() - previous_show_time).total_seconds() // 3600 >= 24
 
 
+def render_active_message(layout):
+    settings = get_main_settings()
+    updater_state = settings.preferences().updater_state
+    limit = 64
+    if updater_state == UpdateState.UPDATES_AVAILABLE:
+        FBUpdater.render_message(layout, limit=limit)
+    elif updater_state == UpdateState.DOWNLOADING:
+        FBDownloadNotification.render_message(layout, limit=limit)
+    elif updater_state == UpdateState.INSTALL:
+        FBInstallationReminder.render_message(layout, limit=limit)
+
+
 def preferences_current_active_updater_operator_info():
     settings = get_main_settings()
     updater_state = settings.preferences().updater_state
@@ -183,13 +195,6 @@ class FBUpdater:
         parsed = cls.get_parsed()
         if parsed is not None:
             render_main(layout, parsed, limit)
-
-    @classmethod
-    def get_message(cls):
-        res = cls.get_response()
-        if res is not None:
-            return skip_new_lines_and_spaces(res.message)
-        return ''
 
     @classmethod
     def get_update_checker(cls):
@@ -312,15 +317,11 @@ class FBDownloadNotification:
         return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.DOWNLOADING
 
     @classmethod
-    def get_message(cls):
+    def render_message(cls, layout, limit=32):
         _message_text = '<h3>Updates are downloading.</h3>' \
                         '<h3>We will let you know when they are ready for installation.</h3>'
-        return _message_text
-
-    @classmethod
-    def render_message(cls, layout, limit=32):
         if cls.is_active():
-            render_main(layout, parse_html(cls.get_message()), limit)
+            render_main(layout, parse_html(_message_text), limit)
 
 
 class FBInstallationReminder:
@@ -335,17 +336,12 @@ class FBInstallationReminder:
         return _operator_available_time(previous_show_time_str)
 
     @classmethod
-    def get_message(cls):
+    def render_message(cls, layout, limit=32):
         _message_text = 'The update {} is ready to be installed.' \
                         'Blender will be relaunched after installing the update automatically.' \
-                        'Please save your project before continuing. Proceed?'.\
+                        'Please save your project before continuing. Proceed?'. \
             format(_downloaded_version())
-        return _message_text
-
-    @classmethod
-    def render_message(cls, layout, limit=32):
-        if cls.is_active():
-            render_main(layout, parse_html(cls.get_message()), limit)
+        render_main(layout, parse_html(_message_text), limit)
 
     @classmethod
     def remind_later(cls):

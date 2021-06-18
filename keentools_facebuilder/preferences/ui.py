@@ -43,9 +43,8 @@ from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
                         draw_warning_labels, draw_long_labels)
 from ..preferences.user_preferences import UserPreferences, UpdaterPreferences
-from ..interface.updater import preferences_current_active_updater_operator_info, \
-    FBUpdater, CurrentStateExecutor
-from ..utils.html import parse_html, render_main
+from ..interface.updater import preferences_current_active_updater_operator_info, UpdateState, \
+    render_active_message, FBUpdater, CurrentStateExecutor
 
 
 def _multi_line_text_to_output_labels(layout, txt):
@@ -537,11 +536,11 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         if not FBUpdater.has_response_message():
             FBUpdater.init_updater()
             CurrentStateExecutor.compute_current_panel_updater_state()
-        message = preferences_updater_message()
-        if message != '':
+        settings = get_main_settings()
+        if settings.preferences().updater_state != UpdateState.INITIAL:
             layout.label(text='Update info:')
             box = layout.box()
-            render_main(box, parse_html(message), limit=64)
+            render_active_message(box)
             operator_info = preferences_current_active_updater_operator_info()
             if operator_info is not None:
                 box.operator(operator_info.idname,
