@@ -105,6 +105,7 @@ class Config:
 
     fb_tex_selector_idname = operators + '.tex_selector'
     fb_exit_pinmode_idname = operators + '.exit_pinmode'
+    fb_install_update_dialog_idname = operators + '.install_update_dialog'
 
     fb_create_blendshapes_idname = operators + '.create_blendshapes'
     fb_delete_blendshapes_idname = operators + '.delete_blendshapes'
@@ -288,4 +289,3 @@ class ErrorType:
     PktProblem = 6
     PktModelProblem = 7
     DownloadingProblem = 8
-    NotSavingProblem = 9

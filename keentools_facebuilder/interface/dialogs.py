@@ -120,11 +120,6 @@ class FB_OT_AddonWarning(Operator):
                               "If you want to manually update the add-on: remove the old add-on, "
                               "restart Blender and install the new version of the add-on."])
             self.width = 650
-        elif self.msg == ErrorType.NotSavingProblem:
-            self.set_content(['The project has some unsaved changes. '
-                              'Please save the project and then try installing the update again.',
-                              'Please note that selecting something in the scene is considered a change in Blender.'])
-            self.width = 550
         return context.window_manager.invoke_props_dialog(self, width=self.width)
 
 
@@ -245,7 +240,6 @@ class FB_OT_TexSelector(Operator):
                            "to create texture.")
 
         layout.prop(settings, 'tex_auto_preview')
-
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)

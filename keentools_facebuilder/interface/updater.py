@@ -406,8 +406,26 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Press to install the update and relaunch Blender'
 
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+
+        content = ['The project has some unsaved changes. '
+                   'Please save the project and then try installing the update again.',
+                   'Please note that selecting something in the scene is considered a change in Blender.',
+                   ' ']
+        for t in content:
+            col.label(text=t)
+
+        settings = get_main_settings()
+        col = layout.column()
+        col.alert = True
+        col.prop(settings, 'not_save_changes')
+
     def execute(self, context):
-        if not bpy.data.is_dirty:
+        settings = get_main_settings()
+        if not bpy.data.is_dirty or settings.not_save_changes:
             if not updates_downloaded():
                 warn = get_operator(Config.fb_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
@@ -425,8 +443,7 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
 
     def invoke(self, context, event):
         if bpy.data.is_dirty:
-            warn = get_operator(Config.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.NotSavingProblem)
+            return context.window_manager.invoke_props_dialog(self, width=550)
         return self.execute(context)
 
 

@@ -757,6 +757,12 @@ class FBSceneSettings(PropertyGroup):
         description='Defaults are loaded flag',
         name='Defaults loaded', default=False)
 
+    # Updater
+    not_save_changes: BoolProperty(
+        description="Don't save changes and install updates",
+        name="Don't save changes", default=False
+    )
+
     def reset_pinmode_id(self):
         self.pinmode_id = 'stop'
 
