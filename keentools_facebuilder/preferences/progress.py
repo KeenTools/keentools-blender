@@ -28,11 +28,11 @@ from ..utils.other import FBTimer, force_ui_redraw
 
 class FBUpdateProgressTimer(FBTimer):
     _UPDATE_INTERVAL = 0.5
+    _redraw_view3d = False
 
     @classmethod
     def _timer_should_not_work(cls):
-        return not cls.is_active() or \
-               not InstallationProgress.get_state()['active']
+        return not cls.is_active()
 
     @classmethod
     def _check_progress(cls):
@@ -41,14 +41,19 @@ class FBUpdateProgressTimer(FBTimer):
             logger.debug("STOP PROGRESS INACTIVE")
             cls.stop()
             force_ui_redraw("PREFERENCES")
+            if cls._redraw_view3d:
+                force_ui_redraw('VIEW_3D')
             return None
 
         logger.debug("NEXT CALL UPDATE TIMER")
         force_ui_redraw("PREFERENCES")
+        if cls._redraw_view3d:
+            force_ui_redraw('VIEW_3D')
         return cls._UPDATE_INTERVAL
 
     @classmethod
-    def start(cls):
+    def start(cls, redraw_view3d=False):
+        cls._redraw_view3d = redraw_view3d
         cls._start(cls._check_progress, persistent=False)
 
     @classmethod
@@ -92,6 +97,7 @@ class InstallationProgress:
         cls._state_mutex.acquire()
         try:
             cls.state = {'active': True, 'progress': 0.0, 'status': None}
+            FBUpdateProgressTimer.start()
         finally:
             cls._state_mutex.release()
 
@@ -100,6 +106,7 @@ class InstallationProgress:
         cls._state_mutex.acquire()
         try:
             cls.state = {'active': False, 'progress': 0.0, 'status': status}
+            FBUpdateProgressTimer.stop()
         finally:
             cls._state_mutex.release()
 
@@ -137,7 +144,6 @@ class InstallationProgress:
             return
 
         cls._on_start_download()
-        FBUpdateProgressTimer.start()
         logger.debug("START CORE LIBRARY DOWNLOAD")
         pkt_install_from_download_async(
             version=pkt_MINIMUM_VERSION_REQUIRED,

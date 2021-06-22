@@ -240,6 +240,8 @@ class FB_PT_DownloadNotification(Common, Panel):
         col = layout.column()
         col.scale_y = Config.text_scale_y
         FBDownloadNotification.render_message(col)
+        col = layout.column()
+        col.label(text="Downloading: {:.1f}%".format(100 * FBDownloadNotification.get_current_progress()))
 
     def draw(self, context):
         layout = self.layout

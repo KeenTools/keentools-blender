@@ -28,7 +28,7 @@ from .config import *
 
 __all__ = ['is_installed', 'uninstall_core', 'installation_status',
            'install_from_download_async', 'install_core_from_file',
-           'download_zips_async',
+           'download_addon_zip_async', 'download_core_zip_async',
            'updates_downloaded', 'loaded', 'module',
            'remove_downloaded_zips', 'install_downloaded_zips']
 
@@ -145,9 +145,42 @@ def _download_with_progress_callback(url, progress_callback,
     return result
 
 
+_MAX_CALLBACK_UPDATES_COUNT = 481
+
+
 def install_from_download(version=None, nightly=False, progress_callback=None,
                           final_callback=None, error_callback=None,
-                          max_callback_updates_count=481):
+                          max_callback_updates_count=_MAX_CALLBACK_UPDATES_COUNT):
+    url = download_core_path(version, nightly)
+
+    def install_process(data):
+        _install_from_stream(data, PartInstallation.CORE)
+
+    _download_and_process(url, install_process, progress_callback, final_callback,
+                          error_callback, max_callback_updates_count)
+
+
+def _download_zip(part_installation, version=None, nightly=False, progress_callback=None,
+                  final_callback=None, error_callback=None,
+                  max_callback_updates_count=_MAX_CALLBACK_UPDATES_COUNT):
+    url = None
+    if part_installation == PartInstallation.CORE:
+        url = download_core_path(version, nightly)
+    elif part_installation == PartInstallation.ADDON:
+        url = download_addon_path(version, nightly)
+
+    def write_process(data):
+        file_path = _download_file_path(part_installation)
+        with open(file_path, 'wb') as code:
+            code.write(data.read())
+
+    _download_and_process(url, write_process, progress_callback, final_callback,
+                          error_callback, max_callback_updates_count)
+
+
+def _download_and_process(url, process_callback, progress_callback=None,
+                          final_callback=None, error_callback=None,
+                          max_callback_updates_count=_MAX_CALLBACK_UPDATES_COUNT):
     """
     :param max_callback_updates_count: max progress_callback calls count
     :param progress_callback: callable getting progress in float [0, 1]
@@ -155,10 +188,9 @@ def install_from_download(version=None, nightly=False, progress_callback=None,
     :param nightly: latest nightly build will be installed if True. version should be None in that case
     """
     try:
-        url = download_core_path(version, nightly)
-        with _download_with_progress_callback(url,
-                progress_callback, max_callback_updates_count) as archive_data:
-            _install_from_stream(archive_data, PartInstallation.CORE)
+        with _download_with_progress_callback(url, progress_callback,
+                                              max_callback_updates_count) as archive_data:
+            process_callback(archive_data)
     except Exception as error:
         if error_callback is not None:
             error_callback(error)
@@ -204,33 +236,13 @@ def _download_file_name(part_installation):
     return file_name
 
 
-def _download_zip(part_installation, version=None, nightly=False, final_callback=None):
-    url = None
-    if part_installation == PartInstallation.CORE:
-        url = download_core_path(version, nightly)
-    elif part_installation == PartInstallation.ADDON:
-        url = download_addon_path(version, nightly)
-    import requests
-    r = requests.get(url)
-    file_path = _download_file_path(part_installation)
-    with open(file_path, 'wb') as code:
-        code.write(r.content)
-    if final_callback is not None:
-        final_callback()
-
-
-def download_zips_async(**kwargs):
-    _download_addon_zip_async(**kwargs)
-    _download_core_zip_async(**kwargs)
-
-
-def _download_addon_zip_async(**kwargs):
+def download_addon_zip_async(**kwargs):
     kwargs['part_installation'] = PartInstallation.ADDON
     t = Thread(target=_download_zip, kwargs=kwargs)
     t.start()
 
 
-def _download_core_zip_async(**kwargs):
+def download_core_zip_async(**kwargs):
     kwargs['part_installation'] = PartInstallation.CORE
     t = Thread(target=_download_zip, kwargs=kwargs)
     t.start()

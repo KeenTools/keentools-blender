@@ -27,11 +27,13 @@ import bpy
 from ..config import get_operator, get_main_settings, Config, ErrorType
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed,
-    updates_downloaded, download_zips_async, remove_downloaded_zips,
+    updates_downloaded, download_core_zip_async, download_addon_zip_async,
     install_downloaded_zips)
 
 from ..utils.html import parse_html, skip_new_lines_and_spaces, render_main
 from ..utils.other import force_ui_redraw
+
+from ..preferences.progress import FBUpdateProgressTimer
 
 
 def mock_response():
@@ -92,6 +94,8 @@ def render_active_message(layout):
         FBUpdater.render_message(layout, limit=limit)
     elif updater_state == UpdateState.DOWNLOADING:
         FBDownloadNotification.render_message(layout, limit=limit)
+        col = layout.column()
+        col.label(text="Downloading: {:.1f}%".format(100 * FBDownloadNotification.get_current_progress()))
     elif updater_state == UpdateState.INSTALL:
         FBInstallationReminder.render_message(layout, limit=limit)
 
@@ -228,43 +232,59 @@ class FBUpdater:
             cls.set_parsed(parsed)
 
 
-class DownloadedPartsExecutor:
-    _state_mutex = Lock()
-    _downloaded_parts = 0
-
-    @classmethod
-    def get_downloaded_parts_count(cls):
-        cls._state_mutex.acquire()
-        try:
-            return cls._downloaded_parts
-        finally:
-            cls._state_mutex.release()
-
-    @classmethod
-    def inc_downloaded_parts_count(cls):
-        cls._state_mutex.acquire()
-        try:
-            cls._downloaded_parts += 1
-        finally:
-            cls._state_mutex.release()
-
-    @classmethod
-    def nullify_downloaded_parts_count(cls):
-        cls._state_mutex.acquire()
-        try:
-            cls._downloaded_parts = 0
-        finally:
-            cls._state_mutex.release()
-
-
 def _set_installing():
-    DownloadedPartsExecutor.inc_downloaded_parts_count()
-    if DownloadedPartsExecutor.get_downloaded_parts_count() == 2:
-        settings = get_main_settings()
-        settings.preferences().downloaded_version = str(FBUpdater.version())
-        CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INSTALL)
-        force_ui_redraw('VIEW_3D')
-        force_ui_redraw('PREFERENCES')
+    settings = get_main_settings()
+    settings.preferences().downloaded_version = str(FBUpdater.version())
+    CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INSTALL)
+    force_ui_redraw('VIEW_3D')
+    force_ui_redraw('PREFERENCES')
+    FBDownloadNotification.init_progress(None)
+    FBUpdateProgressTimer.stop()
+
+
+class Progress:
+    def __init__(self, interval=(0.0, 1.0), parent=None):
+        self._interval = interval
+        self._parent = parent
+        self._progress = interval[0]
+        self._state_mutex = Lock()
+
+    def create_subprogress(self, interval):
+        return Progress(interval, self)
+
+    def progress_callback(self, progress):
+        self._state_mutex.acquire()
+
+        try:
+            next_progress = self._interval[0] + (self._interval[1] - self._interval[0]) * progress
+            self._progress = next_progress
+            if self._parent is not None:
+                self._parent.progress_callback(next_progress)
+        finally:
+            self._state_mutex.release()
+
+    def get_current_progress(self):
+        self._state_mutex.acquire()
+        try:
+            return self._progress
+        finally:
+            self._state_mutex.release()
+
+
+def _download_update():
+    common_progress = Progress()
+
+    core_download_progress = common_progress.create_subprogress((0.0, 0.75))
+    addon_download_progress = common_progress.create_subprogress((0.75, 1.0))
+
+    def core_download_callback():
+        download_addon_zip_async(final_callback=_set_installing,
+                                 progress_callback=addon_download_progress.progress_callback)
+
+    download_core_zip_async(final_callback=core_download_callback,
+                            progress_callback=core_download_progress.progress_callback)
+
+    return common_progress
 
 
 class FB_OT_DownloadTheUpdate(bpy.types.Operator):
@@ -277,8 +297,8 @@ class FB_OT_DownloadTheUpdate(bpy.types.Operator):
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.DOWNLOADING)
         force_ui_redraw('VIEW_3D')
         force_ui_redraw('PREFERENCES')
-        DownloadedPartsExecutor.nullify_downloaded_parts_count()
-        download_zips_async(final_callback=_set_installing)
+        FBUpdateProgressTimer.start(redraw_view3d=True)
+        FBDownloadNotification.init_progress(_download_update())
         return {'FINISHED'}
 
 
@@ -314,6 +334,16 @@ class FB_OT_SkipVersion(bpy.types.Operator):
 
 
 class FBDownloadNotification:
+    _download_update_progress = None
+
+    @classmethod
+    def init_progress(cls, progress):
+        cls._download_update_progress = progress
+
+    @classmethod
+    def get_current_progress(cls):
+        return cls._download_update_progress.get_current_progress()
+
     @classmethod
     def is_active(cls):
         return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.DOWNLOADING
