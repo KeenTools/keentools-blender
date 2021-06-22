@@ -172,7 +172,7 @@ def _download_zip(part_installation, version=None, nightly=False, progress_callb
     def write_process(data):
         file_path = _download_file_path(part_installation)
         with open(file_path, 'wb') as code:
-            code.write(data.read())
+            code.write(data.getbuffer())
 
     _download_and_process(url, write_process, progress_callback, final_callback,
                           error_callback, max_callback_updates_count)
