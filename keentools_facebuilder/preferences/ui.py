@@ -537,9 +537,8 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         draw_warning_labels(layout, arr, alert=False, icon='INFO')
 
     def _draw_updater_info(self, layout):
-        if not FBUpdater.has_response_message():
-            FBUpdater.init_updater()
-            CurrentStateExecutor.compute_current_panel_updater_state()
+        FBUpdater.init_updater()
+        CurrentStateExecutor.compute_current_panel_updater_state()
         settings = get_main_settings()
         if settings.preferences().updater_state != UpdateState.INITIAL:
             layout.label(text='Update available:')
