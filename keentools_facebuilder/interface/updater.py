@@ -90,6 +90,7 @@ def render_active_message(layout):
     settings = get_main_settings()
     updater_state = settings.preferences().updater_state
     limit = 64
+    layout.scale_y = Config.text_scale_y
     if updater_state == UpdateState.UPDATES_AVAILABLE:
         FBUpdater.render_message(layout, limit=limit)
     elif updater_state == UpdateState.DOWNLOADING:
