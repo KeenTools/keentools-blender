@@ -112,6 +112,13 @@ class FB_OT_AddonWarning(Operator):
                 "Model data cannot be loaded. You need to reinstall "
                 "FaceBuilder."
             ])
+        elif self.msg == ErrorType.PktOldModelProblem:
+            self.set_content([
+                "KeenTools Model Version mismatch",
+                " ",
+                "Failed to load face data for this model version. ",
+                "You should use another build to load this version."
+            ])
         return context.window_manager.invoke_props_dialog(self, width=400)
 
 

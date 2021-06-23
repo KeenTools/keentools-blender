@@ -118,18 +118,21 @@ class FBLoader:
         logger.debug('VIEWPORT SHADERS/STOPPER HAS BEEN STOPPED')
 
     @classmethod
-    def out_pinmode(cls, headnum):
-        logger = logging.getLogger(__name__)
-        cls.save_pinmode_state(headnum)
+    def out_pinmode_without_save(cls, headnum):
         cls.stop_viewport_shaders()
-
         settings = get_main_settings()
         head = settings.get_head(headnum)
         if head and head.headobj:
             head.headobj.hide_set(False)
             unhide_viewport_ui_element_from_object(head.headobj)
         settings.pinmode = False
-        logger.debug("OUT PINMODE")
+        logger = logging.getLogger(__name__)
+        logger.debug('OUT PINMODE')
+
+    @classmethod
+    def out_pinmode(cls, headnum):
+        cls.save_pinmode_state(headnum)
+        cls.out_pinmode_without_save(headnum)
 
     @classmethod
     def save_fb_serial_str(cls, headnum):
@@ -323,11 +326,22 @@ class FBLoader:
     @classmethod
     def load_model_from_head(cls, head):
         fb = cls.get_builder()
-        if not fb.deserialize(head.get_serial_str()):
+        try:
+            if not fb.deserialize(head.get_serial_str()):
+                logger = logging.getLogger(__name__)
+                logger.warning('DESERIALIZE ERROR: {}'.format(
+                    head.get_serial_str()))
+                return False
+        except pkt_module().ModelLoadingException as err:
             logger = logging.getLogger(__name__)
-            logger.warning('DESERIALIZE ERROR: {}'.format(
-                head.get_serial_str()))
-            return False
+            logger.error('DESERIALIZE ModelLoadingException: {}'.format(str(err)))
+            logger.error('SERIAL: {}'.format(head.get_serial_str()))
+            return None
+        except Exception as err:
+            logger = logging.getLogger(__name__)
+            logger.error('DESERIALIZE Unknown Exception: {}'.format(str(err)))
+            logger.error('SERIAL: {}'.format(head.get_serial_str()))
+            return None
         return True
 
     @classmethod

@@ -229,12 +229,24 @@ class FB_OT_PinMode(bpy.types.Operator):
                                                     settings.current_camnum))
 
         # Start working with current model
-        FBLoader.load_model(settings.current_headnum)
+        if FBLoader.load_model(settings.current_headnum) is None:
+            logger.error('MODEL CANNOT BE LOADED IN PINMODE')
+
+            FBLoader.out_pinmode_without_save(self.headnum)
+            cameras.exit_localview(context)
+
+            warn = get_operator(Config.fb_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.PktOldModelProblem)
+            return {'CANCELLED'}
 
         if not FBLoader.check_mesh(headobj):
             fb = FBLoader.get_builder()
             logger.error('MESH IS CORRUPTED {} != {}'.format(
                 len(headobj.data.vertices), len(fb.applied_args_vertices())))
+
+            FBLoader.out_pinmode_without_save(self.headnum)
+            cameras.exit_localview(context)
+
             warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
             return {'CANCELLED'}
