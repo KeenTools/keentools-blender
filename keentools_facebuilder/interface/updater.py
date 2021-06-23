@@ -458,7 +458,6 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
 
         settings = get_main_settings()
         col = layout.column()
-        col.alert = True
         col.prop(settings, 'not_save_changes')
 
     def execute(self, context):
