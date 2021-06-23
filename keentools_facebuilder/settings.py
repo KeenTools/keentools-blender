@@ -759,8 +759,8 @@ class FBSceneSettings(PropertyGroup):
 
     # Updater
     not_save_changes: BoolProperty(
-        description="Don't save changes and install updates",
-        name="Don't save changes", default=False
+        description="Discard changes, install the update and restart Blender",
+        name="Discard changes, install the update and restart Blender", default=False
     )
 
     def reset_pinmode_id(self):

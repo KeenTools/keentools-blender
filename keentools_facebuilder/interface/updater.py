@@ -96,9 +96,7 @@ def render_active_message(layout):
     if updater_state == UpdateState.UPDATES_AVAILABLE:
         FBUpdater.render_message(layout, limit=limit)
     elif updater_state == UpdateState.DOWNLOADING:
-        FBDownloadNotification.render_message(layout, limit=limit)
-        col = layout.column()
-        col.label(text="Downloading: {:.1f}%".format(100 * FBDownloadNotification.get_current_progress()))
+        FBDownloadNotification.render_message(layout)
     elif updater_state == UpdateState.INSTALL:
         FBInstallationReminder.render_message(layout, limit=limit)
 
@@ -110,7 +108,7 @@ def preferences_current_active_updater_operator_info():
     if updater_state == UpdateState.UPDATES_AVAILABLE:
         return OperatorInfo(Config.fb_download_the_update_idname, 'Download the update', 'IMPORT')
     elif updater_state == UpdateState.INSTALL:
-        return OperatorInfo(Config.fb_install_updates_idname, 'Update and restart blender', 'FILE_REFRESH')
+        return OperatorInfo(Config.fb_install_updates_idname, 'Install and restart', 'FILE_REFRESH')
     else:
         return None
 
@@ -352,11 +350,10 @@ class FBDownloadNotification:
         return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.DOWNLOADING
 
     @classmethod
-    def render_message(cls, layout, limit=32):
-        _message_text = "<h3>Downloading the update.</h3>" \
-                        "<h3>You'll be notified when it's ready to install.</h3>"
+    def render_message(cls, layout):
         if cls.is_active():
-            render_main(layout, parse_html(_message_text), limit)
+            col = layout.column()
+            col.label(text="Downloading the update: {:.0f}%".format(100 * FBDownloadNotification.get_current_progress()))
 
 
 class FBInstallationReminder:
