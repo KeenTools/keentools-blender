@@ -275,8 +275,8 @@ class Progress:
 def _download_update():
     common_progress = Progress()
 
-    core_download_progress = common_progress.create_subprogress((0.0, 0.75))
-    addon_download_progress = common_progress.create_subprogress((0.75, 1.0))
+    core_download_progress = common_progress.create_subprogress((0.0, 0.98))
+    addon_download_progress = common_progress.create_subprogress((0.98, 1.0))
 
     def core_download_callback():
         download_addon_zip_async(final_callback=_set_installing,
