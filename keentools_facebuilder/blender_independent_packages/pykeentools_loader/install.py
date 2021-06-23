@@ -109,10 +109,10 @@ def _install_from_stream(file_like_object, part_installation):
 
 
 def _download_with_progress_callback(url, progress_callback,
-                                     max_callback_updates_count):
+                                     max_callback_updates_count, timeout):
     import requests
     import io
-    response = requests.get(url, stream=True)
+    response = requests.get(url, stream=True, timeout=timeout)
     if progress_callback is None:
         return io.BytesIO(response.content)
 
@@ -157,10 +157,10 @@ def install_from_download(version=None, nightly=False, progress_callback=None,
         _install_from_stream(data, PartInstallation.CORE)
 
     _download_and_process(url, install_process, progress_callback, final_callback,
-                          error_callback, max_callback_updates_count)
+                          error_callback, max_callback_updates_count, None)
 
 
-def _download_zip(part_installation, version=None, nightly=False, progress_callback=None,
+def _download_zip(part_installation, timeout, version=None, nightly=False, progress_callback=None,
                   final_callback=None, error_callback=None,
                   max_callback_updates_count=_MAX_CALLBACK_UPDATES_COUNT):
     url = None
@@ -175,12 +175,12 @@ def _download_zip(part_installation, version=None, nightly=False, progress_callb
             code.write(data.getbuffer())
 
     _download_and_process(url, write_process, progress_callback, final_callback,
-                          error_callback, max_callback_updates_count)
+                          error_callback, max_callback_updates_count, timeout)
 
 
 def _download_and_process(url, process_callback, progress_callback=None,
                           final_callback=None, error_callback=None,
-                          max_callback_updates_count=_MAX_CALLBACK_UPDATES_COUNT):
+                          max_callback_updates_count=_MAX_CALLBACK_UPDATES_COUNT, timeout=None):
     """
     :param max_callback_updates_count: max progress_callback calls count
     :param progress_callback: callable getting progress in float [0, 1]
@@ -189,7 +189,7 @@ def _download_and_process(url, process_callback, progress_callback=None,
     """
     try:
         with _download_with_progress_callback(url, progress_callback,
-                                              max_callback_updates_count) as archive_data:
+                                              max_callback_updates_count, timeout) as archive_data:
             process_callback(archive_data)
     except Exception as error:
         if error_callback is not None:

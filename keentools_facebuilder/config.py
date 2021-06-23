@@ -131,6 +131,7 @@ class Config:
     fb_camera_panel_idname = _PT + 'camera_panel'
     fb_update_panel_idname = _PT + 'update_panel'
     fb_download_notification_panel_idname = _PT + 'download_notification'
+    fb_downloading_problem_panel_idname = _PT + 'downloading_problem'
     fb_updates_installation_panel_idname = _PT + 'updates_installation_panel'
     fb_views_panel_idname = _PT + 'views_panel'
     fb_exif_panel_idname = _PT + 'exif_panel'
@@ -153,6 +154,8 @@ class Config:
     fb_open_url_idname = operators + '.open_url'
     fb_remind_later_idname = operators + '.remind_later'
     fb_skip_version_idname = operators + '.skip_version'
+
+    fb_come_back_to_update_idname = operators + '.come_back_to_update'
 
     fb_install_updates_idname = operators + '.install_updates'
     fb_remind_install_later_idname = operators + '.remind_install_later'

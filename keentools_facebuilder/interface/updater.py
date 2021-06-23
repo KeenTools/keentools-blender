@@ -97,18 +97,23 @@ def render_active_message(layout):
         FBUpdater.render_message(layout, limit=limit)
     elif updater_state == UpdateState.DOWNLOADING:
         FBDownloadNotification.render_message(layout)
+    elif updater_state == UpdateState.DOWNLOADING_PROBLEM:
+        FBDownloadingProblem.render_message(layout, limit=limit)
     elif updater_state == UpdateState.INSTALL:
         FBInstallationReminder.render_message(layout, limit=limit)
 
 
-def preferences_current_active_updater_operator_info():
+def preferences_current_active_updater_operators_info():
     settings = get_main_settings()
     updater_state = settings.preferences().updater_state
     OperatorInfo = namedtuple('OperatorInfo', 'idname, text, icon')
     if updater_state == UpdateState.UPDATES_AVAILABLE:
-        return OperatorInfo(Config.fb_download_the_update_idname, 'Download the update', 'IMPORT')
+        return [OperatorInfo(Config.fb_download_the_update_idname, 'Download the update', 'IMPORT')]
+    if updater_state == UpdateState.DOWNLOADING_PROBLEM:
+        return [OperatorInfo(Config.fb_download_the_update_idname, 'Download the update', 'IMPORT'),
+                OperatorInfo(Config.fb_come_back_to_update_idname, 'Cancel', 'BACK')]
     elif updater_state == UpdateState.INSTALL:
-        return OperatorInfo(Config.fb_install_updates_idname, 'Install and restart', 'FILE_REFRESH')
+        return [OperatorInfo(Config.fb_install_updates_idname, 'Install and restart', 'FILE_REFRESH')]
     else:
         return None
 
@@ -117,7 +122,8 @@ class UpdateState(IntEnum):
     INITIAL = 1
     UPDATES_AVAILABLE = 2
     DOWNLOADING = 3
-    INSTALL = 4
+    DOWNLOADING_PROBLEM = 4
+    INSTALL = 5
 
 
 class CurrentStateExecutor:
@@ -126,9 +132,11 @@ class CurrentStateExecutor:
     @classmethod
     def set_current_panel_updater_state(cls, state, set_preferences_updater_state=True):
         cls._panel_updater_state = state
+        force_ui_redraw('VIEW_3D')
         if set_preferences_updater_state:
             settings = get_main_settings()
             settings.preferences().updater_state = state
+            force_ui_redraw('PREFERENCES')
 
     @classmethod
     def compute_current_panel_updater_state(cls):
@@ -237,8 +245,6 @@ def _set_installing():
     settings = get_main_settings()
     settings.preferences().downloaded_version = str(FBUpdater.version())
     CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INSTALL)
-    force_ui_redraw('VIEW_3D')
-    force_ui_redraw('PREFERENCES')
     FBDownloadNotification.init_progress(None)
     FBUpdateProgressTimer.stop()
 
@@ -280,10 +286,14 @@ def _download_update():
 
     def core_download_callback():
         download_addon_zip_async(final_callback=_set_installing,
-                                 progress_callback=addon_download_progress.progress_callback)
+                                 progress_callback=addon_download_progress.progress_callback,
+                                 error_callback=on_downloading_problem,
+                                 timeout=30)
 
     download_core_zip_async(final_callback=core_download_callback,
-                            progress_callback=core_download_progress.progress_callback)
+                            progress_callback=core_download_progress.progress_callback,
+                            error_callback=on_downloading_problem,
+                            timeout=30)
 
     return common_progress
 
@@ -296,8 +306,6 @@ class FB_OT_DownloadTheUpdate(bpy.types.Operator):
 
     def execute(self, context):
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.DOWNLOADING)
-        force_ui_redraw('VIEW_3D')
-        force_ui_redraw('PREFERENCES')
         FBUpdateProgressTimer.start(redraw_view3d=True)
         FBDownloadNotification.init_progress(_download_update())
         return {'FINISHED'}
@@ -334,6 +342,12 @@ class FB_OT_SkipVersion(bpy.types.Operator):
         return {'FINISHED'}
 
 
+def on_downloading_problem(error):
+    CurrentStateExecutor.set_current_panel_updater_state(UpdateState.DOWNLOADING_PROBLEM)
+    FBDownloadNotification.init_progress(None)
+    FBUpdateProgressTimer.stop()
+
+
 class FBDownloadNotification:
     _download_update_progress = None
 
@@ -354,6 +368,31 @@ class FBDownloadNotification:
         if cls.is_active():
             col = layout.column()
             col.label(text="Downloading the update: {:.0f}%".format(100 * FBDownloadNotification.get_current_progress()))
+
+
+class FBDownloadingProblem:
+    @classmethod
+    def is_active(cls):
+        return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.DOWNLOADING_PROBLEM
+
+    @classmethod
+    def render_message(cls, layout, limit=32):
+        if cls.is_active():
+            layout.alert = True
+            _message_text = 'Downloading problem'
+            render_main(layout, parse_html(_message_text), limit)
+
+
+class FB_OT_ComeBackToUpdate(bpy.types.Operator):
+    bl_idname = Config.fb_come_back_to_update_idname
+    bl_label = 'Cancel'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Come back to update'
+
+    def execute(self, context):
+        _clear_updater_info()
+        CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL)
+        return {'FINISHED'}
 
 
 class FBInstallationReminder:
@@ -425,15 +464,13 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
     def execute(self, context):
         settings = get_main_settings()
         if not bpy.data.is_dirty or settings.not_save_changes:
+            CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL)
             if not updates_downloaded():
                 warn = get_operator(Config.fb_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
                 _clear_updater_info()
                 CurrentStateExecutor.compute_current_panel_updater_state()
-                force_ui_redraw('VIEW_3D')
-                force_ui_redraw('PREFERENCES')
                 return {'CANCELLED'}
-            CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL)
             import sys
             import atexit
             atexit.register(_start_new_blender, sys.argv[0])

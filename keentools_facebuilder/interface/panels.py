@@ -18,7 +18,7 @@
 
 from bpy.types import Panel
 
-from .updater import (FBUpdater, FBDownloadNotification, FBInstallationReminder)
+from .updater import (FBUpdater, FBDownloadNotification, FBDownloadingProblem, FBInstallationReminder)
 from ..config import Config, get_main_settings
 from ..messages import draw_labels
 import re
@@ -239,6 +239,28 @@ class FB_PT_DownloadNotification(Common, Panel):
     def _draw_response(self, layout):
         FBDownloadNotification.render_message(layout)
 
+    def draw(self, context):
+        layout = self.layout
+        self._draw_response(layout)
+
+
+class FB_PT_DownloadingProblemPanel(Common, Panel):
+    bl_idname = Config.fb_downloading_problem_panel_idname
+    bl_label = 'Downloading problem'
+
+    @classmethod
+    def poll(cls, context):
+        return FBDownloadingProblem.is_active()
+
+    def _draw_response(self, layout):
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        FBDownloadingProblem.render_message(col)
+
+        layout.operator(Config.fb_download_the_update_idname,
+                        text='Try again', icon='IMPORT')
+        layout.operator(Config.fb_come_back_to_update_idname,
+                        text='Cancel', icon='BACK')
 
     def draw(self, context):
         layout = self.layout

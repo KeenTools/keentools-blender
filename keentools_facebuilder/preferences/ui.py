@@ -43,7 +43,7 @@ from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
                         draw_warning_labels, draw_long_labels)
 from ..preferences.user_preferences import UserPreferences, UpdaterPreferences
-from ..interface.updater import preferences_current_active_updater_operator_info, UpdateState, \
+from ..interface.updater import preferences_current_active_updater_operators_info, UpdateState, \
     render_active_message, FBUpdater, CurrentStateExecutor
 
 
@@ -545,10 +545,11 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             box = layout.box()
             col = box.column()
             render_active_message(col)
-            operator_info = preferences_current_active_updater_operator_info()
-            if operator_info is not None:
-                box.operator(operator_info.idname,
-                             text=operator_info.text, icon=operator_info.icon)
+            operators_info = preferences_current_active_updater_operators_info()
+            if operators_info is not None:
+                box = box.split(factor=1 / len(operators_info))
+                for info in operators_info:
+                    box.operator(info.idname, text=info.text, icon=info.icon)
 
     def _draw_old_addon(self, layout):
         box = layout.box()
