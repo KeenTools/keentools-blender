@@ -57,13 +57,15 @@ def mock_response():
 
 
 def _version_to_tuple(version):
+    if version is None:
+        return tuple([0, 0, 0])
     if type(version).__name__ == 'str':
         if version == "":
             return tuple([0, 0, 0])
         return tuple(map(int, version.split('.')))
     if type(version).__name__ == 'Version':
         return tuple([version.major, version.minor, version.patch])
-    return version
+    assert False
 
 
 def _downloaded_version():
