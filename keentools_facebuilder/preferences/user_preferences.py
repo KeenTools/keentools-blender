@@ -112,3 +112,10 @@ class UserPreferences:
         cls.clear_dict()
         for name in cls._defaults.keys():
             cls.set_value(name, cls._defaults[name]['value'])
+
+
+class UpdaterPreferences(UserPreferences):
+    _DICT_NAME = Config.updater_preferences_dict_name
+    _defaults = Config.default_updater_preferences
+    _str_defaults = {k: str(Config.default_updater_preferences[k]['value'])
+                     for k in Config.default_updater_preferences.keys()}

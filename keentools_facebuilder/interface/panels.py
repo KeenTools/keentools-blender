@@ -18,7 +18,7 @@
 
 from bpy.types import Panel
 
-from .updater import FBUpdater
+from .updater import (FBUpdater, FBDownloadNotification, FBDownloadingProblem, FBInstallationReminder)
 from ..config import Config, get_main_settings
 from ..messages import draw_labels
 import re
@@ -114,7 +114,6 @@ class FB_PT_HeaderPanel(Common, Panel):
         col.label(text="a new head using:")
         col.label(text="Add > Mesh > FaceBuilder")
 
-
     def _pkt_install_offer(self, layout):
         col = layout.column()
         col.scale_y = Config.text_scale_y
@@ -189,6 +188,8 @@ class FB_PT_HeaderPanel(Common, Panel):
 
         elif state == 'NO_HEADS':
             self._draw_start_panel(layout)
+            if not FBUpdater.has_response_message():
+                FBUpdater.init_updater()
             return
 
         else:
@@ -203,22 +204,89 @@ class FB_PT_UpdatePanel(Common, Panel):
 
     @classmethod
     def poll(cls, context):
-        return FBUpdater.has_response_message() and _show_all_panels()
+        return FBUpdater.is_active()
 
     def _draw_response(self, layout):
         col = layout.column()
         col.scale_y = Config.text_scale_y
+        if not FBUpdater.is_active():
+            return
         FBUpdater.render_message(col)
 
         res = FBUpdater.get_response()
         if res is None:
             return
-        op = layout.operator(Config.fb_open_url_idname,
-            text='Open downloads page', icon='URL')
-        op.url = res.download_url
+        layout.operator(Config.fb_download_the_update_idname,
+            text='Download the update', icon='IMPORT')
         layout.operator(Config.fb_remind_later_idname,
             text='Remind tomorrow', icon='RECOVER_LAST')
         layout.operator(Config.fb_skip_version_idname,
+            text='Skip this version', icon='X')
+
+    def draw(self, context):
+        layout = self.layout
+        self._draw_response(layout)
+
+
+class FB_PT_DownloadNotification(Common, Panel):
+    bl_idname = Config.fb_download_notification_panel_idname
+    bl_label = 'Update available'
+
+    @classmethod
+    def poll(cls, context):
+        return FBDownloadNotification.is_active()
+
+    def _draw_response(self, layout):
+        FBDownloadNotification.render_message(layout)
+
+    def draw(self, context):
+        layout = self.layout
+        self._draw_response(layout)
+
+
+class FB_PT_DownloadingProblemPanel(Common, Panel):
+    bl_idname = Config.fb_downloading_problem_panel_idname
+    bl_label = 'Downloading problem'
+
+    @classmethod
+    def poll(cls, context):
+        return FBDownloadingProblem.is_active()
+
+    def _draw_response(self, layout):
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        FBDownloadingProblem.render_message(col)
+
+        layout.operator(Config.fb_retry_download_the_update_idname,
+                        text='Try again', icon='FILE_REFRESH')
+        layout.operator(Config.fb_come_back_to_update_idname,
+                        text='Cancel', icon='PANEL_CLOSE')
+
+    def draw(self, context):
+        layout = self.layout
+        self._draw_response(layout)
+
+
+class FB_PT_UpdatesInstallationPanel(Common, Panel):
+    bl_idname = Config.fb_updates_installation_panel_idname
+    bl_label = 'Update available'
+
+    @classmethod
+    def poll(cls, context):
+        return FBInstallationReminder.is_active()
+
+    def _draw_response(self, layout):
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        FBInstallationReminder.render_message(col)
+
+        if not FBInstallationReminder.is_active():
+            return
+        layout.operator(Config.fb_install_updates_idname,
+            text='Install and restart', icon='FILE_REFRESH')
+        layout.operator(Config.fb_remind_install_later_idname,
+            text='Remind tomorrow', icon='RECOVER_LAST')
+        layout.operator(Config.fb_skip_installation_idname,
             text='Skip this version', icon='X')
 
     def draw(self, context):

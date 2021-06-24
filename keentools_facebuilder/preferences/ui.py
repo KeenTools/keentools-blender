@@ -42,7 +42,9 @@ from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
                         draw_warning_labels, draw_long_labels)
-from ..preferences.user_preferences import UserPreferences
+from ..preferences.user_preferences import UserPreferences, UpdaterPreferences
+from ..interface.updater import preferences_current_active_updater_operators_info, UpdateState, \
+    render_active_message, FBUpdater, CurrentStateExecutor
 
 
 def _multi_line_text_to_output_labels(layout, txt):
@@ -64,6 +66,10 @@ def _reset_user_preferences_parameter_to_default(name):
 
 def _set_all_user_preferences_to_default():
     UserPreferences.reset_all_to_defaults()
+
+
+def reset_updater_preferences_to_default():
+    UpdaterPreferences.reset_all_to_defaults()
 
 
 class FB_OT_UserPreferencesResetAll(bpy.types.Operator):
@@ -193,8 +199,56 @@ def _universal_setter(name):
     return _setter
 
 
+def _universal_updater_getter(name, type):
+    def _getter(self):
+        return UpdaterPreferences.get_value_safe(name, type)
+    return _getter
+
+
+def _universal_updater_setter(name):
+    def _setter(self, value):
+        UpdaterPreferences.set_value(name, value)
+    return _setter
+
+
 class FBAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = Config.addon_name
+
+    latest_show_datetime_update_reminder: bpy.props.StringProperty(
+        name='Latest show update reminder', default='',
+        get=_universal_updater_getter('latest_show_datetime_update_reminder', 'string'),
+        set=_universal_updater_setter('latest_show_datetime_update_reminder')
+    )
+
+    latest_update_skip_version: bpy.props.StringProperty(
+        name='Latest update skip version', default='',
+        get=_universal_updater_getter('latest_update_skip_version', 'string'),
+        set=_universal_updater_setter('latest_update_skip_version')
+    )
+
+    updater_state: bpy.props.IntProperty(
+        name='Updater state', default=1,
+        get=_universal_updater_getter('updater_state', 'int'),
+        set=_universal_updater_setter('updater_state')
+    )
+
+    downloaded_version: bpy.props.StringProperty(
+        name='Downloaded version', default='',
+        get=_universal_updater_getter('downloaded_version', 'string'),
+        set=_universal_updater_setter('downloaded_version')
+    )
+
+    latest_installation_skip_version: bpy.props.StringProperty(
+        name='Latest installation skip version', default='',
+        get=_universal_updater_getter('latest_installation_skip_version', 'string'),
+        set=_universal_updater_setter('latest_installation_skip_version')
+    )
+
+    latest_show_datetime_installation_reminder: bpy.props.StringProperty(
+        name='Latest show installation reminder', default='',
+        get=_universal_updater_getter('latest_show_datetime_installation_reminder', 'string'),
+        set=_universal_updater_setter('latest_show_datetime_installation_reminder')
+    )
 
     license_accepted: bpy.props.BoolProperty(
         name='I have read and I agree to KeenTools End-user License Agreement',
@@ -482,6 +536,21 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                'The core library has been installed successfully']
         draw_warning_labels(layout, arr, alert=False, icon='INFO')
 
+    def _draw_updater_info(self, layout):
+        FBUpdater.init_updater()
+        CurrentStateExecutor.compute_current_panel_updater_state()
+        settings = get_main_settings()
+        if settings.preferences().updater_state != UpdateState.INITIAL:
+            layout.label(text='Update available:')
+            box = layout.box()
+            col = box.column()
+            render_active_message(col)
+            operators_info = preferences_current_active_updater_operators_info()
+            if operators_info is not None:
+                box = box.split(factor=1 / len(operators_info))
+                for info in operators_info:
+                    box.operator(info.idname, text=info.text, icon=info.icon)
+
     def _draw_old_addon(self, layout):
         box = layout.box()
         draw_warning_labels(box, ERROR_MESSAGES['OLD_ADDON'])
@@ -602,6 +671,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         if cached_status[1] == 'PYKEENTOOLS_OK':
             try:
                 self._draw_version(box)
+                self._draw_updater_info(layout)
                 self._draw_license_info(layout)
                 self._draw_user_preferences(layout)
                 return

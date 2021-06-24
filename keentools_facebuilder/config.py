@@ -44,6 +44,7 @@ class Config:
     default_fb_camera_name = 'fbCamera'
 
     user_preferences_dict_name = 'keentools_facebuilder_addon'
+    updater_preferences_dict_name = 'keentools_updater'
 
     addon_search = 'KeenTools'
     addon_global_var_name = prefix + '_settings'
@@ -104,6 +105,7 @@ class Config:
 
     fb_tex_selector_idname = operators + '.tex_selector'
     fb_exit_pinmode_idname = operators + '.exit_pinmode'
+    fb_install_update_dialog_idname = operators + '.install_update_dialog'
 
     fb_create_blendshapes_idname = operators + '.create_blendshapes'
     fb_delete_blendshapes_idname = operators + '.delete_blendshapes'
@@ -128,6 +130,9 @@ class Config:
     fb_header_panel_idname = _PT + 'header_panel'
     fb_camera_panel_idname = _PT + 'camera_panel'
     fb_update_panel_idname = _PT + 'update_panel'
+    fb_download_notification_panel_idname = _PT + 'download_notification'
+    fb_downloading_problem_panel_idname = _PT + 'downloading_problem'
+    fb_updates_installation_panel_idname = _PT + 'updates_installation_panel'
     fb_views_panel_idname = _PT + 'views_panel'
     fb_exif_panel_idname = _PT + 'exif_panel'
     fb_texture_panel_idname = _PT + 'texture_panel'
@@ -145,9 +150,17 @@ class Config:
     fb_help_texture_idname = operators + '.help_texture'
     fb_help_blendshapes_idname = operators + '.help_blendshapes'
 
+    fb_download_the_update_idname = operators + '.download_the_update'
+    fb_retry_download_the_update_idname = operators + '.retry_download_the_update'
     fb_open_url_idname = operators + '.open_url'
     fb_remind_later_idname = operators + '.remind_later'
     fb_skip_version_idname = operators + '.skip_version'
+
+    fb_come_back_to_update_idname = operators + '.come_back_to_update'
+
+    fb_install_updates_idname = operators + '.install_updates'
+    fb_remind_install_later_idname = operators + '.remind_install_later'
+    fb_skip_installation_idname = operators + '.skip_installation'
 
     fb_uninstall_core_idname = operators + '.uninstall_core'
 
@@ -238,6 +251,16 @@ class Config:
         'wireframe_opacity': {'value': wireframe_opacity, 'type': 'float'}
     }
 
+    default_updater_preferences = {
+        'latest_show_datetime_update_reminder': {'value': '', 'type': 'string'},
+        'latest_update_skip_version': {'value': '', 'type': 'string'},
+        'updater_state': {'value': 1, 'type': 'int'},
+        'downloaded_version': {'value': '', 'type': 'string'},
+        'latest_installation_skip_version': {'value': '', 'type': 'string'},
+        'latest_show_datetime_installation_reminder': {'value': '', 'type': 'string'}
+    }
+
+
 def is_blender_supported():
     ver = bpy.app.version
     for supported_ver in Config.supported_blender_versions:
@@ -269,3 +292,4 @@ class ErrorType:
     MeshCorrupted = 5
     PktProblem = 6
     PktModelProblem = 7
+    DownloadingProblem = 8
