@@ -156,7 +156,7 @@ class CurrentStateExecutor:
 
 class FBUpdater:
     _response = None
-    _response = mock_response()  # Mock for testing (1/3)
+    # _response = mock_response()  # Mock for testing (1/3)
     _parsed_response_content = None
 
     @classmethod
@@ -186,8 +186,8 @@ class FBUpdater:
 
     @classmethod
     def get_response(cls):
-        if cls._response is not None and cls._response.version is None:
-            cls._response = mock_response()  # Mock for testing (2/3)
+        # if cls._response is not None and cls._response.version is None:
+        #     cls._response = mock_response()  # Mock for testing (2/3)
         return cls._response
 
     @classmethod
@@ -234,7 +234,7 @@ class FBUpdater:
 
         uc = cls.get_update_checker()
         res = uc.check_for_updates('FaceBuilder')
-        res = cls.get_response()  # Mock for testing (3/3)
+        # res = cls.get_response()  # Mock for testing (3/3)
         if res is not None:
             cls.set_response(res)
             parsed = parse_html(skip_new_lines_and_spaces(res.message))
