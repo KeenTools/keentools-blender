@@ -21,7 +21,8 @@ import os
 import sys
 from threading import Thread, Lock
 from enum import Enum
-import time
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 import bpy
 
@@ -114,7 +115,12 @@ def _download_with_progress_callback(url, progress_callback,
                                      max_callback_updates_count, timeout):
     import requests
     import io
-    response = requests.get(url, stream=True, timeout=timeout)
+    session = requests.Session()
+    retry = Retry(connect=3, backoff_factor=0.2)
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount('https://', adapter)
+
+    response = session.get(url, stream=True, timeout=timeout)
     if progress_callback is None:
         return io.BytesIO(response.content)
 
@@ -164,14 +170,10 @@ def install_from_download(version=None, nightly=False, progress_callback=None,
 
 def _download_zip(part_installation, timeout, version=None, nightly=False, progress_callback=None,
                   final_callback=None, error_callback=None,
-                  max_callback_updates_count=_MAX_CALLBACK_UPDATES_COUNT,
-                  wait=False):
-    if wait:
-        time.sleep(0.5)
-    url = None
+                  max_callback_updates_count=_MAX_CALLBACK_UPDATES_COUNT):
     if part_installation == PartInstallation.CORE:
         url = download_core_path(version, nightly)
-    elif part_installation == PartInstallation.ADDON:
+    else:
         url = download_addon_path(version, nightly)
 
     def write_process(data):
