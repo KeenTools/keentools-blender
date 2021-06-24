@@ -231,13 +231,17 @@ class FB_OT_PinMode(bpy.types.Operator):
         # Start working with current model
         try:
             if not FBLoader.load_model_throw_exception(settings.current_headnum):
-                raise Exception('Cannot load model from serial string')
+                raise Exception('Cannot load the model data from '
+                                'the serialised string. Perhaps your file '
+                                'or the scene data got corrupted.')
         except Exception as err:
             logger.error('MODEL CANNOT BE LOADED IN PINMODE')
 
             FBLoader.out_pinmode_without_save(self.headnum)
             cameras.exit_localview(context)
 
+            logger.error('DESERIALIZE load_model_throw_exception: \n'
+                         '{}'.format(str(err)))
             error_message = '\n'.join(split_long_string(str(err), limit=64))
             warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
