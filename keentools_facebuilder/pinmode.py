@@ -28,6 +28,7 @@ from .fbloader import FBLoader
 from .utils.focal_length import update_camera_focal
 from .utils.other import (FBStopShaderTimer, force_ui_redraw,
                           hide_viewport_ui_elements_and_store_on_object)
+from .utils.html import split_long_string
 
 
 class FB_OT_PinMode(bpy.types.Operator):
@@ -227,16 +228,20 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         logger.debug("PINMODE START H{} C{}".format(settings.current_headnum,
                                                     settings.current_camnum))
-
         # Start working with current model
-        if FBLoader.load_model(settings.current_headnum) is None:
+        try:
+            if not FBLoader.load_model_throw_exception(settings.current_headnum):
+                raise Exception('Cannot load model from serial string')
+        except Exception as err:
             logger.error('MODEL CANNOT BE LOADED IN PINMODE')
 
             FBLoader.out_pinmode_without_save(self.headnum)
             cameras.exit_localview(context)
 
+            error_message = '\n'.join(split_long_string(str(err), limit=64))
             warn = get_operator(Config.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.PktOldModelProblem)
+            warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+                 msg_content=error_message)
             return {'CANCELLED'}
 
         if not FBLoader.check_mesh(headobj):

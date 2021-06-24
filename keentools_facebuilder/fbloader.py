@@ -324,51 +324,34 @@ class FBLoader:
         return mesh
 
     @classmethod
-    def load_model_from_head(cls, head):
+    def _load_model_from_head(cls, head):
         fb = cls.get_builder()
-        try:
-            if not fb.deserialize(head.get_serial_str()):
-                logger = logging.getLogger(__name__)
-                logger.warning('DESERIALIZE ERROR: {}'.format(
-                    head.get_serial_str()))
-                return False
-        except pkt_module().ModelLoadingException as err:
+        if not fb.deserialize(head.get_serial_str()):
             logger = logging.getLogger(__name__)
-            logger.error('DESERIALIZE ModelLoadingException: {}'.format(str(err)))
-            logger.error('SERIAL: {}'.format(head.get_serial_str()))
-            return None
-        except Exception as err:
-            logger = logging.getLogger(__name__)
-            logger.error('DESERIALIZE Unknown Exception: {}'.format(str(err)))
-            logger.error('SERIAL: {}'.format(head.get_serial_str()))
-            return None
+            logger.warning('DESERIALIZE ERROR: {}'.format(
+                head.get_serial_str()))
+            return False
         return True
 
     @classmethod
-    def load_model(cls, headnum):
+    def load_model_throw_exception(cls, headnum):
         settings = get_main_settings()
         head = settings.get_head(headnum)
         if head is None:
             return False
-        return cls.load_model_from_head(head)
+        return cls._load_model_from_head(head)
 
     @classmethod
-    def load_all(cls, headnum, camnum):
-        logger = logging.getLogger(__name__)
-        settings = get_main_settings()
-        head = settings.get_head(headnum)
-        cam = head.get_camera(camnum)
-        kid = cam.get_keyframe()
-
-        cls.load_model_from_head(head)
-        fb = cls.get_builder()
-
-        cls.place_camera(headnum, camnum)
-        # Load pins from model
-        vp = cls.viewport()
-        vp.pins().set_pins(vp.img_points(fb, kid))
-        vp.pins().reset_current_pin()
-        logger.debug("LOAD MODEL END")
+    def load_model(cls, headnum):
+        try:
+            return cls.load_model_throw_exception(headnum)
+        except pkt_module().ModelLoadingException as err:
+            logger = logging.getLogger(__name__)
+            logger.error('DESERIALIZE ModelLoadingException: {}'.format(str(err)))
+        except Exception as err:
+            logger = logging.getLogger(__name__)
+            logger.error('DESERIALIZE Unknown Exception: {}'.format(str(err)))
+        return False
 
     @classmethod
     def place_camera(cls, headnum, camnum):
@@ -448,7 +431,7 @@ class FBLoader:
         logger = logging.getLogger(__name__)
         logger.debug('UPDATE_OLD_MODEL')
 
-        cls.load_model_from_head(head)
+        cls.load_model(headnum)
         fb = cls.get_builder()
 
         for cam in head.cameras:
