@@ -246,6 +246,7 @@ def _set_installing():
     settings.preferences().downloaded_version = str(FBUpdater.version())
     CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INSTALL)
     FBDownloadNotification.init_progress(None)
+    FBDownloadNotification.set_retry_download(False)
     FBUpdateProgressTimer.stop()
 
 
@@ -285,15 +286,17 @@ def _download_update():
     addon_download_progress = common_progress.create_subprogress((0.98, 1.0))
 
     def core_download_callback():
-        download_addon_zip_async(final_callback=_set_installing,
+        download_addon_zip_async(timeout=30,
+                                 final_callback=_set_installing,
                                  progress_callback=addon_download_progress.progress_callback,
                                  error_callback=on_downloading_problem,
-                                 timeout=30)
+                                 wait=FBDownloadNotification.get_retry_download())
 
-    download_core_zip_async(final_callback=core_download_callback,
+    download_core_zip_async(timeout=30,
+                            final_callback=core_download_callback,
                             progress_callback=core_download_progress.progress_callback,
                             error_callback=on_downloading_problem,
-                            timeout=30)
+                            wait=FBDownloadNotification.get_retry_download())
 
     return common_progress
 
@@ -345,11 +348,13 @@ class FB_OT_SkipVersion(bpy.types.Operator):
 def on_downloading_problem(error):
     CurrentStateExecutor.set_current_panel_updater_state(UpdateState.DOWNLOADING_PROBLEM)
     FBDownloadNotification.init_progress(None)
+    FBDownloadNotification.set_retry_download(False)
     FBUpdateProgressTimer.stop()
 
 
 class FBDownloadNotification:
     _download_update_progress = None
+    _retry_download = False
 
     @classmethod
     def init_progress(cls, progress):
@@ -362,6 +367,14 @@ class FBDownloadNotification:
     @classmethod
     def is_active(cls):
         return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.DOWNLOADING
+
+    @classmethod
+    def set_retry_download(cls, retry):
+        cls._retry_download = retry
+
+    @classmethod
+    def get_retry_download(cls):
+        return cls._retry_download
 
     @classmethod
     def render_message(cls, layout):
@@ -381,6 +394,20 @@ class FBDownloadingProblem:
             layout.alert = True
             _message_text = 'Downloading problem'
             render_main(layout, parse_html(_message_text), limit)
+
+
+class FB_OT_RetryDownloadUpdate(bpy.types.Operator):
+    bl_idname = Config.fb_retry_download_the_update_idname
+    bl_label = 'Retry download'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Retry download the latest version of FaceBuilder'
+
+    def execute(self, context):
+        FBDownloadNotification.set_retry_download(True)
+        CurrentStateExecutor.set_current_panel_updater_state(UpdateState.DOWNLOADING)
+        FBUpdateProgressTimer.start(redraw_view3d=True)
+        FBDownloadNotification.init_progress(_download_update())
+        return {'FINISHED'}
 
 
 class FB_OT_ComeBackToUpdate(bpy.types.Operator):

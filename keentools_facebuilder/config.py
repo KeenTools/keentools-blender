@@ -151,6 +151,7 @@ class Config:
     fb_help_blendshapes_idname = operators + '.help_blendshapes'
 
     fb_download_the_update_idname = operators + '.download_the_update'
+    fb_retry_download_the_update_idname = operators + '.retry_download_the_update'
     fb_open_url_idname = operators + '.open_url'
     fb_remind_later_idname = operators + '.remind_later'
     fb_skip_version_idname = operators + '.skip_version'

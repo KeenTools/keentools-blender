@@ -21,6 +21,8 @@ import os
 import sys
 from threading import Thread, Lock
 from enum import Enum
+import time
+
 import bpy
 
 from .config import *
@@ -162,7 +164,10 @@ def install_from_download(version=None, nightly=False, progress_callback=None,
 
 def _download_zip(part_installation, timeout, version=None, nightly=False, progress_callback=None,
                   final_callback=None, error_callback=None,
-                  max_callback_updates_count=_MAX_CALLBACK_UPDATES_COUNT):
+                  max_callback_updates_count=_MAX_CALLBACK_UPDATES_COUNT,
+                  wait=False):
+    if wait:
+        time.sleep(10)
     url = None
     if part_installation == PartInstallation.CORE:
         url = download_core_path(version, nightly)
