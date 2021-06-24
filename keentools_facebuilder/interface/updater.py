@@ -400,7 +400,7 @@ class FB_OT_RetryDownloadUpdate(bpy.types.Operator):
     bl_idname = Config.fb_retry_download_the_update_idname
     bl_label = 'Retry download'
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Retry download the latest version of FaceBuilder'
+    bl_description = 'Try downloading again'
 
     def execute(self, context):
         FBDownloadNotification.set_retry_download(True)
@@ -414,7 +414,7 @@ class FB_OT_ComeBackToUpdate(bpy.types.Operator):
     bl_idname = Config.fb_come_back_to_update_idname
     bl_label = 'Cancel'
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Come back to update'
+    bl_description = 'Cancel updating'
 
     def execute(self, context):
         _clear_updater_info()
