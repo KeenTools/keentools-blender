@@ -110,7 +110,7 @@ def preferences_current_active_updater_operators_info():
     if updater_state == UpdateState.UPDATES_AVAILABLE:
         return [OperatorInfo(Config.fb_download_the_update_idname, 'Download the update', 'IMPORT')]
     if updater_state == UpdateState.DOWNLOADING_PROBLEM:
-        return [OperatorInfo(Config.fb_download_the_update_idname, 'Download the update', 'IMPORT'),
+        return [OperatorInfo(Config.fb_retry_download_the_update_idname, 'Try again', 'IMPORT'),
                 OperatorInfo(Config.fb_come_back_to_update_idname, 'Cancel', 'BACK')]
     elif updater_state == UpdateState.INSTALL:
         return [OperatorInfo(Config.fb_install_updates_idname, 'Install and restart', 'FILE_REFRESH')]
@@ -286,13 +286,13 @@ def _download_update():
     addon_download_progress = common_progress.create_subprogress((0.98, 1.0))
 
     def core_download_callback():
-        download_addon_zip_async(timeout=30,
+        download_addon_zip_async(timeout=10,
                                  final_callback=_set_installing,
                                  progress_callback=addon_download_progress.progress_callback,
                                  error_callback=on_downloading_problem,
                                  wait=FBDownloadNotification.get_retry_download())
 
-    download_core_zip_async(timeout=30,
+    download_core_zip_async(timeout=10,
                             final_callback=core_download_callback,
                             progress_callback=core_download_progress.progress_callback,
                             error_callback=on_downloading_problem,
@@ -392,7 +392,7 @@ class FBDownloadingProblem:
     def render_message(cls, layout, limit=32):
         if cls.is_active():
             layout.alert = True
-            _message_text = 'Downloading problem'
+            _message_text = 'Sorry, an unexpected network error happened. Please check your network connection.'
             render_main(layout, parse_html(_message_text), limit)
 
 
