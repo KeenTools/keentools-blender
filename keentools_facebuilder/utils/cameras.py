@@ -107,7 +107,7 @@ def rotate_background_image(camera, delta=1):
 
 
 def exit_localview(context):
-    if context.space_data.local_view:
+    if context.space_data and context.space_data.local_view:
         bpy.ops.view3d.localview()
         return True
     return False
