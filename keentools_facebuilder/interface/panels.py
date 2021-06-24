@@ -258,9 +258,9 @@ class FB_PT_DownloadingProblemPanel(Common, Panel):
         FBDownloadingProblem.render_message(col)
 
         layout.operator(Config.fb_retry_download_the_update_idname,
-                        text='Try again', icon='IMPORT')
+                        text='Try again', icon='FILE_REFRESH')
         layout.operator(Config.fb_come_back_to_update_idname,
-                        text='Cancel', icon='BACK')
+                        text='Cancel', icon='PANEL_CLOSE')
 
     def draw(self, context):
         layout = self.layout

@@ -167,7 +167,7 @@ def _download_zip(part_installation, timeout, version=None, nightly=False, progr
                   max_callback_updates_count=_MAX_CALLBACK_UPDATES_COUNT,
                   wait=False):
     if wait:
-        time.sleep(2)
+        time.sleep(0.5)
     url = None
     if part_installation == PartInstallation.CORE:
         url = download_core_path(version, nightly)

@@ -110,8 +110,8 @@ def preferences_current_active_updater_operators_info():
     if updater_state == UpdateState.UPDATES_AVAILABLE:
         return [OperatorInfo(Config.fb_download_the_update_idname, 'Download the update', 'IMPORT')]
     if updater_state == UpdateState.DOWNLOADING_PROBLEM:
-        return [OperatorInfo(Config.fb_retry_download_the_update_idname, 'Try again', 'IMPORT'),
-                OperatorInfo(Config.fb_come_back_to_update_idname, 'Cancel', 'BACK')]
+        return [OperatorInfo(Config.fb_retry_download_the_update_idname, 'Try again', 'FILE_REFRESH'),
+                OperatorInfo(Config.fb_come_back_to_update_idname, 'Cancel', 'PANEL_CLOSE')]
     elif updater_state == UpdateState.INSTALL:
         return [OperatorInfo(Config.fb_install_updates_idname, 'Install and restart', 'FILE_REFRESH')]
     else:
