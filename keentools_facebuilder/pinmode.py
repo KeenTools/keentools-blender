@@ -28,6 +28,7 @@ from .fbloader import FBLoader
 from .utils.focal_length import update_camera_focal
 from .utils.other import (FBStopShaderTimer, force_ui_redraw,
                           hide_viewport_ui_elements_and_store_on_object)
+from .utils.html import split_long_string
 
 
 class FB_OT_PinMode(bpy.types.Operator):
@@ -227,14 +228,34 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         logger.debug("PINMODE START H{} C{}".format(settings.current_headnum,
                                                     settings.current_camnum))
-
         # Start working with current model
-        FBLoader.load_model(settings.current_headnum)
+        try:
+            if not FBLoader.load_model_throw_exception(settings.current_headnum):
+                raise Exception('Cannot load the model data from '
+                                'the serialised string. Perhaps your file '
+                                'or the scene data got corrupted.')
+        except Exception as err:
+            logger.error('MODEL CANNOT BE LOADED IN PINMODE')
+
+            FBLoader.out_pinmode_without_save(self.headnum)
+            cameras.exit_localview(context)
+
+            logger.error('DESERIALIZE load_model_throw_exception: \n'
+                         '{}'.format(str(err)))
+            error_message = '\n'.join(split_long_string(str(err), limit=64))
+            warn = get_operator(Config.fb_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+                 msg_content=error_message)
+            return {'CANCELLED'}
 
         if not FBLoader.check_mesh(headobj):
             fb = FBLoader.get_builder()
             logger.error('MESH IS CORRUPTED {} != {}'.format(
                 len(headobj.data.vertices), len(fb.applied_args_vertices())))
+
+            FBLoader.out_pinmode_without_save(self.headnum)
+            cameras.exit_localview(context)
+
             warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
             return {'CANCELLED'}
