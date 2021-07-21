@@ -69,10 +69,13 @@ def load_unchanged_rgba(camera):
     with _tmp_image_path(abs_path) as tmp_path:
         with _standard_view_transform():
             camera.cam_image.save_render(tmp_path)
-        img = pkt.module().imread(tmp_path)
-        if img is None:
-            w, h = camera.cam_image.size[:2]
-            img = np.array(camera.cam_image.pixels[:]).reshape((h, w, 4))
+        img = pkt.module().read_png(tmp_path)
+
+    if img is None:
+        if camera.cam_image is None:
+            return None
+        w, h = camera.cam_image.size[:2]
+        img = np.array(camera.cam_image.pixels[:]).reshape((h, w, 4))
 
     return img.astype(np.float32)
 
