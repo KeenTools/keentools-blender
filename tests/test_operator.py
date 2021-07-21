@@ -1,18 +1,20 @@
+import os
 import bpy
 from bpy.types import Panel, Operator
 from bpy.props import StringProperty, IntProperty
 
 import keentools_facebuilder
 from keentools_facebuilder.config import Config, get_main_settings, \
-    get_operators, ErrorType
+    get_operator, ErrorType
 import keentools_facebuilder.utils.coords as coords
-from keentools_facebuilder.utils.fake_context import get_area, get_region, get_fake_context
+from keentools_facebuilder.utils.fake_context import get_fake_context
+from keentools_facebuilder.fbloader import FBLoader
 
 
 class TestsOperator(Operator):
     bl_idname = 'object.keentools_fb_tests'
     bl_label = "Run Test"
-    bl_options = {'REGISTER'}  # 'UNDO'
+    bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Start test"
 
     action: StringProperty(name="Action Name")
@@ -34,7 +36,7 @@ class TestsOperator(Operator):
         elif self.action == "test_duplicate_and_reconstruct":
             test_duplicate_and_reconstruct()
         elif self.action == "test_error_message":
-            warn = getattr(get_operators(), Config.fb_warning_callname)
+            warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=self.error_type)
         return {'FINISHED'}
 
@@ -110,7 +112,7 @@ if __name__ == "__main__":
 # --------
 def create_head():
     # Create Head
-    op = getattr(get_operators(), Config.fb_add_head_operator_callname)
+    op = get_operator(Config.fb_add_head_operator_idname)
     op('EXEC_DEFAULT')
 
 
@@ -134,20 +136,26 @@ def get_last_camnum(headnum):
     return camnum
 
 
-def create_empty_camera():
-    op = getattr(get_operators(), Config.fb_add_camera_callname)
-    op('EXEC_DEFAULT')
+def create_empty_camera(headnum):
+    FBLoader.add_new_camera(headnum, None)
+
+
+def create_camera(dir, filename):
+    headnum = get_last_headnum()
+    op = get_operator(Config.fb_multiple_filebrowser_idname)
+    op('EXEC_DEFAULT', headnum=headnum, directory=dir,
+       files=({'name': filename},))
 
 
 def delete_camera(headnum, camnum):
-    op = getattr(get_operators(), Config.fb_delete_camera_callname)
+    op = get_operator(Config.fb_delete_camera_idname)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
 
 
 def move_pin(start_x, start_y, end_x, end_y, arect, brect,
              headnum=0, camnum=0):
     # Registered Operator call
-    op = getattr(get_operators(), Config.fb_movepin_callname)
+    op = get_operator(Config.fb_movepin_idname)
     # Move pin
     x, y = coords.region_to_image_space(start_x, start_y, *arect)
     px, py = coords.image_space_to_region(x, y, *brect)
@@ -166,7 +174,7 @@ def move_pin(start_x, start_y, end_x, end_y, arect, brect,
 
 
 def select_camera(headnum=0, camnum=0):
-    op = getattr(get_operators(), Config.fb_select_camera_callname)
+    op = get_operator(Config.fb_select_camera_idname)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
 
 
@@ -179,9 +187,10 @@ def test_print_work():
 
 def test_create_head_and_cameras():
     create_head()
-    create_empty_camera()
-    create_empty_camera()
-    create_empty_camera()
+    headnum = get_last_headnum()
+    create_empty_camera(headnum)
+    create_empty_camera(headnum)
+    create_empty_camera(headnum)
 
 
 def test_delete_last_camera():
@@ -210,7 +219,7 @@ def test_move_pins():
     move_pin(912, 412, 911, 388, arect, brect)
 
     # Coloring wireframe
-    op = getattr(get_operators(), Config.fb_wireframe_color_callname)
+    op = get_operator(Config.fb_wireframe_color_idname)
     op('EXEC_DEFAULT', action='wireframe_green')
 
 
@@ -220,5 +229,5 @@ def test_duplicate_and_reconstruct():
         OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
         TRANSFORM_OT_translate={"value": (-3.0, 0, 0)})
 
-    op = getattr(get_operators(), Config.fb_actor_callname)
-    op('EXEC_DEFAULT', action='reconstruct_by_head', headnum=-1, camnum=-1)
+    op = get_operator(Config.fb_history_actor_idname)
+    op('EXEC_DEFAULT', action='reconstruct_by_head')

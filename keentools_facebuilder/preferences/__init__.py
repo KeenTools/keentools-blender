@@ -21,7 +21,12 @@ This module contains everything connected with the addon preferences
 """
 
 from .operators import *
-from .ui import FBAddonPreferences
+from .ui import (reset_updater_preferences_to_default,
+                 FB_OT_UserPreferencesChanger,
+                 FB_OT_UserPreferencesGetColors,
+                 FB_OT_UserPreferencesResetAll,
+                 FB_OT_UserPreferencesResetAllWarning,
+                 FBAddonPreferences)
 
 CLASSES_TO_REGISTER = (
     PREF_OT_InstallLicenseOnline,
@@ -30,11 +35,16 @@ CLASSES_TO_REGISTER = (
     PREF_OT_CopyHardwareId,
     PREF_OT_InstallPkt,
     PREF_OT_OpenPktLicensePage,
+    PREF_OT_InstalFromFilePktWithWarning,
     PREF_OT_InstallFromFilePkt,
     PREF_OT_OpenManualInstallPage,
     PREF_OT_ShowURL,
     PREF_OT_OpenURL,
     PREF_OT_DownloadsURL,
     PREF_OT_ShowWhy,
+    FB_OT_UserPreferencesChanger,
+    FB_OT_UserPreferencesGetColors,
+    FB_OT_UserPreferencesResetAll,
+    FB_OT_UserPreferencesResetAllWarning,
     FBAddonPreferences
 )

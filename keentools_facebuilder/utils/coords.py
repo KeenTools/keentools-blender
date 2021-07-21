@@ -32,31 +32,45 @@ def nearest_point(x, y, points, dist=4000000):  # dist squared
     return nearest, dist2
 
 
+def xy_to_xz_rotation_matrix_3x3():
+    return np.array([[1., 0., 0.],
+                     [0., 0., 1.],
+                     [0., -1., 0.]], dtype=np.float32)
+
+
+def xz_to_xy_rotation_matrix_3x3():
+    return np.array([[1., 0., 0.],
+                     [0., 0., -1.],
+                     [0., 1., 0.]], dtype=np.float32)
+
+
+def xy_to_xz_rotation_matrix_4x4():
+    return np.array([[1., 0., 0., 0.],
+                     [0., 0., 1., 0.],
+                     [0., -1., 0., 0.],
+                     [0., 0., 0., 1.]], dtype=np.float32)
+
+
+def xz_to_xy_rotation_matrix_4x4():
+    return np.array([[1., 0., 0., 0.],
+                     [0., 0., -1., 0.],
+                     [0., 1., 0., 0.],
+                     [0., 0., 0., 1.]], dtype=np.float32)
+
+
 def update_head_mesh_geom(obj, geom):
     mesh = obj.data
-    rot = np.array([[1., 0., 0.], [0., 0., 1.], [0., -1., 0]])
-    npbuffer = geom @ rot
+    assert(len(geom) == len(mesh.vertices))
+    npbuffer = geom @ xy_to_xz_rotation_matrix_3x3()
     mesh.vertices.foreach_set('co', npbuffer.ravel())
+    if mesh.shape_keys:
+        mesh.shape_keys.key_blocks[0].data.foreach_set('co', npbuffer.ravel())
     mesh.update()
 
 
 def update_head_mesh_neutral(fb, headobj):
     geom = fb.applied_args_vertices()
     update_head_mesh_geom(headobj, geom)
-
-
-def update_head_mesh_emotions(fb, headobj, keyframe):
-    geom = fb.applied_args_model_vertices_at(keyframe)
-    update_head_mesh_geom(headobj, geom)
-
-
-def update_head_mesh(settings, fb, head):
-    if head.should_use_emotions():
-        if settings.current_camnum >= 0:
-            update_head_mesh_emotions(
-                fb, head.headobj, head.get_keyframe(settings.current_camnum))
-    else:
-        update_head_mesh_neutral(fb, head.headobj)
 
 
 def projection_matrix(w, h, fl, sw, near, far, scale=1.0):
@@ -70,8 +84,16 @@ def projection_matrix(w, h, fl, sw, near, far, scale=1.0):
     ).transpose()
 
 
-def focal_by_projection_matrix(pm, sw):
+def focal_by_projection_matrix_mm(pm, sw):
     return - 0.5 * pm[0][0] * sw / pm[0][2]
+
+
+def focal_by_projection_matrix_px(pm):
+    return pm[0][0]
+
+
+def focal_mm_to_px(fl, sw, w):
+    return fl / sw * w
 
 
 def render_frame():
@@ -118,23 +140,31 @@ def region_to_image_space(x, y, x1, y1, x2, y2):
     return (x - (x1 + x2) * 0.5) / sc, (y - (y1 + y2) * 0.5) / sc
 
 
-def pin_to_xyz(pin, headobj):
-    """ Surface point from barycentric to XYZ """
+def pin_to_xyz_from_mesh(pin, headobj):
+    """ Surface point from barycentric to XYZ using passed mesh"""
     sp = pin.surface_point
-    bar = sp.barycentric_coordinates
-    v = headobj.data.vertices
     gp = sp.geo_point_idxs
-    p = v[gp[0]].co * bar[0] + v[gp[1]].co * bar[1] + v[gp[2]].co * bar[2]
+    bar = sp.barycentric_coordinates
+    vv = headobj.data.vertices
+    p = vv[gp[0]].co * bar[0] + vv[gp[1]].co * bar[1] + vv[gp[2]].co * bar[2]
+    return p
+
+
+def pin_to_xyz_from_fb_geo_mesh(pin, geo_mesh):
+    """ Surface point from barycentric to XYZ using fb geo_mesh"""
+    sp = pin.surface_point
+    gp = sp.geo_point_idxs
+    bar = sp.barycentric_coordinates
+    v1 = geo_mesh.point(gp[0])
+    v2 = geo_mesh.point(gp[1])
+    v3 = geo_mesh.point(gp[2])
+    p = v1 * bar[0] + v2 * bar[1] + v3 * bar[2]
     return p
 
 
 def calc_model_mat(model_mat, head_mat):
     """ Convert model matrix to camera matrix """
-    rot_mat = np.array([
-        [1., 0., 0., 0.],
-        [0., 0., 1., 0.],
-        [0., -1., 0., 0.],
-        [0., 0., 0., 1.]])
+    rot_mat = xy_to_xz_rotation_matrix_4x4()
 
     try:
         nm = np.array(model_mat @ rot_mat) @ np.linalg.inv(head_mat)

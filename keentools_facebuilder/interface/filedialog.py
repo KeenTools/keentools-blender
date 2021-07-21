@@ -24,13 +24,12 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bpy.types import Operator
 
 from ..fbloader import FBLoader
-from ..config import Config, get_main_settings, get_operators
+from ..config import Config, get_main_settings, get_operator
 
 from ..utils.exif_reader import (read_exif_to_camera,
-                                 update_image_groups,
                                  auto_setup_camera_from_exif)
-from ..utils.other import restore_ui_elements
-from ..utils.materials import find_tex_by_name
+from ..utils.materials import find_bpy_image_by_name
+from ..utils.blendshapes import load_csv_animation_to_blendshapes
 
 
 class FB_OT_SingleFilebrowserExec(Operator):
@@ -44,9 +43,8 @@ class FB_OT_SingleFilebrowserExec(Operator):
 
     def execute(self, context):
         settings = get_main_settings()
-        restore_ui_elements()
 
-        op = getattr(get_operators(), Config.fb_single_filebrowser_callname)
+        op = get_operator(Config.fb_single_filebrowser_idname)
         op('INVOKE_DEFAULT', headnum=settings.tmp_headnum,
            camnum=settings.tmp_camnum)
 
@@ -77,13 +75,11 @@ def load_single_image_file(headnum, camnum, filepath):
         except RuntimeError:
             logger.error('FILE EXIF READ ERROR: {}'.format(filepath))
 
-        update_image_groups(head)
-
         camera = head.get_camera(camnum)
         camera.show_background_image()
         auto_setup_camera_from_exif(camera)
 
-        FBLoader.save_only(headnum)
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
         return {'FINISHED'}
 
 
@@ -168,14 +164,14 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
     def execute(self, context):
         logger = logging.getLogger(__name__)
         logger.debug("START SAVE TEXTURE: {}".format(self.filepath))
-        tex = find_tex_by_name(Config.tex_builder_filename)
+        tex = find_bpy_image_by_name(Config.tex_builder_filename)
         if tex is None:
             return {'CANCELLED'}
         tex.filepath = self.filepath
         # Blender doesn't change file_format after filepath assigning, so
         fix_for_blender_bug = tex.file_format  # Do not remove!
         tex.file_format = self.file_format
-        tex.save_render(tex.filepath)
+        tex.save()
         logger.debug("SAVED TEXTURE: {} {}".format(tex.file_format,
                                                    self.filepath))
         return {'FINISHED'}
@@ -198,9 +194,7 @@ class FB_OT_MultipleFilebrowserExec(Operator):
         pass
 
     def execute(self, context):
-        restore_ui_elements()
-
-        op = getattr(get_operators(), Config.fb_multiple_filebrowser_callname)
+        op = get_operator(Config.fb_multiple_filebrowser_idname)
         op('INVOKE_DEFAULT', headnum=self.headnum)
 
         return {'FINISHED'}
@@ -270,7 +264,39 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
                 auto_setup_camera_from_exif(camera)
                 FBLoader.center_geo_camera_projection(self.headnum, i)
 
-        update_image_groups(head)
+        FBLoader.save_fb_serial_and_image_pathes(self.headnum)
+        return {'FINISHED'}
 
-        FBLoader.save_only(self.headnum)
+
+class FB_OT_AnimationFilebrowser(Operator, ImportHelper):
+    bl_idname = Config.fb_animation_filebrowser_idname
+    bl_label = 'Load animation'
+    bl_description = 'Open animation file'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    filter_glob: bpy.props.StringProperty(
+        default='*.csv',
+        options={'HIDDEN'}
+    )
+
+    obj_name: bpy.props.StringProperty(name='Object Name in scene')
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        obj = bpy.data.objects[self.obj_name]
+        assert obj.type == 'MESH'
+
+        res = load_csv_animation_to_blendshapes(obj, self.filepath)
+
+        if res['status']:
+            info = 'Loaded animation.'
+            if len(res['ignored']) > 0:
+                info += ' Ignored {} columns'.format(len(res['ignored']))
+            if len(res['read_facs']) > 0:
+                info += ' Recognized {} blendshapes'.format(len(res['read_facs']))
+            self.report({'INFO'}, info)
+        else:
+            self.report({'ERROR'}, res['message'])
         return {'FINISHED'}

@@ -56,7 +56,7 @@ class HELP_OT_CameraHelp(bpy.types.Operator):
             "everything's correct,",
             "you can open this panel and see the detected 35mm equiv. "
             "focal length. ",
-            "You can change it if you swtich into manual mode using "
+            "You can change it if you switch into manual mode using "
             "the advanced setting menu",
             "in the header of the camera settings panel.",
             " ",
@@ -78,36 +78,6 @@ class HELP_OT_CameraHelp(bpy.types.Operator):
             col.label(text=c)
         layout.separator()
 
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(
-            self, width=_help_window_width)
-
-    def execute(self, context):
-        return {'FINISHED'}
-
-
-class HELP_OT_ExifHelp(bpy.types.Operator):
-    bl_idname = Config.fb_help_exif_idname
-    bl_label = "EXIF"
-    bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Show help information about EXIF panel"
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-        content = [
-            "On this panel you can load and see EXIF information stored "
-            "in the image files",
-            "that you have loaded into Views. By default EXIF data "
-            "of the first file is loaded.",
-            "This information can be used for the camera in the panel "
-            "above after loading."]
-
-        for c in content:
-            col.label(text=c)
-        layout.separator()
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(
@@ -293,6 +263,69 @@ class HELP_OT_TextureHelp(bpy.types.Operator):
             "the texture is applied to the object. It basically takes "
             "the colour of the last ",
             "pixel on the edge and duplicates it on the next empty pixel."]
+
+        for c in content:
+            col.label(text=c)
+        layout.separator()
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(
+            self, width=_help_window_width)
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+
+class HELP_OT_BlendshapesHelp(bpy.types.Operator):
+    bl_idname = Config.fb_help_blendshapes_idname
+    bl_label = 'Blendshapes'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Show help information about Blendshapes panel'
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        content = [
+            'On this panel you can create FACS ARKit-compatible blendshapes '
+            'for the head ',
+            'you\'ve built, load animation from a CSV file and export the head '
+            'with all blendshapes ',
+            'and animation to a game engine.',
+            ' ',
+            'Once you press "Create" button, 51 blendshapes will be created. '
+            'You can change ',
+            'how they affect the shape of the head here: '
+            'Object Data Properties > Shape Keys.',
+            'If you change the topology, the blendshapes will be recreated. '
+            'When you change ',
+            'the shape of the head using pins in Pin Mode, and also when you '
+            'change the scale ',
+            'of the model, you\'ll be asked if you want to update '
+            'the blendshapes, note that ',
+            'the old blendshapes become useless once you make such changes.',
+            ' ',
+            'The blendshapes are fully compatible with the ARKit '
+            'specifications, which can found ',
+            'at Apple Developer portal.',
+            ' ',
+            'You can animate the blendshapes manually creating keyframes '
+            'for each Shape Key.',
+            ' ',
+            'If you have LiveLinkFace (or similar) application, you can record '
+            'the facial animation ',
+            'using the iOS device with the True Depth sensor (iPhone X '
+            'and newer), ',
+            'export a CSV file and then import it here.',
+            ' ',
+            'To export the head with all its blendshapes and animation, '
+            'you need to know ',
+            'where you want to import this 3D model to. In most cases '
+            'the Export button ',
+            'presented here will work for Unreal Engine and Unity, it will '
+            'pre-setup the Blender ',
+            'export dialog for you. Your free to change the settings before '
+            'saving the file if you need.']
 
         for c in content:
             col.label(text=c)

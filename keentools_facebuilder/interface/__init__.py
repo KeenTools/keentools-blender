@@ -25,31 +25,34 @@ from .updater import *
 
 
 CLASSES_TO_REGISTER = (FB_MT_ProperViewMenu, # menus
-                       FB_MT_ReadExifMenu,
-                       FB_MT_ImageGroupMenu,
-                       FB_MT_CameraPanelMenu,
                        FB_PT_HeaderPanel,  # panels
                        FB_PT_UpdatePanel,
+                       FB_PT_DownloadNotification,
+                       FB_PT_DownloadingProblemPanel,
+                       FB_PT_UpdatesInstallationPanel,
                        FB_PT_CameraPanel,
-                       FB_PT_ExifPanel,
                        FB_PT_ViewsPanel,
                        FB_PT_Model,
                        FB_PT_PinSettingsPanel,
                        FB_PT_WireframeSettingsPanel,
                        FB_PT_TexturePanel,
-                       FB_OT_RemindLater, FB_OT_SkipVersion,
+                       FB_PT_BlendShapesPanel,
+                       FB_OT_DownloadTheUpdate, FB_OT_RemindLater, FB_OT_SkipVersion,
+                       FB_OT_RetryDownloadUpdate, FB_OT_ComeBackToUpdate,
+                       FB_OT_InstallUpdates, FB_OT_RemindInstallLater, FB_OT_SkipInstallation,
                        HELP_OT_CameraHelp,  # helps
-                       HELP_OT_ExifHelp,
                        HELP_OT_ViewsHelp,
                        HELP_OT_ModelHelp,
                        HELP_OT_PinSettingsHelp,
                        HELP_OT_WireframeSettingsHelp,
                        HELP_OT_TextureHelp,
+                       HELP_OT_BlendshapesHelp,
                        FB_OT_AddonWarning,  # dialogs
-                       FB_OT_ExifSelector,
+                       FB_OT_BlendshapesWarning,
                        FB_OT_TexSelector,
                        FB_OT_SingleFilebrowser,  # filedialog
                        FB_OT_SingleFilebrowserExec,
                        FB_OT_TextureFileExport,
+                       FB_OT_AnimationFilebrowser,
                        FB_OT_MultipleFilebrowser,
                        FB_OT_MultipleFilebrowserExec)

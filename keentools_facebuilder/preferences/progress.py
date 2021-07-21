@@ -19,17 +19,20 @@
 import logging
 from threading import Lock
 
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from ..blender_independent_packages.pykeentools_loader import (
+    install_from_download_async as pkt_install_from_download_async,
+    install_core_from_file as pkt_install_core_from_file,
+    MINIMUM_VERSION_REQUIRED as pkt_MINIMUM_VERSION_REQUIRED)
 from ..utils.other import FBTimer, force_ui_redraw
 
 
 class FBUpdateProgressTimer(FBTimer):
     _UPDATE_INTERVAL = 0.5
+    _redraw_view3d = False
 
     @classmethod
     def _timer_should_not_work(cls):
-        return not cls.is_active() or \
-               not InstallationProgress.get_state()['active']
+        return not cls.is_active()
 
     @classmethod
     def _check_progress(cls):
@@ -38,14 +41,19 @@ class FBUpdateProgressTimer(FBTimer):
             logger.debug("STOP PROGRESS INACTIVE")
             cls.stop()
             force_ui_redraw("PREFERENCES")
+            if cls._redraw_view3d:
+                force_ui_redraw('VIEW_3D')
             return None
 
         logger.debug("NEXT CALL UPDATE TIMER")
         force_ui_redraw("PREFERENCES")
+        if cls._redraw_view3d:
+            force_ui_redraw('VIEW_3D')
         return cls._UPDATE_INTERVAL
 
     @classmethod
-    def start(cls):
+    def start(cls, redraw_view3d=False):
+        cls._redraw_view3d = redraw_view3d
         cls._start(cls._check_progress, persistent=False)
 
     @classmethod
@@ -89,6 +97,7 @@ class InstallationProgress:
         cls._state_mutex.acquire()
         try:
             cls.state = {'active': True, 'progress': 0.0, 'status': None}
+            FBUpdateProgressTimer.start()
         finally:
             cls._state_mutex.release()
 
@@ -97,6 +106,7 @@ class InstallationProgress:
         cls._state_mutex.acquire()
         try:
             cls.state = {'active': False, 'progress': 0.0, 'status': status}
+            FBUpdateProgressTimer.stop()
         finally:
             cls._state_mutex.release()
 
@@ -134,10 +144,9 @@ class InstallationProgress:
             return
 
         cls._on_start_download()
-        FBUpdateProgressTimer.start()
         logger.debug("START CORE LIBRARY DOWNLOAD")
-        pkt.install_from_download_async(
-            version=pkt.MINIMUM_VERSION_REQUIRED,
+        pkt_install_from_download_async(
+            version=pkt_MINIMUM_VERSION_REQUIRED,
             progress_callback=cls._progress_callback,
             final_callback=cls._final_callback,
             error_callback=cls._error_callback)
@@ -151,14 +160,14 @@ class InstallationProgress:
             return
 
         cls._on_start_download()
-        logger.debug("START UNPACK CORE LIBRARY DOWNLOAD")
+        logger.info("START UNPACK CORE LIBRARY DOWNLOAD")
         try:
-            pkt.install_from_file(filepath)
+            pkt_install_core_from_file(filepath)
         except Exception as error:
             cls._on_finish_download(
                 'Failed to install Core library from file. ' + str(error))
-            logger.debug("UNPACK CORE ERROR" + str(error))
+            logger.error("UNPACK CORE ERROR" + str(error))
         else:
             cls._on_finish_download(
                 'The core library has been installed successfully.')
-            logger.debug("UNPACK CORE FINISH")
+            logger.info("UNPACK CORE FINISH")

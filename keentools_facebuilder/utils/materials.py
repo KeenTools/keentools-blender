@@ -20,11 +20,11 @@ import logging
 import bpy
 import numpy as np
 
-from .. config import Config, get_main_settings, get_operators, ErrorType
+from .. config import Config, get_main_settings
 from .. fbloader import FBLoader
 from .. utils.coords import projection_matrix
-from .. utils.images import load_rgba
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from .. utils.images import load_rgba, find_bpy_image_by_name
+from .. blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 def switch_to_mode(mode='MATERIAL'):
@@ -73,19 +73,6 @@ def get_shader_node(mat, find_type, create_name):
     return mat.node_tree.nodes.new(create_name)
 
 
-def find_tex_by_name(tex_name):
-    tex_num = bpy.data.images.find(tex_name)
-    if tex_num >= 0:
-        return bpy.data.images[tex_num]
-    return None
-
-
-def remove_tex_by_name(name):
-    tex = find_tex_by_name(name)
-    if tex is not None:
-        bpy.data.images.remove(tex)
-
-
 def remove_mat_by_name(name):
     mat_num = bpy.data.materials.find(name)
     if mat_num >= 0:
@@ -93,7 +80,7 @@ def remove_mat_by_name(name):
 
 
 def show_texture_in_mat(tex_name, mat_name):
-    tex = find_tex_by_name(tex_name)
+    tex = find_bpy_image_by_name(tex_name)
     mat = get_mat_by_name(mat_name)
     principled_node = get_shader_node(
         mat, 'BSDF_PRINCIPLED', 'ShaderNodeBsdfPrincipled')
@@ -126,7 +113,7 @@ def _create_bpy_texture_from_img(img, tex_name):
     tex = bpy.data.images.new(
             tex_name, width=img.shape[1], height=img.shape[0],
             alpha=True, float_buffer=False)
-    tex.colorspace_settings.name = 'Linear'
+    tex.colorspace_settings.name = 'sRGB'
     assert(tex.name == tex_name)
     tex.pixels[:] = img.ravel()
     tex.pack()
@@ -164,10 +151,10 @@ def _create_frame_data_loader(settings, head, camnums, fb):
 
         img = load_rgba(cam)
 
-        frame_data = pkt.module().texture_builder.FrameData()
+        frame_data = pkt_module().texture_builder.FrameData()
         frame_data.geo = fb.applied_args_model_at(cam.get_keyframe())
         frame_data.image = img
-        frame_data.model = cam.get_model_mat()
+        frame_data.model = fb.model_mat(cam.get_keyframe())
         frame_data.view = np.eye(4)
         frame_data.projection = cam.get_projection_matrix()
 
@@ -201,13 +188,13 @@ def bake_tex(headnum, tex_name):
 
     bpy.context.window_manager.progress_begin(0, 1)
 
-    class ProgressCallBack(pkt.module().ProgressCallback):
+    class ProgressCallBack(pkt_module().ProgressCallback):
         def set_progress_and_check_abort(self, progress):
             bpy.context.window_manager.progress_update(progress)
             return False
 
     progress_callBack = ProgressCallBack()
-    built_texture = pkt.module().texture_builder.build_texture(
+    built_texture = pkt_module().texture_builder.build_texture(
         frames_count, frame_data_loader, progress_callBack,
         settings.tex_height, settings.tex_width, settings.tex_face_angles_affection,
         settings.tex_uv_expand_percents, settings.tex_back_face_culling,

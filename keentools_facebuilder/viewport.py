@@ -16,17 +16,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import cProfile
-import logging
 import bpy
 
 import numpy as np
 
-from . import const
-from . config import Config, get_main_settings
-from . utils import coords
-from . utils.edges import FBEdgeShader3D, FBEdgeShader2D
-from . utils.other import FBText
-from . utils.points import FBPoints2D, FBPoints3D
+from .config import Config, get_main_settings
+from .preferences.user_preferences import UserPreferences
+from .utils import coords
+from .utils.edges import FBEdgeShader2D, FBRasterEdgeShader3D, FBRectangleShader2D
+from .utils.other import FBText
+from .utils.points import FBPoints2D, FBPoints3D
 
 
 class FBScreenPins:
@@ -81,17 +80,19 @@ class FBViewport:
     # --- PROFILING ---
 
     # Current View Pins draw
-    _points2d = FBPoints2D()
+    _points2d = FBPoints2D(bpy.types.SpaceView3D)
+    # Rectangles for Face picking
+    _rectangler = FBRectangleShader2D(bpy.types.SpaceView3D)
     # Surface points draw
-    _points3d = FBPoints3D()
+    _points3d = FBPoints3D(bpy.types.SpaceView3D)
     # Text output in Modal mode
-    _texter = FBText()
+    _texter = FBText(bpy.types.SpaceView3D)
     # Wireframe shader object
-    _wireframer = FBEdgeShader3D()
+    _wireframer = FBRasterEdgeShader3D(bpy.types.SpaceView3D)
     # Update timer
     _draw_timer_handler = None
 
-    _residuals = FBEdgeShader2D()
+    _residuals = FBEdgeShader2D(bpy.types.SpaceView3D)
 
     # Pins
     _pins = FBScreenPins()
@@ -100,7 +101,8 @@ class FBViewport:
     def pins(cls):
         return cls._pins
 
-    POINT_SENSITIVITY = Config.default_point_sensitivity
+    POINT_SENSITIVITY = UserPreferences.get_value_safe(
+        'pin_sensitivity', UserPreferences.type_float)
     PIXEL_SIZE = 0.1  # Auto Calculated
 
     @classmethod
@@ -122,6 +124,10 @@ class FBViewport:
     @classmethod
     def residuals(cls):
         return cls._residuals
+
+    @classmethod
+    def rectangler(cls):
+        return cls._rectangler
 
     @classmethod
     def update_view_relative_pixel_size(cls, context):
@@ -148,6 +154,7 @@ class FBViewport:
         cls.unregister_handlers()  # Experimental
 
         cls.residuals().register_handler(args)
+        cls.rectangler().register_handler(args)
 
         cls.points3d().register_handler(args)
         cls.points2d().register_handler(args)
@@ -171,6 +178,7 @@ class FBViewport:
         cls.points2d().unregister_handler()
         cls.points3d().unregister_handler()
 
+        cls.rectangler().unregister_handler()
         cls.residuals().unregister_handler()
     # --------
 
@@ -179,56 +187,28 @@ class FBViewport:
     # --------------------
     @classmethod
     def update_surface_points(
-            cls, fb, headobj, keyframe=-1,
-            allcolor=(0, 0, 1, 0.15), selcolor=Config.surface_point_color):
-        # Load 3D pins
-        verts, colors = cls.surface_points(
-            fb, headobj, keyframe, allcolor, selcolor)
+            cls, fb, headobj, keyframe=-1, color=Config.surface_point_color):
+        verts = cls.surface_points_from_fb(fb, keyframe)
+        colors = [color] * len(verts)
 
         if len(verts) > 0:
-            # Object matrix usage
             m = np.array(headobj.matrix_world, dtype=np.float32).transpose()
             vv = np.ones((len(verts), 4), dtype=np.float32)
             vv[:, :-1] = verts
             vv = vv @ m
-            # Transformed vertices
-            verts = vv[:, :3]
+            verts = vv[:, :3]  # Transformed vertices
 
         cls.points3d().set_vertices_colors(verts, colors)
         cls.points3d().create_batch()
 
     @classmethod
-    def update_wireframe(cls, obj):
-        logger = logging.getLogger(__name__)
+    def update_wireframe_colors(cls):
         settings = get_main_settings()
-        main_color = settings.wireframe_color
-        comp_color = settings.wireframe_special_color
-
-        cls.wireframer().init_color_data((*main_color,
-                                          settings.wireframe_opacity))
-        if settings.show_specials:
-            mesh = obj.data
-            # Check to prevent shader problem
-            if len(mesh.edges) * 2 == len(cls.wireframer().edges_colors):
-                logger.debug("COLORING")
-                special_indices = cls.get_special_indices()
-                cls.wireframer().init_special_areas(
-                    obj.data, special_indices, (*comp_color,
-                                                settings.wireframe_opacity))
-            else:
-                logging.warning("LISTS HAVE DIFFERENT SIZES")
+        cls.wireframer().init_colors((settings.wireframe_color,
+                                      settings.wireframe_special_color,
+                                      settings.wireframe_midline_color),
+                                      settings.wireframe_opacity)
         cls.wireframer().create_batches()
-
-    @classmethod
-    def get_special_indices(cls):
-        pairs = const.get_eyes_indices()
-        pairs = pairs.union(const.get_eyebrows_indices())
-        pairs = pairs.union(const.get_nose_indices())
-        pairs = pairs.union(const.get_mouth_indices())
-        pairs = pairs.union(const.get_ears_indices())
-        pairs = pairs.union(const.get_half_indices())
-        # pairs = pairs.union(const.get_jaw_indices2())
-        return pairs
 
     @classmethod
     def update_pin_sensitivity(cls):
@@ -243,31 +223,26 @@ class FBViewport:
             settings.pin_size * Config.surf_pin_size_scale)
 
     @classmethod
-    def surface_points(cls, fb, headobj, keyframe=-1,
-                       allcolor=(0, 0, 1, 0.15), selcolor=(0, 1, 0, 1)):
+    def surface_points_from_mesh(cls, fb, headobj, keyframe=-1):
         verts = []
-        colors = []
-
-        for k in fb.keyframes():
-            for i in range(fb.pins_count(k)):
-                pin = fb.pin(k, i)
-                p = coords.pin_to_xyz(pin, headobj)
-                verts.append(p)
-                if k == keyframe:
-                    colors.append(selcolor)
-                else:
-                    colors.append(allcolor)
-        return verts, colors
-
-    @classmethod
-    def surface_points_only(cls, fb, headobj, keyframe=-1):
-        verts = []
-
         for i in range(fb.pins_count(keyframe)):
             pin = fb.pin(keyframe, i)
-            p = coords.pin_to_xyz(pin, headobj)
+            p = coords.pin_to_xyz_from_mesh(pin, headobj)
             verts.append(p)
         return verts
+
+    @classmethod
+    def surface_points_from_fb(cls, fb, keyframe=-1):
+        geo = fb.applied_args_model_at(keyframe)
+        geo_mesh = geo.mesh(0)
+        pins_count = fb.pins_count(keyframe)
+        verts = np.empty((pins_count, 3), dtype=np.float32)
+        for i in range(fb.pins_count(keyframe)):
+            pin = fb.pin(keyframe, i)
+            p = coords.pin_to_xyz_from_fb_geo_mesh(pin, geo_mesh)
+            verts[i] = p
+        # tolist() is needed by shader batch on Mac
+        return (verts @ coords.xy_to_xz_rotation_matrix_3x3()).tolist()
 
     @classmethod
     def img_points(cls, fb, keyframe):
@@ -286,7 +261,19 @@ class FBViewport:
 
     @classmethod
     def create_batch_2d(cls, context):
-        """ Main Pin Draw Batch"""
+        def _add_markers_at_camera_corners(points, vertex_colors):
+            points.append(
+                (coords.image_space_to_region(
+                    -0.5, -asp * 0.5, x1, y1, x2, y2))
+            )
+            points.append(
+                (coords.image_space_to_region(
+                    0.5, asp * 0.5,
+                    x1, y1, x2, y2))
+            )
+            vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # left camera corner
+            vertex_colors.append((1.0, 0, 1.0, 0.2))  # right camera corner
+
         points = cls.pins().arr().copy()
 
         scene = context.scene
@@ -306,24 +293,19 @@ class FBViewport:
         if pins.current_pin() and pins.current_pin_num() < len(vertex_colors):
             vertex_colors[pins.current_pin_num()] = Config.current_pin_color
 
-        # Camera corners
-        points.append(
-            (coords.image_space_to_region(
-                -0.5, -asp * 0.5, x1, y1, x2, y2))
-        )
-        points.append(
-            (coords.image_space_to_region(
-                0.5, asp * 0.5,
-                x1, y1, x2, y2))
-        )
-        vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # left camera corner
-        vertex_colors.append((1.0, 0, 1.0, 0.2))  # right camera corner
+        if Config.show_markers_at_camera_corners:
+            _add_markers_at_camera_corners(points, vertex_colors)
 
         cls.points2d().set_vertices_colors(points, vertex_colors)
         cls.points2d().create_batch()
 
+        # Rectangles drawing
+        rectangler = cls.rectangler()
+        rectangler.prepare_shader_data(context)
+        rectangler.create_batch()
+
     @classmethod
-    def update_residuals(cls, fb, context, headobj, keyframe):
+    def update_residuals(cls, fb, headobj, keyframe, context):
         scene = bpy.context.scene
         rx = scene.render.resolution_x
         ry = scene.render.resolution_y
@@ -331,7 +313,7 @@ class FBViewport:
         x1, y1, x2, y2 = coords.get_camera_border(context)
 
         p2d = cls.img_points(fb, keyframe)
-        p3d = cls.surface_points_only(fb, headobj, keyframe)
+        p3d = cls.points3d().get_vertices()
 
         wire = cls.residuals()
         wire.clear_vertices()
@@ -352,17 +334,15 @@ class FBViewport:
         projection = fb.projection_mat(keyframe).T
 
         camobj = bpy.context.scene.camera
-        m = camobj.matrix_world.inverted()
+        if not camobj:  # Fix for tests
+            return
 
         # Fill matrix in homogeneous coords
         vv = np.ones((len(p3d), 4), dtype=np.float32)
         vv[:, :-1] = p3d
 
-        # Object transform, inverse camera, projection apply -> numpy
-        transform = np.array(
-            headobj.matrix_world.transposed() @ m.transposed()) @ projection
-        # Calc projection
-        vv = vv @ transform
+        # No object transform, just inverse camera, then projection apply
+        vv = vv @ np.array(camobj.matrix_world.inverted().transposed()) @ projection
         vv = (vv.T / vv[:, 3]).T
 
         verts2 = []

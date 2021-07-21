@@ -22,7 +22,8 @@ import re
 import bpy
 from bpy.types import Panel, Operator
 
-from ..config import Config, get_main_settings, get_operators, ErrorType
+from ..config import Config, get_main_settings, get_operator, ErrorType
+from ..callbacks import mesh_update_accepted, mesh_update_canceled
 
 
 class FB_OT_AddonWarning(Operator):
@@ -34,6 +35,7 @@ class FB_OT_AddonWarning(Operator):
     msg_content: bpy.props.StringProperty(default="")
 
     content = []
+    width = 400
 
     def set_content(self, txt_list):
         self.content = txt_list
@@ -55,7 +57,7 @@ class FB_OT_AddonWarning(Operator):
         if self.msg not in (ErrorType.PktProblem, ErrorType.NoLicense):
             return {"FINISHED"}
 
-        op = getattr(get_operators(), Config.fb_addon_settings_callname)
+        op = get_operator(Config.fb_addon_settings_idname)
         op('EXEC_DEFAULT')
         return {"FINISHED"}
 
@@ -111,6 +113,72 @@ class FB_OT_AddonWarning(Operator):
                 "Model data cannot be loaded. You need to reinstall "
                 "FaceBuilder."
             ])
+        elif self.msg == ErrorType.DownloadingProblem:
+            self.set_content(["An unknown error encountered. The downloaded files might be corrupted. ",
+                              "You can try downloading them again, "
+                              "restarting Blender or installing the update manually.",
+                              "If you want to manually update the add-on: remove the old add-on, "
+                              "restart Blender and install the new version of the add-on."])
+            self.width = 650
+        return context.window_manager.invoke_props_dialog(self, width=self.width)
+
+
+class FB_OT_BlendshapesWarning(Operator):
+    bl_idname = Config.fb_blendshapes_warning_idname
+    bl_label = 'Warning'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    headnum: bpy.props.IntProperty(default=0)
+    accept: bpy.props.BoolProperty(name='Change the topology and '
+                                        'recreate blendshapes',
+                                   default=False)
+    content_red = []
+    content_white = []
+
+    def output_text(self, layout, content, red=False):
+        for txt in content:
+            row = layout.row()
+            row.alert = red
+            row.label(text=txt)
+
+    def draw(self, context):
+        layout = self.layout.column()
+
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+
+        self.output_text(col, self.content_red, red=True)
+        self.output_text(col, self.content_white, red=False)
+
+        layout.prop(self, 'accept')
+
+    def execute(self, context):
+        if (self.accept):
+            mesh_update_accepted(self.headnum)
+        else:
+            mesh_update_canceled(self.headnum)
+        return {'FINISHED'}
+
+    def cancel(self, context):
+        mesh_update_canceled(self.headnum)
+
+    def invoke(self, context, event):
+        self.content_red = [
+            'Your model has FaceBuilder FACS blendshapes attached to it.',
+            'Once you change the topology, the blendshapes will be recreated.',
+            'All modifications added to the standard blendshapes, ',
+            'as well as all custom blendshapes are going to be lost.',
+            ' ']
+        self.content_white = [
+            'If you have animated the model using old blendshapes, ',
+            'the new ones will be linked to the same Action track,',
+            'so you\'re not going to lose your animation.',
+            'If you have deleted some of the standard FaceBuilder '
+            'FACS blendshapes, ',
+            'they\'re not going to be recreated again.',
+            ' ',
+            'We recommend saving a backup file before changing the topology.',
+            ' ']
         return context.window_manager.invoke_props_dialog(self, width=400)
 
 
@@ -173,7 +241,6 @@ class FB_OT_TexSelector(Operator):
 
         layout.prop(settings, 'tex_auto_preview')
 
-
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
 
@@ -187,7 +254,7 @@ class FB_OT_TexSelector(Operator):
             return {'CANCELLED'}
 
         if head.has_cameras():
-            op = getattr(get_operators(), Config.fb_bake_tex_callname)
+            op = get_operator(Config.fb_bake_tex_idname)
             res = op('INVOKE_DEFAULT', headnum=self.headnum)
 
             if res == {'CANCELLED'}:
@@ -198,44 +265,3 @@ class FB_OT_TexSelector(Operator):
                 self.report({'INFO'}, "Texture has been created successfully")
 
         return {'FINISHED'}
-
-
-class FB_OT_ExifSelector(Operator):
-    bl_idname = Config.fb_exif_selector_idname
-    bl_label = "Select image to read EXIF:"
-    bl_description = "Choose image to load EXIF from"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    headnum: bpy.props.IntProperty(default=0)
-
-    def draw(self, context):
-        settings = get_main_settings()
-        head = settings.get_head(self.headnum)
-        layout = self.layout
-
-        if not head.has_cameras():
-            layout.label(text='No images found')
-            layout.label(text='You need at least one image to read EXIF.',
-                         icon='ERROR')
-            return
-
-        layout.label(text='Select image to read EXIF:')
-        box = layout.box()
-        for i, camera in enumerate(head.cameras):
-            row = box.row()
-            image_icon = 'PINNED' if camera.has_pins() else 'FILE_IMAGE'
-            if camera.cam_image:
-                op = row.operator(Config.fb_read_exif_idname,
-                                  text=camera.get_image_name(), icon=image_icon)
-                op.headnum = self.headnum
-                op.camnum = i
-
-            else:
-                row.label(text='-- empty --', icon='LIBRARY_DATA_BROKEN')
-
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_popup(self, event)
-
-    def execute(self, context):
-        return {"FINISHED"}

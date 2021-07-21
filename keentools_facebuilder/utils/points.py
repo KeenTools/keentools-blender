@@ -20,17 +20,28 @@ import bpy
 import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
-from . shaders import flat_color_3d_vertex_shader, \
-    circular_dot_fragment_shader, flat_color_2d_vertex_shader
-from .. config import Config
+from .shaders import (flat_color_3d_vertex_shader,
+                      circular_dot_fragment_shader,
+                      flat_color_2d_vertex_shader)
+from ..config import Config
+from ..preferences.user_preferences import UserPreferences
 
 
 class FBShaderPoints:
     """ Base class for Point Drawing Shaders """
-    point_size = Config.default_pin_size
+    _is_visible = True
+    _point_size = UserPreferences.get_value_safe('pin_size', UserPreferences.type_float)
 
     # Store all draw handlers registered by class objects
     handler_list = []
+
+    @classmethod
+    def is_visible(cls):
+        return cls._is_visible
+
+    @classmethod
+    def set_visible(cls, flag=True):
+        cls._is_visible = flag
 
     @classmethod
     def add_handler_list(cls, handler):
@@ -45,7 +56,7 @@ class FBShaderPoints:
     def is_handler_list_empty(cls):
         return len(cls.handler_list) == 0
 
-    def __init__(self):
+    def __init__(self, target_class=bpy.types.SpaceView3D):
         self.draw_handler = None  # for 3d shader
         self.shader = None
         self.batch = None
@@ -53,9 +64,21 @@ class FBShaderPoints:
         self.vertices = []
         self.vertices_colors = []
 
+        self._target_class = target_class
+        self._work_area = None
+
+    def get_target_class(self):
+        return self._target_class
+
+    def set_target_class(self, target_class):
+        self._target_class = target_class
+
+    def get_vertices(self):
+        return self.vertices
+
     @classmethod
     def set_point_size(cls, ps):
-        cls.point_size = ps
+        cls._point_size = ps
 
     def _create_batch(self, vertices, vertices_colors,
                       shadername='2D_FLAT_COLOR'):
@@ -95,54 +118,58 @@ class FBShaderPoints:
         self._create_batch(self.vertices, self.vertices_colors)
 
     def register_handler(self, args):
-        self.draw_handler = bpy.types.SpaceView3D.draw_handler_add(
-            self.draw_callback, args, "WINDOW", "POST_VIEW")
+        self._work_area = args[1].area
+
+        self.draw_handler = self.get_target_class().draw_handler_add(
+            self.draw_callback, args, 'WINDOW', 'POST_VIEW')
         # Add to handler list
         self.add_handler_list(self.draw_handler)
 
     def unregister_handler(self):
         if self.draw_handler is not None:
-            bpy.types.SpaceView3D.draw_handler_remove(
+            self.get_target_class().draw_handler_remove(
                 self.draw_handler, "WINDOW")
             # Remove from handler list
             self.remove_handler_list(self.draw_handler)
 
         self.draw_handler = None
 
-    def add_color_vertices(self, color, verts):
-        for i, v in enumerate(verts):
-            self.vertices.append(verts[i])
-            self.vertices_colors.append(color)
-
     def add_vertices_colors(self, verts, colors):
         for i, v in enumerate(verts):
             self.vertices.append(verts[i])
             self.vertices_colors.append(colors[i])
 
-    def set_color_vertices(self, color, verts):
-        self.clear_vertices()
-        self.add_color_vertices(color, verts)
-
     def set_vertices_colors(self, verts, colors):
-        self.clear_vertices()
-        self.add_vertices_colors(verts, colors)
+        self.vertices = verts
+        self.vertices_colors = colors
 
     def clear_vertices(self):
         self.vertices = []
         self.vertices_colors = []
 
     def draw_callback(self, op, context):
+        if not self.is_visible():
+            return
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
             return
 
+        if self._work_area != context.area:
+            return
+
         if self.shader is not None:
-            bgl.glPointSize(self.point_size)
+            bgl.glPointSize(self._point_size)
             bgl.glEnable(bgl.GL_BLEND)
             self.shader.bind()
             self.batch.draw(self.shader)
             bgl.glDisable(bgl.GL_BLEND)
+
+    def hide_shader(self):
+        self.set_visible(False)
+
+    def unhide_shader(self):
+        self.set_visible(True)
 
 
 class FBPoints2D(FBShaderPoints):
@@ -153,8 +180,10 @@ class FBPoints2D(FBShaderPoints):
             self.vertices, self.vertices_colors, 'CUSTOM_2D')
 
     def register_handler(self, args):
-        self.draw_handler = bpy.types.SpaceView3D.draw_handler_add(
-            self.draw_callback, args, "WINDOW", "POST_PIXEL")
+        self._work_area = args[1].area
+
+        self.draw_handler = self.get_target_class().draw_handler_add(
+            self.draw_callback, args, 'WINDOW', 'POST_PIXEL')
         # Add to handler list
         self.add_handler_list(self.draw_handler)
 
@@ -165,7 +194,8 @@ class FBPoints3D(FBShaderPoints):
         # 3D_FLAT_COLOR
         self._create_batch(self.vertices, self.vertices_colors, 'CUSTOM_3D')
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, target_class):
+        super().__init__(target_class)
         self.set_point_size(
-            Config.default_pin_size * Config.surf_pin_size_scale)
+            UserPreferences.get_value_safe('pin_size', UserPreferences.type_float) *
+            Config.surf_pin_size_scale)

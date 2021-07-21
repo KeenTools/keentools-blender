@@ -20,7 +20,7 @@ import logging
 
 import bpy
 
-from .utils import cameras, manipulate, coords
+from .utils import manipulate, coords
 from .fbloader import FBLoader
 from .config import Config, get_main_settings
 
@@ -83,10 +83,7 @@ class FB_OT_MovePin(bpy.types.Operator):
             vp = FBLoader.viewport()
             vp.pins().add_pin((x, y))
             vp.pins().set_current_pin_num_to_last()
-            FBLoader.update_pins_count(headnum, camnum)
-
-            manipulate.push_neutral_head_in_undo_history(
-                settings.get_head(headnum), kid, 'New Pin.')
+            FBLoader.update_camera_pins_count(headnum, camnum)
         else:
             logger.debug("MISS MODEL")
             FBLoader.viewport().pins().reset_current_pin()
@@ -108,21 +105,16 @@ class FB_OT_MovePin(bpy.types.Operator):
         if cam is None:
             return {'CANCELLED'}
 
-        # Init old state values
-        head.tmp_serial_str = ''
-        cam.tmp_model_mat = ''
-
         vp = FBLoader.viewport()
         vp.update_view_relative_pixel_size(context)
 
         FBLoader.load_model(headnum)
         FBLoader.place_camera(headnum, camnum)
-        FBLoader.load_pins(headnum, camnum)
+        FBLoader.load_pins_into_viewport(headnum, camnum)
 
         vp.create_batch_2d(context)
         vp.register_handlers(args, context)
 
-        settings.pinmode = True
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
         vp.pins().set_current_pin((x, y))
 
@@ -133,51 +125,12 @@ class FB_OT_MovePin(bpy.types.Operator):
         else:
             return self._new_pin(context, mouse_x, mouse_y)
 
-    def _push_previous_state(self):
-        logger = logging.getLogger(__name__)
-        settings = get_main_settings()
-        headnum = self.get_headnum()
-        camnum = self.get_camnum()
-        head = settings.get_head(headnum)
-        cam = head.get_camera(camnum)
-        kid = cam.get_keyframe()
-
-        fb = FBLoader.get_builder()
-        # Save state to vars
-        serial_str = head.serial_str
-        model_mat = cam.model_mat
-
-        # Prepare previous state to push in history
-        if head.tmp_serial_str != '':
-            cam.model_mat = cam.tmp_model_mat
-            head.set_serial_str(head.get_tmp_serial_str())
-
-            if not fb.deserialize(head.get_serial_str()):
-                logger.warning('DESERIALIZE ERROR: ', head.get_serial_str())
-
-            FBLoader.update_all_camera_positions(headnum)
-            # ---------
-            # PUSH Previous
-            manipulate.push_neutral_head_in_undo_history(head, kid, 'Move Pin.')
-            # ---------
-            # Restore last position
-            head.set_serial_str(serial_str)
-            cam.model_mat = model_mat
-
-            if not fb.deserialize(head.get_serial_str()):
-                logger.warning("DESERIALIZE ERROR: {}", head.get_serial_str())
-        else:
-            # There was only one click
-            # Save current state
-            head.set_serial_str(fb.serialize())
-            cam.set_model_mat(fb.model_mat(kid))
-
     def on_left_mouse_release(self, context, mouse_x, mouse_y):
         settings = get_main_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
         head = settings.get_head(headnum)
-        kid = settings.get_keyframe(headnum, camnum)
+        kid = head.get_keyframe(camnum)
 
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
         vp = FBLoader.viewport()
@@ -186,22 +139,28 @@ class FB_OT_MovePin(bpy.types.Operator):
             # Move current 2D-pin
             pins.arr()[pins.current_pin_num()] = (x, y)
 
-        pins.reset_current_pin()
-        FBLoader.update_head_camera_focals(head)
-
-        self._push_previous_state()
+        FBLoader.update_head_camobj_focals(headnum)
 
         fb = FBLoader.get_builder()
+
+        if head.should_reduce_pins():
+            fb.reduce_pins()
+            pins.set_pins(vp.img_points(fb, kid))
+
+        coords.update_head_mesh_neutral(fb, head.headobj)
+
         FBLoader.update_all_camera_positions(headnum)
         FBLoader.update_all_camera_focals(headnum)
-        FBLoader.fb_save(headnum, camnum)
-        # ---------
-        # PUSH Last
-        manipulate.push_neutral_head_in_undo_history(head, kid, 'Pin Result.')
-        # ---------
+
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
+        manipulate.push_head_in_undo_history(head, 'Pin Move')
 
         # Load 3D pins
         vp.update_surface_points(fb, head.headobj, kid)
+        vp.update_residuals(fb, head.headobj, kid, context)
+        head.mark_model_changed_by_pinmode()
+
+        pins.reset_current_pin()
         return {'FINISHED'}
 
     @staticmethod
@@ -215,15 +174,12 @@ class FB_OT_MovePin(bpy.types.Operator):
         fb.move_pin(kid, pin_idx, coords.image_space_to_frame(x, y))
 
     def on_mouse_move(self, context, mouse_x, mouse_y):
-
         settings = get_main_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
         head = settings.get_head(headnum)
         headobj = head.headobj
-        cam = head.get_camera(camnum)
-        camobj = cam.camobj
-        kid = settings.get_keyframe(headnum, camnum)
+        kid = head.get_keyframe(camnum)
 
         self._pin_drag(kid, context, mouse_x, mouse_y)
 
@@ -233,30 +189,19 @@ class FB_OT_MovePin(bpy.types.Operator):
             return {'FINISHED'}
 
         fb = FBLoader.get_builder()
-        # --------------
-        # Pin lag solve
-        # --------------
-        head = settings.get_head(headnum)
-        # Store in tmp previous state
-        head.tmp_serial_str = head.serial_str
-        cam.tmp_model_mat = cam.model_mat
-        # Save current state
-        head.set_serial_str(fb.serialize())
-        cam.set_model_mat(fb.model_mat(kid))
-        # --------------
 
-        FBLoader.place_cameraobj(kid, camobj, headobj)
-        coords.update_head_mesh(settings, fb, head)
+        FBLoader.place_camera(headnum, camnum)
 
-        FBLoader.viewport().wireframer().init_geom_data(headobj)
-        FBLoader.viewport().wireframer().create_batches()
-        FBLoader.viewport().create_batch_2d(context)
-        # Try to redraw
+        vp = FBLoader.viewport()
+        vp.wireframer().init_geom_data_from_fb(fb, headobj, kid)
+        vp.wireframer().update_edges_vertices()
+        vp.wireframer().create_batches()
+        vp.create_batch_2d(context)
+        vp.update_surface_points(fb, headobj, kid)
+
+        # Try to force viewport redraw
         if not bpy.app.background:
             context.area.tag_redraw()
-
-        # Load 3D pins
-        FBLoader.viewport().update_surface_points(fb, headobj, kid)
 
         return self.on_default_modal()
 

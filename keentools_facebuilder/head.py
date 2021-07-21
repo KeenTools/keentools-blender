@@ -19,10 +19,11 @@
 import logging
 import bpy
 
-from . utils import attrs
-from . fbloader import FBLoader
-from . config import Config, get_main_settings, get_operators, ErrorType
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from .utils import attrs
+from .fbloader import FBLoader
+from .config import Config, get_main_settings, get_operator, ErrorType
+from .blender_independent_packages.pykeentools_loader import module as pkt_module
+
 
 class MESH_OT_FBAddHead(bpy.types.Operator):
     """ Add FaceBuilder Head into scene"""
@@ -37,18 +38,23 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         try:
             obj = self.new_head()
         except ModuleNotFoundError:
-            logger.debug('ADD_HEAD_ERROR: ModuleNotFoundError')
-            warn = getattr(get_operators(), Config.fb_warning_callname)
+            logger.error('ADD_HEAD_ERROR: ModuleNotFoundError')
+            warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
-        except pkt.module().ModelLoadingException:
-            logger.debug('ADD_HEAD_ERROR: ModelLoadingException')
-            warn = getattr(get_operators(), Config.fb_warning_callname)
+        except pkt_module().ModelLoadingException:
+            logger.error('ADD_HEAD_ERROR: ModelLoadingException')
+            warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktModelProblem)
             return {'CANCELLED'}
+        except TypeError:
+            logger.error('ADD_HEAD_ERROR: TypeError')
+            warn = get_operator(Config.fb_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.CannotCreateObject)
+            return {'CANCELLED'}
         except Exception:
-            logger.debug('ADD_HEAD_ERROR: Exception')
-            warn = getattr(get_operators(), Config.fb_warning_callname)
+            logger.error('ADD_HEAD_ERROR: Exception')
+            warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
 
@@ -65,6 +71,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         h.reset_sensor_size()
 
         settings.current_headnum = settings.get_last_headnum()
+        FBLoader.save_fb_serial_and_image_pathes(settings.current_headnum)
 
         try:
             a = context.area
