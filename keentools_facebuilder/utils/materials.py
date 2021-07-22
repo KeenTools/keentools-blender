@@ -22,8 +22,9 @@ import numpy as np
 
 from .. config import Config, get_main_settings
 from .. fbloader import FBLoader
-from ..blender_independent_packages.pykeentools_loader import module as pkt_module
-from ..utils.images import find_bpy_image_by_name
+from .. utils.coords import projection_matrix
+from .. utils.images import load_rgba, find_bpy_image_by_name
+from .. blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 def switch_to_mode(mode='MATERIAL'):
@@ -148,10 +149,7 @@ def _create_frame_data_loader(settings, head, camnums, fb):
     def frame_data_loader(kf_idx):
         cam = head.cameras[camnums[kf_idx]]
 
-        w, h = cam.cam_image.size[:2]
-        img = np.rot90(
-            np.asarray(cam.cam_image.pixels[:]).reshape((h, w, 4)),
-            cam.orientation)
+        img = load_rgba(cam)
 
         frame_data = pkt_module().texture_builder.FrameData()
         frame_data.geo = fb.applied_args_model_at(cam.get_keyframe())
