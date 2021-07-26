@@ -28,7 +28,7 @@ import numpy as np
 
 import bpy
 
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 _TMP_IMAGES_DIR = os.path.join(tempfile.gettempdir(), 'pykeentools_tmp_images')
@@ -69,7 +69,7 @@ def load_unchanged_rgba(camera):
     with _tmp_image_path(abs_path) as tmp_path:
         with _standard_view_transform():
             camera.cam_image.save_render(tmp_path)
-        img = pkt.module().read_png(tmp_path)
+        img = pkt_module().read_png(tmp_path)
 
     if img is None:
         if camera.cam_image is None:
