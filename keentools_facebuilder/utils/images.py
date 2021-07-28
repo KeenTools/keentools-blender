@@ -50,15 +50,52 @@ def _tmp_image_path(curr_abs_path):
         shutil.rmtree(_TMP_IMAGES_DIR, ignore_errors=True)
 
 
+def _get_color_transform_state():
+    vs = bpy.context.scene.view_settings
+    ds = bpy.context.scene.display_settings
+    return {
+        'display_device': ds.display_device,
+        'view_transform': vs.view_transform,
+        'look': vs.look,
+        'exposure': vs.exposure,
+        'gamma': vs.gamma,
+        'use_curve_mapping': vs.use_curve_mapping
+    }
+
+
+def _set_color_transform_state(state):
+    vs = bpy.context.scene.view_settings
+    ds = bpy.context.scene.display_settings
+
+    ds.display_device = state['display_device']
+    vs.view_transform = state['view_transform']
+    vs.look = state['look']
+    vs.exposure = state['exposure']
+    vs.gamma = state['gamma']
+    vs.use_curve_mapping = state['use_curve_mapping']
+
+
+def _default_color_transform_state():
+    return {
+        'display_device': 'sRGB',
+        'view_transform': 'Standard',
+        'look': 'None',
+        'exposure': 0.0,
+        'gamma': 1.0,
+        'use_curve_mapping': False
+    }
+
+
 @contextlib.contextmanager
 def _standard_view_transform():
     # This is done to enforce correct image saving
-    view_transform = bpy.context.scene.view_settings.view_transform
-    bpy.context.scene.view_settings.view_transform = 'Standard'
+    state = _get_color_transform_state()
+    _set_color_transform_state(_default_color_transform_state())
+
     try:
         yield
     finally:
-        bpy.context.scene.view_settings.view_transform = view_transform
+        _set_color_transform_state(state)
 
 
 def load_unchanged_rgba(camera):
