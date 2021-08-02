@@ -211,6 +211,17 @@ def _universal_updater_setter(name):
     return _setter
 
 
+def _get_license_id(self):
+    visible_chars = 4
+    len_lic = len(self.license_id)
+    return ''.join([x if x == '-' or len_lic - i <= visible_chars else 'X'
+                   for i, x in enumerate(self.license_id)])
+
+
+def _set_license_id(self, value):
+    self.license_id = value
+
+
 class FBAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = Config.addon_name
 
@@ -257,6 +268,12 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
     license_id: bpy.props.StringProperty(
         name="License ID", default=""
+    )
+
+    license_id_masked: bpy.props.StringProperty(
+        name="License ID", default="",
+        get=_get_license_id,
+        set=_set_license_id
     )
 
     license_server: bpy.props.StringProperty(
@@ -379,7 +396,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         if self.lic_type == 'ONLINE':
             box = layout.box()
             row = box.split(factor=0.85)
-            row.prop(self, "license_id")
+            row.prop(self, "license_id_masked")
             install_online_op = row.operator(PREF_OT_InstallLicenseOnline.bl_idname)
             install_online_op.license_id = self.license_id
 
