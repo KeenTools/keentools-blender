@@ -31,6 +31,10 @@ _ID_NAME_PREFIX = 'preferences.' + Config.prefix
 _please_accept_eula = 'You need to accept our EULA before installation'
 
 
+def _get_addon_preferences():
+    return bpy.context.preferences.addons[Config.addon_name].preferences
+
+
 class PREF_OT_OpenPktLicensePage(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_open_pkt_license_page'
     bl_label = 'read license'
@@ -212,6 +216,10 @@ class PREF_OT_InstallLicenseOnline(bpy.types.Operator):
 
     license_id: bpy.props.StringProperty()
 
+    def _clear_license_id(self):
+        pref = _get_addon_preferences()
+        pref.license_id = ''
+
     def execute(self, context):
         lm = pkt_module().FaceBuilder.license_manager()
         res = lm.install_license_online(self.license_id)
@@ -219,6 +227,7 @@ class PREF_OT_InstallLicenseOnline(bpy.types.Operator):
         if res is not None:
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
         else:
+            self._clear_license_id()
             self.report({'INFO'}, 'License installed')
         return {'FINISHED'}
 
@@ -231,6 +240,10 @@ class PREF_OT_InstallLicenseOffline(bpy.types.Operator):
 
     lic_path: bpy.props.StringProperty()
 
+    def _clear_license_path(self):
+        pref = _get_addon_preferences()
+        pref.lic_path = ''
+
     def execute(self, context):
         lm = pkt_module().FaceBuilder.license_manager()
         res = lm.install_license_offline(self.lic_path)
@@ -238,6 +251,7 @@ class PREF_OT_InstallLicenseOffline(bpy.types.Operator):
         if res is not None:
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
         else:
+            self._clear_license_path()
             self.report({'INFO'}, 'License installed')
         return {'FINISHED'}
 
