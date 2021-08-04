@@ -125,6 +125,9 @@ class Config:
     fb_user_preferences_get_colors = operators + '.user_preferences_get_colors'
     fb_user_preferences_reset_all_warning_idname = \
         operators + '.user_preferences_reset_all_warning'
+    fb_default_pin_settings_idname = operators + '.default_pin_settings'
+    fb_default_wireframe_settings_idname = \
+        operators + '.default_wireframe_settings'
 
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
@@ -136,9 +139,8 @@ class Config:
     fb_views_panel_idname = _PT + 'views_panel'
     fb_exif_panel_idname = _PT + 'exif_panel'
     fb_texture_panel_idname = _PT + 'texture_panel'
-    fb_colors_panel_idname = _PT + 'colors_panel'
     fb_model_panel_idname = _PT + 'model_panel'
-    fb_pin_settings_panel_idname = _PT + 'pin_settings_panel'
+    fb_appearance_panel_idname = _PT + 'appearance_panel'
     fb_blendshapes_panel_idname = _PT + 'blendshapes_panel'
 
     # Help ids

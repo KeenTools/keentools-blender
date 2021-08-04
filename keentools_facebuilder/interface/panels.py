@@ -144,8 +144,7 @@ class FB_PT_HeaderPanel(Common, Panel):
         state, headnum = what_is_state()
 
         for i, h in enumerate(settings.heads):
-            box = layout.box()
-            row = box.row()
+            row = layout.row(align=True)
 
             if headnum == i:
                 row.prop(settings, 'blue_head_button', toggle=1,
@@ -310,17 +309,15 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
     def draw(self, context):
         def _draw_default_mode(layout, settings, head):
             camera = head.get_camera(settings.current_camnum)
-            box = layout.box()
-            row = box.row()
-            col = row.column()
-            col.scale_y = Config.text_scale_y
+            col = layout.column(align=True)
+            # col.scale_y = Config.text_scale_y
             col.label(text='File: {}'.format(camera.get_image_name()))
 
-            box.prop(camera, 'auto_focal_estimation')
+            col.prop(camera, 'auto_focal_estimation')
             if camera.auto_focal_estimation:
-                box.label(text='Focal length: {:.2f} mm'.format(camera.focal))
+                layout.label(text='Focal length: {:.2f} mm'.format(camera.focal))
             else:
-                box.prop(camera, 'focal')
+                layout.prop(camera, 'focal')
 
         def _draw_exif(layout, head):
             # Show EXIF info message
@@ -368,19 +365,18 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
     def _draw_pins_panel(self, headnum, camnum):
         settings = get_main_settings()
         layout = self.layout
-        box = layout.box()
+        col = layout.column(align=True)
 
         if settings.get_head(headnum).should_use_emotions():
-            op = box.operator(Config.fb_reset_expression_idname)
+            op = col.operator(Config.fb_reset_expression_idname)
             op.headnum = headnum
             op.camnum = camnum
 
-        op = box.operator(Config.fb_center_geo_idname,
-                          text="Reset camera")
+        op = col.operator(Config.fb_center_geo_idname, text='Reset camera')
         op.headnum = headnum
         op.camnum = camnum
-        op = box.operator(
-            Config.fb_remove_pins_idname, text="Remove all pins")
+
+        op = col.operator(Config.fb_remove_pins_idname, text='Remove all pins')
         op.headnum = headnum
         op.camnum = camnum
 
@@ -391,12 +387,11 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         if not head.has_cameras():
             return
 
-        box = layout.box()
-        box.prop(settings.get_head(headnum), 'use_emotions')
-        box.prop(settings.get_head(headnum), 'reduce_pins')
+        layout.prop(settings.get_head(headnum), 'use_emotions')
+        layout.prop(settings.get_head(headnum), 'reduce_pins')
 
         if settings.pinmode:
-            row = box.row()
+            row = layout.row()
             row.scale_y = 2.0
             op = row.operator(
                 Config.fb_pickmode_starter_idname,
@@ -404,25 +399,23 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             op.headnum = settings.current_headnum
             op.camnum = settings.current_camnum
 
-        box = layout.box()
         for i, camera in enumerate(head.cameras):
-            row = box.row()
+            row = layout.row(align=True)
             view_icon = 'PINNED' if camera.has_pins() else 'HIDE_OFF'
 
-            col = row.column()
+            # col = row.column(align=True)
 
             if settings.current_camnum == i and settings.pinmode:
-                col.prop(settings, 'blue_camera_button', toggle=1,
+                row.prop(settings, 'blue_camera_button', toggle=1,
                          text=camera.get_image_name(), icon=view_icon)
             else:
-                split = col
-                op = split.operator(
+                op = row.operator(
                     Config.fb_select_camera_idname,
                     text=camera.get_image_name(), icon=view_icon)
                 op.headnum = headnum
                 op.camnum = i
 
-            col = row.column()
+            col = row.column(align=True)
             col.active = not camera.cam_image
             op = col.operator(
                 Config.fb_proper_view_menu_exec_idname,
@@ -499,40 +492,38 @@ class FB_PT_Model(AllVisibleClosed, Panel):
         settings = get_main_settings()
 
         state, headnum = what_is_state()
-        # No registered models in scene
         if headnum < 0:
             return
+
         head = settings.get_head(headnum)
 
         op = layout.operator(Config.fb_unmorph_idname, text='Reset')
         op.headnum = headnum
         op.camnum = settings.current_camnum
 
-        box = layout.box()
-        box.prop(settings, 'shape_rigidity')
-        expression_rigidity_row = box.row()
+        col = layout.column(align=True)
+        col.prop(settings, 'shape_rigidity')
+        expression_rigidity_row = col.row(align=True)
         expression_rigidity_row.prop(settings, 'expression_rigidity')  
         expression_rigidity_row.active = head.should_use_emotions()
 
-        box = layout.box()
-        box.prop(head, 'model_scale')
-
-        if not head.blenshapes_are_relevant() and head.model_changed_by_scale:
-            _draw_update_blendshapes_panel(box)
-
-        row = box.split(factor=0.35)
+        row = layout.split(factor=0.35)
         row.label(text='Topology')
         row.prop(head, 'model_type', text='')
+        layout.prop(head, 'model_scale')
+
+        if not head.blenshapes_are_relevant() and head.model_changed_by_scale:
+            _draw_update_blendshapes_panel(layout)
 
         if FBLoader.is_not_loaded():
             return
         fb = FBLoader.get_builder()
-        box = layout.box()
-        box.label(text='Model parts:')
+        col = layout.column(align=True)
+        col.label(text='Model parts:')
         names = fb.mask_names()
         for i, mask in enumerate(fb.masks()):
             if i % 2 == 0:
-                row = box.row()
+                row = col.row(align=True)
             row.prop(head, 'masks', index=i, text=names[i])
 
 
@@ -566,14 +557,13 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
             headnum = settings.current_headnum
         head = settings.get_head(headnum)
 
-        box = layout.box()
-        box.label(text='Resolution (in pixels):')
-        row = box.row()
+        col = layout.column(align=True)
+        col.label(text='Resolution (in pixels):')
+        row = col.row(align=True)
         row.prop(settings, 'tex_width', text='W')
         row.prop(settings, 'tex_height', text='H')
 
-        box = layout.box()
-        box.prop(head, 'tex_uv_shape')
+        layout.prop(head, 'tex_uv_shape')
 
         row = layout.row()
         row.scale_y = 2.0
@@ -602,44 +592,62 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
         row.operator(Config.fb_delete_texture_idname,
                      text="Delete", icon='X')
 
-        box = layout.box()
-        box.label(text='Advanced:')
-        # layout.prop(settings, 'tex_back_face_culling')
-        box.prop(settings, 'tex_face_angles_affection')
-        box.prop(settings, 'tex_uv_expand_percents')
-        box.prop(settings, 'tex_equalize_brightness')
-        box.prop(settings, 'tex_equalize_colour')
-        box.prop(settings, 'tex_fill_gaps')
+        col = layout.column(align=True)
+        col.label(text='Advanced:')
+        col.prop(settings, 'tex_face_angles_affection')
+        col.prop(settings, 'tex_uv_expand_percents')
+        col.prop(settings, 'tex_equalize_brightness')
+        col.prop(settings, 'tex_equalize_colour')
+        col.prop(settings, 'tex_fill_gaps')
 
 
-class FB_PT_WireframeSettingsPanel(AllVisible, Panel):
-    bl_idname = Config.fb_colors_panel_idname
-    bl_label = 'Wireframe'
+class FB_PT_AppearancePanel(AllVisible, Panel):
+    bl_idname = Config.fb_appearance_panel_idname
+    bl_label = 'Appearance'
 
     def draw_header_preset(self, context):
         layout = self.layout
-        row = layout.row()
+        row = layout.row(align=True)
         row.active = False
         row.operator(
             Config.fb_addon_setup_defaults_idname,
             text='', icon='PREFERENCES')
         row.operator(
-            Config.fb_help_wireframe_settings_idname,
+            Config.fb_help_pin_settings_idname,
             text='', icon='QUESTION')
 
     def draw(self, context):
         layout = self.layout
         settings = get_main_settings()
 
-        box = layout.box()
-        split = box.split(factor=0.625)
-        row = split.row()
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.label(text='Pins')
+        btn = row.column(align=True)
+        btn.active = False
+        btn.operator(
+            Config.fb_default_pin_settings_idname,
+            text='', icon='LOOP_BACK', emboss=False, depress=False)
+        col.prop(settings, 'pin_size', slider=True)
+        col.prop(settings, 'pin_sensitivity', slider=True)
+
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.label(text='Wireframe')
+        btn = row.column(align=True)
+        btn.active = True
+        btn.operator(
+            Config.fb_default_wireframe_settings_idname,
+            text='', icon='LOOP_BACK', emboss=False, depress=False)
+
+        split = col.split(factor=0.625)
+        row = split.row(align=True)
         row.prop(settings, 'wireframe_color', text='')
         row.prop(settings, 'wireframe_special_color', text='')
         row.prop(settings, 'wireframe_midline_color', text='')
         split.prop(settings, 'wireframe_opacity', text='', slider=True)
 
-        row = box.row()
+        row = layout.row(align=True)
         op = row.operator(Config.fb_wireframe_color_idname, text="R")
         op.action = 'wireframe_red'
         op = row.operator(Config.fb_wireframe_color_idname, text="G")
@@ -658,30 +666,6 @@ class FB_PT_WireframeSettingsPanel(AllVisible, Panel):
         op.action = 'wireframe_white'
 
         layout.prop(settings, 'show_specials', text='Highlight head parts')
-
-
-class FB_PT_PinSettingsPanel(AllVisible, Panel):
-    bl_idname = Config.fb_pin_settings_panel_idname
-    bl_label = 'Pins'
-
-    def draw_header_preset(self, context):
-        layout = self.layout
-        row = layout.row()
-        row.active = False
-        row.operator(
-            Config.fb_addon_setup_defaults_idname,
-            text='', icon='PREFERENCES')
-        row.operator(
-            Config.fb_help_pin_settings_idname,
-            text='', icon='QUESTION')
-
-    def draw(self, context):
-        layout = self.layout
-        settings = get_main_settings()
-
-        box = layout.box()
-        box.prop(settings, 'pin_size', slider=True)
-        box.prop(settings, 'pin_sensitivity', slider=True)
 
 
 class FB_PT_BlendShapesPanel(AllVisible, Panel):
@@ -713,61 +697,34 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
         no_blendshapes = has_no_blendshape(obj)
         has_blendshapes_act = has_blendshapes_action(obj)
 
-        box = layout.box()
-        box.operator(Config.fb_create_blendshapes_idname)
+        col = layout.column(align=True)
+        col.operator(Config.fb_create_blendshapes_idname)
 
-        row = box.row()
+        row = col.row(align=True)
         if no_blendshapes:
             row.active = False
         op = row.operator(Config.fb_delete_blendshapes_idname)
         op.active_button = not no_blendshapes
 
         if not no_blendshapes:
-            box.operator(Config.fb_reset_blendshape_values_idname)
+            col.operator(Config.fb_reset_blendshape_values_idname)
 
         if not no_blendshapes:
-            box = layout.box()
-            box.label(text='Animation')
+            col = layout.column(align=True)
+            col.label(text='Animation')
 
-            box.operator(Config.fb_load_animation_from_csv_idname)
+            col.operator(Config.fb_load_animation_from_csv_idname)
 
-            row = box.row()
+            row = col.row(align=True)
             if has_blendshapes_act:
                 row.active = False
             op = row.operator(Config.fb_create_example_animation_idname)
             op.active_button = not has_blendshapes_act
 
-            row = box.row()
+            row = col.row(align=True)
             if not has_blendshapes_act:
                 row.active = False
             op = row.operator(Config.fb_clear_animation_idname)
             op.active_button = has_blendshapes_act
 
-        box = layout.box()
-        box.operator(Config.fb_export_head_to_fbx_idname)
-
-        return
-
-        # Functions for future Animation Control Panel
-        box = layout.box()
-        box.label(text='Control Panel')
-
-        op = box.operator(
-            Config.fb_history_actor_idname,
-            text='Generate Control Panel')
-        op.action = 'generate_control_panel'
-
-        op = box.operator(
-            Config.fb_history_actor_idname,
-            text='Delete Control Panel')
-        op.action = 'delete_control_panel'
-
-        op = box.operator(
-            Config.fb_history_actor_idname,
-            text='Select sliders')
-        op.action = 'select_control_panel_sliders'
-
-        op = box.operator(
-            Config.fb_history_actor_idname,
-            text='Sliders -> Blendshapes')
-        op.action = 'convert_controls_to_blendshapes'
+        layout.operator(Config.fb_export_head_to_fbx_idname)
