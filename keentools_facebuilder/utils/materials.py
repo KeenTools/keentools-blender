@@ -156,7 +156,7 @@ def _create_frame_data_loader(settings, head, camnums, fb):
         frame_data = pkt_module().texture_builder.FrameData()
         frame_data.geo = fb.applied_args_model_at(cam.get_keyframe())
         frame_data.image = img
-        frame_data.model = cam.get_model_mat()
+        frame_data.model = fb.model_mat(cam.get_keyframe())
         frame_data.view = np.eye(4)
         frame_data.projection = cam.get_projection_matrix()
 

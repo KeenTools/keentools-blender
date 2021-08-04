@@ -26,7 +26,7 @@ _MT = 'FACEBUILDER_MT_'
 
 class Config:
     # Version dependent
-    addon_version = '2021.2.0'
+    addon_version = '2021.3.0'
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93))
     minimal_blender_api = (2, 80, 60)
@@ -42,6 +42,9 @@ class Config:
     default_fb_collection_name = 'FaceBuilderCol'
     default_fb_camera_data_name = 'fbCamData'
     default_fb_camera_name = 'fbCamera'
+
+    user_preferences_dict_name = 'keentools_facebuilder_addon'
+    updater_preferences_dict_name = 'keentools_updater'
 
     addon_search = 'KeenTools'
     addon_global_var_name = prefix + '_settings'
@@ -69,6 +72,7 @@ class Config:
     fb_delete_camera_idname = operators + '.delete_camera'
     fb_proper_view_menu_exec_idname = operators + '.proper_view_menu_exec'
     fb_addon_settings_idname = operators + '.addon_settings'
+    fb_addon_setup_defaults_idname = operators + '.addon_setup_defaults'
     fb_delete_texture_idname = operators + '.delete_texture'
 
     fb_rotate_image_cw_idname = operators + '.rotate_image_cw'
@@ -101,6 +105,7 @@ class Config:
 
     fb_tex_selector_idname = operators + '.tex_selector'
     fb_exit_pinmode_idname = operators + '.exit_pinmode'
+    fb_install_update_dialog_idname = operators + '.install_update_dialog'
 
     fb_create_blendshapes_idname = operators + '.create_blendshapes'
     fb_delete_blendshapes_idname = operators + '.delete_blendshapes'
@@ -115,11 +120,19 @@ class Config:
     fb_reconstruct_head_idname = operators + '.reconstruct_head'
 
     fb_add_head_operator_idname = operators + '.add_head'
+    fb_user_preferences_changer = operators + '.user_preferences_changer'
+    fb_user_preferences_reset_all = operators + '.user_preferences_reset_all'
+    fb_user_preferences_get_colors = operators + '.user_preferences_get_colors'
+    fb_user_preferences_reset_all_warning_idname = \
+        operators + '.user_preferences_reset_all_warning'
 
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
     fb_camera_panel_idname = _PT + 'camera_panel'
     fb_update_panel_idname = _PT + 'update_panel'
+    fb_download_notification_panel_idname = _PT + 'download_notification'
+    fb_downloading_problem_panel_idname = _PT + 'downloading_problem'
+    fb_updates_installation_panel_idname = _PT + 'updates_installation_panel'
     fb_views_panel_idname = _PT + 'views_panel'
     fb_exif_panel_idname = _PT + 'exif_panel'
     fb_texture_panel_idname = _PT + 'texture_panel'
@@ -137,9 +150,17 @@ class Config:
     fb_help_texture_idname = operators + '.help_texture'
     fb_help_blendshapes_idname = operators + '.help_blendshapes'
 
+    fb_download_the_update_idname = operators + '.download_the_update'
+    fb_retry_download_the_update_idname = operators + '.retry_download_the_update'
     fb_open_url_idname = operators + '.open_url'
     fb_remind_later_idname = operators + '.remind_later'
     fb_skip_version_idname = operators + '.skip_version'
+
+    fb_come_back_to_update_idname = operators + '.come_back_to_update'
+
+    fb_install_updates_idname = operators + '.install_updates'
+    fb_remind_install_later_idname = operators + '.remind_install_later'
+    fb_skip_installation_idname = operators + '.skip_installation'
 
     fb_uninstall_core_idname = operators + '.uninstall_core'
 
@@ -160,6 +181,7 @@ class Config:
     # renamed in future).
     # Only first value in tuple is used for new custom property creation.
     version_prop_name = (_company + '_version',)
+    viewport_state_prop_name = (_company + '_viewport_state',)
     fb_serial_prop_name = (prefix + '_serial',)
     fb_images_prop_name = (prefix + '_images',)
     fb_dir_prop_name = (prefix + '_dir',)
@@ -173,9 +195,7 @@ class Config:
     reconstruct_frame_height_param = ('frame_height', 'height')
 
     # Constants
-    default_pin_size = 7.0
     surf_pin_size_scale = 0.85
-    default_point_sensitivity = 16.0
     text_scale_y = 0.75
 
     viewport_redraw_interval = 0.1
@@ -193,6 +213,8 @@ class Config:
     camera_y_step = 5
     camera_z_step = 0.5
 
+    show_markers_at_camera_corners = False
+
     # In Material
     image_node_layout_coord = (-300, 0)
 
@@ -209,6 +231,7 @@ class Config:
         'white': ((1.0, 1.0, 1.0), (0.0, 0.0, 0.4)),
         'default': ((0.039, 0.04 , 0.039), (0.0, 0.0, 0.85098))
     }
+    wireframe_opacity = 0.45
 
     pin_color = (1.0, 0.0, 0.0, 1.0)
     current_pin_color = (1.0, 0.0, 1.0, 1.0)
@@ -217,6 +240,25 @@ class Config:
 
     selected_rectangle_color = (0.871, 0.107, 0.001, 1.0)
     regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
+
+    default_user_preferences = {
+        'pin_size': {'value': 7.0, 'type': 'float'},
+        'pin_sensitivity': {'value': 16.0, 'type': 'float'},
+        'prevent_view_rotation': {'value': True, 'type': 'bool'},
+        'wireframe_color': {'value': color_schemes['default'][0], 'type': 'color'},
+        'wireframe_special_color': {'value': color_schemes['default'][1], 'type': 'color'},
+        'wireframe_midline_color': {'value': midline_color, 'type': 'color'},
+        'wireframe_opacity': {'value': wireframe_opacity, 'type': 'float'}
+    }
+
+    default_updater_preferences = {
+        'latest_show_datetime_update_reminder': {'value': '', 'type': 'string'},
+        'latest_update_skip_version': {'value': '', 'type': 'string'},
+        'updater_state': {'value': 1, 'type': 'int'},
+        'downloaded_version': {'value': '', 'type': 'string'},
+        'latest_installation_skip_version': {'value': '', 'type': 'string'},
+        'latest_show_datetime_installation_reminder': {'value': '', 'type': 'string'}
+    }
 
 
 def is_blender_supported():
@@ -250,3 +292,4 @@ class ErrorType:
     MeshCorrupted = 5
     PktProblem = 6
     PktModelProblem = 7
+    DownloadingProblem = 8

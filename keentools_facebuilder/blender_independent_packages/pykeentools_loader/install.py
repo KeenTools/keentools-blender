@@ -20,20 +20,36 @@
 import os
 import sys
 from threading import Thread, Lock
+from enum import Enum
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+import bpy
 
 from .config import *
 
 
-__all__ = ['is_installed', 'uninstall', 'installation_status',
-           'install_from_download', 'install_from_download_async',
-           'install_from_file', 'loaded', 'module']
+__all__ = ['is_installed', 'uninstall_core', 'installation_status',
+           'install_from_download_async', 'install_core_from_file',
+           'download_addon_zip_async', 'download_core_zip_async',
+           'updates_downloaded', 'loaded', 'module',
+           'remove_downloaded_zips', 'install_downloaded_zips']
 
 
 _unpack_mutex = Lock()
 
 
-def _is_installed_not_locked():
+class PartInstallation(Enum):
+    CORE = 1
+    ADDON = 2
+
+
+def _is_core_installed_not_locked():
     return os.path.exists(pkt_installation_dir())
+
+
+def _is_addon_installed_not_locked():
+    return os.path.exists(addon_installation_dir())
 
 
 def _installation_path_exists():
@@ -48,18 +64,23 @@ def _installation_path_exists():
 def _is_installed_impl():
     _unpack_mutex.acquire()
     try:
-        return _is_installed_not_locked()
+        return _is_core_installed_not_locked()
     finally:
         _unpack_mutex.release()
 
 
-def _uninstall_not_locked():
-    if _is_installed_not_locked():
-        import shutil
-        shutil.rmtree(pkt_installation_dir(), ignore_errors=True)
+def _uninstall_not_locked(part_installation=PartInstallation.CORE):
+    if part_installation == PartInstallation.CORE:
+        if _is_core_installed_not_locked():
+            import shutil
+            shutil.rmtree(pkt_installation_dir(), ignore_errors=True)
+    elif part_installation == PartInstallation.ADDON:
+        if _is_addon_installed_not_locked():
+            import shutil
+            shutil.rmtree(addon_installation_dir(), ignore_errors=True)
 
 
-def uninstall():
+def uninstall_core():
     _unpack_mutex.acquire()
     try:
         _uninstall_not_locked()
@@ -68,13 +89,16 @@ def uninstall():
         _unpack_mutex.release()
 
 
-def _install_from_stream(file_like_object):
+def _install_from_stream(file_like_object, part_installation):
     _unpack_mutex.acquire()
     try:
-        _uninstall_not_locked()
+        _uninstall_not_locked(part_installation)
 
-        target_path = pkt_installation_dir()
-        os.makedirs(target_path, exist_ok=False)
+        if part_installation == PartInstallation.CORE:
+            target_path = pkt_installation_dir()
+            os.makedirs(target_path, exist_ok=False)
+        elif part_installation == PartInstallation.ADDON:
+            target_path = bpy.utils.user_resource('SCRIPTS', "addons")
 
         import zipfile
         with zipfile.ZipFile(file_like_object) as archive:
@@ -88,10 +112,15 @@ def _install_from_stream(file_like_object):
 
 
 def _download_with_progress_callback(url, progress_callback,
-                                     max_callback_updates_count):
+                                     max_callback_updates_count, timeout):
     import requests
     import io
-    response = requests.get(url, stream=True)
+    session = requests.Session()
+    retry = Retry(connect=3, backoff_factor=0.2)
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount('https://', adapter)
+
+    response = session.get(url, stream=True, timeout=timeout)
     if progress_callback is None:
         return io.BytesIO(response.content)
 
@@ -124,9 +153,41 @@ def _download_with_progress_callback(url, progress_callback,
     return result
 
 
+_MAX_CALLBACK_UPDATES_COUNT = 481
+
+
 def install_from_download(version=None, nightly=False, progress_callback=None,
                           final_callback=None, error_callback=None,
-                          max_callback_updates_count=481):
+                          max_callback_updates_count=_MAX_CALLBACK_UPDATES_COUNT):
+    url = download_core_path(version, nightly)
+
+    def install_process(data):
+        _install_from_stream(data, PartInstallation.CORE)
+
+    _download_and_process(url, install_process, progress_callback, final_callback,
+                          error_callback, max_callback_updates_count, None)
+
+
+def _download_zip(part_installation, timeout, version=None, nightly=False, progress_callback=None,
+                  final_callback=None, error_callback=None,
+                  max_callback_updates_count=_MAX_CALLBACK_UPDATES_COUNT):
+    if part_installation == PartInstallation.CORE:
+        url = download_core_path(version, nightly)
+    else:
+        url = download_addon_path(version, nightly)
+
+    def write_process(data):
+        file_path = _download_file_path(part_installation)
+        with open(file_path, 'wb') as code:
+            code.write(data.getbuffer())
+
+    _download_and_process(url, write_process, progress_callback, final_callback,
+                          error_callback, max_callback_updates_count, timeout)
+
+
+def _download_and_process(url, process_callback, progress_callback=None,
+                          final_callback=None, error_callback=None,
+                          max_callback_updates_count=_MAX_CALLBACK_UPDATES_COUNT, timeout=None):
     """
     :param max_callback_updates_count: max progress_callback calls count
     :param progress_callback: callable getting progress in float [0, 1]
@@ -134,10 +195,9 @@ def install_from_download(version=None, nightly=False, progress_callback=None,
     :param nightly: latest nightly build will be installed if True. version should be None in that case
     """
     try:
-        url = download_path(version, nightly)
-        with _download_with_progress_callback(url,
-                progress_callback, max_callback_updates_count) as archive_data:
-            _install_from_stream(archive_data)
+        with _download_with_progress_callback(url, progress_callback,
+                                              max_callback_updates_count, timeout) as archive_data:
+            process_callback(archive_data)
     except Exception as error:
         if error_callback is not None:
             error_callback(error)
@@ -154,13 +214,45 @@ def install_from_download_async(**kwargs):
     t.start()
 
 
-def install_from_file(path):
+def install_core_from_file(path):
     """
     Install pykeentools from selected archive
     :param path: a path to a pykeentools bundle zip archive
     """
     with open(path, mode='rb') as file:
-        _install_from_stream(file)
+        _install_from_stream(file, PartInstallation.CORE)
+
+
+def install_addon_from_file(path):
+    with open(path, mode='rb') as file:
+        _install_from_stream(file, PartInstallation.ADDON)
+
+
+def _install_from_file(path, part_installation):
+    with open(path, mode='rb') as file:
+        _install_from_stream(file, part_installation)
+
+
+def _download_file_name(part_installation):
+    file_name = 'keentools_'
+    if part_installation == PartInstallation.CORE:
+        file_name += 'core'
+    elif part_installation == PartInstallation.ADDON:
+        file_name += 'addon'
+    file_name += '.zip'
+    return file_name
+
+
+def download_addon_zip_async(**kwargs):
+    kwargs['part_installation'] = PartInstallation.ADDON
+    t = Thread(target=_download_zip, kwargs=kwargs)
+    t.start()
+
+
+def download_core_zip_async(**kwargs):
+    kwargs['part_installation'] = PartInstallation.CORE
+    t = Thread(target=_download_zip, kwargs=kwargs)
+    t.start()
 
 
 def _import_pykeentools():
@@ -266,3 +358,35 @@ def module():
 
     import pykeentools
     return pykeentools
+
+
+def _download_file_path(part_installation):
+    file_name = _download_file_name(part_installation)
+    return os.path.join(module().utils.caches_dir(), file_name)
+
+
+def updates_downloaded():
+    return os.path.exists(_download_file_path(PartInstallation.CORE)) and \
+           os.path.exists(_download_file_path(PartInstallation.ADDON))
+
+
+def _remove_download(part_installation):
+    path = _download_file_path(part_installation)
+    if os.path.exists(path):
+        os.remove(path)
+
+
+def remove_downloaded_zips():
+    _remove_download(PartInstallation.ADDON)
+    _remove_download(PartInstallation.CORE)
+
+
+def _install_download(part_installation, remove_zip=False):
+    _install_from_file(_download_file_path(part_installation), part_installation)
+    if remove_zip:
+        _remove_download(part_installation)
+
+
+def install_downloaded_zips(remove_zip):
+    _install_download(PartInstallation.ADDON, remove_zip)
+    _install_download(PartInstallation.CORE, remove_zip)

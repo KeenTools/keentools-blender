@@ -35,6 +35,7 @@ class FB_OT_AddonWarning(Operator):
     msg_content: bpy.props.StringProperty(default="")
 
     content = []
+    width = 400
 
     def set_content(self, txt_list):
         self.content = txt_list
@@ -112,7 +113,14 @@ class FB_OT_AddonWarning(Operator):
                 "Model data cannot be loaded. You need to reinstall "
                 "FaceBuilder."
             ])
-        return context.window_manager.invoke_props_dialog(self, width=400)
+        elif self.msg == ErrorType.DownloadingProblem:
+            self.set_content(["An unknown error encountered. The downloaded files might be corrupted. ",
+                              "You can try downloading them again, "
+                              "restarting Blender or installing the update manually.",
+                              "If you want to manually update the add-on: remove the old add-on, "
+                              "restart Blender and install the new version of the add-on."])
+            self.width = 650
+        return context.window_manager.invoke_props_dialog(self, width=self.width)
 
 
 class FB_OT_BlendshapesWarning(Operator):
@@ -232,7 +240,6 @@ class FB_OT_TexSelector(Operator):
                            "to create texture.")
 
         layout.prop(settings, 'tex_auto_preview')
-
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)

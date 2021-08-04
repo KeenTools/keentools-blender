@@ -161,15 +161,6 @@ def push_head_in_undo_history(head, msg='KeenTools operation'):
     head.need_update = False
 
 
-def push_neutral_head_in_undo_history(head, keyframe,
-                                      msg='KeenTools operation'):
-    fb = FBLoader.get_builder()
-    coords.update_head_mesh_neutral(fb, head.headobj)
-    push_head_in_undo_history(head, msg)
-    if head.should_use_emotions():
-        coords.update_head_mesh_emotions(fb, head.headobj, keyframe)
-
-
 def check_settings():
     settings = get_main_settings()
     if not settings.check_heads_and_cams():
@@ -199,15 +190,6 @@ def select_object_only(obj):
     bpy.ops.object.select_all(action='DESELECT')
     obj.select_set(state=True)
     bpy.context.view_layer.objects.active = obj
-
-
-def unhide_head(headnum):
-    settings = get_main_settings()
-    head = settings.get_head(headnum)
-    FBLoader.load_model(headnum)
-    coords.update_head_mesh_neutral(FBLoader.get_builder(), head.headobj)
-    head.headobj.hide_set(False)
-    settings.pinmode = False
 
 
 def use_camera_frame_size(headnum, camnum):
@@ -265,17 +247,6 @@ def reset_model_to_neutral(headnum):
     coords.update_head_mesh_neutral(fb, head.headobj)
 
 
-def load_expressions_to_model(headnum, camnum):
-    settings = get_main_settings()
-    FBLoader.load_model(headnum)
-    head = settings.get_head(headnum)
-    if head is None:
-        return
-    fb = FBLoader.get_builder()
-    coords.update_head_mesh_emotions(fb, head.headobj,
-                                     head.get_keyframe(camnum))
-
-
 def reconstruct_by_head():
     """ Reconstruct Cameras and Scene structures by serial """
     logger = logging.getLogger(__name__)
@@ -322,7 +293,7 @@ def reconstruct_by_head():
     head.headobj = obj
 
     try:
-        head.set_serial_str(serial_str)
+        head.store_serial_str_in_head_and_on_headobj(serial_str)
         fb = FBLoader.new_builder()
         head.sensor_width = params['sensor_width']
         head.sensor_height = params['sensor_height']
@@ -355,8 +326,7 @@ def reconstruct_by_head():
 
             logger.debug("CAMERA CREATED {}".format(kid))
             FBLoader.place_camera(headnum, i)
-            camera.set_model_mat(fb.model_mat(kid))
-            FBLoader.update_pins_count(headnum, i)
+            FBLoader.update_camera_pins_count(headnum, i)
 
             attrs.mark_keentools_object(camera.camobj)
 

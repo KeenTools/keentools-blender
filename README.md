@@ -4,9 +4,11 @@
 
 ## Release History
 
-2021.2.0 - March 2021
+2021.3.0 - July 2021
 
-2021.1.0 - December 2020
+2021.2.0 - 24 March 2021
+
+2021.1.0 - 23 December 2020
 
 2.1.1 - 1 October 2020
 
@@ -42,4 +44,4 @@ Please contact us via team@keentools.io if you'd like to contribute to this proj
 
 ## Contact us
 
-[https://keentools.io/contact](KeenTools contact us page)
+[KeenTools contact us page](https://keentools.io/contact)

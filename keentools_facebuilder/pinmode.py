@@ -18,7 +18,7 @@
 
 import logging
 from uuid import uuid4
-import os
+import numpy as np
 
 import bpy
 
@@ -26,7 +26,9 @@ from .utils import manipulate, coords, cameras
 from .config import Config, get_main_settings, get_operator, ErrorType
 from .fbloader import FBLoader
 from .utils.focal_length import update_camera_focal
-from .utils.other import FBStopShaderTimer, force_ui_redraw, hide_ui_elements
+from .utils.other import (FBStopShaderTimer, force_ui_redraw,
+                          hide_viewport_ui_elements_and_store_on_object)
+from .utils.html import split_long_string
 
 
 class FB_OT_PinMode(bpy.types.Operator):
@@ -34,7 +36,7 @@ class FB_OT_PinMode(bpy.types.Operator):
     bl_idname = Config.fb_pinmode_idname
     bl_label = "FaceBuilder Pinmode"
     bl_description = "Operator for in-Viewport drawing"
-    bl_options = {'REGISTER', 'INTERNAL'}  # 'UNDO'
+    bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: bpy.props.IntProperty(default=0)
     camnum: bpy.props.IntProperty(default=0)
@@ -82,15 +84,17 @@ class FB_OT_PinMode(bpy.types.Operator):
                        settings.wireframe_midline_color),
                        settings.wireframe_opacity * opacity)
 
-        if not wf.init_wireframe_image(FBLoader.get_builder(),
-                                       settings.show_specials):
+        fb = FBLoader.get_builder()
+        if not wf.init_wireframe_image(fb, settings.show_specials):
             wf.switch_to_simple_shader()
 
-        wf.init_geom_data(head.headobj)
-        wf.init_edge_indices(FBLoader.get_builder())
+        wf.init_geom_data_from_fb(fb, head.headobj,
+                                  head.get_keyframe(settings.current_camnum))
+        wf.init_edge_indices(fb)
         wf.create_batches()
 
     def _delete_found_pin(self, nearest, context):
+        logger = logging.getLogger(__name__)
         settings = get_main_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
@@ -100,27 +104,32 @@ class FB_OT_PinMode(bpy.types.Operator):
         fb = FBLoader.get_builder()
         fb.remove_pin(kid, nearest)
         del FBLoader.viewport().pins().arr()[nearest]
-        logging.debug("PIN REMOVED {}".format(nearest))
+        logging.debug('PIN REMOVED {}'.format(nearest))
 
         if not FBLoader.solve(headnum, camnum):
-            logger = logging.getLogger(__name__)
-            logger.error("DELETE PIN PROBLEM")
+            logger.error('DELETE PIN PROBLEM')
             return {'FINISHED'}
 
-        FBLoader.update_pins_count(headnum, camnum)
+        if head.should_reduce_pins():
+            if fb.pins_count(kid) > 0:
+                fb.reduce_pins()
+
+        coords.update_head_mesh_neutral(fb, head.headobj)
+        FBLoader.update_camera_pins_count(headnum, camnum)
 
         FBLoader.update_all_camera_positions(headnum)
         # Save result
-        FBLoader.fb_save(headnum, camnum)
-        manipulate.push_neutral_head_in_undo_history(head, kid, 'Pin remove.')
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
+        manipulate.push_head_in_undo_history(head, 'Pin Remove')
 
-        FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
-        FBLoader.shader_update(head.headobj)
+        FBLoader.load_pins_into_viewport(headnum, camnum)
+        FBLoader.update_viewport_shaders(context, headnum, camnum)
 
-        FBLoader.viewport().create_batch_2d(context)
         return {"RUNNING_MODAL"}
 
-    def _undo_detected(self):
+    def _undo_detected(self, context):
+        logger = logging.getLogger(__name__)
+        logger.debug('UNDO DETECTED')
         settings = get_main_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
@@ -129,16 +138,8 @@ class FB_OT_PinMode(bpy.types.Operator):
         head.need_update = False
         FBLoader.load_model(headnum)
         FBLoader.place_camera(headnum, camnum)
-        FBLoader.load_pins(headnum, camnum)
-
-        kid = settings.get_keyframe(headnum, camnum)
-        fb = FBLoader.get_builder()
-
-        coords.update_head_mesh(settings, fb, head)
-
-        FBLoader.viewport().update_surface_points(fb, head.headobj, kid)
-        FBLoader.shader_update(head.headobj)
-
+        FBLoader.load_pins_into_viewport(headnum, camnum)
+        FBLoader.update_viewport_shaders(context, headnum, camnum)
 
     def _on_right_mouse_press(self, context, mouse_x, mouse_y):
         vp = FBLoader.viewport()
@@ -223,16 +224,38 @@ class FB_OT_PinMode(bpy.types.Operator):
         camera.update_background_image_scale()
         kid = camera.get_keyframe()
 
+        cameras.switch_to_fb_camera(camera, context)
+
         logger.debug("PINMODE START H{} C{}".format(settings.current_headnum,
                                                     settings.current_camnum))
-
         # Start working with current model
-        FBLoader.load_model(settings.current_headnum)
+        try:
+            if not FBLoader.load_model_throw_exception(settings.current_headnum):
+                raise Exception('Cannot load the model data from '
+                                'the serialised string. Perhaps your file '
+                                'or the scene data got corrupted.')
+        except Exception as err:
+            logger.error('MODEL CANNOT BE LOADED IN PINMODE')
+
+            FBLoader.out_pinmode_without_save(self.headnum)
+            cameras.exit_localview(context)
+
+            logger.error('DESERIALIZE load_model_throw_exception: \n'
+                         '{}'.format(str(err)))
+            error_message = '\n'.join(split_long_string(str(err), limit=64))
+            warn = get_operator(Config.fb_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+                 msg_content=error_message)
+            return {'CANCELLED'}
 
         if not FBLoader.check_mesh(headobj):
             fb = FBLoader.get_builder()
             logger.error('MESH IS CORRUPTED {} != {}'.format(
                 len(headobj.data.vertices), len(fb.applied_args_vertices())))
+
+            FBLoader.out_pinmode_without_save(self.headnum)
+            cameras.exit_localview(context)
+
             warn = get_operator(Config.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
             return {'CANCELLED'}
@@ -244,8 +267,8 @@ class FB_OT_PinMode(bpy.types.Operator):
                 kfnum = cam.get_keyframe()
                 logger.debug("UPDATE KEYFRAME: {}".format(kfnum))
                 if not fb.is_key_at(kfnum):
-                    fb.set_keyframe(kfnum, cam.get_model_mat())
-
+                    logger.error('\nUNKNOWN KEYFRAME: {}\n'.format(kfnum))
+                    fb.set_keyframe(kfnum, np.eye(4))
         try:
             FBLoader.place_camera(settings.current_headnum,
                                   settings.current_camnum)
@@ -253,18 +276,13 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.debug("UPDATE KEYFRAME PROBLEM")
             return {'CANCELLED'}
 
-        FBLoader.load_pins(settings.current_headnum, settings.current_camnum)
-        coords.update_head_mesh(settings, FBLoader.get_builder(), head)
+        FBLoader.load_pins_into_viewport(settings.current_headnum, settings.current_camnum)
+        coords.update_head_mesh_neutral(FBLoader.get_builder(), head.headobj)
 
         update_camera_focal(camera, fb)
 
-        # Hide geometry
-        headobj.hide_set(True)
-        cameras.hide_other_cameras(settings.current_headnum,
-                                   settings.current_camnum)
-
         if first_start:
-            hide_ui_elements()
+            hide_viewport_ui_elements_and_store_on_object(headobj)
 
             logger.debug("START SHADERS")
             self._init_wireframer_colors(settings.overall_opacity)
@@ -283,9 +301,10 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.debug("SHADER UPDATE ONLY")
             self._init_wireframer_colors(settings.overall_opacity)
 
+        bpy.ops.view3d.view_center_camera()
+
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
-        manipulate.push_neutral_head_in_undo_history(head, kid,
-                                                     'Pin Mode Start.')
+        manipulate.push_head_in_undo_history(head, 'Pin Mode Start.')
         if not first_start:
             logger.debug('PINMODE SWITCH ONLY')
             return {'FINISHED'}
@@ -330,15 +349,21 @@ class FB_OT_PinMode(bpy.types.Operator):
                 warn = get_operator(Config.fb_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
                 settings.license_error = False
+                settings.hide_user_preferences()
             return True
 
         # Quit when camera rotated by user
         if context.space_data.region_3d.view_perspective != 'CAMERA':
-            logger.debug("CAMERA ROTATED PINMODE OUT")
-            FBLoader.out_pinmode(headnum)
-            return True
+            if settings.preferences().prevent_view_rotation:
+                # Return back to the camera view
+                bpy.ops.view3d.view_camera()
+            else:
+                logger.debug("CAMERA ROTATED PINMODE OUT")
+                logger.debug(context.space_data.region_3d.view_perspective)
+                FBLoader.out_pinmode(headnum)
+                return True
 
-        if event.type == 'ESC':
+        if event.type == 'ESC' and event.value == 'RELEASE':
             FBLoader.out_pinmode(headnum)
             # --- PROFILING ---
             if FBLoader.viewport().profiling:
@@ -363,11 +388,8 @@ class FB_OT_PinMode(bpy.types.Operator):
         head = settings.get_head(headnum)
 
         if self._modal_should_finish(context, event):
+            cameras.exit_localview(context)
             return {'FINISHED'}
-
-        if not head.headobj.hide_get():
-            logger.debug("FORCE MESH HIDE")
-            head.headobj.hide_set(True)
 
         if self._check_camera_state_changed(context.space_data.region_3d):
             logger.debug("FORCE TAG REDRAW")
@@ -398,7 +420,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         if head.need_update:
             logger.debug("UNDO CALL DETECTED")
-            self._undo_detected()
+            self._undo_detected(context)
 
         vp = FBLoader.viewport()
         if not (vp.wireframer().is_working()):
@@ -407,8 +429,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             return {'FINISHED'}
 
         vp.create_batch_2d(context)
-        vp.update_residuals(
-            FBLoader.get_builder(), context, head.headobj, kid)
+        vp.update_residuals(FBLoader.get_builder(), head.headobj, kid, context)
 
         if vp.pins().current_pin() is not None:
             return {"RUNNING_MODAL"}

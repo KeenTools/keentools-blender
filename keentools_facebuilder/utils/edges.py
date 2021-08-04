@@ -59,7 +59,7 @@ class FBEdgeShaderBase:
     def is_handler_list_empty(cls):
         return len(cls.handler_list) == 0
 
-    def __init__(self):
+    def __init__(self, target_class=bpy.types.SpaceView3D):
         self.draw_handler = None  # for handler storage
         self.fill_shader = None
         self.line_shader = None
@@ -73,9 +73,19 @@ class FBEdgeShaderBase:
         self.edges_indices = []
         self.edges_colors = []
         self.vertices_colors = []
+
+        self._target_class = target_class
+        self._work_area = None
+
         # Check if blender started in background mode
         if not bpy.app.background:
             self.init_shaders()
+
+    def get_target_class(self):
+        return self._target_class
+
+    def set_target_class(self, target_class):
+        self._target_class = target_class
 
     def is_working(self):
         return not (self.draw_handler is None)
@@ -92,36 +102,29 @@ class FBEdgeShaderBase:
                 self.edges_colors[i * 2 + 1] = color
 
     def register_handler(self, args):
+        self._work_area = args[1].area
+
         if self.draw_handler is not None:
             self.unregister_handler()
-        self.draw_handler = bpy.types.SpaceView3D.draw_handler_add(
-            self.draw_callback, args, "WINDOW", "POST_VIEW")
+        self.draw_handler = self.get_target_class().draw_handler_add(
+            self.draw_callback, args, 'WINDOW', 'POST_VIEW')
         self.add_handler_list(self.draw_handler)
 
     def unregister_handler(self):
         if self.draw_handler is not None:
-            bpy.types.SpaceView3D.draw_handler_remove(
-                self.draw_handler, "WINDOW")
+            self.get_target_class().draw_handler_remove(
+                self.draw_handler, 'WINDOW')
             self.remove_handler_list(self.draw_handler)
         self.draw_handler = None
-
-    def add_color_vertices(self, color, verts):
-        for i, v in enumerate(verts):
-            self.vertices.append(verts[i])
-            self.vertices_colors.append(color)
 
     def add_vertices_colors(self, verts, colors):
         for i, v in enumerate(verts):
             self.vertices.append(verts[i])
             self.vertices_colors.append(colors[i])
 
-    def set_color_vertices(self, color, verts):
-        self.clear_vertices()
-        self.add_color_vertices(color, verts)
-
     def set_vertices_colors(self, verts, colors):
-        self.clear_vertices()
-        self.add_vertices_colors(verts, colors)
+        self.vertices = verts
+        self.vertices_colors = colors
 
     def clear_vertices(self):
         self.vertices = []
@@ -141,9 +144,9 @@ class FBEdgeShaderBase:
 
 
 class FBEdgeShader2D(FBEdgeShaderBase):
-    def __init__(self):
+    def __init__(self, target_class):
         self.edge_lengths = []
-        super().__init__()
+        super().__init__(target_class)
 
     def init_shaders(self):
         self.line_shader = gpu.types.GPUShader(
@@ -158,6 +161,9 @@ class FBEdgeShader2D(FBEdgeShaderBase):
         if self.line_shader is None or self.line_batch is None:
             return
 
+        if self._work_area != context.area:
+            return
+
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
@@ -167,6 +173,8 @@ class FBEdgeShader2D(FBEdgeShaderBase):
         self.line_batch.draw(self.line_shader)
 
     def create_batch(self):
+        if bpy.app.background:
+            return
         # Our shader batch
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
@@ -175,17 +183,19 @@ class FBEdgeShader2D(FBEdgeShaderBase):
         )
 
     def register_handler(self, args):
+        self._work_area = args[1].area
+
         if self.draw_handler is not None:
             self.unregister_handler()
-        self.draw_handler = bpy.types.SpaceView3D.draw_handler_add(
-            self.draw_callback, args, "WINDOW", "POST_PIXEL")
+        self.draw_handler = self.get_target_class().draw_handler_add(
+            self.draw_callback, args, 'WINDOW', 'POST_PIXEL')
         self.add_handler_list(self.draw_handler)
 
 
 class FBRectangleShader2D(FBEdgeShader2D):
-    def __init__(self):
+    def __init__(self, target_class):
         self._rectangles = []
-        super().__init__()
+        super().__init__(target_class)
 
     def clear_rectangles(self):
         self._rectangles = []
@@ -248,6 +258,9 @@ class FBRectangleShader2D(FBEdgeShader2D):
         if self.line_shader is None or self.line_batch is None:
             return
 
+        if self._work_area != context.area:
+            return
+
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
@@ -275,13 +288,13 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
     def _inverse_gamma_color(col, power=2.2):
         return [x ** (1.0 / power) for x in col]
 
-    def __init__(self):
-        self._edges_indices = np.array([], dtype=np.int)
+    def __init__(self, target_class):
+        self._edges_indices = np.array([], dtype=np.int32)
         self._edges_uvs = []
         self._colors = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
         self._opacity = 0.3
         self._use_simple_shader = False
-        super().__init__()
+        super().__init__(target_class)
 
     def init_colors(self, colors, opacity):
         self._colors = [self._inverse_gamma_color(color[:3]) for color in colors]
@@ -343,6 +356,10 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
     def draw_callback(self, op, context):
         if not self.is_visible():
             return
+
+        if self._work_area != context.area:
+            return
+
         # Force Stop
         wireframe_image = find_bpy_image_by_name(Config.coloring_texture_name)
         if self.is_handler_list_empty() or \
@@ -423,29 +440,44 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
 
         self.simple_line_shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
-    def init_geom_data(self, obj):
+    def _get_triangulation_indices(self, obj):
         mesh = obj.data
         mesh.calc_loop_triangles()
-
-        verts = np.empty((len(mesh.vertices), 3), 'f')
-        indices = np.empty((len(mesh.loop_triangles), 3), 'i')
-
-        mesh.vertices.foreach_get(
-            "co", np.reshape(verts, len(mesh.vertices) * 3))
+        indices = np.empty((len(mesh.loop_triangles), 3), dtype=np.int32)
         mesh.loop_triangles.foreach_get(
-            "vertices", np.reshape(indices, len(mesh.loop_triangles) * 3))
+            'vertices', np.reshape(indices, len(mesh.loop_triangles) * 3))
+        return indices
 
-        # Object matrix usage
+    def init_geom_data_from_fb(self, fb, obj, keyframe=None):
+        if keyframe is not None:
+            geom_verts = fb.applied_args_model_vertices_at(keyframe) @ \
+                         coords.xy_to_xz_rotation_matrix_3x3()
+        else:
+            geom_verts = fb.applied_args_vertices() @ \
+                         coords.xy_to_xz_rotation_matrix_3x3()
+
+        m = np.array(obj.matrix_world, dtype=np.float32).transpose()
+        vv = np.ones((len(geom_verts), 4), dtype=np.float32)
+        vv[:, :-1] = geom_verts
+        vv = vv @ m
+        self.vertices = vv[:, :3]
+        self.indices = self._get_triangulation_indices(obj)
+
+    def init_geom_data_from_mesh(self, obj):
+        mesh = obj.data
+        verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
+        mesh.vertices.foreach_get(
+            'co', np.reshape(verts, len(mesh.vertices) * 3))
+
         m = np.array(obj.matrix_world, dtype=np.float32).transpose()
         vv = np.ones((len(mesh.vertices), 4), dtype=np.float32)
         vv[:, :-1] = verts
         vv = vv @ m
-
-        self.vertices = vv[:, :3]  # Transformed vertices
-        self.indices = indices
+        self.vertices = vv[:, :3]
+        self.indices = self._get_triangulation_indices(obj)
 
     def _clear_edge_indices(self):
-        self._edges_indices = np.array([], dtype=np.int)
+        self._edges_indices = np.array([], dtype=np.int32)
         self._edges_uvs = []
 
     def init_edge_indices(self, builder):
@@ -458,8 +490,8 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         geo = builder.applied_args_replaced_uvs_model_at(keyframes[0])
         me = geo.mesh(0)
         face_counts = [me.face_size(x) for x in range(me.faces_count())]
-        indices = np.empty((sum(face_counts), 2), 'i')
-        tex_coords = np.empty((sum(face_counts) * 2, 2), 'f')
+        indices = np.empty((sum(face_counts), 2), dtype=np.int32)
+        tex_coords = np.empty((sum(face_counts) * 2, 2), dtype=np.float32)
 
         i = 0
         for face, count in enumerate(face_counts):

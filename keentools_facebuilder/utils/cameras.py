@@ -22,7 +22,6 @@ import bpy
 
 from .. config import get_main_settings, Config
 from . import attrs
-from . fake_context import get_override_context
 
 
 def show_all_cameras(headnum):
@@ -41,30 +40,6 @@ def hide_other_cameras(headnum, camnum):
         return
     for i, c in enumerate(head.cameras):
         c.camobj.hide_set(i != camnum)
-
-
-def switch_to_camera(camobj):
-    """ Switch to camera context independently"""
-    scene = bpy.context.scene
-    settings = get_main_settings()
-
-    camobj.select_set(state=True)
-    bpy.context.view_layer.objects.active = camobj
-
-    # Switch to camera
-    if (scene.camera == camobj) and settings.pinmode:
-        if not bpy.app.background:
-            bpy.ops.view3d.view_camera()
-        else:
-            override = get_override_context()
-            bpy.ops.view3d.view_camera(override)
-    else:
-        camobj.hide_set(False)  # To allow switch
-        if not bpy.app.background:
-            bpy.ops.view3d.object_as_camera()
-        else:
-            override = get_override_context()
-            bpy.ops.view3d.object_as_camera(override)
 
 
 def default_camera_params():
@@ -117,6 +92,7 @@ def reset_background_image_rotation(camera):
     background_image.rotation = 0
     camera.orientation = 0
 
+
 def rotate_background_image(camera, delta=1):
     background_image = get_camera_background(camera)
     if background_image is None:
@@ -128,3 +104,36 @@ def rotate_background_image(camera, delta=1):
     if camera.orientation >= 4:
         camera.orientation += -4
     background_image.rotation = camera.orientation * math.pi / 2
+
+
+def exit_localview(context):
+    if context.space_data and context.space_data.local_view:
+        bpy.ops.view3d.localview()
+        return True
+    return False
+
+
+def enter_localview(context):
+    if not context.space_data.local_view:
+        bpy.ops.view3d.localview()
+
+
+def switch_to_fb_camera(camera, context):
+    camera.show_background_image()
+    exit_localview(context)
+    camera.camobj.hide_set(False)
+
+    bpy.ops.object.select_all(action='DESELECT')
+    camera.camobj.select_set(state=True)
+    bpy.context.view_layer.objects.active = camera.camobj
+
+    enter_localview(context)
+    bpy.ops.view3d.object_as_camera()
+
+
+def leave_camera_view(context):
+    try:
+        if context.space_data.region_3d.view_perspective == 'CAMERA':
+            bpy.ops.view3d.view_camera()
+    except Exception as err:
+        pass

@@ -20,10 +20,13 @@
 import os
 import inspect
 import tempfile
+
+import bpy
+
 __all__ = ['SHADOW_COPIES_DIRECTORY', 'RELATIVE_LIB_DIRECTORY',
-           'pkt_installation_dir', 'MINIMUM_VERSION_REQUIRED',
+           'pkt_installation_dir', 'addon_installation_dir', 'MINIMUM_VERSION_REQUIRED',
            'is_python_supported',
-           'os_name', 'download_path']
+           'os_name', 'download_core_path', 'download_addon_path']
 
 
 SHADOW_COPIES_DIRECTORY = os.path.join(tempfile.gettempdir(),
@@ -40,7 +43,12 @@ def pkt_installation_dir():
     return os.path.abspath(installation_dir)
 
 
-MINIMUM_VERSION_REQUIRED = (2021, 2, 0)  # 2021.2.0
+def addon_installation_dir():
+    addons_path = bpy.utils.user_resource('SCRIPTS', "addons")
+    return os.path.join(addons_path, 'keentools_facebuilder')
+
+
+MINIMUM_VERSION_REQUIRED = (2021, 3, 0)  # 2021.3.0
 _SUPPORTED_PYTHON_VERSIONS = ((3, 7), (3, 9))
 
 
@@ -63,7 +71,7 @@ def os_name():
         return 'macos'
 
 
-def download_path(version=None, nightly=False):
+def download_core_path(version=None, nightly=False):
     if nightly:
         assert(version is None)
         return 'https://downloads.keentools.io/keentools-core-nightly-{}'.format(os_name())
@@ -73,3 +81,15 @@ def download_path(version=None, nightly=False):
 
     return 'https://downloads.keentools.io/keentools-core-{}-{}'.format(
         '_'.join([str(x) for x in version]), os_name())
+
+
+def download_addon_path(version=None, nightly=False):
+    if nightly:
+        assert(version is None)
+        return 'https://downloads.keentools.io/keentools-facebuilder-nightly-for-blender'
+
+    if version is None:
+        return 'https://downloads.keentools.io/latest-keentools-facebuilder-for-blender'
+
+    return 'https://downloads.keentools.io/keentools-facebuilder-{}-for-blender'.format(
+        '_'.join([str(x) for x in version]))

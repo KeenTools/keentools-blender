@@ -117,7 +117,7 @@ class FB_OT_DeleteHead(Operator):
 class FB_OT_SelectCamera(Operator):
     bl_idname = Config.fb_select_camera_idname
     bl_label = "Pin Mode Select Camera"
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Switch to Pin mode for this view"
 
     headnum: IntProperty(default=0)
@@ -134,29 +134,22 @@ class FB_OT_SelectCamera(Operator):
         head = settings.get_head(self.headnum)
         camera = head.get_camera(self.camnum)
 
-        cameras.switch_to_camera(camera.camobj)
-        camera.show_background_image()
-
-        bpy.context.view_layer.objects.active = head.headobj
-
         copy_exif_parameters_from_camera_to_head(camera, head)
         update_exif_sizes_message(self.headnum, camera.cam_image)
 
-        # Auto Call PinMode
-        draw_op = get_operator(Config.fb_pinmode_idname)
-
+        pinmode_op = get_operator(Config.fb_pinmode_idname)
         if not bpy.app.background:
-            draw_op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
+            pinmode_op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
 
         return {'FINISHED'}
 
 
 class FB_OT_CenterGeo(Operator):
     bl_idname = Config.fb_center_geo_idname
-    bl_label = "Reset Camera"
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
-    bl_description = "Place the camera so the model will be centred " \
-                     "in the view"
+    bl_label = 'Reset Camera'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Place the camera so the model will be centred ' \
+                     'in the view'
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
@@ -171,23 +164,24 @@ class FB_OT_CenterGeo(Operator):
         settings = get_main_settings()
         headnum = self.headnum
         camnum = self.camnum
-        kid = settings.get_keyframe(headnum, camnum)
 
         FBLoader.center_geo_camera_projection(headnum, camnum)
-        FBLoader.fb_save(headnum, camnum)
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
+        FBLoader.place_camera(headnum, camnum)
 
-        manipulate.push_neutral_head_in_undo_history(
-            settings.get_head(headnum), kid, 'Reset Camera.')
-        FBLoader.fb_redraw(headnum, camnum)
+        manipulate.push_head_in_undo_history(settings.get_head(headnum),
+                                             'Reset Camera.')
+
+        FBLoader.update_viewport_shaders(context, headnum, camnum)
         return {'FINISHED'}
 
 
 class FB_OT_Unmorph(Operator):
     bl_idname = Config.fb_unmorph_idname
-    bl_label = "Reset"
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
-    bl_description = "Reset shape deformations to the default state. " \
-                     "It will remove all pins as well"
+    bl_label = 'Reset'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Reset shape deformations to the default state. ' \
+                     'It will remove all pins as well'
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
@@ -204,24 +198,19 @@ class FB_OT_Unmorph(Operator):
         head = settings.get_head(headnum)
 
         fb = FBLoader.get_builder()
-        FBLoader.fb_save(headnum, camnum)
-        manipulate.push_head_in_undo_history(
-            settings.get_head(headnum), 'Before Reset')
-
         fb.unmorph()
 
         for i, camera in enumerate(head.cameras):
             fb.remove_pins(camera.get_keyframe())
             camera.pins_count = 0
 
-        if settings.pinmode:
-            FBLoader.fb_save(headnum, camnum)
-            FBLoader.fb_redraw(headnum, camnum)
-        else:
-            FBLoader.save_only(headnum)
-            FBLoader.update_mesh_only(headnum)
+        coords.update_head_mesh_neutral(fb, head.headobj)
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
 
-        FBLoader.fb_save(headnum, camnum)
+        if settings.pinmode:
+            FBLoader.load_pins_into_viewport(headnum, camnum)
+            FBLoader.update_viewport_shaders(context, headnum, camnum)
+
         manipulate.push_head_in_undo_history(
             settings.get_head(headnum), 'After Reset')
 
@@ -231,7 +220,7 @@ class FB_OT_Unmorph(Operator):
 class FB_OT_RemovePins(Operator):
     bl_idname = Config.fb_remove_pins_idname
     bl_label = "Remove pins"
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+    bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Remove all pins on this view"
 
     headnum: IntProperty(default=0)
@@ -251,19 +240,17 @@ class FB_OT_RemovePins(Operator):
 
         fb = FBLoader.get_builder()
         kid = settings.get_keyframe(headnum, camnum)
-        FBLoader.fb_save(headnum, camnum)
-        manipulate.push_head_in_undo_history(
-            settings.get_head(headnum), 'Before Remove pins')
 
         fb.remove_pins(kid)
         FBLoader.solve(headnum, camnum)  # is it needed?
 
-        FBLoader.fb_save(headnum, camnum)
-        FBLoader.fb_redraw(headnum, camnum)
-        FBLoader.update_pins_count(headnum, camnum)
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
+        FBLoader.update_camera_pins_count(headnum, camnum)
+        FBLoader.load_pins_into_viewport(headnum, camnum)
+        FBLoader.update_viewport_shaders(context, headnum, camnum)
 
         manipulate.push_head_in_undo_history(
-            settings.get_head(headnum), 'After Remove pins')
+            settings.get_head(headnum), 'Remove pins')
 
         return {'FINISHED'}
 
@@ -369,7 +356,7 @@ class FB_OT_DeleteCamera(Operator):
         elif settings.current_camnum == camnum:
             settings.current_camnum = -1
 
-        FBLoader.fb_save(headnum, settings.current_camnum)
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
 
         logger = logging.getLogger(__name__)
         logger.debug("CAMERA H:{} C:{} REMOVED".format(headnum, camnum))
@@ -407,6 +394,22 @@ class FB_OT_AddonSettings(Operator):
         pass
 
     def execute(self, context):
+        bpy.ops.preferences.addon_show(module=Config.addon_name)
+        return {'FINISHED'}
+
+
+class FB_OT_AddonSetupDefaults(Operator):
+    bl_idname = Config.fb_addon_setup_defaults_idname
+    bl_label = "Setup defaults"
+    bl_options = {'REGISTER'}
+    bl_description = "Open Addon Settings in Preferences window"
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        settings = get_main_settings()
+        settings.show_user_preferences()
         bpy.ops.preferences.addon_show(module=Config.addon_name)
         return {'FINISHED'}
 
@@ -482,7 +485,7 @@ class FB_OT_RotateImageCW(Operator):
         camera.rotate_background_image(1)
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
-        FBLoader.fb_save(self.headnum, self.camnum)
+        FBLoader.save_fb_serial_and_image_pathes(self.headnum)
         return {'FINISHED'}
 
 
@@ -504,7 +507,7 @@ class FB_OT_RotateImageCCW(Operator):
         camera.rotate_background_image(-1)
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
-        FBLoader.fb_save(self.headnum, self.camnum)
+        FBLoader.save_fb_serial_and_image_pathes(self.headnum)
         return {'FINISHED'}
 
 
@@ -526,7 +529,7 @@ class FB_OT_ResetImageRotation(Operator):
         camera.reset_background_image_rotation()
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
-        FBLoader.fb_save(self.headnum, self.camnum)
+        FBLoader.save_fb_serial_and_image_pathes(self.headnum)
         return {'FINISHED'}
 
 
@@ -555,12 +558,11 @@ class FB_OT_ResetExpression(Operator):
 
         FBLoader.load_model(self.headnum)
         fb = FBLoader.get_builder()
-        fb.reset_to_neutral_emotions(
-            head.get_keyframe(settings.current_camnum))
+        fb.reset_to_neutral_emotions(head.get_keyframe(self.camnum))
 
-        FBLoader.save_only(self.headnum)
-        FBLoader.fb_redraw(self.headnum, settings.current_camnum)
+        FBLoader.save_fb_serial_and_image_pathes(self.headnum)
         coords.update_head_mesh_neutral(fb, head.headobj)
+        FBLoader.update_viewport_shaders(context, self.headnum, self.camnum)
 
         manipulate.push_head_in_undo_history(head, 'Reset Expression.')
 
@@ -629,7 +631,8 @@ class FB_OT_ExitPinmode(Operator):
         settings = get_main_settings()
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
-            bpy.ops.view3d.view_camera()
+            cameras.exit_localview(context)
+            cameras.leave_camera_view(context)
         return {'FINISHED'}
 
 
@@ -654,7 +657,7 @@ class FB_OT_UninstallCore(bpy.types.Operator):
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
-        from .blender_independent_packages.pykeentools_loader import uninstall as pkt_uninstall
+        from .blender_independent_packages.pykeentools_loader import uninstall_core as pkt_uninstall
         logger.debug("START CORE UNINSTALL")
         pkt_uninstall()
         logger.debug("FINISH CORE UNINSTALL")
@@ -756,7 +759,7 @@ class FB_OT_UnhideHead(ButtonOperator, Operator):
     bl_description = 'Show Head'
 
     def execute(self, context):
-        return unhide_head(self)
+        return unhide_head(self, context)
 
 
 class FB_OT_ReconstructHead(ButtonOperator, Operator):
@@ -779,6 +782,7 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ProperViewMenuExec,
                        FB_OT_DeleteCamera,
                        FB_OT_AddonSettings,
+                       FB_OT_AddonSetupDefaults,
                        FB_OT_BakeTexture,
                        FB_OT_DeleteTexture,
                        FB_OT_RotateImageCW,

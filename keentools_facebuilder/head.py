@@ -71,7 +71,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         h.reset_sensor_size()
 
         settings.current_headnum = settings.get_last_headnum()
-        FBLoader.save_fb_on_headobj(settings.current_headnum)
+        FBLoader.save_fb_serial_and_image_pathes(settings.current_headnum)
 
         try:
             a = context.area

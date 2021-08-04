@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import sys
+import logging
 
 import bpy
 from ..preferences.operators import (
@@ -35,11 +36,16 @@ from ..blender_independent_packages.pykeentools_loader import (
     is_python_supported as pkt_is_python_supported,
     installation_status as pkt_installation_status,
     loaded as pkt_loaded)
-from ..config import (Config, is_blender_supported)
+from ..config import (Config, is_blender_supported,
+                      get_main_settings, get_operator)
 from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
-                        draw_warning_labels, draw_long_label, draw_long_labels)
+                        draw_warning_labels, draw_long_labels)
+from ..preferences.user_preferences import UserPreferences, UpdaterPreferences
+from ..interface.updater import preferences_current_active_updater_operators_info, UpdateState, \
+    render_active_message, FBUpdater, CurrentStateExecutor
+
 
 def _multi_line_text_to_output_labels(layout, txt):
     if txt is None:
@@ -54,8 +60,195 @@ def _multi_line_text_to_output_labels(layout, txt):
         col.label(text=text_line)
 
 
+def _reset_user_preferences_parameter_to_default(name):
+    UserPreferences.reset_parameter_to_default(name)
+
+
+def _set_all_user_preferences_to_default():
+    UserPreferences.reset_all_to_defaults()
+
+
+def reset_updater_preferences_to_default():
+    UpdaterPreferences.reset_all_to_defaults()
+
+
+class FB_OT_UserPreferencesResetAll(bpy.types.Operator):
+    bl_idname = Config.fb_user_preferences_reset_all
+    bl_label = 'Reset All'
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = 'Reset All'
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        logger = logging.getLogger(__name__)
+        logger.debug('user_preferences_reset_all call')
+        warn = get_operator(Config.fb_user_preferences_reset_all_warning_idname)
+        warn('INVOKE_DEFAULT')
+        return {'FINISHED'}
+
+
+class FB_OT_UserPreferencesGetColors(bpy.types.Operator):
+    bl_idname = Config.fb_user_preferences_get_colors
+    bl_label = 'Get from scene'
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = 'Get color settings from the current scene'
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        logger = logging.getLogger(__name__)
+        logger.debug('user_preferences_get_colors')
+
+        settings = get_main_settings()
+        preferences = settings.preferences()
+        preferences.wireframe_color = settings.wireframe_color
+        preferences.wireframe_special_color = settings.wireframe_special_color
+        preferences.wireframe_midline_color = settings.wireframe_midline_color
+        preferences.wireframe_opacity = settings.wireframe_opacity
+        return {'FINISHED'}
+
+
+class FB_OT_UserPreferencesChanger(bpy.types.Operator):
+    bl_idname = Config.fb_user_preferences_changer
+    bl_label = 'FaceBuilder Action'
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = 'Reset'
+
+    param_string: bpy.props.StringProperty(name='String parameter')
+    action: bpy.props.StringProperty(name='Action Name')
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        logger = logging.getLogger(__name__)
+        logger.debug('user_preferences_changer: {}'.format(self.action))
+
+        if self.action == 'revert_default':
+            _reset_user_preferences_parameter_to_default(self.param_string)
+            return {'FINISHED'}
+        elif self.action == 'revert_default_colors':
+            _reset_user_preferences_parameter_to_default('wireframe_color')
+            _reset_user_preferences_parameter_to_default('wireframe_special_color')
+            _reset_user_preferences_parameter_to_default('wireframe_midline_color')
+            _reset_user_preferences_parameter_to_default('wireframe_opacity')
+            return {'FINISHED'}
+
+        return {'CANCELLED'}
+
+
+class FB_OT_UserPreferencesResetAllWarning(bpy.types.Operator):
+    bl_idname = Config.fb_user_preferences_reset_all_warning_idname
+    bl_label = 'Reset All'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    accept: bpy.props.BoolProperty(name='Yes, I really want '
+                                        'to reset all settings',
+                                   default=False)
+
+    def draw(self, context):
+        layout = self.layout.column()
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        layout.prop(self, 'accept')
+
+    def execute(self, context):
+        if (self.accept):
+            logger = logging.getLogger(__name__)
+            logger.debug('user_preferences_reset_all')
+            _set_all_user_preferences_to_default()
+        return {'FINISHED'}
+
+    def cancel(self, context):
+        return
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+
+def _update_user_preferences_pin_size(self, context):
+    settings = get_main_settings()
+    prefs = settings.preferences()
+    settings.pin_size = self.pin_size
+
+    if prefs.pin_sensitivity < self.pin_size:
+        prefs.pin_sensitivity = self.pin_size
+
+
+def _update_user_preferences_pin_sensitivity(self, context):
+    settings = get_main_settings()
+    prefs = settings.preferences()
+    settings.pin_sensitivity = self.pin_sensitivity
+
+    if prefs.pin_size > self.pin_sensitivity:
+        prefs.pin_size = self.pin_sensitivity
+
+
+def _universal_getter(name, type):
+    def _getter(self):
+        return UserPreferences.get_value_safe(name, type)
+    return _getter
+
+
+def _universal_setter(name):
+    def _setter(self, value):
+        UserPreferences.set_value(name, value)
+    return _setter
+
+
+def _universal_updater_getter(name, type):
+    def _getter(self):
+        return UpdaterPreferences.get_value_safe(name, type)
+    return _getter
+
+
+def _universal_updater_setter(name):
+    def _setter(self, value):
+        UpdaterPreferences.set_value(name, value)
+    return _setter
+
+
 class FBAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = Config.addon_name
+
+    latest_show_datetime_update_reminder: bpy.props.StringProperty(
+        name='Latest show update reminder', default='',
+        get=_universal_updater_getter('latest_show_datetime_update_reminder', 'string'),
+        set=_universal_updater_setter('latest_show_datetime_update_reminder')
+    )
+
+    latest_update_skip_version: bpy.props.StringProperty(
+        name='Latest update skip version', default='',
+        get=_universal_updater_getter('latest_update_skip_version', 'string'),
+        set=_universal_updater_setter('latest_update_skip_version')
+    )
+
+    updater_state: bpy.props.IntProperty(
+        name='Updater state', default=1,
+        get=_universal_updater_getter('updater_state', 'int'),
+        set=_universal_updater_setter('updater_state')
+    )
+
+    downloaded_version: bpy.props.StringProperty(
+        name='Downloaded version', default='',
+        get=_universal_updater_getter('downloaded_version', 'string'),
+        set=_universal_updater_setter('downloaded_version')
+    )
+
+    latest_installation_skip_version: bpy.props.StringProperty(
+        name='Latest installation skip version', default='',
+        get=_universal_updater_getter('latest_installation_skip_version', 'string'),
+        set=_universal_updater_setter('latest_installation_skip_version')
+    )
+
+    latest_show_datetime_installation_reminder: bpy.props.StringProperty(
+        name='Latest show installation reminder', default='',
+        get=_universal_updater_getter('latest_show_datetime_installation_reminder', 'string'),
+        set=_universal_updater_setter('latest_show_datetime_installation_reminder')
+    )
 
     license_accepted: bpy.props.BoolProperty(
         name='I have read and I agree to KeenTools End-user License Agreement',
@@ -115,6 +308,59 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     more_info: bpy.props.BoolProperty(
         name='More Info',
         default=False
+    )
+
+    # User preferences
+    show_user_preferences: bpy.props.BoolProperty(
+        name='Addon Settings',
+        default=False
+    )
+    pin_size: bpy.props.FloatProperty(
+        description="Set pin size in pixels",
+        name="Size", min=1.0, max=100.0,
+        precision=1,
+        get=_universal_getter('pin_size', 'float'),
+        set=_universal_setter('pin_size'),
+        update=_update_user_preferences_pin_size)
+    pin_sensitivity: bpy.props.FloatProperty(
+        description="Set active area in pixels",
+        name="Active area", min=1.0, max=100.0,
+        precision=1,
+        get=_universal_getter('pin_sensitivity', 'float'),
+        set=_universal_setter('pin_sensitivity'),
+        update=_update_user_preferences_pin_sensitivity)
+    prevent_view_rotation: bpy.props.BoolProperty(
+        name='Prevent accidental exit from Pin Mode',
+        get=_universal_getter('prevent_view_rotation', 'bool'),
+        set=_universal_setter('prevent_view_rotation'),
+    )
+    wireframe_opacity: bpy.props.FloatProperty(
+        description="From 0.0 to 1.0",
+        name="Wireframe opacity",
+        default=Config.wireframe_opacity, min=0.0, max=1.0,
+        get=_universal_getter('wireframe_opacity', 'float'),
+        set=_universal_setter('wireframe_opacity')
+    )
+    wireframe_color: bpy.props.FloatVectorProperty(
+        description="Color of mesh wireframe in pin-mode",
+        name="Wireframe Color", subtype='COLOR',
+        default=Config.color_schemes['default'][0],
+        get=_universal_getter('wireframe_color', 'color'),
+        set=_universal_setter('wireframe_color')
+    )
+    wireframe_special_color: bpy.props.FloatVectorProperty(
+        description="Color of special parts in pin-mode",
+        name="Wireframe Special Color", subtype='COLOR',
+        default=Config.color_schemes['default'][1],
+        get=_universal_getter('wireframe_special_color', 'color'),
+        set=_universal_setter('wireframe_special_color')
+    )
+    wireframe_midline_color: bpy.props.FloatVectorProperty(
+        description="Color of midline in pin-mode",
+        name="Wireframe Midline Color", subtype='COLOR',
+        default=Config.midline_color,
+        get=_universal_getter('wireframe_midline_color', 'color'),
+        set=_universal_setter('wireframe_midline_color')
     )
 
     def _license_was_accepted(self):
@@ -290,6 +536,21 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                'The core library has been installed successfully']
         draw_warning_labels(layout, arr, alert=False, icon='INFO')
 
+    def _draw_updater_info(self, layout):
+        FBUpdater.init_updater()
+        CurrentStateExecutor.compute_current_panel_updater_state()
+        settings = get_main_settings()
+        if settings.preferences().updater_state != UpdateState.INITIAL:
+            layout.label(text='Update available:')
+            box = layout.box()
+            col = box.column()
+            render_active_message(col)
+            operators_info = preferences_current_active_updater_operators_info()
+            if operators_info is not None:
+                box = box.split(factor=1 / len(operators_info))
+                for info in operators_info:
+                    box.operator(info.idname, text=info.text, icon=info.icon)
+
     def _draw_old_addon(self, layout):
         box = layout.box()
         draw_warning_labels(box, ERROR_MESSAGES['OLD_ADDON'])
@@ -338,6 +599,50 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         col.scale_y = Config.text_scale_y
         draw_long_labels(col, info, 120)
 
+    def _draw_user_preferences(self, layout):
+        icon = 'TRIA_RIGHT' if not self.show_user_preferences else 'TRIA_DOWN'
+        main_box = layout.box()
+        if not self.show_user_preferences:
+            main_box.prop(self, 'show_user_preferences', icon=icon)
+            return
+        main_box.prop(self, 'show_user_preferences', icon=icon,
+                      invert_checkbox=True)  # emboss=False
+
+        box = main_box.box()
+        box.prop(self, 'prevent_view_rotation')
+
+        box = main_box.box()
+        box.label(text='Default pin settings')
+        row = box.split(factor=0.7)
+        row.prop(self, 'pin_size', slider=True)
+        op = row.operator(Config.fb_user_preferences_changer, text='Reset')
+        op.action = 'revert_default'
+        op.param_string = 'pin_size'
+
+        row = box.split(factor=0.7)
+        row.prop(self, 'pin_sensitivity', slider=True)
+        op = row.operator(Config.fb_user_preferences_changer, text='Reset')
+        op.action = 'revert_default'
+        op.param_string = 'pin_sensitivity'
+
+        box = main_box.box()
+        split = box.split(factor=0.7)
+        split.label(text='Default wireframe colors')
+        split.operator(Config.fb_user_preferences_get_colors)
+
+        colors_row = box.split(factor=0.7)
+        row = colors_row.row()
+        row.prop(self, 'wireframe_color', text='')
+        row.prop(self, 'wireframe_special_color', text='')
+        row.prop(self, 'wireframe_midline_color', text='')
+        row.prop(self, 'wireframe_opacity', text='', slider=True)
+
+        op = colors_row.operator(Config.fb_user_preferences_changer,
+                                 text='Reset')
+        op.action = 'revert_default_colors'
+
+        main_box.operator(Config.fb_user_preferences_reset_all)
+
     def draw(self, context):
         layout = self.layout
 
@@ -366,10 +671,15 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         if cached_status[1] == 'PYKEENTOOLS_OK':
             try:
                 self._draw_version(box)
+                self._draw_updater_info(layout)
                 self._draw_license_info(layout)
+                self._draw_user_preferences(layout)
                 return
-            except Exception:
-                cached_status[1] = 'NO_VERSION'
+            except Exception as error:
+                logger = logging.getLogger(__name__)
+                logger.error('UI error: Unknown Exception')
+                logger.error('info: {} -- {}'.format(type(error), error))
+                cached_status = (False, 'NO_VERSION')
 
         self._draw_pkt_detail_error_report(box, cached_status[1])
         self._draw_problem_library(box)
