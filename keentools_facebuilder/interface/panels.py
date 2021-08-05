@@ -444,7 +444,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             col = layout.column()
             col.scale_y = 2.0
             col.operator(Config.fb_exit_pinmode_idname,
-                         text="Exit Pin mode", icon='LOOP_BACK')
+                         text='Exit Pin mode', icon='LOOP_BACK', depress=True)
 
     def draw(self, context):
         settings = get_main_settings()
