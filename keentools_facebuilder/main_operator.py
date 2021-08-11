@@ -773,8 +773,8 @@ class FB_OT_ReconstructHead(ButtonOperator, Operator):
 
 class FB_OT_DefaultPinSettings(ButtonOperator, Operator):
     bl_idname = Config.fb_default_pin_settings_idname
-    bl_label = 'Revert to default'
-    bl_description = 'Revert pin size and pin sensitivity to default settings'
+    bl_label = 'Revert to defaults'
+    bl_description = 'Set pin size and active area as in the saved defaults'
 
     def execute(self, context):
         settings = get_main_settings()
@@ -786,8 +786,8 @@ class FB_OT_DefaultPinSettings(ButtonOperator, Operator):
 
 class FB_OT_DefaultWireframeSettings(ButtonOperator, Operator):
     bl_idname = Config.fb_default_wireframe_settings_idname
-    bl_label = 'Revert to default'
-    bl_description = 'Revert wireframe colors to default settings'
+    bl_label = 'Revert to defaults'
+    bl_description = 'Set the wireframe colours and opacity as in the saved defaults'
 
     def execute(self, context):
         settings = get_main_settings()

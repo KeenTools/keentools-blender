@@ -110,16 +110,16 @@ class FB_PT_HeaderPanel(Common, Panel):
         box = layout.box()
         col = box.column()
         col.scale_y = Config.text_scale_y
-        col.label(text="You can also create")
-        col.label(text="a new head using:")
-        col.label(text="Add > Mesh > FaceBuilder")
+        col.label(text='You can also create')
+        col.label(text='a new head using:')
+        col.label(text='Add > Mesh > FaceBuilder')
 
     def _pkt_install_offer(self, layout):
-        col = layout.column()
+        col = layout.column(align=True)
         col.scale_y = Config.text_scale_y
-        col.label(text="You need to install ")
-        col.label(text="KeenTools Core library")
-        col.label(text="before using FaceBuilder.")
+        col.label(text='You need to install')
+        col.label(text='KeenTools Core library')
+        col.label(text='before using FaceBuilder.')
 
         row = layout.row()
         row.scale_y = 2.0
@@ -145,6 +145,7 @@ class FB_PT_HeaderPanel(Common, Panel):
 
         for i, h in enumerate(settings.heads):
             row = layout.row(align=True)
+            row.scale_y = Config.btn_scale_y
 
             if headnum == i:
                 row.prop(settings, 'blue_head_button', toggle=1,
@@ -310,14 +311,15 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
         def _draw_default_mode(layout, settings, head):
             camera = head.get_camera(settings.current_camnum)
             col = layout.column(align=True)
-            # col.scale_y = Config.text_scale_y
             col.label(text='File: {}'.format(camera.get_image_name()))
+            col.separator(factor=0.4)
 
-            col.prop(camera, 'auto_focal_estimation')
+            box = col.box()
+            box.prop(camera, 'auto_focal_estimation')
             if camera.auto_focal_estimation:
-                layout.label(text='Focal length: {:.2f} mm'.format(camera.focal))
+                box.label(text='Focal length: {:.2f} mm'.format(camera.focal))
             else:
-                layout.prop(camera, 'focal')
+                box.prop(camera, 'focal')
 
         def _draw_exif(layout, head):
             # Show EXIF info message
@@ -366,6 +368,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         settings = get_main_settings()
         layout = self.layout
         col = layout.column(align=True)
+        col.scale_y = Config.btn_scale_y
 
         if settings.get_head(headnum).should_use_emotions():
             op = col.operator(Config.fb_reset_expression_idname)
@@ -395,7 +398,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             row.scale_y = 2.0
             op = row.operator(
                 Config.fb_pickmode_starter_idname,
-                text='Align face', icon='USER')
+                text='Align face', icon='SHADERFX')
             op.headnum = settings.current_headnum
             op.camnum = settings.current_camnum
 
@@ -466,7 +469,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         col = layout.column()
         col.scale_y = 2.0
         op = col.operator(Config.fb_multiple_filebrowser_exec_idname,
-                          text="Add Images", icon='OUTLINER_OB_IMAGE')
+                          text='Add Images', icon='OUTLINER_OB_IMAGE')
         op.headnum = headnum
 
         # Camera buttons Reset camera, Remove pins
@@ -497,7 +500,9 @@ class FB_PT_Model(AllVisibleClosed, Panel):
 
         head = settings.get_head(headnum)
 
-        op = layout.operator(Config.fb_unmorph_idname, text='Reset')
+        col = layout.column()
+        col.scale_y = Config.btn_scale_y
+        op = col.operator(Config.fb_unmorph_idname, text='Reset')
         op.headnum = headnum
         op.camnum = settings.current_camnum
 
@@ -507,10 +512,11 @@ class FB_PT_Model(AllVisibleClosed, Panel):
         expression_rigidity_row.prop(settings, 'expression_rigidity')  
         expression_rigidity_row.active = head.should_use_emotions()
 
+        layout.prop(head, 'model_scale')
+
         row = layout.split(factor=0.35)
         row.label(text='Topology')
         row.prop(head, 'model_type', text='')
-        layout.prop(head, 'model_scale')
 
         if not head.blenshapes_are_relevant() and head.model_changed_by_scale:
             _draw_update_blendshapes_panel(layout)
@@ -518,8 +524,10 @@ class FB_PT_Model(AllVisibleClosed, Panel):
         if FBLoader.is_not_loaded():
             return
         fb = FBLoader.get_builder()
-        col = layout.column(align=True)
-        col.label(text='Model parts:')
+        box = layout.box()
+        col = box.column(align=True)
+        col.label(text='Model parts')
+        col.separator(factor=0.4)
         names = fb.mask_names()
         for i, mask in enumerate(fb.masks()):
             if i % 2 == 0:
@@ -557,8 +565,10 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
             headnum = settings.current_headnum
         head = settings.get_head(headnum)
 
-        col = layout.column(align=True)
-        col.label(text='Resolution (in pixels):')
+        box = layout.box()
+        col = box.column(align=True)
+        col.label(text='Resolution (in pixels)')
+        col.separator(factor=0.4)
         row = col.row(align=True)
         row.prop(settings, 'tex_width', text='W')
         row.prop(settings, 'tex_height', text='H')
@@ -568,34 +578,39 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
         row = layout.row()
         row.scale_y = 2.0
         op = row.operator(Config.fb_tex_selector_idname,
-                          text="Create texture", icon='IMAGE')
+                          text='Create texture', icon='IMAGE')
         op.headnum = headnum
 
         texture_exists = find_bpy_image_by_name(Config.tex_builder_filename)
         row = layout.row()
+        row.scale_y = Config.btn_scale_y
         if not texture_exists:
             row.active = False
 
         mode = self.get_area_mode(context)
         if mode == 'MATERIAL':
             row.operator(Config.fb_show_solid_idname,
-                         text="Hide texture", icon='SHADING_SOLID')
+                         text='Hide texture', icon='SHADING_SOLID')
         else:
             row.operator(Config.fb_show_tex_idname,
-                         text="Apply texture", icon='MATERIAL')
+                         text='Apply texture', icon='MATERIAL')
 
         row = layout.row()
+        row.scale_y = Config.btn_scale_y
         if not texture_exists:
             row.active = False
         row.operator(Config.fb_texture_file_export_idname,
-                     text="Export", icon='EXPORT')
+                     text='Export', icon='EXPORT')
         row.operator(Config.fb_delete_texture_idname,
-                     text="Delete", icon='X')
+                     text='Delete', icon='X')
 
-        col = layout.column(align=True)
-        col.label(text='Advanced:')
+        box = layout.box()
+        col = box.column(align=True)
+        col.label(text='Advanced')
+        col.separator(factor=0.4)
         col.prop(settings, 'tex_face_angles_affection')
         col.prop(settings, 'tex_uv_expand_percents')
+        col.separator(factor=0.8)
         col.prop(settings, 'tex_equalize_brightness')
         col.prop(settings, 'tex_equalize_colour')
         col.prop(settings, 'tex_fill_gaps')
@@ -620,22 +635,28 @@ class FB_PT_AppearancePanel(AllVisible, Panel):
         layout = self.layout
         settings = get_main_settings()
 
-        col = layout.column(align=True)
+        box = layout.box()
+        col = box.column(align=True)
         row = col.row(align=True)
         row.label(text='Pins')
+        col.separator(factor=0.4)
         btn = row.column(align=True)
         btn.active = False
+        btn.scale_y = 0.75
         btn.operator(
             Config.fb_default_pin_settings_idname,
             text='', icon='LOOP_BACK', emboss=False, depress=False)
         col.prop(settings, 'pin_size', slider=True)
         col.prop(settings, 'pin_sensitivity', slider=True)
 
-        col = layout.column(align=True)
+        box = layout.box()
+        col = box.column(align=True)
         row = col.row(align=True)
         row.label(text='Wireframe')
+        col.separator(factor=0.4)
         btn = row.column(align=True)
-        btn.active = True
+        btn.active = False
+        btn.scale_y = 0.75
         btn.operator(
             Config.fb_default_wireframe_settings_idname,
             text='', icon='LOOP_BACK', emboss=False, depress=False)
@@ -647,25 +668,25 @@ class FB_PT_AppearancePanel(AllVisible, Panel):
         row.prop(settings, 'wireframe_midline_color', text='')
         split.prop(settings, 'wireframe_opacity', text='', slider=True)
 
-        row = layout.row(align=True)
-        op = row.operator(Config.fb_wireframe_color_idname, text="R")
+        row = box.row(align=True)
+        op = row.operator(Config.fb_wireframe_color_idname, text='R')
         op.action = 'wireframe_red'
-        op = row.operator(Config.fb_wireframe_color_idname, text="G")
+        op = row.operator(Config.fb_wireframe_color_idname, text='G')
         op.action = 'wireframe_green'
-        op = row.operator(Config.fb_wireframe_color_idname, text="B")
+        op = row.operator(Config.fb_wireframe_color_idname, text='B')
         op.action = 'wireframe_blue'
-        op = row.operator(Config.fb_wireframe_color_idname, text="C")
+        op = row.operator(Config.fb_wireframe_color_idname, text='C')
         op.action = 'wireframe_cyan'
-        op = row.operator(Config.fb_wireframe_color_idname, text="M")
+        op = row.operator(Config.fb_wireframe_color_idname, text='M')
         op.action = 'wireframe_magenta'
-        op = row.operator(Config.fb_wireframe_color_idname, text="Y")
+        op = row.operator(Config.fb_wireframe_color_idname, text='Y')
         op.action = 'wireframe_yellow'
-        op = row.operator(Config.fb_wireframe_color_idname, text="K")
+        op = row.operator(Config.fb_wireframe_color_idname, text='K')
         op.action = 'wireframe_black'
-        op = row.operator(Config.fb_wireframe_color_idname, text="W")
+        op = row.operator(Config.fb_wireframe_color_idname, text='W')
         op.action = 'wireframe_white'
 
-        layout.prop(settings, 'show_specials', text='Highlight head parts')
+        box.prop(settings, 'show_specials', text='Highlight head parts')
 
 
 class FB_PT_BlendShapesPanel(AllVisible, Panel):
@@ -698,6 +719,7 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
         has_blendshapes_act = has_blendshapes_action(obj)
 
         col = layout.column(align=True)
+        col.scale_y = Config.btn_scale_y
         col.operator(Config.fb_create_blendshapes_idname)
 
         row = col.row(align=True)
@@ -710,8 +732,11 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
             col.operator(Config.fb_reset_blendshape_values_idname)
 
         if not no_blendshapes:
-            col = layout.column(align=True)
+            box = layout.box()
+            col = box.column(align=True)
+            col.scale_y = Config.btn_scale_y
             col.label(text='Animation')
+            col.separator(factor=0.4)
 
             col.operator(Config.fb_load_animation_from_csv_idname)
 
@@ -727,4 +752,6 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
             op = row.operator(Config.fb_clear_animation_idname)
             op.active_button = has_blendshapes_act
 
-        layout.operator(Config.fb_export_head_to_fbx_idname)
+        col = layout.column()
+        col.scale_y = Config.btn_scale_y
+        col.operator(Config.fb_export_head_to_fbx_idname)

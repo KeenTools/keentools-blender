@@ -199,6 +199,7 @@ class Config:
     # Constants
     surf_pin_size_scale = 0.85
     text_scale_y = 0.75
+    btn_scale_y = 1.2
 
     viewport_redraw_interval = 0.1
     unknown_mod_ver = -1
