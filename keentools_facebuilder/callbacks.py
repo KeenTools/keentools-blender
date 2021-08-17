@@ -89,8 +89,10 @@ def update_mesh_with_dialog(self, context):
         return
 
     if self.has_no_blendshapes():
-        _update_mesh_now(headnum)
-        self.apply_model_changes()
+        if _update_mesh_now(headnum):
+            self.apply_model_changes()
+        else:
+            self.discard_model_changes()
     else:
         warn = get_operator(Config.fb_blendshapes_warning_idname)
         warn('INVOKE_DEFAULT', headnum=headnum)
@@ -133,14 +135,27 @@ def _update_mesh_now(headnum):
         model_index = 0
         head.model_type = models[model_index]
 
-    fb.select_model(model_index)
+    try:
+        fb.select_model(model_index)
+    except pkt_module().ModelLoadingException:
+        logger.error('CHANGE_MODEL_ERROR: ModelLoadingException')
+        error_message = 'KeenTools Core problem \n \n' \
+                        'Model data cannot be loaded.'
+        warn = get_operator(Config.fb_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+             msg_content=error_message)
+        return False
+    except Exception as err:
+        logger.error('CHANGE_MODEL_ERROR: Unknown Exception')
+        logger.error('info: {} -- {}'.format(type(err), err))
+        return False
+
     logger.debug('MODEL_TYPE: [{}] {}'.format(model_index, head.model_type))
 
     # Create new mesh
     mesh = FBLoader.get_builder_mesh(fb, 'FBHead_tmp_mesh',
                                      head.get_masks(),
                                      uv_set=head.tex_uv_shape)
-
     try:
         # Copy old material
         if old_mesh.materials:
@@ -175,6 +190,7 @@ def _update_mesh_now(headnum):
     # Delete old mesh
     bpy.data.meshes.remove(old_mesh, do_unlink=True)
     mesh.name = mesh_name
+    return True
 
 
 def update_expressions(self, context):
