@@ -118,12 +118,15 @@ def draw_system_info(layout):
     box = layout.box()
     col = box.column()
     col.scale_y = _get_text_scale_y()
-    col.label(
-        text="Blender version: {} API: {}.{}.{}".format(
-            bpy.app.version_string, *bpy.app.version))
-    col.label(text="Python: {}".format(sys.version))
+    col.label(text='Blender version: {} API: {}'.format(
+              bpy.app.version_string,
+              '.'.join([str(x) for x in bpy.app.version])))
+    col.label(text='Python: {}'.format(sys.version))
     arch = platform.architecture()
-    col.label(text="Platform: {} / {}".format(arch[1], arch[0]))
+    col.label(text='Platform: {} / {}'.format(arch[1], arch[0]))
+    col.label(text='Machine: {}, {}'.format(platform.machine(),
+                                     platform.processor()))
+    col.label(text='System: {}'.format(format(platform.platform())))
     return box
 
 
