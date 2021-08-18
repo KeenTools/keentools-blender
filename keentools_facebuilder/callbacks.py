@@ -214,6 +214,9 @@ def update_wireframe_func(self, context):
 
 
 def update_pin_sensitivity(self, context):
+    if self.pin_size > self.pin_sensitivity:
+        self.pin_size = self.pin_sensitivity
+
     FBLoader.viewport().update_pin_sensitivity()
 
 
@@ -233,6 +236,8 @@ def universal_setter(name):
 
 
 def update_pin_size(self, context):
+    if self.pin_sensitivity < self.pin_size:
+        self.pin_sensitivity = self.pin_size
     FBLoader.viewport().update_pin_size()
 
 

@@ -771,6 +771,34 @@ class FB_OT_ReconstructHead(ButtonOperator, Operator):
         return reconstruct_by_mesh(self)
 
 
+class FB_OT_DefaultPinSettings(ButtonOperator, Operator):
+    bl_idname = Config.fb_default_pin_settings_idname
+    bl_label = 'Revert to defaults'
+    bl_description = 'Set pin size and active area as in the saved defaults'
+
+    def execute(self, context):
+        settings = get_main_settings()
+        prefs = settings.preferences()
+        settings.pin_size = prefs.pin_size
+        settings.pin_sensitivity = prefs.pin_sensitivity
+        return {'FINISHED'}
+
+
+class FB_OT_DefaultWireframeSettings(ButtonOperator, Operator):
+    bl_idname = Config.fb_default_wireframe_settings_idname
+    bl_label = 'Revert to defaults'
+    bl_description = 'Set the wireframe colours and opacity as in the saved defaults'
+
+    def execute(self, context):
+        settings = get_main_settings()
+        prefs = settings.preferences()
+        settings.wireframe_color = prefs.wireframe_color
+        settings.wireframe_special_color = prefs.wireframe_special_color
+        settings.wireframe_midline_color = prefs.wireframe_midline_color
+        settings.wireframe_opacity = prefs.wireframe_opacity
+        return {'FINISHED'}
+
+
 CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_DeleteHead,
                        FB_OT_SelectCamera,
@@ -803,4 +831,6 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ExportHeadToFBX,
                        FB_OT_UpdateBlendshapes,
                        FB_OT_UnhideHead,
-                       FB_OT_ReconstructHead)
+                       FB_OT_ReconstructHead,
+                       FB_OT_DefaultPinSettings,
+                       FB_OT_DefaultWireframeSettings)

@@ -592,7 +592,8 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         info = self._get_problem_info()
         if len(info) == 0:
             return
-        layout.prop(self, "more_info", toggle=1)
+        icon = 'TRIA_RIGHT' if not self.more_info else 'TRIA_DOWN'
+        layout.prop(self, 'more_info', toggle=1, icon=icon)
         if not self.more_info:
             return
         col = layout.column()
