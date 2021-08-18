@@ -139,8 +139,12 @@ def _update_mesh_now(headnum):
         fb.select_model(model_index)
     except pkt_module().ModelLoadingException:
         logger.error('CHANGE_MODEL_ERROR: ModelLoadingException')
-        error_message = 'KeenTools Core problem \n \n' \
-                        'Model data cannot be loaded.'
+        error_message = 'Can\'t access face model data\n\n' \
+                        'Face model data is locked by another ' \
+                        'process or corrupted.\n' \
+                        'Please check if there are no other processes\n' \
+                        'using face data at the moment.\n' \
+                        'If that doesn\'t help, please reinstall the add-on.'
         warn = get_operator(Config.fb_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=error_message)
