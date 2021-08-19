@@ -628,7 +628,7 @@ class FB_PT_AppearancePanel(AllVisible, Panel):
             Config.fb_addon_setup_defaults_idname,
             text='', icon='PREFERENCES')
         row.operator(
-            Config.fb_help_pin_settings_idname,
+            Config.fb_help_appearance_idname,
             text='', icon='QUESTION')
 
     def draw(self, context):

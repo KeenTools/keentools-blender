@@ -147,8 +147,7 @@ class Config:
     fb_help_camera_idname = operators + '.help_camera'
     fb_help_views_idname = operators + '.help_view'
     fb_help_model_idname = operators + '.help_model'
-    fb_help_pin_settings_idname = operators + '.help_pin_settings'
-    fb_help_wireframe_settings_idname = operators + '.help_wireframe_settings'
+    fb_help_appearance_idname = operators + '.help_appearance'
     fb_help_texture_idname = operators + '.help_texture'
     fb_help_blendshapes_idname = operators + '.help_blendshapes'
 
