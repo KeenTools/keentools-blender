@@ -512,6 +512,39 @@ class FB_PT_Model(AllVisibleClosed, Panel):
         expression_rigidity_row.prop(settings, 'expression_rigidity')  
         expression_rigidity_row.active = head.should_use_emotions()
 
+        # Patch model
+        patch_model_box = layout.box()
+        
+        def dependent_prop(name, dep=settings.use_patch_model, box=patch_model_box):
+            new_row = box.row()    
+            new_row.prop(settings, name)
+            new_row.active = dep
+
+        patch_model_box.row().prop(settings, 'use_patch_model')
+        
+        dependent_prop('patch_model_overlapping_regularization')
+        dependent_prop('patch_model_global_regularization')
+        dependent_prop('patch_model_active_blendshapes')
+        dependent_prop('patch_dilating')
+
+        patch_model_global_as_neutral_box = patch_model_box.box()
+        dependent_prop('use_global_as_neutral', box=patch_model_global_as_neutral_box)
+        dependent_prop('global_as_neutral_rigidity', 
+                        dep=settings.use_patch_model and settings.use_global_as_neutral,
+                        box=patch_model_global_as_neutral_box)
+
+        dependent_prop('use_expression_patch_model')
+        
+        patch_model_patch_selector_box = patch_model_box.box()
+        dependent_prop('use_square_patches', box=patch_model_patch_selector_box)
+        dependent_prop('square_patches_w', 
+                        dep=settings.use_patch_model and settings.use_square_patches,
+                        box=patch_model_patch_selector_box)
+        dependent_prop('square_patches_h', 
+                        dep=settings.use_patch_model and settings.use_square_patches,
+                        box=patch_model_patch_selector_box)
+        # \Patch model
+
         layout.prop(head, 'model_scale')
 
         row = layout.split(factor=0.35)

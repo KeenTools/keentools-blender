@@ -693,6 +693,40 @@ class FBSceneSettings(PropertyGroup):
         description="Change how much pins affect the model expressions",
         name="Expression rigidity", default=2.0, min=0.001, max=1000.0)
 
+
+    # Patch model
+    patch_model_overlapping_regularization: FloatProperty(
+        description="Change overlapping regularization",
+        name="OVERLAPPING Reg.", default=0.7, min=0.0, max=1000.0)
+
+    patch_model_global_regularization: FloatProperty(
+        description="Change global regularizatioin for patch model",
+        name="GLOBAL Reg.", default=1e-4, min=1e-9, max=1000.0)
+
+    patch_model_temporal_regularization: FloatProperty(
+        description="Change temporal regularizatioin for patch model",
+        name="Patch temporal reg.", default=0, min=0, max=1000)
+
+    patch_model_active_blendshapes: IntProperty(
+        description="Active blendshapes count",
+        name="BLENDSHAPE COUNT", default=40, min=1, max=100)
+
+    use_patch_model: BoolProperty(name="USE PATCHES", default=True)
+    use_global_as_neutral: BoolProperty(name="GLOBAL RES. AS NEUTRAL", default=True)
+    global_as_neutral_rigidity: FloatProperty(
+        description="Change shape rigidity for global model",
+        name="GLOBAL RIGIDITY", default=3, min=0.001, max=1000.0)
+
+    use_expression_patch_model: BoolProperty(name="USE PATCHES FOR EXPR (*)", default=True)
+
+    use_square_patches: BoolProperty(name="SQUARE PATCHES", default=False)
+    square_patches_w: IntProperty(name="W", default=5, min=1, max=10)
+    square_patches_h: IntProperty(name="H", default=5, min=1, max=10)
+
+    patch_dilating: IntProperty(
+        description="Patches overlap size",
+        name="OVERLAP SIZE", default=2, min=1, max=10)
+
     # Internal use only.
     # Warning! current_headnum and current_camnum work only in Pinmode!
     current_headnum: IntProperty(name="Current Head Number", default=-1)

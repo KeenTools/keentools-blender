@@ -161,8 +161,25 @@ class FBLoader:
     def rigidity_setup(cls):
         fb = cls.get_builder()
         settings = get_main_settings()
-        fb.set_shape_rigidity(settings.shape_rigidity)
-        fb.set_expressions_rigidity(settings.expression_rigidity)
+
+        if (settings.use_patch_model):
+            fb.set_shape_rigidity(settings.global_as_neutral_rigidity)
+            fb.set_expressions_rigidity(settings.global_as_neutral_rigidity)
+        else:
+            fb.set_shape_rigidity(settings.shape_rigidity)
+            fb.set_expressions_rigidity(settings.expression_rigidity)
+
+        fb.set_patch_model_global_regularization(settings.patch_model_global_regularization)
+        fb.set_patch_model_active_blendshapes(settings.patch_model_active_blendshapes)
+        fb.set_patch_model_overlapping_regularization(settings.patch_model_overlapping_regularization)
+        fb.set_use_patch_model(settings.use_patch_model)
+        fb.set_use_expression_patch_model(settings.use_expression_patch_model)
+        fb.set_use_global_as_neutral(settings.use_global_as_neutral)  
+
+        fb.set_use_square_patches(settings.use_square_patches, 
+                                  settings.square_patches_w,
+                                  settings.square_patches_h,
+                                  settings.patch_dilating)
 
     @classmethod
     def update_all_camera_positions(cls, headnum):
