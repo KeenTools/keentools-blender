@@ -24,7 +24,8 @@ import tempfile
 import bpy
 
 __all__ = ['SHADOW_COPIES_DIRECTORY', 'RELATIVE_LIB_DIRECTORY',
-           'pkt_installation_dir', 'addon_installation_dir', 'MINIMUM_VERSION_REQUIRED',
+           'pkt_installation_dir', 'addon_installation_dir',
+           'face_data_dir','MINIMUM_VERSION_REQUIRED',
            'is_python_supported',
            'os_name', 'download_core_path', 'download_addon_path']
 
@@ -46,6 +47,12 @@ def pkt_installation_dir():
 def addon_installation_dir():
     addons_path = bpy.utils.user_resource('SCRIPTS', "addons")
     return os.path.join(addons_path, 'keentools_facebuilder')
+
+
+def face_data_dir():
+    face_data_path = os.path.join(pkt_installation_dir(),
+                                  'pykeentools_installation/data/face_data')
+    return os.path.abspath(face_data_path)
 
 
 MINIMUM_VERSION_REQUIRED = (2021, 3, 1)  # 2021.3.1

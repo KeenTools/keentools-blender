@@ -29,7 +29,7 @@ from .utils import attrs, coords
 from .utils.exif_reader import reload_all_camera_exif
 from .utils.other import FBStopShaderTimer, unhide_viewport_ui_element_from_object
 from .viewport import FBViewport
-from .blender_independent_packages.pykeentools_loader import module as pkt_module
+from .blender_independent_packages.pykeentools_loader import face_data_dir, module as pkt_module
 
 
 class FBLoader:
@@ -49,7 +49,8 @@ class FBLoader:
     def new_builder(cls):
         from .camera_input import FaceBuilderCameraInput
         cls._camera_input = FaceBuilderCameraInput()
-        cls._builder_instance = pkt_module().FaceBuilder(cls._camera_input)
+        cls._builder_instance = pkt_module().FaceBuilder(cls._camera_input,
+                                                         face_data_dir())
         return cls._builder_instance
 
     @classmethod
