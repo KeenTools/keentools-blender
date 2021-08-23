@@ -176,7 +176,7 @@ class FBLoader:
         fb.set_use_expression_patch_model(settings.use_expression_patch_model)
         fb.set_use_global_as_neutral(settings.use_global_as_neutral)  
 
-        fb.set_use_square_patches(settings.use_square_patches, 
+        fb.set_patches_properties(settings.use_square_patches, 
                                   settings.square_patches_w,
                                   settings.square_patches_h,
                                   settings.patch_dilating)
