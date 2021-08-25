@@ -329,8 +329,18 @@ def _remove_dir(dir):
 
 
 def _get_all_pids_on_windows():
-    output = subprocess.run(['tasklist', '/NH', '/FO', 'CSV'],
-                            capture_output=True)  # windows specific code
+    assert os_name() == 'windows'
+    try:
+        output = subprocess.run(['tasklist', '/NH', '/FO', 'CSV'],
+                                capture_output=True)
+    except FileNotFoundError as err:
+        logger = logging.getLogger(__name__)
+        logger.error('_get_all_pids_on_windows error: {}'.format(str(err)))
+        return None
+    except Exception as err:
+        logger = logging.getLogger(__name__)
+        logger.error('_get_all_pids_on_windows Exception: {}'.format(str(err)))
+        return None
     rows = re.split(b'\n', output.stdout)
     pids = []
     for row in rows:
@@ -348,8 +358,10 @@ def _all_dirs_in_dir(dir):
 
 
 def _remove_old_dirs(base_dir):
-    pids = _get_all_pids_on_windows()
     dirs = _all_dirs_in_dir(base_dir)
+    pids = _get_all_pids_on_windows()
+    if pids is None:
+        return
     for name in dirs:
         pid_str = name.split('_')[0]  # '_' is delimiter between pid and random
         full_path = os.path.join(base_dir, name)
@@ -364,6 +376,8 @@ def _remove_old_dirs(base_dir):
 
 
 def _do_pkt_shadow_copy():
+    logger = logging.getLogger(__name__)
+    logger.debug('_do_pkt_shadow_copy start')
     os.makedirs(SHADOW_COPIES_DIRECTORY, exist_ok=True)
     _remove_old_dirs(SHADOW_COPIES_DIRECTORY)
 
@@ -372,6 +386,7 @@ def _do_pkt_shadow_copy():
                                             dir=SHADOW_COPIES_DIRECTORY)
     shadow_copy_dir = os.path.join(shadow_copy_base_dir, 'pykeentools')
     shutil.copytree(pkt_installation_dir(), shadow_copy_dir)
+    logger.debug('shadow_copy_dir: {}'.format(shadow_copy_dir))
     return shadow_copy_dir
 
 
