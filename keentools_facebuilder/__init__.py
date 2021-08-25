@@ -39,8 +39,17 @@ import bpy
 
 # Only minimal imports are performed to check the start
 from .config import Config
-from .messages import (ERROR_MESSAGES, draw_warning_labels, draw_system_info,
-                       draw_long_label, draw_long_labels)
+from .messages import (ERROR_MESSAGES, draw_warning_labels, get_system_info,
+                       draw_system_info, draw_long_label, draw_long_labels)
+
+
+# Init logging system via config file
+base_dir = os.path.dirname(os.path.abspath(__file__))
+logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'))
+logger = logging.getLogger(__name__)
+txt = get_system_info()
+txt.append('Addon: {}'.format(bl_info['name']))
+logger.info('System Info:\n' + '\n'.join(txt))
 
 
 def _is_platform_64bit():
@@ -171,10 +180,6 @@ else:
                            FB_OT_HistoryActor,
                            FB_OT_CameraActor) + OPERATOR_CLASSES + \
                            INTERFACE_CLASSES + PREFERENCES_CLASSES
-
-    # Init logging system via config file
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'))
 
 
     def _add_addon_settings_var():
