@@ -411,6 +411,12 @@ class FB_OT_ComeBackToUpdate(bpy.types.Operator):
 
 
 class FBInstallationReminder:
+    _available = True
+
+    @classmethod
+    def make_unavailable(cls):
+        cls._available = False
+
     @classmethod
     def is_active(cls):
         return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.INSTALL
@@ -419,7 +425,7 @@ class FBInstallationReminder:
     def is_available(cls):
         settings = get_main_settings()
         previous_show_time_str = settings.preferences().latest_show_datetime_installation_reminder
-        return _operator_available_time(previous_show_time_str)
+        return cls._available and _operator_available_time(previous_show_time_str)
 
     @classmethod
     def render_message(cls, layout, limit=32):
@@ -485,6 +491,7 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
                 _clear_updater_info()
                 CurrentStateExecutor.compute_current_panel_updater_state()
                 return {'CANCELLED'}
+            FBInstallationReminder.make_unavailable()
             import sys
             import atexit
             atexit.register(_start_new_blender, sys.argv[0])
