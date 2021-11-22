@@ -4,6 +4,8 @@
 
 ## Release History
 
+2021.4.0 - 7 December 2021
+
 2021.3.2 - 1 September 2021
 
 2021.3.1 - 13 August 2021
