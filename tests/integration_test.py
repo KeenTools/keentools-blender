@@ -24,7 +24,7 @@ from keentools_facebuilder.pick_operator import reset_detected_faces, get_detect
 
 class TestConfig:
     facs_blendshapes_count = 51
-    fb_mask_count = 8
+    fb_mask_count = 9
     faces_on_test_render = 3
     skip_heavy_tests_flag = False
     heavy_tests = ('test_uv_switch', 'test_models_and_parts')
