@@ -28,7 +28,7 @@ class Config:
     # Version dependent
     addon_version = '2021.4.0'
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
-                                  (2, 90), (2, 91), (2, 92), (2, 93))
+                                  (2, 90), (2, 91), (2, 92), (2, 93), (3, 0))
     minimal_blender_api = (2, 80, 60)
 
     # Version independent
