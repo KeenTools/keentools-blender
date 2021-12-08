@@ -16,6 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import sys
+import platform
+import bpy
+
 from .config import Config
 
 
@@ -111,19 +115,26 @@ def split_long_string(txt, length=80):
     return [txt[i:i + length] for i in range(0, len(txt), length)]
 
 
+def get_system_info():
+    txt_arr = []
+    txt_arr.append('Blender version: {} API: {}'.format(bpy.app.version_string,
+               '.'.join([str(x) for x in bpy.app.version])))
+    txt_arr.append('Python: {}'.format(sys.version))
+    arch = platform.architecture()
+    txt_arr.append('Platform: {} / {}'.format(arch[1], arch[0]))
+    txt_arr.append('Machine: {}, {}'.format(platform.machine(),
+                                     platform.processor()))
+    txt_arr.append('System: {}'.format(format(platform.platform())))
+    return txt_arr
+
+
 def draw_system_info(layout):
-    import sys
-    import platform
-    import bpy
     box = layout.box()
     col = box.column()
     col.scale_y = _get_text_scale_y()
-    col.label(
-        text="Blender version: {} API: {}.{}.{}".format(
-            bpy.app.version_string, *bpy.app.version))
-    col.label(text="Python: {}".format(sys.version))
-    arch = platform.architecture()
-    col.label(text="Platform: {} / {}".format(arch[1], arch[0]))
+    txt_arr = get_system_info()
+    for txt in txt_arr:
+        col.label(text=txt)
     return box
 
 

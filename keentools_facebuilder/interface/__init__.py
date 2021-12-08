@@ -33,8 +33,7 @@ CLASSES_TO_REGISTER = (FB_MT_ProperViewMenu, # menus
                        FB_PT_CameraPanel,
                        FB_PT_ViewsPanel,
                        FB_PT_Model,
-                       FB_PT_PinSettingsPanel,
-                       FB_PT_WireframeSettingsPanel,
+                       FB_PT_AppearancePanel,
                        FB_PT_TexturePanel,
                        FB_PT_BlendShapesPanel,
                        FB_OT_DownloadTheUpdate, FB_OT_RemindLater, FB_OT_SkipVersion,
@@ -43,8 +42,7 @@ CLASSES_TO_REGISTER = (FB_MT_ProperViewMenu, # menus
                        HELP_OT_CameraHelp,  # helps
                        HELP_OT_ViewsHelp,
                        HELP_OT_ModelHelp,
-                       HELP_OT_PinSettingsHelp,
-                       HELP_OT_WireframeSettingsHelp,
+                       HELP_OT_AppearanceHelp,
                        HELP_OT_TextureHelp,
                        HELP_OT_BlendshapesHelp,
                        FB_OT_AddonWarning,  # dialogs

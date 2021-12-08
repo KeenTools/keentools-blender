@@ -24,6 +24,7 @@ from .fbloader import FBLoader
 from .utils import coords
 from .utils.focal_length import configure_focal_mode_and_fixes
 from .utils.manipulate import push_head_in_undo_history
+from .utils.images import load_rgba
 from .blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
@@ -71,7 +72,7 @@ def init_detected_faces(fb, headnum, camnum):
     camera = head.get_camera(camnum)
     if camera is None:
         return None
-    img = camera.np_image()
+    img = load_rgba(camera)
     if img is None:
         return None
 

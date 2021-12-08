@@ -19,6 +19,11 @@
 
 import os
 import sys
+import tempfile
+import shutil
+import logging
+import subprocess
+import re
 from threading import Thread, Lock
 from enum import Enum
 from requests.adapters import HTTPAdapter
@@ -314,18 +319,74 @@ def is_installed(force_recheck=False):
     return installation_status(force_recheck)[0]
 
 
+def _remove_dir(dir):
+    try:
+        shutil.rmtree(dir, ignore_errors=True)
+    except Exception as err:
+        logger = logging.getLogger(__name__)
+        logger.error('remove_dir: Cannot delete dir {}'.format(dir))
+        logger.error('Exception info: {}'.format(str(err)))
+
+
+def _get_all_pids_on_windows():
+    assert os_name() == 'windows'
+    try:
+        output = subprocess.run(['tasklist', '/NH', '/FO', 'CSV'],
+                                capture_output=True)
+    except FileNotFoundError as err:
+        logger = logging.getLogger(__name__)
+        logger.error('_get_all_pids_on_windows error: {}'.format(str(err)))
+        return None
+    except Exception as err:
+        logger = logging.getLogger(__name__)
+        logger.error('_get_all_pids_on_windows Exception: {}'.format(str(err)))
+        return None
+    rows = re.split(b'\n', output.stdout)
+    pids = []
+    for row in rows:
+        elems = re.split(b'","', row)
+        try:
+            pid = int(elems[1])
+            pids.append(pid)
+        except Exception:
+            pass
+    return pids
+
+
+def _all_dirs_in_dir(dir):
+    return [f for f in os.listdir(dir) if os.path.isdir(os.path.join(dir, f))]
+
+
+def _remove_old_dirs(base_dir):
+    dirs = _all_dirs_in_dir(base_dir)
+    pids = _get_all_pids_on_windows()
+    if pids is None:
+        return
+    for name in dirs:
+        pid_str = name.split('_')[0]  # '_' is delimiter between pid and random
+        full_path = os.path.join(base_dir, name)
+        can_be_deleted = True
+        try:
+            pid = int(pid_str)
+            can_be_deleted = pid not in pids
+        except ValueError:
+            pass
+        if can_be_deleted:
+            _remove_dir(full_path)
+
+
 def _do_pkt_shadow_copy():
-    import tempfile
-    import shutil
-
-    shutil.rmtree(SHADOW_COPIES_DIRECTORY, ignore_errors=True)
+    logger = logging.getLogger(__name__)
+    logger.debug('_do_pkt_shadow_copy start')
     os.makedirs(SHADOW_COPIES_DIRECTORY, exist_ok=True)
+    _remove_old_dirs(SHADOW_COPIES_DIRECTORY)
 
-    shadow_copy_base_dir = tempfile.mkdtemp(dir=SHADOW_COPIES_DIRECTORY)
+    pid = os.getpid()
+    shadow_copy_base_dir = tempfile.mkdtemp(prefix='{}_'.format(pid),
+                                            dir=SHADOW_COPIES_DIRECTORY)
     shadow_copy_dir = os.path.join(shadow_copy_base_dir, 'pykeentools')
-
     shutil.copytree(pkt_installation_dir(), shadow_copy_dir)
-
+    logger.debug('shadow_copy_dir: {}'.format(shadow_copy_dir))
     return shadow_copy_dir
 
 

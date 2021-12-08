@@ -15,9 +15,113 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+
+import contextlib
+import hashlib
 import logging
+import os
+import os.path
+import shutil
+import tempfile
+
 import numpy as np
+
 import bpy
+
+from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+
+
+_TMP_IMAGES_DIR = os.path.join(tempfile.gettempdir(), 'pykeentools_tmp_images')
+
+
+def _make_tmp_path(abs_path):
+    sha1 = hashlib.sha1()
+    sha1.update(abs_path.encode())
+    return os.path.join(_TMP_IMAGES_DIR, sha1.hexdigest() + '.png')
+
+
+@contextlib.contextmanager
+def _tmp_image_path(curr_abs_path):
+    shutil.rmtree(_TMP_IMAGES_DIR, ignore_errors=True)
+    try:
+        os.makedirs(_TMP_IMAGES_DIR, exist_ok=True)
+        yield _make_tmp_path(curr_abs_path)
+    finally:
+        shutil.rmtree(_TMP_IMAGES_DIR, ignore_errors=True)
+
+
+def _get_color_transform_state():
+    vs = bpy.context.scene.view_settings
+    ds = bpy.context.scene.display_settings
+    return {
+        'display_device': ds.display_device,
+        'view_transform': vs.view_transform,
+        'look': vs.look,
+        'exposure': vs.exposure,
+        'gamma': vs.gamma,
+        'use_curve_mapping': vs.use_curve_mapping
+    }
+
+
+def _set_color_transform_state(state):
+    vs = bpy.context.scene.view_settings
+    ds = bpy.context.scene.display_settings
+
+    ds.display_device = state['display_device']
+    vs.view_transform = state['view_transform']
+    vs.look = state['look']
+    vs.exposure = state['exposure']
+    vs.gamma = state['gamma']
+    vs.use_curve_mapping = state['use_curve_mapping']
+
+
+def _default_color_transform_state():
+    return {
+        'display_device': 'sRGB',
+        'view_transform': 'Standard',
+        'look': 'None',
+        'exposure': 0.0,
+        'gamma': 1.0,
+        'use_curve_mapping': False
+    }
+
+
+@contextlib.contextmanager
+def _standard_view_transform():
+    # This is done to enforce correct image saving
+    state = _get_color_transform_state()
+    _set_color_transform_state(_default_color_transform_state())
+
+    try:
+        yield
+    finally:
+        _set_color_transform_state(state)
+
+
+def load_unchanged_rgba(camera):
+    abs_path = camera.get_abspath()
+    if abs_path is None:
+        return None
+
+    with _tmp_image_path(abs_path) as tmp_path:
+        with _standard_view_transform():
+            camera.cam_image.save_render(tmp_path)
+        img = pkt_module().read_png(tmp_path)
+
+    if img is None:
+        if camera.cam_image is None:
+            return None
+        w, h = camera.cam_image.size[:2]
+        img = np.array(camera.cam_image.pixels[:]).reshape((h, w, 4))
+
+    return img.astype(np.float32)
+
+
+def load_rgba(camera):
+    img = load_unchanged_rgba(camera)
+    if img is None:
+        return None
+    return np.rot90(img, camera.orientation)
 
 
 def find_bpy_image_by_name(image_name):

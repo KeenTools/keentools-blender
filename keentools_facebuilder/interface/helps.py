@@ -74,8 +74,8 @@ class HELP_OT_CameraHelp(bpy.types.Operator):
             "so if you really ",
             "know what you're doing."]
 
-        for c in content:
-            col.label(text=c)
+        for txt in content:
+            col.label(text=txt)
         layout.separator()
 
 
@@ -112,8 +112,8 @@ class HELP_OT_ViewsHelp(bpy.types.Operator):
             "modified accordingly),",
             "should be shot in the same orientation (vertical or horizontal)."]
 
-        for c in content:
-            col.label(text=c)
+        for txt in content:
+            col.label(text=txt)
         layout.separator()
 
     def invoke(self, context, event):
@@ -147,8 +147,8 @@ class HELP_OT_ModelHelp(bpy.types.Operator):
             "and the more pins ",
             "affect its shape."]
 
-        for c in content:
-            col.label(text=c)
+        for txt in content:
+            col.label(text=txt)
         layout.separator()
 
     def invoke(self, context, event):
@@ -159,52 +159,23 @@ class HELP_OT_ModelHelp(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class HELP_OT_PinSettingsHelp(bpy.types.Operator):
-    bl_idname = Config.fb_help_pin_settings_idname
-    bl_label = "Pin settings"
+class HELP_OT_AppearanceHelp(bpy.types.Operator):
+    bl_idname = Config.fb_help_appearance_idname
+    bl_label = "Appearance"
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Show help information about Pin settings panel"
+    bl_description = "Show help information about Appearance panel"
 
     def draw(self, context):
         layout = self.layout
         col = layout.column()
         col.scale_y = Config.text_scale_y
         content = [
-            "Here you can tweak the pin size in terms of visual appearance ",
-            "and the size of the active area that responds to mouse "
-            "pointer actions."]
+            "Here you can tweak how pins look and react to mouse and change ",
+            "the colours used for the wireframe of FaceBuilder "
+            "visible in pin mode."]
 
-        for c in content:
-            col.label(text=c)
-        layout.separator()
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(
-            self, width=_help_window_width)
-
-    def execute(self, context):
-        return {'FINISHED'}
-
-
-class HELP_OT_WireframeSettingsHelp(bpy.types.Operator):
-    bl_idname = Config.fb_help_wireframe_settings_idname
-    bl_label = "Wireframe settings"
-    bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Show help information about Wireframe settings panel"
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-        content = [
-            "On this panel you can change colours and opacity of the "
-            "model's wireframe ",
-            "visible in Pin mode. Aside of changing colours manually you "
-            "can try different ",
-            "presets loadable by clicking the one-letter buttons."]
-
-        for c in content:
-            col.label(text=c)
+        for txt in content:
+            col.label(text=txt)
         layout.separator()
 
     def invoke(self, context, event):
@@ -264,8 +235,8 @@ class HELP_OT_TextureHelp(bpy.types.Operator):
             "the colour of the last ",
             "pixel on the edge and duplicates it on the next empty pixel."]
 
-        for c in content:
-            col.label(text=c)
+        for txt in content:
+            col.label(text=txt)
         layout.separator()
 
     def invoke(self, context, event):
@@ -327,8 +298,8 @@ class HELP_OT_BlendshapesHelp(bpy.types.Operator):
             'export dialog for you. Your free to change the settings before '
             'saving the file if you need.']
 
-        for c in content:
-            col.label(text=c)
+        for txt in content:
+            col.label(text=txt)
         layout.separator()
 
     def invoke(self, context, event):

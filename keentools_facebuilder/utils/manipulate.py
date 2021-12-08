@@ -45,7 +45,15 @@ def _get_image_names(obj):
 
 
 def _check_facs_available(count):
-    return pkt_module().FacsExecutor.facs_available(count)
+    try:
+        return pkt_module().FacsExecutor.facs_available(count)
+    except pkt_module().ModelLoadingException as err:
+        logger = logging.getLogger(__name__)
+        logger.error('_check_facs_available ModelLoadingException: {}'.format(str(err)))
+    except Exception as err:
+        logger = logging.getLogger(__name__)
+        logger.error('_check_facs_available Unknown Exception: {}'.format(str(err)))
+    return False
 
 
 def is_it_our_mesh(obj):

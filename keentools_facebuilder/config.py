@@ -26,9 +26,9 @@ _MT = 'FACEBUILDER_MT_'
 
 class Config:
     # Version dependent
-    addon_version = '2021.3.2'
+    addon_version = '2021.4.0'
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
-                                  (2, 90), (2, 91), (2, 92), (2, 93))
+                                  (2, 90), (2, 91), (2, 92), (2, 93), (3, 0))
     minimal_blender_api = (2, 80, 60)
 
     # Version independent
@@ -125,6 +125,9 @@ class Config:
     fb_user_preferences_get_colors = operators + '.user_preferences_get_colors'
     fb_user_preferences_reset_all_warning_idname = \
         operators + '.user_preferences_reset_all_warning'
+    fb_default_pin_settings_idname = operators + '.default_pin_settings'
+    fb_default_wireframe_settings_idname = \
+        operators + '.default_wireframe_settings'
 
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
@@ -136,17 +139,15 @@ class Config:
     fb_views_panel_idname = _PT + 'views_panel'
     fb_exif_panel_idname = _PT + 'exif_panel'
     fb_texture_panel_idname = _PT + 'texture_panel'
-    fb_colors_panel_idname = _PT + 'colors_panel'
     fb_model_panel_idname = _PT + 'model_panel'
-    fb_pin_settings_panel_idname = _PT + 'pin_settings_panel'
+    fb_appearance_panel_idname = _PT + 'appearance_panel'
     fb_blendshapes_panel_idname = _PT + 'blendshapes_panel'
 
     # Help ids
     fb_help_camera_idname = operators + '.help_camera'
     fb_help_views_idname = operators + '.help_view'
     fb_help_model_idname = operators + '.help_model'
-    fb_help_pin_settings_idname = operators + '.help_pin_settings'
-    fb_help_wireframe_settings_idname = operators + '.help_wireframe_settings'
+    fb_help_appearance_idname = operators + '.help_appearance'
     fb_help_texture_idname = operators + '.help_texture'
     fb_help_blendshapes_idname = operators + '.help_blendshapes'
 
@@ -197,6 +198,7 @@ class Config:
     # Constants
     surf_pin_size_scale = 0.85
     text_scale_y = 0.75
+    btn_scale_y = 1.2
 
     viewport_redraw_interval = 0.1
     unknown_mod_ver = -1
