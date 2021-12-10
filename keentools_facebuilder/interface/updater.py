@@ -128,15 +128,22 @@ class UpdateState(IntEnum):
 
 class CurrentStateExecutor:
     _panel_updater_state = UpdateState.INITIAL
+    _mutable = True
+
+    @classmethod
+    def make_immutable(cls):
+        cls._mutable = False
+
 
     @classmethod
     def set_current_panel_updater_state(cls, state, set_preferences_updater_state=True):
-        cls._panel_updater_state = state
-        force_ui_redraw('VIEW_3D')
-        if set_preferences_updater_state:
-            settings = get_main_settings()
-            settings.preferences().updater_state = state
-            force_ui_redraw('PREFERENCES')
+        if cls._mutable:
+            cls._panel_updater_state = state
+            force_ui_redraw('VIEW_3D')
+            if set_preferences_updater_state:
+                settings = get_main_settings()
+                settings.preferences().updater_state = state
+                force_ui_redraw('PREFERENCES')
 
     @classmethod
     def compute_current_panel_updater_state(cls):
@@ -165,6 +172,7 @@ class FBUpdater:
         previous_show_time_str = settings.preferences().latest_show_datetime_update_reminder
         latest_skip_version = settings.preferences().latest_update_skip_version
         return _operator_available_time(previous_show_time_str) and cls.has_response() and \
+               _version_to_tuple(Config.addon_version) < _version_to_tuple(cls.version()) and \
                _version_to_tuple(_downloaded_version()) < _version_to_tuple(cls.version()) and \
                _version_to_tuple(latest_skip_version) != _version_to_tuple(cls.version())
 
@@ -411,11 +419,6 @@ class FB_OT_ComeBackToUpdate(bpy.types.Operator):
 
 
 class FBInstallationReminder:
-    _available = True
-
-    @classmethod
-    def make_unavailable(cls):
-        cls._available = False
 
     @classmethod
     def is_active(cls):
@@ -425,7 +428,7 @@ class FBInstallationReminder:
     def is_available(cls):
         settings = get_main_settings()
         previous_show_time_str = settings.preferences().latest_show_datetime_installation_reminder
-        return cls._available and _operator_available_time(previous_show_time_str)
+        return _operator_available_time(previous_show_time_str)
 
     @classmethod
     def render_message(cls, layout, limit=32):
@@ -484,14 +487,14 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
     def execute(self, context):
         settings = get_main_settings()
         if not bpy.data.is_dirty or settings.not_save_changes:
-            CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL)
+            _clear_updater_info()
             if not updates_downloaded():
                 warn = get_operator(Config.fb_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
                 _clear_updater_info()
                 CurrentStateExecutor.compute_current_panel_updater_state()
                 return {'CANCELLED'}
-            FBInstallationReminder.make_unavailable()
+            CurrentStateExecutor.make_immutable()
             import sys
             import atexit
             atexit.register(_start_new_blender, sys.argv[0])
