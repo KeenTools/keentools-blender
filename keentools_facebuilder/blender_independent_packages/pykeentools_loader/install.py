@@ -103,7 +103,7 @@ def _install_from_stream(file_like_object, part_installation):
             target_path = pkt_installation_dir()
             os.makedirs(target_path, exist_ok=False)
         elif part_installation == PartInstallation.ADDON:
-            target_path = bpy.utils.user_resource('SCRIPTS', "addons")
+            target_path = bpy.utils.user_resource('SCRIPTS', path='addons')
 
         import zipfile
         with zipfile.ZipFile(file_like_object) as archive:
