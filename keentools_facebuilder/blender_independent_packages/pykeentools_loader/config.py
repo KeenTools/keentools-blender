@@ -44,7 +44,7 @@ def pkt_installation_dir():
 
 
 def addon_installation_dir():
-    addons_path = bpy.utils.user_resource('SCRIPTS', "addons")
+    addons_path = bpy.utils.user_resource('SCRIPTS', path='addons')
     return os.path.join(addons_path, 'keentools_facebuilder')
 
 
