@@ -64,15 +64,23 @@ def _get_color_transform_state():
 
 
 def _set_color_transform_state(state):
-    vs = bpy.context.scene.view_settings
-    ds = bpy.context.scene.display_settings
+    success_flag = True
 
-    ds.display_device = state['display_device']
+    ds = bpy.context.scene.display_settings
+    try:
+        ds.display_device = state['display_device']
+    except TypeError as err:
+        success_flag = False
+        logger = logging.getLogger(__name__)
+        logger.error('_set_color_transform_state Exception: {}'.format(str(err)))
+
+    vs = bpy.context.scene.view_settings
     vs.view_transform = state['view_transform']
     vs.look = state['look']
     vs.exposure = state['exposure']
     vs.gamma = state['gamma']
     vs.use_curve_mapping = state['use_curve_mapping']
+    return success_flag
 
 
 def _default_color_transform_state():
