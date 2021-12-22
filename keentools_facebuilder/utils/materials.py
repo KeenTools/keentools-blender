@@ -113,8 +113,12 @@ def _create_bpy_texture_from_img(img, tex_name):
     tex = bpy.data.images.new(
             tex_name, width=img.shape[1], height=img.shape[0],
             alpha=True, float_buffer=False)
-    tex.colorspace_settings.name = 'sRGB'
     assert(tex.name == tex_name)
+    try:
+        tex.colorspace_settings.name = 'sRGB'
+    except TypeError as err:
+        logger.error('_create_bpy_texture_from_img '
+                     'color space sRGB is not found: {}'.format(str(err)))
     tex.pixels[:] = img.ravel()
     tex.pack()
 
