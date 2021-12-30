@@ -22,7 +22,9 @@ import bpy
 from .config import get_main_settings, get_operator, Config, ErrorType
 from .fbloader import FBLoader
 from .utils import coords
-from .utils.manipulate import get_current_headnum
+from .utils.manipulate import (get_current_headnum,
+                               get_vertex_groups,
+                               create_vertex_groups)
 from .utils.blendshapes import (restore_facs_blendshapes,
                                 disconnect_blendshapes_action)
 from .blender_independent_packages.pykeentools_loader import module as pkt_module
@@ -166,6 +168,16 @@ def _update_mesh_now(headnum):
             mesh.materials.append(old_mesh.materials[0])
     except Exception:
         pass
+
+    recreate_vertex_groups_flag = Config.recreate_vertex_groups and \
+                                  len(old_mesh.vertices) == len(mesh.vertices)
+    if recreate_vertex_groups_flag:
+        try:
+            vg_groups_dict = get_vertex_groups(head.headobj)
+        except Exception as err:
+            logger.error('_update_mesh_now get VG: {}'.format(str(err)))
+            recreate_vertex_groups_flag = False
+
     head.headobj.data = mesh
     FBLoader.save_fb_serial_str(headnum)
 
@@ -189,6 +201,12 @@ def _update_mesh_now(headnum):
         wf.init_geom_data_from_fb(fb, head.headobj, keyframe)
         wf.init_edge_indices(fb)
         vp.update_wireframe_colors()
+
+    if recreate_vertex_groups_flag:
+        try:
+            create_vertex_groups(head.headobj, vg_groups_dict)
+        except Exception as err:
+            logger.error('_update_mesh_now create VG: {}'.format(str(err)))
 
     mesh_name = old_mesh.name
     # Delete old mesh
