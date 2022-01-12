@@ -80,6 +80,24 @@ class FBExifItem(PropertyGroup):
     real_width: FloatProperty(default=-1.0)
     real_length: FloatProperty(default=-1.0)
 
+    def __str__(self):
+        res = 'focal: {} \n'.format(self.focal)
+        res += 'focal35mm: {} \n'.format(self.focal35mm)
+        res += 'focal_x_res: {} \n'.format(self.focal_x_res)
+        res += 'focal_y_res: {} \n'.format(self.focal_y_res)
+        res += 'units: {} \n'.format(self.units)
+        res += 'sensor_width: {} \n'.format(self.sensor_width)
+        res += 'sensor_length: {} \n'.format(self.sensor_length)
+        res += 'image_width: {} \n'.format(self.image_width)
+        res += 'image_length: {} \n'.format(self.image_length)
+        res += 'orientation: {} \n'.format(self.orientation)
+        res += 'exif_width: {} \n'.format(self.exif_width)
+        res += 'real_width: {} \n'.format(self.real_width)
+        res += 'real_length: {} \n'.format(self.real_length)
+        res += 'info_message: {} \n'.format(self.info_message)
+        res += 'sizes_message: {} \n'.format(self.sizes_message)
+        return res
+
     def calculated_image_size(self):
         if self.image_width > 0.0 and self.image_length > 0.0:
             w = self.image_width
@@ -91,7 +109,7 @@ class FBExifItem(PropertyGroup):
 
 
 class FBCameraItem(PropertyGroup):
-    keyframe_id: IntProperty(default=0)
+    keyframe_id: IntProperty(default=-1)
     cam_image: PointerProperty(
         name="Image", type=bpy.types.Image, update=update_cam_image
     )
@@ -383,6 +401,14 @@ def model_type_callback(self, context):
     return res
 
 
+def expression_views_callback(self, context):
+    res = [('0', '[Neutral state]', '', 'USER', 0),]
+    for i, camera in enumerate(self.cameras):
+        res.append(('{}'.format(camera.get_keyframe()), camera.get_image_name(),
+                    '', 'HIDE_OFF', i + 1))
+    return res
+
+
 class FBHeadItem(PropertyGroup):
     use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
                                          default=False,
@@ -449,6 +475,10 @@ class FBHeadItem(PropertyGroup):
     model_type_previous: EnumProperty(name='Current Topology',
                                       items=model_type_callback,
                                       description='Invisible Model selector')
+
+    expression_view_selector: EnumProperty(name='Expression View Selector',
+                                           items=expression_views_callback,
+                                           description='What expression will display after pinning')
 
     def blenshapes_are_relevant(self):
         if self.has_no_blendshapes():
@@ -602,6 +632,13 @@ class FBHeadItem(PropertyGroup):
             if head == self:
                 return i
         return -1
+
+    def get_main_settings(self):
+        return get_main_settings()
+
+    def get_active_expression_keyframe(self):
+        kid = int(self.expression_view_selector)
+        return kid
 
 
 class FBSceneSettings(PropertyGroup):

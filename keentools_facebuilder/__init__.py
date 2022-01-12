@@ -49,7 +49,7 @@ logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'))
 logger = logging.getLogger(__name__)
 txt = get_system_info()
 txt.append('Addon: {}'.format(bl_info['name']))
-logger.info('System Info:\n' + '\n'.join(txt))
+logger.info('\n---\nSystem Info:\n' + '\n'.join(txt) + '\n---\n')
 
 
 def _is_platform_64bit():

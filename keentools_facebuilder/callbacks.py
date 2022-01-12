@@ -230,7 +230,7 @@ def update_expressions(self, context):
     if not settings.pinmode:
         return
 
-    coords.update_head_mesh_neutral(fb, self.headobj)
+    coords.update_head_mesh_non_neutral(fb, self)
     FBLoader.update_wireframe_shader_only(settings.current_headnum,
                                           settings.current_camnum)
 
@@ -290,7 +290,7 @@ def update_model_scale(self, context):
 
     head.mark_model_changed_by_scale()
 
-    coords.update_head_mesh_neutral(fb, head.headobj)
+    coords.update_head_mesh_non_neutral(fb, head)
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
     FBLoader.save_fb_serial_str(headnum)
