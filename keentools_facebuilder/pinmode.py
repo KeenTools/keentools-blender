@@ -261,6 +261,8 @@ class FB_OT_PinMode(bpy.types.Operator):
             return {'CANCELLED'}
 
         fb = FBLoader.get_builder()
+        fb.set_use_emotions(head.should_use_emotions())
+
         if not self._check_keyframes(fb, head):
             logger.debug("PINMODE NO KEYFRAME")
             for cam in head.cameras:

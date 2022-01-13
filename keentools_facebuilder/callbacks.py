@@ -227,10 +227,10 @@ def update_expressions(self, context):
     fb.set_use_emotions(self.should_use_emotions())
     logger.debug('EXPRESSIONS: {}'.format(self.should_use_emotions()))
 
+    coords.update_head_mesh_non_neutral(fb, self)
     if not settings.pinmode:
         return
 
-    coords.update_head_mesh_non_neutral(fb, self)
     FBLoader.update_wireframe_shader_only(settings.current_headnum,
                                           settings.current_camnum)
 

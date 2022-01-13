@@ -392,7 +392,9 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
 
         layout.prop(head, 'use_emotions')
         if head.should_use_emotions():
-            layout.prop(head, 'expression_view_selector')
+            box = layout.box()
+            box.label(text='Model gets expression from')
+            box.prop(head, 'expression_view', text='')
         layout.prop(head, 'reduce_pins')
 
         if settings.pinmode:

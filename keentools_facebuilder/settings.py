@@ -404,8 +404,9 @@ def model_type_callback(self, context):
 def expression_views_callback(self, context):
     res = [('0', '[Neutral state]', '', 'USER', 0),]
     for i, camera in enumerate(self.cameras):
-        res.append(('{}'.format(camera.get_keyframe()), camera.get_image_name(),
-                    '', 'HIDE_OFF', i + 1))
+        kid = camera.get_keyframe()
+        res.append(('{}'.format(kid), camera.get_image_name(),
+                    '', 'HIDE_OFF', kid))
     return res
 
 
@@ -476,9 +477,10 @@ class FBHeadItem(PropertyGroup):
                                       items=model_type_callback,
                                       description='Invisible Model selector')
 
-    expression_view_selector: EnumProperty(name='Expression View Selector',
-                                           items=expression_views_callback,
-                                           description='What expression will display after pinning')
+    expression_view: EnumProperty(name='Expression View Selector',
+                                  items=expression_views_callback,
+                                  description='What expression will display after pinning',
+                                  update=update_expressions)
 
     def blenshapes_are_relevant(self):
         if self.has_no_blendshapes():
@@ -636,8 +638,10 @@ class FBHeadItem(PropertyGroup):
     def get_main_settings(self):
         return get_main_settings()
 
-    def get_active_expression_keyframe(self):
-        kid = int(self.expression_view_selector)
+    def get_expression_view_keyframe(self):
+        if self.expression_view == '':
+            return 0
+        kid = int(self.expression_view)
         return kid
 
 

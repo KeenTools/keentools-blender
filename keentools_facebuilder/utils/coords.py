@@ -82,7 +82,7 @@ def update_head_mesh_expressions(fb, head, keyframe):
 
 def update_head_mesh_non_neutral(fb, head):
     if head.should_use_emotions():
-        kid = head.get_active_expression_keyframe()
+        kid = head.get_expression_view_keyframe()
         if kid == 0:  # Neutral selected
             pass
         elif fb.is_key_at(kid):
