@@ -338,15 +338,20 @@ class FB_OT_DeleteCamera(Operator):
         headnum = self.headnum
         camnum = self.camnum
 
-        camera = settings.get_camera(headnum, camnum)
+        head = settings.get_head(headnum)
+        if head is None:
+            return {'CANCELLED'}
+        camera = head.get_camera(camnum)
         if camera is None:
             return {'CANCELLED'}
 
         kid = camera.get_keyframe()
+        if head.get_expression_view_keyframe() == kid:
+            head.set_neutral_expression_view()
+
         fb = FBLoader.get_builder()
         fb.remove_keyframe(kid)
 
-        head = settings.get_head(headnum)
         camera.delete_cam_image()
         camera.delete_camobj()
         head.cameras.remove(camnum)

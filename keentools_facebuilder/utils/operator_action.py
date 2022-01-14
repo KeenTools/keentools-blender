@@ -43,6 +43,19 @@ def create_blendshapes(operator):
         logger.debug('no object')
         return {'CANCELLED'}
 
+    settings = get_main_settings()
+    headnum = settings.head_by_obj(obj)
+    if headnum >= 0:
+        head = settings.get_head(headnum)
+        if head.should_use_emotions() and \
+                head.expression_view != Config.neutral_expression_view_idname:
+            warn = get_operator(Config.fb_noblenshapes_until_expression_warning_idname)
+            warn('INVOKE_DEFAULT', headnum=headnum)
+            return {'CANCELLED'}
+        # Forced change before creating blendshapes
+        # It's not visible to user since expressions are switched off
+        head.set_neutral_expression_view()
+
     try:
         counter = create_facs_blendshapes(obj, scale)
     except pkt_module().UnlicensedException:

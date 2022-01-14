@@ -40,6 +40,7 @@ from .utils import coords
 from .callbacks import (update_mesh_with_dialog,
                         update_mesh_simple,
                         update_expressions,
+                        update_expression_view,
                         update_wireframe_image,
                         update_wireframe_func,
                         update_pin_sensitivity,
@@ -402,7 +403,7 @@ def model_type_callback(self, context):
 
 
 def expression_views_callback(self, context):
-    res = [('0', '[Neutral state]', '', 'USER', 0),]
+    res = [(Config.neutral_expression_view_idname, 'Neutral', '', 'USER', 0), ]
     for i, camera in enumerate(self.cameras):
         kid = camera.get_keyframe()
         res.append(('{}'.format(kid), camera.get_image_name(),
@@ -480,7 +481,7 @@ class FBHeadItem(PropertyGroup):
     expression_view: EnumProperty(name='Expression View Selector',
                                   items=expression_views_callback,
                                   description='What expression will display after pinning',
-                                  update=update_expressions)
+                                  update=update_expression_view)
 
     def blenshapes_are_relevant(self):
         if self.has_no_blendshapes():
@@ -639,10 +640,13 @@ class FBHeadItem(PropertyGroup):
         return get_main_settings()
 
     def get_expression_view_keyframe(self):
-        if self.expression_view == '':
-            return 0
+        if self.expression_view == Config.empty_expression_view_idname:
+            return 0  # Neutral
         kid = int(self.expression_view)
         return kid
+
+    def set_neutral_expression_view(self):
+        self.expression_view = Config.neutral_expression_view_idname
 
 
 class FBSceneSettings(PropertyGroup):
