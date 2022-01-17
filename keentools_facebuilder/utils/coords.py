@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+import logging
+
 import numpy as np
 import math
 import bpy
@@ -68,9 +70,29 @@ def update_head_mesh_geom(obj, geom):
     mesh.update()
 
 
-def update_head_mesh_neutral(fb, headobj):
+def update_head_mesh_neutral(fb, head):
     geom = fb.applied_args_vertices()
-    update_head_mesh_geom(headobj, geom)
+    update_head_mesh_geom(head.headobj, geom)
+
+
+def update_head_mesh_expressions(fb, head, keyframe):
+    geom = fb.applied_args_model_vertices_at(keyframe)
+    update_head_mesh_geom(head.headobj, geom)
+
+
+def update_head_mesh_non_neutral(fb, head):
+    if head.should_use_emotions():
+        kid = head.get_expression_view_keyframe()
+        if kid == 0:  # Neutral selected
+            pass
+        elif fb.is_key_at(kid):
+            update_head_mesh_expressions(fb, head, kid)
+            return
+        else:
+            logger = logging.getLogger(__name__)
+            logger.error(
+                'NO KEYFRAME: {} in {}'.format(kid, fb.keyframes()))
+    update_head_mesh_neutral(fb, head)
 
 
 def projection_matrix(w, h, fl, sw, near, far, scale=1.0):

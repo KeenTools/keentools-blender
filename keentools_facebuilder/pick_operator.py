@@ -121,7 +121,7 @@ def _add_pins_to_face(headnum, camnum, rectangle_index, context):
     if result_flag:
         fb.remove_pins(kid)
         fb.add_preset_pins(kid)
-        coords.update_head_mesh_neutral(fb, head.headobj)
+        coords.update_head_mesh_non_neutral(fb, head)
         logger.debug('auto_pins_added kid: {}'.format(kid))
     else:
         logger.debug('detect_face_pose failed kid: {}'.format(kid))

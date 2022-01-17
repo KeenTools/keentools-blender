@@ -102,6 +102,8 @@ class Config:
 
     fb_warning_idname = operators + '.addon_warning'
     fb_blendshapes_warning_idname = operators + '.blendshapes_warning'
+    fb_noblenshapes_until_expression_warning_idname = operators + \
+        '.no_blenshapes_until_expression_warning'
 
     fb_tex_selector_idname = operators + '.tex_selector'
     fb_exit_pinmode_idname = operators + '.exit_pinmode'
@@ -175,6 +177,9 @@ class Config:
     default_driver_name = 'FaceBuilderDriver'
     default_blendshapes_action_name = 'fbBlendShapesAction'
     example_animation_action_name = 'ExampleAnimAction'
+
+    neutral_expression_view_idname = '0'
+    empty_expression_view_idname = ''
 
     # Object Custom Properties
     # Tuples instead simple values are used to load custom properties

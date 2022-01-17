@@ -387,11 +387,16 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         settings = get_main_settings()
         head = settings.get_head(headnum)
 
-        if not head.has_cameras():
+        if head is not None and not head.has_cameras():
             return
 
-        layout.prop(settings.get_head(headnum), 'use_emotions')
-        layout.prop(settings.get_head(headnum), 'reduce_pins')
+        layout.prop(head, 'use_emotions')
+        if head.should_use_emotions():
+            box = layout.box()
+            col = box.column()
+            col.label(text='Apply expression in 3D:')
+            col.prop(head, 'expression_view', text='')
+        layout.prop(head, 'reduce_pins')
 
         if settings.pinmode:
             row = layout.row()

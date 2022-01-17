@@ -182,6 +182,55 @@ class FB_OT_BlendshapesWarning(Operator):
         return context.window_manager.invoke_props_dialog(self, width=400)
 
 
+class FB_OT_NoBlendshapesUntilExpressionWarning(Operator):
+    bl_idname = Config.fb_noblenshapes_until_expression_warning_idname
+    bl_label = 'Blendshapes can\'t be created'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    headnum: bpy.props.IntProperty(default=0)
+    accept: bpy.props.BoolProperty(name='Set neutral expression',
+                                   default=False)
+    content_red = []
+
+    def output_text(self, layout, content, red=False):
+        for txt in content:
+            row = layout.row()
+            row.alert = red
+            row.label(text=txt)
+
+    def draw(self, context):
+        layout = self.layout.column()
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        self.output_text(col, self.content_red, red=True)
+        layout.prop(self, 'accept')
+
+    def execute(self, context):
+        if (self.accept):
+            settings = get_main_settings()
+            head = settings.get_head(self.headnum)
+            if head is None:
+                return {'CANCELLED'}
+
+            head.set_neutral_expression_view()
+            op = get_operator(Config.fb_create_blendshapes_idname)
+            op('EXEC_DEFAULT')
+
+        return {'FINISHED'}
+
+    def cancel(self, context):
+        pass
+
+    def invoke(self, context, event):
+        self.content_red = [
+            'Unfortunately, expressions extracted from photos ',
+            'can\'t be mixed with FACS blendshapes. ',
+            'You need a neutral expression in order to create FACS blendshapes.',
+            ' ']
+
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+
 class FB_OT_TexSelector(Operator):
     bl_idname = Config.fb_tex_selector_idname
     bl_label = "Select images:"

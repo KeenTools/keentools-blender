@@ -114,7 +114,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             if fb.pins_count(kid) > 0:
                 fb.reduce_pins()
 
-        coords.update_head_mesh_neutral(fb, head.headobj)
+        coords.update_head_mesh_non_neutral(fb, head)
         FBLoader.update_camera_pins_count(headnum, camnum)
 
         FBLoader.update_all_camera_positions(headnum)
@@ -261,6 +261,8 @@ class FB_OT_PinMode(bpy.types.Operator):
             return {'CANCELLED'}
 
         fb = FBLoader.get_builder()
+        fb.set_use_emotions(head.should_use_emotions())
+
         if not self._check_keyframes(fb, head):
             logger.debug("PINMODE NO KEYFRAME")
             for cam in head.cameras:
@@ -277,7 +279,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             return {'CANCELLED'}
 
         FBLoader.load_pins_into_viewport(settings.current_headnum, settings.current_camnum)
-        coords.update_head_mesh_neutral(FBLoader.get_builder(), head.headobj)
+        coords.update_head_mesh_non_neutral(FBLoader.get_builder(), head)
 
         update_camera_focal(camera, fb)
 

@@ -252,7 +252,7 @@ def reset_model_to_neutral(headnum):
     if head is None:
         return
     fb = FBLoader.get_builder()
-    coords.update_head_mesh_neutral(fb, head.headobj)
+    coords.update_head_mesh_non_neutral(fb, head)
 
 
 def reconstruct_by_head():

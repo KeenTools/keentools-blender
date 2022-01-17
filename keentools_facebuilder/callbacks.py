@@ -227,12 +227,35 @@ def update_expressions(self, context):
     fb.set_use_emotions(self.should_use_emotions())
     logger.debug('EXPRESSIONS: {}'.format(self.should_use_emotions()))
 
+    coords.update_head_mesh_non_neutral(fb, self)
     if not settings.pinmode:
         return
 
-    coords.update_head_mesh_neutral(fb, self.headobj)
     FBLoader.update_wireframe_shader_only(settings.current_headnum,
                                           settings.current_camnum)
+
+
+def update_expression_view(self, context):
+    exp_view = self.expression_view
+    if exp_view == Config.empty_expression_view_idname:
+        self.set_neutral_expression_view()
+        return
+    if exp_view != Config.neutral_expression_view_idname \
+            and not self.has_no_blendshapes():
+        logger = logging.getLogger(__name__)
+        logger.error('Object has blendshapes so expression view cannot be used')
+        self.set_neutral_expression_view()
+        error_message = \
+            'Expressions can\'t be used with blendshapes\n' \
+            '\n' \
+            'Unfortunately, using expressions for a model\n' \
+            'that has FACS blendshapes is impossible. \n' \
+            'Please remove blendshapes before choosing an expression.'
+        warn = get_operator(Config.fb_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+             msg_content=error_message)
+        return
+    update_expressions(self, context)
 
 
 def update_wireframe_image(self, context):
@@ -290,7 +313,7 @@ def update_model_scale(self, context):
 
     head.mark_model_changed_by_scale()
 
-    coords.update_head_mesh_neutral(fb, head.headobj)
+    coords.update_head_mesh_non_neutral(fb, head)
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
     FBLoader.save_fb_serial_str(headnum)

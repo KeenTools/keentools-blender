@@ -204,7 +204,7 @@ class FB_OT_Unmorph(Operator):
             fb.remove_pins(camera.get_keyframe())
             camera.pins_count = 0
 
-        coords.update_head_mesh_neutral(fb, head.headobj)
+        coords.update_head_mesh_non_neutral(fb, head)
         FBLoader.save_fb_serial_and_image_pathes(headnum)
 
         if settings.pinmode:
@@ -338,15 +338,20 @@ class FB_OT_DeleteCamera(Operator):
         headnum = self.headnum
         camnum = self.camnum
 
-        camera = settings.get_camera(headnum, camnum)
+        head = settings.get_head(headnum)
+        if head is None:
+            return {'CANCELLED'}
+        camera = head.get_camera(camnum)
         if camera is None:
             return {'CANCELLED'}
 
         kid = camera.get_keyframe()
+        if head.get_expression_view_keyframe() == kid:
+            head.set_neutral_expression_view()
+
         fb = FBLoader.get_builder()
         fb.remove_keyframe(kid)
 
-        head = settings.get_head(headnum)
         camera.delete_cam_image()
         camera.delete_camobj()
         head.cameras.remove(camnum)
@@ -565,7 +570,7 @@ class FB_OT_ResetExpression(Operator):
         fb.reset_to_neutral_emotions(head.get_keyframe(self.camnum))
 
         FBLoader.save_fb_serial_and_image_pathes(self.headnum)
-        coords.update_head_mesh_neutral(fb, head.headobj)
+        coords.update_head_mesh_non_neutral(fb, head)
         FBLoader.update_viewport_shaders(context, self.headnum, self.camnum)
 
         manipulate.push_head_in_undo_history(head, 'Reset Expression.')
