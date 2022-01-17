@@ -222,6 +222,7 @@ class Config:
 
     show_markers_at_camera_corners = False
     recreate_vertex_groups = True
+    use_gpu_texture_loading = True
 
     # In Material
     image_node_layout_coord = (-300, 0)

@@ -27,8 +27,10 @@ import tempfile
 import numpy as np
 
 import bpy
+import bgl
 
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..config import Config
 
 
 _TMP_IMAGES_DIR = os.path.join(tempfile.gettempdir(), 'pykeentools_tmp_images')
@@ -125,10 +127,35 @@ def load_unchanged_rgba(camera):
     return img.astype(np.float32)
 
 
-def load_rgba(camera):
-    img = load_unchanged_rgba(camera)
-    if img is None:
+def np_array_from_bpy_image_using_gpu(bpy_image):
+    if not check_bpy_image_size(bpy_image):
         return None
+    np_array = np.empty((bpy_image.size[1], bpy_image.size[0], bpy_image.channels), dtype=np.float32)
+    if bpy_image.gl_load():
+        return None
+    bgl.glActiveTexture(bgl.GL_TEXTURE0)
+    bgl.glBindTexture(bgl.GL_TEXTURE_2D, bpy_image.bindcode)
+    buffer = bgl.Buffer(bgl.GL_FLOAT, np_array.shape, np_array)
+    bgl.glGetTexImage(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA, bgl.GL_FLOAT, buffer)
+    bgl.glBindTexture(bgl.GL_TEXTURE_2D, 0)
+    return np_array
+
+
+def load_rgba(camera):
+    if camera.cam_image is None:
+        return None
+
+    if Config.use_gpu_texture_loading:
+        img = np_array_from_bpy_image_using_gpu(camera.cam_image)
+    else:
+        img = None
+    if img is None:
+        logger = logging.getLogger(__name__)
+        logger.error('GPU texture acceleration '
+                     'does not work: {}'.format(camera.cam_image))
+        img = load_unchanged_rgba(camera)
+        if img is None:
+            return None
     return np.rot90(img, camera.orientation)
 
 
