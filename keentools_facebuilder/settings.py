@@ -606,6 +606,17 @@ class FBHeadItem(PropertyGroup):
     def has_vertex_groups(self):
         return len(self.headobj.vertex_groups) != 0
 
+    def get_headobj_name(self):
+        if self.headobj:
+            return self.headobj.name
+        return 'none'
+
+    def preview_material_name(self):
+        return Config.tex_builder_matname_template.format(self.get_headobj_name())
+
+    def preview_texture_name(self):
+        return Config.tex_builder_filename_template.format(self.get_headobj_name())
+
 
 class FBSceneSettings(PropertyGroup):
     # ---------------------

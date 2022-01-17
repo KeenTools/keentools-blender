@@ -126,8 +126,8 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
     ], description="Choose image file format", update=update_format)
 
     check_existing: bpy.props.BoolProperty(
-        name="Check Existing",
-        description="Check and warn on overwriting existing files",
+        name='Check Existing',
+        description='Check and warn on overwriting existing files',
         default=True,
         options={'HIDDEN'},
     )
@@ -135,9 +135,10 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
     filename_ext: bpy.props.StringProperty(default=".png")
 
     filepath: bpy.props.StringProperty(
-        default=Config.tex_builder_filename,
+        default='baked_tex',
         subtype='FILE_PATH'
     )
+    headnum: bpy.props.IntProperty(default=0)
 
     def check(self, context):
         change_ext = False
@@ -164,7 +165,12 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
     def execute(self, context):
         logger = logging.getLogger(__name__)
         logger.debug("START SAVE TEXTURE: {}".format(self.filepath))
-        tex = find_bpy_image_by_name(Config.tex_builder_filename)
+        settings = get_main_settings()
+        head = settings.get_head(self.headnum)
+        if head is None:
+            return {'CANCELLED'}
+
+        tex = find_bpy_image_by_name(head.preview_texture_name())
         if tex is None:
             return {'CANCELLED'}
         tex.filepath = self.filepath
@@ -177,6 +183,11 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
         return {'FINISHED'}
 
     def invoke(self, context, event):
+        settings = get_main_settings()
+        head = settings.get_head(self.headnum)
+        if head is None:
+            return {'CANCELLED'}
+        self.filepath = head.preview_texture_name()
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
