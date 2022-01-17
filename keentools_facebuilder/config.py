@@ -102,7 +102,7 @@ class Config:
 
     fb_warning_idname = operators + '.addon_warning'
     fb_blendshapes_warning_idname = operators + '.blendshapes_warning'
-    fb_noblenshapes_until_expression_warning_idname = \
+    fb_noblenshapes_until_expression_warning_idname = operators + \
         '.no_blenshapes_until_expression_warning'
 
     fb_tex_selector_idname = operators + '.tex_selector'
