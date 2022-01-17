@@ -860,9 +860,17 @@ class FBSceneSettings(PropertyGroup):
         for i, c in enumerate(head.cameras):
             if c.is_deleted():
                 status = True
+                headnum = head.get_headnum()
+                FBLoader.load_model(headnum)
+                fb = FBLoader.get_builder()
+                kid = c.get_keyframe()
+                if fb.is_key_at(kid):
+                    fb.remove_keyframe(kid)
                 err.append(i)  # Wrong camera in list
         for i in reversed(err):  # Delete in backward order
             head.cameras.remove(i)
+        if status:
+            FBLoader.save_fb_serial_and_image_pathes(headnum)
         return status  # True if there was any changes
 
     def fix_heads(self):
