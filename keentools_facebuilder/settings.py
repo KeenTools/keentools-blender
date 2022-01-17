@@ -603,6 +603,9 @@ class FBHeadItem(PropertyGroup):
                 return i
         return -1
 
+    def has_vertex_groups(self):
+        return len(self.headobj.vertex_groups) != 0
+
 
 class FBSceneSettings(PropertyGroup):
     # ---------------------
