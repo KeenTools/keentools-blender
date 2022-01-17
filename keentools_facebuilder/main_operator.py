@@ -433,17 +433,17 @@ class FB_OT_BakeTexture(Operator):
 
     def execute(self, context):
         settings = get_main_settings()
-        texture_baked = materials.bake_tex(
-            self.headnum, Config.tex_builder_filename)
         head = settings.get_head(self.headnum)
+        texture_baked = materials.bake_tex(
+            self.headnum, head.preview_texture_name())
 
         if not texture_baked:
             return {'CANCELLED'}
 
         if settings.tex_auto_preview:
             mat = materials.show_texture_in_mat(
-                Config.tex_builder_filename,
-                Config.tex_builder_matname)
+                head.preview_texture_name(),
+                head.preview_material_name())
             materials.assign_material_to_object(head.headobj, mat)
             materials.toggle_mode(('MATERIAL',))
 
@@ -461,14 +461,18 @@ class FB_OT_DeleteTexture(Operator):
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Delete the created texture from the scene"
 
+    headnum: IntProperty(default=0)
+
     def draw(self, context):
         pass
 
     def execute(self, context):
-        images.remove_bpy_image_by_name(Config.tex_builder_filename)
-        materials.remove_mat_by_name(Config.tex_builder_matname)
-        op = get_operator(Config.fb_show_solid_idname)
-        op('EXEC_DEFAULT')
+        settings = get_main_settings()
+        head = settings.get_head(self.headnum)
+        if head is None:
+            return {'CANCELLED'}
+        images.remove_bpy_image_by_name(head.preview_texture_name())
+        materials.remove_mat_by_name(head.preview_material_name())
         return {'FINISHED'}
 
 
@@ -585,18 +589,21 @@ class FB_OT_ShowTexture(Operator):
         pass
 
     def execute(self, context):
-        tex = materials.find_bpy_image_by_name(Config.tex_builder_filename)
+        settings = get_main_settings()
+        head = settings.get_head(settings.current_headnum)
+        if head is None:
+            return {'CANCELLED'}
+
+        tex = materials.find_bpy_image_by_name(head.preview_texture_name())
         if tex is None:
             return {'CANCELLED'}
 
-        settings = get_main_settings()
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
 
         mat = materials.show_texture_in_mat(
-            Config.tex_builder_filename, Config.tex_builder_matname)
-        materials.assign_material_to_object(
-            settings.get_head(settings.current_headnum).headobj, mat)
+            head.preview_texture_name(), head.preview_material_name())
+        materials.assign_material_to_object(head.headobj, mat)
         materials.switch_to_mode('MATERIAL')
 
         logger = logging.getLogger(__name__)

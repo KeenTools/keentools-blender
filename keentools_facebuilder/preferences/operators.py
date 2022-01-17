@@ -210,7 +210,7 @@ class PREF_OT_CopyHardwareId(bpy.types.Operator):
 
 class PREF_OT_InstallLicenseOnline(bpy.types.Operator):
     bl_idname = _ID_NAME_PREFIX + '_lic_online_install'
-    bl_label = 'Install'
+    bl_label = 'Activate'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Install online license'
 

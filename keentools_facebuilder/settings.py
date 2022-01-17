@@ -648,6 +648,20 @@ class FBHeadItem(PropertyGroup):
     def set_neutral_expression_view(self):
         self.expression_view = Config.neutral_expression_view_idname
 
+    def has_vertex_groups(self):
+        return len(self.headobj.vertex_groups) != 0
+
+    def get_headobj_name(self):
+        if self.headobj:
+            return self.headobj.name
+        return 'none'
+
+    def preview_material_name(self):
+        return Config.tex_builder_matname_template.format(self.get_headobj_name())
+
+    def preview_texture_name(self):
+        return Config.tex_builder_filename_template.format(self.get_headobj_name())
+
 
 class FBSceneSettings(PropertyGroup):
     # ---------------------
@@ -905,9 +919,17 @@ class FBSceneSettings(PropertyGroup):
         for i, c in enumerate(head.cameras):
             if c.is_deleted():
                 status = True
+                headnum = head.get_headnum()
+                FBLoader.load_model(headnum)
+                fb = FBLoader.get_builder()
+                kid = c.get_keyframe()
+                if fb.is_key_at(kid):
+                    fb.remove_keyframe(kid)
                 err.append(i)  # Wrong camera in list
         for i in reversed(err):  # Delete in backward order
             head.cameras.remove(i)
+        if status:
+            FBLoader.save_fb_serial_and_image_pathes(headnum)
         return status  # True if there was any changes
 
     def fix_heads(self):

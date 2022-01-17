@@ -256,7 +256,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     )
 
     license_id: bpy.props.StringProperty(
-        name="License ID", default=""
+        name="License key", default=""
     )
 
     license_server: bpy.props.StringProperty(
@@ -299,7 +299,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     )
 
     lic_path: bpy.props.StringProperty(
-            name="License file path",
+            name="License file",
             description="absolute path to license file",
             default="",
             subtype="FILE_PATH"

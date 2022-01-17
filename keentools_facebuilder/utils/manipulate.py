@@ -368,6 +368,9 @@ def get_vertex_groups(obj):
 
 def create_vertex_groups(obj, vg_dict):
     for vg_name in vg_dict.keys():
-        vg = obj.vertex_groups.new(name=vg_name)
+        if vg_name in obj.vertex_groups.keys():
+            vg = obj.vertex_groups[vg_name]
+        else:
+            vg = obj.vertex_groups.new(name=vg_name)
         for i, w in vg_dict[vg_name]:
-            vg.add([i], w, 'ADD')
+            vg.add([i], w, 'REPLACE')
