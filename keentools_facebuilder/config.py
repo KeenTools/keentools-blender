@@ -37,8 +37,8 @@ class Config:
     addon_name = __package__  # the same as module name
     addon_human_readable_name = 'FaceBuilder'
 
-    default_fb_object_name = 'FaceBuilderHead'
-    default_fb_mesh_name = 'FaceBuilderHead_mesh'
+    default_fb_object_name = 'FBHead'
+    default_fb_mesh_name = 'FBHead_mesh'
     default_fb_collection_name = 'FaceBuilderCol'
     default_fb_camera_data_name = 'fbCamData'
     default_fb_camera_name = 'fbCamera'
@@ -169,8 +169,8 @@ class Config:
     fb_proper_view_menu_idname = _MT + 'proper_view_menu'
 
     # Standard names
-    tex_builder_filename = 'kt_facebuilder_texture'
-    tex_builder_matname = 'kt_facebuilder_material'
+    tex_builder_filename_template = '{}_baked_tex'
+    tex_builder_matname_template = '{}_preview_mat'
 
     default_driver_name = 'FaceBuilderDriver'
     default_blendshapes_action_name = 'fbBlendShapesAction'

@@ -581,7 +581,7 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
                           text='Create texture', icon='IMAGE')
         op.headnum = headnum
 
-        texture_exists = find_bpy_image_by_name(Config.tex_builder_filename)
+        texture_exists = find_bpy_image_by_name(head.preview_texture_name())
         row = layout.row()
         row.scale_y = Config.btn_scale_y
         if not texture_exists:
@@ -599,10 +599,12 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
         row.scale_y = Config.btn_scale_y
         if not texture_exists:
             row.active = False
-        row.operator(Config.fb_texture_file_export_idname,
-                     text='Export', icon='EXPORT')
-        row.operator(Config.fb_delete_texture_idname,
-                     text='Delete', icon='X')
+        op = row.operator(Config.fb_texture_file_export_idname,
+                          text='Export', icon='EXPORT')
+        op.headnum = headnum
+        op = row.operator(Config.fb_delete_texture_idname,
+                          text='Delete', icon='X')
+        op.headnum = headnum
 
         box = layout.box()
         col = box.column(align=True)
