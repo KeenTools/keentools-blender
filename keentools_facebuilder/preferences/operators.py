@@ -251,8 +251,14 @@ class PREF_OT_InstallLicenseOffline(bpy.types.Operator):
         if res is not None:
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
         else:
-            self._clear_license_path()
-            self.report({'INFO'}, 'License installed')
+            res_tuple = lm.perform_license_and_trial_check(force_check=True)
+            lic_status = res_tuple[0].license_status
+            if lic_status.status == 'failed':
+                self.report({'ERROR'},
+                            replace_newlines_with_spaces(lic_status.message))
+            else:
+                self._clear_license_path()
+                self.report({'INFO'}, 'License installed')
         return {'FINISHED'}
 
 
