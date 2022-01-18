@@ -354,15 +354,6 @@ class FBCameraItem(PropertyGroup):
     def get_projection_matrix(self):
         return self.get_custom_projection_matrix(self.focal)
 
-    def np_image(self):
-        w, h = self.get_image_size()
-        if w < 0:
-            return None
-        img = np.rot90(
-            np.asarray(self.cam_image.pixels[:]).reshape((h, w, 4)),
-            self.orientation)
-        return img
-
     def get_headnum_camnum(self):
         settings = get_main_settings()
         for i, head in enumerate(settings.heads):
