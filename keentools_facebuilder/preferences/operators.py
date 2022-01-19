@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+import logging
 
 import bpy
 from ..blender_independent_packages.pykeentools_loader import (
@@ -221,14 +222,29 @@ class PREF_OT_InstallLicenseOnline(bpy.types.Operator):
         pref.license_id = ''
 
     def execute(self, context):
+        logger = logging.getLogger(__name__)
+        logger.info('Start InstallLicenseOnline')
         lm = pkt_module().FaceBuilder.license_manager()
         res = lm.install_license_online(self.license_id)
 
         if res is not None:
+            logger.error('InstallLicenseOnline error: {}'.format(res))
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
-        else:
-            self._clear_license_id()
-            self.report({'INFO'}, 'License installed')
+            return {'CANCELLED'}
+
+        res_tuple = lm.perform_license_and_trial_check(force_check=True)
+        lic_status = res_tuple[0].license_status
+        if lic_status.status == 'failed':
+            logger.error('InstallLicenseOnline license check error: '
+                         '{}'.format(lic_status.message))
+            self.report({'ERROR'},
+                        replace_newlines_with_spaces(lic_status.message))
+            return {'CANCELLED'}
+
+        self._clear_license_id()
+        msg = 'License installed online'
+        logger.info(msg)
+        self.report({'INFO'}, msg)
         return {'FINISHED'}
 
 
@@ -245,14 +261,29 @@ class PREF_OT_InstallLicenseOffline(bpy.types.Operator):
         pref.lic_path = ''
 
     def execute(self, context):
+        logger = logging.getLogger(__name__)
+        logger.info('Start InstallLicenseOffline')
         lm = pkt_module().FaceBuilder.license_manager()
         res = lm.install_license_offline(self.lic_path)
 
         if res is not None:
+            logger.error('InstallLicenseOffline error: {}'.format(res))
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
-        else:
-            self._clear_license_path()
-            self.report({'INFO'}, 'License installed')
+            return {'CANCELLED'}
+
+        res_tuple = lm.perform_license_and_trial_check(force_check=True)
+        lic_status = res_tuple[0].license_status
+        if lic_status.status == 'failed':
+            logger.error('InstallLicenseOffline license check error: '
+                         '{}'.format(lic_status.message))
+            self.report({'ERROR'},
+                        replace_newlines_with_spaces(lic_status.message))
+            return {'CANCELLED'}
+
+        self._clear_license_path()
+        msg = 'License installed offline'
+        logger.info(msg)
+        self.report({'INFO'}, msg)
         return {'FINISHED'}
 
 
@@ -266,13 +297,29 @@ class PREF_OT_FloatingConnect(bpy.types.Operator):
     license_server_port: bpy.props.IntProperty()
 
     def execute(self, context):
+        logger = logging.getLogger(__name__)
+        logger.info('Start FloatingConnect')
         lm = pkt_module().FaceBuilder.license_manager()
         res = lm.install_floating_license(self.license_server,
                                           self.license_server_port)
+
         if res is not None:
+            logger.error('FloatingConnect error: {}'.format(res))
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
-        else:
-            self.report({'INFO'}, 'Floating server settings saved')
+            return {'CANCELLED'}
+
+        res_tuple = lm.perform_license_and_trial_check(force_check=True)
+        lic_status = res_tuple[0].floating_status
+        if lic_status.status == 'failed':
+            logger.error('FloatingConnect license check error: '
+                         '{}'.format(lic_status.message))
+            self.report({'ERROR'},
+                        replace_newlines_with_spaces(lic_status.message))
+            return {'CANCELLED'}
+
+        msg = 'Floating server settings saved'
+        logger.info(msg)
+        self.report({'INFO'}, msg)
         return {'FINISHED'}
 
 
