@@ -234,7 +234,7 @@ class PREF_OT_InstallLicenseOnline(bpy.types.Operator):
 
         res_tuple = lm.perform_license_and_trial_check(force_check=True)
         lic_status = res_tuple[0].license_status
-        if lic_status.status != 'succeed':
+        if lic_status.status == 'failed':
             logger.error('InstallLicenseOnline license check error: '
                          '{}'.format(lic_status.message))
             self.report({'ERROR'},
@@ -273,7 +273,7 @@ class PREF_OT_InstallLicenseOffline(bpy.types.Operator):
 
         res_tuple = lm.perform_license_and_trial_check(force_check=True)
         lic_status = res_tuple[0].license_status
-        if lic_status.status != 'succeed':
+        if lic_status.status == 'failed':
             logger.error('InstallLicenseOffline license check error: '
                          '{}'.format(lic_status.message))
             self.report({'ERROR'},
@@ -310,7 +310,7 @@ class PREF_OT_FloatingConnect(bpy.types.Operator):
 
         res_tuple = lm.perform_license_and_trial_check(force_check=True)
         lic_status = res_tuple[0].floating_status
-        if lic_status.status != 'succeed':
+        if lic_status.status == 'failed':
             logger.error('FloatingConnect license check error: '
                          '{}'.format(lic_status.message))
             self.report({'ERROR'},
