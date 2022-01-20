@@ -128,9 +128,14 @@ def load_unchanged_rgba(camera):
 
 
 def np_array_from_bpy_image_using_gpu(bpy_image):
-    if not check_bpy_image_size(bpy_image):
+    if not bpy_image or not bpy_image.size:
         return None
-    np_array = np.empty((bpy_image.size[1], bpy_image.size[0], bpy_image.channels), dtype=np.float32)
+    w, h = bpy_image.size[:2]
+    if w > Config.gpu_texture_maxsize or h > Config.gpu_texture_maxsize:
+        return None
+
+    np_array = np.empty((bpy_image.size[1], bpy_image.size[0],
+                         bpy_image.channels), dtype=np.float32)
     if bpy_image.gl_load():
         return None
     bgl.glActiveTexture(bgl.GL_TEXTURE0)
