@@ -269,24 +269,6 @@ class Config:
         'latest_installation_skip_version': {'value': '', 'type': 'string'},
         'latest_show_datetime_installation_reminder': {'value': '', 'type': 'string'}
     }
-    # GPU
-    use_gpu_texture_loading = False
-    gpu_texture_maxsize = 0
-    gpu_texture_minsize = 1024
-
-    @classmethod
-    def check_gpu(cls):
-        logger = logging.getLogger()
-        logger.info('\n---\nCheck necessary GPU parameters')
-        if(len(gpu.capabilities.extensions_get()) == 0):
-            logger.error('GPU isn\'t supported\n---')
-            return
-        cls.gpu_texture_maxsize = gpu.capabilities.max_texture_size_get()
-        logger.info('GPU Texture maxsize: {}'.format(cls.gpu_texture_maxsize))
-        if cls.gpu_texture_maxsize >= cls.gpu_texture_minsize:
-            cls.use_gpu_texture_loading = True
-        logger.info('GPU Texture loading acceleration: '
-                    '{}\n---'.format(cls.use_gpu_texture_loading))
 
 
 def is_blender_supported():

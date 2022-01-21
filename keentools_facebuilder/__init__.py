@@ -210,7 +210,6 @@ else:
 
         FBIcons.register()
         logger.debug("ICONS REGISTERED")
-        Config.check_gpu()
 
 
     def unregister():
