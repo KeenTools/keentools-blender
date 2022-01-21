@@ -15,11 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
 import math
 import bpy
-import gpu
-
 
 _company = 'keentools'
 _PT = 'FACEBUILDER_PT_'
