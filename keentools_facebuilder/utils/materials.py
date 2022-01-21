@@ -119,7 +119,7 @@ def _create_bpy_texture_from_img(img, tex_name):
     except TypeError as err:
         logger.error('_create_bpy_texture_from_img '
                      'color space sRGB is not found: {}'.format(str(err)))
-    tex.pixels[:] = img.ravel()
+    tex.pixels.foreach_set(img.ravel())
     tex.pack()
 
     logger.debug("TEXTURE BAKED SUCCESSFULLY")

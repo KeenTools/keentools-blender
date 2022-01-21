@@ -29,7 +29,7 @@ from . shaders import (simple_fill_vertex_shader,
 from ..config import Config
 from ..utils.images import (check_bpy_image_has_same_size,
                             find_bpy_image_by_name,
-                            remove_bpy_image, add_alpha_channel)
+                            remove_bpy_image)
 from ..utils import coords
 
 
@@ -312,7 +312,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
             return False
 
         fb.set_face_texture_colors(self._colors)
-        image_data = fb.face_texture()[::2, ::2, :]  # sample down x0.5
+        image_data = fb.face_texture()
         size = image_data.shape[:2]
         assert size[0] > 0 and size[1] > 0
         image_name = Config.coloring_texture_name
@@ -326,8 +326,9 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
                                                   alpha=True,
                                                   float_buffer=False)
         if wireframe_image:
-            rgba = add_alpha_channel(image_data)
-            wireframe_image.pixels[:] = rgba.ravel()
+            rgba = np.ones((size[1], size[0], 4), dtype=np.float32)
+            rgba[:, :, :3] = image_data
+            wireframe_image.pixels.foreach_set(rgba.ravel())
             wireframe_image.pack()
             self.switch_to_complex_shader()
             return True

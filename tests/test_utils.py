@@ -33,8 +33,8 @@ def create_test_dir():
 def create_image(image_name, width=1920, height=1080, color=(0, 0, 0, 1)):
     image = bpy.data.images.new(image_name, width=width, height=height,
                                 alpha=True, float_buffer=False)
-    rgba = np.full((height, width, len(color)), color)
-    image.pixels[:] = rgba.ravel()
+    rgba = np.full((height, width, len(color)), color, dtype=np.float32)
+    image.pixels.foreach_set(rgba.ravel())
     return image
 
 
