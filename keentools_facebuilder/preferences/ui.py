@@ -372,7 +372,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
         lm = pkt_module().FaceBuilder.license_manager()
 
-        _multi_line_text_to_output_labels(box, lm.license_status_text(force_check=pkt_module().LicenseCheckStrategy.LAZY))
+        _multi_line_text_to_output_labels(box, lm.license_status_text(strategy=pkt_module().LicenseCheckStrategy.LAZY))
 
         box.row().prop(self, "lic_type", expand=True)
 
@@ -676,10 +676,9 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
                 self._draw_license_info(layout)
                 self._draw_user_preferences(layout)
                 return
-            except Exception as error:
+            except Exception as err:
                 logger = logging.getLogger(__name__)
-                logger.error('UI error: Unknown Exception')
-                logger.error('info: {} -- {}'.format(type(error), error))
+                logger.error('UI error: {}'.format(str(err)))
                 cached_status = (False, 'NO_VERSION')
 
         self._draw_pkt_detail_error_report(box, cached_status[1])
