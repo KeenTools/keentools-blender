@@ -355,19 +355,3 @@ def update_camera_focal(self, context):
         fb.set_focal_length_at(
             kid, self.get_focal_length_in_pixels_coef() * self.focal)
         FBLoader.save_fb_serial_str(headnum)
-
-
-def update_blue_camera_button(self, context):
-    settings = get_main_settings()
-    if not settings.blue_camera_button:
-        op = get_operator(Config.fb_exit_pinmode_idname)
-        op('EXEC_DEFAULT')
-        settings.blue_camera_button = True
-
-
-def update_blue_head_button(self, context):
-    settings = get_main_settings()
-    if not settings.blue_head_button:
-        op = get_operator(Config.fb_select_head_idname)
-        op('EXEC_DEFAULT', headnum=get_current_headnum())
-        settings.blue_head_button = True

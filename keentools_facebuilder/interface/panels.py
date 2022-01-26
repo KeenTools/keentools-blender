@@ -148,8 +148,10 @@ class FB_PT_HeaderPanel(Common, Panel):
             row.scale_y = Config.btn_scale_y
 
             if headnum == i:
-                row.prop(settings, 'blue_head_button', toggle=1,
-                         text=h.headobj.name, icon='USER')
+                op = row.operator(Config.fb_select_current_head_idname,
+                                  text=h.headobj.name, icon='USER',
+                                  depress=True)
+                op.headnum = i
             else:
                 op = row.operator(Config.fb_select_head_idname,
                                   text=h.headobj.name, icon='USER')
@@ -296,7 +298,7 @@ class FB_PT_UpdatesInstallationPanel(Common, Panel):
 
 class FB_PT_CameraPanel(AllVisibleClosed, Panel):
     bl_idname = Config.fb_camera_panel_idname
-    bl_label = Config.fb_camera_panel_label
+    bl_label = 'Camera'
 
     def draw_header_preset(self, context):
         layout = self.layout
@@ -310,7 +312,10 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
     def draw(self, context):
         def _draw_default_mode(layout, settings, head):
             camera = head.get_camera(settings.current_camnum)
+            if camera is None:
+                return
             col = layout.column(align=True)
+
             col.label(text='File: {}'.format(camera.get_image_name()))
             col.separator(factor=0.4)
 
@@ -354,7 +359,7 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
 
 class FB_PT_ViewsPanel(AllVisible, Panel):
     bl_idname = Config.fb_views_panel_idname
-    bl_label = Config.fb_views_panel_label
+    bl_label = 'Views'
 
     def draw_header_preset(self, context):
         layout = self.layout
@@ -411,11 +416,10 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             row = layout.row(align=True)
             view_icon = 'PINNED' if camera.has_pins() else 'HIDE_OFF'
 
-            # col = row.column(align=True)
-
             if settings.current_camnum == i and settings.pinmode:
-                row.prop(settings, 'blue_camera_button', toggle=1,
-                         text=camera.get_image_name(), icon=view_icon)
+                row.operator(Config.fb_select_current_camera_idname,
+                             text=camera.get_image_name(), icon=view_icon,
+                             depress=True)
             else:
                 op = row.operator(
                     Config.fb_select_camera_idname,
