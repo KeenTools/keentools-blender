@@ -48,8 +48,7 @@ class Config:
     addon_search = 'KeenTools'
     addon_global_var_name = prefix + '_settings'
     addon_full_name = 'Keentools FaceBuilder for Blender'
-    fb_views_panel_label = 'Views'
-    fb_camera_panel_label = 'Camera'
+
     fb_tab_category = addon_human_readable_name
     keentools_website_url = 'https://keentools.io'
     core_download_website_url = keentools_website_url + '/download/core'
@@ -61,8 +60,10 @@ class Config:
     
     # Operators ids
     fb_select_head_idname = operators + '.select_head'
+    fb_select_current_head_idname = operators + '.select_current_head'
     fb_delete_head_idname = operators + '.delete_head'
     fb_select_camera_idname = operators + '.select_camera'
+    fb_select_current_camera_idname = operators + '.select_current_camera'
     fb_center_geo_idname = operators + '.center_geo'
     fb_unmorph_idname = operators + '.unmorph'
     fb_remove_pins_idname = operators + '.remove_pins'

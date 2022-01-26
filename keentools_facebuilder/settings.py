@@ -49,8 +49,6 @@ from .callbacks import (update_mesh_with_dialog,
                         update_cam_image,
                         update_head_focal,
                         update_camera_focal,
-                        update_blue_camera_button,
-                        update_blue_head_button,
                         universal_getter, universal_setter)
 from .utils.manipulate import get_current_head
 
@@ -791,17 +789,6 @@ class FBSceneSettings(PropertyGroup):
     tex_auto_preview: BoolProperty(
         description="Automatically apply the created texture",
         name="Automatically apply the created texture", default=True)
-
-    # Workaround to get blue button for selected camera
-    blue_camera_button: BoolProperty(
-        description="Current camera",
-        name="Blue camera button", default=True,
-        update=update_blue_camera_button)
-
-    blue_head_button: BoolProperty(
-        description="Current head",
-        name="Blue head button", default=True,
-        update=update_blue_head_button)
 
     defaults_loaded: BoolProperty(
         description='Defaults are loaded flag',

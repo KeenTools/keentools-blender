@@ -811,9 +811,35 @@ class FB_OT_DefaultWireframeSettings(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class FB_OT_SelectCurrentHead(ButtonOperator, Operator):
+    bl_idname = Config.fb_select_current_head_idname
+    bl_label = 'Current head'
+    bl_description = 'Select current head in the scene'
+
+    headnum: IntProperty(default=0)
+
+    def execute(self, context):
+        op = get_operator(Config.fb_select_head_idname)
+        op('EXEC_DEFAULT', headnum=self.headnum)
+        return {'FINISHED'}
+
+
+class FB_OT_SelectCurrentCamera(ButtonOperator, Operator):
+    bl_idname = Config.fb_select_current_camera_idname
+    bl_label = 'Current view'
+    bl_description = 'Current view. Press to exit from Pin mode'
+
+    def execute(self, context):
+        op = get_operator(Config.fb_exit_pinmode_idname)
+        op('EXEC_DEFAULT')
+        return {'FINISHED'}
+
+
 CLASSES_TO_REGISTER = (FB_OT_SelectHead,
+                       FB_OT_SelectCurrentHead,
                        FB_OT_DeleteHead,
                        FB_OT_SelectCamera,
+                       FB_OT_SelectCurrentCamera,
                        FB_OT_CenterGeo,
                        FB_OT_Unmorph,
                        FB_OT_RemovePins,
