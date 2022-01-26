@@ -372,7 +372,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
 
         lm = pkt_module().FaceBuilder.license_manager()
 
-        _multi_line_text_to_output_labels(box, lm.license_status_text(force_check=pkt.module().LicenseCheckStrategy.LAZY))
+        _multi_line_text_to_output_labels(box, lm.license_status_text(force_check=pkt_module().LicenseCheckStrategy.LAZY))
 
         box.row().prop(self, "lic_type", expand=True)
 
