@@ -266,13 +266,16 @@ class FBLoader:
 
     @classmethod
     def get_builder_mesh(cls, builder, mesh_name='keentools_mesh',
-                         masks=(), uv_set='uv0'):
+                         masks=(), uv_set='uv0', keyframe=None):
         for i, m in enumerate(masks):
             builder.set_mask(i, m)
 
         cls.select_uv_set(builder, uv_set)
 
-        geo = builder.applied_args_model()
+        if keyframe is not None:
+            geo = builder.applied_args_model_at(keyframe)
+        else:
+            geo = builder.applied_args_model()
         me = geo.mesh(0)
 
         v_count = me.points_count()
@@ -318,9 +321,9 @@ class FBLoader:
 
     @classmethod
     def universal_mesh_loader(cls, mesh_name='keentools_mesh',
-                              masks=(), uv_set='uv0'):
+                              masks=(), uv_set='uv0', keyframe=None):
         builder = cls.new_builder()
-        mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set)
+        mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set, keyframe)
         return mesh
 
     @classmethod

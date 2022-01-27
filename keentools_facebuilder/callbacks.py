@@ -116,9 +116,10 @@ def _update_mesh_now(headnum):
         logger.debug('WRONG_HEAD')
         return
 
-    if settings.pinmode and head.should_use_emotions():
-        keyframe = head.get_keyframe(settings.current_camnum)
-        if keyframe == -1:
+    if head.should_use_emotions() and \
+            head.expression_view != Config.empty_expression_view_idname:
+        keyframe = head.get_expression_view_keyframe()
+        if keyframe <= 0:
             keyframe = None
     else:
         keyframe = None
@@ -161,7 +162,8 @@ def _update_mesh_now(headnum):
     # Create new mesh
     mesh = FBLoader.get_builder_mesh(fb, 'FBHead_tmp_mesh',
                                      head.get_masks(),
-                                     uv_set=head.tex_uv_shape)
+                                     uv_set=head.tex_uv_shape,
+                                     keyframe=keyframe)
     try:
         # Copy old material
         if old_mesh.materials:
