@@ -958,3 +958,6 @@ class FBSceneSettings(PropertyGroup):
 
     def hide_user_preferences(self):
         self.preferences().show_user_preferences = False
+
+    def mock_update_for_testing(self, value=True, ver=None):
+        Config.mock_update_for_testing(value, ver)
