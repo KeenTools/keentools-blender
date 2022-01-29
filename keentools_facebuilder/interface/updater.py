@@ -36,7 +36,7 @@ from ..utils.other import force_ui_redraw
 from ..preferences.progress import FBUpdateProgressTimer
 
 
-def _mock_response(ver=(2022, 5, 1)):
+def _mock_response(ver=(2022, 6, 1)):
     response = lambda: None
     response.description_url = 'https://keentools.io/downloads'
     response.download_url = 'https://keentools.io/downloads'
@@ -239,7 +239,7 @@ class FBUpdater:
 
         uc = cls.get_update_checker()
         res = uc.check_for_updates('FaceBuilder')
-        if res is None and Config.mock_update_for_testing_flag:
+        if Config.mock_update_for_testing_flag and cls.get_response() is None:
             res = _mock_response(ver=Config.mock_update_version)
         if res is not None:
             cls.set_response(res)
