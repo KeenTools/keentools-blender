@@ -21,6 +21,7 @@ from threading import Lock
 from collections import namedtuple
 from enum import IntEnum
 from datetime import datetime
+from typing import Tuple
 
 import bpy
 
@@ -36,7 +37,7 @@ from ..utils.other import force_ui_redraw
 from ..preferences.progress import FBUpdateProgressTimer
 
 
-def _mock_response(ver=(2022, 6, 1)):
+def _mock_response(ver: Tuple):
     response = lambda: None
     response.description_url = 'https://keentools.io/downloads'
     response.download_url = 'https://keentools.io/downloads'

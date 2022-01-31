@@ -268,7 +268,7 @@ class Config:
         'latest_show_datetime_installation_reminder': {'value': '', 'type': 'string'}
     }
     mock_update_for_testing_flag = False
-    mock_update_version = (2023, 6, 1)
+    mock_update_version = (int(addon_version.partition('.')[0]), 6, 3)
 
     @classmethod
     def mock_update_for_testing(cls, value=True, ver=None):
