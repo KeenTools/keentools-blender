@@ -534,11 +534,11 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         try:
             txt = "Version {}, built {}".format(pkt_module().__version__,
                                                 pkt_module().build_time)
+            return txt
         except Exception as err:
             logger = logging.getLogger(__name__)
             logger.error('_get_core_version_text: {}'.format(str(err)))
             return None
-        return txt
 
     def _draw_updater_info(self, layout):
         FBUpdater.init_updater()
