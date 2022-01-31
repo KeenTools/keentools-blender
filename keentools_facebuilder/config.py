@@ -267,6 +267,14 @@ class Config:
         'latest_installation_skip_version': {'value': '', 'type': 'string'},
         'latest_show_datetime_installation_reminder': {'value': '', 'type': 'string'}
     }
+    mock_update_for_testing_flag = False
+    mock_update_version = (int(addon_version.partition('.')[0]), 6, 3)
+
+    @classmethod
+    def mock_update_for_testing(cls, value=True, ver=None):
+        if ver is not None:
+            cls.mock_update_version = ver
+        cls.mock_update_for_testing_flag = value
 
 
 def is_blender_supported():
