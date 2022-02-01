@@ -530,11 +530,15 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             # Core Uninstall button
             layout.operator(Config.fb_uninstall_core_idname)
 
-    def _draw_version(self, layout):
-        arr = ["Version {}, built {}".format(pkt_module().__version__,
-                                             pkt_module().build_time),
-               'The core library has been installed successfully']
-        draw_warning_labels(layout, arr, alert=False, icon='INFO')
+    def _get_core_version_text(self):
+        try:
+            txt = "Version {}, built {}".format(pkt_module().__version__,
+                                                pkt_module().build_time)
+            return txt
+        except Exception as err:
+            logger = logging.getLogger(__name__)
+            logger.error('_get_core_version_text: {}'.format(str(err)))
+            return None
 
     def _draw_updater_info(self, layout):
         FBUpdater.init_updater()
@@ -668,19 +672,21 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             self._draw_download_progress(layout)
             return
 
-        box = layout.box()
         if cached_status[1] == 'PYKEENTOOLS_OK':
-            try:
-                self._draw_version(box)
+            core_txt = self._get_core_version_text()
+            if core_txt is not None:
+                box = layout.box()
+                msg = [core_txt,
+                       'The core library has been installed successfully']
+                draw_warning_labels(box, msg, alert=False, icon='INFO')
                 self._draw_updater_info(layout)
                 self._draw_license_info(layout)
                 self._draw_user_preferences(layout)
                 return
-            except Exception as err:
-                logger = logging.getLogger(__name__)
-                logger.error('UI error: {}'.format(str(err)))
-                cached_status = (False, 'NO_VERSION')
 
+            cached_status = (False, 'NO_VERSION')
+
+        box = layout.box()
         self._draw_pkt_detail_error_report(box, cached_status[1])
         self._draw_problem_library(box)
         draw_system_info(layout)
