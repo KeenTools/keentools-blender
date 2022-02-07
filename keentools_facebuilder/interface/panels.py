@@ -404,6 +404,16 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         layout.prop(head, 'reduce_pins')
 
         if settings.pinmode:
+            col = layout.column(align=True)
+            row = col.row(align=True)
+            row.prop(settings, 'tone_gamma', slider=True)
+            row.operator(Config.fb_reset_tone_gamma_idname,
+                         text='', icon='LOOP_BACK')
+            row = col.row(align=True)
+            row.prop(settings, 'tone_gain', slider=True)
+            row.operator(Config.fb_reset_tone_gain_idname,
+                         text='', icon='LOOP_BACK')
+
             row = layout.row()
             row.scale_y = 2.0
             op = row.operator(

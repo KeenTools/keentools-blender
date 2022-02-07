@@ -15,8 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
-
+import logging
 import math
 
 import bpy
@@ -49,8 +48,10 @@ from .callbacks import (update_mesh_with_dialog,
                         update_cam_image,
                         update_head_focal,
                         update_camera_focal,
+                        update_background_tone_mapping,
                         universal_getter, universal_setter)
 from .utils.manipulate import get_current_head
+from .utils.images import np_array_from_bpy_image, gamma_np_image
 
 
 class FBExifItem(PropertyGroup):
@@ -364,6 +365,39 @@ class FBCameraItem(PropertyGroup):
         w, _ = self.get_oriented_image_size()
         sc = 1.0 / self.compensate_view_scale()
         return sc * w / Config.default_sensor_width
+
+    def reset_tone_mapping(self):
+        if not self.cam_image:
+            return
+        if self.cam_image.is_dirty:
+            self.cam_image.reload()
+            logger = logging.getLogger(__name__)
+            logger.debug('reset_tone_mapping: IMAGE RELOADED')
+
+    def tone_mapping(self, gain=1.0, gamma=1.0):
+        if not self.cam_image:
+            return
+        self.reset_tone_mapping()
+        logger = logging.getLogger(__name__)
+        if np.all(np.isclose([gain, gamma], [Config.default_tone_gain,
+                                             Config.default_tone_gamma], atol=0.02)):
+            logger.debug('SKIP tone mapping, only reload()')
+            return
+        np_img = np_array_from_bpy_image(self.cam_image)
+        np_img[:, :, :3] = gamma_np_image(gain * np_img[:, :, :3], 1.0 / gamma)
+        self.cam_image.pixels.foreach_set(np_img.ravel())
+        logger.debug('restore_tone_mapping: '
+                     'gain: {} gamma: {}'.format(gain, gamma))
+
+    def apply_tone_mapping(self):
+        if not self.cam_image:
+            return
+        settings = get_main_settings()
+        tone_gain = settings.tone_gain
+        tone_gamma = settings.tone_gamma
+        k_gain = (1.0 + tone_gain) if tone_gain > 0.0 else (1.0 / (1.0 - tone_gain))
+        k_gamma = (1.0 + tone_gamma) if tone_gamma > 0.0 else (1.0 / (1.0 - tone_gamma))
+        self.tone_mapping(gain=k_gain, gamma=k_gamma)
 
 
 def uv_items_callback(self, context):
@@ -799,6 +833,16 @@ class FBSceneSettings(PropertyGroup):
         description="Discard changes, install the update and restart Blender",
         name="Discard changes, install the update and restart Blender", default=False
     )
+
+    tone_gain: FloatProperty(
+        name='Gain', description='Tone gain',
+        default=0.0, min=-4.0, max=4.0, precision=2,
+        update=update_background_tone_mapping)
+
+    tone_gamma: FloatProperty(
+        name='Gamma', description='Tone gamma',
+        default=0.0, min=-4.0, max=4.0, precision=2,
+        update=update_background_tone_mapping)
 
     def reset_pinmode_id(self):
         self.pinmode_id = 'stop'

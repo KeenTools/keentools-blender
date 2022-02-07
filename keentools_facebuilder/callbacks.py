@@ -357,3 +357,13 @@ def update_camera_focal(self, context):
         fb.set_focal_length_at(
             kid, self.get_focal_length_in_pixels_coef() * self.focal)
         FBLoader.save_fb_serial_str(headnum)
+
+
+def update_background_tone_mapping(self, context):
+    settings = get_main_settings()
+    if not settings.pinmode:
+        return
+    head = settings.get_current_head()
+    cam = head.get_camera(settings.current_camnum)
+    if cam:
+        cam.apply_tone_mapping()

@@ -835,6 +835,28 @@ class FB_OT_SelectCurrentCamera(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class FB_OT_ResetToneGain(ButtonOperator, Operator):
+    bl_idname = Config.fb_reset_tone_gain_idname
+    bl_label = 'Reset gain'
+    bl_description = 'Reset gain in tone mapping'
+
+    def execute(self, context):
+        settings = get_main_settings()
+        settings.tone_gain = Config.default_tone_gain
+        return {'FINISHED'}
+
+
+class FB_OT_ResetToneGamma(ButtonOperator, Operator):
+    bl_idname = Config.fb_reset_tone_gamma_idname
+    bl_label = 'Reset gamma'
+    bl_description = 'Reset gamma in tone mapping'
+
+    def execute(self, context):
+        settings = get_main_settings()
+        settings.tone_gamma = Config.default_tone_gamma
+        return {'FINISHED'}
+
+
 CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_SelectCurrentHead,
                        FB_OT_DeleteHead,
@@ -871,4 +893,6 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_UnhideHead,
                        FB_OT_ReconstructHead,
                        FB_OT_DefaultPinSettings,
-                       FB_OT_DefaultWireframeSettings)
+                       FB_OT_DefaultWireframeSettings,
+                       FB_OT_ResetToneGain,
+                       FB_OT_ResetToneGamma)
