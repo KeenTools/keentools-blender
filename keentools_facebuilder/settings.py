@@ -150,12 +150,12 @@ class FBCameraItem(PropertyGroup):
 
     tone_gain: FloatProperty(
         name='Gain', description='Tone gain',
-        default=Config.default_tone_gain, min=0.01, max=4.0, precision=2,
+        default=Config.default_tone_gain, min=0.01, max=10.0, soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
 
     tone_gamma: FloatProperty(
-        name='Gamma', description='Tone gamma',
-        default=Config.default_tone_gamma, min=0.01, max=4.0, precision=2,
+        name='Gamma correction', description='Tone gamma correction',
+        default=Config.default_tone_gamma, min=0.01, max=10.0, soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
 
     def update_scene_frame_size(self):
@@ -394,7 +394,9 @@ class FBCameraItem(PropertyGroup):
             logger.debug('SKIP tone mapping, only reload()')
             return
         np_img = np_array_from_bpy_image(self.cam_image)
-        np_img[:, :, :3] = gamma_np_image(gain * np_img[:, :, :3], 1.0 / gamma)
+        # Ires_sRGB = ([gain * IsRGB ^ (1/gamma_sRGB)] ^ (1/gamma)) ^ gamma_sRGB
+        # -> Ires_sRGB = (gain ^ gamma_sRGB * IsRGB) ^ (1/gamma)
+        np_img[:, :, :3] = gamma_np_image(pow(gain, 2.2) * np_img[:, :, :3], 1.0 / gamma)
         self.cam_image.pixels.foreach_set(np_img.ravel())
         logger.debug('restore_tone_mapping: '
                      'gain: {} gamma: {}'.format(gain, gamma))
