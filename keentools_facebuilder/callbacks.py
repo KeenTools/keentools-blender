@@ -363,7 +363,4 @@ def update_background_tone_mapping(self, context):
     settings = get_main_settings()
     if not settings.pinmode:
         return
-    head = settings.get_current_head()
-    cam = head.get_camera(settings.current_camnum)
-    if cam:
-        cam.apply_tone_mapping()
+    self.apply_tone_mapping()

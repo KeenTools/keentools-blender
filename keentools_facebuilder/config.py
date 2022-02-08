@@ -226,8 +226,8 @@ class Config:
     show_markers_at_camera_corners = False
     recreate_vertex_groups = True
 
-    default_tone_gain = 0.0
-    default_tone_gamma = 0.0
+    default_tone_gain = 1.0
+    default_tone_gamma = 1.0
 
     # In Material
     image_node_layout_coord = (-300, 0)

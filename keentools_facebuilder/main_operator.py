@@ -840,9 +840,13 @@ class FB_OT_ResetToneGain(ButtonOperator, Operator):
     bl_label = 'Reset gain'
     bl_description = 'Reset gain in tone mapping'
 
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
     def execute(self, context):
         settings = get_main_settings()
-        settings.tone_gain = Config.default_tone_gain
+        cam = settings.get_camera(self.headnum, self.camnum)
+        cam.tone_gain = Config.default_tone_gain
         return {'FINISHED'}
 
 
@@ -851,9 +855,13 @@ class FB_OT_ResetToneGamma(ButtonOperator, Operator):
     bl_label = 'Reset gamma'
     bl_description = 'Reset gamma in tone mapping'
 
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
     def execute(self, context):
         settings = get_main_settings()
-        settings.tone_gamma = Config.default_tone_gamma
+        cam = settings.get_camera(self.headnum, self.camnum)
+        cam.tone_gamma = Config.default_tone_gamma
         return {'FINISHED'}
 
 

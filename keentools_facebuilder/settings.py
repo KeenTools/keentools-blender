@@ -148,6 +148,16 @@ class FBCameraItem(PropertyGroup):
                     "in the frame",
         default=True)
 
+    tone_gain: FloatProperty(
+        name='Gain', description='Tone gain',
+        default=Config.default_tone_gain, min=0.01, max=4.0, precision=2,
+        update=update_background_tone_mapping)
+
+    tone_gamma: FloatProperty(
+        name='Gamma', description='Tone gamma',
+        default=Config.default_tone_gamma, min=0.01, max=4.0, precision=2,
+        update=update_background_tone_mapping)
+
     def update_scene_frame_size(self):
         if self.image_width > 0 and self.image_height > 0:
             if (self.orientation % 2) == 0:
@@ -392,12 +402,7 @@ class FBCameraItem(PropertyGroup):
     def apply_tone_mapping(self):
         if not self.cam_image:
             return
-        settings = get_main_settings()
-        tone_gain = settings.tone_gain
-        tone_gamma = settings.tone_gamma
-        k_gain = (1.0 + tone_gain) if tone_gain > 0.0 else (1.0 / (1.0 - tone_gain))
-        k_gamma = (1.0 + tone_gamma) if tone_gamma > 0.0 else (1.0 / (1.0 - tone_gamma))
-        self.tone_mapping(gain=k_gain, gamma=k_gamma)
+        self.tone_mapping(gain=self.tone_gain, gamma=self.tone_gamma)
 
 
 def uv_items_callback(self, context):
@@ -833,16 +838,6 @@ class FBSceneSettings(PropertyGroup):
         description="Discard changes, install the update and restart Blender",
         name="Discard changes, install the update and restart Blender", default=False
     )
-
-    tone_gain: FloatProperty(
-        name='Gain', description='Tone gain',
-        default=0.0, min=-4.0, max=4.0, precision=2,
-        update=update_background_tone_mapping)
-
-    tone_gamma: FloatProperty(
-        name='Gamma', description='Tone gamma',
-        default=0.0, min=-4.0, max=4.0, precision=2,
-        update=update_background_tone_mapping)
 
     def reset_pinmode_id(self):
         self.pinmode_id = 'stop'
