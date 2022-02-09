@@ -51,7 +51,7 @@ from .callbacks import (update_mesh_with_dialog,
                         update_background_tone_mapping,
                         universal_getter, universal_setter)
 from .utils.manipulate import get_current_head
-from .utils.images import np_array_from_bpy_image, gamma_np_image
+from .utils.images import np_array_from_bpy_image
 
 
 class FBExifItem(PropertyGroup):
@@ -148,9 +148,10 @@ class FBCameraItem(PropertyGroup):
                     "in the frame",
         default=True)
 
-    tone_gain: FloatProperty(
-        name='Gain', description='Tone gain',
-        default=Config.default_tone_gain, min=0.01, max=10.0, soft_max=4.0, precision=2,
+    tone_exposure: FloatProperty(
+        name='Exposure', description='Tone gain',
+        default=Config.default_tone_exposure,
+        min=-10.0, max=10.0, soft_min=-4.0, soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
 
     tone_gamma: FloatProperty(
@@ -384,27 +385,32 @@ class FBCameraItem(PropertyGroup):
             logger = logging.getLogger(__name__)
             logger.debug('reset_tone_mapping: IMAGE RELOADED')
 
-    def tone_mapping(self, gain=1.0, gamma=1.0):
+    def tone_mapping(self, exposure=Config.default_tone_exposure, gamma=Config.default_tone_gamma):
         if not self.cam_image:
             return
         self.reset_tone_mapping()
         logger = logging.getLogger(__name__)
-        if np.all(np.isclose([gain, gamma], [Config.default_tone_gain,
-                                             Config.default_tone_gamma], atol=0.02)):
+
+        if np.all(np.isclose([exposure, gamma], [Config.default_tone_exposure,
+                                                 Config.default_tone_gamma],
+                                                 atol=0.001)):
             logger.debug('SKIP tone mapping, only reload()')
             return
         np_img = np_array_from_bpy_image(self.cam_image)
-        # Ires_sRGB = ([gain * IsRGB ^ (1/gamma_sRGB)] ^ (1/gamma)) ^ gamma_sRGB
-        # -> Ires_sRGB = (gain ^ gamma_sRGB * IsRGB) ^ (1/gamma)
-        np_img[:, :, :3] = gamma_np_image(pow(gain, 2.2) * np_img[:, :, :3], 1.0 / gamma)
+        # I_res_linear = [gain * I_linear] ^ (1/gamma)
+        # I_res_sRGB = ([gain * I_linear] ^ (1/gamma)) ^ gamma_sRGB
+        # I_res_sRGB = ([gain * I_sRGB ^ (1/gamma_sRGB)] ^ (1/gamma)) ^ gamma_sRGB
+        # I_res_sRGB = (gain ^ gamma_sRGB * I_sRGB) ^ (1/gamma)
+        gain = pow(2, exposure / 2.2)
+        np_img[:, :, :3] = np.power(gain * np_img[:, :, :3], 1.0 / gamma)
         self.cam_image.pixels.foreach_set(np_img.ravel())
-        logger.debug('restore_tone_mapping: '
-                     'gain: {} gamma: {}'.format(gain, gamma))
+        logger.debug('restore_tone_mapping: exposure: {} '
+                     '(gain: {}) gamma: {}'.format(exposure, gain, gamma))
 
     def apply_tone_mapping(self):
         if not self.cam_image:
             return
-        self.tone_mapping(gain=self.tone_gain, gamma=self.tone_gamma)
+        self.tone_mapping(exposure=self.tone_exposure, gamma=self.tone_gamma)
 
 
 def uv_items_callback(self, context):

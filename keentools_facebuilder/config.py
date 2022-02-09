@@ -131,7 +131,7 @@ class Config:
     fb_default_pin_settings_idname = operators + '.default_pin_settings'
     fb_default_wireframe_settings_idname = \
         operators + '.default_wireframe_settings'
-    fb_reset_tone_gain_idname = operators + '.reset_tone_gain'
+    fb_reset_tone_exposure_idname = operators + '.reset_tone_exposure'
     fb_reset_tone_gamma_idname = operators + '.reset_tone_gamma'
 
     # Panel ids
@@ -226,7 +226,7 @@ class Config:
     show_markers_at_camera_corners = False
     recreate_vertex_groups = True
 
-    default_tone_gain = 1.0
+    default_tone_exposure = 0.0
     default_tone_gamma = 1.0
 
     # In Material

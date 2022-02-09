@@ -836,9 +836,9 @@ class FB_OT_SelectCurrentCamera(ButtonOperator, Operator):
 
 
 class FB_OT_ResetToneGain(ButtonOperator, Operator):
-    bl_idname = Config.fb_reset_tone_gain_idname
-    bl_label = 'Reset gain'
-    bl_description = 'Reset gain in tone mapping'
+    bl_idname = Config.fb_reset_tone_exposure_idname
+    bl_label = 'Reset exposure'
+    bl_description = 'Reset exposure in tone mapping'
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
@@ -846,7 +846,7 @@ class FB_OT_ResetToneGain(ButtonOperator, Operator):
     def execute(self, context):
         settings = get_main_settings()
         cam = settings.get_camera(self.headnum, self.camnum)
-        cam.tone_gain = Config.default_tone_gain
+        cam.tone_exposure = Config.default_tone_exposure
         return {'FINISHED'}
 
 

@@ -76,7 +76,3 @@ def check_bpy_image_has_same_size(image, size):
         return False
     w, h = image.size[:2]
     return w == size[0] and h == size[1]
-
-
-def gamma_np_image(np_img, gamma=1.0):
-    return np.power(np_img, gamma)

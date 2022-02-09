@@ -408,14 +408,15 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             if camera:
                 col = layout.column(align=True)
                 row = col.row(align=True)
-                row.prop(camera, 'tone_gamma', slider=True)
-                op = row.operator(Config.fb_reset_tone_gamma_idname,
+                row.prop(camera, 'tone_exposure', slider=True)
+                op = row.operator(Config.fb_reset_tone_exposure_idname,
                                   text='', icon='LOOP_BACK')
                 op.headnum = headnum
                 op.camnum = settings.current_camnum
+
                 row = col.row(align=True)
-                row.prop(camera, 'tone_gain', slider=True)
-                op = row.operator(Config.fb_reset_tone_gain_idname,
+                row.prop(camera, 'tone_gamma', slider=True)
+                op = row.operator(Config.fb_reset_tone_gamma_idname,
                                   text='', icon='LOOP_BACK')
                 op.headnum = headnum
                 op.camnum = settings.current_camnum
