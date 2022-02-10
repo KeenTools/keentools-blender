@@ -397,10 +397,7 @@ class FBCameraItem(PropertyGroup):
             logger.debug('SKIP tone mapping, only reload()')
             return
         np_img = np_array_from_bpy_image(self.cam_image)
-        # I_res_linear = [gain * I_linear] ^ (1/gamma)
-        # I_res_sRGB = ([gain * I_linear] ^ (1/gamma)) ^ gamma_sRGB
-        # I_res_sRGB = ([gain * I_sRGB ^ (1/gamma_sRGB)] ^ (1/gamma)) ^ gamma_sRGB
-        # I_res_sRGB = (gain ^ gamma_sRGB * I_sRGB) ^ (1/gamma)
+
         gain = pow(2, exposure / 2.2)
         np_img[:, :, :3] = np.power(gain * np_img[:, :, :3], 1.0 / gamma)
         self.cam_image.pixels.foreach_set(np_img.ravel())
