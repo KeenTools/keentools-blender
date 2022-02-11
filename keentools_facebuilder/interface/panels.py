@@ -404,6 +404,23 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         layout.prop(head, 'reduce_pins')
 
         if settings.pinmode:
+            camera = head.get_camera(settings.current_camnum)
+            if camera:
+                col = layout.column(align=True)
+                row = col.row(align=True)
+                row.prop(camera, 'tone_exposure', slider=True)
+                op = row.operator(Config.fb_reset_tone_exposure_idname,
+                                  text='', icon='LOOP_BACK')
+                op.headnum = headnum
+                op.camnum = settings.current_camnum
+
+                row = col.row(align=True)
+                row.prop(camera, 'tone_gamma', slider=True)
+                op = row.operator(Config.fb_reset_tone_gamma_idname,
+                                  text='', icon='LOOP_BACK')
+                op.headnum = headnum
+                op.camnum = settings.current_camnum
+
             row = layout.row()
             row.scale_y = 2.0
             op = row.operator(

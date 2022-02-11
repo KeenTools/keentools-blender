@@ -152,6 +152,7 @@ def _sRGB_to_linear(img):
 def _create_frame_data_loader(settings, head, camnums, fb):
     def frame_data_loader(kf_idx):
         cam = head.cameras[camnums[kf_idx]]
+        cam.reset_tone_mapping()
 
         img = load_rgba(cam)
 

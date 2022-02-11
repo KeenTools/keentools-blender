@@ -128,6 +128,9 @@ class FBLoader:
         settings.pinmode = False
         logger = logging.getLogger(__name__)
         logger.debug('OUT PINMODE')
+        camera = head.get_camera(settings.current_camnum)
+        if camera:
+            camera.reset_tone_mapping()
 
     @classmethod
     def out_pinmode(cls, headnum):

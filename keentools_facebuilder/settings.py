@@ -15,8 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
-
+import logging
 import math
 
 import bpy
@@ -49,8 +48,10 @@ from .callbacks import (update_mesh_with_dialog,
                         update_cam_image,
                         update_head_focal,
                         update_camera_focal,
+                        update_background_tone_mapping,
                         universal_getter, universal_setter)
 from .utils.manipulate import get_current_head
+from .utils.images import np_array_from_bpy_image
 
 
 class FBExifItem(PropertyGroup):
@@ -146,6 +147,17 @@ class FBCameraItem(PropertyGroup):
                     "focal length based on the position of the model "
                     "in the frame",
         default=True)
+
+    tone_exposure: FloatProperty(
+        name='Exposure', description='Tone gain',
+        default=Config.default_tone_exposure,
+        min=-10.0, max=10.0, soft_min=-4.0, soft_max=4.0, precision=2,
+        update=update_background_tone_mapping)
+
+    tone_gamma: FloatProperty(
+        name='Gamma correction', description='Tone gamma correction',
+        default=Config.default_tone_gamma, min=0.01, max=10.0, soft_max=4.0, precision=2,
+        update=update_background_tone_mapping)
 
     def update_scene_frame_size(self):
         if self.image_width > 0 and self.image_height > 0:
@@ -364,6 +376,38 @@ class FBCameraItem(PropertyGroup):
         w, _ = self.get_oriented_image_size()
         sc = 1.0 / self.compensate_view_scale()
         return sc * w / Config.default_sensor_width
+
+    def reset_tone_mapping(self):
+        if not self.cam_image:
+            return
+        if self.cam_image.is_dirty:
+            self.cam_image.reload()
+            logger = logging.getLogger(__name__)
+            logger.debug('reset_tone_mapping: IMAGE RELOADED')
+
+    def tone_mapping(self, exposure=Config.default_tone_exposure, gamma=Config.default_tone_gamma):
+        if not self.cam_image:
+            return
+        self.reset_tone_mapping()
+        logger = logging.getLogger(__name__)
+
+        if np.all(np.isclose([exposure, gamma], [Config.default_tone_exposure,
+                                                 Config.default_tone_gamma],
+                                                 atol=0.001)):
+            logger.debug('SKIP tone mapping, only reload()')
+            return
+        np_img = np_array_from_bpy_image(self.cam_image)
+
+        gain = pow(2, exposure / 2.2)
+        np_img[:, :, :3] = np.power(gain * np_img[:, :, :3], 1.0 / gamma)
+        self.cam_image.pixels.foreach_set(np_img.ravel())
+        logger.debug('restore_tone_mapping: exposure: {} '
+                     '(gain: {}) gamma: {}'.format(exposure, gain, gamma))
+
+    def apply_tone_mapping(self):
+        if not self.cam_image:
+            return
+        self.tone_mapping(exposure=self.tone_exposure, gamma=self.tone_gamma)
 
 
 def uv_items_callback(self, context):

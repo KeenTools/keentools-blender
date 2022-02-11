@@ -208,6 +208,10 @@ class FB_OT_PinMode(bpy.types.Operator):
         if settings.pinmode and \
                 settings.current_headnum >= 0 and settings.current_camnum >= 0:
 
+            old_head = settings.get_head(settings.current_headnum)
+            old_camera = old_head.get_camera(settings.current_camnum)
+            old_camera.reset_tone_mapping()
+
             FBLoader.save_pinmode_state(settings.current_headnum)
             logger.debug("PINMODE FORCE FINISH: H{} C{}".format(
                 settings.current_headnum, settings.current_camnum))
@@ -223,6 +227,8 @@ class FB_OT_PinMode(bpy.types.Operator):
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
         kid = camera.get_keyframe()
+
+        camera.apply_tone_mapping()
 
         cameras.switch_to_fb_camera(camera, context)
 
