@@ -15,22 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
-bl_info = {
-    "name": "KeenTools FaceBuilder 2021.4.0",  # (1/5)
-    "version": (2021, 4, 0),  # 2021.4.0 (2/5)
-    "author": "KeenTools",
-    "description": "Creates Head and Face geometry with a few "
-                   "reference photos",
-    "blender": (2, 80, 0),
-    "location": "Add > Mesh menu and View UI (press N to open panel)",
-    "wiki_url": "https://link.keentools.io/fbb-guide",
-    "tracker_url": "https://link.keentools.io/new-support-request",
-    "warning": "",
-    "category": "Add Mesh"
-}
-
-
 import os
 import sys
 import logging.config
@@ -41,6 +25,20 @@ import bpy
 from .config import Config
 from .messages import (ERROR_MESSAGES, draw_warning_labels, get_system_info,
                        draw_system_info, draw_long_label, draw_long_labels)
+
+bl_info = {
+    "name": "KeenTools 2021.4.0",  # (1/5)
+    "version": (2021, 4, 0),  # 2021.4.0 (2/5)
+    "author": "KeenTools",
+    "description": "KeenTools bundle for Blender. FaceBuilder: Creates Head and Face geometry with a few "
+                   "reference photos",
+    "blender": (2, 80, 0),
+    "location": "Add > Mesh menu and View UI (press N to open panel)",
+    "wiki_url": "https://keentools.io",
+    "tracker_url": "https://link.keentools.io/new-support-request",
+    "warning": "",
+    "category": "Add Mesh"  # TODO change?
+}
 
 
 # Init logging system via config file

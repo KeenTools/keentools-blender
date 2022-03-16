@@ -45,7 +45,7 @@ def pkt_installation_dir():
 
 def addon_installation_dir():
     addons_path = bpy.utils.user_resource('SCRIPTS', path='addons')
-    return os.path.join(addons_path, 'keentools_facebuilder')
+    return os.path.join(addons_path, 'keentools')
 
 
 MINIMUM_VERSION_REQUIRED = (2021, 4, 0)  # 2021.4.0 (4/5)
@@ -86,10 +86,10 @@ def download_core_path(version=None, nightly=False):
 def download_addon_path(version=None, nightly=False):
     if nightly:
         assert(version is None)
-        return 'https://downloads.keentools.io/keentools-facebuilder-nightly-for-blender'
+        return 'https://downloads.keentools.io/keentools-nightly-for-blender'
 
     if version is None:
-        return 'https://downloads.keentools.io/latest-keentools-facebuilder-for-blender'
+        return 'https://downloads.keentools.io/latest-keentools-for-blender'
 
-    return 'https://downloads.keentools.io/keentools-facebuilder-{}-for-blender'.format(
+    return 'https://downloads.keentools.io/keentools-{}-for-blender'.format(
         '_'.join([str(x) for x in version]))

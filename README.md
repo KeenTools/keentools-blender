@@ -1,6 +1,6 @@
 # KeenTools for Blender
 
-[KeenTools FaceBuilder for blender](https://keentools.io/facebuilder#blender) is a blender addon that allows using some of the [KeenTools](https://keentools.io) functionality in Blender.
+[KeenTools for Blender](https://keentools.io) is a blender addon that allows using some of the [KeenTools](https://keentools.io) functionality in Blender.
 
 ## Release History
 
