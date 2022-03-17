@@ -26,10 +26,10 @@ from bpy.types import Operator
 from ..fbloader import FBLoader
 from ..config import Config, get_main_settings, get_operator
 
-from ..utils.exif_reader import (read_exif_to_camera,
+from ...utils.exif_reader import (read_exif_to_camera,
                                  auto_setup_camera_from_exif)
-from ..utils.materials import find_bpy_image_by_name
-from ..utils.blendshapes import load_csv_animation_to_blendshapes
+from ...utils.materials import find_bpy_image_by_name
+from ...utils.blendshapes import load_csv_animation_to_blendshapes
 
 
 class FB_OT_SingleFilebrowserExec(Operator):

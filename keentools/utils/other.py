@@ -21,17 +21,12 @@ import time
 import bpy
 import blf
 
-from . edges import FBEdgeShader2D, FBRasterEdgeShader3D
-from . points import FBPoints2D, FBPoints3D
-from .. config import Config, get_main_settings
+from .edges import FBEdgeShader2D, FBRasterEdgeShader3D
+from .points import FBPoints2D, FBPoints3D
+from ..facebuilder.config import FBConfig, get_main_settings
 from ..utils.attrs import set_custom_attribute, get_safe_custom_attribute
-
-
-def force_ui_redraw(area_type="PREFERENCES"):
-    for window in bpy.data.window_managers['WinMan'].windows:
-        for area in window.screen.areas:
-            if area.type == area_type:
-                area.tag_redraw()
+from ..utils.timer import FBTimer
+from ..utils.ui_redraw import force_ui_redraw
 
 
 def force_stop_shaders():
@@ -97,7 +92,7 @@ def _force_hide_ui_elements():
 
 def hide_viewport_ui_elements_and_store_on_object(obj):
     state = _get_viewport_ui_state()
-    set_custom_attribute(obj, Config.viewport_state_prop_name[0], state)
+    set_custom_attribute(obj, FBConfig.viewport_state_prop_name[0], state)
     _force_hide_ui_elements()
 
 
@@ -110,7 +105,7 @@ def unhide_viewport_ui_element_from_object(obj):
                 values[name] = states[name]
         return values
 
-    attr_value = get_safe_custom_attribute(obj, Config.viewport_state_prop_name[0])
+    attr_value = get_safe_custom_attribute(obj, FBConfig.viewport_state_prop_name[0])
     if attr_value is None:
         _force_show_ui_elements()  # For old version compatibility
         return
@@ -123,38 +118,6 @@ def unhide_viewport_ui_element_from_object(obj):
 
     res = _unpack_state(attr_dict)
     _setup_viewport_ui_state(res)
-
-
-class FBTimer:
-    _active = False
-
-    @classmethod
-    def set_active(cls, value=True):
-        cls._active = value
-
-    @classmethod
-    def set_inactive(cls):
-        cls._active = False
-
-    @classmethod
-    def is_active(cls):
-        return cls._active
-
-    @classmethod
-    def _start(cls, callback, persistent=True):
-        logger = logging.getLogger(__name__)
-        cls._stop(callback)
-        bpy.app.timers.register(callback, persistent=persistent)
-        logger.debug("REGISTER TIMER")
-        cls.set_active()
-
-    @classmethod
-    def _stop(cls, callback):
-        logger = logging.getLogger(__name__)
-        if bpy.app.timers.is_registered(callback):
-            logger.debug("UNREGISTER TIMER")
-            bpy.app.timers.unregister(callback)
-        cls.set_inactive()
 
 
 class FBStopShaderTimer(FBTimer):

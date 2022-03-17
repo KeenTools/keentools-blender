@@ -21,11 +21,11 @@ import bpy
 import numpy as np
 
 from .config import Config, get_main_settings
-from .preferences.user_preferences import UserPreferences
-from .utils import coords
-from .utils.edges import FBEdgeShader2D, FBRasterEdgeShader3D, FBRectangleShader2D
-from .utils.other import FBText
-from .utils.points import FBPoints2D, FBPoints3D
+from ..preferences.user_preferences import UserPreferences
+from ..utils import coords
+from ..utils.edges import FBEdgeShader2D, FBRasterEdgeShader3D, FBRectangleShader2D
+from ..utils.other import FBText
+from ..utils.points import FBPoints2D, FBPoints3D
 
 
 class FBScreenPins:

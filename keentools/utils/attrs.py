@@ -17,7 +17,8 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
-from .. config import Config
+from ..config import Config
+from ..facebuilder.config import FBConfig
 
 
 # Functions for Custom Attributes perform
@@ -49,14 +50,14 @@ def set_custom_attribute(obj, attr_name, val):
 
 
 def has_keentools_attributes(obj):
-    attr_name = Config.version_prop_name[0]
+    attr_name = FBConfig.version_prop_name[0]
     if has_custom_attribute(obj, attr_name):
         return True
     return False
 
 
 def mark_keentools_object(obj):
-    set_custom_attribute(obj, Config.version_prop_name[0], Config.addon_version)
+    set_custom_attribute(obj, FBConfig.version_prop_name[0], Config.addon_version)
 
 
 def get_attr_variant_named(data, attr_names):
@@ -101,5 +102,5 @@ def get_obj_collection(obj):
 
 
 def add_to_fb_collection(obj):
-    fb_col = new_collection(Config.default_fb_collection_name)
+    fb_col = new_collection(FBConfig.default_fb_collection_name)
     fb_col.objects.link(obj)

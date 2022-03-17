@@ -19,15 +19,17 @@
 import logging
 import bpy
 
-from .utils import attrs
+from ..utils import attrs
+from ..utils.ui_redraw import show_ui_panel
 from .fbloader import FBLoader
-from .config import Config, get_main_settings, get_operator, ErrorType
-from .blender_independent_packages.pykeentools_loader import module as pkt_module
+from .config import get_main_settings, get_operator, ErrorType
+from .config import FBConfig
+from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 class MESH_OT_FBAddHead(bpy.types.Operator):
     """ Add FaceBuilder Head into scene"""
-    bl_idname = Config.fb_add_head_operator_idname
+    bl_idname = FBConfig.fb_add_head_operator_idname
     bl_label = "FaceBuilder Head"
     bl_options = {'REGISTER', 'UNDO'}
 
@@ -39,22 +41,22 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
             obj = self.new_head()
         except ModuleNotFoundError:
             logger.error('ADD_HEAD_ERROR: ModuleNotFoundError')
-            warn = get_operator(Config.fb_warning_idname)
+            warn = get_operator(FBConfig.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
         except pkt_module().ModelLoadingException:
             logger.error('ADD_HEAD_ERROR: ModelLoadingException')
-            warn = get_operator(Config.fb_warning_idname)
+            warn = get_operator(FBConfig.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktModelProblem)
             return {'CANCELLED'}
         except TypeError:
             logger.error('ADD_HEAD_ERROR: TypeError')
-            warn = get_operator(Config.fb_warning_idname)
+            warn = get_operator(FBConfig.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.CannotCreateObject)
             return {'CANCELLED'}
         except Exception:
             logger.error('ADD_HEAD_ERROR: Exception')
-            warn = get_operator(Config.fb_warning_idname)
+            warn = get_operator(FBConfig.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
 
@@ -73,18 +75,13 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         settings.current_headnum = settings.get_last_headnum()
         FBLoader.save_fb_serial_and_image_pathes(settings.current_headnum)
 
-        try:
-            a = context.area
-            # Try to show UI Panel
-            a.spaces[0].show_region_ui = True
-        except Exception:
-            pass
+        show_ui_panel(context)
 
         logger.debug('HEAD HAS BEEN SUCCESSFULLY CREATED')
         return {'FINISHED'}
 
     @classmethod
     def new_head(cls):
-        mesh = FBLoader.universal_mesh_loader(Config.default_fb_mesh_name)
-        obj = bpy.data.objects.new(Config.default_fb_object_name, mesh)
+        mesh = FBLoader.universal_mesh_loader(FBConfig.default_fb_mesh_name)
+        obj = bpy.data.objects.new(FBConfig.default_fb_object_name, mesh)
         return obj

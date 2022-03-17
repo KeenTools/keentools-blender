@@ -33,9 +33,10 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 
-from .config import Config, get_main_settings
+from ..config import Config
+from .config import FBConfig, get_main_settings
 from .fbloader import FBLoader
-from .utils import coords
+from ..utils import coords
 from .callbacks import (update_mesh_with_dialog,
                         update_mesh_simple,
                         update_expressions,
@@ -50,8 +51,8 @@ from .callbacks import (update_mesh_with_dialog,
                         update_camera_focal,
                         update_background_tone_mapping,
                         universal_getter, universal_setter)
-from .utils.manipulate import get_current_head
-from .utils.images import np_array_from_bpy_image
+from ..utils.manipulate import get_current_head
+from ..utils.images import np_array_from_bpy_image
 
 
 class FBExifItem(PropertyGroup):
@@ -150,13 +151,13 @@ class FBCameraItem(PropertyGroup):
 
     tone_exposure: FloatProperty(
         name='Exposure', description='Tone gain',
-        default=Config.default_tone_exposure,
+        default=FBConfig.default_tone_exposure,
         min=-10.0, max=10.0, soft_min=-4.0, soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
 
     tone_gamma: FloatProperty(
         name='Gamma correction', description='Tone gamma correction',
-        default=Config.default_tone_gamma, min=0.01, max=10.0, soft_max=4.0, precision=2,
+        default=FBConfig.default_tone_gamma, min=0.01, max=10.0, soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
 
     def update_scene_frame_size(self):
@@ -333,8 +334,8 @@ class FBCameraItem(PropertyGroup):
 
     def reset_camera_sensor(self):
         if self.camobj:
-            self.camobj.data.sensor_width = Config.default_sensor_width
-            self.camobj.data.sensor_height = Config.default_sensor_height
+            self.camobj.data.sensor_width = FBConfig.default_sensor_width
+            self.camobj.data.sensor_height = FBConfig.default_sensor_height
 
     def get_custom_projection_matrix(self, focal):
         w = self.image_width
@@ -348,15 +349,15 @@ class FBCameraItem(PropertyGroup):
         if (self.orientation % 2) == 0:
             if w >= h:
                 projection = coords.projection_matrix(
-                    w, h, focal, Config.default_sensor_width,
+                    w, h, focal, FBConfig.default_sensor_width,
                     near, far, scale=1.0)
             else:
                 projection = coords.projection_matrix(
-                    w, h, focal, Config.default_sensor_width,
+                    w, h, focal, FBConfig.default_sensor_width,
                     near, far, scale=sc)
         else:
             projection = coords.projection_matrix(
-                h, w, focal, Config.default_sensor_width,
+                h, w, focal, FBConfig.default_sensor_width,
                 near, far, scale=sc)
 
         return projection
@@ -375,7 +376,7 @@ class FBCameraItem(PropertyGroup):
     def get_focal_length_in_pixels_coef(self):
         w, _ = self.get_oriented_image_size()
         sc = 1.0 / self.compensate_view_scale()
-        return sc * w / Config.default_sensor_width
+        return sc * w / FBConfig.default_sensor_width
 
     def reset_tone_mapping(self):
         if not self.cam_image:
@@ -385,14 +386,15 @@ class FBCameraItem(PropertyGroup):
             logger = logging.getLogger(__name__)
             logger.debug('reset_tone_mapping: IMAGE RELOADED')
 
-    def tone_mapping(self, exposure=Config.default_tone_exposure, gamma=Config.default_tone_gamma):
+    def tone_mapping(self, exposure=FBConfig.default_tone_exposure,
+                     gamma=FBConfig.default_tone_gamma):
         if not self.cam_image:
             return
         self.reset_tone_mapping()
         logger = logging.getLogger(__name__)
 
-        if np.all(np.isclose([exposure, gamma], [Config.default_tone_exposure,
-                                                 Config.default_tone_gamma],
+        if np.all(np.isclose([exposure, gamma], [FBConfig.default_tone_exposure,
+                                                 FBConfig.default_tone_gamma],
                                                  atol=0.001)):
             logger.debug('SKIP tone mapping, only reload()')
             return
@@ -436,7 +438,7 @@ def model_type_callback(self, context):
 
 
 def expression_views_callback(self, context):
-    res = [(Config.neutral_expression_view_idname, 'Neutral', '', 'USER', 0), ]
+    res = [(FBConfig.neutral_expression_view_idname, 'Neutral', '', 'USER', 0), ]
     for i, camera in enumerate(self.cameras):
         kid = camera.get_keyframe()
         res.append(('{}'.format(kid), camera.get_image_name(),
@@ -577,7 +579,7 @@ class FBHeadItem(PropertyGroup):
 
     def store_serial_str_on_headobj(self):
         if self.headobj:
-            self.headobj[Config.fb_serial_prop_name[0]] = self.serial_str
+            self.headobj[FBConfig.fb_serial_prop_name[0]] = self.serial_str
 
     def set_serial_str(self, value):
         self.serial_str = value
@@ -644,9 +646,9 @@ class FBHeadItem(PropertyGroup):
                 res.append('')
         if not self.headobj:
             return
-        self.headobj[Config.fb_images_prop_name[0]] = res
+        self.headobj[FBConfig.fb_images_prop_name[0]] = res
         # Dir name of current scene
-        self.headobj[Config.fb_dir_prop_name[0]] = bpy.path.abspath("//")
+        self.headobj[FBConfig.fb_dir_prop_name[0]] = bpy.path.abspath("//")
 
     def should_use_emotions(self):
         return self.use_emotions
@@ -673,13 +675,13 @@ class FBHeadItem(PropertyGroup):
         return get_main_settings()
 
     def get_expression_view_keyframe(self):
-        if self.expression_view == Config.empty_expression_view_idname:
+        if self.expression_view == FBConfig.empty_expression_view_idname:
             return 0  # Neutral
         kid = int(self.expression_view)
         return kid
 
     def set_neutral_expression_view(self):
-        self.expression_view = Config.neutral_expression_view_idname
+        self.expression_view = FBConfig.neutral_expression_view_idname
 
     def has_vertex_groups(self):
         return len(self.headobj.vertex_groups) != 0
@@ -690,10 +692,10 @@ class FBHeadItem(PropertyGroup):
         return 'none'
 
     def preview_material_name(self):
-        return Config.tex_builder_matname_template.format(self.get_headobj_name())
+        return FBConfig.tex_builder_matname_template.format(self.get_headobj_name())
 
     def preview_texture_name(self):
-        return Config.tex_builder_filename_template.format(self.get_headobj_name())
+        return FBConfig.tex_builder_filename_template.format(self.get_headobj_name())
 
 
 class FBSceneSettings(PropertyGroup):
@@ -718,7 +720,7 @@ class FBSceneSettings(PropertyGroup):
     wireframe_opacity: FloatProperty(
         description="From 0.0 to 1.0",
         name="Wireframe opacity",
-        default=Config.default_user_preferences['wireframe_opacity']['value'],
+        default=FBConfig.default_user_preferences['wireframe_opacity']['value'],
         min=0.0, max=1.0,
         update=update_wireframe_func,
         get=universal_getter('wireframe_opacity', 'float'),
@@ -726,7 +728,7 @@ class FBSceneSettings(PropertyGroup):
     wireframe_color: FloatVectorProperty(
         description="Color of mesh wireframe in pin-mode",
         name="Wireframe Color", subtype='COLOR',
-        default=Config.default_user_preferences['wireframe_color']['value'],
+        default=FBConfig.default_user_preferences['wireframe_color']['value'],
         min=0.0, max=1.0,
         update=update_wireframe_image,
         get=universal_getter('wireframe_color', 'color'),
@@ -734,7 +736,7 @@ class FBSceneSettings(PropertyGroup):
     wireframe_special_color: FloatVectorProperty(
         description="Color of special parts in pin-mode",
         name="Wireframe Special Color", subtype='COLOR',
-        default=Config.default_user_preferences['wireframe_special_color']['value'],
+        default=FBConfig.default_user_preferences['wireframe_special_color']['value'],
         min=0.0, max=1.0,
         update=update_wireframe_image,
         get=universal_getter('wireframe_special_color', 'color'),
@@ -742,7 +744,7 @@ class FBSceneSettings(PropertyGroup):
     wireframe_midline_color: FloatVectorProperty(
         description="Color of midline in pin-mode",
         name="Wireframe Midline Color", subtype='COLOR',
-        default=Config.default_user_preferences['wireframe_midline_color']['value'],
+        default=FBConfig.default_user_preferences['wireframe_midline_color']['value'],
         min=0.0, max=1.0,
         update=update_wireframe_image,
         get=universal_getter('wireframe_midline_color', 'color'),
@@ -760,7 +762,7 @@ class FBSceneSettings(PropertyGroup):
     pin_size: FloatProperty(
         description="Set pin size in pixels",
         name="Size",
-        default=Config.default_user_preferences['pin_size']['value'],
+        default=FBConfig.default_user_preferences['pin_size']['value'],
         min=1.0, max=100.0,
         precision=1,
         update=update_pin_size,
@@ -769,7 +771,7 @@ class FBSceneSettings(PropertyGroup):
     pin_sensitivity: FloatProperty(
         description="Set active area in pixels",
         name="Active area",
-        default=Config.default_user_preferences['pin_sensitivity']['value'],
+        default=FBConfig.default_user_preferences['pin_sensitivity']['value'],
         min=1.0, max=100.0,
         precision=1,
         update=update_pin_sensitivity,
@@ -1004,4 +1006,4 @@ class FBSceneSettings(PropertyGroup):
         self.preferences().show_user_preferences = False
 
     def mock_update_for_testing(self, value=True, ver=None):
-        Config.mock_update_for_testing(value, ver)
+        FBConfig.mock_update_for_testing(value, ver)

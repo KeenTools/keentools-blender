@@ -22,7 +22,7 @@ import numpy as np
 import logging
 import os
 
-from ..config import Config
+from ..facebuilder.config import FBConfig
 from ..utils.rig_slider import create_slider, create_rectangle, create_label
 from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
                             xz_to_xy_rotation_matrix_3x3)
@@ -51,7 +51,7 @@ def _get_all_blendshape_names(obj):
 
 
 def _get_safe_blendshapes_action(
-        obj, action_name=Config.default_blendshapes_action_name):
+        obj, action_name=FBConfig.default_blendshapes_action_name):
     if _has_no_blendshapes(obj):
         return None
     animation_data = obj.data.shape_keys.animation_data
@@ -306,7 +306,7 @@ def create_facs_test_animation_on_blendshapes(obj, start_time=1, dtime=4):
         return -1
     counter = 0
     blendshapes_action = _get_safe_blendshapes_action(
-        obj, Config.example_animation_action_name)
+        obj, FBConfig.example_animation_action_name)
     time = start_time
     for kb in obj.data.shape_keys.key_blocks[1:]:
         blendshape_fcurve = _get_safe_action_fcurve(
@@ -342,7 +342,7 @@ def create_blendshape_controls(obj):
         slider_dict = create_slider(name, name, width=1.0, height=0.2)
         driver = _create_driver(obj.data.shape_keys.key_blocks[name],
                                 slider_dict['slider'],
-                                Config.default_driver_name, 'location.x')
+                                FBConfig.default_driver_name, 'location.x')
         controls[name] = {'control': slider_dict, 'driver': driver}
     return controls
 

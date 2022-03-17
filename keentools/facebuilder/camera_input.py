@@ -1,5 +1,5 @@
 import numpy as np
-from .blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 from .config import get_main_settings

@@ -25,16 +25,17 @@ from typing import Tuple
 
 import bpy
 
-from ..config import get_operator, get_main_settings, Config, ErrorType
-from ..blender_independent_packages.pykeentools_loader import (
+from ..config import get_operator, get_main_settings, FBConfig, ErrorType
+from ...config import Config
+from ...blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed,
     updates_downloaded, download_core_zip_async, download_addon_zip_async,
     install_downloaded_zips)
 
-from ..utils.html import parse_html, skip_new_lines_and_spaces, render_main
-from ..utils.other import force_ui_redraw
+from ...utils.html import parse_html, skip_new_lines_and_spaces, render_main
+from ...utils.other import force_ui_redraw
 
-from ..preferences.progress import FBUpdateProgressTimer
+from ...preferences.progress import FBUpdateProgressTimer
 
 
 def _mock_response(ver: Tuple):
@@ -109,12 +110,12 @@ def preferences_current_active_updater_operators_info():
     updater_state = settings.preferences().updater_state
     OperatorInfo = namedtuple('OperatorInfo', 'idname, text, icon')
     if updater_state == UpdateState.UPDATES_AVAILABLE:
-        return [OperatorInfo(Config.fb_download_the_update_idname, 'Download the update', 'IMPORT')]
+        return [OperatorInfo(FBConfig.fb_download_the_update_idname, 'Download the update', 'IMPORT')]
     if updater_state == UpdateState.DOWNLOADING_PROBLEM:
-        return [OperatorInfo(Config.fb_retry_download_the_update_idname, 'Try again', 'FILE_REFRESH'),
-                OperatorInfo(Config.fb_come_back_to_update_idname, 'Cancel', 'PANEL_CLOSE')]
+        return [OperatorInfo(FBConfig.fb_retry_download_the_update_idname, 'Try again', 'FILE_REFRESH'),
+                OperatorInfo(FBConfig.fb_come_back_to_update_idname, 'Cancel', 'PANEL_CLOSE')]
     elif updater_state == UpdateState.INSTALL:
-        return [OperatorInfo(Config.fb_install_updates_idname, 'Install and restart', 'FILE_REFRESH')]
+        return [OperatorInfo(FBConfig.fb_install_updates_idname, 'Install and restart', 'FILE_REFRESH')]
     else:
         return None
 
@@ -308,7 +309,7 @@ def _download_update():
 
 
 class FB_OT_DownloadTheUpdate(bpy.types.Operator):
-    bl_idname = Config.fb_download_the_update_idname
+    bl_idname = FBConfig.fb_download_the_update_idname
     bl_label = 'Download the update'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Download and install the latest version of FaceBuilder'
@@ -321,7 +322,7 @@ class FB_OT_DownloadTheUpdate(bpy.types.Operator):
 
 
 class FB_OT_RemindLater(bpy.types.Operator):
-    bl_idname = Config.fb_remind_later_idname
+    bl_idname = FBConfig.fb_remind_later_idname
     bl_label = 'Remind later'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Remind about this update tomorrow'
@@ -336,7 +337,7 @@ class FB_OT_RemindLater(bpy.types.Operator):
 
 
 class FB_OT_SkipVersion(bpy.types.Operator):
-    bl_idname = Config.fb_skip_version_idname
+    bl_idname = FBConfig.fb_skip_version_idname
     bl_label = 'Skip this version'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Skip this version'
@@ -393,7 +394,7 @@ class FBDownloadingProblem:
 
 
 class FB_OT_RetryDownloadUpdate(bpy.types.Operator):
-    bl_idname = Config.fb_retry_download_the_update_idname
+    bl_idname = FBConfig.fb_retry_download_the_update_idname
     bl_label = 'Retry download'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Try downloading again'
@@ -406,7 +407,7 @@ class FB_OT_RetryDownloadUpdate(bpy.types.Operator):
 
 
 class FB_OT_ComeBackToUpdate(bpy.types.Operator):
-    bl_idname = Config.fb_come_back_to_update_idname
+    bl_idname = FBConfig.fb_come_back_to_update_idname
     bl_label = 'Cancel'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Cancel updating'
@@ -457,12 +458,12 @@ def _start_new_blender(cmd_line):
 
 
 def _clear_updater_info():
-    from ..preferences import reset_updater_preferences_to_default
+    from ...preferences import reset_updater_preferences_to_default
     reset_updater_preferences_to_default()
 
 
 class FB_OT_InstallUpdates(bpy.types.Operator):
-    bl_idname = Config.fb_install_updates_idname
+    bl_idname = FBConfig.fb_install_updates_idname
     bl_label = ''
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Press to install the update and relaunch Blender'
@@ -488,7 +489,7 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
         if not bpy.data.is_dirty or settings.not_save_changes:
             _clear_updater_info()
             if not updates_downloaded():
-                warn = get_operator(Config.fb_warning_idname)
+                warn = get_operator(FBConfig.fb_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
                 _clear_updater_info()
                 CurrentStateExecutor.compute_current_panel_updater_state()
@@ -507,7 +508,7 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
 
 
 class FB_OT_RemindInstallLater(bpy.types.Operator):
-    bl_idname = Config.fb_remind_install_later_idname
+    bl_idname = FBConfig.fb_remind_install_later_idname
     bl_label = 'Remind install tommorow'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Remind install tommorow'
@@ -520,7 +521,7 @@ class FB_OT_RemindInstallLater(bpy.types.Operator):
 
 
 class FB_OT_SkipInstallation(bpy.types.Operator):
-    bl_idname = Config.fb_skip_installation_idname
+    bl_idname = FBConfig.fb_skip_installation_idname
     bl_label = 'Skip installation'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Skip installation'

@@ -22,18 +22,18 @@ import numpy as np
 
 import bpy
 
-from .utils import manipulate, coords, cameras
-from .config import Config, get_main_settings, get_operator, ErrorType
+from ..utils import manipulate, coords, cameras
+from .config import FBConfig, get_main_settings, get_operator, ErrorType
 from .fbloader import FBLoader
-from .utils.focal_length import update_camera_focal
-from .utils.other import (FBStopShaderTimer, force_ui_redraw,
+from ..utils.focal_length import update_camera_focal
+from ..utils.other import (FBStopShaderTimer, force_ui_redraw,
                           hide_viewport_ui_elements_and_store_on_object)
-from .utils.html import split_long_string
+from ..utils.html import split_long_string
 
 
 class FB_OT_PinMode(bpy.types.Operator):
     """ On Screen Face Builder Draw Operator """
-    bl_idname = Config.fb_pinmode_idname
+    bl_idname = FBConfig.fb_pinmode_idname
     bl_label = "FaceBuilder Pinmode"
     bl_description = "Operator for in-Viewport drawing"
     bl_options = {'REGISTER', 'INTERNAL'}
@@ -71,7 +71,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         if heads_deleted > 0 or cams_deleted > 0:
             logger.warning("HEADS AND CAMERAS FIXED")
         if heads_deleted == 0:
-            warn = get_operator(Config.fb_warning_idname)
+            warn = get_operator(FBConfig.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
 
     def _init_wireframer_colors(self, opacity):
@@ -163,7 +163,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         if coords.is_safe_region(context, mouse_x, mouse_y):
             settings = get_main_settings()
             # Movepin operator Call
-            op = get_operator(Config.fb_movepin_idname)
+            op = get_operator(FBConfig.fb_movepin_idname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
                headnum=settings.current_headnum,
                camnum=settings.current_camnum)
@@ -249,7 +249,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.error('DESERIALIZE load_model_throw_exception: \n'
                          '{}'.format(str(err)))
             error_message = '\n'.join(split_long_string(str(err), limit=64))
-            warn = get_operator(Config.fb_warning_idname)
+            warn = get_operator(FBConfig.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
                  msg_content=error_message)
             return {'CANCELLED'}
@@ -262,7 +262,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             FBLoader.out_pinmode_without_save(self.headnum)
             cameras.exit_localview(context)
 
-            warn = get_operator(Config.fb_warning_idname)
+            warn = get_operator(FBConfig.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
             return {'CANCELLED'}
 
@@ -354,7 +354,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             settings.force_out_pinmode = False
             if settings.license_error:
                 # Show License Warning
-                warn = get_operator(Config.fb_warning_idname)
+                warn = get_operator(FBConfig.fb_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
                 settings.license_error = False
                 settings.hide_user_preferences()

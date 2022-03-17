@@ -20,7 +20,7 @@ import logging
 
 import bpy
 
-from .utils import manipulate, coords
+from ..utils import manipulate, coords
 from .fbloader import FBLoader
 from .config import Config, get_main_settings
 

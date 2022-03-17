@@ -26,23 +26,24 @@ from bpy.props import (
 )
 from bpy.types import Operator
 
-from .config import get_main_settings, get_operator, Config
+from ..config import Config
+from .config import get_main_settings, get_operator, FBConfig
 from .fbloader import FBLoader
-from .utils import cameras, manipulate, materials, coords, images
-from .utils.attrs import get_obj_collection, safe_delete_collection
-from .utils.exif_reader import (update_exif_sizes_message,
-                                copy_exif_parameters_from_camera_to_head)
-from .utils.manipulate import check_settings
-from .utils.operator_action import (create_blendshapes,
-                                    delete_blendshapes,
-                                    load_animation_from_csv,
-                                    create_example_animation,
-                                    reset_blendshape_values,
-                                    clear_animation,
-                                    export_head_to_fbx,
-                                    update_blendshapes,
-                                    unhide_head,
-                                    reconstruct_by_mesh)
+from ..utils import cameras, manipulate, materials, coords, images
+from ..utils.attrs import get_obj_collection, safe_delete_collection
+from ..utils.exif_reader import (update_exif_sizes_message,
+                                 copy_exif_parameters_from_camera_to_head)
+from ..utils.manipulate import check_settings
+from ..utils.operator_action import (create_blendshapes,
+                                     delete_blendshapes,
+                                     load_animation_from_csv,
+                                     create_example_animation,
+                                     reset_blendshape_values,
+                                     clear_animation,
+                                     export_head_to_fbx,
+                                     update_blendshapes,
+                                     unhide_head,
+                                     reconstruct_by_mesh)
 
 
 class ButtonOperator:
@@ -57,7 +58,7 @@ class ActiveButtonOperator(ButtonOperator):
 
 
 class FB_OT_SelectHead(Operator):
-    bl_idname = Config.fb_select_head_idname
+    bl_idname = FBConfig.fb_select_head_idname
     bl_label = "Select head"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Select head in the scene"
@@ -78,7 +79,7 @@ class FB_OT_SelectHead(Operator):
 
 
 class FB_OT_DeleteHead(Operator):
-    bl_idname = Config.fb_delete_head_idname
+    bl_idname = FBConfig.fb_delete_head_idname
     bl_label = "Delete head"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Delete the head and its cameras from the scene"
@@ -115,7 +116,7 @@ class FB_OT_DeleteHead(Operator):
 
 
 class FB_OT_SelectCamera(Operator):
-    bl_idname = Config.fb_select_camera_idname
+    bl_idname = FBConfig.fb_select_camera_idname
     bl_label = "Pin Mode Select Camera"
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Switch to Pin mode for this view"
@@ -137,7 +138,7 @@ class FB_OT_SelectCamera(Operator):
         copy_exif_parameters_from_camera_to_head(camera, head)
         update_exif_sizes_message(self.headnum, camera.cam_image)
 
-        pinmode_op = get_operator(Config.fb_pinmode_idname)
+        pinmode_op = get_operator(FBConfig.fb_pinmode_idname)
         if not bpy.app.background:
             pinmode_op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
 
@@ -145,7 +146,7 @@ class FB_OT_SelectCamera(Operator):
 
 
 class FB_OT_CenterGeo(Operator):
-    bl_idname = Config.fb_center_geo_idname
+    bl_idname = FBConfig.fb_center_geo_idname
     bl_label = 'Reset Camera'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Place the camera so the model will be centred ' \
@@ -177,7 +178,7 @@ class FB_OT_CenterGeo(Operator):
 
 
 class FB_OT_Unmorph(Operator):
-    bl_idname = Config.fb_unmorph_idname
+    bl_idname = FBConfig.fb_unmorph_idname
     bl_label = 'Reset'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Reset shape deformations to the default state. ' \
@@ -218,7 +219,7 @@ class FB_OT_Unmorph(Operator):
 
 
 class FB_OT_RemovePins(Operator):
-    bl_idname = Config.fb_remove_pins_idname
+    bl_idname = FBConfig.fb_remove_pins_idname
     bl_label = "Remove pins"
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Remove all pins on this view"
@@ -256,7 +257,7 @@ class FB_OT_RemovePins(Operator):
 
 
 class FB_OT_WireframeColor(Operator):
-    bl_idname = Config.fb_wireframe_color_idname
+    bl_idname = FBConfig.fb_wireframe_color_idname
     bl_label = "Wireframe color"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}  #
     bl_description = "Choose the wireframe coloring scheme"
@@ -269,8 +270,8 @@ class FB_OT_WireframeColor(Operator):
     def execute(self, context):
         def _setup_colors_from_scheme(name):
             settings = get_main_settings()
-            settings.wireframe_color = Config.color_schemes[name][0]
-            settings.wireframe_special_color = Config.color_schemes[name][1]
+            settings.wireframe_color = FBConfig.color_schemes[name][0]
+            settings.wireframe_special_color = FBConfig.color_schemes[name][1]
 
         if self.action == "wireframe_red":
             _setup_colors_from_scheme('red')
@@ -293,7 +294,7 @@ class FB_OT_WireframeColor(Operator):
 
 
 class FB_OT_FilterCameras(Operator):
-    bl_idname = Config.fb_filter_cameras_idname
+    bl_idname = FBConfig.fb_filter_cameras_idname
     bl_label = "Camera Filter"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Select cameras to use for texture baking"
@@ -319,7 +320,7 @@ class FB_OT_FilterCameras(Operator):
 
 
 class FB_OT_DeleteCamera(Operator):
-    bl_idname = Config.fb_delete_camera_idname
+    bl_idname = FBConfig.fb_delete_camera_idname
     bl_label = "Delete View"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Delete this view and its camera from the scene"
@@ -369,7 +370,7 @@ class FB_OT_DeleteCamera(Operator):
 
 
 class FB_OT_ProperViewMenuExec(Operator):
-    bl_idname = Config.fb_proper_view_menu_exec_idname
+    bl_idname = FBConfig.fb_proper_view_menu_exec_idname
     bl_label = "View operations"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Delete the view or modify the image file path"
@@ -385,12 +386,12 @@ class FB_OT_ProperViewMenuExec(Operator):
         settings.tmp_headnum = self.headnum
         settings.tmp_camnum = self.camnum
         bpy.ops.wm.call_menu(
-            'INVOKE_DEFAULT', name=Config.fb_proper_view_menu_idname)
+            'INVOKE_DEFAULT', name=FBConfig.fb_proper_view_menu_idname)
         return {'FINISHED'}
 
 
 class FB_OT_AddonSettings(Operator):
-    bl_idname = Config.fb_addon_settings_idname
+    bl_idname = FBConfig.fb_addon_settings_idname
     bl_label = "Addon Settings"
     bl_options = {'REGISTER'}
     bl_description = "Open Addon Settings in Preferences window"
@@ -404,7 +405,7 @@ class FB_OT_AddonSettings(Operator):
 
 
 class FB_OT_AddonSetupDefaults(Operator):
-    bl_idname = Config.fb_addon_setup_defaults_idname
+    bl_idname = FBConfig.fb_addon_setup_defaults_idname
     bl_label = "Setup defaults"
     bl_options = {'REGISTER'}
     bl_description = "Open Addon Settings in Preferences window"
@@ -420,7 +421,7 @@ class FB_OT_AddonSetupDefaults(Operator):
 
 
 class FB_OT_BakeTexture(Operator):
-    bl_idname = Config.fb_bake_tex_idname
+    bl_idname = FBConfig.fb_bake_tex_idname
     bl_label = "Bake Texture"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Bake the texture using all selected cameras. " \
@@ -456,7 +457,7 @@ class FB_OT_BakeTexture(Operator):
 
 
 class FB_OT_DeleteTexture(Operator):
-    bl_idname = Config.fb_delete_texture_idname
+    bl_idname = FBConfig.fb_delete_texture_idname
     bl_label = "Delete texture"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Delete the created texture from the scene"
@@ -477,7 +478,7 @@ class FB_OT_DeleteTexture(Operator):
 
 
 class FB_OT_RotateImageCW(Operator):
-    bl_idname = Config.fb_rotate_image_cw_idname
+    bl_idname = FBConfig.fb_rotate_image_cw_idname
     bl_label = "Rotate Image CW"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Rotate image clock-wise"
@@ -499,7 +500,7 @@ class FB_OT_RotateImageCW(Operator):
 
 
 class FB_OT_RotateImageCCW(Operator):
-    bl_idname = Config.fb_rotate_image_ccw_idname
+    bl_idname = FBConfig.fb_rotate_image_ccw_idname
     bl_label = "Rotate Image CCW"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Rotate image counter clock-wise"
@@ -521,7 +522,7 @@ class FB_OT_RotateImageCCW(Operator):
 
 
 class FB_OT_ResetImageRotation(Operator):
-    bl_idname = Config.fb_reset_image_rotation_idname
+    bl_idname = FBConfig.fb_reset_image_rotation_idname
     bl_label = "Reset Image Rotation"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Reset Image Rotation"
@@ -543,7 +544,7 @@ class FB_OT_ResetImageRotation(Operator):
 
 
 class FB_OT_ResetExpression(Operator):
-    bl_idname = Config.fb_reset_expression_idname
+    bl_idname = FBConfig.fb_reset_expression_idname
     bl_label = "Reset expression"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Reset expression"
@@ -579,7 +580,7 @@ class FB_OT_ResetExpression(Operator):
 
 
 class FB_OT_ShowTexture(Operator):
-    bl_idname = Config.fb_show_tex_idname
+    bl_idname = FBConfig.fb_show_tex_idname
     bl_label = "Show Texture"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Create a material from the generated texture " \
@@ -612,7 +613,7 @@ class FB_OT_ShowTexture(Operator):
 
 
 class FB_OT_ShowSolid(Operator):
-    bl_idname = Config.fb_show_solid_idname
+    bl_idname = FBConfig.fb_show_solid_idname
     bl_label = "Show Solid"
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Hide texture and go back to Solid mode"
@@ -631,7 +632,7 @@ class FB_OT_ShowSolid(Operator):
 
 
 class FB_OT_ExitPinmode(Operator):
-    bl_idname = Config.fb_exit_pinmode_idname
+    bl_idname = FBConfig.fb_exit_pinmode_idname
     bl_label = "Exit Pin mode"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Exit Pin mode"
@@ -649,7 +650,7 @@ class FB_OT_ExitPinmode(Operator):
 
 
 class FB_OT_OpenURL(bpy.types.Operator):
-    bl_idname = Config.fb_open_url_idname
+    bl_idname = FBConfig.fb_open_url_idname
     bl_label = 'Open URL'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Open URL in web browser'
@@ -662,14 +663,14 @@ class FB_OT_OpenURL(bpy.types.Operator):
 
 
 class FB_OT_UninstallCore(bpy.types.Operator):
-    bl_idname = Config.fb_uninstall_core_idname
+    bl_idname = FBConfig.fb_uninstall_core_idname
     bl_label = 'Uninstall Core'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Uninstall Core Library'
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
-        from .blender_independent_packages.pykeentools_loader import uninstall_core as pkt_uninstall
+        from ..blender_independent_packages.pykeentools_loader import uninstall_core as pkt_uninstall
         logger.debug("START CORE UNINSTALL")
         pkt_uninstall()
         logger.debug("FINISH CORE UNINSTALL")
@@ -677,7 +678,7 @@ class FB_OT_UninstallCore(bpy.types.Operator):
 
 
 class FB_OT_CreateBlendshapes(ButtonOperator, Operator):
-    bl_idname = Config.fb_create_blendshapes_idname
+    bl_idname = FBConfig.fb_create_blendshapes_idname
     bl_label = 'Create'
     bl_description = 'Create FACS blendshapes'
 
@@ -686,7 +687,7 @@ class FB_OT_CreateBlendshapes(ButtonOperator, Operator):
 
 
 class FB_OT_DeleteBlendshapes(ActiveButtonOperator, Operator):
-    bl_idname = Config.fb_delete_blendshapes_idname
+    bl_idname = FBConfig.fb_delete_blendshapes_idname
     bl_label = 'Delete'
     bl_description = 'Delete all blendshapes (Shape Keys), unlink animation'
 
@@ -697,7 +698,7 @@ class FB_OT_DeleteBlendshapes(ActiveButtonOperator, Operator):
 
 
 class FB_OT_LoadAnimationFromCSV(ButtonOperator, Operator):
-    bl_idname = Config.fb_load_animation_from_csv_idname
+    bl_idname = FBConfig.fb_load_animation_from_csv_idname
     bl_label = 'Load CSV'
     bl_description = 'Load animation keyframes from a CSV file ' \
                      '(LiveLinkFace format)'
@@ -707,7 +708,7 @@ class FB_OT_LoadAnimationFromCSV(ButtonOperator, Operator):
 
 
 class FB_OT_CreateExampleAnimation(ActiveButtonOperator, Operator):
-    bl_idname = Config.fb_create_example_animation_idname
+    bl_idname = FBConfig.fb_create_example_animation_idname
     bl_label = 'Example keyframes'
     bl_description = 'Create example animation keyframes for each blendshape'
 
@@ -718,7 +719,7 @@ class FB_OT_CreateExampleAnimation(ActiveButtonOperator, Operator):
 
 
 class FB_OT_ResetBlendshapeValues(ButtonOperator, Operator):
-    bl_idname = Config.fb_reset_blendshape_values_idname
+    bl_idname = FBConfig.fb_reset_blendshape_values_idname
     bl_label = 'Reset values'
     bl_description = 'Reset the values of blendshapes (Shape Keys), ' \
                      'so the model will be in the neutral state. ' \
@@ -731,7 +732,7 @@ class FB_OT_ResetBlendshapeValues(ButtonOperator, Operator):
 
 
 class FB_OT_ClearAnimation(ActiveButtonOperator, Operator):
-    bl_idname = Config.fb_clear_animation_idname
+    bl_idname = FBConfig.fb_clear_animation_idname
     bl_label = 'Clear animation'
     bl_description = 'Unlink animation from blendshapes (Shape Keys). ' \
                      'Effectively, removes the model animation. ' \
@@ -746,7 +747,7 @@ class FB_OT_ClearAnimation(ActiveButtonOperator, Operator):
 
 
 class FB_OT_ExportHeadToFBX(ButtonOperator, Operator):
-    bl_idname = Config.fb_export_head_to_fbx_idname
+    bl_idname = FBConfig.fb_export_head_to_fbx_idname
     bl_label = 'Export as FBX'
     bl_description = 'Export geometry with all blendshapes ' \
                      'and animation to FBX suitable ' \
@@ -757,7 +758,7 @@ class FB_OT_ExportHeadToFBX(ButtonOperator, Operator):
 
 
 class FB_OT_UpdateBlendshapes(ButtonOperator, Operator):
-    bl_idname = Config.fb_update_blendshapes_idname
+    bl_idname = FBConfig.fb_update_blendshapes_idname
     bl_label = 'Update'
     bl_description = 'Update blendshapes'
 
@@ -766,7 +767,7 @@ class FB_OT_UpdateBlendshapes(ButtonOperator, Operator):
 
 
 class FB_OT_UnhideHead(ButtonOperator, Operator):
-    bl_idname = Config.fb_unhide_head_idname
+    bl_idname = FBConfig.fb_unhide_head_idname
     bl_label = 'Show Head'
     bl_description = 'Show Head'
 
@@ -775,7 +776,7 @@ class FB_OT_UnhideHead(ButtonOperator, Operator):
 
 
 class FB_OT_ReconstructHead(ButtonOperator, Operator):
-    bl_idname = Config.fb_reconstruct_head_idname
+    bl_idname = FBConfig.fb_reconstruct_head_idname
     bl_label = 'Reconstruct!'
     bl_description = 'Reconstruct head by KeenTools attributes on mesh'
 
@@ -784,7 +785,7 @@ class FB_OT_ReconstructHead(ButtonOperator, Operator):
 
 
 class FB_OT_DefaultPinSettings(ButtonOperator, Operator):
-    bl_idname = Config.fb_default_pin_settings_idname
+    bl_idname = FBConfig.fb_default_pin_settings_idname
     bl_label = 'Revert to defaults'
     bl_description = 'Set pin size and active area as in the saved defaults'
 
@@ -797,7 +798,7 @@ class FB_OT_DefaultPinSettings(ButtonOperator, Operator):
 
 
 class FB_OT_DefaultWireframeSettings(ButtonOperator, Operator):
-    bl_idname = Config.fb_default_wireframe_settings_idname
+    bl_idname = FBConfig.fb_default_wireframe_settings_idname
     bl_label = 'Revert to defaults'
     bl_description = 'Set the wireframe colours and opacity as in the saved defaults'
 
@@ -812,31 +813,31 @@ class FB_OT_DefaultWireframeSettings(ButtonOperator, Operator):
 
 
 class FB_OT_SelectCurrentHead(ButtonOperator, Operator):
-    bl_idname = Config.fb_select_current_head_idname
+    bl_idname = FBConfig.fb_select_current_head_idname
     bl_label = 'Current head'
     bl_description = 'Select current head in the scene'
 
     headnum: IntProperty(default=0)
 
     def execute(self, context):
-        op = get_operator(Config.fb_select_head_idname)
+        op = get_operator(FBConfig.fb_select_head_idname)
         op('EXEC_DEFAULT', headnum=self.headnum)
         return {'FINISHED'}
 
 
 class FB_OT_SelectCurrentCamera(ButtonOperator, Operator):
-    bl_idname = Config.fb_select_current_camera_idname
+    bl_idname = FBConfig.fb_select_current_camera_idname
     bl_label = 'Current view'
     bl_description = 'Current view. Press to exit from Pin mode'
 
     def execute(self, context):
-        op = get_operator(Config.fb_exit_pinmode_idname)
+        op = get_operator(FBConfig.fb_exit_pinmode_idname)
         op('EXEC_DEFAULT')
         return {'FINISHED'}
 
 
 class FB_OT_ResetToneGain(ButtonOperator, Operator):
-    bl_idname = Config.fb_reset_tone_exposure_idname
+    bl_idname = FBConfig.fb_reset_tone_exposure_idname
     bl_label = 'Reset exposure'
     bl_description = 'Reset exposure in tone mapping'
 
@@ -846,12 +847,12 @@ class FB_OT_ResetToneGain(ButtonOperator, Operator):
     def execute(self, context):
         settings = get_main_settings()
         cam = settings.get_camera(self.headnum, self.camnum)
-        cam.tone_exposure = Config.default_tone_exposure
+        cam.tone_exposure = FBConfig.default_tone_exposure
         return {'FINISHED'}
 
 
 class FB_OT_ResetToneGamma(ButtonOperator, Operator):
-    bl_idname = Config.fb_reset_tone_gamma_idname
+    bl_idname = FBConfig.fb_reset_tone_gamma_idname
     bl_label = 'Reset gamma'
     bl_description = 'Reset gamma in tone mapping'
 
@@ -861,7 +862,7 @@ class FB_OT_ResetToneGamma(ButtonOperator, Operator):
     def execute(self, context):
         settings = get_main_settings()
         cam = settings.get_camera(self.headnum, self.camnum)
-        cam.tone_gamma = Config.default_tone_gamma
+        cam.tone_gamma = FBConfig.default_tone_gamma
         return {'FINISHED'}
 
 

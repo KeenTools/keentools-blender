@@ -20,11 +20,10 @@ import logging
 import bpy
 import numpy as np
 
-from .. config import Config, get_main_settings
-from .. fbloader import FBLoader
-from .. utils.coords import projection_matrix
-from .. utils.images import load_rgba, find_bpy_image_by_name
-from .. blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..config import Config, get_main_settings
+from ..facebuilder.fbloader import FBLoader
+from ..utils.images import load_rgba, find_bpy_image_by_name
+from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 def switch_to_mode(mode='MATERIAL'):

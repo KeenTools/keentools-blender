@@ -17,14 +17,14 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
-from ..config import Config, get_main_settings
-
+from ..config import FBConfig
+from ...config import Config
 
 _help_window_width = 500
 
 
 class HELP_OT_CameraHelp(bpy.types.Operator):
-    bl_idname = Config.fb_help_camera_idname
+    bl_idname = FBConfig.fb_help_camera_idname
     bl_label = "Camera settings"
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Show help information about Camera settings panel"
@@ -88,7 +88,7 @@ class HELP_OT_CameraHelp(bpy.types.Operator):
 
 
 class HELP_OT_ViewsHelp(bpy.types.Operator):
-    bl_idname = Config.fb_help_views_idname
+    bl_idname = FBConfig.fb_help_views_idname
     bl_label = "Views"
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Show help information about Views panel"
@@ -125,7 +125,7 @@ class HELP_OT_ViewsHelp(bpy.types.Operator):
 
 
 class HELP_OT_ModelHelp(bpy.types.Operator):
-    bl_idname = Config.fb_help_model_idname
+    bl_idname = FBConfig.fb_help_model_idname
     bl_label = "Model"
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Show help information about Model panel"
@@ -160,7 +160,7 @@ class HELP_OT_ModelHelp(bpy.types.Operator):
 
 
 class HELP_OT_AppearanceHelp(bpy.types.Operator):
-    bl_idname = Config.fb_help_appearance_idname
+    bl_idname = FBConfig.fb_help_appearance_idname
     bl_label = "Appearance"
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Show help information about Appearance panel"
@@ -187,7 +187,7 @@ class HELP_OT_AppearanceHelp(bpy.types.Operator):
 
 
 class HELP_OT_TextureHelp(bpy.types.Operator):
-    bl_idname = Config.fb_help_texture_idname
+    bl_idname = FBConfig.fb_help_texture_idname
     bl_label = "Texture"
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Show help information about Texture panel"
@@ -248,7 +248,7 @@ class HELP_OT_TextureHelp(bpy.types.Operator):
 
 
 class HELP_OT_BlendshapesHelp(bpy.types.Operator):
-    bl_idname = Config.fb_help_blendshapes_idname
+    bl_idname = FBConfig.fb_help_blendshapes_idname
     bl_label = 'Blendshapes'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Show help information about Blendshapes panel'

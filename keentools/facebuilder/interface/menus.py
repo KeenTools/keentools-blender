@@ -17,12 +17,12 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from bpy.types import Menu
-from ..config import Config, get_main_settings
+from ..config import FBConfig, get_main_settings
 
 
 class FB_MT_ProperViewMenu(Menu):
     bl_label = "View operations"
-    bl_idname = Config.fb_proper_view_menu_idname
+    bl_idname = FBConfig.fb_proper_view_menu_idname
     bl_description = "View operations"
 
     def draw(self, context):
@@ -30,12 +30,12 @@ class FB_MT_ProperViewMenu(Menu):
         layout = self.layout
 
         op = layout.operator(
-            Config.fb_delete_camera_idname,
+            FBConfig.fb_delete_camera_idname,
             text='Delete this view', icon='CANCEL')
         op.headnum = settings.tmp_headnum
         op.camnum = settings.tmp_camnum
 
-        layout.operator(Config.fb_single_filebrowser_exec_idname,
+        layout.operator(FBConfig.fb_single_filebrowser_exec_idname,
                         text="Open file", icon='FILEBROWSER')
 
         layout.separator()
@@ -43,17 +43,17 @@ class FB_MT_ProperViewMenu(Menu):
         if settings.pinmode and \
                 settings.tmp_headnum == settings.current_headnum and \
                 settings.tmp_camnum == settings.current_camnum:
-            op = layout.operator(Config.fb_rotate_image_cw_idname,
+            op = layout.operator(FBConfig.fb_rotate_image_cw_idname,
                                  text='Rotate CW', icon='LOOP_FORWARDS')
             op.headnum = settings.tmp_headnum
             op.camnum = settings.tmp_camnum
 
-            op = layout.operator(Config.fb_rotate_image_ccw_idname,
+            op = layout.operator(FBConfig.fb_rotate_image_ccw_idname,
                                  text='Rotate CCW', icon='LOOP_BACK')
             op.headnum = settings.tmp_headnum
             op.camnum = settings.tmp_camnum
 
-            op = layout.operator(Config.fb_reset_image_rotation_idname,
+            op = layout.operator(FBConfig.fb_reset_image_rotation_idname,
                                  text='Reset Orientation',
                                  icon='OUTLINER_OB_IMAGE')
             op.headnum = settings.tmp_headnum

@@ -27,18 +27,18 @@ from bpy.props import (
     IntProperty,
 )
 
-from .utils import manipulate
-from .utils.coords import xy_to_xz_rotation_matrix_4x4
+from ..utils import manipulate
+from ..utils.coords import xy_to_xz_rotation_matrix_4x4
 from .config import Config, get_main_settings
-from .utils.exif_reader import auto_setup_camera_from_exif
-from .utils.blendshapes import (create_blendshape_controls,
-                                make_control_panel,
-                                convert_controls_animation_to_blendshapes,
-                                remove_blendshape_drivers,
-                                delete_with_children,
-                                select_control_panel_sliders,
-                                has_blendshapes_action,
-                                convert_blendshapes_animation_to_controls)
+from ..utils.exif_reader import auto_setup_camera_from_exif
+from ..utils.blendshapes import (create_blendshape_controls,
+                                 make_control_panel,
+                                 convert_controls_animation_to_blendshapes,
+                                 remove_blendshape_drivers,
+                                 delete_with_children,
+                                 select_control_panel_sliders,
+                                 has_blendshapes_action,
+                                 convert_blendshapes_animation_to_controls)
 
 
 class FB_OT_HistoryActor(bpy.types.Operator):

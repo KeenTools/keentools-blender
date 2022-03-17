@@ -23,7 +23,8 @@ from ..blender_independent_packages.pykeentools_loader import (
     install_from_download_async as pkt_install_from_download_async,
     install_core_from_file as pkt_install_core_from_file,
     MINIMUM_VERSION_REQUIRED as pkt_MINIMUM_VERSION_REQUIRED)
-from ..utils.other import FBTimer, force_ui_redraw
+from ..utils.timer import FBTimer
+from ..utils.ui_redraw import force_ui_redraw
 
 
 class FBUpdateProgressTimer(FBTimer):

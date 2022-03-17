@@ -21,7 +21,8 @@ from collections import Counter
 
 import bpy
 
-from ..fbloader import FBLoader
+from ..facebuilder.fbloader import FBLoader
+# TODO: Check Config variables
 from ..config import Config, get_main_settings, get_operator, ErrorType
 from . import cameras, attrs, coords
 from .exif_reader import (read_exif_to_camera, auto_setup_camera_from_exif)

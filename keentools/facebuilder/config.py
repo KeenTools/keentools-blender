@@ -17,13 +17,16 @@
 # ##### END GPL LICENSE BLOCK #####
 import math
 import bpy
+from ..config import Config
+
 
 _company = 'keentools'
 _PT = 'FACEBUILDER_PT_'
 _MT = 'FACEBUILDER_MT_'
+prefix = _company + '_fb'
 
 
-class Config:
+class FBConfig:
     default_fb_object_name = 'FBHead'
     default_fb_mesh_name = 'FBHead_mesh'
     default_fb_collection_name = 'FaceBuilderCol'
@@ -37,7 +40,9 @@ class Config:
     addon_global_var_name = prefix + '_settings'
     addon_full_name = 'Keentools FaceBuilder for Blender'
 
-    fb_tab_category = addon_human_readable_name
+    operators = _company + '_facebuilder'
+
+    fb_tab_category = 'FaceBuilder'
     keentools_website_url = 'https://keentools.io'
     core_download_website_url = keentools_website_url + '/download/core'
 
@@ -261,7 +266,7 @@ class Config:
         'latest_show_datetime_installation_reminder': {'value': '', 'type': 'string'}
     }
     mock_update_for_testing_flag = False
-    mock_update_version = (int(addon_version.partition('.')[0]), 6, 3)
+    mock_update_version = (int(Config.addon_version.partition('.')[0]), 6, 3)
 
     @classmethod
     def mock_update_for_testing(cls, value=True, ver=None):
@@ -271,7 +276,7 @@ class Config:
 
 
 def get_main_settings():
-    return getattr(bpy.context.scene, Config.addon_global_var_name)
+    return getattr(bpy.context.scene, FBConfig.addon_global_var_name)
 
 
 def get_operator(operator_id_name):

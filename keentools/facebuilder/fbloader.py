@@ -21,15 +21,15 @@ import logging
 import bpy
 import numpy as np
 
-from .config import Config, get_main_settings
-from .utils.coords import xy_to_xz_rotation_matrix_3x3
-from .utils.focal_length import (configure_focal_mode_and_fixes,
-                                 update_camera_focal)
-from .utils import attrs, coords
-from .utils.exif_reader import reload_all_camera_exif
-from .utils.other import FBStopShaderTimer, unhide_viewport_ui_element_from_object
+from .config import FBConfig, get_main_settings
+from ..utils.coords import xy_to_xz_rotation_matrix_3x3
+from ..utils.focal_length import (configure_focal_mode_and_fixes,
+                                  update_camera_focal)
+from ..utils import attrs, coords
+from ..utils.exif_reader import reload_all_camera_exif
+from ..utils.other import FBStopShaderTimer, unhide_viewport_ui_element_from_object
 from .viewport import FBViewport
-from .blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 class FBLoader:
@@ -183,7 +183,7 @@ class FBLoader:
             kid = camera.get_keyframe()
             proj_mat = fb.projection_mat(kid)
             focal = coords.focal_by_projection_matrix_mm(
-                proj_mat, Config.default_sensor_width)
+                proj_mat, FBConfig.default_sensor_width)
             camera.focal = focal * camera.compensate_view_scale()
 
     @classmethod
@@ -432,7 +432,7 @@ class FBLoader:
             return
 
         sensor_width = head.sensor_width if head.sensor_width != -1 \
-            else Config.default_sensor_width
+            else FBConfig.default_sensor_width
 
         logger = logging.getLogger(__name__)
         logger.debug('UPDATE_OLD_MODEL')
@@ -455,7 +455,7 @@ class FBLoader:
         # Save info
         head.store_serial_str_in_head_and_on_headobj(fb.serialize())
 
-        focal = head.focal * Config.default_sensor_width / sensor_width
+        focal = head.focal * FBConfig.default_sensor_width / sensor_width
         head.reset_sensor_size()
         for cam in head.cameras:
             cam.focal = focal
@@ -469,17 +469,17 @@ class FBLoader:
         settings = get_main_settings()
         head = settings.get_head(headnum)
 
-        cam_data = bpy.data.cameras.new(Config.default_fb_camera_data_name)
-        cam_ob = bpy.data.objects.new(Config.default_fb_camera_name, cam_data)
-        cam_ob.rotation_euler = Config.default_camera_rotation
-        cam_ob.location = (Config.camera_x_step * camnum,
-                           - Config.camera_y_step - headnum,
-                           Config.camera_z_step)
+        cam_data = bpy.data.cameras.new(FBConfig.default_fb_camera_data_name)
+        cam_ob = bpy.data.objects.new(FBConfig.default_fb_camera_name, cam_data)
+        cam_ob.rotation_euler = FBConfig.default_camera_rotation
+        cam_ob.location = (FBConfig.camera_x_step * camnum,
+                           - FBConfig.camera_y_step - headnum,
+                           FBConfig.camera_z_step)
 
-        cam_data.display_size = Config.default_camera_display_size
+        cam_data.display_size = FBConfig.default_camera_display_size
         cam_data.lens = head.focal  # TODO: need a better choise in future
-        cam_data.sensor_width = Config.default_sensor_width
-        cam_data.sensor_height = Config.default_sensor_height
+        cam_data.sensor_width = FBConfig.default_sensor_width
+        cam_data.sensor_height = FBConfig.default_sensor_height
         cam_data.show_background_images = True
 
         col = attrs.get_obj_collection(head.headobj)

@@ -43,7 +43,8 @@ from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
                         draw_warning_labels, draw_long_labels)
 from ..preferences.user_preferences import UserPreferences, UpdaterPreferences
-from ..interface.updater import preferences_current_active_updater_operators_info, UpdateState, \
+# TODO: Switch on Updater
+from ..facebuilder.interface.updater import preferences_current_active_updater_operators_info, UpdateState, \
     render_active_message, FBUpdater, CurrentStateExecutor
 
 
@@ -541,6 +542,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
             return None
 
     def _draw_updater_info(self, layout):
+        pass
         FBUpdater.init_updater()
         CurrentStateExecutor.compute_current_panel_updater_state()
         settings = get_main_settings()

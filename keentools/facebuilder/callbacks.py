@@ -19,16 +19,16 @@ import logging
 import numpy as np
 import bpy
 
-from .config import get_main_settings, get_operator, Config, ErrorType
+from .config import get_main_settings, get_operator, FBConfig, ErrorType
 from .fbloader import FBLoader
-from .utils import coords
-from .utils.manipulate import (get_current_headnum,
-                               get_vertex_groups,
-                               create_vertex_groups)
-from .utils.blendshapes import (restore_facs_blendshapes,
-                                disconnect_blendshapes_action)
-from .blender_independent_packages.pykeentools_loader import module as pkt_module
-from .preferences.user_preferences import UserPreferences
+from ..utils import coords
+from ..utils.manipulate import (get_current_headnum,
+                                get_vertex_groups,
+                                create_vertex_groups)
+from ..utils.blendshapes import (restore_facs_blendshapes,
+                                 disconnect_blendshapes_action)
+from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..preferences.user_preferences import UserPreferences
 
 
 def mesh_update_accepted(headnum):
@@ -56,7 +56,7 @@ def mesh_update_accepted(headnum):
             logger.debug('blendshapes_restored: {}'.format(counter))
         except pkt_module().UnlicensedException:
             logger.error('UnlicensedException restore_facs_blendshapes')
-            warn = get_operator(Config.fb_warning_idname)
+            warn = get_operator(FBConfig.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
         except Exception:
             logger.error('UNKNOWN EXCEPTION restore_facs_blendshapes')
@@ -96,7 +96,7 @@ def update_mesh_with_dialog(self, context):
         else:
             self.discard_model_changes()
     else:
-        warn = get_operator(Config.fb_blendshapes_warning_idname)
+        warn = get_operator(FBConfig.fb_blendshapes_warning_idname)
         warn('INVOKE_DEFAULT', headnum=headnum)
 
 
@@ -117,7 +117,7 @@ def _update_mesh_now(headnum):
         return
 
     if head.should_use_emotions() and \
-            head.expression_view != Config.empty_expression_view_idname:
+            head.expression_view != FBConfig.empty_expression_view_idname:
         keyframe = head.get_expression_view_keyframe()
         if keyframe <= 0:
             keyframe = None
@@ -148,7 +148,7 @@ def _update_mesh_now(headnum):
                         'Please check if there are no other processes\n' \
                         'using face data at the moment.\n' \
                         'If that doesn\'t help, please reinstall the add-on.'
-        warn = get_operator(Config.fb_warning_idname)
+        warn = get_operator(FBConfig.fb_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=error_message)
         return False
@@ -171,7 +171,7 @@ def _update_mesh_now(headnum):
     except Exception:
         pass
 
-    recreate_vertex_groups_flag = Config.recreate_vertex_groups and \
+    recreate_vertex_groups_flag = FBConfig.recreate_vertex_groups and \
                                   len(old_mesh.vertices) == len(mesh.vertices)
     if recreate_vertex_groups_flag:
         try:
@@ -239,10 +239,10 @@ def update_expressions(self, context):
 
 def update_expression_view(self, context):
     exp_view = self.expression_view
-    if exp_view == Config.empty_expression_view_idname:
+    if exp_view == FBConfig.empty_expression_view_idname:
         self.set_neutral_expression_view()
         return
-    if exp_view != Config.neutral_expression_view_idname \
+    if exp_view != FBConfig.neutral_expression_view_idname \
             and not self.has_no_blendshapes():
         logger = logging.getLogger(__name__)
         logger.error('Object has blendshapes so expression view cannot be used')
@@ -253,7 +253,7 @@ def update_expression_view(self, context):
             'Unfortunately, using expressions for a model\n' \
             'that has FACS blendshapes is impossible. \n' \
             'Please remove blendshapes before choosing an expression.'
-        warn = get_operator(Config.fb_warning_idname)
+        warn = get_operator(FBConfig.fb_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=error_message)
         return
