@@ -30,18 +30,15 @@ class Config:
     minimal_blender_api = (2, 80, 60)
 
     prefix = _company + '_fb'
-    operators = _company + '_facebuilder'
+    operators = _company
     addon_name = __package__  # the same as module name
     addon_human_readable_name = 'KeenTools'
 
     user_preferences_dict_name = 'keentools_facebuilder_addon'
     updater_preferences_dict_name = 'keentools_updater'
 
-    addon_search = 'KeenTools'
     addon_global_var_name = prefix + '_settings'
-    addon_full_name = 'Keentools FaceBuilder for Blender'
 
-    fb_tab_category = addon_human_readable_name
     keentools_website_url = 'https://keentools.io'
     core_download_website_url = keentools_website_url + '/download/core'
 
@@ -50,63 +47,13 @@ class Config:
     license_purchase_url = 'https://link.keentools.io/fb-lc-fbbmld?utm_source=fbb-missing-license-dialog'
     coloring_texture_name = 'ktWireframeTexture'
 
-    fb_rotate_image_cw_idname = operators + '.rotate_image_cw'
-    fb_rotate_image_ccw_idname = operators + '.rotate_image_ccw'
-    fb_reset_image_rotation_idname = operators + '.reset_image_rotation'
-
-    fb_reset_expression_idname = operators + '.reset_expression'
-    fb_bake_tex_idname = operators + '.bake_tex'
-    fb_show_tex_idname = operators + '.show_tex'
-    fb_show_solid_idname = operators + '.show_solid'
-
-    fb_multiple_filebrowser_idname = operators + '.open_multiple_filebrowser'
-    fb_multiple_filebrowser_exec_idname = operators + '.open_multiple_filebrowser_exec'
-    fb_single_filebrowser_idname = operators + '.open_single_filebrowser'
-    fb_single_filebrowser_exec_idname = operators + '.open_single_filebrowser_exec'
-
-    fb_texture_file_export_idname = operators + '.texture_file_export'
-
-    fb_animation_filebrowser_idname = operators + '.open_animation_filebrowser'
-
-    fb_pinmode_idname = operators + '.pinmode'
-    fb_movepin_idname = operators + '.movepin'
-    fb_pickmode_idname = operators + '.pickmode'
-    fb_pickmode_starter_idname = operators + '.pickmode_starter'
-    fb_history_actor_idname = operators + '.history_actor'
-    fb_camera_actor_idname = operators + '.camera_actor'
-
     fb_warning_idname = operators + '.addon_warning'
-    fb_blendshapes_warning_idname = operators + '.blendshapes_warning'
-    fb_noblenshapes_until_expression_warning_idname = operators + \
-        '.no_blenshapes_until_expression_warning'
-
-    fb_tex_selector_idname = operators + '.tex_selector'
-    fb_exit_pinmode_idname = operators + '.exit_pinmode'
     fb_install_update_dialog_idname = operators + '.install_update_dialog'
-
-    fb_create_blendshapes_idname = operators + '.create_blendshapes'
-    fb_delete_blendshapes_idname = operators + '.delete_blendshapes'
-    fb_load_animation_from_csv_idname = operators + '.load_animation_from_csv'
-    fb_create_example_animation_idname = operators + '.create_example_animation'
-    fb_reset_blendshape_values_idname = operators + '.reset_blendshape_values'
-    fb_clear_animation_idname = operators + '.clear_animation'
-    fb_update_blendshapes_idname = operators + '.update_blendshapes'
-    fb_export_head_to_fbx_idname = operators + '.export_head_to_fbx'
-
-    fb_unhide_head_idname = operators + '.unhide_head'
-    fb_reconstruct_head_idname = operators + '.reconstruct_head'
-
-    fb_add_head_operator_idname = operators + '.add_head'
     fb_user_preferences_changer = operators + '.user_preferences_changer'
     fb_user_preferences_reset_all = operators + '.user_preferences_reset_all'
     fb_user_preferences_get_colors = operators + '.user_preferences_get_colors'
     fb_user_preferences_reset_all_warning_idname = \
         operators + '.user_preferences_reset_all_warning'
-    fb_default_pin_settings_idname = operators + '.default_pin_settings'
-    fb_default_wireframe_settings_idname = \
-        operators + '.default_wireframe_settings'
-    fb_reset_tone_exposure_idname = operators + '.reset_tone_exposure'
-    fb_reset_tone_gamma_idname = operators + '.reset_tone_gamma'
 
     fb_uninstall_core_idname = operators + '.uninstall_core'
 
@@ -219,6 +166,10 @@ def is_blender_supported():
 
 def get_main_settings():
     return getattr(bpy.context.scene, Config.addon_global_var_name)
+
+
+def get_addon_preferences():
+    return bpy.context.preferences.addons[Config.addon_name].preferences
 
 
 def get_operator(operator_id_name):

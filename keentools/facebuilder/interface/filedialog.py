@@ -24,7 +24,7 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bpy.types import Operator
 
 from ..fbloader import FBLoader
-from ..config import Config, get_main_settings, get_operator
+from ..config import FBConfig, get_main_settings, get_operator
 
 from ...utils.exif_reader import (read_exif_to_camera,
                                  auto_setup_camera_from_exif)
@@ -33,7 +33,7 @@ from ...utils.blendshapes import load_csv_animation_to_blendshapes
 
 
 class FB_OT_SingleFilebrowserExec(Operator):
-    bl_idname = Config.fb_single_filebrowser_exec_idname
+    bl_idname = FBConfig.fb_single_filebrowser_exec_idname
     bl_label = "File Browser Execute"
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = "Change the image file path"
@@ -44,7 +44,7 @@ class FB_OT_SingleFilebrowserExec(Operator):
     def execute(self, context):
         settings = get_main_settings()
 
-        op = get_operator(Config.fb_single_filebrowser_idname)
+        op = get_operator(FBConfig.fb_single_filebrowser_idname)
         op('INVOKE_DEFAULT', headnum=settings.tmp_headnum,
            camnum=settings.tmp_camnum)
 
@@ -84,7 +84,7 @@ def load_single_image_file(headnum, camnum, filepath):
 
 
 class FB_OT_SingleFilebrowser(Operator, ImportHelper):
-    bl_idname = Config.fb_single_filebrowser_idname
+    bl_idname = FBConfig.fb_single_filebrowser_idname
     bl_label = "Open Image"
     bl_description = "Open single image file"
     bl_options = {'REGISTER', 'UNDO'}
@@ -110,7 +110,7 @@ def update_format(self, context):
 
 
 class FB_OT_TextureFileExport(Operator, ExportHelper):
-    bl_idname = Config.fb_texture_file_export_idname
+    bl_idname = FBConfig.fb_texture_file_export_idname
     bl_label = "Export texture"
     bl_description = "Export the created texture to a file"
     bl_options = {'REGISTER', 'INTERNAL'}
@@ -193,7 +193,7 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
 
 
 class FB_OT_MultipleFilebrowserExec(Operator):
-    bl_idname = Config.fb_multiple_filebrowser_exec_idname
+    bl_idname = FBConfig.fb_multiple_filebrowser_exec_idname
     bl_label = "Open Images"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Load images and create views. " \
@@ -205,14 +205,14 @@ class FB_OT_MultipleFilebrowserExec(Operator):
         pass
 
     def execute(self, context):
-        op = get_operator(Config.fb_multiple_filebrowser_idname)
+        op = get_operator(FBConfig.fb_multiple_filebrowser_idname)
         op('INVOKE_DEFAULT', headnum=self.headnum)
 
         return {'FINISHED'}
 
 
 class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
-    bl_idname = Config.fb_multiple_filebrowser_idname
+    bl_idname = FBConfig.fb_multiple_filebrowser_idname
     bl_label = "Open Images"
     bl_description = "Load images and create views. " \
                      "You can select multiple images at once"
@@ -280,7 +280,7 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
 
 
 class FB_OT_AnimationFilebrowser(Operator, ImportHelper):
-    bl_idname = Config.fb_animation_filebrowser_idname
+    bl_idname = FBConfig.fb_animation_filebrowser_idname
     bl_label = 'Load animation'
     bl_description = 'Open animation file'
     bl_options = {'REGISTER', 'UNDO'}

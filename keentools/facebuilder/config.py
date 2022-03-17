@@ -34,9 +34,7 @@ class FBConfig:
     default_fb_camera_name = 'fbCamera'
 
     user_preferences_dict_name = 'keentools_facebuilder_addon'
-    updater_preferences_dict_name = 'keentools_updater'
 
-    addon_search = 'KeenTools'
     addon_global_var_name = prefix + '_settings'
     addon_full_name = 'Keentools FaceBuilder for Blender'
 

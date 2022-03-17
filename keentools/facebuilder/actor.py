@@ -29,7 +29,7 @@ from bpy.props import (
 
 from ..utils import manipulate
 from ..utils.coords import xy_to_xz_rotation_matrix_4x4
-from .config import Config, get_main_settings
+from .config import FBConfig, get_main_settings
 from ..utils.exif_reader import auto_setup_camera_from_exif
 from ..utils.blendshapes import (create_blendshape_controls,
                                  make_control_panel,
@@ -42,7 +42,7 @@ from ..utils.blendshapes import (create_blendshape_controls,
 
 
 class FB_OT_HistoryActor(bpy.types.Operator):
-    bl_idname = Config.fb_history_actor_idname
+    bl_idname = FBConfig.fb_history_actor_idname
     bl_label = 'FaceBuilder Action'
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = 'FaceBuilder'
@@ -118,7 +118,7 @@ class FB_OT_HistoryActor(bpy.types.Operator):
 
 
 class FB_OT_CameraActor(bpy.types.Operator):
-    bl_idname = Config.fb_camera_actor_idname
+    bl_idname = FBConfig.fb_camera_actor_idname
     bl_label = "Camera parameters"
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
     bl_description = "Parameters setup"

@@ -19,7 +19,8 @@
 import logging
 import bpy
 
-from .config import Config, ErrorType, get_main_settings, get_operator
+from .config import Config
+from ..facebuilder.config import FBConfig, ErrorType, get_main_settings, get_operator
 from .fbloader import FBLoader
 from ..utils import coords
 from ..utils.focal_length import configure_focal_mode_and_fixes
@@ -110,7 +111,7 @@ def _add_pins_to_face(headnum, camnum, rectangle_index, context):
         result_flag = fb.detect_face_pose(kid, faces[rectangle_index])
     except pkt_module().UnlicensedException:
         logger.error('UnlicensedException _add_pins_to_face')
-        warn = get_operator(Config.fb_warning_idname)
+        warn = get_operator(FBConfig.fb_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
         return None
     except Exception as err:
@@ -142,7 +143,7 @@ def _add_pins_to_face(headnum, camnum, rectangle_index, context):
 def _not_enough_face_features_warning():
     error_message = 'Sorry, could not find enough facial features \n' \
                     'to pin the model! Please try pinning the model manually.'
-    warn = get_operator(Config.fb_warning_idname)
+    warn = get_operator(FBConfig.fb_warning_idname)
     warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
          msg_content=error_message)
     logger = logging.getLogger(__name__)
@@ -150,7 +151,7 @@ def _not_enough_face_features_warning():
 
 
 class FB_OT_PickMode(bpy.types.Operator):
-    bl_idname = Config.fb_pickmode_idname
+    bl_idname = FBConfig.fb_pickmode_idname
     bl_label = 'FaceBuilder Pick Face mode'
     bl_description = 'Modal Operator for Pick Face mode'
     bl_options = {'REGISTER', 'INTERNAL'}
@@ -308,7 +309,7 @@ class FB_OT_PickMode(bpy.types.Operator):
 
 
 class FB_OT_PickModeStarter(bpy.types.Operator):
-    bl_idname = Config.fb_pickmode_starter_idname
+    bl_idname = FBConfig.fb_pickmode_starter_idname
     bl_label = 'FaceBuilder Pick Face mode starter'
     bl_description = 'Detect a face on the photo ' \
                      'and pin the model to the selected face'
@@ -349,7 +350,7 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
                 rectangler.add_rectangle(x1, y1, x2, y2, w, h,
                                          Config.regular_rectangle_color)
             if invoked:
-                op = get_operator(Config.fb_pickmode_idname)
+                op = get_operator(FBConfig.fb_pickmode_idname)
                 op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
         elif len(rects) == 1:
             result = _add_pins_to_face(self.headnum, self.camnum,

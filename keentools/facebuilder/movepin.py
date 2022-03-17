@@ -22,7 +22,7 @@ import bpy
 
 from ..utils import manipulate, coords
 from .fbloader import FBLoader
-from .config import Config, get_main_settings
+from ..facebuilder.config import FBConfig, get_main_settings
 
 from functools import wraps
 
@@ -45,7 +45,7 @@ def profile_this(fn):
 
 class FB_OT_MovePin(bpy.types.Operator):
     """ On Screen Face Builder MovePin Operator """
-    bl_idname = Config.fb_movepin_idname
+    bl_idname = FBConfig.fb_movepin_idname
     bl_label = "FaceBuilder MovePin operator"
     bl_description = "Operator MovePin"
     bl_options = {'REGISTER'}

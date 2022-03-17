@@ -22,12 +22,13 @@ import re
 import bpy
 from bpy.types import Panel, Operator
 
-from ..config import Config, get_main_settings, get_operator, ErrorType
+from ...config import Config
+from ..config import FBConfig, get_main_settings, get_operator, ErrorType
 from ..callbacks import mesh_update_accepted, mesh_update_canceled
 
 
 class FB_OT_AddonWarning(Operator):
-    bl_idname = Config.fb_warning_idname
+    bl_idname = FBConfig.fb_warning_idname
     bl_label = ""
     bl_options = {'REGISTER', 'INTERNAL'}
 
@@ -49,15 +50,15 @@ class FB_OT_AddonWarning(Operator):
             layout.label(text=t)
 
         if self.msg == ErrorType.NoLicense:
-            op = self.layout.operator(Config.fb_open_url_idname,
+            op = self.layout.operator(FBConfig.fb_open_url_idname,
                                       text='Purchase a license')
-            op.url = Config.license_purchase_url
+            op.url = FBConfig.license_purchase_url
 
     def execute(self, context):
         if self.msg not in (ErrorType.PktProblem, ErrorType.NoLicense):
             return {"FINISHED"}
 
-        op = get_operator(Config.fb_addon_settings_idname)
+        op = get_operator(FBConfig.fb_addon_settings_idname)
         op('EXEC_DEFAULT')
         return {"FINISHED"}
 
@@ -124,7 +125,7 @@ class FB_OT_AddonWarning(Operator):
 
 
 class FB_OT_BlendshapesWarning(Operator):
-    bl_idname = Config.fb_blendshapes_warning_idname
+    bl_idname = FBConfig.fb_blendshapes_warning_idname
     bl_label = 'Warning'
     bl_options = {'REGISTER', 'INTERNAL'}
 
@@ -183,7 +184,7 @@ class FB_OT_BlendshapesWarning(Operator):
 
 
 class FB_OT_NoBlendshapesUntilExpressionWarning(Operator):
-    bl_idname = Config.fb_noblenshapes_until_expression_warning_idname
+    bl_idname = FBConfig.fb_noblenshapes_until_expression_warning_idname
     bl_label = 'Blendshapes can\'t be created'
     bl_options = {'REGISTER', 'INTERNAL'}
 
@@ -213,7 +214,7 @@ class FB_OT_NoBlendshapesUntilExpressionWarning(Operator):
                 return {'CANCELLED'}
 
             head.set_neutral_expression_view()
-            op = get_operator(Config.fb_create_blendshapes_idname)
+            op = get_operator(FBConfig.fb_create_blendshapes_idname)
             op('EXEC_DEFAULT')
 
         return {'FINISHED'}
@@ -232,7 +233,7 @@ class FB_OT_NoBlendshapesUntilExpressionWarning(Operator):
 
 
 class FB_OT_TexSelector(Operator):
-    bl_idname = Config.fb_tex_selector_idname
+    bl_idname = FBConfig.fb_tex_selector_idname
     bl_label = "Select images:"
     bl_description = "Create texture using pinned views"
     bl_options = {'REGISTER', 'INTERNAL'}
@@ -269,11 +270,11 @@ class FB_OT_TexSelector(Operator):
 
         row = box.row()
 
-        op = row.operator(Config.fb_filter_cameras_idname, text='All')
+        op = row.operator(FBConfig.fb_filter_cameras_idname, text='All')
         op.action = 'select_all_cameras'
         op.headnum = self.headnum
 
-        op = row.operator(Config.fb_filter_cameras_idname, text='None')
+        op = row.operator(FBConfig.fb_filter_cameras_idname, text='None')
         op.action = 'deselect_all_cameras'
         op.headnum = self.headnum
 
@@ -303,7 +304,7 @@ class FB_OT_TexSelector(Operator):
             return {'CANCELLED'}
 
         if head.has_cameras():
-            op = get_operator(Config.fb_bake_tex_idname)
+            op = get_operator(FBConfig.fb_bake_tex_idname)
             res = op('INVOKE_DEFAULT', headnum=self.headnum)
 
             if res == {'CANCELLED'}:
