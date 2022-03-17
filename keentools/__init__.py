@@ -154,30 +154,32 @@ if not _can_load():
         logger.error("CANNOT LOAD PREFERENCES UNREGISTERED")
 
 else:
-    from .preferences import CLASSES_TO_REGISTER as PREFERENCES_CLASSES
-    from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
-    from .main_operator import CLASSES_TO_REGISTER as OPERATOR_CLASSES
-    from .head import MESH_OT_FBAddHead
-    from .settings import FBExifItem, FBCameraItem, FBHeadItem, FBSceneSettings
-    from .pinmode import FB_OT_PinMode
-    from .pick_operator import FB_OT_PickMode, FB_OT_PickModeStarter
-    from .movepin import FB_OT_MovePin
-    from .actor import FB_OT_HistoryActor, FB_OT_CameraActor
 
-    from .utils.icons import FBIcons
-
-    CLASSES_TO_REGISTER = (MESH_OT_FBAddHead,
-                           FBExifItem,
-                           FBCameraItem,
-                           FBHeadItem,
-                           FBSceneSettings,
-                           FB_OT_PinMode,
-                           FB_OT_PickMode,
-                           FB_OT_PickModeStarter,
-                           FB_OT_MovePin,
-                           FB_OT_HistoryActor,
-                           FB_OT_CameraActor) + OPERATOR_CLASSES + \
-                           INTERFACE_CLASSES + PREFERENCES_CLASSES
+    # TODO load facebuilder classes from facebuilder/ module
+    # TODO load preferences and other addon classes
+    # from .preferences import CLASSES_TO_REGISTER as PREFERENCES_CLASSES
+    # from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
+    # from .main_operator import CLASSES_TO_REGISTER as OPERATOR_CLASSES
+    # from .head import MESH_OT_FBAddHead
+    # from .settings import FBExifItem, FBCameraItem, FBHeadItem, FBSceneSettings
+    # from .pinmode import FB_OT_PinMode
+    # from .pick_operator import FB_OT_PickMode, FB_OT_PickModeStarter
+    # from .movepin import FB_OT_MovePin
+    # from .actor import FB_OT_HistoryActor, FB_OT_CameraActor
+    # from .utils.icons import FBIcons
+    #
+    # CLASSES_TO_REGISTER = (MESH_OT_FBAddHead,
+    #                        FBExifItem,
+    #                        FBCameraItem,
+    #                        FBHeadItem,
+    #                        FBSceneSettings,
+    #                        FB_OT_PinMode,
+    #                        FB_OT_PickMode,
+    #                        FB_OT_PickModeStarter,
+    #                        FB_OT_MovePin,
+    #                        FB_OT_HistoryActor,
+    #                        FB_OT_CameraActor) + OPERATOR_CLASSES + \
+    #                        INTERFACE_CLASSES + PREFERENCES_CLASSES
 
 
     def _add_addon_settings_var():
@@ -191,7 +193,6 @@ else:
 
     def menu_func(self, context):
         self.layout.operator(MESH_OT_FBAddHead.bl_idname, icon='USER')
-
 
     # Blender predefined methods
     def register():

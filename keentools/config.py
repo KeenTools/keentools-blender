@@ -19,8 +19,6 @@ import math
 import bpy
 
 _company = 'keentools'
-_PT = 'FACEBUILDER_PT_'
-_MT = 'FACEBUILDER_MT_'
 
 
 class Config:
@@ -31,17 +29,10 @@ class Config:
                                   (3, 0), (3, 1))
     minimal_blender_api = (2, 80, 60)
 
-    # Version independent
     prefix = _company + '_fb'
     operators = _company + '_facebuilder'
     addon_name = __package__  # the same as module name
-    addon_human_readable_name = 'FaceBuilder'
-
-    default_fb_object_name = 'FBHead'
-    default_fb_mesh_name = 'FBHead_mesh'
-    default_fb_collection_name = 'FaceBuilderCol'
-    default_fb_camera_data_name = 'fbCamData'
-    default_fb_camera_name = 'fbCamera'
+    addon_human_readable_name = 'KeenTools'
 
     user_preferences_dict_name = 'keentools_facebuilder_addon'
     updater_preferences_dict_name = 'keentools_updater'
@@ -58,23 +49,6 @@ class Config:
     pykeentools_license_url = 'https://link.keentools.io/eula'
     license_purchase_url = 'https://link.keentools.io/fb-lc-fbbmld?utm_source=fbb-missing-license-dialog'
     coloring_texture_name = 'ktWireframeTexture'
-    
-    # Operators ids
-    fb_select_head_idname = operators + '.select_head'
-    fb_select_current_head_idname = operators + '.select_current_head'
-    fb_delete_head_idname = operators + '.delete_head'
-    fb_select_camera_idname = operators + '.select_camera'
-    fb_select_current_camera_idname = operators + '.select_current_camera'
-    fb_center_geo_idname = operators + '.center_geo'
-    fb_unmorph_idname = operators + '.unmorph'
-    fb_remove_pins_idname = operators + '.remove_pins'
-    fb_wireframe_color_idname = operators + '.wireframe_color'
-    fb_filter_cameras_idname = operators + '.filter_cameras'
-    fb_delete_camera_idname = operators + '.delete_camera'
-    fb_proper_view_menu_exec_idname = operators + '.proper_view_menu_exec'
-    fb_addon_settings_idname = operators + '.addon_settings'
-    fb_addon_setup_defaults_idname = operators + '.addon_setup_defaults'
-    fb_delete_texture_idname = operators + '.delete_texture'
 
     fb_rotate_image_cw_idname = operators + '.rotate_image_cw'
     fb_rotate_image_ccw_idname = operators + '.rotate_image_ccw'
@@ -134,55 +108,7 @@ class Config:
     fb_reset_tone_exposure_idname = operators + '.reset_tone_exposure'
     fb_reset_tone_gamma_idname = operators + '.reset_tone_gamma'
 
-    # Panel ids
-    fb_header_panel_idname = _PT + 'header_panel'
-    fb_camera_panel_idname = _PT + 'camera_panel'
-    fb_update_panel_idname = _PT + 'update_panel'
-    fb_download_notification_panel_idname = _PT + 'download_notification'
-    fb_downloading_problem_panel_idname = _PT + 'downloading_problem'
-    fb_updates_installation_panel_idname = _PT + 'updates_installation_panel'
-    fb_views_panel_idname = _PT + 'views_panel'
-    fb_exif_panel_idname = _PT + 'exif_panel'
-    fb_texture_panel_idname = _PT + 'texture_panel'
-    fb_model_panel_idname = _PT + 'model_panel'
-    fb_appearance_panel_idname = _PT + 'appearance_panel'
-    fb_blendshapes_panel_idname = _PT + 'blendshapes_panel'
-
-    # Help ids
-    fb_help_camera_idname = operators + '.help_camera'
-    fb_help_views_idname = operators + '.help_view'
-    fb_help_model_idname = operators + '.help_model'
-    fb_help_appearance_idname = operators + '.help_appearance'
-    fb_help_texture_idname = operators + '.help_texture'
-    fb_help_blendshapes_idname = operators + '.help_blendshapes'
-
-    fb_download_the_update_idname = operators + '.download_the_update'
-    fb_retry_download_the_update_idname = operators + '.retry_download_the_update'
-    fb_open_url_idname = operators + '.open_url'
-    fb_remind_later_idname = operators + '.remind_later'
-    fb_skip_version_idname = operators + '.skip_version'
-
-    fb_come_back_to_update_idname = operators + '.come_back_to_update'
-
-    fb_install_updates_idname = operators + '.install_updates'
-    fb_remind_install_later_idname = operators + '.remind_install_later'
-    fb_skip_installation_idname = operators + '.skip_installation'
-
     fb_uninstall_core_idname = operators + '.uninstall_core'
-
-    # Menu ids
-    fb_proper_view_menu_idname = _MT + 'proper_view_menu'
-
-    # Standard names
-    tex_builder_filename_template = '{}_baked_tex'
-    tex_builder_matname_template = '{}_preview_mat'
-
-    default_driver_name = 'FaceBuilderDriver'
-    default_blendshapes_action_name = 'fbBlendShapesAction'
-    example_animation_action_name = 'ExampleAnimAction'
-
-    neutral_expression_view_idname = '0'
-    empty_expression_view_idname = ''
 
     # Object Custom Properties
     # Tuples instead simple values are used to load custom properties
