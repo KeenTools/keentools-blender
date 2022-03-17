@@ -26,7 +26,7 @@ from .ui import (reset_updater_preferences_to_default,
                  FB_OT_UserPreferencesGetColors,
                  FB_OT_UserPreferencesResetAll,
                  FB_OT_UserPreferencesResetAllWarning,
-                 FBAddonPreferences)
+                 KTAddonPreferences)
 
 CLASSES_TO_REGISTER = (
     PREF_OT_InstallLicenseOnline,
@@ -46,5 +46,5 @@ CLASSES_TO_REGISTER = (
     FB_OT_UserPreferencesGetColors,
     FB_OT_UserPreferencesResetAll,
     FB_OT_UserPreferencesResetAllWarning,
-    FBAddonPreferences
+    KTAddonPreferences
 )

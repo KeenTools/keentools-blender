@@ -37,13 +37,12 @@ from ..blender_independent_packages.pykeentools_loader import (
     installation_status as pkt_installation_status,
     loaded as pkt_loaded)
 from ..config import Config, is_blender_supported
-from ..facebuilder.config import (FBConfig, get_main_settings, get_operator)
+from ..facebuilder.config import FBConfig, get_main_settings, get_operator
 from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
                         draw_warning_labels, draw_long_labels)
 from ..preferences.user_preferences import UserPreferences, UpdaterPreferences
-# TODO: Switch on Updater
 from ..facebuilder.interface.updater import preferences_current_active_updater_operators_info, UpdateState, \
     render_active_message, FBUpdater, CurrentStateExecutor
 
@@ -74,7 +73,7 @@ def reset_updater_preferences_to_default():
 
 
 class FB_OT_UserPreferencesResetAll(bpy.types.Operator):
-    bl_idname = Config.fb_user_preferences_reset_all
+    bl_idname = FBConfig.fb_user_preferences_reset_all
     bl_label = 'Reset All'
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = 'Reset All'
@@ -85,13 +84,13 @@ class FB_OT_UserPreferencesResetAll(bpy.types.Operator):
     def execute(self, context):
         logger = logging.getLogger(__name__)
         logger.debug('user_preferences_reset_all call')
-        warn = get_operator(Config.fb_user_preferences_reset_all_warning_idname)
+        warn = get_operator(FBConfig.fb_user_preferences_reset_all_warning_idname)
         warn('INVOKE_DEFAULT')
         return {'FINISHED'}
 
 
 class FB_OT_UserPreferencesGetColors(bpy.types.Operator):
-    bl_idname = Config.fb_user_preferences_get_colors
+    bl_idname = FBConfig.fb_user_preferences_get_colors
     bl_label = 'Get from scene'
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = 'Get color settings from the current scene'
@@ -113,7 +112,7 @@ class FB_OT_UserPreferencesGetColors(bpy.types.Operator):
 
 
 class FB_OT_UserPreferencesChanger(bpy.types.Operator):
-    bl_idname = Config.fb_user_preferences_changer
+    bl_idname = FBConfig.fb_user_preferences_changer
     bl_label = 'FaceBuilder Action'
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = 'Reset'
@@ -142,7 +141,7 @@ class FB_OT_UserPreferencesChanger(bpy.types.Operator):
 
 
 class FB_OT_UserPreferencesResetAllWarning(bpy.types.Operator):
-    bl_idname = Config.fb_user_preferences_reset_all_warning_idname
+    bl_idname = FBConfig.fb_user_preferences_reset_all_warning_idname
     bl_label = 'Reset All'
     bl_options = {'REGISTER', 'INTERNAL'}
 
@@ -212,7 +211,7 @@ def _universal_updater_setter(name):
     return _setter
 
 
-class FBAddonPreferences(bpy.types.AddonPreferences):
+class KTAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = Config.addon_name
 
     latest_show_datetime_update_reminder: bpy.props.StringProperty(
@@ -338,28 +337,28 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
     wireframe_opacity: bpy.props.FloatProperty(
         description="From 0.0 to 1.0",
         name="Wireframe opacity",
-        default=Config.wireframe_opacity, min=0.0, max=1.0,
+        default=FBConfig.wireframe_opacity, min=0.0, max=1.0,
         get=_universal_getter('wireframe_opacity', 'float'),
         set=_universal_setter('wireframe_opacity')
     )
     wireframe_color: bpy.props.FloatVectorProperty(
         description="Color of mesh wireframe in pin-mode",
         name="Wireframe Color", subtype='COLOR',
-        default=Config.color_schemes['default'][0],
+        default=FBConfig.color_schemes['default'][0],
         get=_universal_getter('wireframe_color', 'color'),
         set=_universal_setter('wireframe_color')
     )
     wireframe_special_color: bpy.props.FloatVectorProperty(
         description="Color of special parts in pin-mode",
         name="Wireframe Special Color", subtype='COLOR',
-        default=Config.color_schemes['default'][1],
+        default=FBConfig.color_schemes['default'][1],
         get=_universal_getter('wireframe_special_color', 'color'),
         set=_universal_setter('wireframe_special_color')
     )
     wireframe_midline_color: bpy.props.FloatVectorProperty(
         description="Color of midline in pin-mode",
         name="Wireframe Midline Color", subtype='COLOR',
-        default=Config.midline_color,
+        default=FBConfig.midline_color,
         get=_universal_getter('wireframe_midline_color', 'color'),
         set=_universal_setter('wireframe_midline_color')
     )
@@ -529,7 +528,7 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         if status in ('INSTALLED_WRONG', 'CANNOT_IMPORT',
                       'NO_VERSION', 'VERSION_PROBLEM'):
             # Core Uninstall button
-            layout.operator(Config.fb_uninstall_core_idname)
+            layout.operator(Config.kt_uninstall_core_idname)
 
     def _get_core_version_text(self):
         try:
@@ -622,20 +621,20 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         box.label(text='Default pin settings')
         row = box.split(factor=0.7)
         row.prop(self, 'pin_size', slider=True)
-        op = row.operator(Config.fb_user_preferences_changer, text='Reset')
+        op = row.operator(FBConfig.fb_user_preferences_changer, text='Reset')
         op.action = 'revert_default'
         op.param_string = 'pin_size'
 
         row = box.split(factor=0.7)
         row.prop(self, 'pin_sensitivity', slider=True)
-        op = row.operator(Config.fb_user_preferences_changer, text='Reset')
+        op = row.operator(FBConfig.fb_user_preferences_changer, text='Reset')
         op.action = 'revert_default'
         op.param_string = 'pin_sensitivity'
 
         box = main_box.box()
         split = box.split(factor=0.7)
         split.label(text='Default wireframe colors')
-        split.operator(Config.fb_user_preferences_get_colors)
+        split.operator(FBConfig.fb_user_preferences_get_colors)
 
         colors_row = box.split(factor=0.7)
         row = colors_row.row()
@@ -644,11 +643,11 @@ class FBAddonPreferences(bpy.types.AddonPreferences):
         row.prop(self, 'wireframe_midline_color', text='')
         row.prop(self, 'wireframe_opacity', text='', slider=True)
 
-        op = colors_row.operator(Config.fb_user_preferences_changer,
+        op = colors_row.operator(FBConfig.fb_user_preferences_changer,
                                  text='Reset')
         op.action = 'revert_default_colors'
 
-        main_box.operator(Config.fb_user_preferences_reset_all)
+        main_box.operator(FBConfig.fb_user_preferences_reset_all)
 
     def draw(self, context):
         layout = self.layout

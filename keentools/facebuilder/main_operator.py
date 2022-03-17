@@ -663,7 +663,7 @@ class FB_OT_OpenURL(bpy.types.Operator):
 
 
 class FB_OT_UninstallCore(bpy.types.Operator):
-    bl_idname = FBConfig.fb_uninstall_core_idname
+    bl_idname = Config.kt_uninstall_core_idname
     bl_label = 'Uninstall Core'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Uninstall Core Library'

@@ -30,7 +30,7 @@ class Config:
     minimal_blender_api = (2, 80, 60)
 
     prefix = _company + '_fb'
-    operators = _company
+    operators = 'keentools'
     addon_name = __package__  # the same as module name
     addon_human_readable_name = 'KeenTools'
 
@@ -48,14 +48,8 @@ class Config:
     coloring_texture_name = 'ktWireframeTexture'
 
     fb_warning_idname = operators + '.addon_warning'
-    fb_install_update_dialog_idname = operators + '.install_update_dialog'
-    fb_user_preferences_changer = operators + '.user_preferences_changer'
-    fb_user_preferences_reset_all = operators + '.user_preferences_reset_all'
-    fb_user_preferences_get_colors = operators + '.user_preferences_get_colors'
-    fb_user_preferences_reset_all_warning_idname = \
-        operators + '.user_preferences_reset_all_warning'
 
-    fb_uninstall_core_idname = operators + '.uninstall_core'
+    kt_uninstall_core_idname = operators + '.uninstall_core'
 
     # Object Custom Properties
     # Tuples instead simple values are used to load custom properties
@@ -91,13 +85,7 @@ class Config:
     default_frame_height = 1080
     default_camera_display_size = 0.75
 
-    default_camera_rotation = (math.pi * 0.5, 0, 0)
-    camera_x_step = 2.0
-    camera_y_step = 5
-    camera_z_step = 0.5
-
     show_markers_at_camera_corners = False
-    recreate_vertex_groups = True
 
     default_tone_exposure = 0.0
     default_tone_gamma = 1.0

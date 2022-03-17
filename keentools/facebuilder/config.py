@@ -98,7 +98,6 @@ class FBConfig:
 
     fb_tex_selector_idname = operators + '.tex_selector'
     fb_exit_pinmode_idname = operators + '.exit_pinmode'
-    fb_install_update_dialog_idname = operators + '.install_update_dialog'
 
     fb_create_blendshapes_idname = operators + '.create_blendshapes'
     fb_delete_blendshapes_idname = operators + '.delete_blendshapes'
@@ -158,8 +157,6 @@ class FBConfig:
     fb_remind_install_later_idname = operators + '.remind_install_later'
     fb_skip_installation_idname = operators + '.skip_installation'
 
-    fb_uninstall_core_idname = operators + '.uninstall_core'
-
     # Menu ids
     fb_proper_view_menu_idname = _MT + 'proper_view_menu'
 
@@ -195,8 +192,6 @@ class FBConfig:
 
     # Constants
     surf_pin_size_scale = 0.85
-    text_scale_y = 0.75
-    btn_scale_y = 1.2
 
     viewport_redraw_interval = 0.1
     unknown_mod_ver = -1
@@ -263,14 +258,6 @@ class FBConfig:
         'latest_installation_skip_version': {'value': '', 'type': 'string'},
         'latest_show_datetime_installation_reminder': {'value': '', 'type': 'string'}
     }
-    mock_update_for_testing_flag = False
-    mock_update_version = (int(Config.addon_version.partition('.')[0]), 6, 3)
-
-    @classmethod
-    def mock_update_for_testing(cls, value=True, ver=None):
-        if ver is not None:
-            cls.mock_update_version = ver
-        cls.mock_update_for_testing_flag = value
 
 
 def get_main_settings():
