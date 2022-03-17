@@ -25,7 +25,7 @@ from typing import Tuple
 
 import bpy
 
-from ..config import get_operator, get_main_settings, FBConfig, ErrorType
+from ..config import get_operator, get_fb_settings, FBConfig, ErrorType
 from ...config import Config
 from ...blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed,
@@ -71,12 +71,12 @@ def _version_to_tuple(version):
 
 
 def _downloaded_version():
-    settings = get_main_settings()
+    settings = get_fb_settings()
     return settings.preferences().downloaded_version
 
 
 def _latest_installation_skip_version():
-    settings = get_main_settings()
+    settings = get_fb_settings()
     return settings.preferences().latest_installation_skip_version
 
 
@@ -91,7 +91,7 @@ def _operator_available_time(previous_show_datetime_str):
 
 
 def render_active_message(layout):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     updater_state = settings.preferences().updater_state
     limit = 64
     layout.scale_y = Config.text_scale_y
@@ -106,7 +106,7 @@ def render_active_message(layout):
 
 
 def preferences_current_active_updater_operators_info():
-    settings = get_main_settings()
+    settings = get_fb_settings()
     updater_state = settings.preferences().updater_state
     OperatorInfo = namedtuple('OperatorInfo', 'idname, text, icon')
     if updater_state == UpdateState.UPDATES_AVAILABLE:
@@ -143,7 +143,7 @@ class CurrentStateExecutor:
             cls._panel_updater_state = state
             force_ui_redraw('VIEW_3D')
             if set_preferences_updater_state:
-                settings = get_main_settings()
+                settings = get_fb_settings()
                 settings.preferences().updater_state = state
                 force_ui_redraw('PREFERENCES')
 
@@ -169,7 +169,7 @@ class FBUpdater:
 
     @classmethod
     def is_available(cls):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         previous_show_time_str = settings.preferences().latest_show_datetime_update_reminder
         latest_skip_version = settings.preferences().latest_update_skip_version
         return _operator_available_time(previous_show_time_str) and cls.has_response() and \
@@ -226,7 +226,7 @@ class FBUpdater:
 
     @classmethod
     def remind_later(cls):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         settings.preferences().latest_show_datetime_update_reminder = \
             datetime.now().strftime(_PREFERENCES_DATETIME_FORMAT)
 
@@ -250,7 +250,7 @@ class FBUpdater:
 
 
 def _set_installing():
-    settings = get_main_settings()
+    settings = get_fb_settings()
     settings.preferences().downloaded_version = str(FBUpdater.version())
     CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INSTALL)
     FBDownloadNotification.init_progress(None)
@@ -347,7 +347,7 @@ class FB_OT_SkipVersion(bpy.types.Operator):
                                                              set_preferences_updater_state=False)
         logger = logging.getLogger(__name__)
         logger.debug('SKIP THIS VERSION')
-        settings = get_main_settings()
+        settings = get_fb_settings()
         settings.preferences().latest_update_skip_version = str(FBUpdater.version())
         return {'FINISHED'}
 
@@ -426,7 +426,7 @@ class FBInstallationReminder:
 
     @classmethod
     def is_available(cls):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         previous_show_time_str = settings.preferences().latest_show_datetime_installation_reminder
         return _operator_available_time(previous_show_time_str)
 
@@ -439,7 +439,7 @@ class FBInstallationReminder:
 
     @classmethod
     def remind_later(cls):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         settings.preferences().latest_show_datetime_installation_reminder = \
             datetime.now().strftime(_PREFERENCES_DATETIME_FORMAT)
 
@@ -480,12 +480,12 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
         for t in content:
             col.label(text=t)
 
-        settings = get_main_settings()
+        settings = get_fb_settings()
         col = layout.column()
         col.prop(settings, 'not_save_changes')
 
     def execute(self, context):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         if not bpy.data.is_dirty or settings.not_save_changes:
             _clear_updater_info()
             if not updates_downloaded():
@@ -529,6 +529,6 @@ class FB_OT_SkipInstallation(bpy.types.Operator):
     def execute(self, context):
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL,
                                                              set_preferences_updater_state=False)
-        settings = get_main_settings()
+        settings = get_fb_settings()
         settings.preferences().latest_installation_skip_version = settings.preferences().downloaded_version
         return {'FINISHED'}

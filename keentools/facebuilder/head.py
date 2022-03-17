@@ -22,7 +22,7 @@ import bpy
 from ..utils import attrs
 from ..utils.ui_redraw import show_ui_panel
 from .fbloader import FBLoader
-from .config import get_main_settings, get_operator, ErrorType
+from .config import get_fb_settings, get_operator, ErrorType
 from .config import FBConfig
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
@@ -35,7 +35,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
-        settings = get_main_settings()
+        settings = get_fb_settings()
         heads_deleted, cams_deleted = settings.fix_heads()
         try:
             obj = self.new_head()
@@ -68,7 +68,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         bpy.context.view_layer.objects.active = obj
 
         # bpy.ops.object.shade_smooth()
-        h = get_main_settings().heads.add()
+        h = get_fb_settings().heads.add()
         h.headobj = obj
         h.reset_sensor_size()
 

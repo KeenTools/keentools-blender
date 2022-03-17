@@ -4,7 +4,7 @@ from bpy.types import Panel, Operator
 from bpy.props import StringProperty, IntProperty
 
 import keentools_facebuilder
-from keentools.facebuilder.config import FBConfig, get_main_settings, \
+from keentools.facebuilder.config import FBConfig, get_fb_settings, \
     get_operator, ErrorType
 import keentools.utils.coords as coords
 from keentools.utils.fake_context import get_fake_context
@@ -117,13 +117,13 @@ def create_head():
 
 
 def get_last_headnum():
-    settings = get_main_settings()
+    settings = get_fb_settings()
     headnum = len(settings.heads) - 1
     return headnum
 
 
 def select_by_headnum(headnum):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     headobj = settings.get_head(headnum).headobj
     headobj.select_set(state=True)
     bpy.context.view_layer.objects.active = headobj
@@ -131,7 +131,7 @@ def select_by_headnum(headnum):
 
 
 def get_last_camnum(headnum):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     camnum = len(settings.get_head(headnum).cameras) - 1
     return camnum
 

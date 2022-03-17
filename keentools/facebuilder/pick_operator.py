@@ -20,7 +20,7 @@ import logging
 import bpy
 
 from .config import Config
-from ..facebuilder.config import FBConfig, ErrorType, get_main_settings, get_operator
+from ..facebuilder.config import FBConfig, ErrorType, get_fb_settings, get_operator
 from .fbloader import FBLoader
 from ..utils import coords
 from ..utils.focal_length import configure_focal_mode_and_fixes
@@ -66,7 +66,7 @@ def _get_detected_faces_rectangles():
 
 
 def init_detected_faces(fb, headnum, camnum):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     head = settings.get_head(headnum)
     if head is None:
         return None
@@ -99,7 +99,7 @@ def _add_pins_to_face(headnum, camnum, rectangle_index, context):
     fb = FBLoader.get_builder()
     faces = get_detected_faces()
 
-    settings = get_main_settings()
+    settings = get_fb_settings()
     head = settings.get_head(headnum)
     camera = head.get_camera(camnum)
     kid = camera.get_keyframe()
@@ -208,7 +208,7 @@ class FB_OT_PickMode(bpy.types.Operator):
         logger = logging.getLogger(__name__)
         logger.debug('PickMode invoke call')
 
-        settings = get_main_settings()
+        settings = get_fb_settings()
         if not settings.pinmode:
             self.report({'INFO'}, 'Not in pinmode')
             return {'FINISHED'}
@@ -279,7 +279,7 @@ class FB_OT_PickMode(bpy.types.Operator):
                     logger.debug(message)
                     _not_enough_face_features_warning()
                 else:
-                    head = get_main_settings().get_head(self.headnum)
+                    head = get_fb_settings().get_head(self.headnum)
                     head.mark_model_changed_by_pinmode()
 
                     message = 'A face was chosen and pinned'
@@ -362,7 +362,7 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
                 logger.debug(message)
                 _not_enough_face_features_warning()
             else:
-                head = get_main_settings().get_head(self.headnum)
+                head = get_fb_settings().get_head(self.headnum)
                 head.mark_model_changed_by_pinmode()
 
                 message = 'A face was detected and pinned'
@@ -378,7 +378,7 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
     def invoke(self, context, event):
         logger = logging.getLogger(__name__)
         logger.debug('PickModeStarter invoke call')
-        settings = get_main_settings()
+        settings = get_fb_settings()
         if not settings.pinmode:
             message = 'Not in pinmode call'
             self.report({'ERROR'}, message)

@@ -23,7 +23,7 @@ import blf
 
 from .edges import FBEdgeShader2D, FBRasterEdgeShader3D
 from .points import FBPoints2D, FBPoints3D
-from ..facebuilder.config import FBConfig, get_main_settings
+from ..facebuilder.config import FBConfig, get_fb_settings
 from ..utils.attrs import set_custom_attribute, get_safe_custom_attribute
 from ..utils.timer import FBTimer
 from ..utils.ui_redraw import force_ui_redraw
@@ -125,7 +125,7 @@ class FBStopShaderTimer(FBTimer):
     @classmethod
     def check_pinmode(cls):
         logger = logging.getLogger(__name__)
-        settings = get_main_settings()
+        settings = get_fb_settings()
         if not cls.is_active():
             # Timer works when shouldn't
             logger.debug("STOP SHADER INACTIVE")
@@ -217,7 +217,7 @@ class FBText:
             self.unregister_handler()
             return
 
-        settings = get_main_settings()
+        settings = get_fb_settings()
 
         # TESTING
         # self.inc_counter()

@@ -20,7 +20,7 @@ import bpy
 
 import numpy as np
 
-from .config import Config, get_main_settings
+from .config import Config, get_fb_settings
 from ..preferences.user_preferences import UserPreferences
 from ..utils import coords
 from ..utils.edges import FBEdgeShader2D, FBRasterEdgeShader3D, FBRectangleShader2D
@@ -203,7 +203,7 @@ class FBViewport:
 
     @classmethod
     def update_wireframe_colors(cls):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         cls.wireframer().init_colors((settings.wireframe_color,
                                       settings.wireframe_special_color,
                                       settings.wireframe_midline_color),
@@ -212,12 +212,12 @@ class FBViewport:
 
     @classmethod
     def update_pin_sensitivity(cls):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         cls.POINT_SENSITIVITY = settings.pin_sensitivity
 
     @classmethod
     def update_pin_size(cls):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         cls.points2d().set_point_size(settings.pin_size)
         cls.points3d().set_point_size(
             settings.pin_size * Config.surf_pin_size_scale)

@@ -24,7 +24,7 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bpy.types import Operator
 
 from ..fbloader import FBLoader
-from ..config import FBConfig, get_main_settings, get_operator
+from ..config import FBConfig, get_fb_settings, get_operator
 
 from ...utils.exif_reader import (read_exif_to_camera,
                                  auto_setup_camera_from_exif)
@@ -42,7 +42,7 @@ class FB_OT_SingleFilebrowserExec(Operator):
         pass
 
     def execute(self, context):
-        settings = get_main_settings()
+        settings = get_fb_settings()
 
         op = get_operator(FBConfig.fb_single_filebrowser_idname)
         op('INVOKE_DEFAULT', headnum=settings.tmp_headnum,
@@ -53,7 +53,7 @@ class FB_OT_SingleFilebrowserExec(Operator):
 
 def load_single_image_file(headnum, camnum, filepath):
         logger = logging.getLogger(__name__)
-        settings = get_main_settings()
+        settings = get_fb_settings()
         logger.info('Load image file: {}'.format(filepath))
 
         if not settings.check_heads_and_cams():
@@ -165,7 +165,7 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
     def execute(self, context):
         logger = logging.getLogger(__name__)
         logger.debug("START SAVE TEXTURE: {}".format(self.filepath))
-        settings = get_main_settings()
+        settings = get_fb_settings()
         head = settings.get_head(self.headnum)
         if head is None:
             return {'CANCELLED'}
@@ -183,7 +183,7 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         head = settings.get_head(self.headnum)
         if head is None:
             return {'CANCELLED'}
@@ -241,7 +241,7 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
     def execute(self, context):
         """ Selected files processing"""
         logger = logging.getLogger(__name__)
-        settings = get_main_settings()
+        settings = get_fb_settings()
         if not settings.is_proper_headnum(self.headnum):
             logger.error("WRONG HEADNUM: {}/{}".format(
                 self.headnum, settings.get_last_headnum()))

@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from bpy.types import Menu
-from ..config import FBConfig, get_main_settings
+from ..config import FBConfig, get_fb_settings
 
 
 class FB_MT_ProperViewMenu(Menu):
@@ -26,7 +26,7 @@ class FB_MT_ProperViewMenu(Menu):
     bl_description = "View operations"
 
     def draw(self, context):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         layout = self.layout
 
         op = layout.operator(

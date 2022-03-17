@@ -20,7 +20,7 @@ import logging
 import bpy
 import numpy as np
 
-from ..config import Config, get_main_settings
+from ..facebuilder.config import FBConfig, get_fb_settings
 from ..facebuilder.fbloader import FBLoader
 from ..utils.images import load_rgba, find_bpy_image_by_name
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
@@ -86,7 +86,7 @@ def show_texture_in_mat(tex_name, mat_name):
     image_node = get_shader_node(
         mat, 'TEX_IMAGE', 'ShaderNodeTexImage')
     image_node.image = tex
-    image_node.location = Config.image_node_layout_coord
+    image_node.location = FBConfig.image_node_layout_coord
     principled_node.inputs['Specular'].default_value = 0.0
     mat.node_tree.links.new(
         image_node.outputs['Color'],
@@ -169,7 +169,7 @@ def _create_frame_data_loader(settings, head, camnums, fb):
 
 def bake_tex(headnum, tex_name):
     logger = logging.getLogger(__name__)
-    settings = get_main_settings()
+    settings = get_fb_settings()
     head = settings.get_head(headnum)
 
     if not head.has_cameras():

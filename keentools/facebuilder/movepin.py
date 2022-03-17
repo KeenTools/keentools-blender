@@ -22,7 +22,7 @@ import bpy
 
 from ..utils import manipulate, coords
 from .fbloader import FBLoader
-from ..facebuilder.config import FBConfig, get_main_settings
+from ..facebuilder.config import FBConfig, get_fb_settings
 
 from functools import wraps
 
@@ -68,7 +68,7 @@ class FB_OT_MovePin(bpy.types.Operator):
 
     def _new_pin(self, context, mouse_x, mouse_y):
         logger = logging.getLogger(__name__)
-        settings = get_main_settings()
+        settings = get_fb_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
         kid = settings.get_keyframe(headnum, camnum)
@@ -93,7 +93,7 @@ class FB_OT_MovePin(bpy.types.Operator):
     def init_action(self, context, mouse_x, mouse_y):
         args = (self, context)
 
-        settings = get_main_settings()
+        settings = get_fb_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
 
@@ -126,7 +126,7 @@ class FB_OT_MovePin(bpy.types.Operator):
             return self._new_pin(context, mouse_x, mouse_y)
 
     def on_left_mouse_release(self, context, mouse_x, mouse_y):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
         head = settings.get_head(headnum)
@@ -174,7 +174,7 @@ class FB_OT_MovePin(bpy.types.Operator):
         fb.move_pin(kid, pin_idx, coords.image_space_to_frame(x, y))
 
     def on_mouse_move(self, context, mouse_x, mouse_y):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
         head = settings.get_head(headnum)

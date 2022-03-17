@@ -23,7 +23,7 @@ import bpy
 from bpy.types import Panel, Operator
 
 from ...config import Config
-from ..config import FBConfig, get_main_settings, get_operator, ErrorType
+from ..config import FBConfig, get_fb_settings, get_operator, ErrorType
 from ..callbacks import mesh_update_accepted, mesh_update_canceled
 
 
@@ -208,7 +208,7 @@ class FB_OT_NoBlendshapesUntilExpressionWarning(Operator):
 
     def execute(self, context):
         if (self.accept):
-            settings = get_main_settings()
+            settings = get_fb_settings()
             head = settings.get_head(self.headnum)
             if head is None:
                 return {'CANCELLED'}
@@ -241,7 +241,7 @@ class FB_OT_TexSelector(Operator):
     headnum: bpy.props.IntProperty(default=0)
 
     def draw(self, context):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         head = settings.get_head(self.headnum)
         layout = self.layout
 
@@ -298,7 +298,7 @@ class FB_OT_TexSelector(Operator):
         logger = logging.getLogger(__name__)
         logger.debug('START TEXTURE CREATION')
 
-        head = get_main_settings().get_head(self.headnum)
+        head = get_fb_settings().get_head(self.headnum)
         if head is None:
             logger.error('WRONG HEADNUM')
             return {'CANCELLED'}

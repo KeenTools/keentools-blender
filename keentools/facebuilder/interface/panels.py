@@ -19,7 +19,7 @@
 from bpy.types import Panel
 
 from .updater import (FBUpdater, FBDownloadNotification, FBDownloadingProblem, FBInstallationReminder)
-from ..config import FBConfig, get_main_settings
+from ..config import FBConfig, get_fb_settings
 from ...config import Config
 import re
 from ..fbloader import FBLoader
@@ -50,7 +50,7 @@ def _show_all_panels_no_blendshapes():
     state, headnum = what_is_state()
     if not _state_valid_to_show(state):
         return False
-    settings = get_main_settings()
+    settings = get_fb_settings()
     return settings.get_head(headnum).has_no_blendshapes()
 
 
@@ -140,7 +140,7 @@ class FB_PT_HeaderPanel(Common, Panel):
 
     def _draw_many_heads(self, layout):
         # Output List of all heads in Scene
-        settings = get_main_settings()
+        settings = get_fb_settings()
         state, headnum = what_is_state()
 
         for i, h in enumerate(settings.heads):
@@ -346,7 +346,7 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
                     col.label(text=a)
 
         layout = self.layout
-        settings = get_main_settings()
+        settings = get_fb_settings()
         head = get_current_head()
 
         if not head:
@@ -370,7 +370,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             text='', icon='QUESTION')
 
     def _draw_pins_panel(self, headnum, camnum):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         layout = self.layout
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
@@ -389,7 +389,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         op.camnum = camnum
 
     def _draw_camera_list(self, headnum, layout):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         head = settings.get_head(headnum)
 
         if head is not None and not head.has_cameras():
@@ -454,7 +454,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
 
 
     def _draw_camera_hint(self, layout, headnum):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         head = settings.get_head(headnum)
 
         if not head.has_pins() \
@@ -468,7 +468,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             col.label(text='to switch to Pin mode', icon='BLANK1')
 
     def _draw_exit_pinmode(self, layout):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         if settings.pinmode:
             col = layout.column()
             col.scale_y = 2.0
@@ -476,7 +476,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
                          text='Exit Pin mode', icon='LOOP_BACK', depress=True)
 
     def draw(self, context):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         layout = self.layout
 
         state, headnum = what_is_state()
@@ -518,7 +518,7 @@ class FB_PT_Model(AllVisibleClosed, Panel):
 
     def draw(self, context):
         layout = self.layout
-        settings = get_main_settings()
+        settings = get_fb_settings()
 
         state, headnum = what_is_state()
         if headnum < 0:
@@ -585,7 +585,7 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
     def draw(self, context):
         layout = self.layout
         obj = context.object
-        settings = get_main_settings()
+        settings = get_fb_settings()
         headnum = settings.head_by_obj(obj)
         if headnum < 0:
             headnum = settings.current_headnum
@@ -661,7 +661,7 @@ class FB_PT_AppearancePanel(AllVisible, Panel):
 
     def draw(self, context):
         layout = self.layout
-        settings = get_main_settings()
+        settings = get_fb_settings()
 
         box = layout.box()
         col = box.column(align=True)

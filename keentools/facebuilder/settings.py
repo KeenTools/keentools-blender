@@ -34,7 +34,7 @@ from bpy.props import (
 from bpy.types import PropertyGroup
 
 from ..config import Config
-from .config import FBConfig, get_main_settings
+from .config import FBConfig, get_fb_settings
 from .fbloader import FBLoader
 from ..utils import coords
 from .callbacks import (update_mesh_with_dialog,
@@ -366,7 +366,7 @@ class FBCameraItem(PropertyGroup):
         return self.get_custom_projection_matrix(self.focal)
 
     def get_headnum_camnum(self):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         for i, head in enumerate(settings.heads):
             for j, camera in enumerate(head.cameras):
                 if camera == self:
@@ -665,14 +665,14 @@ class FBHeadItem(PropertyGroup):
         self.sensor_height = 0
 
     def get_headnum(self):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         for i, head in enumerate(settings.heads):
             if head == self:
                 return i
         return -1
 
     def get_main_settings(self):
-        return get_main_settings()
+        return get_fb_settings()
 
     def get_expression_view_keyframe(self):
         if self.expression_view == FBConfig.empty_expression_view_idname:

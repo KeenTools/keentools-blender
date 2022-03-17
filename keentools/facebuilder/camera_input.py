@@ -2,13 +2,13 @@ import numpy as np
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
-from .config import get_main_settings
+from .config import get_fb_settings
 
 
 class FaceBuilderCameraInput(pkt_module().FaceBuilderCameraInputI):
     @classmethod
     def _camera_at(cls, keyframe):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         head = settings.get_current_head()
         assert head is not None
         return head.get_camera_by_keyframe(keyframe)

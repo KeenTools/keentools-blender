@@ -260,7 +260,7 @@ class FBConfig:
     }
 
 
-def get_main_settings():
+def get_fb_settings():
     return getattr(bpy.context.scene, FBConfig.addon_global_var_name)
 
 

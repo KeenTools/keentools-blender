@@ -15,11 +15,11 @@ import bpy
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import test_utils
 
-from keentools_facebuilder.settings import model_type_callback, uv_items_callback
-from keentools_facebuilder.utils import coords, materials
-from keentools_facebuilder.config import Config, get_main_settings, get_operator
-from keentools_facebuilder.fbloader import FBLoader
-from keentools_facebuilder.pick_operator import reset_detected_faces, get_detected_faces
+from keentools.facebuilder.settings import model_type_callback, uv_items_callback
+from keentools.utils import coords, materials
+from keentools.facebuilder.config import FBConfig, get_fb_settings, get_operator
+from keentools.facebuilder.fbloader import FBLoader
+from keentools.facebuilder.pick_operator import reset_detected_faces, get_detected_faces
 
 
 class TestConfig:
@@ -52,7 +52,7 @@ def _get_models():
 class FaceBuilderTest(unittest.TestCase):
 
     def _head_and_cameras(self):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         self.assertEqual(0, len(settings.heads))
         test_utils.create_head()
         self.assertEqual(1, len(settings.heads))
@@ -68,7 +68,7 @@ class FaceBuilderTest(unittest.TestCase):
 
     def _head_cams_and_pins(self):
         self._head_and_cameras()
-        settings = get_main_settings()
+        settings = get_fb_settings()
         headnum = settings.get_last_headnum()
         camnum = settings.get_last_camnum(headnum)
         test_utils.select_camera(headnum, camnum)
@@ -86,7 +86,7 @@ class FaceBuilderTest(unittest.TestCase):
 
     def test_addon_on(self):
         test_utils.new_scene()
-        settings = get_main_settings()
+        settings = get_fb_settings()
         self.assertEqual(0, len(settings.heads))
 
     def test_create_head_and_cameras(self):
@@ -96,7 +96,7 @@ class FaceBuilderTest(unittest.TestCase):
     def test_delete_cameras(self):
         test_utils.new_scene()
         self._head_and_cameras()
-        settings = get_main_settings()
+        settings = get_fb_settings()
         headnum = settings.get_last_headnum()
 
         filenames = DataHolder.get_image_file_names()
@@ -113,13 +113,13 @@ class FaceBuilderTest(unittest.TestCase):
     def test_wireframe_coloring(self):
         test_utils.new_scene()
         self._head_and_cameras()
-        op = get_operator(Config.fb_wireframe_color_idname)
+        op = get_operator(FBConfig.fb_wireframe_color_idname)
         op('EXEC_DEFAULT', action='wireframe_green')
 
     def test_duplicate_and_reconstruct(self):
         test_utils.new_scene()
         self._head_and_cameras()
-        settings = get_main_settings()
+        settings = get_fb_settings()
         headnum = settings.get_last_headnum()
         head1 = settings.get_head(headnum)
         test_utils.deselect_all()
@@ -132,7 +132,7 @@ class FaceBuilderTest(unittest.TestCase):
             TRANSFORM_OT_translate={"value": (-4.0, 0, 0)})
         test_utils.save_scene(filename='before.blend')
 
-        op = get_operator(Config.fb_reconstruct_head_idname)
+        op = get_operator(FBConfig.fb_reconstruct_head_idname)
         op('EXEC_DEFAULT')
         headnum2 = settings.get_last_headnum()
         head2 = settings.get_head(headnum2)
@@ -143,7 +143,7 @@ class FaceBuilderTest(unittest.TestCase):
     def test_change_camera_params(self):
         test_utils.new_scene()
         self._head_cams_and_pins()
-        settings = get_main_settings()
+        settings = get_fb_settings()
         headnum = settings.get_last_headnum()
         head = settings.get_head(headnum)
         camnum = head.get_last_camnum()
@@ -158,15 +158,15 @@ class FaceBuilderTest(unittest.TestCase):
         new_sensor_width = 15
         head.sensor_width = new_sensor_width
         # Config.default_sensor_width instead cutom new_sensor_width!
-        self.assertEqual(Config.default_sensor_width, camobj.data.sensor_width)
+        self.assertEqual(FBConfig.default_sensor_width, camobj.data.sensor_width)
         new_sensor_width = 20
         head.sensor_width = new_sensor_width
-        self.assertEqual(Config.default_sensor_width, camobj.data.sensor_width)
+        self.assertEqual(FBConfig.default_sensor_width, camobj.data.sensor_width)
 
     def test_load_images_and_bake_texture(self):
         test_utils.new_scene()
         self._head_cams_and_pins()
-        settings = get_main_settings()
+        settings = get_fb_settings()
 
         dir = os.path.dirname(os.path.abspath(__file__))
         filename = os.path.join(dir, 'images/ale_white_24x16.jpg')
@@ -222,7 +222,7 @@ class FaceBuilderTest(unittest.TestCase):
         logger = logging.getLogger(__name__)
         test_utils.new_scene()
         self._head_cams_and_pins()
-        settings = get_main_settings()
+        settings = get_fb_settings()
         headnum = settings.get_last_headnum()
         head = settings.get_head(headnum)
 
@@ -235,7 +235,7 @@ class FaceBuilderTest(unittest.TestCase):
     def test_create_blendshapes_and_animation(self):
         test_utils.new_scene()
         self._head_cams_and_pins()
-        settings = get_main_settings()
+        settings = get_fb_settings()
         headnum = settings.get_last_headnum()
         head = settings.get_head(headnum)
         headobj = head.headobj
@@ -268,7 +268,7 @@ class FaceBuilderTest(unittest.TestCase):
 
         test_utils.new_scene()
         self._head_cams_and_pins()
-        settings = get_main_settings()
+        settings = get_fb_settings()
         headnum = settings.get_last_headnum()
         head = settings.get_head(headnum)
         headobj = head.headobj
@@ -289,7 +289,7 @@ class FaceBuilderTest(unittest.TestCase):
         self._head_and_cameras()
         fb = FBLoader.get_builder()
         self.assertTrue(fb.is_face_detector_available())
-        settings = get_main_settings()
+        settings = get_fb_settings()
         headnum = settings.get_last_headnum()
         head = settings.get_head(headnum)
         camnum = head.get_last_camnum()

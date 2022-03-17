@@ -23,7 +23,7 @@ import numpy as np
 import bpy
 
 from ..utils import manipulate, coords, cameras
-from .config import FBConfig, get_main_settings, get_operator, ErrorType
+from .config import FBConfig, get_fb_settings, get_operator, ErrorType
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
 from ..utils.other import (FBStopShaderTimer, force_ui_redraw,
@@ -66,7 +66,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
     def _fix_heads_with_warning(self):
         logger = logging.getLogger(__name__)
-        settings = get_main_settings()
+        settings = get_fb_settings()
         heads_deleted, cams_deleted = settings.fix_heads()
         if heads_deleted > 0 or cams_deleted > 0:
             logger.warning("HEADS AND CAMERAS FIXED")
@@ -75,7 +75,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
 
     def _init_wireframer_colors(self, opacity):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         head = settings.get_head(settings.current_headnum)
 
         wf = FBLoader.viewport().wireframer()
@@ -95,7 +95,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
     def _delete_found_pin(self, nearest, context):
         logger = logging.getLogger(__name__)
-        settings = get_main_settings()
+        settings = get_fb_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
         head = settings.get_head(headnum)
@@ -130,7 +130,7 @@ class FB_OT_PinMode(bpy.types.Operator):
     def _undo_detected(self, context):
         logger = logging.getLogger(__name__)
         logger.debug('UNDO DETECTED')
-        settings = get_main_settings()
+        settings = get_fb_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
         head = settings.get_head(headnum)
@@ -161,7 +161,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             return {'PASS_THROUGH'}
 
         if coords.is_safe_region(context, mouse_x, mouse_y):
-            settings = get_main_settings()
+            settings = get_fb_settings()
             # Movepin operator Call
             op = get_operator(FBConfig.fb_movepin_idname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
@@ -180,7 +180,7 @@ class FB_OT_PinMode(bpy.types.Operator):
     def invoke(self, context, event):
         logger = logging.getLogger(__name__)
         args = (self, context)
-        settings = get_main_settings()
+        settings = get_fb_settings()
 
         logger.debug('PINMODE ENTER. CURRENT_HEAD: {} CURRENT_CAM: {}'.format(
             settings.current_headnum, settings.current_camnum))
@@ -322,7 +322,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
     def _wireframe_view_toggle(self):
         logger = logging.getLogger(__name__)
-        settings = get_main_settings()
+        settings = get_fb_settings()
 
         settings.overall_opacity = \
             0.0 if settings.overall_opacity > 0.5 else 1.0
@@ -333,7 +333,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
     def _modal_should_finish(self, context, event):
         logger = logging.getLogger(__name__)
-        settings = get_main_settings()
+        settings = get_fb_settings()
         headnum = settings.current_headnum
 
         # Quit if Screen changed
@@ -385,7 +385,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
     def modal(self, context, event):
         logger = logging.getLogger(__name__)
-        settings = get_main_settings()
+        settings = get_fb_settings()
 
         if self.pinmode_id != settings.pinmode_id:
             logger.error('Extreme pinmode operator stop')

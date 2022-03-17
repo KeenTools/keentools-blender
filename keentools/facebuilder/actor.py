@@ -29,7 +29,7 @@ from bpy.props import (
 
 from ..utils import manipulate
 from ..utils.coords import xy_to_xz_rotation_matrix_4x4
-from .config import FBConfig, get_main_settings
+from .config import FBConfig, get_fb_settings
 from ..utils.exif_reader import auto_setup_camera_from_exif
 from ..utils.blendshapes import (create_blendshape_controls,
                                  make_control_panel,
@@ -137,7 +137,7 @@ class FB_OT_CameraActor(bpy.types.Operator):
         logger.debug('headnum: {} camnum: {} num: {}'.format(
             self.headnum, self.camnum, self.num))
 
-        settings = get_main_settings()
+        settings = get_fb_settings()
         head = settings.get_head(self.headnum)
         camera = head.get_camera(settings.current_camnum)
 

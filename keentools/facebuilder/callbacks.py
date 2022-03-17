@@ -19,7 +19,7 @@ import logging
 import numpy as np
 import bpy
 
-from .config import get_main_settings, get_operator, FBConfig, ErrorType
+from .config import get_fb_settings, get_operator, FBConfig, ErrorType
 from .fbloader import FBLoader
 from ..utils import coords
 from ..utils.manipulate import (get_current_headnum,
@@ -35,7 +35,7 @@ def mesh_update_accepted(headnum):
     logger = logging.getLogger(__name__)
     logger.debug('callbacks.update_mesh_geometry')
 
-    settings = get_main_settings()
+    settings = get_fb_settings()
     head = settings.get_head(headnum)
 
     if not head or not head.model_changed():
@@ -71,7 +71,7 @@ def mesh_update_accepted(headnum):
 def mesh_update_canceled(headnum):
     logger = logging.getLogger(__name__)
     logger.debug('callbacks.mesh_update_canceled')
-    settings = get_main_settings()
+    settings = get_fb_settings()
     head = settings.get_head(headnum)
     if not head:
         logger.debug('WRONG_HEAD')
@@ -110,7 +110,7 @@ def _update_mesh_now(headnum):
     logger = logging.getLogger(__name__)
     logger.debug('callbacks.update_mesh')
 
-    settings = get_main_settings()
+    settings = get_fb_settings()
     head = settings.get_head(headnum)
     if not head:
         logger.debug('WRONG_HEAD')
@@ -219,7 +219,7 @@ def _update_mesh_now(headnum):
 
 def update_expressions(self, context):
     logger = logging.getLogger(__name__)
-    settings = get_main_settings()
+    settings = get_fb_settings()
     headnum = self.get_headnum()
     if headnum < 0:
         logger.debug('WRONG HEADNUM {}'.format(headnum))
@@ -261,7 +261,7 @@ def update_expression_view(self, context):
 
 
 def update_wireframe_image(self, context):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     vp = FBLoader.viewport()
     wf = vp.wireframer()
     wf.init_colors((settings.wireframe_color,
@@ -308,7 +308,7 @@ def update_model_scale(self, context):
     headnum = self.get_headnum()
     FBLoader.load_model(headnum)
 
-    settings = get_main_settings()
+    settings = get_fb_settings()
     head = settings.get_head(headnum)
     fb = FBLoader.get_builder()
     fb.set_scale(head.model_scale)
@@ -335,7 +335,7 @@ def update_head_focal(self, context):
 
 def update_camera_focal(self, context):
     def _check_current_selection_is_not_actual(headnum, camnum):
-        settings = get_main_settings()
+        settings = get_fb_settings()
         return headnum < 0 or headnum != settings.current_headnum \
                 or camnum != settings.current_camnum
 
@@ -360,7 +360,7 @@ def update_camera_focal(self, context):
 
 
 def update_background_tone_mapping(self, context):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     if not settings.pinmode:
         return
     self.apply_tone_mapping()

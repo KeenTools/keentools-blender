@@ -37,7 +37,7 @@ from ..blender_independent_packages.pykeentools_loader import (
     installation_status as pkt_installation_status,
     loaded as pkt_loaded)
 from ..config import Config, is_blender_supported
-from ..facebuilder.config import FBConfig, get_main_settings, get_operator
+from ..facebuilder.config import FBConfig, get_fb_settings, get_operator
 from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
@@ -102,7 +102,7 @@ class FB_OT_UserPreferencesGetColors(bpy.types.Operator):
         logger = logging.getLogger(__name__)
         logger.debug('user_preferences_get_colors')
 
-        settings = get_main_settings()
+        settings = get_fb_settings()
         preferences = settings.preferences()
         preferences.wireframe_color = settings.wireframe_color
         preferences.wireframe_special_color = settings.wireframe_special_color
@@ -170,7 +170,7 @@ class FB_OT_UserPreferencesResetAllWarning(bpy.types.Operator):
 
 
 def _update_user_preferences_pin_size(self, context):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     prefs = settings.preferences()
     settings.pin_size = self.pin_size
 
@@ -179,7 +179,7 @@ def _update_user_preferences_pin_size(self, context):
 
 
 def _update_user_preferences_pin_sensitivity(self, context):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     prefs = settings.preferences()
     settings.pin_sensitivity = self.pin_sensitivity
 
@@ -544,7 +544,7 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         pass
         FBUpdater.init_updater()
         CurrentStateExecutor.compute_current_panel_updater_state()
-        settings = get_main_settings()
+        settings = get_fb_settings()
         if settings.preferences().updater_state != UpdateState.INITIAL:
             layout.label(text='Update available:')
             box = layout.box()
