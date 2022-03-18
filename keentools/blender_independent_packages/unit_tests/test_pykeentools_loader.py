@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import pytest
-import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
+import keentools.blender_independent_packages.pykeentools_loader as pkt
 
 
 def test_wrong_installations():

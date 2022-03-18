@@ -3,7 +3,7 @@ import bpy
 from bpy.types import Panel, Operator
 from bpy.props import StringProperty, IntProperty
 
-import keentools_facebuilder
+import keentools
 from keentools.facebuilder.config import FBConfig, get_fb_settings, \
     get_operator, ErrorType
 import keentools.utils.coords as coords
