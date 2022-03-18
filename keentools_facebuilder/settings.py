@@ -784,6 +784,20 @@ class FBSceneSettings(PropertyGroup):
     expression_rigidity: FloatProperty(
         description="Change how much pins affect the model expressions",
         name="Expression rigidity", default=2.0, min=0.001, max=1000.0)
+    blinking_rigidity: FloatProperty(
+        description="Change blinking rigidity",
+        name="Blinking rigidity", default=2.0, min=0.001, max=1000.0)
+    neck_rotation_rigidity: FloatProperty(
+        description="Change neck rotation rigidity",
+        name="Neck rotation rigidity", default=2.0, min=0.001, max=1000.0)
+
+    use_blinking: BoolProperty(
+        description="Use blinking desctiption",
+        name="Use blinking", default=True)
+    use_neck_rotation: BoolProperty(
+        description="Use neck rotation desctiption",
+        name="Use neck rotation", default=True)
+
 
     # Internal use only.
     # Warning! current_headnum and current_camnum work only in Pinmode!

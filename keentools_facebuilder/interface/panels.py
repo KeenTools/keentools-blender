@@ -533,10 +533,21 @@ class FB_PT_Model(AllVisibleClosed, Panel):
         op.camnum = settings.current_camnum
 
         col = layout.column(align=True)
+        col.prop(settings, 'use_blinking')
+        col.prop(settings, 'use_neck_rotation')
+
+        col = layout.column(align=True)
         col.prop(settings, 'shape_rigidity')
         expression_rigidity_row = col.row(align=True)
         expression_rigidity_row.prop(settings, 'expression_rigidity')  
         expression_rigidity_row.active = head.should_use_emotions()
+
+        blinking_row = col.row(align=True)
+        blinking_row.prop(settings, 'blinking_rigidity')
+        blinking_row.active = settings.use_blinking
+        neck_row =  col.row(align=True)
+        neck_row.prop(settings, 'neck_rotation_rigidity')
+        neck_row.active = settings.use_neck_rotation
 
         layout.prop(head, 'model_scale')
 
