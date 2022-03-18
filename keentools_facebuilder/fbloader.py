@@ -167,6 +167,9 @@ class FBLoader:
         fb.set_shape_rigidity(settings.shape_rigidity)
         fb.set_expressions_rigidity(settings.expression_rigidity)
 
+        fb.set_blinking_rigidity(settings.blinking_rigidity)
+        fb.set_neck_rotation_rigidity(settings.neck_rotation_rigidity)
+
     @classmethod
     def update_all_camera_positions(cls, headnum):
         settings = get_main_settings()
