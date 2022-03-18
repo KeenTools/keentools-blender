@@ -17,32 +17,30 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
-from collections import Counter
-
 import bpy
 
 from ..facebuilder.fbloader import FBLoader
-# TODO: Check Config variables
-from ..config import Config, get_main_settings, get_operator, ErrorType
-from . import cameras, attrs, coords
+from ..config import get_operator
+from ..facebuilder.config import FBConfig, get_fb_settings, ErrorType
+from . import cameras, attrs
 from .exif_reader import (read_exif_to_camera, auto_setup_camera_from_exif)
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 def _is_keentools_object(obj):
-    return Config.version_prop_name[0] in obj.keys()
+    return FBConfig.version_prop_name[0] in obj.keys()
 
 
 def _get_serial(obj):
-    return attrs.get_safe_custom_attribute(obj, Config.fb_serial_prop_name[0])
+    return attrs.get_safe_custom_attribute(obj, FBConfig.fb_serial_prop_name[0])
 
 
 def _get_dir_name(obj):
-    return attrs.get_safe_custom_attribute(obj, Config.fb_dir_prop_name[0])
+    return attrs.get_safe_custom_attribute(obj, FBConfig.fb_dir_prop_name[0])
 
 
 def _get_image_names(obj):
-    return attrs.get_safe_custom_attribute(obj, Config.fb_images_prop_name[0])
+    return attrs.get_safe_custom_attribute(obj, FBConfig.fb_images_prop_name[0])
 
 
 def _check_facs_available(count):
@@ -57,19 +55,12 @@ def _check_facs_available(count):
     return False
 
 
-def is_it_our_mesh(obj):
-    if not obj or obj.type != 'MESH':
-        return False
-
-    return _check_facs_available(len(obj.data.vertices))
-
-
 # Scene States and Head number. All States are:
 # RECONSTRUCT, NO_HEADS, THIS_HEAD, ONE_HEAD, MANY_HEADS, PINMODE
 # ------------
 def what_is_state():
     def _how_many_heads():
-        settings = get_main_settings()
+        settings = get_fb_settings()
         unknown_headnum = -1
         heads_count = len(settings.heads)
         if heads_count == 0:
@@ -80,7 +71,7 @@ def what_is_state():
             return 'MANY_HEADS', unknown_headnum
 
     context = bpy.context
-    settings = get_main_settings()
+    settings = get_fb_settings()
     unknown_headnum = -1
 
     if settings.pinmode:
@@ -122,7 +113,7 @@ def get_current_headnum():
 def get_current_head():
     headnum = get_current_headnum()
     if headnum >= 0:
-        settings = get_main_settings()
+        settings = get_fb_settings()
         return settings.get_head(headnum)
     return None
 
@@ -149,7 +140,7 @@ def get_obj_from_context(context, force_fbloader=True):
         if headnum < 0:
             return None, 1.0
 
-        settings = get_main_settings()
+        settings = get_fb_settings()
         head = settings.get_head(headnum)
         if not head:
             return None, 1.0
@@ -171,11 +162,11 @@ def push_head_in_undo_history(head, msg='KeenTools operation'):
 
 
 def check_settings():
-    settings = get_main_settings()
+    settings = get_fb_settings()
     if not settings.check_heads_and_cams():
         heads_deleted, cams_deleted = settings.fix_heads()
         if heads_deleted == 0:
-            warn = get_operator(Config.fb_warning_idname)
+            warn = get_operator(FBConfig.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
         return False
     return True
@@ -184,13 +175,13 @@ def check_settings():
 # --------------------
 def inc_operation():
     """ Debug purpose """
-    settings = get_main_settings()
+    settings = get_fb_settings()
     settings.opnum += 1
 
 
 def get_operation():
     """ Debug purpose """
-    settings = get_main_settings()
+    settings = get_fb_settings()
     return settings.opnum
 # --------------------
 
@@ -201,68 +192,13 @@ def select_object_only(obj):
     bpy.context.view_layer.objects.active = obj
 
 
-def use_camera_frame_size(headnum, camnum):
-    # Camera Background --> Render size
-    scene = bpy.context.scene
-    settings = get_main_settings()
-    camera = settings.get_camera(headnum, camnum)
-    w, h = camera.get_image_size()
-    settings.frame_width = w
-    settings.frame_height = h
-    if w > 0 and h > 0:
-        scene.render.resolution_x = w
-        scene.render.resolution_y = h
-
-
-def use_render_frame_size():
-    scene = bpy.context.scene
-    settings = get_main_settings()
-    settings.frame_width = scene.render.resolution_x
-    settings.frame_height = scene.render.resolution_y
-
-
-def auto_detect_frame_size():
-    scene = bpy.context.scene
-    settings = get_main_settings()
-    headnum = settings.current_headnum
-    sizes = []
-    for c in settings.get_head(headnum).cameras:
-        w, h = c.get_image_size()
-        sizes.append((w, h))
-    cnt = Counter(sizes)
-    mc = cnt.most_common(2)
-    if len(mc) == 0:
-        return
-    el = mc[0][0]
-    # If most are undefined images
-    if el == (-1, -1):
-        if len(mc) > 1:
-            el = mc[1][0]
-    if el[0] > 0:
-        scene.render.resolution_x = el[0]
-        settings.frame_width = el[0]
-    if el[1] > 0:
-        scene.render.resolution_y = el[1]
-        settings.frame_height = el[1]
-
-
-def reset_model_to_neutral(headnum):
-    settings = get_main_settings()
-    FBLoader.load_model(headnum)
-    head = settings.get_head(headnum)
-    if head is None:
-        return
-    fb = FBLoader.get_builder()
-    coords.update_head_mesh_non_neutral(fb, head)
-
-
 def reconstruct_by_head():
     """ Reconstruct Cameras and Scene structures by serial """
     logger = logging.getLogger(__name__)
     scene = bpy.context.scene
     rx = scene.render.resolution_x
     ry = scene.render.resolution_y
-    settings = get_main_settings()
+    settings = get_fb_settings()
 
     obj = bpy.context.object
 
@@ -351,7 +287,7 @@ def reconstruct_by_head():
         scene.render.resolution_x = rx
         scene.render.resolution_y = ry
         logger.info("SCENE PARAMETERS RESTORED")
-        warn = get_operator(Config.fb_warning_idname)
+        warn = get_operator(FBConfig.fb_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CannotReconstruct)
         return
 

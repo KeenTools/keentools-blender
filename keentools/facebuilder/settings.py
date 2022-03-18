@@ -281,9 +281,6 @@ class FBCameraItem(PropertyGroup):
         self.set_image_width(w)
         self.set_image_height(h)
 
-    def is_model_mat_empty(self):
-        return self.model_mat == ''
-
     def is_deleted(self):
         """ Checks that the list item references a non-existent object """
         if self.camobj is None:

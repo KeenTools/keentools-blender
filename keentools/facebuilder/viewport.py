@@ -20,7 +20,7 @@ import bpy
 
 import numpy as np
 
-from .config import Config, get_fb_settings
+from ..facebuilder.config import FBConfig, get_fb_settings
 from ..preferences.user_preferences import UserPreferences
 from ..utils import coords
 from ..utils.edges import FBEdgeShader2D, FBRasterEdgeShader3D, FBRectangleShader2D
@@ -163,7 +163,7 @@ class FBViewport:
         cls.wireframer().register_handler(args)
         # Timer for continuous update modal view
         cls._draw_timer_handler = context.window_manager.event_timer_add(
-            time_step=Config.viewport_redraw_interval, window=context.window
+            time_step=FBConfig.viewport_redraw_interval, window=context.window
         )
 
     @classmethod
@@ -187,7 +187,7 @@ class FBViewport:
     # --------------------
     @classmethod
     def update_surface_points(
-            cls, fb, headobj, keyframe=-1, color=Config.surface_point_color):
+            cls, fb, headobj, keyframe=-1, color=FBConfig.surface_point_color):
         verts = cls.surface_points_from_fb(fb, keyframe)
         colors = [color] * len(verts)
 
@@ -220,7 +220,7 @@ class FBViewport:
         settings = get_fb_settings()
         cls.points2d().set_point_size(settings.pin_size)
         cls.points3d().set_point_size(
-            settings.pin_size * Config.surf_pin_size_scale)
+            settings.pin_size * FBConfig.surf_pin_size_scale)
 
     @classmethod
     def surface_points_from_mesh(cls, fb, headobj, keyframe=-1):
@@ -287,13 +287,13 @@ class FBViewport:
             x, y = coords.image_space_to_region(p[0], p[1], x1, y1, x2, y2)
             points[i] = (x, y)
 
-        vertex_colors = [Config.pin_color for _ in range(len(points))]
+        vertex_colors = [FBConfig.pin_color for _ in range(len(points))]
 
         pins = cls.pins()
         if pins.current_pin() and pins.current_pin_num() < len(vertex_colors):
-            vertex_colors[pins.current_pin_num()] = Config.current_pin_color
+            vertex_colors[pins.current_pin_num()] = FBConfig.current_pin_color
 
-        if Config.show_markers_at_camera_corners:
+        if FBConfig.show_markers_at_camera_corners:
             _add_markers_at_camera_corners(points, vertex_colors)
 
         cls.points2d().set_vertices_colors(points, vertex_colors)
@@ -359,5 +359,5 @@ class FBViewport:
 
         wire.vertices = verts2
         wire.vertices_colors = np.full((len(verts2), 4),
-                                       Config.residual_color).tolist()
+                                       FBConfig.residual_color).tolist()
         wire.create_batch()

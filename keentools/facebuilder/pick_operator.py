@@ -19,7 +19,6 @@
 import logging
 import bpy
 
-from .config import Config
 from ..facebuilder.config import FBConfig, ErrorType, get_fb_settings, get_operator
 from .fbloader import FBLoader
 from ..utils import coords
@@ -264,7 +263,7 @@ class FB_OT_PickMode(bpy.types.Operator):
                 event.mouse_region_x, event.mouse_region_y, context)
             index = rectangler.active_rectangle_index(mouse_x, mouse_y)
             rectangler.highlight_rectangle(index,
-                                           Config.selected_rectangle_color)
+                                           FBConfig.selected_rectangle_color)
             self._update_rectangler_shader(context)
 
         if event.value == 'PRESS' and event.type in {'LEFTMOUSE', 'RIGHTMOUSE'}:
@@ -348,7 +347,7 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
         if len(rects) > 1:
             for x1, y1, x2, y2, _ in rects:
                 rectangler.add_rectangle(x1, y1, x2, y2, w, h,
-                                         Config.regular_rectangle_color)
+                                         FBConfig.regular_rectangle_color)
             if invoked:
                 op = get_operator(FBConfig.fb_pickmode_idname)
                 op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)

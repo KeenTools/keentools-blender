@@ -19,7 +19,8 @@ import logging
 import numpy as np
 import bpy
 
-from .config import get_fb_settings, get_operator, FBConfig, ErrorType
+from ..config import get_operator
+from .config import get_fb_settings, FBConfig, ErrorType
 from .fbloader import FBLoader
 from ..utils import coords
 from ..utils.manipulate import (get_current_headnum,
