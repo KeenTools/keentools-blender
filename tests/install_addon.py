@@ -12,5 +12,5 @@ bpy.ops.preferences.addon_install(filepath=addon_path)
 bpy.ops.preferences.addon_enable(module='keentools_facebuilder')
 bpy.ops.wm.save_userpref()
 
-import keentools.blender_independent_packages.pykeentools_loader as pkt
+import keentools_facebuilder.blender_independent_packages.pykeentools_loader as pkt
 pkt.install_core_from_file(pkt_path)
