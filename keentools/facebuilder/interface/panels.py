@@ -88,7 +88,7 @@ class AllVisibleClosed(AllVisible):
 class FB_PT_HeaderPanel(Common, Panel):
     bl_idname = FBConfig.fb_header_panel_idname
     bl_label = '{} {}'.format(
-            Config.addon_human_readable_name, Config.addon_version)
+            FBConfig.fb_tool_name, Config.addon_version)
 
     def draw_header_preset(self, context):
         layout = self.layout

@@ -17,7 +17,6 @@
 # ##### END GPL LICENSE BLOCK #####
 import math
 import bpy
-from ..config import Config
 
 
 _company = 'keentools'
@@ -35,18 +34,14 @@ class FBConfig:
 
     user_preferences_dict_name = 'keentools_facebuilder_addon'
 
-    addon_global_var_name = prefix + '_settings'
-    addon_full_name = 'Keentools FaceBuilder for Blender'
+    fb_global_var_name = prefix + '_settings'
+    fb_tool_name = 'FaceBuilder'
 
     operators = _company + '_facebuilder'
 
     fb_tab_category = 'FaceBuilder'
-    keentools_website_url = 'https://keentools.io'
-    core_download_website_url = keentools_website_url + '/download/core'
 
-    manual_install_url = keentools_website_url + '/manual-installation'
-    pykeentools_license_url = 'https://link.keentools.io/eula'
-    license_purchase_url = 'https://link.keentools.io/fb-lc-fbbmld?utm_source=fbb-missing-license-dialog'
+    fb_license_purchase_url = 'https://link.keentools.io/fb-lc-fbbmld?utm_source=fbb-missing-license-dialog'
     coloring_texture_name = 'ktWireframeTexture'
     
     # Operators ids
@@ -126,10 +121,13 @@ class FBConfig:
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
     fb_camera_panel_idname = _PT + 'camera_panel'
+
+    # Updater is not for FB
     fb_update_panel_idname = _PT + 'update_panel'
     fb_download_notification_panel_idname = _PT + 'download_notification'
     fb_downloading_problem_panel_idname = _PT + 'downloading_problem'
     fb_updates_installation_panel_idname = _PT + 'updates_installation_panel'
+
     fb_views_panel_idname = _PT + 'views_panel'
     fb_exif_panel_idname = _PT + 'exif_panel'
     fb_texture_panel_idname = _PT + 'texture_panel'
@@ -261,7 +259,7 @@ class FBConfig:
 
 
 def get_fb_settings():
-    return getattr(bpy.context.scene, FBConfig.addon_global_var_name)
+    return getattr(bpy.context.scene, FBConfig.fb_global_var_name)
 
 
 def get_operator(operator_id_name):

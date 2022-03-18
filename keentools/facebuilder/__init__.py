@@ -44,12 +44,12 @@ CLASSES_TO_REGISTER = (MESH_OT_FBAddHead,
 
 
 def _add_addon_settings_var():
-    setattr(bpy.types.Scene, FBConfig.addon_global_var_name,
+    setattr(bpy.types.Scene, FBConfig.fb_global_var_name,
             bpy.props.PointerProperty(type=FBSceneSettings))
 
 
 def _remove_addon_settings_var():
-    delattr(bpy.types.Scene, FBConfig.addon_global_var_name)
+    delattr(bpy.types.Scene, FBConfig.fb_global_var_name)
 
 
 def menu_func(self, context):
