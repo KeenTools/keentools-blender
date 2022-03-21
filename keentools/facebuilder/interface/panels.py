@@ -20,7 +20,7 @@ from bpy.types import Panel
 
 from .updater import (FBUpdater, FBDownloadNotification, FBDownloadingProblem, FBInstallationReminder)
 from ..config import FBConfig, get_fb_settings
-from ...config import Config
+from ...addon_config import Config
 import re
 from ..fbloader import FBLoader
 from ...utils.manipulate import (what_is_state,

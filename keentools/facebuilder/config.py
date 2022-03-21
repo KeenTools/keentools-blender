@@ -262,16 +262,7 @@ def get_fb_settings():
     return getattr(bpy.context.scene, FBConfig.fb_global_var_name)
 
 
-def get_operator(operator_id_name):
-    def _rgetattr(obj, attr, *args):
-        import functools
-        def _getattr(obj, attr):
-            return getattr(obj, attr, *args)
-        return functools.reduce(_getattr, [obj] + attr.split('.'))
-    return _rgetattr(bpy.ops, operator_id_name)
-
-
-class ErrorType:
+class FBErrorType:
     Unknown = -1
     CustomMessage = 0
     NoLicense = 1

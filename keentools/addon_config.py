@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import math
 import bpy
 
 _company = 'keentools'
@@ -37,8 +36,6 @@ class Config:
     user_preferences_dict_name = 'keentools_facebuilder_addon'
     updater_preferences_dict_name = 'keentools_updater'
 
-    addon_global_var_name = prefix + '_settings'
-
     keentools_website_url = 'https://keentools.io'
     core_download_website_url = keentools_website_url + '/download/core'
 
@@ -46,8 +43,6 @@ class Config:
     pykeentools_license_url = 'https://link.keentools.io/eula'
     license_purchase_url = 'https://link.keentools.io/fb-lc-fbbmld?utm_source=fbb-missing-license-dialog'
     coloring_texture_name = 'ktWireframeTexture'
-
-    fb_warning_idname = operators + '.addon_warning'
 
     kt_uninstall_core_idname = operators + '.uninstall_core'
 
@@ -152,10 +147,6 @@ def is_blender_supported():
     return False
 
 
-def get_main_settings():
-    return getattr(bpy.context.scene, Config.addon_global_var_name)
-
-
 def get_addon_preferences():
     return bpy.context.preferences.addons[Config.addon_name].preferences
 
@@ -167,16 +158,3 @@ def get_operator(operator_id_name):
             return getattr(obj, attr, *args)
         return functools.reduce(_getattr, [obj] + attr.split('.'))
     return _rgetattr(bpy.ops, operator_id_name)
-
-
-class ErrorType:
-    Unknown = -1
-    CustomMessage = 0
-    NoLicense = 1
-    SceneDamaged = 2
-    CannotReconstruct = 3
-    CannotCreateObject = 4
-    MeshCorrupted = 5
-    PktProblem = 6
-    PktModelProblem = 7
-    DownloadingProblem = 8

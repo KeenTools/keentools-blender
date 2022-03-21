@@ -1,11 +1,10 @@
-import os
 import bpy
 from bpy.types import Panel, Operator
 from bpy.props import StringProperty, IntProperty
 
 import keentools
-from keentools.facebuilder.config import FBConfig, get_fb_settings, \
-    get_operator, ErrorType
+from keentools.addon_config import get_operator
+from keentools.facebuilder.config import FBConfig, get_fb_settings, FBErrorType
 import keentools.utils.coords as coords
 from keentools.utils.fake_context import get_fake_context
 from keentools.facebuilder.fbloader import FBLoader
@@ -52,15 +51,15 @@ class TestsPanel(Panel):
 
     def _draw_error_buttons(self, layout):
         layout.label(text='Error Messages')
-        for err in dir(ErrorType):
-            if not callable(getattr(ErrorType, err)) and \
+        for err in dir(FBErrorType):
+            if not callable(getattr(FBErrorType, err)) and \
                     not err.startswith('__'):
                 name = "{}".format(err)
-                value = getattr(ErrorType, err)
+                value = getattr(FBErrorType, err)
                 op = layout.operator('object.keentools_fb_tests',
                                      text="{}: {}".format(value, name))
                 op.action = "test_error_message"
-                op.error_type = getattr(ErrorType, name)
+                op.error_type = getattr(FBErrorType, name)
 
 
     # Face Builder Tests Panel Draw

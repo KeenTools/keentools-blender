@@ -20,11 +20,11 @@
 import logging
 import bpy
 
-# TODO: Check Config
-from ..config import Config, get_operator, ErrorType, get_main_settings
+from ..addon_config import get_operator
+from ..facebuilder.config import FBConfig, get_fb_settings, FBErrorType
 from . import manipulate
 from .coords import update_head_mesh_non_neutral
-from .cameras import show_all_cameras, exit_localview
+from ..facebuilder.utils.cameras import show_all_cameras, exit_localview
 from .other import unhide_viewport_ui_element_from_object
 from ..facebuilder.fbloader import FBLoader
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
@@ -44,13 +44,13 @@ def create_blendshapes(operator):
         logger.debug('no object')
         return {'CANCELLED'}
 
-    settings = get_main_settings()
+    settings = get_fb_settings()
     headnum = settings.head_by_obj(obj)
     if headnum >= 0:
         head = settings.get_head(headnum)
         if head.should_use_emotions() and \
-                head.expression_view != Config.neutral_expression_view_idname:
-            warn = get_operator(Config.fb_noblenshapes_until_expression_warning_idname)
+                head.expression_view != FBConfig.neutral_expression_view_idname:
+            warn = get_operator(FBConfig.fb_noblenshapes_until_expression_warning_idname)
             warn('INVOKE_DEFAULT', headnum=headnum)
             return {'CANCELLED'}
         # Forced change before creating blendshapes
@@ -61,8 +61,8 @@ def create_blendshapes(operator):
         counter = create_facs_blendshapes(obj, scale)
     except pkt_module().UnlicensedException:
         logger.error('UnlicensedException generate_facs_blendshapes')
-        warn = get_operator(Config.fb_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        warn = get_operator(FBConfig.fb_warning_idname)
+        warn('INVOKE_DEFAULT', msg=FBErrorType.NoLicense)
         return {'CANCELLED'}
     except Exception:
         logger.error('UNKNOWN EXCEPTION generate_facs_blendshapes')
@@ -104,7 +104,7 @@ def load_animation_from_csv(operator):
         logger.debug('no blendshapes')
         operator.report({'ERROR'}, 'The object has no blendshapes')
     else:
-        op = get_operator(Config.fb_animation_filebrowser_idname)
+        op = get_operator(FBConfig.fb_animation_filebrowser_idname)
         op('INVOKE_DEFAULT', obj_name=obj.name)
         logger.debug('filebrowser called')
     return {'FINISHED'}
@@ -208,8 +208,8 @@ def update_blendshapes(operator):
         except pkt_module().UnlicensedException:
             logger = logging.getLogger(__name__)
             logger.error('UnlicensedException update_blendshapes')
-            warn = get_operator(Config.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+            warn = get_operator(FBConfig.fb_warning_idname)
+            warn('INVOKE_DEFAULT', msg=FBErrorType.NoLicense)
             return {'CANCELLED'}
         except Exception:
             logger = logging.getLogger(__name__)
@@ -228,7 +228,7 @@ def unhide_head(operator, context):
     logger.debug('unhide_head call')
     headnum = manipulate.get_current_headnum()
     if headnum >= 0:
-        settings = get_main_settings()
+        settings = get_fb_settings()
         head = settings.get_head(headnum)
         FBLoader.load_model(headnum)
         update_head_mesh_non_neutral(FBLoader.get_builder(), head)

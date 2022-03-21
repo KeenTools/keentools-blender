@@ -26,13 +26,14 @@ from bpy.props import (
 )
 from bpy.types import Operator
 
-from ..config import Config
-from .config import get_fb_settings, get_operator, FBConfig
+from ..addon_config import Config, get_operator
+from .config import FBConfig, get_fb_settings
 from .fbloader import FBLoader
-from ..utils import cameras, manipulate, materials, coords, images
+from ..utils import manipulate, materials, coords, images
+from .utils import cameras
 from ..utils.attrs import get_obj_collection, safe_delete_collection
-from ..utils.exif_reader import (update_exif_sizes_message,
-                                 copy_exif_parameters_from_camera_to_head)
+from ..facebuilder.utils.exif_reader import (update_exif_sizes_message,
+                                             copy_exif_parameters_from_camera_to_head)
 from ..utils.manipulate import check_settings
 from ..utils.operator_action import (create_blendshapes,
                                      delete_blendshapes,

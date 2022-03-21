@@ -20,12 +20,13 @@ import math
 
 import bpy
 
-from .. config import get_main_settings, Config
-from . import attrs
+from ...addon_config import Config
+from ..config import get_fb_settings
+from ...utils import attrs
 
 
 def show_all_cameras(headnum):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     head = settings.get_head(headnum)
     if head is None:
         return
@@ -34,7 +35,7 @@ def show_all_cameras(headnum):
 
 
 def hide_other_cameras(headnum, camnum):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     head = settings.get_head(headnum)
     if head is None:
         return

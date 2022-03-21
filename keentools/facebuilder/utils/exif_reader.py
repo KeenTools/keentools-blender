@@ -19,11 +19,12 @@
 import logging
 import os
 
-from ..blender_independent_packages.exifread import process_file
-from ..blender_independent_packages.exifread import \
+from ...blender_independent_packages.exifread import process_file
+from ...blender_independent_packages.exifread import \
     DEFAULT_STOP_TAG, FIELD_TYPES
 
-from ..config import Config, get_main_settings
+from ...addon_config import Config
+from ..config import get_fb_settings
 
 
 # Convert frac record like '16384/32768' to float 0.5
@@ -254,7 +255,7 @@ def _exif_info_message(exif, data):
 
 
 def _exif_sizes_message(headnum, image):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     head = settings.get_head(headnum)
 
     if image is None:
@@ -316,7 +317,7 @@ def _exif_sizes_message(headnum, image):
 
 
 def reload_all_camera_exif(headnum):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     head = settings.get_head(headnum)
     for i, camera in enumerate(head.cameras):
         filepath = camera.get_abspath()
@@ -325,7 +326,7 @@ def reload_all_camera_exif(headnum):
 
 
 def read_exif_to_camera(headnum, camnum, filepath):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     camera = settings.get_camera(headnum, camnum)
     if camera is None:
         return False
@@ -336,7 +337,7 @@ def read_exif_to_camera(headnum, camnum, filepath):
 
 
 def update_exif_sizes_message(headnum, image):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     head = settings.get_head(headnum)
     if head is None:
         return False
@@ -402,7 +403,7 @@ def copy_exif_parameters_from_camera_to_head(camera, head):
 
 
 def read_exif_from_camera(headnum, camnum):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     head = settings.get_head(headnum)
     if head is None:
         return False

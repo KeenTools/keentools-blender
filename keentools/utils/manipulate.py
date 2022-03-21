@@ -20,10 +20,11 @@ import logging
 import bpy
 
 from ..facebuilder.fbloader import FBLoader
-from ..config import get_operator
-from ..facebuilder.config import FBConfig, get_fb_settings, ErrorType
-from . import cameras, attrs
-from .exif_reader import (read_exif_to_camera, auto_setup_camera_from_exif)
+from ..addon_config import get_operator
+from ..facebuilder.config import FBConfig, get_fb_settings, FBErrorType
+from . import attrs
+from ..facebuilder.utils import cameras
+from ..facebuilder.utils.exif_reader import (read_exif_to_camera, auto_setup_camera_from_exif)
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
@@ -167,7 +168,7 @@ def check_settings():
         heads_deleted, cams_deleted = settings.fix_heads()
         if heads_deleted == 0:
             warn = get_operator(FBConfig.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
+            warn('INVOKE_DEFAULT', msg=FBErrorType.SceneDamaged)
         return False
     return True
 
@@ -288,7 +289,7 @@ def reconstruct_by_head():
         scene.render.resolution_y = ry
         logger.info("SCENE PARAMETERS RESTORED")
         warn = get_operator(FBConfig.fb_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.CannotReconstruct)
+        warn('INVOKE_DEFAULT', msg=FBErrorType.CannotReconstruct)
         return
 
 

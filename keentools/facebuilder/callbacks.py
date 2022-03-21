@@ -19,8 +19,8 @@ import logging
 import numpy as np
 import bpy
 
-from ..config import get_operator
-from .config import get_fb_settings, FBConfig, ErrorType
+from ..addon_config import get_operator
+from .config import get_fb_settings, FBConfig, FBErrorType
 from .fbloader import FBLoader
 from ..utils import coords
 from ..utils.manipulate import (get_current_headnum,
@@ -58,7 +58,7 @@ def mesh_update_accepted(headnum):
         except pkt_module().UnlicensedException:
             logger.error('UnlicensedException restore_facs_blendshapes')
             warn = get_operator(FBConfig.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+            warn('INVOKE_DEFAULT', msg=FBErrorType.NoLicense)
         except Exception:
             logger.error('UNKNOWN EXCEPTION restore_facs_blendshapes')
 
@@ -150,7 +150,7 @@ def _update_mesh_now(headnum):
                         'using face data at the moment.\n' \
                         'If that doesn\'t help, please reinstall the add-on.'
         warn = get_operator(FBConfig.fb_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+        warn('INVOKE_DEFAULT', msg=FBErrorType.CustomMessage,
              msg_content=error_message)
         return False
     except Exception as err:
@@ -255,7 +255,7 @@ def update_expression_view(self, context):
             'that has FACS blendshapes is impossible. \n' \
             'Please remove blendshapes before choosing an expression.'
         warn = get_operator(FBConfig.fb_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+        warn('INVOKE_DEFAULT', msg=FBErrorType.CustomMessage,
              msg_content=error_message)
         return
     update_expressions(self, context)

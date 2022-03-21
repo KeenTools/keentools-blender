@@ -17,16 +17,16 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+import numpy as np
 
 import bpy
-import numpy as np
 
 from .config import FBConfig, get_fb_settings
 from ..utils.coords import xy_to_xz_rotation_matrix_3x3
 from ..utils.focal_length import (configure_focal_mode_and_fixes,
                                   update_camera_focal)
 from ..utils import attrs, coords
-from ..utils.exif_reader import reload_all_camera_exif
+from ..facebuilder.utils.exif_reader import reload_all_camera_exif
 from ..utils.other import FBStopShaderTimer, unhide_viewport_ui_element_from_object
 from .viewport import FBViewport
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module

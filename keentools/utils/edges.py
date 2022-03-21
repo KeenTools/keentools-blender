@@ -26,7 +26,7 @@ from .shaders import (simple_fill_vertex_shader,
                       residual_fragment_shader, raster_image_vertex_shader,
                       raster_image_fragment_shader,
                       solid_line_vertex_shader, solid_line_fragment_shader)
-from ..config import Config
+from ..addon_config import Config
 from ..utils.images import (check_bpy_image_has_same_size,
                             find_bpy_image_by_name,
                             remove_bpy_image)

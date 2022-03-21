@@ -20,7 +20,7 @@ import sys
 import platform
 import bpy
 
-from .config import Config
+from .addon_config import Config
 
 
 USER_MESSAGES = {

@@ -24,9 +24,10 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bpy.types import Operator
 
 from ..fbloader import FBLoader
-from ..config import FBConfig, get_fb_settings, get_operator
+from ...addon_config import get_operator
+from ..config import FBConfig, get_fb_settings
 
-from ...utils.exif_reader import (read_exif_to_camera,
+from ..utils.exif_reader import (read_exif_to_camera,
                                  auto_setup_camera_from_exif)
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.blendshapes import load_csv_animation_to_blendshapes

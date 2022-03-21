@@ -18,7 +18,7 @@
 
 import logging
 
-from ..config import Config
+from ..addon_config import Config
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed)
 

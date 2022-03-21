@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
-from ..config import Config
+from ..addon_config import Config
 from ..facebuilder.config import FBConfig
 
 

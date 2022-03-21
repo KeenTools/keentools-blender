@@ -23,7 +23,7 @@ from gpu_extras.batch import batch_for_shader
 from .shaders import (flat_color_3d_vertex_shader,
                       circular_dot_fragment_shader,
                       flat_color_2d_vertex_shader)
-from ..config import Config
+from ..addon_config import Config
 from ..preferences.user_preferences import UserPreferences
 
 

@@ -18,7 +18,7 @@
 
 import bpy
 from ..config import FBConfig
-from ...config import Config
+from ...addon_config import Config
 
 _help_window_width = 500
 

@@ -19,7 +19,8 @@
 import logging
 import bpy
 
-from ..facebuilder.config import FBConfig, ErrorType, get_fb_settings, get_operator
+from ..addon_config import get_operator
+from ..facebuilder.config import FBConfig, FBErrorType, get_fb_settings
 from .fbloader import FBLoader
 from ..utils import coords
 from ..utils.focal_length import configure_focal_mode_and_fixes
@@ -111,7 +112,7 @@ def _add_pins_to_face(headnum, camnum, rectangle_index, context):
     except pkt_module().UnlicensedException:
         logger.error('UnlicensedException _add_pins_to_face')
         warn = get_operator(FBConfig.fb_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        warn('INVOKE_DEFAULT', msg=FBErrorType.NoLicense)
         return None
     except Exception as err:
         logger.error('UNKNOWN EXCEPTION detect_face_pose in _add_pins_to_face')
@@ -143,7 +144,7 @@ def _not_enough_face_features_warning():
     error_message = 'Sorry, could not find enough facial features \n' \
                     'to pin the model! Please try pinning the model manually.'
     warn = get_operator(FBConfig.fb_warning_idname)
-    warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+    warn('INVOKE_DEFAULT', msg=FBErrorType.CustomMessage,
          msg_content=error_message)
     logger = logging.getLogger(__name__)
     logger.error('could not find enough facial features')

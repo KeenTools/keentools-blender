@@ -33,7 +33,7 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 
-from ..config import Config
+from ..addon_config import Config
 from .config import FBConfig, get_fb_settings
 from .fbloader import FBLoader
 from ..utils import coords

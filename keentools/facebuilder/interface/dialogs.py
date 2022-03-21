@@ -22,8 +22,8 @@ import re
 import bpy
 from bpy.types import Panel, Operator
 
-from ...config import Config
-from ..config import FBConfig, get_fb_settings, get_operator, ErrorType
+from ...addon_config import Config, get_operator
+from ..config import FBConfig, get_fb_settings, FBErrorType
 from ..callbacks import mesh_update_accepted, mesh_update_canceled
 
 
@@ -32,7 +32,7 @@ class FB_OT_AddonWarning(Operator):
     bl_label = ""
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    msg: bpy.props.IntProperty(default=ErrorType.Unknown)
+    msg: bpy.props.IntProperty(default=FBErrorType.Unknown)
     msg_content: bpy.props.StringProperty(default="")
 
     content = []
@@ -49,13 +49,13 @@ class FB_OT_AddonWarning(Operator):
         for t in self.content:
             layout.label(text=t)
 
-        if self.msg == ErrorType.NoLicense:
+        if self.msg == FBErrorType.NoLicense:
             op = self.layout.operator(FBConfig.fb_open_url_idname,
                                       text='Purchase a license')
             op.url = FBConfig.fb_license_purchase_url
 
     def execute(self, context):
-        if self.msg not in (ErrorType.PktProblem, ErrorType.NoLicense):
+        if self.msg not in (FBErrorType.PktProblem, FBErrorType.NoLicense):
             return {"FINISHED"}
 
         op = get_operator(FBConfig.fb_addon_settings_idname)
@@ -63,10 +63,10 @@ class FB_OT_AddonWarning(Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        if self.msg == ErrorType.CustomMessage:
+        if self.msg == FBErrorType.CustomMessage:
             self.set_content(re.split("\r\n|\n", self.msg_content))
             return context.window_manager.invoke_props_dialog(self, width=400)
-        elif self.msg == ErrorType.NoLicense:
+        elif self.msg == FBErrorType.NoLicense:
             self.set_content([
                 "License is not found",
                 " ",
@@ -76,7 +76,7 @@ class FB_OT_AddonWarning(Operator):
                 "Please check the license settings."
             ])
 
-        elif self.msg == ErrorType.SceneDamaged:
+        elif self.msg == FBErrorType.SceneDamaged:
             self.set_content([
                 "Scene was damaged",
                 " ",
@@ -84,37 +84,37 @@ class FB_OT_AddonWarning(Operator):
                 "from the scene.",
                 "The scene was restored automatically."
             ])
-        elif self.msg == ErrorType.CannotReconstruct:
+        elif self.msg == FBErrorType.CannotReconstruct:
             self.set_content([
                 "Reconstruction is impossible",
                 " ",
                 "Object parameters are invalid or missing."
             ])
-        elif self.msg == ErrorType.CannotCreateObject:
+        elif self.msg == FBErrorType.CannotCreateObject:
             self.set_content([
                 "Cannot create object",
                 " ",
                 "An error occurred while creating an object."
             ])
-        elif self.msg == ErrorType.MeshCorrupted:
+        elif self.msg == FBErrorType.MeshCorrupted:
             self.set_content([
                 "Wrong topology",
                 " ",
                 "The FaceBuilder mesh is damaged and cannot be used."
             ])
-        elif self.msg == ErrorType.PktProblem:
+        elif self.msg == FBErrorType.PktProblem:
             self.set_content([
                 "You need to install KeenTools Core library "
                 "before using FaceBuilder."
             ])
-        elif self.msg == ErrorType.PktModelProblem:
+        elif self.msg == FBErrorType.PktModelProblem:
             self.set_content([
                 "KeenTools Core corrupted",
                 " ",
                 "Model data cannot be loaded. You need to reinstall "
                 "FaceBuilder."
             ])
-        elif self.msg == ErrorType.DownloadingProblem:
+        elif self.msg == FBErrorType.DownloadingProblem:
             self.set_content(["An unknown error encountered. The downloaded files might be corrupted. ",
                               "You can try downloading them again, "
                               "restarting Blender or installing the update manually.",

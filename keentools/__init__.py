@@ -22,7 +22,7 @@ import logging.config
 import bpy
 
 # Only minimal imports are performed to check the start
-from .config import Config
+from .addon_config import Config
 from .messages import (ERROR_MESSAGES, draw_warning_labels, get_system_info,
                        draw_system_info, draw_long_label, draw_long_labels)
 

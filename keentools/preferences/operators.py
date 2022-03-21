@@ -23,7 +23,7 @@ from ..blender_independent_packages.pykeentools_loader import (
     core_filename_info as pkt_core_filename_info,
     MINIMUM_VERSION_REQUIRED as pkt_MINIMUM_VERSION_REQUIRED,
     os_name as pkt_os_name)
-from ..config import Config, get_operator
+from ..addon_config import Config, get_operator
 from .formatting import replace_newlines_with_spaces
 from ..preferences.progress import InstallationProgress
 

@@ -22,8 +22,10 @@ import numpy as np
 
 import bpy
 
-from ..utils import manipulate, coords, cameras
-from .config import FBConfig, get_fb_settings, get_operator, ErrorType
+from ..utils import manipulate, coords
+from .utils import cameras
+from ..addon_config import get_operator
+from .config import FBConfig, get_fb_settings, FBErrorType
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
 from ..utils.other import (FBStopShaderTimer, force_ui_redraw,
@@ -72,7 +74,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.warning("HEADS AND CAMERAS FIXED")
         if heads_deleted == 0:
             warn = get_operator(FBConfig.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
+            warn('INVOKE_DEFAULT', msg=FBErrorType.SceneDamaged)
 
     def _init_wireframer_colors(self, opacity):
         settings = get_fb_settings()
@@ -250,7 +252,7 @@ class FB_OT_PinMode(bpy.types.Operator):
                          '{}'.format(str(err)))
             error_message = '\n'.join(split_long_string(str(err), limit=64))
             warn = get_operator(FBConfig.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+            warn('INVOKE_DEFAULT', msg=FBErrorType.CustomMessage,
                  msg_content=error_message)
             return {'CANCELLED'}
 
@@ -263,7 +265,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             cameras.exit_localview(context)
 
             warn = get_operator(FBConfig.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
+            warn('INVOKE_DEFAULT', msg=FBErrorType.MeshCorrupted)
             return {'CANCELLED'}
 
         fb = FBLoader.get_builder()
@@ -355,7 +357,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             if settings.license_error:
                 # Show License Warning
                 warn = get_operator(FBConfig.fb_warning_idname)
-                warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+                warn('INVOKE_DEFAULT', msg=FBErrorType.NoLicense)
                 settings.license_error = False
                 settings.hide_user_preferences()
             return True
