@@ -41,29 +41,15 @@ class Config:
 
     manual_install_url = keentools_website_url + '/manual-installation'
     pykeentools_license_url = 'https://link.keentools.io/eula'
-    license_purchase_url = 'https://link.keentools.io/fb-lc-fbbmld?utm_source=fbb-missing-license-dialog'
+
     coloring_texture_name = 'ktWireframeTexture'
 
-    kt_uninstall_core_idname = operators + '.uninstall_core'
+    kt_addon_settings_id = operators + '.addon_settings'
+    kt_open_url_id = operators + '.open_url'
+    kt_uninstall_core_id = operators + '.uninstall_core'
 
     # Object Custom Properties
-    # Tuples instead simple values are used to load custom properties
-    # if they have different names (from old scenes by ex. or if they will be
-    # renamed in future).
-    # Only first value in tuple is used for new custom property creation.
-    version_prop_name = (_company + '_version',)
-    viewport_state_prop_name = (_company + '_viewport_state',)
-    fb_serial_prop_name = (prefix + '_serial',)
-    fb_images_prop_name = (prefix + '_images',)
-    fb_dir_prop_name = (prefix + '_dir',)
-    fb_camera_prop_name = (prefix + '_camera',)
-    fb_mod_ver_prop_name = (prefix + '_mod_ver',)
-    # Save / Reconstruct parameters
-    reconstruct_focal_param = ('focal',)
-    reconstruct_sensor_width_param = ('sensor_width',)
-    reconstruct_sensor_height_param = ('sensor_height',)
-    reconstruct_frame_width_param = ('frame_width', 'width')
-    reconstruct_frame_height_param = ('frame_height', 'height')
+    core_version_prop_name = _company + '_version'
 
     # Constants
     surf_pin_size_scale = 0.85
@@ -71,22 +57,6 @@ class Config:
     btn_scale_y = 1.2
 
     viewport_redraw_interval = 0.1
-    unknown_mod_ver = -1
-
-    default_focal_length = 50.0
-    default_sensor_width = 36.0
-    default_sensor_height = 24.0
-    default_frame_width = 1920
-    default_frame_height = 1080
-    default_camera_display_size = 0.75
-
-    show_markers_at_camera_corners = False
-
-    default_tone_exposure = 0.0
-    default_tone_gamma = 1.0
-
-    # In Material
-    image_node_layout_coord = (-300, 0)
 
     # Colors
     midline_color = (0.960784, 0.007843, 0.615686)

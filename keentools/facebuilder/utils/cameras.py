@@ -21,6 +21,7 @@ import math
 import bpy
 
 from ...addon_config import Config
+from ..config import FBConfig
 from ..config import get_fb_settings
 from ...utils import attrs
 
@@ -44,31 +45,31 @@ def hide_other_cameras(headnum, camnum):
 
 
 def default_camera_params():
-    return {'focal': Config.default_focal_length,
-            'sensor_width': Config.default_sensor_width,
-            'sensor_height': Config.default_sensor_height,
-            'frame_width': Config.default_frame_width,
-            'frame_height': Config.default_frame_height}
+    return {'focal': FBConfig.default_focal_length,
+            'sensor_width': FBConfig.default_sensor_width,
+            'sensor_height': FBConfig.default_sensor_height,
+            'frame_width': FBConfig.default_frame_width,
+            'frame_height': FBConfig.default_frame_height}
 
 
 def get_camera_params(obj):
     logger = logging.getLogger(__name__)
     # Init camera parameters
     data = attrs.get_safe_custom_attribute(
-        obj, Config.fb_camera_prop_name[0])
+        obj, FBConfig.fb_camera_prop_name[0])
     if not data:
         return None
     try:
         params = {'focal': attrs.get_attr_variant_named(
-            data, Config.reconstruct_focal_param),
+            data, FBConfig.reconstruct_focal_param),
             'sensor_width': attrs.get_attr_variant_named(
-                data, Config.reconstruct_sensor_width_param),
+                data, FBConfig.reconstruct_sensor_width_param),
             'sensor_height': attrs.get_attr_variant_named(
-                data, Config.reconstruct_sensor_width_param),
+                data, FBConfig.reconstruct_sensor_width_param),
             'frame_width': attrs.get_attr_variant_named(
-                data, Config.reconstruct_frame_width_param),
+                data, FBConfig.reconstruct_frame_width_param),
             'frame_height': attrs.get_attr_variant_named(
-                data, Config.reconstruct_frame_height_param)}
+                data, FBConfig.reconstruct_frame_height_param)}
         logger.debug("LOADED PARAMS {}".format(params))
         if None in params.values():
             return None

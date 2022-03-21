@@ -23,8 +23,7 @@ from ...blender_independent_packages.exifread import process_file
 from ...blender_independent_packages.exifread import \
     DEFAULT_STOP_TAG, FIELD_TYPES
 
-from ...addon_config import Config
-from ..config import get_fb_settings
+from ..config import FBConfig, get_fb_settings
 
 
 # Convert frac record like '16384/32768' to float 0.5
@@ -364,7 +363,7 @@ def auto_setup_camera_from_exif(camera):
                 sw = sh
             if sw > 0:
                 camera.focal = camera.exif.focal * \
-                               Config.default_sensor_width / sw
+                               FBConfig.default_sensor_width / sw
 
     camera.auto_focal_estimation = True
 

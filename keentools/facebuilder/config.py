@@ -57,7 +57,7 @@ class FBConfig:
     fb_filter_cameras_idname = operators + '.filter_cameras'
     fb_delete_camera_idname = operators + '.delete_camera'
     fb_proper_view_menu_exec_idname = operators + '.proper_view_menu_exec'
-    fb_addon_settings_idname = operators + '.addon_settings'
+
     fb_addon_setup_defaults_idname = operators + '.addon_setup_defaults'
     fb_delete_texture_idname = operators + '.delete_texture'
 
@@ -192,7 +192,6 @@ class FBConfig:
     surf_pin_size_scale = 0.85
 
     viewport_redraw_interval = 0.1
-    unknown_mod_ver = -1
 
     default_focal_length = 50.0
     default_sensor_width = 36.0
@@ -246,15 +245,6 @@ class FBConfig:
         'wireframe_special_color': {'value': color_schemes['default'][1], 'type': 'color'},
         'wireframe_midline_color': {'value': midline_color, 'type': 'color'},
         'wireframe_opacity': {'value': wireframe_opacity, 'type': 'float'}
-    }
-
-    default_updater_preferences = {
-        'latest_show_datetime_update_reminder': {'value': '', 'type': 'string'},
-        'latest_update_skip_version': {'value': '', 'type': 'string'},
-        'updater_state': {'value': 1, 'type': 'int'},
-        'downloaded_version': {'value': '', 'type': 'string'},
-        'latest_installation_skip_version': {'value': '', 'type': 'string'},
-        'latest_show_datetime_installation_reminder': {'value': '', 'type': 'string'}
     }
 
 

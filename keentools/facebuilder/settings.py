@@ -33,7 +33,7 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 
-from ..addon_config import Config
+from ..addon_config import Config, get_addon_preferences
 from .config import FBConfig, get_fb_settings
 from .fbloader import FBLoader
 from ..utils import coords
@@ -994,7 +994,7 @@ class FBSceneSettings(PropertyGroup):
         return 0 <= headnum <= self.get_last_headnum()
 
     def preferences(self):
-        return bpy.context.preferences.addons[Config.addon_name].preferences
+        return get_addon_preferences()
 
     def show_user_preferences(self):
         self.preferences().show_user_preferences = True
@@ -1003,4 +1003,4 @@ class FBSceneSettings(PropertyGroup):
         self.preferences().show_user_preferences = False
 
     def mock_update_for_testing(self, value=True, ver=None):
-        FBConfig.mock_update_for_testing(value, ver)
+        Config.mock_update_for_testing(value, ver)

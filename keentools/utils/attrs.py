@@ -57,7 +57,7 @@ def has_keentools_attributes(obj):
 
 
 def mark_keentools_object(obj):
-    set_custom_attribute(obj, FBConfig.version_prop_name[0], Config.addon_version)
+    set_custom_attribute(obj, Config.core_version_prop_name, Config.addon_version)
 
 
 def get_attr_variant_named(data, attr_names):
@@ -68,7 +68,6 @@ def get_attr_variant_named(data, attr_names):
 
 
 def get_collection_by_name(col_name):
-    """ Singleton for collection """
     if col_name not in bpy.context.scene.collection.children:
         fb_col = bpy.data.collections.new(col_name)
         bpy.context.scene.collection.children.link(fb_col)

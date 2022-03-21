@@ -50,7 +50,7 @@ class FB_OT_AddonWarning(Operator):
             layout.label(text=t)
 
         if self.msg == FBErrorType.NoLicense:
-            op = self.layout.operator(FBConfig.fb_open_url_idname,
+            op = self.layout.operator(Config.kt_open_url_id,
                                       text='Purchase a license')
             op.url = FBConfig.fb_license_purchase_url
 
@@ -58,7 +58,7 @@ class FB_OT_AddonWarning(Operator):
         if self.msg not in (FBErrorType.PktProblem, FBErrorType.NoLicense):
             return {"FINISHED"}
 
-        op = get_operator(FBConfig.fb_addon_settings_idname)
+        op = get_operator(Config.kt_addon_settings_id)
         op('EXEC_DEFAULT')
         return {"FINISHED"}
 

@@ -23,17 +23,13 @@ from ..blender_independent_packages.pykeentools_loader import (
     core_filename_info as pkt_core_filename_info,
     MINIMUM_VERSION_REQUIRED as pkt_MINIMUM_VERSION_REQUIRED,
     os_name as pkt_os_name)
-from ..addon_config import Config, get_operator
+from ..addon_config import Config, get_operator, get_addon_preferences
 from .formatting import replace_newlines_with_spaces
 from ..preferences.progress import InstallationProgress
 
 
 _ID_NAME_PREFIX = 'preferences.' + Config.prefix
 _please_accept_eula = 'You need to accept our EULA before installation'
-
-
-def _get_addon_preferences():
-    return bpy.context.preferences.addons[Config.addon_name].preferences
 
 
 class PREF_OT_OpenPktLicensePage(bpy.types.Operator):
@@ -218,7 +214,7 @@ class PREF_OT_InstallLicenseOnline(bpy.types.Operator):
     license_id: bpy.props.StringProperty()
 
     def _clear_license_id(self):
-        pref = _get_addon_preferences()
+        pref = get_addon_preferences()
         pref.license_id = ''
 
     def execute(self, context):
@@ -257,7 +253,7 @@ class PREF_OT_InstallLicenseOffline(bpy.types.Operator):
     lic_path: bpy.props.StringProperty()
 
     def _clear_license_path(self):
-        pref = _get_addon_preferences()
+        pref = get_addon_preferences()
         pref.lic_path = ''
 
     def execute(self, context):

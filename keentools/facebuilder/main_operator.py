@@ -391,11 +391,11 @@ class FB_OT_ProperViewMenuExec(Operator):
         return {'FINISHED'}
 
 
-class FB_OT_AddonSettings(Operator):
-    bl_idname = FBConfig.fb_addon_settings_idname
-    bl_label = "Addon Settings"
+class KT_OT_AddonSettings(Operator):
+    bl_idname = Config.kt_addon_settings_id
+    bl_label = 'Addon Settings'
     bl_options = {'REGISTER'}
-    bl_description = "Open Addon Settings in Preferences window"
+    bl_description = 'Open Addon Settings in Preferences window'
 
     def draw(self, context):
         pass
@@ -650,8 +650,8 @@ class FB_OT_ExitPinmode(Operator):
         return {'FINISHED'}
 
 
-class FB_OT_OpenURL(bpy.types.Operator):
-    bl_idname = FBConfig.fb_open_url_idname
+class KT_OT_OpenURL(bpy.types.Operator):
+    bl_idname = Config.kt_open_url_id
     bl_label = 'Open URL'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Open URL in web browser'
@@ -663,8 +663,8 @@ class FB_OT_OpenURL(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class FB_OT_UninstallCore(bpy.types.Operator):
-    bl_idname = Config.kt_uninstall_core_idname
+class KT_OT_UninstallCore(bpy.types.Operator):
+    bl_idname = Config.kt_uninstall_core_id
     bl_label = 'Uninstall Core'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Uninstall Core Library'
@@ -879,7 +879,6 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_FilterCameras,
                        FB_OT_ProperViewMenuExec,
                        FB_OT_DeleteCamera,
-                       FB_OT_AddonSettings,
                        FB_OT_AddonSetupDefaults,
                        FB_OT_BakeTexture,
                        FB_OT_DeleteTexture,
@@ -890,8 +889,9 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ShowTexture,
                        FB_OT_ShowSolid,
                        FB_OT_ExitPinmode,
-                       FB_OT_OpenURL,
-                       FB_OT_UninstallCore,
+                       KT_OT_AddonSettings,
+                       KT_OT_OpenURL,
+                       KT_OT_UninstallCore,
                        FB_OT_CreateBlendshapes,
                        FB_OT_DeleteBlendshapes,
                        FB_OT_LoadAnimationFromCSV,
