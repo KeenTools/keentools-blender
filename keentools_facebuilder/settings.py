@@ -39,6 +39,7 @@ from .utils import coords
 from .callbacks import (update_mesh_with_dialog,
                         update_mesh_simple,
                         update_expressions,
+                        update_expression_options,
                         update_expression_view,
                         update_wireframe_image,
                         update_wireframe_func,
@@ -448,6 +449,13 @@ class FBHeadItem(PropertyGroup):
     use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
                                          default=False,
                                          update=update_expressions)
+    use_blinking: BoolProperty(
+        description="Use blinking desctiption",
+        name="Use blinking", default=True, update=update_expression_options)
+    use_neck_rotation: BoolProperty(
+        description="Use neck rotation desctiption",
+        name="Use neck rotation", default=True, update=update_expression_options)
+
     reduce_pins: bpy.props.BoolProperty(name="Reduce pins",
                                         default=True)
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
@@ -790,14 +798,6 @@ class FBSceneSettings(PropertyGroup):
     neck_rotation_rigidity: FloatProperty(
         description="Change neck rotation rigidity",
         name="Neck rotation rigidity", default=2.0, min=0.001, max=1000.0)
-
-    use_blinking: BoolProperty(
-        description="Use blinking desctiption",
-        name="Use blinking", default=True)
-    use_neck_rotation: BoolProperty(
-        description="Use neck rotation desctiption",
-        name="Use neck rotation", default=True)
-
 
     # Internal use only.
     # Warning! current_headnum and current_camnum work only in Pinmode!

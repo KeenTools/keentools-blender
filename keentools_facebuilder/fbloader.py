@@ -400,8 +400,8 @@ class FBLoader:
         cls.rigidity_setup()
         fb.set_use_emotions(head.should_use_emotions())
 
-        fb.set_use_blinking(settings.use_blinking)
-        fb.set_use_neck_rotation(settings.use_neck_rotation)
+        fb.set_use_blinking(head.use_blinking)
+        fb.set_use_neck_rotation(head.use_neck_rotation)
 
         configure_focal_mode_and_fixes(fb, head)
         try:
