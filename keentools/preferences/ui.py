@@ -312,7 +312,7 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
 
     # User preferences
     show_user_preferences: bpy.props.BoolProperty(
-        name='Addon Settings',
+        name='FaceBuilder Settings',
         default=False
     )
     pin_size: bpy.props.FloatProperty(
@@ -499,13 +499,15 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         return box
 
     def _draw_download_progress(self, layout):
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
         download_state = InstallationProgress.get_state()
         if download_state['active']:
+            col = layout.column()
+            col.scale_y = Config.text_scale_y
             col.label(text="Downloading: {:.1f}%".format(
                 100 * download_state['progress']))
         if download_state['status'] is not None:
+            col = layout.column()
+            col.scale_y = Config.text_scale_y
             col.label(text="{}".format(download_state['status']))
 
     def _draw_pkt_detail_error_report(self, layout, status):
@@ -649,17 +651,15 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
 
         main_box.operator(FBConfig.fb_user_preferences_reset_all)
 
-    def draw(self, context):
-        layout = self.layout
-
+    def _draw_core_python_problem(self, layout):
         if not pkt_is_python_supported():
             self._draw_unsupported_python(layout)
             draw_system_info(layout)
-            return
+            return True
+        return False
 
+    def _draw_core_installation_progress(self, layout):
         cached_status = pkt_installation_status()
-        assert(cached_status is not None)
-
         if cached_status[1] == 'NOT_INSTALLED':
             if pkt_loaded():
                 box = layout.box()
@@ -667,12 +667,29 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
                     box, USER_MESSAGES['RESTART_BLENDER_TO_UNLOAD_CORE'])
                 self._draw_problem_library(box)
                 draw_system_info(layout)
-                return
+                return True
 
             self._draw_please_accept_license(layout)
             self._draw_download_progress(layout)
-            return
+            return True
+        return False
 
+    def _draw_pykeentools_problem_report(self, layout, pykeentools_status):
+        box = layout.box()
+        self._draw_pkt_detail_error_report(box, pykeentools_status)
+        self._draw_problem_library(box)
+        draw_system_info(layout)
+        self._draw_download_progress(layout)
+
+    def _draw_pykeentools_problem(self, layout):
+        cached_status = pkt_installation_status()
+        if cached_status[1] != 'PYKEENTOOLS_OK':
+            self._draw_pykeentools_problem_report(layout, cached_status[1])
+            return True
+        return False
+
+    def _draw_core_info(self, layout):
+        cached_status = pkt_installation_status()
         if cached_status[1] == 'PYKEENTOOLS_OK':
             core_txt = self._get_core_version_text()
             if core_txt is not None:
@@ -680,16 +697,32 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
                 msg = [core_txt,
                        'The core library has been installed successfully']
                 draw_warning_labels(box, msg, alert=False, icon='INFO')
-                self._draw_updater_info(layout)
-                self._draw_license_info(layout)
-                self._draw_user_preferences(layout)
-                return
+                return True
 
-            cached_status = (False, 'NO_VERSION')
+            self._draw_pykeentools_problem_report(layout, 'NO_VERSION')
+        return False
 
+    def _draw_facebuilder_preferences(self, layout):
         box = layout.box()
-        self._draw_pkt_detail_error_report(box, cached_status[1])
-        self._draw_problem_library(box)
-        draw_system_info(layout)
+        self._draw_license_info(box)
+        self._draw_user_preferences(box)
 
-        self._draw_download_progress(layout)
+    def _draw_geotracker_preferences(self, layout):
+        pass
+
+    def draw(self, context):
+        layout = self.layout
+
+        if self._draw_core_python_problem(layout):
+            return
+        if self._draw_core_installation_progress(layout):
+            return
+        if self._draw_pykeentools_problem(layout):
+            return
+        if not self._draw_core_info(layout):
+            return
+
+        self._draw_updater_info(layout)
+
+        self._draw_facebuilder_preferences(layout)
+        self._draw_geotracker_preferences(layout)
