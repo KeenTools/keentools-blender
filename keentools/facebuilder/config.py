@@ -122,12 +122,6 @@ class FBConfig:
     fb_header_panel_idname = _PT + 'header_panel'
     fb_camera_panel_idname = _PT + 'camera_panel'
 
-    # Updater is not for FB
-    fb_update_panel_idname = _PT + 'update_panel'
-    fb_download_notification_panel_idname = _PT + 'download_notification'
-    fb_downloading_problem_panel_idname = _PT + 'downloading_problem'
-    fb_updates_installation_panel_idname = _PT + 'updates_installation_panel'
-
     fb_views_panel_idname = _PT + 'views_panel'
     fb_exif_panel_idname = _PT + 'exif_panel'
     fb_texture_panel_idname = _PT + 'texture_panel'
@@ -143,14 +137,19 @@ class FBConfig:
     fb_help_texture_idname = operators + '.help_texture'
     fb_help_blendshapes_idname = operators + '.help_blendshapes'
 
+    # TODO: Updater panels are not for FB only
+    fb_update_panel_idname = _PT + 'update_panel'
+    fb_download_notification_panel_idname = _PT + 'download_notification'
+    fb_downloading_problem_panel_idname = _PT + 'downloading_problem'
+    fb_updates_installation_panel_idname = _PT + 'updates_installation_panel'
+
+    # Updater operators
     fb_download_the_update_idname = operators + '.download_the_update'
     fb_retry_download_the_update_idname = operators + '.retry_download_the_update'
     fb_open_url_idname = operators + '.open_url'
     fb_remind_later_idname = operators + '.remind_later'
     fb_skip_version_idname = operators + '.skip_version'
-
     fb_come_back_to_update_idname = operators + '.come_back_to_update'
-
     fb_install_updates_idname = operators + '.install_updates'
     fb_remind_install_later_idname = operators + '.remind_install_later'
     fb_skip_installation_idname = operators + '.skip_installation'
@@ -166,27 +165,23 @@ class FBConfig:
     default_blendshapes_action_name = 'fbBlendShapesAction'
     example_animation_action_name = 'ExampleAnimAction'
 
-    neutral_expression_view_idname = '0'
-    empty_expression_view_idname = ''
+    neutral_expression_view_name = '0'
+    empty_expression_view_name = ''
 
     # Object Custom Properties
-    # Tuples instead simple values are used to load custom properties
-    # if they have different names (from old scenes by ex. or if they will be
-    # renamed in future).
-    # Only first value in tuple is used for new custom property creation.
-    version_prop_name = (_company + '_version',)
-    viewport_state_prop_name = (_company + '_viewport_state',)
-    fb_serial_prop_name = (prefix + '_serial',)
-    fb_images_prop_name = (prefix + '_images',)
-    fb_dir_prop_name = (prefix + '_dir',)
-    fb_camera_prop_name = (prefix + '_camera',)
-    fb_mod_ver_prop_name = (prefix + '_mod_ver',)
+    version_prop_name = _company + '_version'
+    viewport_state_prop_name = _company + '_viewport_state'
+    fb_serial_prop_name = prefix + '_serial'
+    fb_images_prop_name = prefix + '_images'
+    fb_dir_prop_name = prefix + '_dir'
+    fb_camera_prop_name = prefix + '_camera'
+
     # Save / Reconstruct parameters
-    reconstruct_focal_param = ('focal',)
-    reconstruct_sensor_width_param = ('sensor_width',)
-    reconstruct_sensor_height_param = ('sensor_height',)
-    reconstruct_frame_width_param = ('frame_width', 'width')
-    reconstruct_frame_height_param = ('frame_height', 'height')
+    reconstruct_focal_param = 'focal'
+    reconstruct_sensor_width_param = 'sensor_width'
+    reconstruct_sensor_height_param = 'sensor_height'
+    reconstruct_frame_width_param = 'frame_width'
+    reconstruct_frame_height_param = 'frame_height'
 
     # Constants
     surf_pin_size_scale = 0.85

@@ -118,7 +118,7 @@ def _update_mesh_now(headnum):
         return
 
     if head.should_use_emotions() and \
-            head.expression_view != FBConfig.empty_expression_view_idname:
+            head.expression_view != FBConfig.empty_expression_view_name:
         keyframe = head.get_expression_view_keyframe()
         if keyframe <= 0:
             keyframe = None
@@ -240,10 +240,10 @@ def update_expressions(self, context):
 
 def update_expression_view(self, context):
     exp_view = self.expression_view
-    if exp_view == FBConfig.empty_expression_view_idname:
+    if exp_view == FBConfig.empty_expression_view_name:
         self.set_neutral_expression_view()
         return
-    if exp_view != FBConfig.neutral_expression_view_idname \
+    if exp_view != FBConfig.neutral_expression_view_name \
             and not self.has_no_blendshapes():
         logger = logging.getLogger(__name__)
         logger.error('Object has blendshapes so expression view cannot be used')

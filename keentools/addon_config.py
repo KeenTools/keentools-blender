@@ -33,7 +33,6 @@ class Config:
     addon_name = __package__  # the same as module name
     addon_human_readable_name = 'KeenTools'
 
-    user_preferences_dict_name = 'keentools_facebuilder_addon'
     updater_preferences_dict_name = 'keentools_updater'
 
     keentools_website_url = 'https://keentools.io'
@@ -42,11 +41,9 @@ class Config:
     manual_install_url = keentools_website_url + '/manual-installation'
     pykeentools_license_url = 'https://link.keentools.io/eula'
 
-    coloring_texture_name = 'ktWireframeTexture'
-
-    kt_addon_settings_id = operators + '.addon_settings'
-    kt_open_url_id = operators + '.open_url'
-    kt_uninstall_core_id = operators + '.uninstall_core'
+    kt_addon_settings_idname = operators + '.addon_settings'
+    kt_open_url_idname = operators + '.open_url'
+    kt_uninstall_core_idname = operators + '.uninstall_core'
 
     # Object Custom Properties
     core_version_prop_name = _company + '_version'
@@ -55,41 +52,6 @@ class Config:
     surf_pin_size_scale = 0.85
     text_scale_y = 0.75
     btn_scale_y = 1.2
-
-    viewport_redraw_interval = 0.1
-
-    # Colors
-    midline_color = (0.960784, 0.007843, 0.615686)
-    color_schemes = {
-        'red': ((0.3, 0.0, 0.0), (0.0, 0.4, 0.7)),
-        'green': ((0.0, 0.2, 0.0), (0.4, 0.0, 0.4)),
-        'blue': ((0.0, 0.0, 0.3), (0.4, 0.75, 0.0)),
-        'cyan': ((0.0, 0.3, 0.3), (0.4, 0.0, 0.0)),
-        'magenta': ((0.3, 0.0, 0.3), (0.0, 0.55, 0.0)),
-        'yellow': ((0.2, 0.2, 0.0), (0.0, 0.0, 0.4)),
-        'black': ((0.039, 0.04 , 0.039), (0.0, 0.0, 0.85098)),
-        'white': ((1.0, 1.0, 1.0), (0.0, 0.0, 0.4)),
-        'default': ((0.039, 0.04 , 0.039), (0.0, 0.0, 0.85098))
-    }
-    wireframe_opacity = 0.45
-
-    pin_color = (1.0, 0.0, 0.0, 1.0)
-    current_pin_color = (1.0, 0.0, 1.0, 1.0)
-    surface_point_color = (0.0, 1.0, 1.0, 0.5)
-    residual_color = (0.0, 1.0, 1.0, 0.5)
-
-    selected_rectangle_color = (0.871, 0.107, 0.001, 1.0)
-    regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
-
-    default_user_preferences = {
-        'pin_size': {'value': 7.0, 'type': 'float'},
-        'pin_sensitivity': {'value': 16.0, 'type': 'float'},
-        'prevent_view_rotation': {'value': True, 'type': 'bool'},
-        'wireframe_color': {'value': color_schemes['default'][0], 'type': 'color'},
-        'wireframe_special_color': {'value': color_schemes['default'][1], 'type': 'color'},
-        'wireframe_midline_color': {'value': midline_color, 'type': 'color'},
-        'wireframe_opacity': {'value': wireframe_opacity, 'type': 'float'}
-    }
 
     default_updater_preferences = {
         'latest_show_datetime_update_reminder': {'value': '', 'type': 'string'},

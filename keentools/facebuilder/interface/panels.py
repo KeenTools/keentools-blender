@@ -94,7 +94,7 @@ class FB_PT_HeaderPanel(Common, Panel):
         layout = self.layout
         row = layout.row()
         row.operator(
-            Config.kt_addon_settings_id,
+            Config.kt_addon_settings_idname,
             text='', icon='PREFERENCES')
 
     def _head_creation_offer(self, layout):
@@ -124,7 +124,7 @@ class FB_PT_HeaderPanel(Common, Panel):
         row = layout.row()
         row.scale_y = 2.0
         row.operator(
-            Config.kt_addon_settings_id,
+            Config.kt_addon_settings_idname,
             text='Install Core library', icon='PREFERENCES')
 
     def _draw_start_panel(self, layout):

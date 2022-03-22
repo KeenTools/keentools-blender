@@ -92,7 +92,7 @@ def _force_hide_ui_elements():
 
 def hide_viewport_ui_elements_and_store_on_object(obj):
     state = _get_viewport_ui_state()
-    set_custom_attribute(obj, FBConfig.viewport_state_prop_name[0], state)
+    set_custom_attribute(obj, FBConfig.viewport_state_prop_name, state)
     _force_hide_ui_elements()
 
 
@@ -105,7 +105,7 @@ def unhide_viewport_ui_element_from_object(obj):
                 values[name] = states[name]
         return values
 
-    attr_value = get_safe_custom_attribute(obj, FBConfig.viewport_state_prop_name[0])
+    attr_value = get_safe_custom_attribute(obj, FBConfig.viewport_state_prop_name)
     if attr_value is None:
         _force_show_ui_elements()  # For old version compatibility
         return

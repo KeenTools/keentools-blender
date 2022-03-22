@@ -528,7 +528,7 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         if status in ('INSTALLED_WRONG', 'CANNOT_IMPORT',
                       'NO_VERSION', 'VERSION_PROBLEM'):
             # Core Uninstall button
-            layout.operator(Config.kt_uninstall_core_id)
+            layout.operator(Config.kt_uninstall_core_idname)
 
     def _get_core_version_text(self):
         try:

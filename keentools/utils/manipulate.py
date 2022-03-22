@@ -29,19 +29,19 @@ from ..blender_independent_packages.pykeentools_loader import module as pkt_modu
 
 
 def _is_keentools_object(obj):
-    return FBConfig.version_prop_name[0] in obj.keys()
+    return FBConfig.version_prop_name in obj.keys()
 
 
 def _get_serial(obj):
-    return attrs.get_safe_custom_attribute(obj, FBConfig.fb_serial_prop_name[0])
+    return attrs.get_safe_custom_attribute(obj, FBConfig.fb_serial_prop_name)
 
 
 def _get_dir_name(obj):
-    return attrs.get_safe_custom_attribute(obj, FBConfig.fb_dir_prop_name[0])
+    return attrs.get_safe_custom_attribute(obj, FBConfig.fb_dir_prop_name)
 
 
 def _get_image_names(obj):
-    return attrs.get_safe_custom_attribute(obj, FBConfig.fb_images_prop_name[0])
+    return attrs.get_safe_custom_attribute(obj, FBConfig.fb_images_prop_name)
 
 
 def _check_facs_available(count):

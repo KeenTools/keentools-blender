@@ -60,9 +60,9 @@ class ActiveButtonOperator(ButtonOperator):
 
 class FB_OT_SelectHead(Operator):
     bl_idname = FBConfig.fb_select_head_idname
-    bl_label = "Select head"
+    bl_label = 'Select head'
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Select head in the scene"
+    bl_description = 'Select head in the scene'
 
     headnum: IntProperty(default=0)
 
@@ -81,9 +81,9 @@ class FB_OT_SelectHead(Operator):
 
 class FB_OT_DeleteHead(Operator):
     bl_idname = FBConfig.fb_delete_head_idname
-    bl_label = "Delete head"
+    bl_label = 'Delete head'
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Delete the head and its cameras from the scene"
+    bl_description = 'Delete the head and its cameras from the scene'
 
     headnum: IntProperty(default=0)
 
@@ -118,9 +118,9 @@ class FB_OT_DeleteHead(Operator):
 
 class FB_OT_SelectCamera(Operator):
     bl_idname = FBConfig.fb_select_camera_idname
-    bl_label = "Pin Mode Select Camera"
+    bl_label = 'Pin Mode Select Camera'
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Switch to Pin mode for this view"
+    bl_description = 'Switch to Pin mode for this view'
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
@@ -221,9 +221,9 @@ class FB_OT_Unmorph(Operator):
 
 class FB_OT_RemovePins(Operator):
     bl_idname = FBConfig.fb_remove_pins_idname
-    bl_label = "Remove pins"
+    bl_label = 'Remove pins'
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Remove all pins on this view"
+    bl_description = 'Remove all pins on this view'
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
@@ -244,7 +244,7 @@ class FB_OT_RemovePins(Operator):
         kid = settings.get_keyframe(headnum, camnum)
 
         fb.remove_pins(kid)
-        FBLoader.solve(headnum, camnum)  # is it needed?
+        FBLoader.solve(headnum, camnum)
 
         FBLoader.save_fb_serial_and_image_pathes(headnum)
         FBLoader.update_camera_pins_count(headnum, camnum)
@@ -259,9 +259,9 @@ class FB_OT_RemovePins(Operator):
 
 class FB_OT_WireframeColor(Operator):
     bl_idname = FBConfig.fb_wireframe_color_idname
-    bl_label = "Wireframe color"
+    bl_label = 'Wireframe color'
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}  #
-    bl_description = "Choose the wireframe coloring scheme"
+    bl_description = 'Choose the wireframe coloring scheme'
 
     action: StringProperty(name="Action Name")
 
@@ -274,21 +274,21 @@ class FB_OT_WireframeColor(Operator):
             settings.wireframe_color = FBConfig.color_schemes[name][0]
             settings.wireframe_special_color = FBConfig.color_schemes[name][1]
 
-        if self.action == "wireframe_red":
+        if self.action == 'wireframe_red':
             _setup_colors_from_scheme('red')
-        elif self.action == "wireframe_green":
+        elif self.action == 'wireframe_green':
             _setup_colors_from_scheme('green')
-        elif self.action == "wireframe_blue":
+        elif self.action == 'wireframe_blue':
             _setup_colors_from_scheme('blue')
-        elif self.action == "wireframe_cyan":
+        elif self.action == 'wireframe_cyan':
             _setup_colors_from_scheme('cyan')
-        elif self.action == "wireframe_magenta":
+        elif self.action == 'wireframe_magenta':
             _setup_colors_from_scheme('magenta')
-        elif self.action == "wireframe_yellow":
+        elif self.action == 'wireframe_yellow':
             _setup_colors_from_scheme('yellow')
-        elif self.action == "wireframe_black":
+        elif self.action == 'wireframe_black':
             _setup_colors_from_scheme('black')
-        elif self.action == "wireframe_white":
+        elif self.action == 'wireframe_white':
             _setup_colors_from_scheme('white')
 
         return {'FINISHED'}
@@ -296,9 +296,9 @@ class FB_OT_WireframeColor(Operator):
 
 class FB_OT_FilterCameras(Operator):
     bl_idname = FBConfig.fb_filter_cameras_idname
-    bl_label = "Camera Filter"
+    bl_label = 'Camera Filter'
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
-    bl_description = "Select cameras to use for texture baking"
+    bl_description = 'Select cameras to use for texture baking'
 
     action: StringProperty(name="Action Name")
     headnum: IntProperty(default=0)
@@ -309,11 +309,11 @@ class FB_OT_FilterCameras(Operator):
     def execute(self, context):
         settings = get_fb_settings()
 
-        if self.action == "select_all_cameras":
+        if self.action == 'select_all_cameras':
             for c in settings.get_head(self.headnum).cameras:
                 c.use_in_tex_baking = True
 
-        elif self.action == "deselect_all_cameras":
+        elif self.action == 'deselect_all_cameras':
             for c in settings.get_head(self.headnum).cameras:
                 c.use_in_tex_baking = False
 
@@ -322,9 +322,9 @@ class FB_OT_FilterCameras(Operator):
 
 class FB_OT_DeleteCamera(Operator):
     bl_idname = FBConfig.fb_delete_camera_idname
-    bl_label = "Delete View"
+    bl_label = 'Delete View'
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Delete this view and its camera from the scene"
+    bl_description = 'Delete this view and its camera from the scene'
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
@@ -372,9 +372,9 @@ class FB_OT_DeleteCamera(Operator):
 
 class FB_OT_ProperViewMenuExec(Operator):
     bl_idname = FBConfig.fb_proper_view_menu_exec_idname
-    bl_label = "View operations"
+    bl_label = 'View operations'
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Delete the view or modify the image file path"
+    bl_description = 'Delete the view or modify the image file path'
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
@@ -392,7 +392,7 @@ class FB_OT_ProperViewMenuExec(Operator):
 
 
 class KT_OT_AddonSettings(Operator):
-    bl_idname = Config.kt_addon_settings_id
+    bl_idname = Config.kt_addon_settings_idname
     bl_label = 'Addon Settings'
     bl_options = {'REGISTER'}
     bl_description = 'Open Addon Settings in Preferences window'
@@ -407,9 +407,9 @@ class KT_OT_AddonSettings(Operator):
 
 class FB_OT_AddonSetupDefaults(Operator):
     bl_idname = FBConfig.fb_addon_setup_defaults_idname
-    bl_label = "Setup defaults"
+    bl_label = 'Setup defaults'
     bl_options = {'REGISTER'}
-    bl_description = "Open Addon Settings in Preferences window"
+    bl_description = 'Open Addon Settings in Preferences window'
 
     def draw(self, context):
         pass
@@ -423,10 +423,10 @@ class FB_OT_AddonSetupDefaults(Operator):
 
 class FB_OT_BakeTexture(Operator):
     bl_idname = FBConfig.fb_bake_tex_idname
-    bl_label = "Bake Texture"
+    bl_label = 'Bake Texture'
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Bake the texture using all selected cameras. " \
-                     "It can take a lot of time, be patient"
+    bl_description = 'Bake the texture using all selected cameras. ' \
+                     'It can take a lot of time, be patient'
 
     headnum: IntProperty(default=0)
 
@@ -651,7 +651,7 @@ class FB_OT_ExitPinmode(Operator):
 
 
 class KT_OT_OpenURL(bpy.types.Operator):
-    bl_idname = Config.kt_open_url_id
+    bl_idname = Config.kt_open_url_idname
     bl_label = 'Open URL'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Open URL in web browser'
@@ -664,7 +664,7 @@ class KT_OT_OpenURL(bpy.types.Operator):
 
 
 class KT_OT_UninstallCore(bpy.types.Operator):
-    bl_idname = Config.kt_uninstall_core_id
+    bl_idname = Config.kt_uninstall_core_idname
     bl_label = 'Uninstall Core'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Uninstall Core Library'

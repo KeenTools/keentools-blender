@@ -50,7 +50,7 @@ def set_custom_attribute(obj, attr_name, val):
 
 
 def has_keentools_attributes(obj):
-    attr_name = FBConfig.version_prop_name[0]
+    attr_name = FBConfig.version_prop_name
     if has_custom_attribute(obj, attr_name):
         return True
     return False
@@ -58,13 +58,6 @@ def has_keentools_attributes(obj):
 
 def mark_keentools_object(obj):
     set_custom_attribute(obj, Config.core_version_prop_name, Config.addon_version)
-
-
-def get_attr_variant_named(data, attr_names):
-    for attribute in attr_names:
-        if attribute in data.keys():
-            return data[attribute]
-    return None
 
 
 def get_collection_by_name(col_name):

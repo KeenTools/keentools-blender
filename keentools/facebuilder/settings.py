@@ -435,7 +435,7 @@ def model_type_callback(self, context):
 
 
 def expression_views_callback(self, context):
-    res = [(FBConfig.neutral_expression_view_idname, 'Neutral', '', 'USER', 0), ]
+    res = [(FBConfig.neutral_expression_view_name, 'Neutral', '', 'USER', 0), ]
     for i, camera in enumerate(self.cameras):
         kid = camera.get_keyframe()
         res.append(('{}'.format(kid), camera.get_image_name(),
@@ -576,7 +576,7 @@ class FBHeadItem(PropertyGroup):
 
     def store_serial_str_on_headobj(self):
         if self.headobj:
-            self.headobj[FBConfig.fb_serial_prop_name[0]] = self.serial_str
+            self.headobj[FBConfig.fb_serial_prop_name] = self.serial_str
 
     def set_serial_str(self, value):
         self.serial_str = value
@@ -643,9 +643,9 @@ class FBHeadItem(PropertyGroup):
                 res.append('')
         if not self.headobj:
             return
-        self.headobj[FBConfig.fb_images_prop_name[0]] = res
+        self.headobj[FBConfig.fb_images_prop_name] = res
         # Dir name of current scene
-        self.headobj[FBConfig.fb_dir_prop_name[0]] = bpy.path.abspath("//")
+        self.headobj[FBConfig.fb_dir_prop_name] = bpy.path.abspath("//")
 
     def should_use_emotions(self):
         return self.use_emotions
@@ -672,13 +672,13 @@ class FBHeadItem(PropertyGroup):
         return get_fb_settings()
 
     def get_expression_view_keyframe(self):
-        if self.expression_view == FBConfig.empty_expression_view_idname:
+        if self.expression_view == FBConfig.empty_expression_view_name:
             return 0  # Neutral
         kid = int(self.expression_view)
         return kid
 
     def set_neutral_expression_view(self):
-        self.expression_view = FBConfig.neutral_expression_view_idname
+        self.expression_view = FBConfig.neutral_expression_view_name
 
     def has_vertex_groups(self):
         return len(self.headobj.vertex_groups) != 0

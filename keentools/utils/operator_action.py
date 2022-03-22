@@ -49,7 +49,7 @@ def create_blendshapes(operator):
     if headnum >= 0:
         head = settings.get_head(headnum)
         if head.should_use_emotions() and \
-                head.expression_view != FBConfig.neutral_expression_view_idname:
+                head.expression_view != FBConfig.neutral_expression_view_name:
             warn = get_operator(FBConfig.fb_noblenshapes_until_expression_warning_idname)
             warn('INVOKE_DEFAULT', headnum=headnum)
             return {'CANCELLED'}

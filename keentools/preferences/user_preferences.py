@@ -19,15 +19,16 @@
 import logging
 
 from ..addon_config import Config
+from ..facebuilder.config import FBConfig
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed)
 
 
 class UserPreferences:
-    _DICT_NAME = Config.user_preferences_dict_name
-    _defaults = Config.default_user_preferences
-    _str_defaults = {k: str(Config.default_user_preferences[k]['value'])
-                     for k in Config.default_user_preferences.keys()}
+    _DICT_NAME = FBConfig.user_preferences_dict_name
+    _defaults = FBConfig.default_user_preferences
+    _str_defaults = {k: str(FBConfig.default_user_preferences[k]['value'])
+                     for k in FBConfig.default_user_preferences.keys()}
     type_float = 'float'
     type_string = 'string'
     type_int = 'int'

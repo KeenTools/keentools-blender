@@ -53,27 +53,30 @@ def default_camera_params():
 
 
 def get_camera_params(obj):
+    def _get_data_value(data, attr_name):
+        return None if attr_name not in data.keys() else data[attr_name]
+
     logger = logging.getLogger(__name__)
-    # Init camera parameters
-    data = attrs.get_safe_custom_attribute(
-        obj, FBConfig.fb_camera_prop_name[0])
+    data = attrs.get_safe_custom_attribute(obj, FBConfig.fb_camera_prop_name)
     if not data:
+        logger.error('NO CAMERA PARAMETERS')
         return None
     try:
-        params = {'focal': attrs.get_attr_variant_named(
-            data, FBConfig.reconstruct_focal_param),
-            'sensor_width': attrs.get_attr_variant_named(
+        params = {
+            'focal': _get_data_value(data, FBConfig.reconstruct_focal_param),
+            'sensor_width': _get_data_value(
                 data, FBConfig.reconstruct_sensor_width_param),
-            'sensor_height': attrs.get_attr_variant_named(
-                data, FBConfig.reconstruct_sensor_width_param),
-            'frame_width': attrs.get_attr_variant_named(
+            'sensor_height': _get_data_value(
+                data, FBConfig.reconstruct_sensor_height_param),
+            'frame_width': _get_data_value(
                 data, FBConfig.reconstruct_frame_width_param),
-            'frame_height': attrs.get_attr_variant_named(
+            'frame_height': _get_data_value(
                 data, FBConfig.reconstruct_frame_height_param)}
-        logger.debug("LOADED PARAMS {}".format(params))
+        logger.info('LOADED CAMERA PARAMS: {}'.format(params))
         if None in params.values():
             return None
-    except Exception:
+    except Exception as err:
+        logger.error('get_camera_params: {}'.format(str(err)))
         return None
     return params
 

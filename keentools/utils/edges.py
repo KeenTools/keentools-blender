@@ -26,7 +26,7 @@ from .shaders import (simple_fill_vertex_shader,
                       residual_fragment_shader, raster_image_vertex_shader,
                       raster_image_fragment_shader,
                       solid_line_vertex_shader, solid_line_fragment_shader)
-from ..addon_config import Config
+from ..facebuilder.config import FBConfig
 from ..utils.images import (check_bpy_image_has_same_size,
                             find_bpy_image_by_name,
                             remove_bpy_image)
@@ -315,7 +315,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         image_data = fb.face_texture()
         size = image_data.shape[:2]
         assert size[0] > 0 and size[1] > 0
-        image_name = Config.coloring_texture_name
+        image_name = FBConfig.coloring_texture_name
         wireframe_image = find_bpy_image_by_name(image_name)
         if wireframe_image is None or \
                 not check_bpy_image_has_same_size(wireframe_image, size):
@@ -362,7 +362,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
             return
 
         # Force Stop
-        wireframe_image = find_bpy_image_by_name(Config.coloring_texture_name)
+        wireframe_image = find_bpy_image_by_name(FBConfig.coloring_texture_name)
         if self.is_handler_list_empty() or \
                 not self._check_coloring_image(wireframe_image):
             self.unregister_handler()
