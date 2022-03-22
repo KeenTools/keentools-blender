@@ -699,7 +699,7 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
                 draw_warning_labels(box, msg, alert=False, icon='INFO')
                 return True
 
-            self._draw_pykeentools_problem_report(layout, 'NO_VERSION')
+        self._draw_pykeentools_problem_report(layout, 'NO_VERSION')
         return False
 
     def _draw_facebuilder_preferences(self, layout):
