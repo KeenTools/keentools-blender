@@ -72,6 +72,24 @@ def reset_updater_preferences_to_default():
     UpdaterPreferences.reset_all_to_defaults()
 
 
+def _expand_icon(value):
+    return 'TRIA_RIGHT' if not value else 'TRIA_DOWN'
+
+
+def _expandable_button(layout, data, property, text=None):
+    prop_value = getattr(data, property)
+    if text is None:
+        layout.prop(data, property,
+                    icon=_expand_icon(prop_value),
+                    invert_checkbox=prop_value)
+    else:
+        layout.prop(data, property,
+                    icon=_expand_icon(prop_value),
+                    invert_checkbox=prop_value,
+                    text=text)
+    return prop_value
+
+
 class FB_OT_UserPreferencesResetAll(bpy.types.Operator):
     bl_idname = FBConfig.fb_user_preferences_reset_all
     bl_label = 'Reset All'
@@ -213,6 +231,24 @@ def _universal_updater_setter(name):
 
 class KTAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = Config.addon_name
+
+    facebuilder_enabled: bpy.props.BoolProperty(
+        name='Enable KeenTools FaceBuilder',
+        default=True
+    )
+    facebuilder_expanded: bpy.props.BoolProperty(
+        name='KeenTools FaceBuilder',
+        default=False
+    )
+
+    geotracker_enabled: bpy.props.BoolProperty(
+        name='Enable KeenTools GeoTracker',
+        default=True
+    )
+    geotracker_expanded: bpy.props.BoolProperty(
+        name='KeenTools GeoTracker',
+        default=False
+    )
 
     latest_show_datetime_update_reminder: bpy.props.StringProperty(
         name='Latest show update reminder', default='',
@@ -608,13 +644,9 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         draw_long_labels(col, info, 120)
 
     def _draw_user_preferences(self, layout):
-        icon = 'TRIA_RIGHT' if not self.show_user_preferences else 'TRIA_DOWN'
-        main_box = layout.box()
-        if not self.show_user_preferences:
-            main_box.prop(self, 'show_user_preferences', icon=icon)
+        main_box = layout
+        if not _expandable_button(main_box, self, 'show_user_preferences'):
             return
-        main_box.prop(self, 'show_user_preferences', icon=icon,
-                      invert_checkbox=True)  # emboss=False
 
         box = main_box.box()
         box.prop(self, 'prevent_view_rotation')
@@ -703,9 +735,8 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         return False
 
     def _draw_facebuilder_preferences(self, layout):
-        box = layout.box()
-        self._draw_license_info(box)
-        self._draw_user_preferences(box)
+        self._draw_license_info(layout)
+        self._draw_user_preferences(layout)
 
     def _draw_geotracker_preferences(self, layout):
         pass
@@ -721,8 +752,17 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
             return
         if not self._draw_core_info(layout):
             return
-
         self._draw_updater_info(layout)
 
-        self._draw_facebuilder_preferences(layout)
-        self._draw_geotracker_preferences(layout)
+        box = layout.box()
+        row = box.row(align=True)
+
+        row.prop(self, 'facebuilder_enabled', text='')
+        if _expandable_button(row, self, 'facebuilder_expanded'):
+            self._draw_facebuilder_preferences(box)
+            self._draw_geotracker_preferences(box)
+
+        row = box.row(align=True)
+        row.prop(self, 'geotracker_enabled', text='')
+        if _expandable_button(row, self, 'geotracker_expanded'):
+            box.label(text='Geotracker settings')

@@ -83,6 +83,16 @@ def get_addon_preferences():
     return bpy.context.preferences.addons[Config.addon_name].preferences
 
 
+def facebuilder_enabled():
+    prefs = get_addon_preferences()
+    return prefs.facebuilder_enabled
+
+
+def geotracker_enabled():
+    prefs = get_addon_preferences()
+    return prefs.facebuilder_enabled
+
+
 def get_operator(operator_id_name):
     def _rgetattr(obj, attr, *args):
         import functools

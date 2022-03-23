@@ -20,7 +20,7 @@ from bpy.types import Panel
 
 from .updater import (FBUpdater, FBDownloadNotification, FBDownloadingProblem, FBInstallationReminder)
 from ..config import FBConfig, get_fb_settings
-from ...addon_config import Config
+from ...addon_config import Config, facebuilder_enabled
 import re
 from ..fbloader import FBLoader
 from ...utils.manipulate import (what_is_state,
@@ -70,6 +70,10 @@ class Common:
     bl_category = FBConfig.fb_tab_category
     bl_context = 'objectmode'
 
+    @classmethod
+    def poll(cls, context):
+        return facebuilder_enabled()
+
 
 class CommonClosed(Common):
     bl_options = {'DEFAULT_CLOSED'}
@@ -78,6 +82,8 @@ class CommonClosed(Common):
 class AllVisible(Common):
     @classmethod
     def poll(cls, context):
+        if not facebuilder_enabled():
+            return False
         return _show_all_panels()
 
 
@@ -206,6 +212,8 @@ class FB_PT_UpdatePanel(Common, Panel):
 
     @classmethod
     def poll(cls, context):
+        if not facebuilder_enabled():
+            return False
         return FBUpdater.is_active()
 
     def _draw_response(self, layout):
@@ -236,6 +244,8 @@ class FB_PT_DownloadNotification(Common, Panel):
 
     @classmethod
     def poll(cls, context):
+        if not facebuilder_enabled():
+            return False
         return FBDownloadNotification.is_active()
 
     def _draw_response(self, layout):
@@ -252,6 +262,8 @@ class FB_PT_DownloadingProblemPanel(Common, Panel):
 
     @classmethod
     def poll(cls, context):
+        if not facebuilder_enabled():
+            return False
         return FBDownloadingProblem.is_active()
 
     def _draw_response(self, layout):
@@ -275,6 +287,8 @@ class FB_PT_UpdatesInstallationPanel(Common, Panel):
 
     @classmethod
     def poll(cls, context):
+        if not facebuilder_enabled():
+            return False
         return FBInstallationReminder.is_active()
 
     def _draw_response(self, layout):
@@ -723,6 +737,8 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
 
     @classmethod
     def poll(cls, context):
+        if not facebuilder_enabled():
+            return False
         if not pkt_is_installed():
             return False
         state, _ = what_is_state()
