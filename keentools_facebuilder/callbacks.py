@@ -237,6 +237,31 @@ def update_expressions(self, context):
                                           settings.current_camnum)
 
 
+def update_expression_options(self, context):
+    logger = logging.getLogger(__name__)
+    settings = get_main_settings()
+    headnum = self.get_headnum()
+    camnum = settings.current_camnum
+    if headnum < 0 or camnum < 0:
+        logger.error('WRONG HEADNUM: {} CAMNUM: {}'.format(headnum, camnum))
+        return
+    logger.debug('EXPRESSIONS HEADNUM: '
+                 '{} {}'.format(headnum, self.should_use_emotions()))
+    fb = FBLoader.get_builder()
+    FBLoader.solve(headnum, camnum)
+
+    FBLoader.update_all_camera_positions(headnum)
+    FBLoader.save_fb_serial_str(headnum)
+
+    coords.update_head_mesh_non_neutral(fb, self)
+    if not settings.pinmode:
+        return
+
+    FBLoader.update_viewport_shaders(context,
+                                     settings.current_headnum,
+                                     settings.current_camnum)
+
+
 def update_expression_view(self, context):
     exp_view = self.expression_view
     if exp_view == Config.empty_expression_view_idname:
