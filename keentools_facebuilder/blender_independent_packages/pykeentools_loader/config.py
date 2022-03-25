@@ -48,7 +48,7 @@ def addon_installation_dir():
     return os.path.join(addons_path, 'keentools_facebuilder')
 
 
-MINIMUM_VERSION_REQUIRED = (2021, 4, 0)  # 2021.4.0 (4/5)
+MINIMUM_VERSION_REQUIRED = (2022, 1, 0)  # 2022.1.0 (4/5)
 _SUPPORTED_PYTHON_VERSIONS = ((3, 7), (3, 9), (3, 10))
 
 
