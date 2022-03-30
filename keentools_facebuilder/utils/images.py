@@ -19,13 +19,38 @@ import numpy as np
 import bpy
 
 
+_pixels_foreach_exists = None
+
+
+def _get_pixels_foreach_exists():
+    global _pixels_foreach_exists
+    if _pixels_foreach_exists is None:
+        ver = bpy.app.version
+        _pixels_foreach_exists = ver >= (2, 83, 0)
+    return _pixels_foreach_exists
+
+
+def assign_pixels_data(pixels, data):
+    if _get_pixels_foreach_exists():
+        pixels.foreach_set(data)
+    else:
+        pixels[:] = data
+
+
+def get_pixels_data(pixels, data):
+    if _get_pixels_foreach_exists():
+        pixels.foreach_get(data)
+    else:
+        data[:] = pixels[:]
+
+
 def np_array_from_bpy_image(bpy_image):
     if not bpy_image or not bpy_image.size or not bpy_image.channels:
         return None
     w, h = bpy_image.size[:2]
     if w > 0 and h > 0:
         np_img = np.empty((h, w, bpy_image.channels), dtype=np.float32)
-        bpy_image.pixels.foreach_get(np_img.ravel())
+        get_pixels_data(bpy_image.pixels, np_img.ravel())
     else:
         return None
     return np_img
