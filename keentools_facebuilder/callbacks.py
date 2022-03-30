@@ -344,6 +344,8 @@ def update_model_scale(self, context):
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
     FBLoader.save_fb_serial_str(headnum)
+    if settings.pinmode:
+        head.need_update = True
 
 
 def update_cam_image(self, context):
