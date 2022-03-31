@@ -826,7 +826,7 @@ class FBSceneSettings(PropertyGroup):
         name="Angle strictness", default=10.0, min=0.0, max=100.0)
     tex_uv_expand_percents: FloatProperty(
         description="Expand texture edges",
-        name="Expand edges (%)", default=0.0)
+        name="Expand edges (%)", default=0.1)
     tex_back_face_culling: BoolProperty(
         description="Exclude backfacing polygons from the created texture",
         name="Back face culling", default=True)
