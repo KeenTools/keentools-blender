@@ -31,6 +31,39 @@ from .utils.other import (FBStopShaderTimer, force_ui_redraw,
 from .utils.html import split_long_string
 
 
+_undo_handler = None
+
+
+def undo_handler(scene):
+    logger = logging.getLogger(__name__)
+    logger.debug('undo_handler')
+    try:
+        settings = get_main_settings()
+        if not settings.pinmode or settings.current_headnum < 0:
+            unregister_undo_handler()
+            return
+        head = settings.get_head(settings.current_headnum)
+        head.need_update = True
+    except Exception as err:
+        logger.error('undo_handler {}'.format(str(err)))
+        unregister_undo_handler()
+
+
+def unregister_undo_handler():
+    global _undo_handler
+    if _undo_handler is not None:
+        if _undo_handler in bpy.app.handlers.undo_post:
+            bpy.app.handlers.undo_post.remove(_undo_handler)
+    _undo_handler = None
+
+
+def register_undo_handler():
+    global _undo_handler
+    unregister_undo_handler()
+    _undo_handler = undo_handler
+    bpy.app.handlers.undo_post.append(_undo_handler)
+
+
 class FB_OT_PinMode(bpy.types.Operator):
     """ On Screen Face Builder Draw Operator """
     bl_idname = Config.fb_pinmode_idname
@@ -108,6 +141,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         if not FBLoader.solve(headnum, camnum):
             logger.error('DELETE PIN PROBLEM')
+            unregister_undo_handler()
             return {'FINISHED'}
 
         if head.should_reduce_pins():
@@ -317,6 +351,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.debug('PINMODE SWITCH ONLY')
             return {'FINISHED'}
 
+        register_undo_handler()
         logger.debug('PINMODE STARTED')
         return {"RUNNING_MODAL"}
 
@@ -390,12 +425,15 @@ class FB_OT_PinMode(bpy.types.Operator):
         if self.pinmode_id != settings.pinmode_id:
             logger.error('Extreme pinmode operator stop')
             logger.error('{} != {}'.format(self.pinmode_id, settings.pinmode_id))
+            unregister_undo_handler()
+            cameras.exit_localview(context)
             return {'FINISHED'}
 
         headnum = settings.current_headnum
         head = settings.get_head(headnum)
 
         if self._modal_should_finish(context, event):
+            unregister_undo_handler()
             cameras.exit_localview(context)
             return {'FINISHED'}
 
@@ -433,6 +471,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         vp = FBLoader.viewport()
         if not (vp.wireframer().is_working()):
             logger.debug("WIREFRAME IS OFF")
+            unregister_undo_handler()
             FBLoader.out_pinmode(headnum)
             return {'FINISHED'}
 

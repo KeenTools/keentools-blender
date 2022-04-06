@@ -29,7 +29,8 @@ from . shaders import (simple_fill_vertex_shader,
 from ..config import Config
 from ..utils.images import (check_bpy_image_has_same_size,
                             find_bpy_image_by_name,
-                            remove_bpy_image)
+                            remove_bpy_image,
+                            assign_pixels_data)
 from ..utils import coords
 
 
@@ -328,7 +329,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
         if wireframe_image:
             rgba = np.ones((size[1], size[0], 4), dtype=np.float32)
             rgba[:, :, :3] = image_data
-            wireframe_image.pixels.foreach_set(rgba.ravel())
+            assign_pixels_data(wireframe_image.pixels, rgba.ravel())
             wireframe_image.pack()
             self.switch_to_complex_shader()
             return True

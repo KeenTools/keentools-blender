@@ -52,7 +52,7 @@ from .callbacks import (update_mesh_with_dialog,
                         update_background_tone_mapping,
                         universal_getter, universal_setter)
 from .utils.manipulate import get_current_head
-from .utils.images import np_array_from_bpy_image
+from .utils.images import np_array_from_bpy_image, assign_pixels_data
 
 
 class FBExifItem(PropertyGroup):
@@ -401,7 +401,7 @@ class FBCameraItem(PropertyGroup):
 
         gain = pow(2, exposure / 2.2)
         np_img[:, :, :3] = np.power(gain * np_img[:, :, :3], 1.0 / gamma)
-        self.cam_image.pixels.foreach_set(np_img.ravel())
+        assign_pixels_data(self.cam_image.pixels, np_img.ravel())
         logger.debug('restore_tone_mapping: exposure: {} '
                      '(gain: {}) gamma: {}'.format(exposure, gain, gamma))
 
