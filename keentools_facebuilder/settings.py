@@ -15,8 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
-
+import logging
 import math
 
 import bpy
@@ -40,6 +39,8 @@ from .utils import coords
 from .callbacks import (update_mesh_with_dialog,
                         update_mesh_simple,
                         update_expressions,
+                        update_expression_options,
+                        update_expression_view,
                         update_wireframe_image,
                         update_wireframe_func,
                         update_pin_sensitivity,
@@ -48,10 +49,10 @@ from .callbacks import (update_mesh_with_dialog,
                         update_cam_image,
                         update_head_focal,
                         update_camera_focal,
-                        update_blue_camera_button,
-                        update_blue_head_button,
+                        update_background_tone_mapping,
                         universal_getter, universal_setter)
 from .utils.manipulate import get_current_head
+from .utils.images import np_array_from_bpy_image, assign_pixels_data
 
 
 class FBExifItem(PropertyGroup):
@@ -80,6 +81,24 @@ class FBExifItem(PropertyGroup):
     real_width: FloatProperty(default=-1.0)
     real_length: FloatProperty(default=-1.0)
 
+    def __str__(self):
+        res = 'focal: {} \n'.format(self.focal)
+        res += 'focal35mm: {} \n'.format(self.focal35mm)
+        res += 'focal_x_res: {} \n'.format(self.focal_x_res)
+        res += 'focal_y_res: {} \n'.format(self.focal_y_res)
+        res += 'units: {} \n'.format(self.units)
+        res += 'sensor_width: {} \n'.format(self.sensor_width)
+        res += 'sensor_length: {} \n'.format(self.sensor_length)
+        res += 'image_width: {} \n'.format(self.image_width)
+        res += 'image_length: {} \n'.format(self.image_length)
+        res += 'orientation: {} \n'.format(self.orientation)
+        res += 'exif_width: {} \n'.format(self.exif_width)
+        res += 'real_width: {} \n'.format(self.real_width)
+        res += 'real_length: {} \n'.format(self.real_length)
+        res += 'info_message: {} \n'.format(self.info_message)
+        res += 'sizes_message: {} \n'.format(self.sizes_message)
+        return res
+
     def calculated_image_size(self):
         if self.image_width > 0.0 and self.image_length > 0.0:
             w = self.image_width
@@ -91,7 +110,7 @@ class FBExifItem(PropertyGroup):
 
 
 class FBCameraItem(PropertyGroup):
-    keyframe_id: IntProperty(default=0)
+    keyframe_id: IntProperty(default=-1)
     cam_image: PointerProperty(
         name="Image", type=bpy.types.Image, update=update_cam_image
     )
@@ -129,6 +148,17 @@ class FBCameraItem(PropertyGroup):
                     "focal length based on the position of the model "
                     "in the frame",
         default=True)
+
+    tone_exposure: FloatProperty(
+        name='Exposure', description='Tone gain',
+        default=Config.default_tone_exposure,
+        min=-10.0, max=10.0, soft_min=-4.0, soft_max=4.0, precision=2,
+        update=update_background_tone_mapping)
+
+    tone_gamma: FloatProperty(
+        name='Gamma correction', description='Tone gamma correction',
+        default=Config.default_tone_gamma, min=0.01, max=10.0, soft_max=4.0, precision=2,
+        update=update_background_tone_mapping)
 
     def update_scene_frame_size(self):
         if self.image_width > 0 and self.image_height > 0:
@@ -335,15 +365,6 @@ class FBCameraItem(PropertyGroup):
     def get_projection_matrix(self):
         return self.get_custom_projection_matrix(self.focal)
 
-    def np_image(self):
-        w, h = self.get_image_size()
-        if w < 0:
-            return None
-        img = np.rot90(
-            np.asarray(self.cam_image.pixels[:]).reshape((h, w, 4)),
-            self.orientation)
-        return img
-
     def get_headnum_camnum(self):
         settings = get_main_settings()
         for i, head in enumerate(settings.heads):
@@ -356,6 +377,38 @@ class FBCameraItem(PropertyGroup):
         w, _ = self.get_oriented_image_size()
         sc = 1.0 / self.compensate_view_scale()
         return sc * w / Config.default_sensor_width
+
+    def reset_tone_mapping(self):
+        if not self.cam_image:
+            return
+        if self.cam_image.is_dirty:
+            self.cam_image.reload()
+            logger = logging.getLogger(__name__)
+            logger.debug('reset_tone_mapping: IMAGE RELOADED')
+
+    def tone_mapping(self, exposure=Config.default_tone_exposure, gamma=Config.default_tone_gamma):
+        if not self.cam_image:
+            return
+        self.reset_tone_mapping()
+        logger = logging.getLogger(__name__)
+
+        if np.all(np.isclose([exposure, gamma], [Config.default_tone_exposure,
+                                                 Config.default_tone_gamma],
+                                                 atol=0.001)):
+            logger.debug('SKIP tone mapping, only reload()')
+            return
+        np_img = np_array_from_bpy_image(self.cam_image)
+
+        gain = pow(2, exposure / 2.2)
+        np_img[:, :, :3] = np.power(gain * np_img[:, :, :3], 1.0 / gamma)
+        assign_pixels_data(self.cam_image.pixels, np_img.ravel())
+        logger.debug('restore_tone_mapping: exposure: {} '
+                     '(gain: {}) gamma: {}'.format(exposure, gain, gamma))
+
+    def apply_tone_mapping(self):
+        if not self.cam_image:
+            return
+        self.tone_mapping(exposure=self.tone_exposure, gamma=self.tone_gamma)
 
 
 def uv_items_callback(self, context):
@@ -383,10 +436,26 @@ def model_type_callback(self, context):
     return res
 
 
+def expression_views_callback(self, context):
+    res = [(Config.neutral_expression_view_idname, 'Neutral', '', 'USER', 0), ]
+    for i, camera in enumerate(self.cameras):
+        kid = camera.get_keyframe()
+        res.append(('{}'.format(kid), camera.get_image_name(),
+                    '', 'HIDE_OFF', kid))
+    return res
+
+
 class FBHeadItem(PropertyGroup):
     use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
                                          default=False,
                                          update=update_expressions)
+    use_blinking: BoolProperty(
+        description="Use blinking desctiption",
+        name="Use blinking", default=True, update=update_expression_options)
+    use_neck_rotation: BoolProperty(
+        description="Use neck rotation desctiption",
+        name="Use neck rotation", default=True, update=update_expression_options)
+
     reduce_pins: bpy.props.BoolProperty(name="Reduce pins",
                                         default=True)
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
@@ -449,6 +518,11 @@ class FBHeadItem(PropertyGroup):
     model_type_previous: EnumProperty(name='Current Topology',
                                       items=model_type_callback,
                                       description='Invisible Model selector')
+
+    expression_view: EnumProperty(name='Expression View Selector',
+                                  items=expression_views_callback,
+                                  description='What expression will display after pinning',
+                                  update=update_expression_view)
 
     def blenshapes_are_relevant(self):
         if self.has_no_blendshapes():
@@ -603,6 +677,32 @@ class FBHeadItem(PropertyGroup):
                 return i
         return -1
 
+    def get_main_settings(self):
+        return get_main_settings()
+
+    def get_expression_view_keyframe(self):
+        if self.expression_view == Config.empty_expression_view_idname:
+            return 0  # Neutral
+        kid = int(self.expression_view)
+        return kid
+
+    def set_neutral_expression_view(self):
+        self.expression_view = Config.neutral_expression_view_idname
+
+    def has_vertex_groups(self):
+        return len(self.headobj.vertex_groups) != 0
+
+    def get_headobj_name(self):
+        if self.headobj:
+            return self.headobj.name
+        return 'none'
+
+    def preview_material_name(self):
+        return Config.tex_builder_matname_template.format(self.get_headobj_name())
+
+    def preview_texture_name(self):
+        return Config.tex_builder_filename_template.format(self.get_headobj_name())
+
 
 class FBSceneSettings(PropertyGroup):
     # ---------------------
@@ -692,6 +792,12 @@ class FBSceneSettings(PropertyGroup):
     expression_rigidity: FloatProperty(
         description="Change how much pins affect the model expressions",
         name="Expression rigidity", default=2.0, min=0.001, max=1000.0)
+    blinking_rigidity: FloatProperty(
+        description="Change blinking rigidity",
+        name="Blinking rigidity", default=2.0, min=0.001, max=1000.0)
+    neck_rotation_rigidity: FloatProperty(
+        description="Change neck rotation rigidity",
+        name="Neck rotation rigidity", default=2.0, min=0.001, max=1000.0)
 
     # Internal use only.
     # Warning! current_headnum and current_camnum work only in Pinmode!
@@ -741,17 +847,6 @@ class FBSceneSettings(PropertyGroup):
     tex_auto_preview: BoolProperty(
         description="Automatically apply the created texture",
         name="Automatically apply the created texture", default=True)
-
-    # Workaround to get blue button for selected camera
-    blue_camera_button: BoolProperty(
-        description="Current camera",
-        name="Blue camera button", default=True,
-        update=update_blue_camera_button)
-
-    blue_head_button: BoolProperty(
-        description="Current head",
-        name="Blue head button", default=True,
-        update=update_blue_head_button)
 
     defaults_loaded: BoolProperty(
         description='Defaults are loaded flag',
@@ -860,9 +955,17 @@ class FBSceneSettings(PropertyGroup):
         for i, c in enumerate(head.cameras):
             if c.is_deleted():
                 status = True
+                headnum = head.get_headnum()
+                FBLoader.load_model(headnum)
+                fb = FBLoader.get_builder()
+                kid = c.get_keyframe()
+                if fb.is_key_at(kid):
+                    fb.remove_keyframe(kid)
                 err.append(i)  # Wrong camera in list
         for i in reversed(err):  # Delete in backward order
             head.cameras.remove(i)
+        if status:
+            FBLoader.save_fb_serial_and_image_pathes(headnum)
         return status  # True if there was any changes
 
     def fix_heads(self):
@@ -913,3 +1016,6 @@ class FBSceneSettings(PropertyGroup):
 
     def hide_user_preferences(self):
         self.preferences().show_user_preferences = False
+
+    def mock_update_for_testing(self, value=True, ver=None):
+        Config.mock_update_for_testing(value, ver)

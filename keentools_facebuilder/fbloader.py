@@ -128,6 +128,9 @@ class FBLoader:
         settings.pinmode = False
         logger = logging.getLogger(__name__)
         logger.debug('OUT PINMODE')
+        camera = head.get_camera(settings.current_camnum)
+        if camera:
+            camera.reset_tone_mapping()
 
     @classmethod
     def out_pinmode(cls, headnum):
@@ -163,6 +166,9 @@ class FBLoader:
         settings = get_main_settings()
         fb.set_shape_rigidity(settings.shape_rigidity)
         fb.set_expressions_rigidity(settings.expression_rigidity)
+
+        fb.set_blinking_rigidity(settings.blinking_rigidity)
+        fb.set_neck_rotation_rigidity(settings.neck_rotation_rigidity)
 
     @classmethod
     def update_all_camera_positions(cls, headnum):
@@ -266,13 +272,16 @@ class FBLoader:
 
     @classmethod
     def get_builder_mesh(cls, builder, mesh_name='keentools_mesh',
-                         masks=(), uv_set='uv0'):
+                         masks=(), uv_set='uv0', keyframe=None):
         for i, m in enumerate(masks):
             builder.set_mask(i, m)
 
         cls.select_uv_set(builder, uv_set)
 
-        geo = builder.applied_args_model()
+        if keyframe is not None:
+            geo = builder.applied_args_model_at(keyframe)
+        else:
+            geo = builder.applied_args_model()
         me = geo.mesh(0)
 
         v_count = me.points_count()
@@ -318,9 +327,9 @@ class FBLoader:
 
     @classmethod
     def universal_mesh_loader(cls, mesh_name='keentools_mesh',
-                              masks=(), uv_set='uv0'):
+                              masks=(), uv_set='uv0', keyframe=None):
         builder = cls.new_builder()
-        mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set)
+        mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set, keyframe)
         return mesh
 
     @classmethod
@@ -390,6 +399,9 @@ class FBLoader:
 
         cls.rigidity_setup()
         fb.set_use_emotions(head.should_use_emotions())
+
+        fb.set_use_blinking(head.use_blinking)
+        fb.set_use_neck_rotation(head.use_neck_rotation)
 
         configure_focal_mode_and_fixes(fb, head)
         try:

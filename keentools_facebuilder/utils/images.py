@@ -15,110 +15,52 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
-import contextlib
-import hashlib
-import logging
-import os
-import os.path
-import shutil
-import tempfile
-
 import numpy as np
-
 import bpy
 
-from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+
+_pixels_foreach_exists = None
 
 
-_TMP_IMAGES_DIR = os.path.join(tempfile.gettempdir(), 'pykeentools_tmp_images')
+def _get_pixels_foreach_exists():
+    global _pixels_foreach_exists
+    if _pixels_foreach_exists is None:
+        ver = bpy.app.version
+        _pixels_foreach_exists = ver >= (2, 83, 0)
+    return _pixels_foreach_exists
 
 
-def _make_tmp_path(abs_path):
-    sha1 = hashlib.sha1()
-    sha1.update(abs_path.encode())
-    return os.path.join(_TMP_IMAGES_DIR, sha1.hexdigest() + '.png')
+def assign_pixels_data(pixels, data):
+    if _get_pixels_foreach_exists():
+        pixels.foreach_set(data)
+    else:
+        pixels[:] = data
 
 
-@contextlib.contextmanager
-def _tmp_image_path(curr_abs_path):
-    shutil.rmtree(_TMP_IMAGES_DIR, ignore_errors=True)
-    try:
-        os.makedirs(_TMP_IMAGES_DIR, exist_ok=True)
-        yield _make_tmp_path(curr_abs_path)
-    finally:
-        shutil.rmtree(_TMP_IMAGES_DIR, ignore_errors=True)
+def get_pixels_data(pixels, data):
+    if _get_pixels_foreach_exists():
+        pixels.foreach_get(data)
+    else:
+        data[:] = pixels[:]
 
 
-def _get_color_transform_state():
-    vs = bpy.context.scene.view_settings
-    ds = bpy.context.scene.display_settings
-    return {
-        'display_device': ds.display_device,
-        'view_transform': vs.view_transform,
-        'look': vs.look,
-        'exposure': vs.exposure,
-        'gamma': vs.gamma,
-        'use_curve_mapping': vs.use_curve_mapping
-    }
-
-
-def _set_color_transform_state(state):
-    vs = bpy.context.scene.view_settings
-    ds = bpy.context.scene.display_settings
-
-    ds.display_device = state['display_device']
-    vs.view_transform = state['view_transform']
-    vs.look = state['look']
-    vs.exposure = state['exposure']
-    vs.gamma = state['gamma']
-    vs.use_curve_mapping = state['use_curve_mapping']
-
-
-def _default_color_transform_state():
-    return {
-        'display_device': 'sRGB',
-        'view_transform': 'Standard',
-        'look': 'None',
-        'exposure': 0.0,
-        'gamma': 1.0,
-        'use_curve_mapping': False
-    }
-
-
-@contextlib.contextmanager
-def _standard_view_transform():
-    # This is done to enforce correct image saving
-    state = _get_color_transform_state()
-    _set_color_transform_state(_default_color_transform_state())
-
-    try:
-        yield
-    finally:
-        _set_color_transform_state(state)
-
-
-def load_unchanged_rgba(camera):
-    abs_path = camera.get_abspath()
-    if abs_path is None:
+def np_array_from_bpy_image(bpy_image):
+    if not bpy_image or not bpy_image.size or not bpy_image.channels:
         return None
-
-    with _tmp_image_path(abs_path) as tmp_path:
-        with _standard_view_transform():
-            camera.cam_image.save_render(tmp_path)
-        img = pkt_module().read_png(tmp_path)
-
-    if img is None:
-        if camera.cam_image is None:
-            return None
-        w, h = camera.cam_image.size[:2]
-        img = np.array(camera.cam_image.pixels[:]).reshape((h, w, 4))
-
-    return img.astype(np.float32)
+    w, h = bpy_image.size[:2]
+    if w > 0 and h > 0:
+        np_img = np.empty((h, w, bpy_image.channels), dtype=np.float32)
+        get_pixels_data(bpy_image.pixels, np_img.ravel())
+    else:
+        return None
+    return np_img
 
 
 def load_rgba(camera):
-    img = load_unchanged_rgba(camera)
+    if not camera or camera.cam_image is None:
+        return None
+
+    img = np_array_from_bpy_image(camera.cam_image)
     if img is None:
         return None
     return np.rot90(img, camera.orientation)
@@ -147,10 +89,6 @@ def store_bpy_image_in_scene(image):
     image.use_fake_user = True
 
 
-def add_alpha_channel(np_image_array):
-    return np.dstack((np_image_array, np.ones(np_image_array.shape[:2])))
-
-
 def check_bpy_image_size(image):
     if not image or not image.size:
         return False
@@ -163,52 +101,3 @@ def check_bpy_image_has_same_size(image, size):
         return False
     w, h = image.size[:2]
     return w == size[0] and h == size[1]
-
-
-def safe_bpy_image_loading(blender_name, path):
-    tex = find_bpy_image_by_name(blender_name)
-    if tex is not None:
-        if check_bpy_image_size(tex):
-            return tex
-        else:
-            remove_bpy_image_by_name(blender_name)
-    try:
-        image = bpy.data.images.load(path)
-        image.name = blender_name
-    except Exception:
-        logger = logging.getLogger(__name__)
-        logger.error('Source texture for "{}" '
-                     'is not found on path: {}'.format(blender_name, path))
-        return None
-    if not check_bpy_image_size(image):
-        return None
-    return image
-
-
-def safe_bpy_image_in_scene_loading(blender_name, path):
-    logger = logging.getLogger(__name__)
-    tex = find_bpy_image_by_name(blender_name)
-    if tex is not None:
-        if check_bpy_image_size(tex):
-            return tex
-        else:
-            remove_bpy_image_by_name(blender_name)
-    try:
-        image = bpy.data.images.load(path)
-    except Exception:
-        logger.error('Source texture for "{}" '
-                     'is not found on path: {}'.format(blender_name, path))
-        return None
-    if not check_bpy_image_size(image):
-        bpy.data.images.remove(image)
-        logger.error('Source texture "{}" '
-                     'has wrong format on path: {}'.format(blender_name, path))
-        return None
-
-    tex = bpy.data.images.new(blender_name,
-                              width=image.size[0], height=image.size[1],
-                              alpha=True, float_buffer=False)
-    tex.pixels[:] = image.pixels[:]
-    store_bpy_image_in_scene(tex)
-    bpy.data.images.remove(image)
-    return tex

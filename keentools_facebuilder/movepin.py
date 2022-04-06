@@ -147,7 +147,7 @@ class FB_OT_MovePin(bpy.types.Operator):
             fb.reduce_pins()
             pins.set_pins(vp.img_points(fb, kid))
 
-        coords.update_head_mesh_neutral(fb, head.headobj)
+        coords.update_head_mesh_non_neutral(fb, head)
 
         FBLoader.update_all_camera_positions(headnum)
         FBLoader.update_all_camera_focals(headnum)

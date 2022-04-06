@@ -23,7 +23,7 @@ import numpy as np
 from .. config import Config, get_main_settings
 from .. fbloader import FBLoader
 from .. utils.coords import projection_matrix
-from .. utils.images import load_rgba, find_bpy_image_by_name
+from .. utils.images import load_rgba, find_bpy_image_by_name, assign_pixels_data
 from .. blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
@@ -113,9 +113,13 @@ def _create_bpy_texture_from_img(img, tex_name):
     tex = bpy.data.images.new(
             tex_name, width=img.shape[1], height=img.shape[0],
             alpha=True, float_buffer=False)
-    tex.colorspace_settings.name = 'sRGB'
     assert(tex.name == tex_name)
-    tex.pixels[:] = img.ravel()
+    try:
+        tex.colorspace_settings.name = 'sRGB'
+    except TypeError as err:
+        logger.error('_create_bpy_texture_from_img '
+                     'color space sRGB is not found: {}'.format(str(err)))
+    assign_pixels_data(tex.pixels, img.ravel())
     tex.pack()
 
     logger.debug("TEXTURE BAKED SUCCESSFULLY")
@@ -148,6 +152,7 @@ def _sRGB_to_linear(img):
 def _create_frame_data_loader(settings, head, camnums, fb):
     def frame_data_loader(kf_idx):
         cam = head.cameras[camnums[kf_idx]]
+        cam.reset_tone_mapping()
 
         img = load_rgba(cam)
 

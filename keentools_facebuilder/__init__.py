@@ -16,9 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-
 bl_info = {
-    "name": "KeenTools FaceBuilder 2021.4.0",
+    "name": "KeenTools FaceBuilder 2022.1.0",  # (1/5)
+    "version": (2022, 1, 0),  # 2022.1.0 (2/5)
     "author": "KeenTools",
     "description": "Creates Head and Face geometry with a few "
                    "reference photos",
@@ -49,7 +49,7 @@ logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'))
 logger = logging.getLogger(__name__)
 txt = get_system_info()
 txt.append('Addon: {}'.format(bl_info['name']))
-logger.info('System Info:\n' + '\n'.join(txt))
+logger.info('\n---\nSystem Info:\n' + '\n'.join(txt) + '\n---\n')
 
 
 def _is_platform_64bit():
@@ -62,7 +62,7 @@ def _is_python_64bit():
 
 
 def _is_config_latest():
-    return Config.addon_version == '2021.4.0'
+    return Config.addon_version == '2022.1.0'  # (3/5)
 
 
 def _is_blender_too_old():

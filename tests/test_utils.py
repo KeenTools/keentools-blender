@@ -12,6 +12,7 @@ from keentools_facebuilder.config import Config, get_main_settings, \
     get_operator
 import keentools_facebuilder.utils.coords as coords
 from keentools_facebuilder.fbloader import FBLoader
+from keentools_facebuilder.utils.images import assign_pixels_data
 
 
 _TEST_DIR = os.path.join(tempfile.gettempdir(), 'keentools_tests')
@@ -33,8 +34,8 @@ def create_test_dir():
 def create_image(image_name, width=1920, height=1080, color=(0, 0, 0, 1)):
     image = bpy.data.images.new(image_name, width=width, height=height,
                                 alpha=True, float_buffer=False)
-    rgba = np.full((height, width, len(color)), color)
-    image.pixels[:] = rgba.ravel()
+    rgba = np.full((height, width, len(color)), color, dtype=np.float32)
+    assign_pixels_data(image.pixels, rgba.ravel())
     return image
 
 

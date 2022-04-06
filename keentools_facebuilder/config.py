@@ -18,7 +18,6 @@
 import math
 import bpy
 
-
 _company = 'keentools'
 _PT = 'FACEBUILDER_PT_'
 _MT = 'FACEBUILDER_MT_'
@@ -26,9 +25,10 @@ _MT = 'FACEBUILDER_MT_'
 
 class Config:
     # Version dependent
-    addon_version = '2021.4.0'
+    addon_version = '2022.1.0'  # (5/5)
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
-                                  (2, 90), (2, 91), (2, 92), (2, 93), (3, 0))
+                                  (2, 90), (2, 91), (2, 92), (2, 93),
+                                  (3, 0), (3, 1))
     minimal_blender_api = (2, 80, 60)
 
     # Version independent
@@ -37,8 +37,8 @@ class Config:
     addon_name = __package__  # the same as module name
     addon_human_readable_name = 'FaceBuilder'
 
-    default_fb_object_name = 'FaceBuilderHead'
-    default_fb_mesh_name = 'FaceBuilderHead_mesh'
+    default_fb_object_name = 'FBHead'
+    default_fb_mesh_name = 'FBHead_mesh'
     default_fb_collection_name = 'FaceBuilderCol'
     default_fb_camera_data_name = 'fbCamData'
     default_fb_camera_name = 'fbCamera'
@@ -49,8 +49,7 @@ class Config:
     addon_search = 'KeenTools'
     addon_global_var_name = prefix + '_settings'
     addon_full_name = 'Keentools FaceBuilder for Blender'
-    fb_views_panel_label = 'Views'
-    fb_camera_panel_label = 'Camera'
+
     fb_tab_category = addon_human_readable_name
     keentools_website_url = 'https://keentools.io'
     core_download_website_url = keentools_website_url + '/download/core'
@@ -62,8 +61,10 @@ class Config:
     
     # Operators ids
     fb_select_head_idname = operators + '.select_head'
+    fb_select_current_head_idname = operators + '.select_current_head'
     fb_delete_head_idname = operators + '.delete_head'
     fb_select_camera_idname = operators + '.select_camera'
+    fb_select_current_camera_idname = operators + '.select_current_camera'
     fb_center_geo_idname = operators + '.center_geo'
     fb_unmorph_idname = operators + '.unmorph'
     fb_remove_pins_idname = operators + '.remove_pins'
@@ -102,6 +103,8 @@ class Config:
 
     fb_warning_idname = operators + '.addon_warning'
     fb_blendshapes_warning_idname = operators + '.blendshapes_warning'
+    fb_noblenshapes_until_expression_warning_idname = operators + \
+        '.no_blenshapes_until_expression_warning'
 
     fb_tex_selector_idname = operators + '.tex_selector'
     fb_exit_pinmode_idname = operators + '.exit_pinmode'
@@ -128,6 +131,8 @@ class Config:
     fb_default_pin_settings_idname = operators + '.default_pin_settings'
     fb_default_wireframe_settings_idname = \
         operators + '.default_wireframe_settings'
+    fb_reset_tone_exposure_idname = operators + '.reset_tone_exposure'
+    fb_reset_tone_gamma_idname = operators + '.reset_tone_gamma'
 
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
@@ -169,12 +174,15 @@ class Config:
     fb_proper_view_menu_idname = _MT + 'proper_view_menu'
 
     # Standard names
-    tex_builder_filename = 'kt_facebuilder_texture'
-    tex_builder_matname = 'kt_facebuilder_material'
+    tex_builder_filename_template = '{}_baked_tex'
+    tex_builder_matname_template = '{}_preview_mat'
 
     default_driver_name = 'FaceBuilderDriver'
     default_blendshapes_action_name = 'fbBlendShapesAction'
     example_animation_action_name = 'ExampleAnimAction'
+
+    neutral_expression_view_idname = '0'
+    empty_expression_view_idname = ''
 
     # Object Custom Properties
     # Tuples instead simple values are used to load custom properties
@@ -216,6 +224,10 @@ class Config:
     camera_z_step = 0.5
 
     show_markers_at_camera_corners = False
+    recreate_vertex_groups = True
+
+    default_tone_exposure = 0.0
+    default_tone_gamma = 1.0
 
     # In Material
     image_node_layout_coord = (-300, 0)
@@ -261,6 +273,14 @@ class Config:
         'latest_installation_skip_version': {'value': '', 'type': 'string'},
         'latest_show_datetime_installation_reminder': {'value': '', 'type': 'string'}
     }
+    mock_update_for_testing_flag = False
+    mock_update_version = (int(addon_version.partition('.')[0]), 6, 3)
+
+    @classmethod
+    def mock_update_for_testing(cls, value=True, ver=None):
+        if ver is not None:
+            cls.mock_update_version = ver
+        cls.mock_update_for_testing_flag = value
 
 
 def is_blender_supported():

@@ -22,7 +22,9 @@ import bpy
 from .config import get_main_settings, get_operator, Config, ErrorType
 from .fbloader import FBLoader
 from .utils import coords
-from .utils.manipulate import get_current_headnum
+from .utils.manipulate import (get_current_headnum,
+                               get_vertex_groups,
+                               create_vertex_groups)
 from .utils.blendshapes import (restore_facs_blendshapes,
                                 disconnect_blendshapes_action)
 from .blender_independent_packages.pykeentools_loader import module as pkt_module
@@ -114,9 +116,10 @@ def _update_mesh_now(headnum):
         logger.debug('WRONG_HEAD')
         return
 
-    if settings.pinmode and head.should_use_emotions():
-        keyframe = head.get_keyframe(settings.current_camnum)
-        if keyframe == -1:
+    if head.should_use_emotions() and \
+            head.expression_view != Config.empty_expression_view_idname:
+        keyframe = head.get_expression_view_keyframe()
+        if keyframe <= 0:
             keyframe = None
     else:
         keyframe = None
@@ -159,13 +162,24 @@ def _update_mesh_now(headnum):
     # Create new mesh
     mesh = FBLoader.get_builder_mesh(fb, 'FBHead_tmp_mesh',
                                      head.get_masks(),
-                                     uv_set=head.tex_uv_shape)
+                                     uv_set=head.tex_uv_shape,
+                                     keyframe=keyframe)
     try:
         # Copy old material
         if old_mesh.materials:
             mesh.materials.append(old_mesh.materials[0])
     except Exception:
         pass
+
+    recreate_vertex_groups_flag = Config.recreate_vertex_groups and \
+                                  len(old_mesh.vertices) == len(mesh.vertices)
+    if recreate_vertex_groups_flag:
+        try:
+            vg_groups_dict = get_vertex_groups(head.headobj)
+        except Exception as err:
+            logger.error('_update_mesh_now get VG: {}'.format(str(err)))
+            recreate_vertex_groups_flag = False
+
     head.headobj.data = mesh
     FBLoader.save_fb_serial_str(headnum)
 
@@ -190,6 +204,12 @@ def _update_mesh_now(headnum):
         wf.init_edge_indices(fb)
         vp.update_wireframe_colors()
 
+    if recreate_vertex_groups_flag:
+        try:
+            create_vertex_groups(head.headobj, vg_groups_dict)
+        except Exception as err:
+            logger.error('_update_mesh_now create VG: {}'.format(str(err)))
+
     mesh_name = old_mesh.name
     # Delete old mesh
     bpy.data.meshes.remove(old_mesh, do_unlink=True)
@@ -209,12 +229,60 @@ def update_expressions(self, context):
     fb.set_use_emotions(self.should_use_emotions())
     logger.debug('EXPRESSIONS: {}'.format(self.should_use_emotions()))
 
+    coords.update_head_mesh_non_neutral(fb, self)
     if not settings.pinmode:
         return
 
-    coords.update_head_mesh_neutral(fb, self.headobj)
     FBLoader.update_wireframe_shader_only(settings.current_headnum,
                                           settings.current_camnum)
+
+
+def update_expression_options(self, context):
+    logger = logging.getLogger(__name__)
+    settings = get_main_settings()
+    headnum = self.get_headnum()
+    camnum = settings.current_camnum
+    if headnum < 0 or camnum < 0:
+        logger.error('WRONG HEADNUM: {} CAMNUM: {}'.format(headnum, camnum))
+        return
+    logger.debug('EXPRESSIONS HEADNUM: '
+                 '{} {}'.format(headnum, self.should_use_emotions()))
+    fb = FBLoader.get_builder()
+    FBLoader.solve(headnum, camnum)
+
+    FBLoader.update_all_camera_positions(headnum)
+    FBLoader.save_fb_serial_str(headnum)
+
+    coords.update_head_mesh_non_neutral(fb, self)
+    if not settings.pinmode:
+        return
+
+    FBLoader.update_viewport_shaders(context,
+                                     settings.current_headnum,
+                                     settings.current_camnum)
+
+
+def update_expression_view(self, context):
+    exp_view = self.expression_view
+    if exp_view == Config.empty_expression_view_idname:
+        self.set_neutral_expression_view()
+        return
+    if exp_view != Config.neutral_expression_view_idname \
+            and not self.has_no_blendshapes():
+        logger = logging.getLogger(__name__)
+        logger.error('Object has blendshapes so expression view cannot be used')
+        self.set_neutral_expression_view()
+        error_message = \
+            'Expressions can\'t be used with blendshapes\n' \
+            '\n' \
+            'Unfortunately, using expressions for a model\n' \
+            'that has FACS blendshapes is impossible. \n' \
+            'Please remove blendshapes before choosing an expression.'
+        warn = get_operator(Config.fb_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+             msg_content=error_message)
+        return
+    update_expressions(self, context)
 
 
 def update_wireframe_image(self, context):
@@ -272,10 +340,12 @@ def update_model_scale(self, context):
 
     head.mark_model_changed_by_scale()
 
-    coords.update_head_mesh_neutral(fb, head.headobj)
+    coords.update_head_mesh_non_neutral(fb, head)
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
     FBLoader.save_fb_serial_str(headnum)
+    if settings.pinmode:
+        head.need_update = True
 
 
 def update_cam_image(self, context):
@@ -316,17 +386,8 @@ def update_camera_focal(self, context):
         FBLoader.save_fb_serial_str(headnum)
 
 
-def update_blue_camera_button(self, context):
+def update_background_tone_mapping(self, context):
     settings = get_main_settings()
-    if not settings.blue_camera_button:
-        op = get_operator(Config.fb_exit_pinmode_idname)
-        op('EXEC_DEFAULT')
-        settings.blue_camera_button = True
-
-
-def update_blue_head_button(self, context):
-    settings = get_main_settings()
-    if not settings.blue_head_button:
-        op = get_operator(Config.fb_select_head_idname)
-        op('EXEC_DEFAULT', headnum=get_current_headnum())
-        settings.blue_head_button = True
+    if not settings.pinmode:
+        return
+    self.apply_tone_mapping()

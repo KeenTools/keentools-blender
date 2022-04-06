@@ -252,7 +252,7 @@ def reset_model_to_neutral(headnum):
     if head is None:
         return
     fb = FBLoader.get_builder()
-    coords.update_head_mesh_neutral(fb, head.headobj)
+    coords.update_head_mesh_non_neutral(fb, head)
 
 
 def reconstruct_by_head():
@@ -353,3 +353,24 @@ def reconstruct_by_head():
         warn = get_operator(Config.fb_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CannotReconstruct)
         return
+
+
+def get_vertex_groups(obj):
+    vertices = obj.data.vertices
+    vertex_groups = [x for x in obj.vertex_groups]
+    vg_dict = {}
+    for vg in vertex_groups:
+        vg_dict[vg.name] = [[v.index, vg.weight(v.index)]
+                            for v in vertices
+                            if vg.index in [g.group for g in v.groups]]
+    return vg_dict
+
+
+def create_vertex_groups(obj, vg_dict):
+    for vg_name in vg_dict.keys():
+        if vg_name in obj.vertex_groups.keys():
+            vg = obj.vertex_groups[vg_name]
+        else:
+            vg = obj.vertex_groups.new(name=vg_name)
+        for i, w in vg_dict[vg_name]:
+            vg.add([i], w, 'REPLACE')

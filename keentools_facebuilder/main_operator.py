@@ -204,7 +204,7 @@ class FB_OT_Unmorph(Operator):
             fb.remove_pins(camera.get_keyframe())
             camera.pins_count = 0
 
-        coords.update_head_mesh_neutral(fb, head.headobj)
+        coords.update_head_mesh_non_neutral(fb, head)
         FBLoader.save_fb_serial_and_image_pathes(headnum)
 
         if settings.pinmode:
@@ -338,15 +338,20 @@ class FB_OT_DeleteCamera(Operator):
         headnum = self.headnum
         camnum = self.camnum
 
-        camera = settings.get_camera(headnum, camnum)
+        head = settings.get_head(headnum)
+        if head is None:
+            return {'CANCELLED'}
+        camera = head.get_camera(camnum)
         if camera is None:
             return {'CANCELLED'}
 
         kid = camera.get_keyframe()
+        if head.get_expression_view_keyframe() == kid:
+            head.set_neutral_expression_view()
+
         fb = FBLoader.get_builder()
         fb.remove_keyframe(kid)
 
-        head = settings.get_head(headnum)
         camera.delete_cam_image()
         camera.delete_camobj()
         head.cameras.remove(camnum)
@@ -428,17 +433,17 @@ class FB_OT_BakeTexture(Operator):
 
     def execute(self, context):
         settings = get_main_settings()
-        texture_baked = materials.bake_tex(
-            self.headnum, Config.tex_builder_filename)
         head = settings.get_head(self.headnum)
+        texture_baked = materials.bake_tex(
+            self.headnum, head.preview_texture_name())
 
         if not texture_baked:
             return {'CANCELLED'}
 
         if settings.tex_auto_preview:
             mat = materials.show_texture_in_mat(
-                Config.tex_builder_filename,
-                Config.tex_builder_matname)
+                head.preview_texture_name(),
+                head.preview_material_name())
             materials.assign_material_to_object(head.headobj, mat)
             materials.toggle_mode(('MATERIAL',))
 
@@ -456,14 +461,18 @@ class FB_OT_DeleteTexture(Operator):
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Delete the created texture from the scene"
 
+    headnum: IntProperty(default=0)
+
     def draw(self, context):
         pass
 
     def execute(self, context):
-        images.remove_bpy_image_by_name(Config.tex_builder_filename)
-        materials.remove_mat_by_name(Config.tex_builder_matname)
-        op = get_operator(Config.fb_show_solid_idname)
-        op('EXEC_DEFAULT')
+        settings = get_main_settings()
+        head = settings.get_head(self.headnum)
+        if head is None:
+            return {'CANCELLED'}
+        images.remove_bpy_image_by_name(head.preview_texture_name())
+        materials.remove_mat_by_name(head.preview_material_name())
         return {'FINISHED'}
 
 
@@ -561,7 +570,7 @@ class FB_OT_ResetExpression(Operator):
         fb.reset_to_neutral_emotions(head.get_keyframe(self.camnum))
 
         FBLoader.save_fb_serial_and_image_pathes(self.headnum)
-        coords.update_head_mesh_neutral(fb, head.headobj)
+        coords.update_head_mesh_non_neutral(fb, head)
         FBLoader.update_viewport_shaders(context, self.headnum, self.camnum)
 
         manipulate.push_head_in_undo_history(head, 'Reset Expression.')
@@ -580,18 +589,22 @@ class FB_OT_ShowTexture(Operator):
         pass
 
     def execute(self, context):
-        tex = materials.find_bpy_image_by_name(Config.tex_builder_filename)
+        settings = get_main_settings()
+        head = settings.get_head(settings.current_headnum)
+        if head is None:
+            return {'CANCELLED'}
+
+        tex = materials.find_bpy_image_by_name(head.preview_texture_name())
         if tex is None:
             return {'CANCELLED'}
 
-        settings = get_main_settings()
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
+            cameras.exit_localview(context)
 
         mat = materials.show_texture_in_mat(
-            Config.tex_builder_filename, Config.tex_builder_matname)
-        materials.assign_material_to_object(
-            settings.get_head(settings.current_headnum).headobj, mat)
+            head.preview_texture_name(), head.preview_material_name())
+        materials.assign_material_to_object(head.headobj, mat)
         materials.switch_to_mode('MATERIAL')
 
         logger = logging.getLogger(__name__)
@@ -614,6 +627,7 @@ class FB_OT_ShowSolid(Operator):
         settings = get_main_settings()
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
+            cameras.exit_localview(context)
         materials.switch_to_mode('SOLID')
         return {'FINISHED'}
 
@@ -799,9 +813,65 @@ class FB_OT_DefaultWireframeSettings(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class FB_OT_SelectCurrentHead(ButtonOperator, Operator):
+    bl_idname = Config.fb_select_current_head_idname
+    bl_label = 'Current head'
+    bl_description = 'Select current head in the scene'
+
+    headnum: IntProperty(default=0)
+
+    def execute(self, context):
+        op = get_operator(Config.fb_select_head_idname)
+        op('EXEC_DEFAULT', headnum=self.headnum)
+        return {'FINISHED'}
+
+
+class FB_OT_SelectCurrentCamera(ButtonOperator, Operator):
+    bl_idname = Config.fb_select_current_camera_idname
+    bl_label = 'Current view'
+    bl_description = 'Current view. Press to exit from Pin mode'
+
+    def execute(self, context):
+        op = get_operator(Config.fb_exit_pinmode_idname)
+        op('EXEC_DEFAULT')
+        return {'FINISHED'}
+
+
+class FB_OT_ResetToneGain(ButtonOperator, Operator):
+    bl_idname = Config.fb_reset_tone_exposure_idname
+    bl_label = 'Reset exposure'
+    bl_description = 'Reset exposure in tone mapping'
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    def execute(self, context):
+        settings = get_main_settings()
+        cam = settings.get_camera(self.headnum, self.camnum)
+        cam.tone_exposure = Config.default_tone_exposure
+        return {'FINISHED'}
+
+
+class FB_OT_ResetToneGamma(ButtonOperator, Operator):
+    bl_idname = Config.fb_reset_tone_gamma_idname
+    bl_label = 'Reset gamma'
+    bl_description = 'Reset gamma in tone mapping'
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    def execute(self, context):
+        settings = get_main_settings()
+        cam = settings.get_camera(self.headnum, self.camnum)
+        cam.tone_gamma = Config.default_tone_gamma
+        return {'FINISHED'}
+
+
 CLASSES_TO_REGISTER = (FB_OT_SelectHead,
+                       FB_OT_SelectCurrentHead,
                        FB_OT_DeleteHead,
                        FB_OT_SelectCamera,
+                       FB_OT_SelectCurrentCamera,
                        FB_OT_CenterGeo,
                        FB_OT_Unmorph,
                        FB_OT_RemovePins,
@@ -833,4 +903,6 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_UnhideHead,
                        FB_OT_ReconstructHead,
                        FB_OT_DefaultPinSettings,
-                       FB_OT_DefaultWireframeSettings)
+                       FB_OT_DefaultWireframeSettings,
+                       FB_OT_ResetToneGain,
+                       FB_OT_ResetToneGamma)

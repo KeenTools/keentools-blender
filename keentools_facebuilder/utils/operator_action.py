@@ -22,7 +22,7 @@ import bpy
 
 from ..config import Config, get_operator, ErrorType, get_main_settings
 from . import manipulate
-from .coords import update_head_mesh_neutral
+from .coords import update_head_mesh_non_neutral
 from .cameras import show_all_cameras, exit_localview
 from .other import unhide_viewport_ui_element_from_object
 from ..fbloader import FBLoader
@@ -42,6 +42,19 @@ def create_blendshapes(operator):
     if not obj:
         logger.debug('no object')
         return {'CANCELLED'}
+
+    settings = get_main_settings()
+    headnum = settings.head_by_obj(obj)
+    if headnum >= 0:
+        head = settings.get_head(headnum)
+        if head.should_use_emotions() and \
+                head.expression_view != Config.neutral_expression_view_idname:
+            warn = get_operator(Config.fb_noblenshapes_until_expression_warning_idname)
+            warn('INVOKE_DEFAULT', headnum=headnum)
+            return {'CANCELLED'}
+        # Forced change before creating blendshapes
+        # It's not visible to user since expressions are switched off
+        head.set_neutral_expression_view()
 
     try:
         counter = create_facs_blendshapes(obj, scale)
@@ -217,7 +230,7 @@ def unhide_head(operator, context):
         settings = get_main_settings()
         head = settings.get_head(headnum)
         FBLoader.load_model(headnum)
-        update_head_mesh_neutral(FBLoader.get_builder(), head.headobj)
+        update_head_mesh_non_neutral(FBLoader.get_builder(), head)
 
         if not exit_localview(context):
             show_all_cameras(headnum)  # legacy scenes only

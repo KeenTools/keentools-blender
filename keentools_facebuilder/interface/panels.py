@@ -148,8 +148,10 @@ class FB_PT_HeaderPanel(Common, Panel):
             row.scale_y = Config.btn_scale_y
 
             if headnum == i:
-                row.prop(settings, 'blue_head_button', toggle=1,
-                         text=h.headobj.name, icon='USER')
+                op = row.operator(Config.fb_select_current_head_idname,
+                                  text=h.headobj.name, icon='USER',
+                                  depress=True)
+                op.headnum = i
             else:
                 op = row.operator(Config.fb_select_head_idname,
                                   text=h.headobj.name, icon='USER')
@@ -296,7 +298,7 @@ class FB_PT_UpdatesInstallationPanel(Common, Panel):
 
 class FB_PT_CameraPanel(AllVisibleClosed, Panel):
     bl_idname = Config.fb_camera_panel_idname
-    bl_label = Config.fb_camera_panel_label
+    bl_label = 'Camera'
 
     def draw_header_preset(self, context):
         layout = self.layout
@@ -310,7 +312,10 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
     def draw(self, context):
         def _draw_default_mode(layout, settings, head):
             camera = head.get_camera(settings.current_camnum)
+            if camera is None:
+                return
             col = layout.column(align=True)
+
             col.label(text='File: {}'.format(camera.get_image_name()))
             col.separator(factor=0.4)
 
@@ -354,7 +359,7 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
 
 class FB_PT_ViewsPanel(AllVisible, Panel):
     bl_idname = Config.fb_views_panel_idname
-    bl_label = Config.fb_views_panel_label
+    bl_label = 'Views'
 
     def draw_header_preset(self, context):
         layout = self.layout
@@ -387,13 +392,37 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         settings = get_main_settings()
         head = settings.get_head(headnum)
 
-        if not head.has_cameras():
+        if head is not None and not head.has_cameras():
             return
 
-        layout.prop(settings.get_head(headnum), 'use_emotions')
-        layout.prop(settings.get_head(headnum), 'reduce_pins')
+        layout.prop(head, 'use_emotions')
+        if head.should_use_emotions():
+            box = layout.box()
+            col = box.column(align=True)
+            col.prop(head, 'use_blinking')
+            col.prop(head, 'use_neck_rotation')
+            col.label(text='Apply expression in 3D:')
+            col.prop(head, 'expression_view', text='')
+        layout.prop(head, 'reduce_pins')
 
         if settings.pinmode:
+            camera = head.get_camera(settings.current_camnum)
+            if camera:
+                col = layout.column(align=True)
+                row = col.row(align=True)
+                row.prop(camera, 'tone_exposure', slider=True)
+                op = row.operator(Config.fb_reset_tone_exposure_idname,
+                                  text='', icon='LOOP_BACK')
+                op.headnum = headnum
+                op.camnum = settings.current_camnum
+
+                row = col.row(align=True)
+                row.prop(camera, 'tone_gamma', slider=True)
+                op = row.operator(Config.fb_reset_tone_gamma_idname,
+                                  text='', icon='LOOP_BACK')
+                op.headnum = headnum
+                op.camnum = settings.current_camnum
+
             row = layout.row()
             row.scale_y = 2.0
             op = row.operator(
@@ -406,11 +435,10 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             row = layout.row(align=True)
             view_icon = 'PINNED' if camera.has_pins() else 'HIDE_OFF'
 
-            # col = row.column(align=True)
-
             if settings.current_camnum == i and settings.pinmode:
-                row.prop(settings, 'blue_camera_button', toggle=1,
-                         text=camera.get_image_name(), icon=view_icon)
+                row.operator(Config.fb_select_current_camera_idname,
+                             text=camera.get_image_name(), icon=view_icon,
+                             depress=True)
             else:
                 op = row.operator(
                     Config.fb_select_camera_idname,
@@ -512,6 +540,13 @@ class FB_PT_Model(AllVisibleClosed, Panel):
         expression_rigidity_row.prop(settings, 'expression_rigidity')  
         expression_rigidity_row.active = head.should_use_emotions()
 
+        blinking_row = col.row(align=True)
+        blinking_row.prop(settings, 'blinking_rigidity')
+        blinking_row.active = head.use_blinking and head.should_use_emotions()
+        neck_row =  col.row(align=True)
+        neck_row.prop(settings, 'neck_rotation_rigidity')
+        neck_row.active = head.use_neck_rotation and head.should_use_emotions()
+
         layout.prop(head, 'model_scale')
 
         row = layout.split(factor=0.35)
@@ -581,7 +616,7 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
                           text='Create texture', icon='IMAGE')
         op.headnum = headnum
 
-        texture_exists = find_bpy_image_by_name(Config.tex_builder_filename)
+        texture_exists = find_bpy_image_by_name(head.preview_texture_name())
         row = layout.row()
         row.scale_y = Config.btn_scale_y
         if not texture_exists:
@@ -599,10 +634,12 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
         row.scale_y = Config.btn_scale_y
         if not texture_exists:
             row.active = False
-        row.operator(Config.fb_texture_file_export_idname,
-                     text='Export', icon='EXPORT')
-        row.operator(Config.fb_delete_texture_idname,
-                     text='Delete', icon='X')
+        op = row.operator(Config.fb_texture_file_export_idname,
+                          text='Export', icon='EXPORT')
+        op.headnum = headnum
+        op = row.operator(Config.fb_delete_texture_idname,
+                          text='Delete', icon='X')
+        op.headnum = headnum
 
         box = layout.box()
         col = box.column(align=True)

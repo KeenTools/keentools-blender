@@ -21,6 +21,7 @@ from threading import Lock
 from collections import namedtuple
 from enum import IntEnum
 from datetime import datetime
+from typing import Tuple
 
 import bpy
 
@@ -36,21 +37,21 @@ from ..utils.other import force_ui_redraw
 from ..preferences.progress import FBUpdateProgressTimer
 
 
-def mock_response():
+def _mock_response(ver: Tuple):
     response = lambda: None
     response.description_url = 'https://keentools.io/downloads'
     response.download_url = 'https://keentools.io/downloads'
-    response.message = "<h3>What's New in KeenTools 2021.2.1</h3>\n" \
+    response.message = "<h3>What's New in KeenTools {}</h3>\n" \
                        "<ul>\n  " \
                        "<li>fixed performance issues in Nuke 12;</li>\n  " \
                        "<li>pintooling performance improvements;</li>\n  " \
                        "<li>fixed large frame numbers bug;</li>\n  " \
                        "<li>fixed invisible model in macOS Catalina;</li>\n " \
                        "<li>minor fixes and improvements</li>\n" \
-                       "</ul>\n<br />\n"
+                       "</ul>\n<br />\n".format('.'.join([str(x) for x in ver]))
     response.plugin_name = 'FaceBuilder'
     try:
-        response.version = pkt_module().Version(2021, 2, 1)
+        response.version = pkt_module().Version(*ver)
     except Exception:
         response.version = None
     return response
@@ -163,7 +164,6 @@ class CurrentStateExecutor:
 
 class FBUpdater:
     _response = None
-    # _response = mock_response()  # Mock for testing (1/3)
     _parsed_response_content = None
 
     @classmethod
@@ -194,8 +194,6 @@ class FBUpdater:
 
     @classmethod
     def get_response(cls):
-        # if cls._response is not None and cls._response.version is None:
-        #     cls._response = mock_response()  # Mock for testing (2/3)
         return cls._response
 
     @classmethod
@@ -242,7 +240,8 @@ class FBUpdater:
 
         uc = cls.get_update_checker()
         res = uc.check_for_updates('FaceBuilder')
-        # res = cls.get_response()  # Mock for testing (3/3)
+        if Config.mock_update_for_testing_flag and cls.get_response() is None:
+            res = _mock_response(ver=Config.mock_update_version)
         if res is not None:
             cls.set_response(res)
             parsed = parse_html(skip_new_lines_and_spaces(res.message))
