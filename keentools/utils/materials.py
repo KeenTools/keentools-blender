@@ -22,7 +22,7 @@ import numpy as np
 
 from ..facebuilder.config import FBConfig, get_fb_settings
 from ..facebuilder.fbloader import FBLoader
-from ..utils.images import load_rgba, find_bpy_image_by_name
+from ..utils.images import load_rgba, find_bpy_image_by_name, assign_pixels_data
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
@@ -118,7 +118,7 @@ def _create_bpy_texture_from_img(img, tex_name):
     except TypeError as err:
         logger.error('_create_bpy_texture_from_img '
                      'color space sRGB is not found: {}'.format(str(err)))
-    tex.pixels.foreach_set(img.ravel())
+    assign_pixels_data(tex.pixels, img.ravel())
     tex.pack()
 
     logger.debug("TEXTURE BAKED SUCCESSFULLY")

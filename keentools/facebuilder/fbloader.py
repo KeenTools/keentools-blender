@@ -167,6 +167,9 @@ class FBLoader:
         fb.set_shape_rigidity(settings.shape_rigidity)
         fb.set_expressions_rigidity(settings.expression_rigidity)
 
+        fb.set_blinking_rigidity(settings.blinking_rigidity)
+        fb.set_neck_rotation_rigidity(settings.neck_rotation_rigidity)
+
     @classmethod
     def update_all_camera_positions(cls, headnum):
         settings = get_fb_settings()
@@ -396,6 +399,9 @@ class FBLoader:
 
         cls.rigidity_setup()
         fb.set_use_emotions(head.should_use_emotions())
+
+        fb.set_use_blinking(head.use_blinking)
+        fb.set_use_neck_rotation(head.use_neck_rotation)
 
         configure_focal_mode_and_fixes(fb, head)
         try:

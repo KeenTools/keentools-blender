@@ -602,6 +602,7 @@ class FB_OT_ShowTexture(Operator):
 
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
+            cameras.exit_localview(context)
 
         mat = materials.show_texture_in_mat(
             head.preview_texture_name(), head.preview_material_name())
@@ -628,6 +629,7 @@ class FB_OT_ShowSolid(Operator):
         settings = get_fb_settings()
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
+            cameras.exit_localview(context)
         materials.switch_to_mode('SOLID')
         return {'FINISHED'}
 
