@@ -1,14 +1,13 @@
-import os
 import bpy
 from bpy.types import Panel, Operator
 from bpy.props import StringProperty, IntProperty
 
-import keentools_facebuilder
-from keentools_facebuilder.config import Config, get_main_settings, \
-    get_operator, ErrorType
-import keentools_facebuilder.utils.coords as coords
-from keentools_facebuilder.utils.fake_context import get_fake_context
-from keentools_facebuilder.fbloader import FBLoader
+import keentools
+from keentools.addon_config import get_operator
+from keentools.facebuilder.config import FBConfig, get_fb_settings, FBErrorType
+import keentools.utils.coords as coords
+from keentools.utils.fake_context import get_fake_context
+from keentools.facebuilder.fbloader import FBLoader
 
 
 class TestsOperator(Operator):
@@ -36,7 +35,7 @@ class TestsOperator(Operator):
         elif self.action == "test_duplicate_and_reconstruct":
             test_duplicate_and_reconstruct()
         elif self.action == "test_error_message":
-            warn = get_operator(Config.fb_warning_idname)
+            warn = get_operator(FBConfig.fb_warning_idname)
             warn('INVOKE_DEFAULT', msg=self.error_type)
         return {'FINISHED'}
 
@@ -46,21 +45,21 @@ class TestsPanel(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_label = "Integration Tests"
-    bl_category = Config.fb_tab_category
+    bl_category = FBConfig.fb_tab_category
     bl_context = "objectmode"
 
 
     def _draw_error_buttons(self, layout):
         layout.label(text='Error Messages')
-        for err in dir(ErrorType):
-            if not callable(getattr(ErrorType, err)) and \
+        for err in dir(FBErrorType):
+            if not callable(getattr(FBErrorType, err)) and \
                     not err.startswith('__'):
                 name = "{}".format(err)
-                value = getattr(ErrorType, err)
+                value = getattr(FBErrorType, err)
                 op = layout.operator('object.keentools_fb_tests',
                                      text="{}: {}".format(value, name))
                 op.action = "test_error_message"
-                op.error_type = getattr(ErrorType, name)
+                op.error_type = getattr(FBErrorType, name)
 
 
     # Face Builder Tests Panel Draw
@@ -112,18 +111,18 @@ if __name__ == "__main__":
 # --------
 def create_head():
     # Create Head
-    op = get_operator(Config.fb_add_head_operator_idname)
+    op = get_operator(FBConfig.fb_add_head_operator_idname)
     op('EXEC_DEFAULT')
 
 
 def get_last_headnum():
-    settings = get_main_settings()
+    settings = get_fb_settings()
     headnum = len(settings.heads) - 1
     return headnum
 
 
 def select_by_headnum(headnum):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     headobj = settings.get_head(headnum).headobj
     headobj.select_set(state=True)
     bpy.context.view_layer.objects.active = headobj
@@ -131,7 +130,7 @@ def select_by_headnum(headnum):
 
 
 def get_last_camnum(headnum):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     camnum = len(settings.get_head(headnum).cameras) - 1
     return camnum
 
@@ -142,20 +141,20 @@ def create_empty_camera(headnum):
 
 def create_camera(dir, filename):
     headnum = get_last_headnum()
-    op = get_operator(Config.fb_multiple_filebrowser_idname)
+    op = get_operator(FBConfig.fb_multiple_filebrowser_idname)
     op('EXEC_DEFAULT', headnum=headnum, directory=dir,
        files=({'name': filename},))
 
 
 def delete_camera(headnum, camnum):
-    op = get_operator(Config.fb_delete_camera_idname)
+    op = get_operator(FBConfig.fb_delete_camera_idname)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
 
 
 def move_pin(start_x, start_y, end_x, end_y, arect, brect,
              headnum=0, camnum=0):
     # Registered Operator call
-    op = get_operator(Config.fb_movepin_idname)
+    op = get_operator(FBConfig.fb_movepin_idname)
     # Move pin
     x, y = coords.region_to_image_space(start_x, start_y, *arect)
     px, py = coords.image_space_to_region(x, y, *brect)
@@ -174,7 +173,7 @@ def move_pin(start_x, start_y, end_x, end_y, arect, brect,
 
 
 def select_camera(headnum=0, camnum=0):
-    op = get_operator(Config.fb_select_camera_idname)
+    op = get_operator(FBConfig.fb_select_camera_idname)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
 
 
@@ -219,7 +218,7 @@ def test_move_pins():
     move_pin(912, 412, 911, 388, arect, brect)
 
     # Coloring wireframe
-    op = get_operator(Config.fb_wireframe_color_idname)
+    op = get_operator(FBConfig.fb_wireframe_color_idname)
     op('EXEC_DEFAULT', action='wireframe_green')
 
 
@@ -229,5 +228,5 @@ def test_duplicate_and_reconstruct():
         OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
         TRANSFORM_OT_translate={"value": (-3.0, 0, 0)})
 
-    op = get_operator(Config.fb_history_actor_idname)
+    op = get_operator(FBConfig.fb_history_actor_idname)
     op('EXEC_DEFAULT', action='reconstruct_by_head')
