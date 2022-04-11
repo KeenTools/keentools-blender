@@ -30,6 +30,7 @@ class Config:
 
     prefix = _company + '_fb'
     operators = 'keentools'
+    prefs_operators = 'keentools_preferences'
     addon_name = __package__  # the same as module name
     addon_human_readable_name = 'KeenTools'
 
@@ -45,6 +46,19 @@ class Config:
     kt_open_url_idname = operators + '.open_url'
     kt_uninstall_core_idname = operators + '.uninstall_core'
 
+    kt_open_pkt_license_page_idname = prefs_operators + '.open_pkt_license_page'
+    kt_install_latest_pkt_idname = prefs_operators + '.install_latest_pkt'
+    kt_install_pkt_from_file_with_warning_idname = \
+        prefs_operators + '.install_pkt_from_file_with_warning'
+    kt_install_pkt_from_file_idname = prefs_operators + '.install_pkt_from_file'
+    kt_pref_open_url_idname = prefs_operators + '.open_url'
+    kt_pref_downloads_url_idname = prefs_operators + '.downloads_url'
+
+    kt_open_manual_install_page_idname = prefs_operators + '.gt_open_manual_install_page'
+    kt_copy_hardware_id_idname = prefs_operators + '.copy_hardware_id'
+    kt_install_license_online_idname = prefs_operators + '.install_license_online'
+    kt_install_license_offline_idname = prefs_operators + '.install_license_offline'
+    kt_floating_connect_idname = prefs_operators + '.floating_connect'
     # Object Custom Properties
     core_version_prop_name = _company + '_version'
 
