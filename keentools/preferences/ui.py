@@ -35,6 +35,7 @@ from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
 from ..preferences.user_preferences import UserPreferences, UpdaterPreferences
 from ..facebuilder.interface.updater import preferences_current_active_updater_operators_info, UpdateState, \
     render_active_message, FBUpdater, CurrentStateExecutor
+from .operators import get_product_license_manager
 
 
 def _multi_line_text_to_output_labels(layout, txt):
@@ -219,6 +220,11 @@ def _universal_updater_setter(name):
     return _setter
 
 
+_lic_type_items = (('ONLINE', 'Online', 'Online license management', 0),
+            ('OFFLINE', 'Offline', 'Offline license management', 1),
+            ('FLOATING', 'Floating', 'Floating license management', 2))
+
+
 class KTAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = Config.addon_name
 
@@ -305,12 +311,14 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         name="Hardware ID", default=""
     )
 
-    lic_type: bpy.props.EnumProperty(
+    fb_lic_type: bpy.props.EnumProperty(
         name="Type",
-        items=(
-            ('ONLINE', "Online", "Online license management", 0),
-            ('OFFLINE', "Offline", "Offline license management", 1),
-            ('FLOATING', "Floating", "Floating license management", 2)),
+        items=_lic_type_items,
+        default='ONLINE')
+
+    gt_lic_type: bpy.props.EnumProperty(
+        name="Type",
+        items=_lic_type_items,
         default='ONLINE')
 
     install_type: bpy.props.EnumProperty(
@@ -320,11 +328,14 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
             ('OFFLINE', "Offline", "Offline installation", 1)),
         default='ONLINE')
 
-    lic_status: bpy.props.StringProperty(
-        name="license status", default=""
+    fb_lic_path: bpy.props.StringProperty(
+            name="License file",
+            description="absolute path to license file",
+            default="",
+            subtype="FILE_PATH"
     )
 
-    lic_path: bpy.props.StringProperty(
+    gt_lic_path: bpy.props.StringProperty(
             name="License file",
             description="absolute path to license file",
             default="",
@@ -396,40 +407,40 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         layout.label(text='License info:')
         box = layout.box()
 
-        lm = pkt_module().FaceBuilder.license_manager()
+        lm = get_product_license_manager('facebuilder')
+        _multi_line_text_to_output_labels(box, lm.license_status_text(
+            strategy=pkt_module().LicenseCheckStrategy.LAZY))
 
-        _multi_line_text_to_output_labels(box, lm.license_status_text(strategy=pkt_module().LicenseCheckStrategy.LAZY))
+        box.row().prop(self, 'fb_lic_type', expand=True)
 
-        box.row().prop(self, "lic_type", expand=True)
-
-        if self.lic_type == 'ONLINE':
+        if self.fb_lic_type == 'ONLINE':
             box = layout.box()
             row = box.split(factor=0.85)
-            row.prop(self, "license_id")
+            row.prop(self, 'license_id')
             install_online_op = row.operator(Config.kt_install_license_online_idname)
             install_online_op.license_id = self.license_id
             install_online_op.product = 'facebuilder'
 
-        elif self.lic_type == 'OFFLINE':
+        elif self.fb_lic_type == 'OFFLINE':
             self.hardware_id = lm.hardware_id()
 
             row = layout.split(factor=0.65)
-            row.label(text="Get an activated license file at our site:")
+            row.label(text='Get an activated license file at our site:')
             op = row.operator(Config.kt_open_manual_install_page_idname, icon='URL')
             op.product = 'facebuilder'
 
             box = layout.box()
             row = box.split(factor=0.85)
-            row.prop(self, "hardware_id")
+            row.prop(self, 'hardware_id')
             row.operator(Config.kt_copy_hardware_id_idname)
 
             row = box.split(factor=0.85)
-            row.prop(self, "lic_path")
+            row.prop(self, 'fb_lic_path')
             install_offline_op = row.operator(Config.kt_install_license_offline_idname)
-            install_offline_op.lic_path = self.lic_path
+            install_offline_op.lic_path = self.fb_lic_path
             install_offline_op.product = 'facebuilder'
 
-        elif self.lic_type == 'FLOATING':
+        elif self.fb_lic_type == 'FLOATING':
             env = pkt_module().LicenseManager.env_server_info()
             if env is not None:
                 self.license_server = env[0]
@@ -440,22 +451,22 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
 
             box = layout.box()
             row = box.split(factor=0.35)
-            row.label(text="License Server host/IP")
+            row.label(text='License Server host/IP')
             if self.license_server_lock and self.license_server_auto:
                 row.label(text=self.license_server)
             else:
-                row.prop(self, "license_server", text="")
+                row.prop(self, 'license_server', text='')
 
             row = box.split(factor=0.35)
-            row.label(text="License Server port")
+            row.label(text='License Server port')
             if self.license_server_lock and self.license_server_auto:
                 row.label(text=str(self.license_server_port))
             else:
-                row.prop(self, "license_server_port", text="")
+                row.prop(self, 'license_server_port', text='')
 
             if self.license_server_lock:
-                box.prop(self, "license_server_auto",
-                         text="Auto server/port settings")
+                box.prop(self, 'license_server_auto',
+                         text='Auto server/port settings')
 
             floating_install_op = row.operator(Config.kt_floating_connect_idname)
             floating_install_op.license_server = self.license_server
@@ -724,14 +735,13 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         layout.label(text='License info:')
         box = layout.box()
 
-        lm = pkt_module().GeoTracker.license_manager()
-
+        lm = get_product_license_manager('geotracker')
         _multi_line_text_to_output_labels(box, lm.license_status_text(
             strategy=pkt_module().LicenseCheckStrategy.LAZY))
 
-        box.row().prop(self, 'lic_type', expand=True)
+        box.row().prop(self, 'gt_lic_type', expand=True)
 
-        if self.lic_type == 'ONLINE':
+        if self.gt_lic_type == 'ONLINE':
             box = layout.box()
             row = box.split(factor=0.85)
             row.prop(self, 'license_id')
@@ -739,7 +749,7 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
             install_online_op.license_id = self.license_id
             install_online_op.product = 'geotracker'
 
-        elif self.lic_type == 'OFFLINE':
+        elif self.gt_lic_type == 'OFFLINE':
             self.hardware_id = lm.hardware_id()
 
             row = layout.split(factor=0.65)
@@ -755,12 +765,12 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
             row.operator(Config.kt_copy_hardware_id_idname)
 
             row = box.split(factor=0.85)
-            row.prop(self, 'lic_path')
+            row.prop(self, 'gt_lic_path')
             install_offline_op = row.operator(Config.kt_install_license_offline_idname)
-            install_offline_op.lic_path = self.lic_path
+            install_offline_op.lic_path = self.gt_lic_path
             install_offline_op.product = 'geotracker'
 
-        elif self.lic_type == 'FLOATING':
+        elif self.gt_lic_type == 'FLOATING':
             env = pkt_module().LicenseManager.env_server_info()
             if env is not None:
                 self.license_server = env[0]
@@ -819,6 +829,7 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         if _expandable_button(row, self, 'facebuilder_expanded'):
             self._draw_facebuilder_preferences(box)
 
+        box = layout.box()
         row = box.row(align=True)
         row.prop(self, 'geotracker_enabled', text='')
         if _expandable_button(row, self, 'geotracker_expanded'):
