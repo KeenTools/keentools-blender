@@ -32,18 +32,16 @@ _ID_NAME_PREFIX = 'preferences.' + Config.prefix
 _please_accept_eula = 'You need to accept our EULA before installation'
 
 
-def _get_product_license_manager(product):
+def get_product_license_manager(product):
     if product == 'facebuilder':
         return pkt_module().FaceBuilder.license_manager()
     elif product == 'geotracker':
         return pkt_module().GeoTracker.license_manager()
-    return None
+    assert False, 'Wrong product ID'
 
 
 def _get_hardware_id(product='facebuilder'):
-    lm = _get_product_license_manager(product)
-    if lm is None:
-        return None
+    lm = get_product_license_manager(product)
     return lm.hardware_id()
 
 
@@ -237,11 +235,7 @@ class KTPREF_OT_InstallLicenseOnline(bpy.types.Operator):
     def execute(self, context):
         logger = logging.getLogger(__name__)
         logger.info('Start InstallLicenseOnline')
-        lm = _get_product_license_manager(self.product)
-        if lm is None:
-            self.report({'ERROR'},
-                        replace_newlines_with_spaces('Wrong product ID'))
-            return {'CANCELLED'}
+        lm = get_product_license_manager(self.product)
         res = lm.install_license_online(self.license_id)
 
         if res is not None:
@@ -277,17 +271,12 @@ class KTPREF_OT_InstallLicenseOffline(bpy.types.Operator):
 
     def _clear_license_path(self):
         pref = get_addon_preferences()
-        pref.lic_path = ''
+        pref.fb_lic_path = ''
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
         logger.info('Start InstallLicenseOffline')
-        lm = _get_product_license_manager(self.product)
-        if lm is None:
-            self.report({'ERROR'},
-                        replace_newlines_with_spaces('Wrong product ID'))
-            return {'CANCELLED'}
-
+        lm = get_product_license_manager(self.product)
         res = lm.install_license_offline(self.lic_path)
 
         if res is not None:
@@ -325,15 +314,9 @@ class KTPREF_OT_FloatingConnect(bpy.types.Operator):
     def execute(self, context):
         logger = logging.getLogger(__name__)
         logger.info('Start FloatingConnect')
-        lm = _get_product_license_manager(self.product)
-        if lm is None:
-            self.report({'ERROR'},
-                        replace_newlines_with_spaces('Wrong product ID'))
-            return {'CANCELLED'}
-
+        lm = get_product_license_manager(self.product)
         res = lm.install_floating_license(self.license_server,
                                           self.license_server_port)
-
         if res is not None:
             logger.error('FloatingConnect error: {}'.format(res))
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
