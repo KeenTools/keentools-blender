@@ -66,6 +66,21 @@ def load_rgba(camera):
     return np.rot90(img, camera.orientation)
 
 
+def gamma_np_image(np_img, gamma=1.0):
+    res_img = np_img.copy()
+    res_img[:, :, :3] = np.power(np_img[:, :, :3], gamma)
+    return res_img
+
+
+def get_background_image_object(camobj):
+    cam_data = camobj.data
+    if len(cam_data.background_images) == 0:
+        bg_img = cam_data.background_images.new()
+    else:
+        bg_img = cam_data.background_images[0]
+    return bg_img
+
+
 def find_bpy_image_by_name(image_name):
     image_num = bpy.data.images.find(image_name)
     if image_num >= 0:

@@ -301,3 +301,57 @@ def get_pixel_relative_size(context):
     f = (z * 0.01 + math.sqrt(0.5)) ** 2  # f - scale factor
     ps = 1.0 / (w * f)
     return ps
+
+
+def get_depsgraph():
+    return bpy.context.evaluated_depsgraph_get()
+
+
+def evaluated_mesh(obj):
+    depsgraph = get_depsgraph()
+    return obj.evaluated_get(depsgraph)
+
+
+def update_depsgraph():
+    depsgraph = get_depsgraph()
+    depsgraph.update()
+    return depsgraph
+
+
+def get_mesh_verts(obj):
+    mesh = obj.data
+    verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
+    mesh.vertices.foreach_get(
+        'co', np.reshape(verts, len(mesh.vertices) * 3))
+    return verts
+
+
+def multiply_verts_on_matrix_4x4(verts, mat):
+    vv = np.ones((len(verts), 4), dtype=np.float32)
+    vv[:, :-1] = verts
+    vv = vv @ mat
+    return vv[:, :3]
+
+
+def get_scale_vec_3_from_matrix_world(obj_matrix_world):
+    return np.array(obj_matrix_world.to_scale(), dtype=np.float32)
+
+
+def get_scale_vec_4_from_matrix_world(obj_matrix_world):
+    return np.array(obj_matrix_world.to_scale().to_4d(), dtype=np.float32)
+
+
+def get_scale_matrix_4x4_from_matrix_world(obj_matrix_world):
+    scale_vec = get_scale_vec_4_from_matrix_world(obj_matrix_world)
+    return np.diag(scale_vec)
+
+
+def get_world_matrix_without_scale(obj_matrix_world):
+    scale_vec = get_scale_vec_4_from_matrix_world(obj_matrix_world)
+    scminv = np.diag(1.0 / scale_vec)
+    return scminv @ np.array(obj_matrix_world, dtype=np.float32).transpose()
+
+
+def get_scale_matrix_3x3_from_matrix_world(obj_matrix_world):
+    scale_vec = get_scale_vec_3_from_matrix_world(obj_matrix_world)
+    return np.diag(scale_vec)

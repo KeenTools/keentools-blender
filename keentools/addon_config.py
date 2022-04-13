@@ -104,7 +104,7 @@ def facebuilder_enabled():
 
 def geotracker_enabled():
     prefs = get_addon_preferences()
-    return prefs.facebuilder_enabled
+    return prefs.geotracker_enabled
 
 
 def get_operator(operator_id_name):
