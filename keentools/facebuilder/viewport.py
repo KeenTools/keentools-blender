@@ -150,17 +150,17 @@ class FBViewport:
     # --------
     # Handlers
     @classmethod
-    def register_handlers(cls, args, context):
+    def register_handlers(cls, context):
         cls.unregister_handlers()
 
-        cls.residuals().register_handler(args)
-        cls.rectangler().register_handler(args)
+        cls.residuals().register_handler(context)
+        cls.rectangler().register_handler(context)
 
-        cls.points3d().register_handler(args)
-        cls.points2d().register_handler(args)
+        cls.points3d().register_handler(context)
+        cls.points2d().register_handler(context)
         # Draw text on screen registration
         cls.texter().register_handler(context)
-        cls.wireframer().register_handler(args)
+        cls.wireframer().register_handler(context)
         # Timer for continuous update modal view
         cls._draw_timer_handler = context.window_manager.event_timer_add(
             time_step=FBConfig.viewport_redraw_interval, window=context.window

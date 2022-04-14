@@ -117,18 +117,18 @@ class FBShaderPoints:
     def create_batch(self):
         self._create_batch(self.vertices, self.vertices_colors)
 
-    def register_handler(self, args):
-        self._work_area = args[1].area
+    def register_handler(self, context):
+        self._work_area = context.area
 
         self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, args, 'WINDOW', 'POST_VIEW')
+            self.draw_callback, (context,), 'WINDOW', 'POST_VIEW')
         # Add to handler list
         self.add_handler_list(self.draw_handler)
 
     def unregister_handler(self):
         if self.draw_handler is not None:
             self.get_target_class().draw_handler_remove(
-                self.draw_handler, "WINDOW")
+                self.draw_handler, 'WINDOW')
             # Remove from handler list
             self.remove_handler_list(self.draw_handler)
 
@@ -147,7 +147,7 @@ class FBShaderPoints:
         self.vertices = []
         self.vertices_colors = []
 
-    def draw_callback(self, op, context):
+    def draw_callback(self, context):
         if not self.is_visible():
             return
         # Force Stop
@@ -179,11 +179,11 @@ class FBPoints2D(FBShaderPoints):
             # 2D_FLAT_COLOR
             self.vertices, self.vertices_colors, 'CUSTOM_2D')
 
-    def register_handler(self, args):
-        self._work_area = args[1].area
+    def register_handler(self, context):
+        self._work_area = context.area
 
         self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, args, 'WINDOW', 'POST_PIXEL')
+            self.draw_callback, (context,), 'WINDOW', 'POST_PIXEL')
         # Add to handler list
         self.add_handler_list(self.draw_handler)
 

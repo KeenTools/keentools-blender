@@ -215,7 +215,6 @@ class FB_OT_PinMode(bpy.types.Operator):
 
     def invoke(self, context, event):
         logger = logging.getLogger(__name__)
-        args = (self, context)
         settings = get_fb_settings()
 
         logger.debug('PINMODE ENTER. CURRENT_HEAD: {} CURRENT_CAM: {}'.format(
@@ -332,7 +331,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             self._init_wireframer_colors(settings.overall_opacity)
             vp.create_batch_2d(context)
             logger.debug("REGISTER SHADER HANDLERS")
-            vp.register_handlers(args, context)
+            vp.register_handlers(context)
 
             context.window_manager.modal_handler_add(self)
 

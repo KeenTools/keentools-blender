@@ -102,13 +102,13 @@ class FBEdgeShaderBase:
                 self.edges_colors[i * 2] = color
                 self.edges_colors[i * 2 + 1] = color
 
-    def register_handler(self, args):
-        self._work_area = args[1].area
+    def register_handler(self, context):
+        self._work_area = context.area
 
         if self.draw_handler is not None:
             self.unregister_handler()
         self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, args, 'WINDOW', 'POST_VIEW')
+            self.draw_callback, (context,), 'WINDOW', 'POST_VIEW')
         self.add_handler_list(self.draw_handler)
 
     def unregister_handler(self):
@@ -134,7 +134,7 @@ class FBEdgeShaderBase:
     def init_shaders(self):
         pass
 
-    def draw_callback(self, op, context):
+    def draw_callback(self, context):
         pass
 
     def hide_shader(self):
@@ -153,7 +153,7 @@ class FBEdgeShader2D(FBEdgeShaderBase):
         self.line_shader = gpu.types.GPUShader(
             residual_vertex_shader(), residual_fragment_shader())
 
-    def draw_callback(self, op, context):
+    def draw_callback(self, context):
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
@@ -183,13 +183,13 @@ class FBEdgeShader2D(FBEdgeShaderBase):
              "lineLength": self.edge_lengths}
         )
 
-    def register_handler(self, args):
-        self._work_area = args[1].area
+    def register_handler(self, context):
+        self._work_area = context.area
 
         if self.draw_handler is not None:
             self.unregister_handler()
         self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, args, 'WINDOW', 'POST_PIXEL')
+            self.draw_callback, (context,), 'WINDOW', 'POST_PIXEL')
         self.add_handler_list(self.draw_handler)
 
 
@@ -250,7 +250,7 @@ class FBRectangleShader2D(FBEdgeShader2D):
         self.line_shader = gpu.types.GPUShader(
             solid_line_vertex_shader(), solid_line_fragment_shader())
 
-    def draw_callback(self, op, context):
+    def draw_callback(self, context):
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
@@ -355,7 +355,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
             self._activate_coloring_image(image)
         return True
 
-    def draw_callback(self, op, context):
+    def draw_callback(self, context):
         if not self.is_visible():
             return
 
