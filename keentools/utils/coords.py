@@ -355,3 +355,10 @@ def get_world_matrix_without_scale(obj_matrix_world):
 def get_scale_matrix_3x3_from_matrix_world(obj_matrix_world):
     scale_vec = get_scale_vec_3_from_matrix_world(obj_matrix_world)
     return np.diag(scale_vec)
+
+
+def compensate_view_scale():
+    image_width, image_height = render_frame()
+    if image_width >= image_height:
+        return 1.0
+    return image_width / image_height

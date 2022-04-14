@@ -11,7 +11,6 @@ from ..utils import coords
 from .gt_class_loader import GTClassLoader
 
 
-
 class GTLoader:
     _viewport: Any = None  # Viewport()
 
