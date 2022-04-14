@@ -24,7 +24,7 @@ from ..facebuilder.config import FBConfig, get_fb_settings
 from ..preferences.user_preferences import UserPreferences
 from ..utils import coords
 from ..utils.edges import FBEdgeShader2D, FBRasterEdgeShader3D, FBRectangleShader2D
-from ..utils.other import FBText
+from ..utils.screen_text import KTScreenText
 from ..utils.points import FBPoints2D, FBPoints3D
 
 
@@ -86,7 +86,7 @@ class FBViewport:
     # Surface points draw
     _points3d = FBPoints3D(bpy.types.SpaceView3D)
     # Text output in Modal mode
-    _texter = FBText(bpy.types.SpaceView3D)
+    _texter = KTScreenText(bpy.types.SpaceView3D)
     # Wireframe shader object
     _wireframer = FBRasterEdgeShader3D(bpy.types.SpaceView3D)
     # Update timer
@@ -151,7 +151,7 @@ class FBViewport:
     # Handlers
     @classmethod
     def register_handlers(cls, args, context):
-        cls.unregister_handlers()  # Experimental
+        cls.unregister_handlers()
 
         cls.residuals().register_handler(args)
         cls.rectangler().register_handler(args)
@@ -159,7 +159,7 @@ class FBViewport:
         cls.points3d().register_handler(args)
         cls.points2d().register_handler(args)
         # Draw text on screen registration
-        cls.texter().register_handler(args)
+        cls.texter().register_handler(context)
         cls.wireframer().register_handler(args)
         # Timer for continuous update modal view
         cls._draw_timer_handler = context.window_manager.event_timer_add(

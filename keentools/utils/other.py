@@ -27,12 +27,13 @@ from ..facebuilder.config import FBConfig, get_fb_settings
 from ..utils.attrs import set_custom_attribute, get_safe_custom_attribute
 from ..utils.timer import FBTimer
 from ..utils.ui_redraw import force_ui_redraw
+from ..utils.screen_text import KTScreenText
 
 
 def force_stop_shaders():
     FBEdgeShader2D.handler_list = []
     FBRasterEdgeShader3D.handler_list = []
-    FBText.handler_list = []
+    KTScreenText.handler_list = []
     FBPoints2D.handler_list = []
     FBPoints3D.handler_list = []
     force_ui_redraw('VIEW_3D')
@@ -160,96 +161,6 @@ class FBStopShaderTimer(FBTimer):
     @classmethod
     def stop(cls):
         cls._stop(cls.check_pinmode)
-
-
-class FBText:
-    """ Text on screen output in Modal view"""
-    # Test only
-    _counter = 0
-
-    # Store all draw handlers registered by class objects
-    handler_list = []
-
-    @classmethod
-    def add_handler_list(cls, handler):
-        cls.handler_list.append(handler)
-
-    @classmethod
-    def remove_handler_list(cls, handler):
-        if handler in cls.handler_list:
-            cls.handler_list.remove(handler)
-
-    @classmethod
-    def is_handler_list_empty(cls):
-        return len(cls.handler_list) == 0
-
-    def __init__(self, target_class=bpy.types.SpaceView3D):
-        self.text_draw_handler = None
-        self.message = [
-            "Pin Mode ",  # line 1
-            "ESC: Exit | LEFT CLICK: Create Pin | RIGHT CLICK: Delete Pin "
-            "| TAB: Hide/Show"  # line 2
-        ]
-        self._target_class = target_class
-        self._work_area = None
-
-    def get_target_class(self):
-        return self._target_class
-
-    def set_target_class(self, target_class):
-        self._target_class = target_class
-
-    def set_message(self, msg):
-        self.message = msg
-
-    @classmethod
-    def inc_counter(cls):
-        cls._counter += 1
-        return cls._counter
-
-    @classmethod
-    def get_counter(cls):
-        return cls._counter
-
-    def text_draw_callback(self, op, context):
-        # Force Stop
-        if self.is_handler_list_empty():
-            self.unregister_handler()
-            return
-
-        settings = get_fb_settings()
-
-        # TESTING
-        # self.inc_counter()
-        camera = settings.get_camera(settings.current_headnum,
-                                     settings.current_camnum)
-        # Draw text
-        if camera is not None and len(self.message) > 0:
-            region = context.region
-            text = "{0} [{1}]".format(self.message[0], camera.get_image_name())
-            subtext = "{} | {}".format(self.message[1], settings.opnum)
-
-            xt = int(region.width / 2.0)
-
-            blf.size(0, 24, 72)
-            blf.position(0, xt - blf.dimensions(0, text)[0] / 2, 60, 0)
-            blf.draw(0, text)
-
-            blf.size(0, 20, 72)
-            blf.position(0, xt - blf.dimensions(0, subtext)[0] / 2, 30, 1)
-            blf.draw(0, subtext)  # Text is on screen
-
-    def register_handler(self, args):
-        self.text_draw_handler = self.get_target_class().draw_handler_add(
-            self.text_draw_callback, args, 'WINDOW', 'POST_PIXEL')
-        self.add_handler_list(self.text_draw_handler)
-
-    def unregister_handler(self):
-        if self.text_draw_handler is not None:
-            self.get_target_class().draw_handler_remove(
-                self.text_draw_handler, 'WINDOW')
-            self.remove_handler_list(self.text_draw_handler)
-        self.text_draw_handler = None
 
 
 # --------------
