@@ -29,166 +29,143 @@ from ..utils.points import FBPoints2D, FBPoints3D
 
 
 class FBScreenPins:
-    _pins = []
-    _current_pin = None
-    _current_pin_num = -1
+    def __init__(self):
+        self._pins = []
+        self._current_pin = None
+        self._current_pin_num = -1
 
-    @classmethod
-    def arr(cls):
-        return cls._pins
+    def arr(self):
+        return self._pins
 
-    @classmethod
-    def set_pins(cls, arr):
-        cls._pins = arr
+    def set_pins(self, arr):
+        self._pins = arr
 
-    @classmethod
-    def add_pin(cls, vec2d):
-        cls._pins.append(vec2d)
+    def add_pin(self, vec2d):
+        self._pins.append(vec2d)
 
-    @classmethod
-    def current_pin_num(cls):
-        return cls._current_pin_num
+    def current_pin_num(self):
+        return self._current_pin_num
 
-    @classmethod
-    def set_current_pin_num(cls, value):
-        cls._current_pin_num = value
+    def set_current_pin_num(self, value):
+        self._current_pin_num = value
 
-    @classmethod
-    def set_current_pin_num_to_last(cls):
-        cls._current_pin_num = len(cls.arr()) - 1
+    def set_current_pin_num_to_last(self):
+        self._current_pin_num = len(self.arr()) - 1
 
-    @classmethod
-    def current_pin(cls):
-        return cls._current_pin
+    def current_pin(self):
+        return self._current_pin
 
-    @classmethod
-    def set_current_pin(cls, value):
-        cls._current_pin = value
+    def set_current_pin(self, value):
+        self._current_pin = value
 
-    @classmethod
-    def reset_current_pin(cls):
-        cls._current_pin = None
-        cls._current_pin_num = -1
+    def reset_current_pin(self):
+        self._current_pin = None
+        self._current_pin_num = -1
 
 
 class FBViewport:
-    profiling = False
-    # --- PROFILING ---
-    if profiling:
-        pr = cProfile.Profile()
-        pr.disable()
-    # --- PROFILING ---
+    def __init__(self):
+        self.profiling = False
+        # --- PROFILING ---
+        if self.profiling:
+            pr = cProfile.Profile()
+            pr.disable()
+        # --- PROFILING ---
+        # Current View Pins draw
+        self._points2d = FBPoints2D(bpy.types.SpaceView3D)
+        # Rectangles for Face picking
+        self._rectangler = FBRectangleShader2D(bpy.types.SpaceView3D)
+        # Surface points draw
+        self._points3d = FBPoints3D(bpy.types.SpaceView3D)
+        # Text output in Modal mode
+        self._texter = KTScreenText(bpy.types.SpaceView3D)
+        # Wireframe shader object
+        self._wireframer = FBRasterEdgeShader3D(bpy.types.SpaceView3D)
+        # Update timer
+        self._draw_timer_handler = None
 
-    # Current View Pins draw
-    _points2d = FBPoints2D(bpy.types.SpaceView3D)
-    # Rectangles for Face picking
-    _rectangler = FBRectangleShader2D(bpy.types.SpaceView3D)
-    # Surface points draw
-    _points3d = FBPoints3D(bpy.types.SpaceView3D)
-    # Text output in Modal mode
-    _texter = KTScreenText(bpy.types.SpaceView3D)
-    # Wireframe shader object
-    _wireframer = FBRasterEdgeShader3D(bpy.types.SpaceView3D)
-    # Update timer
-    _draw_timer_handler = None
+        self._residuals = FBEdgeShader2D(bpy.types.SpaceView3D)
 
-    _residuals = FBEdgeShader2D(bpy.types.SpaceView3D)
+        # Pins
+        self._pins = FBScreenPins()
+        self._point_sensitivity = UserPreferences.get_value_safe(
+            'pin_sensitivity', UserPreferences.type_float)
+        self._pixel_size = 0.1  # Auto Calculated
 
-    # Pins
-    _pins = FBScreenPins()
+    def pins(self):
+        return self._pins
 
-    @classmethod
-    def pins(cls):
-        return cls._pins
+    def points2d(self):
+        return self._points2d
 
-    POINT_SENSITIVITY = UserPreferences.get_value_safe(
-        'pin_sensitivity', UserPreferences.type_float)
-    PIXEL_SIZE = 0.1  # Auto Calculated
+    def points3d(self):
+        return self._points3d
 
-    @classmethod
-    def points2d(cls):
-        return cls._points2d
+    def texter(self):
+        return self._texter
 
-    @classmethod
-    def points3d(cls):
-        return cls._points3d
+    def wireframer(self):
+        return self._wireframer
 
-    @classmethod
-    def texter(cls):
-        return cls._texter
+    def residuals(self):
+        return self._residuals
 
-    @classmethod
-    def wireframer(cls):
-        return cls._wireframer
+    def rectangler(self):
+        return self._rectangler
 
-    @classmethod
-    def residuals(cls):
-        return cls._residuals
-
-    @classmethod
-    def rectangler(cls):
-        return cls._rectangler
-
-    @classmethod
-    def update_view_relative_pixel_size(cls, context):
+    def update_view_relative_pixel_size(self, context):
         ps = coords.get_pixel_relative_size(context)
-        cls.PIXEL_SIZE = ps
+        self._pixel_size = ps
 
-    @classmethod
-    def tolerance_dist(cls):  # distance * sensitivity
-        return cls.POINT_SENSITIVITY * cls.PIXEL_SIZE
+    def tolerance_dist(self):  # distance * sensitivity
+        return self._point_sensitivity * self._pixel_size
 
-    @classmethod
-    def tolerance_dist2(cls):  # squared distance
-        return (cls.POINT_SENSITIVITY * cls.PIXEL_SIZE)**2
+    def tolerance_dist2(self):  # squared distance
+        return (self._point_sensitivity * self._pixel_size)**2
 
-    @classmethod
-    def in_pin_drag(cls):
-        pins = cls.pins()
+    def in_pin_drag(self):
+        pins = self.pins()
         return pins.current_pin_num() >= 0
 
     # --------
     # Handlers
-    @classmethod
-    def register_handlers(cls, context):
-        cls.unregister_handlers()
+    def register_handlers(self, context):
+        self.unregister_handlers()
 
-        cls.residuals().register_handler(context)
-        cls.rectangler().register_handler(context)
+        self.residuals().register_handler(context)
+        self.rectangler().register_handler(context)
 
-        cls.points3d().register_handler(context)
-        cls.points2d().register_handler(context)
+        self.points3d().register_handler(context)
+        self.points2d().register_handler(context)
         # Draw text on screen registration
-        cls.texter().register_handler(context)
-        cls.wireframer().register_handler(context)
+        self.texter().register_handler(context)
+        self.wireframer().register_handler(context)
         # Timer for continuous update modal view
-        cls._draw_timer_handler = context.window_manager.event_timer_add(
+        self._draw_timer_handler = context.window_manager.event_timer_add(
             time_step=FBConfig.viewport_redraw_interval, window=context.window
         )
 
-    @classmethod
-    def unregister_handlers(cls):
-        if cls._draw_timer_handler is not None:
+    def unregister_handlers(self):
+        if self._draw_timer_handler is not None:
             bpy.context.window_manager.event_timer_remove(
-                cls._draw_timer_handler
+                self._draw_timer_handler
             )
-        cls._draw_timer_handler = None
-        cls.wireframer().unregister_handler()
-        cls.texter().unregister_handler()
-        cls.points2d().unregister_handler()
-        cls.points3d().unregister_handler()
+        self._draw_timer_handler = None
+        self.wireframer().unregister_handler()
+        self.texter().unregister_handler()
+        self.points2d().unregister_handler()
+        self.points3d().unregister_handler()
 
-        cls.rectangler().unregister_handler()
-        cls.residuals().unregister_handler()
+        self.rectangler().unregister_handler()
+        self.residuals().unregister_handler()
     # --------
 
     # --------------------
     # Update functions
     # --------------------
-    @classmethod
     def update_surface_points(
-            cls, fb, headobj, keyframe=-1, color=FBConfig.surface_point_color):
-        verts = cls.surface_points_from_fb(fb, keyframe)
+            self, fb, headobj, keyframe=-1, color=FBConfig.surface_point_color):
+        verts = self.surface_points_from_fb(fb, keyframe)
         colors = [color] * len(verts)
 
         if len(verts) > 0:
@@ -198,32 +175,28 @@ class FBViewport:
             vv = vv @ m
             verts = vv[:, :3]  # Transformed vertices
 
-        cls.points3d().set_vertices_colors(verts, colors)
-        cls.points3d().create_batch()
+        self.points3d().set_vertices_colors(verts, colors)
+        self.points3d().create_batch()
 
-    @classmethod
-    def update_wireframe_colors(cls):
+    def update_wireframe_colors(self):
         settings = get_fb_settings()
-        cls.wireframer().init_colors((settings.wireframe_color,
+        self.wireframer().init_colors((settings.wireframe_color,
                                       settings.wireframe_special_color,
                                       settings.wireframe_midline_color),
                                       settings.wireframe_opacity)
-        cls.wireframer().create_batches()
+        self.wireframer().create_batches()
 
-    @classmethod
-    def update_pin_sensitivity(cls):
+    def update_pin_sensitivity(self):
         settings = get_fb_settings()
-        cls.POINT_SENSITIVITY = settings.pin_sensitivity
+        self._point_sensitivity = settings.pin_sensitivity
 
-    @classmethod
-    def update_pin_size(cls):
+    def update_pin_size(self):
         settings = get_fb_settings()
-        cls.points2d().set_point_size(settings.pin_size)
-        cls.points3d().set_point_size(
+        self.points2d().set_point_size(settings.pin_size)
+        self.points3d().set_point_size(
             settings.pin_size * FBConfig.surf_pin_size_scale)
 
-    @classmethod
-    def surface_points_from_mesh(cls, fb, headobj, keyframe=-1):
+    def surface_points_from_mesh(self, fb, headobj, keyframe=-1):
         verts = []
         for i in range(fb.pins_count(keyframe)):
             pin = fb.pin(keyframe, i)
@@ -231,8 +204,7 @@ class FBViewport:
             verts.append(p)
         return verts
 
-    @classmethod
-    def surface_points_from_fb(cls, fb, keyframe=-1):
+    def surface_points_from_fb(self, fb, keyframe=-1):
         geo = fb.applied_args_model_at(keyframe)
         geo_mesh = geo.mesh(0)
         pins_count = fb.pins_count(keyframe)
@@ -244,8 +216,7 @@ class FBViewport:
         # tolist() is needed by shader batch on Mac
         return (verts @ coords.xy_to_xz_rotation_matrix_3x3()).tolist()
 
-    @classmethod
-    def img_points(cls, fb, keyframe):
+    def img_points(self, fb, keyframe):
         scene = bpy.context.scene
         w = scene.render.resolution_x
         h = scene.render.resolution_y
@@ -259,8 +230,7 @@ class FBViewport:
             verts.append((coords.frame_to_image_space(x, y, w, h)))
         return verts
 
-    @classmethod
-    def create_batch_2d(cls, context):
+    def create_batch_2d(self, context):
         def _add_markers_at_camera_corners(points, vertex_colors):
             points.append(
                 (coords.image_space_to_region(
@@ -274,7 +244,7 @@ class FBViewport:
             vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # left camera corner
             vertex_colors.append((1.0, 0, 1.0, 0.2))  # right camera corner
 
-        points = cls.pins().arr().copy()
+        points = self.pins().arr().copy()
 
         scene = context.scene
         rx = scene.render.resolution_x
@@ -289,33 +259,32 @@ class FBViewport:
 
         vertex_colors = [FBConfig.pin_color for _ in range(len(points))]
 
-        pins = cls.pins()
+        pins = self.pins()
         if pins.current_pin() and pins.current_pin_num() < len(vertex_colors):
             vertex_colors[pins.current_pin_num()] = FBConfig.current_pin_color
 
         if FBConfig.show_markers_at_camera_corners:
             _add_markers_at_camera_corners(points, vertex_colors)
 
-        cls.points2d().set_vertices_colors(points, vertex_colors)
-        cls.points2d().create_batch()
+        self.points2d().set_vertices_colors(points, vertex_colors)
+        self.points2d().create_batch()
 
         # Rectangles drawing
-        rectangler = cls.rectangler()
+        rectangler = self.rectangler()
         rectangler.prepare_shader_data(context)
         rectangler.create_batch()
 
-    @classmethod
-    def update_residuals(cls, fb, headobj, keyframe, context):
+    def update_residuals(self, fb, headobj, keyframe, context):
         scene = bpy.context.scene
         rx = scene.render.resolution_x
         ry = scene.render.resolution_y
 
         x1, y1, x2, y2 = coords.get_camera_border(context)
 
-        p2d = cls.img_points(fb, keyframe)
-        p3d = cls.points3d().get_vertices()
+        p2d = self.img_points(fb, keyframe)
+        p3d = self.points3d().get_vertices()
 
-        wire = cls.residuals()
+        wire = self.residuals()
         wire.clear_vertices()
         wire.edge_lengths = []
         wire.vertices_colors = []
