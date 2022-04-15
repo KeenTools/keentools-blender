@@ -326,10 +326,14 @@ def get_mesh_verts(obj):
     return verts
 
 
-def multiply_verts_on_matrix_4x4(verts, mat):
+def to_homogeneous(verts):
     vv = np.ones((len(verts), 4), dtype=np.float32)
     vv[:, :-1] = verts
-    vv = vv @ mat
+    return vv
+
+
+def multiply_verts_on_matrix_4x4(verts, mat):
+    vv = to_homogeneous(verts) @ mat
     return vv[:, :3]
 
 

@@ -170,10 +170,7 @@ class FBViewport:
 
         if len(verts) > 0:
             m = np.array(headobj.matrix_world, dtype=np.float32).transpose()
-            vv = np.ones((len(verts), 4), dtype=np.float32)
-            vv[:, :-1] = verts
-            vv = vv @ m
-            verts = vv[:, :3]  # Transformed vertices
+            verts = coords.multiply_verts_on_matrix_4x4(verts, m)
 
         self.points3d().set_vertices_colors(verts, colors)
         self.points3d().create_batch()
@@ -306,10 +303,7 @@ class FBViewport:
         if not camobj:  # Fix for tests
             return
 
-        # Fill matrix in homogeneous coords
-        vv = np.ones((len(p3d), 4), dtype=np.float32)
-        vv[:, :-1] = p3d
-
+        vv = coords.to_homogeneous(p3d)
         # No object transform, just inverse camera, then projection apply
         vv = vv @ np.array(camobj.matrix_world.inverted().transposed()) @ projection
         vv = (vv.T / vv[:, 3]).T

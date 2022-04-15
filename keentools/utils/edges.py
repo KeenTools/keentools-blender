@@ -459,10 +459,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
                          coords.xy_to_xz_rotation_matrix_3x3()
 
         m = np.array(obj.matrix_world, dtype=np.float32).transpose()
-        vv = np.ones((len(geom_verts), 4), dtype=np.float32)
-        vv[:, :-1] = geom_verts
-        vv = vv @ m
-        self.vertices = vv[:, :3]
+        self.vertices = coords.multiply_verts_on_matrix_4x4(geom_verts, m)
         self.indices = self._get_triangulation_indices(obj)
 
     def init_geom_data_from_mesh(self, obj):
@@ -472,10 +469,7 @@ class FBRasterEdgeShader3D(FBEdgeShaderBase):
             'co', np.reshape(verts, len(mesh.vertices) * 3))
 
         m = np.array(obj.matrix_world, dtype=np.float32).transpose()
-        vv = np.ones((len(mesh.vertices), 4), dtype=np.float32)
-        vv[:, :-1] = verts
-        vv = vv @ m
-        self.vertices = vv[:, :3]
+        self.vertices = coords.multiply_verts_on_matrix_4x4(verts, m)
         self.indices = self._get_triangulation_indices(obj)
 
     def _clear_edge_indices(self):
