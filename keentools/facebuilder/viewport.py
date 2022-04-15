@@ -46,17 +46,11 @@ class FBViewport(KTViewport):
         self.points2d().register_handler(context)
         self.texter().register_handler(context)
         self.wireframer().register_handler(context)
-        # Timer for continuous update modal view
-        self._draw_update_timer_handler = context.window_manager.event_timer_add(
-            time_step=FBConfig.viewport_redraw_interval, window=context.window
-        )
+        self.register_draw_update_timer(
+            context, time_step=FBConfig.viewport_redraw_interval)
 
     def unregister_handlers(self):
-        if self._draw_update_timer_handler is not None:
-            bpy.context.window_manager.event_timer_remove(
-                self._draw_update_timer_handler
-            )
-        self._draw_update_timer_handler = None
+        self.unregister_draw_update_timer()
         self.wireframer().unregister_handler()
         self.texter().unregister_handler()
         self.points2d().unregister_handler()

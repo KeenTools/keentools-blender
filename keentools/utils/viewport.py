@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import cProfile
+import bpy
 
 from ..preferences.user_preferences import UserPreferences
 from .points import KTScreenPins
@@ -95,3 +96,16 @@ class KTViewport:
     def in_pin_drag(self):
         pins = self.pins()
         return pins.current_pin_num() >= 0
+
+    def unregister_draw_update_timer(self):
+        if self._draw_update_timer_handler is not None:
+            bpy.context.window_manager.event_timer_remove(
+                self._draw_update_timer_handler
+            )
+        self._draw_update_timer_handler = None
+
+    def register_draw_update_timer(self, context, time_step):
+        self.unregister_draw_update_timer()
+        self._draw_update_timer_handler = context.window_manager.event_timer_add(
+            time_step=time_step, window=context.window
+        )
