@@ -25,42 +25,7 @@ from ..preferences.user_preferences import UserPreferences
 from ..utils import coords
 from ..utils.edges import FBEdgeShader2D, FBRasterEdgeShader3D, FBRectangleShader2D
 from ..utils.screen_text import KTScreenText
-from ..utils.points import FBPoints2D, FBPoints3D
-
-
-class FBScreenPins:
-    def __init__(self):
-        self._pins = []
-        self._current_pin = None
-        self._current_pin_num = -1
-
-    def arr(self):
-        return self._pins
-
-    def set_pins(self, arr):
-        self._pins = arr
-
-    def add_pin(self, vec2d):
-        self._pins.append(vec2d)
-
-    def current_pin_num(self):
-        return self._current_pin_num
-
-    def set_current_pin_num(self, value):
-        self._current_pin_num = value
-
-    def set_current_pin_num_to_last(self):
-        self._current_pin_num = len(self.arr()) - 1
-
-    def current_pin(self):
-        return self._current_pin
-
-    def set_current_pin(self, value):
-        self._current_pin = value
-
-    def reset_current_pin(self):
-        self._current_pin = None
-        self._current_pin_num = -1
+from ..utils.points import KTScreenPins, KTPoints2D, KTPoints3D
 
 
 class FBViewport:
@@ -72,11 +37,11 @@ class FBViewport:
             pr.disable()
         # --- PROFILING ---
         # Current View Pins draw
-        self._points2d = FBPoints2D(bpy.types.SpaceView3D)
+        self._points2d = KTPoints2D(bpy.types.SpaceView3D)
         # Rectangles for Face picking
         self._rectangler = FBRectangleShader2D(bpy.types.SpaceView3D)
         # Surface points draw
-        self._points3d = FBPoints3D(bpy.types.SpaceView3D)
+        self._points3d = KTPoints3D(bpy.types.SpaceView3D)
         # Text output in Modal mode
         self._texter = KTScreenText(bpy.types.SpaceView3D)
         # Wireframe shader object
@@ -87,7 +52,7 @@ class FBViewport:
         self._residuals = FBEdgeShader2D(bpy.types.SpaceView3D)
 
         # Pins
-        self._pins = FBScreenPins()
+        self._pins = KTScreenPins()
         self._point_sensitivity = UserPreferences.get_value_safe(
             'pin_sensitivity', UserPreferences.type_float)
         self._pixel_size = 0.1  # Auto Calculated

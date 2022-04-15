@@ -22,7 +22,7 @@ import bpy
 import blf
 
 from .edges import FBEdgeShader2D, FBRasterEdgeShader3D
-from .points import FBPoints2D, FBPoints3D
+from .points import KTPoints2D, KTPoints3D
 from ..facebuilder.config import FBConfig, get_fb_settings
 from ..utils.attrs import set_custom_attribute, get_safe_custom_attribute
 from ..utils.timer import FBTimer
@@ -34,8 +34,8 @@ def force_stop_shaders():
     FBEdgeShader2D.handler_list = []
     FBRasterEdgeShader3D.handler_list = []
     KTScreenText.handler_list = []
-    FBPoints2D.handler_list = []
-    FBPoints3D.handler_list = []
+    KTPoints2D.handler_list = []
+    KTPoints3D.handler_list = []
     force_ui_redraw('VIEW_3D')
 
 

@@ -27,7 +27,42 @@ from ..addon_config import Config
 from ..preferences.user_preferences import UserPreferences
 
 
-class FBShaderPoints:
+class KTScreenPins:
+    def __init__(self):
+        self._pins = []
+        self._current_pin = None
+        self._current_pin_num = -1
+
+    def arr(self):
+        return self._pins
+
+    def set_pins(self, arr):
+        self._pins = arr
+
+    def add_pin(self, vec2d):
+        self._pins.append(vec2d)
+
+    def current_pin_num(self):
+        return self._current_pin_num
+
+    def set_current_pin_num(self, value):
+        self._current_pin_num = value
+
+    def set_current_pin_num_to_last(self):
+        self._current_pin_num = len(self.arr()) - 1
+
+    def current_pin(self):
+        return self._current_pin
+
+    def set_current_pin(self, value):
+        self._current_pin = value
+
+    def reset_current_pin(self):
+        self._current_pin = None
+        self._current_pin_num = -1
+
+
+class KTShaderPoints:
     """ Base class for Point Drawing Shaders """
     _is_visible = True
     _point_size = UserPreferences.get_value_safe('pin_size', UserPreferences.type_float)
@@ -93,7 +128,7 @@ class FBShaderPoints:
 
             self.batch = batch_for_shader(
                 self.shader, 'POINTS',
-                {"pos": vertices, "color": vertices_colors},
+                {'pos': vertices, 'color': vertices_colors},
                 indices=None
             )
         elif shadername == 'CUSTOM_2D':
@@ -104,14 +139,14 @@ class FBShaderPoints:
 
             self.batch = batch_for_shader(
                 self.shader, 'POINTS',
-                {"pos": vertices, "color": vertices_colors},
+                {'pos': vertices, 'color': vertices_colors},
                 indices=None
             )
         else:
             self.shader = gpu.shader.from_builtin(shadername)
             self.batch = batch_for_shader(
                 self.shader, 'POINTS',
-                {"pos": vertices, "color": vertices_colors}
+                {'pos': vertices, 'color': vertices_colors}
             )
 
     def create_batch(self):
@@ -172,7 +207,7 @@ class FBShaderPoints:
         self.set_visible(True)
 
 
-class FBPoints2D(FBShaderPoints):
+class KTPoints2D(KTShaderPoints):
     """ 2D Shader for 2D-points drawing """
     def create_batch(self):
         self._create_batch(
@@ -188,7 +223,7 @@ class FBPoints2D(FBShaderPoints):
         self.add_handler_list(self.draw_handler)
 
 
-class FBPoints3D(FBShaderPoints):
+class KTPoints3D(KTShaderPoints):
     """ 3D Shader wrapper for 3d-points draw """
     def create_batch(self):
         # 3D_FLAT_COLOR
