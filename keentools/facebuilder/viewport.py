@@ -15,121 +15,57 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import cProfile
-import bpy
 
 import numpy as np
+import bpy
 
 from ..facebuilder.config import FBConfig, get_fb_settings
-from ..preferences.user_preferences import UserPreferences
 from ..utils import coords
+from ..utils.viewport import KTViewport
 from ..utils.edges import FBEdgeShader2D, FBRasterEdgeShader3D, FBRectangleShader2D
 from ..utils.screen_text import KTScreenText
-from ..utils.points import KTScreenPins, KTPoints2D, KTPoints3D
+from ..utils.points import KTPoints2D, KTPoints3D
 
 
-class FBViewport:
+class FBViewport(KTViewport):
     def __init__(self):
-        self.profiling = False
-        # --- PROFILING ---
-        if self.profiling:
-            pr = cProfile.Profile()
-            pr.disable()
-        # --- PROFILING ---
-        # Current View Pins draw
+        super().__init__()
         self._points2d = KTPoints2D(bpy.types.SpaceView3D)
-        # Rectangles for Face picking
-        self._rectangler = FBRectangleShader2D(bpy.types.SpaceView3D)
-        # Surface points draw
         self._points3d = KTPoints3D(bpy.types.SpaceView3D)
-        # Text output in Modal mode
-        self._texter = KTScreenText(bpy.types.SpaceView3D)
-        # Wireframe shader object
-        self._wireframer = FBRasterEdgeShader3D(bpy.types.SpaceView3D)
-        # Update timer
-        self._draw_timer_handler = None
-
         self._residuals = FBEdgeShader2D(bpy.types.SpaceView3D)
+        self._texter = KTScreenText(bpy.types.SpaceView3D)
+        self._wireframer = FBRasterEdgeShader3D(bpy.types.SpaceView3D)
+        self._rectangler = FBRectangleShader2D(bpy.types.SpaceView3D)
+        self._draw_update_timer_handler = None
 
-        # Pins
-        self._pins = KTScreenPins()
-        self._point_sensitivity = UserPreferences.get_value_safe(
-            'pin_sensitivity', UserPreferences.type_float)
-        self._pixel_size = 0.1  # Auto Calculated
-
-    def pins(self):
-        return self._pins
-
-    def points2d(self):
-        return self._points2d
-
-    def points3d(self):
-        return self._points3d
-
-    def texter(self):
-        return self._texter
-
-    def wireframer(self):
-        return self._wireframer
-
-    def residuals(self):
-        return self._residuals
-
-    def rectangler(self):
-        return self._rectangler
-
-    def update_view_relative_pixel_size(self, context):
-        ps = coords.get_pixel_relative_size(context)
-        self._pixel_size = ps
-
-    def tolerance_dist(self):  # distance * sensitivity
-        return self._point_sensitivity * self._pixel_size
-
-    def tolerance_dist2(self):  # squared distance
-        return (self._point_sensitivity * self._pixel_size)**2
-
-    def in_pin_drag(self):
-        pins = self.pins()
-        return pins.current_pin_num() >= 0
-
-    # --------
-    # Handlers
     def register_handlers(self, context):
         self.unregister_handlers()
-
         self.residuals().register_handler(context)
         self.rectangler().register_handler(context)
-
         self.points3d().register_handler(context)
         self.points2d().register_handler(context)
-        # Draw text on screen registration
         self.texter().register_handler(context)
         self.wireframer().register_handler(context)
         # Timer for continuous update modal view
-        self._draw_timer_handler = context.window_manager.event_timer_add(
+        self._draw_update_timer_handler = context.window_manager.event_timer_add(
             time_step=FBConfig.viewport_redraw_interval, window=context.window
         )
 
     def unregister_handlers(self):
-        if self._draw_timer_handler is not None:
+        if self._draw_update_timer_handler is not None:
             bpy.context.window_manager.event_timer_remove(
-                self._draw_timer_handler
+                self._draw_update_timer_handler
             )
-        self._draw_timer_handler = None
+        self._draw_update_timer_handler = None
         self.wireframer().unregister_handler()
         self.texter().unregister_handler()
         self.points2d().unregister_handler()
         self.points3d().unregister_handler()
-
         self.rectangler().unregister_handler()
         self.residuals().unregister_handler()
-    # --------
 
-    # --------------------
-    # Update functions
-    # --------------------
-    def update_surface_points(
-            self, fb, headobj, keyframe=-1, color=FBConfig.surface_point_color):
+    def update_surface_points(self, fb, headobj, keyframe=-1,
+                              color=FBConfig.surface_point_color):
         verts = self.surface_points_from_fb(fb, keyframe)
         colors = [color] * len(verts)
 
