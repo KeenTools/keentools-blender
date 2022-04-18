@@ -38,17 +38,13 @@ from ..utils import coords
 
 
 class KTEdgeShaderBase:
-    """ Wireframe drawing class """
-    _is_visible = True
     handler_list = []
 
-    @classmethod
-    def is_visible(cls):
-        return cls._is_visible
+    def is_visible(self):
+        return self._is_shader_visible
 
-    @classmethod
-    def set_visible(cls, flag=True):
-        cls._is_visible = flag
+    def set_visible(self, flag=True):
+        self._is_visible = flag
 
     @classmethod
     def add_handler_list(cls, handler):
@@ -80,6 +76,7 @@ class KTEdgeShaderBase:
 
         self._target_class = target_class
         self._work_area = None
+        self._is_shader_visible = True
 
         # Check if blender started in background mode
         if not bpy.app.background:
@@ -285,7 +282,7 @@ class GTEdgeShaderAll2D (KTEdgeShader2D):
         pos = [reg.view2d.view_to_region(x, 0, clip=False)[0]
                for x in self.keyframes]
         self.vertices = [(x, y) for x in pos for y in (bottom, top)]
-        self.vertices_colors = [GTConfig.timeline_keyframe_color
+        self.vertices_colors = [(0.0, 1.0, 0.0, 0.5)  # GTConfig.timeline_keyframe_color
                                 for _ in self.vertices]
         self.edge_lengths = [x for _ in pos for x in (bottom, top * 0.5)]
 
@@ -323,7 +320,6 @@ class GTEdgeShaderAll2D (KTEdgeShader2D):
 
 
 class KTEdgeShader3D(KTEdgeShaderBase):
-    """ Wireframe drawing class """
     def draw_empty_fill(self):
         self.fill_batch.draw(self.fill_shader)
 
