@@ -18,7 +18,7 @@
 
 import bpy
 from ..addon_config import Config
-from ..facebuilder.config import FBConfig
+from ..facebuilder_config import FBConfig
 
 
 # Functions for Custom Attributes perform

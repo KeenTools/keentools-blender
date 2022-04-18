@@ -26,7 +26,7 @@ from .edges import (KTEdgeShader2D,
                     KTEdgeShaderLocal3D)
 from ..facebuilder.utils.edges import FBRectangleShader2D, FBRasterEdgeShader3D
 from .points import KTPoints2D, KTPoints3D
-from ..facebuilder.config import FBConfig, get_fb_settings
+from ..facebuilder_config import FBConfig, get_fb_settings
 from ..utils.attrs import set_custom_attribute, get_safe_custom_attribute
 from ..utils.timer import KTTimer
 from ..utils.ui_redraw import force_ui_redraw

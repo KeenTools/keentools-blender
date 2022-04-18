@@ -9,7 +9,7 @@ import math
 import bpy
 
 from keentools.addon_config import get_operator
-from keentools.facebuilder.config import FBConfig, get_fb_settings
+from keentools.facebuilder_config import FBConfig, get_fb_settings
 import keentools.utils.coords as coords
 from keentools.facebuilder.fbloader import FBLoader
 from keentools.facebuilder.interface.filedialog import load_single_image_file

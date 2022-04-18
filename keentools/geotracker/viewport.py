@@ -19,7 +19,7 @@
 import numpy as np
 import bpy
 
-from .config import GTConfig, get_gt_settings
+from ..geotracker_config import GTConfig, get_gt_settings
 from ..utils import coords
 from ..utils.viewport import KTViewport
 from ..utils.screen_text import KTScreenText

@@ -22,7 +22,7 @@ import bgl
 import gpu
 from gpu_extras.batch import batch_for_shader
 
-from ..config import FBConfig
+from ...facebuilder_config import FBConfig
 from ...utils.edges import KTEdgeShaderBase, KTEdgeShader2D
 from ...utils import coords
 from ...utils.shaders import (solid_line_vertex_shader,

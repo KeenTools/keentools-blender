@@ -19,7 +19,7 @@
 import logging
 import bpy
 
-from .config import GTConfig
+from ..geotracker_config import GTConfig
 from .utils.geotracker_acts import create_geotracker_act, enter_pinmode_act
 
 

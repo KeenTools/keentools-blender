@@ -19,7 +19,7 @@
 import logging
 
 from ..addon_config import Config
-from ..facebuilder.config import FBConfig
+from ..facebuilder_config import FBConfig
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed)
 

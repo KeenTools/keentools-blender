@@ -22,7 +22,7 @@ from uuid import uuid4
 import bpy
 
 from ..addon_config import get_operator
-from .config import GTConfig, get_gt_settings
+from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
 from ..utils.manipulate import exit_context_localview, set_overlays
 from ..utils import coords

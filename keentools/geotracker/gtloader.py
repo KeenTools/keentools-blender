@@ -23,7 +23,7 @@ import numpy as np
 import bpy
 from bpy.types import Area
 
-from .config import GTConfig, get_gt_settings
+from ..geotracker_config import GTConfig, get_gt_settings
 from .viewport import GTViewport
 from ..utils import coords
 from .gt_class_loader import GTClassLoader

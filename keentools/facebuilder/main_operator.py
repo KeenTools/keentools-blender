@@ -27,7 +27,7 @@ from bpy.props import (
 from bpy.types import Operator
 
 from ..addon_config import Config, get_operator
-from .config import FBConfig, get_fb_settings
+from ..facebuilder_config import FBConfig, get_fb_settings
 from .fbloader import FBLoader
 from ..utils import manipulate, materials, coords, images
 from .utils import cameras

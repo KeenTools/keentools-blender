@@ -17,14 +17,13 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
-import time
 from dataclasses import dataclass
 from typing import Optional
 import bpy
 from bpy.types import Object
 
 from ...addon_config import get_operator
-from ..config import GTConfig, get_gt_settings
+from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
 from ...utils.manipulate import switch_to_camera
 

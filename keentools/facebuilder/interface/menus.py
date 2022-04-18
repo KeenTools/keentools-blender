@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from bpy.types import Menu
-from ..config import FBConfig, get_fb_settings
+from ...facebuilder_config import FBConfig, get_fb_settings
 
 
 class FB_MT_ProperViewMenu(Menu):

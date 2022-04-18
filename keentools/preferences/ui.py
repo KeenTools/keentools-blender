@@ -27,7 +27,7 @@ from ..blender_independent_packages.pykeentools_loader import (
     installation_status as pkt_installation_status,
     loaded as pkt_loaded)
 from ..addon_config import Config, get_operator, is_blender_supported
-from ..facebuilder.config import FBConfig, get_fb_settings
+from ..facebuilder_config import FBConfig, get_fb_settings
 from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,

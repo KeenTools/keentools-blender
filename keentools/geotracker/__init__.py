@@ -19,7 +19,7 @@
 import logging
 import bpy
 
-from .config import GTConfig, get_gt_settings
+from ..geotracker_config import GTConfig, get_gt_settings
 from .settings import FileListItem, GeoTrackerItem, SceneSettings
 from .actor import GT_OT_Actor
 from .pinmode import GT_OT_PinMode

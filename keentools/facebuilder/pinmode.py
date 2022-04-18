@@ -25,7 +25,7 @@ import bpy
 from ..utils import manipulate, coords
 from .utils import cameras
 from ..addon_config import get_operator
-from .config import FBConfig, get_fb_settings, FBErrorType
+from ..facebuilder_config import FBConfig, get_fb_settings, FBErrorType
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
 from ..utils.other import (KTStopShaderTimer, force_ui_redraw,

@@ -22,7 +22,7 @@ import bpy
 
 from ..utils import manipulate, coords
 from .fbloader import FBLoader
-from ..facebuilder.config import FBConfig, get_fb_settings
+from ..facebuilder_config import FBConfig, get_fb_settings
 
 from functools import wraps
 

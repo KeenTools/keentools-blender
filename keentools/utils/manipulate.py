@@ -21,7 +21,7 @@ import bpy
 
 from ..facebuilder.fbloader import FBLoader
 from ..addon_config import get_operator
-from ..facebuilder.config import FBConfig, get_fb_settings, FBErrorType
+from ..facebuilder_config import FBConfig, get_fb_settings, FBErrorType
 from . import attrs
 from ..facebuilder.utils import cameras
 from ..facebuilder.utils.exif_reader import (read_exif_to_camera, auto_setup_camera_from_exif)

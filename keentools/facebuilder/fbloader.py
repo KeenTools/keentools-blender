@@ -21,7 +21,7 @@ import numpy as np
 
 import bpy
 
-from .config import FBConfig, get_fb_settings
+from ..facebuilder_config import FBConfig, get_fb_settings
 from ..utils.coords import xy_to_xz_rotation_matrix_3x3
 from ..utils.focal_length import (configure_focal_mode_and_fixes,
                                   update_camera_focal)

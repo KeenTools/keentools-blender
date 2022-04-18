@@ -19,7 +19,7 @@
 import numpy as np
 import bpy
 
-from .config import FBConfig, get_fb_settings
+from ..facebuilder_config import FBConfig, get_fb_settings
 from ..utils import coords
 from ..utils.viewport import KTViewport
 from ..utils.edges import KTEdgeShader2D

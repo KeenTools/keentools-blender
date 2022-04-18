@@ -18,7 +18,7 @@
 import logging
 import bpy
 
-from .config import FBConfig
+from ..facebuilder_config import FBConfig
 from .head import MESH_OT_FBAddHead
 from .settings import FBSceneSettings, FBExifItem, FBCameraItem, FBHeadItem
 from ..utils.icons import FBIcons
