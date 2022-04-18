@@ -258,11 +258,12 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
                                (x2, y1), (x1, y1)]
 
 
-class GTEdgeShaderAll2D(KTEdgeShader2D):
-    def __init__(self, target_class):
+class KTEdgeShaderAll2D(KTEdgeShader2D):
+    def __init__(self, target_class, line_color=(0.0, 1.0, 0.0, 0.5)):
         self.keyframes = []
         self._state = (-1000.0, -1000.0)
         self._batch_needs_update = True
+        self._line_color = line_color
         super().__init__(target_class)
 
     def set_keyframes(self, keyframes):
@@ -276,8 +277,7 @@ class GTEdgeShaderAll2D(KTEdgeShader2D):
         pos = [reg.view2d.view_to_region(x, 0, clip=False)[0]
                for x in self.keyframes]
         self.vertices = [(x, y) for x in pos for y in (bottom, top)]
-        self.vertices_colors = [(0.0, 1.0, 0.0, 0.5)  # GTConfig.timeline_keyframe_color
-                                for _ in self.vertices]
+        self.vertices_colors = [self._line_color for _ in self.vertices]
         self.edge_lengths = [x for _ in pos for x in (bottom, top * 0.5)]
 
     def _get_region(self, area):

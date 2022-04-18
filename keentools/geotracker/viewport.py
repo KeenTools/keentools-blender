@@ -24,7 +24,7 @@ from ..utils import coords
 from ..utils.viewport import KTViewport
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
-from ..utils.edges import KTEdgeShader2D, KTEdgeShaderLocal3D, GTEdgeShaderAll2D, KTScreenRectangleShader2D
+from ..utils.edges import KTEdgeShader2D, KTEdgeShaderLocal3D, KTEdgeShaderAll2D, KTScreenRectangleShader2D
 
 
 class GTViewport(KTViewport):
@@ -35,7 +35,8 @@ class GTViewport(KTViewport):
         self._residuals = KTEdgeShader2D(bpy.types.SpaceView3D)
         self._texter = KTScreenText(bpy.types.SpaceView3D)
         self._wireframer = KTEdgeShaderLocal3D(bpy.types.SpaceView3D)
-        self._timeliner = GTEdgeShaderAll2D(bpy.types.SpaceDopeSheetEditor)
+        self._timeliner = KTEdgeShaderAll2D(bpy.types.SpaceDopeSheetEditor,
+                                            GTConfig.timeline_keyframe_color)
         self._selector = KTScreenRectangleShader2D(bpy.types.SpaceView3D)
         self._draw_update_timer_handler = None
 

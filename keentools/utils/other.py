@@ -21,7 +21,7 @@ import bpy
 
 from .edges import (KTEdgeShader2D,
                     KTScreenRectangleShader2D,
-                    GTEdgeShaderAll2D,
+                    KTEdgeShaderAll2D,
                     KTEdgeShader3D,
                     KTEdgeShaderLocal3D)
 from ..facebuilder.utils.edges import FBRectangleShader2D, FBRasterEdgeShader3D
@@ -36,7 +36,7 @@ from ..utils.screen_text import KTScreenText
 def force_stop_shaders():
     KTEdgeShader2D.handler_list = []
     KTScreenRectangleShader2D.handler_list = []
-    GTEdgeShaderAll2D.handler_list = []
+    KTEdgeShaderAll2D.handler_list = []
     KTEdgeShader3D.handler_list = []
     FBRectangleShader2D.handler_list = []
     FBRasterEdgeShader3D.handler_list = []
