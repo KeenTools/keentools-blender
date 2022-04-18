@@ -19,12 +19,13 @@
 import numpy as np
 import bpy
 
-from ..facebuilder.config import FBConfig, get_fb_settings
+from .config import FBConfig, get_fb_settings
 from ..utils import coords
 from ..utils.viewport import KTViewport
-from ..utils.edges import KTEdgeShader2D, FBRasterEdgeShader3D, FBRectangleShader2D
+from ..utils.edges import KTEdgeShader2D
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
+from .utils.edges import FBRasterEdgeShader3D, FBRectangleShader2D
 
 
 class FBViewport(KTViewport):
