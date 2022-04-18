@@ -170,7 +170,7 @@ class GTLoader:
             gt.move_pin(keyframe, pin_idx, coords.image_space_to_frame(*pos))
 
     @classmethod
-    def load_pins_into_viewport(cls) -> Any:
+    def load_pins_into_viewport(cls) -> None:
         settings = get_gt_settings()
         keyframe = settings.current_frame()
 

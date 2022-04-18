@@ -21,13 +21,13 @@ import bpy
 import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
+
 from .shaders import (simple_fill_vertex_shader,
                       black_fill_fragment_shader, residual_vertex_shader,
                       residual_fragment_shader,
                       solid_line_vertex_shader, solid_line_fragment_shader,
                       simple_fill_vertex_local_shader,
                       smooth_3d_vertex_local_shader, smooth_3d_fragment_shader)
-
 from ..utils import coords
 
 
@@ -258,7 +258,7 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
                                (x2, y1), (x1, y1)]
 
 
-class GTEdgeShaderAll2D (KTEdgeShader2D):
+class GTEdgeShaderAll2D(KTEdgeShader2D):
     def __init__(self, target_class):
         self.keyframes = []
         self._state = (-1000.0, -1000.0)
