@@ -18,11 +18,19 @@
 import bpy
 
 
-def force_ui_redraw(area_type='PREFERENCES'):
+def get_areas_by_type(area_type='VIEW_3D'):
+    areas = []
     for window in bpy.data.window_managers['WinMan'].windows:
         for area in window.screen.areas:
             if area.type == area_type:
-                area.tag_redraw()
+                areas.append(area)
+    return areas
+
+
+def force_ui_redraw(area_type='PREFERENCES'):
+    areas = get_areas_by_type(area_type)
+    for area in areas:
+        area.tag_redraw()
 
 
 def show_ui_panel(context):

@@ -22,7 +22,7 @@ import bpy
 from ..facebuilder.config import FBConfig, get_fb_settings
 from ..utils import coords
 from ..utils.viewport import KTViewport
-from ..utils.edges import FBEdgeShader2D, FBRasterEdgeShader3D, FBRectangleShader2D
+from ..utils.edges import KTEdgeShader2D, FBRasterEdgeShader3D, FBRectangleShader2D
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
 
@@ -32,7 +32,7 @@ class FBViewport(KTViewport):
         super().__init__()
         self._points2d = KTPoints2D(bpy.types.SpaceView3D)
         self._points3d = KTPoints3D(bpy.types.SpaceView3D)
-        self._residuals = FBEdgeShader2D(bpy.types.SpaceView3D)
+        self._residuals = KTEdgeShader2D(bpy.types.SpaceView3D)
         self._texter = KTScreenText(bpy.types.SpaceView3D)
         self._wireframer = FBRasterEdgeShader3D(bpy.types.SpaceView3D)
         self._rectangler = FBRectangleShader2D(bpy.types.SpaceView3D)

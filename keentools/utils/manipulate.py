@@ -312,3 +312,43 @@ def create_vertex_groups(obj, vg_dict):
             vg = obj.vertex_groups.new(name=vg_name)
         for i, w in vg_dict[vg_name]:
             vg.add([i], w, 'REPLACE')
+
+
+def exit_area_localview(area):
+    if area is None:
+        return
+    if area.spaces.active.local_view:
+        bpy.ops.view3d.localview({'area':area})
+
+
+def exit_context_localview(context):
+    if context.space_data and context.space_data.local_view:
+        bpy.ops.view3d.localview()
+        return True
+    return False
+
+
+def enter_context_localview(context):
+    if context.space_data and not context.space_data.local_view:
+        bpy.ops.view3d.localview()
+        return True
+    return False
+
+
+def set_overlays(status=True):
+    if not bpy.context.space_data:
+        return
+    bpy.context.space_data.overlay.show_floor = status
+    bpy.context.space_data.overlay.show_axis_x = status
+    bpy.context.space_data.overlay.show_axis_y = status
+    bpy.context.space_data.overlay.show_cursor = status
+
+
+def switch_to_camera(context, camobj, select_obj=None):
+    exit_context_localview(context)
+    camobj.hide_set(False)
+    select_object_only(camobj)
+    enter_context_localview(context)
+    bpy.ops.view3d.object_as_camera()
+    if select_obj is not None:
+        select_object_only(select_obj)

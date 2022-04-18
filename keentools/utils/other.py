@@ -17,22 +17,31 @@
 # ##### END GPL LICENSE BLOCK #####
 import logging
 import time
-
 import bpy
-import blf
 
-from .edges import FBEdgeShader2D, FBRasterEdgeShader3D
+from .edges import (KTEdgeShader2D,
+                    KTScreenRectangleShader2D,
+                    GTEdgeShaderAll2D,
+                    KTEdgeShader3D,
+                    FBRectangleShader2D,
+                    FBRasterEdgeShader3D,
+                    KTEdgeShaderLocal3D)
 from .points import KTPoints2D, KTPoints3D
 from ..facebuilder.config import FBConfig, get_fb_settings
 from ..utils.attrs import set_custom_attribute, get_safe_custom_attribute
-from ..utils.timer import FBTimer
+from ..utils.timer import KTTimer
 from ..utils.ui_redraw import force_ui_redraw
 from ..utils.screen_text import KTScreenText
 
 
 def force_stop_shaders():
-    FBEdgeShader2D.handler_list = []
+    KTEdgeShader2D.handler_list = []
+    KTScreenRectangleShader2D.handler_list = []
+    GTEdgeShaderAll2D.handler_list = []
+    KTEdgeShader3D.handler_list = []
+    FBRectangleShader2D.handler_list = []
     FBRasterEdgeShader3D.handler_list = []
+    KTEdgeShaderLocal3D.handler_list = []
     KTScreenText.handler_list = []
     KTPoints2D.handler_list = []
     KTPoints3D.handler_list = []
@@ -121,7 +130,7 @@ def unhide_viewport_ui_element_from_object(obj):
     _setup_viewport_ui_state(res)
 
 
-class FBStopShaderTimer(FBTimer):
+class KTStopShaderTimer(KTTimer):
     _uuid = ''
     @classmethod
     def check_pinmode(cls):

@@ -1,21 +1,53 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+# KeenTools for blender is a blender addon for using KeenTools in Blender.
+# Copyright (C) 2019-2022  KeenTools
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# ##### END GPL LICENSE BLOCK #####
+
 import numpy as np
 import bpy
 
-from ..config import GTConfig, get_gt_settings
-from ...utils import coords
-from ...utils.viewport import KTViewport
+from .config import GTConfig, get_gt_settings
+from ..utils import coords
+from ..utils.viewport import KTViewport
+from ..utils.screen_text import KTScreenText
+from ..utils.points import KTPoints2D, KTPoints3D
+from ..utils.edges import KTEdgeShader2D, KTEdgeShaderLocal3D, GTEdgeShaderAll2D, KTScreenRectangleShader2D
 
 
 class GTViewport(KTViewport):
-    def register_handlers(cls, args, context):
+    def __init__(self):
+        super().__init__()
+        self._points2d = KTPoints2D(bpy.types.SpaceView3D)
+        self._points3d = KTPoints3D(bpy.types.SpaceView3D)
+        self._residuals = KTEdgeShader2D(bpy.types.SpaceView3D)
+        self._texter = KTScreenText(bpy.types.SpaceView3D)
+        self._wireframer = KTEdgeShaderLocal3D(bpy.types.SpaceView3D)
+        self._timeliner = GTEdgeShaderAll2D(bpy.types.SpaceDopeSheetEditor)
+        self._selector = KTScreenRectangleShader2D(bpy.types.SpaceView3D)
+        self._draw_update_timer_handler = None
+
+    def register_handlers(cls, context):
         cls.unregister_handlers()
-        cls.residuals().register_handler(args)
-        cls.points3d().register_handler(args)
-        cls.points2d().register_handler(args)
+        cls.residuals().register_handler(context)
+        cls.points3d().register_handler(context)
+        cls.points2d().register_handler(context)
         cls.texter().register_handler(context)
-        cls.wireframer().register_handler(args)
-        cls.timeliner().register_handler(args)
-        cls.selector().register_handler(args)
+        cls.wireframer().register_handler(context)
+        cls.timeliner().register_handler(context)
+        cls.selector().register_handler(context)
         cls.register_draw_update_timer(
             context, time_step=GTConfig.viewport_redraw_interval)
 

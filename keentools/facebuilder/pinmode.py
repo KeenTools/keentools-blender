@@ -28,8 +28,8 @@ from ..addon_config import get_operator
 from .config import FBConfig, get_fb_settings, FBErrorType
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
-from ..utils.other import (FBStopShaderTimer, force_ui_redraw,
-                          hide_viewport_ui_elements_and_store_on_object)
+from ..utils.other import (KTStopShaderTimer, force_ui_redraw,
+                           hide_viewport_ui_elements_and_store_on_object)
 from ..utils.html import split_long_string
 
 
@@ -338,7 +338,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.debug("SHADER STOPPER START")
             self.pinmode_id = str(uuid4())
             settings.pinmode_id = self.pinmode_id
-            FBStopShaderTimer.start(self.pinmode_id)
+            KTStopShaderTimer.start(self.pinmode_id)
             logger.debug('pinmode_id: {}'.format(self.pinmode_id))
         else:
             logger.debug("SHADER UPDATE ONLY")
