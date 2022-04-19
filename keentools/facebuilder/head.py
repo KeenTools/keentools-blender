@@ -19,11 +19,11 @@
 import logging
 import bpy
 
+from ..addon_config import Config, get_operator, ErrorType
+from ..facebuilder_config import FBConfig, get_fb_settings
 from ..utils import attrs
 from ..utils.ui_redraw import show_ui_panel
 from .fbloader import FBLoader
-from ..facebuilder_config import FBConfig, get_fb_settings, FBErrorType
-from ..addon_config import get_operator
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
@@ -41,23 +41,23 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
             obj = self.new_head()
         except ModuleNotFoundError:
             logger.error('ADD_HEAD_ERROR: ModuleNotFoundError')
-            warn = get_operator(FBConfig.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=FBErrorType.PktProblem)
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
         except pkt_module().ModelLoadingException:
             logger.error('ADD_HEAD_ERROR: ModelLoadingException')
-            warn = get_operator(FBConfig.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=FBErrorType.PktModelProblem)
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.PktModelProblem)
             return {'CANCELLED'}
         except TypeError:
             logger.error('ADD_HEAD_ERROR: TypeError')
-            warn = get_operator(FBConfig.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=FBErrorType.CannotCreateObject)
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.CannotCreateObject)
             return {'CANCELLED'}
         except Exception:
             logger.error('ADD_HEAD_ERROR: Exception')
-            warn = get_operator(FBConfig.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=FBErrorType.PktProblem)
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
 
         attrs.add_to_fb_collection(obj)  # link to FB objects collection

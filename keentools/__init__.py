@@ -157,10 +157,12 @@ if not _can_load():
         logger.error("CANNOT LOAD PREFERENCES UNREGISTERED")
 
 else:
-    from .preferences import CLASSES_TO_REGISTER
+    from .preferences import CLASSES_TO_REGISTER as PREFERENCES_CLASSES
     from .facebuilder import facebuilder_register, facebuilder_unregister
     from .geotracker import geotracker_register, geotracker_unregister
+    from .utils.warning import KT_OT_AddonWarning
 
+    CLASSES_TO_REGISTER = PREFERENCES_CLASSES + (KT_OT_AddonWarning,)
 
     def register():
         logger = logging.getLogger(__name__)

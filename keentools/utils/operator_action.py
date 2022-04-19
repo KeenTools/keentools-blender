@@ -20,8 +20,8 @@
 import logging
 import bpy
 
-from ..addon_config import get_operator
-from ..facebuilder_config import FBConfig, get_fb_settings, FBErrorType
+from ..addon_config import Config, get_operator, ErrorType
+from ..facebuilder_config import FBConfig, get_fb_settings
 from . import manipulate
 from .coords import update_head_mesh_non_neutral
 from ..facebuilder.utils.cameras import show_all_cameras, exit_localview
@@ -61,8 +61,8 @@ def create_blendshapes(operator):
         counter = create_facs_blendshapes(obj, scale)
     except pkt_module().UnlicensedException:
         logger.error('UnlicensedException generate_facs_blendshapes')
-        warn = get_operator(FBConfig.fb_warning_idname)
-        warn('INVOKE_DEFAULT', msg=FBErrorType.NoLicense)
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
         return {'CANCELLED'}
     except Exception:
         logger.error('UNKNOWN EXCEPTION generate_facs_blendshapes')
@@ -208,8 +208,8 @@ def update_blendshapes(operator):
         except pkt_module().UnlicensedException:
             logger = logging.getLogger(__name__)
             logger.error('UnlicensedException update_blendshapes')
-            warn = get_operator(FBConfig.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=FBErrorType.NoLicense)
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
             return {'CANCELLED'}
         except Exception:
             logger = logging.getLogger(__name__)
