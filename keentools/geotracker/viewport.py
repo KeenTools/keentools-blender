@@ -40,51 +40,51 @@ class GTViewport(KTViewport):
         self._selector = KTScreenRectangleShader2D(bpy.types.SpaceView3D)
         self._draw_update_timer_handler = None
 
-    def register_handlers(cls, context):
-        cls.unregister_handlers()
-        cls.residuals().register_handler(context)
-        cls.points3d().register_handler(context)
-        cls.points2d().register_handler(context)
-        cls.texter().register_handler(context)
-        cls.wireframer().register_handler(context)
-        cls.timeliner().register_handler(context)
-        cls.selector().register_handler(context)
-        cls.register_draw_update_timer(
+    def register_handlers(self, context):
+        self.unregister_handlers()
+        self.residuals().register_handler(context)
+        self.points3d().register_handler(context)
+        self.points2d().register_handler(context)
+        self.texter().register_handler(context)
+        self.wireframer().register_handler(context)
+        self.timeliner().register_handler(context)
+        self.selector().register_handler(context)
+        self.register_draw_update_timer(
             context, time_step=GTConfig.viewport_redraw_interval)
 
-    def unregister_handlers(cls):
-        cls.unregister_draw_update_timer()
-        cls.selector().unregister_handler()
-        cls.timeliner().unregister_handler()
-        cls.wireframer().unregister_handler()
-        cls.texter().unregister_handler()
-        cls.points2d().unregister_handler()
-        cls.points3d().unregister_handler()
-        cls.residuals().unregister_handler()
+    def unregister_handlers(self):
+        self.unregister_draw_update_timer()
+        self.selector().unregister_handler()
+        self.timeliner().unregister_handler()
+        self.wireframer().unregister_handler()
+        self.texter().unregister_handler()
+        self.points2d().unregister_handler()
+        self.points3d().unregister_handler()
+        self.residuals().unregister_handler()
 
     def update_surface_points(
-            cls, gt, obj, keyframe, color=GTConfig.surface_point_color):
-        verts = cls.surface_points_from_mesh(gt, obj, keyframe)
+            self, gt, obj, keyframe, color=GTConfig.surface_point_color):
+        verts = self.surface_points_from_mesh(gt, obj, keyframe)
         colors = [color] * len(verts)
 
         if len(verts) > 0:
             m = np.array(obj.matrix_world, dtype=np.float32).transpose()
             verts = coords.multiply_verts_on_matrix_4x4(verts, m)
 
-        cls.points3d().set_vertices_colors(verts, colors)
-        cls.points3d().create_batch()
+        self.points3d().set_vertices_colors(verts, colors)
+        self.points3d().create_batch()
 
-    def update_pin_sensitivity(cls):
+    def update_pin_sensitivity(self):
         settings = get_gt_settings()
-        cls.POINT_SENSITIVITY = settings.pin_sensitivity
+        self.POINT_SENSITIVITY = settings.pin_sensitivity
 
-    def update_pin_size(cls):
+    def update_pin_size(self):
         settings = get_gt_settings()
-        cls.points2d().set_point_size(settings.pin_size)
-        cls.points3d().set_point_size(
+        self.points2d().set_point_size(settings.pin_size)
+        self.points3d().set_point_size(
             settings.pin_size * GTConfig.surf_pin_size_scale)
 
-    def surface_points_from_mesh(cls, gt, headobj, keyframe):
+    def surface_points_from_mesh(self, gt, headobj, keyframe):
         verts = []
         pins_count = gt.pins_count()
         for i in range(pins_count):
@@ -94,7 +94,7 @@ class GTViewport(KTViewport):
                 verts.append(p)
         return verts
 
-    def img_points(cls, gt, keyframe):
+    def img_points(self, gt, keyframe):
         scene = bpy.context.scene
         w = scene.render.resolution_x
         h = scene.render.resolution_y
@@ -109,7 +109,7 @@ class GTViewport(KTViewport):
                 verts.append((coords.frame_to_image_space(x, y, w, h)))
         return verts
 
-    def create_batch_2d(cls, context):
+    def create_batch_2d(self, context):
         def _add_markers_at_camera_corners(points, vertex_colors):
             points.append(
                 (coords.image_space_to_region(
@@ -123,7 +123,7 @@ class GTViewport(KTViewport):
             vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # left camera corner
             vertex_colors.append((1.0, 0, 1.0, 0.2))  # right camera corner
 
-        points = cls.pins().arr().copy()
+        points = self.pins().arr().copy()
 
         scene = context.scene
         rx = scene.render.resolution_x
@@ -138,27 +138,27 @@ class GTViewport(KTViewport):
 
         vertex_colors = [GTConfig.pin_color for _ in range(len(points))]
 
-        pins = cls.pins()
+        pins = self.pins()
         if pins.current_pin() and pins.current_pin_num() < len(vertex_colors):
             vertex_colors[pins.current_pin_num()] = GTConfig.current_pin_color
 
         if GTConfig.show_markers_at_camera_corners:
             _add_markers_at_camera_corners(points, vertex_colors)
 
-        cls.points2d().set_vertices_colors(points, vertex_colors)
-        cls.points2d().create_batch()
+        self.points2d().set_vertices_colors(points, vertex_colors)
+        self.points2d().create_batch()
 
-    def update_residuals(cls, gt, context, keyframe):
+    def update_residuals(self, gt, context, keyframe):
         scene = bpy.context.scene
         rx = scene.render.resolution_x
         ry = scene.render.resolution_y
 
         x1, y1, x2, y2 = coords.get_camera_border(context)
 
-        p2d = cls.img_points(gt, keyframe)
-        p3d = cls.points3d().get_vertices()
+        p2d = self.img_points(gt, keyframe)
+        p3d = self.points3d().get_vertices()
 
-        wire = cls.residuals()
+        wire = self.residuals()
         wire.clear_vertices()
         wire.edge_lengths = []
         wire.vertices_colors = []
@@ -203,8 +203,8 @@ class GTViewport(KTViewport):
                                        GTConfig.residual_color).tolist()
         wire.create_batch()
 
-    def update_wireframe_colors(cls):
+    def update_wireframe_colors(self):
         settings = get_gt_settings()
-        cls.wireframer().init_color_data((*settings.wireframe_color,
+        self.wireframer().init_color_data((*settings.wireframe_color,
                                           settings.wireframe_opacity))
-        cls.wireframer().create_batches()
+        self.wireframer().create_batches()
