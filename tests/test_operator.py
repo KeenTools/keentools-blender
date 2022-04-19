@@ -29,7 +29,7 @@ class TestsOperator(Operator):
             test_create_head_and_cameras()
         elif self.action == "test_move_pins":
             test_move_pins()
-        elif self.action == "test_delete_last_сamera":
+        elif self.action == "test_delete_last_camera":
             test_delete_last_camera()
         elif self.action == "test_duplicate_and_reconstruct":
             test_duplicate_and_reconstruct()
