@@ -20,7 +20,7 @@ from typing import Tuple
 import bpy
 
 from ...addon_config import Config, geotracker_enabled
-from ..config import GTConfig, get_gt_settings
+from ...geotracker_config import GTConfig, get_gt_settings
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 
 

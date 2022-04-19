@@ -22,7 +22,7 @@ import bpy
 from ..utils import attrs
 from ..utils.ui_redraw import show_ui_panel
 from .fbloader import FBLoader
-from .config import FBConfig, get_fb_settings, FBErrorType
+from ..facebuilder_config import FBConfig, get_fb_settings, FBErrorType
 from ..addon_config import get_operator
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 

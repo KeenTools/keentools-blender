@@ -23,7 +23,7 @@ from ...blender_independent_packages.exifread import process_file
 from ...blender_independent_packages.exifread import \
     DEFAULT_STOP_TAG, FIELD_TYPES
 
-from ..config import FBConfig, get_fb_settings
+from ...facebuilder_config import FBConfig, get_fb_settings
 
 
 # Convert frac record like '16384/32768' to float 0.5

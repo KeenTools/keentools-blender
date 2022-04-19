@@ -19,7 +19,7 @@ import logging
 import bpy
 
 
-class FBTimer:
+class KTTimer:
     _active = False
 
     @classmethod

@@ -19,8 +19,8 @@
 import logging
 import bpy
 
-from .config import GTConfig
-from .utils.geotracker_acts import create_geotracker_act
+from ..geotracker_config import GTConfig
+from .utils.geotracker_acts import create_geotracker_act, enter_pinmode_act
 
 
 class GT_OT_Actor(bpy.types.Operator):
@@ -40,6 +40,15 @@ class GT_OT_Actor(bpy.types.Operator):
 
         if self.action == 'create_geotracker':
             create_geotracker_act()
+            self.report({'INFO'}, self.action)
+            return {'FINISHED'}
+
+        elif self.action == 'enter_pinmode':
+            act_status = enter_pinmode_act()
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+                return {'CANCELLED'}
+
             self.report({'INFO'}, self.action)
             return {'FINISHED'}
 

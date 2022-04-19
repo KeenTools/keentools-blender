@@ -22,7 +22,7 @@ import numpy as np
 import logging
 import os
 
-from ..facebuilder.config import FBConfig
+from ..facebuilder_config import FBConfig
 from ..utils.rig_slider import create_slider, create_rectangle, create_label
 from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
                             xz_to_xy_rotation_matrix_3x3)

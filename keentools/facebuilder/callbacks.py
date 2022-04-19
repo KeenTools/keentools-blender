@@ -20,11 +20,10 @@ import numpy as np
 import bpy
 
 from ..addon_config import get_operator
-from .config import get_fb_settings, FBConfig, FBErrorType
+from ..facebuilder_config import get_fb_settings, FBConfig, FBErrorType
 from .fbloader import FBLoader
 from ..utils import coords
-from ..utils.manipulate import (get_current_headnum,
-                                get_vertex_groups,
+from ..utils.manipulate import (get_vertex_groups,
                                 create_vertex_groups)
 from ..utils.blendshapes import (restore_facs_blendshapes,
                                  disconnect_blendshapes_action)

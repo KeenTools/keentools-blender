@@ -34,7 +34,7 @@ from bpy.props import (
 from bpy.types import PropertyGroup
 
 from ..addon_config import Config, get_addon_preferences
-from .config import FBConfig, get_fb_settings
+from ..facebuilder_config import FBConfig, get_fb_settings
 from .fbloader import FBLoader
 from ..utils import coords
 from .callbacks import (update_mesh_with_dialog,

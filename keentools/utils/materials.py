@@ -20,7 +20,7 @@ import logging
 import bpy
 import numpy as np
 
-from ..facebuilder.config import FBConfig, get_fb_settings
+from ..facebuilder_config import FBConfig, get_fb_settings
 from ..facebuilder.fbloader import FBLoader
 from ..utils.images import load_rgba, find_bpy_image_by_name, assign_pixels_data
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module

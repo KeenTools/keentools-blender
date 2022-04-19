@@ -20,10 +20,10 @@ import logging
 import re
 
 import bpy
-from bpy.types import Panel, Operator
+from bpy.types import Operator
 
 from ...addon_config import Config, get_operator
-from ..config import FBConfig, get_fb_settings, FBErrorType
+from ...facebuilder_config import FBConfig, get_fb_settings, FBErrorType
 from ..callbacks import mesh_update_accepted, mesh_update_canceled
 
 

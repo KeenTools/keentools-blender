@@ -26,7 +26,7 @@ from typing import Tuple
 import bpy
 
 from ...addon_config import Config, get_operator
-from ..config import get_fb_settings, FBConfig, FBErrorType
+from ...facebuilder_config import get_fb_settings, FBConfig, FBErrorType
 from ...blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed,
     updates_downloaded, download_core_zip_async, download_addon_zip_async,

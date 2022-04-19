@@ -105,6 +105,66 @@ def simple_fill_vertex_shader():
     '''
 
 
+def simple_fill_vertex_local_shader():
+    return '''
+    uniform mat4 ModelViewProjectionMatrix;
+    uniform mat4 modelMatrix;
+    #ifdef USE_WORLD_CLIP_PLANES
+    uniform mat4 ModelMatrix;
+    #endif
+
+    in vec3 pos;
+
+    void main()
+    {
+        gl_Position = ModelViewProjectionMatrix * modelMatrix * vec4(pos, 1.0);
+
+    #ifdef USE_WORLD_CLIP_PLANES
+        world_clip_planes_calc_clip_distance((ModelMatrix * modelMatrix * vec4(pos, 1.0)).xyz);
+    #endif
+    }
+    '''
+
+
+def smooth_3d_vertex_local_shader():
+    return '''
+    uniform mat4 ModelViewProjectionMatrix;
+    uniform mat4 modelMatrix;
+
+    #ifdef USE_WORLD_CLIP_PLANES
+    uniform mat4 ModelMatrix;
+    #endif
+
+    in vec3 pos;
+    in vec4 color;
+
+    out vec4 finalColor;
+
+    void main()
+    {
+      gl_Position = ModelViewProjectionMatrix * modelMatrix * vec4(pos, 1.0);
+      finalColor = color;
+
+    #ifdef USE_WORLD_CLIP_PLANES
+      world_clip_planes_calc_clip_distance((ModelMatrix * modelMatrix * vec4(pos, 1.0)).xyz);
+    #endif
+    }
+    '''
+
+
+def smooth_3d_fragment_shader():
+    return '''
+    // Based on gpu.shader.code_from_builtin('3D_SMOOTH_COLOR')['fragment_shader']
+    in vec4 finalColor;
+    out vec4 fragColor;
+    void main()
+    {
+      fragColor = finalColor;
+      fragColor = blender_srgb_to_framebuffer_space(fragColor);
+    }
+    '''
+
+
 def black_fill_fragment_shader():
     return '''
     out vec4 fragColor;

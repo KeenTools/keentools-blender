@@ -20,9 +20,7 @@ import math
 
 import bpy
 
-from ...addon_config import Config
-from ..config import FBConfig
-from ..config import get_fb_settings
+from ...facebuilder_config import FBConfig, get_fb_settings
 from ...utils import attrs
 
 

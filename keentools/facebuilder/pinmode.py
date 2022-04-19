@@ -25,11 +25,11 @@ import bpy
 from ..utils import manipulate, coords
 from .utils import cameras
 from ..addon_config import get_operator
-from .config import FBConfig, get_fb_settings, FBErrorType
+from ..facebuilder_config import FBConfig, get_fb_settings, FBErrorType
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
-from ..utils.other import (FBStopShaderTimer, force_ui_redraw,
-                          hide_viewport_ui_elements_and_store_on_object)
+from ..utils.other import (KTStopShaderTimer, force_ui_redraw,
+                           hide_viewport_ui_elements_and_store_on_object)
 from ..utils.html import split_long_string
 
 
@@ -215,7 +215,6 @@ class FB_OT_PinMode(bpy.types.Operator):
 
     def invoke(self, context, event):
         logger = logging.getLogger(__name__)
-        args = (self, context)
         settings = get_fb_settings()
 
         logger.debug('PINMODE ENTER. CURRENT_HEAD: {} CURRENT_CAM: {}'.format(
@@ -332,14 +331,14 @@ class FB_OT_PinMode(bpy.types.Operator):
             self._init_wireframer_colors(settings.overall_opacity)
             vp.create_batch_2d(context)
             logger.debug("REGISTER SHADER HANDLERS")
-            vp.register_handlers(args, context)
+            vp.register_handlers(context)
 
             context.window_manager.modal_handler_add(self)
 
             logger.debug("SHADER STOPPER START")
             self.pinmode_id = str(uuid4())
             settings.pinmode_id = self.pinmode_id
-            FBStopShaderTimer.start(self.pinmode_id)
+            KTStopShaderTimer.start(self.pinmode_id)
             logger.debug('pinmode_id: {}'.format(self.pinmode_id))
         else:
             logger.debug("SHADER UPDATE ONLY")

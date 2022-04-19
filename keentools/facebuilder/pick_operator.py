@@ -20,7 +20,7 @@ import logging
 import bpy
 
 from ..addon_config import get_operator
-from ..facebuilder.config import FBConfig, FBErrorType, get_fb_settings
+from ..facebuilder_config import FBConfig, FBErrorType, get_fb_settings
 from .fbloader import FBLoader
 from ..utils import coords
 from ..utils.focal_length import configure_focal_mode_and_fixes

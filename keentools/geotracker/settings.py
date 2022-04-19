@@ -21,7 +21,7 @@ from typing import Optional
 import bpy
 from bpy.types import Object, CameraBackgroundImage
 
-from .config import GTConfig, get_gt_settings
+from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
 from ..utils.images import (np_array_from_bpy_image,
                             get_background_image_object,

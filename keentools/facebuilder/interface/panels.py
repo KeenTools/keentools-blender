@@ -16,12 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import re
 from bpy.types import Panel
 
 from .updater import (FBUpdater, FBDownloadNotification, FBDownloadingProblem, FBInstallationReminder)
-from ..config import FBConfig, get_fb_settings
 from ...addon_config import Config, facebuilder_enabled
-import re
+from ...facebuilder_config import FBConfig, get_fb_settings
+
 from ..fbloader import FBLoader
 from ...utils.manipulate import (what_is_state,
                                 get_current_head,

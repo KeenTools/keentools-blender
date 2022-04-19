@@ -18,7 +18,7 @@ import test_utils
 from keentools.facebuilder.settings import model_type_callback, uv_items_callback
 from keentools.utils import coords, materials
 from keentools.addon_config import get_operator
-from keentools.facebuilder.config import FBConfig, get_fb_settings
+from keentools.facebuilder_config import FBConfig, get_fb_settings
 from keentools.facebuilder.fbloader import FBLoader
 from keentools.facebuilder.pick_operator import reset_detected_faces, get_detected_faces
 

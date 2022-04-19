@@ -21,13 +21,13 @@ import numpy as np
 
 import bpy
 
-from .config import FBConfig, get_fb_settings
+from ..facebuilder_config import FBConfig, get_fb_settings
 from ..utils.coords import xy_to_xz_rotation_matrix_3x3
 from ..utils.focal_length import (configure_focal_mode_and_fixes,
                                   update_camera_focal)
 from ..utils import attrs, coords
 from ..facebuilder.utils.exif_reader import reload_all_camera_exif
-from ..utils.other import FBStopShaderTimer, unhide_viewport_ui_element_from_object
+from ..utils.other import KTStopShaderTimer, unhide_viewport_ui_element_from_object
 from .viewport import FBViewport
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
@@ -113,7 +113,7 @@ class FBLoader:
     def stop_viewport_shaders(cls):
         vp = cls.viewport()
         vp.unregister_handlers()
-        FBStopShaderTimer.stop()
+        KTStopShaderTimer.stop()
         logger = logging.getLogger(__name__)
         logger.debug('VIEWPORT SHADERS/STOPPER HAS BEEN STOPPED')
 

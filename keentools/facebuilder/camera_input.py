@@ -2,7 +2,7 @@ import numpy as np
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
-from .config import get_fb_settings
+from ..facebuilder_config import get_fb_settings
 
 
 class FaceBuilderCameraInput(pkt_module().FaceBuilderCameraInputI):

@@ -22,7 +22,7 @@ import bpy
 
 from ..utils import manipulate, coords
 from .fbloader import FBLoader
-from ..facebuilder.config import FBConfig, get_fb_settings
+from ..facebuilder_config import FBConfig, get_fb_settings
 
 from functools import wraps
 
@@ -91,8 +91,6 @@ class FB_OT_MovePin(bpy.types.Operator):
         return None
 
     def init_action(self, context, mouse_x, mouse_y):
-        args = (self, context)
-
         settings = get_fb_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
@@ -113,7 +111,7 @@ class FB_OT_MovePin(bpy.types.Operator):
         FBLoader.load_pins_into_viewport(headnum, camnum)
 
         vp.create_batch_2d(context)
-        vp.register_handlers(args, context)
+        vp.register_handlers(context)
 
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
         vp.pins().set_current_pin((x, y))

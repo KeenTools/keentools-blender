@@ -17,8 +17,8 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
-from ..config import FBConfig
 from ...addon_config import Config
+from ...facebuilder_config import FBConfig
 
 _help_window_width = 500
 

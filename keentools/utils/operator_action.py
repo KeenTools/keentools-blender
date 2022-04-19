@@ -21,7 +21,7 @@ import logging
 import bpy
 
 from ..addon_config import get_operator
-from ..facebuilder.config import FBConfig, get_fb_settings, FBErrorType
+from ..facebuilder_config import FBConfig, get_fb_settings, FBErrorType
 from . import manipulate
 from .coords import update_head_mesh_non_neutral
 from ..facebuilder.utils.cameras import show_all_cameras, exit_localview

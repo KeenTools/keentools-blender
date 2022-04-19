@@ -20,7 +20,7 @@ import logging
 import bpy
 
 from ..addon_config import get_operator
-from .config import GTConfig, get_gt_settings
+from ..geotracker_config import GTConfig, get_gt_settings
 
 
 class ButtonOperator:

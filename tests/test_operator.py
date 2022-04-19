@@ -2,9 +2,8 @@ import bpy
 from bpy.types import Panel, Operator
 from bpy.props import StringProperty, IntProperty
 
-import keentools
 from keentools.addon_config import get_operator
-from keentools.facebuilder.config import FBConfig, get_fb_settings, FBErrorType
+from keentools.facebuilder_config import FBConfig, get_fb_settings, FBErrorType
 import keentools.utils.coords as coords
 from keentools.utils.fake_context import get_fake_context
 from keentools.facebuilder.fbloader import FBLoader
