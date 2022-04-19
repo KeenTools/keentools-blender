@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
+import logging
 import re
 import bpy
 from ..addon_config import Config, get_operator, ErrorType
@@ -95,7 +95,7 @@ _ERROR_MESSAGES = {
                 'An unknown error encountered. The downloaded files might be corrupted. ',
                 'You can try downloading them again, '
                 'restarting Blender or installing the update manually.',
-                'If you want to manually update the add-on: remove the old add-on, '
+                'If you want to manually update the add-on: remove the old add-on, ',
                 'restart Blender and install the new version of the add-on.'
             ],
     },
@@ -138,9 +138,15 @@ class KT_OT_AddonWarning(bpy.types.Operator):
         op('EXEC_DEFAULT')
         return {'FINISHED'}
 
+    def _output_error_to_console(self):
+        logger = logging.getLogger(__name__)
+        logger.error('KT_OT_AddonWarning: {}\n---\n'
+                     '{}\n---'.format(self.msg,'\n'.join(self.content)))
+
     def invoke(self, context, event):
         if self.msg == ErrorType.CustomMessage:
-            self.set_content(re.split("\r\n|\n", self.msg_content))
+            self.set_content(re.split('\r\n|\n', self.msg_content))
+            self._output_error_to_console()
             return context.window_manager.invoke_props_dialog(self, width=self.msg_width)
 
         if self.msg not in _ERROR_MESSAGES.keys():
@@ -148,5 +154,6 @@ class KT_OT_AddonWarning(bpy.types.Operator):
 
         message_dict = _ERROR_MESSAGES[self.msg]
         self.set_content(message_dict['message'])
+        self._output_error_to_console()
         return context.window_manager.invoke_props_dialog(
             self, width=message_dict['width'])
