@@ -26,6 +26,7 @@ from ...addon_config import get_operator
 from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
 from ...utils.manipulate import switch_to_camera
+from ...utils.other import hide_viewport_ui_elements_and_store_on_object
 
 
 @dataclass(frozen=True)
@@ -91,7 +92,7 @@ def enter_pinmode_act() -> ActionStatus:
         GTLoader.place_camera()
         switch_to_camera(bpy.context, geotracker.camobj,
                          geotracker.animatable_object())
-        # set_overlays(False)
+        hide_viewport_ui_elements_and_store_on_object(geotracker.geomobj)
 
         # set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
 

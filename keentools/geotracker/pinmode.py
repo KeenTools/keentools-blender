@@ -27,6 +27,7 @@ from .gtloader import GTLoader
 from ..utils.manipulate import exit_context_localview, set_overlays
 from ..utils import coords
 from .utils.animation import create_locrot_keyframe
+from ..utils.other import unhide_viewport_ui_element_from_object
 
 
 class GT_OT_PinMode(bpy.types.Operator):
@@ -76,7 +77,8 @@ class GT_OT_PinMode(bpy.types.Operator):
         vp = GTLoader.viewport()
         vp.unregister_handlers()
         exit_context_localview(context)
-        set_overlays(True)
+        if geotracker.geomobj:
+            unhide_viewport_ui_element_from_object(geotracker.geomobj)
         GTLoader.save_geotracker()
 
     def _on_left_mouse_press(self, context, event):

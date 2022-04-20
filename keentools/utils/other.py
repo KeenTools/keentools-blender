@@ -19,6 +19,8 @@ import logging
 import time
 import bpy
 
+from ..addon_config import Config
+from ..facebuilder_config import get_fb_settings
 from .edges import (KTEdgeShader2D,
                     KTScreenRectangleShader2D,
                     KTEdgeShaderAll2D,
@@ -26,7 +28,6 @@ from .edges import (KTEdgeShader2D,
                     KTEdgeShaderLocal3D)
 from ..facebuilder.utils.edges import FBRectangleShader2D, FBRasterEdgeShader3D
 from .points import KTPoints2D, KTPoints3D
-from ..facebuilder_config import FBConfig, get_fb_settings
 from ..utils.attrs import set_custom_attribute, get_safe_custom_attribute
 from ..utils.timer import KTTimer
 from ..utils.ui_redraw import force_ui_redraw
@@ -101,7 +102,7 @@ def _force_hide_ui_elements():
 
 def hide_viewport_ui_elements_and_store_on_object(obj):
     state = _get_viewport_ui_state()
-    set_custom_attribute(obj, FBConfig.viewport_state_prop_name, state)
+    set_custom_attribute(obj, Config.viewport_state_prop_name, state)
     _force_hide_ui_elements()
 
 
@@ -114,7 +115,7 @@ def unhide_viewport_ui_element_from_object(obj):
                 values[name] = states[name]
         return values
 
-    attr_value = get_safe_custom_attribute(obj, FBConfig.viewport_state_prop_name)
+    attr_value = get_safe_custom_attribute(obj, Config.viewport_state_prop_name)
     if attr_value is None:
         _force_show_ui_elements()  # For old version compatibility
         return
