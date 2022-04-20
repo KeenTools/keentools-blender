@@ -23,6 +23,7 @@ from ..geotracker_config import GTConfig, get_gt_settings
 from .settings import FileListItem, GeoTrackerItem, SceneSettings
 from .actor import GT_OT_Actor
 from .pinmode import GT_OT_PinMode
+from .movepin import GT_OT_MovePin
 from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
 from .operators import BUTTON_CLASSES
 
@@ -31,6 +32,7 @@ CLASSES_TO_REGISTER = (FileListItem,
                        GeoTrackerItem,
                        GT_OT_Actor,
                        GT_OT_PinMode,
+                       GT_OT_MovePin,
                        SceneSettings) + BUTTON_CLASSES + INTERFACE_CLASSES
 
 

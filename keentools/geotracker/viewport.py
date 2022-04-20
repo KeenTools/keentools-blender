@@ -183,7 +183,7 @@ class GTViewport(KTViewport):
         transform = np.array(m.transposed()) @ projection
 
         # Calc projection
-        vv = coords.multiply_verts_on_matrix_4x4(p3d, transform)
+        vv = coords.to_homogeneous(p3d) @ transform
         vv = (vv.T / vv[:, 3]).T
 
         verts2 = []
