@@ -86,7 +86,6 @@ class FBConfig:
     fb_history_actor_idname = operators + '.history_actor'
     fb_camera_actor_idname = operators + '.camera_actor'
 
-    fb_warning_idname = operators + '.addon_warning'
     fb_blendshapes_warning_idname = operators + '.blendshapes_warning'
     fb_noblenshapes_until_expression_warning_idname = operators + \
         '.no_blenshapes_until_expression_warning'
@@ -245,16 +244,3 @@ class FBConfig:
 
 def get_fb_settings():
     return getattr(bpy.context.scene, FBConfig.fb_global_var_name)
-
-
-class FBErrorType:
-    Unknown = -1
-    CustomMessage = 0
-    NoLicense = 1
-    SceneDamaged = 2
-    CannotReconstruct = 3
-    CannotCreateObject = 4
-    MeshCorrupted = 5
-    PktProblem = 6
-    PktModelProblem = 7
-    DownloadingProblem = 8

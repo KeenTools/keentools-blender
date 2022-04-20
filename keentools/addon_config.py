@@ -32,7 +32,6 @@ class Config:
     operators = 'keentools'
     prefs_operators = 'keentools_preferences'
     addon_name = __package__  # the same as module name
-    addon_human_readable_name = 'KeenTools'
 
     updater_preferences_dict_name = 'keentools_updater'
 
@@ -42,6 +41,7 @@ class Config:
     manual_install_url = keentools_website_url + '/manual-installation'
     pykeentools_license_url = 'https://link.keentools.io/eula'
 
+    kt_warning_idname = operators + '.common_addon_warning'
     kt_addon_settings_idname = operators + '.addon_settings'
     kt_open_url_idname = operators + '.open_url'
     kt_uninstall_core_idname = operators + '.uninstall_core'
@@ -114,3 +114,16 @@ def get_operator(operator_id_name):
             return getattr(obj, attr, *args)
         return functools.reduce(_getattr, [obj] + attr.split('.'))
     return _rgetattr(bpy.ops, operator_id_name)
+
+
+class ErrorType:
+    Unknown = -1
+    CustomMessage = 0
+    NoLicense = 1
+    SceneDamaged = 2
+    CannotReconstruct = 3
+    CannotCreateObject = 4
+    MeshCorrupted = 5
+    PktProblem = 6
+    PktModelProblem = 7
+    DownloadingProblem = 8

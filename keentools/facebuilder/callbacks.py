@@ -19,8 +19,8 @@ import logging
 import numpy as np
 import bpy
 
-from ..addon_config import get_operator
-from ..facebuilder_config import get_fb_settings, FBConfig, FBErrorType
+from ..addon_config import Config, get_operator, ErrorType
+from ..facebuilder_config import get_fb_settings, FBConfig
 from .fbloader import FBLoader
 from ..utils import coords
 from ..utils.manipulate import (get_vertex_groups,
@@ -56,8 +56,8 @@ def mesh_update_accepted(headnum):
             logger.debug('blendshapes_restored: {}'.format(counter))
         except pkt_module().UnlicensedException:
             logger.error('UnlicensedException restore_facs_blendshapes')
-            warn = get_operator(FBConfig.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=FBErrorType.NoLicense)
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
         except Exception:
             logger.error('UNKNOWN EXCEPTION restore_facs_blendshapes')
 
@@ -148,8 +148,8 @@ def _update_mesh_now(headnum):
                         'Please check if there are no other processes\n' \
                         'using face data at the moment.\n' \
                         'If that doesn\'t help, please reinstall the add-on.'
-        warn = get_operator(FBConfig.fb_warning_idname)
-        warn('INVOKE_DEFAULT', msg=FBErrorType.CustomMessage,
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=error_message)
         return False
     except Exception as err:
@@ -278,8 +278,8 @@ def update_expression_view(self, context):
             'Unfortunately, using expressions for a model\n' \
             'that has FACS blendshapes is impossible. \n' \
             'Please remove blendshapes before choosing an expression.'
-        warn = get_operator(FBConfig.fb_warning_idname)
-        warn('INVOKE_DEFAULT', msg=FBErrorType.CustomMessage,
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=error_message)
         return
     update_expressions(self, context)

@@ -2,8 +2,8 @@ import bpy
 from bpy.types import Panel, Operator
 from bpy.props import StringProperty, IntProperty
 
-from keentools.addon_config import get_operator
-from keentools.facebuilder_config import FBConfig, get_fb_settings, FBErrorType
+from keentools.addon_config import Config, get_operator, ErrorType
+from keentools.facebuilder_config import FBConfig, get_fb_settings
 import keentools.utils.coords as coords
 from keentools.utils.fake_context import get_fake_context
 from keentools.facebuilder.fbloader import FBLoader
@@ -29,12 +29,12 @@ class TestsOperator(Operator):
             test_create_head_and_cameras()
         elif self.action == "test_move_pins":
             test_move_pins()
-        elif self.action == "test_delete_last_сamera":
+        elif self.action == "test_delete_last_camera":
             test_delete_last_camera()
         elif self.action == "test_duplicate_and_reconstruct":
             test_duplicate_and_reconstruct()
         elif self.action == "test_error_message":
-            warn = get_operator(FBConfig.fb_warning_idname)
+            warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=self.error_type)
         return {'FINISHED'}
 
@@ -50,15 +50,15 @@ class TestsPanel(Panel):
 
     def _draw_error_buttons(self, layout):
         layout.label(text='Error Messages')
-        for err in dir(FBErrorType):
-            if not callable(getattr(FBErrorType, err)) and \
+        for err in dir(ErrorType):
+            if not callable(getattr(ErrorType, err)) and \
                     not err.startswith('__'):
                 name = "{}".format(err)
-                value = getattr(FBErrorType, err)
+                value = getattr(ErrorType, err)
                 op = layout.operator('object.keentools_fb_tests',
                                      text="{}: {}".format(value, name))
                 op.action = "test_error_message"
-                op.error_type = getattr(FBErrorType, name)
+                op.error_type = getattr(ErrorType, name)
 
 
     # Face Builder Tests Panel Draw

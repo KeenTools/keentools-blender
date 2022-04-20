@@ -25,8 +25,8 @@ from typing import Tuple
 
 import bpy
 
-from ...addon_config import Config, get_operator
-from ...facebuilder_config import get_fb_settings, FBConfig, FBErrorType
+from ...addon_config import Config, get_operator, ErrorType
+from ...facebuilder_config import get_fb_settings, FBConfig
 from ...blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed,
     updates_downloaded, download_core_zip_async, download_addon_zip_async,
@@ -489,8 +489,8 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
         if not bpy.data.is_dirty or settings.not_save_changes:
             _clear_updater_info()
             if not updates_downloaded():
-                warn = get_operator(FBConfig.fb_warning_idname)
-                warn('INVOKE_DEFAULT', msg=FBErrorType.DownloadingProblem)
+                warn = get_operator(Config.kt_warning_idname)
+                warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
                 _clear_updater_info()
                 CurrentStateExecutor.compute_current_panel_updater_state()
                 return {'CANCELLED'}

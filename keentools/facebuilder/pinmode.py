@@ -22,10 +22,10 @@ import numpy as np
 
 import bpy
 
+from ..addon_config import Config, get_operator, ErrorType
+from ..facebuilder_config import FBConfig, get_fb_settings
 from ..utils import manipulate, coords
 from .utils import cameras
-from ..addon_config import get_operator
-from ..facebuilder_config import FBConfig, get_fb_settings, FBErrorType
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
 from ..utils.other import (KTStopShaderTimer, force_ui_redraw,
@@ -106,8 +106,8 @@ class FB_OT_PinMode(bpy.types.Operator):
         if heads_deleted > 0 or cams_deleted > 0:
             logger.warning("HEADS AND CAMERAS FIXED")
         if heads_deleted == 0:
-            warn = get_operator(FBConfig.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=FBErrorType.SceneDamaged)
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
 
     def _init_wireframer_colors(self, opacity):
         settings = get_fb_settings()
@@ -284,8 +284,8 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.error('DESERIALIZE load_model_throw_exception: \n'
                          '{}'.format(str(err)))
             error_message = '\n'.join(split_long_string(str(err), limit=64))
-            warn = get_operator(FBConfig.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=FBErrorType.CustomMessage,
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
                  msg_content=error_message)
             return {'CANCELLED'}
 
@@ -297,8 +297,8 @@ class FB_OT_PinMode(bpy.types.Operator):
             FBLoader.out_pinmode_without_save(self.headnum)
             cameras.exit_localview(context)
 
-            warn = get_operator(FBConfig.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=FBErrorType.MeshCorrupted)
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
             return {'CANCELLED'}
 
         fb = FBLoader.get_builder()
@@ -390,8 +390,8 @@ class FB_OT_PinMode(bpy.types.Operator):
             settings.force_out_pinmode = False
             if settings.license_error:
                 # Show License Warning
-                warn = get_operator(FBConfig.fb_warning_idname)
-                warn('INVOKE_DEFAULT', msg=FBErrorType.NoLicense)
+                warn = get_operator(Config.kt_warning_idname)
+                warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
                 settings.license_error = False
                 settings.hide_user_preferences()
             return True

@@ -19,9 +19,9 @@
 import logging
 import bpy
 
+from ..addon_config import Config, get_operator, ErrorType
+from ..facebuilder_config import FBConfig, get_fb_settings
 from ..facebuilder.fbloader import FBLoader
-from ..addon_config import get_operator
-from ..facebuilder_config import FBConfig, get_fb_settings, FBErrorType
 from . import attrs
 from ..facebuilder.utils import cameras
 from ..facebuilder.utils.exif_reader import (read_exif_to_camera, auto_setup_camera_from_exif)
@@ -167,8 +167,8 @@ def check_settings():
     if not settings.check_heads_and_cams():
         heads_deleted, cams_deleted = settings.fix_heads()
         if heads_deleted == 0:
-            warn = get_operator(FBConfig.fb_warning_idname)
-            warn('INVOKE_DEFAULT', msg=FBErrorType.SceneDamaged)
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
         return False
     return True
 
@@ -288,8 +288,8 @@ def reconstruct_by_head():
         scene.render.resolution_x = rx
         scene.render.resolution_y = ry
         logger.info("SCENE PARAMETERS RESTORED")
-        warn = get_operator(FBConfig.fb_warning_idname)
-        warn('INVOKE_DEFAULT', msg=FBErrorType.CannotReconstruct)
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CannotReconstruct)
         return
 
 
