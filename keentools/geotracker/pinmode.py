@@ -152,12 +152,8 @@ class GT_OT_PinMode(bpy.types.Operator):
         logger.debug('GEOTRACKER PINMODE ENTER')
 
         vp = GTLoader.viewport()
-        # Stopped shaders means that we need to restart pinmode
-        if not vp.wireframer().is_working():
-            settings.pinmode = False
-
-        if settings.wrong_pinmode_id():
-            settings.pinmode = False
+        if settings.pinmode:
+            vp.unregister_handlers()
 
         settings.pinmode = True
         self.pinmode_id = str(uuid4())
@@ -166,11 +162,10 @@ class GT_OT_PinMode(bpy.types.Operator):
         if not GTLoader.load_geotracker():
             GTLoader.new_kt_geotracker()
 
-        logger.debug("START SHADERS")
+        logger.debug('START SHADERS')
         GTLoader.load_pins_into_viewport()
         vp.create_batch_2d(context)
-        logger.debug("REGISTER SHADER HANDLERS")
-
+        logger.debug('REGISTER SHADER HANDLERS')
         GTLoader.update_all_viewport_shaders(context)
         vp.register_handlers(context)
 
@@ -184,6 +179,11 @@ class GT_OT_PinMode(bpy.types.Operator):
     def modal(self, context, event):
         logger = logging.getLogger(__name__)
         settings = get_gt_settings()
+
+        if self.pinmode_id != settings.pinmode_id:
+            logger.error('Extreme GeoTracker pinmode operator stop')
+            logger.error('{} != {}'.format(self.pinmode_id, settings.pinmode_id))
+            return {'FINISHED'}
 
         if not context.space_data:
             logger.debug('VIEWPORT IS CLOSED')
@@ -227,11 +227,6 @@ class GT_OT_PinMode(bpy.types.Operator):
             GTLoader.geomobj_world_matrix_changed(update=True)
             GTLoader.tag_redraw(context)
             return {'PASS_THROUGH'}
-
-        if self.pinmode_id != settings.pinmode_id:
-            logger.error('Extreme pinmode operator stop')
-            logger.error('{} != {}'.format(self.pinmode_id, settings.pinmode_id))
-            return {'FINISHED'}
 
         if GTLoader.geomobj_mode_changed_to_object():
             logger.debug('RETURNED TO OBJECT_MODE')
