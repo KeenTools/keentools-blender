@@ -136,7 +136,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         self.focal_length_estimation = False
 
 
-class SceneSettings(bpy.types.PropertyGroup):
+class GTSceneSettings(bpy.types.PropertyGroup):
     pinmode: bpy.props.BoolProperty(name='Pinmode status', default=False)
     pin_move_mode: bpy.props.BoolProperty(name='Pin move mode status', default=False)
     pinmode_id: bpy.props.StringProperty(name='Unique pinmode ID')
