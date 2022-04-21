@@ -20,7 +20,7 @@ import logging
 import bpy
 
 from ..geotracker_config import GTConfig, get_gt_settings
-from .settings import FileListItem, GeoTrackerItem, SceneSettings
+from .settings import FileListItem, GeoTrackerItem, GTSceneSettings
 from .actor import GT_OT_Actor
 from .pinmode import GT_OT_PinMode
 from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
@@ -31,12 +31,12 @@ CLASSES_TO_REGISTER = (FileListItem,
                        GeoTrackerItem,
                        GT_OT_Actor,
                        GT_OT_PinMode,
-                       SceneSettings) + BUTTON_CLASSES + INTERFACE_CLASSES
+                       GTSceneSettings) + BUTTON_CLASSES + INTERFACE_CLASSES
 
 
 def _add_addon_settings_var():
     setattr(bpy.types.Scene, GTConfig.gt_global_var_name,
-            bpy.props.PointerProperty(type=SceneSettings))
+            bpy.props.PointerProperty(type=GTSceneSettings))
 
 
 def _remove_addon_settings_var():
