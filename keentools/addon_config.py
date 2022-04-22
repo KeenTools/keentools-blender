@@ -61,6 +61,7 @@ class Config:
     kt_floating_connect_idname = prefs_operators + '.floating_connect'
     # Object Custom Properties
     core_version_prop_name = _company + '_version'
+    viewport_state_prop_name = _company + '_viewport_state'
 
     # Constants
     surf_pin_size_scale = 0.85

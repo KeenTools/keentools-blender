@@ -169,7 +169,6 @@ class FBConfig:
 
     # Object Custom Properties
     version_prop_name = _company + '_version'
-    viewport_state_prop_name = _company + '_viewport_state'
     fb_serial_prop_name = prefix + '_serial'
     fb_images_prop_name = prefix + '_images'
     fb_dir_prop_name = prefix + '_dir'
