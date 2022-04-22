@@ -89,13 +89,13 @@ class KTEdgeShaderBase:
         self.edges_colors = np.full(
             (len(self.edges_vertices), 4), color).tolist()
 
-    def register_handler(self, context):
-        self._work_area = context.area
+    def register_handler(self, area):
+        self._work_area = area
 
         if self.draw_handler is not None:
             self.unregister_handler()
         self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, (context,), 'WINDOW', 'POST_VIEW')
+            self.draw_callback, (area,), 'WINDOW', 'POST_VIEW')
         self.add_handler_list(self.draw_handler)
 
     def unregister_handler(self):
@@ -122,7 +122,7 @@ class KTEdgeShaderBase:
     def init_shaders(self):
         pass
 
-    def draw_callback(self, context):
+    def draw_callback(self, area):
         pass
 
     def hide_shader(self):
@@ -153,7 +153,7 @@ class KTEdgeShader2D(KTEdgeShaderBase):
         self.line_shader = gpu.types.GPUShader(
             residual_vertex_shader(), residual_fragment_shader())
 
-    def draw_callback(self, context):
+    def draw_callback(self, area):
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
@@ -162,7 +162,7 @@ class KTEdgeShader2D(KTEdgeShaderBase):
         if self.line_shader is None or self.line_batch is None:
             return
 
-        if self._work_area != context.area:
+        if self._work_area != area:
             return
 
         bgl.glEnable(bgl.GL_BLEND)
@@ -183,13 +183,13 @@ class KTEdgeShader2D(KTEdgeShaderBase):
              'lineLength': self.edge_lengths}
         )
 
-    def register_handler(self, context):
-        self._work_area = context.area
+    def register_handler(self, area):
+        self._work_area = area
 
         if self.draw_handler is not None:
             self.unregister_handler()
         self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, (context,), 'WINDOW', 'POST_PIXEL')
+            self.draw_callback, (area,), 'WINDOW', 'POST_PIXEL')
         self.add_handler_list(self.draw_handler)
 
 
@@ -208,7 +208,7 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
             solid_line_vertex_shader(), solid_line_fragment_shader())
         self.fill_shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
 
-    def draw_callback(self, context):
+    def draw_callback(self, area):
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
@@ -217,7 +217,7 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
         if self.line_shader is None or self.line_batch is None:
             return
 
-        if self._work_area != context.area:
+        if self._work_area != area:
             return
 
         bgl.glEnable(bgl.GL_BLEND)
@@ -283,7 +283,7 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
     def _get_region(self, area):
         return area.regions[3]
 
-    def draw_callback(self, context):
+    def draw_callback(self, area):
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
@@ -292,15 +292,15 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
         if self.line_shader is None or self.line_batch is None:
             return
 
-        if not context.area:
+        if not area:
             return
 
-        reg = self._get_region(context.area)
+        reg = self._get_region(area)
         current_state = (reg.view2d.view_to_region(0, 0, clip=False),
                          reg.view2d.view_to_region(100, 0, clip=False))
         if self._batch_needs_update or current_state != self._state:
             self._state = current_state
-            self._update_keyframe_lines(context.area)
+            self._update_keyframe_lines(area)
             self._batch_needs_update = False
             self.create_batch()
 
@@ -320,7 +320,7 @@ class KTEdgeShader3D(KTEdgeShaderBase):
     def draw_edges(self):
         self.line_batch.draw(self.line_shader)
 
-    def draw_callback(self, context):
+    def draw_callback(self, area):
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
@@ -330,7 +330,7 @@ class KTEdgeShader3D(KTEdgeShaderBase):
                 or self.fill_shader is None or self.fill_batch is None:
             return
 
-        if self._work_area != context.area:
+        if self._work_area != area:
             return
 
         bgl.glEnable(bgl.GL_BLEND)

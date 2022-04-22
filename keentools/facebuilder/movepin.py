@@ -73,7 +73,7 @@ class FB_OT_MovePin(bpy.types.Operator):
         camnum = self.get_camnum()
         kid = settings.get_keyframe(headnum, camnum)
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context.area)
 
         pin = FBLoader.get_builder().add_pin(
             kid, (coords.image_space_to_frame(x, y))
@@ -104,16 +104,16 @@ class FB_OT_MovePin(bpy.types.Operator):
             return {'CANCELLED'}
 
         vp = FBLoader.viewport()
-        vp.update_view_relative_pixel_size(context)
+        vp.update_view_relative_pixel_size(context.area)
 
         FBLoader.load_model(headnum)
         FBLoader.place_camera(headnum, camnum)
         FBLoader.load_pins_into_viewport(headnum, camnum)
 
-        vp.create_batch_2d(context)
-        vp.register_handlers(context)
+        vp.create_batch_2d(context.area)
+        vp.register_handlers(context.area)
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context.area)
         vp.pins().set_current_pin((x, y))
 
         nearest, dist2 = coords.nearest_point(x, y, vp.pins().arr())
@@ -130,7 +130,7 @@ class FB_OT_MovePin(bpy.types.Operator):
         head = settings.get_head(headnum)
         kid = head.get_keyframe(camnum)
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context.area)
         vp = FBLoader.viewport()
         pins = vp.pins()
         if pins.current_pin() is not None:
@@ -155,7 +155,7 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         # Load 3D pins
         vp.update_surface_points(fb, head.headobj, kid)
-        vp.update_residuals(fb, head.headobj, kid, context)
+        vp.update_residuals(fb, head.headobj, kid, context.area)
         head.mark_model_changed_by_pinmode()
 
         pins.reset_current_pin()
@@ -164,7 +164,7 @@ class FB_OT_MovePin(bpy.types.Operator):
     @staticmethod
     def _pin_drag(kid, context, mouse_x, mouse_y):
         fb = FBLoader.get_builder()
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context.area)
         pins = FBLoader.viewport().pins()
         pins.set_current_pin((x, y))
         pin_idx = pins.current_pin_num()
@@ -194,7 +194,7 @@ class FB_OT_MovePin(bpy.types.Operator):
         vp.wireframer().init_geom_data_from_fb(fb, headobj, kid)
         vp.wireframer().update_edges_vertices()
         vp.wireframer().create_batches()
-        vp.create_batch_2d(context)
+        vp.create_batch_2d(context.area)
         vp.update_surface_points(fb, headobj, kid)
 
         # Try to force viewport redraw
@@ -234,7 +234,7 @@ class FB_OT_MovePin(bpy.types.Operator):
             context, event.mouse_region_x, event.mouse_region_y)
         if ret in {'CANCELLED', 'FINISHED'}:
             return ret
-        FBLoader.viewport().create_batch_2d(context)
+        FBLoader.viewport().create_batch_2d(context.area)
         context.window_manager.modal_handler_add(self)
         logger.debug("START PIN MOVING")
         return {"RUNNING_MODAL"}

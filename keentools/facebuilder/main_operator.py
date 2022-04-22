@@ -174,7 +174,7 @@ class FB_OT_CenterGeo(Operator):
         manipulate.push_head_in_undo_history(settings.get_head(headnum),
                                              'Reset Camera.')
 
-        FBLoader.update_viewport_shaders(context, headnum, camnum)
+        FBLoader.update_viewport_shaders(context.area, headnum, camnum)
         return {'FINISHED'}
 
 
@@ -211,7 +211,7 @@ class FB_OT_Unmorph(Operator):
 
         if settings.pinmode:
             FBLoader.load_pins_into_viewport(headnum, camnum)
-            FBLoader.update_viewport_shaders(context, headnum, camnum)
+            FBLoader.update_viewport_shaders(context.area, headnum, camnum)
 
         manipulate.push_head_in_undo_history(
             settings.get_head(headnum), 'After Reset')
@@ -249,7 +249,7 @@ class FB_OT_RemovePins(Operator):
         FBLoader.save_fb_serial_and_image_pathes(headnum)
         FBLoader.update_camera_pins_count(headnum, camnum)
         FBLoader.load_pins_into_viewport(headnum, camnum)
-        FBLoader.update_viewport_shaders(context, headnum, camnum)
+        FBLoader.update_viewport_shaders(context.area, headnum, camnum)
 
         manipulate.push_head_in_undo_history(
             settings.get_head(headnum), 'Remove pins')
@@ -573,7 +573,7 @@ class FB_OT_ResetExpression(Operator):
 
         FBLoader.save_fb_serial_and_image_pathes(self.headnum)
         coords.update_head_mesh_non_neutral(fb, head)
-        FBLoader.update_viewport_shaders(context, self.headnum, self.camnum)
+        FBLoader.update_viewport_shaders(context.area, self.headnum, self.camnum)
 
         manipulate.push_head_in_undo_history(head, 'Reset Expression.')
 

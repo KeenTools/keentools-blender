@@ -45,7 +45,7 @@ class GT_OT_MovePin(bpy.types.Operator):
 
         frame = settings.current_frame()
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context.area)
 
         pin = GTLoader.add_pin(
             frame, (coords.image_space_to_frame(x, y))
@@ -88,11 +88,11 @@ class GT_OT_MovePin(bpy.types.Operator):
         new_keyframe_flag = self._auto_keyframe_add()
 
         vp = GTLoader.viewport()
-        vp.update_view_relative_pixel_size(context)
+        vp.update_view_relative_pixel_size(context.area)
 
         GTLoader.load_pins_into_viewport()
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context.area)
         vp.pins().set_current_pin((x, y))
 
         nearest, dist2 = coords.nearest_point(x, y, vp.pins().arr())
@@ -107,15 +107,15 @@ class GT_OT_MovePin(bpy.types.Operator):
                     self._remove_keyframe()
                 return False
 
-        vp.create_batch_2d(context)
-        vp.register_handlers(context)
+        vp.create_batch_2d(context.area)
+        vp.register_handlers(context.area)
         return True
 
 
     def on_left_mouse_release(self, context, event):
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context.area)
         vp = GTLoader.viewport()
         pins = vp.pins()
         if pins.current_pin() is not None:
@@ -126,13 +126,13 @@ class GT_OT_MovePin(bpy.types.Operator):
         GTLoader.spring_pins_back()
         GTLoader.save_geotracker()
 
-        GTLoader.update_all_viewport_shaders(context)
+        GTLoader.update_all_viewport_shaders(context.area)
         GTLoader.tag_redraw(context)
         return self._end_finished()
 
     @staticmethod
     def _pin_drag(kid, context, mouse_x, mouse_y):
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context.area)
         pins = GTLoader.viewport().pins()
         pins.set_current_pin((x, y))
         pin_idx = pins.current_pin_num()
@@ -183,8 +183,8 @@ class GT_OT_MovePin(bpy.types.Operator):
             wf.init_geom_data_from_mesh(geotracker.geomobj)
             wf.create_batches()
 
-        vp.create_batch_2d(context)
-        vp.update_residuals(gt, context, frame)
+        vp.create_batch_2d(context.area)
+        vp.update_residuals(gt, context.area, frame)
         GTLoader.tag_redraw(context)
         return self.on_default_modal()
 
@@ -206,7 +206,7 @@ class GT_OT_MovePin(bpy.types.Operator):
             return {'CANCELLED'}
 
         self._pin_move_mode_on()
-        GTLoader.viewport().create_batch_2d(context)
+        GTLoader.viewport().create_batch_2d(context.area)
         context.window_manager.modal_handler_add(self)
         logger.debug('START PIN MOVING')
         return {'RUNNING_MODAL'}

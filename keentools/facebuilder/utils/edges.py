@@ -68,11 +68,11 @@ class FBRectangleShader2D(KTEdgeShader2D):
         for i, rect in enumerate(self._rectangles):
             rect[6] = (*color,) if i == index else (*rect[7],)
 
-    def prepare_shader_data(self, context):
+    def prepare_shader_data(self, area):
         rect_points = []
         rect_colors = []
 
-        rx1, ry1, rx2, ry2 = coords.get_camera_border(context)
+        rx1, ry1, rx2, ry2 = coords.get_camera_border(area)
 
         for x1, y1, x2, y2, w, h, col1, col2 in self._rectangles:
             points = [(x1, y1), (x1, y2), (x2, y2), (x2, y1)]
@@ -94,7 +94,7 @@ class FBRectangleShader2D(KTEdgeShader2D):
         self.line_shader = gpu.types.GPUShader(
             solid_line_vertex_shader(), solid_line_fragment_shader())
 
-    def draw_callback(self, context):
+    def draw_callback(self, area):
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
@@ -103,7 +103,7 @@ class FBRectangleShader2D(KTEdgeShader2D):
         if self.line_shader is None or self.line_batch is None:
             return
 
-        if self._work_area != context.area:
+        if self._work_area != area:
             return
 
         bgl.glEnable(bgl.GL_BLEND)
@@ -199,11 +199,11 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             self._activate_coloring_image(image)
         return True
 
-    def draw_callback(self, context):
+    def draw_callback(self, area):
         if not self.is_visible():
             return
 
-        if self._work_area != context.area:
+        if self._work_area != area:
             return
 
         # Force Stop

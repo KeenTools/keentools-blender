@@ -159,7 +159,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         manipulate.push_head_in_undo_history(head, 'Pin Remove')
 
         FBLoader.load_pins_into_viewport(headnum, camnum)
-        FBLoader.update_viewport_shaders(context, headnum, camnum)
+        FBLoader.update_viewport_shaders(context.area, headnum, camnum)
 
         return {"RUNNING_MODAL"}
 
@@ -175,28 +175,29 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.load_model(headnum)
         FBLoader.place_camera(headnum, camnum)
         FBLoader.load_pins_into_viewport(headnum, camnum)
-        FBLoader.update_viewport_shaders(context, headnum, camnum)
+        FBLoader.update_viewport_shaders(context.area, headnum, camnum)
 
     def _on_right_mouse_press(self, context, mouse_x, mouse_y):
         vp = FBLoader.viewport()
-        vp.update_view_relative_pixel_size(context)
+        vp.update_view_relative_pixel_size(context.area)
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context.area)
 
         nearest, dist2 = coords.nearest_point(x, y, vp.pins().arr())
         if nearest >= 0 and dist2 < FBLoader.viewport().tolerance_dist2():
             return self._delete_found_pin(nearest, context)
 
-        FBLoader.viewport().create_batch_2d(context)
+        FBLoader.viewport().create_batch_2d(context.area)
         return {"RUNNING_MODAL"}
 
     def _on_left_mouse_press(self, context, mouse_x, mouse_y):
-        FBLoader.viewport().update_view_relative_pixel_size(context)
+        FBLoader.viewport().update_view_relative_pixel_size(context.area)
 
-        if not coords.is_in_area(context, mouse_x, mouse_y):
+        area = context.area
+        if not coords.is_in_area(area, mouse_x, mouse_y):
             return {'PASS_THROUGH'}
 
-        if coords.is_safe_region(context, mouse_x, mouse_y):
+        if coords.is_safe_region(area, mouse_x, mouse_y):
             settings = get_fb_settings()
             # Movepin operator Call
             op = get_operator(FBConfig.fb_movepin_idname)
@@ -329,9 +330,9 @@ class FB_OT_PinMode(bpy.types.Operator):
 
             logger.debug("START SHADERS")
             self._init_wireframer_colors(settings.overall_opacity)
-            vp.create_batch_2d(context)
+            vp.create_batch_2d(context.area)
             logger.debug("REGISTER SHADER HANDLERS")
-            vp.register_handlers(context)
+            vp.register_handlers(context.area)
 
             context.window_manager.modal_handler_add(self)
 
@@ -476,8 +477,8 @@ class FB_OT_PinMode(bpy.types.Operator):
             FBLoader.out_pinmode(headnum)
             return {'FINISHED'}
 
-        vp.create_batch_2d(context)
-        vp.update_residuals(FBLoader.get_builder(), head.headobj, kid, context)
+        vp.create_batch_2d(context.area)
+        vp.update_residuals(FBLoader.get_builder(), head.headobj, kid, context.area)
 
         if vp.pins().current_pin() is not None:
             return {"RUNNING_MODAL"}

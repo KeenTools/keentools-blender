@@ -30,6 +30,41 @@ from .utils.animation import create_locrot_keyframe
 from ..utils.other import unhide_viewport_ui_element_from_object
 
 
+_undo_handler = None
+
+
+def undo_handler(scene):
+    logger = logging.getLogger(__name__)
+    logger.debug('gt_undo_handler')
+    try:
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+        vp = GTLoader.viewport()
+        area = vp.get_work_area()
+        if not settings.pinmode or not geotracker or not area:
+            unregister_undo_handler()
+            return
+
+    except Exception as err:
+        logger.error('gt_undo_handler {}'.format(str(err)))
+        unregister_undo_handler()
+
+
+def unregister_undo_handler():
+    global _undo_handler
+    if _undo_handler is not None:
+        if _undo_handler in bpy.app.handlers.undo_post:
+            bpy.app.handlers.undo_post.remove(_undo_handler)
+    _undo_handler = None
+
+
+def register_undo_handler():
+    global _undo_handler
+    unregister_undo_handler()
+    _undo_handler = undo_handler
+    bpy.app.handlers.undo_post.append(_undo_handler)
+
+
 class GT_OT_PinMode(bpy.types.Operator):
     bl_idname = GTConfig.gt_pinmode_idname
     bl_label = 'GeoTracker Pinmode'
@@ -83,12 +118,13 @@ class GT_OT_PinMode(bpy.types.Operator):
 
     def _on_left_mouse_press(self, context, event):
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
-        GTLoader.viewport().update_view_relative_pixel_size(context)
+        GTLoader.viewport().update_view_relative_pixel_size(context.area)
 
-        if not coords.is_in_area(context, mouse_x, mouse_y):
+        area = context.area
+        if not coords.is_in_area(area, mouse_x, mouse_y):
             return {'PASS_THROUGH'}
 
-        if coords.is_safe_region(context, mouse_x, mouse_y):
+        if coords.is_safe_region(area, mouse_x, mouse_y):
             op = get_operator(GTConfig.gt_movepin_idname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y)
             return {'PASS_THROUGH'}
@@ -98,15 +134,15 @@ class GT_OT_PinMode(bpy.types.Operator):
     def _on_right_mouse_press(self, context, event):
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
         vp = GTLoader.viewport()
-        vp.update_view_relative_pixel_size(context)
+        vp.update_view_relative_pixel_size(context.area)
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context.area)
 
         nearest, dist2 = coords.nearest_point(x, y, vp.pins().arr())
         if nearest >= 0 and dist2 < vp.tolerance_dist2():
             return self._delete_found_pin(nearest, context)
 
-        vp.create_batch_2d(context)
+        vp.create_batch_2d(context.area)
         return {"RUNNING_MODAL"}
 
     def _delete_found_pin(self, nearest, context):
@@ -138,8 +174,8 @@ class GT_OT_PinMode(bpy.types.Operator):
             wf.init_geom_data_from_mesh(geotracker.geomobj)
             wf.create_batches()
 
-        vp.create_batch_2d(context)
-        vp.update_residuals(gt, context, kid)
+        vp.create_batch_2d(context.area)
+        vp.update_residuals(gt, context.area, kid)
 
         GTLoader.tag_redraw(context)
 
@@ -164,15 +200,16 @@ class GT_OT_PinMode(bpy.types.Operator):
 
         logger.debug('START SHADERS')
         GTLoader.load_pins_into_viewport()
-        vp.create_batch_2d(context)
+        vp.create_batch_2d(context.area)
         logger.debug('REGISTER SHADER HANDLERS')
-        GTLoader.update_all_viewport_shaders(context)
-        vp.register_handlers(context)
+        GTLoader.update_all_viewport_shaders(context.area)
+        vp.register_handlers(context.area)
 
         GTLoader.store_geomobj_world_matrix(*GTLoader.get_geomobj_world_matrix())
 
         context.window_manager.modal_handler_add(self)
 
+        register_undo_handler()
         logger.debug('PINMODE STARTED')
         return {'RUNNING_MODAL'}
 
@@ -223,7 +260,7 @@ class GT_OT_PinMode(bpy.types.Operator):
             logger.debug('KEYFRAME UPDATED')
             coords.update_depsgraph()
             GTLoader.place_camera()
-            GTLoader.update_all_viewport_shaders(context)
+            GTLoader.update_all_viewport_shaders(context.area)
             GTLoader.geomobj_world_matrix_changed(update=True)
             GTLoader.tag_redraw(context)
             return {'PASS_THROUGH'}
@@ -232,7 +269,7 @@ class GT_OT_PinMode(bpy.types.Operator):
             logger.debug('RETURNED TO OBJECT_MODE')
             GTLoader.save_geotracker()
             GTLoader.load_geotracker()
-            GTLoader.update_all_viewport_shaders(context)
+            GTLoader.update_all_viewport_shaders(context.area)
             return {'PASS_THROUGH'}
 
         if event.type == 'TIMER' and GTLoader.get_stored_geomobj_mode() == 'EDIT':
@@ -240,14 +277,14 @@ class GT_OT_PinMode(bpy.types.Operator):
             GTLoader.update_geomobj_mesh()
             GTLoader.save_geotracker()
             GTLoader.load_geotracker()
-            GTLoader.update_all_viewport_shaders(context)
+            GTLoader.update_all_viewport_shaders(context.area)
             return {'PASS_THROUGH'}
 
         if self._check_camera_state_changed(context.space_data.region_3d):
             logger.debug('FORCE TAG REDRAW BY VIEWPORT ZOOM/OFFSET')
             vp = GTLoader.viewport()
-            vp.create_batch_2d(context)
-            vp.update_residuals(GTLoader.kt_geotracker(), context,
+            vp.create_batch_2d(context.area)
+            vp.update_residuals(GTLoader.kt_geotracker(), context.area,
                                 settings.current_frame())
             GTLoader.tag_redraw(context)
 
@@ -260,7 +297,7 @@ class GT_OT_PinMode(bpy.types.Operator):
             create_locrot_keyframe(geotracker.geomobj, 'KEYFRAME')
 
             GTLoader.load_geotracker()
-            GTLoader.update_all_viewport_shaders(context)
+            GTLoader.update_all_viewport_shaders(context.area)
             GTLoader.tag_redraw(context)
 
         if event.value == 'PRESS' and event.type == 'LEFTMOUSE':

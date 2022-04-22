@@ -83,8 +83,8 @@ class KTViewport:
     def selector(self):
         return self._selector
 
-    def update_view_relative_pixel_size(self, context):
-        ps = get_pixel_relative_size(context)
+    def update_view_relative_pixel_size(self, area):
+        ps = get_pixel_relative_size(area)
         self._pixel_size = ps
 
     def tolerance_dist(self):  # distance * sensitivity
@@ -104,8 +104,8 @@ class KTViewport:
             )
         self._draw_update_timer_handler = None
 
-    def register_draw_update_timer(self, context, time_step):
+    def register_draw_update_timer(self, time_step):
         self.unregister_draw_update_timer()
-        self._draw_update_timer_handler = context.window_manager.event_timer_add(
-            time_step=time_step, window=context.window
+        self._draw_update_timer_handler = bpy.context.window_manager.event_timer_add(
+            time_step=time_step, window=bpy.context.window
         )

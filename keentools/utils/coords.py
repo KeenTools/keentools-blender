@@ -150,8 +150,8 @@ def image_space_to_region(x, y, x1, y1, x2, y2):
     return x1 + (x + 0.5) * sc, (y1 + y2) * 0.5 + y * sc
 
 
-def get_image_space_coord(px, py, context):
-    x1, y1, x2, y2 = get_camera_border(context)
+def get_image_space_coord(px, py, area):
+    x1, y1, x2, y2 = get_camera_border(area)
     x, y = region_to_image_space(px, py, x1, y1, x2, y2)
     return x, y
 
@@ -196,35 +196,25 @@ def calc_model_mat(model_mat, head_mat):
         return None
 
 
-def get_raw_camera_2d_data(context):
-    """ Area coordinates and view parameters for debug logging """
-    if bpy.app.background:
-        context = get_fake_context()
-
-    a = context.area
-    rv3d = context.space_data.region_3d
-    z = rv3d.view_camera_zoom
-    off = rv3d.view_camera_offset
-    x1, y1, x2, y2 = get_camera_border(context)
-    # res = (a.x, a.y, a.width, a.height, z, off[0], off[1])
-    res = (x1, y1, x2, y2, z, off[0], off[1])
-    return res
-
-
-def get_camera_border(context):
+def get_camera_border(area):
     """ Camera corners detection via context and parameters """
     if bpy.app.background:
         context = get_fake_context()
+        area = context.area
 
-    reg = context.region
-    w = reg.width
-    h = reg.height
-    rv3d = context.space_data.region_3d
+    space = area.spaces.active
+    rv3d = space.region_3d
+
+    region = area.regions[-1]
+    assert region.type == 'WINDOW'
+    w = region.width
+    h = region.height
+
     z = rv3d.view_camera_zoom
     # Blender Zoom formula
     f = (z * 0.01 + math.sqrt(0.5)) ** 2  # f - scale factor
 
-    scene = context.scene
+    scene = bpy.context.scene
     rx = scene.render.resolution_x
     ry = scene.render.resolution_y
 
@@ -260,18 +250,15 @@ def get_camera_border(context):
     return x1, y1, x2, y2
 
 
-def is_safe_region(context, x, y):
+def is_safe_region(area, x, y):
     """ Safe region for pin operation """
     if bpy.app.background:
         context = get_fake_context()
+        area = context.area
 
-    a = context.area
-    rr = a.regions
-    x0 = a.x
-    y0 = a.y
-    w = a.width
-    h = a.height
-    for i, r in enumerate(rr):
+    x0 = area.x
+    y0 = area.y
+    for i, r in enumerate(area.regions):
         if r.type != 'WINDOW':
             if (r.x <= x + x0 <= r.x + r.width) and (
                     r.y <= y + y0 <= r.y + r.height):
@@ -279,23 +266,24 @@ def is_safe_region(context, x, y):
     return True
 
 
-def is_in_area(context, x, y):
-    """ Is point in context.area """
+def is_in_area(area, x, y):
+    """ Is point in area """
     if bpy.app.background:
         context = get_fake_context()
+        area = context.area
 
-    a = context.area
-    return (0 <= x <= a.width) and (0 <= y <= a.height)
+    return (0 <= x <= area.width) and (0 <= y <= area.height)
 
 
-def get_pixel_relative_size(context):
+def get_pixel_relative_size(area):
     """ One Pixel size in relative coords via current zoom """
     if bpy.app.background:
         context = get_fake_context()
+        area = context.area
 
-    a = context.area
-    w = a.width if a.width > 0 else 1.0
-    rv3d = context.space_data.region_3d
+    w = area.width if area.width > 0 else 1.0
+    space = area.spaces.active
+    rv3d = space.region_3d
     z = rv3d.view_camera_zoom
     # Blender Zoom formula
     f = (z * 0.01 + math.sqrt(0.5)) ** 2  # f - scale factor

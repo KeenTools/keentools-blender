@@ -39,18 +39,26 @@ class GTViewport(KTViewport):
                                             GTConfig.timeline_keyframe_color)
         self._selector = KTScreenRectangleShader2D(bpy.types.SpaceView3D)
         self._draw_update_timer_handler = None
+        self._work_area = None
 
-    def register_handlers(self, context):
+    def get_work_area(self):
+        return self._work_area
+
+    def set_work_area(self, area):
+        self._work_area = area
+
+    def register_handlers(self, area):
         self.unregister_handlers()
-        self.residuals().register_handler(context)
-        self.points3d().register_handler(context)
-        self.points2d().register_handler(context)
-        self.texter().register_handler(context)
-        self.wireframer().register_handler(context)
-        self.timeliner().register_handler(context)
-        self.selector().register_handler(context)
-        self.register_draw_update_timer(
-            context, time_step=GTConfig.viewport_redraw_interval)
+        area = area
+        self.set_work_area(area)
+        self.residuals().register_handler(area)
+        self.points3d().register_handler(area)
+        self.points2d().register_handler(area)
+        self.texter().register_handler(area)
+        self.wireframer().register_handler(area)
+        self.timeliner().register_handler(area)
+        self.selector().register_handler(area)
+        self.register_draw_update_timer(time_step=GTConfig.viewport_redraw_interval)
 
     def unregister_handlers(self):
         self.unregister_draw_update_timer()
@@ -61,6 +69,7 @@ class GTViewport(KTViewport):
         self.points2d().unregister_handler()
         self.points3d().unregister_handler()
         self.residuals().unregister_handler()
+        self.set_work_area(None)
 
     def update_surface_points(
             self, gt, obj, keyframe, color=GTConfig.surface_point_color):
@@ -109,7 +118,7 @@ class GTViewport(KTViewport):
                 verts.append((coords.frame_to_image_space(x, y, w, h)))
         return verts
 
-    def create_batch_2d(self, context):
+    def create_batch_2d(self, area):
         def _add_markers_at_camera_corners(points, vertex_colors):
             points.append(
                 (coords.image_space_to_region(
@@ -125,12 +134,12 @@ class GTViewport(KTViewport):
 
         points = self.pins().arr().copy()
 
-        scene = context.scene
+        scene = bpy.context.scene
         rx = scene.render.resolution_x
         ry = scene.render.resolution_y
         asp = ry / rx
 
-        x1, y1, x2, y2 = coords.get_camera_border(context)
+        x1, y1, x2, y2 = coords.get_camera_border(area)
 
         for i, p in enumerate(points):
             x, y = coords.image_space_to_region(p[0], p[1], x1, y1, x2, y2)
@@ -148,12 +157,12 @@ class GTViewport(KTViewport):
         self.points2d().set_vertices_colors(points, vertex_colors)
         self.points2d().create_batch()
 
-    def update_residuals(self, gt, context, keyframe):
+    def update_residuals(self, gt, area, keyframe):
         scene = bpy.context.scene
         rx = scene.render.resolution_x
         ry = scene.render.resolution_y
 
-        x1, y1, x2, y2 = coords.get_camera_border(context)
+        x1, y1, x2, y2 = coords.get_camera_border(area)
 
         p2d = self.img_points(gt, keyframe)
         p3d = self.points3d().get_vertices()
@@ -176,7 +185,7 @@ class GTViewport(KTViewport):
         # Projection
         projection = gt.projection_mat(keyframe).T
 
-        camobj = bpy.context.scene.camera
+        camobj = bpy.context.scene.camera  # TODO: Get proper camera!!!
 
         m = camobj.matrix_world.inverted()
         # Object transform, inverse camera, projection apply -> numpy

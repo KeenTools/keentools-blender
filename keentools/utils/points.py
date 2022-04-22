@@ -152,11 +152,11 @@ class KTShaderPoints:
     def create_batch(self):
         self._create_batch(self.vertices, self.vertices_colors)
 
-    def register_handler(self, context):
-        self._work_area = context.area
+    def register_handler(self, area):
+        self._work_area = area
 
         self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, (context,), 'WINDOW', 'POST_VIEW')
+            self.draw_callback, (area,), 'WINDOW', 'POST_VIEW')
         # Add to handler list
         self.add_handler_list(self.draw_handler)
 
@@ -182,7 +182,7 @@ class KTShaderPoints:
         self.vertices = []
         self.vertices_colors = []
 
-    def draw_callback(self, context):
+    def draw_callback(self, area):
         if not self.is_visible():
             return
         # Force Stop
@@ -190,7 +190,7 @@ class KTShaderPoints:
             self.unregister_handler()
             return
 
-        if self._work_area != context.area:
+        if self._work_area != area:
             return
 
         if self.shader is not None:
@@ -214,11 +214,11 @@ class KTPoints2D(KTShaderPoints):
             # 2D_FLAT_COLOR
             self.vertices, self.vertices_colors, 'CUSTOM_2D')
 
-    def register_handler(self, context):
-        self._work_area = context.area
+    def register_handler(self, area):
+        self._work_area = area
 
         self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, (context,), 'WINDOW', 'POST_PIXEL')
+            self.draw_callback, (area,), 'WINDOW', 'POST_PIXEL')
         # Add to handler list
         self.add_handler_list(self.draw_handler)
 
