@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 import numpy as np
 
 import bpy
@@ -33,7 +33,7 @@ class GTLoader:
     _viewport: Any = GTViewport()
 
     _geo: Any = None
-    _geomobj_world_matrix_at_frame: tuple[int, Any] = (-1, None)
+    _geomobj_world_matrix_at_frame: Tuple[int, Any] = (-1, None)
 
     _geomobj_edit_mode: str = 'OBJECT'
 
@@ -87,7 +87,7 @@ class GTLoader:
         return cls._geomobj_world_matrix_at_frame
 
     @classmethod
-    def get_geomobj_world_matrix(cls) -> tuple[int, Any]:
+    def get_geomobj_world_matrix(cls) -> Tuple[int, Any]:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
         return (settings.current_frame(),
@@ -149,7 +149,7 @@ class GTLoader:
         return cls._kt_geotracker
 
     @classmethod
-    def add_pin(cls, keyframe: int, pos: tuple[float, float]) -> Any:
+    def add_pin(cls, keyframe: int, pos: Tuple[float, float]) -> Any:
         logger = logging.getLogger(__name__)
         logger.debug('ADD PIN: {} {}'.format(pos[0], pos[1]))
         gt = cls.kt_geotracker()
@@ -164,7 +164,7 @@ class GTLoader:
 
     @classmethod
     def move_pin(cls, keyframe: int, pin_idx: int,
-                 pos: tuple[float, float]) -> None:
+                 pos: Tuple[float, float]) -> None:
         gt = cls.kt_geotracker()
         if pin_idx < gt.pins_count():
             gt.move_pin(keyframe, pin_idx, coords.image_space_to_frame(*pos))

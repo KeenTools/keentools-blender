@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Optional
+from typing import Optional, List
 import bpy
 from bpy.types import Object, Action, FCurve, Keyframe
 from mathutils import Vector
@@ -47,7 +47,7 @@ def _get_safe_action_fcurve(action: Action,
     return action.fcurves.new(data_path, index=index)
 
 
-def _get_fcurve_data(fcurve: Optional[FCurve]) -> list[Vector]:
+def _get_fcurve_data(fcurve: Optional[FCurve]) -> List[Vector]:
     if not fcurve:
         return []
     return [p.co for p in fcurve.keyframe_points]
@@ -91,7 +91,7 @@ def remove_fcurve_point(obj: Object, data_path: str, index: int,
 
 
 def _put_anim_data_in_fcurve(fcurve: Optional[FCurve],
-                             anim_data: list[Vector]) -> None:
+                             anim_data: List[Vector]) -> None:
     if not fcurve:
         return
     start_index = len(fcurve.keyframe_points)

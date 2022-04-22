@@ -291,19 +291,31 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         name="License key", default=""
     )
 
-    license_server: bpy.props.StringProperty(
+    fb_license_server: bpy.props.StringProperty(
+        name="License Server host/IP", default="localhost"
+    )
+    gt_license_server: bpy.props.StringProperty(
         name="License Server host/IP", default="localhost"
     )
 
-    license_server_port: bpy.props.IntProperty(
+    fb_license_server_port: bpy.props.IntProperty(
+        name="License Server port", default=7096, min=0, max=65535
+    )
+    gt_license_server_port: bpy.props.IntProperty(
         name="License Server port", default=7096, min=0, max=65535
     )
 
-    license_server_lock: bpy.props.BoolProperty(
+    fb_license_server_lock: bpy.props.BoolProperty(
+        name="Variables from ENV", default=False
+    )
+    gt_license_server_lock: bpy.props.BoolProperty(
         name="Variables from ENV", default=False
     )
 
-    license_server_auto: bpy.props.BoolProperty(
+    fb_license_server_auto: bpy.props.BoolProperty(
+        name="Auto settings from Environment", default=True
+    )
+    gt_license_server_auto: bpy.props.BoolProperty(
         name="Auto settings from Environment", default=True
     )
 
@@ -319,13 +331,6 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
     gt_lic_type: bpy.props.EnumProperty(
         name="Type",
         items=_lic_type_items,
-        default='ONLINE')
-
-    install_type: bpy.props.EnumProperty(
-        name="Type",
-        items=(
-            ('ONLINE', "Online", "Online installation", 0),
-            ('OFFLINE', "Offline", "Offline installation", 1)),
         default='ONLINE')
 
     fb_lic_path: bpy.props.StringProperty(
@@ -443,34 +448,34 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         elif self.fb_lic_type == 'FLOATING':
             env = pkt_module().LicenseManager.env_server_info()
             if env is not None:
-                self.license_server = env[0]
-                self.license_server_port = env[1]
-                self.license_server_lock = True
+                self.fb_license_server = env[0]
+                self.fb_license_server_port = env[1]
+                self.fb_license_server_lock = True
             else:
-                self.license_server_lock = False
+                self.fb_license_server_lock = False
 
             box = layout.box()
             row = box.split(factor=0.35)
             row.label(text='License Server host/IP')
-            if self.license_server_lock and self.license_server_auto:
-                row.label(text=self.license_server)
+            if self.fb_license_server_lock and self.fb_license_server_auto:
+                row.label(text=self.fb_license_server)
             else:
-                row.prop(self, 'license_server', text='')
+                row.prop(self, 'fb_license_server', text='')
 
             row = box.split(factor=0.35)
             row.label(text='License Server port')
-            if self.license_server_lock and self.license_server_auto:
-                row.label(text=str(self.license_server_port))
+            if self.fb_license_server_lock and self.fb_license_server_auto:
+                row.label(text=str(self.fb_license_server_port))
             else:
-                row.prop(self, 'license_server_port', text='')
+                row.prop(self, 'fb_license_server_port', text='')
 
-            if self.license_server_lock:
-                box.prop(self, 'license_server_auto',
+            if self.fb_license_server_lock:
+                box.prop(self, 'fb_license_server_auto',
                          text='Auto server/port settings')
 
             floating_install_op = row.operator(Config.kt_floating_connect_idname)
-            floating_install_op.license_server = self.license_server
-            floating_install_op.license_server_port = self.license_server_port
+            floating_install_op.license_server = self.fb_license_server
+            floating_install_op.license_server_port = self.fb_license_server_port
             floating_install_op.product = 'facebuilder'
 
     def _draw_warning_labels(self, layout, content, alert=True, icon='INFO'):
@@ -773,34 +778,34 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         elif self.gt_lic_type == 'FLOATING':
             env = pkt_module().LicenseManager.env_server_info()
             if env is not None:
-                self.license_server = env[0]
-                self.license_server_port = env[1]
-                self.license_server_lock = True
+                self.gt_license_server = env[0]
+                self.gt_license_server_port = env[1]
+                self.gt_license_server_lock = True
             else:
-                self.license_server_lock = False
+                self.gt_license_server_lock = False
 
             box = layout.box()
             row = box.split(factor=0.35)
             row.label(text='License Server host/IP')
-            if self.license_server_lock and self.license_server_auto:
-                row.label(text=self.license_server)
+            if self.gt_license_server_lock and self.gt_license_server_auto:
+                row.label(text=self.gt_license_server)
             else:
-                row.prop(self, 'license_server', text='')
+                row.prop(self, 'gt_license_server', text='')
 
             row = box.split(factor=0.35)
             row.label(text='License Server port')
-            if self.license_server_lock and self.license_server_auto:
-                row.label(text=str(self.license_server_port))
+            if self.gt_license_server_lock and self.gt_license_server_auto:
+                row.label(text=str(self.gt_license_server_port))
             else:
-                row.prop(self, 'license_server_port', text='')
+                row.prop(self, 'gt_license_server_port', text='')
 
-            if self.license_server_lock:
-                box.prop(self, 'license_server_auto',
+            if self.gt_license_server_lock:
+                box.prop(self, 'gt_license_server_auto',
                          text='Auto server/port settings')
 
             floating_install_op = row.operator(Config.kt_floating_connect_idname)
-            floating_install_op.license_server = self.license_server
-            floating_install_op.license_server_port = self.license_server_port
+            floating_install_op.license_server = self.gt_license_server
+            floating_install_op.license_server_port = self.gt_license_server_port
             floating_install_op.product = 'geotracker'
 
     def _draw_facebuilder_preferences(self, layout):
