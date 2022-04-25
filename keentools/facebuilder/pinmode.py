@@ -31,7 +31,7 @@ from ..utils.focal_length import update_camera_focal
 from ..utils.other import (KTStopShaderTimer, force_ui_redraw,
                            hide_viewport_ui_elements_and_store_on_object)
 from ..utils.html import split_long_string
-from ..utils.localview import exit_area_localview
+from ..utils.localview import exit_area_localview, exit_context_localview
 
 
 _undo_handler = None
@@ -295,7 +295,7 @@ class FB_OT_PinMode(bpy.types.Operator):
                 len(headobj.data.vertices), len(fb.applied_args_vertices())))
 
             FBLoader.out_pinmode_without_save(self.headnum)
-            manipulate.exit_context_localview(context)
+            exit_context_localview(context)
 
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
