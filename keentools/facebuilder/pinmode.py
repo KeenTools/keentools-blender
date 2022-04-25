@@ -24,7 +24,8 @@ import bpy
 
 from ..addon_config import Config, get_operator, ErrorType
 from ..facebuilder_config import FBConfig, get_fb_settings
-from ..utils import manipulate, coords
+from ..utils import coords
+from .utils.manipulate import push_head_in_undo_history
 from .utils import cameras
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
@@ -157,7 +158,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.update_all_camera_positions(headnum)
         # Save result
         FBLoader.save_fb_serial_and_image_pathes(headnum)
-        manipulate.push_head_in_undo_history(head, 'Pin Remove')
+        push_head_in_undo_history(head, 'Pin Remove')
 
         FBLoader.load_pins_into_viewport(headnum, camnum)
         FBLoader.update_viewport_shaders(area, headnum, camnum)
@@ -347,7 +348,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         bpy.ops.view3d.view_center_camera()
 
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
-        manipulate.push_head_in_undo_history(head, 'Pin Mode Start.')
+        push_head_in_undo_history(head, 'Pin Mode Start.')
         if not first_start:
             logger.debug('PINMODE SWITCH ONLY')
             return {'FINISHED'}

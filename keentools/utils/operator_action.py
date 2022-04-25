@@ -22,7 +22,11 @@ import bpy
 
 from ..addon_config import Config, get_operator, ErrorType
 from ..facebuilder_config import FBConfig, get_fb_settings
-from . import manipulate
+from .manipulate import (has_no_blendshape, select_object_only)
+from ..facebuilder.utils.manipulate import (get_current_headnum,
+                                            get_current_head,
+                                            get_obj_from_context,
+                                            reconstruct_by_head)
 from .coords import update_head_mesh_non_neutral
 from ..facebuilder.utils.cameras import show_all_cameras
 from .other import unhide_viewport_ui_element_from_object
@@ -40,7 +44,7 @@ from .localview import exit_area_localview
 def create_blendshapes(operator):
     logger = logging.getLogger(__name__)
     logger.debug('create_blendshapes call')
-    obj, scale = manipulate.get_obj_from_context(bpy.context)
+    obj, scale = get_obj_from_context(bpy.context)
     if not obj:
         logger.debug('no object')
         return {'CANCELLED'}
@@ -82,7 +86,7 @@ def create_blendshapes(operator):
 def delete_blendshapes(operator):
     logger = logging.getLogger(__name__)
     logger.debug('delete_blendshapes call')
-    obj, scale = manipulate.get_obj_from_context(bpy.context)
+    obj, scale = get_obj_from_context(bpy.context)
     if not obj:
         logger.debug('no object')
         return {'CANCELLED'}
@@ -96,12 +100,12 @@ def delete_blendshapes(operator):
 def load_animation_from_csv(operator):
     logger = logging.getLogger(__name__)
     logger.debug('load_animation_from_csv call')
-    obj, scale = manipulate.get_obj_from_context(bpy.context)
+    obj, scale = get_obj_from_context(bpy.context)
     if not obj:
         logger.debug('no object')
         return {'CANCELLED'}
 
-    if manipulate.has_no_blendshape(obj):
+    if has_no_blendshape(obj):
         logger.debug('no blendshapes')
         operator.report({'ERROR'}, 'The object has no blendshapes')
     else:
@@ -114,7 +118,7 @@ def load_animation_from_csv(operator):
 def create_example_animation(operator):
     logger = logging.getLogger(__name__)
     logger.debug('create_example_animation call')
-    obj, scale = manipulate.get_obj_from_context(bpy.context)
+    obj, scale = get_obj_from_context(bpy.context)
     if not obj:
         logger.debug('no object')
         return {'CANCELLED'}
@@ -137,7 +141,7 @@ def create_example_animation(operator):
 def reset_blendshape_values(operator):
     logger = logging.getLogger(__name__)
     logger.debug('reset_blendshape_values call')
-    obj, scale = manipulate.get_obj_from_context(bpy.context)
+    obj, scale = get_obj_from_context(bpy.context)
     if not obj:
         logger.debug('no object')
         return {'CANCELLED'}
@@ -156,7 +160,7 @@ def reset_blendshape_values(operator):
 def clear_animation(operator):
     logger = logging.getLogger(__name__)
     logger.debug('clear_animation call')
-    obj, scale = manipulate.get_obj_from_context(bpy.context)
+    obj, scale = get_obj_from_context(bpy.context)
     if not obj:
         logger.debug('no object')
         return {'CANCELLED'}
@@ -175,12 +179,12 @@ def clear_animation(operator):
 def export_head_to_fbx(operator):
     logger = logging.getLogger(__name__)
     logger.debug('export_head_to_fbx call')
-    obj, scale = manipulate.get_obj_from_context(bpy.context)
+    obj, scale = get_obj_from_context(bpy.context)
     if not obj:
         logger.debug('no object')
         return {'CANCELLED'}
 
-    manipulate.select_object_only(obj)
+    select_object_only(obj)
     bpy.ops.export_scene.fbx('INVOKE_DEFAULT',
                              use_selection=True,
                              bake_anim_use_all_actions=False,
@@ -200,7 +204,7 @@ def export_head_to_fbx(operator):
 def update_blendshapes(operator):
     logger = logging.getLogger(__name__)
     logger.debug('update_blendshapes call')
-    head = manipulate.get_current_head()
+    head = get_current_head()
     if head:
         FBLoader.load_model(head.get_headnum())
         try:
@@ -227,7 +231,7 @@ def update_blendshapes(operator):
 def unhide_head(operator, context):
     logger = logging.getLogger(__name__)
     logger.debug('unhide_head call')
-    headnum = manipulate.get_current_headnum()
+    headnum = get_current_headnum()
     if headnum >= 0:
         settings = get_fb_settings()
         head = settings.get_head(headnum)
@@ -248,9 +252,9 @@ def unhide_head(operator, context):
     return {'CANCELLED'}
 
 
-def reconstruct_by_mesh(operator):
+def reconstruct_by_mesh():
     logger = logging.getLogger(__name__)
     logger.debug('reconstruct_by_mesh call')
-    manipulate.reconstruct_by_head()
+    reconstruct_by_head()
     logger.debug('reconstruction finished')
     return {'FINISHED'}

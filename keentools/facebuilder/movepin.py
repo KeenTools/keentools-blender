@@ -17,14 +17,13 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
-
+from functools import wraps
 import bpy
 
-from ..utils import manipulate, coords
+from ..utils import coords
 from .fbloader import FBLoader
 from ..facebuilder_config import FBConfig, get_fb_settings
-
-from functools import wraps
+from .utils.manipulate import push_head_in_undo_history
 
 
 # Decorator for profiling
@@ -152,7 +151,7 @@ class FB_OT_MovePin(bpy.types.Operator):
         FBLoader.update_all_camera_focals(headnum)
 
         FBLoader.save_fb_serial_and_image_pathes(headnum)
-        manipulate.push_head_in_undo_history(head, 'Pin Move')
+        push_head_in_undo_history(head, 'Pin Move')
 
         # Load 3D pins
         vp.update_surface_points(fb, head.headobj, kid)
