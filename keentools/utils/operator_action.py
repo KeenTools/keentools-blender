@@ -24,7 +24,7 @@ from ..addon_config import Config, get_operator, ErrorType
 from ..facebuilder_config import FBConfig, get_fb_settings
 from . import manipulate
 from .coords import update_head_mesh_non_neutral
-from ..facebuilder.utils.cameras import show_all_cameras, exit_localview
+from ..facebuilder.utils.cameras import show_all_cameras
 from .other import unhide_viewport_ui_element_from_object
 from ..facebuilder.fbloader import FBLoader
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
@@ -34,6 +34,7 @@ from .blendshapes import (create_facs_blendshapes,
                           remove_blendshapes,
                           update_facs_blendshapes,
                           zero_all_blendshape_weights)
+from .localview import exit_area_localview
 
 
 def create_blendshapes(operator):
@@ -233,7 +234,7 @@ def unhide_head(operator, context):
         FBLoader.load_model(headnum)
         update_head_mesh_non_neutral(FBLoader.get_builder(), head)
 
-        if not exit_localview(context):
+        if not exit_area_localview(context.area):
             show_all_cameras(headnum)  # legacy scenes only
             head.headobj.hide_set(False)
 

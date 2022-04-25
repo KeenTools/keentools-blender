@@ -26,6 +26,7 @@ from . import attrs
 from ..facebuilder.utils import cameras
 from ..facebuilder.utils.exif_reader import (read_exif_to_camera, auto_setup_camera_from_exif)
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from .localview import enter_context_localview, exit_context_localview
 
 
 def _is_keentools_object(obj):
@@ -312,27 +313,6 @@ def create_vertex_groups(obj, vg_dict):
             vg = obj.vertex_groups.new(name=vg_name)
         for i, w in vg_dict[vg_name]:
             vg.add([i], w, 'REPLACE')
-
-
-def exit_area_localview(area):
-    if area is None:
-        return
-    if area.spaces.active.local_view:
-        bpy.ops.view3d.localview({'area':area})
-
-
-def exit_context_localview(context):
-    if context.space_data and context.space_data.local_view:
-        bpy.ops.view3d.localview()
-        return True
-    return False
-
-
-def enter_context_localview(context):
-    if context.space_data and not context.space_data.local_view:
-        bpy.ops.view3d.localview()
-        return True
-    return False
 
 
 def set_overlays(status=True):

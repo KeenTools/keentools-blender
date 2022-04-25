@@ -39,14 +39,15 @@ class FBViewport(KTViewport):
         self._rectangler = FBRectangleShader2D(bpy.types.SpaceView3D)
         self._draw_update_timer_handler = None
 
-    def register_handlers(self, area):
+    def register_handlers(self, context):
         self.unregister_handlers()
-        self.residuals().register_handler(area)
-        self.rectangler().register_handler(area)
-        self.points3d().register_handler(area)
-        self.points2d().register_handler(area)
-        self.texter().register_handler(area)
-        self.wireframer().register_handler(area)
+        self.set_work_area(context.area)
+        self.residuals().register_handler(context)
+        self.rectangler().register_handler(context)
+        self.points3d().register_handler(context)
+        self.points2d().register_handler(context)
+        self.texter().register_handler(context)
+        self.wireframer().register_handler(context)
         self.register_draw_update_timer(time_step=FBConfig.viewport_redraw_interval)
 
     def unregister_handlers(self):
@@ -57,6 +58,7 @@ class FBViewport(KTViewport):
         self.points3d().unregister_handler()
         self.rectangler().unregister_handler()
         self.residuals().unregister_handler()
+        self.clear_work_area()
 
     def update_surface_points(self, fb, headobj, keyframe=-1,
                               color=FBConfig.surface_point_color):

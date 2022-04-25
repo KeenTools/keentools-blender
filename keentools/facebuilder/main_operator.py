@@ -45,6 +45,7 @@ from ..utils.operator_action import (create_blendshapes,
                                      update_blendshapes,
                                      unhide_head,
                                      reconstruct_by_mesh)
+from ..utils.localview import exit_area_localview
 
 
 class ButtonOperator:
@@ -602,7 +603,7 @@ class FB_OT_ShowTexture(Operator):
 
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
-            cameras.exit_localview(context)
+            exit_area_localview(context.area)
 
         mat = materials.show_texture_in_mat(
             head.preview_texture_name(), head.preview_material_name())
@@ -629,7 +630,7 @@ class FB_OT_ShowSolid(Operator):
         settings = get_fb_settings()
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
-            cameras.exit_localview(context)
+            exit_area_localview(context.area)
         materials.switch_to_mode('SOLID')
         return {'FINISHED'}
 
@@ -647,7 +648,7 @@ class FB_OT_ExitPinmode(Operator):
         settings = get_fb_settings()
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
-            cameras.exit_localview(context)
+            exit_area_localview(context.area)
             cameras.leave_camera_view(context)
         return {'FINISHED'}
 

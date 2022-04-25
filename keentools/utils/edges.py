@@ -89,13 +89,12 @@ class KTEdgeShaderBase:
         self.edges_colors = np.full(
             (len(self.edges_vertices), 4), color).tolist()
 
-    def register_handler(self, area):
-        self._work_area = area
-
+    def register_handler(self, context):
+        self._work_area = context.area
         if self.draw_handler is not None:
             self.unregister_handler()
         self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, (area,), 'WINDOW', 'POST_VIEW')
+            self.draw_callback, (context,), 'WINDOW', 'POST_VIEW')
         self.add_handler_list(self.draw_handler)
 
     def unregister_handler(self):
@@ -122,7 +121,7 @@ class KTEdgeShaderBase:
     def init_shaders(self):
         pass
 
-    def draw_callback(self, area):
+    def draw_callback(self, context):
         pass
 
     def hide_shader(self):
@@ -130,9 +129,6 @@ class KTEdgeShaderBase:
 
     def unhide_shader(self):
         self.set_visible(True)
-
-    def get_work_area(self):
-        return self._work_area
 
     @staticmethod
     def _get_triangulation_indices(obj):
@@ -153,7 +149,7 @@ class KTEdgeShader2D(KTEdgeShaderBase):
         self.line_shader = gpu.types.GPUShader(
             residual_vertex_shader(), residual_fragment_shader())
 
-    def draw_callback(self, area):
+    def draw_callback(self, context):
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
@@ -162,7 +158,7 @@ class KTEdgeShader2D(KTEdgeShaderBase):
         if self.line_shader is None or self.line_batch is None:
             return
 
-        if self._work_area != area:
+        if self._work_area != context.area:
             return
 
         bgl.glEnable(bgl.GL_BLEND)
@@ -183,13 +179,12 @@ class KTEdgeShader2D(KTEdgeShaderBase):
              'lineLength': self.edge_lengths}
         )
 
-    def register_handler(self, area):
-        self._work_area = area
-
+    def register_handler(self, context):
+        self._work_area = context.area
         if self.draw_handler is not None:
             self.unregister_handler()
         self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, (area,), 'WINDOW', 'POST_PIXEL')
+            self.draw_callback, (context,), 'WINDOW', 'POST_PIXEL')
         self.add_handler_list(self.draw_handler)
 
 
@@ -208,7 +203,7 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
             solid_line_vertex_shader(), solid_line_fragment_shader())
         self.fill_shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
 
-    def draw_callback(self, area):
+    def draw_callback(self, context):
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
@@ -217,7 +212,7 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
         if self.line_shader is None or self.line_batch is None:
             return
 
-        if self._work_area != area:
+        if self._work_area != context.area:
             return
 
         bgl.glEnable(bgl.GL_BLEND)
@@ -283,7 +278,7 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
     def _get_region(self, area):
         return area.regions[3]
 
-    def draw_callback(self, area):
+    def draw_callback(self, context):
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
@@ -292,6 +287,7 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
         if self.line_shader is None or self.line_batch is None:
             return
 
+        area = context.area
         if not area:
             return
 
@@ -320,7 +316,7 @@ class KTEdgeShader3D(KTEdgeShaderBase):
     def draw_edges(self):
         self.line_batch.draw(self.line_shader)
 
-    def draw_callback(self, area):
+    def draw_callback(self, context):
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
@@ -330,7 +326,7 @@ class KTEdgeShader3D(KTEdgeShaderBase):
                 or self.fill_shader is None or self.fill_batch is None:
             return
 
-        if self._work_area != area:
+        if self._work_area != context.area:
             return
 
         bgl.glEnable(bgl.GL_BLEND)

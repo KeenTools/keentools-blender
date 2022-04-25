@@ -196,20 +196,25 @@ def calc_model_mat(model_mat, head_mat):
         return None
 
 
+def get_area_region_3d(area):
+    return area.spaces.active.region_3d
+
+
+def get_area_region(area):
+    return area.regions[-1]
+
+
 def get_camera_border(area):
-    """ Camera corners detection via context and parameters """
     if bpy.app.background:
         context = get_fake_context()
         area = context.area
 
-    space = area.spaces.active
-    rv3d = space.region_3d
-
-    region = area.regions[-1]
+    region = get_area_region(area)
     assert region.type == 'WINDOW'
     w = region.width
     h = region.height
 
+    rv3d = get_area_region_3d(area)
     z = rv3d.view_camera_zoom
     # Blender Zoom formula
     f = (z * 0.01 + math.sqrt(0.5)) ** 2  # f - scale factor

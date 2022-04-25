@@ -39,25 +39,17 @@ class GTViewport(KTViewport):
                                             GTConfig.timeline_keyframe_color)
         self._selector = KTScreenRectangleShader2D(bpy.types.SpaceView3D)
         self._draw_update_timer_handler = None
-        self._work_area = None
 
-    def get_work_area(self):
-        return self._work_area
-
-    def set_work_area(self, area):
-        self._work_area = area
-
-    def register_handlers(self, area):
+    def register_handlers(self, context):
         self.unregister_handlers()
-        area = area
-        self.set_work_area(area)
-        self.residuals().register_handler(area)
-        self.points3d().register_handler(area)
-        self.points2d().register_handler(area)
-        self.texter().register_handler(area)
-        self.wireframer().register_handler(area)
-        self.timeliner().register_handler(area)
-        self.selector().register_handler(area)
+        self.set_work_area(context.area)
+        self.residuals().register_handler(context)
+        self.points3d().register_handler(context)
+        self.points2d().register_handler(context)
+        self.texter().register_handler(context)
+        self.wireframer().register_handler(context)
+        self.timeliner().register_handler(context)
+        self.selector().register_handler(context)
         self.register_draw_update_timer(time_step=GTConfig.viewport_redraw_interval)
 
     def unregister_handlers(self):
@@ -69,7 +61,7 @@ class GTViewport(KTViewport):
         self.points2d().unregister_handler()
         self.points3d().unregister_handler()
         self.residuals().unregister_handler()
-        self.set_work_area(None)
+        self.clear_work_area()
 
     def update_surface_points(
             self, gt, obj, keyframe, color=GTConfig.surface_point_color):

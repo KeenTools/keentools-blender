@@ -16,12 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import logging
-import math
-
 import bpy
 
 from ...facebuilder_config import FBConfig, get_fb_settings
 from ...utils import attrs
+from ...utils.localview import enter_context_localview, exit_context_localview
 
 
 def show_all_cameras(headnum):
@@ -79,58 +78,16 @@ def get_camera_params(obj):
     return params
 
 
-def get_camera_background(camera):
-    camobj = camera.camobj
-    c = camobj.data
-    if len(c.background_images) == 0:
-        return None
-    else:
-        return c.background_images[0]
-
-
-def reset_background_image_rotation(camera):
-    background_image = get_camera_background(camera)
-    if background_image is None:
-        return
-    background_image.rotation = 0
-    camera.orientation = 0
-
-
-def rotate_background_image(camera, delta=1):
-    background_image = get_camera_background(camera)
-    if background_image is None:
-        return
-
-    camera.orientation += delta
-    if camera.orientation < 0:
-        camera.orientation += 4
-    if camera.orientation >= 4:
-        camera.orientation += -4
-    background_image.rotation = camera.orientation * math.pi / 2
-
-
-def exit_localview(context):
-    if context.space_data and context.space_data.local_view:
-        bpy.ops.view3d.localview()
-        return True
-    return False
-
-
-def enter_localview(context):
-    if not context.space_data.local_view:
-        bpy.ops.view3d.localview()
-
-
 def switch_to_fb_camera(camera, context):
     camera.show_background_image()
-    exit_localview(context)
+    exit_context_localview(context)
     camera.camobj.hide_set(False)
 
     bpy.ops.object.select_all(action='DESELECT')
     camera.camobj.select_set(state=True)
     bpy.context.view_layer.objects.active = camera.camobj
 
-    enter_localview(context)
+    enter_context_localview(context)
     bpy.ops.view3d.object_as_camera()
 
 

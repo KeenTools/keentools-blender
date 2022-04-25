@@ -55,6 +55,16 @@ class KTViewport:
         self._point_sensitivity = UserPreferences.get_value_safe(
             'pin_sensitivity', UserPreferences.type_float)
         self._pixel_size = 0.1  # Auto Calculated
+        self._work_area = None
+
+    def get_work_area(self):
+        return self._work_area
+
+    def set_work_area(self, area):
+        self._work_area = area
+
+    def clear_work_area(self):
+        self.set_work_area(None)
 
     def pins(self):
         return self._pins
@@ -109,3 +119,8 @@ class KTViewport:
         self._draw_update_timer_handler = bpy.context.window_manager.event_timer_add(
             time_step=time_step, window=bpy.context.window
         )
+
+    def tag_redraw(self):
+        area = self.get_work_area()
+        if area:
+            area.tag_redraw()

@@ -248,7 +248,7 @@ class GTLoader:
         if not geotracker:
             return
 
-        if geotracker.solve_for_camera_mode():
+        if geotracker.camera_mode():
             logger.debug('place_camera_relative_to_model')
             cls.place_camera_relative_to_model(forced=forced)
         else:
@@ -423,5 +423,4 @@ class GTLoader:
     @classmethod
     def get_work_area(cls) -> Optional[Area]:
         vp = cls.viewport()
-        texter = vp.texter()
-        return texter.get_work_area()
+        return vp.get_work_area()

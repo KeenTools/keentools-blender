@@ -91,12 +91,13 @@ class KTScreenText:
     def get_counter(cls):
         return cls._counter
 
-    def text_draw_callback(self, area):
+    def text_draw_callback(self, context):
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
             return
 
+        area = context.area
         if self._work_area != area:
             return
 
@@ -124,11 +125,10 @@ class KTScreenText:
             blf.position(font_id, xp, yp, 0)
             blf.draw(font_id, row['text'])
 
-    def register_handler(self, area):
-        self._work_area = area
-
+    def register_handler(self, context):
+        self._work_area = context.area
         self.text_draw_handler = self.get_target_class().draw_handler_add(
-            self.text_draw_callback, (area,), 'WINDOW', 'POST_PIXEL')
+            self.text_draw_callback, (context,), 'WINDOW', 'POST_PIXEL')
         self.add_handler_list(self.text_draw_handler)
 
     def unregister_handler(self):
@@ -138,6 +138,3 @@ class KTScreenText:
             self.remove_handler_list(self.text_draw_handler)
         self.text_draw_handler = None
         self._work_area = None
-
-    def get_work_area(self):
-        return self._work_area

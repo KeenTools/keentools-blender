@@ -94,7 +94,7 @@ class FBRectangleShader2D(KTEdgeShader2D):
         self.line_shader = gpu.types.GPUShader(
             solid_line_vertex_shader(), solid_line_fragment_shader())
 
-    def draw_callback(self, area):
+    def draw_callback(self, context):
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
@@ -103,7 +103,7 @@ class FBRectangleShader2D(KTEdgeShader2D):
         if self.line_shader is None or self.line_batch is None:
             return
 
-        if self._work_area != area:
+        if self._work_area != context.area:
             return
 
         bgl.glEnable(bgl.GL_BLEND)
@@ -199,11 +199,11 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             self._activate_coloring_image(image)
         return True
 
-    def draw_callback(self, area):
+    def draw_callback(self, context):
         if not self.is_visible():
             return
 
-        if self._work_area != area:
+        if self._work_area != context.area:
             return
 
         # Force Stop
