@@ -221,10 +221,10 @@ class FB_OT_MovePin(bpy.types.Operator):
             self.init_action(context, self.pinx, self.piny)
         elif self.test_action == "mouse_move":
             logger.debug("MOUSE MOVE TEST")
-            self.on_mouse_move(context, self.pinx, self.piny)
+            self.on_mouse_move(context.area, self.pinx, self.piny)
         elif self.test_action == "mouse_release":
             logger.debug("MOUSE RELEASE TEST")
-            self.on_left_mouse_release(context.release, self.pinx, self.piny)
+            self.on_left_mouse_release(context.area, self.pinx, self.piny)
         return {"FINISHED"}
 
     @profile_this
