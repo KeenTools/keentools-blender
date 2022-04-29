@@ -7,6 +7,7 @@ from .gtloader import GTLoader
 from ..utils import coords
 from .utils.animation import create_locrot_keyframe, insert_keyframe_in_fcurve
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..utils.manipulate import force_undo_push
 
 
 class GT_OT_MovePin(bpy.types.Operator):
@@ -20,24 +21,21 @@ class GT_OT_MovePin(bpy.types.Operator):
     pinx: bpy.props.FloatProperty(default=0)
     piny: bpy.props.FloatProperty(default=0)
 
-    def _pin_move_mode_on(self):
-        settings = get_gt_settings()
-        settings.pin_move_mode = True
+    new_pin_flag: bpy.props.BoolProperty(default=False)
 
-    def _pin_move_mode_off(self):
+    def _move_pin_mode_on(self):
         settings = get_gt_settings()
-        settings.pin_move_mode = False
+        settings.move_pin_mode = True
 
-    def _end_finished(self):
+    def _move_pin_mode_off(self):
+        settings = get_gt_settings()
+        settings.move_pin_mode = False
+
+    def _before_operator_finish(self):
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
         create_locrot_keyframe(geotracker.animatable_object(), 'KEYFRAME')
-        self._pin_move_mode_off()
-        return {'FINISHED'}
-
-    def _end_cancelled(self):
-        self._pin_move_mode_off()
-        return {'CANCELLED'}
+        self._move_pin_mode_off()
 
     def _new_pin(self, area, mouse_x, mouse_y):
         logger = logging.getLogger(__name__)
@@ -86,6 +84,7 @@ class GT_OT_MovePin(bpy.types.Operator):
             return False
 
         new_keyframe_flag = self._auto_keyframe_add()
+        self.new_pin_flag = False
 
         vp = GTLoader.viewport()
         vp.update_view_relative_pixel_size(context.area)
@@ -101,8 +100,8 @@ class GT_OT_MovePin(bpy.types.Operator):
             logger.debug('PIN FOUND: {}'.format(nearest))
             vp.pins().set_current_pin_num(nearest)
         else:
-            new_pin_flag = self._new_pin(context.area, mouse_x, mouse_y)
-            if not new_pin_flag:
+            self.new_pin_flag = self._new_pin(context.area, mouse_x, mouse_y)
+            if not self.new_pin_flag:
                 if new_keyframe_flag:
                     self._remove_keyframe()
                 return False
@@ -110,7 +109,6 @@ class GT_OT_MovePin(bpy.types.Operator):
         vp.create_batch_2d(context.area)
         vp.register_handlers(context)
         return True
-
 
     def on_left_mouse_release(self, area, event):
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
@@ -127,8 +125,15 @@ class GT_OT_MovePin(bpy.types.Operator):
         GTLoader.save_geotracker()
 
         GTLoader.update_all_viewport_shaders(area)
+        self._before_operator_finish()
         vp.tag_redraw()
-        return self._end_finished()
+
+        if self.new_pin_flag:
+            force_undo_push('Add GeoTracker pin')
+            self.new_pin_flag = False
+        else:
+            force_undo_push('Drag GeoTracker pin')
+        return {'FINISHED'}
 
     @staticmethod
     def _pin_drag(kid, area, mouse_x, mouse_y):
@@ -156,13 +161,15 @@ class GT_OT_MovePin(bpy.types.Operator):
                          '{}'.format(str(err)))
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
-            return self._end_finished()
+            self._before_operator_finish()
+            return {'FINISHED'}
         except Exception as err:
             logger = logging.getLogger(__name__)
             logger.error('on_mouse_move UNKNOWN EXCEPTION: '
                          '{}'.format(str(err)))
             self.report({'ERROR'}, 'Unknown error (see console window)')
-            return self._end_finished()
+            self._before_operator_finish()
+            return {'FINISHED'}
 
         GTLoader.place_camera()
         if geotracker.focal_length_estimation:
@@ -194,7 +201,8 @@ class GT_OT_MovePin(bpy.types.Operator):
             return {'RUNNING_MODAL'}
         else:
             logger.debug('MOVE PIN FINISH')
-            return self._end_finished()
+            self._before_operator_finish()
+            return {'FINISHED'}
 
     def invoke(self, context, event):
         logger = logging.getLogger(__name__)
@@ -205,7 +213,7 @@ class GT_OT_MovePin(bpy.types.Operator):
             logger.debug('START SELECTION')
             return {'CANCELLED'}
 
-        self._pin_move_mode_on()
+        self._move_pin_mode_on()
         GTLoader.viewport().create_batch_2d(context.area)
         context.window_manager.modal_handler_add(self)
         logger.debug('START PIN MOVING')

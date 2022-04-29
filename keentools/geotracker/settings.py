@@ -138,7 +138,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
 class SceneSettings(bpy.types.PropertyGroup):
     pinmode: bpy.props.BoolProperty(name='Pinmode status', default=False)
-    pin_move_mode: bpy.props.BoolProperty(name='Pin move mode status', default=False)
+    move_pin_mode: bpy.props.BoolProperty(name='Move pin mode status', default=False)
     pinmode_id: bpy.props.StringProperty(name='Unique pinmode ID')
 
     geotrackers: bpy.props.CollectionProperty(type=GeoTrackerItem, name='GeoTrackers')

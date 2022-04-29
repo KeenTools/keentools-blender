@@ -28,12 +28,45 @@ from ..utils.localview import exit_area_localview
 from ..utils import coords
 from .utils.animation import create_locrot_keyframe
 from ..utils.other import unhide_viewport_ui_element_from_object
+from ..utils.manipulate import force_undo_push
 
 
-_undo_handler = None
+def depsgraph_update_handler(scene, depsgraph):
+    def _check_updated(depsgraph, name):
+        logger = logging.getLogger(__name__)
+        log_output = logger.debug
+        log_output('COUNT UPDATES: {}'.format(len(depsgraph.updates)))
+        log_output('ids: {}'.format([update.id.name for update in depsgraph.updates]))
+        for update in depsgraph.updates:
+            if update.id.name != name:
+                continue
+            if not update.is_updated_transform:
+                continue
+            log_output(f'update.id: {update.id.name}')
+            log_output(f'update.is_updated_geometry: {update.is_updated_geometry}')
+            log_output(f'update.is_updated_transform: {update.is_updated_transform}')
+            log_output(f'update.is_updated_shading: {update.is_updated_shading}')
+            return True
+        return False
+
+    settings = get_gt_settings()
+    if not settings.pinmode:
+        unregister_undo_redo_handlers()
+        return
+    if settings.move_pin_mode:
+        return
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        return
+    obj = geotracker.animatable_object()
+    if not obj:
+        return
+
+    if _check_updated(depsgraph, obj.name):
+        GTLoader.update_all_viewport_shaders()
 
 
-def undo_handler(scene):
+def undo_redo_handler(scene):
     logger = logging.getLogger(__name__)
     logger.debug('gt_undo_handler')
     try:
@@ -42,27 +75,51 @@ def undo_handler(scene):
         vp = GTLoader.viewport()
         area = vp.get_work_area()
         if not settings.pinmode or not geotracker or not area:
-            unregister_undo_handler()
+            unregister_undo_redo_handlers()
             return
+
+        settings.move_pin_mode = True
+        GTLoader.load_geotracker()
+        GTLoader.update_all_viewport_shaders(area)
+
+        logger.debug('UPDATE STORED MATRIX')
+        GTLoader.geomobj_world_matrix_changed(update=True)
+        settings.move_pin_mode = False
 
     except Exception as err:
         logger.error('gt_undo_handler {}'.format(str(err)))
-        unregister_undo_handler()
+        unregister_undo_redo_handlers()
 
 
-def unregister_undo_handler():
-    global _undo_handler
-    if _undo_handler is not None:
-        if _undo_handler in bpy.app.handlers.undo_post:
-            bpy.app.handlers.undo_post.remove(_undo_handler)
-    _undo_handler = None
+def unregister_depsgraph_update():
+    unregister_app_handler(bpy.app.handlers.depsgraph_update_post,
+                           depsgraph_update_handler)
 
 
-def register_undo_handler():
-    global _undo_handler
-    unregister_undo_handler()
-    _undo_handler = undo_handler
-    bpy.app.handlers.undo_post.append(_undo_handler)
+def unregister_undo_redo_handlers():
+    unregister_app_handler(bpy.app.handlers.undo_post, undo_redo_handler)
+    unregister_app_handler(bpy.app.handlers.redo_post, undo_redo_handler)
+    unregister_depsgraph_update()
+
+
+def register_app_handler(app_handlers, handler):
+    if handler is not None:
+        if handler not in app_handlers:
+            app_handlers.append(handler)
+
+
+def unregister_app_handler(app_handlers, handler):
+    if handler is not None:
+        if handler in app_handlers:
+            app_handlers.remove(handler)
+
+
+def register_undo_redo_handlers():
+    unregister_undo_redo_handlers()
+    register_app_handler(bpy.app.handlers.undo_post, undo_redo_handler)
+    register_app_handler(bpy.app.handlers.redo_post, undo_redo_handler)
+    register_app_handler(bpy.app.handlers.depsgraph_update_post,
+                         depsgraph_update_handler)
 
 
 class GT_OT_PinMode(bpy.types.Operator):
@@ -116,6 +173,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         if geotracker.geomobj:
             unhide_viewport_ui_element_from_object(geotracker.geomobj)
         GTLoader.save_geotracker()
+        unregister_undo_redo_handlers()
 
     def _on_left_mouse_press(self, area, event):
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
@@ -178,6 +236,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         vp.update_residuals(gt, area, kid)
         vp.tag_redraw()
 
+        force_undo_push('Delete GeoTracker pin')
         return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):
@@ -208,7 +267,7 @@ class GT_OT_PinMode(bpy.types.Operator):
 
         context.window_manager.modal_handler_add(self)
 
-        register_undo_handler()
+        register_undo_redo_handlers()
         logger.debug('PINMODE STARTED')
         return {'RUNNING_MODAL'}
 
@@ -219,6 +278,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         if self.pinmode_id != settings.pinmode_id:
             logger.error('Extreme GeoTracker pinmode operator stop')
             logger.error('{} != {}'.format(self.pinmode_id, settings.pinmode_id))
+            self._exit_pinmode()
             return {'FINISHED'}
 
         if not context.space_data:
@@ -289,7 +349,10 @@ class GT_OT_PinMode(bpy.types.Operator):
                                 settings.current_frame())
             vp.tag_redraw()
 
-        if GTLoader.geomobj_world_matrix_changed(update=True) is True and not settings.pin_move_mode:
+        if False and GTLoader.geomobj_world_matrix_changed(update=True) is True and not settings.move_pin_mode:
+            coords.update_depsgraph()
+            if GTLoader.geomobj_world_matrix_changed(update=True):
+                logger.error('*** DEPSGRAPH UPDATES WORLD MATRIX ***')
             logger.debug('GEOMOBJ MOVED')
             GTLoader.safe_keyframe_add(settings.current_frame(),
                                        GTLoader.calc_model_matrix())
@@ -301,6 +364,7 @@ class GT_OT_PinMode(bpy.types.Operator):
             GTLoader.update_all_viewport_shaders(context.area)
             vp = GTLoader.viewport()
             vp.tag_redraw()
+            force_undo_push('Move GT geometry')
 
         if event.value == 'PRESS' and event.type == 'LEFTMOUSE':
             return self._on_left_mouse_press(context.area, event)
