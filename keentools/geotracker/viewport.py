@@ -94,8 +94,8 @@ class GTViewport(KTViewport):
         for i in range(pins_count):
             pin = gt.pin(keyframe, i)
             if pin is not None:
-                    p = coords.pin_to_xyz_from_mesh(pin, obj)
-                    verts.append(p)
+                p = coords.pin_to_xyz_from_mesh(pin, obj)
+                verts.append(p)
         return verts
 
     def img_points(self, gt, keyframe):
