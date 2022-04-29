@@ -257,7 +257,7 @@ def update_expression_options(self, context):
     if not settings.pinmode:
         return
 
-    FBLoader.update_viewport_shaders(context,
+    FBLoader.update_viewport_shaders(context.area,
                                      settings.current_headnum,
                                      settings.current_camnum)
 

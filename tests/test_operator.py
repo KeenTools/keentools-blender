@@ -208,7 +208,7 @@ def test_move_pins():
 
     fake_context = get_fake_context()
 
-    brect = tuple(coords.get_camera_border(fake_context))
+    brect = tuple(coords.get_camera_border(fake_context.area))
     arect = (396.5, -261.9, 1189.5, 1147.9)
 
     move_pin(793, 421, 651, 425, arect, brect)

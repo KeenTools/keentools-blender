@@ -19,14 +19,13 @@
 import logging
 import numpy as np
 
-
 import bpy
 from bpy.props import (
     StringProperty,
     IntProperty,
 )
 
-from ..utils import manipulate
+from .utils.manipulate import get_current_head
 from ..utils.coords import xy_to_xz_rotation_matrix_4x4
 from ..facebuilder_config import FBConfig, get_fb_settings
 from ..facebuilder.utils.exif_reader import auto_setup_camera_from_exif
@@ -56,7 +55,7 @@ class FB_OT_HistoryActor(bpy.types.Operator):
         logger.debug('History Actor: {}'.format(self.action))
 
         if self.action == 'generate_control_panel':
-            head = manipulate.get_current_head()
+            head = get_current_head()
             if head:
                 controls = create_blendshape_controls(head.headobj)
                 if len(controls) > 0:
@@ -81,7 +80,7 @@ class FB_OT_HistoryActor(bpy.types.Operator):
                 return {'FINISHED'}
 
         elif self.action == 'delete_control_panel':
-            head = manipulate.get_current_head()
+            head = get_current_head()
             if head and head.control_panel_exists():
                 remove_blendshape_drivers(head.headobj)
                 delete_with_children(head.blendshapes_control_panel)
@@ -90,7 +89,7 @@ class FB_OT_HistoryActor(bpy.types.Operator):
             return {'FINISHED'}
 
         elif self.action == 'select_control_panel_sliders':
-            head = manipulate.get_current_head()
+            head = get_current_head()
             if head and head.control_panel_exists():
                 counter = select_control_panel_sliders(
                     head.blendshapes_control_panel)
@@ -101,7 +100,7 @@ class FB_OT_HistoryActor(bpy.types.Operator):
             return {'FINISHED'}
 
         elif self.action == 'convert_controls_to_blendshapes':
-            head = manipulate.get_current_head()
+            head = get_current_head()
             if head and head.control_panel_exists():
                 if not convert_controls_animation_to_blendshapes(head.headobj):
                     self.report({'ERROR'}, 'Conversion could not be performed')

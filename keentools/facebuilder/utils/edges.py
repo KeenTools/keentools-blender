@@ -68,11 +68,11 @@ class FBRectangleShader2D(KTEdgeShader2D):
         for i, rect in enumerate(self._rectangles):
             rect[6] = (*color,) if i == index else (*rect[7],)
 
-    def prepare_shader_data(self, context):
+    def prepare_shader_data(self, area):
         rect_points = []
         rect_colors = []
 
-        rx1, ry1, rx2, ry2 = coords.get_camera_border(context)
+        rx1, ry1, rx2, ry2 = coords.get_camera_border(area)
 
         for x1, y1, x2, y2, w, h, col1, col2 in self._rectangles:
             points = [(x1, y1), (x1, y2), (x2, y2), (x2, y1)]

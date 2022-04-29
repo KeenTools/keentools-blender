@@ -24,11 +24,9 @@ from ...addon_config import Config, facebuilder_enabled
 from ...facebuilder_config import FBConfig, get_fb_settings
 
 from ..fbloader import FBLoader
-from ...utils.manipulate import (what_is_state,
-                                get_current_head,
-                                get_obj_from_context,
-                                has_no_blendshape,
+from ...utils.manipulate import (has_no_blendshape,
                                 has_blendshapes_action)
+from ..utils.manipulate import (what_is_state, get_current_head, get_obj_from_context)
 from ...utils.materials import find_bpy_image_by_name
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 

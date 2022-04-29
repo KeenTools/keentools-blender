@@ -153,20 +153,13 @@ class KTShaderPoints:
         self._create_batch(self.vertices, self.vertices_colors)
 
     def register_handler(self, context):
-        self._work_area = context.area
-
-        self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, (context,), 'WINDOW', 'POST_VIEW')
-        # Add to handler list
-        self.add_handler_list(self.draw_handler)
+        pass
 
     def unregister_handler(self):
         if self.draw_handler is not None:
             self.get_target_class().draw_handler_remove(
                 self.draw_handler, 'WINDOW')
-            # Remove from handler list
             self.remove_handler_list(self.draw_handler)
-
         self.draw_handler = None
 
     def add_vertices_colors(self, verts, colors):
@@ -208,24 +201,24 @@ class KTShaderPoints:
 
 
 class KTPoints2D(KTShaderPoints):
-    """ 2D Shader for 2D-points drawing """
     def create_batch(self):
+        if bpy.app.background:
+            return
         self._create_batch(
             # 2D_FLAT_COLOR
             self.vertices, self.vertices_colors, 'CUSTOM_2D')
 
     def register_handler(self, context):
         self._work_area = context.area
-
         self.draw_handler = self.get_target_class().draw_handler_add(
             self.draw_callback, (context,), 'WINDOW', 'POST_PIXEL')
-        # Add to handler list
         self.add_handler_list(self.draw_handler)
 
 
 class KTPoints3D(KTShaderPoints):
-    """ 3D Shader wrapper for 3d-points draw """
     def create_batch(self):
+        if bpy.app.background:
+            return
         # 3D_FLAT_COLOR
         self._create_batch(self.vertices, self.vertices_colors, 'CUSTOM_3D')
 
@@ -234,3 +227,9 @@ class KTPoints3D(KTShaderPoints):
         self.set_point_size(
             UserPreferences.get_value_safe('pin_size', UserPreferences.type_float) *
             Config.surf_pin_size_scale)
+
+    def register_handler(self, context):
+        self._work_area = context.area
+        self.draw_handler = self.get_target_class().draw_handler_add(
+            self.draw_callback, (context,), 'WINDOW', 'POST_VIEW')
+        self.add_handler_list(self.draw_handler)

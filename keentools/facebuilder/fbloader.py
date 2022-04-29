@@ -569,22 +569,22 @@ class FBLoader:
         wf.create_batches()
 
     @classmethod
-    def _update_points_and_residuals(cls, context, obj, keyframe):
+    def _update_points_and_residuals(cls, area, obj, keyframe):
         fb = cls.get_builder()
         vp = cls.viewport()
         vp.update_surface_points(fb, obj, keyframe)
-        vp.update_residuals(fb, obj, keyframe, context)
-        vp.create_batch_2d(context)
+        vp.update_residuals(fb, obj, keyframe, area)
+        vp.create_batch_2d(area)
 
     @classmethod
-    def update_viewport_shaders(cls, context, headnum, camnum):
+    def update_viewport_shaders(cls, area, headnum, camnum):
         settings = get_fb_settings()
         head = settings.get_head(headnum)
         if not head or not head.headobj:
             return
         kid = head.get_keyframe(camnum)
         cls._update_wireframe(head.headobj, kid)
-        cls._update_points_and_residuals(context, head.headobj, kid)
+        cls._update_points_and_residuals(area, head.headobj, kid)
 
     @classmethod
     def update_wireframe_shader_only(cls, headnum, camnum):

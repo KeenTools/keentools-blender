@@ -24,10 +24,45 @@ import bpy
 from ..addon_config import get_operator
 from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
-from ..utils.manipulate import exit_context_localview, set_overlays
+from ..utils.localview import exit_area_localview
 from ..utils import coords
 from .utils.animation import create_locrot_keyframe
 from ..utils.other import unhide_viewport_ui_element_from_object
+
+
+_undo_handler = None
+
+
+def undo_handler(scene):
+    logger = logging.getLogger(__name__)
+    logger.debug('gt_undo_handler')
+    try:
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+        vp = GTLoader.viewport()
+        area = vp.get_work_area()
+        if not settings.pinmode or not geotracker or not area:
+            unregister_undo_handler()
+            return
+
+    except Exception as err:
+        logger.error('gt_undo_handler {}'.format(str(err)))
+        unregister_undo_handler()
+
+
+def unregister_undo_handler():
+    global _undo_handler
+    if _undo_handler is not None:
+        if _undo_handler in bpy.app.handlers.undo_post:
+            bpy.app.handlers.undo_post.remove(_undo_handler)
+    _undo_handler = None
+
+
+def register_undo_handler():
+    global _undo_handler
+    unregister_undo_handler()
+    _undo_handler = undo_handler
+    bpy.app.handlers.undo_post.append(_undo_handler)
 
 
 class GT_OT_PinMode(bpy.types.Operator):
@@ -69,47 +104,48 @@ class GT_OT_PinMode(bpy.types.Operator):
         return cls._shift_pressed
 
     @classmethod
-    def _exit_pinmode(cls, context):
+    def _exit_pinmode(cls):
         settings = get_gt_settings()
         settings.pinmode = False
         geotracker = settings.get_current_geotracker_item()
         geotracker.reset_focal_length_estimation()
         vp = GTLoader.viewport()
+        area = vp.get_work_area()
         vp.unregister_handlers()
-        exit_context_localview(context)
+        exit_area_localview(area)
         if geotracker.geomobj:
             unhide_viewport_ui_element_from_object(geotracker.geomobj)
         GTLoader.save_geotracker()
 
-    def _on_left_mouse_press(self, context, event):
+    def _on_left_mouse_press(self, area, event):
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
-        GTLoader.viewport().update_view_relative_pixel_size(context)
+        GTLoader.viewport().update_view_relative_pixel_size(area)
 
-        if not coords.is_in_area(context, mouse_x, mouse_y):
+        if not coords.is_in_area(area, mouse_x, mouse_y):
             return {'PASS_THROUGH'}
 
-        if coords.is_safe_region(context, mouse_x, mouse_y):
+        if coords.is_safe_region(area, mouse_x, mouse_y):
             op = get_operator(GTConfig.gt_movepin_idname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y)
             return {'PASS_THROUGH'}
 
         return {'PASS_THROUGH'}
 
-    def _on_right_mouse_press(self, context, event):
+    def _on_right_mouse_press(self, area, event):
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
         vp = GTLoader.viewport()
-        vp.update_view_relative_pixel_size(context)
+        vp.update_view_relative_pixel_size(area)
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, context)
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, area)
 
         nearest, dist2 = coords.nearest_point(x, y, vp.pins().arr())
         if nearest >= 0 and dist2 < vp.tolerance_dist2():
-            return self._delete_found_pin(nearest, context)
+            return self._delete_found_pin(nearest, area)
 
-        vp.create_batch_2d(context)
-        return {"RUNNING_MODAL"}
+        vp.create_batch_2d(area)
+        return {'RUNNING_MODAL'}
 
-    def _delete_found_pin(self, nearest, context):
+    def _delete_found_pin(self, nearest, area):
         settings = get_gt_settings()
         kid = settings.current_frame()
 
@@ -133,17 +169,16 @@ class GT_OT_PinMode(bpy.types.Operator):
         vp = GTLoader.viewport()
         vp.update_surface_points(gt, geotracker.geomobj, kid)
 
-        if not geotracker.solve_for_camera_mode():
+        if not geotracker.camera_mode():
             wf = vp.wireframer()
             wf.init_geom_data_from_mesh(geotracker.geomobj)
             wf.create_batches()
 
-        vp.create_batch_2d(context)
-        vp.update_residuals(gt, context, kid)
+        vp.create_batch_2d(area)
+        vp.update_residuals(gt, area, kid)
+        vp.tag_redraw()
 
-        GTLoader.tag_redraw(context)
-
-        return {"RUNNING_MODAL"}
+        return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):
         logger = logging.getLogger(__name__)
@@ -164,15 +199,16 @@ class GT_OT_PinMode(bpy.types.Operator):
 
         logger.debug('START SHADERS')
         GTLoader.load_pins_into_viewport()
-        vp.create_batch_2d(context)
+        vp.create_batch_2d(context.area)
         logger.debug('REGISTER SHADER HANDLERS')
-        GTLoader.update_all_viewport_shaders(context)
+        GTLoader.update_all_viewport_shaders(context.area)
         vp.register_handlers(context)
 
         GTLoader.store_geomobj_world_matrix(*GTLoader.get_geomobj_world_matrix())
 
         context.window_manager.modal_handler_add(self)
 
+        register_undo_handler()
         logger.debug('PINMODE STARTED')
         return {'RUNNING_MODAL'}
 
@@ -187,12 +223,12 @@ class GT_OT_PinMode(bpy.types.Operator):
 
         if not context.space_data:
             logger.debug('VIEWPORT IS CLOSED')
-            self._exit_pinmode(context)
+            self._exit_pinmode()
             return {'FINISHED'}
 
         if context.space_data.region_3d.view_perspective != 'CAMERA':
             logger.debug('CAMERA ROTATED PINMODE OUT')
-            self._exit_pinmode(context)
+            self._exit_pinmode()
             return {'FINISHED'}
 
         if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
@@ -209,12 +245,13 @@ class GT_OT_PinMode(bpy.types.Operator):
                 settings.end_selection()
             else:
                 settings.do_selection(event.mouse_region_x, event.mouse_region_y)
-            GTLoader.tag_redraw(context)
+            vp = GTLoader.viewport()
+            vp.tag_redraw()
             return {'RUNNING_MODAL'}
 
         if event.type == 'ESC' and event.value == 'RELEASE':
             logger.debug('Exit pinmode by ESC')
-            self._exit_pinmode(context)
+            self._exit_pinmode()
             return {'FINISHED'}
 
         if self._current_frame_updated():
@@ -223,16 +260,17 @@ class GT_OT_PinMode(bpy.types.Operator):
             logger.debug('KEYFRAME UPDATED')
             coords.update_depsgraph()
             GTLoader.place_camera()
-            GTLoader.update_all_viewport_shaders(context)
+            GTLoader.update_all_viewport_shaders(context.area)
             GTLoader.geomobj_world_matrix_changed(update=True)
-            GTLoader.tag_redraw(context)
+            vp = GTLoader.viewport()
+            vp.tag_redraw()
             return {'PASS_THROUGH'}
 
         if GTLoader.geomobj_mode_changed_to_object():
             logger.debug('RETURNED TO OBJECT_MODE')
             GTLoader.save_geotracker()
             GTLoader.load_geotracker()
-            GTLoader.update_all_viewport_shaders(context)
+            GTLoader.update_all_viewport_shaders(context.area)
             return {'PASS_THROUGH'}
 
         if event.type == 'TIMER' and GTLoader.get_stored_geomobj_mode() == 'EDIT':
@@ -240,16 +278,16 @@ class GT_OT_PinMode(bpy.types.Operator):
             GTLoader.update_geomobj_mesh()
             GTLoader.save_geotracker()
             GTLoader.load_geotracker()
-            GTLoader.update_all_viewport_shaders(context)
+            GTLoader.update_all_viewport_shaders(context.area)
             return {'PASS_THROUGH'}
 
         if self._check_camera_state_changed(context.space_data.region_3d):
             logger.debug('FORCE TAG REDRAW BY VIEWPORT ZOOM/OFFSET')
             vp = GTLoader.viewport()
-            vp.create_batch_2d(context)
-            vp.update_residuals(GTLoader.kt_geotracker(), context,
+            vp.create_batch_2d(context.area)
+            vp.update_residuals(GTLoader.kt_geotracker(), context.area,
                                 settings.current_frame())
-            GTLoader.tag_redraw(context)
+            vp.tag_redraw()
 
         if GTLoader.geomobj_world_matrix_changed(update=True) is True and not settings.pin_move_mode:
             logger.debug('GEOMOBJ MOVED')
@@ -260,13 +298,14 @@ class GT_OT_PinMode(bpy.types.Operator):
             create_locrot_keyframe(geotracker.geomobj, 'KEYFRAME')
 
             GTLoader.load_geotracker()
-            GTLoader.update_all_viewport_shaders(context)
-            GTLoader.tag_redraw(context)
+            GTLoader.update_all_viewport_shaders(context.area)
+            vp = GTLoader.viewport()
+            vp.tag_redraw()
 
         if event.value == 'PRESS' and event.type == 'LEFTMOUSE':
-            return self._on_left_mouse_press(context, event)
+            return self._on_left_mouse_press(context.area, event)
 
         if event.value == 'PRESS' and event.type == 'RIGHTMOUSE':
-            return self._on_right_mouse_press(context, event)
+            return self._on_right_mouse_press(context.area, event)
 
         return {'PASS_THROUGH'}  # {'RUNNING_MODAL'}

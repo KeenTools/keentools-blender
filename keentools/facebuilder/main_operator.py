@@ -34,7 +34,8 @@ from .utils import cameras
 from ..utils.attrs import get_obj_collection, safe_delete_collection
 from ..facebuilder.utils.exif_reader import (update_exif_sizes_message,
                                              copy_exif_parameters_from_camera_to_head)
-from ..utils.manipulate import check_settings
+from .utils.manipulate import check_settings
+from .utils.manipulate import push_head_in_undo_history
 from ..utils.operator_action import (create_blendshapes,
                                      delete_blendshapes,
                                      load_animation_from_csv,
@@ -45,6 +46,7 @@ from ..utils.operator_action import (create_blendshapes,
                                      update_blendshapes,
                                      unhide_head,
                                      reconstruct_by_mesh)
+from ..utils.localview import exit_area_localview
 
 
 class ButtonOperator:
@@ -171,10 +173,9 @@ class FB_OT_CenterGeo(Operator):
         FBLoader.save_fb_serial_and_image_pathes(headnum)
         FBLoader.place_camera(headnum, camnum)
 
-        manipulate.push_head_in_undo_history(settings.get_head(headnum),
-                                             'Reset Camera.')
+        push_head_in_undo_history(settings.get_head(headnum), 'Reset Camera.')
 
-        FBLoader.update_viewport_shaders(context, headnum, camnum)
+        FBLoader.update_viewport_shaders(context.area, headnum, camnum)
         return {'FINISHED'}
 
 
@@ -211,10 +212,9 @@ class FB_OT_Unmorph(Operator):
 
         if settings.pinmode:
             FBLoader.load_pins_into_viewport(headnum, camnum)
-            FBLoader.update_viewport_shaders(context, headnum, camnum)
+            FBLoader.update_viewport_shaders(context.area, headnum, camnum)
 
-        manipulate.push_head_in_undo_history(
-            settings.get_head(headnum), 'After Reset')
+        push_head_in_undo_history(settings.get_head(headnum), 'After Reset')
 
         return {'FINISHED'}
 
@@ -249,10 +249,9 @@ class FB_OT_RemovePins(Operator):
         FBLoader.save_fb_serial_and_image_pathes(headnum)
         FBLoader.update_camera_pins_count(headnum, camnum)
         FBLoader.load_pins_into_viewport(headnum, camnum)
-        FBLoader.update_viewport_shaders(context, headnum, camnum)
+        FBLoader.update_viewport_shaders(context.area, headnum, camnum)
 
-        manipulate.push_head_in_undo_history(
-            settings.get_head(headnum), 'Remove pins')
+        push_head_in_undo_history(settings.get_head(headnum), 'Remove pins')
 
         return {'FINISHED'}
 
@@ -573,9 +572,9 @@ class FB_OT_ResetExpression(Operator):
 
         FBLoader.save_fb_serial_and_image_pathes(self.headnum)
         coords.update_head_mesh_non_neutral(fb, head)
-        FBLoader.update_viewport_shaders(context, self.headnum, self.camnum)
+        FBLoader.update_viewport_shaders(context.area, self.headnum, self.camnum)
 
-        manipulate.push_head_in_undo_history(head, 'Reset Expression.')
+        push_head_in_undo_history(head, 'Reset Expression.')
 
         return {'FINISHED'}
 
@@ -602,7 +601,7 @@ class FB_OT_ShowTexture(Operator):
 
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
-            cameras.exit_localview(context)
+            exit_area_localview(context.area)
 
         mat = materials.show_texture_in_mat(
             head.preview_texture_name(), head.preview_material_name())
@@ -629,7 +628,7 @@ class FB_OT_ShowSolid(Operator):
         settings = get_fb_settings()
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
-            cameras.exit_localview(context)
+            exit_area_localview(context.area)
         materials.switch_to_mode('SOLID')
         return {'FINISHED'}
 
@@ -647,7 +646,7 @@ class FB_OT_ExitPinmode(Operator):
         settings = get_fb_settings()
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
-            cameras.exit_localview(context)
+            exit_area_localview(context.area)
             cameras.leave_camera_view(context)
         return {'FINISHED'}
 
@@ -784,7 +783,7 @@ class FB_OT_ReconstructHead(ButtonOperator, Operator):
     bl_description = 'Reconstruct head by KeenTools attributes on mesh'
 
     def execute(self, context):
-        return reconstruct_by_mesh(self)
+        return reconstruct_by_mesh()
 
 
 class FB_OT_DefaultPinSettings(ButtonOperator, Operator):

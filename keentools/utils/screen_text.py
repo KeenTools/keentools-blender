@@ -97,13 +97,15 @@ class KTScreenText:
             self.unregister_handler()
             return
 
-        if self._work_area != context.area:
+        area = context.area
+        if self._work_area != area:
             return
 
         if len(self.message) == 0:
             return
 
-        region = context.region
+        region = area.regions[-1]
+        assert region.type == 'WINDOW'
         xc = int(region.width * 0.5)  # horizontal center
         yc = int(region.height * 0.5)  # vertical center
         font_id = 0
@@ -125,7 +127,6 @@ class KTScreenText:
 
     def register_handler(self, context):
         self._work_area = context.area
-
         self.text_draw_handler = self.get_target_class().draw_handler_add(
             self.text_draw_callback, (context,), 'WINDOW', 'POST_PIXEL')
         self.add_handler_list(self.text_draw_handler)
@@ -137,6 +138,3 @@ class KTScreenText:
             self.remove_handler_list(self.text_draw_handler)
         self.text_draw_handler = None
         self._work_area = None
-
-    def get_work_area(self):
-        return self._work_area

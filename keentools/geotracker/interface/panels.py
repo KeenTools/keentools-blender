@@ -138,7 +138,7 @@ class GT_PT_GeotrackersPanel(View3DPanel):
 
             op = row.operator(GTConfig.gt_actor_idname, text=name,
                               depress=geotracker_num == i,
-                              icon='CAMERA_DATA' if geotracker.solve_for_camera_mode() else 'MESH_ICOSPHERE')
+                              icon='CAMERA_DATA' if geotracker.camera_mode() else 'MESH_ICOSPHERE')
             op.action = 'select_geotracker'
             op.num = i
 

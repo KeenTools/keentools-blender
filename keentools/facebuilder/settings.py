@@ -52,7 +52,7 @@ from .callbacks import (update_mesh_with_dialog,
                         update_camera_focal,
                         update_background_tone_mapping,
                         universal_getter, universal_setter)
-from ..utils.manipulate import get_current_head
+from .utils.manipulate import get_current_head
 from ..utils.images import np_array_from_bpy_image, assign_pixels_data
 
 

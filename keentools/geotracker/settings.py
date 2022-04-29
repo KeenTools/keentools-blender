@@ -101,11 +101,11 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         if self.geomobj:
             self.geomobj[GTConfig.serial_prop_name] = self.get_serial_str()
 
-    def solve_for_camera_mode(self) -> None:
+    def camera_mode(self) -> None:
         return self.solve_for_camera
 
     def animatable_object(self) -> Optional[Object]:
-        if self.solve_for_camera_mode():
+        if self.camera_mode():
             return self.camobj
         return self.geomobj
 

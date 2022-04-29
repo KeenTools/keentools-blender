@@ -91,7 +91,6 @@ class KTEdgeShaderBase:
 
     def register_handler(self, context):
         self._work_area = context.area
-
         if self.draw_handler is not None:
             self.unregister_handler()
         self.draw_handler = self.get_target_class().draw_handler_add(
@@ -130,9 +129,6 @@ class KTEdgeShaderBase:
 
     def unhide_shader(self):
         self.set_visible(True)
-
-    def get_work_area(self):
-        return self._work_area
 
     @staticmethod
     def _get_triangulation_indices(obj):
@@ -185,7 +181,6 @@ class KTEdgeShader2D(KTEdgeShaderBase):
 
     def register_handler(self, context):
         self._work_area = context.area
-
         if self.draw_handler is not None:
             self.unregister_handler()
         self.draw_handler = self.get_target_class().draw_handler_add(
@@ -292,15 +287,16 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
         if self.line_shader is None or self.line_batch is None:
             return
 
-        if not context.area:
+        area = context.area
+        if not area:
             return
 
-        reg = self._get_region(context.area)
+        reg = self._get_region(area)
         current_state = (reg.view2d.view_to_region(0, 0, clip=False),
                          reg.view2d.view_to_region(100, 0, clip=False))
         if self._batch_needs_update or current_state != self._state:
             self._state = current_state
-            self._update_keyframe_lines(context.area)
+            self._update_keyframe_lines(area)
             self._batch_needs_update = False
             self.create_batch()
 

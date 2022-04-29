@@ -24,7 +24,7 @@ from ..facebuilder_config import FBConfig, get_fb_settings
 from .fbloader import FBLoader
 from ..utils import coords
 from ..utils.focal_length import configure_focal_mode_and_fixes
-from ..utils.manipulate import push_head_in_undo_history
+from .utils.manipulate import push_head_in_undo_history
 from ..utils.images import load_rgba
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
@@ -131,7 +131,7 @@ def _add_pins_to_face(headnum, camnum, rectangle_index, context):
     FBLoader.load_pins_into_viewport(headnum, camnum)
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
-    FBLoader.update_viewport_shaders(context, headnum, camnum)
+    FBLoader.update_viewport_shaders(context.area, headnum, camnum)
 
     FBLoader.save_fb_serial_and_image_pathes(headnum)
 
@@ -160,34 +160,34 @@ class FB_OT_PickMode(bpy.types.Operator):
     camnum: bpy.props.IntProperty(default=0)
     selected: bpy.props.IntProperty(default=-1)
 
-    def _init_rectangler(self, context):
+    def _init_rectangler(self, area):
         vp = FBLoader.viewport()
         rectangler = vp.rectangler()
-        rectangler.prepare_shader_data(context)
+        rectangler.prepare_shader_data(area)
         rectangler.create_batch()
-        vp.create_batch_2d(context)
+        vp.create_batch_2d(area)
 
     def _get_rectangler(self):
         return FBLoader.viewport().rectangler()
 
-    def _update_rectangler_shader(self, context):
+    def _update_rectangler_shader(self, area):
         rectangler = self._get_rectangler()
-        rectangler.prepare_shader_data(context)
+        rectangler.prepare_shader_data(area)
         rectangler.create_batch()
-        context.area.tag_redraw()
+        area.tag_redraw()
 
-    def _before_operator_stop(self, context):
+    def _before_operator_stop(self, area):
         logger = logging.getLogger(__name__)
         logger.debug('_before_operator_stop')
         rectangler = self._get_rectangler()
         rectangler.clear_rectangles()
-        self._update_rectangler_shader(context)
+        self._update_rectangler_shader(area)
         self._show_wireframe()
 
-    def _selected_rectangle(self, context, event):
+    def _selected_rectangle(self, area, event):
         rectangler = self._get_rectangler()
         mouse_x, mouse_y = coords.get_image_space_coord(
-            event.mouse_region_x, event.mouse_region_y, context)
+            event.mouse_region_x, event.mouse_region_y, area)
         return rectangler.active_rectangle_index(mouse_x, mouse_y)
 
     def _hide_wireframe(self):
@@ -213,7 +213,7 @@ class FB_OT_PickMode(bpy.types.Operator):
             self.report({'INFO'}, 'Not in pinmode')
             return {'FINISHED'}
 
-        self._init_rectangler(context)
+        self._init_rectangler(context.area)
         self._hide_wireframe()
 
         context.window_manager.modal_handler_add(self)
@@ -252,23 +252,23 @@ class FB_OT_PickMode(bpy.types.Operator):
             self.report({'INFO'}, message)
             logger.debug(message)
 
-            self._before_operator_stop(context)
+            self._before_operator_stop(context.area)
             return {'FINISHED'}
 
         if event.type in {'WHEELDOWNMOUSE', 'WHEELUPMOUSE', 'MIDDLEMOUSE'}:
-            self._update_rectangler_shader(context)
+            self._update_rectangler_shader(context.area)
             return {'PASS_THROUGH'}
 
         if event.type == 'MOUSEMOVE':
             mouse_x, mouse_y = coords.get_image_space_coord(
-                event.mouse_region_x, event.mouse_region_y, context)
+                event.mouse_region_x, event.mouse_region_y, context.area)
             index = rectangler.active_rectangle_index(mouse_x, mouse_y)
             rectangler.highlight_rectangle(index,
                                            FBConfig.selected_rectangle_color)
-            self._update_rectangler_shader(context)
+            self._update_rectangler_shader(context.area)
 
         if event.value == 'PRESS' and event.type in {'LEFTMOUSE', 'RIGHTMOUSE'}:
-            index = self._selected_rectangle(context, event)
+            index = self._selected_rectangle(context.area, event)
             if index >= 0:
                 result = _add_pins_to_face(self.headnum, self.camnum, index,
                                            context)
@@ -290,7 +290,7 @@ class FB_OT_PickMode(bpy.types.Operator):
                 self.report({'INFO'}, message)
                 logger.debug(message)
 
-            self._before_operator_stop(context)
+            self._before_operator_stop(context.area)
             return {'FINISHED'}
 
         if event.type == 'ESC' and event.value == 'RELEASE':
@@ -298,7 +298,7 @@ class FB_OT_PickMode(bpy.types.Operator):
             self.report({'INFO'}, message)
             logger.debug(message)
 
-            self._before_operator_stop(context)
+            self._before_operator_stop(context.area)
             return {'FINISHED'}
 
         # Prevent camera rotation by user

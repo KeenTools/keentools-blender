@@ -248,7 +248,7 @@ class GTLoader:
         if not geotracker:
             return
 
-        if geotracker.solve_for_camera_mode():
+        if geotracker.camera_mode():
             logger.debug('place_camera_relative_to_model')
             cls.place_camera_relative_to_model(forced=forced)
         else:
@@ -372,11 +372,11 @@ class GTLoader:
         wf.create_batches()
 
     @classmethod
-    def update_viewport_pins_and_residuals(cls, context: Any) -> None:
+    def update_viewport_pins_and_residuals(cls, area: Area) -> None:
         settings = get_gt_settings()
         vp = GTLoader.viewport()
         GTLoader.load_pins_into_viewport()
-        vp.create_batch_2d(context)
+        vp.create_batch_2d(area)
         gt = GTLoader.kt_geotracker()
         kid = settings.current_frame()
 
@@ -385,12 +385,12 @@ class GTLoader:
             return
 
         vp.update_surface_points(gt, geotracker.geomobj, kid)
-        vp.update_residuals(gt, context, kid)
+        vp.update_residuals(gt, area, kid)
 
     @classmethod
-    def update_all_viewport_shaders(cls, context: Any) -> None:
+    def update_all_viewport_shaders(cls, area: Area) -> None:
         cls.update_viewport_wireframe()
-        cls.update_viewport_pins_and_residuals(context)
+        cls.update_viewport_pins_and_residuals(area)
         cls.update_timeline()
 
     @classmethod
@@ -423,5 +423,4 @@ class GTLoader:
     @classmethod
     def get_work_area(cls) -> Optional[Area]:
         vp = cls.viewport()
-        texter = vp.texter()
-        return texter.get_work_area()
+        return vp.get_work_area()

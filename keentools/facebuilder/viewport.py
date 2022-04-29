@@ -41,14 +41,14 @@ class FBViewport(KTViewport):
 
     def register_handlers(self, context):
         self.unregister_handlers()
+        self.set_work_area(context.area)
         self.residuals().register_handler(context)
         self.rectangler().register_handler(context)
         self.points3d().register_handler(context)
         self.points2d().register_handler(context)
         self.texter().register_handler(context)
         self.wireframer().register_handler(context)
-        self.register_draw_update_timer(
-            context, time_step=FBConfig.viewport_redraw_interval)
+        self.register_draw_update_timer(time_step=FBConfig.viewport_redraw_interval)
 
     def unregister_handlers(self):
         self.unregister_draw_update_timer()
@@ -58,6 +58,7 @@ class FBViewport(KTViewport):
         self.points3d().unregister_handler()
         self.rectangler().unregister_handler()
         self.residuals().unregister_handler()
+        self.clear_work_area()
 
     def update_surface_points(self, fb, headobj, keyframe=-1,
                               color=FBConfig.surface_point_color):
@@ -123,7 +124,7 @@ class FBViewport(KTViewport):
             verts.append((coords.frame_to_image_space(x, y, w, h)))
         return verts
 
-    def create_batch_2d(self, context):
+    def create_batch_2d(self, area):
         def _add_markers_at_camera_corners(points, vertex_colors):
             points.append(
                 (coords.image_space_to_region(
@@ -139,12 +140,12 @@ class FBViewport(KTViewport):
 
         points = self.pins().arr().copy()
 
-        scene = context.scene
+        scene = bpy.context.scene
         rx = scene.render.resolution_x
         ry = scene.render.resolution_y
         asp = ry / rx
 
-        x1, y1, x2, y2 = coords.get_camera_border(context)
+        x1, y1, x2, y2 = coords.get_camera_border(area)
 
         for i, p in enumerate(points):
             x, y = coords.image_space_to_region(p[0], p[1], x1, y1, x2, y2)
@@ -164,15 +165,15 @@ class FBViewport(KTViewport):
 
         # Rectangles drawing
         rectangler = self.rectangler()
-        rectangler.prepare_shader_data(context)
+        rectangler.prepare_shader_data(area)
         rectangler.create_batch()
 
-    def update_residuals(self, fb, headobj, keyframe, context):
+    def update_residuals(self, fb, headobj, keyframe, area):
         scene = bpy.context.scene
         rx = scene.render.resolution_x
         ry = scene.render.resolution_y
 
-        x1, y1, x2, y2 = coords.get_camera_border(context)
+        x1, y1, x2, y2 = coords.get_camera_border(area)
 
         p2d = self.img_points(fb, keyframe)
         p3d = self.points3d().get_vertices()
