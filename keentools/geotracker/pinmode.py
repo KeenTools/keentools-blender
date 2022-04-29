@@ -349,23 +349,6 @@ class GT_OT_PinMode(bpy.types.Operator):
                                 settings.current_frame())
             vp.tag_redraw()
 
-        if False and GTLoader.geomobj_world_matrix_changed(update=True) is True and not settings.move_pin_mode:
-            coords.update_depsgraph()
-            if GTLoader.geomobj_world_matrix_changed(update=True):
-                logger.error('*** DEPSGRAPH UPDATES WORLD MATRIX ***')
-            logger.debug('GEOMOBJ MOVED')
-            GTLoader.safe_keyframe_add(settings.current_frame(),
-                                       GTLoader.calc_model_matrix())
-            GTLoader.save_geotracker()
-            geotracker = settings.get_current_geotracker_item()
-            create_locrot_keyframe(geotracker.geomobj, 'KEYFRAME')
-
-            GTLoader.load_geotracker()
-            GTLoader.update_all_viewport_shaders(context.area)
-            vp = GTLoader.viewport()
-            vp.tag_redraw()
-            force_undo_push('Move GT geometry')
-
         if event.value == 'PRESS' and event.type == 'LEFTMOUSE':
             return self._on_left_mouse_press(context.area, event)
 
