@@ -216,7 +216,7 @@ def insert_keyframe_in_fcurve(obj: Object, frame: int, value: float,
     insert_point_in_fcurve(fcurve, frame, value, keyframe_type)
 
 
-def create_locrot_keyframe(obj: Object, keyframe_type: str='KEYFRAME'):
+def create_locrot_keyframe(obj: Object, keyframe_type: str='KEYFRAME') -> None:
     action = _get_safe_action(obj, 'GTAct')
     if action is None:
         return

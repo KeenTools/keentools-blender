@@ -27,6 +27,7 @@ from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
 from ...utils.manipulate import switch_to_camera
 from ...utils.other import hide_viewport_ui_elements_and_store_on_object
+from ..utils.animation import create_locrot_keyframe
 
 
 @dataclass(frozen=True)
@@ -99,4 +100,26 @@ def enter_pinmode_act() -> ActionStatus:
         pinmode_op = get_operator(GTConfig.gt_pinmode_idname)
         if not bpy.app.background:
             pinmode_op('INVOKE_DEFAULT')
+    return ActionStatus(True, 'Ok')
+
+
+def add_keyframe_act() -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        return ActionStatus(False, 'No geotracker')
+
+    area = GTLoader.get_work_area()
+    if not area:
+        return ActionStatus(False, 'Working area does not exist')
+
+    GTLoader.safe_keyframe_add(settings.current_frame(),
+                               GTLoader.calc_model_matrix())
+    GTLoader.save_geotracker()
+    create_locrot_keyframe(geotracker.animatable_object(), 'KEYFRAME')
+    logger.debug('KEYFRAME ADDED')
+
+    GTLoader.update_all_viewport_shaders()
+    area.tag_redraw()
     return ActionStatus(True, 'Ok')

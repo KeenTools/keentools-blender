@@ -96,27 +96,28 @@ class GTLoader:
     @classmethod
     def geomobj_world_matrix_changed(cls, update: bool=False) -> Optional[bool]:
         logger = logging.getLogger(__name__)
+        log_output = logger.debug
         stored = cls.get_stored_geomobj_world_matrix()
         current = cls.get_geomobj_world_matrix()
         if stored[0] != current[0]:
             cls.store_geomobj_world_matrix(*current)
-            logger.debug('geomobj_world_matrix_changed FRAMES DIFFER')
-            logger.debug('stored: {}'.format(stored[0]))
-            logger.debug('\n{}'.format(stored[1]))
-            logger.debug('current: {}'.format(current[0]))
-            logger.debug('\n{}'.format(current[1]))
+            log_output('geomobj_world_matrix_changed FRAMES DIFFER')
+            log_output('stored: {}'.format(stored[0]))
+            log_output('\n{}'.format(stored[1]))
+            log_output('current: {}'.format(current[0]))
+            log_output('\n{}'.format(current[1]))
             return None
         if np.all(np.isclose(stored[1], current[1],
                              rtol=GTConfig.matrix_rtol, atol=GTConfig.matrix_atol)):
             # logger.debug('geomobj_world_matrix_changed -- NO CHANGES')
             return False
-        logger.debug('geomobj_world_matrix_changed -- MATRICES DIFFER')
-        logger.debug('stored: {}'.format(stored[0]))
-        logger.debug('\n{}'.format(stored[1]))
-        logger.debug('current: {}'.format(current[0]))
-        logger.debug('\n{}'.format(current[1]))
-        logger.debug('\n\n{}\n{}'.format(stored[1][:], current[1][:]))
-        logger.debug('\n==\n{}'.format((stored[1] - current[1])[:]))
+        log_output('geomobj_world_matrix_changed -- MATRICES DIFFER')
+        log_output('stored: {}'.format(stored[0]))
+        log_output('\n{}'.format(stored[1]))
+        log_output('current: {}'.format(current[0]))
+        log_output('\n{}'.format(current[1]))
+        log_output('\n\n{}\n{}'.format(stored[1][:], current[1][:]))
+        log_output('\n==\n{}'.format((stored[1] - current[1])[:]))
         if update:
             cls.store_geomobj_world_matrix(*current)
         return True
@@ -388,7 +389,12 @@ class GTLoader:
         vp.update_residuals(gt, area, kid)
 
     @classmethod
-    def update_all_viewport_shaders(cls, area: Area) -> None:
+    def update_all_viewport_shaders(cls, area: Optional[Area]=None) -> None:
+        if area is None:
+            vp = cls.viewport()
+            area = vp.get_work_area()
+            if not area:
+                return
         cls.update_viewport_wireframe()
         cls.update_viewport_pins_and_residuals(area)
         cls.update_timeline()
