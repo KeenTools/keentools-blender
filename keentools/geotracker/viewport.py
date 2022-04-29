@@ -88,11 +88,14 @@ class GTViewport(KTViewport):
     def surface_points_from_mesh(self, gt, headobj, keyframe):
         verts = []
         pins_count = gt.pins_count()
+        obj = coords.evaluated_mesh(headobj)
+        if len(obj.data.vertices) == 0:
+            return verts
         for i in range(pins_count):
             pin = gt.pin(keyframe, i)
             if pin is not None:
-                p = coords.pin_to_xyz_from_mesh(pin, coords.evaluated_mesh(headobj))
-                verts.append(p)
+                    p = coords.pin_to_xyz_from_mesh(pin, obj)
+                    verts.append(p)
         return verts
 
     def img_points(self, gt, keyframe):
@@ -177,7 +180,9 @@ class GTViewport(KTViewport):
         # Projection
         projection = gt.projection_mat(keyframe).T
 
-        camobj = bpy.context.scene.camera  # TODO: Get proper camera!!!
+        camobj = bpy.context.scene.camera
+        if not camobj:
+            return
 
         m = camobj.matrix_world.inverted()
         # Object transform, inverse camera, projection apply -> numpy

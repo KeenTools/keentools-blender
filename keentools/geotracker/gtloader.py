@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 import numpy as np
 
 import bpy
@@ -33,7 +33,7 @@ class GTLoader:
     _viewport: Any = GTViewport()
 
     _geo: Any = None
-    _geomobj_world_matrix_at_frame: tuple[int, Any] = (-1, None)
+    _geomobj_world_matrix_at_frame: Tuple[int, Any] = (-1, None)
 
     _geomobj_edit_mode: str = 'OBJECT'
 
@@ -87,7 +87,7 @@ class GTLoader:
         return cls._geomobj_world_matrix_at_frame
 
     @classmethod
-    def get_geomobj_world_matrix(cls) -> tuple[int, Any]:
+    def get_geomobj_world_matrix(cls) -> Tuple[int, Any]:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
         return (settings.current_frame(),
@@ -96,27 +96,28 @@ class GTLoader:
     @classmethod
     def geomobj_world_matrix_changed(cls, update: bool=False) -> Optional[bool]:
         logger = logging.getLogger(__name__)
+        log_output = logger.debug
         stored = cls.get_stored_geomobj_world_matrix()
         current = cls.get_geomobj_world_matrix()
         if stored[0] != current[0]:
             cls.store_geomobj_world_matrix(*current)
-            logger.debug('geomobj_world_matrix_changed FRAMES DIFFER')
-            logger.debug('stored: {}'.format(stored[0]))
-            logger.debug('\n{}'.format(stored[1]))
-            logger.debug('current: {}'.format(current[0]))
-            logger.debug('\n{}'.format(current[1]))
+            log_output('geomobj_world_matrix_changed FRAMES DIFFER')
+            log_output('stored: {}'.format(stored[0]))
+            log_output('\n{}'.format(stored[1]))
+            log_output('current: {}'.format(current[0]))
+            log_output('\n{}'.format(current[1]))
             return None
         if np.all(np.isclose(stored[1], current[1],
                              rtol=GTConfig.matrix_rtol, atol=GTConfig.matrix_atol)):
             # logger.debug('geomobj_world_matrix_changed -- NO CHANGES')
             return False
-        logger.debug('geomobj_world_matrix_changed -- MATRICES DIFFER')
-        logger.debug('stored: {}'.format(stored[0]))
-        logger.debug('\n{}'.format(stored[1]))
-        logger.debug('current: {}'.format(current[0]))
-        logger.debug('\n{}'.format(current[1]))
-        logger.debug('\n\n{}\n{}'.format(stored[1][:], current[1][:]))
-        logger.debug('\n==\n{}'.format((stored[1] - current[1])[:]))
+        log_output('geomobj_world_matrix_changed -- MATRICES DIFFER')
+        log_output('stored: {}'.format(stored[0]))
+        log_output('\n{}'.format(stored[1]))
+        log_output('current: {}'.format(current[0]))
+        log_output('\n{}'.format(current[1]))
+        log_output('\n\n{}\n{}'.format(stored[1][:], current[1][:]))
+        log_output('\n==\n{}'.format((stored[1] - current[1])[:]))
         if update:
             cls.store_geomobj_world_matrix(*current)
         return True
@@ -149,7 +150,7 @@ class GTLoader:
         return cls._kt_geotracker
 
     @classmethod
-    def add_pin(cls, keyframe: int, pos: tuple[float, float]) -> Any:
+    def add_pin(cls, keyframe: int, pos: Tuple[float, float]) -> Any:
         logger = logging.getLogger(__name__)
         logger.debug('ADD PIN: {} {}'.format(pos[0], pos[1]))
         gt = cls.kt_geotracker()
@@ -164,7 +165,7 @@ class GTLoader:
 
     @classmethod
     def move_pin(cls, keyframe: int, pin_idx: int,
-                 pos: tuple[float, float]) -> None:
+                 pos: Tuple[float, float]) -> None:
         gt = cls.kt_geotracker()
         if pin_idx < gt.pins_count():
             gt.move_pin(keyframe, pin_idx, coords.image_space_to_frame(*pos))
@@ -388,7 +389,12 @@ class GTLoader:
         vp.update_residuals(gt, area, kid)
 
     @classmethod
-    def update_all_viewport_shaders(cls, area: Area) -> None:
+    def update_all_viewport_shaders(cls, area: Optional[Area]=None) -> None:
+        if area is None:
+            vp = cls.viewport()
+            area = vp.get_work_area()
+            if not area:
+                return
         cls.update_viewport_wireframe()
         cls.update_viewport_pins_and_residuals(area)
         cls.update_timeline()

@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+import logging
 
 import bpy
 
@@ -36,6 +37,8 @@ def has_blendshapes_action(obj):
 
 
 def force_undo_push(msg='KeenTools operation'):
+    logger = logging.getLogger(__name__)
+    logger.debug('UNDO PUSH: {}'.format(msg))
     bpy.ops.ed.undo_push(message=msg)
 
 
