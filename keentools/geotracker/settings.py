@@ -41,7 +41,7 @@ def update_selection(self, context) -> None:
 
 
 def update_wireframe_func(self, context) -> None:
-    pass
+    GTLoader.update_viewport_wireframe()
 
 
 def _update_preview_gamma(self, context) -> None:
