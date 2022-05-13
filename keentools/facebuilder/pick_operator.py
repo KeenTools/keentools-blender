@@ -78,7 +78,8 @@ def init_detected_faces(fb, headnum, camnum):
         return None
 
     fb.set_use_emotions(head.should_use_emotions())
-    _set_detected_faces(fb.detect_faces(img))
+    pixel_aspect_ratio = fb.pixel_aspect_ratio(camera.get_keyframe())
+    _set_detected_faces(fb.detect_faces(img, pixel_aspect_ratio))
 
     return img
 
