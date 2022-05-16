@@ -70,6 +70,13 @@ def create_geotracker_act() -> int:
     return num
 
 
+def delete_geotracker_act(geotracker_num: int) -> int:
+    settings = get_gt_settings()
+    num = settings.remove_geotracker_item(geotracker_num)
+    settings.change_current_geotracker(num)
+    return num
+
+
 def add_keyframe_act() -> ActionStatus:
     logger = logging.getLogger(__name__)
     settings = get_gt_settings()
