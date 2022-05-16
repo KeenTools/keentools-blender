@@ -124,3 +124,9 @@ class KTViewport:
         area = self.get_work_area()
         if area:
             area.tag_redraw()
+
+    def is_working(self):
+        wf = self.wireframer()
+        if wf is None:
+            return False
+        return wf.is_working()

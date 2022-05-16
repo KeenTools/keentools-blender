@@ -101,7 +101,7 @@ class GT_OT_BtnNextKeyframe(ButtonOperator, bpy.types.Operator):
 
 class GT_OT_BtnAddKeyframe(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_add_keyframe_idname
-    bl_label = 'Add keyframe'
+    bl_label = 'Add GT keyframe'
     bl_description = 'add keyframe'
 
     def execute(self, context):
@@ -231,20 +231,6 @@ class GT_OT_BtnCreateAnimation(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_BtnEnterPinMode(ButtonOperator, bpy.types.Operator):
-    bl_idname = GTConfig.gt_enter_pinmode_idname
-    bl_label = 'View'
-    bl_description = 'Switch to pinmode'
-
-    def execute(self, context):
-        try:
-            op = get_operator(GTConfig.gt_actor_idname)
-            op('EXEC_DEFAULT', action='enter_pinmode')
-        except Exception as err:
-            self.report({'ERROR'}, 'Problem with PinMode start: {}'.format(str(err)))
-        return {'FINISHED'}
-
-
 class GT_OT_BtnExitPinMode(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_exit_pinmode_idname
     bl_label = 'Out Pinmode'
@@ -324,7 +310,6 @@ BUTTON_CLASSES = (GT_OT_BtnTrackToStart,
                   GT_OT_BtnMagicKeyframe,
                   GT_OT_BtnRemovePins,
                   GT_OT_BtnCreateAnimation,
-                  GT_OT_BtnEnterPinMode,
                   GT_OT_BtnExitPinMode,
                   GT_OT_InterruptModal,
                   GT_OT_BtnPrecalcFile,

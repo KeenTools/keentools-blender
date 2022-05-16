@@ -17,18 +17,19 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+
 import bpy
 
 from ..geotracker_config import GTConfig
 from .utils.geotracker_acts import (create_geotracker_act,
-                                    enter_pinmode_act,
                                     add_keyframe_act)
+from ..utils.manipulate import force_undo_push
 
 
 class GT_OT_Actor(bpy.types.Operator):
     bl_idname = GTConfig.gt_actor_idname
     bl_label = 'Actor Operator'
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER'}
 
     action: bpy.props.StringProperty(name='Action string', default='none')
     num: bpy.props.IntProperty(name='Numeric parameter', default=0)
@@ -43,15 +44,7 @@ class GT_OT_Actor(bpy.types.Operator):
         if self.action == 'create_geotracker':
             create_geotracker_act()
             self.report({'INFO'}, self.action)
-            return {'FINISHED'}
-
-        elif self.action == 'enter_pinmode':
-            act_status = enter_pinmode_act()
-            if not act_status.success:
-                self.report({'ERROR'}, act_status.error_message)
-                return {'CANCELLED'}
-
-            self.report({'INFO'}, self.action)
+            force_undo_push('Create GeoTracker')
             return {'FINISHED'}
 
         elif self.action == 'add_keyframe':

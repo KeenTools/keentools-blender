@@ -16,25 +16,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import logging
+
 import bpy
 
 
-def enter_context_localview(context):
-    if context.space_data and not context.space_data.local_view:
-        bpy.ops.view3d.localview()
-        return True
-    return False
-
-
-def exit_context_localview(context):
-    if context.space_data and context.space_data.local_view:
-        bpy.ops.view3d.localview()
+def enter_area_localview(area):
+    if area and not area.spaces.active.local_view:
+        bpy.ops.view3d.localview({'area':area})
         return True
     return False
 
 
 def exit_area_localview(area):
+    logger = logging.getLogger(__name__)
+    log_output = logger.debug
+    log_output(f'exit_area_localview: area={id(area)}')
     if area and area.spaces.active.local_view:
         bpy.ops.view3d.localview({'area':area})
+        log_output('exit_area_localview success')
         return True
     return False
