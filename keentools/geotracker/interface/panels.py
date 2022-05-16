@@ -111,10 +111,8 @@ class GT_PT_GeotrackersPanel(View3DPanel):
     def _geotracker_creation_offer(self, layout):
         row = layout.row()
         row.scale_y = 2.0
-        op = row.operator(
-            GTConfig.gt_actor_idname,
-            text='Create a new GeoTracker', icon='ADD')
-        op.action = 'create_geotracker'
+        row.operator(GTConfig.gt_create_geotracker_idname,
+                     text='Create a new GeoTracker', icon='ADD')
 
     def _output_geotrackers_list(self, layout):
         settings = get_gt_settings()
@@ -143,10 +141,9 @@ class GT_PT_GeotrackersPanel(View3DPanel):
 
             if not settings.pinmode:
                 op = row.operator(
-                    GTConfig.gt_actor_idname,
+                    GTConfig.gt_delete_geotracker_idname,
                     text='', icon='CANCEL')
-                op.action = 'delete_geotracker'
-                op.num = i
+                op.geotracker_num = i
 
     def _pkt_install_offer(self, layout):
         col = layout.column(align=True)

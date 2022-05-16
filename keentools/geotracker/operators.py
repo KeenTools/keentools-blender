@@ -21,6 +21,7 @@ import bpy
 
 from ..addon_config import get_operator
 from ..geotracker_config import GTConfig, get_gt_settings
+from .utils.geotracker_acts import create_geotracker_act, delete_geotracker_act
 
 
 class ButtonOperator:
@@ -28,6 +29,28 @@ class ButtonOperator:
 
     def draw(self, context):
         pass
+
+
+class GT_OT_CreateGeoTracker(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_create_geotracker_idname
+    bl_label = 'Create GeoTracker'
+    bl_description = 'create GeoTracker object in scene'
+
+    def execute(self, context):
+        create_geotracker_act()
+        return {'FINISHED'}
+
+
+class GT_OT_DeleteGeoTracker(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_delete_geotracker_idname
+    bl_label = 'Delete GeoTracker'
+    bl_description = 'delete GeoTracker object from scene'
+
+    geotracker_num: bpy.props.IntProperty(default=-1)
+
+    def execute(self, context):
+        delete_geotracker_act(self.geotracker_num)
+        return {'FINISHED'}
 
 
 class GT_OT_BtnTrackToStart(ButtonOperator, bpy.types.Operator):
@@ -292,7 +315,9 @@ class GT_OT_InterruptModal(bpy.types.Operator):
         return {'PASS_THROUGH'}
 
 
-BUTTON_CLASSES = (GT_OT_BtnTrackToStart,
+BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
+                  GT_OT_DeleteGeoTracker,
+                  GT_OT_BtnTrackToStart,
                   GT_OT_BtnTrackPrev,
                   GT_OT_BtnTrackNext,
                   GT_OT_BtnTrackToEnd,

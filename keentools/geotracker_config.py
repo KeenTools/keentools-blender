@@ -34,6 +34,8 @@ class GTConfig:
     viewport_state_prop_name = 'keentools_viewport_state'
 
     # Operators
+    gt_create_geotracker_idname = operators + '.create_geotracker'
+    gt_delete_geotracker_idname = operators + '.delete_geotracker'
     gt_actor_idname = operators + '.actor'
     gt_pinmode_idname = operators + '.pinmode'
     gt_movepin_idname = operators + '.movepin'

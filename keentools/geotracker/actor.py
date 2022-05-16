@@ -21,9 +21,7 @@ import logging
 import bpy
 
 from ..geotracker_config import GTConfig
-from .utils.geotracker_acts import (create_geotracker_act,
-                                    add_keyframe_act)
-from ..utils.manipulate import force_undo_push
+from .utils.geotracker_acts import add_keyframe_act
 
 
 class GT_OT_Actor(bpy.types.Operator):
@@ -41,13 +39,7 @@ class GT_OT_Actor(bpy.types.Operator):
         logger = logging.getLogger(__name__)
         logger.debug('ACTION call: {}'.format(self.action))
 
-        if self.action == 'create_geotracker':
-            create_geotracker_act()
-            self.report({'INFO'}, self.action)
-            force_undo_push('Create GeoTracker')
-            return {'FINISHED'}
-
-        elif self.action == 'add_keyframe':
+        if self.action == 'add_keyframe':
             act_status = add_keyframe_act()
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
