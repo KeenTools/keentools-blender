@@ -70,15 +70,6 @@ def create_vertex_groups(obj, vg_dict):
             vg.add([i], w, 'REPLACE')
 
 
-def set_overlays(status=True):
-    if not bpy.context.space_data:
-        return
-    bpy.context.space_data.overlay.show_floor = status
-    bpy.context.space_data.overlay.show_axis_x = status
-    bpy.context.space_data.overlay.show_axis_y = status
-    bpy.context.space_data.overlay.show_cursor = status
-
-
 def switch_to_camera(area, camobj, select_obj=None):
     exit_area_localview(area)
     camobj.hide_set(False)

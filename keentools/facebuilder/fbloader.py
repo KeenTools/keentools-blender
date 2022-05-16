@@ -124,7 +124,14 @@ class FBLoader:
         head = settings.get_head(headnum)
         if head and head.headobj:
             head.headobj.hide_set(False)
-            unhide_viewport_ui_element_from_object(head.headobj)
+            area = FBLoader.get_work_area()
+             # TODO: Need to think about better architecture
+            if area is None:
+                area = bpy.context.area
+            logger = logging.getLogger(__name__)
+            log_output = logger.debug
+            log_output(f'out_pinmode_without_save area={area}')
+            unhide_viewport_ui_element_from_object(area, head.headobj)
         settings.pinmode = False
         logger = logging.getLogger(__name__)
         logger.debug('OUT PINMODE')

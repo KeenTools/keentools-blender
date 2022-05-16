@@ -175,7 +175,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         vp.unregister_handlers()
         exit_area_localview(area)
         if geotracker.geomobj:
-            unhide_viewport_ui_element_from_object(geotracker.geomobj)
+            unhide_viewport_ui_element_from_object(area, geotracker.geomobj)
         GTLoader.save_geotracker()
         unregister_undo_redo_handlers()
 
@@ -292,7 +292,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         switch_to_camera(area, geotracker.camobj,
                          geotracker.animatable_object())
 
-        hide_viewport_ui_elements_and_store_on_object(geotracker.geomobj)
+        hide_viewport_ui_elements_and_store_on_object(area, geotracker.geomobj)
 
     def _switch_to_new_geotracker(self, num):
         logger = logging.getLogger(__name__)
@@ -301,10 +301,10 @@ class GT_OT_PinMode(bpy.types.Operator):
         settings = get_gt_settings()
         settings.pinmode = True
 
-        old_geotracker = settings.get_current_geotracker_item()
-        unhide_viewport_ui_element_from_object(old_geotracker.geomobj)
-
         area = GTLoader.get_work_area()
+        old_geotracker = settings.get_current_geotracker_item()
+        unhide_viewport_ui_element_from_object(area, old_geotracker.geomobj)
+
         self._set_new_geotracker(area, num)
         new_geotracker = settings.get_current_geotracker_item()
 

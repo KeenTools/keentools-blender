@@ -243,7 +243,7 @@ def unhide_head(operator, context):
             head.headobj.hide_set(False)
 
         if head.headobj:
-            unhide_viewport_ui_element_from_object(head.headobj)
+            unhide_viewport_ui_element_from_object(context.area, head.headobj)
         settings.pinmode = False
 
         logger.debug('head revealed')

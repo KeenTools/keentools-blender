@@ -204,6 +204,10 @@ def get_area_region(area):
     return area.regions[-1]
 
 
+def get_area_overlay(area):
+    return area.spaces.active.overlay
+
+
 def get_camera_border(area):
     if bpy.app.background:
         context = get_fake_context()

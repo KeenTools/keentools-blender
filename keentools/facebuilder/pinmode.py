@@ -282,7 +282,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.error('MODEL CANNOT BE LOADED IN PINMODE')
 
             FBLoader.out_pinmode_without_save(self.headnum)
-            exit_area_localview(context.area)
+            exit_area_localview(area)
 
             logger.error('DESERIALIZE load_model_throw_exception: \n'
                          '{}'.format(str(err)))
@@ -328,7 +328,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         update_camera_focal(camera, fb)
 
         if first_start:
-            hide_viewport_ui_elements_and_store_on_object(headobj)
+            hide_viewport_ui_elements_and_store_on_object(context.area, headobj)
 
             logger.debug("START SHADERS")
             self._init_wireframer_colors(settings.overall_opacity)

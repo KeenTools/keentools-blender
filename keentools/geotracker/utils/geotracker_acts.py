@@ -19,16 +19,14 @@
 import logging
 from dataclasses import dataclass
 from typing import Optional
+
 import bpy
 from bpy.types import Object
 
 from ...addon_config import get_operator
 from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
-from ...utils.manipulate import switch_to_camera
-from ...utils.other import hide_viewport_ui_elements_and_store_on_object
 from ..utils.animation import create_locrot_keyframe
-from ...utils.images import set_background_image_by_movieclip
 
 
 @dataclass(frozen=True)
