@@ -30,7 +30,6 @@ from ..addon_config import Config, get_operator
 from ..facebuilder_config import FBConfig, get_fb_settings
 from .fbloader import FBLoader
 from ..utils import manipulate, materials, coords, images
-from .utils import cameras
 from ..utils.attrs import get_obj_collection, safe_delete_collection
 from ..facebuilder.utils.exif_reader import (update_exif_sizes_message,
                                              copy_exif_parameters_from_camera_to_head)
@@ -635,7 +634,7 @@ class FB_OT_ShowSolid(Operator):
 
 class FB_OT_ExitPinmode(Operator):
     bl_idname = FBConfig.fb_exit_pinmode_idname
-    bl_label = "Exit Pin mode"
+    bl_label = 'Exit Pin mode'
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Exit Pin mode"
 
@@ -645,9 +644,7 @@ class FB_OT_ExitPinmode(Operator):
     def execute(self, context):
         settings = get_fb_settings()
         if settings.pinmode:
-            FBLoader.out_pinmode(settings.current_headnum)
-            exit_area_localview(context.area)
-            cameras.leave_camera_view(context)
+            settings.force_out_pinmode = True
         return {'FINISHED'}
 
 

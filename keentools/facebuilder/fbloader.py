@@ -603,3 +603,8 @@ class FBLoader:
         vp = cls.viewport()
         vp.pins().set_pins(vp.img_points(fb, kid))
         vp.pins().reset_current_pin()
+
+    @classmethod
+    def get_work_area(cls):
+        vp = cls.viewport()
+        return vp.get_work_area()

@@ -20,7 +20,7 @@ import bpy
 
 from ...facebuilder_config import FBConfig, get_fb_settings
 from ...utils import attrs
-from ...utils.localview import enter_context_localview, exit_context_localview
+from ...utils.coords import get_area_region
 
 
 def show_all_cameras(headnum):
@@ -76,24 +76,3 @@ def get_camera_params(obj):
         logger.error('get_camera_params: {}'.format(str(err)))
         return None
     return params
-
-
-def switch_to_fb_camera(camera, context):
-    camera.show_background_image()
-    exit_context_localview(context)
-    camera.camobj.hide_set(False)
-
-    bpy.ops.object.select_all(action='DESELECT')
-    camera.camobj.select_set(state=True)
-    bpy.context.view_layer.objects.active = camera.camobj
-
-    enter_context_localview(context)
-    bpy.ops.view3d.object_as_camera()
-
-
-def leave_camera_view(context):
-    try:
-        if context.space_data.region_3d.view_perspective == 'CAMERA':
-            bpy.ops.view3d.view_camera()
-    except Exception as err:
-        pass
