@@ -19,14 +19,13 @@
 import logging
 from dataclasses import dataclass
 from typing import Optional
+
 import bpy
 from bpy.types import Object
 
 from ...addon_config import get_operator
 from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
-from ...utils.manipulate import switch_to_camera
-from ...utils.other import hide_viewport_ui_elements_and_store_on_object
 from ..utils.animation import create_locrot_keyframe
 
 
@@ -69,38 +68,6 @@ def create_geotracker_act() -> int:
         if camobj:
             geotracker.camobj = camobj
     return num
-
-
-def enter_pinmode_act() -> ActionStatus:
-    logger = logging.getLogger(__name__)
-    settings = get_gt_settings()
-    geotracker = settings.get_current_geotracker_item()
-    if not geotracker:
-        return ActionStatus(False, 'No geotracker')
-
-    if not geotracker.geomobj:
-        return ActionStatus(False, 'No geometry in geotracker')
-
-    if geotracker.geomobj.mode != 'OBJECT':
-        return ActionStatus(False, 'Geometry should be in OBJECT mode')
-
-    if not GTLoader.load_geotracker():
-        logger.debug('NEW GEOTRACKER')
-        GTLoader.new_kt_geotracker()
-        GTLoader.save_geotracker()
-
-    if geotracker.camobj:
-        GTLoader.place_camera()
-        switch_to_camera(bpy.context, geotracker.camobj,
-                         geotracker.animatable_object())
-        hide_viewport_ui_elements_and_store_on_object(geotracker.geomobj)
-
-        # set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
-
-        pinmode_op = get_operator(GTConfig.gt_pinmode_idname)
-        if not bpy.app.background:
-            pinmode_op('INVOKE_DEFAULT')
-    return ActionStatus(True, 'Ok')
 
 
 def add_keyframe_act() -> ActionStatus:

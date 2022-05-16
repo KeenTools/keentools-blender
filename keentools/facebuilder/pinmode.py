@@ -26,13 +26,13 @@ from ..addon_config import Config, get_operator, ErrorType
 from ..facebuilder_config import FBConfig, get_fb_settings
 from ..utils import coords
 from .utils.manipulate import push_head_in_undo_history
-from .utils import cameras
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
 from ..utils.other import (KTStopShaderTimer, force_ui_redraw,
                            hide_viewport_ui_elements_and_store_on_object)
 from ..utils.html import split_long_string
-from ..utils.localview import exit_area_localview, exit_context_localview
+from ..utils.localview import exit_area_localview
+from ..utils.manipulate import switch_to_camera
 
 
 _undo_handler = None
@@ -266,7 +266,9 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         camera.apply_tone_mapping()
 
-        cameras.switch_to_fb_camera(camera, context)
+        area = context.area if first_start else FBLoader.get_work_area()
+        switch_to_camera(area, camera.camobj)
+        camera.show_background_image()
 
         logger.debug('PINMODE START H{} C{}'.format(settings.current_headnum,
                                                     settings.current_camnum))
@@ -280,7 +282,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.error('MODEL CANNOT BE LOADED IN PINMODE')
 
             FBLoader.out_pinmode_without_save(self.headnum)
-            exit_area_localview(context.area)
+            exit_area_localview(area)
 
             logger.error('DESERIALIZE load_model_throw_exception: \n'
                          '{}'.format(str(err)))
@@ -296,7 +298,7 @@ class FB_OT_PinMode(bpy.types.Operator):
                 len(headobj.data.vertices), len(fb.applied_args_vertices())))
 
             FBLoader.out_pinmode_without_save(self.headnum)
-            exit_context_localview(context)
+            exit_area_localview(area)
 
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
@@ -326,7 +328,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         update_camera_focal(camera, fb)
 
         if first_start:
-            hide_viewport_ui_elements_and_store_on_object(headobj)
+            hide_viewport_ui_elements_and_store_on_object(context.area, headobj)
 
             logger.debug("START SHADERS")
             self._init_wireframer_colors(settings.overall_opacity)
@@ -345,7 +347,9 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.debug("SHADER UPDATE ONLY")
             self._init_wireframer_colors(settings.overall_opacity)
 
-        bpy.ops.view3d.view_center_camera()
+        assert area.spaces.active.region_3d.view_perspective == 'CAMERA'
+        bpy.ops.view3d.view_center_camera(
+            {'area': area, 'region': coords.get_area_region(area)})
 
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
         push_head_in_undo_history(head, 'Pin Mode Start.')

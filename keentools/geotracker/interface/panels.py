@@ -131,10 +131,9 @@ class GT_PT_GeotrackersPanel(View3DPanel):
             else:
                 name = '# Undefined'
 
-            op = row.operator(GTConfig.gt_actor_idname,
+            op = row.operator(GTConfig.gt_pinmode_idname,
                               text='', icon='HIDE_OFF')
-            op.action = 'select_and_pinmode'
-            op.num = i
+            op.geotracker_num = i
 
             op = row.operator(GTConfig.gt_actor_idname, text=name,
                               depress=geotracker_num == i,
@@ -197,9 +196,8 @@ class GT_PT_InputPanel(AllVisible):
         row.alert = not geotracker.movie_clip
         row.prop(geotracker, 'movie_clip')
 
-        op = layout.operator(GTConfig.gt_actor_idname,
-                             text='Open Sequence')
-        op.action = 'open_image_sequence'
+        layout.operator(GTConfig.gt_multiple_filebrowser_idname,
+                        text='Open Sequence')
 
 
 class GT_PT_AnalyzePanel(AllVisible):
@@ -273,8 +271,11 @@ class GT_PT_CameraPanel(AllVisible):
         row = layout.row()
         row.scale_y = 2.0
 
-        row.operator(GTConfig.gt_enter_pinmode_idname, icon='HIDE_OFF',
-                     depress=settings.pinmode)
+        op = row.operator(GTConfig.gt_pinmode_idname,
+                          text='View', icon='HIDE_OFF',
+                          depress=settings.pinmode)
+        op.geotracker_num = -1
+
         layout.prop(geotracker, 'preview_gamma', slider=True)
 
 

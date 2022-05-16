@@ -32,6 +32,7 @@ from ..utils.attrs import set_custom_attribute, get_safe_custom_attribute
 from ..utils.timer import KTTimer
 from ..utils.ui_redraw import force_ui_redraw
 from ..utils.screen_text import KTScreenText
+from ..utils.coords import get_area_overlay
 
 
 def force_stop_shaders():
@@ -52,17 +53,15 @@ def _viewport_ui_attribute_names():
     return ['show_floor', 'show_axis_x', 'show_axis_y', 'show_cursor']
 
 
-def _get_ui_space_data():
-    if hasattr(bpy.context, 'space_data') and hasattr(bpy.context.space_data, 'overlay'):
-        return bpy.context.space_data.overlay
-    return None
+def _get_ui_space_data(area):
+    return get_area_overlay(area)
 
 
-def _setup_viewport_ui_state(state_dict):
-    python_obj = _get_ui_space_data()
+def _setup_viewport_ui_state(area, state_dict):
+    python_obj = _get_ui_space_data(area)
     if python_obj is None:
         logger = logging.getLogger(__name__)
-        logger.error('bpy.context.space_data.overlay does not exist')
+        logger.error('overlay does not exist')
         return
     attr_names = _viewport_ui_attribute_names()
     for name in attr_names:
@@ -75,8 +74,8 @@ def _setup_viewport_ui_state(state_dict):
                 logger.error('Exception info: {}'.format(str(err)))
 
 
-def _get_viewport_ui_state():
-    python_obj = _get_ui_space_data()
+def _get_viewport_ui_state(area):
+    python_obj = _get_ui_space_data(area)
     attr_names = _viewport_ui_attribute_names()
     res = {}
     for name in attr_names:
@@ -90,23 +89,23 @@ def _get_viewport_ui_state():
     return res
 
 
-def _force_show_ui_elements():
-    _setup_viewport_ui_state({'show_floor': 1, 'show_axis_x': 1,
-                              'show_axis_y': 1, 'show_cursor': 1})
+def _force_show_ui_elements(area):
+    _setup_viewport_ui_state(area, {'show_floor': 1, 'show_axis_x': 1,
+                                    'show_axis_y': 1, 'show_cursor': 1})
 
 
-def _force_hide_ui_elements():
-    _setup_viewport_ui_state({'show_floor': 0, 'show_axis_x': 0,
-                              'show_axis_y': 0, 'show_cursor': 0})
+def _force_hide_ui_elements(area):
+    _setup_viewport_ui_state(area, {'show_floor': 0, 'show_axis_x': 0,
+                                    'show_axis_y': 0, 'show_cursor': 0})
 
 
-def hide_viewport_ui_elements_and_store_on_object(obj):
-    state = _get_viewport_ui_state()
+def hide_viewport_ui_elements_and_store_on_object(area, obj):
+    state = _get_viewport_ui_state(area)
     set_custom_attribute(obj, Config.viewport_state_prop_name, state)
-    _force_hide_ui_elements()
+    _force_hide_ui_elements(area)
 
 
-def unhide_viewport_ui_element_from_object(obj):
+def unhide_viewport_ui_element_from_object(area, obj):
     def _unpack_state(states):
         attr_names = _viewport_ui_attribute_names()
         values = {}
@@ -117,17 +116,17 @@ def unhide_viewport_ui_element_from_object(obj):
 
     attr_value = get_safe_custom_attribute(obj, Config.viewport_state_prop_name)
     if attr_value is None:
-        _force_show_ui_elements()  # For old version compatibility
+        _force_show_ui_elements(area)  # For old version compatibility
         return
 
     try:
         attr_dict = attr_value.to_dict()
     except Exception as err:
-        _force_show_ui_elements()
+        _force_show_ui_elements(area)
         return
 
     res = _unpack_state(attr_dict)
-    _setup_viewport_ui_state(res)
+    _setup_viewport_ui_state(area, res)
 
 
 class KTStopShaderTimer(KTTimer):

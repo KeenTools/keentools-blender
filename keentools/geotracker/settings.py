@@ -206,16 +206,27 @@ class GTSceneSettings(bpy.types.PropertyGroup):
             self.current_geotracker_num = -1
         return None
 
-    def change_current_geotracker(self, num: int) -> bool:
+    def get_geotracker_item(self, num:int) -> GeoTrackerItem:
+        return self.geotrackers[num]
+
+    def get_geotracker_item_safe(self, num: int) -> Optional[GeoTrackerItem]:
         if self.is_proper_geotracker_number(num):
-            self.current_geotracker_num = num
-            if not GTLoader.load_geotracker():
-                GTLoader.new_kt_geotracker()
+            return self.get_geotracker_item(num)
+        return None
+
+    def change_current_geotracker(self, num: int) -> None:
+        self.current_geotracker_num = num
+        if not GTLoader.load_geotracker():
+            GTLoader.new_kt_geotracker()
+
+    def change_current_geotracker_safe(self, num: int) -> bool:
+        if self.is_proper_geotracker_number(num):
+            self.change_current_geotracker(num)
             return True
         return False
 
     def reload_current_geotracker(self) -> bool:
-        return self.change_currrent_geotracker(self.current_geotracker_num)
+        return self.change_currrent_geotracker_safe(self.current_geotracker_num)
 
     def add_geotracker_item(self) -> int:
         self.geotrackers.add()

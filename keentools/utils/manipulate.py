@@ -15,11 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+
 import logging
 
 import bpy
 
-from .localview import enter_context_localview, exit_context_localview
+from .localview import enter_area_localview, exit_area_localview
 
 
 def has_no_blendshape(obj):
@@ -69,20 +70,15 @@ def create_vertex_groups(obj, vg_dict):
             vg.add([i], w, 'REPLACE')
 
 
-def set_overlays(status=True):
-    if not bpy.context.space_data:
-        return
-    bpy.context.space_data.overlay.show_floor = status
-    bpy.context.space_data.overlay.show_axis_x = status
-    bpy.context.space_data.overlay.show_axis_y = status
-    bpy.context.space_data.overlay.show_cursor = status
-
-
-def switch_to_camera(context, camobj, select_obj=None):
-    exit_context_localview(context)
+def switch_to_camera(area, camobj, select_obj=None):
+    exit_area_localview(area)
     camobj.hide_set(False)
     select_object_only(camobj)
-    enter_context_localview(context)
-    bpy.ops.view3d.object_as_camera()
+    enter_area_localview(area)
+
+    # Low-level code instead bpy.ops.view3d.object_as_camera()
+    area.spaces.active.camera = camobj
+    area.spaces.active.region_3d.view_perspective = 'CAMERA'
+
     if select_obj is not None:
         select_object_only(select_obj)

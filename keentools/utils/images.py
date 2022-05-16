@@ -81,6 +81,29 @@ def get_background_image_object(camobj):
     return bg_img
 
 
+def set_background_image_by_movieclip(camobj, movie_clip, name='geotracker_bg'):
+    if not camobj or not movie_clip:
+        return
+    bg_img = get_background_image_object(camobj)
+    bg_img.alpha = 1.0
+    cam_data = camobj.data
+    cam_data.show_background_images = True
+
+    bg_img.source = 'IMAGE'
+    img = bg_img.image
+    if not img:
+        w, h = movie_clip.size[:]
+        img = bpy.data.images.new(name, width=w, height=h, alpha=True,
+                                  float_buffer=False)
+        bg_img.image = img
+    img.source = 'SEQUENCE'
+    img.filepath = movie_clip.filepath
+
+    bg_img.image_user.frame_duration = movie_clip.frame_duration
+    bg_img.image_user.frame_start = 1
+    bg_img.image_user.use_auto_refresh = True
+
+
 def find_bpy_image_by_name(image_name):
     image_num = bpy.data.images.find(image_name)
     if image_num >= 0:
