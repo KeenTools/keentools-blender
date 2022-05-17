@@ -75,8 +75,11 @@ class PrecalcTimer:
 
     def timer_func(self):
         logger = logging.getLogger(__name__)
-        logger.debug('Timer: {} {}'.format(self._state, self._target_frame))
+        log_output = logger.info
         settings = get_gt_settings()
+        log_output(f'Timer: state={self._state} target={self._target_frame} '
+                   f'current={settings.current_frame()}')
+
         if settings.user_interrupts:
             settings.precalc_mode = False
         if not settings.precalc_mode:
@@ -94,8 +97,7 @@ class PrecalcTimer:
                 settings.set_current_frame(self._target_frame)
                 return self._interval
             else:
-                logger = logging.getLogger(__name__)
-                logger.debug('FRAME PROBLEM {}'.format(self._target_frame))
+                log_output(f'FRAME PROBLEM {self._target_frame}')
         if self._state == 'runner':
             if self._runner.is_finished():
                 self._finish_precalc_mode()
@@ -103,9 +105,8 @@ class PrecalcTimer:
                 reload_precalc(geotracker)
                 return None
 
-            logger = logging.getLogger(__name__)
             progress, message = self._runner.current_progress()
-            logger.debug('{} {}'.format(progress, message))
+            log_output(f'{progress} {message}')
             message_to_screen([{'text': 'Precalc calculating... Please wait', 'y': 60,
                                 'color': (1.0, 0.0, 0.0, 0.7)},
                                {'text': message, 'y': 30,
@@ -114,7 +115,9 @@ class PrecalcTimer:
             if next_frame is None:
                 return self._interval
             settings.user_percent = progress * 100
-            if settings.current_frame() != next_frame:
+            current_frame = settings.current_frame()
+            if current_frame != next_frame:
+                log_output(f'NEXT FRAME IS NOT REACHED: {next_frame} current={current_frame}')
                 self._target_frame = next_frame
                 self._state = 'timeline'
                 return self._interval
@@ -140,7 +143,8 @@ class PrecalcTimer:
 
 def precalc_with_runner_act(context):
     logger = logging.getLogger(__name__)
-    logger.debug('precalc_with_runner_act start')
+    log_output = logger.info
+    log_output('precalc_with_runner_act start')
     settings = get_gt_settings()
     geotracker = settings.get_current_geotracker_item()
     rw, rh = render_frame()
@@ -156,7 +160,7 @@ def precalc_with_runner_act(context):
     vp = GTLoader.viewport()
     vp.texter().register_handler(context)
 
-    logger.debug('precalc_path: {}'.format(geotracker.precalc_path))
+    log_output(f'precalc_path: {geotracker.precalc_path}')
 
     runner = GTClassLoader.PrecalcRunner_class()(
         geotracker.precalc_path, rw, rh,
