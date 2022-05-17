@@ -27,7 +27,7 @@ from ..utils.focal_length import (configure_focal_mode_and_fixes,
                                   update_camera_focal)
 from ..utils import attrs, coords
 from ..facebuilder.utils.exif_reader import reload_all_camera_exif
-from ..utils.other import KTStopShaderTimer, unhide_viewport_ui_element_from_object
+from ..utils.other import KTStopShaderTimer, unhide_viewport_ui_elements_from_object
 from .viewport import FBViewport
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
@@ -131,7 +131,7 @@ class FBLoader:
             logger = logging.getLogger(__name__)
             log_output = logger.debug
             log_output(f'out_pinmode_without_save area={area}')
-            unhide_viewport_ui_element_from_object(area, head.headobj)
+            unhide_viewport_ui_elements_from_object(area, head.headobj)
         settings.pinmode = False
         logger = logging.getLogger(__name__)
         logger.debug('OUT PINMODE')

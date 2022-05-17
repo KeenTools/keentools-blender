@@ -22,6 +22,7 @@ import bpy
 
 from ..geotracker_config import GTConfig
 from .utils.geotracker_acts import add_keyframe_act
+from .utils.precalc import precalc_with_runner_act
 
 
 class GT_OT_Actor(bpy.types.Operator):
@@ -46,6 +47,10 @@ class GT_OT_Actor(bpy.types.Operator):
                 return {'CANCELLED'}
 
             self.report({'INFO'}, self.action)
+            return {'FINISHED'}
+
+        elif self.action == 'create_precalc':
+            precalc_with_runner_act(context)
             return {'FINISHED'}
 
         self.report({'INFO'}, self.action)
