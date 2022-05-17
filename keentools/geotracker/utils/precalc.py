@@ -33,11 +33,12 @@ from ...utils.coords import render_frame
 from ...utils.manipulate import (switch_to_camera,
                                  exit_area_localview)
 from ..gt_class_loader import GTClassLoader
+from ..utils.tracking import reload_precalc
 
 
 class PrecalcTimer:
     def __init__(self):
-        self._interval = 0.01
+        self._interval = 0.02
         self._target_frame = -1
         self._runner = None
         self._state = 'none'
@@ -67,6 +68,7 @@ class PrecalcTimer:
         force_ui_redraw('VIEW_3D')
         revert_default_screen_message()
         settings.user_interrupts = True
+
         logger = logging.getLogger(__name__)
         logger.info('Precalc is over: {:.2f} sec.'.format(
                     time.time() - self._start_time))
@@ -80,6 +82,8 @@ class PrecalcTimer:
         if not settings.precalc_mode:
             self._runner.cancel()
             self._finish_precalc_mode()
+            geotracker = settings.get_current_geotracker_item()
+            reload_precalc(geotracker)
             return None
         if self._state == 'timeline':
             if self._target_frame >= 0:
@@ -95,6 +99,8 @@ class PrecalcTimer:
         if self._state == 'runner':
             if self._runner.is_finished():
                 self._finish_precalc_mode()
+                geotracker = settings.get_current_geotracker_item()
+                reload_precalc(geotracker)
                 return None
 
             logger = logging.getLogger(__name__)

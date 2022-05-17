@@ -24,7 +24,7 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 
 from ...geotracker_config import GTConfig, get_gt_settings
 from ...utils.images import set_background_image_by_movieclip
-from ..utils.tracking import get_precalc_info, get_precalc_message
+from ..utils.tracking import reload_precalc
 
 
 def _get_last_movieclip():
@@ -153,17 +153,9 @@ class GT_OT_ChoosePrecalcFile(bpy.types.Operator, ExportHelper):
             return {'CANCELLED'}
 
         geotracker.precalc_path = self.filepath
-        if os.path.exists(self.filepath):
-            precalc_info, msg = get_precalc_info(self.filepath)
-            if precalc_info is None:
-                geotracker.precalc_message = '* Precalc file is corrupted'
-                self.report({'ERROR'}, 'Warning! Precalc file seems corrupted')
-                return {'CANCELLED'}
-            else:
-                geotracker.precalc_message = get_precalc_message(precalc_info)
-        else:
-            geotracker.precalc_message = '* Precalc needs to be built'
-            geotracker.precalc_path = self.filepath
+        status, msg = reload_precalc(geotracker)
+        if not status:
+            self.report({'ERROR'}, msg)
 
         logger.debug('PRECALC PATH HAS BEEN CHANGED: {}'.format(self.filepath))
         return {'FINISHED'}

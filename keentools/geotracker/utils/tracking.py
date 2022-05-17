@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+import os
 from dataclasses import dataclass
 from typing import Tuple, Optional, Any
 
@@ -97,4 +98,19 @@ def check_precalc(precalc_path: str,
         log_error(msg)
         return False, msg
 
+    return True, 'ok'
+
+
+def reload_precalc(geotracker: Any) -> Tuple[bool, str]:
+    precalc_path = geotracker.precalc_path
+    if os.path.exists(precalc_path):
+        precalc_info, msg = get_precalc_info(precalc_path)
+        if precalc_info is None:
+            geotracker.precalc_message = '* Precalc file is corrupted'
+            return False, 'Warning! Precalc file seems corrupted'
+        else:
+            geotracker.precalc_message = get_precalc_message(precalc_info)
+    else:
+        geotracker.precalc_message = '* Precalc needs to be built'
+        geotracker.precalc_path = precalc_path
     return True, 'ok'
