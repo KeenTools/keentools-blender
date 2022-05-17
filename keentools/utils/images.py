@@ -139,3 +139,15 @@ def check_bpy_image_has_same_size(image, size):
         return False
     w, h = image.size[:2]
     return w == size[0] and h == size[1]
+
+
+def np_image_to_grayscale(np_img):
+    return (255 * 0.2989 * np_img[:, :, 0] +
+            255 * 0.5870 * np_img[:, :, 1] +
+            255 * 0.1140 * np_img[:, :, 2]).astype(np.uint8)
+
+
+def np_array_from_background_image(camobj):
+    bg_img = get_background_image_object(camobj)
+    np_img = np_array_from_bpy_image(bg_img.image)
+    return np_img
