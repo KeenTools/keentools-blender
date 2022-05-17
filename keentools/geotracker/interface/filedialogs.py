@@ -24,6 +24,7 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 
 from ...geotracker_config import GTConfig, get_gt_settings
 from ...utils.images import set_background_image_by_movieclip
+from ..utils.tracking import get_precalc_info, get_precalc_message
 
 
 def _get_last_movieclip():
@@ -87,4 +88,82 @@ class GT_OT_MultipleFilebrowser(bpy.types.Operator, ImportHelper):
         set_background_image_by_movieclip(geotracker.camobj,
                                           geotracker.movie_clip)
 
+        return {'FINISHED'}
+
+
+class GT_OT_ChoosePrecalcFile(bpy.types.Operator, ExportHelper):
+    bl_idname = GTConfig.gt_choose_precalc_file_idname
+    bl_label = 'Set precalc file'
+    bl_description = 'Choose an existing .precalc file ' \
+                     'or just enter a name for a new one'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    filter_glob: bpy.props.StringProperty(
+        default='*.precalc',
+        options={'HIDDEN'}
+    )
+
+    check_existing: bpy.props.BoolProperty(
+        name='Check Existing',
+        description='Check and warn on overwriting existing files',
+        default=True,
+        options={'HIDDEN'},
+    )
+
+    filename_ext: bpy.props.StringProperty(default='.precalc')
+
+    filepath: bpy.props.StringProperty(
+        default=GTConfig.default_precalc_filename,
+        subtype='FILE_PATH'
+    )
+
+    def check(self, context):
+        change_ext = False
+
+        filepath = self.filepath
+        sp = os.path.splitext(filepath)
+
+        if sp[1] in {'.precalc', '.'}:
+            filepath = sp[0]
+
+        filepath = bpy.path.ensure_ext(filepath, self.filename_ext)
+
+        if filepath != self.filepath:
+            self.filepath = filepath
+            change_ext = True
+
+        return change_ext
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text='Choose an existing .precalc file')
+        layout.label(text='or just enter a name for a new one')
+
+    def execute(self, context):
+        logger = logging.getLogger(__name__)
+        logger.debug('PRECALC PATH: {}'.format(self.filepath))
+
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if not geotracker:
+            return {'CANCELLED'}
+
+        if os.path.exists(self.filepath) and os.path.isdir(self.filepath):
+            self.report({'ERROR'}, 'Wrong precalc destination!')
+            return {'CANCELLED'}
+
+        geotracker.precalc_path = self.filepath
+        if os.path.exists(self.filepath):
+            precalc_info, msg = get_precalc_info(self.filepath)
+            if precalc_info is None:
+                geotracker.precalc_message = '* Precalc file is corrupted'
+                self.report({'ERROR'}, 'Warning! Precalc file seems corrupted')
+                return {'CANCELLED'}
+            else:
+                geotracker.precalc_message = get_precalc_message(precalc_info)
+        else:
+            geotracker.precalc_message = '* Precalc needs to be built'
+            geotracker.precalc_path = self.filepath
+
+        logger.debug('PRECALC PATH HAS BEEN CHANGED: {}'.format(self.filepath))
         return {'FINISHED'}

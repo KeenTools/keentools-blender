@@ -80,6 +80,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     precalc_path: bpy.props.StringProperty(name='Precalc path')
     precalc_start: bpy.props.IntProperty(name='from', default=1)
     precalc_end: bpy.props.IntProperty(name='to', default=250)
+    precalc_message: bpy.props.StringProperty(name='Precalc info')
 
     solve_for_camera: bpy.props.BoolProperty(name='Solve for camera', default=False)
     reduce_pins: bpy.props.BoolProperty(name='Reduce pins', default=False)
