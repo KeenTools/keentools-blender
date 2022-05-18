@@ -26,7 +26,9 @@ from bpy.types import Object
 from ...addon_config import get_operator
 from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
-from ..utils.animation import create_locrot_keyframe
+from ..utils.animation import (create_locrot_keyframe,
+                               extend_scene_timeline_start,
+                               extend_scene_timeline_end)
 
 
 @dataclass(frozen=True)
@@ -97,3 +99,45 @@ def add_keyframe_act() -> ActionStatus:
     GTLoader.update_all_viewport_shaders()
     area.tag_redraw()
     return ActionStatus(True, 'Ok')
+
+
+def fit_render_size_act() -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_error = logger.error
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        return ActionStatus(False, 'No geotracker')
+    if not geotracker.movie_clip:
+        return ActionStatus(False, 'No image sequence in GeoTracker')
+
+    w, h = geotracker.get_movie_clip_size()
+    if w <= 0 or h <= 0:
+        msg = f'Wrong precalc frame size {w} x {h}'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    scene = bpy.context.scene
+    scene.render.resolution_x = w
+    scene.render.resolution_y = h
+    return ActionStatus(True, f'Render size {w} x {h}')
+
+
+def fit_time_length_act() -> ActionStatus:
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        return ActionStatus(False, 'No geotracker')
+    if not geotracker.movie_clip:
+        return ActionStatus(False, 'No image sequence in GeoTracker')
+
+    duration = geotracker.get_movie_clip_duration()
+    if duration < 2:
+        return ActionStatus(False, f'Image sequence too short: {duration}!')
+
+    extend_scene_timeline_start(1)
+    extend_scene_timeline_end(duration, force=True)
+    geotracker.precalc_start = 1
+    geotracker.precalc_end = duration
+
+    return ActionStatus(True, f'Timeline duration 1 - {duration}')

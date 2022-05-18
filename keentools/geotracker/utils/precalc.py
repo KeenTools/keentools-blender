@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
-from typing import Any, Callable, Optional, List
+from typing import Any, Callable, Optional, List, Tuple
 import time
 
 import bpy
@@ -40,13 +40,13 @@ from ..utils.tracking import reload_precalc
 
 
 class PrecalcTimer:
-    def __init__(self):
+    def __init__(self, area: Optional[Area]=None, runner: Optional[Any]=None):
         self._interval: float = 0.001
         self._target_frame: int = -1
-        self._runner: Any = None
+        self._runner: Any = runner
         self._state: str = 'none'
         self._start_time: int = 0
-        self._area: Area = None
+        self._area: Area = area
         self._active_state_func: Callable = self.dummy_state
 
     def dummy_state(self) -> None:
@@ -82,7 +82,7 @@ class PrecalcTimer:
 
     def common_checks(self) -> bool:
         logger = logging.getLogger(__name__)
-        log_output = logger.info
+        log_output = logger.debug
         settings = get_gt_settings()
         log_output(f'Timer: state={self._state} target={self._target_frame} '
                    f'current={settings.current_frame()}')
@@ -98,7 +98,7 @@ class PrecalcTimer:
 
     def timeline_state(self) -> Optional[float]:
         logger = logging.getLogger(__name__)
-        log_output = logger.info
+        log_output = logger.debug
         settings = get_gt_settings()
         if self._target_frame >= 0:
             if settings.current_frame() == self._target_frame:
@@ -114,7 +114,7 @@ class PrecalcTimer:
 
     def runner_state(self) -> Optional[float]:
         logger = logging.getLogger(__name__)
-        log_output = logger.info
+        log_output = logger.debug
         settings = get_gt_settings()
 
         if self._runner.is_finished():
@@ -166,9 +166,10 @@ class PrecalcTimer:
         bpy.app.timers.register(self.timer_func, first_interval=self._interval)
 
 
-def precalc_with_runner_act(context: Any) -> bool:
+def precalc_with_runner_act(context: Any) -> Tuple[bool, str]:
     logger = logging.getLogger(__name__)
-    log_output = logger.info
+    log_output = logger.debug
+    log_error = logger.error
     log_output('precalc_with_runner_act start')
     settings = get_gt_settings()
     geotracker = settings.get_current_geotracker_item()
@@ -176,11 +177,23 @@ def precalc_with_runner_act(context: Any) -> bool:
 
     area = context.area
 
-    if not geotracker or not geotracker.camobj:
-        return False
+    if not geotracker:
+        msg = 'No GeoTracker structure'
+        log_error(msg)
+        return False, msg
+    if not geotracker.camobj:
+        msg = 'No camera object in GeoTracker'
+        log_error(msg)
+        return False, msg
+    if not geotracker.movie_clip:
+        msg = 'No image sequence in GeoTracker'
+        log_error(msg)
+        return False, msg
 
     if geotracker.precalc_path == '':
-        return False
+        msg = 'Precalc path is not specified'
+        log_error(msg)
+        return False, msg
 
     vp = GTLoader.viewport()
     vp.texter().register_handler(context)
@@ -197,10 +210,9 @@ def precalc_with_runner_act(context: Any) -> bool:
     set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
     geotracker.reload_background_image()
 
-    pt = PrecalcTimer()
-    pt.set_runner(area, runner)
+    pt = PrecalcTimer(area, runner)
     pt.start()
-    return True
+    return True, 'ok'
 
 
 def message_to_screen(msg: List) -> None:

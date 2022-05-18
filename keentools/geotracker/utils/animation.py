@@ -24,9 +24,9 @@ from mathutils import Vector
 from ...geotracker_config import get_gt_settings
 
 
-def extend_scene_timeline_end(keyframe_num: int) -> None:
+def extend_scene_timeline_end(keyframe_num: int, force=False) -> None:
     scene = bpy.context.scene
-    if scene.frame_end < keyframe_num:
+    if force or scene.frame_end < keyframe_num:
         scene.frame_end = keyframe_num
 
 

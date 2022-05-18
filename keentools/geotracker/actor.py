@@ -21,7 +21,9 @@ import logging
 import bpy
 
 from ..geotracker_config import GTConfig
-from .utils.geotracker_acts import add_keyframe_act
+from .utils.geotracker_acts import (add_keyframe_act,
+                                    fit_render_size_act,
+                                    fit_time_length_act)
 from .utils.precalc import precalc_with_runner_act
 
 
@@ -50,7 +52,25 @@ class GT_OT_Actor(bpy.types.Operator):
             return {'FINISHED'}
 
         elif self.action == 'create_precalc':
-            precalc_with_runner_act(context)
+            status, msg = precalc_with_runner_act(context)
+            if not status:
+                self.report({'ERROR'}, msg)
+            return {'FINISHED'}
+
+        elif self.action == 'fit_render_size':
+            act_status = fit_render_size_act()
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+            else:
+                self.report({'INFO'}, act_status.error_message)
+            return {'FINISHED'}
+
+        elif self.action == 'fit_time_length':
+            act_status = fit_time_length_act()
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+            else:
+                self.report({'INFO'}, act_status.error_message)
             return {'FINISHED'}
 
         self.report({'INFO'}, self.action)

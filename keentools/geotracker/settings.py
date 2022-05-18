@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
-from typing import Optional
+from typing import Optional, Tuple
 import bpy
 from bpy.types import Object, CameraBackgroundImage
 
@@ -52,6 +52,8 @@ def _update_preview_gamma(self, context) -> None:
         return
     geotracker = settings.get_current_geotracker_item()
     bg_img = get_background_image_object(geotracker.camobj)
+    if not bg_img or not bg_img.image:
+        return
     bg_img.image.reload()
     np_img = np_array_from_bpy_image(bg_img.image)
     gamma_img = gamma_np_image(np_img, 1.0 / self.preview_gamma)
@@ -130,11 +132,24 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     def reload_background_image(self) -> None:
         bg_img = self.get_background_image_object()
-        if bg_img is not None:
+        if bg_img is not None and bg_img.image:
             bg_img.image.reload()
 
     def reset_focal_length_estimation(self) -> None:
         self.focal_length_estimation = False
+
+    def get_movie_clip_size(self) -> Tuple[int, int]:
+        if not self.movie_clip:
+            return -1, -1
+        size = self.movie_clip.size[:]
+        if len(size) != 2:
+            return -1, -1
+        return size[0], size[1]
+
+    def get_movie_clip_duration(self) -> int:
+        if not self.movie_clip:
+            return -1
+        return self.movie_clip.frame_duration
 
 
 class GTSceneSettings(bpy.types.PropertyGroup):

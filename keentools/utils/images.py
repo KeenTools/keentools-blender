@@ -96,7 +96,8 @@ def set_background_image_by_movieclip(camobj, movie_clip, name='geotracker_bg'):
         img = bpy.data.images.new(name, width=w, height=h, alpha=True,
                                   float_buffer=False)
         bg_img.image = img
-    img.source = 'SEQUENCE'
+
+    img.source = 'SEQUENCE' if movie_clip.frame_duration > 1 else 'FILE'
     img.filepath = movie_clip.filepath
 
     bg_img.image_user.frame_duration = movie_clip.frame_duration
