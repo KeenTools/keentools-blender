@@ -29,7 +29,7 @@ from ..utils import coords
 from .utils.animation import create_locrot_keyframe
 from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
-                           unhide_viewport_ui_element_from_object)
+                           unhide_viewport_ui_elements_from_object)
 from ..utils.images import set_background_image_by_movieclip
 
 
@@ -175,7 +175,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         vp.unregister_handlers()
         exit_area_localview(area)
         if geotracker.geomobj:
-            unhide_viewport_ui_element_from_object(area, geotracker.geomobj)
+            unhide_viewport_ui_elements_from_object(area, geotracker.geomobj)
         GTLoader.save_geotracker()
         unregister_undo_redo_handlers()
 
@@ -303,7 +303,7 @@ class GT_OT_PinMode(bpy.types.Operator):
 
         area = GTLoader.get_work_area()
         old_geotracker = settings.get_current_geotracker_item()
-        unhide_viewport_ui_element_from_object(area, old_geotracker.geomobj)
+        unhide_viewport_ui_elements_from_object(area, old_geotracker.geomobj)
 
         self._set_new_geotracker(area, num)
         new_geotracker = settings.get_current_geotracker_item()

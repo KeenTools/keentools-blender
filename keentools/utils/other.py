@@ -105,7 +105,7 @@ def hide_viewport_ui_elements_and_store_on_object(area, obj):
     _force_hide_ui_elements(area)
 
 
-def unhide_viewport_ui_element_from_object(area, obj):
+def unhide_viewport_ui_elements_from_object(area, obj):
     def _unpack_state(states):
         attr_names = _viewport_ui_attribute_names()
         values = {}

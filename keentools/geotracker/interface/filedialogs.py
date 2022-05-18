@@ -22,8 +22,10 @@ import os
 import bpy
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 
+from ...addon_config import Config
 from ...geotracker_config import GTConfig, get_gt_settings
 from ...utils.images import set_background_image_by_movieclip
+from ..utils.tracking import reload_precalc
 
 
 def _get_last_movieclip():
@@ -35,8 +37,8 @@ def _get_last_movieclip():
 class GT_OT_MultipleFilebrowser(bpy.types.Operator, ImportHelper):
     bl_idname = GTConfig.gt_multiple_filebrowser_idname
     bl_label = 'Open frame sequence'
-    bl_description = 'Load images. ' \
-                     'You can select multiple images at once'
+    bl_description = 'Load image sequence. ' \
+                     'Just select first image in sequence'
 
     filter_glob: bpy.props.StringProperty(
         default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;',  # *.mp4',
@@ -56,8 +58,10 @@ class GT_OT_MultipleFilebrowser(bpy.types.Operator, ImportHelper):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text='Load images for sequence. ')
-        layout.label(text='You can select multiple images at once')
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        col.label(text='Load image sequence. ')
+        col.label(text='Just select first image in sequence')
 
     def execute(self, context):
         settings = get_gt_settings()
@@ -87,4 +91,81 @@ class GT_OT_MultipleFilebrowser(bpy.types.Operator, ImportHelper):
         set_background_image_by_movieclip(geotracker.camobj,
                                           geotracker.movie_clip)
 
+        return {'FINISHED'}
+
+
+class GT_OT_ChoosePrecalcFile(bpy.types.Operator, ExportHelper):
+    bl_idname = GTConfig.gt_choose_precalc_file_idname
+    bl_label = 'Set precalc file'
+    bl_description = 'Choose an existing .precalc file ' \
+                     'or just enter a name for a new one'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    filter_glob: bpy.props.StringProperty(
+        default='*.precalc',
+        options={'HIDDEN'}
+    )
+
+    check_existing: bpy.props.BoolProperty(
+        name='Check Existing',
+        description='Check and warn on overwriting existing files',
+        default=True,
+        options={'HIDDEN'},
+    )
+
+    filename_ext: bpy.props.StringProperty(default='.precalc')
+
+    filepath: bpy.props.StringProperty(
+        default=GTConfig.default_precalc_filename,
+        subtype='FILE_PATH'
+    )
+
+    def check(self, context):
+        change_ext = False
+
+        filepath = self.filepath
+        sp = os.path.splitext(filepath)
+
+        if sp[1] in {'.precalc', '.'}:
+            filepath = sp[0]
+
+        filepath = bpy.path.ensure_ext(filepath, self.filename_ext)
+
+        if filepath != self.filepath:
+            self.filepath = filepath
+            change_ext = True
+
+        return change_ext
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        col.label(text='Choose an existing .precalc file')
+        col.label(text='or just enter a name for a new one')
+
+    def execute(self, context):
+        logger = logging.getLogger(__name__)
+        log_output = logger.debug
+        log_error = logger.error
+        log_output('PRECALC PATH: {}'.format(self.filepath))
+
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if not geotracker:
+            log_error('Current GeoTracker is wrong')
+            return {'CANCELLED'}
+
+        if os.path.exists(self.filepath) and os.path.isdir(self.filepath):
+            log_error(f'Wrong precalc destination: {self.filepath}')
+            self.report({'ERROR'}, 'Wrong precalc destination!')
+            return {'CANCELLED'}
+
+        geotracker.precalc_path = self.filepath
+        status, msg = reload_precalc(geotracker)
+        if not status:
+            log_error(msg)
+            self.report({'ERROR'}, msg)
+
+        log_output('PRECALC PATH HAS BEEN CHANGED: {}'.format(self.filepath))
         return {'FINISHED'}

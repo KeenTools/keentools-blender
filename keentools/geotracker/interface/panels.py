@@ -16,7 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import re
 from typing import Tuple
+
 import bpy
 
 from ...addon_config import Config, geotracker_enabled
@@ -208,26 +210,44 @@ class GT_PT_AnalyzePanel(AllVisible):
             return
 
         layout = self.layout
-        layout.operator(GTConfig.gt_precalc_file_export_idname,
+        block = layout.column(align=True)
+        block.operator(GTConfig.gt_choose_precalc_file_idname,
                         text='Set precalc file')
         if geotracker.precalc_path != '':
-            layout.label(text=geotracker.precalc_path)
-            row = layout.row()
-            row.prop(geotracker, 'precalc_start')
-            row.prop(geotracker, 'precalc_end')
+            box = block.box()
+            col = box.column()
+            col.scale_y = Config.text_scale_y
+            col.label(text=geotracker.precalc_path)
 
+            if geotracker.precalc_message != '':
+                arr = re.split('\r\n|\n', geotracker.precalc_message)
+                for txt in arr:
+                    col.label(text=txt)
+
+        if geotracker.precalc_path != '':
             if settings.precalc_mode:
                 row = layout.row(align=True)
-                row.prop(settings, 'user_percent')
+                row.prop(settings, 'user_percent', text='Calculation...')
                 col = row.column(align=True)
                 col.alert = True
                 col.operator(GTConfig.gt_stop_precalc_idname, text='',
                              icon='CANCEL')
             else:
-                op = layout.operator(GTConfig.gt_actor_idname,
+                col = layout.column(align=True)
+                row = col.row(align=True)
+                op = row.operator(GTConfig.gt_actor_idname,
+                                  text='Fit render size')
+                op.action = 'fit_render_size'
+                op = row.operator(GTConfig.gt_actor_idname,
+                                  text='Fit time length')
+                op.action = 'fit_time_length'
+                op = col.operator(GTConfig.gt_actor_idname,
                                      text='Create precalc')
                 op.action = 'create_precalc'
 
+                row = layout.row()
+                row.prop(geotracker, 'precalc_start')
+                row.prop(geotracker, 'precalc_end')
 
 class GT_PT_CameraPanel(AllVisible):
     bl_idname = GTConfig.gt_camera_panel_idname

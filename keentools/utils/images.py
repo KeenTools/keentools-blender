@@ -96,7 +96,8 @@ def set_background_image_by_movieclip(camobj, movie_clip, name='geotracker_bg'):
         img = bpy.data.images.new(name, width=w, height=h, alpha=True,
                                   float_buffer=False)
         bg_img.image = img
-    img.source = 'SEQUENCE'
+
+    img.source = 'SEQUENCE' if movie_clip.frame_duration > 1 else 'FILE'
     img.filepath = movie_clip.filepath
 
     bg_img.image_user.frame_duration = movie_clip.frame_duration
@@ -139,3 +140,15 @@ def check_bpy_image_has_same_size(image, size):
         return False
     w, h = image.size[:2]
     return w == size[0] and h == size[1]
+
+
+def np_image_to_grayscale(np_img):
+    return (255 * 0.2989 * np_img[:, :, 0] +
+            255 * 0.5870 * np_img[:, :, 1] +
+            255 * 0.1140 * np_img[:, :, 2]).astype(np.uint8)
+
+
+def np_array_from_background_image(camobj):
+    bg_img = get_background_image_object(camobj)
+    np_img = np_array_from_bpy_image(bg_img.image)
+    return np_img

@@ -40,7 +40,7 @@ class GTConfig:
     gt_pinmode_idname = operators + '.pinmode'
     gt_movepin_idname = operators + '.movepin'
     gt_multiple_filebrowser_idname = operators + '.multiple_filebrowser'
-    gt_precalc_file_export_idname = operators + '.precalc_file_export'
+    gt_choose_precalc_file_idname = operators + '.choose_precalc_file'
     gt_track_to_start_idname = operators + '.track_to_start_btn'
     gt_track_to_end_idname = operators + '.track_to_end_btn'
     gt_track_next_idname = operators + '.track_next_btn'

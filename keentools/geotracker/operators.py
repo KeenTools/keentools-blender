@@ -265,18 +265,6 @@ class GT_OT_BtnExitPinMode(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_BtnPrecalcFile(bpy.types.Operator):
-    bl_idname = GTConfig.gt_precalc_file_export_idname
-    bl_label = 'Set precalc file'
-    bl_description = 'Choose an existing .precalc file ' \
-                     'or just enter a name for a new one'
-
-    def execute(self, context):
-        settings = get_gt_settings()
-        settings.precalc_mode = False
-        return {'FINISHED'}
-
-
 class GT_OT_BtnStopPrecalc(bpy.types.Operator):
     bl_idname = GTConfig.gt_stop_precalc_idname
     bl_label = 'Stop Precalc'
@@ -337,5 +325,4 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_BtnCreateAnimation,
                   GT_OT_BtnExitPinMode,
                   GT_OT_InterruptModal,
-                  GT_OT_BtnPrecalcFile,
                   GT_OT_BtnStopPrecalc)
