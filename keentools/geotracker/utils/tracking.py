@@ -18,17 +18,10 @@
 
 import logging
 import os
-from dataclasses import dataclass
 from typing import Tuple, Optional, Any
 
 from ...utils.coords import render_frame
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
-
-
-@dataclass(frozen=True)
-class PrecalcStatus:
-    success: bool = False
-    error_message: str = None
 
 
 def get_precalc_info(precalc_path: str) -> Tuple[Optional[Any], str]:
@@ -37,13 +30,7 @@ def get_precalc_info(precalc_path: str) -> Tuple[Optional[Any], str]:
     try:
         loader = pkt_module().precalc.Loader(precalc_path)
         precalc_info = loader.load_info()
-        w = precalc_info.image_w
-        h = precalc_info.image_h
-        if not isinstance(w, int) or not isinstance(h, int):
-            msg = 'Problem with precalc image size'
-            log_error(msg)
-            return None, msg
-        if w <= 0 or h <= 0:
+        if precalc_info.image_w <= 0 or precalc_info.image_h <= 0:
             msg = 'Wrong precalc image size'
             log_error(msg)
             return None, msg
@@ -83,11 +70,11 @@ def check_precalc(precalc_path: str,
     if precalc_info is None:
         return False, 'Precalc is damaged'
 
+    left = precalc_info.left_precalculated_frame
+    right = precalc_info.right_precalculated_frame
     if frame_from is not None and frame_to is not None:
-        if (not precalc_info.left_precalculated_frame <= frame_from <=
-                precalc_info.right_precalculated_frame) or \
-                (not precalc_info.left_precalculated_frame <= frame_to <=
-                     precalc_info.right_precalculated_frame):
+        if (not left <= frame_from <= right) or \
+                (not left <= frame_to <= right):
             msg = 'Frames are not in precalculated range'
             log_error(msg)
             return False, msg
@@ -101,16 +88,17 @@ def check_precalc(precalc_path: str,
     return True, 'ok'
 
 
-def reload_precalc(geotracker: Any) -> Tuple[bool, str]:
+def reload_precalc(geotracker: Any) -> Tuple[bool, str, Any]:
     precalc_path = geotracker.precalc_path
     if os.path.exists(precalc_path):
         precalc_info, msg = get_precalc_info(precalc_path)
         if precalc_info is None:
             geotracker.precalc_message = '* Precalc file is corrupted'
-            return False, 'Warning! Precalc file seems corrupted'
+            return False, 'Warning! Precalc file seems corrupted', None
         else:
             geotracker.precalc_message = get_precalc_message(precalc_info)
-    else:
-        geotracker.precalc_message = '* Precalc needs to be built'
-        geotracker.precalc_path = precalc_path
-    return True, 'ok'
+            return True, 'ok', precalc_info
+
+    geotracker.precalc_message = '* Precalc needs to be built'
+    geotracker.precalc_path = precalc_path
+    return True, 'Precalc file has not created yet', None

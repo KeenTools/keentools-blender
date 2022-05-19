@@ -36,7 +36,6 @@ from ...utils.coords import render_frame
 from ...utils.manipulate import (switch_to_camera,
                                  exit_area_localview)
 from ..gt_class_loader import GTClassLoader
-from ..utils.tracking import reload_precalc
 
 
 class PrecalcTimer:
@@ -92,7 +91,7 @@ class PrecalcTimer:
             self._runner.cancel()
             self.finish_precalc_mode()
             geotracker = settings.get_current_geotracker_item()
-            reload_precalc(geotracker)
+            geotracker.reload_precalc()
             return False
         return True
 
@@ -120,7 +119,7 @@ class PrecalcTimer:
         if self._runner.is_finished():
             self.finish_precalc_mode()
             geotracker = settings.get_current_geotracker_item()
-            reload_precalc(geotracker)
+            geotracker.reload_precalc()
             return None
 
         progress, message = self._runner.current_progress()

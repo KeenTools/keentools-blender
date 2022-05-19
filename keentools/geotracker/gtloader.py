@@ -257,7 +257,7 @@ class GTLoader:
             cls.place_model_relative_to_camera(forced=forced)
 
     @classmethod
-    def updated_focal_length(cls, force: bool=False) -> None:
+    def updated_focal_length(cls, force: bool=False) -> Optional[float]:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:

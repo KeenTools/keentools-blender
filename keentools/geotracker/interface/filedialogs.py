@@ -25,7 +25,6 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from ...addon_config import Config
 from ...geotracker_config import GTConfig, get_gt_settings
 from ...utils.images import set_background_image_by_movieclip
-from ..utils.tracking import reload_precalc
 
 
 def _get_last_movieclip():
@@ -162,7 +161,7 @@ class GT_OT_ChoosePrecalcFile(bpy.types.Operator, ExportHelper):
             return {'CANCELLED'}
 
         geotracker.precalc_path = self.filepath
-        status, msg = reload_precalc(geotracker)
+        status, msg, _ = geotracker.reload_precalc()
         if not status:
             log_error(msg)
             self.report({'ERROR'}, msg)
