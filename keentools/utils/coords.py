@@ -205,6 +205,8 @@ def get_area_region(area):
 
 
 def get_area_overlay(area):
+    if not area:
+        return None
     return area.spaces.active.overlay
 
 

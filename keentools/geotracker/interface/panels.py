@@ -195,6 +195,15 @@ class GT_PT_InputPanel(AllVisible):
         row.alert = not geotracker.movie_clip
         row.prop(geotracker, 'movie_clip')
 
+        if geotracker.movie_clip:
+            row = layout.row(align=True)
+            op = row.operator(GTConfig.gt_actor_idname,
+                              text='Fit render size')
+            op.action = 'fit_render_size'
+            op = row.operator(GTConfig.gt_actor_idname,
+                              text='Fit time length')
+            op.action = 'fit_time_length'
+
         layout.operator(GTConfig.gt_multiple_filebrowser_idname,
                         text='Open Sequence')
 
@@ -234,13 +243,6 @@ class GT_PT_AnalyzePanel(AllVisible):
                              icon='CANCEL')
             else:
                 col = layout.column(align=True)
-                row = col.row(align=True)
-                op = row.operator(GTConfig.gt_actor_idname,
-                                  text='Fit render size')
-                op.action = 'fit_render_size'
-                op = row.operator(GTConfig.gt_actor_idname,
-                                  text='Fit time length')
-                op.action = 'fit_time_length'
                 op = col.operator(GTConfig.gt_actor_idname,
                                      text='Create precalc')
                 op.action = 'create_precalc'

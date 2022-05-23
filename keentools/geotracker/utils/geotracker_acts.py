@@ -23,12 +23,20 @@ from typing import Optional
 import bpy
 from bpy.types import Object
 
-from ...addon_config import get_operator
 from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
-from ..utils.animation import (create_locrot_keyframe,
-                               extend_scene_timeline_start,
-                               extend_scene_timeline_end)
+from ..gt_class_loader import GTClassLoader
+from ...utils.animation import (create_locrot_keyframe,
+                                delete_locrot_keyframe,
+                                insert_keyframe_in_fcurve,
+                                extend_scene_timeline_start,
+                                extend_scene_timeline_end,
+                                reset_object_action)
+from ...utils.other import bpy_progress_begin, bpy_progress_end
+from .tracking import (PreviewTimer,
+                       get_next_tracking_keyframe,
+                       get_previous_tracking_keyframe)
+from ...utils.coords import update_depsgraph
 
 
 @dataclass(frozen=True)
@@ -101,6 +109,55 @@ def add_keyframe_act() -> ActionStatus:
     return ActionStatus(True, 'Ok')
 
 
+def remove_keyframe_act() -> ActionStatus:
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        return ActionStatus(False, 'No geotracker')
+
+    area = GTLoader.get_work_area()
+    if not area:
+        return ActionStatus(False, 'Working area does not exist')
+
+    gt = GTLoader.kt_geotracker()
+
+    if not gt.is_key_at(settings.current_frame()):
+        return ActionStatus(False, 'No GeoTracker keyframe at this frame')
+
+    gt.remove_keyframe(settings.current_frame())
+    settings.pin_move_mode = True
+    delete_locrot_keyframe(geotracker.animatable_object())
+    reset_object_action(geotracker.animatable_object())
+    update_depsgraph()
+    GTLoader.store_geomobj_world_matrix(-1, geotracker.geomobj.matrix_world)
+    settings.pin_move_mode = False
+    GTLoader.save_geotracker()
+    GTLoader.update_all_viewport_shaders(area)
+    return ActionStatus(True, 'ok')
+
+
+def next_keyframe_act() -> ActionStatus:
+    settings = get_gt_settings()
+    current_frame = settings.current_frame()
+    target_frame = get_next_tracking_keyframe(GTLoader.kt_geotracker(),
+                                              current_frame)
+    if current_frame != target_frame:
+        settings.set_current_frame(target_frame)
+        return ActionStatus(True, 'ok')
+    return ActionStatus(False, 'No next GeoTracker keyframe')
+
+
+def prev_keyframe_act() -> ActionStatus:
+    settings = get_gt_settings()
+    current_frame = settings.current_frame()
+    target_frame = get_previous_tracking_keyframe(GTLoader.kt_geotracker(),
+                                                  current_frame)
+    if current_frame != target_frame:
+        settings.set_current_frame(target_frame)
+        return ActionStatus(True, 'ok')
+    return ActionStatus(False, 'No previous GeoTracker keyframe')
+
+
 def fit_render_size_act() -> ActionStatus:
     logger = logging.getLogger(__name__)
     log_error = logger.error
@@ -141,3 +198,107 @@ def fit_time_length_act() -> ActionStatus:
     geotracker.precalc_end = duration
 
     return ActionStatus(True, f'Timeline duration 1 - {duration}')
+
+
+def track_to(forward: bool=True) -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_output = logger.debug
+    log_error = logger.error
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        msg = 'GeoTracker item is not found'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    status, msg, precalc_info = geotracker.reload_precalc()
+    if not status or precalc_info is None:
+        msg = 'Precalc has problems. Check it'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    gt = GTLoader.kt_geotracker()
+    old_focal_mode = gt.focal_length_mode()
+    if geotracker.track_focal_length:
+        gt.set_focal_length_mode(
+            GTClassLoader.GeoTracker_class().FocalLengthMode.ZOOM_FOCAL_LENGTH)
+        gt.set_track_focal_length(geotracker.track_focal_length)
+
+    settings.pin_move_mode = True
+
+    left = precalc_info.left_precalculated_frame
+    right = precalc_info.right_precalculated_frame
+    if forward:
+        right -= 1
+    else:
+        left += 1
+    progress_callback = GTClassLoader.TRProgressCallBack_class()(left, right)
+
+    current_frame = settings.current_frame()
+    track_error = False
+    bpy_progress_begin(0, 100)
+    try:
+        gt.track(current_frame, forward=forward,
+                 precalc_path=geotracker.precalc_path,
+                 progress_callback=progress_callback)
+    except RuntimeError as err:
+        track_error = True
+        track_error_message = str(err)
+        log_error(f'gt.track error: {track_error_message}')
+    bpy_progress_end()
+
+    end_frame = progress_callback.last_progress
+    if end_frame != -1:
+        create_animation_range(current_frame, end_frame,
+                               geotracker.track_focal_length)
+
+    if track_error:
+        gt.set_focal_length_mode(old_focal_mode)
+        GTLoader.save_geotracker()
+        return ActionStatus(False, track_error_message)
+
+    if end_frame == -1:
+        msg = 'No progress in tracking'
+        log_error(msg)
+        gt.set_focal_length_mode(old_focal_mode)
+        GTLoader.save_geotracker()
+        return ActionStatus(False, msg)
+
+    settings.pin_move_mode = False
+    gt.set_focal_length_mode(old_focal_mode)
+    GTLoader.save_geotracker()
+
+    pt = PreviewTimer(current_frame, end_frame)
+    pt.start()
+    return ActionStatus(True, 'Ok')
+
+
+def create_animation_range(from_frame: int, to_frame: int,
+                           animate_focal: bool=False) -> None:
+    logger = logging.getLogger(__name__)
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        return
+
+    gt = GTLoader.kt_geotracker()
+    track_frames = gt.track_frames()
+    keyframes = gt.keyframes()
+
+    scope = range(from_frame, to_frame + 1) if from_frame < to_frame else \
+        range(from_frame, to_frame - 1, -1)
+    for frame in scope:
+        settings.set_current_frame(frame)
+        if frame in track_frames:
+            GTLoader.place_camera(forced=True)
+            keyframe_type = 'JITTER' if frame not in keyframes else 'KEYFRAME'
+            create_locrot_keyframe(geotracker.animatable_object(), keyframe_type)
+
+            if animate_focal:
+                focal = GTLoader.updated_focal_length(force=True)
+                logger.debug('ANIMATED FOCAL: {}'.format(focal))
+                if focal is not None:
+                    camobj = geotracker.camobj
+                    insert_keyframe_in_fcurve(camobj.data, frame, focal,
+                                              keyframe_type=keyframe_type,
+                                              data_path='lens', index=0)
