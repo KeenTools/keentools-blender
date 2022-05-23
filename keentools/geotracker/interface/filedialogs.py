@@ -27,9 +27,19 @@ from ...geotracker_config import GTConfig, get_gt_settings
 from ...utils.images import set_background_image_by_movieclip
 
 
-def _get_last_movieclip():
-    if len(bpy.data.movieclips) > 0:
-        return bpy.data.movieclips[-1]
+def _get_new_movieclip(old_movieclips):
+    for movieclip in bpy.data.movieclips:
+        if movieclip not in old_movieclips:
+            return movieclip
+    return None
+
+
+def _find_movieclip(filepath):
+    if not os.path.exists(filepath):
+        return None
+    for movieclip in bpy.data.movieclips:
+        if os.path.samefile(movieclip.filepath, filepath):
+            return movieclip
     return None
 
 
@@ -63,33 +73,44 @@ class GT_OT_MultipleFilebrowser(bpy.types.Operator, ImportHelper):
         col.label(text='Just select first image in sequence')
 
     def execute(self, context):
+        logger = logging.getLogger(__name__)
+        log_output = logger.info
+        log_error = logger.error
+
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
 
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
-        log_output(f'DIR: {self.directory}')
-
         frame_files = [{'name': f.name} for f in self.files]
+        log_output(f'DIR: {self.directory}')
         log_output(f'FILES: {frame_files}')
 
-        old_last_movieclip = _get_last_movieclip()
+        old_movieclips = bpy.data.movieclips[:]
         try:
             bpy.ops.clip.open('EXEC_DEFAULT', files=frame_files, directory=self.directory)
         except RuntimeError as err:
-            logger.error('MOVIECLIP OPEN ERROR: {}'.format(str(err)))
+            log_error('MOVIECLIP OPEN ERROR: {}'.format(str(err)))
             return {'CANCELLED'}
 
-        last_movieclip = _get_last_movieclip()
-        if last_movieclip is None or last_movieclip is old_last_movieclip:
-            return {'CANCELLED'}
+        new_movieclip = _get_new_movieclip(old_movieclips)
+        if new_movieclip is None:
+            log_error('NO NEW MOVIECLIP HAS BEEN CREATED')
+            if len(self.files) == 0:
+                log_error('NO FILES HAVE BEEN SELECTED')
+                return {'CANCELLED'}
 
-        geotracker.movie_clip = last_movieclip
+            new_movieclip = _find_movieclip(os.path.join(self.directory, self.files[0].name))
+            if new_movieclip is None:
+                log_error('NO NEW MOVIECLIP IN EXISTING')
+                return {'CANCELLED'}
+            else:
+                log_output(f'EXISTING MOVICLIP HAS BEEN FOUND: {new_movieclip}')
+
+        geotracker.movie_clip = new_movieclip
         set_background_image_by_movieclip(geotracker.camobj,
                                           geotracker.movie_clip)
-
+        log_output(f'LOADED MOVIECLIP: {geotracker.movie_clip.name}')
         return {'FINISHED'}
 
 
