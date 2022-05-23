@@ -5,7 +5,7 @@ from ..addon_config import Config, get_operator, ErrorType
 from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
 from ..utils import coords
-from .utils.animation import create_locrot_keyframe, insert_keyframe_in_fcurve
+from ..utils.animation import create_locrot_keyframe, insert_keyframe_in_fcurve
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..utils.manipulate import force_undo_push
 

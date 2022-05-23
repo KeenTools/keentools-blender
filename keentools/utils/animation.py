@@ -21,7 +21,7 @@ import bpy
 from bpy.types import Object, Action, FCurve, Keyframe
 from mathutils import Vector
 
-from ...geotracker_config import get_gt_settings
+from ..geotracker_config import get_gt_settings
 
 
 def extend_scene_timeline_end(keyframe_num: int, force=False) -> None:

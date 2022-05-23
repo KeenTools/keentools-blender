@@ -23,7 +23,7 @@ import bpy
 
 from ..geotracker_config import get_gt_settings
 from ..utils import coords
-from .utils.animation import get_safe_evaluated_fcurve
+from ..utils.animation import get_safe_evaluated_fcurve
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 

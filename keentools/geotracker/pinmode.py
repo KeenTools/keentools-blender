@@ -26,7 +26,7 @@ from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
 from ..utils.localview import exit_area_localview
 from ..utils import coords
-from .utils.animation import create_locrot_keyframe
+
 from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
                            unhide_viewport_ui_elements_from_object)
@@ -288,6 +288,9 @@ class GT_OT_PinMode(bpy.types.Operator):
             settings.change_current_geotracker(num)
         geotracker = settings.get_current_geotracker_item()
 
+        set_background_image_by_movieclip(geotracker.camobj,
+                                          geotracker.movie_clip)
+
         GTLoader.place_camera()
         switch_to_camera(area, geotracker.camobj,
                          geotracker.animatable_object())
@@ -306,11 +309,6 @@ class GT_OT_PinMode(bpy.types.Operator):
         unhide_viewport_ui_elements_from_object(area, old_geotracker.geomobj)
 
         self._set_new_geotracker(area, num)
-        new_geotracker = settings.get_current_geotracker_item()
-
-        set_background_image_by_movieclip(new_geotracker.camobj,
-                                          new_geotracker.movie_clip)
-
         self._init_pinmode(area)
 
     def invoke(self, context, event):
