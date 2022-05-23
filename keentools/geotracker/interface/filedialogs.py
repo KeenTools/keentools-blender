@@ -84,7 +84,6 @@ class GT_OT_MultipleFilebrowser(bpy.types.Operator, ImportHelper):
 
         frame_files = [{'name': f.name} for f in self.files]
         log_output(f'DIR: {self.directory}')
-        log_output(f'FILES: {frame_files}')
 
         old_movieclips = bpy.data.movieclips[:]
         try:

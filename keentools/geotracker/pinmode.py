@@ -80,13 +80,8 @@ def undo_redo_handler(scene):
             unregister_undo_redo_handlers()
             return
 
-        settings.move_pin_mode = True
         GTLoader.load_geotracker()
         GTLoader.update_all_viewport_shaders(area)
-
-        logger.debug('UPDATE STORED MATRIX')
-        GTLoader.geomobj_world_matrix_changed(update=True)
-        settings.move_pin_mode = False
 
     except Exception as err:
         logger.error('gt_undo_handler {}'.format(str(err)))
@@ -265,8 +260,6 @@ class GT_OT_PinMode(bpy.types.Operator):
             vp.register_handlers(context)
         vp.tag_redraw()
 
-        GTLoader.store_geomobj_world_matrix(*GTLoader.get_geomobj_world_matrix())
-
     def _start_new_pinmode(self, context):
         logger = logging.getLogger(__name__)
         log_output = logger.debug
@@ -412,7 +405,6 @@ class GT_OT_PinMode(bpy.types.Operator):
             coords.update_depsgraph()
             GTLoader.place_camera()
             GTLoader.update_all_viewport_shaders(context.area)
-            GTLoader.geomobj_world_matrix_changed(update=True)
             vp = GTLoader.viewport()
             vp.tag_redraw()
             return {'PASS_THROUGH'}

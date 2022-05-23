@@ -125,12 +125,9 @@ def remove_keyframe_act() -> ActionStatus:
         return ActionStatus(False, 'No GeoTracker keyframe at this frame')
 
     gt.remove_keyframe(settings.current_frame())
-    settings.pin_move_mode = True
     delete_locrot_keyframe(geotracker.animatable_object())
     reset_object_action(geotracker.animatable_object())
     update_depsgraph()
-    GTLoader.store_geomobj_world_matrix(-1, geotracker.geomobj.matrix_world)
-    settings.pin_move_mode = False
     GTLoader.save_geotracker()
     GTLoader.update_all_viewport_shaders(area)
     return ActionStatus(True, 'ok')

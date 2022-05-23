@@ -31,10 +31,7 @@ from .gt_class_loader import GTClassLoader
 
 class GTLoader:
     _viewport: Any = GTViewport()
-
     _geo: Any = None
-    _geomobj_world_matrix_at_frame: Tuple[int, Any] = (-1, None)
-
     _geomobj_edit_mode: str = 'OBJECT'
 
     _geo_input: Any = None
@@ -76,51 +73,6 @@ class GTLoader:
         if current_mode == 'OBJECT':
             return True
         return False
-
-    @classmethod
-    def store_geomobj_world_matrix(cls, frame: int, matrix: Any) -> None:
-        cls._geomobj_world_matrix_at_frame = (frame, np.array(matrix,
-                                                              dtype=np.float32))
-
-    @classmethod
-    def get_stored_geomobj_world_matrix(cls) -> Any:
-        return cls._geomobj_world_matrix_at_frame
-
-    @classmethod
-    def get_geomobj_world_matrix(cls) -> Tuple[int, Any]:
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
-        return (settings.current_frame(),
-                np.array(geotracker.geomobj.matrix_world, dtype=np.float32))
-
-    @classmethod
-    def geomobj_world_matrix_changed(cls, update: bool=False) -> Optional[bool]:
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
-        stored = cls.get_stored_geomobj_world_matrix()
-        current = cls.get_geomobj_world_matrix()
-        if stored[0] != current[0]:
-            cls.store_geomobj_world_matrix(*current)
-            log_output('geomobj_world_matrix_changed FRAMES DIFFER')
-            log_output('stored: {}'.format(stored[0]))
-            log_output('\n{}'.format(stored[1]))
-            log_output('current: {}'.format(current[0]))
-            log_output('\n{}'.format(current[1]))
-            return None
-        if np.all(np.isclose(stored[1], current[1],
-                             rtol=GTConfig.matrix_rtol, atol=GTConfig.matrix_atol)):
-            # logger.debug('geomobj_world_matrix_changed -- NO CHANGES')
-            return False
-        log_output('geomobj_world_matrix_changed -- MATRICES DIFFER')
-        log_output('stored: {}'.format(stored[0]))
-        log_output('\n{}'.format(stored[1]))
-        log_output('current: {}'.format(current[0]))
-        log_output('\n{}'.format(current[1]))
-        log_output('\n\n{}\n{}'.format(stored[1][:], current[1][:]))
-        log_output('\n==\n{}'.format((stored[1] - current[1])[:]))
-        if update:
-            cls.store_geomobj_world_matrix(*current)
-        return True
 
     @classmethod
     def viewport(cls) -> Any:
