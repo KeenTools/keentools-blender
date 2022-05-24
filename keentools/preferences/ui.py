@@ -287,7 +287,7 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         default=False
     )
 
-    license_id: bpy.props.StringProperty(
+    license_key: bpy.props.StringProperty(
         name="License key", default=""
     )
 
@@ -421,9 +421,9 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         if self.fb_lic_type == 'ONLINE':
             box = layout.box()
             row = box.split(factor=0.85)
-            row.prop(self, 'license_id')
+            row.prop(self, 'license_key')
             install_online_op = row.operator(Config.kt_install_license_online_idname)
-            install_online_op.license_id = self.license_id
+            install_online_op.license_key = self.license_key
             install_online_op.product = 'facebuilder'
 
         elif self.fb_lic_type == 'OFFLINE':
@@ -749,9 +749,9 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         if self.gt_lic_type == 'ONLINE':
             box = layout.box()
             row = box.split(factor=0.85)
-            row.prop(self, 'license_id')
+            row.prop(self, 'license_key')
             install_online_op = row.operator(Config.kt_install_license_online_idname)
-            install_online_op.license_id = self.license_id
+            install_online_op.license_key = self.license_key
             install_online_op.product = 'geotracker'
 
         elif self.gt_lic_type == 'OFFLINE':

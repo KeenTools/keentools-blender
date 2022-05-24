@@ -226,17 +226,17 @@ class KTPREF_OT_InstallLicenseOnline(bpy.types.Operator):
     bl_description = 'Install online license'
 
     product: bpy.props.StringProperty(default='')
-    license_id: bpy.props.StringProperty()
+    license_key: bpy.props.StringProperty()
 
-    def _clear_license_id(self):
+    def _clear_license_key(self):
         pref = get_addon_preferences()
-        pref.license_id = ''
+        pref.license_key = ''
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
         logger.info('Start InstallLicenseOnline')
         lm = get_product_license_manager(self.product)
-        res = lm.install_license_online(self.license_id)
+        res = lm.install_license_online(self.license_key)
 
         if res is not None:
             logger.error('InstallLicenseOnline error: {}'.format(res))
@@ -253,7 +253,7 @@ class KTPREF_OT_InstallLicenseOnline(bpy.types.Operator):
                         replace_newlines_with_spaces(lic_status.message))
             return {'CANCELLED'}
 
-        self._clear_license_id()
+        self._clear_license_key()
         msg = 'License installed online'
         logger.info(msg)
         self.report({'INFO'}, msg)
