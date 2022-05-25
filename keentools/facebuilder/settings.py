@@ -448,12 +448,10 @@ class FBHeadItem(PropertyGroup):
     use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
                                          default=False,
                                          update=update_expressions)
-    use_blinking: BoolProperty(
-        description="Use blinking desctiption",
-        name="Use blinking", default=True, update=update_expression_options)
-    use_neck_rotation: BoolProperty(
-        description="Use neck rotation desctiption",
-        name="Use neck rotation", default=True, update=update_expression_options)
+    lock_blinking: BoolProperty(
+        name="Lock eye blinking", default=False, update=update_expression_options)
+    lock_neck_movement: BoolProperty(
+        name="Lock neck movement", default=False, update=update_expression_options)
 
     reduce_pins: bpy.props.BoolProperty(name="Reduce pins",
                                         default=True)
@@ -792,11 +790,9 @@ class FBSceneSettings(PropertyGroup):
         description="Change how much pins affect the model expressions",
         name="Expression rigidity", default=2.0, min=0.001, max=1000.0)
     blinking_rigidity: FloatProperty(
-        description="Change blinking rigidity",
-        name="Blinking rigidity", default=2.0, min=0.001, max=1000.0)
-    neck_rotation_rigidity: FloatProperty(
-        description="Change neck rotation rigidity",
-        name="Neck rotation rigidity", default=2.0, min=0.001, max=1000.0)
+        name="Eye blinking rigidity", default=2.0, min=0.001, max=1000.0)
+    neck_movement_rigidity: FloatProperty(
+        name="Neck movement rigidity", default=2.0, min=0.001, max=1000.0)
 
     # Internal use only.
     # Warning! current_headnum and current_camnum work only in Pinmode!
