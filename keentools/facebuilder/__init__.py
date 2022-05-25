@@ -18,7 +18,7 @@
 import logging
 import bpy
 
-from ..facebuilder_config import FBConfig
+from ..facebuilder_config import FBConfig, get_fb_settings
 from .head import MESH_OT_FBAddHead
 from .settings import FBSceneSettings, FBExifItem, FBCameraItem, FBHeadItem
 from ..utils.icons import FBIcons
@@ -53,7 +53,12 @@ def _remove_addon_settings_var():
 
 
 def menu_func(self, context):
-    self.layout.operator(MESH_OT_FBAddHead.bl_idname, icon='USER')
+    settings = get_fb_settings()
+    if not settings.pinmode:
+        self.layout.operator(MESH_OT_FBAddHead.bl_idname, icon='USER')
+    else:
+        self.layout.label(text='FaceBuilder Head (disabled in PinMode)',
+                          icon='USER')
 
 
 def facebuilder_register():

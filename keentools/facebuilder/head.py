@@ -28,34 +28,36 @@ from ..blender_independent_packages.pykeentools_loader import module as pkt_modu
 
 
 class MESH_OT_FBAddHead(bpy.types.Operator):
-    """ Add FaceBuilder Head into scene"""
     bl_idname = FBConfig.fb_add_head_operator_idname
-    bl_label = "FaceBuilder Head"
+    bl_label = 'FaceBuilder Head'
+    bl_description = 'Add FaceBuilder Head into scene'
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
+        log_error = logger.error
         settings = get_fb_settings()
         heads_deleted, cams_deleted = settings.fix_heads()
         try:
             obj = self.new_head()
+            obj.location = settings.get_next_head_position()
         except ModuleNotFoundError:
-            logger.error('ADD_HEAD_ERROR: ModuleNotFoundError')
+            log_error('ADD_HEAD_ERROR: ModuleNotFoundError')
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
         except pkt_module().ModelLoadingException:
-            logger.error('ADD_HEAD_ERROR: ModelLoadingException')
+            log_error('ADD_HEAD_ERROR: ModelLoadingException')
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktModelProblem)
             return {'CANCELLED'}
         except TypeError:
-            logger.error('ADD_HEAD_ERROR: TypeError')
+            log_error('ADD_HEAD_ERROR: TypeError')
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.CannotCreateObject)
             return {'CANCELLED'}
-        except Exception:
-            logger.error('ADD_HEAD_ERROR: Exception')
+        except Exception as err:
+            log_error('ADD_HEAD_ERROR: Exception ' + str(err))
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}

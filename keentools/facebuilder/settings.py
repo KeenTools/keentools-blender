@@ -1007,6 +1007,14 @@ class FBSceneSettings(PropertyGroup):
     def is_proper_headnum(self, headnum):
         return 0 <= headnum <= self.get_last_headnum()
 
+    def get_next_head_position(self):
+        zero_position = (0., 0., 0)
+        headnum = self.get_last_headnum()
+        head = self.get_head(headnum)
+        if head is None or not head.headobj:
+            return zero_position
+        return np.array(head.headobj.location) + FBConfig.next_head_step
+
     def preferences(self):
         return get_addon_preferences()
 

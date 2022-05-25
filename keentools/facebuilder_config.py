@@ -198,6 +198,8 @@ class FBConfig:
     camera_y_step = 5
     camera_z_step = 0.5
 
+    next_head_step = (2.5, 0., 0.)
+
     show_markers_at_camera_corners = False
     recreate_vertex_groups = True
 
