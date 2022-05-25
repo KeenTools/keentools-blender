@@ -72,7 +72,7 @@ class PrecalcTimer:
         area = self.get_area()
         exit_area_localview(area)
         force_ui_redraw('VIEW_3D')
-        revert_default_screen_message()
+        GTLoader.revert_default_screen_message()
         settings.user_interrupts = True
 
         logger = logging.getLogger(__name__)
@@ -124,10 +124,11 @@ class PrecalcTimer:
 
         progress, message = self._runner.current_progress()
         log_output(f'{progress} {message}')
-        message_to_screen([{'text': 'Precalc calculating... Please wait', 'y': 60,
-                            'color': (1.0, 0.0, 0.0, 0.7)},
-                           {'text': message, 'y': 30,
-                            'color': (1.0, 1.0, 1.0, 0.7)}])
+        GTLoader.message_to_screen(
+            [{'text': 'Precalc calculating... Please wait', 'y': 60,
+              'color': (1.0, 0.0, 0.0, 0.7)},
+             {'text': message, 'y': 30,
+              'color': (1.0, 1.0, 1.0, 0.7)}])
         next_frame = self._runner.is_loading_frame_requested()
         if next_frame is None:
             return self._interval
@@ -159,7 +160,9 @@ class PrecalcTimer:
         self._active_state_func = self.runner_state
         self._start_time = time.time()
         # self._area_header('Precalc is calculating... Please wait')
-        message_to_screen([{'text':'Precalc is calculating... Please wait', 'color': (1.0, 0., 0., 0.7)}])
+        GTLoader.message_to_screen(
+            [{'text':'Precalc is calculating... Please wait',
+              'color': (1.0, 0., 0., 0.7)}])
         op = get_operator(GTConfig.gt_interrupt_modal_idname)
         op('INVOKE_DEFAULT')
         bpy.app.timers.register(self.timer_func, first_interval=self._interval)
@@ -212,17 +215,3 @@ def precalc_with_runner_act(context: Any) -> Tuple[bool, str]:
     pt = PrecalcTimer(area, runner)
     pt.start()
     return True, 'ok'
-
-
-def message_to_screen(msg: List) -> None:
-    vp = GTLoader.viewport()
-    texter = vp.texter()
-    texter.set_message(msg)
-
-
-def revert_default_screen_message(unregister=True) -> None:
-    vp = GTLoader.viewport()
-    texter = vp.texter()
-    texter.set_message(texter.get_default_text())
-    if unregister:
-        texter.unregister_handler()

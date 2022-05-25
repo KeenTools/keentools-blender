@@ -23,8 +23,7 @@ import bpy
 from ..geotracker_config import GTConfig
 from .utils.geotracker_acts import (add_keyframe_act,
                                     fit_render_size_act,
-                                    fit_time_length_act,
-                                    track_to)
+                                    fit_time_length_act)
 from .utils.precalc import precalc_with_runner_act
 
 
@@ -73,21 +72,6 @@ class GT_OT_Actor(bpy.types.Operator):
             else:
                 self.report({'INFO'}, act_status.error_message)
             return {'FINISHED'}
-
-        elif self.action == 'track_to_end':
-            act_status = track_to(forward=True)
-            if not act_status.success:
-                self.report({'ERROR'}, act_status.error_message)
-                return {'CANCELLED'}
-
-            self.report({'INFO'}, self.action)
-            return {'FINISHED'}
-
-        elif self.action == 'track_to_start':
-            act_status = track_to(forward=False)
-            if not act_status.success:
-                self.report({'ERROR'}, act_status.error_message)
-                return {'CANCELLED'}
 
         self.report({'INFO'}, self.action)
         return {'FINISHED'}

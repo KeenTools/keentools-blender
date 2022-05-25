@@ -17,13 +17,13 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, List
 import numpy as np
 
 import bpy
 from bpy.types import Area
 
-from ..geotracker_config import GTConfig, get_gt_settings
+from ..geotracker_config import get_gt_settings
 from .viewport import GTViewport
 from ..utils import coords
 from .gt_class_loader import GTClassLoader
@@ -382,3 +382,17 @@ class GTLoader:
     def get_work_area(cls) -> Optional[Area]:
         vp = cls.viewport()
         return vp.get_work_area()
+
+    @classmethod
+    def message_to_screen(cls, msg: List) -> None:
+        vp = cls.viewport()
+        texter = vp.texter()
+        texter.set_message(msg)
+
+    @classmethod
+    def revert_default_screen_message(cls, unregister=True) -> None:
+        vp = cls.viewport()
+        texter = vp.texter()
+        texter.set_message(texter.get_default_text())
+        if unregister:
+            texter.unregister_handler()

@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
+import logging
 from typing import Optional, List
 import bpy
 from bpy.types import Object, Action, FCurve, Keyframe
@@ -217,6 +217,8 @@ def insert_keyframe_in_fcurve(obj: Object, frame: int, value: float,
 
 
 def create_locrot_keyframe(obj: Object, keyframe_type: str='KEYFRAME') -> None:
+    logger = logging.getLogger(__name__)
+    log_output = logger.info
     action = _get_safe_action(obj, 'GTAct')
     if action is None:
         return
@@ -226,6 +228,7 @@ def create_locrot_keyframe(obj: Object, keyframe_type: str='KEYFRAME') -> None:
     loc = obj.matrix_world.to_translation()
     rot = obj.matrix_world.to_euler()
 
+    log_output(f'{keyframe_type} at {current_frame}')
     for name, value in zip(locrot_dict.keys(), [*loc, *rot]):
         fcurve = _get_safe_action_fcurve(action, locrot_dict[name]['data_path'],
                                          index=locrot_dict[name]['index'])

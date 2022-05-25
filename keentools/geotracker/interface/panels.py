@@ -111,6 +111,9 @@ class GT_PT_GeotrackersPanel(View3DPanel):
             text='', icon='PREFERENCES')
 
     def _geotracker_creation_offer(self, layout):
+        settings = get_gt_settings()
+        if settings.pinmode:
+            return
         row = layout.row()
         row.scale_y = 2.0
         row.operator(GTConfig.gt_create_geotracker_idname,
@@ -313,15 +316,15 @@ class GT_PT_TrackingPanel(AllVisible):
         col = box.column()
         col.prop(geotracker, 'track_focal_length')
 
-        row = box.row()
-        row.operator(GTConfig.gt_track_to_start_idname, text=' ',
-                     icon='TRACKING_BACKWARDS')
+        row = box.row(align=True)
         row.operator(GTConfig.gt_track_prev_idname, text=' ',
                      icon='TRACKING_BACKWARDS_SINGLE')
-        row.operator(GTConfig.gt_track_next_idname, text=' ',
-                     icon='TRACKING_FORWARDS_SINGLE')
+        row.operator(GTConfig.gt_track_to_start_idname, text=' ',
+                     icon='TRACKING_BACKWARDS')
         row.operator(GTConfig.gt_track_to_end_idname, text=' ',
                      icon='TRACKING_FORWARDS')
+        row.operator(GTConfig.gt_track_next_idname, text=' ',
+                     icon='TRACKING_FORWARDS_SINGLE')
 
         row = box.row()
         row.operator(GTConfig.gt_refine_idname)

@@ -26,7 +26,8 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     add_keyframe_act,
                                     remove_keyframe_act,
                                     prev_keyframe_act,
-                                    next_keyframe_act)
+                                    next_keyframe_act,
+                                    track_to)
 
 
 class ButtonOperator:
@@ -82,35 +83,29 @@ class GT_OT_NextKeyframe(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_BtnTrackToStart(ButtonOperator, bpy.types.Operator):
+class GT_OT_TrackToStart(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_track_to_start_idname
     bl_label = 'Track to start'
     bl_description = 'track to start'
 
     def execute(self, context):
-        try:
-            op = get_operator(GTConfig.gt_actor_idname)
-            op('EXEC_DEFAULT', action='track_to_start')
-        except Exception as err:
-            logger = logging.getLogger(__name__)
-            logger.error(str(err))
-            self.report({'ERROR'}, str(err))
+        act_status = track_to(forward=False)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
-class GT_OT_BtnTrackToEnd(ButtonOperator, bpy.types.Operator):
+class GT_OT_TrackToEnd(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_track_to_end_idname
     bl_label = 'Track to end'
     bl_description = 'track to end'
 
     def execute(self, context):
-        try:
-            op = get_operator(GTConfig.gt_actor_idname)
-            op('EXEC_DEFAULT', action='track_to_end')
-        except Exception as err:
-            logger = logging.getLogger(__name__)
-            logger.error(str(err))
-            self.report({'ERROR'}, str(err))
+        act_status = track_to(forward=True)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -316,7 +311,7 @@ class GT_OT_InterruptModal(bpy.types.Operator):
         logger = logging.getLogger(__name__)
         settings = get_gt_settings()
 
-        if event.type == 'ESC' or settings.user_interrupts:
+        if (event.type == 'ESC' and event.value == 'RELEASE') or settings.user_interrupts:
             logger.debug('Exit Interruptor by ESC')
             settings.user_interrupts = True
             return {'FINISHED'}
@@ -330,10 +325,10 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_RemoveKeyframe,
                   GT_OT_NextKeyframe,
                   GT_OT_PrevKeyframe,
-                  GT_OT_BtnTrackToStart,
+                  GT_OT_TrackToStart,
                   GT_OT_BtnTrackPrev,
                   GT_OT_BtnTrackNext,
-                  GT_OT_BtnTrackToEnd,
+                  GT_OT_TrackToEnd,
                   GT_OT_BtnClearAllTracking,
                   GT_OT_BtnClearTrackingForward,
                   GT_OT_BtnClearTrackingBackward,

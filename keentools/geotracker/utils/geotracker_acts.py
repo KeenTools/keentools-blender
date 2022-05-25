@@ -18,11 +18,12 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Any, Callable
 
 import bpy
 from bpy.types import Object
 
+from ...addon_config import get_operator
 from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
 from ..gt_class_loader import GTClassLoader
@@ -33,10 +34,10 @@ from ...utils.animation import (create_locrot_keyframe,
                                 extend_scene_timeline_end,
                                 reset_object_action)
 from ...utils.other import bpy_progress_begin, bpy_progress_end
-from .tracking import (PreviewTimer,
-                       get_next_tracking_keyframe,
+from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
 from ...utils.coords import update_depsgraph
+from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 @dataclass(frozen=True)
@@ -197,12 +198,159 @@ def fit_time_length_act() -> ActionStatus:
     return ActionStatus(True, f'Timeline duration 1 - {duration}')
 
 
+class TrackTimer:
+    def __init__(self, computation: Any, from_frame: int = -1):
+        self._interval: float = 0.01
+        self._target_frame: int = from_frame
+        self._state: str = 'timeline'
+        self._active_state_func: Callable = self.timeline_state
+        self._needs_keyframe = False
+        self.tracking_computation = computation
+
+    def timeline_state(self) -> Optional[float]:
+        logger = logging.getLogger(__name__)
+        log_output = logger.info
+        settings = get_gt_settings()
+        if settings.user_interrupts:
+            self._cancel()
+
+        if settings.current_frame() == self._target_frame:
+            self._state = 'computation'
+            self._active_state_func = self.computation_state
+            return self.computation_state()
+        settings.set_current_frame(self._target_frame)
+        log_output(f'timeline_state: set_current_frame({self._target_frame})')
+        return self._interval
+
+    def computation_state(self) -> Optional[float]:
+        logger = logging.getLogger(__name__)
+        log_error = logger.error
+        log_output = logger.info
+        settings = get_gt_settings()
+        if settings.user_interrupts:
+            self._cancel()
+
+        current_frame = settings.current_frame()
+        log_output(f'computation_state scene={current_frame} '
+                   f'target={self._target_frame}')
+
+        result = self._safe_resume()
+
+        tracking_current_frame = self.tracking_computation.current_frame()
+        log_output(f'CURRENT FRAME: scene={current_frame} '
+                   f'track={tracking_current_frame} result={result}')
+        if self._needs_keyframe or current_frame == tracking_current_frame:
+            self._create_keyframe(current_frame)
+
+        self._needs_keyframe = False
+        if result and tracking_current_frame != current_frame:
+            self._target_frame = tracking_current_frame
+            self._needs_keyframe = True
+            self._state = 'timeline'
+            self._active_state_func = self.timeline_state
+            settings.set_current_frame(self._target_frame)
+            return self._interval
+
+        if not result:
+            self._output_statistics()
+            self._state = 'finish'
+            self._active_state_func = self.finish_computation
+            return self.finish_computation()
+        return self._interval
+
+    def finish_computation(self) -> None:
+        logger = logging.getLogger(__name__)
+        log_output = logger.info
+        log_error = logger.error
+        attempts = 0
+        max_attempts = 3
+        while attempts < max_attempts and not self.tracking_computation.is_finished():
+            attempts += 1
+            log_output(f'TRY TO STOP COMPUTATION. ATTEMPT {attempts}')
+            self.tracking_computation.cancel()
+            self._safe_resume()
+        if attempts == max_attempts and not self.tracking_computation.is_finished():
+            log_error(f'PROBLEM WITH COMPUTATION STOP')
+        GTLoader.revert_default_screen_message(unregister=False)
+        self._stop_user_interrupt_operator()
+        GTLoader.save_geotracker()
+        return None
+
+    def _start_user_interrupt_operator(self) -> None:
+        op = get_operator(GTConfig.gt_interrupt_modal_idname)
+        op('INVOKE_DEFAULT')
+
+    def _stop_user_interrupt_operator(self) -> None:
+        settings = get_gt_settings()
+        settings.user_interrupts = True
+
+    def _create_keyframe(self, current_frame: int) -> None:
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+        create_animation_range(current_frame, current_frame,
+                               geotracker.track_focal_length)
+
+    def _safe_resume(self) -> bool:
+        logger = logging.getLogger(__name__)
+        log_error = logger.error
+        try:
+            if not self.tracking_computation.is_finished():
+                self.tracking_computation.resume()
+                total_frames = self.tracking_computation.total_frames()
+                finished_frames = self.tracking_computation.finished_frames()
+                GTLoader.message_to_screen(
+                    [{'text': f'Tracking calculating: '
+                              f'{finished_frames}/{total_frames}', 'y': 60,
+                      'color': (1.0, 0.0, 0.0, 0.7)},
+                     {'text': 'ESC to interrupt', 'y': 30,
+                      'color': (1.0, 1.0, 1.0, 0.7)}])
+                return True
+        except pkt_module().ComputationException as err:
+            msg = '_safe_resume ComputationException. ' + str(err)
+            log_error(msg)
+        except Exception as err:
+            msg = '_safe_resume Exception. ' + str(err)
+            log_error(msg)
+        return False
+
+    def _output_statistics(self) -> None:
+        logger = logging.getLogger(__name__)
+        log_output = logger.info
+        log_output(f'Total calc frames: {self.tracking_computation.total_frames()}')
+        gt = GTLoader.kt_geotracker()
+        log_output(f'KEYFRAMES: {gt.keyframes()}')
+        log_output(f'TRACKED FRAMES: {gt.track_frames()}')
+
+    def _cancel(self) -> None:
+        logger = logging.getLogger(__name__)
+        log_output = logger.info
+        log_output(f'Cancel call. State={self._state}')
+        self.tracking_computation.cancel()
+
+    def timer_func(self) -> Optional[float]:
+        return self._active_state_func()
+
+    def start(self) -> None:
+        self._start_user_interrupt_operator()
+        GTLoader.message_to_screen(
+            [{'text': 'Tracking calculating... Please wait', 'y': 60,
+              'color': (1.0, 0.0, 0.0, 0.7)},
+             {'text': 'ESC to cancel', 'y': 30,
+              'color': (1.0, 1.0, 1.0, 0.7)}])
+        bpy.app.timers.register(self.timer_func, first_interval=self._interval)
+
+
 def track_to(forward: bool=True) -> ActionStatus:
     logger = logging.getLogger(__name__)
-    log_output = logger.debug
+    log_output = logger.info
     log_error = logger.error
     settings = get_gt_settings()
     geotracker = settings.get_current_geotracker_item()
+    if not settings.pinmode:
+        msg = 'Tracking works only in Pin mode'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
     if not geotracker:
         msg = 'GeoTracker item is not found'
         log_error(msg)
@@ -221,58 +369,20 @@ def track_to(forward: bool=True) -> ActionStatus:
             GTClassLoader.GeoTracker_class().FocalLengthMode.ZOOM_FOCAL_LENGTH)
         gt.set_track_focal_length(geotracker.track_focal_length)
 
-    settings.pin_move_mode = True
-
-    left = precalc_info.left_precalculated_frame
-    right = precalc_info.right_precalculated_frame
-    if forward:
-        right -= 1
-    else:
-        left += 1
-    progress_callback = GTClassLoader.TRProgressCallBack_class()(left, right)
-
     current_frame = settings.current_frame()
-    track_error = False
-    bpy_progress_begin(0, 100)
-    try:
-        gt.track(current_frame, forward=forward,
-                 precalc_path=geotracker.precalc_path,
-                 progress_callback=progress_callback)
-    except RuntimeError as err:
-        track_error = True
-        track_error_message = str(err)
-        log_error(f'gt.track error: {track_error_message}')
-    bpy_progress_end()
+    tracking_computation = gt.track_async(current_frame, forward,
+                                          geotracker.precalc_path)
+    tracking_timer = TrackTimer(tracking_computation, current_frame)
+    tracking_timer.start()
 
-    end_frame = progress_callback.last_progress
-    if end_frame != -1:
-        create_animation_range(current_frame, end_frame,
-                               geotracker.track_focal_length)
-
-    if track_error:
-        gt.set_focal_length_mode(old_focal_mode)
-        GTLoader.save_geotracker()
-        return ActionStatus(False, track_error_message)
-
-    if end_frame == -1:
-        msg = 'No progress in tracking'
-        log_error(msg)
-        gt.set_focal_length_mode(old_focal_mode)
-        GTLoader.save_geotracker()
-        return ActionStatus(False, msg)
-
-    settings.pin_move_mode = False
-    gt.set_focal_length_mode(old_focal_mode)
-    GTLoader.save_geotracker()
-
-    pt = PreviewTimer(current_frame, end_frame)
-    pt.start()
+    gt.set_focal_length_mode(old_focal_mode)  # TODO: Check it for TrackTimer
     return ActionStatus(True, 'Ok')
 
 
 def create_animation_range(from_frame: int, to_frame: int,
                            animate_focal: bool=False) -> None:
     logger = logging.getLogger(__name__)
+    log_output = logger.debug
     settings = get_gt_settings()
     geotracker = settings.get_current_geotracker_item()
     if not geotracker:
@@ -293,7 +403,7 @@ def create_animation_range(from_frame: int, to_frame: int,
 
             if animate_focal:
                 focal = GTLoader.updated_focal_length(force=True)
-                logger.debug('ANIMATED FOCAL: {}'.format(focal))
+                log_output('ANIMATED FOCAL: {}'.format(focal))
                 if focal is not None:
                     camobj = geotracker.camobj
                     insert_keyframe_in_fcurve(camobj.data, frame, focal,
