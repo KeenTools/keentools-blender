@@ -241,6 +241,7 @@ class TrackTimer:
                    f'track={tracking_current_frame} result={result}')
         if self._needs_keyframe or current_frame == tracking_current_frame:
             self._create_keyframe(current_frame)
+            GTLoader.update_viewport_wireframe()  # TODO: Look for better performance
 
         self._needs_keyframe = False
         if result and tracking_current_frame != current_frame:
