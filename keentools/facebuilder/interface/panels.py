@@ -102,15 +102,18 @@ class FB_PT_HeaderPanel(Common, Panel):
             Config.kt_addon_settings_idname,
             text='', icon='PREFERENCES')
 
-    def _head_creation_offer(self, layout):
-        # Test custom icons
-        # FBIcons.layout_icons(layout)
-
+    def _create_head_button(self, layout, icon='USER'):
         row = layout.row()
         row.scale_y = 2.0
         row.operator(
             FBConfig.fb_add_head_operator_idname,
-            text='Create a new head', icon='USER')
+            text='Create a new head', icon=icon)
+
+    def _head_creation_offer(self, layout):
+        # Test custom icons
+        # FBIcons.layout_icons(layout)
+
+        self._create_head_button(layout)
 
         box = layout.box()
         col = box.column()
@@ -167,6 +170,8 @@ class FB_PT_HeaderPanel(Common, Panel):
                     FBConfig.fb_delete_head_idname,
                     text='', icon='CANCEL')
                 op.headnum = i
+
+        self._create_head_button(layout, icon='ADD')
 
     def draw(self, context):
         layout = self.layout
