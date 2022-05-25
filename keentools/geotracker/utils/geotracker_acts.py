@@ -199,6 +199,14 @@ def fit_time_length_act() -> ActionStatus:
 
 
 class TrackTimer:
+    _is_working: bool = False
+
+    @classmethod
+    def is_working(cls, value: Optional[bool]=None):
+        if value is not None:
+            cls._is_working = value
+        return cls._is_working
+
     def __init__(self, computation: Any, from_frame: int = -1):
         self._interval: float = 0.01
         self._target_frame: int = from_frame
@@ -211,7 +219,7 @@ class TrackTimer:
         logger = logging.getLogger(__name__)
         log_output = logger.info
         settings = get_gt_settings()
-        if settings.user_interrupts:
+        if settings.user_interrupts or not settings.pinmode:
             self._cancel()
 
         if settings.current_frame() == self._target_frame:
@@ -227,7 +235,7 @@ class TrackTimer:
         log_error = logger.error
         log_output = logger.info
         settings = get_gt_settings()
-        if settings.user_interrupts:
+        if settings.user_interrupts or not settings.pinmode:
             self._cancel()
 
         current_frame = settings.current_frame()
@@ -275,6 +283,7 @@ class TrackTimer:
         GTLoader.revert_default_screen_message(unregister=False)
         self._stop_user_interrupt_operator()
         GTLoader.save_geotracker()
+        self.is_working(False)
         return None
 
     def _start_user_interrupt_operator(self) -> None:
@@ -338,6 +347,7 @@ class TrackTimer:
               'color': (1.0, 0.0, 0.0, 0.7)},
              {'text': 'ESC to cancel', 'y': 30,
               'color': (1.0, 1.0, 1.0, 0.7)}])
+        self.is_working(True)
         bpy.app.timers.register(self.timer_func, first_interval=self._interval)
 
 
@@ -360,6 +370,12 @@ def track_to(forward: bool=True) -> ActionStatus:
     status, msg, precalc_info = geotracker.reload_precalc()
     if not status or precalc_info is None:
         msg = 'Precalc has problems. Check it'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    if TrackTimer.is_working():
+        settings.user_interrupts = True
+        msg = 'Tracking has been stopped by user'
         log_error(msg)
         return ActionStatus(False, msg)
 
