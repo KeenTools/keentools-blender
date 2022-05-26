@@ -22,6 +22,7 @@ import numpy as np
 import logging
 import os
 
+from ..addon_config import Config, get_operator, ErrorType
 from ..facebuilder_config import FBConfig
 from ..utils.rig_slider import create_slider, create_rectangle, create_label
 from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
@@ -245,16 +246,24 @@ def _snap_keys_in_interval(fcurve, start_keyframe, end_keyframe):
 
 def load_csv_animation_to_blendshapes(obj, filepath):
     logger = logging.getLogger(__name__)
+    log_error = logger.error
     try:
         fan = pkt_module().FacsAnimation()
         read_facs, ignored_columns = fan.load_from_csv_file(filepath)
         facs_names = pkt_module().FacsExecutor.facs_names
     except pkt_module().FacsLoadingException as err:
-        logger.error('CANNOT_LOAD_CSV_ANIMATION: {}'.format(err))
+        log_error('CANNOT_LOAD_CSV_ANIMATION: {}'.format(err))
         return {'status': False, 'message': str(err),
                 'ignored': [], 'read_facs': []}
+    except pkt_module().UnlicensedException:
+        log_error('UnlicensedException load_csv_animation_to_blendshapes')
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        # status=True in result for non-conflict operator report as {'INFO'}
+        return {'status': True, 'message': 'No FaceBuilder license',
+                'ignored': [], 'read_facs': []}
     except Exception as err:
-        logger.error('CANNOT_LOAD_CSV_ANIMATION!: {} {}'.format(type(err), err))
+        log_error('CANNOT_LOAD_CSV_ANIMATION!: {} {}'.format(type(err), err))
         return {'status': False, 'message': str(err),
                 'ignored': [], 'read_facs': []}
 
@@ -297,7 +306,7 @@ def load_csv_animation_to_blendshapes(obj, filepath):
         logger.info('Ignored columns: {}'.format(ignored_columns))
     if len(read_facs) > 0:
         logger.info('Read facs: {}'.format(read_facs))
-    return {'status': True, 'message': 'ok',
+    return {'status': True, 'message': 'Loaded animation.',
             'ignored': ignored_columns, 'read_facs': read_facs}
 
 

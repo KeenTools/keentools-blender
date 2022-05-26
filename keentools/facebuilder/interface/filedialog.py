@@ -302,7 +302,7 @@ class FB_OT_AnimationFilebrowser(Operator, ImportHelper):
         res = load_csv_animation_to_blendshapes(obj, self.filepath)
 
         if res['status']:
-            info = 'Loaded animation.'
+            info = res['message']
             if len(res['ignored']) > 0:
                 info += ' Ignored {} columns'.format(len(res['ignored']))
             if len(res['read_facs']) > 0:
