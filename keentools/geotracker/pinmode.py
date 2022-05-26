@@ -31,6 +31,7 @@ from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
                            unhide_viewport_ui_elements_from_object)
 from ..utils.images import set_background_image_by_movieclip
+from ..utils.animation import create_locrot_keyframe
 
 
 def depsgraph_update_handler(scene, depsgraph):
@@ -216,6 +217,11 @@ class GT_OT_PinMode(bpy.types.Operator):
         if not geotracker:
             return {'FINISHED'}
 
+        gt = GTLoader.kt_geotracker()
+        if not gt.is_key_at(kid):
+            mat = GTLoader.calc_model_matrix()
+            gt.set_keyframe(kid, mat)
+            create_locrot_keyframe(geotracker.animatable_object(), 'KEYFRAME')
         if not GTLoader.solve(geotracker.focal_length_estimation):
             logger.error('DELETE PIN PROBLEM')
             return {'FINISHED'}
