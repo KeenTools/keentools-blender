@@ -37,7 +37,8 @@ class TRProgressCallBack(pkt_module().TrackerProgressCallback):
         bpy.context.window_manager.progress_update(progress)
         self.last_progress = progress
         self.counter += 1
-        return not self.start <= progress <= self.end
+        assert not self.start <= progress <= self.end
+        return True
 
     def set_total_frames(self, arg0):
         logger = logging.getLogger(__name__)

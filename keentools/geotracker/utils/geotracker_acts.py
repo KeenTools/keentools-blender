@@ -389,7 +389,7 @@ def _track_checks() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def track_to(forward: bool=True) -> ActionStatus:
+def track_to(forward: bool) -> ActionStatus:
     check_status = _track_checks()
     if not check_status.success:
         return check_status
