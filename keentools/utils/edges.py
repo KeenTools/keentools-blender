@@ -404,6 +404,10 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
         self.line_shader = gpu.types.GPUShader(
             smooth_3d_vertex_local_shader(), smooth_3d_fragment_shader())
 
+    def set_object_world_matrix(self, bpy_matrix_world):
+        self.object_world_matrix = np.array(bpy_matrix_world,
+                                            dtype=np.float32).transpose()
+
     def init_geom_data_from_mesh(self, obj):
         # self.vertices for evaluated mesh coords
         # self.triangle_indices for hidden mesh drawing

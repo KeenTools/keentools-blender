@@ -249,7 +249,13 @@ class TrackTimer:
                    f'track={tracking_current_frame} result={result}')
         if self._needs_keyframe or current_frame == tracking_current_frame:
             self._create_keyframe(current_frame)
-            GTLoader.update_viewport_wireframe()  # TODO: Look for better performance
+            geotracker = settings.get_current_geotracker_item()
+            vp = GTLoader.viewport()
+            wf = vp.wireframer()
+            wf.set_object_world_matrix(geotracker.geomobj.matrix_world)
+            # TODO: find alternative for update_viewport_pins_and_residuals
+            #       for better performance
+            GTLoader.update_viewport_pins_and_residuals(vp.get_work_area())
 
         self._needs_keyframe = False
         if result and tracking_current_frame != current_frame:
