@@ -257,6 +257,12 @@ class TrackTimer:
             #       for better performance
             GTLoader.update_viewport_pins_and_residuals(vp.get_work_area())
 
+        if not result or self.tracking_computation.total_frames() == 0:
+            self._output_statistics()
+            self._state = 'finish'
+            self._active_state_func = self.finish_computation
+            return self.finish_computation()
+
         self._needs_keyframe = False
         if result and tracking_current_frame != current_frame:
             self._target_frame = tracking_current_frame
@@ -266,17 +272,13 @@ class TrackTimer:
             settings.set_current_frame(self._target_frame)
             return self._interval
 
-        if not result:
-            self._output_statistics()
-            self._state = 'finish'
-            self._active_state_func = self.finish_computation
-            return self.finish_computation()
         return self._interval
 
     def finish_computation(self) -> None:
         logger = logging.getLogger(__name__)
         log_output = logger.info
         log_error = logger.error
+        log_output('finish_computation call')
         attempts = 0
         max_attempts = 3
         while attempts < max_attempts and not self.tracking_computation.is_finished():
