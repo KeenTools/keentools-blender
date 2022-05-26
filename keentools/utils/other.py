@@ -211,3 +211,11 @@ class FPSMeter:
         self.head = self.next_index(self.head)
         self.buffer[self.head] = time.time()
         self.counter += 1
+
+
+def bpy_progress_begin(start_val=0, end_val=1):
+    bpy.context.window_manager.progress_begin(start_val, end_val)
+
+
+def bpy_progress_end():
+    bpy.context.window_manager.progress_end()

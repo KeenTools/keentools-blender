@@ -26,11 +26,12 @@ from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
 from ..utils.localview import exit_area_localview
 from ..utils import coords
-from .utils.animation import create_locrot_keyframe
+
 from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
                            unhide_viewport_ui_elements_from_object)
 from ..utils.images import set_background_image_by_movieclip
+from ..utils.animation import create_locrot_keyframe
 
 
 def depsgraph_update_handler(scene, depsgraph):
@@ -80,13 +81,8 @@ def undo_redo_handler(scene):
             unregister_undo_redo_handlers()
             return
 
-        settings.move_pin_mode = True
         GTLoader.load_geotracker()
         GTLoader.update_all_viewport_shaders(area)
-
-        logger.debug('UPDATE STORED MATRIX')
-        GTLoader.geomobj_world_matrix_changed(update=True)
-        settings.move_pin_mode = False
 
     except Exception as err:
         logger.error('gt_undo_handler {}'.format(str(err)))
@@ -221,6 +217,11 @@ class GT_OT_PinMode(bpy.types.Operator):
         if not geotracker:
             return {'FINISHED'}
 
+        gt = GTLoader.kt_geotracker()
+        if not gt.is_key_at(kid):
+            mat = GTLoader.calc_model_matrix()
+            gt.set_keyframe(kid, mat)
+            create_locrot_keyframe(geotracker.animatable_object(), 'KEYFRAME')
         if not GTLoader.solve(geotracker.focal_length_estimation):
             logger.error('DELETE PIN PROBLEM')
             return {'FINISHED'}
@@ -265,8 +266,6 @@ class GT_OT_PinMode(bpy.types.Operator):
             vp.register_handlers(context)
         vp.tag_redraw()
 
-        GTLoader.store_geomobj_world_matrix(*GTLoader.get_geomobj_world_matrix())
-
     def _start_new_pinmode(self, context):
         logger = logging.getLogger(__name__)
         log_output = logger.debug
@@ -288,6 +287,9 @@ class GT_OT_PinMode(bpy.types.Operator):
             settings.change_current_geotracker(num)
         geotracker = settings.get_current_geotracker_item()
 
+        set_background_image_by_movieclip(geotracker.camobj,
+                                          geotracker.movie_clip)
+
         GTLoader.place_camera()
         switch_to_camera(area, geotracker.camobj,
                          geotracker.animatable_object())
@@ -306,11 +308,6 @@ class GT_OT_PinMode(bpy.types.Operator):
         unhide_viewport_ui_elements_from_object(area, old_geotracker.geomobj)
 
         self._set_new_geotracker(area, num)
-        new_geotracker = settings.get_current_geotracker_item()
-
-        set_background_image_by_movieclip(new_geotracker.camobj,
-                                          new_geotracker.movie_clip)
-
         self._init_pinmode(area)
 
     def invoke(self, context, event):
@@ -414,7 +411,6 @@ class GT_OT_PinMode(bpy.types.Operator):
             coords.update_depsgraph()
             GTLoader.place_camera()
             GTLoader.update_all_viewport_shaders(context.area)
-            GTLoader.geomobj_world_matrix_changed(update=True)
             vp = GTLoader.viewport()
             vp.tag_redraw()
             return {'PASS_THROUGH'}

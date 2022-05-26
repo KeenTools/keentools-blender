@@ -17,7 +17,8 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
+
 import bpy
 from bpy.types import Object, CameraBackgroundImage
 
@@ -26,6 +27,7 @@ from .gtloader import GTLoader
 from ..utils.images import (np_array_from_bpy_image,
                             get_background_image_object,
                             gamma_np_image)
+from .utils.tracking import reload_precalc
 
 
 def is_mesh(self, obj: Optional[Object]) -> bool:
@@ -150,6 +152,9 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         if not self.movie_clip:
             return -1
         return self.movie_clip.frame_duration
+
+    def reload_precalc(self) -> Tuple[bool, str, Any]:
+        return reload_precalc(self)
 
 
 class GTSceneSettings(bpy.types.PropertyGroup):

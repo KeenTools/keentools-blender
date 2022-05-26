@@ -21,7 +21,14 @@ import bpy
 
 from ..addon_config import get_operator
 from ..geotracker_config import GTConfig, get_gt_settings
-from .utils.geotracker_acts import create_geotracker_act, delete_geotracker_act
+from .utils.geotracker_acts import (create_geotracker_act,
+                                    delete_geotracker_act,
+                                    add_keyframe_act,
+                                    remove_keyframe_act,
+                                    prev_keyframe_act,
+                                    next_keyframe_act,
+                                    track_to,
+                                    track_next_frame_act)
 
 
 class ButtonOperator:
@@ -53,94 +60,105 @@ class GT_OT_DeleteGeoTracker(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_BtnTrackToStart(ButtonOperator, bpy.types.Operator):
-    bl_idname = GTConfig.gt_track_to_start_idname
-    bl_label = 'Track to start'
-    bl_description = 'track to start'
-
-    def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='track_to_start')
-        return {'FINISHED'}
-
-
-class GT_OT_BtnTrackToEnd(ButtonOperator, bpy.types.Operator):
-    bl_idname = GTConfig.gt_track_to_end_idname
-    bl_label = 'Track to end'
-    bl_description = 'track to end'
-
-    def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='track_to_end')
-        return {'FINISHED'}
-
-
-class GT_OT_BtnTrackNext(ButtonOperator, bpy.types.Operator):
-    bl_idname = GTConfig.gt_track_next_idname
-    bl_label = 'Track next'
-    bl_description = 'track next'
-
-    def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        try:
-            op('EXEC_DEFAULT', action='track_next')
-        except Exception as err:
-            pass
-        return {'FINISHED'}
-
-
-class GT_OT_BtnTrackPrev(ButtonOperator, bpy.types.Operator):
-    bl_idname = GTConfig.gt_track_prev_idname
-    bl_label = 'Track prev'
-    bl_description = 'track prev'
-
-    def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='track_prev')
-        return {'FINISHED'}
-
-
-class GT_OT_BtnPrevKeyframe(ButtonOperator, bpy.types.Operator):
+class GT_OT_PrevKeyframe(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_prev_keyframe_idname
     bl_label = 'Prev keyframe'
     bl_description = 'prev keyframe'
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='prev_keyframe')
+        act_status = prev_keyframe_act()
+        if not act_status.success:
+            self.report({'INFO'}, act_status.error_message)
         return {'FINISHED'}
 
 
-class GT_OT_BtnNextKeyframe(ButtonOperator, bpy.types.Operator):
+class GT_OT_NextKeyframe(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_next_keyframe_idname
     bl_label = 'Next keyframe'
     bl_description = 'next keyframe'
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='next_keyframe')
+        act_status = next_keyframe_act()
+        if not act_status.success:
+            self.report({'INFO'}, act_status.error_message)
         return {'FINISHED'}
 
 
-class GT_OT_BtnAddKeyframe(ButtonOperator, bpy.types.Operator):
+class GT_OT_TrackToStart(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_track_to_start_idname
+    bl_label = 'Track to start'
+    bl_description = 'track to start'
+
+    def execute(self, context):
+        act_status = track_to(forward=False)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class GT_OT_TrackToEnd(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_track_to_end_idname
+    bl_label = 'Track to end'
+    bl_description = 'track to end'
+
+    def execute(self, context):
+        act_status = track_to(forward=True)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class GT_OT_TrackNext(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_track_next_idname
+    bl_label = 'Track next'
+    bl_description = 'track next'
+
+    def execute(self, context):
+        act_status = track_next_frame_act(forward=True)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class GT_OT_TrackPrev(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_track_prev_idname
+    bl_label = 'Track prev'
+    bl_description = 'track prev'
+
+    def execute(self, context):
+        act_status = track_next_frame_act(forward=False)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class GT_OT_AddKeyframe(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_add_keyframe_idname
     bl_label = 'Add GT keyframe'
     bl_description = 'add keyframe'
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='add_keyframe')
+        act_status = add_keyframe_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
-class GT_OT_BtnRemoveKeyframe(ButtonOperator, bpy.types.Operator):
+class GT_OT_RemoveKeyframe(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_remove_keyframe_idname
     bl_label = 'Remove keyframe'
     bl_description = 'remove keyframe'
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='remove_keyframe')
+        act_status = remove_keyframe_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -295,7 +313,7 @@ class GT_OT_InterruptModal(bpy.types.Operator):
         logger = logging.getLogger(__name__)
         settings = get_gt_settings()
 
-        if event.type == 'ESC' or settings.user_interrupts:
+        if (event.type == 'ESC' and event.value == 'RELEASE') or settings.user_interrupts:
             logger.debug('Exit Interruptor by ESC')
             settings.user_interrupts = True
             return {'FINISHED'}
@@ -305,14 +323,14 @@ class GT_OT_InterruptModal(bpy.types.Operator):
 
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_DeleteGeoTracker,
-                  GT_OT_BtnTrackToStart,
-                  GT_OT_BtnTrackPrev,
-                  GT_OT_BtnTrackNext,
-                  GT_OT_BtnTrackToEnd,
-                  GT_OT_BtnAddKeyframe,
-                  GT_OT_BtnRemoveKeyframe,
-                  GT_OT_BtnNextKeyframe,
-                  GT_OT_BtnPrevKeyframe,
+                  GT_OT_AddKeyframe,
+                  GT_OT_RemoveKeyframe,
+                  GT_OT_NextKeyframe,
+                  GT_OT_PrevKeyframe,
+                  GT_OT_TrackToStart,
+                  GT_OT_TrackPrev,
+                  GT_OT_TrackNext,
+                  GT_OT_TrackToEnd,
                   GT_OT_BtnClearAllTracking,
                   GT_OT_BtnClearTrackingForward,
                   GT_OT_BtnClearTrackingBackward,
