@@ -359,7 +359,7 @@ class TrackTimer:
         bpy.app.timers.register(self.timer_func, first_interval=self._interval)
 
 
-def track_to(forward: bool=True) -> ActionStatus:
+def _track_checks() -> ActionStatus:
     logger = logging.getLogger(__name__)
     log_output = logger.info
     log_error = logger.error
@@ -386,6 +386,16 @@ def track_to(forward: bool=True) -> ActionStatus:
         msg = 'Tracking has been stopped by user'
         log_error(msg)
         return ActionStatus(False, msg)
+    return ActionStatus(True, 'ok')
+
+
+def track_to(forward: bool=True) -> ActionStatus:
+    check_status = _track_checks()
+    if not check_status.success:
+        return check_status
+
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
 
     gt = GTLoader.kt_geotracker()
     old_focal_mode = gt.focal_length_mode()
@@ -401,6 +411,36 @@ def track_to(forward: bool=True) -> ActionStatus:
     tracking_timer.start()
 
     gt.set_focal_length_mode(old_focal_mode)  # TODO: Check it for TrackTimer
+    return ActionStatus(True, 'Ok')
+
+
+def track_next_frame_act(forward: bool=True) -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_error = logger.error
+
+    check_status = _track_checks()
+    if not check_status.success:
+        return check_status
+
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    gt = GTLoader.kt_geotracker()
+    current_frame = settings.current_frame()
+    try:
+        gt.track_frame(current_frame, forward=forward,
+                       precalc_path=geotracker.precalc_path)
+    except Exception as err:
+        msg = 'Track next frame problem (see console)'
+        log_error(msg)
+        log_error(str(err))
+        return ActionStatus(False, msg)
+
+    GTLoader.save_geotracker()
+    current_frame += 1 if forward else -1
+    settings.set_current_frame(current_frame)
+    create_animation_range(current_frame, current_frame,
+                           geotracker.track_focal_length)
+
     return ActionStatus(True, 'Ok')
 
 

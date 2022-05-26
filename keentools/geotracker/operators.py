@@ -27,7 +27,8 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     remove_keyframe_act,
                                     prev_keyframe_act,
                                     next_keyframe_act,
-                                    track_to)
+                                    track_to,
+                                    track_next_frame_act)
 
 
 class ButtonOperator:
@@ -109,28 +110,29 @@ class GT_OT_TrackToEnd(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_BtnTrackNext(ButtonOperator, bpy.types.Operator):
+class GT_OT_TrackNext(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_track_next_idname
     bl_label = 'Track next'
     bl_description = 'track next'
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        try:
-            op('EXEC_DEFAULT', action='track_next')
-        except Exception as err:
-            pass
+        act_status = track_next_frame_act(forward=True)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
-class GT_OT_BtnTrackPrev(ButtonOperator, bpy.types.Operator):
+class GT_OT_TrackPrev(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_track_prev_idname
     bl_label = 'Track prev'
     bl_description = 'track prev'
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='track_prev')
+        act_status = track_next_frame_act(forward=False)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -326,8 +328,8 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_NextKeyframe,
                   GT_OT_PrevKeyframe,
                   GT_OT_TrackToStart,
-                  GT_OT_BtnTrackPrev,
-                  GT_OT_BtnTrackNext,
+                  GT_OT_TrackPrev,
+                  GT_OT_TrackNext,
                   GT_OT_TrackToEnd,
                   GT_OT_BtnClearAllTracking,
                   GT_OT_BtnClearTrackingForward,
