@@ -44,3 +44,24 @@ class TRProgressCallBack(pkt_module().TrackerProgressCallback):
         logger = logging.getLogger(__name__)
         log_output = logger.info
         log_output(f'set_total_frames: {arg0}')
+
+
+class RFProgressCallBack(pkt_module().RefineProgressCallback):
+    def __init__(self):
+        super().__init__()
+        self.refined_frames = []
+
+    def set_progress_and_check_abort(self, progress):
+        bpy.context.window_manager.progress_update(progress)
+        self.refined_frames.append(progress)
+        logger = logging.getLogger(__name__)
+        logger.debug('Refine set_progress_and_check_abort: {}'.format(progress))
+        return False
+
+    def set_progress_stage(self, arg0):
+        logger = logging.getLogger(__name__)
+        logger.debug('Refine set_progress_stage: {}'.format(arg0))
+
+    def set_total_stages(self, arg0):
+        logger = logging.getLogger(__name__)
+        logger.debug('Refine set_total_stages: {}'.format(arg0))

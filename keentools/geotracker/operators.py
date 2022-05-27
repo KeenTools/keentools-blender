@@ -28,7 +28,9 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     prev_keyframe_act,
                                     next_keyframe_act,
                                     track_to,
-                                    track_next_frame_act)
+                                    track_next_frame_act,
+                                    refine_act,
+                                    refine_all_act)
 
 
 class ButtonOperator:
@@ -206,25 +208,29 @@ class GT_OT_BtnClearTrackingBetween(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_BtnRefine(ButtonOperator, bpy.types.Operator):
+class GT_OT_Refine(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_refine_idname
     bl_label = 'refine'
     bl_description = 'Refine tracking between nearest keyframes'
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='refine')
+        act_status = refine_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
-class GT_OT_BtnRefineAll(ButtonOperator, bpy.types.Operator):
+class GT_OT_RefineAll(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_refine_all_idname
     bl_label = 'refine all'
     bl_description = 'Refine all tracking data'
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='refine_all')
+        act_status = refine_all_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -335,8 +341,8 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_BtnClearTrackingForward,
                   GT_OT_BtnClearTrackingBackward,
                   GT_OT_BtnClearTrackingBetween,
-                  GT_OT_BtnRefine,
-                  GT_OT_BtnRefineAll,
+                  GT_OT_Refine,
+                  GT_OT_RefineAll,
                   GT_OT_BtnCenterGeo,
                   GT_OT_BtnMagicKeyframe,
                   GT_OT_BtnRemovePins,

@@ -17,8 +17,9 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+import time
 from dataclasses import dataclass
-from typing import Optional, Any, Callable
+from typing import Optional, Any, Callable, List
 
 import bpy
 from bpy.types import Object
@@ -299,8 +300,7 @@ class TrackTimer:
     def _create_keyframe(self, current_frame: int) -> None:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
-        create_animation_range(current_frame, current_frame,
-                               geotracker.track_focal_length)
+        create_animation_on_frames([current_frame], geotracker.track_focal_length)
 
     def _safe_resume(self) -> bool:
         logger = logging.getLogger(__name__)
@@ -436,14 +436,78 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
     GTLoader.save_geotracker()
     current_frame += 1 if forward else -1
     settings.set_current_frame(current_frame)
-    create_animation_range(current_frame, current_frame,
-                           geotracker.track_focal_length)
+    create_animation_on_frames([current_frame], geotracker.track_focal_length)
 
     return ActionStatus(True, 'Ok')
 
 
-def create_animation_range(from_frame: int, to_frame: int,
-                           animate_focal: bool=False) -> None:
+def refine_act() -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_output = logger.info
+
+    check_status = _track_checks()
+    if not check_status.success:
+        return check_status
+
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    gt = GTLoader.kt_geotracker()
+    current_frame = settings.current_frame()
+    log_output('REFINE AT: {}'.format(current_frame))
+
+    progress_callback = GTClassLoader.RFProgressCallBack_class()()
+
+    start_time = time.time()
+    bpy_progress_begin(0, 100)
+    gt.refine(current_frame, geotracker.precalc_path, progress_callback)
+    bpy_progress_end()
+    overall_time = time.time() - start_time
+    log_output('Refine calculation time: {:.2f} sec'.format(overall_time))
+
+    log_output(f'Refined frames: {progress_callback.refined_frames}')
+    create_animation_on_frames(progress_callback.refined_frames)
+    settings.set_current_frame(current_frame)
+    GTLoader.save_geotracker()
+    GTLoader.place_camera()
+    GTLoader.update_all_viewport_shaders()
+    GTLoader.get_work_area().tag_redraw()
+    return ActionStatus(True, 'ok')
+
+
+def refine_all_act() -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_output = logger.info
+
+    check_status = _track_checks()
+    if not check_status.success:
+        return check_status
+
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    gt = GTLoader.kt_geotracker()
+    current_frame = settings.current_frame()
+    log_output('REFINE AT: {}'.format(current_frame))
+
+    progress_callback = GTClassLoader.RFProgressCallBack_class()()
+
+    start_time = time.time()
+    bpy_progress_begin(0, 100)
+    gt.refine_all(geotracker.precalc_path, progress_callback)
+    bpy_progress_end()
+    overall_time = time.time() - start_time
+    log_output('Refine calculation time: {:.2f} sec'.format(overall_time))
+
+    log_output(f'Refined frames: {progress_callback.refined_frames}')
+    create_animation_on_frames(progress_callback.refined_frames)
+    settings.set_current_frame(current_frame)
+    GTLoader.save_geotracker()
+    GTLoader.place_camera()
+    GTLoader.update_all_viewport_shaders()
+    GTLoader.get_work_area().tag_redraw()
+    return ActionStatus(True, 'ok')
+
+
+def create_animation_on_frames(frames: List, animate_focal: bool=False) -> None:
     logger = logging.getLogger(__name__)
     log_output = logger.debug
     settings = get_gt_settings()
@@ -455,9 +519,7 @@ def create_animation_range(from_frame: int, to_frame: int,
     track_frames = gt.track_frames()
     keyframes = gt.keyframes()
 
-    scope = range(from_frame, to_frame + 1) if from_frame < to_frame else \
-        range(from_frame, to_frame - 1, -1)
-    for frame in scope:
+    for frame in frames:
         settings.set_current_frame(frame)
         if frame in track_frames:
             GTLoader.place_camera(forced=True)
