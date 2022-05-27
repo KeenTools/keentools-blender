@@ -31,7 +31,8 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     track_next_frame_act,
                                     refine_act,
                                     refine_all_act,
-                                    clear_between_keyframes_act)
+                                    clear_between_keyframes_act,
+                                    clear_direction_act)
 
 
 class ButtonOperator:
@@ -176,29 +177,33 @@ class GT_OT_BtnClearAllTracking(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_BtnClearTrackingForward(ButtonOperator, bpy.types.Operator):
+class GT_OT_ClearTrackingForward(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_clear_tracking_forward_idname
     bl_label = 'Clear forward'
     bl_description = 'Clear tracking data forward'
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='clear_fwd')
+        act_status = clear_direction_act(forward=True)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
-class GT_OT_BtnClearTrackingBackward(ButtonOperator, bpy.types.Operator):
+class GT_OT_ClearTrackingBackward(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_clear_tracking_backward_idname
     bl_label = 'Clear backward'
     bl_description = 'Clear tracking data backward'
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='clear_bkwd')
+        act_status = clear_direction_act(forward=False)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
-class GT_OT_BtnClearTrackingBetween(ButtonOperator, bpy.types.Operator):
+class GT_OT_ClearTrackingBetween(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_clear_tracking_between_idname
     bl_label = 'Clear between'
     bl_description = 'Clear tracking data between keyframes'
@@ -341,9 +346,9 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_TrackNext,
                   GT_OT_TrackToEnd,
                   GT_OT_BtnClearAllTracking,
-                  GT_OT_BtnClearTrackingForward,
-                  GT_OT_BtnClearTrackingBackward,
-                  GT_OT_BtnClearTrackingBetween,
+                  GT_OT_ClearTrackingForward,
+                  GT_OT_ClearTrackingBackward,
+                  GT_OT_ClearTrackingBetween,
                   GT_OT_Refine,
                   GT_OT_RefineAll,
                   GT_OT_BtnCenterGeo,

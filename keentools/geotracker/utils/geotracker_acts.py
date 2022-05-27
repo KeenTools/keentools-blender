@@ -49,7 +49,7 @@ class ActionStatus:
 
 
 def find_object_in_selection(obj_type: str='MESH',
-                             selection: Optional[list]=None) -> Optional[Object]:
+                             selection: Optional[List]=None) -> Optional[Object]:
     def _get_any_alone_object(obj_type: str) -> Optional[Object]:
         all_objects = [obj for obj in bpy.data.objects if obj.type == obj_type]
         return None if len(all_objects) != 1 else all_objects[0]
@@ -525,12 +525,37 @@ def clear_between_keyframes_act() -> ActionStatus:
 
     current_frame = settings.current_frame()
     gt = GTLoader.kt_geotracker()
-    before_frames_set = _active_frames(gt)
+    before_frame_set = _active_frames(gt)
     gt.remove_track_between_keyframes(current_frame)
-    delete_frames_set = before_frames_set - _active_frames(gt)
-    log_output(f'DELETE FRAMES: {delete_frames_set}')
+
+    delete_frame_set = before_frame_set - _active_frames(gt)
+    log_output(f'DELETE FRAMES: {delete_frame_set}')
     delete_animation_on_frames(geotracker.animatable_object(),
-                               delete_frames_set)
+                               delete_frame_set)
+    reset_object_action(geotracker.animatable_object())
+    return ActionStatus(True, 'ok')
+
+
+def clear_direction_act(forward: bool) -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_output = logger.info
+
+    check_status = _track_checks()
+    if not check_status.success:
+        return check_status
+
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+
+    current_frame = settings.current_frame()
+    gt = GTLoader.kt_geotracker()
+    before_frame_set = _active_frames(gt)
+    gt.remove_track_in_direction(current_frame, forward=forward)
+
+    delete_frame_set = before_frame_set - _active_frames(gt)
+    log_output(f'DELETE FRAMES: {delete_frame_set}')
+    delete_animation_on_frames(geotracker.animatable_object(),
+                               delete_frame_set)
     reset_object_action(geotracker.animatable_object())
     return ActionStatus(True, 'ok')
 
