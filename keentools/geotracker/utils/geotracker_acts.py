@@ -199,14 +199,6 @@ def fit_time_length_act() -> ActionStatus:
 
 
 class TrackTimer:
-    _is_working: bool = False
-
-    @classmethod
-    def is_working(cls, value: Optional[bool]=None):
-        if value is not None:
-            cls._is_working = value
-        return cls._is_working
-
     def __init__(self, computation: Any, from_frame: int = -1):
         self._interval: float = 0.01
         self._target_frame: int = from_frame
@@ -257,7 +249,8 @@ class TrackTimer:
             #       for better performance
             GTLoader.update_viewport_pins_and_residuals(vp.get_work_area())
 
-        if not result or self.tracking_computation.total_frames() == 0:
+        overall = self.tracking_computation.finished_and_total_frames()
+        if not result or overall is None:
             self._output_statistics()
             self._state = 'finish'
             self._active_state_func = self.finish_computation
@@ -286,12 +279,13 @@ class TrackTimer:
             log_output(f'TRY TO STOP COMPUTATION. ATTEMPT {attempts}')
             self.tracking_computation.cancel()
             self._safe_resume()
-        if attempts == max_attempts and not self.tracking_computation.is_finished():
+        if attempts >= max_attempts and not self.tracking_computation.is_finished():
             log_error(f'PROBLEM WITH COMPUTATION STOP')
         GTLoader.revert_default_screen_message(unregister=False)
         self._stop_user_interrupt_operator()
         GTLoader.save_geotracker()
-        self.is_working(False)
+        settings = get_gt_settings()
+        settings.tracking_mode = False
         return None
 
     def _start_user_interrupt_operator(self) -> None:
@@ -314,8 +308,10 @@ class TrackTimer:
         try:
             if not self.tracking_computation.is_finished():
                 self.tracking_computation.resume()
-                total_frames = self.tracking_computation.total_frames()
-                finished_frames = self.tracking_computation.finished_frames()
+                overall = self.tracking_computation.finished_and_total_frames()
+                if overall is None:
+                    return False
+                finished_frames, total_frames = overall
                 GTLoader.message_to_screen(
                     [{'text': f'Tracking calculating: '
                               f'{finished_frames}/{total_frames}', 'y': 60,
@@ -334,7 +330,8 @@ class TrackTimer:
     def _output_statistics(self) -> None:
         logger = logging.getLogger(__name__)
         log_output = logger.info
-        log_output(f'Total calc frames: {self.tracking_computation.total_frames()}')
+        overall = self.tracking_computation.finished_and_total_frames()
+        log_output(f'Total calc frames: {overall}')
         gt = GTLoader.kt_geotracker()
         log_output(f'KEYFRAMES: {gt.keyframes()}')
         log_output(f'TRACKED FRAMES: {gt.track_frames()}')
@@ -355,7 +352,8 @@ class TrackTimer:
               'color': (1.0, 0.0, 0.0, 0.7)},
              {'text': 'ESC to cancel', 'y': 30,
               'color': (1.0, 1.0, 1.0, 0.7)}])
-        self.is_working(True)
+        settings = get_gt_settings()
+        settings.tracking_mode = True
         bpy.app.timers.register(self.timer_func, first_interval=self._interval)
 
 
@@ -381,9 +379,9 @@ def _track_checks() -> ActionStatus:
         log_error(msg)
         return ActionStatus(False, msg)
 
-    if TrackTimer.is_working():
+    if settings.calculation_mode():
         settings.user_interrupts = True
-        msg = 'Tracking has been stopped by user'
+        msg = 'Calculation has been stopped by user'
         log_error(msg)
         return ActionStatus(False, msg)
     return ActionStatus(True, 'ok')

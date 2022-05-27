@@ -175,9 +175,6 @@ def precalc_with_runner_act(context: Any) -> Tuple[bool, str]:
     log_output('precalc_with_runner_act start')
     settings = get_gt_settings()
     geotracker = settings.get_current_geotracker_item()
-    rw, rh = render_frame()
-
-    area = context.area
 
     if not geotracker:
         msg = 'No GeoTracker structure'
@@ -191,9 +188,12 @@ def precalc_with_runner_act(context: Any) -> Tuple[bool, str]:
         msg = 'No image sequence in GeoTracker'
         log_error(msg)
         return False, msg
-
     if geotracker.precalc_path == '':
         msg = 'Precalc path is not specified'
+        log_error(msg)
+        return False, msg
+    if settings.calculation_mode():
+        msg = 'Other calculation is performing'
         log_error(msg)
         return False, msg
 
@@ -202,6 +202,8 @@ def precalc_with_runner_act(context: Any) -> Tuple[bool, str]:
 
     log_output(f'precalc_path: {geotracker.precalc_path}')
 
+    rw, rh = render_frame()
+    area = context.area
     runner = GTClassLoader.PrecalcRunner_class()(
         geotracker.precalc_path, rw, rh,
         geotracker.precalc_start, geotracker.precalc_end,
