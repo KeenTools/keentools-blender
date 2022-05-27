@@ -30,7 +30,8 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     track_to,
                                     track_next_frame_act,
                                     refine_act,
-                                    refine_all_act)
+                                    refine_all_act,
+                                    clear_between_keyframes_act)
 
 
 class ButtonOperator:
@@ -203,8 +204,10 @@ class GT_OT_BtnClearTrackingBetween(ButtonOperator, bpy.types.Operator):
     bl_description = 'Clear tracking data between keyframes'
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='clear_between_keyframes')
+        act_status = clear_between_keyframes_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 

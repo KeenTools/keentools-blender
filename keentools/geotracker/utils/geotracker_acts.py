@@ -19,7 +19,7 @@
 import logging
 import time
 from dataclasses import dataclass
-from typing import Optional, Any, Callable, List
+from typing import Optional, Any, Callable, List, Set
 
 import bpy
 from bpy.types import Object
@@ -33,7 +33,8 @@ from ...utils.animation import (create_locrot_keyframe,
                                 insert_keyframe_in_fcurve,
                                 extend_scene_timeline_start,
                                 extend_scene_timeline_end,
-                                reset_object_action)
+                                reset_object_action,
+                                delete_animation_on_frames)
 from ...utils.other import bpy_progress_begin, bpy_progress_end
 from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
@@ -504,6 +505,33 @@ def refine_all_act() -> ActionStatus:
     GTLoader.place_camera()
     GTLoader.update_all_viewport_shaders()
     GTLoader.get_work_area().tag_redraw()
+    return ActionStatus(True, 'ok')
+
+
+def _active_frames(kt_geotracker: Any) -> Set:
+    return set(kt_geotracker.track_frames() + kt_geotracker.keyframes())
+
+
+def clear_between_keyframes_act() -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_output = logger.info
+
+    check_status = _track_checks()
+    if not check_status.success:
+        return check_status
+
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+
+    current_frame = settings.current_frame()
+    gt = GTLoader.kt_geotracker()
+    before_frames_set = _active_frames(gt)
+    gt.remove_track_between_keyframes(current_frame)
+    delete_frames_set = before_frames_set - _active_frames(gt)
+    log_output(f'DELETE FRAMES: {delete_frames_set}')
+    delete_animation_on_frames(geotracker.animatable_object(),
+                               delete_frames_set)
+    reset_object_action(geotracker.animatable_object())
     return ActionStatus(True, 'ok')
 
 

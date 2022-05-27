@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import logging
-from typing import Optional, List
+from typing import Optional, List, Set
 import bpy
 from bpy.types import Object, Action, FCurve, Keyframe
 from mathutils import Vector
@@ -249,14 +249,12 @@ def reset_object_action(obj: Object) -> None:
     animation_data.action = act
 
 
-def delete_animation_interval(obj: Object, from_frame: int, to_frame: int,
-                              exclude_frames: Optional[list]=None) -> None:
+def delete_animation_on_frames(obj: Object, frames: Set) -> None:
     action = get_action(obj)
     if action is None:
         return
 
     locrot_dict = get_locrot_dict()
-    excluded_frames = exclude_frames if exclude_frames is not None else []
 
     for name in locrot_dict.keys():
         fcurve = _get_action_fcurve(action, locrot_dict[name]['data_path'],
@@ -264,9 +262,7 @@ def delete_animation_interval(obj: Object, from_frame: int, to_frame: int,
         if fcurve is None:
             continue
 
-        points = [p for p in fcurve.keyframe_points
-                  if (from_frame <= p.co[0] <= to_frame)
-                  and p.co[0] not in excluded_frames]
+        points = [p for p in fcurve.keyframe_points if p.co[0] in frames]
 
         for p in reversed(points):
             fcurve.keyframe_points.remove(p)
