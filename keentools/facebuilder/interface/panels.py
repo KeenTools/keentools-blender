@@ -417,8 +417,8 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         if head.should_use_emotions():
             box = layout.box()
             col = box.column(align=True)
-            col.prop(head, 'use_blinking')
-            col.prop(head, 'use_neck_rotation')
+            col.prop(head, 'lock_blinking')
+            col.prop(head, 'lock_neck_movement')
             col.label(text='Apply expression in 3D:')
             col.prop(head, 'expression_view', text='')
         layout.prop(head, 'reduce_pins')
@@ -560,10 +560,10 @@ class FB_PT_Model(AllVisibleClosed, Panel):
 
         blinking_row = col.row(align=True)
         blinking_row.prop(settings, 'blinking_rigidity')
-        blinking_row.active = head.use_blinking and head.should_use_emotions()
+        blinking_row.active = not head.lock_blinking and head.should_use_emotions()
         neck_row =  col.row(align=True)
-        neck_row.prop(settings, 'neck_rotation_rigidity')
-        neck_row.active = head.use_neck_rotation and head.should_use_emotions()
+        neck_row.prop(settings, 'neck_movement_rigidity')
+        neck_row.active = not head.lock_neck_movement and head.should_use_emotions()
 
         layout.prop(head, 'model_scale')
 
