@@ -188,7 +188,8 @@ class GTSceneSettings(bpy.types.PropertyGroup):
                                           precision=1)
     precalc_mode: bpy.props.BoolProperty(name='Precalc mode status',
                                          default = False)
-
+    tracking_mode: bpy.props.BoolProperty(name='Tracking mode status',
+                                          default=False)
     selection_mode: bpy.props.BoolProperty(name='Selection mode',
                                            default=False)
     selection_x: bpy.props.FloatProperty(name='Selection X',
@@ -293,3 +294,6 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     def end_selection(self) -> None:
         self.selection_mode = False
         self.do_selection()
+
+    def calculation_mode(self) -> bool:
+        return self.precalc_mode or self.tracking_mode

@@ -283,7 +283,7 @@ class GT_OT_BtnExitPinMode(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_BtnStopPrecalc(bpy.types.Operator):
+class GT_OT_StopPrecalc(bpy.types.Operator):
     bl_idname = GTConfig.gt_stop_precalc_idname
     bl_label = 'Stop Precalc'
     bl_description = 'Stop Precalc calculation'
@@ -343,4 +343,4 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_BtnCreateAnimation,
                   GT_OT_BtnExitPinMode,
                   GT_OT_InterruptModal,
-                  GT_OT_BtnStopPrecalc)
+                  GT_OT_StopPrecalc)
