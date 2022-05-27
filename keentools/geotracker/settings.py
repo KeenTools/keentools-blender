@@ -160,7 +160,6 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 class GTSceneSettings(bpy.types.PropertyGroup):
     pinmode: bpy.props.BoolProperty(name='Pinmode status', default=False)
     move_pin_mode: bpy.props.BoolProperty(name='Move pin mode status', default=False)
-    tracking_mode: bpy.props.BoolProperty(name='Tracking mode status', default=False)
     pinmode_id: bpy.props.StringProperty(name='Unique pinmode ID')
 
     geotrackers: bpy.props.CollectionProperty(type=GeoTrackerItem, name='GeoTrackers')
@@ -189,7 +188,8 @@ class GTSceneSettings(bpy.types.PropertyGroup):
                                           precision=1)
     precalc_mode: bpy.props.BoolProperty(name='Precalc mode status',
                                          default = False)
-
+    tracking_mode: bpy.props.BoolProperty(name='Tracking mode status',
+                                          default=False)
     selection_mode: bpy.props.BoolProperty(name='Selection mode',
                                            default=False)
     selection_x: bpy.props.FloatProperty(name='Selection X',
