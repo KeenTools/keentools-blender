@@ -69,6 +69,8 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         obj.select_set(state=True)
         bpy.context.view_layer.objects.active = obj
 
+        bpy.ops.view3d.view_selected()
+
         # bpy.ops.object.shade_smooth()
         h = get_fb_settings().heads.add()
         h.headobj = obj
