@@ -25,6 +25,7 @@ from ..utils import attrs
 from ..utils.ui_redraw import show_ui_panel
 from .fbloader import FBLoader
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..utils.manipulate import center_viewports_on_object
 
 
 class MESH_OT_FBAddHead(bpy.types.Operator):
@@ -65,11 +66,7 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
         attrs.add_to_fb_collection(obj)  # link to FB objects collection
         FBLoader.set_keentools_attributes(obj)
 
-        bpy.ops.object.select_all(action='DESELECT')
-        obj.select_set(state=True)
-        bpy.context.view_layer.objects.active = obj
-
-        bpy.ops.view3d.view_selected()
+        center_viewports_on_object(obj)
 
         # bpy.ops.object.shade_smooth()
         h = get_fb_settings().heads.add()

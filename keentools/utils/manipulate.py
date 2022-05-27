@@ -21,6 +21,7 @@ import logging
 import bpy
 
 from .localview import enter_area_localview, exit_area_localview
+from .ui_redraw import get_areas_by_type
 
 
 def has_no_blendshape(obj):
@@ -82,3 +83,11 @@ def switch_to_camera(area, camobj, select_obj=None):
 
     if select_obj is not None:
         select_object_only(select_obj)
+
+
+def center_viewports_on_object(obj=None):
+    if obj is not None:
+        select_object_only(obj)
+    areas = get_areas_by_type(area_type='VIEW_3D')
+    for area in areas:
+        bpy.ops.view3d.view_selected({'area': area}, use_all_regions=True)
