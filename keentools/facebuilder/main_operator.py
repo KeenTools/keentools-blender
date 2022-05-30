@@ -76,8 +76,8 @@ class FB_OT_SelectHead(Operator):
 
         settings = get_fb_settings()
         head = settings.get_head(self.headnum)
-        manipulate.select_object_only(head.headobj)
-        bpy.ops.view3d.view_selected()
+
+        manipulate.center_viewports_on_object(head.headobj)
         return {'FINISHED'}
 
 

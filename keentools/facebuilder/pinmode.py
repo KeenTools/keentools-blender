@@ -32,7 +32,7 @@ from ..utils.other import (KTStopShaderTimer, force_ui_redraw,
                            hide_viewport_ui_elements_and_store_on_object)
 from ..utils.html import split_long_string
 from ..utils.localview import exit_area_localview
-from ..utils.manipulate import switch_to_camera
+from ..utils.manipulate import switch_to_camera, center_viewports_on_object
 
 
 _undo_handler = None
@@ -267,6 +267,8 @@ class FB_OT_PinMode(bpy.types.Operator):
         camera.apply_tone_mapping()
 
         area = context.area if first_start else FBLoader.get_work_area()
+        if first_start:
+            center_viewports_on_object(headobj)
         switch_to_camera(area, camera.camobj)
         camera.show_background_image()
 
