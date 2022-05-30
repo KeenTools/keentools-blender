@@ -36,8 +36,8 @@ class GTCameraInput(pkt_module().TrackerCameraInputI):
         camera = geotracker.camobj
         assert camera is not None
         cam_data = camera.data
-        near = 0.1
-        far = 1000.0
+        near = cam_data.clip_start
+        far = cam_data.clip_end
         scene = bpy.context.scene
         w = scene.render.resolution_x
         h = scene.render.resolution_y
