@@ -24,7 +24,7 @@ from typing import Optional, Any, Callable, List, Set
 import bpy
 from bpy.types import Object
 
-from ...addon_config import get_operator
+from ...addon_config import Config, get_operator, ErrorType
 from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
 from ..gt_class_loader import GTClassLoader
@@ -389,6 +389,9 @@ def _track_checks() -> ActionStatus:
 
 
 def track_to(forward: bool) -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_error = logger.error
+
     check_status = _track_checks()
     if not check_status.success:
         return check_status
@@ -404,12 +407,25 @@ def track_to(forward: bool) -> ActionStatus:
         gt.set_track_focal_length(geotracker.track_focal_length)
 
     current_frame = settings.current_frame()
-    tracking_computation = gt.track_async(current_frame, forward,
-                                          geotracker.precalc_path)
+    try:
+        tracking_computation = gt.track_async(current_frame, forward,
+                                              geotracker.precalc_path)
+    except pkt_module().UnlicensedException as err:
+        log_error(f'UnlicensedException refine_act: {str(err)}')
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        # Return True to prevent doubling dialogs
+        return ActionStatus(True, 'Unlicensed error')
+    except Exception as err:
+        log_error(f'Unknown Exception refine_act: {str(err)}')
+        return ActionStatus(False, 'Some problem (see console)')
+    finally:
+        gt.set_focal_length_mode(old_focal_mode)
+
+    # TODO: Check focal_length_mode for TrackTimer
     tracking_timer = TrackTimer(tracking_computation, current_frame)
     tracking_timer.start()
 
-    gt.set_focal_length_mode(old_focal_mode)  # TODO: Check it for TrackTimer
     return ActionStatus(True, 'Ok')
 
 
@@ -428,6 +444,12 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
     try:
         gt.track_frame(current_frame, forward=forward,
                        precalc_path=geotracker.precalc_path)
+    except pkt_module().UnlicensedException as err:
+        log_error(f'UnlicensedException track_next_frame_act: {str(err)}')
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        # Return True to prevent doubling dialogs
+        return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
         msg = 'Track next frame problem (see console)'
         log_error(msg)
@@ -445,6 +467,7 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
 def refine_act() -> ActionStatus:
     logger = logging.getLogger(__name__)
     log_output = logger.info
+    log_error = logger.error
 
     check_status = _track_checks()
     if not check_status.success:
@@ -460,10 +483,22 @@ def refine_act() -> ActionStatus:
 
     start_time = time.time()
     bpy_progress_begin(0, 100)
-    gt.refine(current_frame, geotracker.precalc_path, progress_callback)
-    bpy_progress_end()
-    overall_time = time.time() - start_time
-    log_output('Refine calculation time: {:.2f} sec'.format(overall_time))
+    result = False
+    try:
+        result = gt.refine(current_frame, geotracker.precalc_path,
+                           progress_callback)
+    except pkt_module().UnlicensedException as err:
+        log_error(f'UnlicensedException refine_act: {str(err)}')
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        # Return True to prevent doubling dialogs
+        return ActionStatus(True, 'Unlicensed error')
+    except Exception as err:
+        log_error(f'Unknown Exception refine_act: {str(err)}')
+    finally:
+        bpy_progress_end()
+        overall_time = time.time() - start_time
+        log_output('Refine calculation time: {:.2f} sec'.format(overall_time))
 
     log_output(f'Refined frames: {progress_callback.refined_frames}')
     create_animation_on_frames(progress_callback.refined_frames)
@@ -471,13 +506,16 @@ def refine_act() -> ActionStatus:
     GTLoader.save_geotracker()
     GTLoader.place_camera()
     GTLoader.update_all_viewport_shaders()
-    GTLoader.get_work_area().tag_redraw()
+    GTLoader.viewport_area_redraw()
+    if not result:
+        return ActionStatus(False, 'Some problem. See console for details')
     return ActionStatus(True, 'ok')
 
 
 def refine_all_act() -> ActionStatus:
     logger = logging.getLogger(__name__)
     log_output = logger.info
+    log_error = logger.error
 
     check_status = _track_checks()
     if not check_status.success:
@@ -493,18 +531,30 @@ def refine_all_act() -> ActionStatus:
 
     start_time = time.time()
     bpy_progress_begin(0, 100)
-    gt.refine_all(geotracker.precalc_path, progress_callback)
-    bpy_progress_end()
-    overall_time = time.time() - start_time
-    log_output('Refine calculation time: {:.2f} sec'.format(overall_time))
+    result = False
+    try:
+        result = gt.refine_all(geotracker.precalc_path, progress_callback)
+    except pkt_module().UnlicensedException as err:
+        log_error(f'UnlicensedException refine_all_act: {str(err)}')
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        # Return True to prevent doubling dialogs
+        return ActionStatus(True, 'Unlicensed error')
+    except Exception as err:
+        log_error(f'Unknown Exception refine_all_act: {str(err)}')
+    finally:
+        bpy_progress_end()
+        overall_time = time.time() - start_time
+        log_output('Refine calculation time: {:.2f} sec'.format(overall_time))
 
-    log_output(f'Refined frames: {progress_callback.refined_frames}')
     create_animation_on_frames(progress_callback.refined_frames)
     settings.set_current_frame(current_frame)
     GTLoader.save_geotracker()
     GTLoader.place_camera()
     GTLoader.update_all_viewport_shaders()
-    GTLoader.get_work_area().tag_redraw()
+    GTLoader.viewport_area_redraw()
+    if not result:
+        return ActionStatus(False, 'Some problem. See console for details')
     return ActionStatus(True, 'ok')
 
 
@@ -515,6 +565,7 @@ def _active_frames(kt_geotracker: Any) -> Set:
 def clear_between_keyframes_act() -> ActionStatus:
     logger = logging.getLogger(__name__)
     log_output = logger.info
+    log_error = logger.error
 
     check_status = _track_checks()
     if not check_status.success:
@@ -526,19 +577,28 @@ def clear_between_keyframes_act() -> ActionStatus:
     current_frame = settings.current_frame()
     gt = GTLoader.kt_geotracker()
     before_frame_set = _active_frames(gt)
-    gt.remove_track_between_keyframes(current_frame)
+    try:
+        gt.remove_track_between_keyframes(current_frame)
+    except Exception as err:
+        log_error(f'Unknown Exception clear_between_keyframes_act: {str(err)}')
 
     delete_frame_set = before_frame_set - _active_frames(gt)
     log_output(f'DELETE FRAMES: {delete_frame_set}')
     delete_animation_on_frames(geotracker.animatable_object(),
                                delete_frame_set)
     reset_object_action(geotracker.animatable_object())
+    settings.set_current_frame(current_frame)
+    GTLoader.save_geotracker()
+    GTLoader.place_camera()
+    GTLoader.update_all_viewport_shaders()
+    GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
 
 def clear_direction_act(forward: bool) -> ActionStatus:
     logger = logging.getLogger(__name__)
     log_output = logger.info
+    log_error = logger.error
 
     check_status = _track_checks()
     if not check_status.success:
@@ -550,13 +610,54 @@ def clear_direction_act(forward: bool) -> ActionStatus:
     current_frame = settings.current_frame()
     gt = GTLoader.kt_geotracker()
     before_frame_set = _active_frames(gt)
-    gt.remove_track_in_direction(current_frame, forward=forward)
+    try:
+        gt.remove_track_in_direction(current_frame, forward=forward)
+    except Exception as err:
+        log_error(f'Unknown Exception clear_direction_act: {str(err)}')
 
     delete_frame_set = before_frame_set - _active_frames(gt)
     log_output(f'DELETE FRAMES: {delete_frame_set}')
     delete_animation_on_frames(geotracker.animatable_object(),
                                delete_frame_set)
     reset_object_action(geotracker.animatable_object())
+    settings.set_current_frame(current_frame)
+    GTLoader.save_geotracker()
+    GTLoader.place_camera()
+    GTLoader.update_all_viewport_shaders()
+    GTLoader.viewport_area_redraw()
+    return ActionStatus(True, 'ok')
+
+
+def clear_all_act() -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_output = logger.info
+    log_error = logger.error
+
+    check_status = _track_checks()
+    if not check_status.success:
+        return check_status
+
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+
+    current_frame = settings.current_frame()
+    gt = GTLoader.kt_geotracker()
+    before_frame_set = _active_frames(gt)
+    try:
+        gt.remove_all_track_data_and_keyframes()
+    except Exception as err:
+        log_error(f'Unknown Exception clear_all_act: {str(err)}')
+
+    delete_frame_set = before_frame_set - _active_frames(gt)
+    log_output(f'DELETE FRAMES: {delete_frame_set}')
+    obj = geotracker.animatable_object()
+    delete_animation_on_frames(obj, delete_frame_set)
+    reset_object_action(obj)
+    settings.set_current_frame(current_frame)
+    GTLoader.save_geotracker()
+    GTLoader.place_camera()
+    GTLoader.update_all_viewport_shaders()
+    GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
 
