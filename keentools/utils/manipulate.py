@@ -90,4 +90,5 @@ def center_viewports_on_object(obj=None):
         select_object_only(obj)
     areas = get_areas_by_type(area_type='VIEW_3D')
     for area in areas:
-        bpy.ops.view3d.view_selected({'area': area}, use_all_regions=True)
+        if not bpy.app.background:
+            bpy.ops.view3d.view_selected({'area': area}, use_all_regions=True)
