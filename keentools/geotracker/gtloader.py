@@ -140,6 +140,11 @@ class GTLoader:
             context.area.tag_redraw()
 
     @classmethod
+    def viewport_area_redraw(cls):
+        vp = cls.viewport()
+        vp.tag_redraw()
+
+    @classmethod
     def place_camera_relative_to_model(cls, forced: bool=False) -> None:
         logger = logging.getLogger(__name__)
         settings = get_gt_settings()
