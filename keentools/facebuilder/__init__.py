@@ -20,7 +20,12 @@ import bpy
 import addon_utils
 
 from ..addon_config import Config
-from ..facebuilder_config import FBConfig, get_fb_settings, set_get_fb_settings
+from ..facebuilder_config import (FBConfig,
+                                  get_fb_settings,
+                                  set_fb_settings_func,
+                                  remove_addon_settings_var,
+                                  check_addon_settings_var_exists,
+                                  check_addon_settings_var_type)
 from .head import MESH_OT_FBAddHead
 from .settings import FBSceneSettings, FBExifItem, FBCameraItem, FBHeadItem
 from ..utils.icons import FBIcons
@@ -70,19 +75,6 @@ class OldFBAddonPreferences(bpy.types.AddonPreferences):
         col.label(text='This addon is outdated. Please uninstall it to prevent conflicts.')
 
 
-class OLDMESH_OT_FBAddHead(bpy.types.Operator):
-    bl_idname = Config.old_facebuilder_addon_name + '.add_head'
-    bl_label = 'Old FaceBuilder Head'
-    bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Operator to prevent old FaceBuilder addon install'
-
-    def execute(self, context):
-        logger = logging.getLogger(__name__)
-        log_error = logger.error
-        log_error('OLDMESH_OT_FBAddHead call')
-        return {'FINISHED'}
-
-
 CLASSES_TO_REGISTER = (MESH_OT_FBAddHead,
                        FBExifItem,
                        FBCameraItem,
@@ -93,18 +85,14 @@ CLASSES_TO_REGISTER = (MESH_OT_FBAddHead,
                        FB_OT_PickModeStarter,
                        FB_OT_MovePin,
                        FB_OT_HistoryActor,
-                       FB_OT_CameraActor,) + OPERATOR_CLASSES + INTERFACE_CLASSES  # + (OLDMESH_OT_FBAddHead,)
-
-
-def _check_addon_settings_var_exists():
-    return hasattr(bpy.types.Scene, FBConfig.fb_global_var_name)
+                       FB_OT_CameraActor,) + OPERATOR_CLASSES + INTERFACE_CLASSES
 
 
 def _unregister_old_facebuilder():
     logger = logging.getLogger(__name__)
     log_error = logger.error
     log_output = logger.debug
-    if not _check_addon_settings_var_exists():
+    if not check_addon_settings_var_exists():
         log_output('NO OLD FACEBUILDER HAS BEEN FOUND')
         return
 
@@ -114,40 +102,11 @@ def _unregister_old_facebuilder():
     mod = sys.modules.get(Config.old_facebuilder_addon_name)
     log_error(f'OLD MODULE:\n{mod}')
 
-    log_output('START UNREGISTER OLD FB CLASSES')
-    if hasattr(mod, 'CLASSES_TO_REGISTER'):
-        for cls in reversed(mod.CLASSES_TO_REGISTER):
-            log_output(f'UNREGISTER OLD FB CLASS: {str(cls)}')
-            try:
-                bpy.utils.unregister_class(cls)
-            except Exception as err:
-                log_error(f'CANNOT UNREGISTER OLD FB CLASS: {cls}\n{str(err)}')
-    else:
-        log_error('MODULE HAS NO CLASSES_TO_REGISTER')
-
-    if hasattr(mod, 'menu_func'):
-        try:
-            bpy.types.VIEW3D_MT_mesh_add.remove(mod.menu_func)
-            log_output('OLD FB MENU UNREGISTERED')
-        except Exception as err:
-            log_error(f'CANNOT UNREGISTER OLD FB MENU: \n{str(err)}')
-    else:
-        log_error('MODULE HAS NO menu_func')
-
     try:
-        _remove_addon_settings_var()
-        log_output('OLD FB MAIN VAR UNREGISTERED')
+        addon_utils.disable(Config.old_facebuilder_addon_name, default_set=True)
+        log_output('OLD FB ADDON HAS BEEN DISABLED')
     except Exception as err:
-        log_error(f'CANNOT UNREGISTER OLD FB MAIN VAR: \n{str(err)}')
-
-    if hasattr(mod, 'FBIcons'):
-        try:
-            mod.FBIcons.unregister()
-            log_output('OLD FB ICONS UNREGISTERED')
-        except Exception as err:
-            log_error(f'CANNOT UNREGISTER OLD FB ICONS: \n{str(err)}')
-    else:
-        log_error('MODULE HAS NO FBIcons')
+        log_error(f'CANNOT DISABLE OLD FB: \n{str(err)}')
 
     try:
         mod.unregister = old_facebuilder_unregister_replacement
@@ -160,12 +119,6 @@ def _unregister_old_facebuilder():
         bpy.utils.register_class(OldFBAddonPreferences)
     except Exception as err:
         log_error(f'CANNOT REGISTER PREFERENCES REPLACEMENT CLASS: \n{str(err)}')
-
-    try:
-        addon_utils.disable(Config.old_facebuilder_addon_name, default_set=True)
-        log_output('OLD FB ADDON HAS BEEN DISABLED')
-    except Exception as err:
-        log_error(f'CANNOT REGISTER WARNING CLASS: \n{str(err)}')
 
 
 def old_facebuilder_register_replacement():
@@ -181,16 +134,6 @@ def old_facebuilder_unregister_replacement():
 def _add_addon_settings_var():
     setattr(bpy.types.Scene, FBConfig.fb_global_var_name,
             bpy.props.PointerProperty(type=FBSceneSettings))
-
-
-def _check_addon_settings_var_type():
-    if not hasattr(bpy.context.scene, FBConfig.fb_global_var_name):
-        return None
-    return type(getattr(bpy.context.scene, FBConfig.fb_global_var_name))
-
-
-def _remove_addon_settings_var():
-    delattr(bpy.types.Scene, FBConfig.fb_global_var_name)
 
 
 def menu_func(self, context):
@@ -240,7 +183,7 @@ def facebuilder_register():
     FBIcons.register()
     logger.debug('FACEBUILDER ICONS REGISTERED')
 
-    set_get_fb_settings(get_fb_settings_safe)
+    set_fb_settings_func(get_fb_settings_safe)
 
 
 def facebuilder_unregister():
@@ -253,8 +196,8 @@ def facebuilder_unregister():
 
     bpy.types.VIEW3D_MT_mesh_add.remove(menu_func)
     logger.debug('FACEBUILDER ADD MESH MENU UNREGISTERED')
-    if _check_addon_settings_var_type() == FBSceneSettings:
-        _remove_addon_settings_var()
+    if check_addon_settings_var_type() == FBSceneSettings:
+        remove_addon_settings_var()
         logger.debug('MAIN FACEBUILDER VARIABLE UNREGISTERED')
     else:
         logger.error('CANNOT UNREGISTER MAIN FB VAR')

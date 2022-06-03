@@ -257,6 +257,20 @@ def get_fb_settings():
     return _get_fb_settings()
 
 
-def set_get_fb_settings(func):
+def set_fb_settings_func(func):
     global _get_fb_settings
     _get_fb_settings = func
+
+
+def check_addon_settings_var_exists():
+    return hasattr(bpy.types.Scene, FBConfig.fb_global_var_name)
+
+
+def remove_addon_settings_var():
+    delattr(bpy.types.Scene, FBConfig.fb_global_var_name)
+
+
+def check_addon_settings_var_type():
+    if not hasattr(bpy.context.scene, FBConfig.fb_global_var_name):
+        return None
+    return type(getattr(bpy.context.scene, FBConfig.fb_global_var_name))
