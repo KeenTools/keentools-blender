@@ -50,6 +50,8 @@ def _show_all_panels_no_blendshapes():
     if not _state_valid_to_show(state):
         return False
     settings = get_fb_settings()
+    if settings is None:
+        return False
     return settings.get_head(headnum).has_no_blendshapes()
 
 
@@ -149,6 +151,8 @@ class FB_PT_HeaderPanel(Common, Panel):
     def _draw_many_heads(self, layout):
         # Output List of all heads in Scene
         settings = get_fb_settings()
+        if settings is None:
+            return
         state, headnum = what_is_state()
 
         for i, h in enumerate(settings.heads):
@@ -365,6 +369,8 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
 
         layout = self.layout
         settings = get_fb_settings()
+        if settings is None:
+            return
         head = get_current_head()
 
         if not head:
@@ -389,6 +395,8 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
 
     def _draw_pins_panel(self, headnum, camnum):
         settings = get_fb_settings()
+        if settings is None:
+            return
         layout = self.layout
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
@@ -408,6 +416,8 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
 
     def _draw_camera_list(self, headnum, layout):
         settings = get_fb_settings()
+        if settings is None:
+            return
         head = settings.get_head(headnum)
 
         if head is not None and not head.has_cameras():
@@ -475,6 +485,8 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
 
     def _draw_camera_hint(self, layout, headnum):
         settings = get_fb_settings()
+        if settings is None:
+            return
         head = settings.get_head(headnum)
 
         if not head.has_pins() \
@@ -489,6 +501,8 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
 
     def _draw_exit_pinmode(self, layout):
         settings = get_fb_settings()
+        if settings is None:
+            return
         if settings.pinmode:
             col = layout.column()
             col.scale_y = 2.0
@@ -497,6 +511,8 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
 
     def draw(self, context):
         settings = get_fb_settings()
+        if settings is None:
+            return
         layout = self.layout
 
         state, headnum = what_is_state()
@@ -539,6 +555,8 @@ class FB_PT_Model(AllVisibleClosed, Panel):
     def draw(self, context):
         layout = self.layout
         settings = get_fb_settings()
+        if settings is None:
+            return
 
         state, headnum = what_is_state()
         if headnum < 0:
@@ -613,6 +631,8 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
         layout = self.layout
         obj = context.object
         settings = get_fb_settings()
+        if settings is None:
+            return
         headnum = settings.head_by_obj(obj)
         if headnum < 0:
             headnum = settings.current_headnum
@@ -689,6 +709,8 @@ class FB_PT_AppearancePanel(AllVisible, Panel):
     def draw(self, context):
         layout = self.layout
         settings = get_fb_settings()
+        if settings is None:
+            return
 
         box = layout.box()
         col = box.column(align=True)

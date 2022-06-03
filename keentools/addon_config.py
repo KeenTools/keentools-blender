@@ -28,10 +28,11 @@ class Config:
                                   (3, 0), (3, 1))
     minimal_blender_api = (2, 80, 60)
 
-    prefix = _company + '_fb'
     operators = 'keentools'
     prefs_operators = 'keentools_preferences'
     addon_name = __package__  # the same as module name
+
+    old_facebuilder_addon_name = 'keentools_facebuilder'  # to remove
 
     updater_preferences_dict_name = 'keentools_updater'
 
@@ -43,6 +44,7 @@ class Config:
 
     kt_warning_idname = operators + '.common_addon_warning'
     kt_addon_settings_idname = operators + '.addon_settings'
+    kt_addon_search_idname = operators + '.addon_search'
     kt_open_url_idname = operators + '.open_url'
     kt_uninstall_core_idname = operators + '.uninstall_core'
 

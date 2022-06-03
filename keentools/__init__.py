@@ -46,7 +46,8 @@ from .messages import (ERROR_MESSAGES, draw_warning_labels, get_system_info,
 
 # Init logging system via config file
 base_dir = os.path.dirname(os.path.abspath(__file__))
-logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'))
+logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'),
+                          disable_existing_loggers=False)
 logger = logging.getLogger(__name__)
 txt = get_system_info()
 txt.append('Addon: {}'.format(bl_info['name']))
@@ -190,5 +191,6 @@ else:
         logger.info('KeenTools addon classes have been unregistered')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
+    logger.info('KeenTools addon direct initialization')
     register()

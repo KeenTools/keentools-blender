@@ -18,6 +18,7 @@
 import logging
 
 import bpy
+
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module,
     core_filename_info as pkt_core_filename_info,
@@ -26,9 +27,12 @@ from ..blender_independent_packages.pykeentools_loader import (
 from ..addon_config import Config, get_operator, get_addon_preferences
 from .formatting import replace_newlines_with_spaces
 from ..preferences.progress import InstallationProgress
+from ..utils.ui_redraw import (force_ui_redraw,
+                               find_modules_by_name,
+                               collapse_all_modules,
+                               mark_old_modules)
 
 
-_ID_NAME_PREFIX = 'preferences.' + Config.prefix
 _please_accept_eula = 'You need to accept our EULA before installation'
 
 
@@ -361,4 +365,68 @@ class KTPREF_OT_DownloadsURL(bpy.types.Operator):
 
     def execute(self, context):
         bpy.ops.wm.url_open(url=self.url)
+        return {'FINISHED'}
+
+
+class KT_OT_AddonSettings(bpy.types.Operator):
+    bl_idname = Config.kt_addon_settings_idname
+    bl_label = 'Addon Settings'
+    bl_options = {'REGISTER'}
+    bl_description = 'Open Addon Settings in Preferences window'
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        bpy.ops.preferences.addon_show(module=Config.addon_name)
+        return {'FINISHED'}
+
+
+class KT_OT_AddonSearch(bpy.types.Operator):
+    bl_idname = Config.kt_addon_search_idname
+    bl_label = 'Addon Search'
+    bl_options = {'REGISTER'}
+    bl_description = 'Open Addon Search in Preferences window'
+
+    search: bpy.props.StringProperty(default='KeenTools')
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        bpy.context.window_manager.addon_search = self.search
+        bpy.ops.screen.userpref_show()
+        mods = find_modules_by_name(self.search)
+        if len(mods) > 1:
+            collapse_all_modules(mods)
+            mark_old_modules(mods)
+        force_ui_redraw(area_type='PREFERENCES')
+        return {'FINISHED'}
+
+
+class KT_OT_OpenURL(bpy.types.Operator):
+    bl_idname = Config.kt_open_url_idname
+    bl_label = 'Open URL'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Open URL in web browser'
+
+    url: bpy.props.StringProperty(name='URL', default='')
+
+    def execute(self, context):
+        bpy.ops.wm.url_open(url=self.url)
+        return {'FINISHED'}
+
+
+class KT_OT_UninstallCore(bpy.types.Operator):
+    bl_idname = Config.kt_uninstall_core_idname
+    bl_label = 'Uninstall Core'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Uninstall Core Library'
+
+    def execute(self, context):
+        logger = logging.getLogger(__name__)
+        from ..blender_independent_packages.pykeentools_loader import uninstall_core as pkt_uninstall
+        logger.debug("START CORE UNINSTALL")
+        pkt_uninstall()
+        logger.debug("FINISH CORE UNINSTALL")
         return {'FINISHED'}

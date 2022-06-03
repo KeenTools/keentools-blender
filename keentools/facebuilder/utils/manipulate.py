@@ -91,6 +91,8 @@ def what_is_state():
     context = bpy.context
     settings = get_fb_settings()
     unknown_headnum = -1
+    if settings is None:
+        return 'NO_HEADS', unknown_headnum
 
     if settings.pinmode:
         return 'PINMODE', settings.current_headnum
