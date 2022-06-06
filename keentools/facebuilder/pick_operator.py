@@ -97,6 +97,8 @@ def sort_detected_faces():
 
 def _add_pins_to_face(headnum, camnum, rectangle_index, context):
     logger = logging.getLogger(__name__)
+    log_error = logger.error
+    log_output = logger.debug
     fb = FBLoader.get_builder()
     faces = get_detected_faces()
 
@@ -111,22 +113,26 @@ def _add_pins_to_face(headnum, camnum, rectangle_index, context):
     try:
         result_flag = fb.detect_face_pose(kid, faces[rectangle_index])
     except pkt_module().UnlicensedException:
-        logger.error('UnlicensedException _add_pins_to_face')
+        log_error('UnlicensedException _add_pins_to_face')
         warn = get_operator(Config.kt_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
         return None
     except Exception as err:
-        logger.error('UNKNOWN EXCEPTION detect_face_pose in _add_pins_to_face')
-        logger.error('Exception info: {}'.format(str(err)))
+        log_error('UNKNOWN EXCEPTION detect_face_pose in _add_pins_to_face')
+        log_error('Exception info: {}'.format(str(err)))
         return None
 
     if result_flag:
         fb.remove_pins(kid)
         fb.add_preset_pins(kid)
+        if not FBLoader.solve(headnum, camnum):
+            log_error('PROBLEM WHITH SOLVE AFTER DETECTION')
+            return None
+
         coords.update_head_mesh_non_neutral(fb, head)
-        logger.debug('auto_pins_added kid: {}'.format(kid))
+        log_output('auto_pins_added kid: {}'.format(kid))
     else:
-        logger.debug('detect_face_pose failed kid: {}'.format(kid))
+        log_output('detect_face_pose failed kid: {}'.format(kid))
 
     FBLoader.update_camera_pins_count(headnum, camnum)
     FBLoader.load_pins_into_viewport(headnum, camnum)
