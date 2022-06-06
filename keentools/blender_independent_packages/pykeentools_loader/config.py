@@ -23,6 +23,9 @@ import tempfile
 
 import bpy
 
+from ...addon_config import Config
+
+
 __all__ = ['SHADOW_COPIES_DIRECTORY', 'RELATIVE_LIB_DIRECTORY',
            'pkt_installation_dir', 'addon_installation_dir', 'MINIMUM_VERSION_REQUIRED',
            'is_python_supported',
@@ -72,6 +75,8 @@ def os_name():
 
 
 def download_core_path(version=None, nightly=False):
+    if Config.mock_update_for_testing_flag:
+        return Config.mock_update_core_path
     if nightly:
         assert(version is None)
         return 'https://downloads.keentools.io/keentools-core-nightly-{}'.format(os_name())
@@ -84,6 +89,8 @@ def download_core_path(version=None, nightly=False):
 
 
 def download_addon_path(version=None, nightly=False):
+    if Config.mock_update_for_testing_flag:
+        return Config.mock_update_addon_path
     if nightly:
         assert(version is None)
         return 'https://downloads.keentools.io/keentools-nightly-for-blender'
