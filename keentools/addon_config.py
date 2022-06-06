@@ -83,7 +83,6 @@ class Config:
     mock_update_addon_path = 'http://localhost/addon.zip'
     mock_update_core_path = 'http://localhost/core.zip'
 
-
     @classmethod
     def mock_update_for_testing(cls, value=True, ver=None,
                                 addon_path=None, core_path=None):
