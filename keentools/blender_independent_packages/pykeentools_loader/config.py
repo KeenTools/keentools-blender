@@ -23,13 +23,12 @@ import tempfile
 
 import bpy
 
-from ...addon_config import Config
-
 
 __all__ = ['SHADOW_COPIES_DIRECTORY', 'RELATIVE_LIB_DIRECTORY',
            'pkt_installation_dir', 'addon_installation_dir', 'MINIMUM_VERSION_REQUIRED',
            'is_python_supported',
-           'os_name', 'download_core_path', 'download_addon_path']
+           'os_name', 'download_core_path', 'download_addon_path',
+           'set_mock_update_paths']
 
 
 SHADOW_COPIES_DIRECTORY = os.path.join(tempfile.gettempdir(),
@@ -74,9 +73,20 @@ def os_name():
         return 'macos'
 
 
+_mock_update_addon_path = None
+_mock_update_core_path = None
+
+
+def set_mock_update_paths(addon_path=None, core_path=None):
+    global _mock_update_addon_path, _mock_update_core_path
+    _mock_update_addon_path = addon_path
+    _mock_update_core_path = core_path
+
+
 def download_core_path(version=None, nightly=False):
-    if Config.mock_update_for_testing_flag:
-        return Config.mock_update_core_path
+    global _mock_update_core_path
+    if _mock_update_core_path is not None:
+        return _mock_update_core_path
     if nightly:
         assert(version is None)
         return 'https://downloads.keentools.io/keentools-core-nightly-{}'.format(os_name())
@@ -89,8 +99,9 @@ def download_core_path(version=None, nightly=False):
 
 
 def download_addon_path(version=None, nightly=False):
-    if Config.mock_update_for_testing_flag:
-        return Config.mock_update_addon_path
+    global _mock_update_addon_path
+    if _mock_update_addon_path is not None:
+        return _mock_update_addon_path
     if nightly:
         assert(version is None)
         return 'https://downloads.keentools.io/keentools-nightly-for-blender'

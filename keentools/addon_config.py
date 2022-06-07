@@ -88,11 +88,9 @@ class Config:
                                 addon_path=None, core_path=None):
         if ver is not None:
             cls.mock_update_version = ver
-        if addon_path is not None:
-            cls.mock_update_addon_path = addon_path
-        if core_path is not None:
-            cls.mock_update_core_path = core_path
 
+        cls.mock_update_addon_path = addon_path
+        cls.mock_update_core_path = core_path
         cls.mock_update_for_testing_flag = value
 
 
