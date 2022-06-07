@@ -54,6 +54,7 @@ from .callbacks import (update_mesh_with_dialog,
                         universal_getter, universal_setter)
 from .utils.manipulate import get_current_head
 from ..utils.images import np_array_from_bpy_image, assign_pixels_data
+from ..blender_independent_packages.pykeentools_loader.config import set_mock_update_paths
 
 
 class FBExifItem(PropertyGroup):
@@ -1020,5 +1021,8 @@ class FBSceneSettings(PropertyGroup):
     def hide_user_preferences(self):
         self.preferences().show_user_preferences = False
 
-    def mock_update_for_testing(self, value=True, ver=None):
-        Config.mock_update_for_testing(value, ver)
+    def mock_update_for_testing(self, value=True, ver=None,
+                                addon_path=Config.mock_update_addon_path,
+                                core_path=Config.mock_update_core_path):
+        Config.mock_update_for_testing(value, ver, addon_path, core_path)
+        set_mock_update_paths(addon_path=addon_path, core_path=core_path)

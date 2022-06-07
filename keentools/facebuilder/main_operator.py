@@ -390,20 +390,6 @@ class FB_OT_ProperViewMenuExec(Operator):
         return {'FINISHED'}
 
 
-class KT_OT_AddonSettings(Operator):
-    bl_idname = Config.kt_addon_settings_idname
-    bl_label = 'Addon Settings'
-    bl_options = {'REGISTER'}
-    bl_description = 'Open Addon Settings in Preferences window'
-
-    def draw(self, context):
-        pass
-
-    def execute(self, context):
-        bpy.ops.preferences.addon_show(module=Config.addon_name)
-        return {'FINISHED'}
-
-
 class FB_OT_AddonSetupDefaults(Operator):
     bl_idname = FBConfig.fb_addon_setup_defaults_idname
     bl_label = 'Setup defaults'
@@ -649,34 +635,6 @@ class FB_OT_ExitPinmode(Operator):
         return {'FINISHED'}
 
 
-class KT_OT_OpenURL(bpy.types.Operator):
-    bl_idname = Config.kt_open_url_idname
-    bl_label = 'Open URL'
-    bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Open URL in web browser'
-
-    url: bpy.props.StringProperty(name='URL', default='')
-
-    def execute(self, context):
-        bpy.ops.wm.url_open(url=self.url)
-        return {'FINISHED'}
-
-
-class KT_OT_UninstallCore(bpy.types.Operator):
-    bl_idname = Config.kt_uninstall_core_idname
-    bl_label = 'Uninstall Core'
-    bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Uninstall Core Library'
-
-    def execute(self, context):
-        logger = logging.getLogger(__name__)
-        from ..blender_independent_packages.pykeentools_loader import uninstall_core as pkt_uninstall
-        logger.debug("START CORE UNINSTALL")
-        pkt_uninstall()
-        logger.debug("FINISH CORE UNINSTALL")
-        return {'FINISHED'}
-
-
 class FB_OT_CreateBlendshapes(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_create_blendshapes_idname
     bl_label = 'Create'
@@ -888,9 +846,6 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ShowTexture,
                        FB_OT_ShowSolid,
                        FB_OT_ExitPinmode,
-                       KT_OT_AddonSettings,
-                       KT_OT_OpenURL,
-                       KT_OT_UninstallCore,
                        FB_OT_CreateBlendshapes,
                        FB_OT_DeleteBlendshapes,
                        FB_OT_LoadAnimationFromCSV,

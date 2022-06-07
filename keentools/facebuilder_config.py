@@ -20,9 +20,9 @@ import bpy
 
 
 _company = 'keentools'
-_PT = 'FACEBUILDER_PT_'
-_MT = 'FACEBUILDER_MT_'
-prefix = _company + '_fb'
+_PT = 'FBUILDER_PT_'
+_MT = 'FBUILDER_MT_'
+prefix = 'keentools_fb'
 
 
 class FBConfig:
@@ -37,7 +37,7 @@ class FBConfig:
     fb_global_var_name = prefix + '_settings'
     fb_tool_name = 'FaceBuilder'
 
-    operators = _company + '_facebuilder'
+    operators = 'keentools_fb'
 
     fb_tab_category = 'FaceBuilder'
 
@@ -106,11 +106,13 @@ class FBConfig:
     fb_reconstruct_head_idname = operators + '.reconstruct_head'
 
     fb_add_head_operator_idname = operators + '.add_head'
-    fb_user_preferences_changer = operators + '.user_preferences_changer'
-    fb_user_preferences_reset_all = operators + '.user_preferences_reset_all'
-    fb_user_preferences_get_colors = operators + '.user_preferences_get_colors'
+
+    fb_user_preferences_changer = operators + '.user_pref_changer'
+    fb_user_preferences_reset_all = operators + '.user_pref_reset_all'
+    fb_user_preferences_get_colors = operators + '.user_pref_get_colors'
     fb_user_preferences_reset_all_warning_idname = \
-        operators + '.user_preferences_reset_all_warning'
+        operators + '.user_pref_reset_all_warning'
+
     fb_default_pin_settings_idname = operators + '.default_pin_settings'
     fb_default_wireframe_settings_idname = \
         operators + '.default_wireframe_settings'
@@ -243,5 +245,32 @@ class FBConfig:
     }
 
 
-def get_fb_settings():
+def get_fb_settings_func():
     return getattr(bpy.context.scene, FBConfig.fb_global_var_name)
+
+
+_get_fb_settings = get_fb_settings_func
+
+
+def get_fb_settings():
+    global _get_fb_settings
+    return _get_fb_settings()
+
+
+def set_fb_settings_func(func):
+    global _get_fb_settings
+    _get_fb_settings = func
+
+
+def check_addon_settings_var_exists():
+    return hasattr(bpy.types.Scene, FBConfig.fb_global_var_name)
+
+
+def remove_addon_settings_var():
+    delattr(bpy.types.Scene, FBConfig.fb_global_var_name)
+
+
+def check_addon_settings_var_type():
+    if not hasattr(bpy.context.scene, FBConfig.fb_global_var_name):
+        return None
+    return type(getattr(bpy.context.scene, FBConfig.fb_global_var_name))

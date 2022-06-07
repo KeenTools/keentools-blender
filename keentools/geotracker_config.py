@@ -25,7 +25,7 @@ prefix = _company + '_gt'
 
 
 class GTConfig:
-    operators = 'keentools_geotracker'
+    operators = 'keentools_gt'
     gt_tool_name = 'GeoTracker'
     gt_tab_category = 'GeoTracker'
     gt_global_var_name = prefix + '_settings'

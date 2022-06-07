@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import bpy
+import addon_utils
 
 
 def get_areas_by_type(area_type='VIEW_3D'):
@@ -39,3 +40,24 @@ def show_ui_panel(context):
         area.spaces[0].show_region_ui = True
     except Exception:
         pass
+
+
+def find_modules_by_name(name='KeenTools'):
+    return [mod for mod in addon_utils.modules() if
+            mod.bl_info['name'][:len(name)] == name]
+
+
+def collapse_all_modules(mods):
+    for mod in mods:
+        mod.bl_info['show_expanded'] = False
+
+
+def mark_old_modules(mods, name='KeenTools FaceBuilder', category='Add Mesh'):
+    for mod in mods:
+        if mod.bl_info['name'][:len(name)] == name and mod.bl_info['category'] == category:
+            mark_text = ' ** REMOVE THIS OUTDATED **'
+            if mod.bl_info['name'][-len(mark_text):] != mark_text:
+                mod.bl_info['name'] = mod.bl_info['name'] + mark_text
+            mod.bl_info['description'] = 'This add-on is outdated. Please remove it!'
+            mod.bl_info['location'] = ''
+            mod.bl_info['show_expanded'] = True

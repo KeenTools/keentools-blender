@@ -582,10 +582,11 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
             return None
 
     def _draw_updater_info(self, layout):
-        pass
         FBUpdater.init_updater()
         CurrentStateExecutor.compute_current_panel_updater_state()
         settings = get_fb_settings()
+        if settings is None:
+            return
         if settings.preferences().updater_state != UpdateState.INITIAL:
             layout.label(text='Update available:')
             box = layout.box()

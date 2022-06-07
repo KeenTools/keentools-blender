@@ -28,10 +28,11 @@ class Config:
                                   (3, 0), (3, 1))
     minimal_blender_api = (2, 80, 60)
 
-    prefix = _company + '_fb'
     operators = 'keentools'
     prefs_operators = 'keentools_preferences'
     addon_name = __package__  # the same as module name
+
+    old_facebuilder_addon_name = 'keentools_facebuilder'  # to remove
 
     updater_preferences_dict_name = 'keentools_updater'
 
@@ -43,6 +44,7 @@ class Config:
 
     kt_warning_idname = operators + '.common_addon_warning'
     kt_addon_settings_idname = operators + '.addon_settings'
+    kt_addon_search_idname = operators + '.addon_search'
     kt_open_url_idname = operators + '.open_url'
     kt_uninstall_core_idname = operators + '.uninstall_core'
 
@@ -78,11 +80,17 @@ class Config:
     }
     mock_update_for_testing_flag = False
     mock_update_version = (int(addon_version.partition('.')[0]), 6, 3)
+    mock_update_addon_path = 'http://localhost/addon.zip'
+    mock_update_core_path = 'http://localhost/core.zip'
 
     @classmethod
-    def mock_update_for_testing(cls, value=True, ver=None):
+    def mock_update_for_testing(cls, value=True, ver=None,
+                                addon_path=None, core_path=None):
         if ver is not None:
             cls.mock_update_version = ver
+
+        cls.mock_update_addon_path = addon_path
+        cls.mock_update_core_path = core_path
         cls.mock_update_for_testing_flag = value
 
 

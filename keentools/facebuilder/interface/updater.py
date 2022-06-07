@@ -72,11 +72,15 @@ def _version_to_tuple(version):
 
 def _downloaded_version():
     settings = get_fb_settings()
+    if settings is None:
+        return ''
     return settings.preferences().downloaded_version
 
 
 def _latest_installation_skip_version():
     settings = get_fb_settings()
+    if settings is None:
+        return ''
     return settings.preferences().latest_installation_skip_version
 
 
@@ -170,6 +174,8 @@ class FBUpdater:
     @classmethod
     def is_available(cls):
         settings = get_fb_settings()
+        if settings is None:
+            return False
         previous_show_time_str = settings.preferences().latest_show_datetime_update_reminder
         latest_skip_version = settings.preferences().latest_update_skip_version
         return _operator_available_time(previous_show_time_str) and cls.has_response() and \
