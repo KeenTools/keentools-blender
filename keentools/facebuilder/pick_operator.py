@@ -124,11 +124,7 @@ def _add_pins_to_face(headnum, camnum, rectangle_index, context):
 
     if result_flag:
         fb.remove_pins(kid)
-        fb.add_preset_pins(kid)
-        if not FBLoader.solve(headnum, camnum):
-            log_error('PROBLEM WHITH SOLVE AFTER DETECTION')
-            return None
-
+        fb.add_preset_pins_and_solve(kid)
         coords.update_head_mesh_non_neutral(fb, head)
         log_output('auto_pins_added kid: {}'.format(kid))
     else:
