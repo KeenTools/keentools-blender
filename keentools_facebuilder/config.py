@@ -275,11 +275,17 @@ class Config:
     }
     mock_update_for_testing_flag = False
     mock_update_version = (int(addon_version.partition('.')[0]), 6, 3)
+    mock_update_addon_path = 'http://localhost/addon.zip'
+    mock_update_core_path = 'http://localhost/core.zip'
 
     @classmethod
-    def mock_update_for_testing(cls, value=True, ver=None):
+    def mock_update_for_testing(cls, value=True, *, ver=None,
+                                addon_path=None, core_path=None):
         if ver is not None:
             cls.mock_update_version = ver
+
+        cls.mock_update_addon_path = addon_path
+        cls.mock_update_core_path = core_path
         cls.mock_update_for_testing_flag = value
 
 

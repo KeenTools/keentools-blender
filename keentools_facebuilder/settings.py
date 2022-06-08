@@ -53,6 +53,7 @@ from .callbacks import (update_mesh_with_dialog,
                         universal_getter, universal_setter)
 from .utils.manipulate import get_current_head
 from .utils.images import np_array_from_bpy_image, assign_pixels_data
+from .blender_independent_packages.pykeentools_loader.config import set_mock_update_paths
 
 
 class FBExifItem(PropertyGroup):
@@ -1017,5 +1018,25 @@ class FBSceneSettings(PropertyGroup):
     def hide_user_preferences(self):
         self.preferences().show_user_preferences = False
 
-    def mock_update_for_testing(self, value=True, ver=None):
-        Config.mock_update_for_testing(value, ver)
+    def mock_update_for_testing(self, value=True, ver=None,
+                                addon_path=Config.mock_update_addon_path,
+                                core_path=Config.mock_update_core_path):
+        """Enable mock for update testing
+
+        :param value: Mock status. True for active, False for inactive
+        :type value: bool
+        :param ver: Tuple for encoding target update version
+        :type ver: tuple of int. For ex. (2022, 6, 3)
+        :param addon_path: updated addon downloading URL.
+            It uses Config.mock_update_addon_path value if None.
+        :type addon_path: str, optional
+        :param core_path: updated core downloading URL.
+            It uses Config.mock_update_core_path value if None.
+        :type core_path: str, optional
+
+        Call example:
+        bpy.context.scene.keentools_fb_settings.mock_update_for_testing(True)
+        """
+        Config.mock_update_for_testing(value, ver=ver, addon_path=addon_path,
+                                       core_path=core_path)
+        set_mock_update_paths(addon_path=addon_path, core_path=core_path)
