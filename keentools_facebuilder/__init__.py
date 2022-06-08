@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 bl_info = {
-    "name": "KeenTools FaceBuilder installer 2022.1.1",  # (1/5)
+    "name": "KeenTools FaceBuilder uninstaller 2022.1.1",  # (1/5)
     "version": (2022, 1, 1),  # 2022.1.1 (2/5)
     "author": "KeenTools",
     "description": "KeenTools old FaceBuilder addon uninstaller. "
@@ -32,6 +32,8 @@ bl_info = {
 
 
 import logging
+import os
+import shutil
 from typing import List, Set
 
 import bpy
@@ -45,6 +47,7 @@ class FBPreferences(bpy.types.AddonPreferences):
         layout = self.layout
         box = layout.box()
         box.label(text='Error message')
+        box.label(text='You shouldn\'t see this message')
 
 
 def get_window_manager():
@@ -77,6 +80,21 @@ def get_all_modules_info():
     return overall_info
 
 
+def find_addon_modules_by_name(name, info):
+    found = []
+    for row in info:
+        if row['module'].__name__ == name:
+            found.append(row)
+    return found
+
+
+_PYKEENTOOLS_RELATIVE_PATH = 'blender_independent_packages/pykeentools_loader/pykeentools'
+
+
+def error_in_register():
+    bpy.utils.register_class(FBPreferences)
+
+
 def register():
     logger = logging.getLogger(__name__)
     log_error = logger.error
@@ -91,12 +109,61 @@ def register():
         log_error('NO KEENTOOLS ADDON INSTALLED')
         return
 
-    addon_utils.enable('keentools', default_set=True)
-    addon_utils.disable('keentools_facebuilder', default_set=True)
+    fb_mod = find_addon_modules_by_name('keentools_facebuilder',
+                                        overall_info['all_addons_info'])
+    if len(fb_mod) != 1:
+        log_error(f'WRONG keentools_facebuilder COUNTER: {fb_mod}')
+        return
+
+    kt_mod = find_addon_modules_by_name('keentools',
+                                        overall_info['all_addons_info'])
+    if len(kt_mod) != 1:
+        log_error(f'WRONG keentools COUNTER: {fb_mod}')
+        return
+
+    try:
+        fb_dir = os.path.dirname(__file__)
+        kt_dir = os.path.dirname(kt_mod[0]['module'].__file__)
+
+        fb_path = os.path.abspath(os.path.join(fb_dir, _PYKEENTOOLS_RELATIVE_PATH))
+        kt_path = os.path.abspath(os.path.join(kt_dir, _PYKEENTOOLS_RELATIVE_PATH))
+
+        log_output(f'TRY COPY:\n{fb_path}\n{kt_path}')
+        shutil.rmtree(kt_path, ignore_errors=True)
+        log_output('TARGET PATH IS CLEAR')
+        shutil.copytree(fb_path, kt_path)
+        log_output(f'COPYING WAS SUCCESSFUL ')
+    except Exception as err:
+        log_error(f'CANNOT COPY PYKEENTOOLS:\n{str(err)}')
+        return
+
+    try:
+        addon_utils.disable('keentools_facebuilder', default_set=True)
+        log_output('KEENTOOLS FACEBUILDER ADDON HAS BEEN DEACTIVATED')
+    except Exception as err:
+        log_error(f'CANNOT DEACTIVATE KEENTOOLS FACEBUILDER ADDON:\n{str(err)}')
+
+    try:
+        bpy.ops.preferences.addon_remove(module="keentools_facebuilder")
+        log_output('KEENTOOLS FACEBUILDER ADDON HAS BEEN REMOVED')
+    except Exception as err:
+        log_error(f'CANNOT REMOVE KEENTOOLS FACEBUILDER ADDON:\n{str(err)}')
+
+    try:
+        addon_utils.enable('keentools', default_set=True)
+        log_output('KEENTOOLS ADDON HAS BEEN ACTIVATED')
+    except Exception as err:
+        log_error(f'CANNOT ACTIVATE KEENTOOLS ADDON:\n{str(err)}')
 
 
 def unregister():
     logger = logging.getLogger(__name__)
     logger.debug('unregister UNINSTALLER')
+    try:
+        bpy.utils.unregister_class(FBPreferences)
+    except Exception as err:
+        logger.error(f'CANNOT UNREGISTER PREFERENCES CLASS:\n{str(err)}')
 
-    bpy.utils.unregister_class(FBPreferences)
+
+if __name__ == '__main__':
+    register()
