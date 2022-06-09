@@ -32,12 +32,19 @@ bl_info = {
 
 
 import logging
+import logging.config
 import os
 import shutil
 from typing import List, Set
 
 import bpy
 import addon_utils
+
+
+# Init logging system via config file
+base_dir = os.path.dirname(os.path.abspath(__file__))
+logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'),
+                          disable_existing_loggers=False)
 
 
 class FBPreferences(bpy.types.AddonPreferences):
@@ -144,7 +151,7 @@ def register():
         log_error(f'CANNOT DEACTIVATE KEENTOOLS FACEBUILDER ADDON:\n{str(err)}')
 
     try:
-        bpy.ops.preferences.addon_remove(module="keentools_facebuilder")
+        bpy.ops.preferences.addon_remove(module='keentools_facebuilder')
         log_output('KEENTOOLS FACEBUILDER ADDON HAS BEEN REMOVED')
     except Exception as err:
         log_error(f'CANNOT REMOVE KEENTOOLS FACEBUILDER ADDON:\n{str(err)}')
