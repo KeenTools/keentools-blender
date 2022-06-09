@@ -47,6 +47,9 @@ logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'),
                           disable_existing_loggers=False)
 
 
+_PYKEENTOOLS_RELATIVE_PATH = 'blender_independent_packages/pykeentools_loader/pykeentools'
+
+
 class FBPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
@@ -95,11 +98,28 @@ def find_addon_modules_by_name(name, info):
     return found
 
 
-_PYKEENTOOLS_RELATIVE_PATH = 'blender_independent_packages/pykeentools_loader/pykeentools'
+def scan_tree(root_path):
+    res = {}
+    for dirpath, dirs, files in os.walk(root_path):
+        relpath = os.path.relpath(os.path.abspath(dirpath), root_path).replace('\\','/')
+        res[relpath] = [name for name in files]
+    return res
 
 
-def error_in_register():
-    bpy.utils.register_class(FBPreferences)
+def find_extra_path(tree_info, exclude_dirs):
+    def _checked_path(path, dirs):
+        for dir in dirs:
+            if path == dir:
+                return True
+            len_dir = len(dir)
+            if len(path) > len_dir and dir == path[:len_dir] and path[len_dir] == '/':
+                return True
+        return False
+    res = {}
+    for path in tree_info.keys():
+        if not _checked_path(path, exclude_dirs):
+            res[path] = tree_info[path]
+    return res
 
 
 def register():
@@ -151,7 +171,7 @@ def register():
         log_error(f'CANNOT DEACTIVATE KEENTOOLS FACEBUILDER ADDON:\n{str(err)}')
 
     try:
-        bpy.ops.preferences.addon_remove(module='keentools_facebuilder')
+        shutil.rmtree(fb_dir, ignore_errors=True)
         log_output('KEENTOOLS FACEBUILDER ADDON HAS BEEN REMOVED')
     except Exception as err:
         log_error(f'CANNOT REMOVE KEENTOOLS FACEBUILDER ADDON:\n{str(err)}')
