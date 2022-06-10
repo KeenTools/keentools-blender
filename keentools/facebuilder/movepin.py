@@ -141,10 +141,6 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         fb = FBLoader.get_builder()
 
-        if head.should_reduce_pins():
-            fb.reduce_pins()
-            pins.set_pins(vp.img_points(fb, kid))
-
         coords.update_head_mesh_non_neutral(fb, head)
 
         FBLoader.update_all_camera_positions(headnum)

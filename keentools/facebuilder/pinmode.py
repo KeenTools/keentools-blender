@@ -148,10 +148,6 @@ class FB_OT_PinMode(bpy.types.Operator):
             unregister_undo_handler()
             return {'FINISHED'}
 
-        if head.should_reduce_pins():
-            if fb.pins_count(kid) > 0:
-                fb.reduce_pins()
-
         coords.update_head_mesh_non_neutral(fb, head)
         FBLoader.update_camera_pins_count(headnum, camnum)
 
