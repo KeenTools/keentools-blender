@@ -17,8 +17,8 @@
 # ##### END GPL LICENSE BLOCK #####
 
 bl_info = {
-    "name": "KeenTools FaceBuilder uninstaller 2022.1.1",  # (1/5)
-    "version": (2022, 1, 1),  # 2022.1.1 (2/5)
+    "name": "KeenTools FaceBuilder uninstaller 2022.1.1",  # [1/2]
+    "version": (2022, 1, 1),  # 2022.1.1 [2/2]
     "author": "KeenTools",
     "description": "KeenTools old FaceBuilder addon uninstaller. "
                    "Use KeenTools addon instead",
@@ -35,15 +35,18 @@ import logging
 import logging.config
 import os
 import shutil
+import sys
 
 import bpy
 import addon_utils
 
 
-# Init logging system via config file
-base_dir = os.path.dirname(os.path.abspath(__file__))
-logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'),
-                          disable_existing_loggers=False)
+# Init logging system
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler(stream=sys.stdout)
+handler.setFormatter(logging.Formatter(fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+logger.addHandler(handler)
 
 
 _PYKEENTOOLS_RELATIVE_PATH = 'blender_independent_packages/pykeentools_loader/pykeentools'
@@ -55,8 +58,8 @@ class FBPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
         box = layout.box()
-        box.label(text='Error message')
-        box.label(text='You shouldn\'t see this message')
+        box.label(text='This is uninstaller for old FaceBuilder add-on.')
+        box.label(text='Please remove it!')
 
 
 def get_window_manager():
@@ -105,8 +108,8 @@ def scan_tree(root_path):
     return res
 
 
-def find_extra_path(tree_info, exclude_dirs):
-    def _checked_path(path, dirs):
+def find_extra_paths(tree_info, exclude_dirs):
+    def _path_is_in_dirs(path, dirs):
         for dir in dirs:
             if path == dir:
                 return True
@@ -116,7 +119,7 @@ def find_extra_path(tree_info, exclude_dirs):
         return False
     res = {}
     for path in tree_info.keys():
-        if not _checked_path(path, exclude_dirs):
+        if not _path_is_in_dirs(path, exclude_dirs):
             res[path] = tree_info[path]
     return res
 
@@ -126,7 +129,7 @@ def copy_dir(from_path, to_path):
     log_error = logger.error
     log_output = logger.info
     try:
-        log_output(f'TRY COPY TREE:\n{from_path}\n{to_path}')
+        log_output(f'TRY COPY TREE:\nSRC: {from_path}\nDST: {to_path}')
         shutil.rmtree(to_path, ignore_errors=True)
         log_output('TARGET PATH IS CLEAR')
         shutil.copytree(from_path, to_path)
@@ -249,7 +252,7 @@ def register():
         anyway_enable_keentools_addon()
         return
 
-    extra = find_extra_path(tree_info, ['.', 'blender_independent_packages'])
+    extra = find_extra_paths(tree_info, ['.', 'blender_independent_packages'])
     if len(extra) > 1:
         log_error('EXTRA FOLDERS EXIST IN KEENTOOLS FACEBUILDER ADDON FOLDER')
         anyway_enable_keentools_addon()
@@ -263,7 +266,10 @@ def register():
     if disable_addon('keentools_facebuilder'):
         remove_keentools_facebuilder_addon(fb_dir)
 
-    anyway_enable_keentools_addon()
+    if enable_addon('keentools'):
+        log_output('KEENTOOLS ADDON UPDATE COMPLETE')
+    else:
+        log_error('THERE WAS PROBLEM WITH KEENTOOLS ADDON UPDATE')
 
 
 def unregister():
