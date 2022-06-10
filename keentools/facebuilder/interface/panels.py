@@ -431,7 +431,6 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             col.prop(head, 'lock_neck_movement')
             col.label(text='Apply expression in 3D:')
             col.prop(head, 'expression_view', text='')
-        layout.prop(head, 'reduce_pins')
 
         if settings.pinmode:
             camera = head.get_camera(settings.current_camnum)
