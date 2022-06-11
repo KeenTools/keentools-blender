@@ -36,6 +36,7 @@ import logging.config
 import os
 import shutil
 import sys
+from typing import List, Set, Dict, Any, Optional
 
 import bpy
 import addon_utils
@@ -49,7 +50,7 @@ handler.setFormatter(logging.Formatter(fmt='%(asctime)s - %(name)s - %(levelname
 logger.addHandler(handler)
 
 
-_PYKEENTOOLS_RELATIVE_PATH = 'blender_independent_packages/pykeentools_loader/pykeentools'
+_PYKEENTOOLS_RELATIVE_PATH: str = 'blender_independent_packages/pykeentools_loader/pykeentools'
 
 
 class FBPreferences(bpy.types.AddonPreferences):
@@ -62,54 +63,54 @@ class FBPreferences(bpy.types.AddonPreferences):
         box.label(text='Please remove it!')
 
 
-def get_window_manager():
+def _get_window_manager() -> Any:
     return bpy.data.window_managers['WinMan']
 
 
-def get_bpy_preferences():
+def _get_bpy_preferences() -> Any:
     return bpy.context.preferences
 
 
-def get_addons_in_use():
-    prefs = get_bpy_preferences()
+def _get_addons_in_use() -> Set:
+    prefs = _get_bpy_preferences()
     return {addon.module for addon in prefs.addons}
 
 
-def get_all_addons_info():
+def _get_all_addons_info() -> List:
     return [{'module': mod, 'bl_info': addon_utils.module_bl_info(mod)}
             for mod in addon_utils.modules(refresh=False)]
 
 
-def get_all_modules_info():
-    used_addon_names = get_addons_in_use()
-    all_addons_info = get_all_addons_info()
-    all_module_names = {addon_info['module'].__name__ for addon_info in all_addons_info}
-    missing_modules = {name for name in used_addon_names if name not in all_module_names}
-    overall_info = {'used_addon_names': used_addon_names,
+def _get_all_modules_info() -> Dict:
+    used_addon_names: Set = _get_addons_in_use()
+    all_addons_info: List = _get_all_addons_info()
+    all_module_names: Set = {addon_info['module'].__name__ for addon_info in all_addons_info}
+    missing_modules: Set = {name for name in used_addon_names if name not in all_module_names}
+    overall_info: Dict = {'used_addon_names': used_addon_names,
                     'all_addons_info': all_addons_info,
                     'all_module_names': all_module_names,
                     'missing_modules': missing_modules}
     return overall_info
 
 
-def find_addon_modules_by_name(name, info):
-    found = []
+def _find_addon_modules_by_name(name: str, info: Dict) -> List:
+    found: List = []
     for row in info:
         if row['module'].__name__ == name:
             found.append(row)
     return found
 
 
-def scan_tree(root_path):
-    res = {}
+def _scan_tree(root_path: str) -> Dict:
+    res: Dict = {}
     for dirpath, dirs, files in os.walk(root_path):
         relpath = os.path.relpath(os.path.abspath(dirpath), root_path).replace('\\','/')
         res[relpath] = [name for name in files]
     return res
 
 
-def find_extra_paths(tree_info, exclude_dirs):
-    def _path_is_in_dirs(path, dirs):
+def _find_extra_paths(tree_info: Dict, exclude_dirs: List) -> Dict:
+    def _path_is_in_dirs(path: str, dirs: List) -> bool:
         for dir in dirs:
             if path == dir:
                 return True
@@ -124,7 +125,7 @@ def find_extra_paths(tree_info, exclude_dirs):
     return res
 
 
-def copy_dir(from_path, to_path):
+def _copy_dir(from_path: str, to_path: str) -> bool:
     logger = logging.getLogger(__name__)
     log_error = logger.error
     log_output = logger.info
@@ -140,14 +141,14 @@ def copy_dir(from_path, to_path):
     return True
 
 
-def copy_pykeentools(from_dir, to_dir):
+def _copy_pykeentools(from_dir: str, to_dir: str) -> bool:
     global _PYKEENTOOLS_RELATIVE_PATH
     fb_path = os.path.abspath(os.path.join(from_dir, _PYKEENTOOLS_RELATIVE_PATH))
     kt_path = os.path.abspath(os.path.join(to_dir, _PYKEENTOOLS_RELATIVE_PATH))
-    return copy_dir(fb_path, kt_path)
+    return _copy_dir(fb_path, kt_path)
 
 
-def disable_addon(name):
+def _disable_addon(name: str) -> bool:
     logger = logging.getLogger(__name__)
     log_error = logger.error
     log_output = logger.info
@@ -160,7 +161,7 @@ def disable_addon(name):
     return True
 
 
-def enable_addon(name):
+def _enable_addon(name: str) -> bool:
     logger = logging.getLogger(__name__)
     log_error = logger.error
     log_output = logger.info
@@ -173,7 +174,7 @@ def enable_addon(name):
     return True
 
 
-def remove_keentools_facebuilder_addon(fb_dir):
+def _remove_keentools_facebuilder_addon(fb_dir: str) -> bool:
     logger = logging.getLogger(__name__)
     log_error = logger.error
     log_output = logger.info
@@ -186,11 +187,36 @@ def remove_keentools_facebuilder_addon(fb_dir):
     return True
 
 
-def anyway_enable_keentools_addon():
+def _anyway_enable_keentools_addon() -> None:
     logger = logging.getLogger(__name__)
     log_error = logger.error
     log_error('EXTREME KEENTOOLS ADDON INITIALIZATION')
-    enable_addon('keentools')
+    _enable_addon('keentools')
+
+
+def _check_keentools_facebuilder_updater_state() -> [bool, Optional[Dict]]:
+    logger = logging.getLogger(__name__)
+    log_error = logger.error
+    log_output = logger.info
+
+    fb_dir = os.path.dirname(__file__)
+
+    tree_info = _scan_tree(fb_dir)
+    if '.' not in tree_info.keys():
+        log_error('WRONG STRUCTURE OF FOLDER TREE')
+        return False, None
+    else:
+        log_output('IT IS PROPER UPDATING STAGE STRUCTURE')
+
+    if len(tree_info['.']) > 3:  # __init__.py and two others that can be created by OS
+        log_error('EXTRA FILES EXIST IN KEENTOOLS FACEBUILDER ADDON FOLDER')
+        return False, None
+
+    extra = _find_extra_paths(tree_info, ['.', 'blender_independent_packages'])
+    if len(extra) > 2:  # Two extra folder that can be created by OS and held by user
+        log_error('EXTRA FOLDERS EXIST IN KEENTOOLS FACEBUILDER ADDON FOLDER')
+        return False, None
+    return True, tree_info
 
 
 def register():
@@ -199,7 +225,7 @@ def register():
     log_output = logger.info
 
     log_output('register UNINSTALLER')
-    overall_info = get_all_modules_info()
+    overall_info = _get_all_modules_info()
 
     try:
         bpy.utils.register_class(FBPreferences)
@@ -210,17 +236,17 @@ def register():
         log_error('NO KEENTOOLS ADDON INSTALLED')
         return
 
-    fb_mod_info = find_addon_modules_by_name('keentools_facebuilder',
-                                        overall_info['all_addons_info'])
+    fb_mod_info = _find_addon_modules_by_name('keentools_facebuilder',
+                                              overall_info['all_addons_info'])
     if len(fb_mod_info) == 0:
         log_error('NO keentools_facebuilder')
-        anyway_enable_keentools_addon()
+        _anyway_enable_keentools_addon()
         return
 
     if len(fb_mod_info) != 1:
         log_error(f'WRONG keentools_facebuilder COUNTER: {fb_mod_info}')
 
-    kt_modules_info = find_addon_modules_by_name(
+    kt_modules_info = _find_addon_modules_by_name(
         'keentools', overall_info['all_addons_info'])
 
     if len(kt_modules_info) == 0:
@@ -239,37 +265,23 @@ def register():
         log_error(f'CANNOT GET KEENTOOLS MODULE FILE:\n{str(err)}')
         return
 
-    tree_info = scan_tree(fb_dir)
-    if '.' not in tree_info.keys():
-        log_error('WRONG STRUCTURE OF FOLDER TREE')
-        anyway_enable_keentools_addon()
-        return
-    else:
-        log_output('IT IS PROPER UPDATING STAGE')
-
-    if len(tree_info['.']) > 3:
-        log_error('EXTRA FILES EXIST IN KEENTOOLS FACEBUILDER ADDON FOLDER')
-        anyway_enable_keentools_addon()
-        return
-
-    extra = find_extra_paths(tree_info, ['.', 'blender_independent_packages'])
-    if len(extra) > 1:
-        log_error('EXTRA FOLDERS EXIST IN KEENTOOLS FACEBUILDER ADDON FOLDER')
-        anyway_enable_keentools_addon()
+    status, tree_info = _check_keentools_facebuilder_updater_state()
+    if not status:
+        _anyway_enable_keentools_addon()
         return
 
     if _PYKEENTOOLS_RELATIVE_PATH in tree_info.keys():
-        copy_pykeentools(fb_dir, kt_dir)
+        _copy_pykeentools(fb_dir, kt_dir)
     else:
-        log_error('NO PYKEENTOOLS IN FACEBUILDER ADDON')
+        log_error('NO PYKEENTOOLS IN KEENTOOLS FACEBUILDER ADDON')
 
-    if disable_addon('keentools_facebuilder'):
-        remove_keentools_facebuilder_addon(fb_dir)
+    if _disable_addon('keentools_facebuilder'):
+        _remove_keentools_facebuilder_addon(fb_dir)
 
-    if enable_addon('keentools'):
+    if _enable_addon('keentools'):
         log_output('KEENTOOLS ADDON UPDATE COMPLETE')
     else:
-        log_error('THERE WAS PROBLEM WITH KEENTOOLS ADDON UPDATE')
+        log_error('THERE WAS A PROBLEM WITH KEENTOOLS ADDON UPDATE')
 
 
 def unregister():
