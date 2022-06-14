@@ -271,6 +271,7 @@ def remove_addon_settings_var():
 
 
 def check_addon_settings_var_type():
-    if not hasattr(bpy.context.scene, FBConfig.fb_global_var_name):
+    if not hasattr(bpy.types.Scene, FBConfig.fb_global_var_name):
         return None
-    return type(getattr(bpy.context.scene, FBConfig.fb_global_var_name))
+    attr = getattr(bpy.types.Scene, FBConfig.fb_global_var_name)
+    return attr.keywords['type']

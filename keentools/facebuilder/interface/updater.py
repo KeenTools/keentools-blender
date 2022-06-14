@@ -238,7 +238,10 @@ class FBUpdater:
 
     @classmethod
     def version(cls):
-        return cls.get_response().version
+        response = cls.get_response()
+        if response is None:
+            return ''
+        return response.version
 
     @classmethod
     def init_updater(cls):
