@@ -55,9 +55,9 @@ def collapse_all_modules(mods):
 def mark_old_modules(mods, name='KeenTools FaceBuilder', category='Add Mesh'):
     for mod in mods:
         if mod.bl_info['name'][:len(name)] == name and mod.bl_info['category'] == category:
-            mark_text = ' ** REMOVE THIS OUTDATED **'
+            mark_text = ' OUTDATED \u2014 REMOVE THIS'  # \u2014 - em dash
             if mod.bl_info['name'][-len(mark_text):] != mark_text:
                 mod.bl_info['name'] = mod.bl_info['name'] + mark_text
-            mod.bl_info['description'] = 'This add-on is outdated. Please remove it!'
+            mod.bl_info['description'] = 'This add-on is outdated. Please remove it.'
             mod.bl_info['location'] = ''
             mod.bl_info['show_expanded'] = True

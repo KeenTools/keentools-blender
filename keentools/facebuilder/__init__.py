@@ -45,7 +45,7 @@ class FB_PT_OldFaceBuilderWarning(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = FBConfig.fb_tab_category
     bl_context = 'objectmode'
-    bl_label = 'Old FaceBuilder detected!'
+    bl_label = 'Remove old FaceBuilder'
 
     def draw(self, context):
         layout = self.layout
@@ -53,26 +53,28 @@ class FB_PT_OldFaceBuilderWarning(bpy.types.Panel):
         box.alert = True
         col = box.column()
         col.scale_y = Config.text_scale_y
-        col.label(icon='ERROR', text='Please uninstall')
-        col.label(text='old FaceBuilder addon!')
-        col.label(text='and then restart Blender!')
+        col.label(icon='ERROR', text='To continue using FaceBuilder ')
+        col.label(text='you need to remove the old')
+        col.label(text='version of the add-on manually')
 
         row = layout.row()
         row.scale_y = 2.0
         op = row.operator(Config.kt_addon_search_idname,
-                          icon='PREFERENCES', text='Show in preferences')
+                          icon='PREFERENCES', text='Open preferences')
         op.search = 'KeenTools'
 
 
 class OldFBAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = Config.old_facebuilder_addon_name
-    bl_description = 'Fake preferences for showing message to the user'
+    bl_description = 'Preferences replacement for showing message to the user'
 
     def draw(self, context):
         layout = self.layout
         col = layout.column()
+        col.scale_y = Config.text_scale_y
         col.alert = True
-        col.label(text='This addon is outdated. Please uninstall it to prevent conflicts.')
+        col.label(text='This add-on is outdated. '
+                       'Please remove it before using the new version.')
 
 
 CLASSES_TO_REGISTER = (MESH_OT_FBAddHead,
