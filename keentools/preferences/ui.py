@@ -239,7 +239,7 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
 
     geotracker_enabled: bpy.props.BoolProperty(
         name='Enable KeenTools GeoTracker',
-        default=False
+        default=not Config.hide_geotracker
     )
     geotracker_expanded: bpy.props.BoolProperty(
         name='KeenTools GeoTracker',
