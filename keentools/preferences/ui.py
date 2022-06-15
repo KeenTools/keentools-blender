@@ -239,7 +239,7 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
 
     geotracker_enabled: bpy.props.BoolProperty(
         name='Enable KeenTools GeoTracker',
-        default=True
+        default=False
     )
     geotracker_expanded: bpy.props.BoolProperty(
         name='KeenTools GeoTracker',
@@ -828,6 +828,10 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         if not self._draw_core_info(layout):
             return
         self._draw_updater_info(layout)
+
+        if Config.hide_geotracker:
+            self._draw_facebuilder_preferences(layout)
+            return
 
         box = layout.box()
         row = box.row(align=True)
