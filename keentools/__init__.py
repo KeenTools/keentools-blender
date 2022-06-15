@@ -174,15 +174,17 @@ else:
         logger.info('KeenTools addon classes have been registered')
         facebuilder_register()
         logger.info('FaceBuilder classes have been registered')
-        geotracker_register()
-        logger.info('GeoTracker classes have been registered')
+        if not Config.hide_geotracker:
+            geotracker_register()
+            logger.info('GeoTracker classes have been registered')
 
 
     def unregister():
         logger = logging.getLogger(__name__)
         logger.debug('START UNREGISTER CLASSES')
-        geotracker_unregister()
-        logger.info('GeoTracker classes have been unregistered')
+        if not Config.hide_geotracker:
+            geotracker_unregister()
+            logger.info('GeoTracker classes have been unregistered')
         facebuilder_unregister()
         logger.info('FaceBuilder classes have been unregistered')
         for cls in reversed(CLASSES_TO_REGISTER):
