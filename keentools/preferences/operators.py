@@ -28,7 +28,8 @@ from ..addon_config import Config, get_operator, get_addon_preferences
 from .formatting import replace_newlines_with_spaces
 from ..preferences.progress import InstallationProgress
 from ..utils.ui_redraw import (force_ui_redraw,
-                               find_modules_by_name,
+                               find_modules_by_name_starting_with,
+                               filter_module_list_by_name_starting_with,
                                collapse_all_modules,
                                mark_old_modules)
 
@@ -396,10 +397,12 @@ class KT_OT_AddonSearch(bpy.types.Operator):
     def execute(self, context):
         bpy.context.window_manager.addon_search = self.search
         bpy.ops.screen.userpref_show()
-        mods = find_modules_by_name(self.search)
+        mods = find_modules_by_name_starting_with(self.search)
         if len(mods) > 1:
             collapse_all_modules(mods)
-            mark_old_modules(mods)
+            keentools_fb_mods = filter_module_list_by_name_starting_with(
+                mods, 'KeenTools FaceBuilder')
+            mark_old_modules(keentools_fb_mods, {'category': 'Add Mesh'})
         force_ui_redraw(area_type='PREFERENCES')
         return {'FINISHED'}
 

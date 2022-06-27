@@ -35,7 +35,7 @@ from .movepin import FB_OT_MovePin
 from .actor import FB_OT_HistoryActor, FB_OT_CameraActor
 from .main_operator import CLASSES_TO_REGISTER as OPERATOR_CLASSES
 from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
-from ..utils.ui_redraw import (find_modules_by_name,
+from ..utils.ui_redraw import (find_modules_by_name_starting_with,
                                collapse_all_modules,
                                mark_old_modules)
 
@@ -163,11 +163,12 @@ def facebuilder_register():
 
     _unregister_old_facebuilder()
 
-    keentools_mods = find_modules_by_name('KeenTools')
-    if len(keentools_mods) > 1:
-        collapse_all_modules(keentools_mods)
-        mark_old_modules(keentools_mods, name='KeenTools FaceBuilder',
-                         category='Add Mesh')
+    old_addon_title = 'KeenTools FaceBuilder'
+    old_addon_category = 'Add Mesh'
+    keentools_fb_mods = find_modules_by_name_starting_with(old_addon_title)
+    if len(keentools_fb_mods) > 1:
+        collapse_all_modules(keentools_fb_mods)
+        mark_old_modules(keentools_fb_mods, {'category': old_addon_category})
 
         if FB_PT_OldFaceBuilderWarning not in CLASSES_TO_REGISTER:
             CLASSES_TO_REGISTER = (FB_PT_OldFaceBuilderWarning,) + CLASSES_TO_REGISTER
