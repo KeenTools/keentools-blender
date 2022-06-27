@@ -42,9 +42,14 @@ def show_ui_panel(context):
         pass
 
 
-def find_modules_by_name(name='KeenTools'):
+def find_modules_by_name_starting_with(name_start='KeenTools'):
     return [mod for mod in addon_utils.modules() if
-            mod.bl_info['name'][:len(name)] == name]
+            mod.bl_info['name'][:len(name_start)].lower() == name_start.lower()]
+
+
+def filter_module_list_by_name_starting_with(module_list, name_start):
+    return [mod for mod in module_list if
+            mod.bl_info['name'][:len(name_start)].lower() == name_start.lower()]
 
 
 def collapse_all_modules(mods):
@@ -52,12 +57,17 @@ def collapse_all_modules(mods):
         mod.bl_info['show_expanded'] = False
 
 
-def mark_old_modules(mods, name='KeenTools FaceBuilder', category='Add Mesh'):
+def mark_old_modules(mods, filter_dict):
+    def _mark_outdated(mod):
+        mark_text = ' OUTDATED \u2014 REMOVE THIS'  # \u2014 - em dash
+        if mod.bl_info['name'][-len(mark_text):] != mark_text:
+            mod.bl_info['name'] = mod.bl_info['name'] + mark_text
+        mod.bl_info[
+            'description'] = 'This add-on is outdated. Please remove it.'
+        mod.bl_info['location'] = ''
+        mod.bl_info['show_expanded'] = True
+
     for mod in mods:
-        if mod.bl_info['name'][:len(name)] == name and mod.bl_info['category'] == category:
-            mark_text = ' OUTDATED \u2014 REMOVE THIS'  # \u2014 - em dash
-            if mod.bl_info['name'][-len(mark_text):] != mark_text:
-                mod.bl_info['name'] = mod.bl_info['name'] + mark_text
-            mod.bl_info['description'] = 'This add-on is outdated. Please remove it.'
-            mod.bl_info['location'] = ''
-            mod.bl_info['show_expanded'] = True
+        if all([mod.bl_info[key] == filter_dict[key]
+                for key in filter_dict.keys()]):
+            _mark_outdated(mod)
