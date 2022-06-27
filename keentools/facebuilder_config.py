@@ -42,7 +42,7 @@ class FBConfig:
     fb_tab_category = 'FaceBuilder'
 
     fb_license_purchase_url = 'https://link.keentools.io/fb-lc-fbbmld?utm_source=fbb-missing-license-dialog'
-    coloring_texture_name = 'ktWireframeTexture'
+    coloring_texture_name = '.ktWireframeTexture'
     
     # Operators ids
     fb_select_head_idname = operators + '.select_head'
