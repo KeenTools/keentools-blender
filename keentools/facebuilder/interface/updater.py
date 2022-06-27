@@ -94,19 +94,19 @@ def _operator_available_time(previous_show_datetime_str):
     return (datetime.now() - previous_show_time).total_seconds() // 3600 >= 24
 
 
-def render_active_message(layout):
+def render_active_message(limit=64):
     settings = get_fb_settings()
     updater_state = settings.preferences().updater_state
-    limit = 64
-    layout.scale_y = Config.text_scale_y
+    output_list = []
     if updater_state == UpdateState.UPDATES_AVAILABLE:
-        FBUpdater.render_message(layout, limit=limit)
+        FBUpdater.render_message(output_list, limit=limit)
     elif updater_state == UpdateState.DOWNLOADING:
-        FBDownloadNotification.render_message(layout)
+        FBDownloadNotification.render_message(output_list)
     elif updater_state == UpdateState.DOWNLOADING_PROBLEM:
-        FBDownloadingProblem.render_message(layout, limit=limit)
+        FBDownloadingProblem.render_message(output_list, limit=limit)
     elif updater_state == UpdateState.INSTALL:
-        FBInstallationReminder.render_message(layout, limit=limit)
+        FBInstallationReminder.render_message(output_list, limit=limit)
+    return output_list
 
 
 def preferences_current_active_updater_operators_info():
@@ -217,10 +217,10 @@ class FBUpdater:
         cls.set_parsed(None)
 
     @classmethod
-    def render_message(cls, layout, limit=32):
+    def render_message(cls, output_list, limit=32):
         parsed = cls.get_parsed()
         if parsed is not None:
-            render_main(layout, parsed, limit)
+            render_main(output_list, parsed, limit)
 
     @classmethod
     def get_update_checker(cls):
@@ -383,10 +383,9 @@ class FBDownloadNotification:
         return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.DOWNLOADING
 
     @classmethod
-    def render_message(cls, layout):
+    def render_message(cls, output_list):
         if cls.is_active():
-            col = layout.column()
-            col.label(text="Downloading the update: {:.0f}%".format(100 * FBDownloadNotification.get_current_progress()))
+            output_list.append("Downloading the update: {:.0f}%".format(100 * FBDownloadNotification.get_current_progress()))
 
 
 class FBDownloadingProblem:
@@ -395,11 +394,10 @@ class FBDownloadingProblem:
         return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.DOWNLOADING_PROBLEM
 
     @classmethod
-    def render_message(cls, layout, limit=32):
+    def render_message(cls, output_list, limit=32):
         if cls.is_active():
-            layout.alert = True
             _message_text = 'Sorry, an unexpected network error happened. Please check your network connection.'
-            render_main(layout, parse_html(_message_text), limit)
+            render_main(output_list, parse_html(_message_text), limit)
 
 
 class FB_OT_RetryDownloadUpdate(bpy.types.Operator):
@@ -440,11 +438,11 @@ class FBInstallationReminder:
         return _operator_available_time(previous_show_time_str)
 
     @classmethod
-    def render_message(cls, layout, limit=32):
+    def render_message(cls, output_list, limit=32):
         _message_text = 'The new version of FaceBuilder is ready to be installed. ' \
                         'Blender will be relaunched automatically. ' \
                         'Please save your project before proceeding.'
-        render_main(layout, parse_html(_message_text), limit)
+        render_main(output_list, parse_html(_message_text), limit)
 
     @classmethod
     def remind_later(cls):
