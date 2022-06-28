@@ -21,7 +21,7 @@ from threading import Lock
 from collections import namedtuple
 from enum import IntEnum
 from datetime import datetime
-from typing import Tuple
+from typing import Tuple, List
 
 import bpy
 
@@ -94,19 +94,19 @@ def _operator_available_time(previous_show_datetime_str):
     return (datetime.now() - previous_show_time).total_seconds() // 3600 >= 24
 
 
-def render_active_message(layout):
+def render_active_message(limit: int=64) -> List[str]:
     settings = get_fb_settings()
     updater_state = settings.preferences().updater_state
-    limit = 64
-    layout.scale_y = Config.text_scale_y
+
     if updater_state == UpdateState.UPDATES_AVAILABLE:
-        FBUpdater.render_message(layout, limit=limit)
+        return FBUpdater.render_message(limit=limit)
     elif updater_state == UpdateState.DOWNLOADING:
-        FBDownloadNotification.render_message(layout)
+        return FBDownloadNotification.render_message()
     elif updater_state == UpdateState.DOWNLOADING_PROBLEM:
-        FBDownloadingProblem.render_message(layout, limit=limit)
+        return FBDownloadingProblem.render_message(limit=limit)
     elif updater_state == UpdateState.INSTALL:
-        FBInstallationReminder.render_message(layout, limit=limit)
+        return FBInstallationReminder.render_message(limit=limit)
+    return []
 
 
 def preferences_current_active_updater_operators_info():
@@ -217,10 +217,11 @@ class FBUpdater:
         cls.set_parsed(None)
 
     @classmethod
-    def render_message(cls, layout, limit=32):
+    def render_message(cls, limit: int=32) -> List[str]:
         parsed = cls.get_parsed()
         if parsed is not None:
-            render_main(layout, parsed, limit)
+            return render_main(parsed, limit)
+        return []
 
     @classmethod
     def get_update_checker(cls):
@@ -383,10 +384,10 @@ class FBDownloadNotification:
         return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.DOWNLOADING
 
     @classmethod
-    def render_message(cls, layout):
+    def render_message(cls) -> List[str]:
         if cls.is_active():
-            col = layout.column()
-            col.label(text="Downloading the update: {:.0f}%".format(100 * FBDownloadNotification.get_current_progress()))
+            return ["Downloading the update: {:.0f}%".format(100 * FBDownloadNotification.get_current_progress())]
+        return []
 
 
 class FBDownloadingProblem:
@@ -395,12 +396,11 @@ class FBDownloadingProblem:
         return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.DOWNLOADING_PROBLEM
 
     @classmethod
-    def render_message(cls, layout, limit=32):
+    def render_message(cls, limit: int=32) -> List[str]:
         if cls.is_active():
-            layout.alert = True
-            _message_text = 'Sorry, an unexpected network error happened. Please check your network connection.'
-            render_main(layout, parse_html(_message_text), limit)
-
+            _message_text: str = 'Sorry, an unexpected network error happened. Please check your network connection.'
+            return render_main(parse_html(_message_text), limit)
+        return []
 
 class FB_OT_RetryDownloadUpdate(bpy.types.Operator):
     bl_idname = FBConfig.fb_retry_download_the_update_idname
@@ -440,11 +440,12 @@ class FBInstallationReminder:
         return _operator_available_time(previous_show_time_str)
 
     @classmethod
-    def render_message(cls, layout, limit=32):
-        _message_text = 'The new version of FaceBuilder is ready to be installed. ' \
-                        'Blender will be relaunched automatically. ' \
-                        'Please save your project before proceeding.'
-        render_main(layout, parse_html(_message_text), limit)
+    def render_message(cls, limit: int=32) -> List[str]:
+        _message_text: str = \
+            'The new version of FaceBuilder is ready to be installed. ' \
+            'Blender will be relaunched automatically. ' \
+            'Please save your project before proceeding.'
+        return render_main(parse_html(_message_text), limit)
 
     @classmethod
     def remind_later(cls):

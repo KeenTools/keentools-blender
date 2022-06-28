@@ -587,16 +587,27 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         settings = get_fb_settings()
         if settings is None:
             return
-        if settings.preferences().updater_state != UpdateState.INITIAL:
-            layout.label(text='Update available:')
-            box = layout.box()
-            col = box.column()
-            render_active_message(col)
-            operators_info = preferences_current_active_updater_operators_info()
-            if operators_info is not None:
-                box = box.split(factor=1 / len(operators_info))
-                for info in operators_info:
-                    box.operator(info.idname, text=info.text, icon=info.icon)
+        if settings.preferences().updater_state == UpdateState.INITIAL:
+            return
+
+        output_list = render_active_message()
+        operators_info = preferences_current_active_updater_operators_info()
+
+        if len(output_list) == 0 and operators_info is None:
+            return
+
+        layout.label(text='Update available:')
+        box = layout.box()
+        col = box.column()
+        col.scale_y = Config.text_scale_y
+        col.alert = settings.preferences().updater_state == UpdateState.DOWNLOADING_PROBLEM
+        for txt in output_list:
+            col.label(text=txt)
+
+        if operators_info is not None:
+            box2 = box.split(factor=1.0 / len(operators_info))
+            for info in operators_info:
+                box2.operator(info.idname, text=info.text, icon=info.icon)
 
     def _draw_old_addon(self, layout):
         box = layout.box()
