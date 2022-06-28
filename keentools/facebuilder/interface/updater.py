@@ -140,7 +140,6 @@ class CurrentStateExecutor:
     def make_immutable(cls):
         cls._mutable = False
 
-
     @classmethod
     def set_current_panel_updater_state(cls, state, set_preferences_updater_state=True):
         if cls._mutable:
@@ -428,7 +427,6 @@ class FB_OT_ComeBackToUpdate(bpy.types.Operator):
 
 
 class FBInstallationReminder:
-
     @classmethod
     def is_active(cls):
         return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.INSTALL
@@ -502,6 +500,7 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
                 warn = get_operator(Config.kt_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.DownloadingProblem)
                 _clear_updater_info()
+                CurrentStateExecutor.set_current_panel_updater_state(UpdateState.UPDATES_AVAILABLE)
                 CurrentStateExecutor.compute_current_panel_updater_state()
                 return {'CANCELLED'}
             CurrentStateExecutor.make_immutable()

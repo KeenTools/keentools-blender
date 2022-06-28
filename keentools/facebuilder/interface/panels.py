@@ -227,17 +227,16 @@ class FB_PT_UpdatePanel(Common, Panel):
     def _draw_response(self, layout):
         col = layout.column()
         col.scale_y = Config.text_scale_y
-        if not FBUpdater.is_active():
-            return
 
         for txt in FBUpdater.render_message(limit=32):
             col.label(text=txt)
 
+        layout.operator(FBConfig.fb_download_the_update_idname,
+            text='Download the update', icon='IMPORT')
+
         res = FBUpdater.get_response()
         if res is None:
             return
-        layout.operator(FBConfig.fb_download_the_update_idname,
-            text='Download the update', icon='IMPORT')
         layout.operator(FBConfig.fb_remind_later_idname,
             text='Remind tomorrow', icon='RECOVER_LAST')
         layout.operator(FBConfig.fb_skip_version_idname,
