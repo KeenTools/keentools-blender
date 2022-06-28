@@ -89,9 +89,11 @@ def split_long_string(txt: str, limit: int) -> List[str]:
     return arr
 
 
-def create_label(output_list: List, txt: str, limit: int=32):
+def create_label(txt: str, limit: int=32) -> List[str]:
+    output_list: List[str] = []
     for t in split_long_string(txt, limit):
         output_list.append(t)
+    return output_list
 
 
 def text_from_element(el: Any) -> str:
@@ -109,38 +111,39 @@ def text_from_element(el: Any) -> str:
     return ''
 
 
-def render_dict(output_list: List, el: Dict, limit: int=32):
+def render_dict(el: Dict, limit: int=32) -> List[str]:
+    output_list: List[str] = []
     t = el['type']
     if t in {'h1', 'h2', 'h3', 'h4'}:
         txt = text_from_element(el['content'])
-        create_label(output_list, txt, limit)
-
-    if t in {'ul', 'p'}:
-        render_main(output_list, el['content'], limit)
-
+        output_list += create_label(txt, limit)
+    elif t in {'ul', 'p'}:
+        output_list += render_main(el['content'], limit)
     elif t == 'text':
         txt = text_from_element(el['content'])
         if txt not in {'',' '}:
-            create_label(output_list, txt, limit)
-
+            output_list += create_label(txt, limit)
     elif t == 'li':
         txt = text_from_element(el['content'])
-        create_label(output_list, '— ' + txt, limit)
-
+        output_list += create_label('— ' + txt, limit)
     elif t == 'br':
-        return
+        pass
+    return output_list
 
 
-def render_list(output_list: List, tree: Any, limit: int=32):
+def render_list(tree: Any, limit: int=32) -> List[str]:
+    output_list: List[str] = []
     for el in tree:
         if type(el) == list:
-            render_list(output_list, el, limit)
+            output_list += render_list(el, limit)
         elif type(el) == dict:
-            render_dict(output_list, el, limit)
+            output_list += render_dict(el, limit)
+    return output_list
 
 
-def render_main(output_list: List, el: Any, limit: int=32):
+def render_main(el: Any, limit: int=32) -> List[str]:
     if type(el) == list:
-        return render_list(output_list, el, limit)
+        return render_list(el, limit)
     elif type(el) == dict:
-        return render_dict(output_list, el, limit)
+        return render_dict(el, limit)
+    return []
