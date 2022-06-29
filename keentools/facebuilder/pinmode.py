@@ -28,7 +28,8 @@ from ..utils import coords
 from .utils.manipulate import push_head_in_undo_history
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
-from ..utils.other import (KTStopShaderTimer, force_ui_redraw,
+from ..utils.ui_redraw import force_ui_redraw
+from ..utils.other import (KTStopShaderTimer,
                            hide_viewport_ui_elements_and_store_on_object)
 from ..utils.html import split_long_string
 from ..utils.localview import exit_area_localview
@@ -480,7 +481,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             return {'FINISHED'}
 
         vp.create_batch_2d(context.area)
-        vp.update_residuals(FBLoader.get_builder(), head.headobj, kid, context.area)
+        vp.update_residuals(FBLoader.get_builder(), kid, context.area)
 
         if vp.pins().current_pin() is not None:
             return {'RUNNING_MODAL'}

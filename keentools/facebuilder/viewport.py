@@ -168,7 +168,7 @@ class FBViewport(KTViewport):
         rectangler.prepare_shader_data(area)
         rectangler.create_batch()
 
-    def update_residuals(self, fb, headobj, keyframe, area):
+    def update_residuals(self, fb, keyframe, area):
         scene = bpy.context.scene
         rx = scene.render.resolution_x
         ry = scene.render.resolution_y
@@ -192,17 +192,15 @@ class FBViewport(KTViewport):
             wire.create_batch()
             return
 
-        # ----------
-        # Projection
-        projection = fb.projection_mat(keyframe).T
-
-        camobj = bpy.context.scene.camera
-        if not camobj:  # Fix for tests
+        if not area:
+            return
+        r3d = coords.get_area_region_3d(area)
+        if not r3d:
             return
 
+        projection = fb.projection_mat(keyframe).T
         vv = coords.to_homogeneous(p3d)
-        # No object transform, just inverse camera, then projection apply
-        vv = vv @ np.array(camobj.matrix_world.inverted().transposed()) @ projection
+        vv = vv @ np.array(r3d.view_matrix.transposed()) @ projection
         vv = (vv.T / vv[:, 3]).T
 
         verts2 = []

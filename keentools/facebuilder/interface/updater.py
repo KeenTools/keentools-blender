@@ -33,7 +33,7 @@ from ...blender_independent_packages.pykeentools_loader import (
     install_downloaded_zips)
 
 from ...utils.html import parse_html, skip_new_lines_and_spaces, render_main
-from ...utils.other import force_ui_redraw
+from ...utils.ui_redraw import force_ui_redraw
 
 from ...preferences.progress import FBUpdateProgressTimer
 
