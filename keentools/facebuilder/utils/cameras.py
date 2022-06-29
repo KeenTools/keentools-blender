@@ -16,11 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import logging
-import bpy
 
 from ...facebuilder_config import FBConfig, get_fb_settings
 from ...utils import attrs
-from ...utils.coords import get_area_region
 
 
 def show_all_cameras(headnum):

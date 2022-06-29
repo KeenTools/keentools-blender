@@ -580,7 +580,7 @@ class FBLoader:
         fb = cls.get_builder()
         vp = cls.viewport()
         vp.update_surface_points(fb, obj, keyframe)
-        vp.update_residuals(fb, obj, keyframe, area)
+        vp.update_residuals(fb, keyframe, area)
         vp.create_batch_2d(area)
 
     @classmethod

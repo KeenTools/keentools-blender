@@ -151,7 +151,7 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         # Load 3D pins
         vp.update_surface_points(fb, head.headobj, kid)
-        vp.update_residuals(fb, head.headobj, kid, area)
+        vp.update_residuals(fb, kid, area)
         head.mark_model_changed_by_pinmode()
 
         pins.reset_current_pin()
