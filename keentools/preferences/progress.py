@@ -27,39 +27,49 @@ from ..utils.timer import KTTimer
 from ..utils.ui_redraw import force_ui_redraw
 
 
-class FBUpdateProgressTimer(KTTimer):
-    _UPDATE_INTERVAL = 0.5
-    _redraw_view3d = False
+class UpdateProgressTimer(KTTimer):
+    def __init__(self):
+        super().__init__()
+        self._UPDATE_INTERVAL = 0.5
+        self._redraw_view3d = False
 
-    @classmethod
-    def _timer_should_not_work(cls):
-        return not cls.is_active()
+    def _timer_should_not_work(self):
+        return not self.is_active()
 
-    @classmethod
-    def _check_progress(cls):
+    def _check_progress(self):
         logger = logging.getLogger(__name__)
-        if cls._timer_should_not_work():
+        if self._timer_should_not_work():
             logger.debug("STOP PROGRESS INACTIVE")
-            cls.stop()
+            self.stop()
             force_ui_redraw("PREFERENCES")
-            if cls._redraw_view3d:
+            if self._redraw_view3d:
                 force_ui_redraw('VIEW_3D')
             return None
 
         logger.debug("NEXT CALL UPDATE TIMER")
         force_ui_redraw("PREFERENCES")
-        if cls._redraw_view3d:
+        if self._redraw_view3d:
             force_ui_redraw('VIEW_3D')
-        return cls._UPDATE_INTERVAL
+        return self._UPDATE_INTERVAL
+
+    def start(self, redraw_view3d=False):
+        self._redraw_view3d = redraw_view3d
+        self._start(self._check_progress, persistent=False)
+
+    def stop(self):
+        self._stop(self._check_progress)
+
+
+class FBUpdateProgressTimer:
+    _timer = UpdateProgressTimer()
 
     @classmethod
     def start(cls, redraw_view3d=False):
-        cls._redraw_view3d = redraw_view3d
-        cls._start(cls._check_progress, persistent=False)
+        cls._timer.start(redraw_view3d=redraw_view3d)
 
     @classmethod
     def stop(cls):
-        cls._stop(cls._check_progress)
+        cls._timer.stop()
 
 
 class InstallationProgress:

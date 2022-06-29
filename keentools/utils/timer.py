@@ -20,32 +20,28 @@ import bpy
 
 
 class KTTimer:
-    _active = False
+    def __init__(self):
+        self._active = False
 
-    @classmethod
-    def set_active(cls, value=True):
-        cls._active = value
+    def set_active(self, value=True):
+        self._active = value
 
-    @classmethod
-    def set_inactive(cls):
-        cls._active = False
+    def set_inactive(self):
+        self._active = False
 
-    @classmethod
-    def is_active(cls):
-        return cls._active
+    def is_active(self):
+        return self._active
 
-    @classmethod
-    def _start(cls, callback, persistent=True):
+    def _start(self, callback, persistent=True):
         logger = logging.getLogger(__name__)
-        cls._stop(callback)
+        self._stop(callback)
         bpy.app.timers.register(callback, persistent=persistent)
         logger.debug("REGISTER TIMER")
-        cls.set_active()
+        self.set_active()
 
-    @classmethod
-    def _stop(cls, callback):
+    def _stop(self, callback):
         logger = logging.getLogger(__name__)
         if bpy.app.timers.is_registered(callback):
             logger.debug("UNREGISTER TIMER")
             bpy.app.timers.unregister(callback)
-        cls.set_inactive()
+        self.set_inactive()

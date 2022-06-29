@@ -129,13 +129,15 @@ def unhide_viewport_ui_elements_from_object(area, obj):
     _setup_viewport_ui_state(area, res)
 
 
-class KTStopShaderTimer(KTTimer):
-    _uuid = ''
-    @classmethod
-    def check_pinmode(cls):
+class StopShaderTimer(KTTimer):
+    def __init__(self):
+        super().__init__()
+        self._uuid = ''
+
+    def check_pinmode(self):
         logger = logging.getLogger(__name__)
         settings = get_fb_settings()
-        if not cls.is_active():
+        if not self.is_active():
             # Timer works when shouldn't
             logger.debug("STOP SHADER INACTIVE")
             return None
@@ -143,32 +145,44 @@ class KTStopShaderTimer(KTTimer):
         if not settings.pinmode:
             # But we are not in pinmode
             force_stop_shaders()
-            cls.stop()
+            self.stop()
             logger.debug("STOP SHADER FORCE")
             return None
         else:
-            if settings.pinmode_id != cls.get_uuid():
+            if settings.pinmode_id != self.get_uuid():
                 # pinmode id externally changed
                 force_stop_shaders()
-                cls.stop()
+                self.stop()
                 logger.debug("STOP SHADER FORCED BY PINMODE_ID")
                 return None
-
         # Interval to next call
         return 1.0
 
+    def get_uuid(self):
+        return self._uuid
+
+    def start(self, uuid=''):
+        self._uuid = uuid
+        self._start(self.check_pinmode, persistent=True)
+
+    def stop(self):
+        self._stop(self.check_pinmode)
+
+
+class KTStopShaderTimer():
+    _timer = StopShaderTimer()
+
     @classmethod
     def get_uuid(cls):
-        return cls._uuid
+        return cls._timer.get_uuid()
 
     @classmethod
     def start(cls, uuid=''):
-        cls._uuid = uuid
-        cls._start(cls.check_pinmode, persistent=True)
+        cls._timer.start(uuid)
 
     @classmethod
     def stop(cls):
-        cls._stop(cls.check_pinmode)
+        cls._timer.stop()
 
 
 # --------------
