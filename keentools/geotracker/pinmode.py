@@ -21,7 +21,7 @@ from uuid import uuid4
 
 import bpy
 
-from ..addon_config import get_operator
+from ..addon_config import Config, get_operator, ErrorType
 from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
 from ..utils.localview import exit_area_localview
@@ -386,9 +386,14 @@ class GT_OT_PinMode(bpy.types.Operator):
                 return {'FINISHED'}
 
         if settings.force_out_pinmode:
-            logger.debug('FORCE PINMODE OUT')
+            logger.debug('GT FORCE PINMODE OUT')
             self._exit_pinmode()
             settings.force_out_pinmode = False
+            if settings.license_error:
+                warn = get_operator(Config.kt_warning_idname)
+                warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+                settings.license_error = False
+                settings.hide_user_preferences()
             return {'FINISHED'}
 
         if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
