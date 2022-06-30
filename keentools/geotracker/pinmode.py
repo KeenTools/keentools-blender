@@ -377,8 +377,18 @@ class GT_OT_PinMode(bpy.types.Operator):
             return {'FINISHED'}
 
         if context.space_data.region_3d.view_perspective != 'CAMERA':
-            log_output('CAMERA ROTATED PINMODE OUT')
+            if GTConfig.prevent_view_rotation:
+                # Return back to the camera view
+                bpy.ops.view3d.view_camera()
+            else:
+                log_output('CAMERA ROTATED PINMODE OUT')
+                self._exit_pinmode()
+                return {'FINISHED'}
+
+        if settings.force_out_pinmode:
+            logger.debug('FORCE PINMODE OUT')
             self._exit_pinmode()
+            settings.force_out_pinmode = False
             return {'FINISHED'}
 
         if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
