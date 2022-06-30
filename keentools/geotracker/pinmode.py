@@ -445,8 +445,9 @@ class GT_OT_PinMode(bpy.types.Operator):
             GTLoader.update_all_viewport_shaders(context.area)
             return {'PASS_THROUGH'}
 
-        if self._check_camera_state_changed(context.space_data.region_3d):
-            log_output('FORCE TAG REDRAW BY VIEWPORT ZOOM/OFFSET')
+        if self._check_camera_state_changed(context.space_data.region_3d) or event.type == 'TIMER':
+            if event.type != 'TIMER':
+                log_output('FORCE TAG REDRAW BY VIEWPORT ZOOM/OFFSET')
             vp = GTLoader.viewport()
             vp.create_batch_2d(context.area)
             vp.update_residuals(GTLoader.kt_geotracker(), context.area,
