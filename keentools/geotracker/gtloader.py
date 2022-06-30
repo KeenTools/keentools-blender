@@ -27,6 +27,13 @@ from ..geotracker_config import get_gt_settings
 from .viewport import GTViewport
 from ..utils import coords
 from .gt_class_loader import GTClassLoader
+from ..utils.timer import KTStopShaderTimer
+from ..utils.ui_redraw import force_ui_redraw
+
+
+def force_stop_gt_shaders():
+    GTLoader.stop_viewport_shaders()
+    force_ui_redraw('VIEW_3D')
 
 
 class GTLoader:
@@ -39,6 +46,12 @@ class GTLoader:
     _camera_input: Any = None
     _kt_geotracker: Any = None
     _mask2d: Any = None
+
+    _check_shader_timer = KTStopShaderTimer(get_gt_settings, force_stop_gt_shaders)
+
+    @classmethod
+    def start_shader_timer(cls, uuid):
+        cls._check_shader_timer.start(uuid)
 
     @classmethod
     def update_geomobj_mesh(cls) -> None:
@@ -401,3 +414,11 @@ class GTLoader:
         texter.set_message(texter.get_default_text())
         if unregister:
             texter.unregister_handler()
+
+    @classmethod
+    def stop_viewport_shaders(cls):
+        cls._check_shader_timer.stop()
+        vp = cls.viewport()
+        vp.unregister_handlers()
+        logger = logging.getLogger(__name__)
+        logger.debug('GT VIEWPORT SHADERS HAVE BEEN STOPPED')

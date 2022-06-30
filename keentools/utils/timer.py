@@ -36,12 +36,56 @@ class KTTimer:
         logger = logging.getLogger(__name__)
         self._stop(callback)
         bpy.app.timers.register(callback, persistent=persistent)
-        logger.debug("REGISTER TIMER")
+        logger.debug('REGISTER TIMER')
         self.set_active()
 
     def _stop(self, callback):
         logger = logging.getLogger(__name__)
         if bpy.app.timers.is_registered(callback):
-            logger.debug("UNREGISTER TIMER")
+            logger.debug('UNREGISTER TIMER')
             bpy.app.timers.unregister(callback)
         self.set_inactive()
+
+
+class KTStopShaderTimer(KTTimer):
+    def __init__(self, get_settings_func, stop_func):
+        super().__init__()
+        self._uuid = ''
+        self._stop_func = stop_func
+        self._get_settings_func = get_settings_func
+
+    def check_pinmode(self):
+        logger = logging.getLogger(__name__)
+        settings = self._get_settings_func()
+        if not self.is_active():
+            # Timer works when shouldn't
+            logger.debug('STOP SHADER INACTIVE')
+            return None
+        # Timer is active
+        if not settings.pinmode:
+            # But we are not in pinmode
+            logger.debug('CALL STOP SHADERS')
+            self._stop_func()
+            self.stop()
+            logger.debug('STOP SHADER FORCE')
+            return None
+        else:
+            if settings.pinmode_id != self.get_uuid():
+                # pinmode id externally changed
+                logger.debug('CALL STOP SHADERS')
+                self._stop_func()
+                self.stop()
+                logger.debug('STOP SHADER FORCED BY PINMODE_ID')
+                return None
+        # Interval to next call
+        return 1.0
+
+    def get_uuid(self):
+        return self._uuid
+
+    def start(self, uuid=''):
+        self._uuid = uuid
+        self._start(self.check_pinmode, persistent=True)
+
+    def stop(self):
+        self._stop(self.check_pinmode)

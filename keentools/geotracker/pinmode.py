@@ -166,9 +166,8 @@ class GT_OT_PinMode(bpy.types.Operator):
         settings.pinmode = False
         geotracker = settings.get_current_geotracker_item()
         geotracker.reset_focal_length_estimation()
-        vp = GTLoader.viewport()
-        area = vp.get_work_area()
-        vp.unregister_handlers()
+        area = GTLoader.get_work_area()
+        GTLoader.stop_viewport_shaders()
         exit_area_localview(area)
         if geotracker.geomobj:
             unhide_viewport_ui_elements_from_object(area, geotracker.geomobj)
@@ -273,7 +272,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         settings = get_gt_settings()
         settings.pinmode = True
         self._new_pinmode_id()
-        log_output('_new_pinmode_id')
+        log_output(f'_new_pinmode_id: {settings.pinmode_id}')
 
         self._set_new_geotracker(context.area)
         self._init_pinmode(context.area, context)
@@ -355,6 +354,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         log_output(f'START GEOTRACKER PINMODE: {new_geotracker_num}')
 
         self._start_new_pinmode(context)
+        GTLoader.start_shader_timer(settings.pinmode_id)
         context.window_manager.modal_handler_add(self)
         register_undo_redo_handlers()
         log_output('PINMODE STARTED')

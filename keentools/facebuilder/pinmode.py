@@ -29,8 +29,7 @@ from .utils.manipulate import push_head_in_undo_history
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
 from ..utils.ui_redraw import force_ui_redraw
-from ..utils.other import (KTStopShaderTimer,
-                           hide_viewport_ui_elements_and_store_on_object)
+from ..utils.other import hide_viewport_ui_elements_and_store_on_object
 from ..utils.html import split_long_string
 from ..utils.localview import exit_area_localview
 from ..utils.manipulate import switch_to_camera, center_viewports_on_object
@@ -340,7 +339,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.debug("SHADER STOPPER START")
             self.pinmode_id = str(uuid4())
             settings.pinmode_id = self.pinmode_id
-            KTStopShaderTimer.start(self.pinmode_id)
+            FBLoader.start_shader_timer(self.pinmode_id)
             logger.debug('pinmode_id: {}'.format(self.pinmode_id))
         else:
             logger.debug("SHADER UPDATE ONLY")
