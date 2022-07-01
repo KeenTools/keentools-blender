@@ -97,6 +97,8 @@ class GTConfig:
     serial_prop_name = prefix + '_serial'
     version_prop_name = prefix + '_version'
 
+    prevent_view_rotation = False
+
 
 def get_gt_settings():
     return getattr(bpy.context.scene, GTConfig.gt_global_var_name)

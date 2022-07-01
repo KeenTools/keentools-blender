@@ -289,14 +289,15 @@ class GT_OT_BtnCreateAnimation(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_BtnExitPinMode(ButtonOperator, bpy.types.Operator):
+class GT_OT_ExitPinMode(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_exit_pinmode_idname
-    bl_label = 'Out Pinmode'
-    bl_description = 'Out from PinMode'
+    bl_label = 'Exit Pinmode'
+    bl_description = 'Exit from PinMode'
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='exit_pinmode')
+        settings = get_gt_settings()
+        if settings.pinmode:
+            settings.force_out_pinmode = True
         return {'FINISHED'}
 
 
@@ -358,6 +359,6 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_BtnMagicKeyframe,
                   GT_OT_BtnRemovePins,
                   GT_OT_BtnCreateAnimation,
-                  GT_OT_BtnExitPinMode,
+                  GT_OT_ExitPinMode,
                   GT_OT_InterruptModal,
                   GT_OT_StopPrecalc)

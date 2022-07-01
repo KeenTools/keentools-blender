@@ -21,7 +21,7 @@ from uuid import uuid4
 
 import bpy
 
-from ..addon_config import get_operator
+from ..addon_config import Config, get_operator, ErrorType
 from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
 from ..utils.localview import exit_area_localview
@@ -166,9 +166,8 @@ class GT_OT_PinMode(bpy.types.Operator):
         settings.pinmode = False
         geotracker = settings.get_current_geotracker_item()
         geotracker.reset_focal_length_estimation()
-        vp = GTLoader.viewport()
-        area = vp.get_work_area()
-        vp.unregister_handlers()
+        area = GTLoader.get_work_area()
+        GTLoader.stop_viewport_shaders()
         exit_area_localview(area)
         if geotracker.geomobj:
             unhide_viewport_ui_elements_from_object(area, geotracker.geomobj)
@@ -273,7 +272,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         settings = get_gt_settings()
         settings.pinmode = True
         self._new_pinmode_id()
-        log_output('_new_pinmode_id')
+        log_output(f'_new_pinmode_id: {settings.pinmode_id}')
 
         self._set_new_geotracker(context.area)
         self._init_pinmode(context.area, context)
@@ -355,6 +354,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         log_output(f'START GEOTRACKER PINMODE: {new_geotracker_num}')
 
         self._start_new_pinmode(context)
+        GTLoader.start_shader_timer(settings.pinmode_id)
         context.window_manager.modal_handler_add(self)
         register_undo_redo_handlers()
         log_output('PINMODE STARTED')
@@ -377,8 +377,23 @@ class GT_OT_PinMode(bpy.types.Operator):
             return {'FINISHED'}
 
         if context.space_data.region_3d.view_perspective != 'CAMERA':
-            log_output('CAMERA ROTATED PINMODE OUT')
+            if GTConfig.prevent_view_rotation:
+                # Return back to the camera view
+                bpy.ops.view3d.view_camera()
+            else:
+                log_output('CAMERA ROTATED PINMODE OUT')
+                self._exit_pinmode()
+                return {'FINISHED'}
+
+        if settings.force_out_pinmode:
+            logger.debug('GT FORCE PINMODE OUT')
             self._exit_pinmode()
+            settings.force_out_pinmode = False
+            if settings.license_error:
+                warn = get_operator(Config.kt_warning_idname)
+                warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+                settings.license_error = False
+                settings.hide_user_preferences()
             return {'FINISHED'}
 
         if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
@@ -430,8 +445,9 @@ class GT_OT_PinMode(bpy.types.Operator):
             GTLoader.update_all_viewport_shaders(context.area)
             return {'PASS_THROUGH'}
 
-        if self._check_camera_state_changed(context.space_data.region_3d):
-            log_output('FORCE TAG REDRAW BY VIEWPORT ZOOM/OFFSET')
+        if self._check_camera_state_changed(context.space_data.region_3d) or event.type == 'TIMER':
+            if event.type != 'TIMER':
+                log_output('FORCE TAG REDRAW BY VIEWPORT ZOOM/OFFSET')
             vp = GTLoader.viewport()
             vp.create_batch_2d(context.area)
             vp.update_residuals(GTLoader.kt_geotracker(), context.area,

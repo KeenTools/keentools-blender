@@ -293,10 +293,15 @@ class GT_PT_CameraPanel(AllVisible):
         row = layout.row()
         row.scale_y = 2.0
 
-        op = row.operator(GTConfig.gt_pinmode_idname,
-                          text='View', icon='HIDE_OFF',
-                          depress=settings.pinmode)
-        op.geotracker_num = -1
+        if settings.pinmode:
+            row.operator(GTConfig.gt_exit_pinmode_idname,
+                         icon='LOOP_BACK',
+                         depress=settings.pinmode)
+        else:
+            op = row.operator(GTConfig.gt_pinmode_idname,
+                              text='View', icon='HIDE_OFF',
+                              depress=settings.pinmode)
+            op.geotracker_num = -1
 
         layout.prop(geotracker, 'preview_gamma', slider=True)
 

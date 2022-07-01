@@ -21,32 +21,9 @@ import bpy
 
 from ..addon_config import Config
 from ..facebuilder_config import get_fb_settings
-from .edges import (KTEdgeShader2D,
-                    KTScreenRectangleShader2D,
-                    KTEdgeShaderAll2D,
-                    KTEdgeShader3D,
-                    KTEdgeShaderLocal3D)
-from ..facebuilder.utils.edges import FBRectangleShader2D, FBRasterEdgeShader3D
-from .points import KTPoints2D, KTPoints3D
 from ..utils.attrs import set_custom_attribute, get_safe_custom_attribute
 from ..utils.timer import KTTimer
-from ..utils.ui_redraw import force_ui_redraw
-from ..utils.screen_text import KTScreenText
 from ..utils.coords import get_area_overlay
-
-
-def force_stop_shaders():
-    KTEdgeShader2D.handler_list = []
-    KTScreenRectangleShader2D.handler_list = []
-    KTEdgeShaderAll2D.handler_list = []
-    KTEdgeShader3D.handler_list = []
-    FBRectangleShader2D.handler_list = []
-    FBRasterEdgeShader3D.handler_list = []
-    KTEdgeShaderLocal3D.handler_list = []
-    KTScreenText.handler_list = []
-    KTPoints2D.handler_list = []
-    KTPoints3D.handler_list = []
-    force_ui_redraw('VIEW_3D')
 
 
 def _viewport_ui_attribute_names():
@@ -127,48 +104,6 @@ def unhide_viewport_ui_elements_from_object(area, obj):
 
     res = _unpack_state(attr_dict)
     _setup_viewport_ui_state(area, res)
-
-
-class KTStopShaderTimer(KTTimer):
-    _uuid = ''
-    @classmethod
-    def check_pinmode(cls):
-        logger = logging.getLogger(__name__)
-        settings = get_fb_settings()
-        if not cls.is_active():
-            # Timer works when shouldn't
-            logger.debug("STOP SHADER INACTIVE")
-            return None
-        # Timer is active
-        if not settings.pinmode:
-            # But we are not in pinmode
-            force_stop_shaders()
-            cls.stop()
-            logger.debug("STOP SHADER FORCE")
-            return None
-        else:
-            if settings.pinmode_id != cls.get_uuid():
-                # pinmode id externally changed
-                force_stop_shaders()
-                cls.stop()
-                logger.debug("STOP SHADER FORCED BY PINMODE_ID")
-                return None
-
-        # Interval to next call
-        return 1.0
-
-    @classmethod
-    def get_uuid(cls):
-        return cls._uuid
-
-    @classmethod
-    def start(cls, uuid=''):
-        cls._uuid = uuid
-        cls._start(cls.check_pinmode, persistent=True)
-
-    @classmethod
-    def stop(cls):
-        cls._stop(cls.check_pinmode)
 
 
 # --------------

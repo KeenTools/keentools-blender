@@ -162,6 +162,9 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     move_pin_mode: bpy.props.BoolProperty(name='Move pin mode status', default=False)
     pinmode_id: bpy.props.StringProperty(name='Unique pinmode ID')
 
+    force_out_pinmode: bpy.props.BoolProperty(name='Pin Mode Out', default=False)
+    license_error: bpy.props.BoolProperty(name='License Error', default=False)
+
     geotrackers: bpy.props.CollectionProperty(type=GeoTrackerItem, name='GeoTrackers')
     current_geotracker_num: bpy.props.IntProperty(name='Current Geotracker Number', default=-1)
 
