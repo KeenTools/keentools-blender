@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+import numpy as np
 from typing import Optional, Tuple, Any
 
 import bpy
@@ -28,6 +29,8 @@ from ..utils.images import (np_array_from_bpy_image,
                             get_background_image_object,
                             gamma_np_image)
 from .utils.tracking import reload_precalc
+from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
+                            get_scale_vec_4_from_matrix_world)
 
 
 def is_mesh(self, obj: Optional[Object]) -> bool:
@@ -95,6 +98,13 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     preview_gamma: bpy.props.FloatProperty(name='Gamma', default=1.0, min=0.1, max=3.0,
                                            update=_update_preview_gamma)
+    default_zoom_focal_length: bpy.props.FloatProperty(name='Default Zoom FL',
+                                                       default=50.0,
+                                                       min=0.1, max=5000.0)
+    static_focal_length: bpy.props.FloatProperty(name='Static FL',
+                                                 default=50.0,
+                                                 min=0.1, max=5000.0)
+    focal_length_mode: bpy.props.IntProperty(name='FL mode', default=0)
 
     def get_serial_str(self) -> str:
         return self.serial_str
@@ -155,6 +165,22 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     def reload_precalc(self) -> Tuple[bool, str, Any]:
         return reload_precalc(self)
+
+    def calc_model_matrix(self) -> Any:
+        if not self.camobj or not self.geomobj:
+            return np.eye(4)
+
+        rot_mat = xz_to_xy_rotation_matrix_4x4()
+
+        cam_mat = self.camobj.matrix_world
+        geom_mw = self.geomobj.matrix_world
+        scale_vec = get_scale_vec_4_from_matrix_world(geom_mw)
+        scminv = np.diag(1.0 / scale_vec)
+        geom_mat = np.array(geom_mw, dtype=np.float32) @ scminv
+
+        nm = np.array(cam_mat.inverted_safe(),
+                      dtype=np.float32) @ geom_mat @ rot_mat
+        return nm
 
 
 class GTSceneSettings(bpy.types.PropertyGroup):

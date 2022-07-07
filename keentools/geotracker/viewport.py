@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+import logging
 
 import numpy as np
 import bpy
@@ -143,8 +144,9 @@ class GTViewport(KTViewport):
         vertex_colors = [GTConfig.pin_color for _ in range(len(points))]
 
         pins = self.pins()
-        if pins.current_pin() and pins.current_pin_num() < len(vertex_colors):
-            vertex_colors[pins.current_pin_num()] = GTConfig.current_pin_color
+        pin_num = pins.current_pin_num()
+        if pins.current_pin() and pin_num >= 0 and pin_num < len(vertex_colors):
+            vertex_colors[pin_num] = GTConfig.current_pin_color
 
         if GTConfig.show_markers_at_camera_corners:
             _add_markers_at_camera_corners(points, vertex_colors)

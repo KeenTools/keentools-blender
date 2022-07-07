@@ -34,25 +34,27 @@ class GT_OT_MovePin(bpy.types.Operator):
     def _before_operator_finish(self):
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
-        create_locrot_keyframe(geotracker.animatable_object(), 'KEYFRAME')
+        if not GTConfig.use_storage:
+            create_locrot_keyframe(geotracker.animatable_object(), 'KEYFRAME')
         self._move_pin_mode_off()
 
     def _new_pin(self, area, mouse_x, mouse_y):
         logger = logging.getLogger(__name__)
+        log_output = logger.debug
         settings = get_gt_settings()
 
         frame = settings.current_frame()
-
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, area)
 
         pin = GTLoader.add_pin(
             frame, (coords.image_space_to_frame(x, y))
         )
+        log_output(f'_new_pin pin: {pin}')
         if pin is not False:
-            logger.debug('ADD PIN: {}'.format(pin))
             vp = GTLoader.viewport()
             vp.pins().add_pin((x, y))
             vp.pins().set_current_pin_num_to_last()
+            log_output(f'_new_pin ADD PIN pins: {vp.pins().arr()}')
             return True
         else:
             logger.debug('MISS MODEL')
@@ -206,6 +208,7 @@ class GT_OT_MovePin(bpy.types.Operator):
 
     def invoke(self, context, event):
         logger = logging.getLogger(__name__)
+        log_output = logger.debug
         if not self.init_action(context,
                                 event.mouse_region_x, event.mouse_region_y):
             settings = get_gt_settings()
@@ -216,7 +219,7 @@ class GT_OT_MovePin(bpy.types.Operator):
         self._move_pin_mode_on()
         GTLoader.viewport().create_batch_2d(context.area)
         context.window_manager.modal_handler_add(self)
-        logger.debug('START PIN MOVING')
+        log_output('GT START PIN MOVING')
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):

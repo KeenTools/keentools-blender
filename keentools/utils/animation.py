@@ -16,12 +16,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import logging
-from typing import Optional, List, Set
+from typing import Optional, List, Set, Dict
 import bpy
 from bpy.types import Object, Action, FCurve, Keyframe
 from mathutils import Vector
 
-from ..geotracker_config import get_gt_settings
+from ..geotracker_config import GTConfig, get_gt_settings
 
 
 def extend_scene_timeline_end(keyframe_num: int, force=False) -> None:
@@ -35,7 +35,7 @@ def extend_scene_timeline_start(keyframe_num: int) -> None:
     if 0 <= keyframe_num < scene.frame_start:
         scene.frame_start = keyframe_num
 
-def _get_action_fcurve(action: Action, data_path: str, index: int=0) -> FCurve:
+def _get_action_fcurve(action: Action, data_path: str, index: int=0) -> Optional[FCurve]:
     return action.fcurves.find(data_path, index=index)
 
 
@@ -208,12 +208,29 @@ def create_animation_locrot_keyframe_force(obj: Object) -> None:
 
 def insert_keyframe_in_fcurve(obj: Object, frame: int, value: float,
                               keyframe_type: str, data_path: str,
-                              index: int=0) -> None:
-    action = _get_safe_action(obj, 'GTAct')
+                              index: int=0, act_name: str = 'GTAct') -> None:
+    action = _get_safe_action(obj, act_name)
     if action is None:
         return
     fcurve = _get_safe_action_fcurve(action, data_path, index=index)
     insert_point_in_fcurve(fcurve, frame, value, keyframe_type)
+
+
+def remove_fcurve_from_action(action: Action, data_path: str, index: int=0,
+                              remove_empty_action=True) -> None:
+    fcurve = _get_action_fcurve(action, data_path, index)
+    if fcurve:
+        action.fcurves.remove(fcurve)
+    if remove_empty_action and len(action.fcurves) == 0:
+        bpy.data.actions.remove(action)
+
+
+def remove_fcurve_from_object(obj: Object, data_path: str, index: int=0,
+                              remove_empty_action=True) -> None:
+    action = get_action(obj)
+    if action is None:
+        return
+    remove_fcurve_from_action(action, data_path, index, remove_empty_action)
 
 
 def create_locrot_keyframe(obj: Object, keyframe_type: str='KEYFRAME') -> None:
@@ -250,12 +267,13 @@ def reset_object_action(obj: Object) -> None:
 
 
 def delete_animation_on_frames(obj: Object, frames: Set) -> None:
+    if GTConfig.use_storage:
+        return
     action = get_action(obj)
     if action is None:
         return
 
     locrot_dict = get_locrot_dict()
-
     for name in locrot_dict.keys():
         fcurve = _get_action_fcurve(action, locrot_dict[name]['data_path'],
                                     index=locrot_dict[name]['index'])
@@ -266,3 +284,38 @@ def delete_animation_on_frames(obj: Object, frames: Set) -> None:
 
         for p in reversed(points):
             fcurve.keyframe_points.remove(p)
+
+
+def delete_animation_between_frames(obj: Object, from_frame: int, to_frame: int) -> None:
+    action = get_action(obj)
+    if action is None:
+        return
+
+    locrot_dict = get_locrot_dict()
+    for name in locrot_dict.keys():
+        fcurve = _get_action_fcurve(action, locrot_dict[name]['data_path'],
+                                    index=locrot_dict[name]['index'])
+        if fcurve is None:
+            continue
+        points = [p for p in fcurve.keyframe_points
+                  if from_frame <= p.co[0] <= to_frame]
+        for p in reversed(points):
+            fcurve.keyframe_points.remove(p)
+
+
+def get_object_keyframe_numbers(obj: Object) -> List[int]:
+    action: Action = get_action(obj)
+    if action is None:
+        return []
+
+    locrot_dict: Dict = get_locrot_dict()
+    fcurves: Dict = {name: _get_safe_action_fcurve(action,
+                                             locrot_dict[name]['data_path'],
+                                             index=locrot_dict[name]['index'])
+                     for name in locrot_dict.keys()}
+
+    keys_set: Set = set()
+    for name in fcurves.keys():
+        points: Set = {int(p.co[0]) for p in fcurves[name].keyframe_points}
+        keys_set = keys_set.union(points)
+    return list(keys_set)

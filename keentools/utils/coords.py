@@ -365,3 +365,25 @@ def compensate_view_scale():
     if image_width >= image_height:
         return 1.0
     return image_width / image_height
+
+
+def calc_bpy_camera_mat_relative_to_model(model, gt_model_mat):
+    rot_mat2 = xz_to_xy_rotation_matrix_4x4()
+    scale_vec = get_scale_vec_4_from_matrix_world(model.matrix_world)
+    scminv = np.diag(1.0 / scale_vec)
+
+    try:
+        mat = np.array(
+            model.matrix_world) @ scminv @ rot_mat2 @ np.linalg.inv(
+            gt_model_mat)
+        return mat.transpose()
+    except Exception:
+        return np.eye(4)
+
+
+def calc_bpy_model_mat_relative_to_camera(camera, model, gt_model_mat):
+    rot_mat = xy_to_xz_rotation_matrix_4x4()
+    scale_mat = get_scale_matrix_4x4_from_matrix_world(model.matrix_world)
+    np_mw = np.array(camera.matrix_world) @ (gt_model_mat @
+                                             rot_mat @ scale_mat)
+    return np_mw.transpose()

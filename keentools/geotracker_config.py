@@ -97,7 +97,8 @@ class GTConfig:
     serial_prop_name = prefix + '_serial'
     version_prop_name = prefix + '_version'
 
-    prevent_view_rotation = False
+    prevent_view_rotation = True
+    use_storage = True
 
 
 def get_gt_settings():
