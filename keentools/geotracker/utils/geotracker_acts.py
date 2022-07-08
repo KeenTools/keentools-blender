@@ -710,6 +710,47 @@ def remove_focal_keyframes_act() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
+def remove_pins_act() -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_error = logger.error
+
+    settings = get_gt_settings()
+    if not settings.pinmode:
+        msg = 'Remove pins can be called in PinMode only'
+        log_error(msg)
+        return ActionStatus(False, msg)
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        msg = 'GeoTracker item is not found'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    gt = GTLoader.kt_geotracker()
+    gt.remove_pins()
+    GTLoader.update_all_viewport_shaders()
+    return ActionStatus(True, 'ok')
+
+
+def center_geo_act() -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_error = logger.error
+
+    settings = get_gt_settings()
+    if not settings.pinmode:
+        msg = 'Center geo can be called in PinMode only'
+        log_error(msg)
+        return ActionStatus(False, msg)
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        msg = 'GeoTracker item is not found'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    gt = GTLoader.kt_geotracker()
+    gt.center_geo(settings.current_frame())
+    return ActionStatus(True, 'ok')
+
+
 def create_animation_on_frames(frames: List, animate_focal: bool=False) -> None:
     if GTConfig.use_storage:
         return

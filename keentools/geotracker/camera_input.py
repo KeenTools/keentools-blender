@@ -150,6 +150,18 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
             flm.ZOOM_FOCAL_LENGTH
         ]}
 
+    @staticmethod
+    def _focal_px_to_mm(fl_px):
+        sw = 36.0
+        w = bpy.context.scene.render.resolution_x
+        return fl_px * sw / w
+
+    @staticmethod
+    def _focal_mm_to_px(fl_mm):
+        sw = 36.0
+        w = bpy.context.scene.render.resolution_x
+        return fl_mm * w / sw
+
     def _mode_by_value(self, value: str) -> Any:
         if value in self._modes.keys():
             return self._modes[value]
@@ -174,12 +186,14 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         cam_data = geotracker.camobj.data
         _log_output('remove_fcurve_from_object: lens')
         remove_fcurve_from_object(cam_data, 'lens')
-        cam_data.lens = static_fl
+        cam_data.lens = self._focal_px_to_mm(static_fl)
 
     def serialize(self) -> str:
+        _log_output('serialize call')
         return ''
 
     def deserialize(self, serial_txt: str) -> bool:
+        _log_output(f'deserialize: {serial_txt}')
         return True
 
     def model_mat_at(self, frame: int) -> Any:
@@ -257,15 +271,15 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.camobj:
             return geotracker.default_zoom_focal_length
-        return get_safe_evaluated_fcurve(geotracker.camobj.data, frame, 'lens')
+        return self._focal_mm_to_px(get_safe_evaluated_fcurve(geotracker.camobj.data, frame, 'lens'))
 
     def get_default_zoom_focal_length(self) -> float:
         _log_output('get_default_zoom_focal_length')
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
-            return 50.0  # Undefined case
-        return geotracker.default_zoom_focal_length
+            return self._focal_mm_to_px(50.0)  # Undefined case
+        return self._focal_mm_to_px(geotracker.default_zoom_focal_length)
 
     def set_default_zoom_focal_length(self, default_fl: float) -> None:
         _log_output(f'set_default_zoom_focal_length: {default_fl}')
@@ -294,7 +308,7 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
-            return 50.0  # Undefined case
+            return self._focal_mm_to_px(50.0)  # Undefined case
         return geotracker.static_focal_length
 
     def set_camera_focal_length_mode(self) -> None:
@@ -314,5 +328,5 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return
-        insert_keyframe_in_fcurve(geotracker.camobj.data, frame, fl,
+        insert_keyframe_in_fcurve(geotracker.camobj.data, frame, self._focal_px_to_mm(fl),
                                   'KEYFRAME', 'lens')

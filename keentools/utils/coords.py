@@ -118,6 +118,10 @@ def focal_mm_to_px(fl, sw, w):
     return fl / sw * w
 
 
+def focal_px_to_mm(fl_px, sw, w):
+    return fl_px * sw / w
+
+
 def render_frame():
     """ Just get frame size from scene render settings """
     scene = bpy.context.scene

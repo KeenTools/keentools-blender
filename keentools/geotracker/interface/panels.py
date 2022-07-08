@@ -271,8 +271,15 @@ class GT_PT_CameraPanel(AllVisible):
 
         cam_data = geotracker.camobj.data
         col = layout.column()
+
+        col.prop(geotracker, 'default_zoom_focal_length')
+        col.prop(geotracker, 'static_focal_length')
+
         col.prop(geotracker, 'focal_length_mode', text='Mode')
-        col.prop(geotracker, 'focal_length_estimation')
+        row = col.row()
+        row.enabled = geotracker.focal_length_mode != 'CAMERA_FOCAL_LENGTH'
+        row.prop(geotracker, 'focal_length_estimation')
+
         row = col.row(align=True)
         row.prop(cam_data, 'lens')
         op = row.operator(GTConfig.gt_actor_idname, text='', icon='KEY_DEHLT')
@@ -320,7 +327,10 @@ class GT_PT_TrackingPanel(AllVisible):
         layout = self.layout
         box = layout.box()
         col = box.column()
-        col.prop(geotracker, 'track_focal_length')
+
+        row = col.row()
+        row.enabled = geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH'
+        row.prop(geotracker, 'track_focal_length')
 
         row = box.row(align=True)
         row.operator(GTConfig.gt_track_prev_idname, text=' ',
