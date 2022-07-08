@@ -104,7 +104,11 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     static_focal_length: bpy.props.FloatProperty(name='Static FL',
                                                  default=50.0,
                                                  min=0.1, max=5000.0)
-    focal_length_mode: bpy.props.IntProperty(name='FL mode', default=0)
+    focal_length_mode: bpy.props.EnumProperty(name='Focal length mode', items=[
+        ('CAMERA_FOCAL_LENGTH', 'CAMERA FOCAL LENGTH', 'Camera focal length', 0),
+        ('STATIC_FOCAL_LENGTH', 'STATIC FOCAL LENGTH', 'Static focal length', 1),
+        ('ZOOM_FOCAL_LENGTH', 'ZOOM FOCAL LENGTH', 'Zoom focal length', 2),
+    ], description='Focal length mode')
 
     def get_serial_str(self) -> str:
         return self.serial_str

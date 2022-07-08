@@ -23,7 +23,7 @@ from typing import Any, Tuple, List, Dict
 import bpy
 from bpy.types import Object
 
-from ..geotracker_config import get_gt_settings
+from ..geotracker_config import GTConfig, get_gt_settings
 from ..utils import coords
 from ..utils.animation import (get_safe_evaluated_fcurve,
                                create_locrot_keyframe,
@@ -142,15 +142,15 @@ class GTMask2DInput(pkt_module().Mask2DInputI):
 class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
     def __init__(self):
         super().__init__()
-        flm =pkt_module().GeoTracker.FocalLengthMode
+        flm = pkt_module().GeoTracker.FocalLengthMode
         self._modes: Dict = {
-            mode.value: mode for mode in [
+            mode.name: mode for mode in [
             flm.CAMERA_FOCAL_LENGTH,
             flm.STATIC_FOCAL_LENGTH,
             flm.ZOOM_FOCAL_LENGTH
         ]}
 
-    def _mode_by_value(self, value: int) -> Any:
+    def _mode_by_value(self, value: str) -> Any:
         if value in self._modes.keys():
             return self._modes[value]
         return pkt_module().GeoTracker.FocalLengthMode.CAMERA_FOCAL_LENGTH
@@ -160,15 +160,19 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return
-        geotracker.focal_length_mode = enum_value.value
+        geotracker.focal_length_mode = enum_value.name
 
     def _set_static_fl(self, static_fl: float) -> None:
+        _log_output(f'_set_static_fl: {static_fl}')
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
-        if not geotracker or not geotracker.camobj:
+        if not geotracker:
             return
         geotracker.static_focal_length = static_fl
+        if not geotracker.camobj:
+            return
         cam_data = geotracker.camobj.data
+        _log_output('remove_fcurve_from_object: lens')
         remove_fcurve_from_object(cam_data, 'lens')
         cam_data.lens = static_fl
 
@@ -298,12 +302,10 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         self._set_fl_mode(pkt_module().GeoTracker.FocalLengthMode.CAMERA_FOCAL_LENGTH)
 
     def focal_length_mode(self) -> Any:
-        _log_output('focal_length_mode call')
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return pkt_module().GeoTracker.FocalLengthMode.CAMERA_FOCAL_LENGTH
-        _log_output(f'focal_length_mode: {geotracker.focal_length_mode}')
         return self._mode_by_value(geotracker.focal_length_mode)
 
     def set_zoom_focal_length_at(self, frame: int, fl: float) -> None:

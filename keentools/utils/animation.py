@@ -75,19 +75,22 @@ def clear_whole_fcurve(obj: Object, data_path: str, index: int=0,
     return value
 
 
-def remove_fcurve_point(obj: Object, data_path: str, index: int,
-                        frame: int) -> None:
+def remove_fcurve_point(obj: Object, frame: int, data_path: str,
+                        index: int=0, remove_empty_curve=True,
+                        remove_empty_action=True) -> None:
     action = get_action(obj)
     if action is None:
-        return None
+        return
     fcurve = _get_action_fcurve(action, data_path, index=index)
     if not fcurve:
-        return None
+        return
     points = [p for p in fcurve.keyframe_points if p.co[0] == frame]
     for p in reversed(points):
         fcurve.keyframe_points.remove(p)
-    if fcurve.is_empty:
+    if remove_empty_curve and fcurve.is_empty:
         action.fcurves.remove(fcurve)
+    if remove_empty_action and len(action.fcurves) == 0:
+        bpy.data.actions.remove(action)
 
 
 def _put_anim_data_in_fcurve(fcurve: Optional[FCurve],

@@ -34,7 +34,9 @@ from ...utils.animation import (create_locrot_keyframe,
                                 extend_scene_timeline_start,
                                 extend_scene_timeline_end,
                                 reset_object_action,
-                                delete_animation_on_frames)
+                                delete_animation_on_frames,
+                                remove_fcurve_point,
+                                remove_fcurve_from_object)
 from ...utils.other import bpy_progress_begin, bpy_progress_end
 from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
@@ -665,6 +667,46 @@ def clear_all_act() -> ActionStatus:
     GTLoader.place_camera()
     GTLoader.update_all_viewport_shaders()
     GTLoader.viewport_area_redraw()
+    return ActionStatus(True, 'ok')
+
+
+def remove_focal_keyframe_act() -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_error = logger.error
+
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        msg = 'GeoTracker item is not found'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    if not geotracker.camobj:
+        msg = 'GeoTracker camera is not found'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    remove_fcurve_point(geotracker.camobj.data, settings.current_frame(), 'lens')
+    return ActionStatus(True, 'ok')
+
+
+def remove_focal_keyframes_act() -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_error = logger.error
+
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        msg = 'GeoTracker item is not found'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    if not geotracker.camobj:
+        msg = 'GeoTracker camera is not found'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    remove_fcurve_from_object(geotracker.camobj.data, 'lens')
     return ActionStatus(True, 'ok')
 
 

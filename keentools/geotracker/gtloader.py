@@ -243,12 +243,16 @@ class GTLoader:
     def solve(cls, estimate_focal_length: bool=False) -> bool:
         _log_output('GTloader.solve called')
         settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
         gt = cls.kt_geotracker()
         keyframe = settings.current_frame()
-        if not estimate_focal_length:
-            gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.CAMERA_FOCAL_LENGTH)
-        else:
+
+        if geotracker.focal_length_mode == 'STATIC_FOCAL_LENGTH':
             gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.STATIC_FOCAL_LENGTH)
+        elif geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH':
+            gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.ZOOM_FOCAL_LENGTH)
+        else:
+            gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.CAMERA_FOCAL_LENGTH)
 
         gt.solve_for_current_pins(keyframe, estimate_focal_length)
         _log_output('GTloader.solve finished')

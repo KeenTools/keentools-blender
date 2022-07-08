@@ -271,6 +271,7 @@ class GT_PT_CameraPanel(AllVisible):
 
         cam_data = geotracker.camobj.data
         col = layout.column()
+        col.prop(geotracker, 'focal_length_mode', text='Mode')
         col.prop(geotracker, 'focal_length_estimation')
         row = col.row(align=True)
         row.prop(cam_data, 'lens')

@@ -163,6 +163,7 @@ class GT_OT_MovePin(bpy.types.Operator):
                          '{}'.format(str(err)))
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+            settings.force_out_pinmode = True
             self._before_operator_finish()
             return {'FINISHED'}
         except Exception as err:
