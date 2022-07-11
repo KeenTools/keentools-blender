@@ -390,8 +390,10 @@ class KTPREF_OT_ComputerInfo(bpy.types.Operator):
         addon_info = ['---'] + _get_addon_and_core_version_info()
         system_info = ['---'] + get_system_info()
         gpu_info = ['---'] + get_gpu_info()
-        all_info = addon_info + system_info + gpu_info + ['---', '']
-        context.window_manager.clipboard = '\n'.join(all_info)
+        all_info = '\n'.join(addon_info + system_info + gpu_info + ['---', ''])
+        context.window_manager.clipboard = all_info
+        logger = logging.getLogger(__name__)
+        logger.info('\n' + all_info)
         self.report({'INFO'}, 'Computer info is in clipboard!')
         return {'FINISHED'}
 
