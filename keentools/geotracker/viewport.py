@@ -161,7 +161,9 @@ class GTViewport(KTViewport):
 
         x1, y1, x2, y2 = coords.get_camera_border(area)
 
-        p2d = self.img_points(gt, keyframe)
+        p2d = self.points2d().get_vertices()
+        if GTConfig.show_markers_at_camera_corners:
+            p2d = p2d[:-2]
         p3d = self.points3d().get_vertices()
 
         wire = self.residuals()
@@ -200,8 +202,7 @@ class GTViewport(KTViewport):
             verts2.append(coords.image_space_to_region(x, y,
                                                        x1, y1, x2, y2))
             wire.edge_lengths.append(0)
-            verts2.append(coords.image_space_to_region(p2d[i][0], p2d[i][1],
-                                                       x1, y1, x2, y2))
+            verts2.append((p2d[i][0], p2d[i][1]))
             # length = np.linalg.norm((v[0]-p2d[i][0], v[1]-p2d[i][1]))
             length = 22.0
             wire.edge_lengths.append(length)
