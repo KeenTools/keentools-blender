@@ -40,6 +40,7 @@ CLASSES_TO_REGISTER = (
     KTPREF_OT_OpenManualInstallPage,
     KTPREF_OT_OpenURL,
     KTPREF_OT_DownloadsURL,
+    KTPREF_OT_ComputerInfo,
     KT_OT_AddonSettings,
     KT_OT_AddonSearch,
     KT_OT_OpenURL,

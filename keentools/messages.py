@@ -128,6 +128,22 @@ def get_system_info():
     return txt_arr
 
 
+def get_gpu_info():
+    txt_arr = []
+    try:
+        import gpu
+        txt_arr.append(f'Video: {gpu.platform.renderer_get()}')
+        txt_arr.append(f'Vendor: {gpu.platform.vendor_get()}')
+        txt_arr.append(f'Version: {gpu.platform.version_get()}')
+        txt_arr.append(f'max_texture_size: '
+                       f'{gpu.capabilities.max_texture_size_get()}')
+        txt_arr.append(f'max_textures: '
+                       f'{gpu.capabilities.max_textures_get()}')
+    except Exception as err:
+        txt_arr.append(str(err))
+    return txt_arr
+
+
 def draw_system_info(layout):
     box = layout.box()
     col = box.column()
@@ -139,12 +155,16 @@ def draw_system_info(layout):
 
 
 def draw_warning_labels(layout, content, alert=True, icon='INFO'):
-    col = layout.column()
+    row = layout.row()
+    col = row.column()
+    col.operator(Config.kt_pref_computer_info_idname,
+                 text='', icon=icon, emboss=False)
+
+    col = row.column()
     col.alert = alert
     col.scale_y = _get_text_scale_y()
-    for i, c in enumerate(content):
-        icon_first = icon if i == 0 else 'BLANK1'
-        col.label(text=c, icon=icon_first)
+    for i, txt in enumerate(content):
+        col.label(text=txt)
     return col
 
 

@@ -55,6 +55,7 @@ class Config:
     kt_install_pkt_from_file_idname = prefs_operators + '.install_pkt_from_file'
     kt_pref_open_url_idname = prefs_operators + '.open_url'
     kt_pref_downloads_url_idname = prefs_operators + '.downloads_url'
+    kt_pref_computer_info_idname = prefs_operators + '.computer_info'
 
     kt_open_manual_install_page_idname = prefs_operators + '.gt_open_manual_install_page'
     kt_copy_hardware_id_idname = prefs_operators + '.copy_hardware_id'
