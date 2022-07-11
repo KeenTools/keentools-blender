@@ -179,10 +179,11 @@ class GT_OT_MovePin(bpy.types.Operator):
             focal = GTLoader.updated_focal_length()
             if focal is not None:
                 camobj = geotracker.camobj
-                insert_keyframe_in_fcurve(camobj.data, frame, focal,
-                                          keyframe_type='KEYFRAME',
-                                          data_path='lens', index=0)
-                camobj.data.lens = focal
+                if not GTConfig.use_storage:
+                    insert_keyframe_in_fcurve(camobj.data, frame, focal,
+                                              keyframe_type='KEYFRAME',
+                                              data_path='lens', index=0)
+                    camobj.data.lens = focal
 
         vp = GTLoader.viewport()
         gt = GTLoader.kt_geotracker()

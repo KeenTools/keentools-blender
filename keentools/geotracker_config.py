@@ -58,7 +58,7 @@ class GTConfig:
     gt_center_geo_idname = operators + '.center_geo_btn'
     gt_magic_keyframe_idname = operators + '.magic_keyframe_btn'
     gt_remove_pins_idname = operators + '.remove_pins_btn'
-    gt_create_animation_idname = operators + '.create_animation_btn'
+    gt_create_animated_empty_idname = operators + '.create_animated_empty_btn'
     gt_exit_pinmode_idname = operators + '.exit_pinmode_btn'
     gt_interrupt_modal_idname = operators + '.interrupt_modal'
     gt_stop_precalc_idname = operators + '.stop_precalc_btn'

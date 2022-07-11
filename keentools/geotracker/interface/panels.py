@@ -270,11 +270,12 @@ class GT_PT_CameraPanel(AllVisible):
         layout = self.layout
 
         cam_data = geotracker.camobj.data
-        col = layout.column()
-
+        col = layout.column(align=True)
+        col.enabled = False
         col.prop(geotracker, 'default_zoom_focal_length')
         col.prop(geotracker, 'static_focal_length')
 
+        col = layout.column()
         col.prop(geotracker, 'focal_length_mode', text='Mode')
         row = col.row()
         row.enabled = geotracker.focal_length_mode != 'CAMERA_FOCAL_LENGTH'
@@ -408,21 +409,4 @@ class GT_PT_AnimationPanel(AllVisible):
 
     def draw(self, context):
         layout = self.layout
-        settings = get_gt_settings()
-
-        row = layout.row()
-        op = row.operator(GTConfig.gt_actor_idname,
-                          text='<--[')
-        op.action = 'extend_scene_range_start'
-        op = row.operator(GTConfig.gt_actor_idname,
-                          text=']-->')
-        op.action = 'extend_scene_range_end'
-
-        row = layout.row()
-        row.prop(settings, 'anim_start', text='')
-        row.prop(settings, 'anim_end', text='')
-
-        layout.operator(GTConfig.gt_create_animation_idname)
-
-        op = layout.operator(GTConfig.gt_actor_idname, text='Create Keyframes')
-        op.action = 'create_keyframe_animation'
+        layout.operator(GTConfig.gt_create_animated_empty_idname)

@@ -35,7 +35,8 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     clear_direction_act,
                                     clear_all_act,
                                     remove_pins_act,
-                                    center_geo_act)
+                                    center_geo_act,
+                                    create_animated_empty_act)
 
 
 class ButtonOperator:
@@ -284,14 +285,16 @@ class GT_OT_RemovePins(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_BtnCreateAnimation(ButtonOperator, bpy.types.Operator):
-    bl_idname = GTConfig.gt_create_animation_idname
-    bl_label = 'Create animation'
-    bl_description = 'Create animation to geometry'
+class GT_OT_CreateAnimatedEmpty(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_create_animated_empty_idname
+    bl_label = 'Create animated Empty'
+    bl_description = 'Copy animation to Empty'
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='create_animation')
+        act_status = create_animated_empty_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -364,7 +367,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_CenterGeo,
                   GT_OT_BtnMagicKeyframe,
                   GT_OT_RemovePins,
-                  GT_OT_BtnCreateAnimation,
+                  GT_OT_CreateAnimatedEmpty,
                   GT_OT_ExitPinMode,
                   GT_OT_InterruptModal,
                   GT_OT_StopPrecalc)

@@ -36,11 +36,13 @@ from ...utils.animation import (create_locrot_keyframe,
                                 reset_object_action,
                                 delete_animation_on_frames,
                                 remove_fcurve_point,
-                                remove_fcurve_from_object)
+                                remove_fcurve_from_object,
+                                create_empty_object)
 from ...utils.other import bpy_progress_begin, bpy_progress_end
 from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
 from ...utils.coords import update_depsgraph
+from ...utils.animation import get_action
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
@@ -748,6 +750,29 @@ def center_geo_act() -> ActionStatus:
 
     gt = GTLoader.kt_geotracker()
     gt.center_geo(settings.current_frame())
+    return ActionStatus(True, 'ok')
+
+
+def create_animated_empty_act() -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_error = logger.error
+
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        msg = 'GeoTracker item is not found'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    action = get_action(geotracker.animatable_object())
+    if not action:
+        msg = 'Animation is not created on source object'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    obj = create_empty_object('GTEmpty')
+    anim_data = obj.animation_data_create()
+    anim_data.action = action
     return ActionStatus(True, 'ok')
 
 

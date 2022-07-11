@@ -326,7 +326,12 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         _log_output('set_zoom_focal_length_at')
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
-        if not geotracker:
+        if not geotracker or not geotracker.camobj:
             return
-        insert_keyframe_in_fcurve(geotracker.camobj.data, frame, self._focal_px_to_mm(fl),
-                                  'KEYFRAME', 'lens')
+        cam_data = geotracker.camobj.data
+        if geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH':
+            insert_keyframe_in_fcurve(cam_data, frame,
+                                      self._focal_px_to_mm(fl),
+                                      'KEYFRAME', 'lens')
+        else:
+            cam_data.lens = self._focal_px_to_mm(fl)

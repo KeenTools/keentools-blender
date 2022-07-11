@@ -157,8 +157,8 @@ def _link_object_to_current_scene_collection(obj: Object) -> None:
     col.objects.link(obj)
 
 
-def _create_empty_object(name: str) -> Object:
-    control = bpy.data.objects.new(name + 'Empty', None)  # Empty-object
+def create_empty_object(name: str) -> Object:
+    control = bpy.data.objects.new(name, None)  # Empty-object
     _link_object_to_current_scene_collection(control)
     control.empty_display_type = 'PLAIN_AXES'
     control.empty_display_size = 2.5
@@ -183,7 +183,7 @@ def create_animation_on_object(obj: Object, anim_dict: dict,
 
 
 def create_animated_empty(anim_dict: dict) -> Object:
-    empty_obj = _create_empty_object('animator')
+    empty_obj = create_empty_object('animatorEmpty')
     create_animation_on_object(empty_obj, anim_dict, 'gtAction')
     return empty_obj
 
