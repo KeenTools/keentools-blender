@@ -163,7 +163,7 @@ def draw_warning_labels(layout, content, alert=True, icon='INFO'):
     col = row.column()
     col.alert = alert
     col.scale_y = _get_text_scale_y()
-    for i, txt in enumerate(content):
+    for txt in content:
         col.label(text=txt)
     return col
 
