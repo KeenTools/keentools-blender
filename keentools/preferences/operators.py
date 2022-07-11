@@ -31,6 +31,7 @@ from ..utils.ui_redraw import (force_ui_redraw,
                                find_modules_by_name,
                                collapse_all_modules,
                                mark_old_modules)
+from ..messages import get_system_info, get_gpu_info
 
 
 _please_accept_eula = 'You need to accept our EULA before installation'
@@ -47,6 +48,17 @@ def get_product_license_manager(product):
 def _get_hardware_id(product='facebuilder'):
     lm = get_product_license_manager(product)
     return lm.hardware_id()
+
+
+def _get_addon_and_core_version_info():
+    txt_arr = []
+    try:
+        txt_arr.append(f'Addon: {Config.addon_name} {Config.addon_version}')
+        txt_arr.append(f'Core version {pkt_module().__version__}, '
+                       f'built {pkt_module().build_time}')
+    except Exception as err:
+        txt_arr.append(str(err))
+    return txt_arr
 
 
 class KTPREF_OT_OpenPktLicensePage(bpy.types.Operator):
@@ -365,6 +377,24 @@ class KTPREF_OT_DownloadsURL(bpy.types.Operator):
 
     def execute(self, context):
         bpy.ops.wm.url_open(url=self.url)
+        return {'FINISHED'}
+
+
+class KTPREF_OT_ComputerInfo(bpy.types.Operator):
+    bl_idname = Config.kt_pref_computer_info_idname
+    bl_label = 'Computer info'
+    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_description = 'Copy computer info to clipboard'
+
+    def execute(self, context):
+        addon_info = ['---'] + _get_addon_and_core_version_info()
+        system_info = ['---'] + get_system_info()
+        gpu_info = ['---'] + get_gpu_info()
+        all_info = '\n'.join(addon_info + system_info + gpu_info + ['---', ''])
+        context.window_manager.clipboard = all_info
+        logger = logging.getLogger(__name__)
+        logger.info('\n' + all_info)
+        self.report({'INFO'}, 'Computer info is in clipboard!')
         return {'FINISHED'}
 
 
