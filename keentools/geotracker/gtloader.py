@@ -78,6 +78,8 @@ class GTLoader:
     def get_geomobj_mode(cls) -> str:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
+        if not geotracker or not geotracker.geomobj:
+            return 'OBJECT'
         return geotracker.geomobj.mode
 
     @classmethod
@@ -295,7 +297,7 @@ class GTLoader:
     def update_viewport_wireframe(cls) -> None:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
-        if not geotracker:
+        if not geotracker or not geotracker.geomobj:
             return
 
         vp = GTLoader.viewport()
@@ -315,7 +317,7 @@ class GTLoader:
         kid = settings.current_frame()
 
         geotracker = settings.get_current_geotracker_item()
-        if not geotracker:
+        if not geotracker or not geotracker.geomobj:
             return
 
         vp.update_surface_points(gt, geotracker.geomobj, kid)

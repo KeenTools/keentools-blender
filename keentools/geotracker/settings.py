@@ -33,12 +33,42 @@ from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_scale_vec_4_from_matrix_world)
 
 
+_logger: Any = logging.getLogger(__name__)
+
+
+def _log_output(message: str) -> None:
+    global logger
+    _logger.debug(message)
+
+
 def is_mesh(self, obj: Optional[Object]) -> bool:
     return obj and obj.type == 'MESH'
 
 
 def is_camera(self, obj: Optional[Object]) -> bool:
     return obj and obj.type == 'CAMERA'
+
+
+def update_camobj(self, context: Any) -> None:
+    _log_output('update_camera')
+    _log_output(f'self: {self.camobj}')
+    if not self.camobj:
+        settings = get_gt_settings()
+        if settings.pinmode:
+            settings.force_out_pinmode = True
+            return
+    GTLoader.update_all_viewport_shaders()
+
+
+def update_geomobj(self, context: Any) -> None:
+    _log_output('update_geomobj')
+    _log_output(f'self: {self.geomobj}')
+    if not self.geomobj:
+        settings = get_gt_settings()
+        if settings.pinmode:
+            settings.force_out_pinmode = True
+            return
+    GTLoader.update_all_viewport_shaders()
 
 
 def update_selection(self, context) -> None:
@@ -73,10 +103,12 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     serial_str: bpy.props.StringProperty(name='GeoTracker Serialization string')
     geomobj: bpy.props.PointerProperty(name='Geom object',
                                        type=bpy.types.Object,
-                                       poll=is_mesh, update=update_selection)
+                                       poll=is_mesh,
+                                       update=update_geomobj)
     camobj: bpy.props.PointerProperty(name='Camera object',
                                       type=bpy.types.Object,
-                                      poll=is_camera, update=update_selection)
+                                      poll=is_camera,
+                                      update=update_camobj)
     movie_clip: bpy.props.PointerProperty(name='Movie Clip',
                                           type=bpy.types.MovieClip,
                                           update=update_selection)

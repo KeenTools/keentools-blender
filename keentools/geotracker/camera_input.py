@@ -46,7 +46,8 @@ class GTCameraInput(pkt_module().TrackerCameraInputI):
     def projection(self, frame: int) -> Any:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
-        if not geotracker:
+        if not geotracker or not geotracker.camobj:
+            _log_output('projection error: no geotracker or camera')
             return np.eye(4)
         camera = geotracker.camobj
         assert camera is not None
