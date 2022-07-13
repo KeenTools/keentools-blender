@@ -23,7 +23,7 @@ from typing import Any, Tuple, List, Dict
 import bpy
 from bpy.types import Object
 
-from ..geotracker_config import GTConfig, get_gt_settings
+from ..geotracker_config import get_gt_settings
 from ..utils import coords
 from ..utils.animation import (get_safe_evaluated_fcurve,
                                create_locrot_keyframe,
@@ -32,6 +32,7 @@ from ..utils.animation import (get_safe_evaluated_fcurve,
                                insert_keyframe_in_fcurve,
                                remove_fcurve_from_object)
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..geotracker.gtloader import GTLoader
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -236,8 +237,9 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
             _log_output(f'set_model_mat3:\n{mat}')
             geotracker.geomobj.matrix_world = mat
 
-        create_locrot_keyframe(geotracker.animatable_object(),
-            'KEYFRAME' if not settings.tracking_mode else 'JITTER')
+        gt = GTLoader.kt_geotracker()
+        keyframe_type = 'KEYFRAME' if gt.is_key_at(frame) else 'JITTER'
+        create_locrot_keyframe(geotracker.animatable_object(), keyframe_type)
         if current_frame != frame:
             settings.set_current_frame(current_frame)
 
