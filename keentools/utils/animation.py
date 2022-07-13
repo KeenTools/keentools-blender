@@ -167,7 +167,7 @@ def create_empty_object(name: str) -> Object:
     return control
 
 
-def create_animation_on_object(obj: Object, anim_dict: dict,
+def create_animation_on_object(obj: Object, anim_dict: Dict,
                                action_name: str='gtAction') -> None:
     action = _get_safe_action(obj, action_name)
     locrot_dict = get_locrot_dict()
@@ -182,7 +182,7 @@ def create_animation_on_object(obj: Object, anim_dict: dict,
         _put_anim_data_in_fcurve(fcurves[name], anim_dict[name])
 
 
-def create_animated_empty(anim_dict: dict) -> Object:
+def create_animated_empty(anim_dict: Dict) -> Object:
     empty_obj = create_empty_object('animatorEmpty')
     create_animation_on_object(empty_obj, anim_dict, 'gtAction')
     return empty_obj
@@ -195,13 +195,43 @@ def insert_point_in_fcurve(fcurve: FCurve, frame: int, value: float,
     return k
 
 
-def get_locrot_dict() -> dict:
+def get_locrot_dict() -> Dict:
     return {'location_x': {'data_path': 'location', 'index': 0},
             'location_y': {'data_path': 'location', 'index': 1},
             'location_z': {'data_path': 'location', 'index': 2},
             'rotation_euler_x': {'data_path': 'rotation_euler', 'index': 0},
             'rotation_euler_y': {'data_path': 'rotation_euler', 'index': 1},
             'rotation_euler_z': {'data_path': 'rotation_euler', 'index': 2}}
+
+
+def get_locrot_keys_in_frame(obj: Object, frame: int) -> Dict:
+    res = dict()
+    action = get_action(obj)
+    if not action:
+        return res
+    locrot_dict = get_locrot_dict()
+    for name in locrot_dict.keys():
+        fcurve = _get_action_fcurve(action, locrot_dict[name]['data_path'],
+                                    index=locrot_dict[name]['index'])
+        if fcurve is None:
+            continue
+        points = [p.co[1] for p in fcurve.keyframe_points if p.co[0] == frame]
+        if len(points) != 0:
+            res[name] = {'data_path': locrot_dict[name]['data_path'],
+                         'index': locrot_dict[name]['index'],
+                         'value': points[0]}
+    return res
+
+
+def put_keys_in_frame(obj: Object, frame: int, anim_dict: Dict) -> None:
+    if len(anim_dict.keys()) == 0:
+        return
+    for name in anim_dict.keys():
+        row = anim_dict[name]
+        insert_keyframe_in_fcurve(obj, frame, row['value'],
+                                  keyframe_type='KEYFRAME',
+                                  data_path=row['data_path'],
+                                  index=row['index'])
 
 
 def create_animation_locrot_keyframe_force(obj: Object) -> None:
