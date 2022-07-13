@@ -23,7 +23,9 @@ import bpy
 from ..geotracker_config import GTConfig
 from .utils.geotracker_acts import (add_keyframe_act,
                                     fit_render_size_act,
-                                    fit_time_length_act)
+                                    fit_time_length_act,
+                                    remove_focal_keyframe_act,
+                                    remove_focal_keyframes_act)
 from .utils.precalc import precalc_with_runner_act
 
 
@@ -67,6 +69,22 @@ class GT_OT_Actor(bpy.types.Operator):
 
         elif self.action == 'fit_time_length':
             act_status = fit_time_length_act()
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+            else:
+                self.report({'INFO'}, act_status.error_message)
+            return {'FINISHED'}
+
+        elif self.action == 'remove_focal_keyframe':
+            act_status = remove_focal_keyframe_act()
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+            else:
+                self.report({'INFO'}, act_status.error_message)
+            return {'FINISHED'}
+
+        elif self.action == 'remove_focal_keyframes':
+            act_status = remove_focal_keyframes_act()
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
             else:

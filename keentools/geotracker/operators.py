@@ -33,7 +33,10 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     refine_all_act,
                                     clear_between_keyframes_act,
                                     clear_direction_act,
-                                    clear_all_act)
+                                    clear_all_act,
+                                    remove_pins_act,
+                                    center_geo_act,
+                                    create_animated_empty_act)
 
 
 class ButtonOperator:
@@ -245,14 +248,16 @@ class GT_OT_RefineAll(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_BtnCenterGeo(ButtonOperator, bpy.types.Operator):
+class GT_OT_CenterGeo(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_center_geo_idname
     bl_label = 'center geo'
     bl_description = 'Center geometry in the view'
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='center_geo')
+        act_status = center_geo_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -267,25 +272,29 @@ class GT_OT_BtnMagicKeyframe(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_BtnRemovePins(ButtonOperator, bpy.types.Operator):
+class GT_OT_RemovePins(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_remove_pins_idname
     bl_label = 'remove pins'
     bl_description = 'Remove all pins from view'
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='remove_pins')
+        act_status = remove_pins_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
-class GT_OT_BtnCreateAnimation(ButtonOperator, bpy.types.Operator):
-    bl_idname = GTConfig.gt_create_animation_idname
-    bl_label = 'Create animation'
-    bl_description = 'Create animation to geometry'
+class GT_OT_CreateAnimatedEmpty(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_create_animated_empty_idname
+    bl_label = 'Create animated Empty'
+    bl_description = 'Copy animation to Empty'
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_actor_idname)
-        op('EXEC_DEFAULT', action='create_animation')
+        act_status = create_animated_empty_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -355,10 +364,10 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_ClearTrackingBetween,
                   GT_OT_Refine,
                   GT_OT_RefineAll,
-                  GT_OT_BtnCenterGeo,
+                  GT_OT_CenterGeo,
                   GT_OT_BtnMagicKeyframe,
-                  GT_OT_BtnRemovePins,
-                  GT_OT_BtnCreateAnimation,
+                  GT_OT_RemovePins,
+                  GT_OT_CreateAnimatedEmpty,
                   GT_OT_ExitPinMode,
                   GT_OT_InterruptModal,
                   GT_OT_StopPrecalc)

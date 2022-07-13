@@ -41,6 +41,11 @@ class GTClassLoader:
         return GTMask2DInput
 
     @staticmethod
+    def GTGeoTrackerResultsStorage_class():
+        from .camera_input import GTGeoTrackerResultsStorage
+        return GTGeoTrackerResultsStorage
+
+    @staticmethod
     def GeoTracker_class():
         return pkt_module().GeoTracker
 

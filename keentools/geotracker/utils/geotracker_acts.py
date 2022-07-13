@@ -34,11 +34,15 @@ from ...utils.animation import (create_locrot_keyframe,
                                 extend_scene_timeline_start,
                                 extend_scene_timeline_end,
                                 reset_object_action,
-                                delete_animation_on_frames)
+                                delete_animation_on_frames,
+                                remove_fcurve_point,
+                                remove_fcurve_from_object,
+                                create_empty_object)
 from ...utils.other import bpy_progress_begin, bpy_progress_end
 from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
 from ...utils.coords import update_depsgraph
+from ...utils.animation import get_action
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
@@ -104,7 +108,8 @@ def add_keyframe_act() -> ActionStatus:
     GTLoader.safe_keyframe_add(settings.current_frame(),
                                GTLoader.calc_model_matrix())
     GTLoader.save_geotracker()
-    create_locrot_keyframe(geotracker.animatable_object(), 'KEYFRAME')
+    if not GTConfig.use_storage:
+        create_locrot_keyframe(geotracker.animatable_object(), 'KEYFRAME')
     logger.debug('KEYFRAME ADDED')
 
     GTLoader.update_all_viewport_shaders()
@@ -128,7 +133,8 @@ def remove_keyframe_act() -> ActionStatus:
         return ActionStatus(False, 'No GeoTracker keyframe at this frame')
 
     gt.remove_keyframe(settings.current_frame())
-    delete_locrot_keyframe(geotracker.animatable_object())
+    if not GTConfig.use_storage:
+        delete_locrot_keyframe(geotracker.animatable_object())
     reset_object_action(geotracker.animatable_object())
     update_depsgraph()
     GTLoader.save_geotracker()
@@ -483,6 +489,7 @@ def refine_act() -> ActionStatus:
 
     start_time = time.time()
     bpy_progress_begin(0, 100)
+    settings.tracking_mode = True
     result = False
     try:
         result = gt.refine(current_frame, geotracker.precalc_path,
@@ -496,6 +503,7 @@ def refine_act() -> ActionStatus:
     except Exception as err:
         log_error(f'Unknown Exception refine_act: {str(err)}')
     finally:
+        settings.tracking_mode = False
         bpy_progress_end()
         overall_time = time.time() - start_time
         log_output('Refine calculation time: {:.2f} sec'.format(overall_time))
@@ -531,6 +539,7 @@ def refine_all_act() -> ActionStatus:
 
     start_time = time.time()
     bpy_progress_begin(0, 100)
+    settings.tracking_mode = True
     result = False
     try:
         result = gt.refine_all(geotracker.precalc_path, progress_callback)
@@ -543,6 +552,7 @@ def refine_all_act() -> ActionStatus:
     except Exception as err:
         log_error(f'Unknown Exception refine_all_act: {str(err)}')
     finally:
+        settings.tracking_mode = False
         bpy_progress_end()
         overall_time = time.time() - start_time
         log_output('Refine calculation time: {:.2f} sec'.format(overall_time))
@@ -611,6 +621,7 @@ def clear_direction_act(forward: bool) -> ActionStatus:
     gt = GTLoader.kt_geotracker()
     before_frame_set = _active_frames(gt)
     try:
+        log_output(f'clear_direction_act: {current_frame} {forward}')
         gt.remove_track_in_direction(current_frame, forward=forward)
     except Exception as err:
         log_error(f'Unknown Exception clear_direction_act: {str(err)}')
@@ -661,7 +672,113 @@ def clear_all_act() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
+def remove_focal_keyframe_act() -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_error = logger.error
+
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        msg = 'GeoTracker item is not found'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    if not geotracker.camobj:
+        msg = 'GeoTracker camera is not found'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    remove_fcurve_point(geotracker.camobj.data, settings.current_frame(), 'lens')
+    return ActionStatus(True, 'ok')
+
+
+def remove_focal_keyframes_act() -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_error = logger.error
+
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        msg = 'GeoTracker item is not found'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    if not geotracker.camobj:
+        msg = 'GeoTracker camera is not found'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    remove_fcurve_from_object(geotracker.camobj.data, 'lens')
+    return ActionStatus(True, 'ok')
+
+
+def remove_pins_act() -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_error = logger.error
+
+    settings = get_gt_settings()
+    if not settings.pinmode:
+        msg = 'Remove pins can be called in PinMode only'
+        log_error(msg)
+        return ActionStatus(False, msg)
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        msg = 'GeoTracker item is not found'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    gt = GTLoader.kt_geotracker()
+    gt.remove_pins()
+    GTLoader.update_all_viewport_shaders()
+    return ActionStatus(True, 'ok')
+
+
+def center_geo_act() -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_error = logger.error
+
+    settings = get_gt_settings()
+    if not settings.pinmode:
+        msg = 'Center geo can be called in PinMode only'
+        log_error(msg)
+        return ActionStatus(False, msg)
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        msg = 'GeoTracker item is not found'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    gt = GTLoader.kt_geotracker()
+    gt.center_geo(settings.current_frame())
+    return ActionStatus(True, 'ok')
+
+
+def create_animated_empty_act() -> ActionStatus:
+    logger = logging.getLogger(__name__)
+    log_error = logger.error
+
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        msg = 'GeoTracker item is not found'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    action = get_action(geotracker.animatable_object())
+    if not action:
+        msg = 'Animation is not created on source object'
+        log_error(msg)
+        return ActionStatus(False, msg)
+
+    obj = create_empty_object('GTEmpty')
+    anim_data = obj.animation_data_create()
+    anim_data.action = action
+    return ActionStatus(True, 'ok')
+
+
 def create_animation_on_frames(frames: List, animate_focal: bool=False) -> None:
+    if GTConfig.use_storage:
+        return
     logger = logging.getLogger(__name__)
     log_output = logger.debug
     settings = get_gt_settings()

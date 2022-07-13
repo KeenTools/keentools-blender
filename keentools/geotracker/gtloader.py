@@ -23,15 +23,35 @@ import numpy as np
 import bpy
 from bpy.types import Area
 
-from ..geotracker_config import get_gt_settings
+from ..addon_config import Config, get_operator, ErrorType
+from ..geotracker_config import GTConfig, get_gt_settings
 from .viewport import GTViewport
 from ..utils import coords
 from .gt_class_loader import GTClassLoader
 from ..utils.timer import KTStopShaderTimer
 from ..utils.ui_redraw import force_ui_redraw
+from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
-def force_stop_gt_shaders():
+_logger: Any = logging.getLogger(__name__)
+
+
+def _log_output(message: str) -> None:
+    global logger
+    _logger.debug(message)
+
+
+def _log_warning(message):
+    global logger
+    _logger.warning(message)
+
+
+def _log_error(message):
+    global logger
+    _logger.error(message)
+
+
+def force_stop_gt_shaders() -> None:
     GTLoader.stop_viewport_shaders()
     force_ui_redraw('VIEW_3D')
 
@@ -47,16 +67,16 @@ class GTLoader:
     _kt_geotracker: Any = None
     _mask2d: Any = None
 
-    _check_shader_timer = KTStopShaderTimer(get_gt_settings, force_stop_gt_shaders)
+    _check_shader_timer: Any = KTStopShaderTimer(get_gt_settings,
+                                                 force_stop_gt_shaders)
 
     @classmethod
-    def start_shader_timer(cls, uuid):
+    def start_shader_timer(cls, uuid: str):
         cls._check_shader_timer.start(uuid)
 
     @classmethod
     def update_geomobj_mesh(cls) -> None:
-        logger = logging.getLogger(__name__)
-        logger.debug('update_geomobj_mesh UPDATE')
+        _log_output('update_geomobj_mesh UPDATE')
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
         geotracker.geomobj.update_from_editmode()
@@ -65,6 +85,8 @@ class GTLoader:
     def get_geomobj_mode(cls) -> str:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
+        if not geotracker or not geotracker.geomobj:
+            return 'OBJECT'
         return geotracker.geomobj.mode
 
     @classmethod
@@ -77,8 +99,8 @@ class GTLoader:
 
     @classmethod
     def geomobj_mode_changed_to_object(cls, update: bool=True) -> bool:
-        stored_mode = cls.get_stored_geomobj_mode()
-        current_mode = cls.get_geomobj_mode()
+        stored_mode: str = cls.get_stored_geomobj_mode()
+        current_mode: str = cls.get_geomobj_mode()
         if stored_mode == current_mode:
             return False
         if update:
@@ -101,11 +123,23 @@ class GTLoader:
         cls._image_input = GTClassLoader.GTImageInput_class()()
         cls._camera_input = GTClassLoader.GTCameraInput_class()()
         cls._mask2d = GTClassLoader.GTMask2DInput_class()()
-        cls._kt_geotracker = GTClassLoader.GeoTracker_class()(
-            cls._geo_input,
-            cls._camera_input,
-            cls._image_input,
-            cls._mask2d)
+        cls._storage = GTClassLoader.GTGeoTrackerResultsStorage_class()()
+
+        if GTConfig.use_storage:
+            cls._kt_geotracker = GTClassLoader.GeoTracker_class()(
+                cls._geo_input,
+                cls._camera_input,
+                cls._image_input,
+                cls._mask2d,
+                cls._storage
+            )
+        else:
+            cls._kt_geotracker = GTClassLoader.GeoTracker_class()(
+                cls._geo_input,
+                cls._camera_input,
+                cls._image_input,
+                cls._mask2d
+            )
         return cls._kt_geotracker
 
     @classmethod
@@ -116,15 +150,13 @@ class GTLoader:
 
     @classmethod
     def add_pin(cls, keyframe: int, pos: Tuple[float, float]) -> Any:
-        logger = logging.getLogger(__name__)
-        logger.debug('ADD PIN: {} {}'.format(pos[0], pos[1]))
+        _log_output(f'add_pin ADD PIN: {pos}')
         gt = cls.kt_geotracker()
-
         pin_result = gt.add_pin(keyframe, pos)
-        logger.debug('PIN RESULT: {}'.format(pin_result))
+        _log_output('add_pin PIN RESULT: {}'.format(pin_result))
         if pin_result:
             pin = gt.pin(keyframe, gt.pins_count() - 1)
-            logger.debug('ADDED PIN: {} {}'.format(pin.img_pos[0], pin.img_pos[1]))
+            _log_output(f'add_pin ADDED PIN: {pin.img_pos}')
             return pin
         return False
 
@@ -143,13 +175,11 @@ class GTLoader:
         vp = cls.viewport()
         gt = cls.kt_geotracker()
         vp.pins().set_pins(vp.img_points(gt, keyframe))
-        vp.pins().reset_current_pin()
 
     @classmethod
     def tag_redraw(cls, context: Any) -> None:
         if not bpy.app.background:
-            logger = logging.getLogger(__name__)
-            logger.debug('TAG REDRAW CALL')
+            _log_output('TAG REDRAW CALL')
             context.area.tag_redraw()
 
     @classmethod
@@ -158,73 +188,24 @@ class GTLoader:
         vp.tag_redraw()
 
     @classmethod
-    def place_camera_relative_to_model(cls, forced: bool=False) -> None:
-        logger = logging.getLogger(__name__)
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
-        if not geotracker:
-            return
-
-        gt = cls.kt_geotracker()
-        keyframe = settings.current_frame()
-        model = geotracker.geomobj
-        camera = geotracker.camobj
-        rot_mat2 = coords.xz_to_xy_rotation_matrix_4x4()
-
-        if gt.is_key_at(keyframe) or forced:
-            logger.debug('MATRIX FROM GEOTRACKER')
-            scale_vec = coords.get_scale_vec_4_from_matrix_world(model.matrix_world)
-            scminv = np.diag(1.0 / scale_vec)
-            gt_model_mat = gt.model_mat(keyframe)
-
-            try:
-                mat = np.array(model.matrix_world) @ scminv @ rot_mat2 @ np.linalg.inv(gt_model_mat)
-                camera.matrix_world = mat.transpose()
-            except Exception:
-                pass
-
-    @classmethod
-    def place_model_relative_to_camera(cls, forced: bool=False) -> None:
-        logger = logging.getLogger(__name__)
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
-        if not geotracker:
-            return
-
-        gt = cls.kt_geotracker()
-        keyframe = settings.current_frame()
-        model = geotracker.geomobj
-        camera = geotracker.camobj
-        rot_mat = coords.xy_to_xz_rotation_matrix_4x4()
-
-        if gt.is_key_at(keyframe) or forced:
-            logger.debug('MATRIX FROM GEOTRACKER')
-            scale_mat = coords.get_scale_matrix_4x4_from_matrix_world(model.matrix_world)
-            gt_model_mat = gt.model_mat(keyframe)
-            np_mw = np.array(camera.matrix_world) @ (gt_model_mat @
-                                                     rot_mat @ scale_mat)
-            model.matrix_world = np_mw.transpose()
-            logger.debug('place_model_relative_to_camera MW: \n'
-                         '{}'.format(model.matrix_world))
-            logger.debug('model_mat:\n{}'.format(gt_model_mat))
-        else:
-            logger.debug('MATRIX FROM OBJECT')
-
-
-    @classmethod
     def place_camera(cls, forced: bool=False) -> None:
-        logger = logging.getLogger(__name__)
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return
-
+        gt = cls.kt_geotracker()
+        keyframe = settings.current_frame()
+        if not gt.is_key_at(keyframe) and not forced:
+            return
+        gt_model_mat = gt.model_mat(keyframe)
         if geotracker.camera_mode():
-            logger.debug('place_camera_relative_to_model')
-            cls.place_camera_relative_to_model(forced=forced)
+            mat = coords.calc_bpy_camera_mat_relative_to_model(
+                geotracker.geomobj, gt_model_mat)
+            geotracker.camobj.matrix_world = mat
         else:
-            logger.debug('place_model_relative_to_camera')
-            cls.place_model_relative_to_camera(forced=forced)
+            mat = coords.calc_bpy_model_mat_relative_to_camera(
+                geotracker.camobj, geotracker.geomobj, gt_model_mat)
+            geotracker.geomobj.matrix_world = mat
 
     @classmethod
     def updated_focal_length(cls, force: bool=False) -> Optional[float]:
@@ -239,8 +220,7 @@ class GTLoader:
         proj_mat = gt.projection_mat(frame)
         focal = coords.focal_by_projection_matrix_mm(
             proj_mat, 36.0)  # Config.default_sensor_width
-        logger = logging.getLogger(__name__)
-        logger.debug('FOCAL ESTIMATED: {}'.format(focal))
+        _log_output('FOCAL ESTIMATED: {}'.format(focal))
         return focal * coords.compensate_view_scale()
 
     @classmethod
@@ -257,43 +237,45 @@ class GTLoader:
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return np.eye(4)
-
-        rot_mat = coords.xz_to_xy_rotation_matrix_4x4()
-
-        cam_mat = geotracker.camobj.matrix_world
-        geom_mw = geotracker.geomobj.matrix_world
-        scale_vec = coords.get_scale_vec_4_from_matrix_world(geom_mw)
-        scminv = np.diag(1.0 / scale_vec)
-        geom_mat = np.array(geom_mw, dtype=np.float32) @ scminv
-
-        nm = np.array(cam_mat.inverted_safe(),
-                      dtype=np.float32) @ geom_mat @ rot_mat
-        return nm
+        return geotracker.calc_model_matrix()
 
     @classmethod
     def safe_keyframe_add(cls, keyframe: int, mat: Any) -> None:
-        logger = logging.getLogger(__name__)
         gt = cls.kt_geotracker()
         if not gt.is_key_at(keyframe):
-            logger.debug('safe_keyframe_add: {}\n{}'.format(keyframe, mat))
+            _log_output('safe_keyframe_add: {}\n{}'.format(keyframe, mat))
             gt.set_keyframe(keyframe, mat)
         else:
             gt.update_model_mat(keyframe, mat)
 
     @classmethod
-    def solve(cls, estimate_focal_length: bool=False) -> bool:
-        logger = logging.getLogger(__name__)
-        logger.debug('GTloader.solve called')
+    def solve(cls) -> bool:
+        _log_output('GTloader.solve called')
         settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
         gt = cls.kt_geotracker()
         keyframe = settings.current_frame()
-        if not estimate_focal_length:
-            gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.CAMERA_FOCAL_LENGTH)
-        else:
-            gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.STATIC_FOCAL_LENGTH)
+        try:
+            if geotracker.focal_length_mode == 'STATIC_FOCAL_LENGTH':
+                gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.STATIC_FOCAL_LENGTH)
+            elif geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH':
+                gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.ZOOM_FOCAL_LENGTH)
+            else:
+                gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.CAMERA_FOCAL_LENGTH)
+                geotracker.focal_length_estimation = False
 
-        gt.solve_for_current_pins(keyframe, estimate_focal_length)
-        logger.debug('GTloader.solve finished')
+            gt.solve_for_current_pins(keyframe, geotracker.focal_length_estimation)
+
+        except pkt_module().UnlicensedException as err:
+            _log_error(f'solve UnlicensedException: \n{str(err)}')
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+            settings.force_out_pinmode = True
+            return False
+        except Exception as err:
+            _log_error(f'solve UNKNOWN EXCEPTION: \n{str(err)}')
+            return False
+        _log_output('GTloader.solve finished')
         return True
 
     @classmethod
@@ -317,14 +299,12 @@ class GTLoader:
         serial = geotracker.get_serial_str()
 
         if serial == '':
-            logger = logging.getLogger(__name__)
-            logger.warning('EMPTY SERIAL ERROR: {}'.format(settings.current_geotracker_num))
+            _log_warning('EMPTY SERIAL ERROR: {}'.format(settings.current_geotracker_num))
             return False
 
         gt = cls.kt_geotracker()
         if not gt.deserialize(serial):
-            logger = logging.getLogger(__name__)
-            logger.warning('DESERIALIZE ERROR: {}'.format(serial))
+            _log_warning('DESERIALIZE ERROR: {}'.format(serial))
             return False
         return True
 
@@ -332,7 +312,7 @@ class GTLoader:
     def update_viewport_wireframe(cls) -> None:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
-        if not geotracker:
+        if not geotracker or not geotracker.geomobj:
             return
 
         vp = GTLoader.viewport()
@@ -352,7 +332,7 @@ class GTLoader:
         kid = settings.current_frame()
 
         geotracker = settings.get_current_geotracker_item()
-        if not geotracker:
+        if not geotracker or not geotracker.geomobj:
             return
 
         vp.update_surface_points(gt, geotracker.geomobj, kid)
@@ -416,9 +396,8 @@ class GTLoader:
             texter.unregister_handler()
 
     @classmethod
-    def stop_viewport_shaders(cls):
+    def stop_viewport_shaders(cls) -> None:
         cls._check_shader_timer.stop()
         vp = cls.viewport()
         vp.unregister_handlers()
-        logger = logging.getLogger(__name__)
-        logger.debug('GT VIEWPORT SHADERS HAVE BEEN STOPPED')
+        _log_output('GT VIEWPORT SHADERS HAVE BEEN STOPPED')

@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+import numpy as np
 from typing import Optional, Tuple, Any
 
 import bpy
@@ -28,6 +29,16 @@ from ..utils.images import (np_array_from_bpy_image,
                             get_background_image_object,
                             gamma_np_image)
 from .utils.tracking import reload_precalc
+from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
+                            get_scale_vec_4_from_matrix_world)
+
+
+_logger: Any = logging.getLogger(__name__)
+
+
+def _log_output(message: str) -> None:
+    global logger
+    _logger.debug(message)
 
 
 def is_mesh(self, obj: Optional[Object]) -> bool:
@@ -36,6 +47,28 @@ def is_mesh(self, obj: Optional[Object]) -> bool:
 
 def is_camera(self, obj: Optional[Object]) -> bool:
     return obj and obj.type == 'CAMERA'
+
+
+def update_camobj(self, context: Any) -> None:
+    _log_output('update_camera')
+    _log_output(f'self: {self.camobj}')
+    if not self.camobj:
+        settings = get_gt_settings()
+        if settings.pinmode:
+            settings.force_out_pinmode = True
+            return
+    GTLoader.update_all_viewport_shaders()
+
+
+def update_geomobj(self, context: Any) -> None:
+    _log_output('update_geomobj')
+    _log_output(f'self: {self.geomobj}')
+    if not self.geomobj:
+        settings = get_gt_settings()
+        if settings.pinmode:
+            settings.force_out_pinmode = True
+            return
+    GTLoader.update_all_viewport_shaders()
 
 
 def update_selection(self, context) -> None:
@@ -70,10 +103,12 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     serial_str: bpy.props.StringProperty(name='GeoTracker Serialization string')
     geomobj: bpy.props.PointerProperty(name='Geom object',
                                        type=bpy.types.Object,
-                                       poll=is_mesh, update=update_selection)
+                                       poll=is_mesh,
+                                       update=update_geomobj)
     camobj: bpy.props.PointerProperty(name='Camera object',
                                       type=bpy.types.Object,
-                                      poll=is_camera, update=update_selection)
+                                      poll=is_camera,
+                                      update=update_camobj)
     movie_clip: bpy.props.PointerProperty(name='Movie Clip',
                                           type=bpy.types.MovieClip,
                                           update=update_selection)
@@ -95,6 +130,17 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     preview_gamma: bpy.props.FloatProperty(name='Gamma', default=1.0, min=0.1, max=3.0,
                                            update=_update_preview_gamma)
+    default_zoom_focal_length: bpy.props.FloatProperty(name='Default Zoom FL',
+                                                       default=50.0 / 36.0 * 1920,
+                                                       min=0.01, max=5000.0)
+    static_focal_length: bpy.props.FloatProperty(name='Static FL',
+                                                 default=50.0 / 36.0 * 1920,
+                                                 min=0.01, max=5000.0)
+    focal_length_mode: bpy.props.EnumProperty(name='Focal length mode', items=[
+        ('CAMERA_FOCAL_LENGTH', 'CAMERA FOCAL LENGTH', 'Camera focal length', 0),
+        ('STATIC_FOCAL_LENGTH', 'STATIC FOCAL LENGTH', 'Static focal length', 1),
+        ('ZOOM_FOCAL_LENGTH', 'ZOOM FOCAL LENGTH', 'Zoom focal length', 2),
+    ], description='Focal length mode')
 
     def get_serial_str(self) -> str:
         return self.serial_str
@@ -155,6 +201,22 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     def reload_precalc(self) -> Tuple[bool, str, Any]:
         return reload_precalc(self)
+
+    def calc_model_matrix(self) -> Any:
+        if not self.camobj or not self.geomobj:
+            return np.eye(4)
+
+        rot_mat = xz_to_xy_rotation_matrix_4x4()
+
+        cam_mat = self.camobj.matrix_world
+        geom_mw = self.geomobj.matrix_world
+        scale_vec = get_scale_vec_4_from_matrix_world(geom_mw)
+        scminv = np.diag(1.0 / scale_vec)
+        geom_mat = np.array(geom_mw, dtype=np.float32) @ scminv
+
+        nm = np.array(cam_mat.inverted_safe(),
+                      dtype=np.float32) @ geom_mat @ rot_mat
+        return nm
 
 
 class GTSceneSettings(bpy.types.PropertyGroup):

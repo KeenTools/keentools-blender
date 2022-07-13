@@ -162,6 +162,8 @@ class GT_OT_PinMode(bpy.types.Operator):
 
     @classmethod
     def _exit_pinmode(cls):
+        logger = logging.getLogger(__name__)
+        log_output = logger.debug
         settings = get_gt_settings()
         settings.pinmode = False
         geotracker = settings.get_current_geotracker_item()
@@ -173,6 +175,7 @@ class GT_OT_PinMode(bpy.types.Operator):
             unhide_viewport_ui_elements_from_object(area, geotracker.geomobj)
         GTLoader.save_geotracker()
         unregister_undo_redo_handlers()
+        log_output(f'_exit_pinmode: {settings.pinmode_id}')
 
     def _on_left_mouse_press(self, area, event):
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
@@ -221,7 +224,7 @@ class GT_OT_PinMode(bpy.types.Operator):
             mat = GTLoader.calc_model_matrix()
             gt.set_keyframe(kid, mat)
             create_locrot_keyframe(geotracker.animatable_object(), 'KEYFRAME')
-        if not GTLoader.solve(geotracker.focal_length_estimation):
+        if not GTLoader.solve():
             logger.error('DELETE PIN PROBLEM')
             return {'FINISHED'}
 

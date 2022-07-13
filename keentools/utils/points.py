@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+import logging
 
 import bpy
 import gpu
@@ -55,11 +56,17 @@ class KTScreenPins:
         return self._current_pin
 
     def set_current_pin(self, value):
+        logger = logging.getLogger(__name__)
+        log_output = logger.debug
+        log_output(f'set_current_pin: {value}')
         self._current_pin = value
 
     def reset_current_pin(self):
+        logger = logging.getLogger(__name__)
+        log_output = logger.debug
         self._current_pin = None
         self._current_pin_num = -1
+        log_output(f'reset_current_pin: {self._current_pin}')
 
 
 class KTShaderPoints:
