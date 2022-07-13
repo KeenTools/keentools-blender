@@ -155,22 +155,7 @@ class GT_OT_MovePin(bpy.types.Operator):
         frame = settings.current_frame()
         self._pin_drag(frame, area, mouse_x, mouse_y)
 
-        try:
-            GTLoader.solve(geotracker.focal_length_estimation)
-        except pkt_module().UnlicensedException as err:
-            logger = logging.getLogger(__name__)
-            logger.error('on_mouse_move UnlicensedException: '
-                         '{}'.format(str(err)))
-            warn = get_operator(Config.kt_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
-            settings.force_out_pinmode = True
-            self._before_operator_finish()
-            return {'FINISHED'}
-        except Exception as err:
-            logger = logging.getLogger(__name__)
-            logger.error('on_mouse_move UNKNOWN EXCEPTION: '
-                         '{}'.format(str(err)))
-            self.report({'ERROR'}, 'Unknown error (see console window)')
+        if not GTLoader.solve():
             self._before_operator_finish()
             return {'FINISHED'}
 

@@ -224,7 +224,7 @@ class GT_OT_PinMode(bpy.types.Operator):
             mat = GTLoader.calc_model_matrix()
             gt.set_keyframe(kid, mat)
             create_locrot_keyframe(geotracker.animatable_object(), 'KEYFRAME')
-        if not GTLoader.solve(geotracker.focal_length_estimation):
+        if not GTLoader.solve():
             logger.error('DELETE PIN PROBLEM')
             return {'FINISHED'}
 

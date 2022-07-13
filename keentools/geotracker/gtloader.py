@@ -23,12 +23,14 @@ import numpy as np
 import bpy
 from bpy.types import Area
 
+from ..addon_config import Config, get_operator, ErrorType
 from ..geotracker_config import GTConfig, get_gt_settings
 from .viewport import GTViewport
 from ..utils import coords
 from .gt_class_loader import GTClassLoader
 from ..utils.timer import KTStopShaderTimer
 from ..utils.ui_redraw import force_ui_redraw
+from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -42,6 +44,11 @@ def _log_output(message: str) -> None:
 def _log_warning(message):
     global logger
     _logger.warning(message)
+
+
+def _log_error(message):
+    global logger
+    _logger.error(message)
 
 
 def force_stop_gt_shaders() -> None:
@@ -242,24 +249,32 @@ class GTLoader:
             gt.update_model_mat(keyframe, mat)
 
     @classmethod
-    def solve(cls, estimate_focal_length: bool=False) -> bool:
+    def solve(cls) -> bool:
         _log_output('GTloader.solve called')
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
         gt = cls.kt_geotracker()
         keyframe = settings.current_frame()
-
-        if geotracker.focal_length_mode == 'STATIC_FOCAL_LENGTH':
-            gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.STATIC_FOCAL_LENGTH)
-        elif geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH':
-            gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.ZOOM_FOCAL_LENGTH)
-        else:
-            gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.CAMERA_FOCAL_LENGTH)
-            if estimate_focal_length:
-                estimate_focal_length = False
+        try:
+            if geotracker.focal_length_mode == 'STATIC_FOCAL_LENGTH':
+                gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.STATIC_FOCAL_LENGTH)
+            elif geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH':
+                gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.ZOOM_FOCAL_LENGTH)
+            else:
+                gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.CAMERA_FOCAL_LENGTH)
                 geotracker.focal_length_estimation = False
 
-        gt.solve_for_current_pins(keyframe, estimate_focal_length)
+            gt.solve_for_current_pins(keyframe, geotracker.focal_length_estimation)
+
+        except pkt_module().UnlicensedException as err:
+            _log_error(f'solve UnlicensedException: \n{str(err)}')
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+            settings.force_out_pinmode = True
+            return False
+        except Exception as err:
+            _log_error(f'solve UNKNOWN EXCEPTION: \n{str(err)}')
+            return False
         _log_output('GTloader.solve finished')
         return True
 
