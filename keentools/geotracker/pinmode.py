@@ -17,12 +17,13 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+from typing import Any
 from uuid import uuid4
 
 import bpy
 
 from ..addon_config import Config, get_operator, ErrorType
-from ..geotracker_config import GTConfig, get_gt_settings
+from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
 from .gtloader import GTLoader
 from ..utils.localview import exit_area_localview
 from ..utils import coords
@@ -31,24 +32,35 @@ from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
                            unhide_viewport_ui_elements_from_object)
 from ..utils.images import set_background_image_by_movieclip
-from ..utils.animation import create_locrot_keyframe
+from ..utils.bpy_common import bpy_current_frame
+
+
+_logger: Any = logging.getLogger(__name__)
+
+
+def _log_output(message: str) -> None:
+    global _logger
+    _logger.debug(message)
+
+
+def _log_error(message: str) -> None:
+    global _logger
+    _logger.error(message)
 
 
 def depsgraph_update_handler(scene, depsgraph):
     def _check_updated(depsgraph, name):
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
-        log_output('COUNT UPDATES: {}'.format(len(depsgraph.updates)))
-        log_output('ids: {}'.format([update.id.name for update in depsgraph.updates]))
+        _log_output('COUNT UPDATES: {}'.format(len(depsgraph.updates)))
+        _log_output('ids: {}'.format([update.id.name for update in depsgraph.updates]))
         for update in depsgraph.updates:
             if update.id.name != name:
                 continue
             if not update.is_updated_transform:
                 continue
-            log_output(f'update.id: {update.id.name}')
-            log_output(f'update.is_updated_geometry: {update.is_updated_geometry}')
-            log_output(f'update.is_updated_transform: {update.is_updated_transform}')
-            log_output(f'update.is_updated_shading: {update.is_updated_shading}')
+            _log_output(f'update.id: {update.id.name}')
+            _log_output(f'update.is_updated_geometry: {update.is_updated_geometry}')
+            _log_output(f'update.is_updated_transform: {update.is_updated_transform}')
+            _log_output(f'update.is_updated_shading: {update.is_updated_shading}')
             return True
         return False
 
@@ -70,8 +82,7 @@ def depsgraph_update_handler(scene, depsgraph):
 
 
 def undo_redo_handler(scene):
-    logger = logging.getLogger(__name__)
-    logger.debug('gt_undo_handler')
+    _log_output('gt_undo_handler')
     try:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
@@ -85,7 +96,7 @@ def undo_redo_handler(scene):
         GTLoader.update_all_viewport_shaders(area)
 
     except Exception as err:
-        logger.error('gt_undo_handler {}'.format(str(err)))
+        _log_error(f'gt_undo_handler {str(err)}')
         unregister_undo_redo_handlers()
 
 
@@ -135,8 +146,7 @@ class GT_OT_PinMode(bpy.types.Operator):
     _prev_camera_state = ()
 
     def _current_frame_updated(self):
-        settings = get_gt_settings()
-        keyframe = settings.current_frame()
+        keyframe = bpy_current_frame()
         if keyframe != self.pinmode_keyframe:
             self.pinmode_keyframe = keyframe
             return True
@@ -162,8 +172,6 @@ class GT_OT_PinMode(bpy.types.Operator):
 
     @classmethod
     def _exit_pinmode(cls):
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
         settings = get_gt_settings()
         settings.pinmode = False
         geotracker = settings.get_current_geotracker_item()
@@ -175,7 +183,7 @@ class GT_OT_PinMode(bpy.types.Operator):
             unhide_viewport_ui_elements_from_object(area, geotracker.geomobj)
         GTLoader.save_geotracker()
         unregister_undo_redo_handlers()
-        log_output(f'_exit_pinmode: {settings.pinmode_id}')
+        _log_output(f'_exit_pinmode: {settings.pinmode_id}')
 
     def _on_left_mouse_press(self, area, event):
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
@@ -206,26 +214,23 @@ class GT_OT_PinMode(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def _delete_found_pin(self, nearest, area):
-        settings = get_gt_settings()
-        kid = settings.current_frame()
-
         gt = GTLoader.kt_geotracker()
         gt.remove_pin(nearest)
         del GTLoader.viewport().pins().arr()[nearest]
-        logger = logging.getLogger(__name__)
-        logging.debug('PIN REMOVED {}'.format(nearest))
+        _log_output('PIN REMOVED {}'.format(nearest))
 
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = get_current_geotracker_item()
         if not geotracker:
             return {'FINISHED'}
 
+        kid = bpy_current_frame()
         gt = GTLoader.kt_geotracker()
         if not gt.is_key_at(kid):
             mat = GTLoader.calc_model_matrix()
             gt.set_keyframe(kid, mat)
-            create_locrot_keyframe(geotracker.animatable_object(), 'KEYFRAME')
+
         if not GTLoader.solve():
-            logger.error('DELETE PIN PROBLEM')
+            _log_error('DELETE PIN PROBLEM')
             return {'FINISHED'}
 
         GTLoader.load_pins_into_viewport()
@@ -252,38 +257,32 @@ class GT_OT_PinMode(bpy.types.Operator):
         settings.pinmode_id = self.pinmode_id
 
     def _init_pinmode(self, area, context=None):
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
         if not GTLoader.load_geotracker():
-            log_output('NEW KT_GEOTRACKER')
+            _log_output('NEW KT_GEOTRACKER')
             GTLoader.new_kt_geotracker()
 
-        log_output('START SHADERS')
+        _log_output('START SHADERS')
         GTLoader.load_pins_into_viewport()
         vp = GTLoader.viewport()
         vp.create_batch_2d(area)
-        log_output('REGISTER SHADER HANDLERS')
+        _log_output('REGISTER SHADER HANDLERS')
         GTLoader.update_all_viewport_shaders(area)
         if context is not None:
             vp.register_handlers(context)
         vp.tag_redraw()
 
     def _start_new_pinmode(self, context):
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
-        log_output('_start_new_pinmode')
+        _log_output('_start_new_pinmode')
         settings = get_gt_settings()
         settings.pinmode = True
         self._new_pinmode_id()
-        log_output(f'_new_pinmode_id: {settings.pinmode_id}')
+        _log_output(f'_new_pinmode_id: {settings.pinmode_id}')
 
         self._set_new_geotracker(context.area)
         self._init_pinmode(context.area, context)
 
     def _set_new_geotracker(self, area, num=None):
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
-        log_output(f'_set_new_geotracker: area={id(area)} num={num}')
+        _log_output(f'_set_new_geotracker: area={id(area)} num={num}')
         settings = get_gt_settings()
         if num is not None:
             settings.change_current_geotracker(num)
@@ -299,9 +298,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         hide_viewport_ui_elements_and_store_on_object(area, geotracker.geomobj)
 
     def _switch_to_new_geotracker(self, num):
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
-        log_output('_switch_to_new_geotracker')
+        _log_output('_switch_to_new_geotracker')
         settings = get_gt_settings()
         settings.pinmode = True
 
@@ -313,10 +310,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         self._init_pinmode(area)
 
     def invoke(self, context, event):
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
-        log_error = logger.error
-        log_output(f'INVOKE PINMODE: {self.geotracker_num}')
+        _log_output(f'INVOKE PINMODE: {self.geotracker_num}')
 
         settings = get_gt_settings()
         old_geotracker_num = settings.current_geotracker_num
@@ -324,58 +318,55 @@ class GT_OT_PinMode(bpy.types.Operator):
             self.geotracker_num == -1 else self.geotracker_num
 
         if not settings.is_proper_geotracker_number(new_geotracker_num):
-            log_error(f'WRONG GEOTRACKER NUMBER: {new_geotracker_num}')
+            _log_error(f'WRONG GEOTRACKER NUMBER: {new_geotracker_num}')
             return {'CANCELLED'}
 
         vp = GTLoader.viewport()
 
         if settings.pinmode and not vp.is_working():
-            log_error(f'VIEWPORT DOES NOT WORK IN PINMODE -- FIX IT')
+            _log_error(f'VIEWPORT DOES NOT WORK IN PINMODE -- FIX IT')
             settings.pinmode = False
 
         if settings.pinmode and old_geotracker_num == new_geotracker_num and vp.is_working():
-            log_output(f'SAME GEOTRACKER. NOTHING TO DO: {new_geotracker_num}')
+            _log_output(f'SAME GEOTRACKER. NOTHING TO DO: {new_geotracker_num}')
             return {'CANCELLED'}
 
         new_geotracker = settings.get_geotracker_item(new_geotracker_num)
 
         if not new_geotracker.geomobj:
-            log_error(f'NO GEOMETRY OBJECT: {new_geotracker_num}')
+            _log_error(f'NO GEOMETRY OBJECT: {new_geotracker_num}')
             return {'CANCELLED'}
 
         if not new_geotracker.camobj:
-            log_error(f'NO CAMERA OBJECT: {new_geotracker_num}')
+            _log_error(f'NO CAMERA OBJECT: {new_geotracker_num}')
             return {'CANCELLED'}
 
-        log_output('GEOTRACKER PINMODE CHECKS PASSED')
+        _log_output('GEOTRACKER PINMODE CHECKS PASSED')
 
         if settings.pinmode:
             self._switch_to_new_geotracker(new_geotracker_num)
             return {'FINISHED'}
 
         settings.change_current_geotracker(new_geotracker_num)
-        log_output(f'START GEOTRACKER PINMODE: {new_geotracker_num}')
+        _log_output(f'START GEOTRACKER PINMODE: {new_geotracker_num}')
 
         self._start_new_pinmode(context)
         GTLoader.start_shader_timer(settings.pinmode_id)
         context.window_manager.modal_handler_add(self)
         register_undo_redo_handlers()
-        log_output('PINMODE STARTED')
+        _log_output('PINMODE STARTED')
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
-        log_error = logger.error
         settings = get_gt_settings()
 
         if self.pinmode_id != settings.pinmode_id:
-            log_error('Extreme GeoTracker pinmode operator stop')
-            log_error('{} != {}'.format(self.pinmode_id, settings.pinmode_id))
+            _log_error('Extreme GeoTracker pinmode operator stop')
+            _log_error('{} != {}'.format(self.pinmode_id, settings.pinmode_id))
             return {'FINISHED'}
 
         if not context.space_data:
-            log_output('VIEWPORT IS CLOSED')
+            _log_output('VIEWPORT IS CLOSED')
             self._exit_pinmode()
             return {'FINISHED'}
 
@@ -384,12 +375,12 @@ class GT_OT_PinMode(bpy.types.Operator):
                 # Return back to the camera view
                 bpy.ops.view3d.view_camera()
             else:
-                log_output('CAMERA ROTATED PINMODE OUT')
+                _log_output('CAMERA ROTATED PINMODE OUT')
                 self._exit_pinmode()
                 return {'FINISHED'}
 
         if settings.force_out_pinmode:
-            logger.debug('GT FORCE PINMODE OUT')
+            _log_output('GT FORCE PINMODE OUT')
             self._exit_pinmode()
             settings.force_out_pinmode = False
             if settings.license_error:
@@ -418,14 +409,14 @@ class GT_OT_PinMode(bpy.types.Operator):
             return {'RUNNING_MODAL'}
 
         if event.type == 'ESC' and event.value == 'RELEASE':
-            log_output('Exit pinmode by ESC')
+            _log_output('Exit pinmode by ESC')
             self._exit_pinmode()
             return {'FINISHED'}
 
         if self._current_frame_updated():
             geotracker = settings.get_current_geotracker_item()
             geotracker.reset_focal_length_estimation()
-            log_output('KEYFRAME UPDATED')
+            _log_output('KEYFRAME UPDATED')
             coords.update_depsgraph()
             GTLoader.place_camera()
             GTLoader.update_all_viewport_shaders(context.area)
@@ -434,14 +425,14 @@ class GT_OT_PinMode(bpy.types.Operator):
             return {'PASS_THROUGH'}
 
         if GTLoader.geomobj_mode_changed_to_object():
-            log_output('RETURNED TO OBJECT_MODE')
+            _log_output('RETURNED TO OBJECT_MODE')
             GTLoader.save_geotracker()
             GTLoader.load_geotracker()
             GTLoader.update_all_viewport_shaders(context.area)
             return {'PASS_THROUGH'}
 
         if event.type == 'TIMER' and GTLoader.get_stored_geomobj_mode() == 'EDIT':
-            log_output('TIMER IN EDIT_MODE')
+            _log_output('TIMER IN EDIT_MODE')
             GTLoader.update_geomobj_mesh()
             GTLoader.save_geotracker()
             GTLoader.load_geotracker()
@@ -450,11 +441,11 @@ class GT_OT_PinMode(bpy.types.Operator):
 
         if self._check_camera_state_changed(context.space_data.region_3d) or event.type == 'TIMER':
             if event.type != 'TIMER':
-                log_output('FORCE TAG REDRAW BY VIEWPORT ZOOM/OFFSET')
+                _log_output('FORCE TAG REDRAW BY VIEWPORT ZOOM/OFFSET')
             vp = GTLoader.viewport()
             vp.create_batch_2d(context.area)
             vp.update_residuals(GTLoader.kt_geotracker(), context.area,
-                                settings.current_frame())
+                                bpy_current_frame())
             vp.tag_redraw()
 
         if event.value == 'PRESS' and event.type == 'LEFTMOUSE':

@@ -24,9 +24,10 @@ import bpy
 from bpy.types import Area
 
 from ..addon_config import Config, get_operator, ErrorType
-from ..geotracker_config import GTConfig, get_gt_settings
+from ..geotracker_config import get_gt_settings, get_current_geotracker_item
 from .viewport import GTViewport
 from ..utils import coords
+from ..utils.bpy_common import bpy_current_frame
 from .gt_class_loader import GTClassLoader
 from ..utils.timer import KTStopShaderTimer
 from ..utils.ui_redraw import force_ui_redraw
@@ -37,17 +38,17 @@ _logger: Any = logging.getLogger(__name__)
 
 
 def _log_output(message: str) -> None:
-    global logger
+    global _logger
     _logger.debug(message)
 
 
-def _log_warning(message):
-    global logger
+def _log_warning(message: str) -> None:
+    global _logger
     _logger.warning(message)
 
 
-def _log_error(message):
-    global logger
+def _log_error(message: str) -> None:
+    global _logger
     _logger.error(message)
 
 
@@ -77,14 +78,13 @@ class GTLoader:
     @classmethod
     def update_geomobj_mesh(cls) -> None:
         _log_output('update_geomobj_mesh UPDATE')
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
-        geotracker.geomobj.update_from_editmode()
+        geotracker = get_current_geotracker_item()
+        if geotracker and geotracker.geomobj:
+            geotracker.geomobj.update_from_editmode()
 
     @classmethod
     def get_geomobj_mode(cls) -> str:
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.geomobj:
             return 'OBJECT'
         return geotracker.geomobj.mode
@@ -125,21 +125,13 @@ class GTLoader:
         cls._mask2d = GTClassLoader.GTMask2DInput_class()()
         cls._storage = GTClassLoader.GTGeoTrackerResultsStorage_class()()
 
-        if GTConfig.use_storage:
-            cls._kt_geotracker = GTClassLoader.GeoTracker_class()(
-                cls._geo_input,
-                cls._camera_input,
-                cls._image_input,
-                cls._mask2d,
-                cls._storage
-            )
-        else:
-            cls._kt_geotracker = GTClassLoader.GeoTracker_class()(
-                cls._geo_input,
-                cls._camera_input,
-                cls._image_input,
-                cls._mask2d
-            )
+        cls._kt_geotracker = GTClassLoader.GeoTracker_class()(
+            cls._geo_input,
+            cls._camera_input,
+            cls._image_input,
+            cls._mask2d,
+            cls._storage
+        )
         return cls._kt_geotracker
 
     @classmethod
@@ -169,9 +161,7 @@ class GTLoader:
 
     @classmethod
     def load_pins_into_viewport(cls) -> None:
-        settings = get_gt_settings()
-        keyframe = settings.current_frame()
-
+        keyframe = bpy_current_frame()
         vp = cls.viewport()
         gt = cls.kt_geotracker()
         vp.pins().set_pins(vp.img_points(gt, keyframe))
@@ -188,14 +178,13 @@ class GTLoader:
         vp.tag_redraw()
 
     @classmethod
-    def place_camera(cls, forced: bool=False) -> None:
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
-        if not geotracker:
+    def place_camera(cls) -> None:
+        geotracker = get_current_geotracker_item()
+        if not geotracker or not geotracker.geomobj or not geotracker.camobj:
             return
         gt = cls.kt_geotracker()
-        keyframe = settings.current_frame()
-        if not gt.is_key_at(keyframe) and not forced:
+        keyframe = bpy_current_frame()
+        if not gt.is_key_at(keyframe):
             return
         gt_model_mat = gt.model_mat(keyframe)
         if geotracker.camera_mode():
@@ -209,12 +198,11 @@ class GTLoader:
 
     @classmethod
     def updated_focal_length(cls, force: bool=False) -> Optional[float]:
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = get_current_geotracker_item()
         if not geotracker:
             return None
         gt = GTLoader.kt_geotracker()
-        frame = settings.current_frame()
+        frame = bpy_current_frame()
         if not force and not gt.is_key_at(frame):
             return None
         proj_mat = gt.projection_mat(frame)
@@ -225,16 +213,14 @@ class GTLoader:
 
     @classmethod
     def center_geo(cls) -> None:
-        settings = get_gt_settings()
-        keyframe = settings.current_frame()
+        keyframe = bpy_current_frame()
         gt = cls.kt_geotracker()
         cls.safe_keyframe_add(keyframe, cls.calc_model_matrix())
         gt.center_geo(keyframe)
 
     @classmethod
     def calc_model_matrix(cls) -> Any:
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = get_current_geotracker_item()
         if not geotracker:
             return np.eye(4)
         return geotracker.calc_model_matrix()
@@ -252,9 +238,9 @@ class GTLoader:
     def solve(cls) -> bool:
         _log_output('GTloader.solve called')
         settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = get_current_geotracker_item()
         gt = cls.kt_geotracker()
-        keyframe = settings.current_frame()
+        keyframe = bpy_current_frame()
         try:
             if geotracker.focal_length_mode == 'STATIC_FOCAL_LENGTH':
                 gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.STATIC_FOCAL_LENGTH)
@@ -280,8 +266,7 @@ class GTLoader:
 
     @classmethod
     def save_geotracker(cls) -> None:
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = get_current_geotracker_item()
         if not geotracker:
             return
 
@@ -291,27 +276,27 @@ class GTLoader:
 
     @classmethod
     def load_geotracker(cls) -> bool:
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = get_current_geotracker_item()
         if not geotracker:
             return False
 
         serial = geotracker.get_serial_str()
 
         if serial == '':
-            _log_warning('EMPTY SERIAL ERROR: {}'.format(settings.current_geotracker_num))
+            settings = get_gt_settings()
+            _log_warning(f'EMPTY SERIAL ERROR: {settings.current_geotracker_num}')
             return False
 
         gt = cls.kt_geotracker()
         if not gt.deserialize(serial):
-            _log_warning('DESERIALIZE ERROR: {}'.format(serial))
+            _log_warning(f'DESERIALIZE ERROR: {serial}')
             return False
         return True
 
     @classmethod
     def update_viewport_wireframe(cls) -> None:
         settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.geomobj:
             return
 
@@ -324,17 +309,16 @@ class GTLoader:
 
     @classmethod
     def update_viewport_pins_and_residuals(cls, area: Area) -> None:
-        settings = get_gt_settings()
         vp = GTLoader.viewport()
         GTLoader.load_pins_into_viewport()
         vp.create_batch_2d(area)
         gt = GTLoader.kt_geotracker()
-        kid = settings.current_frame()
 
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.geomobj:
             return
 
+        kid = bpy_current_frame()
         vp.update_surface_points(gt, geotracker.geomobj, kid)
         vp.update_residuals(gt, area, kid)
 
@@ -367,14 +351,13 @@ class GTLoader:
 
     @classmethod
     def spring_pins_back(cls) -> None:
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = get_current_geotracker_item()
         if not geotracker:
             return
 
         if geotracker.spring_pins_back:
             gt = cls.kt_geotracker()
-            gt.spring_pins_back(settings.current_frame())
+            gt.spring_pins_back(bpy_current_frame())
 
     @classmethod
     def get_work_area(cls) -> Optional[Area]:

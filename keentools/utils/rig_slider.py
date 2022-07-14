@@ -19,15 +19,7 @@
 import math
 import bpy
 
-
-def _link_object_to_current_scene_collection(obj):
-    act_col = bpy.context.view_layer.active_layer_collection
-    index = bpy.data.collections.find(act_col.name)
-    if index >= 0:
-        col = bpy.data.collections[index]
-    else:
-        col = bpy.context.scene.collection
-    col.objects.link(obj)
+from .bpy_common import link_object_to_current_scene_collection
 
 
 def create_label(name, label='Label', size=0.2):
@@ -37,7 +29,7 @@ def create_label(name, label='Label', size=0.2):
     text_curve.size = size
     text_obj.hide_select = True
     text_obj.hide_render = True
-    _link_object_to_current_scene_collection(text_obj)
+    link_object_to_current_scene_collection(text_obj)
     return text_obj
 
 
@@ -56,7 +48,7 @@ def create_rectangle(name, width=1.0, height=0.2):
     pline.use_cyclic_u = True  # closed spline
 
     obj = bpy.data.objects.new(name, curve)
-    _link_object_to_current_scene_collection(obj)
+    link_object_to_current_scene_collection(obj)
     return obj
 
 
@@ -64,7 +56,7 @@ def create_slider(name, label='Label', width=1.0, height=0.2):
     rect = create_rectangle(name + 'Rect', width, height)
 
     control = bpy.data.objects.new(name + 'Slider', None)  # Empty-object
-    _link_object_to_current_scene_collection(control)
+    link_object_to_current_scene_collection(control)
 
     control.empty_display_type = 'CIRCLE'
     control.empty_display_size = 0.35 * height

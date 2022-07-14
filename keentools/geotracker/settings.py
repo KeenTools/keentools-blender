@@ -37,7 +37,7 @@ _logger: Any = logging.getLogger(__name__)
 
 
 def _log_output(message: str) -> None:
-    global logger
+    global _logger
     _logger.debug(message)
 
 
@@ -267,18 +267,6 @@ class GTSceneSettings(bpy.types.PropertyGroup):
 
     def wrong_pinmode_id(self) -> bool:
         return self.pinmode_id in {'', 'stop'}
-
-    def current_frame(self) -> int:
-        return bpy.context.scene.frame_current
-
-    def end_frame(self) -> int:
-        return bpy.context.scene.frame_end
-
-    def start_frame(self) -> int:
-        return bpy.context.scene.frame_start
-
-    def set_current_frame(self, frame: int) -> None:
-        bpy.context.scene.frame_set(frame)
 
     def get_last_geotracker_num(self) -> int:
         return len(self.geotrackers) - 1

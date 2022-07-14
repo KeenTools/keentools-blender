@@ -20,8 +20,7 @@ from typing import Optional, List, Set, Dict
 import bpy
 from bpy.types import Object, Action, FCurve, Keyframe
 from mathutils import Vector
-
-from ..geotracker_config import GTConfig, get_gt_settings
+from .bpy_common import bpy_current_frame, create_empty_object
 
 
 def extend_scene_timeline_end(keyframe_num: int, force=False) -> None:
@@ -34,6 +33,7 @@ def extend_scene_timeline_start(keyframe_num: int) -> None:
     scene = bpy.context.scene
     if 0 <= keyframe_num < scene.frame_start:
         scene.frame_start = keyframe_num
+
 
 def _get_action_fcurve(action: Action, data_path: str, index: int=0) -> Optional[FCurve]:
     return action.fcurves.find(data_path, index=index)
@@ -147,26 +147,6 @@ def _get_safe_action(obj: Object,
     return animation_data.action
 
 
-def _link_object_to_current_scene_collection(obj: Object) -> None:
-    act_col = bpy.context.view_layer.active_layer_collection
-    index = bpy.data.collections.find(act_col.name)
-    if index >= 0:
-        col = bpy.data.collections[index]
-    else:
-        col = bpy.context.scene.collection
-    col.objects.link(obj)
-
-
-def create_empty_object(name: str) -> Object:
-    control = bpy.data.objects.new(name, None)  # Empty-object
-    _link_object_to_current_scene_collection(control)
-    control.empty_display_type = 'PLAIN_AXES'
-    control.empty_display_size = 2.5
-    control.rotation_euler = (0, 0, 0)
-    control.location = (0, 0, 0)
-    return control
-
-
 def create_animation_on_object(obj: Object, anim_dict: Dict,
                                action_name: str='gtAction') -> None:
     action = _get_safe_action(obj, action_name)
@@ -273,8 +253,7 @@ def create_locrot_keyframe(obj: Object, keyframe_type: str='KEYFRAME') -> None:
     if action is None:
         return
     locrot_dict = get_locrot_dict()
-    settings = get_gt_settings()
-    current_frame = settings.current_frame()
+    current_frame = bpy_current_frame()
     loc = obj.matrix_world.to_translation()
     rot = obj.matrix_world.to_euler()
 
@@ -297,26 +276,6 @@ def reset_object_action(obj: Object) -> None:
     act = animation_data.action
     animation_data.action = None
     animation_data.action = act
-
-
-def delete_animation_on_frames(obj: Object, frames: Set) -> None:
-    if GTConfig.use_storage:
-        return
-    action = get_action(obj)
-    if action is None:
-        return
-
-    locrot_dict = get_locrot_dict()
-    for name in locrot_dict.keys():
-        fcurve = _get_action_fcurve(action, locrot_dict[name]['data_path'],
-                                    index=locrot_dict[name]['index'])
-        if fcurve is None:
-            continue
-
-        points = [p for p in fcurve.keyframe_points if p.co[0] in frames]
-
-        for p in reversed(points):
-            fcurve.keyframe_points.remove(p)
 
 
 def delete_animation_between_frames(obj: Object, from_frame: int, to_frame: int) -> None:

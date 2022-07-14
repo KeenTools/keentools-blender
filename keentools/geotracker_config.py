@@ -103,3 +103,8 @@ class GTConfig:
 
 def get_gt_settings():
     return getattr(bpy.context.scene, GTConfig.gt_global_var_name)
+
+
+def get_current_geotracker_item():
+    settings = get_gt_settings()
+    return settings.get_current_geotracker_item()
