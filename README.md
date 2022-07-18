@@ -4,6 +4,8 @@
 
 ## Release History
 
+2022.2.0 - 19 July 2022
+
 2022.1.1 - 15 April 2022
 
 2022.1.0 - 7 April 2022

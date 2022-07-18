@@ -17,13 +17,14 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import re
+from typing import Any, List, Dict
 
 
-def skip_new_lines_and_spaces(txt):
+def skip_new_lines_and_spaces(txt: str) -> str:
     return re.sub("[\r\n\s]+", " ", txt)
 
 
-def skip_single_tags(html):
+def skip_single_tags(html: str) -> Any:
     start = 0
     end = len(html)
 
@@ -48,7 +49,7 @@ def skip_single_tags(html):
         return arr
 
 
-def parse_html(html):
+def parse_html(html: str) -> Any:
     start = 0
     end = len(html)
 
@@ -70,7 +71,7 @@ def parse_html(html):
         return arr
 
 
-def split_long_string(txt, limit):
+def split_long_string(txt: str, limit: int) -> List[str]:
     if len(txt) < limit:
         return [txt]
     start = 0
@@ -88,12 +89,14 @@ def split_long_string(txt, limit):
     return arr
 
 
-def create_label(layout, txt, limit=32):
+def create_label(txt: str, limit: int=32) -> List[str]:
+    output_list: List[str] = []
     for t in split_long_string(txt, limit):
-        layout.label(text="{}".format(t))
+        output_list.append(t)
+    return output_list
 
 
-def text_from_element(el):
+def text_from_element(el: Any) -> str:
     t = type(el)
     if t == list:
         txt = ''
@@ -105,40 +108,42 @@ def text_from_element(el):
             return text_from_element(el['content'])
     elif t == str:
         return el
+    return ''
 
 
-def render_dict(layout, el, limit=32):
+def render_dict(el: Dict, limit: int=32) -> List[str]:
+    output_list: List[str] = []
     t = el['type']
     if t in {'h1', 'h2', 'h3', 'h4'}:
         txt = text_from_element(el['content'])
-        create_label(layout, txt, limit)
-
-    if t in {'ul', 'p'}:
-        render_main(layout, el['content'], limit)
-
+        output_list += create_label(txt, limit)
+    elif t in {'ul', 'p'}:
+        output_list += render_main(el['content'], limit)
     elif t == 'text':
         txt = text_from_element(el['content'])
         if txt not in {'',' '}:
-            create_label(layout, txt, limit)
-
+            output_list += create_label(txt, limit)
     elif t == 'li':
         txt = text_from_element(el['content'])
-        create_label(layout, '— ' + txt, limit)
-
+        output_list += create_label('— ' + txt, limit)
     elif t == 'br':
-        return
+        pass
+    return output_list
 
 
-def render_list(layout, tree, limit=32):
+def render_list(tree: Any, limit: int=32) -> List[str]:
+    output_list: List[str] = []
     for el in tree:
         if type(el) == list:
-            render_list(layout, el, limit)
+            output_list += render_list(el, limit)
         elif type(el) == dict:
-            render_dict(layout, el, limit)
+            output_list += render_dict(el, limit)
+    return output_list
 
 
-def render_main(layout, el, limit=32):
+def render_main(el: Any, limit: int=32) -> List[str]:
     if type(el) == list:
-        return render_list(layout, el, limit)
+        return render_list(el, limit)
     elif type(el) == dict:
-        return render_dict(layout, el, limit)
+        return render_dict(el, limit)
+    return []
