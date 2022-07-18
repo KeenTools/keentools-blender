@@ -80,8 +80,7 @@ def update_wireframe_func(self, context) -> None:
 
 
 def _update_preview_gamma(self, context) -> None:
-    logger = logging.getLogger(__name__)
-    logger.debug('Image Adj Gamma: ', self.preview_gamma)
+    _log_output('Image Adj Gamma: ', self.preview_gamma)
     settings = get_gt_settings()
     if not settings.pinmode:
         return

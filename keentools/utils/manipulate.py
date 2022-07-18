@@ -78,8 +78,9 @@ def switch_to_camera(area, camobj, select_obj=None):
     enter_area_localview(area)
 
     # Low-level code instead bpy.ops.view3d.object_as_camera()
-    area.spaces.active.camera = camobj
-    area.spaces.active.region_3d.view_perspective = 'CAMERA'
+    if area:
+        area.spaces.active.camera = camobj
+        area.spaces.active.region_3d.view_perspective = 'CAMERA'
 
     if select_obj is not None:
         select_object_only(select_obj)

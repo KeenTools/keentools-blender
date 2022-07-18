@@ -65,10 +65,16 @@ def find_object_in_selection(obj_type: str='MESH',
         all_objects = [obj for obj in bpy.data.objects if obj.type == obj_type]
         return None if len(all_objects) != 1 else all_objects[0]
 
-    context_obj = bpy.context.object
+    context_obj = bpy.context.object if hasattr(bpy.context, 'object') else None
     if context_obj and context_obj.type == obj_type:
         return context_obj
-    objects = bpy.context.selected_objects if selection is None else selection
+    if selection is not None:
+        objects = selection
+    else:
+        if hasattr(bpy.context, 'selected_objects'):
+            objects = bpy.context.selected_objects
+        else:
+            objects = []
     selected_objects = [obj for obj in objects if obj.type == obj_type]
     if len(selected_objects) == 1:
         return selected_objects[0]
