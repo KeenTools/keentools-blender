@@ -1,13 +1,29 @@
 import logging
+from typing import Any
+
 import bpy
 
-from ..addon_config import Config, get_operator, ErrorType
-from ..geotracker_config import GTConfig, get_gt_settings
+from ..geotracker_config import (GTConfig,
+                                 get_gt_settings,
+                                 get_current_geotracker_item)
 from .gtloader import GTLoader
 from ..utils import coords
-from ..utils.animation import create_locrot_keyframe, insert_keyframe_in_fcurve
-from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..utils.animation import insert_keyframe_in_fcurve
 from ..utils.manipulate import force_undo_push
+from ..utils.bpy_common import bpy_current_frame
+
+
+_logger: Any = logging.getLogger(__name__)
+
+
+def _log_output(message: str) -> None:
+    global _logger
+    _logger.debug(message)
+
+
+def _log_error(message: str) -> None:
+    global _logger
+    _logger.error(message)
 
 
 class GT_OT_MovePin(bpy.types.Operator):
@@ -32,38 +48,29 @@ class GT_OT_MovePin(bpy.types.Operator):
         settings.move_pin_mode = False
 
     def _before_operator_finish(self):
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
-        if not GTConfig.use_storage:
-            create_locrot_keyframe(geotracker.animatable_object(), 'KEYFRAME')
         self._move_pin_mode_off()
 
     def _new_pin(self, area, mouse_x, mouse_y):
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
-        settings = get_gt_settings()
-
-        frame = settings.current_frame()
+        frame = bpy_current_frame()
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, area)
 
         pin = GTLoader.add_pin(
             frame, (coords.image_space_to_frame(x, y))
         )
-        log_output(f'_new_pin pin: {pin}')
+        _log_output(f'_new_pin pin: {pin}')
         if pin is not False:
             vp = GTLoader.viewport()
             vp.pins().add_pin((x, y))
             vp.pins().set_current_pin_num_to_last()
-            log_output(f'_new_pin ADD PIN pins: {vp.pins().arr()}')
+            _log_output(f'_new_pin ADD PIN pins: {vp.pins().arr()}')
             return True
         else:
-            logger.debug('MISS MODEL')
+            _log_output('MISS MODEL')
             GTLoader.viewport().pins().reset_current_pin()
             return False
 
     def _auto_keyframe_add(self):
-        settings = get_gt_settings()
-        keyframe = settings.current_frame()
+        keyframe = bpy_current_frame()
         gt = GTLoader.kt_geotracker()
         if not gt.is_key_at(keyframe):
             mat = GTLoader.calc_model_matrix()
@@ -72,16 +79,13 @@ class GT_OT_MovePin(bpy.types.Operator):
         return False
 
     def _remove_keyframe(self):
-        settings = get_gt_settings()
-        keyframe = settings.current_frame()
+        keyframe = bpy_current_frame()
         gt = GTLoader.kt_geotracker()
         if gt.is_key_at(keyframe):
             gt.remove_keyframe(keyframe)
 
     def init_action(self, context, mouse_x, mouse_y):
-        logger = logging.getLogger(__name__)
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.geomobj or not geotracker.camobj:
             return False
 
@@ -99,7 +103,7 @@ class GT_OT_MovePin(bpy.types.Operator):
         nearest, dist2 = coords.nearest_point(x, y, vp.pins().arr())
 
         if nearest >= 0 and dist2 < vp.tolerance_dist2():
-            logger.debug('PIN FOUND: {}'.format(nearest))
+            _log_output(f'PIN FOUND: {nearest}')
             vp.pins().set_current_pin_num(nearest)
         else:
             self.new_pin_flag = self._new_pin(context.area, mouse_x, mouse_y)
@@ -147,12 +151,11 @@ class GT_OT_MovePin(bpy.types.Operator):
         GTLoader.move_pin(kid, pin_idx, (x, y))
 
     def on_mouse_move(self, area, mouse_x, mouse_y):
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = get_current_geotracker_item()
         if not geotracker:
             return self.on_default_modal()
 
-        frame = settings.current_frame()
+        frame = bpy_current_frame()
         self._pin_drag(frame, area, mouse_x, mouse_y)
 
         if not GTLoader.solve():
@@ -185,42 +188,38 @@ class GT_OT_MovePin(bpy.types.Operator):
         return self.on_default_modal()
 
     def on_default_modal(self):
-        logger = logging.getLogger(__name__)
         if GTLoader.viewport().pins().current_pin() is not None:
             return {'RUNNING_MODAL'}
         else:
-            logger.debug('MOVE PIN FINISH')
+            _log_output('MOVE PIN FINISH')
             self._before_operator_finish()
             return {'FINISHED'}
 
     def invoke(self, context, event):
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
         if not self.init_action(context,
                                 event.mouse_region_x, event.mouse_region_y):
             settings = get_gt_settings()
             settings.start_selection(event.mouse_region_x, event.mouse_region_y)
-            logger.debug('START SELECTION')
+            _log_output('START SELECTION')
             return {'CANCELLED'}
 
         self._move_pin_mode_on()
         GTLoader.viewport().create_batch_2d(context.area)
         context.window_manager.modal_handler_add(self)
-        log_output('GT START PIN MOVING')
+        _log_output('GT START PIN MOVING')
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
-        logger = logging.getLogger(__name__)
         mouse_x = event.mouse_region_x
         mouse_y = event.mouse_region_y
 
         if event.value == 'RELEASE' and event.type == 'LEFTMOUSE':
-            logger.debug('LEFT MOUSE RELEASE')
+            _log_output('LEFT MOUSE RELEASE')
             return self.on_left_mouse_release(context.area, event)
 
         if event.type == 'MOUSEMOVE' \
                 and GTLoader.viewport().pins().current_pin() is not None:
-            logger.debug('MOUSEMOVE {} {}'.format(mouse_x, mouse_y))
+            _log_output(f'MOUSEMOVE: {mouse_x} {mouse_y}')
             return self.on_mouse_move(context.area, mouse_x, mouse_y)
 
         return self.on_default_modal()

@@ -18,13 +18,27 @@
 
 import logging
 import os
+from typing import Any
 
 import bpy
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 
 from ...addon_config import Config
-from ...geotracker_config import GTConfig, get_gt_settings
+from ...geotracker_config import GTConfig, get_current_geotracker_item
 from ...utils.images import set_background_image_by_movieclip
+
+
+_logger: Any = logging.getLogger(__name__)
+
+
+def _log_output(message: str) -> None:
+    global _logger
+    _logger.debug(message)
+
+
+def _log_error(message: str) -> None:
+    global _logger
+    _logger.error(message)
 
 
 def _get_new_movieclip(old_movieclips):
@@ -73,43 +87,38 @@ class GT_OT_MultipleFilebrowser(bpy.types.Operator, ImportHelper):
         col.label(text='Just select first image in sequence')
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        log_output = logger.info
-        log_error = logger.error
-
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
 
         frame_files = [{'name': f.name} for f in self.files]
-        log_output(f'DIR: {self.directory}')
+        _log_output(f'DIR: {self.directory}')
 
         old_movieclips = bpy.data.movieclips[:]
         try:
             bpy.ops.clip.open('EXEC_DEFAULT', files=frame_files, directory=self.directory)
         except RuntimeError as err:
-            log_error('MOVIECLIP OPEN ERROR: {}'.format(str(err)))
+            _log_error('MOVIECLIP OPEN ERROR: {}'.format(str(err)))
             return {'CANCELLED'}
 
         new_movieclip = _get_new_movieclip(old_movieclips)
         if new_movieclip is None:
-            log_error('NO NEW MOVIECLIP HAS BEEN CREATED')
+            _log_error('NO NEW MOVIECLIP HAS BEEN CREATED')
             if len(self.files) == 0:
-                log_error('NO FILES HAVE BEEN SELECTED')
+                _log_error('NO FILES HAVE BEEN SELECTED')
                 return {'CANCELLED'}
 
             new_movieclip = _find_movieclip(os.path.join(self.directory, self.files[0].name))
             if new_movieclip is None:
-                log_error('NO NEW MOVIECLIP IN EXISTING')
+                _log_error('NO NEW MOVIECLIP IN EXISTING')
                 return {'CANCELLED'}
             else:
-                log_output(f'EXISTING MOVICLIP HAS BEEN FOUND: {new_movieclip}')
+                _log_output(f'EXISTING MOVICLIP HAS BEEN FOUND: {new_movieclip}')
 
         geotracker.movie_clip = new_movieclip
         set_background_image_by_movieclip(geotracker.camobj,
                                           geotracker.movie_clip)
-        log_output(f'LOADED MOVIECLIP: {geotracker.movie_clip.name}')
+        _log_output(f'LOADED MOVIECLIP: {geotracker.movie_clip.name}')
         return {'FINISHED'}
 
 
@@ -164,27 +173,22 @@ class GT_OT_ChoosePrecalcFile(bpy.types.Operator, ExportHelper):
         col.label(text='or just enter a name for a new one')
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
-        log_error = logger.error
-        log_output('PRECALC PATH: {}'.format(self.filepath))
-
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
+        _log_output('PRECALC PATH: {}'.format(self.filepath))
+        geotracker = get_current_geotracker_item()
         if not geotracker:
-            log_error('Current GeoTracker is wrong')
+            _log_error('Current GeoTracker is wrong')
             return {'CANCELLED'}
 
         if os.path.exists(self.filepath) and os.path.isdir(self.filepath):
-            log_error(f'Wrong precalc destination: {self.filepath}')
+            _log_error(f'Wrong precalc destination: {self.filepath}')
             self.report({'ERROR'}, 'Wrong precalc destination!')
             return {'CANCELLED'}
 
         geotracker.precalc_path = self.filepath
         status, msg, _ = geotracker.reload_precalc()
         if not status:
-            log_error(msg)
+            _log_error(msg)
             self.report({'ERROR'}, msg)
 
-        log_output('PRECALC PATH HAS BEEN CHANGED: {}'.format(self.filepath))
+        _log_output('PRECALC PATH HAS BEEN CHANGED: {}'.format(self.filepath))
         return {'FINISHED'}

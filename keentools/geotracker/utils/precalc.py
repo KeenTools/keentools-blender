@@ -35,7 +35,26 @@ from ...utils.images import (np_image_to_grayscale,
 from ...utils.coords import render_frame
 from ...utils.manipulate import (switch_to_camera,
                                  exit_area_localview)
+from ...utils.bpy_common import bpy_current_frame, bpy_set_current_frame
 from ..gt_class_loader import GTClassLoader
+
+
+_logger: Any = logging.getLogger(__name__)
+
+
+def _log_output(message: str) -> None:
+    global _logger
+    _logger.debug(message)
+
+
+def _log_error(message: str) -> None:
+    global _logger
+    _logger.error(message)
+
+
+def _log_info(message: str) -> None:
+    global _logger
+    _logger.info(message)
 
 
 class PrecalcTimer:
@@ -75,16 +94,13 @@ class PrecalcTimer:
         GTLoader.revert_default_screen_message()
         settings.user_interrupts = True
 
-        logger = logging.getLogger(__name__)
-        logger.info('Precalc is over: {:.2f} sec.'.format(
-                    time.time() - self._start_time))
+        _log_info('Precalc is over: {:.2f} sec.'.format(
+                  time.time() - self._start_time))
 
     def common_checks(self) -> bool:
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
         settings = get_gt_settings()
-        log_output(f'Timer: state={self._state} target={self._target_frame} '
-                   f'current={settings.current_frame()}')
+        _log_output(f'Timer: state={self._state} target={self._target_frame} '
+                    f'current={bpy_current_frame()}')
         if settings.user_interrupts:
             settings.precalc_mode = False
         if not settings.precalc_mode:
@@ -96,24 +112,19 @@ class PrecalcTimer:
         return True
 
     def timeline_state(self) -> Optional[float]:
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
-        settings = get_gt_settings()
         if self._target_frame >= 0:
-            if settings.current_frame() == self._target_frame:
+            if bpy_current_frame() == self._target_frame:
                 self._target_frame = -1
                 self._state = 'runner'
                 self._active_state_func = self.runner_state
                 return self._interval
-            settings.set_current_frame(self._target_frame)
+            bpy_set_current_frame(self._target_frame)
             return self._interval
         else:
-            log_output(f'FRAME PROBLEM {self._target_frame}')
+            _log_output(f'FRAME PROBLEM {self._target_frame}')
         return self._interval
 
     def runner_state(self) -> Optional[float]:
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
         settings = get_gt_settings()
 
         if self._runner.is_finished():
@@ -123,7 +134,7 @@ class PrecalcTimer:
             return None
 
         progress, message = self._runner.current_progress()
-        log_output(f'{progress} {message}')
+        _log_output(f'{progress} {message}')
         GTLoader.message_to_screen(
             [{'text': 'Precalc calculating... Please wait', 'y': 60,
               'color': (1.0, 0.0, 0.0, 0.7)},
@@ -133,9 +144,9 @@ class PrecalcTimer:
         if next_frame is None:
             return self._interval
         settings.user_percent = progress * 100
-        current_frame = settings.current_frame()
+        current_frame = bpy_current_frame()
         if current_frame != next_frame:
-            log_output(f'NEXT FRAME IS NOT REACHED: {next_frame} current={current_frame}')
+            _log_output(f'NEXT FRAME IS NOT REACHED: {next_frame} current={current_frame}')
             self._target_frame = next_frame
             self._state = 'timeline'
             self._active_state_func = self.timeline_state
@@ -169,38 +180,35 @@ class PrecalcTimer:
 
 
 def precalc_with_runner_act(context: Any) -> Tuple[bool, str]:
-    logger = logging.getLogger(__name__)
-    log_output = logger.debug
-    log_error = logger.error
-    log_output('precalc_with_runner_act start')
+    _log_output('precalc_with_runner_act start')
     settings = get_gt_settings()
     geotracker = settings.get_current_geotracker_item()
 
     if not geotracker:
         msg = 'No GeoTracker structure'
-        log_error(msg)
+        _log_error(msg)
         return False, msg
     if not geotracker.camobj:
         msg = 'No camera object in GeoTracker'
-        log_error(msg)
+        _log_error(msg)
         return False, msg
     if not geotracker.movie_clip:
         msg = 'No image sequence in GeoTracker'
-        log_error(msg)
+        _log_error(msg)
         return False, msg
     if geotracker.precalc_path == '':
         msg = 'Precalc path is not specified'
-        log_error(msg)
+        _log_error(msg)
         return False, msg
     if settings.calculation_mode():
         msg = 'Other calculation is performing'
-        log_error(msg)
+        _log_error(msg)
         return False, msg
 
     vp = GTLoader.viewport()
     vp.texter().register_handler(context)
 
-    log_output(f'precalc_path: {geotracker.precalc_path}')
+    _log_output(f'precalc_path: {geotracker.precalc_path}')
 
     rw, rh = render_frame()
     area = context.area
