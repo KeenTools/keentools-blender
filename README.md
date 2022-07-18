@@ -1,8 +1,10 @@
 # KeenTools for Blender
 
-[KeenTools FaceBuilder for blender](https://keentools.io/facebuilder#blender) is a blender addon that allows using some of the [KeenTools](https://keentools.io) functionality in Blender.
+[KeenTools for Blender](https://keentools.io) is a blender addon that allows using some of the [KeenTools](https://keentools.io) functionality in Blender.
 
 ## Release History
+
+2022.2.0 - 19 July 2022
 
 2022.1.1 - 15 April 2022
 

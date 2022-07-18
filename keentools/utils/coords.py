@@ -1,0 +1,367 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+# KeenTools for blender is a blender addon for using KeenTools in Blender.
+# Copyright (C) 2019  KeenTools
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# ##### END GPL LICENSE BLOCK #####
+import logging
+
+import numpy as np
+import math
+import bpy
+from . fake_context import get_fake_context
+
+
+def nearest_point(x, y, points, dist=4000000):  # dist squared
+    dist2 = dist
+    nearest = -1
+    for i, p in enumerate(points):
+        d2 = (x - p[0]) ** 2 + (y - p[1]) ** 2
+        if d2 < dist2:
+            dist2 = d2
+            nearest = i
+    return nearest, dist2
+
+
+def xy_to_xz_rotation_matrix_3x3():
+    return np.array([[1., 0., 0.],
+                     [0., 0., 1.],
+                     [0., -1., 0.]], dtype=np.float32)
+
+
+def xz_to_xy_rotation_matrix_3x3():
+    return np.array([[1., 0., 0.],
+                     [0., 0., -1.],
+                     [0., 1., 0.]], dtype=np.float32)
+
+
+def xy_to_xz_rotation_matrix_4x4():
+    return np.array([[1., 0., 0., 0.],
+                     [0., 0., 1., 0.],
+                     [0., -1., 0., 0.],
+                     [0., 0., 0., 1.]], dtype=np.float32)
+
+
+def xz_to_xy_rotation_matrix_4x4():
+    return np.array([[1., 0., 0., 0.],
+                     [0., 0., -1., 0.],
+                     [0., 1., 0., 0.],
+                     [0., 0., 0., 1.]], dtype=np.float32)
+
+
+def update_head_mesh_geom(obj, geom):
+    mesh = obj.data
+    assert(len(geom) == len(mesh.vertices))
+    npbuffer = geom @ xy_to_xz_rotation_matrix_3x3()
+    mesh.vertices.foreach_set('co', npbuffer.ravel())
+    if mesh.shape_keys:
+        mesh.shape_keys.key_blocks[0].data.foreach_set('co', npbuffer.ravel())
+    mesh.update()
+
+
+def update_head_mesh_neutral(fb, head):
+    geom = fb.applied_args_vertices()
+    update_head_mesh_geom(head.headobj, geom)
+
+
+def update_head_mesh_expressions(fb, head, keyframe):
+    geom = fb.applied_args_model_vertices_at(keyframe)
+    update_head_mesh_geom(head.headobj, geom)
+
+
+def update_head_mesh_non_neutral(fb, head):
+    if head.should_use_emotions():
+        kid = head.get_expression_view_keyframe()
+        if kid == 0:  # Neutral selected
+            pass
+        elif fb.is_key_at(kid):
+            update_head_mesh_expressions(fb, head, kid)
+            return
+        else:
+            logger = logging.getLogger(__name__)
+            logger.error(
+                'NO KEYFRAME: {} in {}'.format(kid, fb.keyframes()))
+    update_head_mesh_neutral(fb, head)
+
+
+def projection_matrix(w, h, fl, sw, near, far, scale=1.0):
+    z_diff = near - far
+    fl_to_sw = fl / sw
+    return np.array(
+        [[scale * w * fl_to_sw, 0, 0, 0],
+         [0, scale * w * fl_to_sw, 0, 0],
+         [-w / 2, -h / 2, (near + far) / z_diff, -1],
+         [0, 0, 2 * near * far / z_diff, 0]]
+    ).transpose()
+
+
+def focal_by_projection_matrix_mm(pm, sw):
+    return - 0.5 * pm[0][0] * sw / pm[0][2]
+
+
+def focal_by_projection_matrix_px(pm):
+    return pm[0][0]
+
+
+def focal_mm_to_px(fl, sw, w):
+    return fl / sw * w
+
+
+def render_frame():
+    """ Just get frame size from scene render settings """
+    scene = bpy.context.scene
+    rx = scene.render.resolution_x
+    ry = scene.render.resolution_y
+    w = rx if rx != 0.0 else 1.0
+    h = ry if ry != 0.0 else 1.0
+    return w, h
+
+
+def image_space_to_frame(x, y):
+    """ Image centered Relative coords to Frame pixels """
+    w, h = render_frame()
+    return (x + 0.5) * w, y * w + 0.5 * h
+
+
+def frame_to_image_space(x, y, w, h):
+    return x / w - 0.5, (y - 0.5 * h) / w
+
+
+def get_mouse_coords(event):
+    return event.mouse_region_x, event.mouse_region_y
+
+
+def image_space_to_region(x, y, x1, y1, x2, y2):
+    """ Relative coords to Region (screen) space """
+    w = (x2 - x1)
+    h = (y2 - y1)
+    sc = w
+    return x1 + (x + 0.5) * sc, (y1 + y2) * 0.5 + y * sc
+
+
+def get_image_space_coord(px, py, area):
+    x1, y1, x2, y2 = get_camera_border(area)
+    x, y = region_to_image_space(px, py, x1, y1, x2, y2)
+    return x, y
+
+
+def region_to_image_space(x, y, x1, y1, x2, y2):
+    w = (x2 - x1) if x2 != x1 else 1.0
+    sc = w
+    return (x - (x1 + x2) * 0.5) / sc, (y - (y1 + y2) * 0.5) / sc
+
+
+def pin_to_xyz_from_mesh(pin, headobj):
+    """ Surface point from barycentric to XYZ using passed mesh"""
+    sp = pin.surface_point
+    gp = sp.geo_point_idxs
+    bar = sp.barycentric_coordinates
+    vv = headobj.data.vertices
+    p = vv[gp[0]].co * bar[0] + vv[gp[1]].co * bar[1] + vv[gp[2]].co * bar[2]
+    return p
+
+
+def pin_to_xyz_from_fb_geo_mesh(pin, geo_mesh):
+    """ Surface point from barycentric to XYZ using fb geo_mesh"""
+    sp = pin.surface_point
+    gp = sp.geo_point_idxs
+    bar = sp.barycentric_coordinates
+    v1 = geo_mesh.point(gp[0])
+    v2 = geo_mesh.point(gp[1])
+    v3 = geo_mesh.point(gp[2])
+    p = v1 * bar[0] + v2 * bar[1] + v3 * bar[2]
+    return p
+
+
+def calc_model_mat(model_mat, head_mat):
+    """ Convert model matrix to camera matrix """
+    rot_mat = xy_to_xz_rotation_matrix_4x4()
+
+    try:
+        nm = np.array(model_mat @ rot_mat) @ np.linalg.inv(head_mat)
+        im = np.linalg.inv(nm)
+        return im.transpose()
+    except Exception:
+        return None
+
+
+def get_area_region_3d(area):
+    return area.spaces.active.region_3d
+
+
+def get_area_region(area):
+    return area.regions[-1]
+
+
+def get_area_overlay(area):
+    if not area:
+        return None
+    return area.spaces.active.overlay
+
+
+def get_camera_border(area):
+    if bpy.app.background:
+        context = get_fake_context()
+        area = context.area
+
+    region = get_area_region(area)
+    assert region.type == 'WINDOW'
+    w = region.width
+    h = region.height
+
+    rv3d = get_area_region_3d(area)
+    z = rv3d.view_camera_zoom
+    # Blender Zoom formula
+    f = (z * 0.01 + math.sqrt(0.5)) ** 2  # f - scale factor
+
+    scene = bpy.context.scene
+    rx = scene.render.resolution_x
+    ry = scene.render.resolution_y
+
+    a1 = w / h
+    a2 = rx / ry
+
+    offset = (rv3d.view_camera_offset[0] * w * 2 * f,
+              rv3d.view_camera_offset[1] * h * 2 * f)
+
+    # This works when Camera Sensor Mode is Auto
+    if a1 >= 1.0:
+        if a2 >= 1.0:
+            # Horizontal image in horizontal View
+            kx = f
+            ky = f * a1 * a2  # (ry / rx) * (w / h)
+        else:
+            kx = f * a2  # (rx / ry)
+            ky = f * a1  # (w / h)
+
+    else:
+        if a2 < 1.0:
+            # Vertical image in vertical View
+            kx = f * a2 / a1  # (rx / ry) * (h / w)
+            ky = f
+        else:
+            kx = f / a1  # (h / w)
+            ky = f / a2  # (ry / rx)
+
+    x1 = w * 0.5 - kx * w * 0.5 - offset[0]
+    x2 = w * 0.5 + kx * w * 0.5 - offset[0]
+    y1 = h * 0.5 - ky * h * 0.5 - offset[1]
+    y2 = h * 0.5 + ky * h * 0.5 - offset[1]
+    return x1, y1, x2, y2
+
+
+def is_safe_region(area, x, y):
+    """ Safe region for pin operation """
+    if bpy.app.background:
+        context = get_fake_context()
+        area = context.area
+
+    x0 = area.x
+    y0 = area.y
+    for i, r in enumerate(area.regions):
+        if r.type != 'WINDOW':
+            if (r.x <= x + x0 <= r.x + r.width) and (
+                    r.y <= y + y0 <= r.y + r.height):
+                return False
+    return True
+
+
+def is_in_area(area, x, y):
+    """ Is point in area """
+    if bpy.app.background:
+        context = get_fake_context()
+        area = context.area
+
+    return (0 <= x <= area.width) and (0 <= y <= area.height)
+
+
+def get_pixel_relative_size(area):
+    """ One Pixel size in relative coords via current zoom """
+    if bpy.app.background:
+        context = get_fake_context()
+        area = context.area
+
+    w = area.width if area.width > 0 else 1.0
+    space = area.spaces.active
+    rv3d = space.region_3d
+    z = rv3d.view_camera_zoom
+    # Blender Zoom formula
+    f = (z * 0.01 + math.sqrt(0.5)) ** 2  # f - scale factor
+    ps = 1.0 / (w * f)
+    return ps
+
+
+def get_depsgraph():
+    return bpy.context.evaluated_depsgraph_get()
+
+
+def evaluated_mesh(obj):
+    depsgraph = get_depsgraph()
+    return obj.evaluated_get(depsgraph)
+
+
+def update_depsgraph():
+    depsgraph = get_depsgraph()
+    depsgraph.update()
+    return depsgraph
+
+
+def get_mesh_verts(obj):
+    mesh = obj.data
+    verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
+    mesh.vertices.foreach_get(
+        'co', np.reshape(verts, len(mesh.vertices) * 3))
+    return verts
+
+
+def to_homogeneous(verts):
+    vv = np.ones((len(verts), 4), dtype=np.float32)
+    vv[:, :-1] = verts
+    return vv
+
+
+def multiply_verts_on_matrix_4x4(verts, mat):
+    vv = to_homogeneous(verts) @ mat
+    return vv[:, :3]
+
+
+def get_scale_vec_3_from_matrix_world(obj_matrix_world):
+    return np.array(obj_matrix_world.to_scale(), dtype=np.float32)
+
+
+def get_scale_vec_4_from_matrix_world(obj_matrix_world):
+    return np.array(obj_matrix_world.to_scale().to_4d(), dtype=np.float32)
+
+
+def get_scale_matrix_4x4_from_matrix_world(obj_matrix_world):
+    scale_vec = get_scale_vec_4_from_matrix_world(obj_matrix_world)
+    return np.diag(scale_vec)
+
+
+def get_world_matrix_without_scale(obj_matrix_world):
+    scale_vec = get_scale_vec_4_from_matrix_world(obj_matrix_world)
+    scminv = np.diag(1.0 / scale_vec)
+    return scminv @ np.array(obj_matrix_world, dtype=np.float32).transpose()
+
+
+def get_scale_matrix_3x3_from_matrix_world(obj_matrix_world):
+    scale_vec = get_scale_vec_3_from_matrix_world(obj_matrix_world)
+    return np.diag(scale_vec)
+
+
+def compensate_view_scale():
+    image_width, image_height = render_frame()
+    if image_width >= image_height:
+        return 1.0
+    return image_width / image_height

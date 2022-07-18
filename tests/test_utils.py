@@ -7,12 +7,13 @@ import random
 import math
 
 import bpy
-import keentools_facebuilder
-from keentools_facebuilder.config import Config, get_main_settings, \
-    get_operator
-import keentools_facebuilder.utils.coords as coords
-from keentools_facebuilder.fbloader import FBLoader
-from keentools_facebuilder.utils.images import assign_pixels_data
+
+from keentools.addon_config import get_operator
+from keentools.facebuilder_config import FBConfig, get_fb_settings
+import keentools.utils.coords as coords
+from keentools.facebuilder.fbloader import FBLoader
+from keentools.facebuilder.interface.filedialog import load_single_image_file
+from keentools.utils.images import assign_pixels_data
 
 
 _TEST_DIR = os.path.join(tempfile.gettempdir(), 'keentools_tests')
@@ -81,7 +82,7 @@ def create_random_size_test_images(count=3,
 
 
 def select_by_headnum(headnum):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     headobj = settings.get_head(headnum).headobj
     headobj.select_set(state=True)
     bpy.context.view_layer.objects.active = headobj
@@ -89,7 +90,7 @@ def select_by_headnum(headnum):
 
 
 def out_pinmode():
-    settings = get_main_settings()
+    settings = get_fb_settings()
     FBLoader.out_pinmode(settings.current_headnum)
 
 
@@ -101,7 +102,7 @@ def update_pins(headnum, camnum):
 # Operators call
 def create_head():
     # Create Head
-    op = get_operator(Config.fb_add_head_operator_idname)
+    op = get_operator(FBConfig.fb_add_head_operator_idname)
     op('EXEC_DEFAULT')
 
 
@@ -110,27 +111,26 @@ def create_empty_camera(headnum):
 
 
 def create_camera_from_image(headnum, camnum, filename):
-    return keentools_facebuilder.interface.filedialog.load_single_image_file(
-        headnum, camnum, filename)
+    return load_single_image_file(headnum, camnum, filename)
 
 
 def create_camera(headnum, filepath):
     filename = os.path.basename(filepath)
     dir = os.path.dirname(filepath)
-    op = get_operator(Config.fb_multiple_filebrowser_idname)
+    op = get_operator(FBConfig.fb_multiple_filebrowser_idname)
     op('EXEC_DEFAULT', headnum=headnum, directory=dir,
        files=({'name': filename},))
 
 
 def delete_camera(headnum, camnum):
-    op = get_operator(Config.fb_delete_camera_idname)
+    op = get_operator(FBConfig.fb_delete_camera_idname)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
 
 
 def move_pin(start_x, start_y, end_x, end_y, arect, brect,
              headnum=0, camnum=0):
     # Registered Operator call
-    op = get_operator(Config.fb_movepin_idname)
+    op = get_operator(FBConfig.fb_movepin_idname)
     # Move pin
     x, y = coords.region_to_image_space(start_x, start_y, *arect)
     px, py = coords.image_space_to_region(x, y, *brect)
@@ -148,12 +148,12 @@ def move_pin(start_x, start_y, end_x, end_y, arect, brect,
 
 
 def select_camera(headnum=0, camnum=0):
-    op = get_operator(Config.fb_select_camera_idname)
+    op = get_operator(FBConfig.fb_select_camera_idname)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
 
 
 def change_scene_camera(headnum, camnum):
-    settings = get_main_settings()
+    settings = get_fb_settings()
     camera = settings.get_camera(headnum, camnum)
     bpy.context.scene.camera = camera.camobj
 
@@ -163,7 +163,7 @@ def deselect_all():
 
 
 def wireframe_coloring(action='wireframe_green'):
-    op = get_operator(Config.fb_wireframe_color_idname)
+    op = get_operator(FBConfig.fb_wireframe_color_idname)
     op('EXEC_DEFAULT', action=action)
 
 
@@ -177,27 +177,27 @@ def save_scene(filename):
 
 
 def create_blendshapes():
-    op = get_operator(Config.fb_create_blendshapes_idname)
+    op = get_operator(FBConfig.fb_create_blendshapes_idname)
     op('EXEC_DEFAULT')
 
 
 def delete_blendshapes():
-    op = get_operator(Config.fb_delete_blendshapes_idname)
+    op = get_operator(FBConfig.fb_delete_blendshapes_idname)
     op('EXEC_DEFAULT')
 
 
 def create_example_animation():
-    op = get_operator(Config.fb_create_example_animation_idname)
+    op = get_operator(FBConfig.fb_create_example_animation_idname)
     op('EXEC_DEFAULT')
 
 
 def pickmode_start(headnum, camnum):
-    op = get_operator(Config.fb_pickmode_starter_idname)
+    op = get_operator(FBConfig.fb_pickmode_starter_idname)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
 
 
 def pickmode_select(headnum, camnum, selected):
-    op = get_operator(Config.fb_pickmode_idname)
+    op = get_operator(FBConfig.fb_pickmode_idname)
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum, selected=selected)
 
 
@@ -205,7 +205,7 @@ def create_head_images():
     logger = logging.getLogger(__name__)
     new_scene()
     create_head()
-    settings = get_main_settings()
+    settings = get_fb_settings()
     headnum = settings.get_last_headnum()
     head = settings.get_head(headnum)
     headobj = head.headobj
