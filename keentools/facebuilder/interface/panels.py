@@ -227,15 +227,16 @@ class FB_PT_UpdatePanel(Common, Panel):
     def _draw_response(self, layout):
         col = layout.column()
         col.scale_y = Config.text_scale_y
-        if not FBUpdater.is_active():
-            return
-        FBUpdater.render_message(col)
+
+        for txt in FBUpdater.render_message(limit=32):
+            col.label(text=txt)
+
+        layout.operator(FBConfig.fb_download_the_update_idname,
+            text='Download the update', icon='IMPORT')
 
         res = FBUpdater.get_response()
         if res is None:
             return
-        layout.operator(FBConfig.fb_download_the_update_idname,
-            text='Download the update', icon='IMPORT')
         layout.operator(FBConfig.fb_remind_later_idname,
             text='Remind tomorrow', icon='RECOVER_LAST')
         layout.operator(FBConfig.fb_skip_version_idname,
@@ -257,7 +258,8 @@ class FB_PT_DownloadNotification(Common, Panel):
         return FBDownloadNotification.is_active()
 
     def _draw_response(self, layout):
-        FBDownloadNotification.render_message(layout)
+        for txt in FBDownloadNotification.render_message():
+            layout.label(text=txt)
 
     def draw(self, context):
         layout = self.layout
@@ -277,7 +279,9 @@ class FB_PT_DownloadingProblemPanel(Common, Panel):
     def _draw_response(self, layout):
         col = layout.column()
         col.scale_y = Config.text_scale_y
-        FBDownloadingProblem.render_message(col)
+
+        for txt in FBDownloadingProblem.render_message(limit=32):
+            col.label(text=txt)
 
         layout.operator(FBConfig.fb_retry_download_the_update_idname,
                         text='Try again', icon='FILE_REFRESH')
@@ -302,7 +306,9 @@ class FB_PT_UpdatesInstallationPanel(Common, Panel):
     def _draw_response(self, layout):
         col = layout.column()
         col.scale_y = Config.text_scale_y
-        FBInstallationReminder.render_message(col)
+
+        for txt in FBInstallationReminder.render_message():
+            col.label(text=txt)
 
         if not FBInstallationReminder.is_active():
             return

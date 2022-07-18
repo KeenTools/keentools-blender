@@ -17,8 +17,8 @@
 # ##### END GPL LICENSE BLOCK #####
 
 bl_info = {
-    "name": "KeenTools FaceBuilder uninstaller 2022.1.1",  # [1/2]
-    "version": (2022, 1, 1),  # 2022.1.1 [2/2]
+    "name": "KeenTools FaceBuilder uninstaller 2022.2.0",  # [1/2]
+    "version": (2022, 2, 0),  # 2022.2.0 [2/2]
     "author": "KeenTools",
     "description": "KeenTools old FaceBuilder addon uninstaller. "
                    "Use KeenTools addon instead",
