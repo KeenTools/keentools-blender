@@ -31,7 +31,7 @@ from ..utils.focal_length import update_camera_focal
 from ..utils.ui_redraw import force_ui_redraw
 from ..utils.other import hide_viewport_ui_elements_and_store_on_object
 from ..utils.html import split_long_string
-from ..utils.localview import exit_area_localview
+from ..utils.localview import exit_area_localview, check_area_active_problem
 from ..utils.manipulate import switch_to_camera, center_viewports_on_object
 
 
@@ -345,9 +345,10 @@ class FB_OT_PinMode(bpy.types.Operator):
             logger.debug("SHADER UPDATE ONLY")
             self._init_wireframer_colors(settings.overall_opacity)
 
-        assert area.spaces.active.region_3d.view_perspective == 'CAMERA'
-        bpy.ops.view3d.view_center_camera(
-            {'area': area, 'region': coords.get_area_region(area)})
+        if not check_area_active_problem(area):
+            assert area.spaces.active.region_3d.view_perspective == 'CAMERA'
+            bpy.ops.view3d.view_center_camera(
+                {'area': area, 'region': coords.get_area_region(area)})
 
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
         push_head_in_undo_history(head, 'Pin Mode Start.')
