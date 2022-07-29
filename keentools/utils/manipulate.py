@@ -20,7 +20,9 @@ import logging
 
 import bpy
 
-from .localview import enter_area_localview, exit_area_localview
+from .localview import (enter_area_localview,
+                        exit_area_localview,
+                        check_area_active_problem)
 from .ui_redraw import get_areas_by_type
 
 
@@ -78,8 +80,10 @@ def switch_to_camera(area, camobj, select_obj=None):
     enter_area_localview(area)
 
     # Low-level code instead bpy.ops.view3d.object_as_camera()
-    area.spaces.active.camera = camobj
-    area.spaces.active.region_3d.view_perspective = 'CAMERA'
+    if not check_area_active_problem(area):
+        area.spaces.active.camera = camobj
+        if area.spaces.active.region_3d:
+            area.spaces.active.region_3d.view_perspective = 'CAMERA'
 
     if select_obj is not None:
         select_object_only(select_obj)
