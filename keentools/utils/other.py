@@ -151,6 +151,7 @@ class KTStopShaderTimer(KTTimer):
                 # pinmode id externally changed
                 force_stop_shaders()
                 cls.stop()
+                settings.pinmode = False
                 logger.debug("STOP SHADER FORCED BY PINMODE_ID")
                 return None
 
