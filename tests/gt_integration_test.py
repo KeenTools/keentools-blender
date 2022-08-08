@@ -4,6 +4,7 @@ import os
 import logging
 import math
 from typing import Any
+import time
 
 import bpy
 
@@ -35,16 +36,22 @@ class GTTestConfig:
     cube_frames_dir = 'cube_frames'
     cube_start_frame = 1
     cube_end_frame = 10
+    cube_frames_count = cube_end_frame - cube_start_frame + 1
+    cube_max_precalc_time_per_frame = 5.0
+    cube_precalc_time_limit = cube_frames_count * cube_max_precalc_time_per_frame
     cube_precalc_filename = 'cube.precalc'
 
 
-_dirname: str = os.path.dirname(os.path.abspath(__file__))
-_log_output(f'GT TEST DIRNAME: {_dirname}')
+def _add_test_utils_path() -> None:
+    _dirname: str = os.path.dirname(os.path.abspath(__file__))
+    _log_output(f'GT TEST DIRNAME: {_dirname}')
 
-if _dirname not in sys.path:
-    sys.path.append(_dirname)
-sys.path.append(_dirname)
+    if _dirname not in sys.path:
+        sys.path.append(_dirname)
+        _log_output(f'sys.path: {sys.path}')
 
+
+_add_test_utils_path()
 import test_utils
 
 
@@ -151,14 +158,42 @@ def prepare_gt_test_environment():
     op('EXEC_DEFAULT', action='create_precalc')
 
     settings = get_gt_settings()
+    start_time = time.time()
+    prev_time = start_time
+    overall_time = 0.0
+    output_status_delta_time = 2.0
+    precalc_time_limit = GTTestConfig.cube_precalc_time_limit
+
     while settings.precalc_mode:
-        pass
+        current_time = time.time()
+        overall_time = current_time - start_time
+        if current_time - prev_time > output_status_delta_time:
+            _log_output(f'precalc calculating... {overall_time:.2f} sec.')
+            prev_time = current_time
+        if overall_time > precalc_time_limit:
+            settings.user_interrupts = True
+            raise Exception('Too long precalc calculation')
+    _log_output(f'precalc time: {overall_time}')
 
     test_utils.save_scene(filename='geotracker2.blend')
 
+    from keentools.utils.ui_redraw import get_areas_by_type
+    areas = get_areas_by_type(area_type='VIEW_3D')
+
+    # op = get_operator(GTConfig.gt_pinmode_idname)
+    # op({'area': areas[0]}, 'EXEC_DEFAULT', geotracker_num=0)
+
+    # op = get_operator(GTConfig.gt_track_to_end_idname)
+    # op('EXEC_DEFAULT')
+
+    test_utils.save_scene(filename='geotracker3.blend')
+
 
 class GeoTrackerTest(unittest.TestCase):
-    pass
+    def test_addon_on(self):
+        new_scene()
+        settings = get_gt_settings()
+        self.assertEqual(0, len(settings.geotrackers))
 
 
 if __name__ == '__main__':
