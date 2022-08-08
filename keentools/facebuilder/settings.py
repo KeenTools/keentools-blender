@@ -441,7 +441,7 @@ def expression_views_callback(self, context):
     for i, camera in enumerate(self.cameras):
         kid = camera.get_keyframe()
         res.append(('{}'.format(kid), camera.get_image_name(),
-                    '', 'HIDE_OFF', kid))
+                    '', 'PINNED' if camera.has_pins() else 'HIDE_OFF', kid))
     return res
 
 

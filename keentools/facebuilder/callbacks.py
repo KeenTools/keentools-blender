@@ -200,7 +200,8 @@ def _update_mesh_now(headnum):
         # Update wireframe structures
         vp = FBLoader.viewport()
         wf = vp.wireframer()
-        wf.init_geom_data_from_fb(fb, head.headobj, keyframe)
+        wf.init_geom_data_from_fb(fb, head.headobj,
+                                  head.get_keyframe(settings.current_camnum))
         wf.init_edge_indices(fb)
         vp.update_wireframe_colors()
 
