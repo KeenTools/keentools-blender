@@ -332,8 +332,11 @@ class GT_OT_InterruptModal(bpy.types.Operator):
         settings = get_gt_settings()
         settings.user_interrupts = False
 
-        context.window_manager.modal_handler_add(self)
-        logger.debug('INTERRUPTOR START')
+        if not bpy.app.background:
+            context.window_manager.modal_handler_add(self)
+            logger.debug('INTERRUPTOR START')
+        else:
+            logger.info('GeoTracker Interruptor skipped by background mode')
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):

@@ -31,12 +31,16 @@ from ...utils.other import (hide_viewport_ui_elements_and_store_on_object,
                             unhide_viewport_ui_elements_from_object)
 from ...utils.images import (np_image_to_grayscale,
                              np_array_from_background_image,
+                             get_background_image_object,
+                             check_bpy_image_size,
+                             np_array_from_bpy_image,
                              set_background_image_by_movieclip)
-from ...utils.coords import render_frame
+from ...utils.coords import render_frame, update_depsgraph
 from ...utils.manipulate import (switch_to_camera,
                                  exit_area_localview)
 from ...utils.bpy_common import bpy_current_frame, bpy_set_current_frame
 from ..gt_class_loader import GTClassLoader
+from ...utils.timer import RepeatTimer
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -127,6 +131,7 @@ class PrecalcTimer:
     def runner_state(self) -> Optional[float]:
         settings = get_gt_settings()
 
+        _log_output('runner_state call')
         if self._runner.is_finished():
             self.finish_precalc_mode()
             geotracker = settings.get_current_geotracker_item()
@@ -134,7 +139,7 @@ class PrecalcTimer:
             return None
 
         progress, message = self._runner.current_progress()
-        _log_output(f'{progress} {message}')
+        _log_output(f'runner_state: {progress} {message}')
         GTLoader.message_to_screen(
             [{'text': 'Precalc calculating... Please wait', 'y': 60,
               'color': (1.0, 0.0, 0.0, 0.7)},
@@ -152,19 +157,39 @@ class PrecalcTimer:
             self._active_state_func = self.timeline_state
             return self._interval
         geotracker = settings.get_current_geotracker_item()
+
         np_img = np_array_from_background_image(geotracker.camobj)
         if np_img is None:
-            return None
+            # For testing purpose only
+            _log_output('no np_img. possible in bpy.app.background mode')
+            bg_img = get_background_image_object(geotracker.camobj)
+
+            im_user = bg_img.image_user
+            update_depsgraph()
+            _log_output(bg_img.image.filepath)
+            path = bg_img.image.filepath_from_user(image_user=im_user)
+            _log_output(f'user_path: {current_frame} {path}')
+            img = bpy.data.images.load(path)
+
+            if not check_bpy_image_size(img):
+                _log_output('cannot load image')
+                return None
+
+            np_img = np_array_from_bpy_image(img)
+            bpy.data.images.remove(img)
+
         grayscale = np_image_to_grayscale(np_img)
         self._runner.fulfill_loading_request(grayscale)
         return self._interval
 
     def timer_func(self) -> Optional[float]:
+        _log_output('timer_func')
         if not self.common_checks():
+            _log_output('timer_func common_checks problem')
             return None
         return self._active_state_func()
 
-    def start(self) -> None:
+    def start(self) -> bool:
         settings = get_gt_settings()
         settings.precalc_mode = True
         self._state = 'runner'
@@ -174,9 +199,19 @@ class PrecalcTimer:
         GTLoader.message_to_screen(
             [{'text':'Precalc is calculating... Please wait',
               'color': (1.0, 0., 0., 0.7)}])
-        op = get_operator(GTConfig.gt_interrupt_modal_idname)
-        op('INVOKE_DEFAULT')
-        bpy.app.timers.register(self.timer_func, first_interval=self._interval)
+
+        _func = self.timer_func
+        if not bpy.app.background:
+            op = get_operator(GTConfig.gt_interrupt_modal_idname)
+            op('INVOKE_DEFAULT')
+            bpy.app.timers.register(_func, first_interval=self._interval)
+            res = bpy.app.timers.is_registered(_func)
+            _log_output(f'timer registered: {res}')
+        else:
+            timer = RepeatTimer(self._interval, _func)
+            timer.start()
+            res = True
+        return res
 
 
 def precalc_with_runner_act(context: Any) -> Tuple[bool, str]:
@@ -223,5 +258,8 @@ def precalc_with_runner_act(context: Any) -> Tuple[bool, str]:
     geotracker.reload_background_image()
 
     pt = PrecalcTimer(area, runner)
-    pt.start()
+    if pt.start():
+        _log_output('Precalc started')
+    else:
+        return False, 'Cannot start precalc timer'
     return True, 'ok'

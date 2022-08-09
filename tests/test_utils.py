@@ -29,7 +29,9 @@ def clear_test_dir():
 
 
 def create_test_dir():
-    os.makedirs(test_dir(), exist_ok=True)
+    dir_path = test_dir()
+    os.makedirs(dir_path, exist_ok=True)
+    return dir_path
 
 
 def create_image(image_name, width=1920, height=1080, color=(0, 0, 0, 1)):
@@ -174,6 +176,11 @@ def new_scene():
 def save_scene(filename):
     filepath = os.path.join(test_dir(), filename)
     bpy.ops.wm.save_mainfile(filepath=filepath, check_existing=False)
+
+
+def load_scene(filename):
+    filepath = os.path.join(test_dir(), filename)
+    bpy.ops.wm.open_mainfile(filepath=filepath)
 
 
 def create_blendshapes():

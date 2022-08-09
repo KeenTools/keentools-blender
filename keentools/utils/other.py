@@ -20,9 +20,7 @@ import time
 import bpy
 
 from ..addon_config import Config
-from ..facebuilder_config import get_fb_settings
 from ..utils.attrs import set_custom_attribute, get_safe_custom_attribute
-from ..utils.timer import KTTimer
 from ..utils.coords import get_area_overlay
 
 

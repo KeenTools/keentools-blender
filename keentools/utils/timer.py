@@ -16,7 +16,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import logging
+import threading
+from typing import Any
+
 import bpy
+
+
+_logger: Any = logging.getLogger(__name__)
+
+
+def _log_output(message: str) -> None:
+    global _logger
+    _logger.debug(message)
 
 
 class KTTimer:
@@ -89,3 +100,15 @@ class KTStopShaderTimer(KTTimer):
 
     def stop(self):
         self._stop(self.check_pinmode)
+
+
+class RepeatTimer(threading.Timer):
+    def run(self):
+        interval = self.interval
+        _log_output('RepeatTimer start')
+        while not self.finished.wait(interval):
+            _log_output(f'RepeatTimer: {interval}')
+            interval = self.function()
+            if interval == None:
+                _log_output('RepeatTimer out')
+                break
