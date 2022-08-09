@@ -46,8 +46,10 @@ from .messages import (ERROR_MESSAGES, draw_warning_labels, get_system_info,
 
 # Init logging system via config file
 base_dir = os.path.dirname(os.path.abspath(__file__))
-logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'),
-                          disable_existing_loggers=False)
+logging.config.fileConfig(os.path.join(base_dir,
+    'logging.conf' if 'KEENTOOLS_ENABLE_DEBUG_LOGGING'
+    in os.environ else 'logging_debug_console.conf'),
+    disable_existing_loggers=False)
 logger = logging.getLogger(__name__)
 txt = get_system_info()
 txt.append('Addon: {}'.format(bl_info['name']))
