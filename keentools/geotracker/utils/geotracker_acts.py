@@ -38,6 +38,7 @@ from .tracking import (get_next_tracking_keyframe,
 from ...utils.bpy_common import create_empty_object, bpy_current_frame, bpy_set_current_frame
 from ...utils.animation import get_action
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
+from ...utils.timer import RepeatTimer
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -315,7 +316,8 @@ class TrackTimer:
         return self._active_state_func()
 
     def start(self) -> None:
-        self._start_user_interrupt_operator()
+        if not bpy.app.background:
+            self._start_user_interrupt_operator()
         GTLoader.message_to_screen(
             [{'text': 'Tracking calculating... Please wait', 'y': 60,
               'color': (1.0, 0.0, 0.0, 0.7)},
@@ -323,7 +325,16 @@ class TrackTimer:
               'color': (1.0, 1.0, 1.0, 0.7)}])
         settings = get_gt_settings()
         settings.tracking_mode = True
-        bpy.app.timers.register(self.timer_func, first_interval=self._interval)
+
+        _func = self.timer_func
+        if not bpy.app.background:
+            bpy.app.timers.register(_func, first_interval=self._interval)
+            res = bpy.app.timers.is_registered(_func)
+            _log_output(f'tracking timer registered: {res}')
+        else:
+            # Testing purpose
+            timer = RepeatTimer(self._interval, _func)
+            timer.start()
 
 
 def _track_checks() -> ActionStatus:

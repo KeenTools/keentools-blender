@@ -178,6 +178,11 @@ def save_scene(filename):
     bpy.ops.wm.save_mainfile(filepath=filepath, check_existing=False)
 
 
+def load_scene(filename):
+    filepath = os.path.join(test_dir(), filename)
+    bpy.ops.wm.open_mainfile(filepath=filepath)
+
+
 def create_blendshapes():
     op = get_operator(FBConfig.fb_create_blendshapes_idname)
     op('EXEC_DEFAULT')

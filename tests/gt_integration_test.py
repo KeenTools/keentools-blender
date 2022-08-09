@@ -7,6 +7,7 @@ from typing import Any
 import time
 
 import bpy
+from mathutils import Vector
 
 from keentools.utils.materials import get_mat_by_name, assign_material_to_object, get_shader_node
 from keentools.addon_config import get_operator
@@ -15,6 +16,8 @@ from keentools.utils.animation import create_locrot_keyframe
 from keentools.utils.bpy_common import bpy_current_frame, bpy_set_current_frame, bpy_scene
 from keentools.utils.coords import update_depsgraph
 from keentools.geotracker_config import get_gt_settings, get_current_geotracker_item
+from keentools.geotracker.gtloader import GTLoader
+from keentools.utils.ui_redraw import get_areas_by_type
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -39,10 +42,20 @@ class GTTestConfig:
     cube_frames_count = cube_end_frame - cube_start_frame + 1
     cube_max_precalc_time_per_frame = 5.0
     cube_precalc_time_limit = cube_frames_count * cube_max_precalc_time_per_frame
+    cube_max_tracking_time_per_frame = 2.0
+    cube_tracking_time_limit = cube_frames_count * cube_max_tracking_time_per_frame
     cube_precalc_filename = 'cube.precalc'
+    cube_start_location = Vector((0.0, 0.0, 0.0))
+    cube_start_rotation = Vector((0.0, 0.0, 0.0))
+    cube_end_location = Vector((-5.0, 10.0, -3.0))
+    cube_end_rotation = Vector((0.0, 0.0, math.pi / 4.0))
+    cube_location_tolerance = 0.3
+    cube_moving_scene_filename = 'gt1_moving_cube.blend'
+    cube_precalc_scene_filename = 'gt2_precalc_calculated.blend'
+    cube_tracked_scene_filename = 'gt3_cube_tracked.blend'
 
 
-def _add_test_utils_path() -> None:
+def add_test_utils_path() -> None:
     _dirname: str = os.path.dirname(os.path.abspath(__file__))
     _log_output(f'GT TEST DIRNAME: {_dirname}')
 
@@ -51,7 +64,7 @@ def _add_test_utils_path() -> None:
         _log_output(f'sys.path: {sys.path}')
 
 
-_add_test_utils_path()
+add_test_utils_path()
 import test_utils
 
 
@@ -95,10 +108,13 @@ def create_moving_cube_scene():
     mat = create_checker_material()
     assign_material_to_object(obj, mat)
     bpy_set_current_frame(GTTestConfig.cube_start_frame)
+    obj.location = GTTestConfig.cube_start_location
+    obj.rotation_euler = GTTestConfig.cube_start_rotation
+    update_depsgraph()
     create_locrot_keyframe(obj)
     bpy_set_current_frame(GTTestConfig.cube_end_frame)
-    obj.location = (-5, 10, -3)
-    obj.rotation_euler = (0, 0, math.pi / 4)
+    obj.location = GTTestConfig.cube_end_location
+    obj.rotation_euler = GTTestConfig.cube_end_rotation
     update_depsgraph()
     create_locrot_keyframe(obj)
     scene = bpy_scene()
@@ -125,8 +141,57 @@ def gt_load_movieclip(dir_path, filename):
     op('EXEC_DEFAULT', directory=dir_path, files=[{'name':filename}], num=0)
 
 
+def fake_pinmode_on():
+    settings = get_gt_settings()
+    settings.pinmode = True
+    settings.user_interrupts = False
+
+
+def fake_viewport_work_area():
+    areas = get_areas_by_type(area_type='VIEW_3D')
+    vp = GTLoader.viewport()
+    vp.set_work_area(areas[0])
+
+
+def wait_for_precalc_end(time_limit=GTTestConfig.cube_precalc_time_limit):
+    settings = get_gt_settings()
+    start_time = time.time()
+    prev_time = start_time
+    overall_time = 0.0
+    output_status_delta_time = 2.0
+
+    while settings.precalc_mode:
+        current_time = time.time()
+        overall_time = current_time - start_time
+        if current_time - prev_time > output_status_delta_time:
+            _log_output(f'precalc calculating... {overall_time:.2f} sec.')
+            prev_time = current_time
+        if overall_time > time_limit:
+            settings.user_interrupts = True  # Stop background process
+            raise Exception('Too long precalc calculation')
+    _log_output(f'precalc time: {overall_time}')
+
+
+def wait_for_tracking_end(time_limit=GTTestConfig.cube_tracking_time_limit):
+    settings = get_gt_settings()
+    start_time = time.time()
+    prev_time = start_time
+    overall_time = 0.0
+    output_status_delta_time = 0.5
+
+    while settings.tracking_mode:
+        current_time = time.time()
+        overall_time = current_time - start_time
+        if current_time - prev_time > output_status_delta_time:
+            _log_output(f'Tracking calculating... {overall_time:.2f} sec.')
+            prev_time = current_time
+        if overall_time > time_limit:
+            settings.user_interrupts = True  # Stop background process
+            raise Exception('Too long tracking calculation')
+    _log_output(f'tracking time: {overall_time}')
+
+
 def prepare_gt_test_environment():
-    global _timer_var
     test_utils.clear_test_dir()
     dir_path = test_utils.create_test_dir()
     _log_output(f'test_dir: {test_utils.test_dir()}')
@@ -151,42 +216,24 @@ def prepare_gt_test_environment():
     geotracker = get_current_geotracker_item()
     geotracker.precalc_start = GTTestConfig.cube_start_frame
     geotracker.precalc_end = GTTestConfig.cube_end_frame
+    test_utils.save_scene(filename=GTTestConfig.cube_moving_scene_filename)
 
-    test_utils.save_scene(filename='geotracker1.blend')
-
+    _log_output('Start precalc')
     op = get_operator(GTConfig.gt_actor_idname)
     op('EXEC_DEFAULT', action='create_precalc')
+    wait_for_precalc_end()
+    test_utils.save_scene(filename=GTTestConfig.cube_precalc_scene_filename)
 
-    settings = get_gt_settings()
-    start_time = time.time()
-    prev_time = start_time
-    overall_time = 0.0
-    output_status_delta_time = 2.0
-    precalc_time_limit = GTTestConfig.cube_precalc_time_limit
+    _log_output('Start tracking')
+    fake_pinmode_on()
+    fake_viewport_work_area()
+    op = get_operator(GTConfig.gt_actor_idname)
+    op('EXEC_DEFAULT', action='add_keyframe')
 
-    while settings.precalc_mode:
-        current_time = time.time()
-        overall_time = current_time - start_time
-        if current_time - prev_time > output_status_delta_time:
-            _log_output(f'precalc calculating... {overall_time:.2f} sec.')
-            prev_time = current_time
-        if overall_time > precalc_time_limit:
-            settings.user_interrupts = True
-            raise Exception('Too long precalc calculation')
-    _log_output(f'precalc time: {overall_time}')
-
-    test_utils.save_scene(filename='geotracker2.blend')
-
-    from keentools.utils.ui_redraw import get_areas_by_type
-    areas = get_areas_by_type(area_type='VIEW_3D')
-
-    # op = get_operator(GTConfig.gt_pinmode_idname)
-    # op({'area': areas[0]}, 'EXEC_DEFAULT', geotracker_num=0)
-
-    # op = get_operator(GTConfig.gt_track_to_end_idname)
-    # op('EXEC_DEFAULT')
-
-    test_utils.save_scene(filename='geotracker3.blend')
+    op = get_operator(GTConfig.gt_track_to_end_idname)
+    op('EXEC_DEFAULT')
+    wait_for_tracking_end()
+    test_utils.save_scene(filename=GTTestConfig.cube_tracked_scene_filename)
 
 
 class GeoTrackerTest(unittest.TestCase):
@@ -194,6 +241,23 @@ class GeoTrackerTest(unittest.TestCase):
         new_scene()
         settings = get_gt_settings()
         self.assertEqual(0, len(settings.geotrackers))
+
+    def test_tracked_cube(self):
+        new_scene()
+        test_utils.load_scene(GTTestConfig.cube_tracked_scene_filename)
+        obj = bpy.data.objects['Cube']
+
+        bpy_set_current_frame(GTTestConfig.cube_start_frame)
+        _log_output(f'Cube location: {obj.location}')
+        loc_diff = (obj.location - GTTestConfig.cube_start_location).length
+        _log_output(f'Cube location diff: {loc_diff}')
+        assert loc_diff < GTTestConfig.cube_location_tolerance
+
+        bpy_set_current_frame(GTTestConfig.cube_end_frame)
+        _log_output(f'Cube location: {obj.location}')
+        loc_diff = (obj.location - GTTestConfig.cube_end_location).length
+        _log_output(f'Cube location diff: {loc_diff}')
+        assert loc_diff < GTTestConfig.cube_location_tolerance
 
 
 if __name__ == '__main__':
@@ -211,7 +275,11 @@ if __name__ == '__main__':
         runner = unittest.TextTestRunner()
         _log_error('Unittest TextTestRunner is active')
 
-    prepare_gt_test_environment()
+    try:
+        prepare_gt_test_environment()
+    except Exception as err:
+        _log_error(f'Preparing environment exception: \n{str(err)}')
+        raise Exception('GeoTracker Test failed on scene preparing')
 
     # unittest.main()  # -- Doesn't work with Blender, so we use Suite
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(GeoTrackerTest)

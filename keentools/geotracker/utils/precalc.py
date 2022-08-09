@@ -40,6 +40,7 @@ from ...utils.manipulate import (switch_to_camera,
                                  exit_area_localview)
 from ...utils.bpy_common import bpy_current_frame, bpy_set_current_frame
 from ..gt_class_loader import GTClassLoader
+from ...utils.timer import RepeatTimer
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -58,18 +59,6 @@ def _log_error(message: str) -> None:
 def _log_info(message: str) -> None:
     global _logger
     _logger.info(message)
-
-
-import threading
-class RepeatTimer(threading.Timer):
-    def run(self):
-        interval = self.interval
-        while not self.finished.wait(interval):
-            _log_output(f'RepeatTimer: {interval}')
-            interval = self.function()
-            if interval == None:
-                _log_output('RepeatTimer out')
-                break
 
 
 class PrecalcTimer:
@@ -210,12 +199,11 @@ class PrecalcTimer:
         GTLoader.message_to_screen(
             [{'text':'Precalc is calculating... Please wait',
               'color': (1.0, 0., 0., 0.7)}])
-        if not bpy.app.background:
-            op = get_operator(GTConfig.gt_interrupt_modal_idname)
-            op('INVOKE_DEFAULT')
 
         _func = self.timer_func
         if not bpy.app.background:
+            op = get_operator(GTConfig.gt_interrupt_modal_idname)
+            op('INVOKE_DEFAULT')
             bpy.app.timers.register(_func, first_interval=self._interval)
             res = bpy.app.timers.is_registered(_func)
             _log_output(f'timer registered: {res}')
