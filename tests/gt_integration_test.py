@@ -68,11 +68,11 @@ add_test_utils_path()
 import test_utils
 
 
-def create_new_default_scene():
+def create_new_default_scene() -> None:
     bpy.ops.wm.read_homefile(app_template="")
 
 
-def create_checker_material():
+def create_checker_material() -> Any:
     tex_size = 2048
     mat = get_mat_by_name('checker_material')
     tex = bpy.data.images.new('ch', tex_size, tex_size)
@@ -90,20 +90,20 @@ def create_checker_material():
     return mat
 
 
-def create_geotracker():
+def create_geotracker() -> None:
     op = get_operator(GTConfig.gt_create_geotracker_idname)
     op('EXEC_DEFAULT')
 
 
-def new_scene():
+def new_scene() -> None:
     bpy.ops.wm.read_homefile(app_template='')
 
 
-def cube_render_frames_dir():
+def cube_render_frames_dir() -> str:
     return os.path.join(test_utils.test_dir(), GTTestConfig.cube_frames_dir)
 
 
-def create_moving_cube_scene():
+def create_moving_cube_scene() -> None:
     obj = bpy.data.objects['Cube']
     mat = create_checker_material()
     assign_material_to_object(obj, mat)
@@ -131,29 +131,29 @@ def create_moving_cube_scene():
     _log_output(f'Rendered by {scene.render.engine}: {filepath}')
 
 
-def gt_create_geotracker():
+def gt_create_geotracker() -> None:
     op = get_operator(GTConfig.gt_create_geotracker_idname)
     op('EXEC_DEFAULT')
 
 
-def gt_load_movieclip(dir_path, filename):
+def gt_load_movieclip(dir_path: str, filename: str) -> None:
     op = get_operator(GTConfig.gt_multiple_filebrowser_idname)
     op('EXEC_DEFAULT', directory=dir_path, files=[{'name':filename}], num=0)
 
 
-def fake_pinmode_on():
+def fake_pinmode_on() -> None:
     settings = get_gt_settings()
     settings.pinmode = True
     settings.user_interrupts = False
 
 
-def fake_viewport_work_area():
+def fake_viewport_work_area() -> None:
     areas = get_areas_by_type(area_type='VIEW_3D')
     vp = GTLoader.viewport()
     vp.set_work_area(areas[0])
 
 
-def wait_for_precalc_end(time_limit=GTTestConfig.cube_precalc_time_limit):
+def wait_for_precalc_end(time_limit: float=GTTestConfig.cube_precalc_time_limit) -> None:
     settings = get_gt_settings()
     start_time = time.time()
     prev_time = start_time
@@ -172,7 +172,7 @@ def wait_for_precalc_end(time_limit=GTTestConfig.cube_precalc_time_limit):
     _log_output(f'precalc time: {overall_time}')
 
 
-def wait_for_tracking_end(time_limit=GTTestConfig.cube_tracking_time_limit):
+def wait_for_tracking_end(time_limit: float=GTTestConfig.cube_tracking_time_limit) -> None:
     settings = get_gt_settings()
     start_time = time.time()
     prev_time = start_time
@@ -191,7 +191,7 @@ def wait_for_tracking_end(time_limit=GTTestConfig.cube_tracking_time_limit):
     _log_output(f'tracking time: {overall_time}')
 
 
-def prepare_gt_test_environment():
+def prepare_gt_test_environment() -> None:
     test_utils.clear_test_dir()
     dir_path = test_utils.create_test_dir()
     _log_output(f'test_dir: {test_utils.test_dir()}')
@@ -237,12 +237,12 @@ def prepare_gt_test_environment():
 
 
 class GeoTrackerTest(unittest.TestCase):
-    def test_addon_on(self):
+    def test_addon_on(self) -> None:
         new_scene()
         settings = get_gt_settings()
         self.assertEqual(0, len(settings.geotrackers))
 
-    def test_tracked_cube(self):
+    def test_tracked_cube(self) -> None:
         new_scene()
         test_utils.load_scene(GTTestConfig.cube_tracked_scene_filename)
         obj = bpy.data.objects['Cube']
