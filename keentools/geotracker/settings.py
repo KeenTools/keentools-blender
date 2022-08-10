@@ -241,6 +241,11 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         default=GTConfig.wireframe_color, min=0.0, max=1.0,
         update=update_wireframe_func)
 
+    wireframe_backface_culling: bpy.props.BoolProperty(
+        name='Backface culling',
+        default=False,
+        update=update_wireframe_func)
+
     anim_start: bpy.props.IntProperty(name='from', default=1)
     anim_end: bpy.props.IntProperty(name='to', default=250)
 

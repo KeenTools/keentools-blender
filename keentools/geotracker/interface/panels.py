@@ -397,10 +397,10 @@ class GT_PT_WireframeSettingsPanel(AllVisible):
         layout = self.layout
         settings = get_gt_settings()
 
-        split = layout.split(factor=0.25)
-        row = split.row()
-        row.prop(settings, 'wireframe_color', text='')
+        split = layout.split(factor=0.25, align=True)
+        split.prop(settings, 'wireframe_color', text='')
         split.prop(settings, 'wireframe_opacity', text='', slider=True)
+        layout.prop(settings, 'wireframe_backface_culling')
 
 
 class GT_PT_AnimationPanel(AllVisible):

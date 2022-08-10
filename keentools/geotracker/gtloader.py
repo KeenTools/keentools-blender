@@ -305,6 +305,7 @@ class GTLoader:
         wf.init_geom_data_from_mesh(geotracker.geomobj)
         wf.init_color_data((*settings.wireframe_color,
                             settings.wireframe_opacity))
+        wf.set_backface_culling(settings.wireframe_backface_culling)
         wf.create_batches()
 
     @classmethod
