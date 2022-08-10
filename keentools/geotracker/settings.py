@@ -79,6 +79,16 @@ def update_wireframe_func(self, context) -> None:
     GTLoader.update_viewport_wireframe()
 
 
+def update_wireframe_backface_culling(self, context) -> None:
+    if self.ui_write_mode:
+        return
+    gt = GTLoader.kt_geotracker()
+    gt.set_back_face_culling(self.wireframe_backface_culling)
+    GTLoader.save_geotracker()
+    if self.pinmode:
+        GTLoader.update_viewport_wireframe()
+
+
 def _update_preview_gamma(self, context) -> None:
     _log_output('Image Adj Gamma: ', self.preview_gamma)
     settings = get_gt_settings()
@@ -219,6 +229,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
 
 class GTSceneSettings(bpy.types.PropertyGroup):
+    ui_write_mode: bpy.props.BoolProperty(name='UI Write mode', default=False)
     pinmode: bpy.props.BoolProperty(name='Pinmode status', default=False)
     move_pin_mode: bpy.props.BoolProperty(name='Move pin mode status', default=False)
     pinmode_id: bpy.props.StringProperty(name='Unique pinmode ID')
@@ -244,7 +255,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     wireframe_backface_culling: bpy.props.BoolProperty(
         name='Backface culling',
         default=False,
-        update=update_wireframe_func)
+        update=update_wireframe_backface_culling)
 
     anim_start: bpy.props.IntProperty(name='from', default=1)
     anim_end: bpy.props.IntProperty(name='to', default=250)
@@ -265,6 +276,9 @@ class GTSceneSettings(bpy.types.PropertyGroup):
                                          default=0.0)
     selection_y: bpy.props.FloatProperty(name='Selection Y',
                                          default=0.0)
+
+    def set_ui_write_mode(self, value: bool) -> None:
+        self.ui_write_mode = value
 
     def reset_pinmode_id(self) -> None:
         self.pinmode_id = 'stop'

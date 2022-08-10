@@ -275,6 +275,18 @@ class GTLoader:
         geotracker.store_serial_str_on_geomobj()
 
     @classmethod
+    def _deserialize_global_options(cls):
+        settings = get_gt_settings()
+        gt = cls.kt_geotracker()
+        settings.set_ui_write_mode(True)
+        try:
+            settings.wireframe_backface_culling = gt.back_face_culling()
+        except Exception as err:
+            _log_error(f'_deserialize_global_options:\n{str(err)}')
+        finally:
+            settings.set_ui_write_mode(False)
+
+    @classmethod
     def load_geotracker(cls) -> bool:
         geotracker = get_current_geotracker_item()
         if not geotracker:
@@ -291,6 +303,7 @@ class GTLoader:
         if not gt.deserialize(serial):
             _log_warning(f'DESERIALIZE ERROR: {serial}')
             return False
+        cls._deserialize_global_options()
         return True
 
     @classmethod
