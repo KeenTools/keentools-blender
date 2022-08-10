@@ -71,7 +71,7 @@ class KTEdgeShaderBase:
         self._target_class = target_class
         self._work_area = None
         self._is_shader_visible = True
-        self._backface_culling = True
+        self._backface_culling = False
 
         # Check if blender started in background mode
         if not bpy.app.background:
