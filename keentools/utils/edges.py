@@ -71,6 +71,7 @@ class KTEdgeShaderBase:
         self._target_class = target_class
         self._work_area = None
         self._is_shader_visible = True
+        self._backface_culling = False
 
         # Check if blender started in background mode
         if not bpy.app.background:
@@ -129,6 +130,9 @@ class KTEdgeShaderBase:
 
     def unhide_shader(self):
         self.set_visible(True)
+
+    def set_backface_culling(self, state):
+        self._backface_culling = state
 
     @staticmethod
     def _get_triangulation_indices(obj):
@@ -336,11 +340,18 @@ class KTEdgeShader3D(KTEdgeShaderBase):
 
         bgl.glEnable(bgl.GL_DEPTH_TEST)
         bgl.glEnable(bgl.GL_POLYGON_OFFSET_FILL)
-        bgl.glPolygonOffset(1.0, 1.0)
-
         bgl.glColorMask(bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE)
-        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_FILL)
 
+        if self._backface_culling:
+            bgl.glPolygonMode(bgl.GL_BACK, bgl.GL_FILL)
+            bgl.glEnable(bgl.GL_CULL_FACE)
+            bgl.glCullFace(bgl.GL_FRONT)
+            bgl.glPolygonOffset(-1.0, -1.0)
+            self.draw_empty_fill()
+
+        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_FILL)
+        bgl.glDisable(bgl.GL_CULL_FACE)
+        bgl.glPolygonOffset(1.0, 1.0)
         self.draw_empty_fill()
 
         bgl.glColorMask(bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE)
