@@ -18,6 +18,7 @@
 
 import logging
 import numpy as np
+from typing import Any
 
 import bpy
 
@@ -32,6 +33,24 @@ from ..utils.other import unhide_viewport_ui_elements_from_object
 from ..utils.ui_redraw import force_ui_redraw
 from .viewport import FBViewport
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+
+
+_logger: Any = logging.getLogger(__name__)
+
+
+def _log_output(message: str) -> None:
+    global _logger
+    _logger.debug(message)
+
+
+def _log_warning(message: str) -> None:
+    global _logger
+    _logger.warning(message)
+
+
+def _log_error(message: str) -> None:
+    global _logger
+    _logger.error(message)
 
 
 def force_stop_fb_shaders():
@@ -80,15 +99,14 @@ class FBLoader:
 
     @classmethod
     def update_head_camobj_focals(cls, headnum):
-        logger = logging.getLogger(__name__)
-        logger.debug('update_head_camobj_focals call')
+        _log_output('update_head_camobj_focals call')
         settings = get_fb_settings()
         head = settings.get_head(headnum)
         if not head:
             return
         for i, c in enumerate(head.cameras):
             c.camobj.data.lens = c.focal
-            logger.debug('camera: {} focal: {}'.format(i, c.focal))
+            _log_output(f'camera: {i} focal: {c.focal}')
 
     @classmethod
     def set_keentools_attributes(cls, obj):
@@ -112,22 +130,20 @@ class FBLoader:
 
     @classmethod
     def save_pinmode_state(cls, headnum):
-        logger = logging.getLogger(__name__)
         cls.save_fb_serial_and_image_pathes(headnum)
 
         vp = cls.viewport()
         vp.pins().reset_current_pin()
 
         cls.update_head_camobj_focals(headnum)
-        logger.debug('SAVE PINMODE STATE')
+        _log_output('SAVE PINMODE STATE')
 
     @classmethod
     def stop_viewport_shaders(cls):
         cls._check_shader_timer.stop()
         vp = cls.viewport()
         vp.unregister_handlers()
-        logger = logging.getLogger(__name__)
-        logger.debug('VIEWPORT SHADERS/STOPPER HAS BEEN STOPPED')
+        _log_output('VIEWPORT SHADERS/STOPPER HAS BEEN STOPPED')
 
     @classmethod
     def out_pinmode_without_save(cls, headnum):
@@ -140,13 +156,10 @@ class FBLoader:
              # TODO: Need to think about better architecture
             if area is None:
                 area = bpy.context.area
-            logger = logging.getLogger(__name__)
-            log_output = logger.debug
-            log_output(f'out_pinmode_without_save area={area}')
+            _log_output(f'out_pinmode_without_save area={area}')
             unhide_viewport_ui_elements_from_object(area, head.headobj)
         settings.pinmode = False
-        logger = logging.getLogger(__name__)
-        logger.debug('OUT PINMODE')
+        _log_output('OUT PINMODE')
         camera = head.get_camera(settings.current_camnum)
         if camera:
             camera.reset_tone_mapping()
@@ -210,8 +223,7 @@ class FBLoader:
 
     @classmethod
     def update_all_camera_focals(cls, headnum):
-        logger = logging.getLogger(__name__)
-        logger.debug('update_all_camera_focals')
+        _log_output('update_all_camera_focals')
         settings = get_fb_settings()
         head = settings.get_head(headnum)
         if not head:
@@ -219,7 +231,7 @@ class FBLoader:
 
         for i, cam in enumerate(head.cameras):
             cls.update_one_camera_focal(cam)
-            logger.debug('cam.focal: {} {}'.format(i, cam.focal))
+            _log_output(f'cam.focal: {i} {cam.focal}')
 
     @classmethod
     def center_geo_camera_projection(cls, headnum, camnum):
@@ -256,7 +268,6 @@ class FBLoader:
 
     @classmethod
     def update_camera_pins_count(cls, headnum, camnum):
-        logger = logging.getLogger(__name__)
         settings = get_fb_settings()
         head = settings.get_head(headnum)
         cam = head.get_camera(camnum)
@@ -264,8 +275,8 @@ class FBLoader:
         kid = settings.get_keyframe(headnum, camnum)
         pins_count = fb.pins_count(kid)
         cam.pins_count = pins_count
-        logger.debug("PINS_COUNT H:{} C:{} k:{} count:{}".format(
-            headnum, camnum, kid, pins_count))
+        _log_output(f'PINS_COUNT H:{headnum} C:{camnum} '
+                    f'k:{kid} count:{pins_count}')
 
     @classmethod
     def get_next_keyframe(cls):
@@ -355,14 +366,12 @@ class FBLoader:
     def _load_model_from_head(cls, head):
         fb = cls.get_builder()
         if not fb.deserialize(head.get_serial_str()):
-            logger = logging.getLogger(__name__)
-            logger.warning('DESERIALIZE ERROR: {}'.format(
-                head.get_serial_str()))
+            _log_warning(f'DESERIALIZE ERROR: {head.get_serial_str()}')
             return False
         return True
 
     @classmethod
-    def load_model_throw_exception(cls, headnum):
+    def load_model_throw_exception(cls, headnum: int) -> bool:
         settings = get_fb_settings()
         head = settings.get_head(headnum)
         if head is None:
@@ -370,15 +379,35 @@ class FBLoader:
         return cls._load_model_from_head(head)
 
     @classmethod
-    def load_model(cls, headnum):
+    def _deserialize_global_options(cls, headnum: int) -> None:
+        _log_output('_deserialize_global_options call')
+        settings = get_fb_settings()
+        head = settings.get_head(headnum)  # we assume that head is checked
+        fb = cls.get_builder()
+        with settings.ui_write_mode_context():
+            try:
+                head.use_emotions = fb.use_emotions()
+                head.lock_blinking = fb.blinking_locked()
+                head.lock_neck_movement = fb.neck_movement_locked()
+                settings.shape_rigidity = fb.shape_rigidity()
+                settings.expression_rigidity = fb.expressions_rigidity()
+                settings.blinking_rigidity = fb.blinking_rigidity()
+                settings.neck_movement_rigidity = fb.neck_movement_rigidity()
+            except Exception as err:
+                _log_error(f'_deserialize_global_options:\n{str(err)}')
+
+    @classmethod
+    def load_model(cls, headnum: int) -> bool:
         try:
-            return cls.load_model_throw_exception(headnum)
+            res = cls.load_model_throw_exception(headnum)
+            if not res:
+                return False
+            cls._deserialize_global_options(headnum)
+            return True
         except pkt_module().ModelLoadingException as err:
-            logger = logging.getLogger(__name__)
-            logger.error('DESERIALIZE ModelLoadingException: {}'.format(str(err)))
+            _log_error(f'DESERIALIZE ModelLoadingException: {str(err)}')
         except Exception as err:
-            logger = logging.getLogger(__name__)
-            logger.error('DESERIALIZE Unknown Exception: {}'.format(str(err)))
+            _log_error(f'DESERIALIZE Unknown Exception: {str(err)}')
         return False
 
     @classmethod
@@ -401,15 +430,13 @@ class FBLoader:
     @classmethod
     def solve(cls, headnum, camnum):
         def _exception_handling(headnum, msg, license_err=True):
-            logger = logging.getLogger(__name__)
-            logger.error(msg)
+            _log_error(msg)
             if settings.pinmode:
                 settings.force_out_pinmode = True
                 settings.license_error = license_err
                 cls.out_pinmode(headnum)
 
-        logger = logging.getLogger(__name__)
-        logger.debug('FBloader.solve called')
+        _log_output('FBloader.solve called')
         settings = get_fb_settings()
         head = settings.get_head(headnum)
         camera = head.get_camera(camnum)
@@ -434,13 +461,11 @@ class FBLoader:
                                 license_err=False)
             return False
         except Exception as err:
-            _exception_handling(
-                headnum,
-                'SOLVE UNKNOWN EXCEPTION: {}'.format(str(err)),
-                license_err=False
+            _exception_handling(headnum, f'SOLVE UNKNOWN EXCEPTION: {str(err)}',
+                                license_err=False
             )
             return False
-        logger.debug('FBloader.solve finished')
+        _log_output('FBloader.solve finished')
         return True
 
     @classmethod
@@ -459,8 +484,7 @@ class FBLoader:
         sensor_width = head.sensor_width if head.sensor_width != -1 \
             else FBConfig.default_sensor_width
 
-        logger = logging.getLogger(__name__)
-        logger.debug('UPDATE_OLD_MODEL')
+        _log_output('UPDATE_OLD_MODEL')
 
         cls.load_model(headnum)
         fb = cls.get_builder()
@@ -470,7 +494,7 @@ class FBLoader:
                 continue
             kid = cam.get_keyframe()
             w, h = cls.size_from_projection(kid)
-            logger.debug('IMAGE_SIZE_BY_PROJECTION: {}x{}'.format(w, h))
+            _log_output(f'IMAGE_SIZE_BY_PROJECTION: {w}x{h}')
             dx = (h - w) * 0.5
             dy = (w - h) * 0.5
             for i in range(fb.pins_count(kid)):
@@ -511,8 +535,7 @@ class FBLoader:
         if col is not None:
             col.objects.link(cam_ob)  # link to headobj collection
         else:
-            logger = logging.getLogger(__name__)
-            logger.error("ERROR IN COLLECTIONS")
+            _log_error('ERROR IN COLLECTIONS')
             bpy.context.scene.collection.objects.link(cam_ob)  # Link to Scene
 
         return cam_ob
@@ -550,7 +573,6 @@ class FBLoader:
 
     @classmethod
     def add_new_camera(cls, headnum, img):
-        logger = logging.getLogger(__name__)
         settings = get_fb_settings()
         head = settings.get_head(headnum)
 
@@ -568,7 +590,7 @@ class FBLoader:
 
         fb.set_centered_geo_keyframe(kid)
 
-        logger.debug("KEYFRAMES {}".format(str(fb.keyframes())))
+        _log_output(f'KEYFRAMES {str(fb.keyframes())}')
 
         attrs.mark_keentools_object(camera.camobj)
         return camera

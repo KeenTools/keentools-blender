@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 import logging
 import math
+from contextlib import contextmanager
 
 import bpy
 import numpy as np
@@ -39,8 +40,13 @@ from .fbloader import FBLoader
 from ..utils import coords
 from .callbacks import (update_mesh_with_dialog,
                         update_mesh_simple,
-                        update_expressions,
-                        update_expression_options,
+                        update_shape_rigidity,
+                        update_expression_rigidity,
+                        update_blinking_rigidity,
+                        update_neck_movement_rigidity,
+                        update_use_emotions,
+                        update_lock_blinking,
+                        update_lock_neck_movement,
                         update_expression_view,
                         update_wireframe_image,
                         update_wireframe_func,
@@ -448,11 +454,11 @@ def expression_views_callback(self, context):
 class FBHeadItem(PropertyGroup):
     use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
                                          default=False,
-                                         update=update_expressions)
+                                         update=update_use_emotions)
     lock_blinking: BoolProperty(
-        name="Lock eye blinking", default=False, update=update_expression_options)
+        name="Lock eye blinking", default=False, update=update_lock_blinking)
     lock_neck_movement: BoolProperty(
-        name="Lock neck movement", default=False, update=update_expression_options)
+        name="Lock neck movement", default=False, update=update_lock_neck_movement)
 
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
     blendshapes_control_panel: PointerProperty(name="Blendshapes Control Panel",
@@ -713,6 +719,7 @@ class FBSceneSettings(PropertyGroup):
     force_out_pinmode: BoolProperty(name="Pin Mode Out", default=False)
     license_error: BoolProperty(name="License Error", default=False)
 
+    ui_write_mode: bpy.props.BoolProperty(name='UI Write mode', default=False)
     # ---------------------
     # Model View parameters
     # ---------------------
@@ -780,15 +787,21 @@ class FBSceneSettings(PropertyGroup):
 
     # Other settings
     shape_rigidity: FloatProperty(
-        description="Change how much pins affect the model shape",
-        name="Shape rigidity", default=1.0, min=0.001, max=1000.0)
+        description='Change how much pins affect the model shape. '
+                    'Accessible in Pinmode only',
+        name='Shape rigidity', default=1.0, min=0.001, max=1000.0,
+        update=update_shape_rigidity)
     expression_rigidity: FloatProperty(
-        description="Change how much pins affect the model expressions",
-        name="Expression rigidity", default=2.0, min=0.001, max=1000.0)
+        description='Change how much pins affect the model expressions'
+                    'Accessible in Pinmode only',
+        name='Expression rigidity', default=2.0, min=0.001, max=1000.0,
+        update=update_expression_rigidity)
     blinking_rigidity: FloatProperty(
-        name="Eye blinking rigidity", default=2.0, min=0.001, max=1000.0)
+        name="Eye blinking rigidity", default=2.0, min=0.001, max=1000.0,
+        update=update_blinking_rigidity)
     neck_movement_rigidity: FloatProperty(
-        name="Neck movement rigidity", default=2.0, min=0.001, max=1000.0)
+        name='Neck movement rigidity', default=2.0, min=0.001, max=1000.0,
+        update=update_neck_movement_rigidity)
 
     # Internal use only.
     # Warning! current_headnum and current_camnum work only in Pinmode!
@@ -848,6 +861,12 @@ class FBSceneSettings(PropertyGroup):
         description="Discard changes, install the update and restart Blender",
         name="Discard changes, install the update and restart Blender", default=False
     )
+
+    @contextmanager
+    def ui_write_mode_context(self):
+        self.ui_write_mode = True
+        yield
+        self.ui_write_mode = False
 
     def reset_pinmode_id(self):
         self.pinmode_id = 'stop'

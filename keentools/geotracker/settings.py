@@ -19,6 +19,7 @@
 import logging
 import numpy as np
 from typing import Optional, Tuple, Any
+from contextlib import contextmanager
 
 import bpy
 from bpy.types import Object, CameraBackgroundImage
@@ -277,8 +278,11 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     selection_y: bpy.props.FloatProperty(name='Selection Y',
                                          default=0.0)
 
-    def set_ui_write_mode(self, value: bool) -> None:
-        self.ui_write_mode = value
+    @contextmanager
+    def ui_write_mode_context(self):
+        self.ui_write_mode = True
+        yield
+        self.ui_write_mode = False
 
     def reset_pinmode_id(self) -> None:
         self.pinmode_id = 'stop'
