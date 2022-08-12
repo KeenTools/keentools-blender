@@ -399,8 +399,7 @@ class FBLoader:
     @classmethod
     def load_model(cls, headnum: int) -> bool:
         try:
-            res = cls.load_model_throw_exception(headnum)
-            if not res:
+            if not cls.load_model_throw_exception(headnum):
                 return False
             cls._deserialize_global_options(headnum)
             return True

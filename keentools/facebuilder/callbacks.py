@@ -187,7 +187,7 @@ def _update_mesh_now(headnum):
         try:
             vg_groups_dict = get_vertex_groups(head.headobj)
         except Exception as err:
-            _log_error('_update_mesh_now get VG: {}'.format(str(err)))
+            _log_error(f'_update_mesh_now get VG: {str(err)}')
             recreate_vertex_groups_flag = False
 
     head.headobj.data = mesh
