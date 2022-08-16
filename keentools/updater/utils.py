@@ -37,18 +37,19 @@ from ..utils.ui_redraw import force_ui_redraw
 from ..preferences.progress import KTUpdateProgressTimer
 
 
-def _mock_response(ver: Tuple):
+def _mock_response(*, product: str='FaceBuilder', ver: Tuple) -> Any:
     response = lambda: None
     response.description_url = 'https://keentools.io/downloads'
     response.download_url = 'https://keentools.io/downloads'
-    response.message = "<h3>What's New in KeenTools {}</h3>\n" \
+    response.message = "<h3>What's New in KeenTools {} {}</h3>\n" \
                        "<ul>\n  " \
                        "<li>fixed performance issues in Nuke 12;</li>\n  " \
                        "<li>pintooling performance improvements;</li>\n  " \
                        "<li>fixed large frame numbers bug;</li>\n  " \
                        "<li>fixed invisible model in macOS Catalina;</li>\n " \
                        "<li>minor fixes and improvements</li>\n" \
-                       "</ul>\n<br />\n".format('.'.join([str(x) for x in ver]))
+                       "</ul>\n<br />\n".format(product,
+                                                '.'.join([str(x) for x in ver]))
     response.plugin_name = 'FaceBuilder'
     try:
         response.version = pkt_module().Version(*ver)
@@ -268,7 +269,9 @@ class KTUpdater:
         uc = cls.get_update_checker()
         res = uc.check_for_updates(product)
         if Config.mock_update_for_testing_flag and not cls.product_is_checked(product):
-            res = _mock_response(ver=Config.mock_update_version)
+            if Config.mock_product is None or Config.mock_product == product:
+                res = _mock_response(product=product,
+                                     ver=Config.mock_update_version)
         if res is not None:
             cls.set_response(product, res)
             parsed = parse_html(skip_new_lines_and_spaces(res.message))
