@@ -18,6 +18,7 @@
 import bpy
 
 _company = 'keentools'
+_PT = 'KEENTOOLS_PT_'
 
 
 class Config:
@@ -28,6 +29,8 @@ class Config:
                                   (3, 0), (3, 1))
     minimal_blender_api = (2, 80, 60)
 
+    fb_tab_category = 'FaceBuilder'
+    gt_tab_category = 'GeoTracker'
     operators = 'keentools'
     prefs_operators = 'keentools_preferences'
     addon_name = __package__  # the same as module name
@@ -62,6 +65,23 @@ class Config:
     kt_install_license_online_idname = prefs_operators + '.install_license_online'
     kt_install_license_offline_idname = prefs_operators + '.install_license_offline'
     kt_floating_connect_idname = prefs_operators + '.floating_connect'
+
+    # Updater panels
+    kt_update_panel_idname = _PT + 'update_panel'
+    kt_download_notification_panel_idname = _PT + 'download_notification'
+    kt_downloading_problem_panel_idname = _PT + 'downloading_problem'
+    kt_updates_installation_panel_idname = _PT + 'updates_installation_panel'
+
+    # Updater operators
+    kt_download_the_update_idname = operators + '.download_the_update'
+    kt_retry_download_the_update_idname = operators + '.retry_download_the_update'
+    kt_remind_later_idname = operators + '.remind_later'
+    kt_skip_version_idname = operators + '.skip_version'
+    kt_come_back_to_update_idname = operators + '.come_back_to_update'
+    kt_install_updates_idname = operators + '.install_updates'
+    kt_remind_install_later_idname = operators + '.remind_install_later'
+    kt_skip_installation_idname = operators + '.skip_installation'
+
     # Object Custom Properties
     core_version_prop_name = _company + '_version'
     viewport_state_prop_name = _company + '_viewport_state'

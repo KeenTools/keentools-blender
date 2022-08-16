@@ -21,10 +21,9 @@ from .panels import *
 from .dialogs import *
 from .filedialog import *
 from .helps import *
-from .updater import *
 
 
-CLASSES_TO_REGISTER = (FB_MT_ProperViewMenu, # menus
+CLASSES_TO_REGISTER = (FB_MT_ProperViewMenu,  # menus
                        FB_PT_HeaderPanel,  # panels
                        FB_PT_UpdatePanel,
                        FB_PT_DownloadNotification,
@@ -36,14 +35,6 @@ CLASSES_TO_REGISTER = (FB_MT_ProperViewMenu, # menus
                        FB_PT_AppearancePanel,
                        FB_PT_TexturePanel,
                        FB_PT_BlendShapesPanel,
-                       FB_OT_DownloadTheUpdate,  # updater
-                       FB_OT_RemindLater,
-                       FB_OT_SkipVersion,
-                       FB_OT_RetryDownloadUpdate,
-                       FB_OT_ComeBackToUpdate,
-                       FB_OT_InstallUpdates,
-                       FB_OT_RemindInstallLater,
-                       FB_OT_SkipInstallation,
                        HELP_OT_CameraHelp,  # helps
                        HELP_OT_ViewsHelp,
                        HELP_OT_ModelHelp,

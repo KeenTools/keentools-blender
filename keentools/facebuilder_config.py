@@ -138,22 +138,11 @@ class FBConfig:
     fb_help_texture_idname = operators + '.help_texture'
     fb_help_blendshapes_idname = operators + '.help_blendshapes'
 
-    # TODO: Updater panels are not for FB only
+    # Updater panels
     fb_update_panel_idname = _PT + 'update_panel'
     fb_download_notification_panel_idname = _PT + 'download_notification'
     fb_downloading_problem_panel_idname = _PT + 'downloading_problem'
     fb_updates_installation_panel_idname = _PT + 'updates_installation_panel'
-
-    # Updater operators
-    fb_download_the_update_idname = operators + '.download_the_update'
-    fb_retry_download_the_update_idname = operators + '.retry_download_the_update'
-    fb_open_url_idname = operators + '.open_url'
-    fb_remind_later_idname = operators + '.remind_later'
-    fb_skip_version_idname = operators + '.skip_version'
-    fb_come_back_to_update_idname = operators + '.come_back_to_update'
-    fb_install_updates_idname = operators + '.install_updates'
-    fb_remind_install_later_idname = operators + '.remind_install_later'
-    fb_skip_installation_idname = operators + '.skip_installation'
 
     # Menu ids
     fb_proper_view_menu_idname = _MT + 'proper_view_menu'

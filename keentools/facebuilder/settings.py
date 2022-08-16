@@ -860,12 +860,6 @@ class FBSceneSettings(PropertyGroup):
         description='Defaults are loaded flag',
         name='Defaults loaded', default=False)
 
-    # Updater
-    not_save_changes: BoolProperty(
-        description="Discard changes, install the update and restart Blender",
-        name="Discard changes, install the update and restart Blender", default=False
-    )
-
     @contextmanager
     def ui_write_mode_context(self):
         self.ui_write_mode = True

@@ -21,21 +21,20 @@ from threading import Lock
 from collections import namedtuple
 from enum import IntEnum
 from datetime import datetime
-from typing import Tuple, List
+from typing import Tuple, List, Optional, Any
 
 import bpy
 
-from ...addon_config import Config, get_operator, ErrorType
-from ...facebuilder_config import get_fb_settings, FBConfig
-from ...blender_independent_packages.pykeentools_loader import (
+from ..addon_config import Config, get_operator, get_addon_preferences, ErrorType
+from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed,
     updates_downloaded, download_core_zip_async, download_addon_zip_async,
     install_downloaded_zips)
 
-from ...utils.html import parse_html, skip_new_lines_and_spaces, render_main
-from ...utils.ui_redraw import force_ui_redraw
+from ..utils.html import parse_html, skip_new_lines_and_spaces, render_main
+from ..utils.ui_redraw import force_ui_redraw
 
-from ...preferences.progress import FBUpdateProgressTimer
+from ..preferences.progress import KTUpdateProgressTimer
 
 
 def _mock_response(ver: Tuple):
@@ -58,7 +57,7 @@ def _mock_response(ver: Tuple):
     return response
 
 
-def _version_to_tuple(version):
+def _version_to_tuple(version: Optional[Any]) -> Tuple:
     if version is None:
         return tuple([0, 0, 0])
     if type(version).__name__ == 'str':
@@ -70,24 +69,24 @@ def _version_to_tuple(version):
     assert False
 
 
-def _downloaded_version():
-    settings = get_fb_settings()
-    if settings is None:
+def _downloaded_version() -> str:
+    prefs = get_addon_preferences()
+    if not prefs:
         return ''
-    return settings.preferences().downloaded_version
+    return prefs.downloaded_version
 
 
-def _latest_installation_skip_version():
-    settings = get_fb_settings()
-    if settings is None:
+def _latest_installation_skip_version() -> str:
+    prefs = get_addon_preferences()
+    if not prefs:
         return ''
-    return settings.preferences().latest_installation_skip_version
+    return prefs.latest_installation_skip_version
 
 
-_PREFERENCES_DATETIME_FORMAT = '%d/%m/%y %H:%M:%S'
+_PREFERENCES_DATETIME_FORMAT: str = '%d/%m/%y %H:%M:%S'
 
 
-def _operator_available_time(previous_show_datetime_str):
+def _operator_available_time(previous_show_datetime_str: str) -> bool:
     if previous_show_datetime_str == '':
         return True
     previous_show_time = datetime.strptime(previous_show_datetime_str, _PREFERENCES_DATETIME_FORMAT)
@@ -95,33 +94,36 @@ def _operator_available_time(previous_show_datetime_str):
 
 
 def render_active_message(limit: int=64) -> List[str]:
-    settings = get_fb_settings()
-    updater_state = settings.preferences().updater_state
+    prefs = get_addon_preferences()
+    if not prefs:
+        return []
+    updater_state = prefs.updater_state
 
     if updater_state == UpdateState.UPDATES_AVAILABLE:
-        return FBUpdater.render_message(limit=limit)
+        return KTUpdater.render_message(product=None, limit=limit)
     elif updater_state == UpdateState.DOWNLOADING:
-        return FBDownloadNotification.render_message()
+        return KTDownloadNotification.render_message()
     elif updater_state == UpdateState.DOWNLOADING_PROBLEM:
-        return FBDownloadingProblem.render_message(limit=limit)
+        return KTDownloadingProblem.render_message(limit=limit)
     elif updater_state == UpdateState.INSTALL:
-        return FBInstallationReminder.render_message(limit=limit)
+        return KTInstallationReminder.render_message(limit=limit)
     return []
 
 
-def preferences_current_active_updater_operators_info():
-    settings = get_fb_settings()
-    updater_state = settings.preferences().updater_state
+def preferences_current_active_updater_operators_info() -> Optional[List]:
+    prefs = get_addon_preferences()
+    if not prefs:
+        return None
+    updater_state = prefs.updater_state
     OperatorInfo = namedtuple('OperatorInfo', 'idname, text, icon')
     if updater_state == UpdateState.UPDATES_AVAILABLE:
-        return [OperatorInfo(FBConfig.fb_download_the_update_idname, 'Download the update', 'IMPORT')]
+        return [OperatorInfo(Config.kt_download_the_update_idname, 'Download the update', 'IMPORT')]
     if updater_state == UpdateState.DOWNLOADING_PROBLEM:
-        return [OperatorInfo(FBConfig.fb_retry_download_the_update_idname, 'Try again', 'FILE_REFRESH'),
-                OperatorInfo(FBConfig.fb_come_back_to_update_idname, 'Cancel', 'PANEL_CLOSE')]
+        return [OperatorInfo(Config.kt_retry_download_the_update_idname, 'Try again', 'FILE_REFRESH'),
+                OperatorInfo(Config.kt_come_back_to_update_idname, 'Cancel', 'PANEL_CLOSE')]
     elif updater_state == UpdateState.INSTALL:
-        return [OperatorInfo(FBConfig.fb_install_updates_idname, 'Install and restart', 'FILE_REFRESH')]
-    else:
-        return None
+        return [OperatorInfo(Config.kt_install_updates_idname, 'Install and restart', 'FILE_REFRESH')]
+    return None
 
 
 class UpdateState(IntEnum):
@@ -141,89 +143,103 @@ class CurrentStateExecutor:
         cls._mutable = False
 
     @classmethod
-    def set_current_panel_updater_state(cls, state, set_preferences_updater_state=True):
+    def set_current_panel_updater_state(cls, state: UpdateState,
+            set_preferences_updater_state: bool=True) -> None:
         if cls._mutable:
             cls._panel_updater_state = state
             force_ui_redraw('VIEW_3D')
             if set_preferences_updater_state:
-                settings = get_fb_settings()
-                settings.preferences().updater_state = state
+                prefs = get_addon_preferences()
+                if not prefs:
+                    return
+                prefs.updater_state = state
                 force_ui_redraw('PREFERENCES')
 
     @classmethod
-    def compute_current_panel_updater_state(cls):
+    def compute_current_panel_updater_state(cls) -> UpdateState:
         downloaded_version = _version_to_tuple(_downloaded_version())
         if cls._panel_updater_state == UpdateState.INITIAL:
-            if FBUpdater.is_available():
+            if KTUpdater.is_available():
                 cls.set_current_panel_updater_state(UpdateState.UPDATES_AVAILABLE)
             elif downloaded_version > _version_to_tuple(Config.addon_version) and \
                     downloaded_version != _version_to_tuple(_latest_installation_skip_version()) and \
-                    updates_downloaded() and FBInstallationReminder.is_available():
+                    updates_downloaded() and KTInstallationReminder.is_available():
                 cls.set_current_panel_updater_state(UpdateState.INSTALL)
         elif cls._panel_updater_state == UpdateState.INSTALL:
-            if FBUpdater.is_available():
+            if KTUpdater.is_available():
                 cls.set_current_panel_updater_state(UpdateState.UPDATES_AVAILABLE)
         return cls._panel_updater_state
 
 
-class FBUpdater:
-    _response = None
-    _parsed_response_content = None
+class KTUpdater:
+    _response = {'FaceBuilder': None, 'GeoTracker': None}
+    _parsed_response_content = {'FaceBuilder': None, 'GeoTracker': None}
 
     @classmethod
-    def is_available(cls):
-        settings = get_fb_settings()
-        if settings is None:
+    def is_available(cls) -> bool:
+        prefs = get_addon_preferences()
+        if not prefs:
             return False
-        previous_show_time_str = settings.preferences().latest_show_datetime_update_reminder
-        latest_skip_version = settings.preferences().latest_update_skip_version
-        return _operator_available_time(previous_show_time_str) and cls.has_response() and \
-               _version_to_tuple(Config.addon_version) < _version_to_tuple(cls.version()) and \
-               _version_to_tuple(_downloaded_version()) < _version_to_tuple(cls.version()) and \
-               _version_to_tuple(latest_skip_version) != _version_to_tuple(cls.version())
+        if not _operator_available_time(prefs.latest_show_datetime_update_reminder) or not cls.has_response():
+            return False
+        ver_tuple = _version_to_tuple(cls.version())
+        return _version_to_tuple(Config.addon_version) < ver_tuple and \
+               _version_to_tuple(_downloaded_version()) < ver_tuple and \
+               _version_to_tuple(prefs.latest_update_skip_version) != ver_tuple
 
     @classmethod
-    def is_active(cls):
+    def is_active(cls) -> bool:
         return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.UPDATES_AVAILABLE
 
     @classmethod
-    def has_response(cls):
-        return cls.get_response() is not None
+    def has_response(cls) -> bool:
+        return any([cls._response[key] is not None for key in cls._response])
 
     @classmethod
-    def has_response_message(cls):
-        return cls._parsed_response_content is not None
+    def product_is_checked(cls, product: str) -> bool:
+        return cls._parsed_response_content[product] is not None
 
     @classmethod
-    def set_response(cls, val):
-        cls._response = val
+    def has_response_message(cls, product: str) -> bool:
+        return cls._parsed_response_content[product] is not None
 
     @classmethod
-    def get_response(cls):
-        return cls._response
+    def set_response(cls, product: str, val: Optional[Any]) -> None:
+        cls._response[product] = val
 
     @classmethod
-    def get_parsed(cls):
-        return cls._parsed_response_content
+    def get_response(cls, *, product: Optional[str]=None) -> Optional[Any]:
+        if product is not None:
+            return cls._response[product]
+        for key in cls._response:
+            response = cls._response[key]
+            if response is not None:
+                return response
+        return None
 
     @classmethod
-    def set_parsed(cls, val):
-        cls._parsed_response_content = val
+    def get_parsed(cls, *, product: Optional[str]=None) -> Optional[Any]:
+        if product is not None:
+            return cls._parsed_response_content[product]
+        for key in cls._parsed_response_content:
+            parsed = cls._parsed_response_content[key]
+            if parsed is not None:
+                return parsed
+        return None
 
     @classmethod
-    def clear_message(cls):
-        cls.set_response(None)
-        cls.set_parsed(None)
+    def set_parsed(cls, product: str, val: Optional[Any]) -> None:
+        cls._parsed_response_content[product] = val
 
     @classmethod
-    def render_message(cls, limit: int=32) -> List[str]:
-        parsed = cls.get_parsed()
+    def render_message(cls, *, product: Optional[str]=None, limit: int=32) -> List[str]:
+        parsed = cls.get_parsed(product=product)
         if parsed is not None:
             return render_main(parsed, limit)
         return []
 
     @classmethod
-    def get_update_checker(cls):
+    def get_update_checker(cls) -> Any:
         pykeentools = pkt_module()
         platform = 'Blender'
         ver = pykeentools.Version(*bpy.app.version)
@@ -231,39 +247,42 @@ class FBUpdater:
         return uc
 
     @classmethod
-    def remind_later(cls):
-        settings = get_fb_settings()
-        settings.preferences().latest_show_datetime_update_reminder = \
+    def remind_later(cls) -> None:
+        prefs = get_addon_preferences()
+        if not prefs:
+            return
+        prefs.latest_show_datetime_update_reminder = \
             datetime.now().strftime(_PREFERENCES_DATETIME_FORMAT)
 
     @classmethod
-    def version(cls):
-        response = cls.get_response()
-        if response is None:
-            return ''
-        return response.version
+    def version(cls) -> Any:
+        response = cls.get_response(product=None)
+        if response is not None:
+            return response.version
+        return ''
 
     @classmethod
-    def init_updater(cls):
-        if cls.has_response_message() or not pkt_is_installed():
+    def call_updater(cls, product: str) -> None:
+        if cls.has_response_message(product) or not pkt_is_installed():
             return
-
         uc = cls.get_update_checker()
-        res = uc.check_for_updates('FaceBuilder')
-        if Config.mock_update_for_testing_flag and cls.get_response() is None:
+        res = uc.check_for_updates(product)
+        if Config.mock_update_for_testing_flag and not cls.product_is_checked(product):
             res = _mock_response(ver=Config.mock_update_version)
         if res is not None:
-            cls.set_response(res)
+            cls.set_response(product, res)
             parsed = parse_html(skip_new_lines_and_spaces(res.message))
-            cls.set_parsed(parsed)
+            cls.set_parsed(product, parsed)
 
 
-def _set_installing():
-    settings = get_fb_settings()
-    settings.preferences().downloaded_version = str(FBUpdater.version())
+def _set_installing() -> None:
+    prefs = get_addon_preferences()
+    if not prefs:
+        return
+    prefs.downloaded_version = str(KTUpdater.version())
     CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INSTALL)
-    FBDownloadNotification.init_progress(None)
-    FBUpdateProgressTimer.stop()
+    KTDownloadNotification.init_progress(None)
+    KTUpdateProgressTimer.stop()
 
 
 class Progress:
@@ -317,21 +336,21 @@ def _download_update():
     return common_progress
 
 
-class FB_OT_DownloadTheUpdate(bpy.types.Operator):
-    bl_idname = FBConfig.fb_download_the_update_idname
+class KT_OT_DownloadTheUpdate(bpy.types.Operator):
+    bl_idname = Config.kt_download_the_update_idname
     bl_label = 'Download the update'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Download and install the latest version of FaceBuilder'
 
     def execute(self, context):
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.DOWNLOADING)
-        FBUpdateProgressTimer.start(redraw_view3d=True)
-        FBDownloadNotification.init_progress(_download_update())
+        KTUpdateProgressTimer.start(redraw_view3d=True)
+        KTDownloadNotification.init_progress(_download_update())
         return {'FINISHED'}
 
 
-class FB_OT_RemindLater(bpy.types.Operator):
-    bl_idname = FBConfig.fb_remind_later_idname
+class KT_OT_RemindLater(bpy.types.Operator):
+    bl_idname = Config.kt_remind_later_idname
     bl_label = 'Remind later'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Remind about this update tomorrow'
@@ -341,12 +360,12 @@ class FB_OT_RemindLater(bpy.types.Operator):
                                                              set_preferences_updater_state=False)
         logger = logging.getLogger(__name__)
         logger.debug('REMIND LATER')
-        FBUpdater.remind_later()
+        KTUpdater.remind_later()
         return {'FINISHED'}
 
 
-class FB_OT_SkipVersion(bpy.types.Operator):
-    bl_idname = FBConfig.fb_skip_version_idname
+class KT_OT_SkipVersion(bpy.types.Operator):
+    bl_idname = Config.kt_skip_version_idname
     bl_label = 'Skip this version'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Skip this version'
@@ -356,18 +375,20 @@ class FB_OT_SkipVersion(bpy.types.Operator):
                                                              set_preferences_updater_state=False)
         logger = logging.getLogger(__name__)
         logger.debug('SKIP THIS VERSION')
-        settings = get_fb_settings()
-        settings.preferences().latest_update_skip_version = str(FBUpdater.version())
+        prefs = get_addon_preferences()
+        if not prefs:
+            return {'CANCELLED'}
+        prefs.latest_update_skip_version = str(KTUpdater.version())
         return {'FINISHED'}
 
 
 def on_downloading_problem(error):
     CurrentStateExecutor.set_current_panel_updater_state(UpdateState.DOWNLOADING_PROBLEM)
-    FBDownloadNotification.init_progress(None)
-    FBUpdateProgressTimer.stop()
+    KTDownloadNotification.init_progress(None)
+    KTUpdateProgressTimer.stop()
 
 
-class FBDownloadNotification:
+class KTDownloadNotification:
     _download_update_progress = None
 
     @classmethod
@@ -385,11 +406,11 @@ class FBDownloadNotification:
     @classmethod
     def render_message(cls) -> List[str]:
         if cls.is_active():
-            return ["Downloading the update: {:.0f}%".format(100 * FBDownloadNotification.get_current_progress())]
+            return ["Downloading the update: {:.0f}%".format(100 * KTDownloadNotification.get_current_progress())]
         return []
 
 
-class FBDownloadingProblem:
+class KTDownloadingProblem:
     @classmethod
     def is_active(cls):
         return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.DOWNLOADING_PROBLEM
@@ -401,21 +422,21 @@ class FBDownloadingProblem:
             return render_main(parse_html(_message_text), limit)
         return []
 
-class FB_OT_RetryDownloadUpdate(bpy.types.Operator):
-    bl_idname = FBConfig.fb_retry_download_the_update_idname
+class KT_OT_RetryDownloadUpdate(bpy.types.Operator):
+    bl_idname = Config.kt_retry_download_the_update_idname
     bl_label = 'Retry download'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Try downloading again'
 
     def execute(self, context):
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.DOWNLOADING)
-        FBUpdateProgressTimer.start(redraw_view3d=True)
-        FBDownloadNotification.init_progress(_download_update())
+        KTUpdateProgressTimer.start(redraw_view3d=True)
+        KTDownloadNotification.init_progress(_download_update())
         return {'FINISHED'}
 
 
-class FB_OT_ComeBackToUpdate(bpy.types.Operator):
-    bl_idname = FBConfig.fb_come_back_to_update_idname
+class KT_OT_ComeBackToUpdate(bpy.types.Operator):
+    bl_idname = Config.kt_come_back_to_update_idname
     bl_label = 'Cancel'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Cancel updating'
@@ -426,15 +447,17 @@ class FB_OT_ComeBackToUpdate(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class FBInstallationReminder:
+class KTInstallationReminder:
     @classmethod
-    def is_active(cls):
+    def is_active(cls) -> bool:
         return CurrentStateExecutor.compute_current_panel_updater_state() == UpdateState.INSTALL
 
     @classmethod
-    def is_available(cls):
-        settings = get_fb_settings()
-        previous_show_time_str = settings.preferences().latest_show_datetime_installation_reminder
+    def is_available(cls) -> bool:
+        prefs = get_addon_preferences()
+        if not prefs:
+            return False
+        previous_show_time_str = prefs.latest_show_datetime_installation_reminder
         return _operator_available_time(previous_show_time_str)
 
     @classmethod
@@ -447,8 +470,10 @@ class FBInstallationReminder:
 
     @classmethod
     def remind_later(cls):
-        settings = get_fb_settings()
-        settings.preferences().latest_show_datetime_installation_reminder = \
+        prefs = get_addon_preferences()
+        if not prefs:
+            return
+        prefs.latest_show_datetime_installation_reminder = \
             datetime.now().strftime(_PREFERENCES_DATETIME_FORMAT)
 
 
@@ -466,15 +491,20 @@ def _start_new_blender(cmd_line):
 
 
 def _clear_updater_info():
-    from ...preferences import reset_updater_preferences_to_default
+    from ..preferences import reset_updater_preferences_to_default
     reset_updater_preferences_to_default()
 
 
-class FB_OT_InstallUpdates(bpy.types.Operator):
-    bl_idname = FBConfig.fb_install_updates_idname
+class KT_OT_InstallUpdates(bpy.types.Operator):
+    bl_idname = Config.kt_install_updates_idname
     bl_label = ''
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Press to install the update and relaunch Blender'
+
+    not_save_changes: bpy.props.BoolProperty(
+        description="Discard changes, install the update and restart Blender",
+        name="Discard changes, install the update and restart Blender", default=False
+    )
 
     def draw(self, context):
         layout = self.layout
@@ -488,13 +518,11 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
         for t in content:
             col.label(text=t)
 
-        settings = get_fb_settings()
         col = layout.column()
-        col.prop(settings, 'not_save_changes')
+        col.prop(self, 'not_save_changes')
 
     def execute(self, context):
-        settings = get_fb_settings()
-        if not bpy.data.is_dirty or settings.not_save_changes:
+        if not bpy.data.is_dirty or self.not_save_changes:
             _clear_updater_info()
             if not updates_downloaded():
                 warn = get_operator(Config.kt_warning_idname)
@@ -516,8 +544,8 @@ class FB_OT_InstallUpdates(bpy.types.Operator):
         return self.execute(context)
 
 
-class FB_OT_RemindInstallLater(bpy.types.Operator):
-    bl_idname = FBConfig.fb_remind_install_later_idname
+class KT_OT_RemindInstallLater(bpy.types.Operator):
+    bl_idname = Config.kt_remind_install_later_idname
     bl_label = 'Remind install tommorow'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Remind install tommorow'
@@ -525,12 +553,12 @@ class FB_OT_RemindInstallLater(bpy.types.Operator):
     def execute(self, context):
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL,
                                                              set_preferences_updater_state=False)
-        FBInstallationReminder.remind_later()
+        KTInstallationReminder.remind_later()
         return {'FINISHED'}
 
 
-class FB_OT_SkipInstallation(bpy.types.Operator):
-    bl_idname = FBConfig.fb_skip_installation_idname
+class KT_OT_SkipInstallation(bpy.types.Operator):
+    bl_idname = Config.kt_skip_installation_idname
     bl_label = 'Skip installation'
     bl_options = {'REGISTER', 'INTERNAL'}
     bl_description = 'Skip installation'
@@ -538,6 +566,8 @@ class FB_OT_SkipInstallation(bpy.types.Operator):
     def execute(self, context):
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL,
                                                              set_preferences_updater_state=False)
-        settings = get_fb_settings()
-        settings.preferences().latest_installation_skip_version = settings.preferences().downloaded_version
+        prefs = get_addon_preferences()
+        if not prefs:
+            return {'CANCELLED'}
+        prefs.latest_installation_skip_version = prefs.downloaded_version
         return {'FINISHED'}
