@@ -283,8 +283,6 @@ class GTLoader:
                 settings.wireframe_backface_culling = gt.back_face_culling()
             except Exception as err:
                 _log_error(f'_deserialize_global_options:\n{str(err)}')
-            finally:
-                settings.set_ui_write_mode(False)
 
     @classmethod
     def load_geotracker(cls) -> bool:
