@@ -576,17 +576,20 @@ class FB_PT_Model(AllVisibleClosed, Panel):
         op.camnum = settings.current_camnum
 
         col = layout.column(align=True)
+        col.enabled = settings.pinmode
         col.prop(settings, 'shape_rigidity')
-        expression_rigidity_row = col.row(align=True)
-        expression_rigidity_row.prop(settings, 'expression_rigidity')  
-        expression_rigidity_row.active = head.should_use_emotions()
 
-        blinking_row = col.row(align=True)
-        blinking_row.prop(settings, 'blinking_rigidity')
-        blinking_row.active = not head.lock_blinking and head.should_use_emotions()
-        neck_row =  col.row(align=True)
-        neck_row.prop(settings, 'neck_movement_rigidity')
-        neck_row.active = not head.lock_neck_movement and head.should_use_emotions()
+        row = col.row(align=True)
+        row.prop(settings, 'expression_rigidity')
+        row.enabled = head.should_use_emotions()
+
+        row = col.row(align=True)
+        row.prop(settings, 'blinking_rigidity')
+        row.enabled = not head.lock_blinking and head.should_use_emotions()
+
+        row =  col.row(align=True)
+        row.prop(settings, 'neck_movement_rigidity')
+        row.enabled = not head.lock_neck_movement and head.should_use_emotions()
 
         layout.prop(head, 'model_scale')
 
