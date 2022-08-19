@@ -25,7 +25,6 @@ import bpy
 from ..addon_config import Config, get_operator, ErrorType
 from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
 from .gtloader import GTLoader
-from ..utils.localview import exit_area_localview
 from ..utils import coords
 
 from ..utils.manipulate import force_undo_push, switch_to_camera
@@ -46,89 +45,6 @@ def _log_output(message: str) -> None:
 def _log_error(message: str) -> None:
     global _logger
     _logger.error(message)
-
-
-def depsgraph_update_handler(scene, depsgraph):
-    def _check_updated(depsgraph, name):
-        _log_output('COUNT UPDATES: {}'.format(len(depsgraph.updates)))
-        _log_output('ids: {}'.format([update.id.name for update in depsgraph.updates]))
-        for update in depsgraph.updates:
-            if update.id.name != name:
-                continue
-            if not update.is_updated_transform:
-                continue
-            _log_output(f'update.id: {update.id.name}')
-            _log_output(f'update.is_updated_geometry: {update.is_updated_geometry}')
-            _log_output(f'update.is_updated_transform: {update.is_updated_transform}')
-            _log_output(f'update.is_updated_shading: {update.is_updated_shading}')
-            return True
-        return False
-
-    settings = get_gt_settings()
-    if not settings.pinmode:
-        unregister_undo_redo_handlers()
-        return
-    if settings.move_pin_mode:
-        return
-    geotracker = settings.get_current_geotracker_item()
-    if not geotracker:
-        return
-    obj = geotracker.animatable_object()
-    if not obj:
-        return
-
-    if _check_updated(depsgraph, obj.name):
-        GTLoader.update_all_viewport_shaders()
-
-
-def undo_redo_handler(scene):
-    _log_output('gt_undo_handler')
-    try:
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
-        vp = GTLoader.viewport()
-        area = vp.get_work_area()
-        if not settings.pinmode or not geotracker or not area:
-            unregister_undo_redo_handlers()
-            return
-
-        GTLoader.load_geotracker()
-        GTLoader.update_all_viewport_shaders(area)
-
-    except Exception as err:
-        _log_error(f'gt_undo_handler {str(err)}')
-        unregister_undo_redo_handlers()
-
-
-def unregister_depsgraph_update():
-    unregister_app_handler(bpy.app.handlers.depsgraph_update_post,
-                           depsgraph_update_handler)
-
-
-def unregister_undo_redo_handlers():
-    unregister_app_handler(bpy.app.handlers.undo_post, undo_redo_handler)
-    unregister_app_handler(bpy.app.handlers.redo_post, undo_redo_handler)
-    unregister_depsgraph_update()
-
-
-def register_app_handler(app_handlers, handler):
-    if handler is not None:
-        if handler not in app_handlers:
-            app_handlers.append(handler)
-
-
-def unregister_app_handler(app_handlers, handler):
-    if handler is not None:
-        if handler in app_handlers:
-            app_handlers.remove(handler)
-
-
-def register_undo_redo_handlers():
-    unregister_undo_redo_handlers()
-    register_app_handler(bpy.app.handlers.undo_post, undo_redo_handler)
-    register_app_handler(bpy.app.handlers.redo_post, undo_redo_handler)
-    register_app_handler(bpy.app.handlers.depsgraph_update_post,
-                         depsgraph_update_handler)
 
 
 class GT_OT_PinMode(bpy.types.Operator):
@@ -169,21 +85,6 @@ class GT_OT_PinMode(bpy.types.Operator):
     @classmethod
     def _is_shift_pressed(cls):
         return cls._shift_pressed
-
-    @classmethod
-    def _exit_pinmode(cls):
-        settings = get_gt_settings()
-        settings.pinmode = False
-        geotracker = settings.get_current_geotracker_item()
-        geotracker.reset_focal_length_estimation()
-        area = GTLoader.get_work_area()
-        GTLoader.stop_viewport_shaders()
-        exit_area_localview(area)
-        if geotracker.geomobj:
-            unhide_viewport_ui_elements_from_object(area, geotracker.geomobj)
-        GTLoader.save_geotracker()
-        unregister_undo_redo_handlers()
-        _log_output(f'_exit_pinmode: {settings.pinmode_id}')
 
     def _on_left_mouse_press(self, area, event):
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
@@ -353,7 +254,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         self._start_new_pinmode(context)
         GTLoader.start_shader_timer(settings.pinmode_id)
         context.window_manager.modal_handler_add(self)
-        register_undo_redo_handlers()
+        GTLoader.register_undo_redo_handlers()
         _log_output('PINMODE STARTED')
         return {'RUNNING_MODAL'}
 
@@ -367,7 +268,7 @@ class GT_OT_PinMode(bpy.types.Operator):
 
         if not context.space_data:
             _log_output('VIEWPORT IS CLOSED')
-            self._exit_pinmode()
+            GTLoader.out_pinmode()
             return {'FINISHED'}
 
         if context.space_data.region_3d.view_perspective != 'CAMERA':
@@ -376,19 +277,8 @@ class GT_OT_PinMode(bpy.types.Operator):
                 bpy.ops.view3d.view_camera()
             else:
                 _log_output('CAMERA ROTATED PINMODE OUT')
-                self._exit_pinmode()
+                GTLoader.out_pinmode()
                 return {'FINISHED'}
-
-        if settings.force_out_pinmode:
-            _log_output('GT FORCE PINMODE OUT')
-            self._exit_pinmode()
-            settings.force_out_pinmode = False
-            if settings.license_error:
-                warn = get_operator(Config.kt_warning_idname)
-                warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
-                settings.license_error = False
-                settings.hide_user_preferences()
-            return {'FINISHED'}
 
         if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
                 and event.value == 'PRESS':
@@ -410,7 +300,7 @@ class GT_OT_PinMode(bpy.types.Operator):
 
         if event.type == 'ESC' and event.value == 'RELEASE':
             _log_output('Exit pinmode by ESC')
-            self._exit_pinmode()
+            GTLoader.out_pinmode()
             return {'FINISHED'}
 
         if self._current_frame_updated():

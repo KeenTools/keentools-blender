@@ -305,13 +305,7 @@ class GT_OT_ExitPinMode(ButtonOperator, bpy.types.Operator):
     bl_description = 'Exit from PinMode'
 
     def execute(self, context):
-        settings = get_gt_settings()
-        if settings.pinmode:
-            vp = GTLoader.viewport()
-            if not vp.is_working():
-                settings.pinmode = False
-            else:
-                settings.force_out_pinmode = True
+        GTLoader.out_pinmode()
         return {'FINISHED'}
 
 
