@@ -28,7 +28,8 @@ from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
 from ..utils.images import (np_array_from_bpy_image,
                             get_background_image_object,
-                            gamma_np_image)
+                            gamma_np_image,
+                            set_background_image_by_movieclip)
 from .utils.tracking import reload_precalc
 from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_scale_vec_4_from_matrix_world)
@@ -61,10 +62,10 @@ def update_camobj(self, context: Any) -> None:
     GTLoader.update_all_viewport_shaders()
 
 
-def update_geomobj(self, context: Any) -> None:
+def update_geomobj(geotracker, context: Any) -> None:
     _log_output('update_geomobj')
-    _log_output(f'self: {self.geomobj}')
-    if not self.geomobj:
+    _log_output(f'self: {geotracker.geomobj}')
+    if not geotracker.geomobj:
         settings = get_gt_settings()
         if settings.pinmode:
             GTLoader.out_pinmode()
@@ -72,8 +73,12 @@ def update_geomobj(self, context: Any) -> None:
     GTLoader.update_all_viewport_shaders()
 
 
-def update_selection(self, context) -> None:
-    pass
+def update_movieclip(geotracker, context) -> None:
+    _log_output('update_movieclip')
+    settings = get_gt_settings()
+    if settings.ui_write_mode:
+        return
+    set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
 
 
 def update_wireframe_func(self, context) -> None:
@@ -121,7 +126,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
                                       update=update_camobj)
     movie_clip: bpy.props.PointerProperty(name='Movie Clip',
                                           type=bpy.types.MovieClip,
-                                          update=update_selection)
+                                          update=update_movieclip)
 
     dir_name: bpy.props.StringProperty(name='Dir name')
     frames: bpy.props.CollectionProperty(type=FileListItem, name='Frame list')

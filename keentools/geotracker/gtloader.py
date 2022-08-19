@@ -494,6 +494,8 @@ class GTLoader:
         txt += f'area: {area}\n'
         txt += f'check_localview(area): {check_localview(area)}\n'
         txt += f'viewport is working: {GTLoader.viewport().is_working()}\n'
+        txt += f'cls._check_shader_timer.is_active(): ' \
+               f'{cls._check_shader_timer.is_active()}\n'
         txt += f'is_registered(bpy.app.handlers.undo_post, undo_redo_handler): ' \
                f'{is_registered(bpy.app.handlers.undo_post, undo_redo_handler)}\n'
         txt += f'is_registered(bpy.app.handlers.redo_post, undo_redo_handler): ' \
