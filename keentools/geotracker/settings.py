@@ -147,10 +147,10 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
                                            update=_update_preview_gamma)
     default_zoom_focal_length: bpy.props.FloatProperty(name='Default Zoom FL',
                                                        default=50.0 / 36.0 * 1920,
-                                                       min=0.01, max=5000.0)
+                                                       min=0.01, max=15000.0 / 36.0 * 1920)
     static_focal_length: bpy.props.FloatProperty(name='Static FL',
                                                  default=50.0 / 36.0 * 1920,
-                                                 min=0.01, max=5000.0)
+                                                 min=0.01, max=15000.0 / 36.0 * 1920)
     focal_length_mode: bpy.props.EnumProperty(name='Focal length mode', items=[
         ('CAMERA_FOCAL_LENGTH', 'CAMERA FOCAL LENGTH', 'Camera focal length', 0),
         ('STATIC_FOCAL_LENGTH', 'STATIC FOCAL LENGTH', 'Static focal length', 1),
