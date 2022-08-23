@@ -47,7 +47,9 @@ def exit_area_localview(area: Optional[Area]):
     if check_area_active_problem(area):
         return False
     if area.spaces.active.local_view:
-        operator_with_context(bpy.ops.view3d.localview, {'area':area})
+        operator_with_context(bpy.ops.view3d.localview,
+                              {'window': bpy.context.window,  # Fix
+                               'area':area})
         log_output('exit_area_localview success')
         return True
     return False
