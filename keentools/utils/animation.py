@@ -17,10 +17,11 @@
 # ##### END GPL LICENSE BLOCK #####
 import logging
 from typing import Optional, List, Set, Dict
+
 import bpy
 from bpy.types import Object, Action, FCurve, Keyframe
 from mathutils import Vector
-from .bpy_common import bpy_current_frame, create_empty_object
+from .bpy_common import bpy_current_frame, create_empty_object, operator_with_context
 
 
 def extend_scene_timeline_end(keyframe_num: int, force=False) -> None:
@@ -215,8 +216,9 @@ def put_keys_in_frame(obj: Object, frame: int, anim_dict: Dict) -> None:
 
 
 def create_animation_locrot_keyframe_force(obj: Object) -> None:
-    bpy.ops.anim.keyframe_insert_menu({'selected_objects': [obj]},
-                                      type='BUILTIN_KSI_LocRot')
+    operator_with_context(bpy.ops.anim.keyframe_insert_menu,
+                          {'selected_objects': [obj]},
+                          type='BUILTIN_KSI_LocRot')
 
 
 def insert_keyframe_in_fcurve(obj: Object, frame: int, value: float,
@@ -265,8 +267,9 @@ def create_locrot_keyframe(obj: Object, keyframe_type: str='KEYFRAME') -> None:
 
 
 def delete_locrot_keyframe(obj: Object) -> None:
-    bpy.ops.anim.keyframe_delete_by_name({'selected_objects': [obj]},
-                                         type='BUILTIN_KSI_LocRot')
+    operator_with_context(bpy.ops.anim.keyframe_delete_by_name,
+                          {'selected_objects': [obj]},
+                          type='BUILTIN_KSI_LocRot')
 
 
 def reset_object_action(obj: Object) -> None:

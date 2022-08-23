@@ -22,6 +22,8 @@ from typing import Optional
 import bpy
 from bpy.types import Area
 
+from .bpy_common import operator_with_context
+
 
 def check_area_active_problem(area: Optional[Area]) -> bool:
     return not area or not area.spaces or not area.spaces.active
@@ -31,7 +33,9 @@ def enter_area_localview(area: Optional[Area]):
     if check_area_active_problem(area):
         return False
     if not area.spaces.active.local_view:
-        bpy.ops.view3d.localview({'area':area})
+        operator_with_context(bpy.ops.view3d.localview,
+                              {'window': bpy.context.window,  # Fix for new temp_context
+                               'area': area})
         return True
     return False
 
@@ -43,7 +47,7 @@ def exit_area_localview(area: Optional[Area]):
     if check_area_active_problem(area):
         return False
     if area.spaces.active.local_view:
-        bpy.ops.view3d.localview({'area':area})
+        operator_with_context(bpy.ops.view3d.localview, {'area':area})
         log_output('exit_area_localview success')
         return True
     return False

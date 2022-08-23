@@ -23,6 +23,7 @@ import logging
 import os
 
 from ..addon_config import Config, get_operator, ErrorType
+from ..utils.bpy_common import operator_with_context
 from ..facebuilder_config import FBConfig
 from ..utils.rig_slider import create_slider, create_rectangle, create_label
 from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
@@ -409,7 +410,8 @@ def delete_with_children(obj):
     arr = []
     _find_all_children(obj, arr)
     if arr:
-        bpy.ops.object.delete({'selected_objects': arr})
+        operator_with_context(bpy.ops.object.delete,
+                              {'selected_objects': arr})
 
 
 def select_control_panel_sliders(panel_obj):
