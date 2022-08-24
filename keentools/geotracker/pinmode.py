@@ -56,17 +56,9 @@ class GT_OT_PinMode(bpy.types.Operator):
     geotracker_num: bpy.props.IntProperty(default=-1)
 
     pinmode_id: bpy.props.StringProperty(default='')
-    pinmode_keyframe: bpy.props.IntProperty(default=-1)
 
     _shift_pressed = False
     _prev_camera_state = ()
-
-    def _current_frame_updated(self):
-        keyframe = bpy_current_frame()
-        if keyframe != self.pinmode_keyframe:
-            self.pinmode_keyframe = keyframe
-            return True
-        return False
 
     @classmethod
     def _check_camera_state_changed(cls, rv3d):
@@ -303,17 +295,6 @@ class GT_OT_PinMode(bpy.types.Operator):
             _log_output('Exit pinmode by ESC')
             GTLoader.out_pinmode()
             return {'FINISHED'}
-
-        if self._current_frame_updated():
-            geotracker = settings.get_current_geotracker_item()
-            geotracker.reset_focal_length_estimation()
-            _log_output('KEYFRAME UPDATED')
-            coords.update_depsgraph()
-            GTLoader.place_camera()
-            GTLoader.update_all_viewport_shaders(context.area)
-            vp = GTLoader.viewport()
-            vp.tag_redraw()
-            return {'PASS_THROUGH'}
 
         if GTLoader.geomobj_mode_changed_to_object():
             _log_output('RETURNED TO OBJECT_MODE')
