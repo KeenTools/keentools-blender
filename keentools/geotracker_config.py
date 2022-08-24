@@ -110,6 +110,8 @@ class GTConfig:
 
     prevent_view_rotation = True
     use_storage = True
+    auto_render_size = True
+    auto_time_length = True
 
 
 def get_gt_settings():
