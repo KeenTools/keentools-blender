@@ -91,6 +91,9 @@ class Config:
     text_scale_y = 0.75
     btn_scale_y = 1.2
 
+    default_tone_exposure = 0.0
+    default_tone_gamma = 1.0
+
     default_updater_preferences = {
         'latest_show_datetime_update_reminder': {'value': '', 'type': 'string'},
         'latest_update_skip_version': {'value': '', 'type': 'string'},

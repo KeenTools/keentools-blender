@@ -344,8 +344,6 @@ class GT_PT_CameraPanel(AllVisible):
                               depress=settings.pinmode)
             op.geotracker_num = -1
 
-        layout.prop(geotracker, 'preview_gamma', slider=True)
-
 
 class GT_PT_TrackingPanel(AllVisible):
     bl_idname = GTConfig.gt_tracking_panel_idname
@@ -423,16 +421,55 @@ class GT_PT_TrackingPanel(AllVisible):
 
 class GT_PT_WireframeSettingsPanel(AllVisible):
     bl_idname = GTConfig.gt_colors_panel_idname
-    bl_label = 'Wireframe'
+    bl_label = 'Appearance'
 
     def draw(self, context):
         layout = self.layout
         settings = get_gt_settings()
 
-        split = layout.split(factor=0.25, align=True)
+        box = layout.box()
+        col = box.column(align=True)
+        row = col.row(align=True)
+        row.label(text='Wireframe')
+        col.separator(factor=0.4)
+        btn = row.column(align=True)
+        btn.active = False
+        btn.scale_y = 0.75
+        btn.operator(
+            GTConfig.gt_default_wireframe_settings_idname,
+            text='', icon='LOOP_BACK', emboss=False, depress=False)
+
+        split = col.split(factor=0.25, align=True)
         split.prop(settings, 'wireframe_color', text='')
         split.prop(settings, 'wireframe_opacity', text='', slider=True)
-        layout.prop(settings, 'wireframe_backface_culling')
+        col.prop(settings, 'wireframe_backface_culling')
+
+        geotracker = settings.get_current_geotracker_item()
+        if not geotracker:
+            return
+
+        box = layout.box()
+        col = box.column(align=True)
+        row = col.row(align=True)
+        row.label(text='Background adjustment')
+        col.separator(factor=0.4)
+        btn = row.column(align=True)
+        btn.active = False
+        btn.scale_y = 0.75
+        btn.operator(
+            GTConfig.gt_reset_tone_mapping_idname,
+            text='', icon='LOOP_BACK', emboss=False, depress=False)
+
+        col2 = col.column(align=True)
+        row = col2.row(align=True)
+        row.prop(geotracker, 'tone_exposure', slider=True)
+        row.operator(GTConfig.gt_reset_tone_exposure_idname,
+                     text='', icon='LOOP_BACK')
+
+        row = col.row(align=True)
+        row.prop(geotracker, 'tone_gamma', slider=True)
+        row.operator(GTConfig.gt_reset_tone_gamma_idname,
+                     text='', icon='LOOP_BACK')
 
 
 class GT_PT_AnimationPanel(AllVisible):

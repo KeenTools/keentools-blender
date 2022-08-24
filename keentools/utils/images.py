@@ -15,8 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+import logging
 import numpy as np
+
 import bpy
+
+from ..addon_config import Config
 
 
 _pixels_foreach_exists = None
@@ -152,3 +156,32 @@ def np_array_from_background_image(camobj):
     bg_img = get_background_image_object(camobj)
     np_img = np_array_from_bpy_image(bg_img.image)
     return np_img
+
+
+def reset_tone_mapping(cam_image):
+    if not cam_image:
+        return
+    if cam_image.is_dirty:
+        cam_image.reload()
+        logger = logging.getLogger(__name__)
+        logger.debug('reset_tone_mapping: IMAGE RELOADED')
+
+
+def tone_mapping(cam_image, exposure, gamma):
+    if not cam_image:
+        return
+    reset_tone_mapping(cam_image)
+    logger = logging.getLogger(__name__)
+
+    if np.all(np.isclose([exposure, gamma], [Config.default_tone_exposure,
+                                             Config.default_tone_gamma],
+                                             atol=0.001)):
+        logger.debug('SKIP tone mapping, only reload()')
+        return
+    np_img = np_array_from_bpy_image(cam_image)
+
+    gain = pow(2, exposure / 2.2)
+    np_img[:, :, :3] = np.power(gain * np_img[:, :, :3], 1.0 / gamma)
+    assign_pixels_data(cam_image.pixels, np_img.ravel())
+    logger.debug('restore_tone_mapping: exposure: {} '
+                 '(gain: {}) gamma: {}'.format(exposure, gain, gamma))

@@ -214,6 +214,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         _log_output(f'INVOKE PINMODE: {self.geotracker_num}')
 
         settings = get_gt_settings()
+        settings.fix_geotrackers()
         old_geotracker_num = settings.current_geotracker_num
         new_geotracker_num = old_geotracker_num if \
             self.geotracker_num == -1 else self.geotracker_num

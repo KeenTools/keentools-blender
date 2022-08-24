@@ -24,12 +24,13 @@ from contextlib import contextmanager
 import bpy
 from bpy.types import Object, CameraBackgroundImage
 
+from ..addon_config import Config
 from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
 from ..utils.images import (np_array_from_bpy_image,
                             get_background_image_object,
                             gamma_np_image,
-                            set_background_image_by_movieclip)
+                            set_background_image_by_movieclip, tone_mapping)
 from .utils.tracking import reload_precalc
 from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_scale_vec_4_from_matrix_world)
@@ -95,19 +96,12 @@ def update_wireframe_backface_culling(self, context) -> None:
         GTLoader.update_viewport_wireframe()
 
 
-def _update_preview_gamma(self, context) -> None:
-    _log_output(f'Image Adj Gamma: {self.preview_gamma}')
-    settings = get_gt_settings()
-    if not settings.pinmode:
-        return
-    geotracker = settings.get_current_geotracker_item()
+def update_background_tone_mapping(geotracker, context):
     bg_img = get_background_image_object(geotracker.camobj)
     if not bg_img or not bg_img.image:
         return
-    bg_img.image.reload()
-    np_img = np_array_from_bpy_image(bg_img.image)
-    gamma_img = gamma_np_image(np_img, 1.0 / self.preview_gamma)
-    bg_img.image.pixels.foreach_set(gamma_img.ravel())
+    tone_mapping(bg_img.image,
+                 exposure=geotracker.tone_exposure, gamma=geotracker.tone_gamma)
 
 
 class FileListItem(bpy.types.PropertyGroup):
@@ -143,8 +137,15 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     focal_length_estimation: bpy.props.BoolProperty(name='Estimate focal length', default=False)
     track_focal_length: bpy.props.BoolProperty(name='Track focal length', default=False)
 
-    preview_gamma: bpy.props.FloatProperty(name='Gamma', default=1.0, min=0.1, max=3.0,
-                                           update=_update_preview_gamma)
+    tone_exposure: bpy.props.FloatProperty(
+        name='Exposure', description='Tone gain',
+        default=Config.default_tone_exposure,
+        min=-10.0, max=10.0, soft_min=-4.0, soft_max=4.0, precision=2,
+        update=update_background_tone_mapping)
+    tone_gamma: bpy.props.FloatProperty(
+        name='Gamma correction', description='Tone gamma correction',
+        default=Config.default_tone_gamma, min=0.01, max=10.0, soft_max=4.0, precision=2,
+        update=update_background_tone_mapping)
     default_zoom_focal_length: bpy.props.FloatProperty(name='Default Zoom FL',
                                                        default=50.0 / 36.0 * 1920,
                                                        min=0.01, max=15000.0 / 36.0 * 1920)
@@ -314,6 +315,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         return None
 
     def change_current_geotracker(self, num: int) -> None:
+        self.fix_geotrackers()
         self.current_geotracker_num = num
         if not GTLoader.load_geotracker():
             GTLoader.new_kt_geotracker()
@@ -374,3 +376,19 @@ class GTSceneSettings(bpy.types.PropertyGroup):
 
     def calculation_mode(self) -> bool:
         return self.precalc_mode or self.tracking_mode
+
+    def fix_geotrackers(self) -> bool:
+        def _object_is_not_in_use(obj: Optional[Object]):
+            if obj is None:
+                return False
+            return obj.users <= 1
+
+        flag = False
+        for geotracker in self.geotrackers:
+            if _object_is_not_in_use(geotracker.geomobj):
+                geotracker.geomobj = None
+                flag = True
+            if _object_is_not_in_use(geotracker.camobj):
+                geotracker.camobj = None
+                flag = True
+        return flag
