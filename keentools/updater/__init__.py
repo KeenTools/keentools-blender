@@ -1,6 +1,6 @@
 # ##### BEGIN GPL LICENSE BLOCK #####
 # KeenTools for blender is a blender addon for using KeenTools in Blender.
-# Copyright (C)2022 KeenTools
+# Copyright (C) 2019  KeenTools
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,17 +16,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from .panels import *
+from .utils import *
 
 
-CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,
-                       GT_PT_UpdatePanel,
-                       GT_PT_DownloadNotification,
-                       GT_PT_DownloadingProblemPanel,
-                       GT_PT_UpdatesInstallationPanel,
-                       GT_PT_InputPanel,
-                       GT_PT_AnalyzePanel,
-                       GT_PT_CameraPanel,
-                       GT_PT_TrackingPanel,
-                       GT_PT_WireframeSettingsPanel,
-                       GT_PT_AnimationPanel)
+CLASSES_TO_REGISTER = (KT_OT_DownloadTheUpdate,  # operators
+                       KT_OT_RemindLater,
+                       KT_OT_SkipVersion,
+                       KT_OT_RetryDownloadUpdate,
+                       KT_OT_ComeBackToUpdate,
+                       KT_OT_InstallUpdates,
+                       KT_OT_RemindInstallLater,
+                       KT_OT_SkipInstallation)

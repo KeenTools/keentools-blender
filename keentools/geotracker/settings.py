@@ -91,7 +91,7 @@ def update_wireframe_backface_culling(self, context) -> None:
 
 
 def _update_preview_gamma(self, context) -> None:
-    _log_output('Image Adj Gamma: ', self.preview_gamma)
+    _log_output(f'Image Adj Gamma: {self.preview_gamma}')
     settings = get_gt_settings()
     if not settings.pinmode:
         return

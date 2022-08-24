@@ -24,6 +24,11 @@ import bpy
 from ...addon_config import Config, geotracker_enabled
 from ...geotracker_config import GTConfig, get_gt_settings
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
+from ...updater.panels import (KTUpdater,
+                               KT_PT_UpdatePanel,
+                               KT_PT_DownloadNotification,
+                               KT_PT_DownloadingProblemPanel,
+                               KT_PT_UpdatesInstallationPanel)
 
 
 def _is_keentools_object(obj) -> bool:
@@ -171,6 +176,33 @@ class GT_PT_GeotrackersPanel(View3DPanel):
 
         self._output_geotrackers_list(layout)
         self._geotracker_creation_offer(layout)
+        KTUpdater.call_updater('GeoTracker')
+
+
+class GT_PT_UpdatePanel(KT_PT_UpdatePanel):
+    bl_idname = GTConfig.gt_update_panel_idname
+    bl_category = Config.gt_tab_category
+
+    @classmethod
+    def poll(cls, context):
+        if not geotracker_enabled():
+            return False
+        return KTUpdater.is_active()
+
+
+class GT_PT_DownloadNotification(KT_PT_DownloadNotification):
+    bl_idname = GTConfig.gt_download_notification_panel_idname
+    bl_category = Config.gt_tab_category
+
+
+class GT_PT_DownloadingProblemPanel(KT_PT_DownloadingProblemPanel):
+    bl_idname = GTConfig.gt_downloading_problem_panel_idname
+    bl_category = Config.gt_tab_category
+
+
+class GT_PT_UpdatesInstallationPanel(KT_PT_UpdatesInstallationPanel):
+    bl_idname = GTConfig.gt_updates_installation_panel_idname
+    bl_category = Config.gt_tab_category
 
 
 class GT_PT_InputPanel(AllVisible):

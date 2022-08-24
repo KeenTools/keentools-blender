@@ -33,8 +33,11 @@ from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
                         draw_warning_labels, draw_long_labels)
 from ..preferences.user_preferences import UserPreferences, UpdaterPreferences
-from ..facebuilder.interface.updater import preferences_current_active_updater_operators_info, UpdateState, \
-    render_active_message, FBUpdater, CurrentStateExecutor
+from ..updater.utils import (preferences_current_active_updater_operators_info,
+                             UpdateState,
+                             render_active_message,
+                             KTUpdater,
+                             CurrentStateExecutor)
 from .operators import get_product_license_manager
 
 
@@ -582,7 +585,7 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
             return None
 
     def _draw_updater_info(self, layout):
-        FBUpdater.init_updater()
+        KTUpdater.call_updater('FaceBuilder')
         CurrentStateExecutor.compute_current_panel_updater_state()
         settings = get_fb_settings()
         if settings is None:

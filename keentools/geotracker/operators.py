@@ -37,6 +37,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     remove_pins_act,
                                     center_geo_act,
                                     create_animated_empty_act)
+from .gtloader import GTLoader
 
 
 class ButtonOperator:
@@ -306,7 +307,11 @@ class GT_OT_ExitPinMode(ButtonOperator, bpy.types.Operator):
     def execute(self, context):
         settings = get_gt_settings()
         if settings.pinmode:
-            settings.force_out_pinmode = True
+            vp = GTLoader.viewport()
+            if not vp.is_working():
+                settings.pinmode = False
+            else:
+                settings.force_out_pinmode = True
         return {'FINISHED'}
 
 

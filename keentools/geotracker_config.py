@@ -73,6 +73,12 @@ class GTConfig:
     gt_colors_panel_idname = _PT + 'colors_panel'
     gt_animation_panel_idname = _PT + 'animation_panel'
 
+    # Updater panels
+    gt_update_panel_idname = _PT + 'update_panel'
+    gt_download_notification_panel_idname = _PT + 'download_notification'
+    gt_downloading_problem_panel_idname = _PT + 'downloading_problem'
+    gt_updates_installation_panel_idname = _PT + 'updates_installation_panel'
+
     # Constants
     text_scale_y = 0.75
     default_precalc_filename = 'geotracker.precalc'

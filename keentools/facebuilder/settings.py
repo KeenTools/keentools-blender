@@ -860,12 +860,6 @@ class FBSceneSettings(PropertyGroup):
         description='Defaults are loaded flag',
         name='Defaults loaded', default=False)
 
-    # Updater
-    not_save_changes: BoolProperty(
-        description="Discard changes, install the update and restart Blender",
-        name="Discard changes, install the update and restart Blender", default=False
-    )
-
     @contextmanager
     def ui_write_mode_context(self):
         self.ui_write_mode = True
@@ -1041,7 +1035,8 @@ class FBSceneSettings(PropertyGroup):
 
     def mock_update_for_testing(self, value=True, ver=None,
                                 addon_path=Config.mock_update_addon_path,
-                                core_path=Config.mock_update_core_path):
+                                core_path=Config.mock_update_core_path,
+                                product=Config.mock_product):
         """Enable mock for update testing
 
         :param value: Mock status. True for active, False for inactive
@@ -1059,5 +1054,5 @@ class FBSceneSettings(PropertyGroup):
         bpy.context.scene.keentools_fb_settings.mock_update_for_testing(True)
         """
         Config.mock_update_for_testing(value, ver=ver, addon_path=addon_path,
-                                       core_path=core_path)
+                                       core_path=core_path, product=product)
         set_mock_update_paths(addon_path=addon_path, core_path=core_path)

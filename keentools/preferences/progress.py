@@ -60,7 +60,7 @@ class UpdateProgressTimer(KTTimer):
         self._stop(self._check_progress)
 
 
-class FBUpdateProgressTimer:
+class KTUpdateProgressTimer:
     _timer = UpdateProgressTimer()
 
     @classmethod
@@ -108,7 +108,7 @@ class InstallationProgress:
         cls._state_mutex.acquire()
         try:
             cls.state = {'active': True, 'progress': 0.0, 'status': None}
-            FBUpdateProgressTimer.start()
+            KTUpdateProgressTimer.start()
         finally:
             cls._state_mutex.release()
 
@@ -117,7 +117,7 @@ class InstallationProgress:
         cls._state_mutex.acquire()
         try:
             cls.state = {'active': False, 'progress': 0.0, 'status': status}
-            FBUpdateProgressTimer.stop()
+            KTUpdateProgressTimer.stop()
         finally:
             cls._state_mutex.release()
 

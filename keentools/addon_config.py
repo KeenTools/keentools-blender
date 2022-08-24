@@ -18,6 +18,7 @@
 import bpy
 
 _company = 'keentools'
+_PT = 'KEENTOOLS_PT_'
 
 
 class Config:
@@ -28,6 +29,8 @@ class Config:
                                   (3, 0), (3, 1))
     minimal_blender_api = (2, 80, 60)
 
+    fb_tab_category = 'FaceBuilder'
+    gt_tab_category = 'GeoTracker'
     operators = 'keentools'
     prefs_operators = 'keentools_preferences'
     addon_name = __package__  # the same as module name
@@ -62,6 +65,23 @@ class Config:
     kt_install_license_online_idname = prefs_operators + '.install_license_online'
     kt_install_license_offline_idname = prefs_operators + '.install_license_offline'
     kt_floating_connect_idname = prefs_operators + '.floating_connect'
+
+    # Updater panels
+    kt_update_panel_idname = _PT + 'update_panel'
+    kt_download_notification_panel_idname = _PT + 'download_notification'
+    kt_downloading_problem_panel_idname = _PT + 'downloading_problem'
+    kt_updates_installation_panel_idname = _PT + 'updates_installation_panel'
+
+    # Updater operators
+    kt_download_the_update_idname = operators + '.download_the_update'
+    kt_retry_download_the_update_idname = operators + '.retry_download_the_update'
+    kt_remind_later_idname = operators + '.remind_later'
+    kt_skip_version_idname = operators + '.skip_version'
+    kt_come_back_to_update_idname = operators + '.come_back_to_update'
+    kt_install_updates_idname = operators + '.install_updates'
+    kt_remind_install_later_idname = operators + '.remind_install_later'
+    kt_skip_installation_idname = operators + '.skip_installation'
+
     # Object Custom Properties
     core_version_prop_name = _company + '_version'
     viewport_state_prop_name = _company + '_viewport_state'
@@ -83,17 +103,19 @@ class Config:
     mock_update_version = (int(addon_version.partition('.')[0]), 6, 3)
     mock_update_addon_path = 'http://localhost/addon.zip'
     mock_update_core_path = 'http://localhost/core.zip'
+    mock_product = None
 
     hide_geotracker = False
 
     @classmethod
     def mock_update_for_testing(cls, value=True, *, ver=None,
-                                addon_path=None, core_path=None):
+                                addon_path=None, core_path=None, product=None):
         if ver is not None:
             cls.mock_update_version = ver
 
         cls.mock_update_addon_path = addon_path
         cls.mock_update_core_path = core_path
+        cls.mock_product = product
         cls.mock_update_for_testing_flag = value
 
 

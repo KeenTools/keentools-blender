@@ -164,8 +164,11 @@ else:
     from .facebuilder import facebuilder_register, facebuilder_unregister
     from .geotracker import geotracker_register, geotracker_unregister
     from .utils.warning import KT_OT_AddonWarning
+    from .updater import CLASSES_TO_REGISTER as UPDATER_CLASSES
 
-    CLASSES_TO_REGISTER = PREFERENCES_CLASSES + (KT_OT_AddonWarning,)
+
+    CLASSES_TO_REGISTER = PREFERENCES_CLASSES + UPDATER_CLASSES + (KT_OT_AddonWarning,)
+
 
     def register():
         logger = logging.getLogger(__name__)
