@@ -105,6 +105,12 @@ class PrecalcTimer:
         _log_info('Precalc is over: {:.2f} sec.'.format(
                   time.time() - self._start_time))
 
+    def finish_precalc_mode_with_error(self, err_message: str) -> None:
+        self.finish_precalc_mode()
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+        geotracker.precalc_message = err_message
+
     def common_checks(self) -> bool:
         settings = get_gt_settings()
         _log_output(f'Timer: state={self._state} target={self._target_frame} '
@@ -167,6 +173,10 @@ class PrecalcTimer:
             # For testing purpose only
             _log_output('no np_img. possible in bpy.app.background mode')
             bg_img = get_background_image_object(geotracker.camobj)
+            if not bg_img.image:
+                _log_output('no image in background')
+                self.finish_precalc_mode_with_error('* Cannot load images')
+                return None
 
             im_user = bg_img.image_user
             update_depsgraph()
@@ -177,6 +187,7 @@ class PrecalcTimer:
 
             if not check_bpy_image_size(img):
                 _log_output('cannot load image')
+                self.finish_precalc_mode_with_error('* Cannot load images')
                 return None
 
             np_img = np_array_from_bpy_image(img)
