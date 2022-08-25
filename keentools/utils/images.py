@@ -17,35 +17,48 @@
 # ##### END GPL LICENSE BLOCK #####
 import logging
 import numpy as np
+from typing import Any, Callable
 
 import bpy
 
 from ..addon_config import Config
 
 
-_pixels_foreach_exists = None
+_logger: Any = logging.getLogger(__name__)
 
 
-def _get_pixels_foreach_exists():
-    global _pixels_foreach_exists
-    if _pixels_foreach_exists is None:
-        ver = bpy.app.version
-        _pixels_foreach_exists = ver >= (2, 83, 0)
-    return _pixels_foreach_exists
+def _log_output(message: str) -> None:
+    global _logger
+    _logger.debug(message)
 
 
-def assign_pixels_data(pixels, data):
-    if _get_pixels_foreach_exists():
-        pixels.foreach_set(data)
-    else:
-        pixels[:] = data
+def _log_error(message: str) -> None:
+    global _logger
+    _logger.error(message)
 
 
-def get_pixels_data(pixels, data):
-    if _get_pixels_foreach_exists():
-        pixels.foreach_get(data)
-    else:
-        data[:] = pixels[:]
+def _assign_pixels_data_new(pixels: Any, data: Any) -> None:
+    pixels.foreach_set(data)
+
+
+def _assign_pixels_data_old(pixels: Any, data: Any) -> None:
+    pixels[:] = data
+
+
+assign_pixels_data: Callable = _assign_pixels_data_new \
+    if bpy.app.version >= (2, 83, 0) else _assign_pixels_data_old
+
+
+def _get_pixels_data_new(pixels: Any, data: Any) -> None:
+    pixels.foreach_get(data)
+
+
+def _get_pixels_data_old(pixels: Any, data: Any) -> None:
+    data[:] = pixels[:]
+
+
+get_pixels_data: Callable = _get_pixels_data_new \
+    if bpy.app.version >= (2, 83, 0) else _get_pixels_data_old
 
 
 def np_array_from_bpy_image(bpy_image):
@@ -93,20 +106,26 @@ def set_background_image_by_movieclip(camobj, movie_clip, name='geotracker_bg'):
     cam_data = camobj.data
     cam_data.show_background_images = True
 
-    bg_img.source = 'IMAGE'
-    img = bg_img.image
-    if not img:
-        w, h = movie_clip.size[:]
-        img = bpy.data.images.new(name, width=w, height=h, alpha=True,
-                                  float_buffer=False)
-        bg_img.image = img
+    if movie_clip.source == 'SEQUENCE':
+        bg_img.source = 'IMAGE'
+        img = bg_img.image
+        if not img:
+            w, h = movie_clip.size[:]
+            img = bpy.data.images.new(name, width=w, height=h, alpha=True,
+                                      float_buffer=False)
+            bg_img.image = img
 
-    img.source = 'SEQUENCE' if movie_clip.frame_duration > 1 else 'FILE'
-    img.filepath = movie_clip.filepath
+        img.source = 'SEQUENCE' if movie_clip.frame_duration > 1 else 'FILE'
+        img.filepath = movie_clip.filepath
 
-    bg_img.image_user.frame_duration = movie_clip.frame_duration
-    bg_img.image_user.frame_start = 1
-    bg_img.image_user.use_auto_refresh = True
+        bg_img.image_user.frame_duration = movie_clip.frame_duration
+        bg_img.image_user.frame_start = 1
+        bg_img.image_user.use_auto_refresh = True
+    elif movie_clip.source == 'MOVIE':
+        bg_img.source = 'MOVIE_CLIP'
+        bg_img.clip = movie_clip
+    else:
+        _log_error('UNKNOWN MOVIECLIP TYPE')
 
 
 def find_bpy_image_by_name(image_name):
@@ -163,25 +182,23 @@ def reset_tone_mapping(cam_image):
         return
     if cam_image.is_dirty:
         cam_image.reload()
-        logger = logging.getLogger(__name__)
-        logger.debug('reset_tone_mapping: IMAGE RELOADED')
+        _log_output('reset_tone_mapping: IMAGE RELOADED')
 
 
 def tone_mapping(cam_image, exposure, gamma):
     if not cam_image:
         return
     reset_tone_mapping(cam_image)
-    logger = logging.getLogger(__name__)
 
     if np.all(np.isclose([exposure, gamma], [Config.default_tone_exposure,
                                              Config.default_tone_gamma],
                                              atol=0.001)):
-        logger.debug('SKIP tone mapping, only reload()')
+        _log_output('SKIP tone mapping, only reload()')
         return
     np_img = np_array_from_bpy_image(cam_image)
 
     gain = pow(2, exposure / 2.2)
     np_img[:, :, :3] = np.power(gain * np_img[:, :, :3], 1.0 / gamma)
     assign_pixels_data(cam_image.pixels, np_img.ravel())
-    logger.debug('restore_tone_mapping: exposure: {} '
-                 '(gain: {}) gamma: {}'.format(exposure, gain, gamma))
+    _log_output('restore_tone_mapping: exposure: {} '
+                '(gain: {}) gamma: {}'.format(exposure, gain, gamma))
