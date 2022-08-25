@@ -78,7 +78,7 @@ class GTViewport(KTViewport):
 
     def update_pin_sensitivity(self):
         settings = get_gt_settings()
-        self.POINT_SENSITIVITY = settings.pin_sensitivity
+        self._point_sensitivity = settings.pin_sensitivity
 
     def update_pin_size(self):
         settings = get_gt_settings()

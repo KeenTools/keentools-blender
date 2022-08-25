@@ -104,6 +104,19 @@ def update_background_tone_mapping(geotracker, context):
                  exposure=geotracker.tone_exposure, gamma=geotracker.tone_gamma)
 
 
+def update_pin_sensitivity(settings, context):
+    if settings.pin_size > settings.pin_sensitivity:
+        settings.pin_size = settings.pin_sensitivity
+
+    GTLoader.viewport().update_pin_sensitivity()
+
+
+def update_pin_size(settings, context):
+    if settings.pin_sensitivity < settings.pin_size:
+        settings.pin_sensitivity = settings.pin_size
+    GTLoader.viewport().update_pin_size()
+
+
 class FileListItem(bpy.types.PropertyGroup):
     name: bpy.props.StringProperty(name='File name')
 
@@ -260,6 +273,23 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         name='Backface culling',
         default=False,
         update=update_wireframe_backface_culling)
+
+    pin_size: bpy.props.FloatProperty(
+        description='Set pin size in pixels',
+        name='Size',
+        default=GTConfig.pin_size,
+        min=1.0, max=100.0,
+        precision=1,
+        update=update_pin_size
+    )
+    pin_sensitivity: bpy.props.FloatProperty(
+        description='Set active area in pixels',
+        name='Active area',
+        default=GTConfig.pin_sensitivity,
+        min=1.0, max=100.0,
+        precision=1,
+        update=update_pin_sensitivity
+    )
 
     anim_start: bpy.props.IntProperty(name='from', default=1)
     anim_end: bpy.props.IntProperty(name='to', default=250)

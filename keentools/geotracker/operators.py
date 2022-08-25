@@ -403,6 +403,18 @@ class GT_OT_DefaultWireframeSettings(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
+class FB_OT_DefaultPinSettings(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_default_pin_settings_idname
+    bl_label = 'Revert to defaults'
+    bl_description = 'Set pin size and active area as in the saved defaults'
+
+    def execute(self, context):
+        settings = get_gt_settings()
+        settings.pin_size = GTConfig.pin_size
+        settings.pin_sensitivity = GTConfig.pin_sensitivity
+        return {'FINISHED'}
+
+
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_DeleteGeoTracker,
                   GT_OT_AddKeyframe,
@@ -429,4 +441,5 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_ResetToneGain,
                   GT_OT_ResetToneGamma,
                   GT_OT_ResetToneMapping,
-                  GT_OT_DefaultWireframeSettings)
+                  GT_OT_DefaultWireframeSettings,
+                  FB_OT_DefaultPinSettings)

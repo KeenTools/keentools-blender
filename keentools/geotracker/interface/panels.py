@@ -471,6 +471,20 @@ class GT_PT_WireframeSettingsPanel(AllVisible):
         row.operator(GTConfig.gt_reset_tone_gamma_idname,
                      text='', icon='LOOP_BACK')
 
+        box = layout.box()
+        col = box.column(align=True)
+        row = col.row(align=True)
+        row.label(text='Pins')
+        col.separator(factor=0.4)
+        btn = row.column(align=True)
+        btn.active = False
+        btn.scale_y = 0.75
+        btn.operator(
+            GTConfig.gt_default_pin_settings_idname,
+            text='', icon='LOOP_BACK', emboss=False, depress=False)
+        col.prop(settings, 'pin_size', slider=True)
+        col.prop(settings, 'pin_sensitivity', slider=True)
+
 
 class GT_PT_AnimationPanel(AllVisible):
     bl_idname = GTConfig.gt_animation_panel_idname

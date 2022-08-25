@@ -506,6 +506,9 @@ class GTLoader:
         txt += f'is_registered(bpy.app.handlers.depsgraph_update_post, ' \
                f'depsgraph_update_handler): ' \
                f'{is_registered(bpy.app.handlers.depsgraph_update_post, depsgraph_update_handler)}\n'
+        txt += f'is_registered(bpy.app.handlers.frame_change_post, ' \
+               f'frame_change_post_handler): ' \
+               f'{is_registered(bpy.app.handlers.frame_change_post, frame_change_post_handler)}\n'
         return txt
 
     @classmethod
