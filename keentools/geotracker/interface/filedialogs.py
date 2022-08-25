@@ -26,6 +26,7 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from ...addon_config import Config
 from ...geotracker_config import GTConfig, get_current_geotracker_item
 from ...utils.images import set_background_image_by_movieclip
+from ..utils.geotracker_acts import fit_render_size_act, fit_time_length_act
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -119,6 +120,16 @@ class GT_OT_MultipleFilebrowser(bpy.types.Operator, ImportHelper):
         set_background_image_by_movieclip(geotracker.camobj,
                                           geotracker.movie_clip)
         _log_output(f'LOADED MOVIECLIP: {geotracker.movie_clip.name}')
+
+        if GTConfig.auto_render_size:
+            act_status = fit_render_size_act()
+            if not act_status.success:
+                _log_error(act_status.error_message)
+                return {'FINISHED'}
+        if GTConfig.auto_time_length:
+            act_status = fit_time_length_act()
+            if not act_status.success:
+                _log_error(act_status.error_message)
         return {'FINISHED'}
 
 

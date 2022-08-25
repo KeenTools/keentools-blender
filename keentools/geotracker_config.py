@@ -63,6 +63,11 @@ class GTConfig:
     gt_interrupt_modal_idname = operators + '.interrupt_modal'
     gt_stop_precalc_idname = operators + '.stop_precalc_btn'
     gt_set_key_idname = operators + '.set_key_btn'
+    gt_reset_tone_exposure_idname = operators + '.reset_tone_exposure'
+    gt_reset_tone_gamma_idname = operators + '.reset_tone_gamma'
+    gt_reset_tone_mapping_idname = operators + '.reset_tone_mapping'
+    gt_default_wireframe_settings_idname = \
+        operators + '.default_wireframe_settings'
 
     # Panel ids
     gt_geotrackers_panel_idname = _PT + 'geotrackers_panel'
@@ -98,13 +103,15 @@ class GTConfig:
     timeline_keyframe_color = (0.0, 1.0, 0.0, 0.5)
 
     wireframe_color = (0.0, 1.0, 0.0)
-    wireframe_opacity = 0.1
+    wireframe_opacity = 0.4
 
     serial_prop_name = prefix + '_serial'
     version_prop_name = prefix + '_version'
 
     prevent_view_rotation = True
     use_storage = True
+    auto_render_size = True
+    auto_time_length = True
 
 
 def get_gt_settings():

@@ -19,8 +19,8 @@
 import logging
 import bpy
 
-from ..addon_config import get_operator
-from ..geotracker_config import GTConfig, get_gt_settings
+from ..addon_config import get_operator, Config
+from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
 from .utils.geotracker_acts import (create_geotracker_act,
                                     delete_geotracker_act,
                                     add_keyframe_act,
@@ -305,13 +305,7 @@ class GT_OT_ExitPinMode(ButtonOperator, bpy.types.Operator):
     bl_description = 'Exit from PinMode'
 
     def execute(self, context):
-        settings = get_gt_settings()
-        if settings.pinmode:
-            vp = GTLoader.viewport()
-            if not vp.is_working():
-                settings.pinmode = False
-            else:
-                settings.force_out_pinmode = True
+        GTLoader.out_pinmode()
         return {'FINISHED'}
 
 
@@ -356,6 +350,59 @@ class GT_OT_InterruptModal(bpy.types.Operator):
         return {'PASS_THROUGH'}
 
 
+class GT_OT_ResetToneGain(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_reset_tone_exposure_idname
+    bl_label = 'Reset exposure'
+    bl_description = 'Reset exposure in tone mapping'
+
+    def execute(self, context):
+        geotracker = get_current_geotracker_item()
+        if not geotracker:
+            return {'CANCELLED'}
+        geotracker.tone_exposure = Config.default_tone_exposure
+        return {'FINISHED'}
+
+
+class GT_OT_ResetToneGamma(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_reset_tone_gamma_idname
+    bl_label = 'Reset gamma'
+    bl_description = 'Reset gamma in tone mapping'
+
+    def execute(self, context):
+        geotracker = get_current_geotracker_item()
+        if not geotracker:
+            return {'CANCELLED'}
+        geotracker.tone_gamma = Config.default_tone_gamma
+        return {'FINISHED'}
+
+
+class GT_OT_ResetToneMapping(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_reset_tone_mapping_idname
+    bl_label = 'Reset tone mapping'
+    bl_description = 'Revert default values in tone mapping'
+
+    def execute(self, context):
+        geotracker = get_current_geotracker_item()
+        if not geotracker:
+            return {'CANCELLED'}
+        geotracker.tone_exposure = Config.default_tone_exposure
+        geotracker.tone_gamma = Config.default_tone_gamma
+        return {'FINISHED'}
+
+
+class GT_OT_DefaultWireframeSettings(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_default_wireframe_settings_idname
+    bl_label = 'Revert to defaults'
+    bl_description = 'Set the wireframe colours and opacity as in the saved defaults'
+
+    def execute(self, context):
+        settings = get_gt_settings()
+        settings.wireframe_color = GTConfig.wireframe_color
+        settings.wireframe_opacity = GTConfig.wireframe_opacity
+        settings.wireframe_backface_culling = False
+        return {'FINISHED'}
+
+
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_DeleteGeoTracker,
                   GT_OT_AddKeyframe,
@@ -378,4 +425,8 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_CreateAnimatedEmpty,
                   GT_OT_ExitPinMode,
                   GT_OT_InterruptModal,
-                  GT_OT_StopPrecalc)
+                  GT_OT_StopPrecalc,
+                  GT_OT_ResetToneGain,
+                  GT_OT_ResetToneGamma,
+                  GT_OT_ResetToneMapping,
+                  GT_OT_DefaultWireframeSettings)

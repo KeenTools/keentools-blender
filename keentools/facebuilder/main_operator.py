@@ -805,7 +805,7 @@ class FB_OT_ResetToneGain(ButtonOperator, Operator):
     def execute(self, context):
         settings = get_fb_settings()
         cam = settings.get_camera(self.headnum, self.camnum)
-        cam.tone_exposure = FBConfig.default_tone_exposure
+        cam.tone_exposure = Config.default_tone_exposure
         return {'FINISHED'}
 
 
@@ -820,7 +820,7 @@ class FB_OT_ResetToneGamma(ButtonOperator, Operator):
     def execute(self, context):
         settings = get_fb_settings()
         cam = settings.get_camera(self.headnum, self.camnum)
-        cam.tone_gamma = FBConfig.default_tone_gamma
+        cam.tone_gamma = Config.default_tone_gamma
         return {'FINISHED'}
 
 

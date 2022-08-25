@@ -70,6 +70,8 @@ class PrecalcTimer:
         self._start_time: int = 0
         self._area: Area = area
         self._active_state_func: Callable = self.dummy_state
+        settings = get_gt_settings()
+        self._started_in_pinmode = settings.pinmode
 
     def dummy_state(self) -> None:
         pass
@@ -89,14 +91,16 @@ class PrecalcTimer:
         self._state = 'over'
         settings = get_gt_settings()
         settings.precalc_mode = False
+        GTLoader.revert_default_screen_message(unregister=not settings.pinmode)
+
         geotracker = settings.get_current_geotracker_item()
-        unhide_viewport_ui_elements_from_object(self.get_area(), geotracker.camobj)
-        # self._area_header(None)
-        area = self.get_area()
-        exit_area_localview(area)
-        force_ui_redraw('VIEW_3D')
-        GTLoader.revert_default_screen_message()
+        if not settings.pinmode:
+            unhide_viewport_ui_elements_from_object(self.get_area(), geotracker.camobj)
+            # self._area_header(None)
+            area = self.get_area()
+            exit_area_localview(area)
         settings.user_interrupts = True
+        force_ui_redraw('VIEW_3D')
 
         _log_info('Precalc is over: {:.2f} sec.'.format(
                   time.time() - self._start_time))
@@ -189,7 +193,19 @@ class PrecalcTimer:
             return None
         return self._active_state_func()
 
+    def prepare_camera(self):
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if not settings.pinmode:
+            switch_to_camera(self._area, geotracker.camobj,
+                             geotracker.animatable_object())
+            hide_viewport_ui_elements_and_store_on_object(self._area, geotracker.camobj)
+        set_background_image_by_movieclip(geotracker.camobj,
+                                          geotracker.movie_clip)
+        geotracker.reload_background_image()
+
     def start(self) -> bool:
+        self.prepare_camera()
         settings = get_gt_settings()
         settings.precalc_mode = True
         self._state = 'runner'
@@ -251,11 +267,6 @@ def precalc_with_runner_act(context: Any) -> Tuple[bool, str]:
         geotracker.precalc_path, rw, rh,
         geotracker.precalc_start, geotracker.precalc_end,
         GTClassLoader.GeoTracker_class().license_manager(), True)
-
-    switch_to_camera(area, geotracker.camobj, geotracker.animatable_object())
-    hide_viewport_ui_elements_and_store_on_object(area, geotracker.camobj)
-    set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
-    geotracker.reload_background_image()
 
     pt = PrecalcTimer(area, runner)
     if pt.start():

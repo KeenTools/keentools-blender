@@ -627,7 +627,11 @@ def center_geo_act() -> ActionStatus:
         return ActionStatus(False, msg)
 
     gt = GTLoader.kt_geotracker()
-    gt.center_geo(bpy_current_frame())
+    keyframe = bpy_current_frame()
+    if not gt.is_key_at(keyframe):
+        mat = GTLoader.calc_model_matrix()
+        gt.set_keyframe(keyframe, mat)
+    gt.center_geo(keyframe)
     GTLoader.update_all_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')

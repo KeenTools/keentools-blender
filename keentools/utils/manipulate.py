@@ -20,10 +20,12 @@ import logging
 
 import bpy
 
+from .coords import get_area_region
 from .localview import (enter_area_localview,
                         exit_area_localview,
                         check_area_active_problem)
 from .ui_redraw import get_areas_by_type
+from .bpy_common import operator_with_context
 
 
 def has_no_blendshape(obj):
@@ -95,4 +97,8 @@ def center_viewports_on_object(obj=None):
     areas = get_areas_by_type(area_type='VIEW_3D')
     for area in areas:
         if not bpy.app.background:
-            bpy.ops.view3d.view_selected({'area': area}, use_all_regions=True)
+            operator_with_context(bpy.ops.view3d.view_selected,
+                                  {'window': bpy.context.window,  # Fix for new temp_context
+                                   'area': area,
+                                   'region': get_area_region(area)},  # Fix
+                                  use_all_regions=True)

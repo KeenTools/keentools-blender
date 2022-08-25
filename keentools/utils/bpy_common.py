@@ -15,9 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-from typing import Any
+from typing import Any, Dict, Callable
+
 import bpy
-from bpy.types import Object
+from bpy.types import Object, Operator
 
 
 def bpy_scene() -> Any:
@@ -50,3 +51,18 @@ def create_empty_object(name: str) -> Object:
     control.rotation_euler = (0, 0, 0)
     control.location = (0, 0, 0)
     return control
+
+
+def _operator_with_context_old(operator: Operator,
+                               context_override_dict: Dict, **kwargs) -> None:
+    operator(context_override_dict, **kwargs)
+
+
+def _operator_with_context_new(operator: Operator,
+                               context_override_dict: Dict, **kwargs) -> None:
+    with bpy.context.temp_override(**context_override_dict):
+        operator(**kwargs)
+
+
+operator_with_context: Callable = _operator_with_context_new \
+    if bpy.app.version >= (3, 2, 0) else _operator_with_context_old
