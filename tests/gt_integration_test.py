@@ -137,8 +137,8 @@ def gt_create_geotracker() -> None:
 
 
 def gt_load_movieclip(dir_path: str, filename: str) -> None:
-    op = get_operator(GTConfig.gt_multiple_filebrowser_idname)
-    op('EXEC_DEFAULT', directory=dir_path, files=[{'name':filename}], num=0)
+    op = get_operator(GTConfig.gt_sequence_filebrowser_idname)
+    op('EXEC_DEFAULT', directory=dir_path, files=[{'name':filename}])
 
 
 def fake_pinmode_on() -> None:

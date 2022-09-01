@@ -29,6 +29,13 @@ def bpy_current_frame() -> int:
     return bpy.context.scene.frame_current
 
 
+def bpy_start_frame() -> int:
+    return bpy.context.scene.frame_start
+
+def bpy_end_frame() -> int:
+    return bpy.context.scene.frame_end
+
+
 def bpy_set_current_frame(frame: int) -> None:
     bpy.context.scene.frame_set(frame)
 
@@ -55,14 +62,26 @@ def create_empty_object(name: str) -> Object:
 
 def _operator_with_context_old(operator: Operator,
                                context_override_dict: Dict, **kwargs) -> None:
-    operator(context_override_dict, **kwargs)
+    return operator(context_override_dict, **kwargs)
 
 
 def _operator_with_context_new(operator: Operator,
                                context_override_dict: Dict, **kwargs) -> None:
     with bpy.context.temp_override(**context_override_dict):
-        operator(**kwargs)
+        return operator(**kwargs)
 
 
 operator_with_context: Callable = _operator_with_context_new \
     if bpy.app.version >= (3, 2, 0) else _operator_with_context_old
+
+
+def extend_scene_timeline_end(keyframe_num: int, force=False) -> None:
+    scene = bpy.context.scene
+    if force or scene.frame_end < keyframe_num:
+        scene.frame_end = keyframe_num
+
+
+def extend_scene_timeline_start(keyframe_num: int) -> None:
+    scene = bpy.context.scene
+    if 0 <= keyframe_num < scene.frame_start:
+        scene.frame_start = keyframe_num

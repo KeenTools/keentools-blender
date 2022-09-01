@@ -24,18 +24,6 @@ from mathutils import Vector
 from .bpy_common import bpy_current_frame, create_empty_object, operator_with_context
 
 
-def extend_scene_timeline_end(keyframe_num: int, force=False) -> None:
-    scene = bpy.context.scene
-    if force or scene.frame_end < keyframe_num:
-        scene.frame_end = keyframe_num
-
-
-def extend_scene_timeline_start(keyframe_num: int) -> None:
-    scene = bpy.context.scene
-    if 0 <= keyframe_num < scene.frame_start:
-        scene.frame_start = keyframe_num
-
-
 def _get_action_fcurve(action: Action, data_path: str, index: int=0) -> Optional[FCurve]:
     return action.fcurves.find(data_path, index=index)
 

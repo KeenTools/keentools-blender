@@ -18,27 +18,29 @@
 
 import logging
 import time
-from dataclasses import dataclass
 from typing import Optional, Any, Callable, List, Set
 
 import bpy
 from bpy.types import Object
 
-from ...addon_config import Config, get_operator, ErrorType
+from ...addon_config import Config, get_operator, ErrorType, ActionStatus
 from ...geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
 from ..gtloader import GTLoader
 from ..gt_class_loader import GTClassLoader
-from ...utils.animation import (extend_scene_timeline_start,
-                                extend_scene_timeline_end,
-                                remove_fcurve_point,
+from ...utils.animation import (remove_fcurve_point,
                                 remove_fcurve_from_object)
 from ...utils.other import bpy_progress_begin, bpy_progress_end
 from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
-from ...utils.bpy_common import create_empty_object, bpy_current_frame, bpy_set_current_frame
+from ...utils.bpy_common import (create_empty_object,
+                                 bpy_current_frame,
+                                 bpy_end_frame,
+                                 bpy_set_current_frame)
 from ...utils.animation import get_action
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.timer import RepeatTimer
+from ...utils.video import (fit_render_size,
+                            fit_time_length)
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -52,12 +54,6 @@ def _log_output(message: str) -> None:
 def _log_error(message):
     global _logger
     _logger.error(message)
-
-
-@dataclass(frozen=True)
-class ActionStatus:
-    success: bool = False
-    error_message: str = None
 
 
 def find_object_in_selection(obj_type: str='MESH',
@@ -168,17 +164,7 @@ def fit_render_size_act() -> ActionStatus:
         return ActionStatus(False, 'No geotracker')
     if not geotracker.movie_clip:
         return ActionStatus(False, 'No image sequence in GeoTracker')
-
-    w, h = geotracker.get_movie_clip_size()
-    if w <= 0 or h <= 0:
-        msg = f'Wrong precalc frame size {w} x {h}'
-        _log_error(msg)
-        return ActionStatus(False, msg)
-
-    scene = bpy.context.scene
-    scene.render.resolution_x = w
-    scene.render.resolution_y = h
-    return ActionStatus(True, f'Render size {w} x {h}')
+    return fit_render_size(geotracker.movie_clip)
 
 
 def fit_time_length_act() -> ActionStatus:
@@ -187,17 +173,11 @@ def fit_time_length_act() -> ActionStatus:
         return ActionStatus(False, 'No geotracker')
     if not geotracker.movie_clip:
         return ActionStatus(False, 'No image sequence in GeoTracker')
-
-    duration = geotracker.get_movie_clip_duration()
-    if duration < 2:
-        return ActionStatus(False, f'Image sequence too short: {duration}!')
-
-    extend_scene_timeline_start(1)
-    extend_scene_timeline_end(duration, force=True)
-    geotracker.precalc_start = 1
-    geotracker.precalc_end = duration
-
-    return ActionStatus(True, f'Timeline duration 1 - {duration}')
+    res = fit_time_length(geotracker.movie_clip)
+    if res.success:
+        geotracker.precalc_start = 1
+        geotracker.precalc_end = bpy_end_frame()
+    return res
 
 
 class TrackTimer:

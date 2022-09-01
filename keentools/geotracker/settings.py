@@ -27,13 +27,14 @@ from bpy.types import Object, CameraBackgroundImage
 from ..addon_config import Config
 from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
-from ..utils.images import (np_array_from_bpy_image,
-                            get_background_image_object,
-                            gamma_np_image,
-                            set_background_image_by_movieclip, tone_mapping)
+from ..utils.images import (get_background_image_object,
+                            set_background_image_by_movieclip,
+                            tone_mapping)
 from .utils.tracking import reload_precalc
 from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_scale_vec_4_from_matrix_world)
+from ..utils.video import fit_render_size, fit_time_length
+from ..utils.bpy_common import bpy_start_frame, bpy_end_frame
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -44,18 +45,27 @@ def _log_output(message: str) -> None:
     _logger.debug(message)
 
 
+def _log_error(message: str) -> None:
+    global _logger
+    _logger.error(message)
+
+
+def object_is_in_scene(obj):
+    return obj in bpy.context.scene.objects[:]
+
+
 def is_mesh(self, obj: Optional[Object]) -> bool:
-    return obj and obj.type == 'MESH'
+    return obj and obj.type == 'MESH' and object_is_in_scene(obj)
 
 
 def is_camera(self, obj: Optional[Object]) -> bool:
-    return obj and obj.type == 'CAMERA'
+    return obj and obj.type == 'CAMERA' and object_is_in_scene(obj)
 
 
-def update_camobj(self, context: Any) -> None:
+def update_camobj(geotracker, context: Any) -> None:
     _log_output('update_camera')
-    _log_output(f'self: {self.camobj}')
-    if not self.camobj:
+    _log_output(f'self: {geotracker.camobj}')
+    if not geotracker.camobj:
         settings = get_gt_settings()
         if settings.pinmode:
             GTLoader.out_pinmode()
@@ -80,6 +90,11 @@ def update_movieclip(geotracker, context) -> None:
     if settings.ui_write_mode:
         return
     set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
+    if geotracker.movie_clip:
+        fit_render_size(geotracker.movie_clip)
+        fit_time_length(geotracker.movie_clip)
+        geotracker.precalc_start = bpy_start_frame()
+        geotracker.precalc_end = bpy_end_frame()
 
 
 def update_wireframe_func(self, context) -> None:
@@ -214,19 +229,6 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     def reset_focal_length_estimation(self) -> None:
         self.focal_length_estimation = False
-
-    def get_movie_clip_size(self) -> Tuple[int, int]:
-        if not self.movie_clip:
-            return -1, -1
-        size = self.movie_clip.size[:]
-        if len(size) != 2:
-            return -1, -1
-        return size[0], size[1]
-
-    def get_movie_clip_duration(self) -> int:
-        if not self.movie_clip:
-            return -1
-        return self.movie_clip.frame_duration
 
     def reload_precalc(self) -> Tuple[bool, str, Any]:
         return reload_precalc(self)

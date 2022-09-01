@@ -96,7 +96,6 @@ class PrecalcTimer:
         geotracker = settings.get_current_geotracker_item()
         if not settings.pinmode:
             unhide_viewport_ui_elements_from_object(self.get_area(), geotracker.camobj)
-            # self._area_header(None)
             area = self.get_area()
             exit_area_localview(area)
         settings.user_interrupts = True
@@ -256,6 +255,10 @@ def precalc_with_runner_act(context: Any) -> Tuple[bool, str]:
         return False, msg
     if not geotracker.movie_clip:
         msg = 'No image sequence in GeoTracker'
+        _log_error(msg)
+        return False, msg
+    if geotracker.movie_clip.source == 'MOVIE':
+        msg = 'Cannot calculate precalc on movie. Separate it to frames'
         _log_error(msg)
         return False, msg
     if geotracker.precalc_path == '':

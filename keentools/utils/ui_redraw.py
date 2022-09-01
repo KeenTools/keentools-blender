@@ -28,6 +28,11 @@ def get_areas_by_type(area_type='VIEW_3D'):
     return areas
 
 
+def get_all_areas():
+    return [area for window in bpy.data.window_managers['WinMan'].windows
+                 for area in window.screen.areas]
+
+
 def force_ui_redraw(area_type='PREFERENCES'):
     areas = get_areas_by_type(area_type)
     for area in areas:

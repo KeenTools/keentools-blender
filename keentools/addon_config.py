@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import bpy
+from dataclasses import dataclass
+
 
 _company = 'keentools'
 _PT = 'KEENTOOLS_PT_'
@@ -164,3 +166,9 @@ class ErrorType:
     PktProblem = 6
     PktModelProblem = 7
     DownloadingProblem = 8
+
+
+@dataclass(frozen=True)
+class ActionStatus:
+    success: bool = False
+    error_message: str = None
