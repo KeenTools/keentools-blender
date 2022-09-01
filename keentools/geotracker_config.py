@@ -68,6 +68,7 @@ class GTConfig:
     gt_reset_tone_mapping_idname = operators + '.reset_tone_mapping'
     gt_default_wireframe_settings_idname = \
         operators + '.default_wireframe_settings'
+    gt_default_pin_settings_idname = operators + '.default_pin_settings'
 
     # Panel ids
     gt_geotrackers_panel_idname = _PT + 'geotrackers_panel'
@@ -88,9 +89,11 @@ class GTConfig:
     text_scale_y = 0.75
     default_precalc_filename = 'geotracker.precalc'
     viewport_redraw_interval = 0.15
-    show_markers_at_camera_corners = True
-    pin_size = 6.0
-    surf_pin_size_scale = 1.5
+    show_markers_at_camera_corners = False
+
+    pin_size = 7.0
+    pin_sensitivity = 16.0
+    surf_pin_size_scale = 0.85
 
     matrix_rtol = 1e-05
     matrix_atol = 1e-07

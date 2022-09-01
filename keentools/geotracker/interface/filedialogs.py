@@ -65,7 +65,7 @@ class GT_OT_MultipleFilebrowser(bpy.types.Operator, ImportHelper):
                      'Just select first image in sequence'
 
     filter_glob: bpy.props.StringProperty(
-        default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;',  # *.mp4',
+        default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.mp4;*.avi;*.mov;*.mpeg',
         options={'HIDDEN'}
     )
 
@@ -115,6 +115,9 @@ class GT_OT_MultipleFilebrowser(bpy.types.Operator, ImportHelper):
                 return {'CANCELLED'}
             else:
                 _log_output(f'EXISTING MOVICLIP HAS BEEN FOUND: {new_movieclip}')
+
+        if new_movieclip.source == 'MOVIE':
+            self.report({'WARNING'}, 'Videofile found. Tracking is impossible')
 
         geotracker.movie_clip = new_movieclip
         set_background_image_by_movieclip(geotracker.camobj,

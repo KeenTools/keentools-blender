@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+import bpy
+
 
 def flat_color_3d_vertex_shader():
     return '''
@@ -152,7 +154,7 @@ def smooth_3d_vertex_local_shader():
     '''
 
 
-def smooth_3d_fragment_shader():
+def smooth_3d_fragment_shader_new():
     return '''
     // Based on gpu.shader.code_from_builtin('3D_SMOOTH_COLOR')['fragment_shader']
     in vec4 finalColor;
@@ -163,6 +165,21 @@ def smooth_3d_fragment_shader():
       fragColor = blender_srgb_to_framebuffer_space(fragColor);
     }
     '''
+
+
+def smooth_3d_fragment_shader_old():
+    return '''
+    in vec4 finalColor;
+    out vec4 fragColor;
+    void main()
+    {
+      fragColor = finalColor;
+    }
+    '''
+
+
+smooth_3d_fragment_shader = smooth_3d_fragment_shader_new \
+    if bpy.app.version >= (2, 83, 0) else smooth_3d_fragment_shader_old
 
 
 def black_fill_fragment_shader():

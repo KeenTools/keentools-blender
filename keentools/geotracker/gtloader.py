@@ -111,11 +111,6 @@ def undo_redo_handler(scene):
         GTLoader.unregister_undo_redo_handlers()
 
 
-def unregister_depsgraph_update():
-    unregister_app_handler(bpy.app.handlers.depsgraph_update_post,
-                           depsgraph_update_handler)
-
-
 def is_registered(app_handlers, handler) -> bool:
     if handler is None:
         return False
@@ -132,6 +127,14 @@ def unregister_app_handler(app_handlers, handler) -> None:
     if handler is not None:
         if handler in app_handlers:
             app_handlers.remove(handler)
+
+
+def frame_change_post_handler(scene):
+    _log_output('KEYFRAME UPDATED')
+    geotracker = get_current_geotracker_item()
+    geotracker.reset_focal_length_estimation()
+    GTLoader.place_camera()
+    GTLoader.update_all_viewport_shaders()
 
 
 class GTLoader:
@@ -503,6 +506,9 @@ class GTLoader:
         txt += f'is_registered(bpy.app.handlers.depsgraph_update_post, ' \
                f'depsgraph_update_handler): ' \
                f'{is_registered(bpy.app.handlers.depsgraph_update_post, depsgraph_update_handler)}\n'
+        txt += f'is_registered(bpy.app.handlers.frame_change_post, ' \
+               f'frame_change_post_handler): ' \
+               f'{is_registered(bpy.app.handlers.frame_change_post, frame_change_post_handler)}\n'
         return txt
 
     @classmethod
@@ -540,9 +546,14 @@ class GTLoader:
         register_app_handler(bpy.app.handlers.redo_post, undo_redo_handler)
         register_app_handler(bpy.app.handlers.depsgraph_update_post,
                              depsgraph_update_handler)
+        register_app_handler(bpy.app.handlers.frame_change_post,
+                             frame_change_post_handler)
 
     @staticmethod
     def unregister_undo_redo_handlers():
+        unregister_app_handler(bpy.app.handlers.frame_change_post,
+                               frame_change_post_handler)
+        unregister_app_handler(bpy.app.handlers.depsgraph_update_post,
+                               depsgraph_update_handler)
         unregister_app_handler(bpy.app.handlers.undo_post, undo_redo_handler)
         unregister_app_handler(bpy.app.handlers.redo_post, undo_redo_handler)
-        unregister_depsgraph_update()
