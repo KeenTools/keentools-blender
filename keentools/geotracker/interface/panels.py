@@ -216,7 +216,6 @@ class GT_PT_InputPanel(AllVisible):
             return
 
         layout = self.layout
-        # layout.label(text='Geotracker #{}'.format(settings.current_geotracker_num))
 
         row = layout.row()
         row.alert = not geotracker.camobj
@@ -230,17 +229,13 @@ class GT_PT_InputPanel(AllVisible):
         row.alert = not geotracker.movie_clip
         row.prop(geotracker, 'movie_clip')
 
-        if geotracker.movie_clip:
-            row = layout.row(align=True)
-            op = row.operator(GTConfig.gt_actor_idname,
-                              text='Fit render size')
-            op.action = 'fit_render_size'
-            op = row.operator(GTConfig.gt_actor_idname,
-                              text='Fit time length')
-            op.action = 'fit_time_length'
+        row = layout.row(align=True)
+        row.operator(GTConfig.gt_sequence_filebrowser_idname,
+                     text='Open Sequence')
 
-        layout.operator(GTConfig.gt_multiple_filebrowser_idname,
-                        text='Open Sequence')
+        if geotracker.movie_clip and geotracker.movie_clip.source == 'MOVIE':
+            row.operator(GTConfig.gt_split_video_to_frames_exec_idname,
+                         text='', icon='RENDER_RESULT')
 
 
 class GT_PT_AnalyzePanel(AllVisible):
@@ -278,8 +273,11 @@ class GT_PT_AnalyzePanel(AllVisible):
                              icon='CANCEL')
             else:
                 col = layout.column(align=True)
+                icon = 'ERROR' if not geotracker.movie_clip or \
+                       geotracker.movie_clip.source == 'MOVIE' else 'NONE'
+
                 op = col.operator(GTConfig.gt_actor_idname,
-                                     text='Create precalc')
+                                  text='Create precalc', icon=icon)
                 op.action = 'create_precalc'
 
                 row = layout.row()

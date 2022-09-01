@@ -18,6 +18,9 @@
 import logging
 import numpy as np
 from typing import Any, Callable
+import re
+import os
+
 
 import bpy
 
@@ -98,6 +101,16 @@ def get_background_image_object(camobj):
     return bg_img
 
 
+def _get_file_number(filename):
+    name, _ = os.path.splitext(filename)
+    regex = re.compile(r'\d+$')
+    regex.findall(name)
+    numbers = [int(x) for x in regex.findall(name)]
+    if len(numbers) == 0:
+        return -1
+    return numbers[-1]
+
+
 def set_background_image_by_movieclip(camobj, movie_clip, name='geotracker_bg'):
     if not camobj or not movie_clip:
         return
@@ -121,6 +134,10 @@ def set_background_image_by_movieclip(camobj, movie_clip, name='geotracker_bg'):
         bg_img.image_user.frame_duration = movie_clip.frame_duration
         bg_img.image_user.frame_start = 1
         bg_img.image_user.use_auto_refresh = True
+
+        file_number = _get_file_number(os.path.basename(movie_clip.filepath))
+        if file_number > 1:
+            bg_img.image_user.frame_offset = file_number - 1
     elif movie_clip.source == 'MOVIE':
         bg_img.source = 'MOVIE_CLIP'
         bg_img.clip = movie_clip
