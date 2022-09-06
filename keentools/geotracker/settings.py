@@ -22,7 +22,7 @@ from typing import Optional, Tuple, Any
 from contextlib import contextmanager
 
 import bpy
-from bpy.types import Object, CameraBackgroundImage
+from bpy.types import Object, CameraBackgroundImage, Area
 
 from ..addon_config import Config
 from ..geotracker_config import GTConfig, get_gt_settings
@@ -32,7 +32,8 @@ from ..utils.images import (get_background_image_object,
                             tone_mapping)
 from .utils.tracking import reload_precalc
 from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
-                            get_scale_vec_4_from_matrix_world)
+                            get_scale_vec_4_from_matrix_world,
+                            get_image_space_coord)
 from ..utils.video import fit_render_size, fit_time_length
 from ..utils.bpy_common import bpy_start_frame, bpy_end_frame
 
@@ -402,9 +403,23 @@ class GTSceneSettings(bpy.types.PropertyGroup):
                                mouse_x, mouse_y)
         selector.create_batch()
 
-    def end_selection(self) -> None:
+    def cancel_selection(self) -> None:
         self.selection_mode = False
         self.do_selection()
+        vp = GTLoader.viewport()
+        vp.pins().set_add_selection_mode(False)
+
+    def end_selection(self, area: Area, mouse_x: int, mouse_y: int) -> None:
+        x1, y1 = get_image_space_coord(self.selection_x, self.selection_y, area)
+        x2, y2 = get_image_space_coord(mouse_x, mouse_y, area)
+        vp = GTLoader.viewport()
+        pins = vp.pins()
+        found_pins = pins.pins_inside_rectangle(x1, y1, x2, y2)
+        if pins.get_add_selection_mode():
+            pins.add_selected_pins(found_pins)
+        else:
+            pins.set_selected_pins(found_pins)
+        self.cancel_selection()
 
     def calculation_mode(self) -> bool:
         return self.precalc_mode or self.tracking_mode

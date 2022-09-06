@@ -35,6 +35,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     clear_direction_act,
                                     clear_all_act,
                                     remove_pins_act,
+                                    toggle_pins_act,
                                     center_geo_act,
                                     create_animated_empty_act)
 from .gtloader import GTLoader
@@ -286,6 +287,19 @@ class GT_OT_RemovePins(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
+class GT_OT_TogglePins(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_toggle_pins_idname
+    bl_label = 'toggle pins'
+    bl_description = 'toggle pins operation'
+
+    def execute(self, context):
+        act_status = toggle_pins_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
 class GT_OT_CreateAnimatedEmpty(ButtonOperator, bpy.types.Operator):
     bl_idname = GTConfig.gt_create_animated_empty_idname
     bl_label = 'Create animated Empty'
@@ -434,6 +448,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_CenterGeo,
                   GT_OT_BtnMagicKeyframe,
                   GT_OT_RemovePins,
+                  GT_OT_TogglePins,
                   GT_OT_CreateAnimatedEmpty,
                   GT_OT_ExitPinMode,
                   GT_OT_InterruptModal,

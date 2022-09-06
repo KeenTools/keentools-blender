@@ -589,6 +589,33 @@ def remove_pins_act() -> ActionStatus:
 
     gt = GTLoader.kt_geotracker()
     gt.remove_pins()
+
+    pins = GTLoader.viewport().pins()
+    pins.clear_disabled_pins()
+    pins.clear_selected_pins()
+    pins.reset_current_pin()
+
+    GTLoader.update_all_viewport_shaders()
+    GTLoader.viewport_area_redraw()
+    return ActionStatus(True, 'ok')
+
+
+def toggle_pins_act() -> ActionStatus:
+    settings = get_gt_settings()
+    if not settings.pinmode:
+        msg = 'Remove pins can be called in PinMode only'
+        _log_error(msg)
+        return ActionStatus(False, msg)
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        msg = 'GeoTracker item is not found'
+        _log_error(msg)
+        return ActionStatus(False, msg)
+
+    gt = GTLoader.kt_geotracker()
+    keyframe = bpy_current_frame()
+    gt.toggle_pins(keyframe)
+
     GTLoader.update_all_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')

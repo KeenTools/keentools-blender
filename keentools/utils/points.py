@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import logging
+from typing import List, Optional, Tuple
 
 import bpy
 import gpu
@@ -30,43 +31,101 @@ from ..preferences.user_preferences import UserPreferences
 
 class KTScreenPins:
     def __init__(self):
-        self._pins = []
-        self._current_pin = None
-        self._current_pin_num = -1
+        self._pins: List[Tuple[float, float]] = []
+        self._current_pin: Optional[Tuple[float, float]] = None
+        self._current_pin_num: int = -1
+        self._disabled_pins: List[int] = []
+        self._selected_pins: List[int] = []
+        self._add_selection_mode: bool = False
 
-    def arr(self):
+    def arr(self) -> List:
         return self._pins
 
-    def set_pins(self, arr):
+    def set_pins(self, arr: List[Tuple[float, float]]) -> None:
         self._pins = arr
 
-    def add_pin(self, vec2d):
+    def add_pin(self, vec2d: Tuple[float, float]) -> None:
         self._pins.append(vec2d)
 
-    def current_pin_num(self):
+    def current_pin_num(self) -> Optional[int]:
         return self._current_pin_num
 
-    def set_current_pin_num(self, value):
+    def set_current_pin_num(self, value: int) -> None:
         self._current_pin_num = value
 
-    def set_current_pin_num_to_last(self):
+    def set_current_pin_num_to_last(self) -> None:
         self._current_pin_num = len(self.arr()) - 1
 
-    def current_pin(self):
+    def current_pin(self) -> Optional[Tuple[float, float]]:
         return self._current_pin
 
-    def set_current_pin(self, value):
+    def set_current_pin(self, value: Tuple[float, float]) -> None:
         logger = logging.getLogger(__name__)
         log_output = logger.debug
         log_output(f'set_current_pin: {value}')
         self._current_pin = value
 
-    def reset_current_pin(self):
+    def reset_current_pin(self) -> None:
         logger = logging.getLogger(__name__)
         log_output = logger.debug
         self._current_pin = None
         self._current_pin_num = -1
         log_output(f'reset_current_pin: {self._current_pin}')
+
+    def get_selected_pins(self) -> List:
+        return self._selected_pins
+
+    def set_selected_pins(self, selected_pins: List[int]) -> None:
+        self._selected_pins = selected_pins
+
+    def add_selected_pins(self, selected_pins: List[int]) -> None:
+        self._selected_pins = list(set(self._selected_pins + selected_pins))
+
+    def exclude_selected_pin(self, pin_number: int) -> None:
+        self.set_selected_pins([x for x in self.get_selected_pins()
+                                if x != pin_number])
+
+    def clear_selected_pins(self):
+        self._selected_pins = []
+
+    def get_disabled_pins(self) -> List:
+        return self._disabled_pins
+
+    def set_disabled_pins(self, disabled_pins: List[int]) -> None:
+        self._disabled_pins = disabled_pins
+
+    def clear_disabled_pins(self):
+        self._disabled_pins = []
+
+    def pins_inside_rectangle(self, x1: float, y1: float,
+                              x2: float, y2: float) -> List[int]:
+        if x1 > x2:
+            x1, x2 = x2, x1
+        if y1 > y2:
+            y1, y2 = y2, y1
+        return [i for i, p in enumerate(self._pins)
+                if x1 <= p[0] <= x2 and y1 <= p[1] <= y2]
+
+    def set_add_selection_mode(self, value: bool) -> None:
+        self._add_selection_mode = value
+
+    def get_add_selection_mode(self) -> bool:
+        return self._add_selection_mode
+
+    def on_start(self) -> None:
+        self.set_add_selection_mode(False)
+        self.clear_selected_pins()
+
+    def remove_pin(self, index: int) -> None:
+        if index in self._selected_pins:
+            self._selected_pins.remove(index)
+        self._selected_pins = [x if x < index else x - 1
+                               for x in self._selected_pins]
+        if index in self._disabled_pins:
+            self._disabled_pins.remove(index)
+        self._disabled_pins = [x if x < index else x - 1
+                               for x in self._disabled_pins]
+        del self.arr()[index]
 
 
 class KTShaderPoints:

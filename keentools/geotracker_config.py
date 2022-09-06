@@ -60,6 +60,7 @@ class GTConfig:
     gt_center_geo_idname = operators + '.center_geo_btn'
     gt_magic_keyframe_idname = operators + '.magic_keyframe_btn'
     gt_remove_pins_idname = operators + '.remove_pins_btn'
+    gt_toggle_pins_idname = operators + '.toggle_pins_btn'
     gt_create_animated_empty_idname = operators + '.create_animated_empty_btn'
     gt_exit_pinmode_idname = operators + '.exit_pinmode_btn'
     gt_interrupt_modal_idname = operators + '.interrupt_modal'
@@ -102,7 +103,9 @@ class GTConfig:
 
     # Colors
     pin_color = (1.0, 0.0, 0.0, 1.0)
-    current_pin_color = (1.0, 0.0, 1.0, 1.0)
+    disabled_pin_color = (1.0, 1.0, 0.0, 1.0)
+    selected_pin_color = (0.0, 1.0, 1.0, 1.0)
+    current_pin_color = (0.0, 1.0, 0.0, 1.0)
     surface_point_color = (0.0, 1.0, 1.0, 0.5)
     residual_color = (0.0, 1.0, 1.0, 0.5)
     timeline_keyframe_color = (0.0, 1.0, 0.0, 0.5)
