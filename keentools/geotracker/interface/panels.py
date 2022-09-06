@@ -384,21 +384,14 @@ class GT_PT_TrackingPanel(AllVisible):
         layout.label(text='Keyframes')
 
         box = layout.box()
-        row = box.row()
-        row.operator(GTConfig.gt_magic_keyframe_idname)
+
+        row = box.row(align=True)
+        row.operator(GTConfig.gt_remove_pins_idname, icon='X')
+        row.operator(GTConfig.gt_toggle_pins_idname, icon='UNPINNED')
+
+        row = box.row(align=True)
         row.operator(GTConfig.gt_center_geo_idname)
-
-        row = box.row()
-        row.operator(GTConfig.gt_remove_pins_idname)
-
-        col = row.column()
-        col.active = False
-        op = col.operator(GTConfig.gt_actor_idname,
-                          text='pin/unpin')
-        op.action = 'pin_unpin'
-
-        row = box.row()
-        row.operator(GTConfig.gt_toggle_pins_idname)
+        row.operator(GTConfig.gt_magic_keyframe_idname)
 
         box = layout.box()
         box.prop(geotracker, 'spring_pins_back')

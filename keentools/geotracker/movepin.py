@@ -135,15 +135,14 @@ class GT_OT_MovePin(bpy.types.Operator):
                 force_undo_push('Drag GeoTracker pin')
 
         _toggle_undragged_pin()
-        vp = GTLoader.viewport()
-        vp.pins().reset_current_pin()
+        GTLoader.viewport().pins().reset_current_pin()
 
         GTLoader.spring_pins_back()
         GTLoader.save_geotracker()
 
         GTLoader.update_all_viewport_shaders(area)
         self._before_operator_finish()
-        vp.tag_redraw()
+        GTLoader.viewport_area_redraw()
 
         _push_action_in_undo_history()
         return {'FINISHED'}

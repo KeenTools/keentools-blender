@@ -85,14 +85,17 @@ class KTScreenPins:
         self.set_selected_pins([x for x in self.get_selected_pins()
                                 if x != pin_number])
 
+    def clear_selected_pins(self):
+        self._selected_pins = []
+
     def get_disabled_pins(self) -> List:
         return self._disabled_pins
 
     def set_disabled_pins(self, disabled_pins: List[int]) -> None:
         self._disabled_pins = disabled_pins
 
-    def clear_selected_pins(self):
-        self._selected_pins = []
+    def clear_disabled_pins(self):
+        self._disabled_pins = []
 
     def pins_inside_rectangle(self, x1: float, y1: float,
                               x2: float, y2: float) -> List[int]:

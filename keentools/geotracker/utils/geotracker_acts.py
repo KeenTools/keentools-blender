@@ -589,6 +589,12 @@ def remove_pins_act() -> ActionStatus:
 
     gt = GTLoader.kt_geotracker()
     gt.remove_pins()
+
+    pins = GTLoader.viewport().pins()
+    pins.clear_disabled_pins()
+    pins.clear_selected_pins()
+    pins.reset_current_pin()
+
     GTLoader.update_all_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
@@ -608,9 +614,8 @@ def toggle_pins_act() -> ActionStatus:
 
     gt = GTLoader.kt_geotracker()
     keyframe = bpy_current_frame()
-    kt_pins = gt.projected_pins(keyframe)
-    for i in range(gt.pins_count()):
-        gt.pin_enable(keyframe,i, False)
+    gt.toggle_pins(keyframe)
+
     GTLoader.update_all_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
