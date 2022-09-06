@@ -72,29 +72,11 @@ class GT_OT_MovePin(bpy.types.Operator):
             _log_output(f'_new_pin ADD PIN pins: {pins.arr()}')
             return True
 
-    def _auto_keyframe_add(self) -> bool:  # TODO: Check if it is needed
-        keyframe = bpy_current_frame()
-        gt = GTLoader.kt_geotracker()
-        if not gt.is_key_at(keyframe):
-            mat = GTLoader.calc_model_matrix()
-            gt.set_keyframe(keyframe, mat)
-            return True
-        return False
-
-    def _remove_keyframe(self) -> bool:  # TODO: Check if it is needed
-        keyframe = bpy_current_frame()
-        gt = GTLoader.kt_geotracker()
-        if gt.is_key_at(keyframe):
-            gt.remove_keyframe(keyframe)
-            return True
-        return False
-
     def init_action(self, context: Any, mouse_x: float, mouse_y: float) -> bool:
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.geomobj or not geotracker.camobj:
             return False
 
-        new_keyframe_flag = self._auto_keyframe_add()
         self.new_pin_flag = False
 
         vp = GTLoader.viewport()
@@ -127,24 +109,25 @@ class GT_OT_MovePin(bpy.types.Operator):
         else:
             self.new_pin_flag = self._new_pin(context.area, mouse_x, mouse_y)
             if not self.new_pin_flag:
-                if new_keyframe_flag:
-                    self._remove_keyframe()
+                _log_output('GT MISS MODEL CLICK')
                 pins.clear_selected_pins()
                 return False
             pins.set_selected_pins([pins.current_pin_num()])
+            _log_output('GT NEW PIN CREATED')
 
         vp.create_batch_2d(context.area)
         vp.register_handlers(context)
         return True
 
     def on_left_mouse_release(self, area: Area) -> Set:
-        def _toggle_undragged_pin():
-            if not self.dragged and not self.new_pin_flag and self.pin_was_selected:
-                _log_output('TOGGLE OFF PIN')
+        def _toggle_undragged_pin() -> None:
+            if not self.dragged and not self.new_pin_flag \
+                    and self.pin_was_selected:
+                _log_output('TOGGLE PIN OFF')
                 pins = GTLoader.viewport().pins()
                 pins.exclude_selected_pin(pins.current_pin_num())
 
-        def _push_action_in_undo_history():
+        def _push_action_in_undo_history() -> None:
             if self.new_pin_flag:
                 force_undo_push('Add GeoTracker pin')
                 self.new_pin_flag = False
