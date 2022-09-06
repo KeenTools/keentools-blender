@@ -109,7 +109,7 @@ class GT_OT_PinMode(bpy.types.Operator):
     def _delete_found_pin(self, nearest, area):
         gt = GTLoader.kt_geotracker()
         gt.remove_pin(nearest)
-        del GTLoader.viewport().pins().arr()[nearest]
+        GTLoader.viewport().pins().remove_pin(nearest)
         _log_output('PIN REMOVED {}'.format(nearest))
 
         geotracker = get_current_geotracker_item()
@@ -216,6 +216,7 @@ class GT_OT_PinMode(bpy.types.Operator):
             return {'CANCELLED'}
 
         vp = GTLoader.viewport()
+        vp.pins().on_start()
 
         if settings.pinmode and not vp.is_working():
             _log_error(f'VIEWPORT DOES NOT WORK IN PINMODE -- FIX IT')
@@ -276,15 +277,20 @@ class GT_OT_PinMode(bpy.types.Operator):
         if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
                 and event.value == 'PRESS':
             self._set_shift_pressed(True)
+            if not settings.selection_mode:
+                vp = GTLoader.viewport()
+                vp.pins().set_add_selection_mode(True)
 
         if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
                 and event.value == 'RELEASE':
             self._set_shift_pressed(False)
+            if not settings.selection_mode:
+                vp = GTLoader.viewport()
+                vp.pins().set_add_selection_mode(False)
 
         if settings.selection_mode:
-            if (event.type == 'ESC' and event.value == 'RELEASE') or \
-                    (event.type == 'LEFTMOUSE' and event.value == 'RELEASE'):
-                settings.end_selection()
+            if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
+                settings.end_selection(context.area, event.mouse_region_x, event.mouse_region_y)
             else:
                 settings.do_selection(event.mouse_region_x, event.mouse_region_y)
             vp = GTLoader.viewport()
@@ -292,6 +298,11 @@ class GT_OT_PinMode(bpy.types.Operator):
             return {'RUNNING_MODAL'}
 
         if event.type == 'ESC' and event.value == 'RELEASE':
+            if settings.selection_mode:
+                settings.cancel_selection()
+                vp = GTLoader.viewport()
+                vp.tag_redraw()
+                return {'RUNNING_MODAL'}
             _log_output('Exit pinmode by ESC')
             GTLoader.out_pinmode()
             return {'FINISHED'}

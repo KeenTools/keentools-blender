@@ -397,6 +397,9 @@ class GT_PT_TrackingPanel(AllVisible):
                           text='pin/unpin')
         op.action = 'pin_unpin'
 
+        row = box.row()
+        row.operator(GTConfig.gt_toggle_pins_idname)
+
         box = layout.box()
         box.prop(geotracker, 'spring_pins_back')
 

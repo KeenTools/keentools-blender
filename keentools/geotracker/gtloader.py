@@ -26,7 +26,13 @@ from bpy.types import Area
 from ..addon_config import Config, get_operator, ErrorType
 from ..geotracker_config import get_gt_settings, get_current_geotracker_item
 from .viewport import GTViewport
-from ..utils import coords
+from ..utils.coords import (render_frame,
+                            image_space_to_frame,
+                            calc_bpy_camera_mat_relative_to_model,
+                            calc_bpy_model_mat_relative_to_camera,
+                            focal_by_projection_matrix_mm,
+                            compensate_view_scale,
+                            frame_to_image_space)
 from ..utils.bpy_common import bpy_current_frame
 from .gt_class_loader import GTClassLoader
 from ..utils.timer import KTStopShaderTimer
@@ -230,36 +236,40 @@ class GTLoader:
         return cls._kt_geotracker
 
     @classmethod
-    def add_pin(cls, keyframe: int, pos: Tuple[float, float]) -> Any:
+    def add_pin(cls, keyframe: int, pos: Tuple[float, float]) -> Optional[Any]:
         _log_output(f'add_pin ADD PIN: {pos}')
         gt = cls.kt_geotracker()
-        pin_result = gt.add_pin(keyframe, pos)
-        _log_output('add_pin PIN RESULT: {}'.format(pin_result))
-        if pin_result:
-            pin = gt.pin(keyframe, gt.pins_count() - 1)
-            _log_output(f'add_pin ADDED PIN: {pin.img_pos}')
-            return pin
-        return False
+        return gt.add_pin(keyframe, pos)
 
     @classmethod
     def move_pin(cls, keyframe: int, pin_idx: int,
                  pos: Tuple[float, float]) -> None:
         gt = cls.kt_geotracker()
         if pin_idx < gt.pins_count():
-            gt.move_pin(keyframe, pin_idx, coords.image_space_to_frame(*pos))
+            gt.move_pin(keyframe, pin_idx, image_space_to_frame(*pos))
+
+    @classmethod
+    def delta_move_pin(cls, keyframe: int, indices: List[int],
+                       offset: Tuple[float, float]) -> None:
+        gt = cls.kt_geotracker()
+        pins_count = gt.pins_count()
+        for i in indices:
+            if i < pins_count:
+                x, y = gt.pin(keyframe, i).img_pos
+                gt.move_pin(keyframe, i, (x + offset[0], y + offset[1]))
 
     @classmethod
     def load_pins_into_viewport(cls) -> None:
         keyframe = bpy_current_frame()
         vp = cls.viewport()
         gt = cls.kt_geotracker()
-        vp.pins().set_pins(vp.img_points(gt, keyframe))
-
-    @classmethod
-    def tag_redraw(cls, context: Any) -> None:
-        if not bpy.app.background:
-            _log_output('TAG REDRAW CALL')
-            context.area.tag_redraw()
+        w, h = render_frame()
+        kt_pins = gt.projected_pins(keyframe)
+        pins = vp.pins()
+        pins.set_pins([frame_to_image_space(*pin.img_pos, w, h)
+                       for pin in kt_pins])
+        pins.set_disabled_pins([i for i, pin in enumerate(kt_pins)
+                                if not pin.enabled])
 
     @classmethod
     def viewport_area_redraw(cls):
@@ -277,12 +287,13 @@ class GTLoader:
             return
         gt_model_mat = gt.model_mat(keyframe)
         if geotracker.camera_mode():
-            mat = coords.calc_bpy_camera_mat_relative_to_model(
-                geotracker.geomobj, gt_model_mat)
+            mat = calc_bpy_camera_mat_relative_to_model(geotracker.geomobj,
+                                                        gt_model_mat)
             geotracker.camobj.matrix_world = mat
         else:
-            mat = coords.calc_bpy_model_mat_relative_to_camera(
-                geotracker.camobj, geotracker.geomobj, gt_model_mat)
+            mat = calc_bpy_model_mat_relative_to_camera(geotracker.camobj,
+                                                        geotracker.geomobj,
+                                                        gt_model_mat)
             geotracker.geomobj.matrix_world = mat
 
     @classmethod
@@ -295,10 +306,9 @@ class GTLoader:
         if not force and not gt.is_key_at(frame):
             return None
         proj_mat = gt.projection_mat(frame)
-        focal = coords.focal_by_projection_matrix_mm(
-            proj_mat, 36.0)  # Config.default_sensor_width
+        focal = focal_by_projection_matrix_mm(proj_mat, 36.0)  # TODO: Config.default_sensor_width
         _log_output('FOCAL ESTIMATED: {}'.format(focal))
-        return focal * coords.compensate_view_scale()
+        return focal * compensate_view_scale()
 
     @classmethod
     def center_geo(cls) -> None:
