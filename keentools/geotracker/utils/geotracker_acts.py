@@ -41,6 +41,7 @@ from ...blender_independent_packages.pykeentools_loader import module as pkt_mod
 from ...utils.timer import RepeatTimer
 from ...utils.video import (fit_render_size,
                             fit_time_length)
+from ...utils.html import split_long_string
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -113,8 +114,7 @@ def add_keyframe_act() -> ActionStatus:
     if not area:
         return ActionStatus(False, 'Working area does not exist')
 
-    GTLoader.safe_keyframe_add(bpy_current_frame(),
-                               GTLoader.calc_model_matrix())
+    GTLoader.safe_keyframe_add(bpy_current_frame(), update=True)
     GTLoader.save_geotracker()
     return ActionStatus(True, 'Ok')
 
@@ -276,6 +276,10 @@ class TrackTimer:
         except pkt_module().ComputationException as err:
             msg = '_safe_resume ComputationException. ' + str(err)
             _log_error(msg)
+            user_message = '\n'.join(split_long_string(str(err), limit=70))
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+                 msg_content=user_message)
         except Exception as err:
             msg = '_safe_resume Exception. ' + str(err)
             _log_error(msg)
@@ -315,6 +319,24 @@ class TrackTimer:
             # Testing purpose
             timer = RepeatTimer(self._interval, _func)
             timer.start()
+
+
+def _minimal_checks() -> ActionStatus:
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+
+    if not geotracker:
+        msg = 'GeoTracker item is not found'
+        _log_error(msg)
+        return ActionStatus(False, msg)
+
+    if settings.calculation_mode():
+        settings.user_interrupts = True
+        msg = 'Calculation has been stopped by user'
+        _log_error(msg)
+        return ActionStatus(False, msg)
+
+    return ActionStatus(True, 'ok')
 
 
 def _track_checks() -> ActionStatus:
@@ -490,7 +512,7 @@ def _active_frames(kt_geotracker: Any) -> Set:
 
 
 def clear_between_keyframes_act() -> ActionStatus:
-    check_status = _track_checks()
+    check_status = _minimal_checks()
     if not check_status.success:
         return check_status
 
@@ -508,7 +530,7 @@ def clear_between_keyframes_act() -> ActionStatus:
 
 
 def clear_direction_act(forward: bool) -> ActionStatus:
-    check_status = _track_checks()
+    check_status = _minimal_checks()
     if not check_status.success:
         return check_status
 
@@ -527,7 +549,7 @@ def clear_direction_act(forward: bool) -> ActionStatus:
 
 
 def clear_all_act() -> ActionStatus:
-    check_status = _track_checks()
+    check_status = _minimal_checks()
     if not check_status.success:
         return check_status
 
@@ -614,7 +636,9 @@ def toggle_pins_act() -> ActionStatus:
 
     gt = GTLoader.kt_geotracker()
     keyframe = bpy_current_frame()
-    gt.toggle_pins(keyframe)
+    if gt.pins_count() > 0:
+        GTLoader.safe_keyframe_add(keyframe, update=True)
+        gt.toggle_pins(keyframe)
 
     GTLoader.update_all_viewport_shaders()
     GTLoader.viewport_area_redraw()
@@ -633,12 +657,7 @@ def center_geo_act() -> ActionStatus:
         _log_error(msg)
         return ActionStatus(False, msg)
 
-    gt = GTLoader.kt_geotracker()
-    keyframe = bpy_current_frame()
-    if not gt.is_key_at(keyframe):
-        mat = GTLoader.calc_model_matrix()
-        gt.set_keyframe(keyframe, mat)
-    gt.center_geo(keyframe)
+    GTLoader.center_geo()
     GTLoader.update_all_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')

@@ -257,10 +257,6 @@ def precalc_with_runner_act(context: Any) -> Tuple[bool, str]:
         msg = 'No image sequence in GeoTracker'
         _log_error(msg)
         return False, msg
-    if geotracker.movie_clip.source == 'MOVIE':
-        msg = 'Cannot calculate precalc on movie. Separate it to frames'
-        _log_error(msg)
-        return False, msg
     if geotracker.precalc_path == '':
         msg = 'Precalc path is not specified'
         _log_error(msg)

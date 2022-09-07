@@ -314,7 +314,7 @@ class GTLoader:
     def center_geo(cls) -> None:
         keyframe = bpy_current_frame()
         gt = cls.kt_geotracker()
-        cls.safe_keyframe_add(keyframe, cls.calc_model_matrix())
+        cls.safe_keyframe_add(keyframe, update=True)
         gt.center_geo(keyframe)
 
     @classmethod
@@ -325,12 +325,13 @@ class GTLoader:
         return geotracker.calc_model_matrix()
 
     @classmethod
-    def safe_keyframe_add(cls, keyframe: int, mat: Any) -> None:
+    def safe_keyframe_add(cls, keyframe: int, update: bool=False) -> None:
         gt = cls.kt_geotracker()
         if not gt.is_key_at(keyframe):
-            _log_output('safe_keyframe_add: {}\n{}'.format(keyframe, mat))
+            mat = cls.calc_model_matrix()
             gt.set_keyframe(keyframe, mat)
-        else:
+        elif update:
+            mat = cls.calc_model_matrix()
             gt.update_model_mat(keyframe, mat)
 
     @classmethod

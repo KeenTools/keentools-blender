@@ -24,7 +24,7 @@ from contextlib import contextmanager
 import bpy
 from bpy.types import Object, CameraBackgroundImage, Area
 
-from ..addon_config import Config
+from ..addon_config import Config, get_addon_preferences
 from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
 from ..utils.images import (get_background_image_object,
@@ -313,7 +313,6 @@ class GTSceneSettings(bpy.types.PropertyGroup):
                                          default=0.0)
     selection_y: bpy.props.FloatProperty(name='Selection Y',
                                          default=0.0)
-
     @contextmanager
     def ui_write_mode_context(self):
         self.ui_write_mode = True
@@ -439,3 +438,12 @@ class GTSceneSettings(bpy.types.PropertyGroup):
                 geotracker.camobj = None
                 flag = True
         return flag
+
+    def preferences(self):
+        return get_addon_preferences()
+
+    def show_user_preferences(self):
+        self.preferences().show_user_preferences = True
+
+    def hide_user_preferences(self):
+        self.preferences().show_user_preferences = False
