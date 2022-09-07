@@ -114,35 +114,38 @@ def _get_file_number(filename):
 def set_background_image_by_movieclip(camobj, movie_clip, name='geotracker_bg'):
     if not camobj or not movie_clip:
         return
+
+    if movie_clip.source not in ['SEQUENCE', 'MOVIE']:
+        _log_error('UNKNOWN MOVIECLIP TYPE')
+        return
+
     bg_img = get_background_image_object(camobj)
     bg_img.alpha = 1.0
     cam_data = camobj.data
     cam_data.show_background_images = True
 
-    if movie_clip.source == 'SEQUENCE':
-        bg_img.source = 'IMAGE'
-        img = bg_img.image
-        if not img:
-            w, h = movie_clip.size[:]
-            img = bpy.data.images.new(name, width=w, height=h, alpha=True,
-                                      float_buffer=False)
-            bg_img.image = img
+    bg_img.source = 'IMAGE'
+    img = bg_img.image
+    if not img:
+        w, h = movie_clip.size[:]
+        img = bpy.data.images.new(name, width=w, height=h, alpha=True,
+                                  float_buffer=False)
+        bg_img.image = img
 
+    if movie_clip.source == 'MOVIE':
+        img.source = 'MOVIE'
+    else:
         img.source = 'SEQUENCE' if movie_clip.frame_duration > 1 else 'FILE'
-        img.filepath = movie_clip.filepath
 
-        bg_img.image_user.frame_duration = movie_clip.frame_duration
-        bg_img.image_user.frame_start = 1
-        bg_img.image_user.use_auto_refresh = True
+    img.filepath = movie_clip.filepath
+    bg_img.image_user.frame_duration = movie_clip.frame_duration
+    bg_img.image_user.frame_start = 1
+    bg_img.image_user.use_auto_refresh = True
 
+    if movie_clip.source == 'SEQUENCE':
         file_number = _get_file_number(os.path.basename(movie_clip.filepath))
         if file_number > 1:
             bg_img.image_user.frame_offset = file_number - 1
-    elif movie_clip.source == 'MOVIE':
-        bg_img.source = 'MOVIE_CLIP'
-        bg_img.clip = movie_clip
-    else:
-        _log_error('UNKNOWN MOVIECLIP TYPE')
 
 
 def find_bpy_image_by_name(image_name):

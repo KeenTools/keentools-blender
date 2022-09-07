@@ -117,10 +117,7 @@ class GT_OT_PinMode(bpy.types.Operator):
             return {'FINISHED'}
 
         kid = bpy_current_frame()
-        gt = GTLoader.kt_geotracker()
-        if not gt.is_key_at(kid):
-            mat = GTLoader.calc_model_matrix()
-            gt.set_keyframe(kid, mat)
+        GTLoader.safe_keyframe_add(kid)
 
         if not GTLoader.solve():
             _log_error('DELETE PIN PROBLEM')

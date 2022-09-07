@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+import os
+
 import bpy
 from dataclasses import dataclass
 
@@ -110,7 +112,7 @@ class Config:
     mock_update_core_path = 'http://localhost/core.zip'
     mock_product = None
 
-    hide_geotracker = False
+    hide_geotracker = not 'KEENTOOLS_ENABLE_BLENDER_GEOTRACKER' in os.environ
 
     @classmethod
     def mock_update_for_testing(cls, value=True, *, ver=None,

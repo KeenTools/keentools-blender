@@ -73,6 +73,11 @@ class GT_OT_MovePin(bpy.types.Operator):
             return True
 
     def init_action(self, context: Any, mouse_x: float, mouse_y: float) -> bool:
+        def _enable_pin_safe(gt, keyframe, pin_index):
+            pin = gt.pin(keyframe, pin_index)
+            if not pin.enabled:
+                gt.pin_enable(keyframe, pin_index, True)
+
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.geomobj or not geotracker.camobj:
             return False
@@ -99,9 +104,9 @@ class GT_OT_MovePin(bpy.types.Operator):
             self.pin_was_selected = nearest in selected_pins
             if self.pin_was_selected:
                 for i in selected_pins:
-                    gt.pin_enable(keyframe, i, True)
+                    _enable_pin_safe(gt, keyframe, i)
             else:
-                gt.pin_enable(keyframe, nearest, True)
+                _enable_pin_safe(gt, keyframe, nearest)
                 if pins.get_add_selection_mode():
                     pins.add_selected_pins([nearest])
                 else:
@@ -137,7 +142,8 @@ class GT_OT_MovePin(bpy.types.Operator):
         _toggle_undragged_pin()
         GTLoader.viewport().pins().reset_current_pin()
 
-        GTLoader.spring_pins_back()
+        if self.dragged:
+            GTLoader.spring_pins_back()
         GTLoader.save_geotracker()
 
         GTLoader.update_all_viewport_shaders(area)
@@ -163,6 +169,8 @@ class GT_OT_MovePin(bpy.types.Operator):
         pin_index = pins.current_pin_num()
         pins.arr()[pin_index] = (x, y)
         selected_pins = pins.get_selected_pins()
+
+        GTLoader.safe_keyframe_add(kid)
 
         if len(selected_pins) == 1:
             GTLoader.move_pin(kid, pin_index, (x, y))
