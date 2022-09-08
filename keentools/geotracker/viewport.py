@@ -126,16 +126,18 @@ class GTViewport(KTViewport):
         for i, p in enumerate(points):
             points[i] = image_space_to_region(p[0], p[1], x1, y1, x2, y2)
 
-        vertex_colors = [GTConfig.pin_color] * len(points)
+        points_count = len(points)
 
-        for i in pins.get_disabled_pins():
+        vertex_colors = [GTConfig.pin_color] * points_count
+
+        for i in [x for x in pins.get_disabled_pins() if x < points_count]:
             vertex_colors[i] = GTConfig.disabled_pin_color
 
-        for i in pins.get_selected_pins():
+        for i in [x for x in pins.get_selected_pins() if x < points_count]:
             vertex_colors[i] = GTConfig.selected_pin_color
 
         pin_num = pins.current_pin_num()
-        if pins.current_pin() and pin_num >= 0 and pin_num < len(vertex_colors):
+        if pins.current_pin() and pin_num >= 0 and pin_num < points_count:
             vertex_colors[pin_num] = GTConfig.current_pin_color
 
         if GTConfig.show_markers_at_camera_corners:
