@@ -22,7 +22,7 @@ from uuid import uuid4
 
 import bpy
 
-from ..addon_config import Config, get_operator, ErrorType
+from ..addon_config import get_operator
 from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
 from .gtloader import GTLoader
 from ..utils import coords
@@ -32,6 +32,7 @@ from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
                            unhide_viewport_ui_elements_from_object)
 from ..utils.images import set_background_image_by_movieclip
 from ..utils.bpy_common import bpy_current_frame
+from ..utils.video import fit_render_size
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -235,6 +236,7 @@ class GT_OT_PinMode(bpy.types.Operator):
 
         _log_output('GEOTRACKER PINMODE CHECKS PASSED')
 
+        fit_render_size(new_geotracker.movie_clip)
         if settings.pinmode:
             self._switch_to_new_geotracker(new_geotracker_num)
             return {'FINISHED'}

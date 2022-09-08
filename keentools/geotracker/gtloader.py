@@ -546,7 +546,7 @@ class GTLoader:
         geotracker.reset_focal_length_estimation()
         if geotracker.geomobj:
             unhide_viewport_ui_elements_from_object(area, geotracker.geomobj)
-        cls.save_geotracker()
+
         cls.set_geotracker_item(None)
         _log_output(f'\n--- After out\n{cls.status_info()}')
 
