@@ -24,11 +24,17 @@ import bpy
 from bpy.types import Object
 
 from ..geotracker_config import get_gt_settings, get_current_geotracker_item
-from ..utils import coords
 from ..utils.coords import (focal_mm_to_px,
                             focal_px_to_mm,
                             render_width,
-                            camera_sensor_width)
+                            camera_sensor_width,
+                            custom_projection_matrix,
+                            evaluated_mesh,
+                            get_scale_matrix_3x3_from_matrix_world,
+                            xz_to_xy_rotation_matrix_3x3,
+                            get_mesh_verts,
+                            calc_bpy_camera_mat_relative_to_model,
+                            calc_bpy_model_mat_relative_to_camera)
 from ..utils.animation import (get_safe_evaluated_fcurve,
                                create_locrot_keyframe,
                                get_object_keyframe_numbers,
@@ -63,9 +69,8 @@ class GTCameraInput(pkt_module().TrackerCameraInputI):
         w = scene.render.resolution_x
         h = scene.render.resolution_y
         lens = get_safe_evaluated_fcurve(cam_data, frame, 'lens')
-        proj_mat = coords.projection_matrix(w, h, lens,
-                                            cam_data.sensor_width,
-                                            near, far, scale=1.0)
+        proj_mat = custom_projection_matrix(w, h, lens, cam_data.sensor_width,
+                                            near, far)
         return proj_mat
 
     def view(self, keyframe: int) -> Any:
@@ -86,16 +91,16 @@ class GTGeoInput(pkt_module().GeoInputI):
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return None
-        return self.init_geo(coords.evaluated_mesh(geotracker.geomobj))
+        return self.init_geo(evaluated_mesh(geotracker.geomobj))
 
     @staticmethod
     def init_geo(obj: Object) -> Any:
         mesh = obj.data
-        scale = coords.get_scale_matrix_3x3_from_matrix_world(obj.matrix_world)
-        verts = coords.get_mesh_verts(obj) @ scale
+        scale = get_scale_matrix_3x3_from_matrix_world(obj.matrix_world)
+        verts = get_mesh_verts(obj) @ scale
 
         mb = pkt_module().MeshBuilder()
-        mb.add_points(verts @ coords.xz_to_xy_rotation_matrix_3x3())
+        mb.add_points(verts @ xz_to_xy_rotation_matrix_3x3())
 
         for polygon in mesh.polygons:
             mb.add_face(polygon.vertices[:])
@@ -213,13 +218,14 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
             bpy_set_current_frame(frame)
 
         if geotracker.camera_mode():
-            mat = coords.calc_bpy_camera_mat_relative_to_model(
-                geotracker.geomobj, model_mat)
+            mat = calc_bpy_camera_mat_relative_to_model(geotracker.geomobj,
+                                                        model_mat)
             _log_output(f'set_model_mat2:\n{mat}')
             geotracker.camobj.matrix_world = mat
         else:
-            mat = coords.calc_bpy_model_mat_relative_to_camera(
-                geotracker.camobj, geotracker.geomobj, model_mat)
+            mat = calc_bpy_model_mat_relative_to_camera(geotracker.camobj,
+                                                        geotracker.geomobj,
+                                                        model_mat)
             _log_output(f'set_model_mat3:\n{mat}')
             geotracker.geomobj.matrix_world = mat
 

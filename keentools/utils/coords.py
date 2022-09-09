@@ -110,6 +110,20 @@ def projection_matrix(w: float, h: float, fl: float, sw: float,
     ).transpose()
 
 
+def custom_projection_matrix(w: float, h: float, fl: float, sw: float,
+                             near: float, far: float) -> Any:
+    def _compensate_view_scale(w: float, h: float) -> float:
+        if w == 0 or h == 0:
+            return 1.0
+        if w >= h:
+            return 1.0
+        else:
+            return h / w
+
+    return projection_matrix(w, h, fl, sw, near, far,
+                             scale=_compensate_view_scale(w, h))
+
+
 def focal_by_projection_matrix_mm(pm: Any, sw: float) -> float:
     return - 0.5 * pm[0][0] * sw / pm[0][2]
 
