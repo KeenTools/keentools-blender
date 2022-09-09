@@ -285,7 +285,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
 
     wireframe_backface_culling: bpy.props.BoolProperty(
         name='Backface culling',
-        default=False,
+        default=True,
         update=update_wireframe_backface_culling)
 
     pin_size: bpy.props.FloatProperty(
