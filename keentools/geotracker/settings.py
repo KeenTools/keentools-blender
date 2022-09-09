@@ -159,10 +159,6 @@ def set_camera_focal_length(geotracker, value):
         GTLoader.update_all_viewport_shaders()
 
 
-class FileListItem(bpy.types.PropertyGroup):
-    name: bpy.props.StringProperty(name='File name')
-
-
 class GeoTrackerItem(bpy.types.PropertyGroup):
     serial_str: bpy.props.StringProperty(name='GeoTracker Serialization string')
     geomobj: bpy.props.PointerProperty(name='Geom object',
@@ -178,7 +174,6 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
                                           update=update_movieclip)
 
     dir_name: bpy.props.StringProperty(name='Dir name')
-    frames: bpy.props.CollectionProperty(type=FileListItem, name='Frame list')
 
     precalc_path: bpy.props.StringProperty(name='Precalc path')
     precalc_start: bpy.props.IntProperty(name='from', default=1)
@@ -236,21 +231,6 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
             return self.camobj
         return self.geomobj
 
-    def set_frames(self, arr: list) -> None:
-        self.frames.clear()
-        for filename in arr:
-            item = self.frames.add()
-            item.name = filename
-
-    def sequence_frame(self, request_frame: int) -> Optional[str]:
-        logger = logging.getLogger(__name__)
-        frame = request_frame - self.precalc_start
-        logger.debug('sequence_frame:', request_frame, frame)
-        if 0 <= frame < len(self.frames):
-            logger.debug('sequence_frame:', self.frames[frame].name)
-            return self.frames[frame].name
-        return None
-
     def get_background_image_object(self) -> Optional[CameraBackgroundImage]:
         return get_background_image_object(self.camobj)
 
@@ -305,7 +285,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
 
     wireframe_backface_culling: bpy.props.BoolProperty(
         name='Backface culling',
-        default=False,
+        default=True,
         update=update_wireframe_backface_culling)
 
     pin_size: bpy.props.FloatProperty(
@@ -407,12 +387,6 @@ class GTSceneSettings(bpy.types.PropertyGroup):
                     else:
                         self.current_geotracker_num = -1
         return self.current_geotracker_num
-
-    def get_frame_image_path(self, frame: int) -> Optional[str]:
-        geotracker = self.get_current_geotracker_item()
-        if not geotracker:
-            return None
-        return geotracker.sequence_frame(frame)
 
     def start_selection(self, mouse_x: int, mouse_y: int) -> None:
         self.selection_x = mouse_x

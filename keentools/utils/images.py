@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 import logging
 import numpy as np
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 import re
 import os
 
@@ -92,7 +92,7 @@ def gamma_np_image(np_img, gamma=1.0):
     return res_img
 
 
-def get_background_image_object(camobj):
+def get_background_image_object(camobj: Any) -> Any:
     cam_data = camobj.data
     if len(cam_data.background_images) == 0:
         bg_img = cam_data.background_images.new()
@@ -191,7 +191,7 @@ def np_image_to_grayscale(np_img):
             255 * 0.1140 * np_img[:, :, 2]).astype(np.uint8)
 
 
-def np_array_from_background_image(camobj):
+def np_array_from_background_image(camobj: Any) -> Optional[Any]:
     bg_img = get_background_image_object(camobj)
     np_img = np_array_from_bpy_image(bg_img.image)
     return np_img
