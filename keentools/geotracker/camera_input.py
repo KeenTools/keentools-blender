@@ -23,10 +23,11 @@ from typing import Any, Tuple, List, Dict
 import bpy
 from bpy.types import Object
 
-from ..geotracker_config import get_gt_settings, get_current_geotracker_item
+from ..geotracker_config import get_current_geotracker_item
 from ..utils.coords import (focal_mm_to_px,
                             focal_px_to_mm,
                             render_width,
+                            render_frame,
                             camera_sensor_width,
                             custom_projection_matrix,
                             evaluated_mesh,
@@ -44,6 +45,7 @@ from ..utils.animation import (get_safe_evaluated_fcurve,
 from ..utils.bpy_common import bpy_current_frame, bpy_set_current_frame
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..geotracker.gtloader import GTLoader
+from ..utils.images import np_array_from_background_image
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -65,9 +67,8 @@ class GTCameraInput(pkt_module().TrackerCameraInputI):
         cam_data = camera.data
         near = cam_data.clip_start
         far = cam_data.clip_end
-        scene = bpy.context.scene
-        w = scene.render.resolution_x
-        h = scene.render.resolution_y
+
+        w, h = render_frame()
         lens = get_safe_evaluated_fcurve(cam_data, frame, 'lens')
         proj_mat = custom_projection_matrix(w, h, lens, cam_data.sensor_width,
                                             near, far)
@@ -77,10 +78,7 @@ class GTCameraInput(pkt_module().TrackerCameraInputI):
         return np.eye(4)
 
     def image_size(self) -> Tuple[int, int]:
-        scene = bpy.context.scene
-        w = scene.render.resolution_x
-        h = scene.render.resolution_y
-        return (w, h)
+        return render_frame()
 
 
 class GTGeoInput(pkt_module().GeoInputI):
@@ -115,19 +113,17 @@ class GTImageInput(pkt_module().ImageInputI):
         return pkt_module().Hash(frame)
 
     def load_linear_rgb_image_at(self, frame: int) -> Any:
-        _log_output('load_linear_rgb_image_at: {}'.format(frame))
-        settings = get_gt_settings()
-        frame_filepath = settings.get_frame_image_path(frame)
-        _log_output('frame_filepath: {}'.format(frame_filepath))
+        def _empty_image():
+            w, h = render_frame()
+            return np.full((h, w, 3), (0.0, 0.0, 0.0), dtype=np.float32)
 
-        img = bpy.data.images.load(frame_filepath)
-        size = img.size
-        _log_output('img.size: {} {}'.format(size[0], size[1]))
-
-        np_img0 = np.asarray(img.pixels[:], dtype=np.float32)
-        np_img = np_img0.reshape((size[1], size[0], 4))
-        bpy.data.images.remove(img, do_unlink=True)
-        return np_img[:, :, :3]
+        _log_output(f'load_linear_rgb_image_at: {frame}')
+        geotracker = get_current_geotracker_item()
+        np_img = np_array_from_background_image(geotracker.camobj)
+        if np_img is not None:
+            return np_img[:, :, :3]
+        else:
+            return _empty_image()
 
     def first_frame(self) -> int:
         geotracker = get_current_geotracker_item()
