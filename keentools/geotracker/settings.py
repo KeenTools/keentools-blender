@@ -146,6 +146,19 @@ def update_focal_length_mode(geotracker, context):
             camera_sensor_width(geotracker.camobj))
 
 
+def get_camera_focal_length(geotracker):
+    return camera_focal_length(geotracker.camobj)
+
+
+def set_camera_focal_length(geotracker, value):
+    if not geotracker or not geotracker.camobj:
+        return
+    geotracker.camobj.data.lens = value
+    settings = get_gt_settings()
+    if settings.pinmode:
+        GTLoader.update_all_viewport_shaders()
+
+
 class FileListItem(bpy.types.PropertyGroup):
     name: bpy.props.StringProperty(name='File name')
 
@@ -176,6 +189,11 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     reduce_pins: bpy.props.BoolProperty(name='Reduce pins', default=False)
     spring_pins_back: bpy.props.BoolProperty(name='Spring pins back', default=True)
 
+    focal_length: bpy.props.FloatProperty(name='Focal Length',
+                                          default=50.0,
+                                          min=0.01, max=15000.0,
+                                          get=get_camera_focal_length,
+                                          set=set_camera_focal_length)
     focal_length_estimation: bpy.props.BoolProperty(name='Estimate focal length', default=False)
     track_focal_length: bpy.props.BoolProperty(name='Track focal length', default=False)
 
