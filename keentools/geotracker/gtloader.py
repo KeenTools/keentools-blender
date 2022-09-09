@@ -534,7 +534,10 @@ class GTLoader:
         cls.unregister_undo_redo_handlers()
         area = cls.get_work_area()
         cls.stop_viewport_shaders()
-        exit_area_localview(area)
+        try:
+            exit_area_localview(area)
+        except Exception as err:
+            _log_error('out_pinmode CANNOT OUT FROM LOCALVIEW')
 
         settings.reset_pinmode_id()
 
