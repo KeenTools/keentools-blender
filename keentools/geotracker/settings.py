@@ -33,7 +33,11 @@ from ..utils.images import (get_background_image_object,
 from .utils.tracking import reload_precalc
 from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_scale_vec_4_from_matrix_world,
-                            get_image_space_coord)
+                            get_image_space_coord,
+                            focal_mm_to_px,
+                            render_width,
+                            camera_focal_length,
+                            camera_sensor_width)
 from ..utils.video import fit_render_size, fit_time_length
 from ..utils.bpy_common import bpy_start_frame, bpy_end_frame
 
@@ -133,6 +137,15 @@ def update_pin_size(settings, context):
     GTLoader.viewport().update_pin_size()
 
 
+def update_focal_length_mode(geotracker, context):
+    _log_output(f'update_focal_length_mode: {geotracker.focal_length_mode}')
+    if geotracker.focal_length_mode == 'STATIC_FOCAL_LENGTH':
+        geotracker.static_focal_length = focal_mm_to_px(
+            camera_focal_length(geotracker.camobj),
+            render_width(),
+            camera_sensor_width(geotracker.camobj))
+
+
 class FileListItem(bpy.types.PropertyGroup):
     name: bpy.props.StringProperty(name='File name')
 
@@ -185,7 +198,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         ('CAMERA_FOCAL_LENGTH', 'CAMERA FOCAL LENGTH', 'Camera focal length', 0),
         ('STATIC_FOCAL_LENGTH', 'STATIC FOCAL LENGTH', 'Static focal length', 1),
         ('ZOOM_FOCAL_LENGTH', 'ZOOM FOCAL LENGTH', 'Zoom focal length', 2),
-    ], description='Focal length mode')
+    ], description='Focal length mode', update=update_focal_length_mode)
 
     def get_serial_str(self) -> str:
         return self.serial_str

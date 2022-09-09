@@ -32,7 +32,8 @@ from ..utils.coords import (render_frame,
                             calc_bpy_model_mat_relative_to_camera,
                             focal_by_projection_matrix_mm,
                             compensate_view_scale,
-                            frame_to_image_space)
+                            frame_to_image_space,
+                            camera_sensor_width)
 from ..utils.bpy_common import bpy_current_frame
 from .gt_class_loader import GTClassLoader
 from ..utils.timer import KTStopShaderTimer
@@ -306,7 +307,8 @@ class GTLoader:
         if not force and not gt.is_key_at(frame):
             return None
         proj_mat = gt.projection_mat(frame)
-        focal = focal_by_projection_matrix_mm(proj_mat, 36.0)  # TODO: Config.default_sensor_width
+        focal = focal_by_projection_matrix_mm(
+            proj_mat, camera_sensor_width(geotracker.camobj))
         _log_output('FOCAL ESTIMATED: {}'.format(focal))
         return focal * compensate_view_scale()
 
