@@ -24,7 +24,17 @@ import bpy
 from bpy.types import Object
 
 from ..geotracker_config import get_gt_settings, get_current_geotracker_item
-from ..utils import coords
+from ..utils.coords import (focal_mm_to_px,
+                            focal_px_to_mm,
+                            render_width,
+                            camera_sensor_width,
+                            custom_projection_matrix,
+                            evaluated_mesh,
+                            get_scale_matrix_3x3_from_matrix_world,
+                            xz_to_xy_rotation_matrix_3x3,
+                            get_mesh_verts,
+                            calc_bpy_camera_mat_relative_to_model,
+                            calc_bpy_model_mat_relative_to_camera)
 from ..utils.animation import (get_safe_evaluated_fcurve,
                                create_locrot_keyframe,
                                get_object_keyframe_numbers,
@@ -59,9 +69,8 @@ class GTCameraInput(pkt_module().TrackerCameraInputI):
         w = scene.render.resolution_x
         h = scene.render.resolution_y
         lens = get_safe_evaluated_fcurve(cam_data, frame, 'lens')
-        proj_mat = coords.projection_matrix(w, h, lens,
-                                            cam_data.sensor_width,
-                                            near, far, scale=1.0)
+        proj_mat = custom_projection_matrix(w, h, lens, cam_data.sensor_width,
+                                            near, far)
         return proj_mat
 
     def view(self, keyframe: int) -> Any:
@@ -82,16 +91,16 @@ class GTGeoInput(pkt_module().GeoInputI):
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return None
-        return self.init_geo(coords.evaluated_mesh(geotracker.geomobj))
+        return self.init_geo(evaluated_mesh(geotracker.geomobj))
 
     @staticmethod
     def init_geo(obj: Object) -> Any:
         mesh = obj.data
-        scale = coords.get_scale_matrix_3x3_from_matrix_world(obj.matrix_world)
-        verts = coords.get_mesh_verts(obj) @ scale
+        scale = get_scale_matrix_3x3_from_matrix_world(obj.matrix_world)
+        verts = get_mesh_verts(obj) @ scale
 
         mb = pkt_module().MeshBuilder()
-        mb.add_points(verts @ coords.xz_to_xy_rotation_matrix_3x3())
+        mb.add_points(verts @ xz_to_xy_rotation_matrix_3x3())
 
         for polygon in mesh.polygons:
             mb.add_face(polygon.vertices[:])
@@ -141,25 +150,13 @@ class GTMask2DInput(pkt_module().Mask2DInputI):
 class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
     def __init__(self):
         super().__init__()
-        flm = pkt_module().GeoTracker.FocalLengthMode
+        fl_mode = pkt_module().GeoTracker.FocalLengthMode
         self._modes: Dict = {
             mode.name: mode for mode in [
-            flm.CAMERA_FOCAL_LENGTH,
-            flm.STATIC_FOCAL_LENGTH,
-            flm.ZOOM_FOCAL_LENGTH
+            fl_mode.CAMERA_FOCAL_LENGTH,
+            fl_mode.STATIC_FOCAL_LENGTH,
+            fl_mode.ZOOM_FOCAL_LENGTH
         ]}
-
-    @staticmethod
-    def _focal_px_to_mm(fl_px):
-        sw = 36.0
-        w = bpy.context.scene.render.resolution_x
-        return fl_px * sw / w
-
-    @staticmethod
-    def _focal_mm_to_px(fl_mm):
-        sw = 36.0
-        w = bpy.context.scene.render.resolution_x
-        return fl_mm * w / sw
 
     def _mode_by_value(self, value: str) -> Any:
         if value in self._modes.keys():
@@ -183,7 +180,8 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         cam_data = geotracker.camobj.data
         _log_output('remove_fcurve_from_object: lens')
         remove_fcurve_from_object(cam_data, 'lens')
-        cam_data.lens = self._focal_px_to_mm(static_fl)
+        cam_data.lens = focal_px_to_mm(static_fl, render_width(),
+                                       cam_data.sensor_width)
 
     def serialize(self) -> str:
         _log_output('serialize call')
@@ -220,13 +218,14 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
             bpy_set_current_frame(frame)
 
         if geotracker.camera_mode():
-            mat = coords.calc_bpy_camera_mat_relative_to_model(
-                geotracker.geomobj, model_mat)
+            mat = calc_bpy_camera_mat_relative_to_model(geotracker.geomobj,
+                                                        model_mat)
             _log_output(f'set_model_mat2:\n{mat}')
             geotracker.camobj.matrix_world = mat
         else:
-            mat = coords.calc_bpy_model_mat_relative_to_camera(
-                geotracker.camobj, geotracker.geomobj, model_mat)
+            mat = calc_bpy_model_mat_relative_to_camera(geotracker.camobj,
+                                                        geotracker.geomobj,
+                                                        model_mat)
             _log_output(f'set_model_mat3:\n{mat}')
             geotracker.geomobj.matrix_world = mat
 
@@ -264,14 +263,18 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.camobj:
             return geotracker.default_zoom_focal_length
-        return self._focal_mm_to_px(get_safe_evaluated_fcurve(geotracker.camobj.data, frame, 'lens'))
+        return focal_mm_to_px(
+            get_safe_evaluated_fcurve(geotracker.camobj.data, frame, 'lens'),
+            render_width(), camera_sensor_width(geotracker.camobj))
 
     def get_default_zoom_focal_length(self) -> float:
         _log_output('get_default_zoom_focal_length')
         geotracker = get_current_geotracker_item()
         if not geotracker:
-            return self._focal_mm_to_px(50.0)  # Undefined case
-        return self._focal_mm_to_px(geotracker.default_zoom_focal_length)
+            return focal_mm_to_px(50.0, render_width())  # Undefined case
+        return focal_mm_to_px(geotracker.default_zoom_focal_length,
+                              render_width(),
+                              camera_sensor_width(geotracker.camobj))
 
     def set_default_zoom_focal_length(self, default_fl: float) -> None:
         _log_output(f'set_default_zoom_focal_length: {default_fl}')
@@ -295,10 +298,9 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         self._set_static_fl(static_fl)
 
     def static_focal_length(self) -> float:
-        _log_output('static_focal_length call')
         geotracker = get_current_geotracker_item()
         if not geotracker:
-            return self._focal_mm_to_px(50.0)  # Undefined case
+            return focal_mm_to_px(50.0, render_width())  # Undefined case
         return geotracker.static_focal_length
 
     def set_camera_focal_length_mode(self) -> None:
@@ -319,7 +321,9 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         cam_data = geotracker.camobj.data
         if geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH':
             insert_keyframe_in_fcurve(cam_data, frame,
-                                      self._focal_px_to_mm(fl),
+                                      focal_px_to_mm(fl, render_width(),
+                                                     cam_data.sensor_width),
                                       'KEYFRAME', 'lens')
         else:
-            cam_data.lens = self._focal_px_to_mm(fl)
+            cam_data.lens = focal_px_to_mm(fl, render_width(),
+                                           cam_data.sensor_width)

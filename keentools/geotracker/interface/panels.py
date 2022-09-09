@@ -312,7 +312,8 @@ class GT_PT_CameraPanel(AllVisible):
         row.prop(geotracker, 'focal_length_estimation')
 
         row = col.row(align=True)
-        row.prop(cam_data, 'lens')
+        row.prop(geotracker, 'focal_length')
+
         op = row.operator(GTConfig.gt_actor_idname, text='', icon='KEY_DEHLT')
         op.action = 'remove_focal_keyframe'
         op = row.operator(GTConfig.gt_actor_idname, text='', icon='CANCEL')
@@ -321,7 +322,6 @@ class GT_PT_CameraPanel(AllVisible):
         col = layout.column(align=True)
         col.prop(cam_data, 'sensor_width')
         col.prop(cam_data, 'sensor_height')
-
 
         col = layout.column(align=True)
         col.label(text='Track object:')

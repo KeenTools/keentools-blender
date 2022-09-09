@@ -32,7 +32,8 @@ from ..utils.coords import (render_frame,
                             calc_bpy_model_mat_relative_to_camera,
                             focal_by_projection_matrix_mm,
                             compensate_view_scale,
-                            frame_to_image_space)
+                            frame_to_image_space,
+                            camera_sensor_width)
 from ..utils.bpy_common import bpy_current_frame
 from .gt_class_loader import GTClassLoader
 from ..utils.timer import KTStopShaderTimer
@@ -306,7 +307,8 @@ class GTLoader:
         if not force and not gt.is_key_at(frame):
             return None
         proj_mat = gt.projection_mat(frame)
-        focal = focal_by_projection_matrix_mm(proj_mat, 36.0)  # TODO: Config.default_sensor_width
+        focal = focal_by_projection_matrix_mm(
+            proj_mat, camera_sensor_width(geotracker.camobj))
         _log_output('FOCAL ESTIMATED: {}'.format(focal))
         return focal * compensate_view_scale()
 
@@ -532,7 +534,10 @@ class GTLoader:
         cls.unregister_undo_redo_handlers()
         area = cls.get_work_area()
         cls.stop_viewport_shaders()
-        exit_area_localview(area)
+        try:
+            exit_area_localview(area)
+        except Exception as err:
+            _log_error('out_pinmode CANNOT OUT FROM LOCALVIEW')
 
         settings.reset_pinmode_id()
 
@@ -546,7 +551,7 @@ class GTLoader:
         geotracker.reset_focal_length_estimation()
         if geotracker.geomobj:
             unhide_viewport_ui_elements_from_object(area, geotracker.geomobj)
-        cls.save_geotracker()
+
         cls.set_geotracker_item(None)
         _log_output(f'\n--- After out\n{cls.status_info()}')
 
