@@ -352,11 +352,12 @@ def _track_checks() -> ActionStatus:
         _log_error(msg)
         return ActionStatus(False, msg)
 
-    status, msg, precalc_info = geotracker.reload_precalc()
-    if not status or precalc_info is None:
-        msg = 'Precalc has problems. Check it'
-        _log_error(msg)
-        return ActionStatus(False, msg)
+    if not geotracker.precalcless:
+        status, msg, precalc_info = geotracker.reload_precalc()
+        if not status or precalc_info is None:
+            msg = 'Precalc has problems. Check it'
+            _log_error(msg)
+            return ActionStatus(False, msg)
 
     if settings.calculation_mode():
         settings.user_interrupts = True
@@ -376,8 +377,8 @@ def track_to(forward: bool) -> ActionStatus:
     gt = GTLoader.kt_geotracker()
     current_frame = bpy_current_frame()
     try:
-        tracking_computation = gt.track_async(current_frame, forward,
-                                              geotracker.precalc_path)
+        precalc_path = None if geotracker.precalcless else geotracker.precalc_path
+        tracking_computation = gt.track_async(current_frame, forward, precalc_path)
         tracking_timer = TrackTimer(tracking_computation, current_frame)
         tracking_timer.start()
     except pkt_module().UnlicensedException as err:
@@ -402,8 +403,8 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
     gt = GTLoader.kt_geotracker()
     current_frame = bpy_current_frame()
     try:
-        gt.track_frame(current_frame, forward=forward,
-                       precalc_path=geotracker.precalc_path)
+        precalc_path = None if geotracker.precalcless else geotracker.precalc_path
+        gt.track_frame(current_frame, forward, precalc_path)
     except pkt_module().UnlicensedException as err:
         _log_error(f'UnlicensedException track_next_frame_act: {str(err)}')
         warn = get_operator(Config.kt_warning_idname)
