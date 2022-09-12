@@ -187,6 +187,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     focal_length: bpy.props.FloatProperty(name='Focal Length',
                                           default=50.0,
                                           min=0.01, max=15000.0,
+                                          options={'HIDDEN'},  # to prevent animation
                                           get=get_camera_focal_length,
                                           set=set_camera_focal_length)
     focal_length_estimation: bpy.props.BoolProperty(name='Estimate focal length', default=False)
@@ -212,6 +213,8 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         ('STATIC_FOCAL_LENGTH', 'STATIC FOCAL LENGTH', 'Static focal length', 1),
         ('ZOOM_FOCAL_LENGTH', 'ZOOM FOCAL LENGTH', 'Zoom focal length', 2),
     ], description='Focal length mode', update=update_focal_length_mode)
+
+    precalcless: bpy.props.BoolProperty(name='Precalcless tracking', default=True)
 
     def get_serial_str(self) -> str:
         return self.serial_str
@@ -342,10 +345,10 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     def is_proper_geotracker_number(self, num: int) -> bool:
         return 0 <= num < len(self.geotrackers)
 
-    def get_current_geotracker_item(self) -> Optional[GeoTrackerItem]:
+    def get_current_geotracker_item(self, safe=False) -> Optional[GeoTrackerItem]:
         if self.is_proper_geotracker_number(self.current_geotracker_num):
             return self.geotrackers[self.current_geotracker_num]
-        else:
+        elif not safe:
             self.current_geotracker_num = -1
         return None
 

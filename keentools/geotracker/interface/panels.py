@@ -237,10 +237,25 @@ class GT_PT_InputPanel(AllVisible):
             row.operator(GTConfig.gt_split_video_to_frames_exec_idname,
                          text='', icon='RENDER_RESULT')
 
+        row = layout.row(align=True)
+        row.prop(geotracker, 'precalcless', text='Precalcless', toggle=1)
+        row.prop(geotracker, 'precalcless', text='Use precalc', toggle=1,
+                 invert_checkbox=True)
+
 
 class GT_PT_AnalyzePanel(AllVisible):
     bl_idname = GTConfig.gt_analyze_panel_idname
     bl_label = 'Analyze input'
+
+    @classmethod
+    def poll(cls, context):
+        if not geotracker_enabled():
+            return False
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if not geotracker:
+            return False
+        return not geotracker.precalcless
 
     def draw(self, context):
         settings = get_gt_settings()
@@ -298,12 +313,7 @@ class GT_PT_CameraPanel(AllVisible):
             return
 
         layout = self.layout
-
         cam_data = geotracker.camobj.data
-        col = layout.column(align=True)
-        col.enabled = False
-        col.prop(geotracker, 'default_zoom_focal_length')
-        col.prop(geotracker, 'static_focal_length')
 
         col = layout.column()
         col.prop(geotracker, 'focal_length_mode', text='Mode')
