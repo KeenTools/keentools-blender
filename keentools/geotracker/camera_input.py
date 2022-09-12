@@ -176,7 +176,7 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         cam_data = geotracker.camobj.data
         _log_output('remove_fcurve_from_object: lens')
         remove_fcurve_from_object(cam_data, 'lens')
-        cam_data.lens = focal_px_to_mm(static_fl, render_width(),
+        cam_data.lens = focal_px_to_mm(static_fl, *render_frame(),
                                        cam_data.sensor_width)
 
     def serialize(self) -> str:
@@ -261,15 +261,15 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
             return geotracker.default_zoom_focal_length
         return focal_mm_to_px(
             get_safe_evaluated_fcurve(geotracker.camobj.data, frame, 'lens'),
-            render_width(), camera_sensor_width(geotracker.camobj))
+            *render_frame(), camera_sensor_width(geotracker.camobj))
 
     def get_default_zoom_focal_length(self) -> float:
         _log_output('get_default_zoom_focal_length')
         geotracker = get_current_geotracker_item()
         if not geotracker:
-            return focal_mm_to_px(50.0, render_width())  # Undefined case
+            return focal_mm_to_px(50.0, *render_frame())  # Undefined case
         return focal_mm_to_px(geotracker.default_zoom_focal_length,
-                              render_width(),
+                              *render_frame(),
                               camera_sensor_width(geotracker.camobj))
 
     def set_default_zoom_focal_length(self, default_fl: float) -> None:
@@ -296,7 +296,7 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
     def static_focal_length(self) -> float:
         geotracker = get_current_geotracker_item()
         if not geotracker:
-            return focal_mm_to_px(50.0, render_width())  # Undefined case
+            return focal_mm_to_px(50.0, *render_frame())  # Undefined case
         return geotracker.static_focal_length
 
     def set_camera_focal_length_mode(self) -> None:
@@ -317,9 +317,9 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         cam_data = geotracker.camobj.data
         if geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH':
             insert_keyframe_in_fcurve(cam_data, frame,
-                                      focal_px_to_mm(fl, render_width(),
+                                      focal_px_to_mm(fl, *render_frame(),
                                                      cam_data.sensor_width),
                                       'KEYFRAME', 'lens')
         else:
-            cam_data.lens = focal_px_to_mm(fl, render_width(),
+            cam_data.lens = focal_px_to_mm(fl, *render_frame(),
                                            cam_data.sensor_width)

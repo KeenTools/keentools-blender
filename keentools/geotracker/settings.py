@@ -36,6 +36,7 @@ from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_image_space_coord,
                             focal_mm_to_px,
                             render_width,
+                            render_frame,
                             camera_focal_length,
                             camera_sensor_width)
 from ..utils.video import fit_render_size, fit_time_length
@@ -142,8 +143,8 @@ def update_focal_length_mode(geotracker, context):
     if geotracker.focal_length_mode == 'STATIC_FOCAL_LENGTH':
         geotracker.static_focal_length = focal_mm_to_px(
             camera_focal_length(geotracker.camobj),
-            render_width(),
-            camera_sensor_width(geotracker.camobj))
+            *render_frame(), camera_sensor_width(geotracker.camobj))
+
 
 
 def get_camera_focal_length(geotracker):
