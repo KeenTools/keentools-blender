@@ -442,8 +442,8 @@ def refine_act() -> ActionStatus:
     settings.tracking_mode = True
     result = False
     try:
-        result = gt.refine(current_frame, geotracker.precalc_path,
-                           progress_callback)
+        precalc_path = None if geotracker.precalcless else geotracker.precalc_path
+        result = gt.refine(current_frame, precalc_path, progress_callback)
     except pkt_module().UnlicensedException as err:
         _log_error(f'UnlicensedException refine_act: {str(err)}')
         warn = get_operator(Config.kt_warning_idname)
@@ -485,7 +485,8 @@ def refine_all_act() -> ActionStatus:
     settings.tracking_mode = True
     result = False
     try:
-        result = gt.refine_all(geotracker.precalc_path, progress_callback)
+        precalc_path = None if geotracker.precalcless else geotracker.precalc_path
+        result = gt.refine_all(precalc_path, progress_callback)
     except pkt_module().UnlicensedException as err:
         _log_error(f'UnlicensedException refine_all_act: {str(err)}')
         warn = get_operator(Config.kt_warning_idname)
