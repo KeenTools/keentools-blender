@@ -115,11 +115,10 @@ def _compensate_view_scale(w: float, h: float, inverse=False) -> float:
         return 1.0
     if w >= h:
         return 1.0
+    if inverse:
+        return w / h
     else:
-        if inverse:
-            return w / h
-        else:
-            return h / w
+        return h / w
 
 
 def custom_projection_matrix(w: float, h: float, fl: float, sw: float,
