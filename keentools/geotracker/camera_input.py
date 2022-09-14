@@ -20,13 +20,11 @@ import numpy as np
 import logging
 from typing import Any, Tuple, List, Dict
 
-import bpy
 from bpy.types import Object
 
 from ..geotracker_config import get_current_geotracker_item
 from ..utils.coords import (focal_mm_to_px,
                             focal_px_to_mm,
-                            render_width,
                             render_frame,
                             camera_sensor_width,
                             custom_projection_matrix,
@@ -46,6 +44,7 @@ from ..utils.bpy_common import bpy_current_frame, bpy_set_current_frame
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..geotracker.gtloader import GTLoader
 from ..utils.images import np_array_from_background_image
+from ..utils.ui_redraw import total_redraw_ui
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -54,6 +53,11 @@ _logger: Any = logging.getLogger(__name__)
 def _log_output(message: str) -> None:
     global _logger
     _logger.debug(message)
+
+
+def _log_error(message: str) -> None:
+    global _logger
+    _logger.error(message)
 
 
 class GTCameraInput(pkt_module().TrackerCameraInputI):
@@ -119,10 +123,23 @@ class GTImageInput(pkt_module().ImageInputI):
 
         _log_output(f'load_linear_rgb_image_at: {frame}')
         geotracker = get_current_geotracker_item()
+        if not geotracker:
+            _log_error('load_linear_rgb_image_at NO GEOTRACKER')
+            return _empty_image()
+
+        current_frame = bpy_current_frame()
+        if current_frame != frame:
+            bpy_set_current_frame(frame)
+
+        total_redraw_ui()
         np_img = np_array_from_background_image(geotracker.camobj)
+
+        if current_frame != frame:
+            bpy_set_current_frame(current_frame)
         if np_img is not None:
             return np_img[:, :, :3]
         else:
+            _log_output(f'load_linear_rgb_image_at EMPTY IMAGE: {frame}')
             return _empty_image()
 
     def first_frame(self) -> int:
