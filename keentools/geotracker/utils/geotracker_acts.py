@@ -271,7 +271,7 @@ class _CommonTimer:
                     return False
                 finished_frames, total_frames = overall
                 GTLoader.message_to_screen(
-                    [{'text': f'{self._operation_name} '
+                    [{'text': f'{self._operation_name} calculating:'
                               f'{finished_frames}/{total_frames}', 'y': 60,
                       'color': (1.0, 0.0, 0.0, 0.7)},
                      {'text': 'ESC to interrupt', 'y': 30,
