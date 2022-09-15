@@ -30,6 +30,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     track_to,
                                     track_next_frame_act,
                                     refine_act,
+                                    refine_async_act,
                                     refine_all_act,
                                     clear_between_keyframes_act,
                                     clear_direction_act,
@@ -230,7 +231,7 @@ class GT_OT_Refine(ButtonOperator, bpy.types.Operator):
     bl_description = 'Refine tracking between nearest keyframes'
 
     def execute(self, context):
-        act_status = refine_act()
+        act_status = refine_async_act()
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
