@@ -193,6 +193,7 @@ class GT_OT_SplitVideo(bpy.types.Operator, ExportHelper):
     ], description='Choose image file format')
     from_frame: bpy.props.IntProperty(name='from', default=1)
     to_frame: bpy.props.IntProperty(name='to', default=1)
+    filename_ext: bpy.props.StringProperty()
 
     def draw(self, context):
         layout = self.layout
@@ -204,24 +205,22 @@ class GT_OT_SplitVideo(bpy.types.Operator, ExportHelper):
         row.prop(self, 'to_frame', expand=True)
 
     def execute(self, context):
-        dir_path = os.path.abspath(self.filepath)
-        if os.path.isdir(dir_path):
-            dir_path = os.path.join(dir_path,'')
-            _log_output(f'added ending slash: {dir_path}')
+        self.filename_ext = '.png' if self.file_format == 'PNG' else '.jpg'
+        filepath = os.path.abspath(self.filepath)
+        _log_output(f'OUTPUT filepath: {filepath}')
 
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
 
-        _log_output(f'OUTPUT PATH1: {dir_path}')
         output_path = convert_movieclip_to_frames(geotracker.movie_clip,
-                                                  dir_path,
+                                                  filepath,
                                                   file_format=self.file_format,
                                                   start_frame=self.from_frame,
                                                   end_frame=self.to_frame)
         _log_output(f'OUTPUT PATH2: {output_path}')
         if output_path is not None:
-            new_movieclip = _load_movieclip(dir_path,
+            new_movieclip = _load_movieclip(os.path.dirname(output_path),
                                             [os.path.basename(output_path)])
             _log_output(f'new_movieclip: {new_movieclip}')
         return {'FINISHED'}

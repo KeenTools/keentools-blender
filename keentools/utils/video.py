@@ -108,7 +108,7 @@ def load_movieclip(directory: str, file_names: List[str]) -> Optional[MovieClip]
 
     file_names.sort()
     frame_files = [{'name': name} for name in file_names]
-    _log_output(f'DIR: {directory}')
+    _log_output(f'load_movieclip DIR: {directory}')
 
     old_movieclips = bpy.data.movieclips[:]
     try:
@@ -137,7 +137,7 @@ def load_movieclip(directory: str, file_names: List[str]) -> Optional[MovieClip]
 def convert_movieclip_to_frames(movie_clip: Optional[MovieClip],
                                 filepath: str, *,
                                 file_format: str='PNG',
-                                quality: float=100.0,
+                                quality: int=100,
                                 start_frame: int=1,
                                 end_frame: int=-1,
                                 opengl_render: bool=True) -> Optional[str]:
@@ -168,7 +168,7 @@ def convert_movieclip_to_frames(movie_clip: Optional[MovieClip],
     scene.render.use_file_extension = True
     scene.render.image_settings.file_format = file_format
     if file_format == 'JPEG':
-        scene.render.image_settings.image_settings.quality = quality
+        scene.render.image_settings.quality = quality
     scene.frame_start = start_frame
     scene.frame_end = end_frame if end_frame >= 0 else movie_clip.frame_duration
     output_filepath = scene.render.frame_path(frame=start_frame)
