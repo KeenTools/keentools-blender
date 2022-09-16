@@ -18,7 +18,7 @@
 
 import numpy as np
 import logging
-from typing import Any, Tuple, List, Dict
+from typing import Any, Tuple, List, Dict, Optional
 
 from bpy.types import Object
 
@@ -45,6 +45,7 @@ from ..blender_independent_packages.pykeentools_loader import module as pkt_modu
 from ..geotracker.gtloader import GTLoader
 from ..utils.images import np_array_from_background_image
 from ..utils.ui_redraw import total_redraw_ui
+from ..utils.mesh_builder import build_geo
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -60,23 +61,29 @@ def _log_error(message: str) -> None:
     _logger.error(message)
 
 
+def camera_projection(camobj: Any, frame: Optional[int]=None,
+                      image_width: Optional[int]=None,
+                      image_height: Optional[int]=None) -> Any:
+    cam_data = camobj.data
+    near = cam_data.clip_start
+    far = cam_data.clip_end
+    if image_width is None or image_height is None:
+        image_width, image_height = render_frame()
+    if frame is None:
+        frame =bpy_current_frame()
+    lens = get_safe_evaluated_fcurve(cam_data, frame, 'lens')
+    proj_mat = custom_projection_matrix(image_width, image_height, lens,
+                                        cam_data.sensor_width, near, far)
+    return proj_mat
+
+
 class GTCameraInput(pkt_module().TrackerCameraInputI):
     def projection(self, frame: int) -> Any:
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.camobj:
             _log_output('projection error: no geotracker or camera')
             return np.eye(4)
-        camera = geotracker.camobj
-        assert camera is not None
-        cam_data = camera.data
-        near = cam_data.clip_start
-        far = cam_data.clip_end
-
-        w, h = render_frame()
-        lens = get_safe_evaluated_fcurve(cam_data, frame, 'lens')
-        proj_mat = custom_projection_matrix(w, h, lens, cam_data.sensor_width,
-                                            near, far)
-        return proj_mat
+        return camera_projection(geotracker.camobj, frame)
 
     def view(self, keyframe: int) -> Any:
         return np.eye(4)
@@ -93,23 +100,7 @@ class GTGeoInput(pkt_module().GeoInputI):
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return None
-        return self.init_geo(evaluated_mesh(geotracker.geomobj))
-
-    @staticmethod
-    def init_geo(obj: Object) -> Any:
-        mesh = obj.data
-        scale = get_scale_matrix_3x3_from_matrix_world(obj.matrix_world)
-        verts = get_mesh_verts(obj) @ scale
-
-        mb = pkt_module().MeshBuilder()
-        mb.add_points(verts @ xz_to_xy_rotation_matrix_3x3())
-
-        for polygon in mesh.polygons:
-            mb.add_face(polygon.vertices[:])
-
-        _geo = pkt_module().Geo()
-        _geo.add_mesh(mb.mesh())
-        return _geo
+        return build_geo(geotracker.geomobj, evaluated=True, get_uv=False)
 
 
 class GTImageInput(pkt_module().ImageInputI):

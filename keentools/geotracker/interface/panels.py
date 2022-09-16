@@ -497,3 +497,6 @@ class GT_PT_AnimationPanel(AllVisible):
     def draw(self, context):
         layout = self.layout
         layout.operator(GTConfig.gt_create_animated_empty_idname)
+
+        op = layout.operator(GTConfig.gt_actor_idname, text='Reproject frame')
+        op.action = 'reproject_frame'
