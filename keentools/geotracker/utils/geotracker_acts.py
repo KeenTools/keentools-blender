@@ -50,7 +50,7 @@ from ...utils.materials import (show_texture_in_mat,
 from ...utils.images import create_bpy_image_from_np_array
 from ...utils.mesh_builder import build_geo
 from ...utils.images import np_array_from_background_image
-from ...geotracker.camera_input import camera_projection
+from ...utils.coords import camera_projection
 
 
 _logger: Any = logging.getLogger(__name__)

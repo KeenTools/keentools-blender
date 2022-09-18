@@ -20,20 +20,14 @@ import numpy as np
 import logging
 from typing import Any, Tuple, List, Dict, Optional
 
-from bpy.types import Object
-
 from ..geotracker_config import get_current_geotracker_item
 from ..utils.coords import (focal_mm_to_px,
                             focal_px_to_mm,
                             render_frame,
                             camera_sensor_width,
-                            custom_projection_matrix,
-                            evaluated_mesh,
-                            get_scale_matrix_3x3_from_matrix_world,
-                            xz_to_xy_rotation_matrix_3x3,
-                            get_mesh_verts,
                             calc_bpy_camera_mat_relative_to_model,
-                            calc_bpy_model_mat_relative_to_camera)
+                            calc_bpy_model_mat_relative_to_camera,
+                            camera_projection)
 from ..utils.animation import (get_safe_evaluated_fcurve,
                                create_locrot_keyframe,
                                get_object_keyframe_numbers,
@@ -59,22 +53,6 @@ def _log_output(message: str) -> None:
 def _log_error(message: str) -> None:
     global _logger
     _logger.error(message)
-
-
-def camera_projection(camobj: Any, frame: Optional[int]=None,
-                      image_width: Optional[int]=None,
-                      image_height: Optional[int]=None) -> Any:
-    cam_data = camobj.data
-    near = cam_data.clip_start
-    far = cam_data.clip_end
-    if image_width is None or image_height is None:
-        image_width, image_height = render_frame()
-    if frame is None:
-        frame =bpy_current_frame()
-    lens = get_safe_evaluated_fcurve(cam_data, frame, 'lens')
-    proj_mat = custom_projection_matrix(image_width, image_height, lens,
-                                        cam_data.sensor_width, near, far)
-    return proj_mat
 
 
 class GTCameraInput(pkt_module().TrackerCameraInputI):
