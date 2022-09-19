@@ -180,13 +180,15 @@ def fit_time_length_act() -> ActionStatus:
     return res
 
 
-class TrackTimer:
+class _CommonTimer:
     def __init__(self, computation: Any, from_frame: int = -1):
         self._interval: float = 0.01
         self._target_frame: int = from_frame
         self._state: str = 'timeline'
         self._active_state_func: Callable = self.timeline_state
         self.tracking_computation = computation
+        self._operation_name = 'common operation'
+        self._overall_func = lambda: None
 
     def timeline_state(self) -> Optional[float]:
         settings = get_gt_settings()
@@ -198,7 +200,8 @@ class TrackTimer:
             self._active_state_func = self.computation_state
             return self.computation_state()
         bpy_set_current_frame(self._target_frame)
-        _log_output(f'timeline_state: set_current_frame({self._target_frame})')
+        _log_output(f'{self._operation_name} timeline_state: '
+                    f'set_current_frame({self._target_frame})')
         return self._interval
 
     def computation_state(self) -> Optional[float]:
@@ -207,16 +210,17 @@ class TrackTimer:
             self._cancel()
 
         current_frame = bpy_current_frame()
-        _log_output(f'computation_state scene={current_frame} '
-                    f'target={self._target_frame}')
+        _log_output(f'{self._operation_name} computation_state '
+                    f'scene={current_frame} target={self._target_frame}')
 
         result = self._safe_resume()
 
         tracking_current_frame = self.tracking_computation.current_frame()
-        _log_output(f'CURRENT FRAME: scene={current_frame} '
+        _log_output(f'{self._operation_name} '
+                    f'CURRENT FRAME: scene={current_frame} '
                     f'track={tracking_current_frame} result={result}')
 
-        overall = self.tracking_computation.finished_and_total_frames()
+        overall = self._overall_func()
         if not result or overall is None:
             self._output_statistics()
             self._state = 'finish'
@@ -233,7 +237,7 @@ class TrackTimer:
         return self._interval
 
     def finish_computation(self) -> None:
-        _log_output('finish_computation call')
+        _log_output(f'{self._operation_name} finish_computation call')
         attempts = 0
         max_attempts = 3
         while attempts < max_attempts and not self.tracking_computation.is_finished():
@@ -262,38 +266,39 @@ class TrackTimer:
         try:
             if not self.tracking_computation.is_finished():
                 self.tracking_computation.resume()
-                overall = self.tracking_computation.finished_and_total_frames()
+                overall = self._overall_func()
                 if overall is None:
                     return False
                 finished_frames, total_frames = overall
                 GTLoader.message_to_screen(
-                    [{'text': f'Tracking calculating: '
+                    [{'text': f'{self._operation_name} calculating:'
                               f'{finished_frames}/{total_frames}', 'y': 60,
                       'color': (1.0, 0.0, 0.0, 0.7)},
                      {'text': 'ESC to interrupt', 'y': 30,
                       'color': (1.0, 1.0, 1.0, 0.7)}])
                 return True
         except pkt_module().ComputationException as err:
-            msg = '_safe_resume ComputationException. ' + str(err)
+            msg = f'{self._operation_name} _safe_resume ' \
+                  f'ComputationException.\n{str(err)}'
             _log_error(msg)
             user_message = '\n'.join(split_long_string(str(err), limit=70))
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
                  msg_content=user_message)
         except Exception as err:
-            msg = '_safe_resume Exception. ' + str(err)
+            msg = f'{self._operation_name} _safe_resume Exception. {str(err)}'
             _log_error(msg)
         return False
 
     def _output_statistics(self) -> None:
-        overall = self.tracking_computation.finished_and_total_frames()
-        _log_output(f'Total calc frames: {overall}')
+        overall = self._overall_func()
+        _log_output(f'{self._operation_name} Total calc frames: {overall}')
         gt = GTLoader.kt_geotracker()
         _log_output(f'KEYFRAMES: {gt.keyframes()}')
         _log_output(f'TRACKED FRAMES: {gt.track_frames()}')
 
     def _cancel(self) -> None:
-        _log_output(f'Cancel call. State={self._state}')
+        _log_output(f'{self._operation_name} Cancel call. State={self._state}')
         self.tracking_computation.cancel()
 
     def timer_func(self) -> Optional[float]:
@@ -303,7 +308,7 @@ class TrackTimer:
         if not bpy.app.background:
             self._start_user_interrupt_operator()
         GTLoader.message_to_screen(
-            [{'text': 'Tracking calculating... Please wait', 'y': 60,
+            [{'text': f'{self._operation_name} calculating... Please wait', 'y': 60,
               'color': (1.0, 0.0, 0.0, 0.7)},
              {'text': 'ESC to cancel', 'y': 30,
               'color': (1.0, 1.0, 1.0, 0.7)}])
@@ -314,11 +319,25 @@ class TrackTimer:
         if not bpy.app.background:
             bpy.app.timers.register(_func, first_interval=self._interval)
             res = bpy.app.timers.is_registered(_func)
-            _log_output(f'tracking timer registered: {res}')
+            _log_output(f'{self._operation_name} timer registered: {res}')
         else:
             # Testing purpose
             timer = RepeatTimer(self._interval, _func)
             timer.start()
+
+
+class TrackTimer(_CommonTimer):
+    def __init__(self, computation: Any, from_frame: int = -1):
+        super().__init__(computation, from_frame)
+        self._operation_name = 'Tracking'
+        self._overall_func = computation.finished_and_total_frames
+
+
+class RefineTimer(_CommonTimer):
+    def __init__(self, computation: Any, from_frame: int = -1):
+        super().__init__(computation, from_frame)
+        self._operation_name = 'Refine'
+        self._overall_func = computation.finished_and_total_stage_frames
 
 
 def _minimal_checks() -> ActionStatus:
@@ -420,6 +439,33 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
     GTLoader.save_geotracker()
     current_frame += 1 if forward else -1
     bpy_set_current_frame(current_frame)
+
+    return ActionStatus(True, 'Ok')
+
+
+def refine_async_act() -> ActionStatus:
+    check_status = _track_checks()
+    if not check_status.success:
+        return check_status
+
+    geotracker = get_current_geotracker_item()
+
+    gt = GTLoader.kt_geotracker()
+    current_frame = bpy_current_frame()
+    try:
+        precalc_path = None if geotracker.precalcless else geotracker.precalc_path
+        tracking_computation = gt.refine_async(current_frame, precalc_path)
+        tracking_timer = RefineTimer(tracking_computation, current_frame)
+        tracking_timer.start()
+    except pkt_module().UnlicensedException as err:
+        _log_error(f'UnlicensedException refine_act: {str(err)}')
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        # Return True to prevent doubling dialogs
+        return ActionStatus(True, 'Unlicensed error')
+    except Exception as err:
+        _log_error(f'Unknown Exception refine_act: {str(err)}')
+        return ActionStatus(False, 'Some problem (see console)')
 
     return ActionStatus(True, 'Ok')
 

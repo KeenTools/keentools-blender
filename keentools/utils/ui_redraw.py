@@ -76,3 +76,7 @@ def mark_old_modules(mods, filter_dict):
         if all([mod.bl_info[key] == filter_dict[key]
                 for key in filter_dict.keys()]):
             _mark_outdated(mod)
+
+
+def total_redraw_ui():
+    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)

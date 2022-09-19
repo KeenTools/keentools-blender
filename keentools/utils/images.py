@@ -222,3 +222,11 @@ def tone_mapping(cam_image, exposure, gamma):
     assign_pixels_data(cam_image.pixels, np_img.ravel())
     _log_output('restore_tone_mapping: exposure: {} '
                 '(gain: {}) gamma: {}'.format(exposure, gain, gamma))
+
+
+def create_bpy_image_from_np_array(np_img, name='tmp_name'):
+    img = bpy.data.images.new(name,
+                              width=np_img.shape[1], height=np_img.shape[0],
+                              alpha=True, float_buffer=False)
+    assign_pixels_data(img.pixels, np_img.ravel())
+    return img
