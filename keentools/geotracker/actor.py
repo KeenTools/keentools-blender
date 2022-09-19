@@ -20,14 +20,15 @@ import logging
 
 import bpy
 
-from ..geotracker_config import GTConfig
+from ..geotracker_config import GTConfig, get_current_geotracker_item
 from .utils.geotracker_acts import (add_keyframe_act,
                                     fit_render_size_act,
                                     fit_time_length_act,
                                     remove_focal_keyframe_act,
                                     remove_focal_keyframes_act,
-                                    bake_current_frame_as_texture)
+                                    bake_texture_from_frames_act)
 from .utils.precalc import precalc_with_runner_act
+from ..utils.bpy_common import bpy_current_frame
 
 
 class GT_OT_Actor(bpy.types.Operator):
@@ -93,11 +94,27 @@ class GT_OT_Actor(bpy.types.Operator):
             return {'FINISHED'}
 
         elif self.action == 'reproject_frame':
-            act_status = bake_current_frame_as_texture()
+            act_status = bake_texture_from_frames_act([bpy_current_frame()])
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
             else:
                 self.report({'INFO'}, act_status.error_message)
+            return {'FINISHED'}
+
+        elif self.action == 'select_all_frames':
+            geotracker = get_current_geotracker_item()
+            if not geotracker:
+                return {'CANCELLED'}
+            for item in geotracker.selected_frames:
+                item.selected = True
+            return {'FINISHED'}
+
+        elif self.action == 'deselect_all_frames':
+            geotracker = get_current_geotracker_item()
+            if not geotracker:
+                return {'CANCELLED'}
+            for item in geotracker.selected_frames:
+                item.selected = False
             return {'FINISHED'}
 
         self.report({'INFO'}, self.action)

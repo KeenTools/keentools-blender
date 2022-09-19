@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import numpy as np
 import logging
 import time
 from typing import Optional, Any, Callable, List, Set
@@ -43,14 +42,7 @@ from ...utils.timer import RepeatTimer
 from ...utils.video import (fit_render_size,
                             fit_time_length)
 from ...utils.html import split_long_string
-from ...utils.materials import (show_texture_in_mat,
-                                assign_material_to_object,
-                                switch_to_mode,
-                                remove_bpy_texture_if_exists)
-from ...utils.images import create_bpy_image_from_np_array
-from ...utils.mesh_builder import build_geo
-from ...utils.images import np_array_from_background_image
-from ...utils.coords import camera_projection
+from .textures import bake_texture, preview_material_with_texture
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -739,7 +731,7 @@ def create_animated_empty_act() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def bake_current_frame_as_texture() -> ActionStatus:
+def bake_texture_from_frames_act(selected_frames: List) -> ActionStatus:
     geotracker = get_current_geotracker_item()
     if not geotracker:
         msg = 'GeoTracker item is not found'
@@ -758,42 +750,7 @@ def bake_current_frame_as_texture() -> ActionStatus:
         _log_error(msg)
         return ActionStatus(False, msg)
 
-    def frame_data_loader(frame):
-        _log_output(f'frame_data_loader: {frame}')
-        np_img = np_array_from_background_image(geotracker.camobj)
-        geo = build_geo(geotracker.geomobj, evaluated=True, get_uv=True)
-        frame_data = pkt_module().texture_builder.FrameData()
-        frame_data.geo = geo
-        frame_data.image = np_img
-        frame_data.model = geotracker.calc_model_matrix()
-        frame_data.view = np.eye(4)
-        frame_data.projection = camera_projection(geotracker.camobj)
-        return frame_data
-
-    class ProgressCallBack(pkt_module().ProgressCallback):
-        def set_progress_and_check_abort(self, progress):
-            bpy.context.window_manager.progress_update(progress)
-            return False
-
-    progress_callBack = ProgressCallBack()
-    frames_count = 1
-    tex_width, tex_height = 2048, 2048
-
-    bpy.context.window_manager.progress_begin(0, 1)
-    built_texture = pkt_module().texture_builder.build_texture(
-        frames_count, frame_data_loader, progress_callBack,
-        tex_height, tex_width)
-
-    bpy.context.window_manager.progress_end()
-
-    tex_name = 'kt_reprojected_tex'
-    mat_name = 'kt_reproject_preview_mat'
-
-    remove_bpy_texture_if_exists(tex_name)
-    img = create_bpy_image_from_np_array(built_texture, tex_name)
-
-    mat = show_texture_in_mat(img.name, mat_name)
-    assign_material_to_object(geotracker.geomobj, mat)
-    switch_to_mode('MATERIAL')
+    built_texture = bake_texture(geotracker, selected_frames)
+    preview_material_with_texture(built_texture, geotracker.geomobj)
 
     return ActionStatus(True, 'ok')

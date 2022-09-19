@@ -498,5 +498,9 @@ class GT_PT_AnimationPanel(AllVisible):
         layout = self.layout
         layout.operator(GTConfig.gt_create_animated_empty_idname)
 
-        op = layout.operator(GTConfig.gt_actor_idname, text='Reproject frame')
+        op = layout.operator(GTConfig.gt_actor_idname,
+                             text='Reproject current frame')
         op.action = 'reproject_frame'
+
+        layout.operator(GTConfig.gt_select_frames_for_bake_idname,
+                        text='Reproject from keyframes')

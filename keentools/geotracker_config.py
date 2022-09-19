@@ -72,6 +72,7 @@ class GTConfig:
     gt_default_wireframe_settings_idname = \
         operators + '.default_wireframe_settings'
     gt_default_pin_settings_idname = operators + '.default_pin_settings'
+    gt_select_frames_for_bake_idname = operators + '.select_frames_for_bake'
 
     # Panel ids
     gt_geotrackers_panel_idname = _PT + 'geotrackers_panel'

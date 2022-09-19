@@ -254,7 +254,7 @@ def get_area_region(area: Area) -> Optional[Any]:
 
 
 def get_area_overlay(area: Area) -> Optional[Any]:
-    if not area:
+    if not area or not not area.spaces.active:
         return None
     return area.spaces.active.overlay
 

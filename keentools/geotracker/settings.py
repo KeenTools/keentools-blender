@@ -18,7 +18,7 @@
 
 import logging
 import numpy as np
-from typing import Optional, Tuple, Any
+from typing import Optional, Tuple, Any, List
 from contextlib import contextmanager
 
 import bpy
@@ -160,6 +160,11 @@ def set_camera_focal_length(geotracker, value):
         GTLoader.update_all_viewport_shaders()
 
 
+class FrameListItem(bpy.types.PropertyGroup):
+    num: bpy.props.IntProperty(name='Frame number', default=-1)
+    selected: bpy.props.BoolProperty(name='Selected', default=False)
+
+
 class GeoTrackerItem(bpy.types.PropertyGroup):
     serial_str: bpy.props.StringProperty(name='GeoTracker Serialization string')
     geomobj: bpy.props.PointerProperty(name='Geom object',
@@ -217,6 +222,8 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     precalcless: bpy.props.BoolProperty(name='Precalcless tracking', default=True)
 
+    selected_frames: bpy.props.CollectionProperty(type=FrameListItem,
+                                                  name='Selected frames')
     def get_serial_str(self) -> str:
         return self.serial_str
 
