@@ -296,12 +296,15 @@ class GT_OT_PinMode(bpy.types.Operator):
             vp.tag_redraw()
             return {'RUNNING_MODAL'}
 
-        if event.type == 'ESC' and event.value == 'RELEASE':
+        if event.type == 'ESC' and event.value == 'PRESS':
             if settings.selection_mode:
                 settings.cancel_selection()
                 vp = GTLoader.viewport()
                 vp.tag_redraw()
                 return {'RUNNING_MODAL'}
+            if not bpy.app.background and bpy.context.screen.is_animation_playing:
+                _log_output('STOP ANIMATION PLAYBACK')
+                return {'PASS_THROUGH'}
             _log_output('Exit pinmode by ESC')
             GTLoader.out_pinmode()
             return {'FINISHED'}
