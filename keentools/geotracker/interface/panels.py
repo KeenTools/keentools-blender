@@ -103,6 +103,16 @@ class AllVisible(View3DPanel):
         return show_all_panels()
 
 
+def _draw_calculating_indicator(layout):
+    settings = get_gt_settings()
+    row = layout.row(align=True)
+    row.prop(settings, 'user_percent', text='Calculating...')
+    col = row.column(align=True)
+    col.alert = True
+    col.operator(GTConfig.gt_stop_calculating_idname, text='',
+                 icon='CANCEL')
+
+
 class GT_PT_GeotrackersPanel(View3DPanel):
     bl_idname = GTConfig.gt_geotrackers_panel_idname
     bl_label = '{} {}'.format(GTConfig.gt_tool_name,
@@ -279,13 +289,8 @@ class GT_PT_AnalyzePanel(AllVisible):
                     col.label(text=txt)
 
         if geotracker.precalc_path != '':
-            if settings.precalc_mode:
-                row = layout.row(align=True)
-                row.prop(settings, 'user_percent', text='Calculation...')
-                col = row.column(align=True)
-                col.alert = True
-                col.operator(GTConfig.gt_stop_precalc_idname, text='',
-                             icon='CANCEL')
+            if settings.is_calculating('PRECALC'):
+                _draw_calculating_indicator(layout)
             else:
                 col = layout.column(align=True)
                 icon = 'ERROR' if not geotracker.movie_clip or \
@@ -298,6 +303,7 @@ class GT_PT_AnalyzePanel(AllVisible):
                 row = layout.row()
                 row.prop(geotracker, 'precalc_start')
                 row.prop(geotracker, 'precalc_end')
+
 
 class GT_PT_CameraPanel(AllVisible):
     bl_idname = GTConfig.gt_camera_panel_idname
@@ -390,6 +396,9 @@ class GT_PT_TrackingPanel(AllVisible):
         row.operator(GTConfig.gt_clear_tracking_backward_idname, text='<X')
         row.operator(GTConfig.gt_clear_all_tracking_idname, text='X')
         row.operator(GTConfig.gt_clear_tracking_forward_idname, text='X>')
+
+        if settings.is_calculating('TRACKING') or settings.is_calculating('REFINE'):
+            _draw_calculating_indicator(layout)
 
         layout.label(text='Keyframes')
 

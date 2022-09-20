@@ -189,6 +189,7 @@ class _CommonTimer:
         self._active_state_func: Callable = self.timeline_state
         self.tracking_computation = computation
         self._operation_name = 'common operation'
+        self._calc_mode = 'NONE'
         self._overall_func = lambda: None
 
     def timeline_state(self) -> Optional[float]:
@@ -252,7 +253,7 @@ class _CommonTimer:
         self._stop_user_interrupt_operator()
         GTLoader.save_geotracker()
         settings = get_gt_settings()
-        settings.tracking_mode = False
+        settings.stop_calculating()
         return None
 
     def _start_user_interrupt_operator(self) -> None:
@@ -277,6 +278,9 @@ class _CommonTimer:
                       'color': (1.0, 0.0, 0.0, 0.7)},
                      {'text': 'ESC to interrupt', 'y': 30,
                       'color': (1.0, 1.0, 1.0, 0.7)}])
+                settings = get_gt_settings()
+                total = total_frames if total_frames != 0 else 1
+                settings.user_percent = 100 * finished_frames / total
                 return True
         except pkt_module().ComputationException as err:
             msg = f'{self._operation_name} _safe_resume ' \
@@ -314,7 +318,7 @@ class _CommonTimer:
              {'text': 'ESC to cancel', 'y': 30,
               'color': (1.0, 1.0, 1.0, 0.7)}])
         settings = get_gt_settings()
-        settings.tracking_mode = True
+        settings.calculating_mode = self._calc_mode
 
         _func = self.timer_func
         if not bpy.app.background:
@@ -331,6 +335,7 @@ class TrackTimer(_CommonTimer):
     def __init__(self, computation: Any, from_frame: int = -1):
         super().__init__(computation, from_frame)
         self._operation_name = 'Tracking'
+        self._calc_mode = 'TRACKING'
         self._overall_func = computation.finished_and_total_frames
 
 
@@ -338,6 +343,7 @@ class RefineTimer(_CommonTimer):
     def __init__(self, computation: Any, from_frame: int = -1):
         super().__init__(computation, from_frame)
         self._operation_name = 'Refine'
+        self._calc_mode = 'REFINE'
         self._overall_func = computation.finished_and_total_stage_frames
 
 
@@ -350,7 +356,7 @@ def _minimal_checks() -> ActionStatus:
         _log_error(msg)
         return ActionStatus(False, msg)
 
-    if settings.calculation_mode():
+    if settings.is_calculating():
         settings.user_interrupts = True
         msg = 'Calculation has been stopped by user'
         _log_error(msg)
@@ -379,7 +385,7 @@ def _track_checks() -> ActionStatus:
             _log_error(msg)
             return ActionStatus(False, msg)
 
-    if settings.calculation_mode():
+    if settings.is_calculating():
         settings.user_interrupts = True
         msg = 'Calculation has been stopped by user'
         _log_error(msg)
@@ -486,7 +492,7 @@ def refine_act() -> ActionStatus:
 
     start_time = time.time()
     bpy_progress_begin(0, 100)
-    settings.tracking_mode = True
+    settings.calculating_mode = 'REFINE'
     result = False
     try:
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
@@ -500,7 +506,7 @@ def refine_act() -> ActionStatus:
     except Exception as err:
         _log_error(f'Unknown Exception refine_act: {str(err)}')
     finally:
-        settings.tracking_mode = False
+        settings.stop_calculating()
         bpy_progress_end()
         overall_time = time.time() - start_time
         _log_output('Refine calculation time: {:.2f} sec'.format(overall_time))
@@ -529,7 +535,7 @@ def refine_all_act() -> ActionStatus:
 
     start_time = time.time()
     bpy_progress_begin(0, 100)
-    settings.tracking_mode = True
+    settings.calculating_mode = 'REFINE'
     result = False
     try:
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
@@ -543,7 +549,7 @@ def refine_all_act() -> ActionStatus:
     except Exception as err:
         _log_error(f'Unknown Exception refine_all_act: {str(err)}')
     finally:
-        settings.tracking_mode = False
+        settings.stop_calculating()
         bpy_progress_end()
         overall_time = time.time() - start_time
         _log_output('Refine calculation time: {:.2f} sec'.format(overall_time))

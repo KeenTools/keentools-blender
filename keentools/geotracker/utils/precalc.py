@@ -90,7 +90,7 @@ class PrecalcTimer:
     def finish_precalc_mode(self) -> None:
         self._state = 'over'
         settings = get_gt_settings()
-        settings.precalc_mode = False
+        settings.stop_calculating()
         GTLoader.revert_default_screen_message(unregister=not settings.pinmode)
 
         geotracker = settings.get_current_geotracker_item()
@@ -115,8 +115,8 @@ class PrecalcTimer:
         _log_output(f'Timer: state={self._state} target={self._target_frame} '
                     f'current={bpy_current_frame()}')
         if settings.user_interrupts:
-            settings.precalc_mode = False
-        if not settings.precalc_mode:
+            settings.stop_calculating()
+        if not settings.is_calculating('PRECALC'):
             self._runner.cancel()
             self.finish_precalc_mode()
             geotracker = settings.get_current_geotracker_item()
@@ -217,7 +217,8 @@ class PrecalcTimer:
     def start(self) -> bool:
         self.prepare_camera()
         settings = get_gt_settings()
-        settings.precalc_mode = True
+        settings.calculating_mode = 'PRECALC'
+
         self._state = 'runner'
         self._active_state_func = self.runner_state
         self._start_time = time.time()
@@ -261,7 +262,7 @@ def precalc_with_runner_act(context: Any) -> Tuple[bool, str]:
         msg = 'Precalc path is not specified'
         _log_error(msg)
         return False, msg
-    if settings.calculation_mode():
+    if settings.is_calculating():
         msg = 'Other calculation is performing'
         _log_error(msg)
         return False, msg
