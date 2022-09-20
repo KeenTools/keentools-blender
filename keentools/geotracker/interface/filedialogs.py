@@ -309,8 +309,7 @@ class GT_OT_FrameSelector(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        logger.debug('START TEXTURE CREATION')
+        _log_output('GT START TEXTURE CREATION')
 
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
@@ -319,6 +318,10 @@ class GT_OT_FrameSelector(bpy.types.Operator):
         built_texture = bake_texture(
             geotracker,
             [x.num for x in geotracker.selected_frames if x.selected])
-        preview_material_with_texture(built_texture, geotracker.geomobj)
 
+        if built_texture is None:
+            _log_error('GT TEXTURE HAS NOT BEEN CREATED')
+        else:
+            preview_material_with_texture(built_texture, geotracker.geomobj)
+            _log_output('GT TEXTURE HAS BEEN CREATED')
         return {'FINISHED'}
