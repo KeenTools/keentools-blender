@@ -357,11 +357,16 @@ class GT_OT_InterruptModal(bpy.types.Operator):
         logger = logging.getLogger(__name__)
         settings = get_gt_settings()
 
-        if (event.type == 'ESC' and event.value == 'RELEASE') or settings.user_interrupts:
+        if settings.user_interrupts:
+            logger.debug('Interruptor has been stopped by value')
+            settings.user_interrupts = True
+            return {'FINISHED'}
+
+        if event.type == 'ESC' and event.value == 'PRESS':
             logger.debug('Exit Interruptor by ESC')
             settings.user_interrupts = True
             return {'FINISHED'}
-        logger.debug('INTERRUPTOR IN ACTION')
+
         return {'PASS_THROUGH'}
 
 
