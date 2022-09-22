@@ -42,7 +42,7 @@ from ..utils.ui_redraw import total_redraw_ui
 from ..utils.mesh_builder import build_geo
 
 
-_log = KTLogger()
+_log = KTLogger(__name__)
 
 
 class GTCameraInput(pkt_module().TrackerCameraInputI):

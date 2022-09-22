@@ -43,7 +43,7 @@ from ..utils.other import unhide_viewport_ui_elements_from_object
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
-_log = KTLogger()
+_log = KTLogger(__name__)
 
 
 def force_stop_gt_shaders() -> None:

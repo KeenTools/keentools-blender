@@ -32,12 +32,12 @@ _log_colors = {
 
 
 class KTLogger():
-    def __init__(self, *, output: str='debug',
+    def __init__(self, name, *, output: str='debug',
                  info_color: Optional[str]=None,
                  debug_color: Optional[str]=None,
                  warning_color: Optional[str]='yellow',
                  error_color: Optional[str]='red'):
-        self._logger = logging.getLogger(__name__)
+        self._logger = logging.getLogger(name)
         self._info_color = info_color
         self._debug_color = debug_color
         self._error_color = error_color
@@ -55,28 +55,30 @@ class KTLogger():
         if self._info_color is None:
             self._logger.info(message)
         else:
-            self.color(self._info_color, message)
+            self._logger.info(self.color(self._info_color, message))
 
     def warning(self, message: str) -> None:
         if self._warning_color is None:
             self._logger.warning(message)
         else:
-            self.color(self._warning_color, message)
+            self._logger.warning(self.color(self._warning_color, message))
 
     def debug(self, message: str) -> None:
         if self._debug_color is None:
             self._logger.debug(message)
         else:
-            self.color(self._debug_color, message)
+            self._logger.debug(self.color(self._debug_color, message))
 
     def error(self, message: str) -> None:
         if self._error_color is None:
             self._logger.error(message)
         else:
-            self.color(self._error_color, message)
+            self._logger.error(self.color(self._error_color, message))
 
     def color(self, color: str, txt: str) -> str:
-        ''' Add ASCII color code at start and reset code at end of the text'''
+        ''' Add an ASCII color code at the beginning
+            and a reset code at the end of the text
+        '''
         global _log_colors
         if color not in _log_colors:
             return txt

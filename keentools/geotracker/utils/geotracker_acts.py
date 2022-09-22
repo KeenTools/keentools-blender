@@ -16,13 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
 import time
 from typing import Optional, Any, Callable, List, Set
 
 import bpy
 from bpy.types import Object
 
+from ...utils.kt_logging import KTLogger
 from ...addon_config import Config, get_operator, ErrorType, ActionStatus
 from ...geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
 from ..gtloader import GTLoader
@@ -45,17 +45,22 @@ from ...utils.html import split_long_string
 from .textures import bake_texture, preview_material_with_texture
 
 
-_logger: Any = logging.getLogger(__name__)
+_log = KTLogger(__name__)
 
 
-def _log_output(message: str) -> None:
-    global _logger
-    _logger.debug(message)
+def show_warning_dialog(err: Any, limit=70) -> None:
+    _log.output('show_warning_dialog call')
+    user_message = '\n'.join(split_long_string(str(err), limit=limit))
+    _log.warning(user_message)
+    warn = get_operator(Config.kt_warning_idname)
+    warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+         msg_content=user_message)
 
 
-def _log_error(message):
-    global _logger
-    _logger.error(message)
+def show_unlicensed_warning():
+    _log.output('show_unlicensed_warning call')
+    warn = get_operator(Config.kt_warning_idname)
+    warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
 
 
 def find_object_in_selection(obj_type: str='MESH',
@@ -205,7 +210,7 @@ class _CommonTimer:
             self._active_state_func = self.computation_state
             return self.computation_state()
         bpy_set_current_frame(self._target_frame)
-        _log_output(f'{self._operation_name} timeline_state: '
+        _log.output(f'{self._operation_name} timeline_state: '
                     f'set_current_frame({self._target_frame})')
         return self._interval
 
@@ -215,13 +220,13 @@ class _CommonTimer:
             self._cancel()
 
         current_frame = bpy_current_frame()
-        _log_output(f'{self._operation_name} computation_state '
+        _log.output(f'{self._operation_name} computation_state '
                     f'scene={current_frame} target={self._target_frame}')
 
         result = self._safe_resume()
 
         tracking_current_frame = self.tracking_computation.current_frame()
-        _log_output(f'{self._operation_name} '
+        _log.output(f'{self._operation_name} '
                     f'CURRENT FRAME: scene={current_frame} '
                     f'track={tracking_current_frame} result={result}')
 
@@ -242,16 +247,16 @@ class _CommonTimer:
         return self._interval
 
     def finish_computation(self) -> None:
-        _log_output(f'{self._operation_name} finish_computation call')
+        _log.output(f'{self._operation_name} finish_computation call')
         attempts = 0
         max_attempts = 3
         while attempts < max_attempts and not self.tracking_computation.is_finished():
             attempts += 1
-            _log_output(f'TRY TO STOP COMPUTATION. ATTEMPT {attempts}')
+            _log.output(f'TRY TO STOP COMPUTATION. ATTEMPT {attempts}')
             self.tracking_computation.cancel()
             self._safe_resume()
         if attempts >= max_attempts and not self.tracking_computation.is_finished():
-            _log_error(f'PROBLEM WITH COMPUTATION STOP')
+            _log.error(f'PROBLEM WITH COMPUTATION STOP')
         GTLoader.revert_default_screen_message(unregister=False)
         self._stop_user_interrupt_operator()
         GTLoader.save_geotracker()
@@ -278,7 +283,7 @@ class _CommonTimer:
                     return False
                 finished_frames, total_frames = overall
                 GTLoader.message_to_screen(
-                    [{'text': f'{self._operation_name} calculating:'
+                    [{'text': f'{self._operation_name} calculating: '
                               f'{finished_frames}/{total_frames}', 'y': 60,
                       'color': (1.0, 0.0, 0.0, 0.7)},
                      {'text': 'ESC to interrupt', 'y': 30,
@@ -290,25 +295,24 @@ class _CommonTimer:
         except pkt_module().ComputationException as err:
             msg = f'{self._operation_name} _safe_resume ' \
                   f'ComputationException.\n{str(err)}'
-            _log_error(msg)
-            user_message = '\n'.join(split_long_string(str(err), limit=70))
-            warn = get_operator(Config.kt_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
-                 msg_content=user_message)
+            _log.error(msg)
+            show_warning_dialog(err)
         except Exception as err:
             msg = f'{self._operation_name} _safe_resume Exception. {str(err)}'
-            _log_error(msg)
+            _log.error(msg)
+            show_warning_dialog(err)
         return False
 
     def _output_statistics(self) -> None:
         overall = self._overall_func()
-        _log_output(f'{self._operation_name} Total calc frames: {overall}')
+        _log.output(f'--- {self._operation_name} statistics ---')
+        _log.output(f'Total calc frames: {overall}')
         gt = GTLoader.kt_geotracker()
-        _log_output(f'KEYFRAMES: {gt.keyframes()}')
-        _log_output(f'TRACKED FRAMES: {gt.track_frames()}')
+        _log.output(f'KEYFRAMES: {gt.keyframes()}')
+        _log.output(f'TRACKED FRAMES: {gt.track_frames()}\n')
 
     def _cancel(self) -> None:
-        _log_output(f'{self._operation_name} Cancel call. State={self._state}')
+        _log.output(f'{self._operation_name} Cancel call. State={self._state}')
         self.tracking_computation.cancel()
 
     def timer_func(self) -> Optional[float]:
@@ -329,7 +333,7 @@ class _CommonTimer:
         if not bpy.app.background:
             bpy.app.timers.register(_func, first_interval=self._interval)
             res = bpy.app.timers.is_registered(_func)
-            _log_output(f'{self._operation_name} timer registered: {res}')
+            _log.output(f'{self._operation_name} timer registered: {res}')
         else:
             # Testing purpose
             timer = RepeatTimer(self._interval, _func)
@@ -358,13 +362,13 @@ def _minimal_checks() -> ActionStatus:
 
     if not geotracker:
         msg = 'GeoTracker item is not found'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
 
     if settings.is_calculating():
         settings.user_interrupts = True
         msg = 'Calculation has been stopped by user'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
 
     return ActionStatus(True, 'ok')
@@ -375,25 +379,25 @@ def _track_checks() -> ActionStatus:
     geotracker = settings.get_current_geotracker_item()
     if not settings.pinmode:
         msg = 'Tracking works only in Pin mode'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
 
     if not geotracker:
         msg = 'GeoTracker item is not found'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
 
     if not geotracker.precalcless:
         status, msg, precalc_info = geotracker.reload_precalc()
         if not status or precalc_info is None:
             msg = 'Precalc has problems. Check it'
-            _log_error(msg)
+            _log.error(msg)
             return ActionStatus(False, msg)
 
     if settings.is_calculating():
         settings.user_interrupts = True
         msg = 'Calculation has been stopped by user'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
     return ActionStatus(True, 'ok')
 
@@ -413,13 +417,13 @@ def track_to(forward: bool) -> ActionStatus:
         tracking_timer = TrackTimer(tracking_computation, current_frame)
         tracking_timer.start()
     except pkt_module().UnlicensedException as err:
-        _log_error(f'UnlicensedException refine_act: {str(err)}')
-        warn = get_operator(Config.kt_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        _log.error(f'UnlicensedException refine_act: {str(err)}')
+        show_unlicensed_warning()
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
-        _log_error(f'Unknown Exception refine_act: {str(err)}')
+        _log.error(f'Unknown Exception refine_act: {str(err)}')
+        show_warning_dialog(err)
         return ActionStatus(False, 'Some problem (see console)')
 
     return ActionStatus(True, 'Ok')
@@ -437,15 +441,14 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
         gt.track_frame(current_frame, forward, precalc_path)
     except pkt_module().UnlicensedException as err:
-        _log_error(f'UnlicensedException track_next_frame_act: {str(err)}')
-        warn = get_operator(Config.kt_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        _log.error(f'UnlicensedException track_next_frame_act: {str(err)}')
+        show_unlicensed_warning()
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
         msg = 'Track next frame problem (see console)'
-        _log_error(msg)
-        _log_error(str(err))
+        _log.error(f'{msg}\n{str(err)}')
+        show_warning_dialog(err)
         return ActionStatus(False, msg)
 
     GTLoader.save_geotracker()
@@ -470,13 +473,13 @@ def refine_async_act() -> ActionStatus:
         tracking_timer = RefineTimer(tracking_computation, current_frame)
         tracking_timer.start()
     except pkt_module().UnlicensedException as err:
-        _log_error(f'UnlicensedException refine_act: {str(err)}')
-        warn = get_operator(Config.kt_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        _log.error(f'UnlicensedException refine_act: {str(err)}')
+        show_unlicensed_warning()
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
-        _log_error(f'Unknown Exception refine_act: {str(err)}')
+        _log.error(f'Unknown Exception refine_act: {str(err)}')
+        show_warning_dialog(err)
         return ActionStatus(False, 'Some problem (see console)')
 
     return ActionStatus(True, 'Ok')
@@ -491,7 +494,7 @@ def refine_act() -> ActionStatus:
     geotracker = settings.get_current_geotracker_item()
     gt = GTLoader.kt_geotracker()
     current_frame = bpy_current_frame()
-    _log_output(f'REFINE AT: {current_frame}')
+    _log.output(f'REFINE AT: {current_frame}')
 
     progress_callback = GTClassLoader.RFProgressCallBack_class()()
 
@@ -503,20 +506,20 @@ def refine_act() -> ActionStatus:
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
         result = gt.refine(current_frame, precalc_path, progress_callback)
     except pkt_module().UnlicensedException as err:
-        _log_error(f'UnlicensedException refine_act: {str(err)}')
-        warn = get_operator(Config.kt_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        _log.error(f'UnlicensedException refine_act: {str(err)}')
+        show_unlicensed_warning()
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
-        _log_error(f'Unknown Exception refine_act: {str(err)}')
+        _log.error(f'Unknown Exception refine_act: {str(err)}')
+        show_warning_dialog(err)
     finally:
         settings.stop_calculating()
         bpy_progress_end()
         overall_time = time.time() - start_time
-        _log_output('Refine calculation time: {:.2f} sec'.format(overall_time))
+        _log.output('Refine calculation time: {:.2f} sec'.format(overall_time))
 
-    _log_output(f'Refined frames: {progress_callback.refined_frames}')
+    _log.output(f'Refined frames: {progress_callback.refined_frames}')
     GTLoader.save_geotracker()
     GTLoader.update_all_viewport_shaders()
     GTLoader.viewport_area_redraw()
@@ -534,7 +537,7 @@ def refine_all_act() -> ActionStatus:
     geotracker = settings.get_current_geotracker_item()
     gt = GTLoader.kt_geotracker()
     current_frame = bpy_current_frame()
-    _log_output('REFINE AT: {}'.format(current_frame))
+    _log.output('REFINE AT: {}'.format(current_frame))
 
     progress_callback = GTClassLoader.RFProgressCallBack_class()()
 
@@ -546,18 +549,18 @@ def refine_all_act() -> ActionStatus:
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
         result = gt.refine_all(precalc_path, progress_callback)
     except pkt_module().UnlicensedException as err:
-        _log_error(f'UnlicensedException refine_all_act: {str(err)}')
-        warn = get_operator(Config.kt_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        _log.error(f'UnlicensedException refine_all_act: {str(err)}')
+        show_unlicensed_warning()
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
-        _log_error(f'Unknown Exception refine_all_act: {str(err)}')
+        _log.error(f'Unknown Exception refine_all_act: {str(err)}')
+        show_warning_dialog(err)
     finally:
         settings.stop_calculating()
         bpy_progress_end()
         overall_time = time.time() - start_time
-        _log_output('Refine calculation time: {:.2f} sec'.format(overall_time))
+        _log.output('Refine calculation time: {:.2f} sec'.format(overall_time))
 
     GTLoader.save_geotracker()
     GTLoader.update_all_viewport_shaders()
@@ -581,7 +584,8 @@ def clear_between_keyframes_act() -> ActionStatus:
     try:
         gt.remove_track_between_keyframes(current_frame)
     except Exception as err:
-        _log_error(f'Unknown Exception clear_between_keyframes_act: {str(err)}')
+        _log.error(f'Unknown Exception clear_between_keyframes_act: {str(err)}')
+        show_warning_dialog(err)
 
     GTLoader.save_geotracker()
     GTLoader.update_all_viewport_shaders()
@@ -597,10 +601,11 @@ def clear_direction_act(forward: bool) -> ActionStatus:
     current_frame = bpy_current_frame()
     gt = GTLoader.kt_geotracker()
     try:
-        _log_output(f'clear_direction_act: {current_frame} {forward}')
+        _log.output(f'clear_direction_act: {current_frame} {forward}')
         gt.remove_track_in_direction(current_frame, forward=forward)
     except Exception as err:
-        _log_error(f'Unknown Exception clear_direction_act: {str(err)}')
+        _log.error(f'Unknown Exception clear_direction_act: {str(err)}')
+        show_warning_dialog(err)
 
     GTLoader.save_geotracker()
     GTLoader.update_all_viewport_shaders()
@@ -617,7 +622,8 @@ def clear_all_act() -> ActionStatus:
     try:
         gt.remove_all_track_data_and_keyframes()
     except Exception as err:
-        _log_error(f'Unknown Exception clear_all_act: {str(err)}')
+        _log.error(f'Unknown Exception clear_all_act: {str(err)}')
+        show_warning_dialog(err)
 
     GTLoader.save_geotracker()
     GTLoader.update_all_viewport_shaders()
@@ -629,12 +635,12 @@ def remove_focal_keyframe_act() -> ActionStatus:
     geotracker = get_current_geotracker_item()
     if not geotracker:
         msg = 'GeoTracker item is not found'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
 
     if not geotracker.camobj:
         msg = 'GeoTracker camera is not found'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
 
     remove_fcurve_point(geotracker.camobj.data, bpy_current_frame(), 'lens')
@@ -645,12 +651,12 @@ def remove_focal_keyframes_act() -> ActionStatus:
     geotracker = get_current_geotracker_item()
     if not geotracker:
         msg = 'GeoTracker item is not found'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
 
     if not geotracker.camobj:
         msg = 'GeoTracker camera is not found'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
 
     remove_fcurve_from_object(geotracker.camobj.data, 'lens')
@@ -661,12 +667,12 @@ def remove_pins_act() -> ActionStatus:
     settings = get_gt_settings()
     if not settings.pinmode:
         msg = 'Remove pins can be called in PinMode only'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
     geotracker = settings.get_current_geotracker_item()
     if not geotracker:
         msg = 'GeoTracker item is not found'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
 
     gt = GTLoader.kt_geotracker()
@@ -686,12 +692,12 @@ def toggle_pins_act() -> ActionStatus:
     settings = get_gt_settings()
     if not settings.pinmode:
         msg = 'Remove pins can be called in PinMode only'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
     geotracker = settings.get_current_geotracker_item()
     if not geotracker:
         msg = 'GeoTracker item is not found'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
 
     gt = GTLoader.kt_geotracker()
@@ -709,12 +715,12 @@ def center_geo_act() -> ActionStatus:
     settings = get_gt_settings()
     if not settings.pinmode:
         msg = 'Center geo can be called in PinMode only'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
     geotracker = settings.get_current_geotracker_item()
     if not geotracker:
         msg = 'GeoTracker item is not found'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
 
     GTLoader.center_geo()
@@ -727,13 +733,13 @@ def create_animated_empty_act() -> ActionStatus:
     geotracker = get_current_geotracker_item()
     if not geotracker:
         msg = 'GeoTracker item is not found'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
 
     action = get_action(geotracker.animatable_object())
     if not action:
         msg = 'Animation is not created on source object'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
 
     obj = create_empty_object('GTEmpty')
@@ -746,19 +752,19 @@ def bake_texture_from_frames_act(selected_frames: List) -> ActionStatus:
     geotracker = get_current_geotracker_item()
     if not geotracker:
         msg = 'GeoTracker item is not found'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
     if not geotracker.camobj:
         msg = 'GeoTracker camera is not found'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
     if not geotracker.geomobj:
         msg = 'GeoTracker geometry is not found'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
     if not geotracker.movie_clip:
         msg = 'GeoTracker movie clip is not found'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
 
     built_texture = bake_texture(geotracker, selected_frames)
