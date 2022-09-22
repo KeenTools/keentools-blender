@@ -366,12 +366,15 @@ def update_depsgraph() -> Any:
     return depsgraph
 
 
-def get_mesh_verts(obj: Any) -> Any:
-    mesh = obj.data
+def get_mesh_verts(mesh: Any) -> Any:
     verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
     mesh.vertices.foreach_get(
         'co', np.reshape(verts, len(mesh.vertices) * 3))
     return verts
+
+
+def get_obj_verts(obj: Any) -> Any:
+    return get_mesh_verts(obj.data)
 
 
 def to_homogeneous(verts: Any) -> Any:

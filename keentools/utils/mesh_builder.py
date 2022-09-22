@@ -31,7 +31,7 @@ from .coords import (get_scale_matrix_3x3_from_matrix_world,
 def build_geo(obj: Object, evaluated: bool=True, get_uv=False) -> Any:
     mesh = obj.data if not evaluated else evaluated_mesh(obj).data
     scale = get_scale_matrix_3x3_from_matrix_world(obj.matrix_world)
-    verts = get_mesh_verts(obj) @ scale
+    verts = get_mesh_verts(mesh) @ scale
 
     mb = pkt_module().MeshBuilder()
     mb.add_points(verts @ xz_to_xy_rotation_matrix_3x3())
@@ -39,8 +39,8 @@ def build_geo(obj: Object, evaluated: bool=True, get_uv=False) -> Any:
     for polygon in mesh.polygons:
         mb.add_face(polygon.vertices[:])
 
-    if get_uv and obj.data.uv_layers.active:
-        uvmap = obj.data.uv_layers.active.data
+    if get_uv and mesh.uv_layers.active:
+        uvmap = mesh.uv_layers.active.data
         uvs = [np.array(v.uv) for v in uvmap]
         mb.set_uvs_attribute('VERTEX_BASED', uvs)
 

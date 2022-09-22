@@ -16,13 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
 from typing import Any, Optional, Tuple, List
 import numpy as np
 
 import bpy
 from bpy.types import Area
 
+from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType
 from ..geotracker_config import get_gt_settings, get_current_geotracker_item
 from .viewport import GTViewport
@@ -43,22 +43,7 @@ from ..utils.other import unhide_viewport_ui_elements_from_object
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
-_logger: Any = logging.getLogger(__name__)
-
-
-def _log_output(message: str) -> None:
-    global _logger
-    _logger.debug(message)
-
-
-def _log_warning(message: str) -> None:
-    global _logger
-    _logger.warning(message)
-
-
-def _log_error(message: str) -> None:
-    global _logger
-    _logger.error(message)
+_log = KTLogger()
 
 
 def force_stop_gt_shaders() -> None:
@@ -68,17 +53,17 @@ def force_stop_gt_shaders() -> None:
 
 def depsgraph_update_handler(scene, depsgraph):
     def _check_updated(depsgraph, name):
-        _log_output('COUNT UPDATES: {}'.format(len(depsgraph.updates)))
-        _log_output('ids: {}'.format([update.id.name for update in depsgraph.updates]))
+        _log.output('COUNT UPDATES: {}'.format(len(depsgraph.updates)))
+        _log.output('ids: {}'.format([update.id.name for update in depsgraph.updates]))
         for update in depsgraph.updates:
             if update.id.name != name:
                 continue
             if not update.is_updated_transform:
                 continue
-            _log_output(f'update.id: {update.id.name}')
-            _log_output(f'update.is_updated_geometry: {update.is_updated_geometry}')
-            _log_output(f'update.is_updated_transform: {update.is_updated_transform}')
-            _log_output(f'update.is_updated_shading: {update.is_updated_shading}')
+            _log.output(f'update.id: {update.id.name}')
+            _log.output(f'update.is_updated_geometry: {update.is_updated_geometry}')
+            _log.output(f'update.is_updated_transform: {update.is_updated_transform}')
+            _log.output(f'update.is_updated_shading: {update.is_updated_shading}')
             return True
         return False
 
@@ -100,7 +85,7 @@ def depsgraph_update_handler(scene, depsgraph):
 
 
 def undo_redo_handler(scene):
-    _log_output('gt_undo_handler')
+    _log.output('gt_undo_handler')
     try:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
@@ -114,7 +99,7 @@ def undo_redo_handler(scene):
         GTLoader.update_all_viewport_shaders(area)
 
     except Exception as err:
-        _log_error(f'gt_undo_handler {str(err)}')
+        _log.error(f'gt_undo_handler {str(err)}')
         GTLoader.unregister_undo_redo_handlers()
 
 
@@ -137,7 +122,7 @@ def unregister_app_handler(app_handlers, handler) -> None:
 
 
 def frame_change_post_handler(scene):
-    _log_output('KEYFRAME UPDATED')
+    _log.output('KEYFRAME UPDATED')
     geotracker = get_current_geotracker_item()
     geotracker.reset_focal_length_estimation()
     GTLoader.place_camera()
@@ -173,7 +158,7 @@ class GTLoader:
 
     @classmethod
     def update_geomobj_mesh(cls) -> None:
-        _log_output('update_geomobj_mesh UPDATE')
+        _log.output('update_geomobj_mesh UPDATE')
         geotracker = get_current_geotracker_item()
         if geotracker and geotracker.geomobj:
             geotracker.geomobj.update_from_editmode()
@@ -215,6 +200,7 @@ class GTLoader:
 
     @classmethod
     def new_kt_geotracker(cls) -> Any:
+        _log.output(_log.color('magenta', '*** new_kt_geotracker ***'))
         cls._geo_input = GTClassLoader.GTGeoInput_class()()
         cls._image_input = GTClassLoader.GTImageInput_class()()
         cls._camera_input = GTClassLoader.GTCameraInput_class()()
@@ -238,7 +224,7 @@ class GTLoader:
 
     @classmethod
     def add_pin(cls, keyframe: int, pos: Tuple[float, float]) -> Optional[Any]:
-        _log_output(f'add_pin ADD PIN: {pos}')
+        _log.output(f'add_pin ADD PIN: {pos}')
         gt = cls.kt_geotracker()
         return gt.add_pin(keyframe, pos)
 
@@ -309,7 +295,7 @@ class GTLoader:
         proj_mat = gt.projection_mat(frame)
         focal = focal_by_projection_matrix_mm(
             proj_mat, camera_sensor_width(geotracker.camobj))
-        _log_output('FOCAL ESTIMATED: {}'.format(focal))
+        _log.output('FOCAL ESTIMATED: {}'.format(focal))
         return focal * compensate_view_scale()
 
     @classmethod
@@ -338,7 +324,7 @@ class GTLoader:
 
     @classmethod
     def solve(cls) -> bool:
-        _log_output('GTloader.solve called')
+        _log.output('GTloader.solve called')
         geotracker = get_current_geotracker_item()
         gt = cls.kt_geotracker()
         keyframe = bpy_current_frame()
@@ -354,7 +340,7 @@ class GTLoader:
             gt.solve_for_current_pins(keyframe, geotracker.focal_length_estimation)
 
         except pkt_module().UnlicensedException as err:
-            _log_error(f'solve UnlicensedException: \n{str(err)}')
+            _log.error(f'solve UnlicensedException: \n{str(err)}')
             cls.out_pinmode()
             settings = get_gt_settings()
             settings.hide_user_preferences()
@@ -362,13 +348,14 @@ class GTLoader:
             warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
             return False
         except Exception as err:
-            _log_error(f'solve UNKNOWN EXCEPTION: \n{str(err)}')
+            _log.error(f'solve UNKNOWN EXCEPTION: \n{str(err)}')
             return False
-        _log_output('GTloader.solve finished')
+        _log.output('GTloader.solve finished')
         return True
 
     @classmethod
     def save_geotracker(cls) -> None:
+        _log.output('save_geotracker call')
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return
@@ -385,24 +372,26 @@ class GTLoader:
             try:
                 settings.wireframe_backface_culling = gt.back_face_culling()
             except Exception as err:
-                _log_error(f'_deserialize_global_options:\n{str(err)}')
+                _log.error(f'_deserialize_global_options:\n{str(err)}')
 
     @classmethod
     def load_geotracker(cls) -> bool:
+        _log.output('load_geotracker')
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return False
 
         serial = geotracker.get_serial_str()
 
+        _log.output(_log.color('cyan', f'SERIAL:\n{serial}'))
         if serial == '':
             settings = get_gt_settings()
-            _log_warning(f'EMPTY SERIAL ERROR: {settings.current_geotracker_num}')
+            _log.warning(f'EMPTY SERIAL ERROR: {settings.current_geotracker_num}')
             return False
 
         gt = cls.kt_geotracker()
         if not gt.deserialize(serial):
-            _log_warning(f'DESERIALIZE ERROR: {serial}')
+            _log.warning(f'DESERIALIZE ERROR: {serial}')
             return False
         cls._deserialize_global_options()
         return True
@@ -498,7 +487,7 @@ class GTLoader:
         cls._check_shader_timer.stop()
         vp = cls.viewport()
         vp.unregister_handlers()
-        _log_output('GT VIEWPORT SHADERS HAVE BEEN STOPPED')
+        _log.output('GT VIEWPORT SHADERS HAVE BEEN STOPPED')
 
     @classmethod
     def status_info(cls):
@@ -527,8 +516,8 @@ class GTLoader:
     @classmethod
     def out_pinmode(cls) -> None:
         settings = get_gt_settings()
-        _log_output(f'out_pinmode call')
-        _log_output(f'\n--- Before out\n{cls.status_info()}')
+        _log.output(f'out_pinmode call')
+        _log.output(f'\n--- Before out\n{cls.status_info()}')
         settings.pinmode = False
 
         cls.unregister_undo_redo_handlers()
@@ -537,7 +526,7 @@ class GTLoader:
         try:
             exit_area_localview(area)
         except Exception as err:
-            _log_error('out_pinmode CANNOT OUT FROM LOCALVIEW')
+            _log.error('out_pinmode CANNOT OUT FROM LOCALVIEW')
 
         settings.reset_pinmode_id()
 
@@ -545,7 +534,7 @@ class GTLoader:
         if geotracker is None:
             geotracker = settings.get_current_geotracker_item()
         if geotracker is None:
-            _log_error(f'out_pinmode error: No geotracker')
+            _log.error(f'out_pinmode error: No geotracker')
             return
 
         geotracker.reset_focal_length_estimation()
@@ -553,7 +542,7 @@ class GTLoader:
             unhide_viewport_ui_elements_from_object(area, geotracker.geomobj)
 
         cls.set_geotracker_item(None)
-        _log_output(f'\n--- After out\n{cls.status_info()}')
+        _log.output(f'\n--- After out\n{cls.status_info()}')
 
     @classmethod
     def register_undo_redo_handlers(cls):

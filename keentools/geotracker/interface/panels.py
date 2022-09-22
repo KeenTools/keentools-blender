@@ -29,6 +29,16 @@ from ...updater.panels import (KTUpdater,
                                KT_PT_DownloadNotification,
                                KT_PT_DownloadingProblemPanel,
                                KT_PT_UpdatesInstallationPanel)
+from ..gtloader import GTLoader
+
+
+def _pinmode_escaper():
+    GTLoader.out_pinmode()
+    return None
+
+
+def _start_pinmode_escaper():
+    bpy.app.timers.register(_pinmode_escaper, first_interval = 0.01)
 
 
 def _is_keentools_object(obj) -> bool:
@@ -352,6 +362,8 @@ class GT_PT_CameraPanel(AllVisible):
             row.operator(GTConfig.gt_exit_pinmode_idname,
                          icon='LOOP_BACK',
                          depress=settings.pinmode)
+            if not GTLoader.viewport().is_working():
+                _start_pinmode_escaper()
         else:
             op = row.operator(GTConfig.gt_pinmode_idname,
                               text='View', icon='HIDE_OFF',
@@ -370,6 +382,18 @@ class GT_PT_TrackingPanel(AllVisible):
             return
 
         layout = self.layout
+        box = layout.box()
+
+        row = box.row(align=True)
+        row.operator(GTConfig.gt_prev_keyframe_idname, text=' ',
+                     icon='PREV_KEYFRAME')
+        row.operator(GTConfig.gt_next_keyframe_idname, text=' ',
+                     icon='NEXT_KEYFRAME')
+        row.operator(GTConfig.gt_add_keyframe_idname, text=' ',
+                     icon='KEY_HLT')
+        row.operator(GTConfig.gt_remove_keyframe_idname, text=' ',
+                     icon='KEY_DEHLT')
+
         box = layout.box()
         col = box.column()
 
@@ -420,16 +444,6 @@ class GT_PT_TrackingPanel(AllVisible):
         op = col.operator(GTConfig.gt_actor_idname,
                           text='stabilize view')
         op.action = 'stabilize_view'
-
-        row = box.row(align=True)
-        row.operator(GTConfig.gt_prev_keyframe_idname, text=' ',
-                     icon='PREV_KEYFRAME')
-        row.operator(GTConfig.gt_next_keyframe_idname, text=' ',
-                     icon='NEXT_KEYFRAME')
-        row.operator(GTConfig.gt_add_keyframe_idname, text=' ',
-                     icon='KEY_HLT')
-        row.operator(GTConfig.gt_remove_keyframe_idname, text=' ',
-                     icon='KEY_DEHLT')
 
 
 class GT_PT_WireframeSettingsPanel(AllVisible):
