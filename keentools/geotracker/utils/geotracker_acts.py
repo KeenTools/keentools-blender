@@ -182,15 +182,18 @@ def fit_time_length_act() -> ActionStatus:
 
 
 class _CommonTimer:
-    def __init__(self, computation: Any, from_frame: int = -1):
+    def __init__(self, computation: Any, from_frame: int = -1,
+                 revert_current_frame: bool=False):
         self._interval: float = 0.01
         self._target_frame: int = from_frame
         self._state: str = 'timeline'
         self._active_state_func: Callable = self.timeline_state
-        self.tracking_computation = computation
-        self._operation_name = 'common operation'
-        self._calc_mode = 'NONE'
-        self._overall_func = lambda: None
+        self.tracking_computation: Any = computation
+        self._operation_name: str = 'common operation'
+        self._calc_mode: str = 'NONE'
+        self._overall_func: Callable = lambda: None
+        self._start_frame: int = from_frame
+        self._revert_current_frame: bool = revert_current_frame
 
     def timeline_state(self) -> Optional[float]:
         settings = get_gt_settings()
@@ -254,6 +257,8 @@ class _CommonTimer:
         GTLoader.save_geotracker()
         settings = get_gt_settings()
         settings.stop_calculating()
+        if self._revert_current_frame:
+            bpy_set_current_frame(self._start_frame)
         return None
 
     def _start_user_interrupt_operator(self) -> None:
@@ -341,7 +346,7 @@ class TrackTimer(_CommonTimer):
 
 class RefineTimer(_CommonTimer):
     def __init__(self, computation: Any, from_frame: int = -1):
-        super().__init__(computation, from_frame)
+        super().__init__(computation, from_frame, revert_current_frame=True)
         self._operation_name = 'Refine'
         self._calc_mode = 'REFINE'
         self._overall_func = computation.finished_and_total_stage_frames
