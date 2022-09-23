@@ -15,13 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
+
 import time
 import bpy
 
+from .kt_logging import KTLogger
 from ..addon_config import Config
 from ..utils.attrs import set_custom_attribute, get_safe_custom_attribute
 from ..utils.coords import get_area_overlay
+
+
+_log = KTLogger(__name__)
 
 
 def _viewport_ui_attribute_names():
@@ -35,8 +39,7 @@ def _get_ui_space_data(area):
 def _setup_viewport_ui_state(area, state_dict):
     python_obj = _get_ui_space_data(area)
     if python_obj is None:
-        logger = logging.getLogger(__name__)
-        logger.error('overlay does not exist')
+        _log.error(f'_setup_viewport_ui_state: overlay does not exist. area={area}')
         return
     attr_names = _viewport_ui_attribute_names()
     for name in attr_names:
@@ -44,9 +47,7 @@ def _setup_viewport_ui_state(area, state_dict):
             try:
                 setattr(python_obj, name, state_dict[name])
             except Exception as err:
-                logger = logging.getLogger(__name__)
-                logger.error('EXCEPTION _setup_viewport_ui_state')
-                logger.error('Exception info: {}'.format(str(err)))
+                _log.error(f'EXCEPTION _setup_viewport_ui_state: {str(err)}')
 
 
 def _get_viewport_ui_state(area):
@@ -58,9 +59,7 @@ def _get_viewport_ui_state(area):
             try:
                 res[name] = getattr(python_obj, name)
             except Exception as err:
-                logger = logging.getLogger(__name__)
-                logger.error('EXCEPTION _get_viewport_ui_state')
-                logger.error('Exception info: {}'.format(str(err)))
+                _log.error(f'EXCEPTION _get_viewport_ui_state: {str(err)}')
     return res
 
 
