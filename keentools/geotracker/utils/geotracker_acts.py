@@ -51,7 +51,6 @@ _log = KTLogger(__name__)
 def show_warning_dialog(err: Any, limit=70) -> None:
     _log.output('show_warning_dialog call')
     user_message = '\n'.join(split_long_string(str(err), limit=limit))
-    _log.warning(user_message)
     warn = get_operator(Config.kt_warning_idname)
     warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
          msg_content=user_message)

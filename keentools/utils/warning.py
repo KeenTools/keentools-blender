@@ -143,8 +143,8 @@ class KT_OT_AddonWarning(bpy.types.Operator):
         return {'FINISHED'}
 
     def _output_error_to_console(self):
-        _log.error('KT_OT_AddonWarning: {}\n---\n'
-                   '{}\n---'.format(self.msg,'\n'.join(self.content)))
+        _log.warning('\n--- KeenTools Addon Warning [{}] ---\n'
+                     '{}\n---\n'.format(self.msg, '\n'.join(self.content)))
 
     def invoke(self, context, event):
         if self.msg == ErrorType.CustomMessage:
