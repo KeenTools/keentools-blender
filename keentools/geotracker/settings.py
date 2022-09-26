@@ -331,6 +331,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         ('PRECALC', 'PRECALC', 'Precalc is calculating', 1),
         ('TRACKING', 'TRACKING', 'Tracking is calculating', 2),
         ('REFINE', 'REFINE', 'Refine is calculating', 3),
+        ('REPROJECT', 'REPROJECT', 'Reproject is calculating', 4),
     ])
 
     selection_mode: bpy.props.BoolProperty(name='Selection mode',

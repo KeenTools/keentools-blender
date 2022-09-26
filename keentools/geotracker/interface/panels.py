@@ -513,6 +513,22 @@ class GT_PT_WireframeSettingsPanel(AllVisible):
         col.prop(settings, 'pin_sensitivity', slider=True)
 
 
+class GT_PT_TexturePanel(AllVisible):
+    bl_idname = GTConfig.gt_texture_panel_idname
+    bl_label = 'Texture'
+
+    def draw(self, context):
+        layout = self.layout
+        op = layout.operator(GTConfig.gt_actor_idname,
+                             text='Reproject current frame')
+        op.action = 'reproject_frame'
+
+        layout.operator(GTConfig.gt_select_frames_for_bake_idname,
+                        text='Reproject from keyframes')
+        layout.operator(GTConfig.gt_reproject_tex_sequence_idname,
+                        text='Reproject to sequence')
+
+
 class GT_PT_AnimationPanel(AllVisible):
     bl_idname = GTConfig.gt_animation_panel_idname
     bl_label = 'Animation'
@@ -520,10 +536,3 @@ class GT_PT_AnimationPanel(AllVisible):
     def draw(self, context):
         layout = self.layout
         layout.operator(GTConfig.gt_create_animated_empty_idname)
-
-        op = layout.operator(GTConfig.gt_actor_idname,
-                             text='Reproject current frame')
-        op.action = 'reproject_frame'
-
-        layout.operator(GTConfig.gt_select_frames_for_bake_idname,
-                        text='Reproject from keyframes')

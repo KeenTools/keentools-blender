@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from .panels import *
+from .filedialogs import *
 
 
 CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,
@@ -29,4 +30,11 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,
                        GT_PT_CameraPanel,
                        GT_PT_TrackingPanel,
                        GT_PT_WireframeSettingsPanel,
-                       GT_PT_AnimationPanel)
+                       GT_PT_TexturePanel,
+                       GT_PT_AnimationPanel,
+                       GT_OT_SequenceFilebrowser,  # file dialogs
+                       GT_OT_ChoosePrecalcFile,
+                       GT_OT_SplitVideo,
+                       GT_OT_SplitVideoExec,
+                       GT_OT_ReprojectTextureSequence,
+                       GT_OT_FrameSelector)

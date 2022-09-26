@@ -23,6 +23,7 @@ from typing import Any, List
 import bpy
 from bpy.types import Object
 
+from ...utils.kt_logging import KTLogger
 from ...utils.bpy_common import bpy_current_frame, bpy_set_current_frame
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.mesh_builder import build_geo
@@ -36,17 +37,7 @@ from ...utils.materials import (remove_bpy_texture_if_exists,
                                 switch_to_mode)
 
 
-_logger: Any = logging.getLogger(__name__)
-
-
-def _log_output(message: str) -> None:
-    global _logger
-    _logger.debug(message)
-
-
-def _log_error(message: str) -> None:
-    global _logger
-    _logger.error(message)
+_log = KTLogger(__name__)
 
 
 def bake_texture(geotracker: Any, selected_frames: List[int],
@@ -54,7 +45,7 @@ def bake_texture(geotracker: Any, selected_frames: List[int],
     def _create_frame_data_loader(geotracker, frame_numbers):
         def frame_data_loader(index):
             frame = frame_numbers[index]
-            _log_output(f'frame_data_loader: {frame}')
+            _log.output(f'frame_data_loader: {frame}')
             current_frame = bpy_current_frame()
 
             if frame != current_frame:
@@ -100,6 +91,7 @@ def preview_material_with_texture(
         return
     remove_bpy_texture_if_exists(tex_name)
     img = create_bpy_image_from_np_array(built_texture, tex_name)
+    img.pack()
 
     mat = show_texture_in_mat(img.name, mat_name)
     assign_material_to_object(geomobj, mat)

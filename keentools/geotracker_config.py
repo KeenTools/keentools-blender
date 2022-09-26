@@ -43,6 +43,7 @@ class GTConfig:
     gt_choose_precalc_file_idname = operators + '.choose_precalc_file'
     gt_split_video_to_frames_idname = operators + '.split_video_to_frames'
     gt_split_video_to_frames_exec_idname = operators + '.split_video_to_frames_exec'
+    gt_reproject_tex_sequence_idname = operators + '.reproject_tex_sequence'
     gt_track_to_start_idname = operators + '.track_to_start_btn'
     gt_track_to_end_idname = operators + '.track_to_end_btn'
     gt_track_next_idname = operators + '.track_next_btn'
@@ -82,6 +83,7 @@ class GTConfig:
     gt_tracking_panel_idname = _PT + 'tracking_panel'
     gt_colors_panel_idname = _PT + 'colors_panel'
     gt_animation_panel_idname = _PT + 'animation_panel'
+    gt_texture_panel_idname = _PT + 'texture_panel'
 
     # Updater panels
     gt_update_panel_idname = _PT + 'update_panel'

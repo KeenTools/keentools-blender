@@ -224,9 +224,14 @@ def tone_mapping(cam_image, exposure, gamma):
                 '(gain: {}) gamma: {}'.format(exposure, gain, gamma))
 
 
-def create_bpy_image_from_np_array(np_img: Any, name: str='tmp_name') -> Any:
+def create_compatible_bpy_image(np_img: Any, name: str= 'tmp_name') -> Any:
     img = bpy.data.images.new(name,
                               width=np_img.shape[1], height=np_img.shape[0],
                               alpha=True, float_buffer=False)
+    return img
+
+
+def create_bpy_image_from_np_array(np_img: Any, name: str='tmp_name') -> Any:
+    img = create_compatible_bpy_image(np_img, name)
     assign_pixels_data(img.pixels, np_img.ravel())
     return img
