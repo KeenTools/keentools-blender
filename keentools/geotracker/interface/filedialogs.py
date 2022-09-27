@@ -25,7 +25,7 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import Config, get_operator
-from ...geotracker_config import GTConfig, get_current_geotracker_item
+from ...geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
 from ...utils.images import set_background_image_by_movieclip
 from ...utils.video import (convert_movieclip_to_frames,
                             load_movieclip,
@@ -35,7 +35,9 @@ from ...utils.bpy_common import (bpy_current_frame,
                                  bpy_set_current_frame,
                                  bpy_start_frame,
                                  bpy_end_frame)
-from ..utils.textures import bake_texture, preview_material_with_texture
+from ..utils.textures import (bake_texture,
+                              preview_material_with_texture,
+                              bake_texture_sequence)
 from ...utils.images import create_compatible_bpy_image, assign_pixels_data
 
 _log = KTLogger(__name__)
@@ -345,16 +347,13 @@ class GT_OT_ReprojectTextureSequence(_DirSelectionTemplate):
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
 
-        current_frame = bpy_current_frame()
-        tex = None
-        for frame in range(self.from_frame, self.to_frame + 1):
-            built_texture = bake_texture(geotracker, [frame])
-            if tex is None:
-                tex = create_compatible_bpy_image(built_texture)
-            tex.filepath = self.filepath + str(frame).zfill(4) + self.filename_ext
-            tex.file_format = self.file_format
-            assign_pixels_data(tex.pixels, built_texture.ravel())
-            tex.save()
-            _log.output(f'TEXTURE SAVED: {tex.filepath}')
-        bpy_set_current_frame(current_frame)
+        filepath_pattern = f'{self.filepath}' + '{}' + f'{self.filename_ext}'
+
+        settings = get_gt_settings()
+        settings.calculating_mode = 'REPROJECT'
+        bake_texture_sequence(geotracker, filepath_pattern,
+                              from_frame=self.from_frame,
+                              to_frame=self.to_frame,
+                              file_format=self.file_format)
+        settings.stop_calculating()
         return {'FINISHED'}

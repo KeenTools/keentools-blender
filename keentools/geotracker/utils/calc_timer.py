@@ -113,3 +113,6 @@ class CalcTimer():
             _log.output('timer_func common_checks problem')
             return None
         return self._active_state_func()
+
+    def start(self) -> bool:
+        return True

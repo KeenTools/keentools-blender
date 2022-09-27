@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
 import numpy as np
 from typing import Any, List
 
@@ -35,6 +34,9 @@ from ...utils.materials import (remove_bpy_texture_if_exists,
                                 show_texture_in_mat,
                                 assign_material_to_object,
                                 switch_to_mode)
+from ...utils.images import (create_compatible_bpy_image,
+                             assign_pixels_data,
+                             remove_bpy_image)
 
 
 _log = KTLogger(__name__)
@@ -96,3 +98,22 @@ def preview_material_with_texture(
     mat = show_texture_in_mat(img.name, mat_name)
     assign_material_to_object(geomobj, mat)
     switch_to_mode('MATERIAL')
+
+
+def bake_texture_sequence(geotracker, filepath_pattern, *, file_format='PNG',
+                          from_frame=1, to_frame=10, digits=4,
+                          width=2048, height=2048) -> None:
+    current_frame = bpy_current_frame()
+    tex = None
+    for frame in range(from_frame, to_frame + 1):
+        built_texture = bake_texture(geotracker, [frame],
+                                     tex_width=width, tex_height=height)
+        if tex is None:
+            tex = create_compatible_bpy_image(built_texture)
+        tex.filepath_raw = filepath_pattern.format(str(frame).zfill(digits))
+        tex.file_format = file_format
+        assign_pixels_data(tex.pixels, built_texture.ravel())
+        tex.save()
+        _log.output(f'TEXTURE SAVED: {tex.filepath}')
+    bpy_set_current_frame(current_frame)
+    remove_bpy_image(tex)

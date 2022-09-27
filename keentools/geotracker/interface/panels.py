@@ -528,6 +528,10 @@ class GT_PT_TexturePanel(AllVisible):
         layout.operator(GTConfig.gt_reproject_tex_sequence_idname,
                         text='Reproject to sequence')
 
+        settings = get_gt_settings()
+        if settings.is_calculating('REPROJECT'):
+            _draw_calculating_indicator(layout)
+
 
 class GT_PT_AnimationPanel(AllVisible):
     bl_idname = GTConfig.gt_animation_panel_idname
