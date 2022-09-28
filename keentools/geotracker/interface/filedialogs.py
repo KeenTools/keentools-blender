@@ -332,6 +332,34 @@ class GT_OT_ReprojectTextureSequence(_DirSelectionTemplate):
     bl_label = 'Reproject texture sequence'
     bl_description = 'Choose dir where to place resulting sequence'
 
+    width: bpy.props.IntProperty(default=2048, description='Texture width')
+    height: bpy.props.IntProperty(default=2048, description='Texture height')
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text='Output files format:')
+        layout.prop(self, 'file_format', expand=True)
+
+        layout.label(text='Texture size:')
+        row = layout.row(align=True)
+        row.prop(self, 'width', text='Width')
+        row.prop(self, 'height', text='Height')
+
+        layout.label(text='Frame range:')
+        row = layout.row()
+        row.prop(self, 'from_frame', expand=True)
+        row.prop(self, 'to_frame', expand=True)
+
+        layout.separator()
+
+        layout.label(text='Output file names:')
+        col = layout.column(align=True)
+        col.scale_y = Config.text_scale_y
+        file_pattern = self._file_pattern()
+        col.label(text=file_pattern.format(str(self.from_frame).zfill(4)))
+        col.label(text='...')
+        col.label(text=file_pattern.format(str(self.to_frame).zfill(4)))
+
     def invoke(self, context, _event):
         self.filepath = ''
         self.from_frame = bpy_start_frame()
@@ -339,18 +367,25 @@ class GT_OT_ReprojectTextureSequence(_DirSelectionTemplate):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
+    def _file_pattern(self):
+        return f'{self.filepath}' + '{}' + f'{self._filename_ext()}'
+
+    def _filename_ext(self):
+        return '.png' if self.file_format == 'PNG' else '.jpg'
+
     def execute(self, context):
-        self.filename_ext = '.png' if self.file_format == 'PNG' else '.jpg'
+        self.filename_ext = self._filename_ext()
         _log.output(f'OUTPUT reproject filepath: {self.filepath}')
 
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
 
-        filepath_pattern = f'{self.filepath}' + '{}' + f'{self.filename_ext}'
+        filepath_pattern = self._file_pattern()
 
         bake_texture_sequence(context, geotracker, filepath_pattern,
                               from_frame=self.from_frame,
                               to_frame=self.to_frame,
-                              file_format=self.file_format)
+                              file_format=self.file_format,
+                              width=self.width, height=self.height)
         return {'FINISHED'}
