@@ -30,6 +30,8 @@ from ...utils.images import set_background_image_by_movieclip
 from ...utils.video import (convert_movieclip_to_frames,
                             load_movieclip,
                             get_movieclip_duration)
+from ..gtloader import GTLoader
+from ..utils.textures import bake_texture, preview_material_with_texture
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -245,4 +247,81 @@ class GT_OT_SplitVideoExec(bpy.types.Operator):
         op('INVOKE_DEFAULT', from_frame=1,
            to_frame=get_movieclip_duration(geotracker.movie_clip),
            filepath=os.path.join(os.path.dirname(geotracker.movie_clip.filepath),''))
+        return {'FINISHED'}
+
+
+class GT_OT_FrameSelector(bpy.types.Operator):
+    bl_idname = GTConfig.gt_select_frames_for_bake_idname
+    bl_label = 'Select frames:'
+    bl_description = 'Create texture using selected frames'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def draw(self, context):
+        geotracker = get_current_geotracker_item()
+        if not geotracker or not geotracker.movie_clip:
+            return {'CANCELLED'}
+
+        layout = self.layout
+        checked_views = False
+
+        box = layout.box()
+        col = box.column(align=True)
+        col.scale_y = Config.text_scale_y
+        for item in geotracker.selected_frames:
+            row = col.row(align=True)
+            row.prop(item, 'selected', text='')
+            row.label(text=f'{item.num}', icon='FILE_IMAGE')
+            if item.selected:
+                checked_views = True
+
+        row = box.row(align=True)
+        op = row.operator(GTConfig.gt_actor_idname, text='All')
+        op.action = 'select_all_frames'
+
+        op = row.operator(GTConfig.gt_actor_idname, text='None')
+        op.action = 'deselect_all_frames'
+
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+
+        if checked_views:
+            col.label(text='Please note: texture creation is very '
+                           'time consuming.')
+        else:
+            col.alert = True
+            col.label(text='You need to select at least one image '
+                           'to create texture.')
+
+    def invoke(self, context, event):
+        geotracker = get_current_geotracker_item()
+        if not geotracker or not geotracker.movie_clip:
+            return {'CANCELLED'}
+        gt = GTLoader.kt_geotracker()
+
+        selected_frames = geotracker.selected_frames
+        old_selected_frame_numbers = set([x.num for x in selected_frames if x.selected])
+        selected_frames.clear()
+        for frame in gt.keyframes():
+            item = selected_frames.add()
+            item.num = frame
+            item.selected = frame in old_selected_frame_numbers
+
+        return context.window_manager.invoke_props_dialog(self)
+
+    def execute(self, context):
+        _log_output('GT START TEXTURE CREATION')
+
+        geotracker = get_current_geotracker_item()
+        if not geotracker or not geotracker.movie_clip:
+            return {'CANCELLED'}
+
+        built_texture = bake_texture(
+            geotracker,
+            [x.num for x in geotracker.selected_frames if x.selected])
+
+        if built_texture is None:
+            _log_error('GT TEXTURE HAS NOT BEEN CREATED')
+        else:
+            preview_material_with_texture(built_texture, geotracker.geomobj)
+            _log_output('GT TEXTURE HAS BEEN CREATED')
         return {'FINISHED'}

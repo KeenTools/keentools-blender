@@ -21,8 +21,10 @@ from typing import Any, Tuple, List, Optional
 import numpy as np
 import math
 import bpy
-from bpy.types import Area
-from . fake_context import get_fake_context
+from bpy.types import Area, Object
+from .fake_context import get_fake_context
+from .bpy_common import bpy_current_frame
+from .animation import get_safe_evaluated_fcurve
 
 
 def nearest_point(x: float, y: float, points: List[Tuple[float, float]],
@@ -252,7 +254,7 @@ def get_area_region(area: Area) -> Optional[Any]:
 
 
 def get_area_overlay(area: Area) -> Optional[Any]:
-    if not area:
+    if not area or not not area.spaces.active:
         return None
     return area.spaces.active.overlay
 
@@ -435,3 +437,19 @@ def calc_bpy_model_mat_relative_to_camera(camera: Any, model: Any,
     np_mw = np.array(camera.matrix_world) @ (gt_model_mat @
                                              rot_mat @ scale_mat)
     return np_mw.transpose()
+
+
+def camera_projection(camobj: Object, frame: Optional[int]=None,
+                      image_width: Optional[int]=None,
+                      image_height: Optional[int]=None) -> Any:
+    cam_data = camobj.data
+    near = cam_data.clip_start
+    far = cam_data.clip_end
+    if image_width is None or image_height is None:
+        image_width, image_height = render_frame()
+    if frame is None:
+        frame =bpy_current_frame()
+    lens = get_safe_evaluated_fcurve(cam_data, frame, 'lens')
+    proj_mat = custom_projection_matrix(image_width, image_height, lens,
+                                        cam_data.sensor_width, near, far)
+    return proj_mat

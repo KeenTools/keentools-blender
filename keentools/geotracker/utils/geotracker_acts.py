@@ -42,6 +42,7 @@ from ...utils.timer import RepeatTimer
 from ...utils.video import (fit_render_size,
                             fit_time_length)
 from ...utils.html import split_long_string
+from .textures import bake_texture, preview_material_with_texture
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -727,4 +728,29 @@ def create_animated_empty_act() -> ActionStatus:
     obj = create_empty_object('GTEmpty')
     anim_data = obj.animation_data_create()
     anim_data.action = action
+    return ActionStatus(True, 'ok')
+
+
+def bake_texture_from_frames_act(selected_frames: List) -> ActionStatus:
+    geotracker = get_current_geotracker_item()
+    if not geotracker:
+        msg = 'GeoTracker item is not found'
+        _log_error(msg)
+        return ActionStatus(False, msg)
+    if not geotracker.camobj:
+        msg = 'GeoTracker camera is not found'
+        _log_error(msg)
+        return ActionStatus(False, msg)
+    if not geotracker.geomobj:
+        msg = 'GeoTracker geometry is not found'
+        _log_error(msg)
+        return ActionStatus(False, msg)
+    if not geotracker.movie_clip:
+        msg = 'GeoTracker movie clip is not found'
+        _log_error(msg)
+        return ActionStatus(False, msg)
+
+    built_texture = bake_texture(geotracker, selected_frames)
+    preview_material_with_texture(built_texture, geotracker.geomobj)
+
     return ActionStatus(True, 'ok')

@@ -94,7 +94,7 @@ def show_texture_in_mat(tex_name, mat_name):
     return mat
 
 
-def _remove_bpy_texture_if_exists(tex_name):
+def remove_bpy_texture_if_exists(tex_name):
     logger = logging.getLogger(__name__)
     tex_num = bpy.data.images.find(tex_name)
     if tex_num >= 0:
@@ -107,7 +107,7 @@ def _create_bpy_texture_from_img(img, tex_name):
     logger = logging.getLogger(__name__)
     assert(len(img.shape) == 3 and img.shape[2] == 4)
 
-    _remove_bpy_texture_if_exists(tex_name)
+    remove_bpy_texture_if_exists(tex_name)
 
     tex = bpy.data.images.new(
             tex_name, width=img.shape[1], height=img.shape[0],
