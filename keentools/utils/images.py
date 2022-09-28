@@ -156,7 +156,7 @@ def find_bpy_image_by_name(image_name):
 
 
 def remove_bpy_image(image):
-    if image and image in bpy.data.images:
+    if image and image.name in bpy.data.images.keys():
         bpy.data.images.remove(image)
 
 

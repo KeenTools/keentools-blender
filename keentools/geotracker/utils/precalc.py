@@ -26,19 +26,17 @@ from ...addon_config import get_operator
 from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
 
-from ...utils.other import hide_viewport_ui_elements_and_store_on_object
+
 from ...utils.images import (np_image_to_grayscale,
                              np_array_from_background_image,
                              get_background_image_object,
                              check_bpy_image_size,
-                             np_array_from_bpy_image,
-                             set_background_image_by_movieclip)
+                             np_array_from_bpy_image)
 from ...utils.coords import render_frame, update_depsgraph
-from ...utils.manipulate import switch_to_camera
 from ...utils.bpy_common import bpy_current_frame
 from ..gt_class_loader import GTClassLoader
 from ...utils.timer import RepeatTimer
-from .calc_timer import CalcTimer
+from .calc_timer import CalcTimer, prepare_camera
 
 
 _log = KTLogger(__name__)
@@ -110,19 +108,8 @@ class PrecalcTimer(CalcTimer):
         self._runner.fulfill_loading_request(grayscale)
         return self._interval
 
-    def prepare_camera(self) -> None:
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
-        if not settings.pinmode:
-            switch_to_camera(self._area, geotracker.camobj,
-                             geotracker.animatable_object())
-            hide_viewport_ui_elements_and_store_on_object(self._area, geotracker.camobj)
-        set_background_image_by_movieclip(geotracker.camobj,
-                                          geotracker.movie_clip)
-        geotracker.reload_background_image()
-
     def start(self) -> bool:
-        self.prepare_camera()
+        prepare_camera(self.get_area())
         settings = get_gt_settings()
         settings.calculating_mode = 'PRECALC'
 

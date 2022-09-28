@@ -349,11 +349,8 @@ class GT_OT_ReprojectTextureSequence(_DirSelectionTemplate):
 
         filepath_pattern = f'{self.filepath}' + '{}' + f'{self.filename_ext}'
 
-        settings = get_gt_settings()
-        settings.calculating_mode = 'REPROJECT'
-        bake_texture_sequence(geotracker, filepath_pattern,
+        bake_texture_sequence(context, geotracker, filepath_pattern,
                               from_frame=self.from_frame,
                               to_frame=self.to_frame,
                               file_format=self.file_format)
-        settings.stop_calculating()
         return {'FINISHED'}
