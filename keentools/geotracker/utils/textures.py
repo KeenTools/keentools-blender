@@ -83,7 +83,7 @@ def bake_texture(geotracker: Any, selected_frames: List[int],
     built_texture = pkt_module().texture_builder.build_texture(
         len(selected_frames),
         _create_frame_data_loader(geotracker, selected_frames),
-        progress_callBack, tex_height, tex_width)
+        progress_callBack, tex_height, tex_width, face_angles_affection=3.0)
 
     bpy.context.window_manager.progress_end()
 

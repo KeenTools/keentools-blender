@@ -1,9 +1,27 @@
-import logging
-from typing import Any, Set
+# ##### BEGIN GPL LICENSE BLOCK #####
+# KeenTools for blender is a blender addon for using KeenTools in Blender.
+# Copyright (C) 2019-2022  KeenTools
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# ##### END GPL LICENSE BLOCK #####
+
+from typing import Any, Set, Tuple
 
 import bpy
 from bpy.types import Area
 
+from ..utils.kt_logging import KTLogger
 from ..geotracker_config import (GTConfig,
                                  get_gt_settings,
                                  get_current_geotracker_item)
@@ -13,20 +31,10 @@ from ..utils.coords import (get_image_space_coord,
                             nearest_point)
 from ..utils.animation import insert_keyframe_in_fcurve
 from ..utils.manipulate import force_undo_push
-from ..utils.bpy_common import bpy_current_frame
+from ..utils.bpy_common import bpy_current_frame, get_scene_camera_shift
 
 
-_logger: Any = logging.getLogger(__name__)
-
-
-def _log_output(message: str) -> None:
-    global _logger
-    _logger.debug(message)
-
-
-def _log_error(message: str) -> None:
-    global _logger
-    _logger.error(message)
+_log = KTLogger(__name__)
 
 
 class GT_OT_MovePin(bpy.types.Operator):
@@ -44,6 +52,9 @@ class GT_OT_MovePin(bpy.types.Operator):
     dragged: bpy.props.BoolProperty(default=False)
     pin_was_selected: bpy.props.BoolProperty(default=False)
 
+    shift_x: bpy.props.FloatProperty(default=0.0)
+    shift_y: bpy.props.FloatProperty(default=0.0)
+
     def _move_pin_mode_on(self) -> None:
         settings = get_gt_settings()
         settings.move_pin_mode = True
@@ -59,17 +70,18 @@ class GT_OT_MovePin(bpy.types.Operator):
         frame = bpy_current_frame()
         x, y = get_image_space_coord(mouse_x, mouse_y, area)
 
-        pin = GTLoader.add_pin(frame, (image_space_to_frame(x, y)))
-        _log_output(f'_new_pin pin: {pin}')
+        pin = GTLoader.add_pin(
+            frame, (image_space_to_frame(x, y, *get_scene_camera_shift())))
+        _log.output(f'_new_pin pin: {pin}')
         pins = GTLoader.viewport().pins()
         if not pin:
-            _log_output('_new_pin MISS MODEL')
+            _log.output('_new_pin MISS MODEL')
             pins.reset_current_pin()
             return False
         else:
             pins.add_pin((x, y))
             pins.set_current_pin_num_to_last()
-            _log_output(f'_new_pin ADD PIN pins: {pins.arr()}')
+            _log.output(f'_new_pin ADD PIN pins: {pins.arr()}')
             return True
 
     def init_action(self, context: Any, mouse_x: float, mouse_y: float) -> bool:
@@ -96,7 +108,7 @@ class GT_OT_MovePin(bpy.types.Operator):
         nearest, dist2 = nearest_point(x, y, pins.arr())
 
         if nearest >= 0 and dist2 < vp.tolerance_dist2():
-            _log_output(f'init_action PIN FOUND: {nearest}')
+            _log.output(f'init_action PIN FOUND: {nearest}')
             pins.set_current_pin_num(nearest)
             gt = GTLoader.kt_geotracker()
             selected_pins = pins.get_selected_pins()
@@ -114,11 +126,11 @@ class GT_OT_MovePin(bpy.types.Operator):
         else:
             self.new_pin_flag = self._new_pin(context.area, mouse_x, mouse_y)
             if not self.new_pin_flag:
-                _log_output('GT MISS MODEL CLICK')
+                _log.output('GT MISS MODEL CLICK')
                 pins.clear_selected_pins()
                 return False
             pins.set_selected_pins([pins.current_pin_num()])
-            _log_output('GT NEW PIN CREATED')
+            _log.output('GT NEW PIN CREATED')
 
         vp.create_batch_2d(context.area)
         vp.register_handlers(context)
@@ -128,7 +140,7 @@ class GT_OT_MovePin(bpy.types.Operator):
         def _toggle_undragged_pin() -> None:
             if not self.dragged and not self.new_pin_flag \
                     and self.pin_was_selected:
-                _log_output('TOGGLE PIN OFF')
+                _log.output('TOGGLE PIN OFF')
                 pins = GTLoader.viewport().pins()
                 pins.exclude_selected_pin(pins.current_pin_num())
 
@@ -158,7 +170,7 @@ class GT_OT_MovePin(bpy.types.Operator):
         def _drag_multiple_pins(kid: int, pin_index: int) -> None:
             gt = GTLoader.kt_geotracker()
             old_x, old_y = gt.pin(kid, pin_index).img_pos
-            new_x, new_y = image_space_to_frame(x, y)
+            new_x, new_y = image_space_to_frame(x, y, *get_scene_camera_shift())
             offset = (new_x - old_x, new_y - old_y)
             GTLoader.delta_move_pin(kid, selected_pins, offset)
             GTLoader.load_pins_into_viewport()
@@ -173,7 +185,7 @@ class GT_OT_MovePin(bpy.types.Operator):
         GTLoader.safe_keyframe_add(kid)
 
         if len(selected_pins) == 1:
-            GTLoader.move_pin(kid, pin_index, (x, y))
+            GTLoader.move_pin(kid, pin_index, (x, y), *get_scene_camera_shift())
         else:
             _drag_multiple_pins(kid, pin_index)
 
@@ -222,7 +234,7 @@ class GT_OT_MovePin(bpy.types.Operator):
         if GTLoader.viewport().pins().current_pin() is not None:
             return {'RUNNING_MODAL'}
         else:
-            _log_output('MOVE PIN FINISH')
+            _log.output('MOVE PIN FINISH')
             self._before_operator_finish()
             return {'FINISHED'}
 
@@ -232,12 +244,12 @@ class GT_OT_MovePin(bpy.types.Operator):
                                 event.mouse_region_x, event.mouse_region_y):
             settings = get_gt_settings()
             settings.start_selection(event.mouse_region_x, event.mouse_region_y)
-            _log_output('START SELECTION')
+            _log.output('START SELECTION')
             return {'CANCELLED'}
 
         self._move_pin_mode_on()
         context.window_manager.modal_handler_add(self)
-        _log_output('GT START PIN MOVING')
+        _log.output('GT START PIN MOVING')
         return {'RUNNING_MODAL'}
 
     def modal(self, context: Any, event: Any) -> Set:
@@ -245,12 +257,12 @@ class GT_OT_MovePin(bpy.types.Operator):
         mouse_y = event.mouse_region_y
 
         if event.value == 'RELEASE' and event.type == 'LEFTMOUSE':
-            _log_output('MOVEPIN LEFT MOUSE RELEASE')
+            _log.output('MOVEPIN LEFT MOUSE RELEASE')
             return self.on_left_mouse_release(context.area)
 
         if event.type == 'MOUSEMOVE' \
                 and GTLoader.viewport().pins().current_pin() is not None:
-            _log_output(f'MOVEPIN MOUSEMOVE: {mouse_x} {mouse_y}')
+            _log.output(f'MOVEPIN MOUSEMOVE: {mouse_x} {mouse_y}')
             return self.on_mouse_move(context.area, mouse_x, mouse_y)
 
         return self.on_default_modal()
