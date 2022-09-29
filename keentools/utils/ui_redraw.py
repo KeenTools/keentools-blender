@@ -79,4 +79,5 @@ def mark_old_modules(mods, filter_dict):
 
 
 def total_redraw_ui():
-    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+    if not bpy.app.background:
+        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)

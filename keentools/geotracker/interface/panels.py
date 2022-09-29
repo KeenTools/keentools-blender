@@ -29,6 +29,16 @@ from ...updater.panels import (KTUpdater,
                                KT_PT_DownloadNotification,
                                KT_PT_DownloadingProblemPanel,
                                KT_PT_UpdatesInstallationPanel)
+from ..gtloader import GTLoader
+
+
+def _pinmode_escaper():
+    GTLoader.out_pinmode()
+    return None
+
+
+def _start_pinmode_escaper():
+    bpy.app.timers.register(_pinmode_escaper, first_interval = 0.01)
 
 
 def _is_keentools_object(obj) -> bool:
@@ -101,6 +111,16 @@ class AllVisible(View3DPanel):
         if not geotracker_enabled():
             return False
         return show_all_panels()
+
+
+def _draw_calculating_indicator(layout):
+    settings = get_gt_settings()
+    row = layout.row(align=True)
+    row.prop(settings, 'user_percent', text='Calculating...')
+    col = row.column(align=True)
+    col.alert = True
+    col.operator(GTConfig.gt_stop_calculating_idname, text='',
+                 icon='CANCEL')
 
 
 class GT_PT_GeotrackersPanel(View3DPanel):
@@ -279,13 +299,8 @@ class GT_PT_AnalyzePanel(AllVisible):
                     col.label(text=txt)
 
         if geotracker.precalc_path != '':
-            if settings.precalc_mode:
-                row = layout.row(align=True)
-                row.prop(settings, 'user_percent', text='Calculation...')
-                col = row.column(align=True)
-                col.alert = True
-                col.operator(GTConfig.gt_stop_precalc_idname, text='',
-                             icon='CANCEL')
+            if settings.is_calculating('PRECALC'):
+                _draw_calculating_indicator(layout)
             else:
                 col = layout.column(align=True)
                 icon = 'ERROR' if not geotracker.movie_clip or \
@@ -298,6 +313,7 @@ class GT_PT_AnalyzePanel(AllVisible):
                 row = layout.row()
                 row.prop(geotracker, 'precalc_start')
                 row.prop(geotracker, 'precalc_end')
+
 
 class GT_PT_CameraPanel(AllVisible):
     bl_idname = GTConfig.gt_camera_panel_idname
@@ -346,6 +362,8 @@ class GT_PT_CameraPanel(AllVisible):
             row.operator(GTConfig.gt_exit_pinmode_idname,
                          icon='LOOP_BACK',
                          depress=settings.pinmode)
+            if not GTLoader.viewport().is_working():
+                _start_pinmode_escaper()
         else:
             op = row.operator(GTConfig.gt_pinmode_idname,
                               text='View', icon='HIDE_OFF',
@@ -364,6 +382,18 @@ class GT_PT_TrackingPanel(AllVisible):
             return
 
         layout = self.layout
+        box = layout.box()
+
+        row = box.row(align=True)
+        row.operator(GTConfig.gt_prev_keyframe_idname, text=' ',
+                     icon='PREV_KEYFRAME')
+        row.operator(GTConfig.gt_next_keyframe_idname, text=' ',
+                     icon='NEXT_KEYFRAME')
+        row.operator(GTConfig.gt_add_keyframe_idname, text=' ',
+                     icon='KEY_HLT')
+        row.operator(GTConfig.gt_remove_keyframe_idname, text=' ',
+                     icon='KEY_DEHLT')
+
         box = layout.box()
         col = box.column()
 
@@ -391,6 +421,9 @@ class GT_PT_TrackingPanel(AllVisible):
         row.operator(GTConfig.gt_clear_all_tracking_idname, text='X')
         row.operator(GTConfig.gt_clear_tracking_forward_idname, text='X>')
 
+        if settings.is_calculating('TRACKING') or settings.is_calculating('REFINE'):
+            _draw_calculating_indicator(layout)
+
         layout.label(text='Keyframes')
 
         box = layout.box()
@@ -411,16 +444,6 @@ class GT_PT_TrackingPanel(AllVisible):
         op = col.operator(GTConfig.gt_actor_idname,
                           text='stabilize view')
         op.action = 'stabilize_view'
-
-        row = box.row(align=True)
-        row.operator(GTConfig.gt_prev_keyframe_idname, text=' ',
-                     icon='PREV_KEYFRAME')
-        row.operator(GTConfig.gt_next_keyframe_idname, text=' ',
-                     icon='NEXT_KEYFRAME')
-        row.operator(GTConfig.gt_add_keyframe_idname, text=' ',
-                     icon='KEY_HLT')
-        row.operator(GTConfig.gt_remove_keyframe_idname, text=' ',
-                     icon='KEY_DEHLT')
 
 
 class GT_PT_WireframeSettingsPanel(AllVisible):
@@ -490,6 +513,26 @@ class GT_PT_WireframeSettingsPanel(AllVisible):
         col.prop(settings, 'pin_sensitivity', slider=True)
 
 
+class GT_PT_TexturePanel(AllVisible):
+    bl_idname = GTConfig.gt_texture_panel_idname
+    bl_label = 'Texture'
+
+    def draw(self, context):
+        layout = self.layout
+        op = layout.operator(GTConfig.gt_actor_idname,
+                             text='Reproject current frame')
+        op.action = 'reproject_frame'
+
+        layout.operator(GTConfig.gt_select_frames_for_bake_idname,
+                        text='Reproject from keyframes')
+        layout.operator(GTConfig.gt_reproject_tex_sequence_idname,
+                        text='Reproject to sequence')
+
+        settings = get_gt_settings()
+        if settings.is_calculating('REPROJECT'):
+            _draw_calculating_indicator(layout)
+
+
 class GT_PT_AnimationPanel(AllVisible):
     bl_idname = GTConfig.gt_animation_panel_idname
     bl_label = 'Animation'
@@ -497,10 +540,3 @@ class GT_PT_AnimationPanel(AllVisible):
     def draw(self, context):
         layout = self.layout
         layout.operator(GTConfig.gt_create_animated_empty_idname)
-
-        op = layout.operator(GTConfig.gt_actor_idname,
-                             text='Reproject current frame')
-        op.action = 'reproject_frame'
-
-        layout.operator(GTConfig.gt_select_frames_for_bake_idname,
-                        text='Reproject from keyframes')

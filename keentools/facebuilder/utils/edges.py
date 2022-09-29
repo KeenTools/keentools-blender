@@ -296,7 +296,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
 
         m = np.array(obj.matrix_world, dtype=np.float32).transpose()
         self.vertices = coords.multiply_verts_on_matrix_4x4(geom_verts, m)
-        self.triangle_indices = self._get_triangulation_indices(obj)
+        self.triangle_indices = self._get_triangulation_indices(obj.data)
 
     def init_geom_data_from_mesh(self, obj):
         mesh = obj.data
@@ -306,7 +306,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
 
         m = np.array(obj.matrix_world, dtype=np.float32).transpose()
         self.vertices = coords.multiply_verts_on_matrix_4x4(verts, m)
-        self.triangle_indices = self._get_triangulation_indices(obj)
+        self.triangle_indices = self._get_triangulation_indices(mesh)
 
     def _clear_edge_indices(self):
         self._edges_indices = np.array([], dtype=np.int32)

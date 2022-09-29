@@ -17,8 +17,11 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import re
+import bpy
 from bpy.types import Panel
 
+
+from ...utils.kt_logging import KTLogger
 from ...updater.panels import (KT_PT_UpdatePanel,
                                KT_PT_DownloadNotification,
                                KT_PT_DownloadingProblemPanel,
@@ -33,6 +36,11 @@ from ...utils.manipulate import (has_no_blendshape,
 from ..utils.manipulate import (what_is_state, get_current_head, get_obj_from_context)
 from ...utils.materials import find_bpy_image_by_name
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
+from ...utils.other import unhide_viewport_ui_elements_from_object
+from ...utils.localview import exit_area_localview
+
+
+_log = KTLogger(__name__)
 
 
 def _state_valid_to_show(state):
@@ -67,6 +75,29 @@ def _draw_update_blendshapes_panel(layout):
     col.label(text='The shape has been changed,')
     col.label(text='blendshapes need to be updated')
     box.operator(FBConfig.fb_update_blendshapes_idname)
+
+
+_escaper_context_area = None
+
+
+def _pinmode_escaper():
+    settings = get_fb_settings()
+    head = settings.get_head(settings.current_headnum)
+    if head is None or not head.headobj:
+        _log.error('_pinmode_escaper: could not find head object')
+    exit_area_localview(_escaper_context_area)
+    settings.pinmode = False
+    if not head.headobj:
+        _log.error('_pinmode_escaper: could not find head.headobj')
+    unhide_viewport_ui_elements_from_object(_escaper_context_area, head.headobj)
+    return None
+
+
+def _start_pinmode_escaper(context):
+    global _escaper_context_area
+    _escaper_context_area = context.area
+    _log.output(f'_start_pinmode_escaper: area={_escaper_context_area}')
+    bpy.app.timers.register(_pinmode_escaper, first_interval = 0.01)
 
 
 class Common:
@@ -200,6 +231,7 @@ class FB_PT_HeaderPanel(Common, Panel):
                 row.scale_y = 2.0
                 row.alert = True
                 row.operator(FBConfig.fb_unhide_head_idname, icon='HIDE_OFF')
+                _start_pinmode_escaper(context)
             return
 
         elif state == 'RECONSTRUCT':

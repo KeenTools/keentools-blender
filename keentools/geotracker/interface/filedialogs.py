@@ -16,35 +16,31 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
 import os
-from typing import Any, Optional, List
+from typing import Optional, List
 
 import bpy
 from bpy.types import MovieClip
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 
+from ...utils.kt_logging import KTLogger
 from ...addon_config import Config, get_operator
-from ...geotracker_config import GTConfig, get_current_geotracker_item
+from ...geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
 from ...utils.images import set_background_image_by_movieclip
 from ...utils.video import (convert_movieclip_to_frames,
                             load_movieclip,
                             get_movieclip_duration)
 from ..gtloader import GTLoader
-from ..utils.textures import bake_texture, preview_material_with_texture
+from ...utils.bpy_common import (bpy_current_frame,
+                                 bpy_set_current_frame,
+                                 bpy_start_frame,
+                                 bpy_end_frame)
+from ..utils.textures import (bake_texture,
+                              preview_material_with_texture,
+                              bake_texture_sequence)
+from ...utils.images import create_compatible_bpy_image, assign_pixels_data
 
-
-_logger: Any = logging.getLogger(__name__)
-
-
-def _log_output(message: str) -> None:
-    global _logger
-    _logger.debug(message)
-
-
-def _log_error(message: str) -> None:
-    global _logger
-    _logger.error(message)
+_log = KTLogger(__name__)
 
 
 def _load_movieclip(dir_path: str, file_names: List[str]) -> Optional[MovieClip]:
@@ -97,7 +93,7 @@ class GT_OT_SequenceFilebrowser(bpy.types.Operator, ImportHelper):
         if not new_movieclip:
             return {'CANCELLED'}
 
-        _log_output(f'LOADED MOVIECLIP: {geotracker.movie_clip.name}')
+        _log.output(f'LOADED MOVIECLIP: {geotracker.movie_clip.name}')
         return {'FINISHED'}
 
 
@@ -152,31 +148,30 @@ class GT_OT_ChoosePrecalcFile(bpy.types.Operator, ExportHelper):
         col.label(text='or just enter a name for a new one')
 
     def execute(self, context):
-        _log_output('PRECALC PATH: {}'.format(self.filepath))
+        _log.output('PRECALC PATH: {}'.format(self.filepath))
         geotracker = get_current_geotracker_item()
         if not geotracker:
-            _log_error('Current GeoTracker is wrong')
+            _log.error('Current GeoTracker is wrong')
             return {'CANCELLED'}
 
         if os.path.exists(self.filepath) and os.path.isdir(self.filepath):
-            _log_error(f'Wrong precalc destination: {self.filepath}')
+            _log.error(f'Wrong precalc destination: {self.filepath}')
             self.report({'ERROR'}, 'Wrong precalc destination!')
             return {'CANCELLED'}
 
         geotracker.precalc_path = self.filepath
         status, msg, _ = geotracker.reload_precalc()
         if not status:
-            _log_error(msg)
+            _log.error(msg)
             self.report({'ERROR'}, msg)
 
-        _log_output('PRECALC PATH HAS BEEN CHANGED: {}'.format(self.filepath))
+        _log.output('PRECALC PATH HAS BEEN CHANGED: {}'.format(self.filepath))
         return {'FINISHED'}
 
 
-class GT_OT_SplitVideo(bpy.types.Operator, ExportHelper):
-    bl_idname = GTConfig.gt_split_video_to_frames_idname
-    bl_label = 'Split video to frames'
-    bl_description = 'Choose dir where to place video-file frames'
+class _DirSelectionTemplate(bpy.types.Operator, ExportHelper):
+    bl_label = 'Choose dir'
+    bl_description = 'Choose dir where to place files'
     bl_options = {'REGISTER', 'INTERNAL'}
 
     use_filter: bpy.props.BoolProperty(default=True)
@@ -187,11 +182,11 @@ class GT_OT_SplitVideo(bpy.types.Operator, ExportHelper):
     )
     filepath: bpy.props.StringProperty(
         default='',
-        subtype='DIR_PATH'
+        subtype='FILE_PATH'
     )
     file_format: bpy.props.EnumProperty(name='Image file format', items=[
-        ('PNG', 'PNG', 'Default image file format', 0),
-        ('JPEG', 'JPEG', 'Data loss image format', 1),
+        ('PNG', 'PNG', 'Default image file format with transparency', 0),
+        ('JPEG', 'JPEG', 'Data loss image format without transparency', 1),
     ], description='Choose image file format')
     from_frame: bpy.props.IntProperty(name='from', default=1)
     to_frame: bpy.props.IntProperty(name='to', default=1)
@@ -199,32 +194,37 @@ class GT_OT_SplitVideo(bpy.types.Operator, ExportHelper):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text='Output frames file format:')
+        layout.label(text='Output files format:')
         layout.prop(self, 'file_format', expand=True)
         layout.label(text='Frame range:')
         row = layout.row()
         row.prop(self, 'from_frame', expand=True)
         row.prop(self, 'to_frame', expand=True)
 
+
+class GT_OT_SplitVideo(_DirSelectionTemplate):
+    bl_idname = GTConfig.gt_split_video_to_frames_idname
+    bl_label = 'Split video to frames'
+    bl_description = 'Choose dir where to place video-file frames'
+
     def execute(self, context):
         self.filename_ext = '.png' if self.file_format == 'PNG' else '.jpg'
-        filepath = os.path.abspath(self.filepath)
-        _log_output(f'OUTPUT filepath: {filepath}')
+        _log.output(f'OUTPUT filepath: {self.filepath}')
 
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
 
         output_path = convert_movieclip_to_frames(geotracker.movie_clip,
-                                                  filepath,
+                                                  self.filepath,
                                                   file_format=self.file_format,
                                                   start_frame=self.from_frame,
                                                   end_frame=self.to_frame)
-        _log_output(f'OUTPUT PATH2: {output_path}')
+        _log.output(f'OUTPUT PATH2: {output_path}')
         if output_path is not None:
             new_movieclip = _load_movieclip(os.path.dirname(output_path),
                                             [os.path.basename(output_path)])
-            _log_output(f'new_movieclip: {new_movieclip}')
+            _log.output(f'new_movieclip: {new_movieclip}')
         return {'FINISHED'}
 
 
@@ -238,7 +238,7 @@ class GT_OT_SplitVideoExec(bpy.types.Operator):
         pass
 
     def execute(self, context):
-        _log_output('GT_OT_SplitVideoExec')
+        _log.output('GT_OT_SplitVideoExec')
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
@@ -309,7 +309,7 @@ class GT_OT_FrameSelector(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
-        _log_output('GT START TEXTURE CREATION')
+        _log.output('GT START TEXTURE CREATION')
 
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
@@ -320,8 +320,72 @@ class GT_OT_FrameSelector(bpy.types.Operator):
             [x.num for x in geotracker.selected_frames if x.selected])
 
         if built_texture is None:
-            _log_error('GT TEXTURE HAS NOT BEEN CREATED')
+            _log.error('GT TEXTURE HAS NOT BEEN CREATED')
         else:
             preview_material_with_texture(built_texture, geotracker.geomobj)
-            _log_output('GT TEXTURE HAS BEEN CREATED')
+            _log.output('GT TEXTURE HAS BEEN CREATED')
+        return {'FINISHED'}
+
+
+class GT_OT_ReprojectTextureSequence(_DirSelectionTemplate):
+    bl_idname = GTConfig.gt_reproject_tex_sequence_idname
+    bl_label = 'Reproject texture sequence'
+    bl_description = 'Choose dir where to place resulting sequence'
+
+    width: bpy.props.IntProperty(default=2048, description='Texture width')
+    height: bpy.props.IntProperty(default=2048, description='Texture height')
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text='Output files format:')
+        layout.prop(self, 'file_format', expand=True)
+
+        layout.label(text='Texture size:')
+        row = layout.row(align=True)
+        row.prop(self, 'width', text='Width')
+        row.prop(self, 'height', text='Height')
+
+        layout.label(text='Frame range:')
+        row = layout.row()
+        row.prop(self, 'from_frame', expand=True)
+        row.prop(self, 'to_frame', expand=True)
+
+        layout.separator()
+
+        layout.label(text='Output file names:')
+        col = layout.column(align=True)
+        col.scale_y = Config.text_scale_y
+        file_pattern = self._file_pattern()
+        col.label(text=file_pattern.format(str(self.from_frame).zfill(4)))
+        col.label(text='...')
+        col.label(text=file_pattern.format(str(self.to_frame).zfill(4)))
+
+    def invoke(self, context, _event):
+        self.filepath = ''
+        self.from_frame = bpy_start_frame()
+        self.to_frame = bpy_end_frame()
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+    def _file_pattern(self):
+        return f'{self.filepath}' + '{}' + f'{self._filename_ext()}'
+
+    def _filename_ext(self):
+        return '.png' if self.file_format == 'PNG' else '.jpg'
+
+    def execute(self, context):
+        self.filename_ext = self._filename_ext()
+        _log.output(f'OUTPUT reproject filepath: {self.filepath}')
+
+        geotracker = get_current_geotracker_item()
+        if not geotracker or not geotracker.movie_clip:
+            return {'CANCELLED'}
+
+        filepath_pattern = self._file_pattern()
+
+        bake_texture_sequence(context, geotracker, filepath_pattern,
+                              from_frame=self.from_frame,
+                              to_frame=self.to_frame,
+                              file_format=self.file_format,
+                              width=self.width, height=self.height)
         return {'FINISHED'}

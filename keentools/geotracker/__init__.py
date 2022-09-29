@@ -24,11 +24,6 @@ from .settings import FrameListItem, GeoTrackerItem, GTSceneSettings
 from .actor import GT_OT_Actor
 from .pinmode import GT_OT_PinMode
 from .movepin import GT_OT_MovePin
-from .interface.filedialogs import (GT_OT_SequenceFilebrowser,
-                                    GT_OT_ChoosePrecalcFile,
-                                    GT_OT_SplitVideo,
-                                    GT_OT_SplitVideoExec,
-                                    GT_OT_FrameSelector)
 from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
 from .operators import BUTTON_CLASSES
 
@@ -38,11 +33,6 @@ CLASSES_TO_REGISTER = (FrameListItem,
                        GT_OT_Actor,
                        GT_OT_PinMode,
                        GT_OT_MovePin,
-                       GT_OT_SequenceFilebrowser,
-                       GT_OT_ChoosePrecalcFile,
-                       GT_OT_SplitVideo,
-                       GT_OT_SplitVideoExec,
-                       GT_OT_FrameSelector,
                        GTSceneSettings) + BUTTON_CLASSES + INTERFACE_CLASSES
 
 

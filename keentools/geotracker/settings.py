@@ -325,10 +325,15 @@ class GTSceneSettings(bpy.types.PropertyGroup):
                                           subtype='PERCENTAGE',
                                           default=0.0, min=0.0, max=100.0,
                                           precision=1)
-    precalc_mode: bpy.props.BoolProperty(name='Precalc mode status',
-                                         default = False)
-    tracking_mode: bpy.props.BoolProperty(name='Tracking mode status',
-                                          default=False)
+
+    calculating_mode: bpy.props.EnumProperty(name='Calculating mode', items=[
+        ('NONE', 'NONE', 'No calculation mode', 0),
+        ('PRECALC', 'PRECALC', 'Precalc is calculating', 1),
+        ('TRACKING', 'TRACKING', 'Tracking is calculating', 2),
+        ('REFINE', 'REFINE', 'Refine is calculating', 3),
+        ('REPROJECT', 'REPROJECT', 'Reproject is calculating', 4),
+    ])
+
     selection_mode: bpy.props.BoolProperty(name='Selection mode',
                                            default=False)
     selection_x: bpy.props.FloatProperty(name='Selection X',
@@ -436,8 +441,13 @@ class GTSceneSettings(bpy.types.PropertyGroup):
             pins.set_selected_pins(found_pins)
         self.cancel_selection()
 
-    def calculation_mode(self) -> bool:
-        return self.precalc_mode or self.tracking_mode
+    def stop_calculating(self) -> None:
+        self.calculating_mode = 'NONE'
+
+    def is_calculating(self, mode=None) -> bool:
+        if mode is None:
+            return self.calculating_mode != 'NONE'
+        return self.calculating_mode == mode
 
     def fix_geotrackers(self) -> bool:
         def _object_is_not_in_use(obj: Optional[Object]):

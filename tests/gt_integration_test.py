@@ -160,7 +160,7 @@ def wait_for_precalc_end(time_limit: float=GTTestConfig.cube_precalc_time_limit)
     overall_time = 0.0
     output_status_delta_time = 2.0
 
-    while settings.precalc_mode:
+    while settings.is_calculating():
         current_time = time.time()
         overall_time = current_time - start_time
         if current_time - prev_time > output_status_delta_time:
@@ -179,7 +179,7 @@ def wait_for_tracking_end(time_limit: float=GTTestConfig.cube_tracking_time_limi
     overall_time = 0.0
     output_status_delta_time = 0.5
 
-    while settings.tracking_mode:
+    while settings.is_calculating():
         current_time = time.time()
         overall_time = current_time - start_time
         if current_time - prev_time > output_status_delta_time:
@@ -216,6 +216,8 @@ def prepare_gt_test_environment() -> None:
     geotracker = get_current_geotracker_item()
     geotracker.precalc_start = GTTestConfig.cube_start_frame
     geotracker.precalc_end = GTTestConfig.cube_end_frame
+    geotracker.precalcless = False
+
     test_utils.save_scene(filename=GTTestConfig.cube_moving_scene_filename)
 
     _log_output('Start precalc')

@@ -324,14 +324,14 @@ class GT_OT_ExitPinMode(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_StopPrecalc(bpy.types.Operator):
-    bl_idname = GTConfig.gt_stop_precalc_idname
-    bl_label = 'Stop Precalc'
-    bl_description = 'Stop Precalc calculation'
+class GT_OT_StopCalculating(bpy.types.Operator):
+    bl_idname = GTConfig.gt_stop_calculating_idname
+    bl_label = 'Stop calculating'
+    bl_description = 'Stop calculating'
 
     def execute(self, context):
         settings = get_gt_settings()
-        settings.precalc_mode = False
+        settings.user_interrupts = True
         return {'FINISHED'}
 
 
@@ -357,11 +357,16 @@ class GT_OT_InterruptModal(bpy.types.Operator):
         logger = logging.getLogger(__name__)
         settings = get_gt_settings()
 
-        if (event.type == 'ESC' and event.value == 'RELEASE') or settings.user_interrupts:
+        if settings.user_interrupts:
+            logger.debug('Interruptor has been stopped by value')
+            settings.user_interrupts = True
+            return {'FINISHED'}
+
+        if event.type == 'ESC' and event.value == 'PRESS':
             logger.debug('Exit Interruptor by ESC')
             settings.user_interrupts = True
             return {'FINISHED'}
-        logger.debug('INTERRUPTOR IN ACTION')
+
         return {'PASS_THROUGH'}
 
 
@@ -453,7 +458,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_CreateAnimatedEmpty,
                   GT_OT_ExitPinMode,
                   GT_OT_InterruptModal,
-                  GT_OT_StopPrecalc,
+                  GT_OT_StopCalculating,
                   GT_OT_ResetToneGain,
                   GT_OT_ResetToneGamma,
                   GT_OT_ResetToneMapping,
