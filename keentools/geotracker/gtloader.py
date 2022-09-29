@@ -528,7 +528,9 @@ class GTLoader:
         try:
             exit_area_localview(area)
         except Exception as err:
-            _log.error('out_pinmode CANNOT OUT FROM LOCALVIEW')
+            _log.error(_log.color(
+                'magenta',
+                f'out_pinmode CANNOT OUT FROM LOCALVIEW:\n{str(err)}'))
 
         settings.reset_pinmode_id()
 

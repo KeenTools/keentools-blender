@@ -77,7 +77,7 @@ def _draw_update_blendshapes_panel(layout):
     box.operator(FBConfig.fb_update_blendshapes_idname)
 
 
-_escaper_context_area = None
+_pinmode_escaper_context_area = None
 
 
 def _pinmode_escaper():
@@ -85,16 +85,17 @@ def _pinmode_escaper():
     head = settings.get_head(settings.current_headnum)
     if head is None or not head.headobj:
         _log.error('_pinmode_escaper: could not find head object')
-    exit_area_localview(_escaper_context_area)
+    exit_area_localview(_pinmode_escaper_context_area)
     settings.pinmode = False
     if not head.headobj:
         _log.error('_pinmode_escaper: could not find head.headobj')
-    unhide_viewport_ui_elements_from_object(_escaper_context_area, head.headobj)
+    unhide_viewport_ui_elements_from_object(_pinmode_escaper_context_area,
+                                            head.headobj)
     return None
 
 
 def _start_pinmode_escaper(context):
-    global _escaper_context_area
+    global _pinmode_escaper_context_area
     _escaper_context_area = context.area
     _log.output(f'_start_pinmode_escaper: area={_escaper_context_area}')
     bpy.app.timers.register(_pinmode_escaper, first_interval = 0.01)

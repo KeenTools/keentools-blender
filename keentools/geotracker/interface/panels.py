@@ -30,14 +30,24 @@ from ...updater.panels import (KTUpdater,
                                KT_PT_DownloadingProblemPanel,
                                KT_PT_UpdatesInstallationPanel)
 from ..gtloader import GTLoader
+from ...utils.localview import exit_area_localview
+from ...utils.other import force_show_ui_overlays
+
+
+_pinmode_escaper_context_area = None
 
 
 def _pinmode_escaper():
+    global _pinmode_escaper_context_area
     GTLoader.out_pinmode()
+    exit_area_localview(_pinmode_escaper_context_area)
+    force_show_ui_overlays(_pinmode_escaper_context_area)
     return None
 
 
-def _start_pinmode_escaper():
+def _start_pinmode_escaper(context):
+    global _pinmode_escaper_context_area
+    _pinmode_escaper_context_area = context.area
     bpy.app.timers.register(_pinmode_escaper, first_interval = 0.01)
 
 
@@ -363,7 +373,7 @@ class GT_PT_CameraPanel(AllVisible):
                          icon='LOOP_BACK',
                          depress=settings.pinmode)
             if not GTLoader.viewport().is_working():
-                _start_pinmode_escaper()
+                _start_pinmode_escaper(context)
         else:
             op = row.operator(GTConfig.gt_pinmode_idname,
                               text='View', icon='HIDE_OFF',
