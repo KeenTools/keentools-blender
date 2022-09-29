@@ -188,7 +188,7 @@ def fit_time_length_act() -> ActionStatus:
 class _CommonTimer:
     def __init__(self, computation: Any, from_frame: int = -1,
                  revert_current_frame: bool=False):
-        self._interval: float = 0.01
+        self._interval: float = 0.001
         self._target_frame: int = from_frame
         self._state: str = 'timeline'
         self._active_state_func: Callable = self.timeline_state
