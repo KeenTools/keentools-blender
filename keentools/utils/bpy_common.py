@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-from typing import Any, Dict, Callable
+from typing import Any, Dict, Callable, Tuple
 
 import bpy
 from bpy.types import Object, Operator
@@ -85,3 +85,10 @@ def extend_scene_timeline_start(keyframe_num: int) -> None:
     scene = bpy.context.scene
     if 0 <= keyframe_num < scene.frame_start:
         scene.frame_start = keyframe_num
+
+
+def get_scene_camera_shift() -> Tuple[float, float]:
+    cam = bpy.context.scene.camera
+    if not cam:
+        return 0.0, 0.0
+    return cam.data.shift_x, cam.data.shift_y

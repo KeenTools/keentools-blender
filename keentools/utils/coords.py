@@ -175,14 +175,17 @@ def camera_focal_length(camobj: Any) -> float:
     return camobj.data.lens
 
 
-def image_space_to_frame(x: float, y: float) -> Tuple[float, float]:
+def image_space_to_frame(x: float, y: float, shift_x: float=0.0,
+                         shift_y: float=0.0) -> Tuple[float, float]:
     """ Image centered Relative coords to Frame pixels """
     w, h = render_frame()
-    return (x + 0.5) * w, y * w + 0.5 * h
+    return (x + shift_x + 0.5) * w, (y + shift_y) * w + 0.5 * h
 
 
-def frame_to_image_space(x: float, y: float, w: float, h: float) -> Tuple[float, float]:
-    return x / w - 0.5, (y - 0.5 * h) / w
+def frame_to_image_space(x: float, y: float, w: float, h: float,
+                         shift_x: float=0.0,
+                         shift_y: float=0.0) -> Tuple[float, float]:
+    return x / w - 0.5 - shift_x, (y - 0.5 * h) / w - shift_y
 
 
 def get_mouse_coords(event: Any) -> Tuple[float, float]:

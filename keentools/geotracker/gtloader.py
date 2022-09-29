@@ -34,7 +34,7 @@ from ..utils.coords import (render_frame,
                             compensate_view_scale,
                             frame_to_image_space,
                             camera_sensor_width)
-from ..utils.bpy_common import bpy_current_frame
+from ..utils.bpy_common import bpy_current_frame, get_scene_camera_shift
 from .gt_class_loader import GTClassLoader
 from ..utils.timer import KTStopShaderTimer
 from ..utils.ui_redraw import force_ui_redraw
@@ -229,11 +229,12 @@ class GTLoader:
         return gt.add_pin(keyframe, pos)
 
     @classmethod
-    def move_pin(cls, keyframe: int, pin_idx: int,
-                 pos: Tuple[float, float]) -> None:
+    def move_pin(cls, keyframe: int, pin_idx: int, pos: Tuple[float, float],
+                 shift_x: float=0.0, shift_y: float=0.0) -> None:
         gt = cls.kt_geotracker()
         if pin_idx < gt.pins_count():
-            gt.move_pin(keyframe, pin_idx, image_space_to_frame(*pos))
+            gt.move_pin(keyframe, pin_idx,
+                        image_space_to_frame(*pos, shift_x, shift_y))
 
     @classmethod
     def delta_move_pin(cls, keyframe: int, indices: List[int],
@@ -253,7 +254,8 @@ class GTLoader:
         w, h = render_frame()
         kt_pins = gt.projected_pins(keyframe)
         pins = vp.pins()
-        pins.set_pins([frame_to_image_space(*pin.img_pos, w, h)
+        pins.set_pins([frame_to_image_space(*pin.img_pos, w, h,
+                                            *get_scene_camera_shift())
                        for pin in kt_pins])
         pins.set_disabled_pins([i for i, pin in enumerate(kt_pins)
                                 if not pin.enabled])
@@ -526,7 +528,9 @@ class GTLoader:
         try:
             exit_area_localview(area)
         except Exception as err:
-            _log.error('out_pinmode CANNOT OUT FROM LOCALVIEW')
+            _log.error(_log.color(
+                'magenta',
+                f'out_pinmode CANNOT OUT FROM LOCALVIEW:\n{str(err)}'))
 
         settings.reset_pinmode_id()
 

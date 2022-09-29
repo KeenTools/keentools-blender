@@ -186,8 +186,9 @@ class GTViewport(KTViewport):
         vv = (vv.T / vv[:, 3]).T
 
         verts2 = []
+        shift_x, shift_y = camobj.data.shift_x, camobj.data.shift_y
         for i, v in enumerate(vv):
-            x, y = frame_to_image_space(v[0], v[1], rx, ry)
+            x, y = frame_to_image_space(v[0], v[1], rx, ry, shift_x, shift_y)
             verts2.append(image_space_to_region(x, y, x1, y1, x2, y2))
             wire.edge_lengths.append(0)
             verts2.append((p2d[i][0], p2d[i][1]))

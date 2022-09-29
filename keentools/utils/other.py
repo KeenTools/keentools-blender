@@ -63,12 +63,12 @@ def _get_viewport_ui_state(area):
     return res
 
 
-def _force_show_ui_elements(area):
+def force_show_ui_overlays(area):
     _setup_viewport_ui_state(area, {'show_floor': 1, 'show_axis_x': 1,
                                     'show_axis_y': 1, 'show_cursor': 1})
 
 
-def _force_hide_ui_elements(area):
+def force_hide_ui_overlays(area):
     _setup_viewport_ui_state(area, {'show_floor': 0, 'show_axis_x': 0,
                                     'show_axis_y': 0, 'show_cursor': 0})
 
@@ -76,7 +76,7 @@ def _force_hide_ui_elements(area):
 def hide_viewport_ui_elements_and_store_on_object(area, obj):
     state = _get_viewport_ui_state(area)
     set_custom_attribute(obj, Config.viewport_state_prop_name, state)
-    _force_hide_ui_elements(area)
+    force_hide_ui_overlays(area)
 
 
 def unhide_viewport_ui_elements_from_object(area, obj):
@@ -90,13 +90,13 @@ def unhide_viewport_ui_elements_from_object(area, obj):
 
     attr_value = get_safe_custom_attribute(obj, Config.viewport_state_prop_name)
     if attr_value is None:
-        _force_show_ui_elements(area)  # For old version compatibility
+        force_show_ui_overlays(area)  # For old version compatibility
         return
 
     try:
         attr_dict = attr_value.to_dict()
     except Exception as err:
-        _force_show_ui_elements(area)
+        force_show_ui_overlays(area)
         return
 
     res = _unpack_state(attr_dict)

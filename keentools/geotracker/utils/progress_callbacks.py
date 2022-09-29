@@ -16,10 +16,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
 import bpy
 
+from ...utils.kt_logging import KTLogger
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
+from ...geotracker_config import get_gt_settings
+
+
+_log = KTLogger(__name__)
 
 
 class TRProgressCallBack(pkt_module().TrackerProgressCallback):
@@ -31,9 +35,7 @@ class TRProgressCallBack(pkt_module().TrackerProgressCallback):
         self.counter = 0
 
     def set_progress_and_check_abort(self, progress):
-        logger = logging.getLogger(__name__)
-        log_output = logger.info
-        log_output(f'set_progress_and_check_abort: {progress}')
+        _log.output(f'set_progress_and_check_abort: {progress}')
         bpy.context.window_manager.progress_update(progress)
         self.last_progress = progress
         self.counter += 1
@@ -41,27 +43,32 @@ class TRProgressCallBack(pkt_module().TrackerProgressCallback):
         return False
 
     def set_total_frames(self, arg0):
-        logger = logging.getLogger(__name__)
-        log_output = logger.info
-        log_output(f'set_total_frames: {arg0}')
+        _log.output(f'set_total_frames: {arg0}')
 
 
 class RFProgressCallBack(pkt_module().RefineProgressCallback):
     def __init__(self):
         super().__init__()
-        self.refined_frames = []
+        self.refined_frames = 0
+        self.total_frames = 100
 
     def set_progress_and_check_abort(self, progress):
         bpy.context.window_manager.progress_update(progress)
-        self.refined_frames.append(progress)
-        logger = logging.getLogger(__name__)
-        logger.debug('Refine set_progress_and_check_abort: {}'.format(progress))
+        self.refined_frames += 1
+        _log.output('Refine set_progress_and_check_abort: {}'.format(progress))
+        _log.output(_log.color(
+            'magenta',
+            f'refined_frames: {self.refined_frames}/{self.total_frames}'))
+        if type(self.total_frames) == int and self.total_frames > 0:
+            settings = get_gt_settings()
+            settings.user_percent = 100 * self.refined_frames / self.total_frames
+            _log.output(f'REFINE PERCENT: {settings.user_percent}')
         return False
 
     def set_progress_stage(self, arg0):
-        logger = logging.getLogger(__name__)
-        logger.debug('Refine set_progress_stage: {}'.format(arg0))
+        _log.output('Refine set_progress_stage: {}'.format(arg0))
+        self.total_frames = arg0
+        self.refined_frames = 0
 
     def set_total_stages(self, arg0):
-        logger = logging.getLogger(__name__)
-        logger.debug('Refine set_total_stages: {}'.format(arg0))
+        _log.output('Refine set_total_stages: {}'.format(arg0))
