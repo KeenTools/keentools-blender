@@ -267,7 +267,15 @@ class GT_PT_InputPanel(AllVisible):
             row.operator(GTConfig.gt_split_video_to_frames_exec_idname,
                          text='', icon='RENDER_RESULT')
 
-        row = layout.row(align=True)
+        col = layout.column(align=True)
+        col.label(text='Track object:')
+        row = col.row(align=True)
+        row.prop(geotracker, 'solve_for_camera', text='Geometry', toggle=1, invert_checkbox=True)
+        row.prop(geotracker, 'solve_for_camera', text='Camera', toggle=1)
+
+        col = layout.column(align=True)
+        col.label(text='Cached data usage:')
+        row = col.row(align=True)
         row.prop(geotracker, 'precalcless', text='Precalcless', toggle=1)
         row.prop(geotracker, 'precalcless', text='Use precalc', toggle=1,
                  invert_checkbox=True)
@@ -359,27 +367,6 @@ class GT_PT_CameraPanel(AllVisible):
         col.prop(cam_data, 'sensor_width')
         col.prop(cam_data, 'sensor_height')
 
-        col = layout.column(align=True)
-        col.label(text='Track object:')
-        row = col.row(align=True)
-        row.prop(geotracker, 'solve_for_camera', text='Geometry', toggle=1, invert_checkbox=True)
-        row.prop(geotracker, 'solve_for_camera', text='Camera', toggle=1)
-
-        row = layout.row()
-        row.scale_y = 2.0
-
-        if settings.pinmode:
-            row.operator(GTConfig.gt_exit_pinmode_idname,
-                         icon='LOOP_BACK',
-                         depress=settings.pinmode)
-            if not GTLoader.viewport().is_working():
-                _start_pinmode_escaper(context)
-        else:
-            op = row.operator(GTConfig.gt_pinmode_idname,
-                              text='View', icon='HIDE_OFF',
-                              depress=settings.pinmode)
-            op.geotracker_num = -1
-
 
 class GT_PT_TrackingPanel(AllVisible):
     bl_idname = GTConfig.gt_tracking_panel_idname
@@ -392,6 +379,21 @@ class GT_PT_TrackingPanel(AllVisible):
             return
 
         layout = self.layout
+
+        row = layout.row()
+        row.scale_y = 2.0
+        if settings.pinmode:
+            row.operator(GTConfig.gt_exit_pinmode_idname,
+                         icon='LOOP_BACK',
+                         depress=settings.pinmode)
+            if not GTLoader.viewport().is_working():
+                _start_pinmode_escaper(context)
+        else:
+            op = row.operator(GTConfig.gt_pinmode_idname,
+                              text='Start Pinmode', icon='HIDE_OFF',
+                              depress=settings.pinmode)
+            op.geotracker_num = -1
+
         box = layout.box()
 
         row = box.row(align=True)
@@ -426,10 +428,16 @@ class GT_PT_TrackingPanel(AllVisible):
         row.operator(GTConfig.gt_refine_all_idname)
 
         row = box.row(align=True)
+        part = row.split(factor=0.5, align=True)
+        row = part.split(factor=0.5, align=True)
         row.operator(GTConfig.gt_clear_tracking_between_idname, text='Xk')
-        row.operator(GTConfig.gt_clear_tracking_backward_idname, text='<X')
+        row.operator(GTConfig.gt_clear_tracking_backward_idname,
+                     icon='TRACKING_CLEAR_BACKWARDS', text='')
+        part = part.row(align=True)
+        row = part.split(factor=0.5, align=True)
         row.operator(GTConfig.gt_clear_all_tracking_idname, text='X')
-        row.operator(GTConfig.gt_clear_tracking_forward_idname, text='X>')
+        row.operator(GTConfig.gt_clear_tracking_forward_idname,
+                     icon='TRACKING_CLEAR_FORWARDS', text='')
 
         if settings.is_calculating('TRACKING') or settings.is_calculating('REFINE'):
             _draw_calculating_indicator(layout)
@@ -444,7 +452,9 @@ class GT_PT_TrackingPanel(AllVisible):
 
         row = box.row(align=True)
         row.operator(GTConfig.gt_center_geo_idname)
-        row.operator(GTConfig.gt_magic_keyframe_idname)
+        col = row.column()
+        col.active = False
+        col.operator(GTConfig.gt_magic_keyframe_idname)
 
         box = layout.box()
         box.prop(geotracker, 'spring_pins_back')
