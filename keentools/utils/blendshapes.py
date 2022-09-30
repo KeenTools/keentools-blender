@@ -252,6 +252,7 @@ def _snap_keys_in_interval(fcurve: FCurve, start_keyframe: float,
 
 def load_csv_animation_to_blendshapes(obj: Object, filepath: str) -> Dict:
     try:
+        _log.info(f'LOADING CSV FILE: {filepath}')
         fan = pkt_module().FacsAnimation()
         read_facs, ignored_columns = fan.load_from_csv_file(filepath)
         facs_names = pkt_module().FacsExecutor.facs_names
