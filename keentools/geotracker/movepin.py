@@ -166,7 +166,7 @@ class GT_OT_MovePin(bpy.types.Operator):
         return {'FINISHED'}
 
     @staticmethod
-    def _pin_drag(kid: int, area: Area, mouse_x: float, mouse_y: float) -> None:
+    def _pin_drag(kid: int, area: Area, mouse_x: float, mouse_y: float) -> bool:
         def _drag_multiple_pins(kid: int, pin_index: int) -> None:
             gt = GTLoader.kt_geotracker()
             old_x, old_y = gt.pin(kid, pin_index).img_pos
@@ -186,8 +186,16 @@ class GT_OT_MovePin(bpy.types.Operator):
 
         if len(selected_pins) == 1:
             GTLoader.move_pin(kid, pin_index, (x, y), *get_scene_camera_shift())
+            return GTLoader.solve()
         else:
+            gt = GTLoader.kt_geotracker()
+            old_positions = [gt.pin(kid, x).img_pos for x in range(gt.pins_count())]
             _drag_multiple_pins(kid, pin_index)
+            if not GTLoader.solve():
+                return False
+            for i in [x for x in range(gt.pins_count()) if x not in selected_pins]:
+                gt.move_pin(kid, i, old_positions[i])
+        return True
 
     def on_mouse_move(self, area: Area, mouse_x: float, mouse_y: float) -> Set:
         geotracker = get_current_geotracker_item()
@@ -195,9 +203,8 @@ class GT_OT_MovePin(bpy.types.Operator):
             return self.on_default_modal()
 
         frame = bpy_current_frame()
-        self._pin_drag(frame, area, mouse_x, mouse_y)
 
-        if not GTLoader.solve():
+        if not self._pin_drag(frame, area, mouse_x, mouse_y):
             self._before_operator_finish()
             return {'FINISHED'}
 
