@@ -190,18 +190,6 @@ class GT_OT_MovePin(bpy.types.Operator):
             _drag_multiple_pins(kid, pin_index)
 
     def on_mouse_move(self, area: Area, mouse_x: float, mouse_y: float) -> Set:
-        def _place_cameras_and_calc_focals(geotracker: Any, frame: int) -> None:
-            GTLoader.place_camera()
-            if geotracker.focal_length_estimation:
-                focal = GTLoader.updated_focal_length()
-                if focal is not None:
-                    camobj = geotracker.camobj
-                    if not GTConfig.use_storage:
-                        insert_keyframe_in_fcurve(camobj.data, frame, focal,
-                                                  keyframe_type='KEYFRAME',
-                                                  data_path='lens', index=0)
-                        camobj.data.lens = focal
-
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return self.on_default_modal()
@@ -214,7 +202,10 @@ class GT_OT_MovePin(bpy.types.Operator):
             return {'FINISHED'}
 
         self.dragged = True
-        _place_cameras_and_calc_focals(geotracker, frame)
+
+        GTLoader.place_camera()
+        if geotracker.focal_length_estimation:
+            GTLoader.updated_focal_length()
 
         vp = GTLoader.viewport()
         gt = GTLoader.kt_geotracker()

@@ -120,7 +120,6 @@ class GTConfig:
     version_prop_name = prefix + '_version'
 
     prevent_view_rotation = True
-    use_storage = True
     auto_render_size = True
     auto_time_length = True
 
