@@ -58,9 +58,9 @@ class GT_OT_Actor(bpy.types.Operator):
             return {'FINISHED'}
 
         elif self.action == 'create_precalc':
-            status, msg = precalc_with_runner_act(context)
-            if not status:
-                self.report({'ERROR'}, msg)
+            act_status = precalc_with_runner_act(context)
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
             return {'FINISHED'}
 
         elif self.action == 'remove_focal_keyframe':

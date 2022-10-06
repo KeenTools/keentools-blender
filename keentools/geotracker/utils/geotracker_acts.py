@@ -17,13 +17,12 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import time
-from typing import Optional, Any, Callable, List, Set
+from typing import Optional, Any, Callable, List
 
 import bpy
-from bpy.types import Object
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config, get_operator, ErrorType, ActionStatus
+from ...addon_config import get_operator, ActionStatus
 from ...geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
 from ..gtloader import GTLoader
 from ..gt_class_loader import GTClassLoader
@@ -37,106 +36,25 @@ from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
 from ...utils.bpy_common import (create_empty_object,
                                  bpy_current_frame,
-                                 bpy_end_frame,
                                  bpy_set_current_frame)
 from ...utils.animation import (get_action,
                                 get_object_keyframe_numbers,
                                 create_animation_locrot_keyframe_force)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.timer import RepeatTimer
-from ...utils.video import (fit_render_size,
-                            fit_time_length)
-from ...utils.html import split_long_string
-from ...utils.coords import (calc_bpy_model_mat_relative_to_camera,
-                             update_depsgraph,
+from ...utils.coords import (update_depsgraph,
                              xy_to_xz_rotation_matrix_4x4)
 from .textures import bake_texture, preview_material_with_texture
+from .prechecks import (common_checks,
+                        track_checks,
+                        find_object_in_selection,
+                        prepare_camera,
+                        revert_camera,
+                        show_warning_dialog,
+                        show_unlicensed_warning)
 
 
 _log = KTLogger(__name__)
-
-
-def show_warning_dialog(err: Any, limit=70) -> None:
-    _log.output('show_warning_dialog call')
-    user_message = '\n'.join(split_long_string(str(err), limit=limit))
-    warn = get_operator(Config.kt_warning_idname)
-    warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
-         msg_content=user_message)
-
-
-def show_unlicensed_warning():
-    _log.output('show_unlicensed_warning call')
-    warn = get_operator(Config.kt_warning_idname)
-    warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
-
-
-def find_object_in_selection(obj_type: str='MESH',
-                             selection: Optional[List]=None) -> Optional[Object]:
-    def _get_any_alone_object(obj_type: str) -> Optional[Object]:
-        all_objects = [obj for obj in bpy.data.objects if obj.type == obj_type]
-        return None if len(all_objects) != 1 else all_objects[0]
-
-    context_obj = bpy.context.object if hasattr(bpy.context, 'object') else None
-    if context_obj and context_obj.type == obj_type:
-        return context_obj
-    if selection is not None:
-        objects = selection
-    else:
-        if hasattr(bpy.context, 'selected_objects'):
-            objects = bpy.context.selected_objects
-        else:
-            objects = []
-    selected_objects = [obj for obj in objects if obj.type == obj_type]
-    if len(selected_objects) == 1:
-        return selected_objects[0]
-    return None if selection is not None else _get_any_alone_object(obj_type)
-
-
-def common_checks(*, pinmode: bool=False,
-                  pinmode_out: bool=False,
-                  is_calculating: bool=False,
-                  reload_geotracker: bool = False,
-                  geotracker: bool=False,
-                  camera: bool=False,
-                  geometry: bool=False,
-                  movie_clip: bool=False) -> ActionStatus:
-    settings = get_gt_settings()
-    if is_calculating and settings.is_calculating():
-        msg = 'Calculation is performing'
-        _log.error(msg)
-        return ActionStatus(False, msg)
-    if pinmode and not settings.pinmode:
-        msg = 'This operation works only in Pin mode'
-        _log.error(msg)
-        return ActionStatus(False, msg)
-    if pinmode_out and settings.pinmode:
-        msg = 'This operation does not work in Pin mode'
-        _log.error(msg)
-        return ActionStatus(False, msg)
-
-    if reload_geotracker:
-        if not settings.reload_current_geotracker():
-            msg = 'Cannot load GeoTracker data'
-            _log.error(msg)
-            return ActionStatus(False, msg)
-    geotracker_item = get_current_geotracker_item()
-    if geotracker and not geotracker_item:
-        msg = 'GeoTracker item is not found'
-        _log.error(msg)
-        return ActionStatus(False, msg)
-    if camera and not geotracker_item.camobj:
-        msg = 'GeoTracker camera is not found'
-        _log.error(msg)
-        return ActionStatus(False, msg)
-    if geometry and not geotracker_item.geomobj:
-        msg = 'GeoTracker geometry is not found'
-        _log.error(msg)
-        return ActionStatus(False, msg)
-    if movie_clip and not geotracker_item.movie_clip:
-        msg = 'GeoTracker movie clip is not found'
-        _log.error(msg)
-        return ActionStatus(False, msg)
-    return ActionStatus(True, 'Checks have been passed')
 
 
 def create_geotracker_act() -> ActionStatus:
@@ -416,32 +334,8 @@ class RefineTimer(_CommonTimer):
         self._overall_func = computation.finished_and_total_stage_frames
 
 
-def _track_checks() -> ActionStatus:
-    check_status = common_checks(pinmode=True, is_calculating=True,
-                                 reload_geotracker=True, geotracker=True,
-                                 camera=True, geometry=True)
-    if not check_status.success:
-        return check_status
-
-    settings = get_gt_settings()
-    geotracker = settings.get_current_geotracker_item()
-
-    if not geotracker.precalcless:
-        status, msg, precalc_info = geotracker.reload_precalc()
-        if not status or precalc_info is None:
-            msg = 'Precalc has problems. Check it'
-            _log.error(msg)
-            return ActionStatus(False, msg)
-    else:
-        check_status = common_checks(movie_clip=True)
-        if not check_status.success:
-            return check_status
-
-    return ActionStatus(True, 'ok')
-
-
 def track_to(forward: bool) -> ActionStatus:
-    check_status = _track_checks()
+    check_status = track_checks()
     if not check_status.success:
         return check_status
 
@@ -468,7 +362,7 @@ def track_to(forward: bool) -> ActionStatus:
 
 
 def track_next_frame_act(forward: bool=True) -> ActionStatus:
-    check_status = _track_checks()
+    check_status = track_checks()
     if not check_status.success:
         return check_status
 
@@ -497,7 +391,7 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
 
 
 def refine_async_act() -> ActionStatus:
-    check_status = _track_checks()
+    check_status = track_checks()
     if not check_status.success:
         return check_status
 
@@ -524,7 +418,7 @@ def refine_async_act() -> ActionStatus:
 
 
 def refine_act() -> ActionStatus:
-    check_status = _track_checks()
+    check_status = track_checks()
     if not check_status.success:
         return check_status
 
@@ -567,7 +461,7 @@ def refine_act() -> ActionStatus:
 
 
 def refine_all_act() -> ActionStatus:
-    check_status = _track_checks()
+    check_status = track_checks()
     if not check_status.success:
         return check_status
 
@@ -767,15 +661,17 @@ def create_animated_empty_act() -> ActionStatus:
 
 
 def bake_texture_from_frames_act(selected_frames: List) -> ActionStatus:
-    # TODO: Make possible to bake in out of Pinmode
-    check_status = common_checks(pinmode=True, is_calculating=True,
+    check_status = common_checks(is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True, movie_clip=True)
     if not check_status.success:
         return check_status
 
+    area = bpy.context.area
+    prepare_camera(area)
     geotracker = get_current_geotracker_item()
     built_texture = bake_texture(geotracker, selected_frames)
+    revert_camera(area)
     preview_material_with_texture(built_texture, geotracker.geomobj)
     return ActionStatus(True, 'ok')
 

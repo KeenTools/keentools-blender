@@ -26,7 +26,7 @@ from ...addon_config import get_operator
 from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
 
-
+from ...addon_config import ActionStatus
 from ...utils.images import (np_image_to_grayscale,
                              np_array_from_background_image,
                              get_background_image_object,
@@ -36,7 +36,8 @@ from ...utils.coords import render_frame, update_depsgraph
 from ...utils.bpy_common import bpy_current_frame
 from ..gt_class_loader import GTClassLoader
 from ...utils.timer import RepeatTimer
-from .calc_timer import CalcTimer, prepare_camera
+from .calc_timer import CalcTimer
+from .prechecks import common_checks, prepare_camera
 
 
 _log = KTLogger(__name__)
@@ -135,32 +136,21 @@ class PrecalcTimer(CalcTimer):
         return res
 
 
-def precalc_with_runner_act(context: Any) -> Tuple[bool, str]:
-    _log.output('precalc_with_runner_act start')
+def precalc_with_runner_act(context: Any) -> ActionStatus:
+    check_status = common_checks(is_calculating=True, reload_geotracker=True,
+                                 geotracker=True, camera=True, movie_clip=True)
+    if not check_status.success:
+        return check_status
+
     settings = get_gt_settings()
     geotracker = settings.get_current_geotracker_item()
 
-    if not geotracker:
-        msg = 'No GeoTracker structure'
-        _log.error(msg)
-        return False, msg
-    if not geotracker.camobj:
-        msg = 'No camera object in GeoTracker'
-        _log.error(msg)
-        return False, msg
-    if not geotracker.movie_clip:
-        msg = 'No image sequence in GeoTracker'
-        _log.error(msg)
-        return False, msg
     if geotracker.precalc_path == '':
         msg = 'Precalc path is not specified'
         _log.error(msg)
-        return False, msg
-    if settings.is_calculating():
-        msg = 'Other calculation is performing'
-        _log.error(msg)
-        return False, msg
+        return ActionStatus(False, msg)
 
+    _log.output('precalc_with_runner_act start')
     vp = GTLoader.viewport()
     vp.texter().register_handler(context)
 
@@ -177,5 +167,5 @@ def precalc_with_runner_act(context: Any) -> Tuple[bool, str]:
     if pt.start():
         _log.output('Precalc started')
     else:
-        return False, 'Cannot start precalc timer'
-    return True, 'ok'
+        return ActionStatus(False, 'Cannot start precalc timer')
+    return ActionStatus(True, 'ok')
