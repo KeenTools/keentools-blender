@@ -26,9 +26,11 @@ from .utils.geotracker_acts import (add_keyframe_act,
                                     remove_focal_keyframes_act,
                                     bake_texture_from_frames_act,
                                     relative_to_camera_act,
+                                    relative_to_geometry_act,
                                     geometry_repositioninig_act,
                                     camera_repositioninig_act,
-                                    move_tracking_to_camera_act)
+                                    move_tracking_to_camera_act,
+                                    move_tracking_to_geometry_act)
 from .utils.precalc import precalc_with_runner_act
 from ..utils.bpy_common import bpy_current_frame
 
@@ -111,6 +113,14 @@ class GT_OT_Actor(bpy.types.Operator):
                 self.report({'INFO'}, act_status.error_message)
             return {'FINISHED'}
 
+        elif self.action == 'relative_to_geometry':
+            act_status = relative_to_geometry_act()
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+            else:
+                self.report({'INFO'}, act_status.error_message)
+            return {'FINISHED'}
+
         elif self.action == 'geometry_repositioning':
             act_status = geometry_repositioninig_act()
             if not act_status.success:
@@ -129,6 +139,14 @@ class GT_OT_Actor(bpy.types.Operator):
 
         elif self.action == 'move_tracking_to_camera':
             act_status = move_tracking_to_camera_act()
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+            else:
+                self.report({'INFO'}, act_status.error_message)
+            return {'FINISHED'}
+
+        elif self.action == 'move_tracking_to_geometry':
+            act_status = move_tracking_to_geometry_act()
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
             else:

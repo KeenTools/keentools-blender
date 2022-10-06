@@ -559,18 +559,24 @@ class GT_PT_AnimationPanel(AllVisible):
 
     def draw(self, context):
         layout = self.layout
+        layout.label(text='Create helpers')
         layout.operator(GTConfig.gt_create_animated_empty_idname)
-        op = layout.operator(GTConfig.gt_actor_idname, text='Relative to Camera')
+        layout.label(text='Move to default position')
+        op = layout.operator(GTConfig.gt_actor_idname, text='Camera to default')
         op.action = 'relative_to_camera'
+        op = layout.operator(GTConfig.gt_actor_idname, text='Object to default')
+        op.action = 'relative_to_geometry'
 
+        layout.label(text='Repositioning of animated')
         op = layout.operator(GTConfig.gt_actor_idname, text='Reorient Geometry')
         op.action = 'geometry_repositioning'
 
         op = layout.operator(GTConfig.gt_actor_idname, text='Reorient Camera')
         op.action = 'camera_repositioning'
 
-        op = layout.operator(GTConfig.gt_actor_idname, text='Geom Tracking -> Camera')
+        layout.label(text='Convert tracked keys')
+        op = layout.operator(GTConfig.gt_actor_idname, text='Geom. tracking -> Camera')
         op.action = 'move_tracking_to_camera'
 
-        op = layout.operator(GTConfig.gt_actor_idname, text='Camera Tracking -> Geom')
+        op = layout.operator(GTConfig.gt_actor_idname, text='Cam. tracking -> Geom.')
         op.action = 'move_tracking_to_geometry'

@@ -18,8 +18,10 @@
 
 import time
 from typing import Optional, Any, Callable, List
+import numpy as np
 
 import bpy
+from bpy.types import Object
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import get_operator, ActionStatus
@@ -685,25 +687,76 @@ def relative_to_camera_act() -> ActionStatus:
         return check_status
 
     geotracker = get_current_geotracker_item()
-
-    gt = GTLoader.kt_geotracker()
-    animated_frames = get_object_keyframe_numbers(geotracker.geomobj)
-    matrices = {x:gt.model_mat(x) for x in animated_frames}
-
-    current_frame = bpy_current_frame()
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
+
+    gt = GTLoader.kt_geotracker()
+    geom_animated_frames = get_object_keyframe_numbers(geomobj)
+    cam_animated_frames = get_object_keyframe_numbers(camobj)
+    all_animated_frames = list(set(geom_animated_frames).union(set(cam_animated_frames)))
+    all_animated_frames.sort()
+    if len(all_animated_frames) == 0:
+        msg = 'No animation keys on both objects'
+        _log.error(msg)
+        return ActionStatus(False, msg)
+
+    matrices = {x:gt.model_mat(x) for x in all_animated_frames}
+
+    current_frame = bpy_current_frame()
 
     # Default camera position at (0, 0, 0) and +90 deg rotated on X
     cam_matrix = xy_to_xz_rotation_matrix_4x4()
     for frame in matrices:
         bpy_set_current_frame(frame)
+        delete_locrot_keyframe(camobj)
         camobj.matrix_world = cam_matrix
         GTLoader.place_object_relative_to_camera(matrices[frame])
         update_depsgraph()
         create_animation_locrot_keyframe_force(geomobj)
 
     bpy_set_current_frame(current_frame)
+    geotracker.solve_for_camera = False
+    _mark_object_keyframes(geomobj)
+    return ActionStatus(True, 'ok')
+
+
+def relative_to_geometry_act() -> ActionStatus:
+    check_status = common_checks(is_calculating=True,
+                                 reload_geotracker=True, geotracker=True,
+                                 camera=True, geometry=True)
+    if not check_status.success:
+        return check_status
+
+    geotracker = get_current_geotracker_item()
+    geomobj = geotracker.geomobj
+    camobj = geotracker.camobj
+
+    gt = GTLoader.kt_geotracker()
+    geom_animated_frames = get_object_keyframe_numbers(geomobj)
+    cam_animated_frames = get_object_keyframe_numbers(camobj)
+    all_animated_frames = list(set(geom_animated_frames).union(set(cam_animated_frames)))
+    all_animated_frames.sort()
+    if len(all_animated_frames) == 0:
+        msg = 'No animation keys on both objects'
+        _log.error(msg)
+        return ActionStatus(False, msg)
+
+    matrices = {x:gt.model_mat(x) for x in all_animated_frames}
+
+    current_frame = bpy_current_frame()
+
+    geom_matrix = np.eye(4)  # Object at (0, 0, 0)
+    for frame in matrices:
+        bpy_set_current_frame(frame)
+        delete_locrot_keyframe(geomobj)
+        geomobj.matrix_world = geom_matrix
+        GTLoader.place_camera_relative_to_object(matrices[frame])
+        update_depsgraph()
+        create_animation_locrot_keyframe_force(camobj)
+
+    bpy_set_current_frame(current_frame)
+    geotracker.solve_for_camera = True
+    _mark_object_keyframes(camobj)
     return ActionStatus(True, 'ok')
 
 
@@ -835,16 +888,69 @@ def move_tracking_to_camera_act() -> ActionStatus:
 
     for frame in all_matrices:
         bpy_set_current_frame(frame)
+        delete_locrot_keyframe(geomobj)
         geomobj.matrix_world = geom_matrix
         GTLoader.place_camera_relative_to_object(all_matrices[frame])
         update_depsgraph()
         create_animation_locrot_keyframe_force(camobj)
-        delete_locrot_keyframe(geomobj)
 
     bpy_set_current_frame(current_frame)
     geotracker.solve_for_camera = True
-    mark_all_points_in_locrot(camobj, 'JITTER')
-    keyframes = [x for x in gt.keyframes()]
-    _log.output(f'KEYFRAMES TO MARK: {keyframes}')
-    mark_selected_points_in_locrot(camobj, keyframes, 'KEYFRAME')
+
+    _mark_object_keyframes(camobj)
     return ActionStatus(True, 'ok')
+
+
+def move_tracking_to_geometry_act() -> ActionStatus:
+    check_status = common_checks(is_calculating=True,
+                                 reload_geotracker=True, geotracker=True,
+                                 camera=True, geometry=True)
+    if not check_status.success:
+        return check_status
+
+    geotracker = get_current_geotracker_item()
+
+    geomobj = geotracker.geomobj
+    camobj = geotracker.camobj
+    cam_matrix = camobj.matrix_world.copy()
+
+    geom_animated_frames = get_object_keyframe_numbers(geomobj)
+    cam_animated_frames = get_object_keyframe_numbers(camobj)
+    if len(cam_animated_frames) == 0:
+        msg = 'Camera does not have any keyframes'
+        _log.error(msg)
+        return ActionStatus(False, msg)
+
+    current_frame = reset_unsaved_animation_changes_in_frame()
+
+    gt = GTLoader.kt_geotracker()
+
+    all_animated_frames = list(set(geom_animated_frames).union(set(cam_animated_frames)))
+    all_animated_frames.sort()
+    _log.output(f'ALL FRAMES: {all_animated_frames}')
+    all_matrices = {x:gt.model_mat(x) for x in all_animated_frames}
+    _log.output(f'ALL: {all_matrices.keys()}')
+
+    for frame in all_matrices:
+        bpy_set_current_frame(frame)
+        delete_locrot_keyframe(camobj)
+        camobj.matrix_world = cam_matrix
+        GTLoader.place_object_relative_to_camera(all_matrices[frame])
+        update_depsgraph()
+        create_animation_locrot_keyframe_force(geomobj)
+
+    bpy_set_current_frame(current_frame)
+    geotracker.solve_for_camera = False
+
+    _mark_object_keyframes(geomobj)
+    return ActionStatus(True, 'ok')
+
+
+def _mark_object_keyframes(obj: Object) -> None:
+    gt = GTLoader.kt_geotracker()
+    tracked_keyframes = [x for x in gt.track_frames()]
+    _log.output(f'KEYFRAMES TO MARK AS TRACKED: {tracked_keyframes}')
+    mark_selected_points_in_locrot(obj, tracked_keyframes, 'JITTER')
+    keyframes = [x for x in gt.keyframes()]
+    _log.output(f'KEYFRAMES TO MARK AS KEYFRAMES: {keyframes}')
+    mark_selected_points_in_locrot(obj, keyframes, 'KEYFRAME')
