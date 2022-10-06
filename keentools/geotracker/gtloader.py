@@ -26,15 +26,16 @@ from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType
 from ..geotracker_config import get_gt_settings, get_current_geotracker_item
 from .viewport import GTViewport
-from ..utils.coords import (render_frame,
-                            image_space_to_frame,
+from ..utils.coords import (image_space_to_frame,
                             calc_bpy_camera_mat_relative_to_model,
                             calc_bpy_model_mat_relative_to_camera,
                             focal_by_projection_matrix_mm,
                             compensate_view_scale,
                             frame_to_image_space,
                             camera_sensor_width)
-from ..utils.bpy_common import bpy_current_frame, get_scene_camera_shift
+from ..utils.bpy_common import (bpy_render_frame,
+                                bpy_current_frame,
+                                get_scene_camera_shift)
 from .gt_class_loader import GTClassLoader
 from ..utils.timer import KTStopShaderTimer
 from ..utils.ui_redraw import force_ui_redraw
@@ -251,7 +252,7 @@ class GTLoader:
         keyframe = bpy_current_frame()
         vp = cls.viewport()
         gt = cls.kt_geotracker()
-        w, h = render_frame()
+        w, h = bpy_render_frame()
         kt_pins = gt.projected_pins(keyframe)
         pins = vp.pins()
         pins.set_pins([frame_to_image_space(*pin.img_pos, w, h,

@@ -32,8 +32,9 @@ from ...utils.images import (np_image_to_grayscale,
                              get_background_image_object,
                              check_bpy_image_size,
                              np_array_from_bpy_image)
-from ...utils.coords import render_frame, update_depsgraph
-from ...utils.bpy_common import bpy_current_frame
+from ...utils.bpy_common import (bpy_render_frame,
+                                 bpy_current_frame,
+                                 update_depsgraph)
 from ..gt_class_loader import GTClassLoader
 from ...utils.timer import RepeatTimer
 from .calc_timer import CalcTimer
@@ -156,7 +157,7 @@ def precalc_with_runner_act(context: Any) -> ActionStatus:
 
     _log.output(f'precalc_path: {geotracker.precalc_path}')
 
-    rw, rh = render_frame()
+    rw, rh = bpy_render_frame()
     area = context.area
     runner = GTClassLoader.PrecalcRunner_class()(
         geotracker.precalc_path, rw, rh,

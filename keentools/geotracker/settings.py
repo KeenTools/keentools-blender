@@ -35,12 +35,10 @@ from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_scale_vec_4_from_matrix_world,
                             get_image_space_coord,
                             focal_mm_to_px,
-                            render_width,
-                            render_frame,
                             camera_focal_length,
                             camera_sensor_width)
 from ..utils.video import fit_render_size, fit_time_length
-from ..utils.bpy_common import bpy_start_frame, bpy_end_frame
+from ..utils.bpy_common import bpy_render_frame, bpy_start_frame, bpy_end_frame
 
 
 _log = KTLogger(__name__)
@@ -133,7 +131,7 @@ def update_focal_length_mode(geotracker, context):
     if geotracker.focal_length_mode == 'STATIC_FOCAL_LENGTH':
         geotracker.static_focal_length = focal_mm_to_px(
             camera_focal_length(geotracker.camobj),
-            *render_frame(), camera_sensor_width(geotracker.camobj))
+            *bpy_render_frame(), camera_sensor_width(geotracker.camobj))
 
 
 

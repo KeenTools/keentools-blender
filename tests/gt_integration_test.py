@@ -13,8 +13,10 @@ from keentools.utils.materials import get_mat_by_name, assign_material_to_object
 from keentools.addon_config import get_operator
 from keentools.geotracker_config import GTConfig
 from keentools.utils.animation import create_locrot_keyframe
-from keentools.utils.bpy_common import bpy_current_frame, bpy_set_current_frame, bpy_scene
-from keentools.utils.coords import update_depsgraph
+from keentools.utils.bpy_common import (bpy_current_frame,
+                                        bpy_set_current_frame,
+                                        bpy_scene,
+                                        update_depsgraph)
 from keentools.geotracker_config import get_gt_settings, get_current_geotracker_item
 from keentools.geotracker.gtloader import GTLoader
 from keentools.utils.ui_redraw import get_areas_by_type

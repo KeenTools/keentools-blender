@@ -33,8 +33,8 @@ from .shaders import (simple_fill_vertex_shader,
                       smooth_3d_vertex_local_shader, smooth_3d_fragment_shader)
 from .coords import (get_mesh_verts,
                      multiply_verts_on_matrix_4x4,
-                     get_scale_vec_4_from_matrix_world,
-                     evaluated_mesh)
+                     get_scale_vec_4_from_matrix_world)
+from .bpy_common import evaluated_mesh
 
 
 class KTEdgeShaderBase:

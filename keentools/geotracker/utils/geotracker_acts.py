@@ -36,14 +36,15 @@ from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
 from ...utils.bpy_common import (create_empty_object,
                                  bpy_current_frame,
-                                 bpy_set_current_frame)
+                                 bpy_set_current_frame,
+                                 update_depsgraph,
+                                 reset_unsaved_animation_changes_in_frame)
 from ...utils.animation import (get_action,
                                 get_object_keyframe_numbers,
                                 create_animation_locrot_keyframe_force)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.timer import RepeatTimer
-from ...utils.coords import (update_depsgraph,
-                             xy_to_xz_rotation_matrix_4x4)
+from ...utils.coords import xy_to_xz_rotation_matrix_4x4
 from .textures import bake_texture, preview_material_with_texture
 from .prechecks import (common_checks,
                         track_checks,
@@ -706,15 +707,6 @@ def relative_to_camera_act() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def _reset_unsaved_animation_changes_in_frame() -> int:
-    current_frame = bpy_current_frame()
-    bpy_set_current_frame(current_frame + 1)
-    update_depsgraph()
-    bpy_set_current_frame(current_frame)
-    update_depsgraph()
-    return current_frame
-
-
 def geometry_repositioninig_act() -> ActionStatus:
     check_status = common_checks(is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
@@ -734,7 +726,7 @@ def geometry_repositioninig_act() -> ActionStatus:
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    current_frame = _reset_unsaved_animation_changes_in_frame()
+    current_frame = reset_unsaved_animation_changes_in_frame()
 
     gt = GTLoader.kt_geotracker()
 
@@ -782,7 +774,7 @@ def camera_repositioninig_act() -> ActionStatus:
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    current_frame = _reset_unsaved_animation_changes_in_frame()
+    current_frame = reset_unsaved_animation_changes_in_frame()
 
     gt = GTLoader.kt_geotracker()
 
@@ -831,7 +823,7 @@ def move_tracking_to_camera_act() -> ActionStatus:
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    current_frame = _reset_unsaved_animation_changes_in_frame()
+    current_frame = reset_unsaved_animation_changes_in_frame()
 
     gt = GTLoader.kt_geotracker()
 

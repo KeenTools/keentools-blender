@@ -15,20 +15,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
 
 import numpy as np
 import bpy
 
 from ..geotracker_config import GTConfig, get_gt_settings
-from ..utils.coords import (render_frame,
-                            get_camera_border,
+from ..utils.coords import (get_camera_border,
                             image_space_to_region,
                             frame_to_image_space,
                             multiply_verts_on_matrix_4x4,
                             to_homogeneous,
-                            evaluated_mesh,
                             pin_to_xyz_from_mesh)
+from ..utils.bpy_common import bpy_render_frame, evaluated_mesh
 from ..utils.viewport import KTViewport
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
@@ -118,7 +116,7 @@ class GTViewport(KTViewport):
             vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # left camera corner
             vertex_colors.append((1.0, 0, 1.0, 0.2))  # right camera corner
 
-        rx, ry = render_frame()
+        rx, ry = bpy_render_frame()
         x1, y1, x2, y2 = get_camera_border(area)
 
         pins = self.pins()
@@ -147,7 +145,7 @@ class GTViewport(KTViewport):
         self.points2d().create_batch()
 
     def update_residuals(self, gt, area, keyframe):
-        rx, ry = render_frame()
+        rx, ry = bpy_render_frame()
         x1, y1, x2, y2 = get_camera_border(area)
 
         p2d = self.points2d().get_vertices()

@@ -40,6 +40,15 @@ def bpy_set_current_frame(frame: int) -> None:
     bpy.context.scene.frame_set(frame)
 
 
+def bpy_render_frame() -> Tuple[int, int]:
+    scene = bpy.context.scene
+    rx = scene.render.resolution_x
+    ry = scene.render.resolution_y
+    w = rx if rx != 0 else 1
+    h = ry if ry != 0 else 1
+    return w, h
+
+
 def link_object_to_current_scene_collection(obj: Object) -> None:
     act_col = bpy.context.view_layer.active_layer_collection
     index = bpy.data.collections.find(act_col.name)
@@ -92,3 +101,27 @@ def get_scene_camera_shift() -> Tuple[float, float]:
     if not cam:
         return 0.0, 0.0
     return cam.data.shift_x, cam.data.shift_y
+
+
+def get_depsgraph() -> Any:
+    return bpy.context.evaluated_depsgraph_get()
+
+
+def evaluated_mesh(obj: Any) -> Any:
+    depsgraph = get_depsgraph()
+    return obj.evaluated_get(depsgraph)
+
+
+def update_depsgraph() -> Any:
+    depsgraph = get_depsgraph()
+    depsgraph.update()
+    return depsgraph
+
+
+def reset_unsaved_animation_changes_in_frame() -> int:
+    current_frame = bpy_current_frame()
+    bpy_set_current_frame(current_frame + 1)
+    update_depsgraph()
+    bpy_set_current_frame(current_frame)
+    update_depsgraph()
+    return current_frame
