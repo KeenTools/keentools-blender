@@ -125,7 +125,7 @@ class GT_OT_PinMode(bpy.types.Operator):
             return {'FINISHED'}
 
         GTLoader.load_pins_into_viewport()
-        GTLoader.place_camera()
+        GTLoader.place_object_or_camera()
 
         vp = GTLoader.viewport()
         vp.update_surface_points(gt, geotracker.geomobj, kid)
@@ -182,7 +182,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         set_background_image_by_movieclip(geotracker.camobj,
                                           geotracker.movie_clip)
 
-        GTLoader.place_camera()
+        GTLoader.place_object_or_camera()
         switch_to_camera(area, geotracker.camobj,
                          geotracker.animatable_object())
 

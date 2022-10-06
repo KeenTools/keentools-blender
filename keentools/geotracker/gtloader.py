@@ -125,7 +125,7 @@ def frame_change_post_handler(scene):
     _log.output('KEYFRAME UPDATED')
     geotracker = get_current_geotracker_item()
     geotracker.reset_focal_length_estimation()
-    GTLoader.place_camera()
+    GTLoader.place_object_or_camera()
     GTLoader.update_all_viewport_shaders()
 
 
@@ -266,9 +266,9 @@ class GTLoader:
         vp.tag_redraw()
 
     @classmethod
-    def place_camera(cls) -> None:
+    def place_object_or_camera(cls) -> None:
         geotracker = get_current_geotracker_item()
-        if not geotracker or not geotracker.geomobj or not geotracker.camobj:
+        if not geotracker:
             return
         gt = cls.kt_geotracker()
         keyframe = bpy_current_frame()
@@ -276,14 +276,28 @@ class GTLoader:
             return
         gt_model_mat = gt.model_mat(keyframe)
         if geotracker.camera_mode():
-            mat = calc_bpy_camera_mat_relative_to_model(geotracker.geomobj,
-                                                        gt_model_mat)
-            geotracker.camobj.matrix_world = mat
+            cls.place_camera_relative_to_object(gt_model_mat)
         else:
-            mat = calc_bpy_model_mat_relative_to_camera(geotracker.camobj,
-                                                        geotracker.geomobj,
-                                                        gt_model_mat)
-            geotracker.geomobj.matrix_world = mat
+            cls.place_object_relative_to_camera(gt_model_mat)
+
+    @classmethod
+    def place_object_relative_to_camera(cls, gt_model_mat: Any) -> None:
+        geotracker = get_current_geotracker_item()
+        if not geotracker or not geotracker.geomobj or not geotracker.camobj:
+            return
+        mat = calc_bpy_model_mat_relative_to_camera(geotracker.camobj,
+                                                    geotracker.geomobj,
+                                                    gt_model_mat)
+        geotracker.geomobj.matrix_world = mat
+
+    @classmethod
+    def place_camera_relative_to_object(cls, gt_model_mat: Any) -> None:
+        geotracker = get_current_geotracker_item()
+        if not geotracker or not geotracker.geomobj or not geotracker.camobj:
+            return
+        mat = calc_bpy_camera_mat_relative_to_model(geotracker.geomobj,
+                                                    gt_model_mat)
+        geotracker.camobj.matrix_world = mat
 
     @classmethod
     def updated_focal_length(cls, force: bool=False) -> Optional[float]:

@@ -241,7 +241,7 @@ class GT_PT_InputPanel(AllVisible):
 
     def draw(self, context):
         settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
             return
 
@@ -297,7 +297,7 @@ class GT_PT_AnalyzePanel(AllVisible):
 
     def draw(self, context):
         settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
             return
 
@@ -339,7 +339,7 @@ class GT_PT_CameraPanel(AllVisible):
 
     def draw(self, context):
         settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
             return
 
@@ -374,7 +374,7 @@ class GT_PT_TrackingPanel(AllVisible):
 
     def draw(self, context):
         settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
             return
 
@@ -491,7 +491,7 @@ class GT_PT_WireframeSettingsPanel(AllVisible):
         split.prop(settings, 'wireframe_opacity', text='', slider=True)
         col.prop(settings, 'wireframe_backface_culling')
 
-        geotracker = settings.get_current_geotracker_item()
+        geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
             return
 
@@ -560,3 +560,17 @@ class GT_PT_AnimationPanel(AllVisible):
     def draw(self, context):
         layout = self.layout
         layout.operator(GTConfig.gt_create_animated_empty_idname)
+        op = layout.operator(GTConfig.gt_actor_idname, text='Relative to Camera')
+        op.action = 'relative_to_camera'
+
+        op = layout.operator(GTConfig.gt_actor_idname, text='Reorient Geometry')
+        op.action = 'geometry_repositioning'
+
+        op = layout.operator(GTConfig.gt_actor_idname, text='Reorient Camera')
+        op.action = 'camera_repositioning'
+
+        op = layout.operator(GTConfig.gt_actor_idname, text='Geom Tracking -> Camera')
+        op.action = 'move_tracking_to_camera'
+
+        op = layout.operator(GTConfig.gt_actor_idname, text='Camera Tracking -> Geom')
+        op.action = 'move_tracking_to_geometry'

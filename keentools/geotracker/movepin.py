@@ -210,7 +210,7 @@ class GT_OT_MovePin(bpy.types.Operator):
 
         self.dragged = True
 
-        GTLoader.place_camera()
+        GTLoader.place_object_or_camera()
         if geotracker.focal_length_estimation:
             GTLoader.updated_focal_length()
 
