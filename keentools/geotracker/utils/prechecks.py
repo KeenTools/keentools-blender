@@ -91,7 +91,8 @@ def show_unlicensed_warning() -> None:
     warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
 
 
-def common_checks(*, pinmode: bool=False,
+def common_checks(*, object_mode: bool=False,
+                  pinmode: bool=False,
                   pinmode_out: bool=False,
                   is_calculating: bool=False,
                   reload_geotracker: bool = False,
@@ -99,6 +100,17 @@ def common_checks(*, pinmode: bool=False,
                   camera: bool=False,
                   geometry: bool=False,
                   movie_clip: bool=False) -> ActionStatus:
+
+    if object_mode:
+        if not hasattr(bpy.context, 'mode'):
+            msg = 'Context has no mode attribute'
+            _log.error(msg)
+            return ActionStatus(False, msg)
+        if bpy.context.mode != 'OBJECT':
+            msg = 'This works only in OBJECT mode'
+            _log.error(msg)
+            return ActionStatus(False, msg)
+
     settings = get_gt_settings()
     if is_calculating and settings.is_calculating():
         msg = 'Calculation is performing'
@@ -139,9 +151,9 @@ def common_checks(*, pinmode: bool=False,
 
 
 def track_checks() -> ActionStatus:
-    check_status = common_checks(pinmode=True, is_calculating=True,
-                                 reload_geotracker=True, geotracker=True,
-                                 camera=True, geometry=True)
+    check_status = common_checks(object_mode=True, pinmode=True,
+                                 is_calculating=True, reload_geotracker=True,
+                                 geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
 

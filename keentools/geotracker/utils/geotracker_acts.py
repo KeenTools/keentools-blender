@@ -61,7 +61,8 @@ _log = KTLogger(__name__)
 
 
 def create_geotracker_act() -> ActionStatus:
-    check_status = common_checks(pinmode_out=True, is_calculating=True)
+    check_status = common_checks(object_mode=True, pinmode_out=True,
+                                 is_calculating=True)
     if not check_status.success:
         return check_status
 
@@ -86,7 +87,8 @@ def create_geotracker_act() -> ActionStatus:
 
 
 def delete_geotracker_act(geotracker_num: int) -> ActionStatus:
-    check_status = common_checks(pinmode_out=True, is_calculating=True)
+    check_status = common_checks(object_mode=True, pinmode_out=True,
+                                 is_calculating=True)
     if not check_status.success:
         return check_status
 
@@ -101,8 +103,8 @@ def delete_geotracker_act(geotracker_num: int) -> ActionStatus:
 
 
 def add_keyframe_act() -> ActionStatus:
-    check_status = common_checks(pinmode=True, is_calculating=True,
-                                 reload_geotracker=True,
+    check_status = common_checks(object_mode=True, pinmode=True,
+                                 is_calculating=True, reload_geotracker=True,
                                  geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
@@ -117,8 +119,8 @@ def add_keyframe_act() -> ActionStatus:
 
 
 def remove_keyframe_act() -> ActionStatus:
-    check_status = common_checks(pinmode=True, is_calculating=True,
-                                 reload_geotracker=True,
+    check_status = common_checks(object_mode=True, pinmode=True,
+                                 is_calculating=True, reload_geotracker=True,
                                  geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
@@ -138,7 +140,8 @@ def remove_keyframe_act() -> ActionStatus:
 
 
 def next_keyframe_act() -> ActionStatus:
-    check_status = common_checks(is_calculating=True, reload_geotracker=True,
+    check_status = common_checks(object_mode=False, is_calculating=True,
+                                 reload_geotracker=True,
                                  geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
@@ -153,7 +156,8 @@ def next_keyframe_act() -> ActionStatus:
 
 
 def prev_keyframe_act() -> ActionStatus:
-    check_status = common_checks(is_calculating=True, reload_geotracker=True,
+    check_status = common_checks(object_mode=False, is_calculating=True,
+                                 reload_geotracker=True,
                                  geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
@@ -506,9 +510,9 @@ def refine_all_act() -> ActionStatus:
 
 
 def clear_between_keyframes_act() -> ActionStatus:
-    check_status = common_checks(pinmode=True, is_calculating=True,
-                                 reload_geotracker=True, geotracker=True,
-                                 camera=True, geometry=True)
+    check_status = common_checks(object_mode=False, pinmode=True,
+                                 is_calculating=True, reload_geotracker=True,
+                                 geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
@@ -527,9 +531,9 @@ def clear_between_keyframes_act() -> ActionStatus:
 
 
 def clear_direction_act(forward: bool) -> ActionStatus:
-    check_status = common_checks(pinmode=True, is_calculating=True,
-                                 reload_geotracker=True, geotracker=True,
-                                 camera=True, geometry=True)
+    check_status = common_checks(object_mode=False, pinmode=True,
+                                 is_calculating=True, reload_geotracker=True,
+                                 geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
@@ -549,9 +553,9 @@ def clear_direction_act(forward: bool) -> ActionStatus:
 
 
 def clear_all_act() -> ActionStatus:
-    check_status = common_checks(pinmode=True, is_calculating=True,
-                                 reload_geotracker=True, geotracker=True,
-                                 camera=True, geometry=True)
+    check_status = common_checks(object_mode=False, pinmode=True,
+                                 is_calculating=True, reload_geotracker=True,
+                                 geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
@@ -569,7 +573,7 @@ def clear_all_act() -> ActionStatus:
 
 
 def remove_focal_keyframe_act() -> ActionStatus:
-    check_status = common_checks(is_calculating=True,
+    check_status = common_checks(object_mode=False, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True)
     if not check_status.success:
@@ -581,7 +585,7 @@ def remove_focal_keyframe_act() -> ActionStatus:
 
 
 def remove_focal_keyframes_act() -> ActionStatus:
-    check_status = common_checks(is_calculating=True,
+    check_status = common_checks(object_mode=False, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True)
     if not check_status.success:
@@ -593,9 +597,9 @@ def remove_focal_keyframes_act() -> ActionStatus:
 
 
 def remove_pins_act() -> ActionStatus:
-    check_status = common_checks(pinmode=True, is_calculating=True,
-                                 reload_geotracker=True, geotracker=True,
-                                 camera=True, geometry=True)
+    check_status = common_checks(object_mode=True, pinmode=True,
+                                 is_calculating=True, reload_geotracker=True,
+                                 geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
@@ -613,9 +617,9 @@ def remove_pins_act() -> ActionStatus:
 
 
 def toggle_pins_act() -> ActionStatus:
-    check_status = common_checks(pinmode=True, is_calculating=True,
-                                 reload_geotracker=True, geotracker=True,
-                                 camera=True, geometry=True)
+    check_status = common_checks(object_mode=True, pinmode=True,
+                                 is_calculating=True, reload_geotracker=True,
+                                 geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
@@ -631,9 +635,9 @@ def toggle_pins_act() -> ActionStatus:
 
 
 def center_geo_act() -> ActionStatus:
-    check_status = common_checks(pinmode=True, is_calculating=True,
-                                 reload_geotracker=True, geotracker=True,
-                                 camera=True, geometry=True)
+    check_status = common_checks(object_mode=True, pinmode=True,
+                                 is_calculating=True, reload_geotracker=True,
+                                 geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
@@ -644,7 +648,7 @@ def center_geo_act() -> ActionStatus:
 
 
 def create_animated_empty_act() -> ActionStatus:
-    check_status = common_checks(is_calculating=True,
+    check_status = common_checks(object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
     if not check_status.success:
@@ -664,7 +668,7 @@ def create_animated_empty_act() -> ActionStatus:
 
 
 def bake_texture_from_frames_act(selected_frames: List) -> ActionStatus:
-    check_status = common_checks(is_calculating=True,
+    check_status = common_checks(object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True, movie_clip=True)
     if not check_status.success:
@@ -680,7 +684,7 @@ def bake_texture_from_frames_act(selected_frames: List) -> ActionStatus:
 
 
 def relative_to_camera_act() -> ActionStatus:
-    check_status = common_checks(is_calculating=True,
+    check_status = common_checks(object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
     if not check_status.success:
@@ -721,7 +725,7 @@ def relative_to_camera_act() -> ActionStatus:
 
 
 def relative_to_geometry_act() -> ActionStatus:
-    check_status = common_checks(is_calculating=True,
+    check_status = common_checks(object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
     if not check_status.success:
@@ -761,7 +765,7 @@ def relative_to_geometry_act() -> ActionStatus:
 
 
 def geometry_repositioninig_act() -> ActionStatus:
-    check_status = common_checks(is_calculating=True,
+    check_status = common_checks(object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
     if not check_status.success:
@@ -809,7 +813,7 @@ def geometry_repositioninig_act() -> ActionStatus:
 
 
 def camera_repositioninig_act() -> ActionStatus:
-    check_status = common_checks(is_calculating=True,
+    check_status = common_checks(object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
     if not check_status.success:
@@ -857,7 +861,7 @@ def camera_repositioninig_act() -> ActionStatus:
 
 
 def move_tracking_to_camera_act() -> ActionStatus:
-    check_status = common_checks(is_calculating=True,
+    check_status = common_checks(object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
     if not check_status.success:
@@ -902,7 +906,7 @@ def move_tracking_to_camera_act() -> ActionStatus:
 
 
 def move_tracking_to_geometry_act() -> ActionStatus:
-    check_status = common_checks(is_calculating=True,
+    check_status = common_checks(object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
     if not check_status.success:

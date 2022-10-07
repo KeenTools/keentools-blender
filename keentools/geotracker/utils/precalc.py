@@ -138,7 +138,8 @@ class PrecalcTimer(CalcTimer):
 
 
 def precalc_with_runner_act(context: Any) -> ActionStatus:
-    check_status = common_checks(is_calculating=True, reload_geotracker=True,
+    check_status = common_checks(object_mode=True, is_calculating=True,
+                                 reload_geotracker=True,
                                  geotracker=True, camera=True, movie_clip=True)
     if not check_status.success:
         return check_status

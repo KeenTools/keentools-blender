@@ -292,7 +292,7 @@ class GT_OT_FrameSelector(bpy.types.Operator):
                            'to create texture.')
 
     def invoke(self, context, event):
-        check_status = common_checks(is_calculating=True,
+        check_status = common_checks(object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True,
                                      movie_clip=True)
@@ -313,9 +313,9 @@ class GT_OT_FrameSelector(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
-        check_status = common_checks(is_calculating=True, geotracker=True,
-                                     camera=True, geometry=True,
-                                     movie_clip=True)
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     geotracker=True, camera=True,
+                                     geometry=True, movie_clip=True)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
@@ -373,7 +373,7 @@ class GT_OT_ReprojectTextureSequence(_DirSelectionTemplate):
         col.label(text=file_pattern.format(str(self.to_frame).zfill(4)))
 
     def invoke(self, context, _event):
-        check_status = common_checks(is_calculating=True,
+        check_status = common_checks(object_mode=True, is_calculating=True,
                                      reload_geotracker=True,
                                      geotracker=True, camera=True,
                                      geometry=True, movie_clip=True)
@@ -394,7 +394,7 @@ class GT_OT_ReprojectTextureSequence(_DirSelectionTemplate):
         return '.png' if self.file_format == 'PNG' else '.jpg'
 
     def execute(self, context):
-        check_status = common_checks(is_calculating=True,
+        check_status = common_checks(object_mode=True, is_calculating=True,
                                      reload_geotracker=True,
                                      geotracker=True, camera=True,
                                      geometry=True, movie_clip=True)
