@@ -26,7 +26,7 @@ from ..utils.coords import (get_camera_border,
                             multiply_verts_on_matrix_4x4,
                             to_homogeneous,
                             pin_to_xyz_from_mesh)
-from ..utils.bpy_common import bpy_render_frame, evaluated_mesh
+from ..utils.bpy_common import bpy_render_frame, evaluated_object
 from ..utils.viewport import KTViewport
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
@@ -101,7 +101,7 @@ class GTViewport(KTViewport):
     def surface_points_from_mesh(self, gt, headobj, keyframe):
         verts = []
         pins_count = gt.pins_count()
-        obj = evaluated_mesh(headobj)
+        obj = evaluated_object(headobj)
         if len(obj.data.vertices) == 0:
             return verts
         for i in range(pins_count):

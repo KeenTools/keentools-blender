@@ -18,7 +18,7 @@
 from typing import Any, Dict, Callable, Tuple
 
 import bpy
-from bpy.types import Object, Operator
+from bpy.types import Object, Mesh, Operator
 
 
 def bpy_scene() -> Any:
@@ -107,9 +107,14 @@ def get_depsgraph() -> Any:
     return bpy.context.evaluated_depsgraph_get()
 
 
-def evaluated_mesh(obj: Any) -> Any:
+def evaluated_object(obj: Any) -> Object:
     depsgraph = get_depsgraph()
     return obj.evaluated_get(depsgraph)
+
+
+def evaluated_mesh(obj: Object) -> Mesh:
+    object_eval = evaluated_object(obj) if obj.mode == 'OBJECT' else obj
+    return object_eval.data
 
 
 def update_depsgraph() -> Any:

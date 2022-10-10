@@ -32,7 +32,8 @@ from ..utils.coords import (image_space_to_frame,
                             focal_by_projection_matrix_mm,
                             compensate_view_scale,
                             frame_to_image_space,
-                            camera_sensor_width)
+                            camera_sensor_width,
+                            get_triangles_in_vertex_group)
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
                                 get_scene_camera_shift)
@@ -448,13 +449,11 @@ class GTLoader:
         geotracker = get_current_geotracker_item()
         if not geotracker.geomobj:
             return
-        # vertex_group_index = geotracker.geomobj.vertex_groups.find(geotracker.poly_mask)
-        # if vertex_group_index < 0:
-        #     return
-        # vertex_group = geotracker.vertex_groups(vertex_group_index)
         vp = cls.viewport()
         selection = vp.poly_selection()
         selection.init_geom_data_from_mesh(geotracker.geomobj)
+        selection.triangle_indices = get_triangles_in_vertex_group(
+            geotracker.geomobj, geotracker.poly_mask)
         selection.create_batch()
 
     @classmethod

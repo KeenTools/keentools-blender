@@ -20,7 +20,7 @@ import numpy as np
 from typing import Any, List, Callable, Tuple, Optional
 
 import bpy
-from bpy.types import Area, Region
+from bpy.types import Object, Area, Region
 import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
@@ -326,9 +326,8 @@ class KTTrisShaderLocal3D(KTShaderBase):
             self.object_world_matrix.ravel(), 16)
         self.fill_batch.draw(self.fill_shader)
 
-    def init_geom_data_from_mesh(self, obj: Any) -> None:
-        object_eval = evaluated_mesh(obj) if obj.mode == 'OBJECT' else obj
-        mesh = object_eval.data
+    def init_geom_data_from_mesh(self, obj: Object) -> None:
+        mesh = evaluated_mesh(obj)
         verts = get_mesh_verts(mesh)
         mw = np.array(obj.matrix_world, dtype=np.float32).transpose()
 
@@ -512,8 +511,7 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
 
         self.object_world_matrix = scminv @ np.array(mw, dtype=np.float32).transpose()
 
-        object_eval = evaluated_mesh(obj) if obj.mode == 'OBJECT' else obj
-        mesh = object_eval.data
+        mesh = evaluated_mesh(obj)
         verts = get_mesh_verts(mesh)
 
         self.vertices = multiply_verts_on_matrix_4x4(verts, scm)

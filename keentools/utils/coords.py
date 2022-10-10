@@ -23,7 +23,7 @@ import math
 import bpy
 from bpy.types import Area, Object
 from .fake_context import get_fake_context
-from .bpy_common import bpy_current_frame, bpy_render_frame
+from .bpy_common import bpy_current_frame, bpy_render_frame, evaluated_mesh
 from .animation import get_safe_evaluated_fcurve
 
 
@@ -439,3 +439,27 @@ def get_triangulation_indices(mesh: Any, calculate: bool = True) -> Any:
     mesh.loop_triangles.foreach_get(
         'vertices', np.reshape(indices, len(mesh.loop_triangles) * 3))
     return indices
+
+
+def get_triangles_in_vertex_group(obj: Object, vertex_group_name: str):
+    mesh = evaluated_mesh(obj)
+
+    vertex_group_index = obj.vertex_groups.find(vertex_group_name)
+    if vertex_group_index < 0:
+        return []
+
+    verts_in_group = set([v.index for v in mesh.vertices if
+                          vertex_group_index in [g.group for g in v.groups]])
+
+    polys_in_group = set()
+    for polygon in mesh.polygons:
+        if verts_in_group.issuperset(polygon.vertices[:]):
+            polys_in_group.add(polygon.index)
+
+    mesh.calc_loop_triangles()
+    triangles = []
+    for tris in mesh.loop_triangles:
+        tris_verts = tris.vertices[:]
+        if tris.polygon_index in polys_in_group:
+            triangles.append(tris_verts)
+    return np.array(triangles, dtype=np.int32)
