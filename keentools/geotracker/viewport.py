@@ -30,7 +30,11 @@ from ..utils.bpy_common import bpy_render_frame, evaluated_mesh
 from ..utils.viewport import KTViewport
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
-from ..utils.edges import KTEdgeShader2D, KTEdgeShaderLocal3D, KTEdgeShaderAll2D, KTScreenRectangleShader2D
+from ..utils.edges import (KTEdgeShader2D,
+                           KTEdgeShaderLocal3D,
+                           KTEdgeShaderAll2D,
+                           KTScreenRectangleShader2D,
+                           KTTrisShaderLocal3D)
 
 
 class GTViewport(KTViewport):
@@ -44,6 +48,7 @@ class GTViewport(KTViewport):
         self._timeliner = KTEdgeShaderAll2D(bpy.types.SpaceDopeSheetEditor,
                                             GTConfig.timeline_keyframe_color)
         self._selector = KTScreenRectangleShader2D(bpy.types.SpaceView3D)
+        self._poly_selection = KTTrisShaderLocal3D(bpy.types.SpaceView3D)
         self._draw_update_timer_handler = None
 
     def register_handlers(self, context):
@@ -56,10 +61,12 @@ class GTViewport(KTViewport):
         self.wireframer().register_handler(context)
         self.timeliner().register_handler(context)
         self.selector().register_handler(context)
+        self.poly_selection().register_handler(context)
         self.register_draw_update_timer(time_step=GTConfig.viewport_redraw_interval)
 
     def unregister_handlers(self):
         self.unregister_draw_update_timer()
+        self.poly_selection().unregister_handler()
         self.selector().unregister_handler()
         self.timeliner().unregister_handler()
         self.wireframer().unregister_handler()

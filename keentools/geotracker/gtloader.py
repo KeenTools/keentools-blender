@@ -420,7 +420,7 @@ class GTLoader:
         if not geotracker or not geotracker.geomobj:
             return
 
-        vp = GTLoader.viewport()
+        vp = cls.viewport()
         wf = vp.wireframer()
         wf.init_geom_data_from_mesh(geotracker.geomobj)
         wf.init_color_data((*settings.wireframe_color,
@@ -430,10 +430,10 @@ class GTLoader:
 
     @classmethod
     def update_viewport_pins_and_residuals(cls, area: Area) -> None:
-        vp = GTLoader.viewport()
-        GTLoader.load_pins_into_viewport()
+        vp = cls.viewport()
+        cls.load_pins_into_viewport()
         vp.create_batch_2d(area)
-        gt = GTLoader.kt_geotracker()
+        gt = cls.kt_geotracker()
 
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.geomobj:
@@ -444,6 +444,20 @@ class GTLoader:
         vp.update_residuals(gt, area, kid)
 
     @classmethod
+    def update_3d_mask(cls) -> None:
+        geotracker = get_current_geotracker_item()
+        if not geotracker.geomobj:
+            return
+        # vertex_group_index = geotracker.geomobj.vertex_groups.find(geotracker.poly_mask)
+        # if vertex_group_index < 0:
+        #     return
+        # vertex_group = geotracker.vertex_groups(vertex_group_index)
+        vp = cls.viewport()
+        selection = vp.poly_selection()
+        selection.init_geom_data_from_mesh(geotracker.geomobj)
+        selection.create_batch()
+
+    @classmethod
     def update_all_viewport_shaders(cls, area: Optional[Area]=None) -> None:
         if area is None:
             vp = cls.viewport()
@@ -452,6 +466,7 @@ class GTLoader:
                 return
         cls.update_viewport_wireframe()
         cls.update_viewport_pins_and_residuals(area)
+        cls.update_3d_mask()
         cls.update_timeline()
 
     @classmethod

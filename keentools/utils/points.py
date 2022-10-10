@@ -130,20 +130,8 @@ class KTScreenPins:
 
 
 class KTShaderPoints:
-    """ Base class for Point Drawing Shaders """
-    _is_visible = True
-    _point_size = UserPreferences.get_value_safe('pin_size', UserPreferences.type_float)
-
     # Store all draw handlers registered by class objects
     handler_list = []
-
-    @classmethod
-    def is_visible(cls):
-        return cls._is_visible
-
-    @classmethod
-    def set_visible(cls, flag=True):
-        cls._is_visible = flag
 
     @classmethod
     def add_handler_list(cls, handler):
@@ -168,6 +156,15 @@ class KTShaderPoints:
 
         self._target_class = target_class
         self._work_area = None
+        self._is_visible = True
+        self._point_size = UserPreferences.get_value_safe(
+            'pin_size', UserPreferences.type_float)
+
+    def is_visible(self):
+        return self._is_visible
+
+    def set_visible(self, flag=True):
+        self._is_visible = flag
 
     def get_target_class(self):
         return self._target_class
@@ -178,9 +175,11 @@ class KTShaderPoints:
     def get_vertices(self):
         return self.vertices
 
-    @classmethod
-    def set_point_size(cls, ps):
-        cls._point_size = ps
+    def set_point_size(self, ps):
+        self._point_size = ps
+
+    def get_point_size(self):
+        return self._point_size
 
     def _create_batch(self, vertices, vertices_colors,
                       shadername='2D_FLAT_COLOR'):
@@ -254,7 +253,7 @@ class KTShaderPoints:
             return
 
         if self.shader is not None:
-            bgl.glPointSize(self._point_size)
+            bgl.glPointSize(self.get_point_size())
             bgl.glEnable(bgl.GL_BLEND)
             self.shader.bind()
             self.batch.draw(self.shader)

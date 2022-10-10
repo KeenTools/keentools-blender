@@ -430,3 +430,12 @@ def camera_projection(camobj: Object, frame: Optional[int]=None,
     proj_mat = custom_projection_matrix(image_width, image_height, lens,
                                         cam_data.sensor_width, near, far)
     return proj_mat
+
+
+def get_triangulation_indices(mesh: Any, calculate: bool = True) -> Any:
+    if calculate:
+        mesh.calc_loop_triangles()
+    indices = np.empty((len(mesh.loop_triangles), 3), dtype=np.int32)
+    mesh.loop_triangles.foreach_get(
+        'vertices', np.reshape(indices, len(mesh.loop_triangles) * 3))
+    return indices

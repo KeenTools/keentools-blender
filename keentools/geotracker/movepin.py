@@ -225,6 +225,9 @@ class GT_OT_MovePin(bpy.types.Operator):
 
         vp.create_batch_2d(area)
         vp.update_residuals(gt, area, frame)
+        if geotracker.geomobj:
+            vp.poly_selection().set_object_world_matrix(
+                geotracker.geomobj.matrix_world)
         vp.tag_redraw()
         return self.on_default_modal()
 

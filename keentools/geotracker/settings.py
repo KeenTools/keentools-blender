@@ -212,6 +212,8 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     selected_frames: bpy.props.CollectionProperty(type=FrameListItem,
                                                   name='Selected frames')
+    poly_mask: bpy.props.StringProperty(name='Poly mask')
+
     def get_serial_str(self) -> str:
         return self.serial_str
 

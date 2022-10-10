@@ -25,26 +25,26 @@ import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
 
+from .kt_logging import KTLogger
 from .shaders import (simple_fill_vertex_shader,
                       black_fill_fragment_shader, residual_vertex_shader,
                       residual_fragment_shader,
                       solid_line_vertex_shader, solid_line_fragment_shader,
                       simple_fill_vertex_local_shader,
-                      smooth_3d_vertex_local_shader, smooth_3d_fragment_shader)
+                      smooth_3d_vertex_local_shader, smooth_3d_fragment_shader,
+                      uniform_3d_vertex_local_shader)
 from .coords import (get_mesh_verts,
                      multiply_verts_on_matrix_4x4,
-                     get_scale_vec_4_from_matrix_world)
+                     get_scale_vec_4_from_matrix_world,
+                     get_triangulation_indices)
 from .bpy_common import evaluated_mesh
 
 
-class KTEdgeShaderBase:
+_log = KTLogger(__name__)
+
+
+class KTShaderBase:
     handler_list: List[Callable] = []
-
-    def is_visible(self) -> bool:
-        return self._is_shader_visible
-
-    def set_visible(self, flag: bool=True) -> None:
-        self._is_visible = flag
 
     @classmethod
     def add_handler_list(cls, handler: Callable) -> None:
@@ -60,7 +60,64 @@ class KTEdgeShaderBase:
         return len(cls.handler_list) == 0
 
     def __init__(self, target_class: Any=bpy.types.SpaceView3D):
+        self.draw_handler: Optional[Any] = None
+        self.target_class: Any = target_class
+        self.work_area: Optional[Area] = None
+        self.is_shader_visible: bool = True
+        # Check if blender started in background mode
+        if not bpy.app.background:
+            self.init_shaders()
+
+    def is_visible(self) -> bool:
+        return self.is_shader_visible
+
+    def set_visible(self, flag: bool=True) -> None:
+        self.is_shader_visible = flag
+
+    def get_target_class(self) -> Any:
+        return self.target_class
+
+    def set_target_class(self, target_class: Any) -> None:
+        self.target_class = target_class
+
+    def is_working(self) -> bool:
+        return not (self.draw_handler is None)
+
+    def init_shaders(self) -> None:
+        pass
+
+    def create_batch(self) -> None:
+        pass
+
+    def draw_callback(self, context) -> None:
+        pass
+
+    def register_handler(self, context: Any) -> None:
+        self.work_area = context.area
+        if self.draw_handler is not None:
+            self.unregister_handler()
+        self.draw_handler = self.get_target_class().draw_handler_add(
+            self.draw_callback, (context,), 'WINDOW', 'POST_VIEW')
+        self.add_handler_list(self.draw_handler)
+
+    def unregister_handler(self) -> None:
+        if self.draw_handler is not None:
+            self.get_target_class().draw_handler_remove(
+                self.draw_handler, 'WINDOW')
+            self.remove_handler_list(self.draw_handler)
         self.draw_handler = None
+        self.work_area = None
+
+    def hide_shader(self) -> None:
+        self.set_visible(False)
+
+    def unhide_shader(self) -> None:
+        self.set_visible(True)
+
+
+class KTEdgeShaderBase(KTShaderBase):
+    def __init__(self, target_class: Any=bpy.types.SpaceView3D):
+        super().__init__(target_class)
         self.fill_shader = None
         self.line_shader = None
         self.fill_batch = None
@@ -74,43 +131,15 @@ class KTEdgeShaderBase:
         self.edges_colors = []
         self.vertices_colors = []
 
-        self._target_class = target_class
-        self._work_area = None
-        self._is_shader_visible = True
-        self._backface_culling = False
+        self.backface_culling = False
 
         # Check if blender started in background mode
         if not bpy.app.background:
             self.init_shaders()
 
-    def get_target_class(self) -> Any:
-        return self._target_class
-
-    def set_target_class(self, target_class: Any) -> None:
-        self._target_class = target_class
-
-    def is_working(self) -> bool:
-        return not (self.draw_handler is None)
-
     def init_color_data(self, color: Tuple[float, float, float, float]):
         self.edges_colors = np.full(
             (len(self.edges_vertices), 4), color).tolist()
-
-    def register_handler(self, context: Any) -> None:
-        self._work_area = context.area
-        if self.draw_handler is not None:
-            self.unregister_handler()
-        self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, (context,), 'WINDOW', 'POST_VIEW')
-        self.add_handler_list(self.draw_handler)
-
-    def unregister_handler(self) -> None:
-        if self.draw_handler is not None:
-            self.get_target_class().draw_handler_remove(
-                self.draw_handler, 'WINDOW')
-            self.remove_handler_list(self.draw_handler)
-        self.draw_handler = None
-        self._work_area = None
 
     def set_vertices_colors(self, verts: List, colors: List) -> None:
         self.vertices = verts
@@ -120,28 +149,8 @@ class KTEdgeShaderBase:
         self.vertices = []
         self.vertices_colors = []
 
-    def init_shaders(self) -> None:
-        pass
-
-    def draw_callback(self, context) -> None:
-        pass
-
-    def hide_shader(self) -> None:
-        self.set_visible(False)
-
-    def unhide_shader(self) -> None:
-        self.set_visible(True)
-
     def set_backface_culling(self, state: bool) -> None:
-        self._backface_culling = state
-
-    @staticmethod
-    def _get_triangulation_indices(mesh: Any) -> Any:
-        mesh.calc_loop_triangles()
-        indices = np.empty((len(mesh.loop_triangles), 3), dtype=np.int32)
-        mesh.loop_triangles.foreach_get(
-            'vertices', np.reshape(indices, len(mesh.loop_triangles) * 3))
-        return indices
+        self.backface_culling = state
 
 
 class KTEdgeShader2D(KTEdgeShaderBase):
@@ -162,7 +171,7 @@ class KTEdgeShader2D(KTEdgeShaderBase):
         if self.line_shader is None or self.line_batch is None:
             return
 
-        if self._work_area != context.area:
+        if self.work_area != context.area:
             return
 
         bgl.glEnable(bgl.GL_BLEND)
@@ -184,7 +193,7 @@ class KTEdgeShader2D(KTEdgeShaderBase):
         )
 
     def register_handler(self, context: Any) -> None:
-        self._work_area = context.area
+        self.work_area = context.area
         if self.draw_handler is not None:
             self.unregister_handler()
         self.draw_handler = self.get_target_class().draw_handler_add(
@@ -194,12 +203,12 @@ class KTEdgeShader2D(KTEdgeShaderBase):
 
 class KTScreenRectangleShader2D(KTEdgeShader2D):
     def __init__(self, target_class: Any):
-        self._edge_vertices = []
-        self._edge_vertices_colors = []
-        self._line_width = 1.0
-        self._line_color = (0., 0., 1.0, 0.9)
-        self._fill_color = (0., 0., 1.0, 0.5)
-        self._fill_indices = ((0, 1, 3), (4, 5, 0))
+        self.edge_vertices = []
+        self.edge_vertices_colors = []
+        self.line_width = 1.0
+        self.line_color = (0., 0., 1.0, 0.9)
+        self.fill_color = (0., 0., 1.0, 0.5)
+        self.fill_indices = ((0, 1, 3), (4, 5, 0))
         super().__init__(target_class)
 
     def init_shaders(self) -> None:
@@ -216,59 +225,130 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
         if self.line_shader is None or self.line_batch is None:
             return
 
-        if self._work_area != context.area:
+        if self.work_area != context.area:
             return
 
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-        bgl.glLineWidth(self._line_width)  # Rectangle Width
+        bgl.glLineWidth(self.line_width)  # Rectangle Width
 
         self.line_shader.bind()
         self.line_batch.draw(self.line_shader)
         self.fill_shader.bind()
-        self.fill_shader.uniform_float('color', self._fill_color)
+        self.fill_shader.uniform_float('color', self.fill_color)
         self.fill_batch.draw(self.fill_shader)
 
     def create_batch(self) -> None:
         if bpy.app.background:
             return
-        self._edge_vertices_colors = [self._line_color] * len(self._edge_vertices)
+        self.edge_vertices_colors = [self.line_color] * len(self.edge_vertices)
         # Our shader batch
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
-            {'pos': self._edge_vertices, 'color': self._edge_vertices_colors}
+            {'pos': self.edge_vertices, 'color': self.edge_vertices_colors}
         )
         self.fill_batch = batch_for_shader(
             self.fill_shader, 'TRIS',
-            {'pos': self._edge_vertices},
-            indices=self._fill_indices if len(self._edge_vertices) == 8 else []
+            {'pos': self.edge_vertices},
+            indices=self.fill_indices if len(self.edge_vertices) == 8 else []
         )
 
     def clear_rectangle(self) -> None:
-        self._edge_vertices = []
-        self._edge_vertices_colors = []
+        self.edge_vertices = []
+        self.edge_vertices_colors = []
 
     def add_rectangle(self, x1: int, y1: int, x2: int, y2: int) -> None:
-        self._edge_vertices = [(x1, y1), (x1, y2),
-                               (x1, y2), (x2, y2),
-                               (x2, y2), (x2, y1),
-                               (x2, y1), (x1, y1)]
+        self.edge_vertices = [(x1, y1), (x1, y2),
+                              (x1, y2), (x2, y2),
+                              (x2, y2), (x2, y1),
+                              (x2, y1), (x1, y1)]
+
+
+class KTTrisShaderLocal3D(KTShaderBase):
+    def __init__(self, target_class: Any):
+        self.vertices = []
+        self.triangle_indices = []
+        self.fill_color = (0., 0., 1.0, 0.3)
+        self.fill_shader = None
+        self.fill_batch = None
+        self.object_world_matrix = np.eye(4, dtype=np.float32)
+        super().__init__(target_class)
+
+    def set_object_world_matrix(self, bpy_matrix_world: Any) -> None:
+        self.object_world_matrix = np.array(bpy_matrix_world,
+                                            dtype=np.float32).transpose()
+
+    def init_shaders(self) -> None:
+        self.fill_shader = gpu.types.GPUShader(
+            uniform_3d_vertex_local_shader(), smooth_3d_fragment_shader())
+
+    def create_batch(self) -> None:
+        if bpy.app.background:
+            return
+        verts = []
+        indices = []
+
+        verts_count = len(self.vertices)
+        if verts_count > 0:
+            if len(self.triangle_indices) > 0:
+                max_index = self.triangle_indices.max()
+                if max_index < verts_count:
+                    verts = self.vertices
+                    indices = self.triangle_indices
+
+        self.fill_batch = batch_for_shader(
+            self.fill_shader, 'TRIS', {'pos': verts},
+            indices=indices)
+
+    def draw_callback(self, context: Any) -> None:
+        # Force Stop
+        if self.is_handler_list_empty():
+            self.unregister_handler()
+            return
+
+        if self.fill_shader is None or self.fill_batch is None:
+            return
+
+        if self.work_area != context.area:
+            return
+
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glEnable(bgl.GL_LINE_SMOOTH)
+        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
+        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
+
+        self.fill_shader.bind()
+        self.fill_shader.uniform_float('color', self.fill_color)
+        self.fill_shader.uniform_vector_float(
+            self.fill_shader.uniform_from_name('modelMatrix'),
+            self.object_world_matrix.ravel(), 16)
+        self.fill_batch.draw(self.fill_shader)
+
+    def init_geom_data_from_mesh(self, obj: Any) -> None:
+        object_eval = evaluated_mesh(obj) if obj.mode == 'OBJECT' else obj
+        mesh = object_eval.data
+        verts = get_mesh_verts(mesh)
+        mw = np.array(obj.matrix_world, dtype=np.float32).transpose()
+
+        self.object_world_matrix = mw
+        self.vertices = verts
+        self.triangle_indices = get_triangulation_indices(mesh)
 
 
 class KTEdgeShaderAll2D(KTEdgeShader2D):
     def __init__(self, target_class: Any,
                  line_color: Tuple[float, float, float, float]):
         self.keyframes = []
-        self._state = (-1000.0, -1000.0)
-        self._batch_needs_update = True
-        self._line_color = line_color
+        self.state = (-1000.0, -1000.0)
+        self.batch_needs_update = True
+        self.line_color = line_color
         super().__init__(target_class)
 
     def set_keyframes(self, keyframes: List[int]) -> None:
         self.keyframes = keyframes
-        self._batch_needs_update = True
+        self.batch_needs_update = True
 
     def _update_keyframe_lines(self, area: Area) -> None:
         bottom = 0
@@ -277,7 +357,7 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
         pos = [reg.view2d.view_to_region(x, 0, clip=False)[0]
                for x in self.keyframes]
         self.vertices = [(x, y) for x in pos for y in (bottom, top)]
-        self.vertices_colors = [self._line_color for _ in self.vertices]
+        self.vertices_colors = [self.line_color for _ in self.vertices]
         self.edge_lengths = [x for _ in pos for x in (bottom, top * 0.5)]
 
     def _get_region(self, area: Area) -> Optional[Region]:
@@ -299,10 +379,10 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
         reg = self._get_region(area)
         current_state = (reg.view2d.view_to_region(0, 0, clip=False),
                          reg.view2d.view_to_region(100, 0, clip=False))
-        if self._batch_needs_update or current_state != self._state:
-            self._state = current_state
+        if self.batch_needs_update or current_state != self.state:
+            self.state = current_state
             self._update_keyframe_lines(area)
-            self._batch_needs_update = False
+            self.batch_needs_update = False
             self.create_batch()
 
         bgl.glEnable(bgl.GL_BLEND)
@@ -331,7 +411,7 @@ class KTEdgeShader3D(KTEdgeShaderBase):
                 or self.fill_shader is None or self.fill_batch is None:
             return
 
-        if self._work_area != context.area:
+        if self.work_area != context.area:
             return
 
         bgl.glEnable(bgl.GL_BLEND)
@@ -343,7 +423,7 @@ class KTEdgeShader3D(KTEdgeShaderBase):
         bgl.glEnable(bgl.GL_POLYGON_OFFSET_FILL)
         bgl.glColorMask(bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE)
 
-        if self._backface_culling:
+        if self.backface_culling:
             bgl.glPolygonMode(bgl.GL_BACK, bgl.GL_FILL)
             bgl.glEnable(bgl.GL_CULL_FACE)
             bgl.glCullFace(bgl.GL_FRONT)
@@ -395,7 +475,7 @@ class KTEdgeShader3D(KTEdgeShaderBase):
         mw = np.array(obj.matrix_world, dtype=np.float32).transpose()
 
         self.vertices = multiply_verts_on_matrix_4x4(verts, mw)
-        self.triangle_indices = self._get_triangulation_indices(mesh)
+        self.triangle_indices = get_triangulation_indices(mesh)
 
         edges = np.empty((len(mesh.edges), 2), dtype=np.int32)
         mesh.edges.foreach_get(
@@ -437,7 +517,7 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
         verts = get_mesh_verts(mesh)
 
         self.vertices = multiply_verts_on_matrix_4x4(verts, scm)
-        self.triangle_indices = self._get_triangulation_indices(mesh)
+        self.triangle_indices = get_triangulation_indices(mesh)
 
         edges = np.empty((len(mesh.edges), 2), dtype=np.int32)
         mesh.edges.foreach_get(

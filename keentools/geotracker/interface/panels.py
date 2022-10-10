@@ -280,6 +280,10 @@ class GT_PT_InputPanel(AllVisible):
         row.prop(geotracker, 'precalcless', text='Use precalc', toggle=1,
                  invert_checkbox=True)
 
+        if geotracker.geomobj:
+            layout.prop_search(geotracker, 'poly_mask',
+                               geotracker.geomobj, 'vertex_groups')
+
 
 class GT_PT_AnalyzePanel(AllVisible):
     bl_idname = GTConfig.gt_analyze_panel_idname
