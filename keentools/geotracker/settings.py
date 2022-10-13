@@ -139,14 +139,7 @@ def update_mask_3d(geotracker, context):
     GTLoader.update_viewport_wireframe()
     settings = get_gt_settings()
     settings.reload_current_geotracker()
-    gt = GTLoader.kt_geotracker()
-    if not geotracker.geomobj:
-        return
-    polys = get_polygons_in_vertex_group(geotracker.geomobj,
-                                         geotracker.mask_3d,
-                                         geotracker.mask_3d_inverted)
-    gt.set_ignored_faces(polys)
-    GTLoader.save_geotracker()
+    settings.reload_mask_3d()
 
 
 def get_camera_focal_length(geotracker):
@@ -395,6 +388,19 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     def reload_current_geotracker(self) -> bool:
         self.fix_geotrackers()
         return self.change_current_geotracker_safe(self.current_geotracker_num)
+
+    def reload_mask_3d(self) -> None:
+        geotracker = self.get_current_geotracker_item()
+        if not geotracker:
+            return
+        gt = GTLoader.kt_geotracker()
+        if not geotracker.geomobj:
+            return
+        polys = get_polygons_in_vertex_group(geotracker.geomobj,
+                                             geotracker.mask_3d,
+                                             geotracker.mask_3d_inverted)
+        gt.set_ignored_faces(polys)
+        GTLoader.save_geotracker()
 
     def add_geotracker_item(self) -> int:
         self.fix_geotrackers()
