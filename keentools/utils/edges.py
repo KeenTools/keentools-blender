@@ -266,6 +266,9 @@ class KTEdgeShader3D(KTEdgeShaderBase):
             self.unregister_handler()
             return
 
+        if not self.is_visible():
+            return
+
         if self.line_shader is None or self.line_batch is None \
                 or self.fill_shader is None or self.fill_batch is None:
             return
