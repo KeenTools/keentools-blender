@@ -26,18 +26,14 @@ from .base_shaders import KTShaderBase
 
 class KTScreenText(KTShaderBase):
     def __init__(self, target_class: str=bpy.types.SpaceView3D):
-        self.defaults = {'color': (1., 1., 1., 0.5),
-                         'size': 24,
-                         'shadow_color': (0., 0., 0., 0.75),
-                         'shadow_blur': 5,
-                         'x': None,
-                         'y': 60}
-        self.message: Dict = dict()
-        self.set_message(self.get_default_text())
-        super().__init__(target_class)
-
-    def get_default_text(self) -> List[Dict]:
-        return [
+        self.defaults: Dict = {'color': (1., 1., 1., 0.5),
+                               'size': 24,
+                               'shadow_color': (0., 0., 0., 0.75),
+                               'shadow_blur': 5,
+                               'x': None,
+                               'y': 60}
+        self.message: List[Dict] = []
+        self.default_text: List[Dict] = [
             {'text': 'Pin Mode ',
              'color': (1., 1., 1., 0.5),
              'size': 24,
@@ -48,6 +44,14 @@ class KTScreenText(KTShaderBase):
              'size': 20,
              'y': 30}  # line 2
         ]
+        self.set_message(self.get_default_text())
+        super().__init__(target_class)
+
+    def get_default_text(self) -> List[Dict]:
+        return self.default_text
+
+    def set_default_text(self, default_text: List[Dict]) -> None:
+        self.default_text = default_text
 
     def _fill_all_fields(self, text_arr: List[Dict]) -> List[Dict]:
         for row in text_arr:
