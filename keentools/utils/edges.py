@@ -36,83 +36,13 @@ from .shaders import (simple_fill_vertex_shader,
 from .coords import (get_mesh_verts,
                      multiply_verts_on_matrix_4x4,
                      get_scale_vec_4_from_matrix_world,
-                     get_triangulation_indices)
+                     get_triangulation_indices,
+                     get_triangles_in_vertex_group)
 from .bpy_common import evaluated_mesh
+from .base_shaders import KTShaderBase
 
 
 _log = KTLogger(__name__)
-
-
-class KTShaderBase:
-    handler_list: List[Callable] = []
-
-    @classmethod
-    def add_handler_list(cls, handler: Callable) -> None:
-        cls.handler_list.append(handler)
-
-    @classmethod
-    def remove_handler_list(cls, handler: Callable) -> None:
-        if handler in cls.handler_list:
-            cls.handler_list.remove(handler)
-
-    @classmethod
-    def is_handler_list_empty(cls) -> bool:
-        return len(cls.handler_list) == 0
-
-    def __init__(self, target_class: Any=bpy.types.SpaceView3D):
-        self.draw_handler: Optional[Any] = None
-        self.target_class: Any = target_class
-        self.work_area: Optional[Area] = None
-        self.is_shader_visible: bool = True
-        # Check if blender started in background mode
-        if not bpy.app.background:
-            self.init_shaders()
-
-    def is_visible(self) -> bool:
-        return self.is_shader_visible
-
-    def set_visible(self, flag: bool=True) -> None:
-        self.is_shader_visible = flag
-
-    def get_target_class(self) -> Any:
-        return self.target_class
-
-    def set_target_class(self, target_class: Any) -> None:
-        self.target_class = target_class
-
-    def is_working(self) -> bool:
-        return not (self.draw_handler is None)
-
-    def init_shaders(self) -> None:
-        pass
-
-    def create_batch(self) -> None:
-        pass
-
-    def draw_callback(self, context) -> None:
-        pass
-
-    def register_handler(self, context: Any) -> None:
-        self.work_area = context.area
-        if self.draw_handler is not None:
-            self.unregister_handler()
-        self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, (context,), 'WINDOW', 'POST_VIEW')
-        self.add_handler_list(self.draw_handler)
-
-    def unregister_handler(self) -> None:
-        if self.draw_handler is not None:
-            self.get_target_class().draw_handler_remove(
-                self.draw_handler, 'WINDOW')
-            self.remove_handler_list(self.draw_handler)
-        self.draw_handler = None
-        self.work_area = None
-
-    def hide_shader(self) -> None:
-        self.set_visible(False)
-
-    def unhide_shader(self) -> None:
-        self.set_visible(True)
 
 
 class KTEdgeShaderBase(KTShaderBase):
@@ -266,76 +196,6 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
                               (x2, y1), (x1, y1)]
 
 
-class KTTrisShaderLocal3D(KTShaderBase):
-    def __init__(self, target_class: Any):
-        self.vertices = []
-        self.triangle_indices = []
-        self.fill_color = (0., 0., 1.0, 0.3)
-        self.fill_shader = None
-        self.fill_batch = None
-        self.object_world_matrix = np.eye(4, dtype=np.float32)
-        super().__init__(target_class)
-
-    def set_object_world_matrix(self, bpy_matrix_world: Any) -> None:
-        self.object_world_matrix = np.array(bpy_matrix_world,
-                                            dtype=np.float32).transpose()
-
-    def init_shaders(self) -> None:
-        self.fill_shader = gpu.types.GPUShader(
-            uniform_3d_vertex_local_shader(), smooth_3d_fragment_shader())
-
-    def create_batch(self) -> None:
-        if bpy.app.background:
-            return
-        verts = []
-        indices = []
-
-        verts_count = len(self.vertices)
-        if verts_count > 0:
-            if len(self.triangle_indices) > 0:
-                max_index = self.triangle_indices.max()
-                if max_index < verts_count:
-                    verts = self.vertices
-                    indices = self.triangle_indices
-
-        self.fill_batch = batch_for_shader(
-            self.fill_shader, 'TRIS', {'pos': verts},
-            indices=indices)
-
-    def draw_callback(self, context: Any) -> None:
-        # Force Stop
-        if self.is_handler_list_empty():
-            self.unregister_handler()
-            return
-
-        if self.fill_shader is None or self.fill_batch is None:
-            return
-
-        if self.work_area != context.area:
-            return
-
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-
-        self.fill_shader.bind()
-        self.fill_shader.uniform_float('color', self.fill_color)
-        self.fill_shader.uniform_vector_float(
-            self.fill_shader.uniform_from_name('modelMatrix'),
-            self.object_world_matrix.ravel(), 16)
-        self.fill_batch.draw(self.fill_shader)
-
-    def init_geom_data_from_mesh(self, obj: Object) -> None:
-        mesh = evaluated_mesh(obj)
-        verts = get_mesh_verts(mesh)
-        mw = np.array(obj.matrix_world, dtype=np.float32).transpose()
-
-        self.object_world_matrix = mw
-        self.vertices = verts
-        self.triangle_indices = get_triangulation_indices(mesh)
-
-
 class KTEdgeShaderAll2D(KTEdgeShader2D):
     def __init__(self, target_class: Any,
                  line_color: Tuple[float, float, float, float]):
@@ -443,8 +303,13 @@ class KTEdgeShader3D(KTEdgeShaderBase):
         self.draw_edges()
 
         bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_FILL)
+        self.draw_selection_fill()
+
         bgl.glDepthMask(bgl.GL_TRUE)
         bgl.glDisable(bgl.GL_DEPTH_TEST)
+
+    def draw_selection_fill(self):
+        pass
 
     def create_batches(self) -> None:
         if bpy.app.background:
@@ -486,6 +351,10 @@ class KTEdgeShader3D(KTEdgeShaderBase):
 class KTEdgeShaderLocal3D(KTEdgeShader3D):
     def __init__(self, target_class: Any):
         self.object_world_matrix = np.eye(4, dtype=np.float32)
+        self.selection_fill_color = (0.0, 0.0, 1.0, 0.4)
+        self.selection_fill_shader = None
+        self.selection_fill_batch = None
+        self.selection_triangle_indices = []
         super().__init__(target_class)
 
     def init_shaders(self) -> None:
@@ -494,6 +363,32 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
 
         self.line_shader = gpu.types.GPUShader(
             smooth_3d_vertex_local_shader(), smooth_3d_fragment_shader())
+
+        self.selection_fill_shader = gpu.types.GPUShader(
+            uniform_3d_vertex_local_shader(), smooth_3d_fragment_shader())
+
+    def create_batches(self) -> None:
+        if bpy.app.background:
+            return
+        self.fill_batch = batch_for_shader(
+                    self.fill_shader, 'TRIS',
+                    {'pos': self.vertices},
+                    indices=self.triangle_indices)
+        self.line_batch = batch_for_shader(
+            self.line_shader, 'LINES',
+            {'pos': self.edges_vertices, 'color': self.edges_colors})
+
+        verts = []
+        indices = []
+        verts_count = len(self.vertices)
+        if verts_count > 0 and len(self.selection_triangle_indices) > 0:
+            max_index = np.max(self.selection_triangle_indices)
+            if max_index < verts_count:
+                verts = self.vertices
+                indices = self.selection_triangle_indices
+        self.selection_fill_batch = batch_for_shader(
+            self.selection_fill_shader, 'TRIS', {'pos': verts},
+            indices=indices)
 
     def set_object_world_matrix(self, bpy_matrix_world: Any) -> None:
         self.object_world_matrix = np.array(bpy_matrix_world,
@@ -536,3 +431,17 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
             self.fill_shader.uniform_from_name('modelMatrix'),
             self.object_world_matrix.ravel(), 16)
         self.fill_batch.draw(self.fill_shader)
+
+    def draw_selection_fill(self) -> None:
+        shader = self.selection_fill_shader
+        shader.bind()
+        shader.uniform_float('color', self.selection_fill_color)
+        shader.uniform_vector_float(
+            shader.uniform_from_name('modelMatrix'),
+            self.object_world_matrix.ravel(), 16)
+        self.selection_fill_batch.draw(self.selection_fill_shader)
+
+    def init_selection_from_mesh(self, obj: Object, mask_3d: str,
+                                 inverted: bool) -> None:
+        self.selection_triangle_indices = get_triangles_in_vertex_group(
+            obj, mask_3d, inverted)

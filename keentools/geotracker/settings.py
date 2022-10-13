@@ -36,7 +36,8 @@ from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_image_space_coord,
                             focal_mm_to_px,
                             camera_focal_length,
-                            camera_sensor_width)
+                            camera_sensor_width,
+                            get_polygons_in_vertex_group)
 from ..utils.video import fit_render_size, fit_time_length
 from ..utils.bpy_common import bpy_render_frame, bpy_start_frame, bpy_end_frame
 
@@ -134,6 +135,19 @@ def update_focal_length_mode(geotracker, context):
             *bpy_render_frame(), camera_sensor_width(geotracker.camobj))
 
 
+def update_mask_3d(geotracker, context):
+    GTLoader.update_viewport_wireframe()
+    settings = get_gt_settings()
+    settings.reload_current_geotracker()
+    gt = GTLoader.kt_geotracker()
+    if not geotracker.geomobj:
+        return
+    polys = get_polygons_in_vertex_group(geotracker.geomobj,
+                                         geotracker.mask_3d,
+                                         geotracker.mask_3d_inverted)
+    gt.set_ignored_faces(polys)
+    GTLoader.save_geotracker()
+
 
 def get_camera_focal_length(geotracker):
     return camera_focal_length(geotracker.camobj)
@@ -212,8 +226,11 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     selected_frames: bpy.props.CollectionProperty(type=FrameListItem,
                                                   name='Selected frames')
-    poly_mask: bpy.props.StringProperty(name='Poly mask')
-
+    mask_3d: bpy.props.StringProperty(name='Mask 3D',
+                                      update=update_mask_3d)
+    mask_3d_inverted: bpy.props.BoolProperty(name='Invert Mask 3D',
+                                             default=False,
+                                             update=update_mask_3d)
     def get_serial_str(self) -> str:
         return self.serial_str
 

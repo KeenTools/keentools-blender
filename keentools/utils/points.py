@@ -154,8 +154,8 @@ class KTShaderPoints:
         self.vertices = []
         self.vertices_colors = []
 
-        self._target_class = target_class
-        self._work_area = None
+        self.target_class = target_class
+        self.work_area = None
         self._is_visible = True
         self._point_size = UserPreferences.get_value_safe(
             'pin_size', UserPreferences.type_float)
@@ -167,10 +167,10 @@ class KTShaderPoints:
         self._is_visible = flag
 
     def get_target_class(self):
-        return self._target_class
+        return self.target_class
 
     def set_target_class(self, target_class):
-        self._target_class = target_class
+        self.target_class = target_class
 
     def get_vertices(self):
         return self.vertices
@@ -249,7 +249,7 @@ class KTShaderPoints:
             self.unregister_handler()
             return
 
-        if self._work_area != context.area:
+        if self.work_area != context.area:
             return
 
         if self.shader is not None:
@@ -275,7 +275,7 @@ class KTPoints2D(KTShaderPoints):
             self.vertices, self.vertices_colors, 'CUSTOM_2D')
 
     def register_handler(self, context):
-        self._work_area = context.area
+        self.work_area = context.area
         self.draw_handler = self.get_target_class().draw_handler_add(
             self.draw_callback, (context,), 'WINDOW', 'POST_PIXEL')
         self.add_handler_list(self.draw_handler)
@@ -295,7 +295,7 @@ class KTPoints3D(KTShaderPoints):
             Config.surf_pin_size_scale)
 
     def register_handler(self, context):
-        self._work_area = context.area
+        self.work_area = context.area
         self.draw_handler = self.get_target_class().draw_handler_add(
             self.draw_callback, (context,), 'WINDOW', 'POST_VIEW')
         self.add_handler_list(self.draw_handler)

@@ -32,8 +32,7 @@ from ..utils.coords import (image_space_to_frame,
                             focal_by_projection_matrix_mm,
                             compensate_view_scale,
                             frame_to_image_space,
-                            camera_sensor_width,
-                            get_triangles_in_vertex_group)
+                            camera_sensor_width)
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
                                 get_scene_camera_shift)
@@ -426,6 +425,8 @@ class GTLoader:
         wf.init_geom_data_from_mesh(geotracker.geomobj)
         wf.init_color_data((*settings.wireframe_color,
                             settings.wireframe_opacity))
+        wf.init_selection_from_mesh(geotracker.geomobj, geotracker.mask_3d,
+                                    geotracker.mask_3d_inverted)
         wf.set_backface_culling(settings.wireframe_backface_culling)
         wf.create_batches()
 
@@ -445,18 +446,6 @@ class GTLoader:
         vp.update_residuals(gt, area, kid)
 
     @classmethod
-    def update_3d_mask(cls) -> None:
-        geotracker = get_current_geotracker_item()
-        if not geotracker.geomobj:
-            return
-        vp = cls.viewport()
-        selection = vp.poly_selection()
-        selection.init_geom_data_from_mesh(geotracker.geomobj)
-        selection.triangle_indices = get_triangles_in_vertex_group(
-            geotracker.geomobj, geotracker.poly_mask)
-        selection.create_batch()
-
-    @classmethod
     def update_all_viewport_shaders(cls, area: Optional[Area]=None) -> None:
         if area is None:
             vp = cls.viewport()
@@ -465,7 +454,6 @@ class GTLoader:
                 return
         cls.update_viewport_wireframe()
         cls.update_viewport_pins_and_residuals(area)
-        cls.update_3d_mask()
         cls.update_timeline()
 
     @classmethod

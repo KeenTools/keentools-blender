@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import logging
-from typing import Any, Tuple, List, Optional
+from typing import Any, Tuple, List, Optional, Set
 
 import numpy as np
 import math
@@ -441,25 +441,38 @@ def get_triangulation_indices(mesh: Any, calculate: bool = True) -> Any:
     return indices
 
 
-def get_triangles_in_vertex_group(obj: Object, vertex_group_name: str):
+def get_polygons_in_vertex_group(obj: Object,
+                                 vertex_group_name: str,
+                                 inverted=False) -> Set[int]:
     mesh = evaluated_mesh(obj)
-
     vertex_group_index = obj.vertex_groups.find(vertex_group_name)
     if vertex_group_index < 0:
-        return []
+        return set()
 
-    verts_in_group = set([v.index for v in mesh.vertices if
-                          vertex_group_index in [g.group for g in v.groups]])
+    verts_in_group = set([v.index for v in mesh.vertices
+                          if vertex_group_index in
+                          [g.group for g in v.groups]])
 
     polys_in_group = set()
-    for polygon in mesh.polygons:
-        if verts_in_group.issuperset(polygon.vertices[:]):
-            polys_in_group.add(polygon.index)
 
+    if not inverted:
+        for polygon in mesh.polygons:
+            if verts_in_group.issuperset(polygon.vertices[:]):
+                polys_in_group.add(polygon.index)
+    else:
+        for polygon in mesh.polygons:
+            if not verts_in_group.issuperset(polygon.vertices[:]):
+                polys_in_group.add(polygon.index)
+
+    return polys_in_group
+
+
+def get_triangles_in_vertex_group(obj: Object,
+                                  vertex_group_name: str,
+                                  inverted=False) -> List:
+    polys_in_group = get_polygons_in_vertex_group(obj, vertex_group_name,
+                                                  inverted)
+    mesh = evaluated_mesh(obj)
     mesh.calc_loop_triangles()
-    triangles = []
-    for tris in mesh.loop_triangles:
-        tris_verts = tris.vertices[:]
-        if tris.polygon_index in polys_in_group:
-            triangles.append(tris_verts)
-    return np.array(triangles, dtype=np.int32)
+    return [tris.vertices[:] for tris in mesh.loop_triangles
+            if tris.polygon_index in polys_in_group]

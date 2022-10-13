@@ -56,8 +56,6 @@ class KTViewport:
             'pin_sensitivity', UserPreferences.type_float)
         self._pixel_size = 0.1  # Auto Calculated
         self._work_area = None
-        # Selected polygons drawing
-        self._poly_selection = None
 
     def get_work_area(self):
         return self._work_area
@@ -94,9 +92,6 @@ class KTViewport:
 
     def selector(self):
         return self._selector
-
-    def poly_selection(self):
-        return self._poly_selection
 
     def update_view_relative_pixel_size(self, area):
         ps = get_pixel_relative_size(area)

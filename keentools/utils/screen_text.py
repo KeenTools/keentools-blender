@@ -42,8 +42,8 @@ class KTScreenText:
 
     def __init__(self, target_class=bpy.types.SpaceView3D):
         self.text_draw_handler = None
-        self._target_class = target_class
-        self._work_area = None
+        self.target_class = target_class
+        self.work_area = None
 
         self.defaults = {'color': (1., 1., 1., 0.5),
                          'size': 24,
@@ -74,10 +74,10 @@ class KTScreenText:
         return text_arr
 
     def get_target_class(self):
-        return self._target_class
+        return self.target_class
 
     def set_target_class(self, target_class):
-        self._target_class = target_class
+        self.target_class = target_class
 
     def set_message(self, msg):
         self.message = self._fill_all_fields(msg)
@@ -98,7 +98,7 @@ class KTScreenText:
             return
 
         area = context.area
-        if self._work_area != area:
+        if self.work_area != area:
             return
 
         if len(self.message) == 0:
@@ -126,7 +126,7 @@ class KTScreenText:
             blf.draw(font_id, row['text'])
 
     def register_handler(self, context):
-        self._work_area = context.area
+        self.work_area = context.area
         self.text_draw_handler = self.get_target_class().draw_handler_add(
             self.text_draw_callback, (context,), 'WINDOW', 'POST_PIXEL')
         self.add_handler_list(self.text_draw_handler)
@@ -137,4 +137,4 @@ class KTScreenText:
                 self.text_draw_handler, 'WINDOW')
             self.remove_handler_list(self.text_draw_handler)
         self.text_draw_handler = None
-        self._work_area = None
+        self.work_area = None
