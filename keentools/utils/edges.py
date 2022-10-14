@@ -48,10 +48,10 @@ _log = KTLogger(__name__)
 class KTEdgeShaderBase(KTShaderBase):
     def __init__(self, target_class: Any=bpy.types.SpaceView3D):
         super().__init__(target_class)
-        self.fill_shader = None
-        self.line_shader = None
-        self.fill_batch = None
-        self.line_batch = None
+        self.fill_shader: Optional[Any] = None
+        self.line_shader: Optional[Any] = None
+        self.fill_batch: Optional[Any] = None
+        self.line_batch: Optional[Any] = None
         # Triangle vertices & indices
         self.vertices = []
         self.triangle_indices = []
@@ -85,7 +85,7 @@ class KTEdgeShaderBase(KTShaderBase):
 
 class KTEdgeShader2D(KTEdgeShaderBase):
     def __init__(self, target_class: Any):
-        self.edge_lengths = []
+        self.edge_lengths: List[float] = []
         super().__init__(target_class)
 
     def init_shaders(self) -> None:
@@ -122,23 +122,19 @@ class KTEdgeShader2D(KTEdgeShaderBase):
              'lineLength': self.edge_lengths}
         )
 
-    def register_handler(self, context: Any) -> None:
-        self.work_area = context.area
-        if self.draw_handler is not None:
-            self.unregister_handler()
-        self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, (context,), 'WINDOW', 'POST_PIXEL')
-        self.add_handler_list(self.draw_handler)
+    def register_handler(self, context: Any,
+                         post_type: str='POST_PIXEL') -> None:
+        super().register_handler(context, post_type)
 
 
 class KTScreenRectangleShader2D(KTEdgeShader2D):
     def __init__(self, target_class: Any):
-        self.edge_vertices = []
-        self.edge_vertices_colors = []
-        self.line_width = 1.0
-        self.line_color = (0., 0., 1.0, 0.9)
-        self.fill_color = (0., 0., 1.0, 0.5)
-        self.fill_indices = ((0, 1, 3), (4, 5, 0))
+        self.edge_vertices: List[Tuple[float, float, float]] = []
+        self.edge_vertices_colors: List[Tuple[float, float, float, float]] = []
+        self.line_width: float = 1.0
+        self.line_color: Tuple[float, float, float, float] = (0., 0., 1.0, 0.9)
+        self.fill_color: Tuple[float, float, float, float] = (0., 0., 1.0, 0.5)
+        self.fill_indices: List[Tuple[int, int, int]] = [(0, 1, 3), (4, 5, 0)]
         super().__init__(target_class)
 
     def init_shaders(self) -> None:
@@ -150,6 +146,9 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
+            return
+
+        if not self.is_visible():
             return
 
         if self.line_shader is None or self.line_batch is None:
@@ -199,10 +198,10 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
 class KTEdgeShaderAll2D(KTEdgeShader2D):
     def __init__(self, target_class: Any,
                  line_color: Tuple[float, float, float, float]):
-        self.keyframes = []
-        self.state = (-1000.0, -1000.0)
-        self.batch_needs_update = True
-        self.line_color = line_color
+        self.keyframes: List[int] = []
+        self.state: Tuple[float, float] = (-1000.0, -1000.0)
+        self.batch_needs_update: bool = True
+        self.line_color: Tuple[float, float, float, float] = line_color
         super().__init__(target_class)
 
     def set_keyframes(self, keyframes: List[int]) -> None:
@@ -226,6 +225,9 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
+            return
+
+        if not self.is_visible():
             return
 
         if self.line_shader is None or self.line_batch is None:
@@ -353,11 +355,12 @@ class KTEdgeShader3D(KTEdgeShaderBase):
 
 class KTEdgeShaderLocal3D(KTEdgeShader3D):
     def __init__(self, target_class: Any):
-        self.object_world_matrix = np.eye(4, dtype=np.float32)
-        self.selection_fill_color = (0.0, 0.0, 1.0, 0.4)
-        self.selection_fill_shader = None
-        self.selection_fill_batch = None
-        self.selection_triangle_indices = []
+        self.object_world_matrix: Any = np.eye(4, dtype=np.float32)
+        self.selection_fill_color: Tuple[float, float, float, float] = \
+            (0.0, 0.0, 1.0, 0.4)
+        self.selection_fill_shader: Optional[Any] = None
+        self.selection_fill_batch: Optional[Any] = None
+        self.selection_triangle_indices: List[Tuple[int, int, int]] = []
         super().__init__(target_class)
 
     def init_shaders(self) -> None:

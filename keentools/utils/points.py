@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Any
 
 import bpy
 import gpu
@@ -68,7 +68,7 @@ class KTScreenPins:
         self._current_pin = None
         self._current_pin_num = -1
 
-    def get_selected_pins(self) -> List:
+    def get_selected_pins(self) -> List[int]:
         return self._selected_pins
 
     def set_selected_pins(self, selected_pins: List[int]) -> None:
@@ -84,7 +84,7 @@ class KTScreenPins:
     def clear_selected_pins(self) -> None:
         self._selected_pins = []
 
-    def get_disabled_pins(self) -> List:
+    def get_disabled_pins(self) -> List[int]:
         return self._disabled_pins
 
     def set_disabled_pins(self, disabled_pins: List[int]) -> None:
@@ -126,45 +126,41 @@ class KTScreenPins:
 
 
 class KTShaderPoints(KTShaderBase):
-    def __init__(self, target_class=bpy.types.SpaceView3D):
-        self.shader = None
-        self.batch = None
+    def __init__(self, target_class: Any=bpy.types.SpaceView3D):
+        self.shader: Any = None
+        self.batch: Any = None
 
-        self.vertices = []
-        self.vertices_colors = []
+        self.vertices: List[Tuple[float, float, float]] = []
+        self.vertices_colors: List[Tuple[float, float, float, float]] = []
 
-        self._point_size = UserPreferences.get_value_safe(
+        self._point_size: float = UserPreferences.get_value_safe(
             'pin_size', UserPreferences.type_float)
         super().__init__(target_class)
 
-    def get_vertices(self):
+    def get_vertices(self) -> List[Tuple[float, float, float]]:
         return self.vertices
 
-    def set_point_size(self, ps):
+    def set_point_size(self, ps: float) -> None:
         self._point_size = ps
 
-    def get_point_size(self):
+    def get_point_size(self) -> float:
         return self._point_size
 
-    def add_vertices_colors(self, verts, colors):
-        for i, v in enumerate(verts):
-            self.vertices.append(verts[i])
-            self.vertices_colors.append(colors[i])
-
-    def set_vertices_colors(self, verts, colors):
+    def set_vertices_colors(self, verts: List, colors: List) -> None:
         self.vertices = verts
         self.vertices_colors = colors
 
-    def clear_vertices(self):
+    def clear_vertices(self) -> None:
         self.vertices = []
         self.vertices_colors = []
 
-    def draw_callback(self, context):
-        if not self.is_visible():
-            return
+    def draw_callback(self, context: Any) -> None:
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
+            return
+
+        if not self.is_visible():
             return
 
         if self.work_area != context.area:
@@ -187,7 +183,7 @@ class KTPoints2D(KTShaderPoints):
         self.shader = gpu.types.GPUShader(flat_color_2d_vertex_shader(),
                                           circular_dot_fragment_shader())
 
-    def create_batch(self):
+    def create_batch(self) -> None:
         if bpy.app.background:
             return
         self.batch = batch_for_shader(
@@ -195,7 +191,8 @@ class KTPoints2D(KTShaderPoints):
             {'pos': self.vertices, 'color': self.vertices_colors},
             indices=None)
 
-    def register_handler(self, context, post_type='POST_PIXEL'):
+    def register_handler(self, context: Any,
+                         post_type: str='POST_PIXEL') -> None:
         super().register_handler(context, post_type)
 
 
@@ -206,7 +203,7 @@ class KTPoints3D(KTShaderPoints):
         self.shader = gpu.types.GPUShader(flat_color_3d_vertex_shader(),
                                           circular_dot_fragment_shader())
 
-    def create_batch(self):
+    def create_batch(self) -> None:
         if bpy.app.background:
             return
         self.batch = batch_for_shader(
@@ -214,7 +211,7 @@ class KTPoints3D(KTShaderPoints):
             {'pos': self.vertices, 'color': self.vertices_colors},
             indices=None)
 
-    def __init__(self, target_class):
+    def __init__(self, target_class: Any):
         super().__init__(target_class)
         self.set_point_size(
             UserPreferences.get_value_safe(
