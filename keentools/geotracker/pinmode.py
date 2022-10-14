@@ -192,16 +192,14 @@ class GT_OT_PinMode(bpy.types.Operator):
 
     def _change_wireframe_visibility(self, *, toggle=True, value=True):
         vp = GTLoader.viewport()
-        wf = vp.wireframer()
-        flag = not wf.is_visible() if toggle else value
-        wf.set_visible(flag)
-        _log.output(f'WIREFRAME IS VISIBLE: {wf.is_visible()}')
+        flag = not vp.wireframer().is_visible() if toggle else value
+        vp.set_visible(flag)
         if flag:
-            GTLoader.revert_default_screen_message(unregister=False)
+            vp.revert_default_screen_message(unregister=False)
         else:
-            GTLoader.message_to_screen([
-            {'text': '[Wireframe is hidden] Press Tab to revert',
-             'color': (1., 0., 1., 0.5),
+            vp.message_to_screen([
+            {'text': 'Wireframe is hidden. Press Tab to reveal',
+             'color': (1., 0., 1., 0.7),
              'size': 24,
              'y': 60},  # line 1
             {'text': 'ESC: Exit | LEFT CLICK: Create Pin | '

@@ -488,20 +488,6 @@ class GTLoader:
         return vp.get_work_area()
 
     @classmethod
-    def message_to_screen(cls, msg: List) -> None:
-        vp = cls.viewport()
-        texter = vp.texter()
-        texter.set_message(msg)
-
-    @classmethod
-    def revert_default_screen_message(cls, unregister=True) -> None:
-        vp = cls.viewport()
-        texter = vp.texter()
-        texter.set_message(texter.get_default_text())
-        if unregister:
-            texter.unregister_handler()
-
-    @classmethod
     def stop_viewport_shaders(cls) -> None:
         cls._check_shader_timer.stop()
         vp = cls.viewport()

@@ -242,7 +242,7 @@ class _CommonTimer:
             self._safe_resume()
         if attempts >= max_attempts and not self.tracking_computation.is_finished():
             _log.error(f'PROBLEM WITH COMPUTATION STOP')
-        GTLoader.revert_default_screen_message(unregister=False)
+        GTLoader.viewport().revert_default_screen_message(unregister=False)
         self._stop_user_interrupt_operator()
         GTLoader.save_geotracker()
         settings = get_gt_settings()
@@ -267,7 +267,7 @@ class _CommonTimer:
                 if overall is None:
                     return False
                 finished_frames, total_frames = overall
-                GTLoader.message_to_screen(
+                GTLoader.viewport().message_to_screen(
                     [{'text': f'{self._operation_name} calculating: '
                               f'{finished_frames}/{total_frames}', 'y': 60,
                       'color': (1.0, 0.0, 0.0, 0.7)},
@@ -306,7 +306,7 @@ class _CommonTimer:
     def start(self) -> None:
         if not bpy.app.background:
             self._start_user_interrupt_operator()
-        GTLoader.message_to_screen(
+        GTLoader.viewport().message_to_screen(
             [{'text': f'{self._operation_name} calculating... Please wait', 'y': 60,
               'color': (1.0, 0.0, 0.0, 0.7)},
              {'text': 'ESC to cancel', 'y': 30,

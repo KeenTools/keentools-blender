@@ -16,13 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
 from typing import Any
 from uuid import uuid4
 import numpy as np
 
 import bpy
 
+from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType
 from ..facebuilder_config import FBConfig, get_fb_settings
 from ..utils.bpy_common import operator_with_context
@@ -30,36 +30,20 @@ from ..utils import coords
 from .utils.manipulate import push_head_in_undo_history
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
-from ..utils.ui_redraw import force_ui_redraw
 from ..utils.other import hide_viewport_ui_elements_and_store_on_object
 from ..utils.html import split_long_string
 from ..utils.localview import exit_area_localview, check_area_active_problem
 from ..utils.manipulate import switch_to_camera, center_viewports_on_object
 
 
-_logger: Any = logging.getLogger(__name__)
-
-
-def _log_output(message: str) -> None:
-    global _logger
-    _logger.debug(message)
-
-
-def _log_warning(message: str) -> None:
-    global _logger
-    _logger.warning(message)
-
-
-def _log_error(message: str) -> None:
-    global _logger
-    _logger.error(message)
+_log = KTLogger(__name__)
 
 
 _undo_handler = None
 
 
 def undo_handler(scene):
-    _log_output('undo_handler')
+    _log.output('undo_handler')
     try:
         settings = get_fb_settings()
         if not settings.pinmode or settings.current_headnum < 0:
@@ -68,7 +52,7 @@ def undo_handler(scene):
         head = settings.get_head(settings.current_headnum)
         head.need_update = True
     except Exception as err:
-        _log_error(f'undo_handler {str(err)}')
+        _log.error(f'undo_handler {str(err)}')
         unregister_undo_handler()
 
 
@@ -123,12 +107,12 @@ class FB_OT_PinMode(bpy.types.Operator):
         settings = get_fb_settings()
         heads_deleted, cams_deleted = settings.fix_heads()
         if heads_deleted > 0 or cams_deleted > 0:
-            _log_warning('HEADS AND CAMERAS FIXED')
+            _log.warning('HEADS AND CAMERAS FIXED')
         if heads_deleted == 0:
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
 
-    def _init_wireframer_colors(self, opacity):
+    def _init_wireframer_colors(self):
         settings = get_fb_settings()
         head = settings.get_head(settings.current_headnum)
 
@@ -136,7 +120,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         wf.init_colors((settings.wireframe_color,
                        settings.wireframe_special_color,
                        settings.wireframe_midline_color),
-                       settings.wireframe_opacity * opacity)
+                       settings.wireframe_opacity)
 
         fb = FBLoader.get_builder()
         if not wf.init_wireframe_image(fb, settings.show_specials):
@@ -146,6 +130,25 @@ class FB_OT_PinMode(bpy.types.Operator):
                                   head.get_keyframe(settings.current_camnum))
         wf.init_edge_indices(fb)
         wf.create_batches()
+
+    def _change_wireframe_visibility(self, *, toggle=True, value=True):
+        vp = FBLoader.viewport()
+        flag = not vp.wireframer().is_visible() if toggle else value
+        vp.set_visible(flag)
+        if flag:
+            vp.revert_default_screen_message(unregister=False)
+        else:
+            vp.message_to_screen([
+            {'text': 'Wireframe is hidden. Press Tab to reveal',
+             'color': (1., 0., 1., 0.7),
+             'size': 24,
+             'y': 60},  # line 1
+            {'text': 'ESC: Exit | LEFT CLICK: Create Pin | '
+                     'RIGHT CLICK: Delete Pin | TAB: Hide/Show',
+             'color': (1., 1., 1., 0.5),
+             'size': 20,
+             'y': 30}  # line 2
+        ])
 
     def _delete_found_pin(self, nearest, area):
         settings = get_fb_settings()
@@ -157,10 +160,10 @@ class FB_OT_PinMode(bpy.types.Operator):
         fb = FBLoader.get_builder()
         fb.remove_pin(kid, nearest)
         del FBLoader.viewport().pins().arr()[nearest]
-        logging.debug('PIN REMOVED {}'.format(nearest))
+        _log.output('FB PIN REMOVED {}'.format(nearest))
 
         if not FBLoader.solve(headnum, camnum):
-            _log_error('DELETE PIN PROBLEM')
+            _log.error('FB DELETE PIN PROBLEM')
             unregister_undo_handler()
             return {'FINISHED'}
 
@@ -178,7 +181,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
     def _undo_detected(self, area):
-        _log_output('UNDO DETECTED')
+        _log.output('UNDO DETECTED')
         settings = get_fb_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
@@ -228,8 +231,8 @@ class FB_OT_PinMode(bpy.types.Operator):
     def invoke(self, context, event):
         settings = get_fb_settings()
 
-        _log_output(f'PINMODE ENTER. CURRENT_HEAD: {settings.current_headnum} '
-                    f'CURRENT_CAM: {settings.current_camnum}')
+        _log.output(f'FB PINMODE ENTER. CURRENT_HEAD: {settings.current_headnum} '
+                    f'FB CURRENT_CAM: {settings.current_camnum}')
 
         if not settings.check_heads_and_cams():
             self._fix_heads_with_warning()
@@ -237,7 +240,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         head = settings.get_head(self.headnum)
         if not head or not head.headobj:
-            _log_error('CANNOT FIND head or headobj')
+            _log.error('FB CANNOT FIND head or headobj')
             return {'CANCELLED'}
         headobj = head.headobj
         first_start = True
@@ -259,7 +262,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             old_camera.reset_tone_mapping()
 
             FBLoader.save_pinmode_state(settings.current_headnum)
-            _log_output(f'PINMODE FORCE FINISH: H{settings.current_headnum} '
+            _log.output(f'FB PINMODE FORCE FINISH: H{settings.current_headnum} '
                         f'C{settings.current_camnum}')
             first_start = False
         else:
@@ -282,7 +285,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         switch_to_camera(area, camera.camobj)
         camera.show_background_image()
 
-        _log_output(f'PINMODE START H{settings.current_headnum} '
+        _log.output(f'FB PINMODE START H{settings.current_headnum} '
                     f'C{settings.current_camnum}')
         # Start working with current model
         try:
@@ -291,12 +294,12 @@ class FB_OT_PinMode(bpy.types.Operator):
                                 'the serialised string. Perhaps your file '
                                 'or the scene data got corrupted.')
         except Exception as err:
-            _log_error('MODEL CANNOT BE LOADED IN PINMODE')
+            _log.error('FB MODEL CANNOT BE LOADED IN PINMODE')
 
             FBLoader.out_pinmode_without_save(self.headnum)
             exit_area_localview(area)
 
-            _log_error(f'DESERIALIZE load_model_throw_exception: \n{str(err)}')
+            _log.error(f'DESERIALIZE load_model_throw_exception: \n{str(err)}')
             error_message = '\n'.join(split_long_string(str(err), limit=64))
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
@@ -305,7 +308,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         if not FBLoader.check_mesh(headobj):
             fb = FBLoader.get_builder()
-            _log_error('MESH IS CORRUPTED {} != {}'.format(
+            _log.error('FB MESH IS CORRUPTED {} != {}'.format(
                 len(headobj.data.vertices), len(fb.applied_args_vertices())))
 
             FBLoader.out_pinmode_without_save(self.headnum)
@@ -319,18 +322,18 @@ class FB_OT_PinMode(bpy.types.Operator):
         fb.set_use_emotions(head.should_use_emotions())
 
         if not self._check_keyframes(fb, head):
-            _log_output('PINMODE NO KEYFRAME')
+            _log.output('FB PINMODE NO KEYFRAME')
             for cam in head.cameras:
                 kfnum = cam.get_keyframe()
-                _log_output(f'UPDATE KEYFRAME: {kfnum}')
+                _log.output(f'FB UPDATE KEYFRAME: {kfnum}')
                 if not fb.is_key_at(kfnum):
-                    _log_error('\nUNKNOWN KEYFRAME: {kfnum}\n')
+                    _log.error(f'\nFB UNKNOWN KEYFRAME: {kfnum}\n')
                     fb.set_keyframe(kfnum, np.eye(4))
         try:
             FBLoader.place_camera(settings.current_headnum,
                                   settings.current_camnum)
         except Exception:
-            _log_output('UPDATE KEYFRAME PROBLEM')
+            _log.output('FB UPDATE KEYFRAME PROBLEM')
             return {'CANCELLED'}
 
         FBLoader.load_pins_into_viewport(settings.current_headnum, settings.current_camnum)
@@ -338,50 +341,41 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         update_camera_focal(camera, fb)
 
+        self._init_wireframer_colors()
         if first_start:
             hide_viewport_ui_elements_and_store_on_object(context.area, headobj)
 
-            _log_output('START SHADERS')
-            self._init_wireframer_colors(settings.overall_opacity)
+            _log.output('START FB SHADERS')
+            self._change_wireframe_visibility(toggle=False, value=True)
             vp.create_batch_2d(context.area)
-            _log_output('REGISTER SHADER HANDLERS')
+            _log.output('REGISTER FB SHADER HANDLERS')
             vp.register_handlers(context)
 
             context.window_manager.modal_handler_add(self)
 
-            _log_output('SHADER STOPPER START')
+            _log.output('FB SHADER STOPPER START')
             self.pinmode_id = str(uuid4())
             settings.pinmode_id = self.pinmode_id
             FBLoader.start_shader_timer(self.pinmode_id)
-            _log_output(f'pinmode_id: {self.pinmode_id}')
+            _log.output(f'pinmode_id: {self.pinmode_id}')
         else:
-            _log_output('SHADER UPDATE ONLY')
-            self._init_wireframer_colors(settings.overall_opacity)
+            _log.output('FB SHADER UPDATE ONLY')
 
         if not check_area_active_problem(area):
             assert area.spaces.active.region_3d.view_perspective == 'CAMERA'
-            _log_output('bpy.ops.view3d.view_center_camera call')
+            _log.output('bpy.ops.view3d.view_center_camera call')
             operator_with_context(bpy.ops.view3d.view_center_camera,
                 {'area': area, 'region': coords.get_area_region(area)})
 
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
         push_head_in_undo_history(head, 'Pin Mode Start.')
         if not first_start:
-            _log_output('PINMODE SWITCH ONLY')
+            _log.output('FB PINMODE SWITCH ONLY')
             return {'FINISHED'}
 
         register_undo_handler()
-        _log_output('PINMODE STARTED')
+        _log.output('FB PINMODE STARTED')
         return {'RUNNING_MODAL'}
-
-    def _wireframe_view_toggle(self):
-        settings = get_fb_settings()
-
-        settings.overall_opacity = \
-            0.0 if settings.overall_opacity > 0.5 else 1.0
-        _log_output(f'OVERALL_OPACITY BY TAB {settings.overall_opacity}')
-        self._init_wireframer_colors(settings.overall_opacity)
-        force_ui_redraw('VIEW_3D')
 
     def _modal_should_finish(self, context, event):
         settings = get_fb_settings()
@@ -389,18 +383,18 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         # Quit if Screen changed
         if context.area is None:  # Different operation Space
-            _log_output('CONTEXT LOST')
+            _log.output('CONTEXT LOST')
             FBLoader.out_pinmode(headnum)
             return True
 
         if headnum < 0:
-            _log_error('HEAD LOST')
+            _log.error('HEAD LOST')
             FBLoader.out_pinmode(headnum)
             return True
 
         # Quit if Force Pinmode Out flag is set (by ex. license, pin problem)
         if settings.force_out_pinmode:
-            _log_output('FORCE PINMODE OUT')
+            _log.output('FORCE PINMODE OUT')
             FBLoader.out_pinmode(headnum)
             settings.force_out_pinmode = False
             if settings.license_error:
@@ -417,8 +411,8 @@ class FB_OT_PinMode(bpy.types.Operator):
                 # Return back to the camera view
                 bpy.ops.view3d.view_camera()
             else:
-                _log_output('CAMERA ROTATED PINMODE OUT')
-                _log_output(context.space_data.region_3d.view_perspective)
+                _log.output('CAMERA ROTATED PINMODE OUT')
+                _log.output(context.space_data.region_3d.view_perspective)
                 FBLoader.out_pinmode(headnum)
                 return True
 
@@ -438,8 +432,8 @@ class FB_OT_PinMode(bpy.types.Operator):
         settings = get_fb_settings()
 
         if self.pinmode_id != settings.pinmode_id:
-            _log_error('Extreme pinmode operator stop')
-            _log_error(f'{self.pinmode_id} != {settings.pinmode_id}')
+            _log.error('Extreme pinmode operator stop')
+            _log.error(f'{self.pinmode_id} != {settings.pinmode_id}')
             unregister_undo_handler()
             exit_area_localview(context.area)
             return {'FINISHED'}
@@ -453,11 +447,12 @@ class FB_OT_PinMode(bpy.types.Operator):
             return {'FINISHED'}
 
         if self._check_camera_state_changed(context.space_data.region_3d):
-            _log_output('CAMERA STATE CHANGED. FORCE TAG REDRAW')
+            _log.output('CAMERA STATE CHANGED. FORCE TAG REDRAW')
             context.area.tag_redraw()
 
         if event.value == 'PRESS' and event.type == 'TAB':
-            self._wireframe_view_toggle()
+            self._change_wireframe_visibility()
+            context.area.tag_redraw()
             return {'RUNNING_MODAL'}
 
         if event.value == 'PRESS' and event.type == 'LEFTMOUSE':
@@ -480,12 +475,12 @@ class FB_OT_PinMode(bpy.types.Operator):
         kid = settings.get_keyframe(headnum, camnum)
 
         if head.need_update:
-            _log_output('UNDO CALL DETECTED')
+            _log.output('UNDO CALL DETECTED')
             self._undo_detected(context.area)
 
         vp = FBLoader.viewport()
         if not (vp.wireframer().is_working()):
-            _log_output('WIREFRAME IS OFF')
+            _log.output('WIREFRAME IS OFF')
             unregister_undo_handler()
             FBLoader.out_pinmode(headnum)
             return {'FINISHED'}
