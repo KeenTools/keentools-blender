@@ -442,8 +442,6 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     def cancel_selection(self) -> None:
         self.selection_mode = False
         self.do_selection()
-        vp = GTLoader.viewport()
-        vp.pins().set_add_selection_mode(False)
 
     def end_selection(self, area: Area, mouse_x: int, mouse_y: int) -> None:
         x1, y1 = get_image_space_coord(self.selection_x, self.selection_y, area)
@@ -452,7 +450,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         pins = vp.pins()
         found_pins = pins.pins_inside_rectangle(x1, y1, x2, y2)
         if pins.get_add_selection_mode():
-            pins.add_selected_pins(found_pins)
+            pins.toggle_selected_pins(found_pins)
         else:
             pins.set_selected_pins(found_pins)
         self.cancel_selection()

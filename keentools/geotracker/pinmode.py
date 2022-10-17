@@ -16,10 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any
+from typing import Any, Set, Optional
 from uuid import uuid4
 
 import bpy
+from bpy.types import Area
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import get_operator
@@ -62,28 +63,45 @@ class GT_OT_PinMode(bpy.types.Operator):
         return False
 
     @classmethod
-    def _set_shift_pressed(cls, val):
+    def _set_shift_pressed(cls, val: bool) -> None:
         cls._shift_pressed = val
 
     @classmethod
-    def _is_shift_pressed(cls):
+    def _is_shift_pressed(cls) -> bool:
         return cls._shift_pressed
 
-    def _on_left_mouse_press(self, area, event):
+    def _on_left_mouse_press(self, area: Area, event: Any) -> Set:
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
-        GTLoader.viewport().update_view_relative_pixel_size(area)
+        vp = GTLoader.viewport()
+        vp.update_view_relative_pixel_size(area)
 
-        if not coords.is_in_area(area, mouse_x, mouse_y):
+        if not coords.is_safe_region(area, mouse_x, mouse_y):
             return {'PASS_THROUGH'}
 
-        if coords.is_safe_region(area, mouse_x, mouse_y):
+        pins = vp.pins()
+        if not pins.get_add_selection_mode():
             op = get_operator(GTConfig.gt_movepin_idname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y)
             return {'PASS_THROUGH'}
 
+        x, y = coords.get_image_space_coord(mouse_x, mouse_y, area)
+        nearest, dist2 = coords.nearest_point(x, y, vp.pins().arr())
+        if nearest >= 0 and dist2 < vp.tolerance_dist2():
+            _log.output(f'CHANGE SELECTION PIN FOUND: {nearest}')
+            pins.set_current_pin_num(nearest)
+            selected_pins = pins.get_selected_pins()
+
+            if nearest in selected_pins:
+                pins.exclude_selected_pin(nearest)
+            else:
+                pins.add_selected_pins([nearest])
+        else:
+            settings = get_gt_settings()
+            settings.start_selection(mouse_x, mouse_y)
+        vp.tag_redraw()
         return {'PASS_THROUGH'}
 
-    def _on_right_mouse_press(self, area, event):
+    def _on_right_mouse_press(self, area: Area, event: Any) -> Set:
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
         vp = GTLoader.viewport()
         vp.update_view_relative_pixel_size(area)
@@ -97,7 +115,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         vp.create_batch_2d(area)
         return {'RUNNING_MODAL'}
 
-    def _delete_found_pin(self, nearest, area):
+    def _delete_found_pin(self, nearest: int, area: Area) -> Set:
         gt = GTLoader.kt_geotracker()
         gt.remove_pin(nearest)
         GTLoader.viewport().pins().remove_pin(nearest)
@@ -132,27 +150,27 @@ class GT_OT_PinMode(bpy.types.Operator):
         force_undo_push('Delete GeoTracker pin')
         return {'RUNNING_MODAL'}
 
-    def _new_pinmode_id(self):
+    def _new_pinmode_id(self) -> None:
         settings = get_gt_settings()
         self.pinmode_id = str(uuid4())
         settings.pinmode_id = self.pinmode_id
 
-    def _init_pinmode(self, area, context=None):
+    def _init_pinmode(self, area: Area, context: Optional[Any]=None) -> None:
         if not GTLoader.load_geotracker():
             _log.output('NEW KT_GEOTRACKER')
             GTLoader.new_kt_geotracker()
 
-        _log.output('START SHADERS')
+        _log.output('GT START SHADERS')
         GTLoader.load_pins_into_viewport()
         vp = GTLoader.viewport()
         vp.create_batch_2d(area)
-        _log.output('REGISTER SHADER HANDLERS')
+        _log.output('GT REGISTER SHADER HANDLERS')
         GTLoader.update_all_viewport_shaders(area)
         if context is not None:
             vp.register_handlers(context)
         vp.tag_redraw()
 
-    def _start_new_pinmode(self, context):
+    def _start_new_pinmode(self, context: Any) -> None:
         _log.output('_start_new_pinmode')
         settings = get_gt_settings()
         settings.pinmode = True
@@ -162,7 +180,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         self._set_new_geotracker(context.area)
         self._init_pinmode(context.area, context)
 
-    def _set_new_geotracker(self, area, num=None):
+    def _set_new_geotracker(self, area: Area, num: Optional[int]=None) -> None:
         _log.output(f'_set_new_geotracker: area={id(area)} num={num}')
         settings = get_gt_settings()
         if num is not None:
@@ -178,7 +196,7 @@ class GT_OT_PinMode(bpy.types.Operator):
 
         hide_viewport_ui_elements_and_store_on_object(area, geotracker.geomobj)
 
-    def _switch_to_new_geotracker(self, num):
+    def _switch_to_new_geotracker(self, num: int) -> None:
         _log.output('_switch_to_new_geotracker')
         settings = get_gt_settings()
         settings.pinmode = True
@@ -190,7 +208,8 @@ class GT_OT_PinMode(bpy.types.Operator):
         self._set_new_geotracker(area, num)
         self._init_pinmode(area)
 
-    def _change_wireframe_visibility(self, *, toggle=True, value=True):
+    def _change_wireframe_visibility(self, *, toggle: bool=True,
+                                     value: bool=True) -> None:
         vp = GTLoader.viewport()
         flag = not vp.wireframer().is_visible() if toggle else value
         vp.set_visible(flag)
@@ -209,7 +228,7 @@ class GT_OT_PinMode(bpy.types.Operator):
              'y': 30}  # line 2
         ])
 
-    def invoke(self, context, event):
+    def invoke(self, context: Any, event: Any) -> Set:
         _log.output(f'INVOKE PINMODE: {self.geotracker_num}')
 
         settings = get_gt_settings()
@@ -261,7 +280,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         _log.output('PINMODE STARTED')
         return {'RUNNING_MODAL'}
 
-    def modal(self, context, event):
+    def modal(self, context: Any, event: Any) -> Set:
         settings = get_gt_settings()
 
         if self.pinmode_id != settings.pinmode_id:
@@ -309,6 +328,7 @@ class GT_OT_PinMode(bpy.types.Operator):
         if event.type == 'ESC' and event.value == 'PRESS':
             if settings.selection_mode:
                 settings.cancel_selection()
+                settings.set_add_selection_mode(False)
                 vp = GTLoader.viewport()
                 vp.tag_redraw()
                 return {'RUNNING_MODAL'}

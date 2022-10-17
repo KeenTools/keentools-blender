@@ -77,6 +77,11 @@ class KTScreenPins:
     def add_selected_pins(self, selected_pins: List[int]) -> None:
         self._selected_pins = list(set(self._selected_pins + selected_pins))
 
+    def toggle_selected_pins(self, selected_pins: List[int]) -> None:
+        old_selected_set = set(self._selected_pins)
+        new_selected_set = set(selected_pins)
+        self._selected_pins = list(old_selected_set.symmetric_difference(new_selected_set))
+
     def exclude_selected_pin(self, pin_number: int) -> None:
         self.set_selected_pins([x for x in self.get_selected_pins()
                                 if x != pin_number])
