@@ -29,6 +29,7 @@ from .kt_logging import KTLogger
 from .shaders import (simple_fill_vertex_shader,
                       black_fill_fragment_shader, residual_vertex_shader,
                       residual_fragment_shader,
+                      dashed_fragment_shader,
                       solid_line_vertex_shader, solid_line_fragment_shader,
                       simple_fill_vertex_local_shader,
                       smooth_3d_vertex_local_shader, smooth_3d_fragment_shader,
@@ -135,8 +136,8 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
         self.edge_vertices: List[Tuple[float, float, float]] = []
         self.edge_vertices_colors: List[Tuple[float, float, float, float]] = []
         self.line_width: float = 1.0
-        self.line_color: Tuple[float, float, float, float] = (0., 0., 1.0, 0.9)
-        self.fill_color: Tuple[float, float, float, float] = (0., 0., 1.0, 0.5)
+        self.line_color: Tuple[float, float, float, float] = (1., 1., 1., 0.75)
+        self.fill_color: Tuple[float, float, float, float] = (1., 1., 1., 0.01)
         self.fill_indices: List[Tuple[int, int, int]] = [(0, 1, 3), (4, 5, 0)]
         super().__init__(target_class)
 
@@ -161,10 +162,8 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
             return
 
         bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-        bgl.glLineWidth(self.line_width)  # Rectangle Width
+        bgl.glLineWidth(self.line_width)
 
         self.line_shader.bind()
         self.line_batch.draw(self.line_shader)
@@ -176,7 +175,7 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
         if bpy.app.background:
             return
         self.edge_vertices_colors = [self.line_color] * len(self.edge_vertices)
-        # Our shader batch
+
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
             {'pos': self.edge_vertices, 'color': self.edge_vertices_colors}
@@ -190,12 +189,43 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
     def clear_rectangle(self) -> None:
         self.edge_vertices = []
         self.edge_vertices_colors = []
+        self.edge_lengths = []
 
     def add_rectangle(self, x1: int, y1: int, x2: int, y2: int) -> None:
         self.edge_vertices = [(x1, y1), (x1, y2),
                               (x1, y2), (x2, y2),
                               (x2, y2), (x2, y1),
                               (x2, y1), (x1, y1)]
+
+
+class KTScreenDashedRectangleShader2D(KTScreenRectangleShader2D):
+    def init_shaders(self) -> None:
+        self.line_shader = gpu.types.GPUShader(
+            residual_vertex_shader(), dashed_fragment_shader())
+        self.fill_shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
+
+    def create_batch(self) -> None:
+        if bpy.app.background:
+            return
+        self.edge_vertices_colors = [self.line_color] * len(self.edge_vertices)
+
+        self.line_batch = batch_for_shader(
+            self.line_shader, 'LINES',
+            {'pos': self.edge_vertices, 'color': self.edge_vertices_colors,
+             'lineLength': self.edge_lengths})
+        self.fill_batch = batch_for_shader(
+            self.fill_shader, 'TRIS',
+            {'pos': self.edge_vertices},
+            indices=self.fill_indices if len(self.edge_vertices) == 8 else [])
+
+    def add_rectangle(self, x1: int, y1: int, x2: int, y2: int) -> None:
+        self.edge_vertices = [(x1, y1), (x1, y2),
+                              (x1, y2), (x2, y2),
+                              (x2, y2), (x2, y1),
+                              (x2, y1), (x1, y1)]
+        dy = y2 - y1
+        dx = x2 - x1
+        self.edge_lengths = [0, dy, dy, dx + dy, -dx - dy, -dx, -dx, 0]
 
 
 class KTEdgeShaderAll2D(KTEdgeShader2D):

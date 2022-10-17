@@ -251,6 +251,20 @@ def residual_fragment_shader():
     '''
 
 
+def dashed_fragment_shader():
+    return '''
+    in float v_LineLength;
+    flat in vec4 finalColor;
+    out vec4 fragColor;
+
+    void main()
+    {
+        if (mod(v_LineLength + 5.0f, 10.0f) > 5.5f) discard;
+        fragColor = finalColor;
+    }
+    '''
+
+
 def solid_line_vertex_shader():
     return '''
     uniform mat4 ModelViewProjectionMatrix;
