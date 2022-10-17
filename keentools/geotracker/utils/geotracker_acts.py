@@ -604,13 +604,25 @@ def remove_pins_act() -> ActionStatus:
         return check_status
 
     gt = GTLoader.kt_geotracker()
-    gt.remove_pins()
 
-    pins = GTLoader.viewport().pins()
-    pins.clear_disabled_pins()
-    pins.clear_selected_pins()
+    vp = GTLoader.viewport()
+    pins = vp.pins()
+    selected_pins = pins.get_selected_pins()
+    if len(selected_pins) == 0:
+        gt.remove_pins()
+        pins.clear_disabled_pins()
+        pins.clear_selected_pins()
+    else:
+        selected_pins.sort()
+        for i in reversed(selected_pins):
+            gt.remove_pin(i)
+            selected_pins.remove(i)
+        if not GTLoader.solve():
+            return ActionStatus(False, 'Could not remove selected pins')
+        GTLoader.load_pins_into_viewport()
+
     pins.reset_current_pin()
-
+    GTLoader.save_geotracker()
     GTLoader.update_all_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
