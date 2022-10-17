@@ -25,27 +25,12 @@ from ...utils.kt_logging import KTLogger
 from ...geotracker_config import get_gt_settings
 from ..gtloader import GTLoader
 from ...utils.bpy_common import bpy_current_frame, bpy_set_current_frame
-from ...utils.other import (unhide_viewport_ui_elements_from_object,
-                            hide_viewport_ui_elements_and_store_on_object)
-from ...utils.manipulate import exit_area_localview, switch_to_camera
+from ...utils.other import unhide_viewport_ui_elements_from_object
+from ...utils.manipulate import exit_area_localview
 from ...utils.ui_redraw import force_ui_redraw
-from ...utils.images import set_background_image_by_movieclip
 
 
 _log = KTLogger(__name__)
-
-
-def prepare_camera(area) -> None:
-    settings = get_gt_settings()
-    geotracker = settings.get_current_geotracker_item()
-    if not settings.pinmode:
-        switch_to_camera(area, geotracker.camobj,
-                         geotracker.animatable_object())
-        hide_viewport_ui_elements_and_store_on_object(area,
-                                                      geotracker.camobj)
-    set_background_image_by_movieclip(geotracker.camobj,
-                                      geotracker.movie_clip)
-    geotracker.reload_background_image()
 
 
 class CalcTimer():

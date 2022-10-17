@@ -23,7 +23,6 @@ from ..utils.kt_logging import KTLogger
 from ..geotracker_config import get_current_geotracker_item
 from ..utils.coords import (focal_mm_to_px,
                             focal_px_to_mm,
-                            render_frame,
                             camera_sensor_width,
                             calc_bpy_camera_mat_relative_to_model,
                             calc_bpy_model_mat_relative_to_camera,
@@ -34,7 +33,9 @@ from ..utils.animation import (get_safe_evaluated_fcurve,
                                delete_animation_between_frames,
                                insert_keyframe_in_fcurve,
                                remove_fcurve_from_object)
-from ..utils.bpy_common import bpy_current_frame, bpy_set_current_frame
+from ..utils.bpy_common import (bpy_current_frame,
+                                bpy_set_current_frame,
+                                bpy_render_frame)
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..geotracker.gtloader import GTLoader
 from ..utils.images import np_array_from_background_image
@@ -57,7 +58,7 @@ class GTCameraInput(pkt_module().TrackerCameraInputI):
         return np.eye(4)
 
     def image_size(self) -> Tuple[int, int]:
-        return render_frame()
+        return bpy_render_frame()
 
 
 class GTGeoInput(pkt_module().GeoInputI):
@@ -77,7 +78,7 @@ class GTImageInput(pkt_module().ImageInputI):
 
     def load_linear_rgb_image_at(self, frame: int) -> Any:
         def _empty_image():
-            w, h = render_frame()
+            w, h = bpy_render_frame()
             return np.full((h, w, 3), (0.0, 0.0, 0.0), dtype=np.float32)
 
         _log.output(f'load_linear_rgb_image_at: {frame}')
@@ -152,7 +153,7 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         cam_data = geotracker.camobj.data
         _log.output('remove_fcurve_from_object: lens')
         remove_fcurve_from_object(cam_data, 'lens')
-        cam_data.lens = focal_px_to_mm(static_fl, *render_frame(),
+        cam_data.lens = focal_px_to_mm(static_fl, *bpy_render_frame(),
                                        cam_data.sensor_width)
 
     def serialize(self) -> str:
@@ -237,15 +238,15 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
             return geotracker.default_zoom_focal_length
         return focal_mm_to_px(
             get_safe_evaluated_fcurve(geotracker.camobj.data, frame, 'lens'),
-            *render_frame(), camera_sensor_width(geotracker.camobj))
+            *bpy_render_frame(), camera_sensor_width(geotracker.camobj))
 
     def get_default_zoom_focal_length(self) -> float:
         _log.output('get_default_zoom_focal_length')
         geotracker = get_current_geotracker_item()
         if not geotracker:
-            return focal_mm_to_px(50.0, *render_frame())  # Undefined case
+            return focal_mm_to_px(50.0, *bpy_render_frame())  # Undefined case
         return focal_mm_to_px(geotracker.default_zoom_focal_length,
-                              *render_frame(),
+                              *bpy_render_frame(),
                               camera_sensor_width(geotracker.camobj))
 
     def set_default_zoom_focal_length(self, default_fl: float) -> None:
@@ -272,7 +273,7 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
     def static_focal_length(self) -> float:
         geotracker = get_current_geotracker_item()
         if not geotracker:
-            return focal_mm_to_px(50.0, *render_frame())  # Undefined case
+            return focal_mm_to_px(50.0, *bpy_render_frame())  # Undefined case
         return geotracker.static_focal_length
 
     def set_camera_focal_length_mode(self) -> None:
@@ -293,9 +294,9 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         cam_data = geotracker.camobj.data
         if geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH':
             insert_keyframe_in_fcurve(cam_data, frame,
-                                      focal_px_to_mm(fl, *render_frame(),
+                                      focal_px_to_mm(fl, *bpy_render_frame(),
                                                      cam_data.sensor_width),
                                       'KEYFRAME', 'lens')
         else:
-            cam_data.lens = focal_px_to_mm(fl, *render_frame(),
+            cam_data.lens = focal_px_to_mm(fl, *bpy_render_frame(),
                                            cam_data.sensor_width)

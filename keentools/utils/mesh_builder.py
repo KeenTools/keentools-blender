@@ -24,8 +24,8 @@ from bpy.types import Object
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from .coords import (get_scale_matrix_3x3_from_matrix_world,
                      get_mesh_verts,
-                     xz_to_xy_rotation_matrix_3x3,
-                     evaluated_mesh)
+                     xz_to_xy_rotation_matrix_3x3)
+from .bpy_common import evaluated_mesh
 
 
 def build_geo(obj: Object, evaluated: bool=True, get_uv=False) -> Any:

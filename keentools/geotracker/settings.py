@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
 import numpy as np
 from typing import Optional, Tuple, Any, List
 from contextlib import contextmanager
@@ -24,6 +23,7 @@ from contextlib import contextmanager
 import bpy
 from bpy.types import Object, CameraBackgroundImage, Area
 
+from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_addon_preferences
 from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
@@ -35,25 +35,13 @@ from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_scale_vec_4_from_matrix_world,
                             get_image_space_coord,
                             focal_mm_to_px,
-                            render_width,
-                            render_frame,
                             camera_focal_length,
                             camera_sensor_width)
 from ..utils.video import fit_render_size, fit_time_length
-from ..utils.bpy_common import bpy_start_frame, bpy_end_frame
+from ..utils.bpy_common import bpy_render_frame, bpy_start_frame, bpy_end_frame
 
 
-_logger: Any = logging.getLogger(__name__)
-
-
-def _log_output(message: str) -> None:
-    global _logger
-    _logger.debug(message)
-
-
-def _log_error(message: str) -> None:
-    global _logger
-    _logger.error(message)
+_log = KTLogger(__name__)
 
 
 def object_is_in_scene(obj):
@@ -69,8 +57,8 @@ def is_camera(self, obj: Optional[Object]) -> bool:
 
 
 def update_camobj(geotracker, context: Any) -> None:
-    _log_output('update_camera')
-    _log_output(f'self: {geotracker.camobj}')
+    _log.output('update_camera')
+    _log.output(f'self: {geotracker.camobj}')
     if not geotracker.camobj:
         settings = get_gt_settings()
         if settings.pinmode:
@@ -80,8 +68,8 @@ def update_camobj(geotracker, context: Any) -> None:
 
 
 def update_geomobj(geotracker, context: Any) -> None:
-    _log_output('update_geomobj')
-    _log_output(f'self: {geotracker.geomobj}')
+    _log.output('update_geomobj')
+    _log.output(f'self: {geotracker.geomobj}')
     if not geotracker.geomobj:
         settings = get_gt_settings()
         if settings.pinmode:
@@ -91,7 +79,7 @@ def update_geomobj(geotracker, context: Any) -> None:
 
 
 def update_movieclip(geotracker, context) -> None:
-    _log_output('update_movieclip')
+    _log.output('update_movieclip')
     settings = get_gt_settings()
     if settings.ui_write_mode:
         return
@@ -139,11 +127,11 @@ def update_pin_size(settings, context):
 
 
 def update_focal_length_mode(geotracker, context):
-    _log_output(f'update_focal_length_mode: {geotracker.focal_length_mode}')
+    _log.output(f'update_focal_length_mode: {geotracker.focal_length_mode}')
     if geotracker.focal_length_mode == 'STATIC_FOCAL_LENGTH':
         geotracker.static_focal_length = focal_mm_to_px(
             camera_focal_length(geotracker.camobj),
-            *render_frame(), camera_sensor_width(geotracker.camobj))
+            *bpy_render_frame(), camera_sensor_width(geotracker.camobj))
 
 
 
@@ -386,13 +374,16 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         return False
 
     def reload_current_geotracker(self) -> bool:
-        return self.change_currrent_geotracker_safe(self.current_geotracker_num)
+        self.fix_geotrackers()
+        return self.change_current_geotracker_safe(self.current_geotracker_num)
 
     def add_geotracker_item(self) -> int:
+        self.fix_geotrackers()
         self.geotrackers.add()
         return self.get_last_geotracker_num()
 
-    def remove_geotracker_item(self, num: int) -> int:
+    def remove_geotracker_item(self, num: int) -> bool:
+        self.fix_geotrackers()
         if self.is_proper_geotracker_number(num):
             self.geotrackers.remove(num)
             if self.current_geotracker_num >= num:
@@ -402,7 +393,8 @@ class GTSceneSettings(bpy.types.PropertyGroup):
                         self.current_geotracker_num = 0
                     else:
                         self.current_geotracker_num = -1
-        return self.current_geotracker_num
+            return True
+        return False
 
     def start_selection(self, mouse_x: int, mouse_y: int) -> None:
         self.selection_x = mouse_x
@@ -411,8 +403,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         self.do_selection(mouse_x, mouse_y)
 
     def do_selection(self, mouse_x: int=0, mouse_y: int=0):
-        logger = logging.getLogger(__name__)
-        logger.debug('DO SELECTION: {}'.format(self.selection_mode))
+        _log.output('DO SELECTION: {}'.format(self.selection_mode))
         vp = GTLoader.viewport()
         selector = vp.selector()
         if not self.selection_mode:

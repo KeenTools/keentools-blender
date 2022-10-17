@@ -20,7 +20,7 @@ import logging
 import os
 from typing import Tuple, Optional, Any
 
-from ...utils.coords import render_frame
+from ...utils.bpy_common import bpy_render_frame
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
@@ -76,7 +76,7 @@ def check_precalc(precalc_info: Any,
             log_error(msg)
             return False, msg
 
-    rw, rh = render_frame()
+    rw, rh = bpy_render_frame()
     if rw != precalc_info.image_w or rh != precalc_info.image_h:
         msg = 'Render size differs from precalculated'
         log_error(msg)

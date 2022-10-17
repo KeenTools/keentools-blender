@@ -23,7 +23,7 @@ import math
 import bpy
 from bpy.types import Area, Object
 from .fake_context import get_fake_context
-from .bpy_common import bpy_current_frame
+from .bpy_common import bpy_current_frame, bpy_render_frame
 from .animation import get_safe_evaluated_fcurve
 
 
@@ -149,20 +149,6 @@ def focal_px_to_mm(fl_px: float, image_width: float, image_height: float,
     return sc * fl_px * sensor_width / image_width
 
 
-def render_frame() -> Tuple[int, int]:
-    """ Just get frame size from scene render settings """
-    scene = bpy.context.scene
-    rx = scene.render.resolution_x
-    ry = scene.render.resolution_y
-    w = rx if rx != 0 else 1
-    h = ry if ry != 0 else 1
-    return w, h
-
-
-def render_width() -> int:
-    return bpy.context.scene.render.resolution_x
-
-
 def camera_sensor_width(camobj: Any) -> float:
     if not camobj or not camobj.data:
         return 36.0
@@ -178,7 +164,7 @@ def camera_focal_length(camobj: Any) -> float:
 def image_space_to_frame(x: float, y: float, shift_x: float=0.0,
                          shift_y: float=0.0) -> Tuple[float, float]:
     """ Image centered Relative coords to Frame pixels """
-    w, h = render_frame()
+    w, h = bpy_render_frame()
     return (x + shift_x + 0.5) * w, (y + shift_y) * w + 0.5 * h
 
 
@@ -354,21 +340,6 @@ def get_pixel_relative_size(area: Area) -> float:
     return ps
 
 
-def get_depsgraph() -> Any:
-    return bpy.context.evaluated_depsgraph_get()
-
-
-def evaluated_mesh(obj: Any) -> Any:
-    depsgraph = get_depsgraph()
-    return obj.evaluated_get(depsgraph)
-
-
-def update_depsgraph() -> Any:
-    depsgraph = get_depsgraph()
-    depsgraph.update()
-    return depsgraph
-
-
 def get_mesh_verts(mesh: Any) -> Any:
     verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
     mesh.vertices.foreach_get(
@@ -416,7 +387,7 @@ def get_scale_matrix_3x3_from_matrix_world(obj_matrix_world: Any) -> Any:
 
 
 def compensate_view_scale() -> float:
-    image_width, image_height = render_frame()
+    image_width, image_height = bpy_render_frame()
     if image_width >= image_height:
         return 1.0
     return image_width / image_height
@@ -452,7 +423,7 @@ def camera_projection(camobj: Object, frame: Optional[int]=None,
     near = cam_data.clip_start
     far = cam_data.clip_end
     if image_width is None or image_height is None:
-        image_width, image_height = render_frame()
+        image_width, image_height = bpy_render_frame()
     if frame is None:
         frame =bpy_current_frame()
     lens = get_safe_evaluated_fcurve(cam_data, frame, 'lens')

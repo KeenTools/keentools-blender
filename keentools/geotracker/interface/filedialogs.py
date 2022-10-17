@@ -25,20 +25,19 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import Config, get_operator
-from ...geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
+from ...geotracker_config import GTConfig, get_current_geotracker_item
 from ...utils.images import set_background_image_by_movieclip
 from ...utils.video import (convert_movieclip_to_frames,
                             load_movieclip,
                             get_movieclip_duration)
 from ..gtloader import GTLoader
-from ...utils.bpy_common import (bpy_current_frame,
-                                 bpy_set_current_frame,
-                                 bpy_start_frame,
+from ...utils.bpy_common import (bpy_start_frame,
                                  bpy_end_frame)
 from ..utils.textures import (bake_texture,
                               preview_material_with_texture,
                               bake_texture_sequence)
-from ...utils.images import create_compatible_bpy_image, assign_pixels_data
+from ..utils.prechecks import common_checks, prepare_camera, revert_camera
+
 
 _log = KTLogger(__name__)
 
@@ -293,11 +292,16 @@ class GT_OT_FrameSelector(bpy.types.Operator):
                            'to create texture.')
 
     def invoke(self, context, event):
-        geotracker = get_current_geotracker_item()
-        if not geotracker or not geotracker.movie_clip:
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     reload_geotracker=True, geotracker=True,
+                                     camera=True, geometry=True,
+                                     movie_clip=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
-        gt = GTLoader.kt_geotracker()
 
+        geotracker = get_current_geotracker_item()
+        gt = GTLoader.kt_geotracker()
         selected_frames = geotracker.selected_frames
         old_selected_frame_numbers = set([x.num for x in selected_frames if x.selected])
         selected_frames.clear()
@@ -309,21 +313,29 @@ class GT_OT_FrameSelector(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
-        _log.output('GT START TEXTURE CREATION')
-
-        geotracker = get_current_geotracker_item()
-        if not geotracker or not geotracker.movie_clip:
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     geotracker=True, camera=True,
+                                     geometry=True, movie_clip=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        built_texture = bake_texture(
-            geotracker,
-            [x.num for x in geotracker.selected_frames if x.selected])
+        geotracker = get_current_geotracker_item()
+        selected_keyframes = [x.num for x in geotracker.selected_frames if x.selected]
+        if len(selected_keyframes) == 0:
+            self.report({'ERROR'}, 'No keyframes have been selected')
+            return {'CANCELLED'}
 
+        _log.output('GT START TEXTURE CREATION')
+        area = context.area
+        prepare_camera(area)
+        built_texture = bake_texture(geotracker, selected_keyframes)
         if built_texture is None:
             _log.error('GT TEXTURE HAS NOT BEEN CREATED')
         else:
             preview_material_with_texture(built_texture, geotracker.geomobj)
             _log.output('GT TEXTURE HAS BEEN CREATED')
+        revert_camera(area)
         return {'FINISHED'}
 
 
@@ -361,6 +373,14 @@ class GT_OT_ReprojectTextureSequence(_DirSelectionTemplate):
         col.label(text=file_pattern.format(str(self.to_frame).zfill(4)))
 
     def invoke(self, context, _event):
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     reload_geotracker=True,
+                                     geotracker=True, camera=True,
+                                     geometry=True, movie_clip=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         self.filepath = ''
         self.from_frame = bpy_start_frame()
         self.to_frame = bpy_end_frame()
@@ -374,6 +394,14 @@ class GT_OT_ReprojectTextureSequence(_DirSelectionTemplate):
         return '.png' if self.file_format == 'PNG' else '.jpg'
 
     def execute(self, context):
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     reload_geotracker=True,
+                                     geotracker=True, camera=True,
+                                     geometry=True, movie_clip=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         self.filename_ext = self._filename_ext()
         _log.output(f'OUTPUT reproject filepath: {self.filepath}')
 

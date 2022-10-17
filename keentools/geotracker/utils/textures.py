@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import numpy as np
-from typing import Any, List
+from typing import Any, List, Optional
 
 import bpy
 from bpy.types import Object, Area
@@ -40,7 +40,7 @@ from ...utils.images import (create_compatible_bpy_image,
 from ...addon_config import get_operator
 from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
-from .calc_timer import prepare_camera
+from .prechecks import prepare_camera
 from ...utils.other import unhide_viewport_ui_elements_from_object
 from ...utils.localview import exit_area_localview
 
@@ -148,6 +148,7 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
               'color': (1.0, 1.0, 1.0, 0.7)}])
         settings.user_percent = 100 * frame / total_frames
         bpy_set_current_frame(current_frame)
+
         yield delta
 
         built_texture = bake_texture(geotracker, [current_frame],
@@ -159,13 +160,14 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
         assign_pixels_data(tex.pixels, built_texture.ravel())
         tex.save()
         _log.output(f'TEXTURE SAVED: {tex.filepath}')
+
         yield delta
 
     _finish()
     return None
 
 
-def _bake_caller():
+def _bake_caller() -> Optional[float]:
     global _bake_generator_var
     if _bake_generator_var is None:
         return None

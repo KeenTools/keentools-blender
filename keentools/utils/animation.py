@@ -15,13 +15,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
+
 from typing import Optional, List, Set, Dict
 
 import bpy
 from bpy.types import Object, Action, FCurve, Keyframe
 from mathutils import Vector
 from .bpy_common import bpy_current_frame, create_empty_object, operator_with_context
+
+from .kt_logging import KTLogger
+
+
+_log = KTLogger(__name__)
 
 
 def _get_action_fcurve(action: Action, data_path: str, index: int=0) -> Optional[FCurve]:
@@ -164,6 +169,21 @@ def insert_point_in_fcurve(fcurve: FCurve, frame: int, value: float,
     return k
 
 
+def mark_all_points_in_fcurve(fcurve: FCurve,
+                              keyframe_type: str='KEYFRAME') -> None:
+    for keyframe in fcurve.keyframe_points:
+        keyframe.type = keyframe_type
+
+
+def mark_selected_points_in_fcurve(fcurve: FCurve, selected_frames: List[int],
+                                   keyframe_type: str='KEYFRAME') -> None:
+    selected_set = set(selected_frames)
+    selected_points = [x for x in fcurve.keyframe_points
+                       if x.co[0] in selected_set]
+    for keyframe in selected_points:
+        keyframe.type = keyframe_type
+
+
 def get_locrot_dict() -> Dict:
     return {'location_x': {'data_path': 'location', 'index': 0},
             'location_y': {'data_path': 'location', 'index': 1},
@@ -171,6 +191,32 @@ def get_locrot_dict() -> Dict:
             'rotation_euler_x': {'data_path': 'rotation_euler', 'index': 0},
             'rotation_euler_y': {'data_path': 'rotation_euler', 'index': 1},
             'rotation_euler_z': {'data_path': 'rotation_euler', 'index': 2}}
+
+
+def mark_all_points_in_locrot(obj: Object,
+                              keyframe_type: str='JITTER') -> None:
+    action = get_action(obj)
+    if not action:
+        return None
+    locrot_dict = get_locrot_dict()
+    for name in locrot_dict.keys():
+        fcurve = _get_action_fcurve(action, locrot_dict[name]['data_path'],
+                                    index=locrot_dict[name]['index'])
+        if fcurve is not None:
+            mark_all_points_in_fcurve(fcurve, keyframe_type)
+
+
+def mark_selected_points_in_locrot(obj: Object, selected_frames: List[int],
+                                   keyframe_type: str='KEYFRAME') -> None:
+    action = get_action(obj)
+    if not action:
+        return None
+    locrot_dict = get_locrot_dict()
+    for name in locrot_dict.keys():
+        fcurve = _get_action_fcurve(action, locrot_dict[name]['data_path'],
+                                    index=locrot_dict[name]['index'])
+        if fcurve is not None:
+            mark_selected_points_in_fcurve(fcurve, selected_frames, keyframe_type)
 
 
 def get_locrot_keys_in_frame(obj: Object, frame: int) -> Dict:
@@ -237,8 +283,6 @@ def remove_fcurve_from_object(obj: Object, data_path: str, index: int=0,
 
 
 def create_locrot_keyframe(obj: Object, keyframe_type: str='KEYFRAME') -> None:
-    logger = logging.getLogger(__name__)
-    log_output = logger.info
     action = _get_safe_action(obj, 'GTAct')
     if action is None:
         return
@@ -247,7 +291,7 @@ def create_locrot_keyframe(obj: Object, keyframe_type: str='KEYFRAME') -> None:
     loc = obj.matrix_world.to_translation()
     rot = obj.matrix_world.to_euler()
 
-    log_output(f'{keyframe_type} at {current_frame}')
+    _log.output(f'{keyframe_type} at {current_frame}')
     for name, value in zip(locrot_dict.keys(), [*loc, *rot]):
         fcurve = _get_safe_action_fcurve(action, locrot_dict[name]['data_path'],
                                          index=locrot_dict[name]['index'])

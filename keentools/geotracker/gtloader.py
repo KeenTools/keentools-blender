@@ -26,15 +26,16 @@ from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType
 from ..geotracker_config import get_gt_settings, get_current_geotracker_item
 from .viewport import GTViewport
-from ..utils.coords import (render_frame,
-                            image_space_to_frame,
+from ..utils.coords import (image_space_to_frame,
                             calc_bpy_camera_mat_relative_to_model,
                             calc_bpy_model_mat_relative_to_camera,
                             focal_by_projection_matrix_mm,
                             compensate_view_scale,
                             frame_to_image_space,
                             camera_sensor_width)
-from ..utils.bpy_common import bpy_current_frame, get_scene_camera_shift
+from ..utils.bpy_common import (bpy_render_frame,
+                                bpy_current_frame,
+                                get_scene_camera_shift)
 from .gt_class_loader import GTClassLoader
 from ..utils.timer import KTStopShaderTimer
 from ..utils.ui_redraw import force_ui_redraw
@@ -125,7 +126,7 @@ def frame_change_post_handler(scene):
     _log.output('KEYFRAME UPDATED')
     geotracker = get_current_geotracker_item()
     geotracker.reset_focal_length_estimation()
-    GTLoader.place_camera()
+    GTLoader.place_object_or_camera()
     GTLoader.update_all_viewport_shaders()
 
 
@@ -251,7 +252,7 @@ class GTLoader:
         keyframe = bpy_current_frame()
         vp = cls.viewport()
         gt = cls.kt_geotracker()
-        w, h = render_frame()
+        w, h = bpy_render_frame()
         kt_pins = gt.projected_pins(keyframe)
         pins = vp.pins()
         pins.set_pins([frame_to_image_space(*pin.img_pos, w, h,
@@ -266,9 +267,9 @@ class GTLoader:
         vp.tag_redraw()
 
     @classmethod
-    def place_camera(cls) -> None:
+    def place_object_or_camera(cls) -> None:
         geotracker = get_current_geotracker_item()
-        if not geotracker or not geotracker.geomobj or not geotracker.camobj:
+        if not geotracker:
             return
         gt = cls.kt_geotracker()
         keyframe = bpy_current_frame()
@@ -276,14 +277,28 @@ class GTLoader:
             return
         gt_model_mat = gt.model_mat(keyframe)
         if geotracker.camera_mode():
-            mat = calc_bpy_camera_mat_relative_to_model(geotracker.geomobj,
-                                                        gt_model_mat)
-            geotracker.camobj.matrix_world = mat
+            cls.place_camera_relative_to_object(gt_model_mat)
         else:
-            mat = calc_bpy_model_mat_relative_to_camera(geotracker.camobj,
-                                                        geotracker.geomobj,
-                                                        gt_model_mat)
-            geotracker.geomobj.matrix_world = mat
+            cls.place_object_relative_to_camera(gt_model_mat)
+
+    @classmethod
+    def place_object_relative_to_camera(cls, gt_model_mat: Any) -> None:
+        geotracker = get_current_geotracker_item()
+        if not geotracker or not geotracker.geomobj or not geotracker.camobj:
+            return
+        mat = calc_bpy_model_mat_relative_to_camera(geotracker.camobj,
+                                                    geotracker.geomobj,
+                                                    gt_model_mat)
+        geotracker.geomobj.matrix_world = mat
+
+    @classmethod
+    def place_camera_relative_to_object(cls, gt_model_mat: Any) -> None:
+        geotracker = get_current_geotracker_item()
+        if not geotracker or not geotracker.geomobj or not geotracker.camobj:
+            return
+        mat = calc_bpy_camera_mat_relative_to_model(geotracker.geomobj,
+                                                    gt_model_mat)
+        geotracker.camobj.matrix_world = mat
 
     @classmethod
     def updated_focal_length(cls, force: bool=False) -> Optional[float]:

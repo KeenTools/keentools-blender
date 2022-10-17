@@ -55,7 +55,9 @@ class GT_OT_CreateGeoTracker(ButtonOperator, bpy.types.Operator):
     bl_description = 'create GeoTracker object in scene'
 
     def execute(self, context):
-        create_geotracker_act()
+        act_status = create_geotracker_act()
+        if not act_status.success:
+            self.report({'INFO'}, act_status.error_message)
         return {'FINISHED'}
 
 
@@ -67,7 +69,9 @@ class GT_OT_DeleteGeoTracker(ButtonOperator, bpy.types.Operator):
     geotracker_num: bpy.props.IntProperty(default=-1)
 
     def execute(self, context):
-        delete_geotracker_act(self.geotracker_num)
+        act_status = delete_geotracker_act(self.geotracker_num)
+        if not act_status.success:
+            self.report({'INFO'}, act_status.error_message)
         return {'FINISHED'}
 
 
