@@ -242,7 +242,7 @@ class _CommonTimer:
             self._safe_resume()
         if attempts >= max_attempts and not self.tracking_computation.is_finished():
             _log.error(f'PROBLEM WITH COMPUTATION STOP')
-        GTLoader.revert_default_screen_message(unregister=False)
+        GTLoader.viewport().revert_default_screen_message(unregister=False)
         self._stop_user_interrupt_operator()
         GTLoader.save_geotracker()
         settings = get_gt_settings()
@@ -267,7 +267,7 @@ class _CommonTimer:
                 if overall is None:
                     return False
                 finished_frames, total_frames = overall
-                GTLoader.message_to_screen(
+                GTLoader.viewport().message_to_screen(
                     [{'text': f'{self._operation_name} calculating: '
                               f'{finished_frames}/{total_frames}', 'y': 60,
                       'color': (1.0, 0.0, 0.0, 0.7)},
@@ -306,7 +306,7 @@ class _CommonTimer:
     def start(self) -> None:
         if not bpy.app.background:
             self._start_user_interrupt_operator()
-        GTLoader.message_to_screen(
+        GTLoader.viewport().message_to_screen(
             [{'text': f'{self._operation_name} calculating... Please wait', 'y': 60,
               'color': (1.0, 0.0, 0.0, 0.7)},
              {'text': 'ESC to cancel', 'y': 30,
@@ -604,13 +604,25 @@ def remove_pins_act() -> ActionStatus:
         return check_status
 
     gt = GTLoader.kt_geotracker()
-    gt.remove_pins()
 
-    pins = GTLoader.viewport().pins()
-    pins.clear_disabled_pins()
-    pins.clear_selected_pins()
+    vp = GTLoader.viewport()
+    pins = vp.pins()
+    selected_pins = pins.get_selected_pins()
+    if len(selected_pins) == 0:
+        gt.remove_pins()
+        pins.clear_disabled_pins()
+        pins.clear_selected_pins()
+    else:
+        selected_pins.sort()
+        for i in reversed(selected_pins):
+            gt.remove_pin(i)
+            selected_pins.remove(i)
+        if not GTLoader.solve():
+            return ActionStatus(False, 'Could not remove selected pins')
+        GTLoader.load_pins_into_viewport()
+
     pins.reset_current_pin()
-
+    GTLoader.save_geotracker()
     GTLoader.update_all_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
@@ -627,7 +639,14 @@ def toggle_pins_act() -> ActionStatus:
     keyframe = bpy_current_frame()
     if gt.pins_count() > 0:
         GTLoader.safe_keyframe_add(keyframe, update=True)
-        gt.toggle_pins(keyframe)
+        pins = GTLoader.viewport().pins()
+        selected_pins = pins.get_selected_pins()
+        if len(selected_pins) == 0:
+            gt.toggle_pins(keyframe)
+        else:
+            gt.toggle_pins(keyframe, selected_pins)
+        pins.clear_selected_pins()
+        GTLoader.save_geotracker()
 
     GTLoader.update_all_viewport_shaders()
     GTLoader.viewport_area_redraw()

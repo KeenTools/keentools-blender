@@ -115,7 +115,8 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
                    width: int=2048, height: int=2048):
     def _finish():
         settings.stop_calculating()
-        GTLoader.revert_default_screen_message(unregister=not settings.pinmode)
+        GTLoader.viewport().revert_default_screen_message(
+            unregister=not settings.pinmode)
         if tex is not None:
             remove_bpy_image(tex)
         if not settings.pinmode:
@@ -128,7 +129,7 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
     settings.calculating_mode = 'REPROJECT'
     op = get_operator(GTConfig.gt_interrupt_modal_idname)
     op('INVOKE_DEFAULT')
-    GTLoader.message_to_screen(
+    GTLoader.viewport().message_to_screen(
         [{'text': 'Reproject is calculating... Please wait',
           'color': (1.0, 0., 0., 0.7)}])
 
@@ -140,7 +141,7 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
             _finish()
             return None
 
-        GTLoader.message_to_screen(
+        GTLoader.viewport().message_to_screen(
             [{'text': 'Reprojection: '
                       f'{frame + 1}/{total_frames}', 'y': 60,
               'color': (1.0, 0.0, 0.0, 0.7)},

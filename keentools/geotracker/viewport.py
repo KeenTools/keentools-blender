@@ -26,11 +26,14 @@ from ..utils.coords import (get_camera_border,
                             multiply_verts_on_matrix_4x4,
                             to_homogeneous,
                             pin_to_xyz_from_mesh)
-from ..utils.bpy_common import bpy_render_frame, evaluated_mesh
+from ..utils.bpy_common import bpy_render_frame, evaluated_object
 from ..utils.viewport import KTViewport
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
-from ..utils.edges import KTEdgeShader2D, KTEdgeShaderLocal3D, KTEdgeShaderAll2D, KTScreenRectangleShader2D
+from ..utils.edges import (KTEdgeShader2D,
+                           KTEdgeShaderLocal3D,
+                           KTEdgeShaderAll2D,
+                           KTScreenDashedRectangleShader2D)
 
 
 class GTViewport(KTViewport):
@@ -43,7 +46,7 @@ class GTViewport(KTViewport):
         self._wireframer = KTEdgeShaderLocal3D(bpy.types.SpaceView3D)
         self._timeliner = KTEdgeShaderAll2D(bpy.types.SpaceDopeSheetEditor,
                                             GTConfig.timeline_keyframe_color)
-        self._selector = KTScreenRectangleShader2D(bpy.types.SpaceView3D)
+        self._selector = KTScreenDashedRectangleShader2D(bpy.types.SpaceView3D)
         self._draw_update_timer_handler = None
 
     def register_handlers(self, context):
@@ -94,7 +97,7 @@ class GTViewport(KTViewport):
     def surface_points_from_mesh(self, gt, headobj, keyframe):
         verts = []
         pins_count = gt.pins_count()
-        obj = evaluated_mesh(headobj)
+        obj = evaluated_object(headobj)
         if len(obj.data.vertices) == 0:
             return verts
         for i in range(pins_count):

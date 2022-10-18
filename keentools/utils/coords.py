@@ -16,14 +16,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import logging
-from typing import Any, Tuple, List, Optional
+from typing import Any, Tuple, List, Optional, Set
 
 import numpy as np
 import math
 import bpy
 from bpy.types import Area, Object
 from .fake_context import get_fake_context
-from .bpy_common import bpy_current_frame, bpy_render_frame
+from .bpy_common import bpy_current_frame, bpy_render_frame, evaluated_mesh
 from .animation import get_safe_evaluated_fcurve
 
 
@@ -430,3 +430,49 @@ def camera_projection(camobj: Object, frame: Optional[int]=None,
     proj_mat = custom_projection_matrix(image_width, image_height, lens,
                                         cam_data.sensor_width, near, far)
     return proj_mat
+
+
+def get_triangulation_indices(mesh: Any, calculate: bool = True) -> Any:
+    if calculate:
+        mesh.calc_loop_triangles()
+    indices = np.empty((len(mesh.loop_triangles), 3), dtype=np.int32)
+    mesh.loop_triangles.foreach_get(
+        'vertices', np.reshape(indices, len(mesh.loop_triangles) * 3))
+    return indices
+
+
+def get_polygons_in_vertex_group(obj: Object,
+                                 vertex_group_name: str,
+                                 inverted=False) -> Set[int]:
+    mesh = evaluated_mesh(obj)
+    vertex_group_index = obj.vertex_groups.find(vertex_group_name)
+    if vertex_group_index < 0:
+        return set()
+
+    verts_in_group = set([v.index for v in mesh.vertices
+                          if vertex_group_index in
+                          [g.group for g in v.groups]])
+
+    polys_in_group = set()
+
+    if not inverted:
+        for polygon in mesh.polygons:
+            if verts_in_group.issuperset(polygon.vertices[:]):
+                polys_in_group.add(polygon.index)
+    else:
+        for polygon in mesh.polygons:
+            if not verts_in_group.issuperset(polygon.vertices[:]):
+                polys_in_group.add(polygon.index)
+
+    return polys_in_group
+
+
+def get_triangles_in_vertex_group(obj: Object,
+                                  vertex_group_name: str,
+                                  inverted=False) -> List:
+    polys_in_group = get_polygons_in_vertex_group(obj, vertex_group_name,
+                                                  inverted)
+    mesh = evaluated_mesh(obj)
+    mesh.calc_loop_triangles()
+    return [tris.vertices[:] for tris in mesh.loop_triangles
+            if tris.polygon_index in polys_in_group]

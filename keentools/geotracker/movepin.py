@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Set, Tuple
+from typing import Any, Set, Tuple, List
 
 import bpy
 from bpy.types import Area
@@ -29,7 +29,6 @@ from .gtloader import GTLoader
 from ..utils.coords import (get_image_space_coord,
                             image_space_to_frame,
                             nearest_point)
-from ..utils.animation import insert_keyframe_in_fcurve
 from ..utils.manipulate import force_undo_push
 from ..utils.bpy_common import bpy_current_frame, get_scene_camera_shift
 
@@ -50,7 +49,6 @@ class GT_OT_MovePin(bpy.types.Operator):
 
     new_pin_flag: bpy.props.BoolProperty(default=False)
     dragged: bpy.props.BoolProperty(default=False)
-    pin_was_selected: bpy.props.BoolProperty(default=False)
 
     shift_x: bpy.props.FloatProperty(default=0.0)
     shift_y: bpy.props.FloatProperty(default=0.0)
@@ -111,24 +109,18 @@ class GT_OT_MovePin(bpy.types.Operator):
             _log.output(f'init_action PIN FOUND: {nearest}')
             pins.set_current_pin_num(nearest)
             gt = GTLoader.kt_geotracker()
-            selected_pins = pins.get_selected_pins()
             keyframe = bpy_current_frame()
-            self.pin_was_selected = nearest in selected_pins
-            if self.pin_was_selected:
-                for i in selected_pins:
-                    _enable_pin_safe(gt, keyframe, i)
-            else:
-                _enable_pin_safe(gt, keyframe, nearest)
-                if pins.get_add_selection_mode():
-                    pins.add_selected_pins([nearest])
-                else:
-                    pins.set_selected_pins([nearest])
+            if not nearest in pins.get_selected_pins():
+                pins.set_selected_pins([nearest])
+            for i in pins.get_selected_pins():
+                _enable_pin_safe(gt, keyframe, i)
         else:
             self.new_pin_flag = self._new_pin(context.area, mouse_x, mouse_y)
             if not self.new_pin_flag:
                 _log.output('GT MISS MODEL CLICK')
                 pins.clear_selected_pins()
                 return False
+
             pins.set_selected_pins([pins.current_pin_num()])
             _log.output('GT NEW PIN CREATED')
 
@@ -137,13 +129,6 @@ class GT_OT_MovePin(bpy.types.Operator):
         return True
 
     def on_left_mouse_release(self, area: Area) -> Set:
-        def _toggle_undragged_pin() -> None:
-            if not self.dragged and not self.new_pin_flag \
-                    and self.pin_was_selected:
-                _log.output('TOGGLE PIN OFF')
-                pins = GTLoader.viewport().pins()
-                pins.exclude_selected_pin(pins.current_pin_num())
-
         def _push_action_in_undo_history() -> None:
             if self.new_pin_flag:
                 force_undo_push('Add GeoTracker pin')
@@ -151,7 +136,6 @@ class GT_OT_MovePin(bpy.types.Operator):
             else:
                 force_undo_push('Drag GeoTracker pin')
 
-        _toggle_undragged_pin()
         GTLoader.viewport().pins().reset_current_pin()
 
         if self.dragged:
@@ -167,7 +151,8 @@ class GT_OT_MovePin(bpy.types.Operator):
 
     @staticmethod
     def _pin_drag(kid: int, area: Area, mouse_x: float, mouse_y: float) -> bool:
-        def _drag_multiple_pins(kid: int, pin_index: int) -> None:
+        def _drag_multiple_pins(kid: int, pin_index: int,
+                                selected_pins: List[int]) -> None:
             gt = GTLoader.kt_geotracker()
             old_x, old_y = gt.pin(kid, pin_index).img_pos
             new_x, new_y = image_space_to_frame(x, y, *get_scene_camera_shift())
@@ -187,15 +172,16 @@ class GT_OT_MovePin(bpy.types.Operator):
         if len(selected_pins) == 1:
             GTLoader.move_pin(kid, pin_index, (x, y), *get_scene_camera_shift())
             return GTLoader.solve()
-        else:
-            gt = GTLoader.kt_geotracker()
-            old_positions = [gt.pin(kid, x).img_pos for x in range(gt.pins_count())]
-            _drag_multiple_pins(kid, pin_index)
-            if not GTLoader.solve():
-                return False
-            for i in [x for x in range(gt.pins_count()) if x not in selected_pins]:
-                gt.move_pin(kid, i, old_positions[i])
-        return True
+
+        gt = GTLoader.kt_geotracker()
+        old_positions = [gt.pin(kid, x).img_pos for x in range(gt.pins_count())]
+        _drag_multiple_pins(kid, pin_index, selected_pins)
+
+        excluded_pins = set(selected_pins + pins.get_disabled_pins())
+        for i in [x for x in range(gt.pins_count()) if x not in excluded_pins]:
+            gt.move_pin(kid, i, old_positions[i])
+
+        return GTLoader.solve()
 
     def on_mouse_move(self, area: Area, mouse_x: float, mouse_y: float) -> Set:
         geotracker = get_current_geotracker_item()

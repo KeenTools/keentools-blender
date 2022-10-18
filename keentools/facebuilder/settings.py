@@ -735,10 +735,6 @@ class FBSceneSettings(PropertyGroup):
         description="Use different colors for important head parts "
                     "on the mesh",
         name="Special face parts", default=True, update=update_wireframe_image)
-    overall_opacity: FloatProperty(
-        description="Overall opacity in pin-mode.",
-        name="Overall opacity",
-        default=1.00, min=0.0, max=1.0)
 
     # Initial pin_size state in FBShaderPoints class
     pin_size: FloatProperty(

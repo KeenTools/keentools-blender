@@ -15,18 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
-from typing import List, Optional, Tuple
+
+from typing import List, Optional, Tuple, Any
 
 import bpy
 import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
+
 from .shaders import (flat_color_3d_vertex_shader,
                       circular_dot_fragment_shader,
                       flat_color_2d_vertex_shader)
 from ..addon_config import Config
 from ..preferences.user_preferences import UserPreferences
+from .base_shaders import KTShaderBase
 
 
 class KTScreenPins:
@@ -60,19 +62,13 @@ class KTScreenPins:
         return self._current_pin
 
     def set_current_pin(self, value: Tuple[float, float]) -> None:
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
-        log_output(f'set_current_pin: {value}')
         self._current_pin = value
 
     def reset_current_pin(self) -> None:
-        logger = logging.getLogger(__name__)
-        log_output = logger.debug
         self._current_pin = None
         self._current_pin_num = -1
-        log_output(f'reset_current_pin: {self._current_pin}')
 
-    def get_selected_pins(self) -> List:
+    def get_selected_pins(self) -> List[int]:
         return self._selected_pins
 
     def set_selected_pins(self, selected_pins: List[int]) -> None:
@@ -81,20 +77,25 @@ class KTScreenPins:
     def add_selected_pins(self, selected_pins: List[int]) -> None:
         self._selected_pins = list(set(self._selected_pins + selected_pins))
 
+    def toggle_selected_pins(self, selected_pins: List[int]) -> None:
+        old_selected_set = set(self._selected_pins)
+        new_selected_set = set(selected_pins)
+        self._selected_pins = list(old_selected_set.symmetric_difference(new_selected_set))
+
     def exclude_selected_pin(self, pin_number: int) -> None:
         self.set_selected_pins([x for x in self.get_selected_pins()
                                 if x != pin_number])
 
-    def clear_selected_pins(self):
+    def clear_selected_pins(self) -> None:
         self._selected_pins = []
 
-    def get_disabled_pins(self) -> List:
+    def get_disabled_pins(self) -> List[int]:
         return self._disabled_pins
 
     def set_disabled_pins(self, disabled_pins: List[int]) -> None:
         self._disabled_pins = disabled_pins
 
-    def clear_disabled_pins(self):
+    def clear_disabled_pins(self) -> None:
         self._disabled_pins = []
 
     def pins_inside_rectangle(self, x1: float, y1: float,
@@ -129,174 +130,95 @@ class KTScreenPins:
         del self.arr()[index]
 
 
-class KTShaderPoints:
-    """ Base class for Point Drawing Shaders """
-    _is_visible = True
-    _point_size = UserPreferences.get_value_safe('pin_size', UserPreferences.type_float)
+class KTShaderPoints(KTShaderBase):
+    def __init__(self, target_class: Any=bpy.types.SpaceView3D):
+        self.shader: Any = None
+        self.batch: Any = None
 
-    # Store all draw handlers registered by class objects
-    handler_list = []
+        self.vertices: List[Tuple[float, float, float]] = []
+        self.vertices_colors: List[Tuple[float, float, float, float]] = []
 
-    @classmethod
-    def is_visible(cls):
-        return cls._is_visible
+        self._point_size: float = UserPreferences.get_value_safe(
+            'pin_size', UserPreferences.type_float)
+        super().__init__(target_class)
 
-    @classmethod
-    def set_visible(cls, flag=True):
-        cls._is_visible = flag
-
-    @classmethod
-    def add_handler_list(cls, handler):
-        cls.handler_list.append(handler)
-
-    @classmethod
-    def remove_handler_list(cls, handler):
-        if handler in cls.handler_list:
-            cls.handler_list.remove(handler)
-
-    @classmethod
-    def is_handler_list_empty(cls):
-        return len(cls.handler_list) == 0
-
-    def __init__(self, target_class=bpy.types.SpaceView3D):
-        self.draw_handler = None  # for 3d shader
-        self.shader = None
-        self.batch = None
-
-        self.vertices = []
-        self.vertices_colors = []
-
-        self._target_class = target_class
-        self._work_area = None
-
-    def get_target_class(self):
-        return self._target_class
-
-    def set_target_class(self, target_class):
-        self._target_class = target_class
-
-    def get_vertices(self):
+    def get_vertices(self) -> List[Tuple[float, float, float]]:
         return self.vertices
 
-    @classmethod
-    def set_point_size(cls, ps):
-        cls._point_size = ps
+    def set_point_size(self, ps: float) -> None:
+        self._point_size = ps
 
-    def _create_batch(self, vertices, vertices_colors,
-                      shadername='2D_FLAT_COLOR'):
-        if bpy.app.background:
-            return
-        if shadername == 'CUSTOM_3D':
-            # 3D_FLAT_COLOR
-            vertex_shader = flat_color_3d_vertex_shader()
-            fragment_shader = circular_dot_fragment_shader()
+    def get_point_size(self) -> float:
+        return self._point_size
 
-            self.shader = gpu.types.GPUShader(vertex_shader, fragment_shader)
-
-            self.batch = batch_for_shader(
-                self.shader, 'POINTS',
-                {'pos': vertices, 'color': vertices_colors},
-                indices=None
-            )
-        elif shadername == 'CUSTOM_2D':
-            vertex_shader = flat_color_2d_vertex_shader()
-            fragment_shader = circular_dot_fragment_shader()
-
-            self.shader = gpu.types.GPUShader(vertex_shader, fragment_shader)
-
-            self.batch = batch_for_shader(
-                self.shader, 'POINTS',
-                {'pos': vertices, 'color': vertices_colors},
-                indices=None
-            )
-        else:
-            self.shader = gpu.shader.from_builtin(shadername)
-            self.batch = batch_for_shader(
-                self.shader, 'POINTS',
-                {'pos': vertices, 'color': vertices_colors}
-            )
-
-    def create_batch(self):
-        self._create_batch(self.vertices, self.vertices_colors)
-
-    def register_handler(self, context):
-        pass
-
-    def unregister_handler(self):
-        if self.draw_handler is not None:
-            self.get_target_class().draw_handler_remove(
-                self.draw_handler, 'WINDOW')
-            self.remove_handler_list(self.draw_handler)
-        self.draw_handler = None
-
-    def add_vertices_colors(self, verts, colors):
-        for i, v in enumerate(verts):
-            self.vertices.append(verts[i])
-            self.vertices_colors.append(colors[i])
-
-    def set_vertices_colors(self, verts, colors):
+    def set_vertices_colors(self, verts: List, colors: List) -> None:
         self.vertices = verts
         self.vertices_colors = colors
 
-    def clear_vertices(self):
+    def clear_vertices(self) -> None:
         self.vertices = []
         self.vertices_colors = []
 
-    def draw_callback(self, context):
-        if not self.is_visible():
-            return
+    def draw_callback(self, context: Any) -> None:
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
             return
 
-        if self._work_area != context.area:
+        if not self.is_visible():
             return
 
-        if self.shader is not None:
-            bgl.glPointSize(self._point_size)
-            bgl.glEnable(bgl.GL_BLEND)
-            self.shader.bind()
-            self.batch.draw(self.shader)
-            bgl.glDisable(bgl.GL_BLEND)
+        if self.work_area != context.area:
+            return
 
-    def hide_shader(self):
-        self.set_visible(False)
+        if not self.shader or not self.batch:
+            return
 
-    def unhide_shader(self):
-        self.set_visible(True)
+        bgl.glPointSize(self.get_point_size())
+        bgl.glEnable(bgl.GL_BLEND)
+        self.shader.bind()
+        self.batch.draw(self.shader)
+        bgl.glDisable(bgl.GL_BLEND)
 
 
 class KTPoints2D(KTShaderPoints):
-    def create_batch(self):
+    def init_shaders(self) -> None:
         if bpy.app.background:
             return
-        self._create_batch(
-            # 2D_FLAT_COLOR
-            self.vertices, self.vertices_colors, 'CUSTOM_2D')
+        self.shader = gpu.types.GPUShader(flat_color_2d_vertex_shader(),
+                                          circular_dot_fragment_shader())
 
-    def register_handler(self, context):
-        self._work_area = context.area
-        self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, (context,), 'WINDOW', 'POST_PIXEL')
-        self.add_handler_list(self.draw_handler)
+    def create_batch(self) -> None:
+        if bpy.app.background:
+            return
+        self.batch = batch_for_shader(
+            self.shader, 'POINTS',
+            {'pos': self.vertices, 'color': self.vertices_colors},
+            indices=None)
+
+    def register_handler(self, context: Any,
+                         post_type: str='POST_PIXEL') -> None:
+        super().register_handler(context, post_type)
 
 
 class KTPoints3D(KTShaderPoints):
-    def create_batch(self):
+    def init_shaders(self) -> None:
         if bpy.app.background:
             return
-        # 3D_FLAT_COLOR
-        self._create_batch(self.vertices, self.vertices_colors, 'CUSTOM_3D')
+        self.shader = gpu.types.GPUShader(flat_color_3d_vertex_shader(),
+                                          circular_dot_fragment_shader())
 
-    def __init__(self, target_class):
+    def create_batch(self) -> None:
+        if bpy.app.background:
+            return
+        self.batch = batch_for_shader(
+            self.shader, 'POINTS',
+            {'pos': self.vertices, 'color': self.vertices_colors},
+            indices=None)
+
+    def __init__(self, target_class: Any):
         super().__init__(target_class)
         self.set_point_size(
-            UserPreferences.get_value_safe('pin_size', UserPreferences.type_float) *
-            Config.surf_pin_size_scale)
-
-    def register_handler(self, context):
-        self._work_area = context.area
-        self.draw_handler = self.get_target_class().draw_handler_add(
-            self.draw_callback, (context,), 'WINDOW', 'POST_VIEW')
-        self.add_handler_list(self.draw_handler)
+            UserPreferences.get_value_safe(
+                'pin_size',
+                UserPreferences.type_float) * Config.surf_pin_size_scale)

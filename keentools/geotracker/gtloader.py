@@ -420,20 +420,22 @@ class GTLoader:
         if not geotracker or not geotracker.geomobj:
             return
 
-        vp = GTLoader.viewport()
+        vp = cls.viewport()
         wf = vp.wireframer()
         wf.init_geom_data_from_mesh(geotracker.geomobj)
         wf.init_color_data((*settings.wireframe_color,
                             settings.wireframe_opacity))
+        wf.init_selection_from_mesh(geotracker.geomobj, geotracker.mask_3d,
+                                    geotracker.mask_3d_inverted)
         wf.set_backface_culling(settings.wireframe_backface_culling)
         wf.create_batches()
 
     @classmethod
     def update_viewport_pins_and_residuals(cls, area: Area) -> None:
-        vp = GTLoader.viewport()
-        GTLoader.load_pins_into_viewport()
+        vp = cls.viewport()
+        cls.load_pins_into_viewport()
         vp.create_batch_2d(area)
-        gt = GTLoader.kt_geotracker()
+        gt = cls.kt_geotracker()
 
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.geomobj:
@@ -484,20 +486,6 @@ class GTLoader:
     def get_work_area(cls) -> Optional[Area]:
         vp = cls.viewport()
         return vp.get_work_area()
-
-    @classmethod
-    def message_to_screen(cls, msg: List) -> None:
-        vp = cls.viewport()
-        texter = vp.texter()
-        texter.set_message(msg)
-
-    @classmethod
-    def revert_default_screen_message(cls, unregister=True) -> None:
-        vp = cls.viewport()
-        texter = vp.texter()
-        texter.set_message(texter.get_default_text())
-        if unregister:
-            texter.unregister_handler()
 
     @classmethod
     def stop_viewport_shaders(cls) -> None:

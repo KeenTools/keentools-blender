@@ -24,7 +24,12 @@ from gpu_extras.batch import batch_for_shader
 
 from ...facebuilder_config import FBConfig
 from ...utils.edges import KTEdgeShaderBase, KTEdgeShader2D
-from ...utils import coords
+from ...utils.coords import (frame_to_image_space,
+                             get_camera_border,
+                             image_space_to_region,
+                             xy_to_xz_rotation_matrix_3x3,
+                             multiply_verts_on_matrix_4x4,
+                             get_triangulation_indices)
 from ...utils.shaders import (solid_line_vertex_shader,
                               solid_line_fragment_shader,
                               simple_fill_vertex_shader,
@@ -47,8 +52,8 @@ class FBRectangleShader2D(KTEdgeShader2D):
 
     def add_rectangle(self, x1, y1, x2, y2, frame_w, frame_h, color):
         self._rectangles.append([
-            *coords.frame_to_image_space(x1, y1, frame_w, frame_h),
-            *coords.frame_to_image_space(x2, y2, frame_w, frame_h),
+            *frame_to_image_space(x1, y1, frame_w, frame_h),
+            *frame_to_image_space(x2, y2, frame_w, frame_h),
             frame_w, frame_h, (*color,), (*color,)])
 
     def active_rectangle_index(self, mouse_x, mouse_y):
@@ -72,19 +77,17 @@ class FBRectangleShader2D(KTEdgeShader2D):
         rect_points = []
         rect_colors = []
 
-        rx1, ry1, rx2, ry2 = coords.get_camera_border(area)
+        rx1, ry1, rx2, ry2 = get_camera_border(area)
 
         for x1, y1, x2, y2, w, h, col1, col2 in self._rectangles:
             points = [(x1, y1), (x1, y2), (x2, y2), (x2, y1)]
             previous_p = points[-1]
             for p in points:
-                rect_points.append(coords.image_space_to_region(*previous_p,
-                                                                rx1, ry1,
-                                                                rx2, ry2))
+                rect_points.append(image_space_to_region(*previous_p,
+                                                         rx1, ry1, rx2, ry2))
                 rect_colors.append(col1)
-                rect_points.append(coords.image_space_to_region(*p,
-                                                                rx1, ry1,
-                                                                rx2, ry2))
+                rect_points.append(image_space_to_region(*p,
+                                                         rx1, ry1, rx2, ry2))
                 rect_colors.append(col1)
                 previous_p = p
 
@@ -103,7 +106,7 @@ class FBRectangleShader2D(KTEdgeShader2D):
         if self.line_shader is None or self.line_batch is None:
             return
 
-        if self._work_area != context.area:
+        if self.work_area != context.area:
             return
 
         bgl.glEnable(bgl.GL_BLEND)
@@ -203,7 +206,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         if not self.is_visible():
             return
 
-        if self._work_area != context.area:
+        if self.work_area != context.area:
             return
 
         # Force Stop
@@ -289,14 +292,14 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
     def init_geom_data_from_fb(self, fb, obj, keyframe=None):
         if keyframe is not None:
             geom_verts = fb.applied_args_model_vertices_at(keyframe) @ \
-                         coords.xy_to_xz_rotation_matrix_3x3()
+                         xy_to_xz_rotation_matrix_3x3()
         else:
             geom_verts = fb.applied_args_vertices() @ \
-                         coords.xy_to_xz_rotation_matrix_3x3()
+                         xy_to_xz_rotation_matrix_3x3()
 
         m = np.array(obj.matrix_world, dtype=np.float32).transpose()
-        self.vertices = coords.multiply_verts_on_matrix_4x4(geom_verts, m)
-        self.triangle_indices = self._get_triangulation_indices(obj.data)
+        self.vertices = multiply_verts_on_matrix_4x4(geom_verts, m)
+        self.triangle_indices = get_triangulation_indices(obj.data)
 
     def init_geom_data_from_mesh(self, obj):
         mesh = obj.data
@@ -305,8 +308,8 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             'co', np.reshape(verts, len(mesh.vertices) * 3))
 
         m = np.array(obj.matrix_world, dtype=np.float32).transpose()
-        self.vertices = coords.multiply_verts_on_matrix_4x4(verts, m)
-        self.triangle_indices = self._get_triangulation_indices(mesh)
+        self.vertices = multiply_verts_on_matrix_4x4(verts, m)
+        self.triangle_indices = get_triangulation_indices(mesh)
 
     def _clear_edge_indices(self):
         self._edges_indices = np.array([], dtype=np.int32)

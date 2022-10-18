@@ -182,6 +182,32 @@ smooth_3d_fragment_shader = smooth_3d_fragment_shader_new \
     if bpy.app.version >= (2, 83, 0) else smooth_3d_fragment_shader_old
 
 
+def uniform_3d_vertex_local_shader():
+    return '''
+    uniform mat4 ModelViewProjectionMatrix;
+    uniform mat4 modelMatrix;
+    uniform vec4 color;
+
+    #ifdef USE_WORLD_CLIP_PLANES
+    uniform mat4 ModelMatrix;
+    #endif
+
+    in vec3 pos;
+
+    out vec4 finalColor;
+
+    void main()
+    {
+      gl_Position = ModelViewProjectionMatrix * modelMatrix * vec4(pos, 1.0);
+      finalColor = color;
+
+    #ifdef USE_WORLD_CLIP_PLANES
+      world_clip_planes_calc_clip_distance((ModelMatrix * modelMatrix * vec4(pos, 1.0)).xyz);
+    #endif
+    }
+    '''
+
+
 def black_fill_fragment_shader():
     return '''
     out vec4 fragColor;
@@ -220,6 +246,20 @@ def residual_fragment_shader():
     void main()
     {
         if (step(sin(v_LineLength), -0.3f) == 1) discard;
+        fragColor = finalColor;
+    }
+    '''
+
+
+def dashed_fragment_shader():
+    return '''
+    in float v_LineLength;
+    flat in vec4 finalColor;
+    out vec4 fragColor;
+
+    void main()
+    {
+        if (mod(v_LineLength + 5.0f, 10.0f) > 5.5f) discard;
         fragColor = finalColor;
     }
     '''

@@ -130,6 +130,8 @@ def common_checks(*, object_mode: bool=False,
             msg = 'Cannot load GeoTracker data'
             _log.error(msg)
             return ActionStatus(False, msg)
+        settings.reload_mask_3d()
+
     geotracker_item = get_current_geotracker_item()
     if geotracker and not geotracker_item:
         msg = 'GeoTracker item is not found'

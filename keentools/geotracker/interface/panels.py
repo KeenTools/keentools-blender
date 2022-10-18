@@ -280,6 +280,13 @@ class GT_PT_InputPanel(AllVisible):
         row.prop(geotracker, 'precalcless', text='Use precalc', toggle=1,
                  invert_checkbox=True)
 
+        if geotracker.geomobj:
+            row = layout.row(align=True)
+            row.prop_search(geotracker, 'mask_3d',
+                            geotracker.geomobj, 'vertex_groups')
+            row.prop(geotracker, 'mask_3d_inverted',
+                     text='', icon='ARROW_LEFTRIGHT')
+
 
 class GT_PT_AnalyzePanel(AllVisible):
     bl_idname = GTConfig.gt_analyze_panel_idname
@@ -430,7 +437,7 @@ class GT_PT_TrackingPanel(AllVisible):
         row = box.row(align=True)
         part = row.split(factor=0.5, align=True)
         row = part.split(factor=0.5, align=True)
-        row.operator(GTConfig.gt_clear_tracking_between_idname, text='Xk')
+        row.operator(GTConfig.gt_clear_tracking_between_idname, text='| Xk |')
         row.operator(GTConfig.gt_clear_tracking_backward_idname,
                      icon='TRACKING_CLEAR_BACKWARDS', text='')
         part = part.row(align=True)

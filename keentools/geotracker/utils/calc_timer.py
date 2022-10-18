@@ -59,7 +59,8 @@ class CalcTimer():
         self._state = 'over'
         settings = get_gt_settings()
         settings.stop_calculating()
-        GTLoader.revert_default_screen_message(unregister=not settings.pinmode)
+        GTLoader.viewport().revert_default_screen_message(
+            unregister=not settings.pinmode)
 
         geotracker = settings.get_current_geotracker_item()
         if not settings.pinmode:

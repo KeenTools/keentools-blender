@@ -36,7 +36,8 @@ from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_image_space_coord,
                             focal_mm_to_px,
                             camera_focal_length,
-                            camera_sensor_width)
+                            camera_sensor_width,
+                            get_polygons_in_vertex_group)
 from ..utils.video import fit_render_size, fit_time_length
 from ..utils.bpy_common import bpy_render_frame, bpy_start_frame, bpy_end_frame
 
@@ -134,6 +135,12 @@ def update_focal_length_mode(geotracker, context):
             *bpy_render_frame(), camera_sensor_width(geotracker.camobj))
 
 
+def update_mask_3d(geotracker, context):
+    GTLoader.update_viewport_wireframe()
+    settings = get_gt_settings()
+    settings.reload_current_geotracker()
+    settings.reload_mask_3d()
+
 
 def get_camera_focal_length(geotracker):
     return camera_focal_length(geotracker.camobj)
@@ -212,6 +219,11 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     selected_frames: bpy.props.CollectionProperty(type=FrameListItem,
                                                   name='Selected frames')
+    mask_3d: bpy.props.StringProperty(name='Mask 3D',
+                                      update=update_mask_3d)
+    mask_3d_inverted: bpy.props.BoolProperty(name='Invert Mask 3D',
+                                             default=False,
+                                             update=update_mask_3d)
     def get_serial_str(self) -> str:
         return self.serial_str
 
@@ -377,6 +389,19 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         self.fix_geotrackers()
         return self.change_current_geotracker_safe(self.current_geotracker_num)
 
+    def reload_mask_3d(self) -> None:
+        geotracker = self.get_current_geotracker_item()
+        if not geotracker:
+            return
+        gt = GTLoader.kt_geotracker()
+        if not geotracker.geomobj:
+            return
+        polys = get_polygons_in_vertex_group(geotracker.geomobj,
+                                             geotracker.mask_3d,
+                                             geotracker.mask_3d_inverted)
+        gt.set_ignored_faces(polys)
+        GTLoader.save_geotracker()
+
     def add_geotracker_item(self) -> int:
         self.fix_geotrackers()
         self.geotrackers.add()
@@ -417,8 +442,6 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     def cancel_selection(self) -> None:
         self.selection_mode = False
         self.do_selection()
-        vp = GTLoader.viewport()
-        vp.pins().set_add_selection_mode(False)
 
     def end_selection(self, area: Area, mouse_x: int, mouse_y: int) -> None:
         x1, y1 = get_image_space_coord(self.selection_x, self.selection_y, area)
@@ -427,7 +450,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         pins = vp.pins()
         found_pins = pins.pins_inside_rectangle(x1, y1, x2, y2)
         if pins.get_add_selection_mode():
-            pins.add_selected_pins(found_pins)
+            pins.toggle_selected_pins(found_pins)
         else:
             pins.set_selected_pins(found_pins)
         self.cancel_selection()
