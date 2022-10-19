@@ -21,18 +21,7 @@ import logging
 import bpy
 
 from ..geotracker_config import GTConfig, get_current_geotracker_item
-from .utils.geotracker_acts import (add_keyframe_act,
-                                    remove_focal_keyframe_act,
-                                    remove_focal_keyframes_act,
-                                    bake_texture_from_frames_act,
-                                    relative_to_camera_act,
-                                    relative_to_geometry_act,
-                                    geometry_repositioninig_act,
-                                    camera_repositioninig_act,
-                                    move_tracking_to_camera_act,
-                                    move_tracking_to_geometry_act)
-from .utils.precalc import precalc_with_runner_act
-from ..utils.bpy_common import bpy_current_frame
+from .utils.geotracker_acts import (center_geo_act,)
 
 
 class GT_OT_Actor(bpy.types.Operator):
@@ -50,70 +39,8 @@ class GT_OT_Actor(bpy.types.Operator):
         logger = logging.getLogger(__name__)
         logger.debug('ACTION call: {}'.format(self.action))
 
-        if self.action == 'create_precalc':
-            act_status = precalc_with_runner_act(context)
-            if not act_status.success:
-                self.report({'ERROR'}, act_status.error_message)
-            return {'FINISHED'}
-
-        elif self.action == 'remove_focal_keyframe':
-            act_status = remove_focal_keyframe_act()
-            if not act_status.success:
-                self.report({'ERROR'}, act_status.error_message)
-            else:
-                self.report({'INFO'}, act_status.error_message)
-            return {'FINISHED'}
-
-        elif self.action == 'remove_focal_keyframes':
-            act_status = remove_focal_keyframes_act()
-            if not act_status.success:
-                self.report({'ERROR'}, act_status.error_message)
-            else:
-                self.report({'INFO'}, act_status.error_message)
-            return {'FINISHED'}
-
-        elif self.action == 'relative_to_camera':
-            act_status = relative_to_camera_act()
-            if not act_status.success:
-                self.report({'ERROR'}, act_status.error_message)
-            else:
-                self.report({'INFO'}, act_status.error_message)
-            return {'FINISHED'}
-
-        elif self.action == 'relative_to_geometry':
-            act_status = relative_to_geometry_act()
-            if not act_status.success:
-                self.report({'ERROR'}, act_status.error_message)
-            else:
-                self.report({'INFO'}, act_status.error_message)
-            return {'FINISHED'}
-
-        elif self.action == 'geometry_repositioning':
-            act_status = geometry_repositioninig_act()
-            if not act_status.success:
-                self.report({'ERROR'}, act_status.error_message)
-            else:
-                self.report({'INFO'}, act_status.error_message)
-            return {'FINISHED'}
-
-        elif self.action == 'camera_repositioning':
-            act_status = camera_repositioninig_act()
-            if not act_status.success:
-                self.report({'ERROR'}, act_status.error_message)
-            else:
-                self.report({'INFO'}, act_status.error_message)
-            return {'FINISHED'}
-
-        elif self.action == 'move_tracking_to_camera':
-            act_status = move_tracking_to_camera_act()
-            if not act_status.success:
-                self.report({'ERROR'}, act_status.error_message)
-            else:
-                self.report({'INFO'}, act_status.error_message)
-            return {'FINISHED'}
-
-        elif self.action == 'move_tracking_to_geometry':
-            act_status = move_tracking_to_geometry_act()
+        if self.action == 'none':
+            act_status = center_geo_act()
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
             else:

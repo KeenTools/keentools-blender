@@ -783,7 +783,7 @@ def relative_to_geometry_act() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def geometry_repositioninig_act() -> ActionStatus:
+def geometry_repositioning_act() -> ActionStatus:
     check_status = common_checks(object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
@@ -831,7 +831,7 @@ def geometry_repositioninig_act() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def camera_repositioninig_act() -> ActionStatus:
+def camera_repositioning_act() -> ActionStatus:
     check_status = common_checks(object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)

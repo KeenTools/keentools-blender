@@ -350,9 +350,8 @@ class GT_PT_AnalyzePanel(AllVisible):
                 icon = 'ERROR' if not geotracker.movie_clip or \
                        geotracker.movie_clip.source == 'MOVIE' else 'NONE'
 
-                op = col.operator(GTConfig.gt_actor_idname,
-                                  text='Create precalc', icon=icon)
-                op.action = 'create_precalc'
+                col.operator(GTConfig.gt_create_precalc_idname,
+                             text='Create precalc', icon=icon)
 
                 row = layout.row()
                 row.prop(geotracker, 'precalc_start')
@@ -392,10 +391,10 @@ class GT_PT_CameraPanel(AllVisible):
         row = col.row(align=True)
         row.prop(geotracker, 'focal_length')
 
-        op = row.operator(GTConfig.gt_actor_idname, text='', icon='KEY_DEHLT')
-        op.action = 'remove_focal_keyframe'
-        op = row.operator(GTConfig.gt_actor_idname, text='', icon='CANCEL')
-        op.action = 'remove_focal_keyframes'
+        row.operator(GTConfig.gt_remove_focal_keyframe_idname,
+                     text='', icon='KEY_DEHLT')
+        row.operator(GTConfig.gt_remove_focal_keyframes_idname,
+                     text='', icon='CANCEL')
 
         col = layout.column(align=True)
         col.prop(cam_data, 'sensor_width')
@@ -632,25 +631,23 @@ class GT_PT_AnimationPanel(AllVisible):
         layout.label(text='Move to default position')
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
-        op = col.operator(GTConfig.gt_actor_idname, text='Camera to default')
-        op.action = 'relative_to_camera'
-        op = col.operator(GTConfig.gt_actor_idname, text='Object to default')
-        op.action = 'relative_to_geometry'
+        col.operator(GTConfig.gt_relative_to_camera_idname,
+                     text='Camera to default')
+        col.operator(GTConfig.gt_relative_to_geometry_idname,
+                     text='Object to default')
 
         layout.label(text='Repositioning of animated')
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
-        op = col.operator(GTConfig.gt_actor_idname, text='Reorient Geometry')
-        op.action = 'geometry_repositioning'
-        op = col.operator(GTConfig.gt_actor_idname, text='Reorient Camera')
-        op.action = 'camera_repositioning'
+        col.operator(GTConfig.gt_geometry_repositioning_idname,
+                     text='Reorient Geometry')
+        col.operator(GTConfig.gt_camera_repositioning_idname,
+                     text='Reorient Camera')
 
         layout.label(text='Convert tracked keys')
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
-        op = col.operator(GTConfig.gt_actor_idname,
-                          text='Geom. tracking -> Camera')
-        op.action = 'move_tracking_to_camera'
-        op = col.operator(GTConfig.gt_actor_idname,
-                          text='Cam. tracking -> Geom.')
-        op.action = 'move_tracking_to_geometry'
+        col.operator(GTConfig.gt_move_tracking_to_camera_idname,
+                     text='Geom. tracking -> Camera')
+        col.operator(GTConfig.gt_move_tracking_to_geometry_idname,
+                     text='Cam. tracking -> Geom.')

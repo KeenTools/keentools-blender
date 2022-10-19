@@ -223,8 +223,8 @@ def prepare_gt_test_environment() -> None:
     test_utils.save_scene(filename=GTTestConfig.cube_moving_scene_filename)
 
     _log_output('Start precalc')
-    op = get_operator(GTConfig.gt_actor_idname)
-    op('EXEC_DEFAULT', action='create_precalc')
+    op = get_operator(GTConfig.gt_create_precalc_idname)
+    op('EXEC_DEFAULT')
     wait_for_precalc_end()
     test_utils.save_scene(filename=GTTestConfig.cube_precalc_scene_filename)
 

@@ -40,7 +40,16 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     toggle_pins_act,
                                     center_geo_act,
                                     create_animated_empty_act,
-                                    bake_texture_from_frames_act)
+                                    bake_texture_from_frames_act,
+                                    relative_to_camera_act,
+                                    relative_to_geometry_act,
+                                    geometry_repositioning_act,
+                                    camera_repositioning_act,
+                                    move_tracking_to_camera_act,
+                                    move_tracking_to_geometry_act,
+                                    remove_focal_keyframe_act,
+                                    remove_focal_keyframes_act)
+from .utils.precalc import precalc_with_runner_act
 from .gtloader import GTLoader
 
 
@@ -74,6 +83,18 @@ class GT_OT_DeleteGeoTracker(ButtonOperator, bpy.types.Operator):
         act_status = delete_geotracker_act(self.geotracker_num)
         if not act_status.success:
             self.report({'INFO'}, act_status.error_message)
+        return {'FINISHED'}
+
+
+class GT_OT_CreatePrecalc(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_create_precalc_idname
+    bl_label = 'Create precalc'
+    bl_description = 'Create precalc for current MovieClip'
+
+    def execute(self, context):
+        act_status = precalc_with_runner_act(context)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
         return {'FINISHED'}
 
 
@@ -482,8 +503,117 @@ class GT_OT_DeselectAllFrames(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
+class GT_OT_RelativeToCamera(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_relative_to_camera_idname
+    bl_label = 'Relative to Camera'
+    bl_description = 'Move the Camera to default position and place ' \
+                     'the Geometry according to this position'
+
+    def execute(self, context):
+        act_status = relative_to_camera_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class GT_OT_RelativeToGeometry(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_relative_to_geometry_idname
+    bl_label = 'Relative to Geometry'
+    bl_description = 'Move the Geometry to default position and place ' \
+                     'the Camera according to this position'
+
+    def execute(self, context):
+        act_status = relative_to_geometry_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class GT_OT_GeometryRepositioning(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_geometry_repositioning_idname
+    bl_label = 'Geometry repositioning'
+    bl_description = 'Move the whole Geometry animation according to ' \
+                     'current (changed but not saved) position'
+
+    def execute(self, context):
+        act_status = geometry_repositioning_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class GT_OT_CameraRepositioning(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_camera_repositioning_idname
+    bl_label = 'Camera repositioning'
+    bl_description = 'Move the whole Camera animation according to ' \
+                     'current (changed but not saved) position'
+
+    def execute(self, context):
+        act_status = camera_repositioning_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class GT_OT_MoveTrackingToCamera(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_move_tracking_to_camera_idname
+    bl_label = 'Move tracking to Camera'
+    bl_description = 'Move both objects animation to Camera only'
+
+    def execute(self, context):
+        act_status = move_tracking_to_camera_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class GT_OT_MoveTrackingToGeometry(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_move_tracking_to_geometry_idname
+    bl_label = 'Move tracking to Geometry'
+    bl_description = 'Move both objects animation to Geometry only'
+
+    def execute(self, context):
+        act_status = move_tracking_to_geometry_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class GT_OT_RemoveFocalKeyframe(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_remove_focal_keyframe_idname
+    bl_label = 'Remove focal keyframe'
+    bl_description = 'Remove a single keyframe in the current frame'
+
+    def execute(self, context):
+        act_status = remove_focal_keyframe_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class GT_OT_RemoveFocalKeyframes(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_remove_focal_keyframes_idname
+    bl_label = 'Remove all focal keyframes'
+    bl_description = 'Remove all focal keyframes'
+
+    def execute(self, context):
+        act_status = remove_focal_keyframes_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_DeleteGeoTracker,
+                  GT_OT_CreatePrecalc,
                   GT_OT_AddKeyframe,
                   GT_OT_RemoveKeyframe,
                   GT_OT_NextKeyframe,
@@ -513,4 +643,12 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   FB_OT_DefaultPinSettings,
                   GT_OT_ReprojectFrame,
                   GT_OT_SelectAllFrames,
-                  GT_OT_DeselectAllFrames)
+                  GT_OT_DeselectAllFrames,
+                  GT_OT_RelativeToCamera,
+                  GT_OT_RelativeToGeometry,
+                  GT_OT_GeometryRepositioning,
+                  GT_OT_CameraRepositioning,
+                  GT_OT_MoveTrackingToCamera,
+                  GT_OT_MoveTrackingToGeometry,
+                  GT_OT_RemoveFocalKeyframe,
+                  GT_OT_RemoveFocalKeyframes)

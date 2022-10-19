@@ -39,6 +39,7 @@ class GTConfig:
     gt_actor_idname = operators + '.actor'
     gt_pinmode_idname = operators + '.pinmode'
     gt_movepin_idname = operators + '.movepin'
+    gt_create_precalc_idname = operators + '.create_precalc'
     gt_sequence_filebrowser_idname = operators + '.sequence_filebrowser'
     gt_choose_precalc_file_idname = operators + '.choose_precalc_file'
     gt_split_video_to_frames_idname = operators + '.split_video_to_frames'
@@ -77,6 +78,14 @@ class GTConfig:
     gt_reproject_frame_idname = operators + '.reproject_current_frame'
     gt_select_all_frames_idname = operators + '.select_all_frames'
     gt_deselect_all_frames_idname = operators + '.deselect_all_frames'
+    gt_relative_to_camera_idname = operators + '.relative_to_camera'
+    gt_relative_to_geometry_idname = operators + '.relative_to_geometry'
+    gt_geometry_repositioning_idname = operators + '.geometry_repositioning'
+    gt_camera_repositioning_idname = operators + '.camera_repositioning'
+    gt_move_tracking_to_camera_idname = operators + '.move_tracking_to_camera'
+    gt_move_tracking_to_geometry_idname = operators + '.move_tracking_to_geometry'
+    gt_remove_focal_keyframe_idname = operators + '.remove_focal_keyframe'
+    gt_remove_focal_keyframes_idname = operators + '.remove_focal_keyframes'
 
     # Panel ids
     gt_geotrackers_panel_idname = _PT + 'geotrackers_panel'
