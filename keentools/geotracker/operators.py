@@ -21,6 +21,7 @@ import bpy
 
 from ..addon_config import get_operator, Config
 from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
+from ..utils.bpy_common import bpy_current_frame
 from .utils.geotracker_acts import (create_geotracker_act,
                                     delete_geotracker_act,
                                     add_keyframe_act,
@@ -38,7 +39,8 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     remove_pins_act,
                                     toggle_pins_act,
                                     center_geo_act,
-                                    create_animated_empty_act)
+                                    create_animated_empty_act,
+                                    bake_texture_from_frames_act)
 from .gtloader import GTLoader
 
 
@@ -439,6 +441,47 @@ class FB_OT_DefaultPinSettings(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
+class GT_OT_ReprojectFrame(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_reproject_frame_idname
+    bl_label = 'Reproject frame'
+    bl_description = 'Reproject current frame to get texture'
+
+    def execute(self, context):
+        act_status = bake_texture_from_frames_act([bpy_current_frame()])
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class GT_OT_SelectAllFrames(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_select_all_frames_idname
+    bl_label = 'Select All'
+    bl_description = 'Select all keyframes for getting texture by reprojection'
+
+    def execute(self, context):
+        geotracker = get_current_geotracker_item()
+        if not geotracker:
+            return {'CANCELLED'}
+        for item in geotracker.selected_frames:
+            item.selected = True
+        return {'FINISHED'}
+
+
+class GT_OT_DeselectAllFrames(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_deselect_all_frames_idname
+    bl_label = 'Deselect All'
+    bl_description = 'Deselect all keyframes for getting texture by reprojection'
+
+    def execute(self, context):
+        geotracker = get_current_geotracker_item()
+        if not geotracker:
+            return {'CANCELLED'}
+        for item in geotracker.selected_frames:
+            item.selected = False
+        return {'FINISHED'}
+
+
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_DeleteGeoTracker,
                   GT_OT_AddKeyframe,
@@ -467,4 +510,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_ResetToneGamma,
                   GT_OT_ResetToneMapping,
                   GT_OT_DefaultWireframeSettings,
-                  FB_OT_DefaultPinSettings)
+                  FB_OT_DefaultPinSettings,
+                  GT_OT_ReprojectFrame,
+                  GT_OT_SelectAllFrames,
+                  GT_OT_DeselectAllFrames)

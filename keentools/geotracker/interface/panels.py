@@ -598,10 +598,8 @@ class GT_PT_TexturePanel(AllVisible):
         layout = self.layout
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
-        op = col.operator(GTConfig.gt_actor_idname,
-                             text='Reproject current frame')
-        op.action = 'reproject_frame'
-
+        col.operator(GTConfig.gt_reproject_frame_idname,
+                     text='Reproject current frame')
         col.operator(GTConfig.gt_select_frames_for_bake_idname,
                         text='Reproject from keyframes')
         col.operator(GTConfig.gt_reproject_tex_sequence_idname,

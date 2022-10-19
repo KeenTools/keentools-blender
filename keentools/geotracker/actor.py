@@ -50,16 +50,7 @@ class GT_OT_Actor(bpy.types.Operator):
         logger = logging.getLogger(__name__)
         logger.debug('ACTION call: {}'.format(self.action))
 
-        if self.action == 'add_keyframe':
-            act_status = add_keyframe_act()
-            if not act_status.success:
-                self.report({'ERROR'}, act_status.error_message)
-                return {'CANCELLED'}
-
-            self.report({'INFO'}, self.action)
-            return {'FINISHED'}
-
-        elif self.action == 'create_precalc':
+        if self.action == 'create_precalc':
             act_status = precalc_with_runner_act(context)
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
@@ -79,30 +70,6 @@ class GT_OT_Actor(bpy.types.Operator):
                 self.report({'ERROR'}, act_status.error_message)
             else:
                 self.report({'INFO'}, act_status.error_message)
-            return {'FINISHED'}
-
-        elif self.action == 'reproject_frame':
-            act_status = bake_texture_from_frames_act([bpy_current_frame()])
-            if not act_status.success:
-                self.report({'ERROR'}, act_status.error_message)
-            else:
-                self.report({'INFO'}, act_status.error_message)
-            return {'FINISHED'}
-
-        elif self.action == 'select_all_frames':
-            geotracker = get_current_geotracker_item()
-            if not geotracker:
-                return {'CANCELLED'}
-            for item in geotracker.selected_frames:
-                item.selected = True
-            return {'FINISHED'}
-
-        elif self.action == 'deselect_all_frames':
-            geotracker = get_current_geotracker_item()
-            if not geotracker:
-                return {'CANCELLED'}
-            for item in geotracker.selected_frames:
-                item.selected = False
             return {'FINISHED'}
 
         elif self.action == 'relative_to_camera':

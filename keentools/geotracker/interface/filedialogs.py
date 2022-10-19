@@ -273,11 +273,8 @@ class GT_OT_FrameSelector(bpy.types.Operator):
                 checked_views = True
 
         row = box.row(align=True)
-        op = row.operator(GTConfig.gt_actor_idname, text='All')
-        op.action = 'select_all_frames'
-
-        op = row.operator(GTConfig.gt_actor_idname, text='None')
-        op.action = 'deselect_all_frames'
+        row.operator(GTConfig.gt_select_all_frames_idname, text='All')
+        row.operator(GTConfig.gt_deselect_all_frames_idname, text='None')
 
         col = layout.column()
         col.scale_y = Config.text_scale_y

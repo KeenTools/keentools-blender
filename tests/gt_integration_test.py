@@ -231,8 +231,8 @@ def prepare_gt_test_environment() -> None:
     _log_output('Start tracking')
     fake_pinmode_on()
     fake_viewport_work_area()
-    op = get_operator(GTConfig.gt_actor_idname)
-    op('EXEC_DEFAULT', action='add_keyframe')
+    op = get_operator(GTConfig.gt_add_keyframe_idname)
+    op('EXEC_DEFAULT')
 
     op = get_operator(GTConfig.gt_track_to_end_idname)
     op('EXEC_DEFAULT')
