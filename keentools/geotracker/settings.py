@@ -162,15 +162,18 @@ class FrameListItem(bpy.types.PropertyGroup):
 
 class GeoTrackerItem(bpy.types.PropertyGroup):
     serial_str: bpy.props.StringProperty(name='GeoTracker Serialization string')
-    geomobj: bpy.props.PointerProperty(name='Geom object',
+    geomobj: bpy.props.PointerProperty(name='Geometry',
+                                       description='Geometry object in scene',
                                        type=bpy.types.Object,
                                        poll=is_mesh,
                                        update=update_geomobj)
-    camobj: bpy.props.PointerProperty(name='Camera object',
+    camobj: bpy.props.PointerProperty(name='Camera',
+                                      description='Camera object in scene',
                                       type=bpy.types.Object,
                                       poll=is_camera,
                                       update=update_camobj)
     movie_clip: bpy.props.PointerProperty(name='Movie Clip',
+                                          description='Footage for tracking',
                                           type=bpy.types.MovieClip,
                                           update=update_movieclip)
 
@@ -181,9 +184,13 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     precalc_end: bpy.props.IntProperty(name='to', default=250)
     precalc_message: bpy.props.StringProperty(name='Precalc info')
 
-    solve_for_camera: bpy.props.BoolProperty(name='Solve for camera', default=False)
+    solve_for_camera: bpy.props.BoolProperty(
+        name='Track for Camera or Geometry',
+        description='Which object will be tracked',
+        default=False)
     reduce_pins: bpy.props.BoolProperty(name='Reduce pins', default=False)
-    spring_pins_back: bpy.props.BoolProperty(name='Spring pins back', default=True)
+    spring_pins_back: bpy.props.BoolProperty(name='Spring pins back',
+                                             default=True)
 
     focal_length: bpy.props.FloatProperty(name='Focal Length',
                                           default=50.0,
@@ -191,8 +198,12 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
                                           options={'HIDDEN'},  # to prevent animation
                                           get=get_camera_focal_length,
                                           set=set_camera_focal_length)
-    focal_length_estimation: bpy.props.BoolProperty(name='Estimate focal length', default=False)
-    track_focal_length: bpy.props.BoolProperty(name='Track focal length', default=False)
+    focal_length_estimation: bpy.props.BoolProperty(
+        name='Estimate focal length',
+        description='To enable this you need choose STATIC FOCAL as mode',
+        default=False)
+    track_focal_length: bpy.props.BoolProperty(name='Track focal length',
+                                               default=False)
 
     tone_exposure: bpy.props.FloatProperty(
         name='Exposure', description='Tone gain',
@@ -215,15 +226,21 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         ('ZOOM_FOCAL_LENGTH', 'ZOOM FOCAL LENGTH', 'Zoom focal length', 2),
     ], description='Focal length mode', update=update_focal_length_mode)
 
-    precalcless: bpy.props.BoolProperty(name='Precalcless tracking', default=True)
+    precalcless: bpy.props.BoolProperty(name='Precalcless tracking',
+                                        default=True)
 
     selected_frames: bpy.props.CollectionProperty(type=FrameListItem,
                                                   name='Selected frames')
-    mask_3d: bpy.props.StringProperty(name='Mask 3D',
-                                      update=update_mask_3d)
-    mask_3d_inverted: bpy.props.BoolProperty(name='Invert Mask 3D',
-                                             default=False,
-                                             update=update_mask_3d)
+    mask_3d: bpy.props.StringProperty(
+        name='Mask 3D',
+        description='Polygons in selected Vertex Group '
+                    'will be excluded from tracking',
+        update=update_mask_3d)
+    mask_3d_inverted: bpy.props.BoolProperty(
+        name='Invert Mask 3D',
+        description='Invert Mask 3D Vertex Group',
+        default=False,
+        update=update_mask_3d)
     def get_serial_str(self) -> str:
         return self.serial_str
 

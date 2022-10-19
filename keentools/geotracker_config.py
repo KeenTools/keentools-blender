@@ -81,9 +81,18 @@ class GTConfig:
     gt_analyze_panel_idname = _PT + 'analyze_panel'
     gt_camera_panel_idname = _PT + 'camera_panel'
     gt_tracking_panel_idname = _PT + 'tracking_panel'
-    gt_colors_panel_idname = _PT + 'colors_panel'
+    gt_appearance_panel_idname = _PT + 'appearance_panel'
     gt_animation_panel_idname = _PT + 'animation_panel'
     gt_texture_panel_idname = _PT + 'texture_panel'
+
+    # Help ids
+    gt_help_inputs_idname = operators + '.help_inputs'
+    gt_help_analyze_idname = operators + '.help_analyze'
+    gt_help_camera_idname = operators + '.help_camera'
+    gt_help_tracking_idname = operators + '.help_tracking'
+    gt_help_appearance_idname = operators + '.help_appearance'
+    gt_help_texture_idname = operators + '.help_texture'
+    gt_help_animation_idname = operators + '.help_animation'
 
     # Updater panels
     gt_update_panel_idname = _PT + 'update_panel'

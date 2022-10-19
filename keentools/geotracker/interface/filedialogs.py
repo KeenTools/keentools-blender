@@ -57,9 +57,8 @@ def _load_movieclip(dir_path: str, file_names: List[str]) -> Optional[MovieClip]
 
 class GT_OT_SequenceFilebrowser(bpy.types.Operator, ImportHelper):
     bl_idname = GTConfig.gt_sequence_filebrowser_idname
-    bl_label = 'Open frame sequence'
-    bl_description = 'Load image sequence. ' \
-                     'Just select first image in sequence'
+    bl_label = 'Load footage'
+    bl_description = 'Both image sequences and movie files are supported'
 
     filter_glob: bpy.props.StringProperty(
         default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.mp4;*.avi;*.mov;*.mpeg',
@@ -79,7 +78,7 @@ class GT_OT_SequenceFilebrowser(bpy.types.Operator, ImportHelper):
         layout = self.layout
         col = layout.column()
         col.scale_y = Config.text_scale_y
-        col.label(text='Load image sequence. ')
+        col.label(text='Load image sequence or movie. ')
         col.label(text='Just select first image in sequence')
 
     def execute(self, context):
