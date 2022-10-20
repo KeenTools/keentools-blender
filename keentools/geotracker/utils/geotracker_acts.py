@@ -25,7 +25,9 @@ from bpy.types import Object
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import get_operator, ActionStatus
-from ...geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
+from ...geotracker_config import (GTConfig,
+                                  get_gt_settings,
+                                  get_current_geotracker_item)
 from ..gtloader import GTLoader
 from ..gt_class_loader import GTClassLoader
 from ...utils.animation import (remove_fcurve_point,
@@ -51,7 +53,8 @@ from ...utils.manipulate import select_objects_only, center_viewport
 from .textures import bake_texture, preview_material_with_texture
 from .prechecks import (common_checks,
                         track_checks,
-                        find_object_in_selection,
+                        get_alone_object_in_scene_selection_by_type,
+                        get_alone_object_in_scene_by_type,
                         prepare_camera,
                         revert_camera,
                         show_warning_dialog,
@@ -73,16 +76,16 @@ def create_geotracker_act() -> ActionStatus:
     GTLoader.new_kt_geotracker()
 
     geotracker = settings.get_current_geotracker_item()
-    obj = find_object_in_selection('MESH')
-    if obj is not None:
-        geotracker.geomobj = obj
-    camobj = find_object_in_selection('CAMERA')
-    if camobj is not None:
-        geotracker.camobj = camobj
-    else:
-        camobj = bpy.context.scene.camera
-        if camobj:
-            geotracker.camobj = camobj
+    obj = get_alone_object_in_scene_selection_by_type('MESH')
+    if obj is None:
+        obj = get_alone_object_in_scene_by_type('MESH')
+    geotracker.geomobj = obj
+
+    camobj = get_alone_object_in_scene_selection_by_type('CAMERA')
+    if camobj is None:
+        camobj = get_alone_object_in_scene_by_type('CAMERA')
+    geotracker.camobj = camobj
+
     settings.reload_current_geotracker()
     return ActionStatus(True, 'GeoTracker has been added')
 

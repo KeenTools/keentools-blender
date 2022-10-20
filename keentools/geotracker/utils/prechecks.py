@@ -29,6 +29,8 @@ from ...utils.manipulate import exit_area_localview, switch_to_camera
 from ...utils.other import (unhide_viewport_ui_elements_from_object,
                             hide_viewport_ui_elements_and_store_on_object)
 from ...utils.images import set_background_image_by_movieclip
+from ...utils.bpy_common import (bpy_all_scene_objects,
+                                 bpy_scene_selected_objects)
 
 
 _log = KTLogger(__name__)
@@ -55,26 +57,25 @@ def revert_camera(area: Area) -> None:
         exit_area_localview(area)
 
 
-def find_object_in_selection(obj_type: str='MESH',
-                             selection: Optional[List]=None) -> Optional[Object]:
-    def _get_any_alone_object(obj_type: str) -> Optional[Object]:
-        all_objects = [obj for obj in bpy.data.objects if obj.type == obj_type]
-        return None if len(all_objects) != 1 else all_objects[0]
+def get_alone_object_in_selection_by_type(selection: List,
+                                          obj_type: str='MESH'):
+    found_obj = None
+    for obj in selection:
+        if obj.type == obj_type:
+            if found_obj is not None:
+                return None
+            found_obj = obj
+    return found_obj
 
-    context_obj = bpy.context.object if hasattr(bpy.context, 'object') else None
-    if context_obj and context_obj.type == obj_type:
-        return context_obj
-    if selection is not None:
-        objects = selection
-    else:
-        if hasattr(bpy.context, 'selected_objects'):
-            objects = bpy.context.selected_objects
-        else:
-            objects = []
-    selected_objects = [obj for obj in objects if obj.type == obj_type]
-    if len(selected_objects) == 1:
-        return selected_objects[0]
-    return None if selection is not None else _get_any_alone_object(obj_type)
+
+def get_alone_object_in_scene_by_type(obj_type: str='MESH'):
+    return get_alone_object_in_selection_by_type(bpy_all_scene_objects(),
+                                                 obj_type)
+
+
+def get_alone_object_in_scene_selection_by_type(obj_type: str='MESH'):
+    return get_alone_object_in_selection_by_type(bpy_scene_selected_objects(),
+                                                 obj_type)
 
 
 def show_warning_dialog(err: Any, limit=70) -> None:
