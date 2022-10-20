@@ -186,7 +186,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     solve_for_camera: bpy.props.BoolProperty(
         name='Track for Camera or Geometry',
-        description='Which object will be tracked',
+        description='Which object will be tracked Geometry or Camera',
         default=False)
     reduce_pins: bpy.props.BoolProperty(name='Reduce pins', default=False)
     spring_pins_back: bpy.props.BoolProperty(name='Spring pins back',

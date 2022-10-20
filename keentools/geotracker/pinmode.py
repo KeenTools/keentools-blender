@@ -256,11 +256,15 @@ class GT_OT_PinMode(bpy.types.Operator):
         new_geotracker = settings.get_geotracker_item(new_geotracker_num)
 
         if not new_geotracker.geomobj:
-            _log.error(f'NO GEOMETRY OBJECT: {new_geotracker_num}')
+            msg = f'No Geometry object in GeoTracker {new_geotracker_num}'
+            _log.error(msg)
+            self.report({'INFO'}, msg)
             return {'CANCELLED'}
 
         if not new_geotracker.camobj:
-            _log.error(f'NO CAMERA OBJECT: {new_geotracker_num}')
+            msg = f'No Camera object in GeoTracker {new_geotracker_num}'
+            _log.error(msg)
+            self.report({'INFO'}, msg)
             return {'CANCELLED'}
 
         _log.output('GEOTRACKER PINMODE CHECKS PASSED')

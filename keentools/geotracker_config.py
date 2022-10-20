@@ -36,6 +36,7 @@ class GTConfig:
     # Operators
     gt_create_geotracker_idname = operators + '.create_geotracker'
     gt_delete_geotracker_idname = operators + '.delete_geotracker'
+    gt_select_geotracker_objects_idname = operators + '.select_geotracker'
     gt_actor_idname = operators + '.actor'
     gt_pinmode_idname = operators + '.pinmode'
     gt_movepin_idname = operators + '.movepin'

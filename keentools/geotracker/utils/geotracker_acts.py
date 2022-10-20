@@ -47,6 +47,7 @@ from ...utils.animation import (get_action,
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.timer import RepeatTimer
 from ...utils.coords import xy_to_xz_rotation_matrix_4x4
+from ...utils.manipulate import select_objects_only, center_viewport
 from .textures import bake_texture, preview_material_with_texture
 from .prechecks import (common_checks,
                         track_checks,
@@ -977,3 +978,29 @@ def _mark_object_keyframes(obj: Object) -> None:
     keyframes = [x for x in gt.keyframes()]
     _log.output(f'KEYFRAMES TO MARK AS KEYFRAMES: {keyframes}')
     mark_selected_points_in_locrot(obj, keyframes, 'KEYFRAME')
+
+
+def select_geotracker_objects_act(geotracker_num: int) -> ActionStatus:
+    check_status = common_checks(object_mode=True, is_calculating=True,
+                                 pinmode_out=True)
+    if not check_status.success:
+        return check_status
+
+    settings = get_gt_settings()
+    settings.fix_geotrackers()
+    if not settings.change_current_geotracker_safe(geotracker_num):
+        return ActionStatus(False, f'Cannot switch to Geotracker '
+                                   f'{geotracker_num}')
+
+    geotracker = get_current_geotracker_item()
+    if not geotracker.geomobj and not geotracker.camobj:
+        return ActionStatus(False, f'Geotracker {geotracker_num} '
+                                   f'does not contain any objects')
+    if geotracker.camera_mode():
+        select_objects_only([geotracker.camobj, geotracker.geomobj])
+    else:
+        select_objects_only([geotracker.geomobj, geotracker.camobj])
+
+    center_viewport(bpy.context.area)
+
+    return ActionStatus(True, 'ok')

@@ -31,6 +31,7 @@ from ..facebuilder_config import FBConfig
 from ..utils.rig_slider import create_slider, create_rectangle, create_label
 from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
                             xz_to_xy_rotation_matrix_3x3)
+from ..utils.manipulate import deselect_all
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
@@ -428,7 +429,7 @@ def select_control_panel_sliders(panel_obj: Object) -> int:
     empties = [obj for obj in arr if obj.type == 'EMPTY']
     counter = 0
     if empties:
-        bpy.ops.object.select_all(action='DESELECT')
+        deselect_all()
         for obj in empties:
             obj.select_set(state=True)
             counter += 1

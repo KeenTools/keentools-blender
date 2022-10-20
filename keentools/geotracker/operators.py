@@ -48,9 +48,11 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     move_tracking_to_camera_act,
                                     move_tracking_to_geometry_act,
                                     remove_focal_keyframe_act,
-                                    remove_focal_keyframes_act)
+                                    remove_focal_keyframes_act,
+                                    select_geotracker_objects_act)
 from .utils.precalc import precalc_with_runner_act
 from .gtloader import GTLoader
+from .utils.prechecks import common_checks
 
 
 class ButtonOperator:
@@ -611,6 +613,21 @@ class GT_OT_RemoveFocalKeyframes(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
+class GT_OT_SelectGeotrackerObjects(ButtonOperator, bpy.types.Operator):
+    bl_idname = GTConfig.gt_select_geotracker_objects_idname
+    bl_label = 'Select objects'
+    bl_description = 'Select GeoTracker objects in scene'
+
+    geotracker_num: bpy.props.IntProperty(default=0)
+
+    def execute(self, context):
+        act_status = select_geotracker_objects_act(self.geotracker_num)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_DeleteGeoTracker,
                   GT_OT_CreatePrecalc,
@@ -651,4 +668,5 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_MoveTrackingToCamera,
                   GT_OT_MoveTrackingToGeometry,
                   GT_OT_RemoveFocalKeyframe,
-                  GT_OT_RemoveFocalKeyframes)
+                  GT_OT_RemoveFocalKeyframes,
+                  GT_OT_SelectGeotrackerObjects)

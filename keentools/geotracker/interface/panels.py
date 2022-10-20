@@ -163,26 +163,44 @@ class GT_PT_GeotrackersPanel(View3DPanel):
         for i, geotracker in enumerate(settings.geotrackers):
 
             row = layout.row(align=True)
+            row.scale_y = Config.btn_scale_y
 
             if geotracker.geomobj:
                 name = geotracker.geomobj.name
             else:
                 name = '# Undefined'
 
-            op = row.operator(GTConfig.gt_pinmode_idname,
-                              text='', icon='HIDE_OFF')
-            op.geotracker_num = i
-
-            op = row.operator(GTConfig.gt_actor_idname, text=name,
-                              depress=geotracker_num == i,
-                              icon='CAMERA_DATA' if geotracker.camera_mode() else 'MESH_ICOSPHERE')
-            op.action = 'select_geotracker'
-            op.num = i
+            if settings.pinmode and geotracker_num == i:
+                row.operator(GTConfig.gt_exit_pinmode_idname,
+                             text='', icon='HIDE_OFF', depress=True)
+            else:
+                op = row.operator(GTConfig.gt_pinmode_idname,
+                                  text='', icon='HIDE_OFF', depress=False)
+                op.geotracker_num = i
 
             if not settings.pinmode:
                 op = row.operator(
-                    GTConfig.gt_delete_geotracker_idname,
-                    text='', icon='CANCEL')
+                    GTConfig.gt_select_geotracker_objects_idname, text=name,
+                    depress=geotracker_num == i,
+                    icon='CAMERA_DATA' if geotracker.camera_mode()
+                    else 'MESH_ICOSPHERE')
+                op.geotracker_num = i
+            else:
+                if geotracker_num == i:
+                    row.operator(GTConfig.gt_exit_pinmode_idname,
+                                 text=name, depress=True,
+                                 icon='CAMERA_DATA' if geotracker.camera_mode()
+                                 else 'MESH_ICOSPHERE')
+                else:
+                    op = row.operator(GTConfig.gt_pinmode_idname,
+                                      text=name, depress=False,
+                                      icon='CAMERA_DATA' if geotracker.camera_mode()
+                                      else 'MESH_ICOSPHERE')
+                    op.geotracker_num = i
+
+            if not settings.pinmode:
+                op = row.operator(GTConfig.gt_delete_geotracker_idname,
+                                  text='', icon='CANCEL')
                 op.geotracker_num = i
 
     def _pkt_install_offer(self, layout):
