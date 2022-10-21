@@ -680,7 +680,7 @@ def create_animated_empty_act() -> ActionStatus:
     geotracker = get_current_geotracker_item()
     action = get_action(geotracker.animatable_object())
     if not action:
-        msg = 'Animation is not created on source object'
+        msg = 'Tracked object has no animation'
         _log.error(msg)
         return ActionStatus(False, msg)
 
