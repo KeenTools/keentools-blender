@@ -712,6 +712,11 @@ class FB_OT_ExportHeadToFBX(ButtonOperator, Operator):
                      'for game engines (UE4, Unity, etc.)'
 
     def execute(self, context):
+        settings = get_fb_settings()
+        if settings.pinmode:
+            FBLoader.out_pinmode(settings.current_headnum)
+            exit_area_localview(context.area)
+
         return export_head_to_fbx(self)
 
 
