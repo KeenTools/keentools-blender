@@ -27,7 +27,7 @@ from .localview import (enter_area_localview,
                         exit_area_localview,
                         check_area_active_problem)
 from .ui_redraw import get_areas_by_type
-from .bpy_common import operator_with_context
+from .bpy_common import operator_with_context, bpy_background_mode
 
 
 _log = KTLogger(__name__)
@@ -111,7 +111,7 @@ def center_viewport(area):
 def center_viewports_on_object(obj: Optional[Object]=None) -> None:
     if obj is not None:
         select_object_only(obj)
-    if bpy.app.background:
+    if bpy_background_mode():
         return
 
     areas = get_areas_by_type(area_type='VIEW_3D')

@@ -19,13 +19,13 @@
 import numpy as np
 from typing import Any, List, Callable, Tuple, Optional
 
-import bpy
 from bpy.types import Object, Area, Region, Image
 import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
 
 from ..utils.kt_logging import KTLogger
+from ..geotracker_config import GTConfig
 from .shaders import (smooth_3d_fragment_shader,
                       uniform_3d_vertex_local_shader,
                       raster_image_mask_vertex_shader,
@@ -44,7 +44,7 @@ class KTTrisShaderLocal3D(KTShaderBase):
     def __init__(self, target_class: Any):
         self.vertices: List[Tuple[float, float, float]] = []
         self.triangle_indices: List[List[int]] = []
-        self.fill_color: Tuple[float, float, float, float] = (0., 0., 1.0, 0.3)
+        self.color: Tuple[float, float, float, float] = GTConfig.mask_3d_color
         self.fill_shader: Any = None
         self.fill_batch: Any = None
         self.object_world_matrix: Any = np.eye(4, dtype=np.float32)
@@ -94,7 +94,7 @@ class KTTrisShaderLocal3D(KTShaderBase):
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
 
         self.fill_shader.bind()
-        self.fill_shader.uniform_float('color', self.fill_color)
+        self.fill_shader.uniform_float('color', self.color)
         self.fill_shader.uniform_vector_float(
             self.fill_shader.uniform_from_name('modelMatrix'),
             self.object_world_matrix.ravel(), 16)
@@ -116,7 +116,7 @@ class KTRasterMask(KTShaderBase):
                                                   (1., 1), (0., 1)]
         self.vertices: List[Tuple[float, float]] = self.square
         self.uvs: List[Tuple[float, float]] = self.square
-        self.mask_color: Tuple[float, float, float, float] = (0., 0., 1.0, 0.4)
+        self.color: Tuple[float, float, float, float] = GTConfig.mask_2d_color
         self.mask_shader: Any = None
         self.mask_batch: Any = None
         self.inverted: bool = False
@@ -165,7 +165,7 @@ class KTRasterMask(KTShaderBase):
         shader.bind()
         shader.uniform_float('left', self.left)
         shader.uniform_float('right', self.right)
-        shader.uniform_float('color', self.mask_color)
+        shader.uniform_float('color', self.color)
         shader.uniform_int('inverted', 1 if self.inverted else 0)
         shader.uniform_int('image', 0)
         self.mask_batch.draw(shader)

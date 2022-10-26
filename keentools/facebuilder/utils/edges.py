@@ -16,16 +16,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from  typing import Any, Tuple, List, Optional
+from typing import Any, Tuple, List, Optional
 import numpy as np
 
 import bpy
-from bpy.types import Area, Image, Object
+from bpy.types import Area, Image, Object, SpaceView3D
 import bgl
 import gpu
 from gpu_extras.batch import batch_for_shader
 
 from ...facebuilder_config import FBConfig
+from ...utils.bpy_common import bpy_background_mode
 from ...utils.edges import KTEdgeShaderBase, KTEdgeShader2D
 from ...utils.coords import (frame_to_image_space,
                              get_camera_border,
@@ -47,7 +48,7 @@ from ...utils.images import (check_bpy_image_has_same_size,
 
 
 class FBRectangleShader2D(KTEdgeShader2D):
-    def __init__(self, target_class: Any=bpy.types.SpaceView3D):
+    def __init__(self, target_class: Any=SpaceView3D):
         self._rectangles = []
         super().__init__(target_class)
 
@@ -125,7 +126,7 @@ class FBRectangleShader2D(KTEdgeShader2D):
         self.line_batch.draw(self.line_shader)
 
     def create_batch(self) -> None:
-        if bpy.app.background:
+        if bpy_background_mode():
             return
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
@@ -134,7 +135,7 @@ class FBRectangleShader2D(KTEdgeShader2D):
 
 
 class FBRasterEdgeShader3D(KTEdgeShaderBase):
-    def __init__(self, target_class: Any=bpy.types.SpaceView3D):
+    def __init__(self, target_class: Any=SpaceView3D):
         self._edges_indices = np.array([], dtype=np.int32)
         self._edges_uvs = []
         self._colors = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
@@ -260,7 +261,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         bgl.glDisable(bgl.GL_DEPTH_TEST)
 
     def create_batches(self) -> None:
-        if bpy.app.background:
+        if bpy_background_mode():
             return
         self.fill_batch = batch_for_shader(
             self.fill_shader, 'TRIS',

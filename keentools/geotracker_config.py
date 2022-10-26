@@ -135,6 +135,9 @@ class GTConfig:
     residual_color = (0.0, 1.0, 1.0, 0.5)
     timeline_keyframe_color = (0.0, 1.0, 0.0, 0.5)
 
+    mask_2d_color = (0.0, 1.0, 0.0, 0.4)
+    mask_3d_color = (0.0, 0.0, 1.0, 0.4)
+
     wireframe_color = (0.0, 1.0, 0.0)
     wireframe_opacity = 0.4
 

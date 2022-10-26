@@ -97,6 +97,16 @@ def update_wireframe_func(self, context) -> None:
     GTLoader.update_viewport_wireframe()
 
 
+def update_mask_2d_color(settings, context) -> None:
+    vp = GTLoader.viewport()
+    mask = vp.mask2d()
+    mask.color = (*settings.mask_2d_color, settings.mask_2d_opacity)
+
+
+def update_mask_3d_color(settings, context) -> None:
+    pass
+
+
 def update_wireframe_backface_culling(self, context) -> None:
     if self.ui_write_mode:
         return
@@ -375,6 +385,31 @@ class GTSceneSettings(bpy.types.PropertyGroup):
                                          default=0.0)
     selection_y: bpy.props.FloatProperty(name='Selection Y',
                                          default=0.0)
+
+    mask_3d_color: bpy.props.FloatVectorProperty(
+        description='Color of masked areas',
+        name='Mask 3D Color', subtype='COLOR',
+        default=GTConfig.mask_3d_color[:3], min=0.0, max=1.0,
+        update=update_mask_3d_color)
+
+    mask_3d_opacity: bpy.props.FloatProperty(
+        description='From 0.0 to 1.0',
+        name='Mask 3D opacity',
+        default=GTConfig.mask_3d_color[3], min=0.0, max=1.0,
+        update=update_mask_3d_color)
+
+    mask_2d_color: bpy.props.FloatVectorProperty(
+        description='Color of masked areas',
+        name='Mask 3D Color', subtype='COLOR',
+        default=GTConfig.mask_2d_color[:3], min=0.0, max=1.0,
+        update=update_mask_2d_color)
+
+    mask_2d_opacity: bpy.props.FloatProperty(
+        description='From 0.0 to 1.0',
+        name='Mask 3D opacity',
+        default=GTConfig.mask_2d_color[3], min=0.0, max=1.0,
+        update=update_mask_2d_color)
+
     @contextmanager
     def ui_write_mode_context(self):
         self.ui_write_mode = True

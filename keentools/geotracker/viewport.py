@@ -19,8 +19,7 @@
 from typing import Any, List, Tuple
 import numpy as np
 
-import bpy
-from bpy.types import Object, Area
+from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
 
 from ..geotracker_config import GTConfig, get_gt_settings
 from ..utils.coords import (get_camera_border,
@@ -29,7 +28,9 @@ from ..utils.coords import (get_camera_border,
                             multiply_verts_on_matrix_4x4,
                             to_homogeneous,
                             pin_to_xyz_from_mesh)
-from ..utils.bpy_common import bpy_render_frame, evaluated_object
+from ..utils.bpy_common import (bpy_render_frame,
+                                evaluated_object,
+                                bpy_scene_camera)
 from ..utils.viewport import KTViewport
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
@@ -43,15 +44,16 @@ from ..utils.polygons import KTRasterMask
 class GTViewport(KTViewport):
     def __init__(self):
         super().__init__()
-        self._points2d = KTPoints2D(bpy.types.SpaceView3D)
-        self._points3d = KTPoints3D(bpy.types.SpaceView3D)
-        self._residuals = KTEdgeShader2D(bpy.types.SpaceView3D)
-        self._texter = KTScreenText(bpy.types.SpaceView3D)
-        self._wireframer = KTEdgeShaderLocal3D(bpy.types.SpaceView3D)
-        self._timeliner = KTEdgeShaderAll2D(bpy.types.SpaceDopeSheetEditor,
+        self._points2d = KTPoints2D(SpaceView3D)
+        self._points3d = KTPoints3D(SpaceView3D)
+        self._residuals = KTEdgeShader2D(SpaceView3D)
+        self._texter = KTScreenText(SpaceView3D)
+        self._wireframer = KTEdgeShaderLocal3D(
+            SpaceView3D, selection_color=GTConfig.mask_3d_color)
+        self._timeliner = KTEdgeShaderAll2D(SpaceDopeSheetEditor,
                                             GTConfig.timeline_keyframe_color)
-        self._selector = KTScreenDashedRectangleShader2D(bpy.types.SpaceView3D)
-        self._mask2d = KTRasterMask(bpy.types.SpaceView3D)
+        self._selector = KTScreenDashedRectangleShader2D(SpaceView3D)
+        self._mask2d = KTRasterMask(SpaceView3D)
         self._draw_update_timer_handler = None
 
     def register_handlers(self, context):
@@ -185,7 +187,7 @@ class GTViewport(KTViewport):
             wire.create_batch()  # Empty shader
             return
 
-        camobj = bpy.context.scene.camera
+        camobj = bpy_scene_camera()
         if not camobj:
             return
 

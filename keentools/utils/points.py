@@ -18,15 +18,16 @@
 
 from typing import List, Optional, Tuple, Any
 
-import bpy
+from bpy.types import SpaceView3D
 import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
 
+from ..addon_config import Config
+from .bpy_common import bpy_background_mode
 from .shaders import (flat_color_3d_vertex_shader,
                       circular_dot_fragment_shader,
                       flat_color_2d_vertex_shader)
-from ..addon_config import Config
 from ..preferences.user_preferences import UserPreferences
 from .base_shaders import KTShaderBase
 
@@ -131,7 +132,7 @@ class KTScreenPins:
 
 
 class KTShaderPoints(KTShaderBase):
-    def __init__(self, target_class: Any=bpy.types.SpaceView3D):
+    def __init__(self, target_class: Any=SpaceView3D):
         self.shader: Any = None
         self.batch: Any = None
 
@@ -183,13 +184,13 @@ class KTShaderPoints(KTShaderBase):
 
 class KTPoints2D(KTShaderPoints):
     def init_shaders(self) -> None:
-        if bpy.app.background:
+        if bpy_background_mode():
             return
         self.shader = gpu.types.GPUShader(flat_color_2d_vertex_shader(),
                                           circular_dot_fragment_shader())
 
     def create_batch(self) -> None:
-        if bpy.app.background:
+        if bpy_background_mode():
             return
         self.batch = batch_for_shader(
             self.shader, 'POINTS',
@@ -203,13 +204,13 @@ class KTPoints2D(KTShaderPoints):
 
 class KTPoints3D(KTShaderPoints):
     def init_shaders(self) -> None:
-        if bpy.app.background:
+        if bpy_background_mode():
             return
         self.shader = gpu.types.GPUShader(flat_color_3d_vertex_shader(),
                                           circular_dot_fragment_shader())
 
     def create_batch(self) -> None:
-        if bpy.app.background:
+        if bpy_background_mode():
             return
         self.batch = batch_for_shader(
             self.shader, 'POINTS',

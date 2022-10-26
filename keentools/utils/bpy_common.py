@@ -18,7 +18,7 @@
 from typing import Any, Dict, Callable, Tuple, List
 
 import bpy
-from bpy.types import Object, Mesh, Operator
+from bpy.types import Object, Mesh, Operator, Camera
 
 
 def bpy_background_mode() -> bool:
@@ -27,6 +27,14 @@ def bpy_background_mode() -> bool:
 
 def bpy_scene() -> Any:
     return bpy.context.scene
+
+
+def bpy_scene_camera() -> Camera:
+    return bpy.context.scene.camera
+
+
+def bpy_is_animation_playing() -> bool:
+    return bpy.context.screen.is_animation_playing
 
 
 def bpy_current_frame() -> int:

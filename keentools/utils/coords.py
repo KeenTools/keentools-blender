@@ -19,12 +19,14 @@ import numpy as np
 import math
 from typing import Any, Tuple, List, Optional, Set
 
-import bpy
 from bpy.types import Area, Object
 
 from .kt_logging import KTLogger
 from .fake_context import get_fake_context
-from .bpy_common import bpy_current_frame, bpy_render_frame, evaluated_mesh
+from .bpy_common import (bpy_current_frame,
+                         bpy_render_frame,
+                         evaluated_mesh,
+                         bpy_background_mode)
 from .animation import get_safe_evaluated_fcurve
 
 
@@ -251,7 +253,7 @@ def get_area_overlay(area: Area) -> Optional[Any]:
 
 
 def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
-    if bpy.app.background:
+    if bpy_background_mode():
         context = get_fake_context()
         area = context.area
 
@@ -301,7 +303,7 @@ def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
 
 def is_safe_region(area: Area, x: float, y: float) -> bool:
     """ Safe region for pin operation """
-    if bpy.app.background:
+    if bpy_background_mode():
         context = get_fake_context()
         area = context.area
 
@@ -317,7 +319,7 @@ def is_safe_region(area: Area, x: float, y: float) -> bool:
 
 def is_in_area(area: Area, x: float, y: float) -> bool:
     """ Is point in area """
-    if bpy.app.background:
+    if bpy_background_mode():
         context = get_fake_context()
         area = context.area
 
@@ -326,7 +328,7 @@ def is_in_area(area: Area, x: float, y: float) -> bool:
 
 def get_pixel_relative_size(area: Area) -> float:
     """ One Pixel size in relative coords via current zoom """
-    if bpy.app.background:
+    if bpy_background_mode():
         context = get_fake_context()
         area = context.area
 
