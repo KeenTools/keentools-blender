@@ -104,7 +104,11 @@ def update_mask_2d_color(settings, context) -> None:
 
 
 def update_mask_3d_color(settings, context) -> None:
-    pass
+    vp = GTLoader.viewport()
+    wf = vp.wireframer()
+    wf.selection_fill_color = (*settings.mask_3d_color, settings.mask_3d_opacity)
+    if settings.pinmode:
+        GTLoader.update_viewport_wireframe()
 
 
 def update_wireframe_backface_culling(self, context) -> None:
@@ -251,7 +255,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
                                                   name='Selected frames')
     mask_3d: bpy.props.StringProperty(
         name='3d mask',
-        description='Polygons in selected Vertex Group '
+        description='The polygons in selected Vertex Group '
                     'will be excluded from tracking',
         update=update_mask_3d)
     mask_3d_inverted: bpy.props.BoolProperty(
@@ -261,8 +265,8 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         update=update_mask_3d)
     mask_2d: bpy.props.StringProperty(
         name='2d mask',
-        description='Polygons in selected Vertex Group '
-                    'will be excluded from tracking',
+        description='The masked areas will be excluded from tracking '
+                    '(It does not work yet)',
         update=update_mask_2d)
     mask_2d_inverted: bpy.props.BoolProperty(
         name='Invert Mask 3D',
