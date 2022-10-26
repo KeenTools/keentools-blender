@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-from typing import Any, Dict, Callable, Tuple
+from typing import Any, Dict, Callable, Tuple, List
 
 import bpy
 from bpy.types import Object, Mesh, Operator
@@ -130,3 +130,13 @@ def reset_unsaved_animation_changes_in_frame() -> int:
     bpy_set_current_frame(current_frame)
     update_depsgraph()
     return current_frame
+
+
+def bpy_scene_selected_objects() -> List:
+    if not hasattr(bpy.context, 'selected_objects'):
+        return []
+    return bpy.context.selected_objects
+
+
+def bpy_all_scene_objects() -> List:
+    return bpy.data.objects

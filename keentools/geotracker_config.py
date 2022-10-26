@@ -36,9 +36,11 @@ class GTConfig:
     # Operators
     gt_create_geotracker_idname = operators + '.create_geotracker'
     gt_delete_geotracker_idname = operators + '.delete_geotracker'
+    gt_select_geotracker_objects_idname = operators + '.select_geotracker'
     gt_actor_idname = operators + '.actor'
     gt_pinmode_idname = operators + '.pinmode'
     gt_movepin_idname = operators + '.movepin'
+    gt_create_precalc_idname = operators + '.create_precalc'
     gt_sequence_filebrowser_idname = operators + '.sequence_filebrowser'
     gt_choose_precalc_file_idname = operators + '.choose_precalc_file'
     gt_split_video_to_frames_idname = operators + '.split_video_to_frames'
@@ -74,6 +76,17 @@ class GTConfig:
         operators + '.default_wireframe_settings'
     gt_default_pin_settings_idname = operators + '.default_pin_settings'
     gt_select_frames_for_bake_idname = operators + '.select_frames_for_bake'
+    gt_reproject_frame_idname = operators + '.reproject_current_frame'
+    gt_select_all_frames_idname = operators + '.select_all_frames'
+    gt_deselect_all_frames_idname = operators + '.deselect_all_frames'
+    gt_relative_to_camera_idname = operators + '.relative_to_camera'
+    gt_relative_to_geometry_idname = operators + '.relative_to_geometry'
+    gt_geometry_repositioning_idname = operators + '.geometry_repositioning'
+    gt_camera_repositioning_idname = operators + '.camera_repositioning'
+    gt_move_tracking_to_camera_idname = operators + '.move_tracking_to_camera'
+    gt_move_tracking_to_geometry_idname = operators + '.move_tracking_to_geometry'
+    gt_remove_focal_keyframe_idname = operators + '.remove_focal_keyframe'
+    gt_remove_focal_keyframes_idname = operators + '.remove_focal_keyframes'
 
     # Panel ids
     gt_geotrackers_panel_idname = _PT + 'geotrackers_panel'
@@ -81,9 +94,18 @@ class GTConfig:
     gt_analyze_panel_idname = _PT + 'analyze_panel'
     gt_camera_panel_idname = _PT + 'camera_panel'
     gt_tracking_panel_idname = _PT + 'tracking_panel'
-    gt_colors_panel_idname = _PT + 'colors_panel'
+    gt_appearance_panel_idname = _PT + 'appearance_panel'
     gt_animation_panel_idname = _PT + 'animation_panel'
     gt_texture_panel_idname = _PT + 'texture_panel'
+
+    # Help ids
+    gt_help_inputs_idname = operators + '.help_inputs'
+    gt_help_analyze_idname = operators + '.help_analyze'
+    gt_help_camera_idname = operators + '.help_camera'
+    gt_help_tracking_idname = operators + '.help_tracking'
+    gt_help_appearance_idname = operators + '.help_appearance'
+    gt_help_texture_idname = operators + '.help_texture'
+    gt_help_animation_idname = operators + '.help_animation'
 
     # Updater panels
     gt_update_panel_idname = _PT + 'update_panel'

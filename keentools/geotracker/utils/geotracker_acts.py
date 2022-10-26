@@ -25,7 +25,9 @@ from bpy.types import Object
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import get_operator, ActionStatus
-from ...geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
+from ...geotracker_config import (GTConfig,
+                                  get_gt_settings,
+                                  get_current_geotracker_item)
 from ..gtloader import GTLoader
 from ..gt_class_loader import GTClassLoader
 from ...utils.animation import (remove_fcurve_point,
@@ -47,10 +49,12 @@ from ...utils.animation import (get_action,
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.timer import RepeatTimer
 from ...utils.coords import xy_to_xz_rotation_matrix_4x4
+from ...utils.manipulate import select_objects_only, center_viewport
 from .textures import bake_texture, preview_material_with_texture
 from .prechecks import (common_checks,
                         track_checks,
-                        find_object_in_selection,
+                        get_alone_object_in_scene_selection_by_type,
+                        get_alone_object_in_scene_by_type,
                         prepare_camera,
                         revert_camera,
                         show_warning_dialog,
@@ -72,16 +76,16 @@ def create_geotracker_act() -> ActionStatus:
     GTLoader.new_kt_geotracker()
 
     geotracker = settings.get_current_geotracker_item()
-    obj = find_object_in_selection('MESH')
-    if obj is not None:
-        geotracker.geomobj = obj
-    camobj = find_object_in_selection('CAMERA')
-    if camobj is not None:
-        geotracker.camobj = camobj
-    else:
-        camobj = bpy.context.scene.camera
-        if camobj:
-            geotracker.camobj = camobj
+    obj = get_alone_object_in_scene_selection_by_type('MESH')
+    if obj is None:
+        obj = get_alone_object_in_scene_by_type('MESH')
+    geotracker.geomobj = obj
+
+    camobj = get_alone_object_in_scene_selection_by_type('CAMERA')
+    if camobj is None:
+        camobj = get_alone_object_in_scene_by_type('CAMERA')
+    geotracker.camobj = camobj
+
     settings.reload_current_geotracker()
     return ActionStatus(True, 'GeoTracker has been added')
 
@@ -676,7 +680,7 @@ def create_animated_empty_act() -> ActionStatus:
     geotracker = get_current_geotracker_item()
     action = get_action(geotracker.animatable_object())
     if not action:
-        msg = 'Animation is not created on source object'
+        msg = 'Tracked object has no animation'
         _log.error(msg)
         return ActionStatus(False, msg)
 
@@ -783,7 +787,7 @@ def relative_to_geometry_act() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def geometry_repositioninig_act() -> ActionStatus:
+def geometry_repositioning_act() -> ActionStatus:
     check_status = common_checks(object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
@@ -831,7 +835,7 @@ def geometry_repositioninig_act() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def camera_repositioninig_act() -> ActionStatus:
+def camera_repositioning_act() -> ActionStatus:
     check_status = common_checks(object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
@@ -977,3 +981,29 @@ def _mark_object_keyframes(obj: Object) -> None:
     keyframes = [x for x in gt.keyframes()]
     _log.output(f'KEYFRAMES TO MARK AS KEYFRAMES: {keyframes}')
     mark_selected_points_in_locrot(obj, keyframes, 'KEYFRAME')
+
+
+def select_geotracker_objects_act(geotracker_num: int) -> ActionStatus:
+    check_status = common_checks(object_mode=True, is_calculating=True,
+                                 pinmode_out=True)
+    if not check_status.success:
+        return check_status
+
+    settings = get_gt_settings()
+    settings.fix_geotrackers()
+    if not settings.change_current_geotracker_safe(geotracker_num):
+        return ActionStatus(False, f'Cannot switch to Geotracker '
+                                   f'{geotracker_num}')
+
+    geotracker = get_current_geotracker_item()
+    if not geotracker.geomobj and not geotracker.camobj:
+        return ActionStatus(False, f'Geotracker {geotracker_num} '
+                                   f'does not contain any objects')
+    if geotracker.camera_mode():
+        select_objects_only([geotracker.camobj, geotracker.geomobj])
+    else:
+        select_objects_only([geotracker.geomobj, geotracker.camobj])
+
+    center_viewport(bpy.context.area)
+
+    return ActionStatus(True, 'ok')
