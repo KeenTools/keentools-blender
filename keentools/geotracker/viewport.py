@@ -59,6 +59,7 @@ class GTViewport(KTViewport):
     def register_handlers(self, context):
         self.unregister_handlers()
         self.set_work_area(context.area)
+        self.mask2d().register_handler(context)
         self.residuals().register_handler(context)
         self.points3d().register_handler(context)
         self.points2d().register_handler(context)
@@ -66,12 +67,10 @@ class GTViewport(KTViewport):
         self.wireframer().register_handler(context)
         self.timeliner().register_handler(context)
         self.selector().register_handler(context)
-        self.mask2d().register_handler(context)
         self.register_draw_update_timer(time_step=GTConfig.viewport_redraw_interval)
 
     def unregister_handlers(self):
         self.unregister_draw_update_timer()
-        self.mask2d().unregister_handler()
         self.selector().unregister_handler()
         self.timeliner().unregister_handler()
         self.wireframer().unregister_handler()
@@ -79,6 +78,7 @@ class GTViewport(KTViewport):
         self.points2d().unregister_handler()
         self.points3d().unregister_handler()
         self.residuals().unregister_handler()
+        self.mask2d().unregister_handler()
         self.clear_work_area()
 
     def mask2d(self) -> KTRasterMask:

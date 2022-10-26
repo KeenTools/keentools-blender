@@ -250,7 +250,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     selected_frames: bpy.props.CollectionProperty(type=FrameListItem,
                                                   name='Selected frames')
     mask_3d: bpy.props.StringProperty(
-        name='Mask 3D',
+        name='3d mask',
         description='Polygons in selected Vertex Group '
                     'will be excluded from tracking',
         update=update_mask_3d)
@@ -260,7 +260,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         default=False,
         update=update_mask_3d)
     mask_2d: bpy.props.StringProperty(
-        name='Mask 2D',
+        name='2d mask',
         description='Polygons in selected Vertex Group '
                     'will be excluded from tracking',
         update=update_mask_2d)
@@ -269,6 +269,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         description='Invert Mask 3D Vertex Group',
         default=False,
         update=update_mask_2d)
+
     def get_serial_str(self) -> str:
         return self.serial_str
 
