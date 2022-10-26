@@ -316,6 +316,12 @@ class GT_PT_InputsPanel(AllVisible):
             row.prop(geotracker, 'mask_3d_inverted',
                      text='', icon='ARROW_LEFTRIGHT')
 
+        row = layout.row(align=True)
+        row.prop_search(geotracker, 'mask_2d',
+                        bpy.data, 'images')
+        row.prop(geotracker, 'mask_2d_inverted',
+                 text='', icon='ARROW_LEFTRIGHT')
+
 
 class GT_PT_AnalyzePanel(AllVisible):
     bl_idname = GTConfig.gt_analyze_panel_idname

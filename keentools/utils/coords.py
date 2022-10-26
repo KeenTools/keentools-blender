@@ -15,16 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
-from typing import Any, Tuple, List, Optional, Set
-
 import numpy as np
 import math
+from typing import Any, Tuple, List, Optional, Set
+
 import bpy
 from bpy.types import Area, Object
+
+from .kt_logging import KTLogger
 from .fake_context import get_fake_context
 from .bpy_common import bpy_current_frame, bpy_render_frame, evaluated_mesh
 from .animation import get_safe_evaluated_fcurve
+
+
+_log = KTLogger(__name__)
 
 
 def nearest_point(x: float, y: float, points: List[Tuple[float, float]],
@@ -94,9 +98,7 @@ def update_head_mesh_non_neutral(fb: Any, head: Any) -> None:
             update_head_mesh_expressions(fb, head, kid)
             return
         else:
-            logger = logging.getLogger(__name__)
-            logger.error(
-                'NO KEYFRAME: {} in {}'.format(kid, fb.keyframes()))
+            _log.error(f'NO KEYFRAME: {kid} in {fb.keyframes()}')
     update_head_mesh_neutral(fb, head)
 
 
@@ -263,9 +265,7 @@ def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
     # Blender Zoom formula
     f = (z * 0.01 + math.sqrt(0.5)) ** 2  # f - scale factor
 
-    scene = bpy.context.scene
-    rx = scene.render.resolution_x
-    ry = scene.render.resolution_y
+    rx, ry = bpy_render_frame()
 
     a1 = w / h
     a2 = rx / ry

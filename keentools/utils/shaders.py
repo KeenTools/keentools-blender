@@ -322,3 +322,48 @@ def raster_image_fragment_shader():
         fragColor.a = opacity;
     }
     '''
+
+
+def raster_image_mask_vertex_shader():
+    return '''
+    uniform mat4 ModelViewProjectionMatrix;
+    uniform vec2 left;
+    uniform vec2 right;
+
+    in vec2 texCoord;
+    in vec2 pos;
+    out vec2 texCoord_interp;
+
+    void main()
+    {
+        gl_Position = ModelViewProjectionMatrix * vec4(
+            left.x + pos.x * (right.x - left.x),
+            left.y + pos.y * (right.y - left.y),
+            0.0f, 1.0f);
+        gl_Position.z = 1.0;
+        texCoord_interp = texCoord;
+    }
+    '''
+
+
+def raster_image_mask_fragment_shader():
+    return '''
+    uniform sampler2D image;
+    uniform vec4 color;
+    uniform bool inverted;
+
+    in vec2 texCoord_interp;
+    out vec4 fragColor;
+
+    void main()
+    {
+        vec4 tex = texture(image, texCoord_interp);
+        if ((tex[0] == 0) && (tex[1] == 0) && (tex[2] == 0)) {
+            if (!inverted) discard;
+            fragColor = color;
+        } else {
+            if (inverted) discard;
+            fragColor = color;
+        }
+    }
+    '''

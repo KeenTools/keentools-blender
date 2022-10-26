@@ -21,6 +21,10 @@ import bpy
 from bpy.types import Object, Mesh, Operator
 
 
+def bpy_background_mode() -> bool:
+    return bpy.app.background
+
+
 def bpy_scene() -> Any:
     return bpy.context.scene
 

@@ -18,8 +18,9 @@
 
 from typing import Any, List, Callable, Tuple, Optional
 
-import bpy
-from bpy.types import Object, Area, Region
+from bpy.types import Object, Area, Region, SpaceView3D
+
+from .bpy_common import bpy_background_mode
 
 
 class KTShaderBase:
@@ -38,13 +39,13 @@ class KTShaderBase:
     def is_handler_list_empty(cls) -> bool:
         return len(cls.handler_list) == 0
 
-    def __init__(self, target_class: Any=bpy.types.SpaceView3D):
+    def __init__(self, target_class: Any=SpaceView3D):
         self.draw_handler: Optional[Any] = None
         self.target_class: Any = target_class
         self.work_area: Optional[Area] = None
         self.is_shader_visible: bool = True
-        # Check if blender started in background mode
-        if not bpy.app.background:
+
+        if not bpy_background_mode():
             self.init_shaders()
 
     def is_visible(self) -> bool:

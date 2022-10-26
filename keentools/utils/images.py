@@ -15,29 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
+
 import numpy as np
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Tuple, List
 import re
 import os
 
-
 import bpy
+from bpy.types import Image, Camera, Object, MovieClip
 
 from ..addon_config import Config
+from .kt_logging import KTLogger
 
 
-_logger: Any = logging.getLogger(__name__)
-
-
-def _log_output(message: str) -> None:
-    global _logger
-    _logger.debug(message)
-
-
-def _log_error(message: str) -> None:
-    global _logger
-    _logger.error(message)
+_log = KTLogger(__name__)
 
 
 def _assign_pixels_data_new(pixels: Any, data: Any) -> None:
@@ -64,7 +55,7 @@ get_pixels_data: Callable = _get_pixels_data_new \
     if bpy.app.version >= (2, 83, 0) else _get_pixels_data_old
 
 
-def np_array_from_bpy_image(bpy_image):
+def np_array_from_bpy_image(bpy_image: Optional[Image]) -> Optional[Any]:
     if not bpy_image or not bpy_image.size or not bpy_image.channels:
         return None
     w, h = bpy_image.size[:2]
@@ -76,7 +67,7 @@ def np_array_from_bpy_image(bpy_image):
     return np_img
 
 
-def load_rgba(camera):
+def load_rgba(camera: Optional[Camera]) -> Optional[Any]:
     if not camera or camera.cam_image is None:
         return None
 
@@ -86,13 +77,13 @@ def load_rgba(camera):
     return np.rot90(img, camera.orientation)
 
 
-def gamma_np_image(np_img, gamma=1.0):
+def gamma_np_image(np_img: Any, gamma: float=1.0) -> Any:
     res_img = np_img.copy()
     res_img[:, :, :3] = np.power(np_img[:, :, :3], gamma)
     return res_img
 
 
-def get_background_image_object(camobj: Any) -> Any:
+def get_background_image_object(camobj: Camera) -> Any:
     cam_data = camobj.data
     if len(cam_data.background_images) == 0:
         bg_img = cam_data.background_images.new()
@@ -101,7 +92,7 @@ def get_background_image_object(camobj: Any) -> Any:
     return bg_img
 
 
-def _get_file_number(filename):
+def _get_file_number(filename: str) -> int:
     name, _ = os.path.splitext(filename)
     regex = re.compile(r'\d+$')
     regex.findall(name)
@@ -111,12 +102,13 @@ def _get_file_number(filename):
     return numbers[-1]
 
 
-def set_background_image_by_movieclip(camobj, movie_clip, name='geotracker_bg'):
+def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
+                                      name: str='geotracker_bg') -> None:
     if not camobj or not movie_clip:
         return
 
     if movie_clip.source not in ['SEQUENCE', 'MOVIE']:
-        _log_error('UNKNOWN MOVIECLIP TYPE')
+        _log.error('UNKNOWN MOVIECLIP TYPE')
         return
 
     bg_img = get_background_image_object(camobj)
@@ -148,61 +140,62 @@ def set_background_image_by_movieclip(camobj, movie_clip, name='geotracker_bg'):
             bg_img.image_user.frame_offset = file_number - 1
 
 
-def find_bpy_image_by_name(image_name):
+def find_bpy_image_by_name(image_name: str) -> Optional[Image]:
     image_num = bpy.data.images.find(image_name)
     if image_num >= 0:
         return bpy.data.images[image_num]
     return None
 
 
-def remove_bpy_image(image):
+def remove_bpy_image(image: Optional[Image]) -> None:
     if image and image.name in bpy.data.images.keys():
         bpy.data.images.remove(image)
 
 
-def remove_bpy_image_by_name(image_name):
+def remove_bpy_image_by_name(image_name: str) -> None:
     image = find_bpy_image_by_name(image_name)
     if image is not None:
         bpy.data.images.remove(image)
 
 
-def store_bpy_image_in_scene(image):
+def store_bpy_image_in_scene(image: Image) -> None:
     image.pack()
     image.use_fake_user = True
 
 
-def check_bpy_image_size(image):
+def check_bpy_image_size(image: Optional[Image]) -> bool:
     if not image or not image.size:
         return False
     w, h = image.size[:2]
     return w > 0 and h > 0
 
 
-def check_bpy_image_has_same_size(image, size):
+def check_bpy_image_has_same_size(image: Optional[Image],
+                                  size: Tuple[float, float]) -> bool:
     if not image or not image.size:
         return False
     w, h = image.size[:2]
     return w == size[0] and h == size[1]
 
 
-def np_image_to_grayscale(np_img):
+def np_image_to_grayscale(np_img: Any) -> Any:
     return (255 * 0.2989 * np_img[:, :, 0] +
             255 * 0.5870 * np_img[:, :, 1] +
             255 * 0.1140 * np_img[:, :, 2]).astype(np.uint8)
 
 
-def np_array_from_background_image(camobj: Any) -> Optional[Any]:
+def np_array_from_background_image(camobj: Camera) -> Optional[Any]:
     bg_img = get_background_image_object(camobj)
     np_img = np_array_from_bpy_image(bg_img.image)
     return np_img
 
 
-def reset_tone_mapping(cam_image):
+def reset_tone_mapping(cam_image: Optional[Image]) -> None:
     if not cam_image:
         return
     if cam_image.is_dirty:
         cam_image.reload()
-        _log_output('reset_tone_mapping: IMAGE RELOADED')
+        _log.output('reset_tone_mapping: IMAGE RELOADED')
 
 
 def tone_mapping(cam_image, exposure, gamma):
@@ -213,14 +206,14 @@ def tone_mapping(cam_image, exposure, gamma):
     if np.all(np.isclose([exposure, gamma], [Config.default_tone_exposure,
                                              Config.default_tone_gamma],
                                              atol=0.001)):
-        _log_output('SKIP tone mapping, only reload()')
+        _log.output('SKIP tone mapping, only reload()')
         return
     np_img = np_array_from_bpy_image(cam_image)
 
     gain = pow(2, exposure / 2.2)
     np_img[:, :, :3] = np.power(gain * np_img[:, :, :3], 1.0 / gamma)
     assign_pixels_data(cam_image.pixels, np_img.ravel())
-    _log_output('restore_tone_mapping: exposure: {} '
+    _log.output('restore_tone_mapping: exposure: {} '
                 '(gain: {}) gamma: {}'.format(exposure, gain, gamma))
 
 
@@ -235,3 +228,34 @@ def create_bpy_image_from_np_array(np_img: Any, name: str='tmp_name') -> Any:
     img = create_compatible_bpy_image(np_img, name)
     assign_pixels_data(img.pixels, np_img.ravel())
     return img
+
+
+def activate_gl_image(image: Optional[Image]) -> bool:
+    if not image:
+        return False
+    if image.gl_load():
+        return False
+    image.gl_touch()
+    return True
+
+
+def deactivate_gl_image(image: Optional[Image]) -> None:
+    if image is not None:
+        image.gl_free()
+
+
+def check_gl_image(image: Optional[Image]) -> bool:
+    if image is None:
+        return False
+
+    if image.bindcode == 0:
+        return activate_gl_image(image)
+    return True
+
+
+def gamma_color(col: List[float], power: float=2.2) -> List[float]:
+    return [x ** power for x in col]
+
+
+def inverse_gamma_color(col: List[float], power: float=2.2) -> List[float]:
+    return [x ** (1.0 / power) for x in col]

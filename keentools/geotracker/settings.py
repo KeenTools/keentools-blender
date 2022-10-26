@@ -29,7 +29,8 @@ from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
 from ..utils.images import (get_background_image_object,
                             set_background_image_by_movieclip,
-                            tone_mapping)
+                            tone_mapping,
+                            find_bpy_image_by_name)
 from .utils.tracking import reload_precalc
 from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_scale_vec_4_from_matrix_world,
@@ -142,6 +143,13 @@ def update_mask_3d(geotracker, context):
     settings.reload_mask_3d()
 
 
+def update_mask_2d(geotracker, context):
+    GTLoader.update_viewport_wireframe()
+    settings = get_gt_settings()
+    settings.reload_current_geotracker()
+    settings.reload_mask_2d()
+
+
 def get_camera_focal_length(geotracker):
     return camera_focal_length(geotracker.camobj)
 
@@ -241,6 +249,16 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         description='Invert Mask 3D Vertex Group',
         default=False,
         update=update_mask_3d)
+    mask_2d: bpy.props.StringProperty(
+        name='Mask 2D',
+        description='Polygons in selected Vertex Group '
+                    'will be excluded from tracking',
+        update=update_mask_2d)
+    mask_2d_inverted: bpy.props.BoolProperty(
+        name='Invert Mask 3D',
+        description='Invert Mask 3D Vertex Group',
+        default=False,
+        update=update_mask_2d)
     def get_serial_str(self) -> str:
         return self.serial_str
 
@@ -418,6 +436,15 @@ class GTSceneSettings(bpy.types.PropertyGroup):
                                              geotracker.mask_3d_inverted)
         gt.set_ignored_faces(polys)
         GTLoader.save_geotracker()
+
+    def reload_mask_2d(self) -> None:
+        geotracker = self.get_current_geotracker_item()
+        if not geotracker:
+            return
+        vp = GTLoader.viewport()
+        mask = vp.mask2d()
+        mask.image = find_bpy_image_by_name(geotracker.mask_2d)
+        mask.inverted = geotracker.mask_2d_inverted
 
     def add_geotracker_item(self) -> int:
         self.fix_geotrackers()

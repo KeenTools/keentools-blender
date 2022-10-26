@@ -39,7 +39,7 @@ from .coords import (get_mesh_verts,
                      get_scale_vec_4_from_matrix_world,
                      get_triangulation_indices,
                      get_triangles_in_vertex_group)
-from .bpy_common import evaluated_mesh
+from .bpy_common import evaluated_mesh, bpy_background_mode
 from .base_shaders import KTShaderBase
 
 
@@ -64,8 +64,7 @@ class KTEdgeShaderBase(KTShaderBase):
 
         self.backface_culling = False
 
-        # Check if blender started in background mode
-        if not bpy.app.background:
+        if not bpy_background_mode():
             self.init_shaders()
 
     def init_color_data(self, color: Tuple[float, float, float, float]):

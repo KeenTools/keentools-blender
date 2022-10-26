@@ -16,11 +16,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import Any, Callable, Optional, Tuple, List
 import numpy as np
-import bpy
+
+from bpy.types import Object, Area, SpaceView3D
 
 from ..facebuilder_config import FBConfig, get_fb_settings
-from ..utils import coords
+from ..utils.bpy_common import bpy_render_frame
+from ..utils.coords import (multiply_verts_on_matrix_4x4,
+                            pin_to_xyz_from_mesh,
+                            pin_to_xyz_from_fb_geo_mesh,
+                            xy_to_xz_rotation_matrix_3x3,
+                            frame_to_image_space,
+                            image_space_to_region,
+                            get_camera_border,
+                            get_area_region_3d,
+                            to_homogeneous)
 from ..utils.viewport import KTViewport
 from ..utils.edges import KTEdgeShader2D
 from ..utils.screen_text import KTScreenText
@@ -31,15 +42,15 @@ from .utils.edges import FBRasterEdgeShader3D, FBRectangleShader2D
 class FBViewport(KTViewport):
     def __init__(self):
         super().__init__()
-        self._points2d = KTPoints2D(bpy.types.SpaceView3D)
-        self._points3d = KTPoints3D(bpy.types.SpaceView3D)
-        self._residuals = KTEdgeShader2D(bpy.types.SpaceView3D)
-        self._texter = KTScreenText(bpy.types.SpaceView3D)
-        self._wireframer = FBRasterEdgeShader3D(bpy.types.SpaceView3D)
-        self._rectangler = FBRectangleShader2D(bpy.types.SpaceView3D)
-        self._draw_update_timer_handler = None
+        self._points2d: Any = KTPoints2D(SpaceView3D)
+        self._points3d: Any = KTPoints3D(SpaceView3D)
+        self._residuals: Any = KTEdgeShader2D(SpaceView3D)
+        self._texter: Any = KTScreenText(SpaceView3D)
+        self._wireframer: Any = FBRasterEdgeShader3D(SpaceView3D)
+        self._rectangler: Any = FBRectangleShader2D(SpaceView3D)
+        self._draw_update_timer_handler: Optional[Callable] = None
 
-    def register_handlers(self, context):
+    def register_handlers(self, context: Any) -> None:
         self.unregister_handlers()
         self.set_work_area(context.area)
         self.residuals().register_handler(context)
@@ -50,7 +61,7 @@ class FBViewport(KTViewport):
         self.wireframer().register_handler(context)
         self.register_draw_update_timer(time_step=FBConfig.viewport_redraw_interval)
 
-    def unregister_handlers(self):
+    def unregister_handlers(self) -> None:
         self.unregister_draw_update_timer()
         self.wireframer().unregister_handler()
         self.texter().unregister_handler()
@@ -60,19 +71,20 @@ class FBViewport(KTViewport):
         self.residuals().unregister_handler()
         self.clear_work_area()
 
-    def update_surface_points(self, fb, headobj, keyframe=-1,
-                              color=FBConfig.surface_point_color):
+    def update_surface_points(
+            self, fb: Any, headobj: Object, keyframe: int=-1,
+            color: Tuple[float, float, float, float]=FBConfig.surface_point_color):
         verts = self.surface_points_from_fb(fb, keyframe)
         colors = [color] * len(verts)
 
         if len(verts) > 0:
             m = np.array(headobj.matrix_world, dtype=np.float32).transpose()
-            verts = coords.multiply_verts_on_matrix_4x4(verts, m)
+            verts = multiply_verts_on_matrix_4x4(verts, m)
 
         self.points3d().set_vertices_colors(verts, colors)
         self.points3d().create_batch()
 
-    def update_wireframe_colors(self):
+    def update_wireframe_colors(self) -> None:
         settings = get_fb_settings()
         self.wireframer().init_colors((settings.wireframe_color,
                                       settings.wireframe_special_color,
@@ -80,76 +92,65 @@ class FBViewport(KTViewport):
                                       settings.wireframe_opacity)
         self.wireframer().create_batches()
 
-    def update_pin_sensitivity(self):
+    def update_pin_sensitivity(self) -> None:
         settings = get_fb_settings()
         self._point_sensitivity = settings.pin_sensitivity
 
-    def update_pin_size(self):
+    def update_pin_size(self) -> None:
         settings = get_fb_settings()
         self.points2d().set_point_size(settings.pin_size)
         self.points3d().set_point_size(
             settings.pin_size * FBConfig.surf_pin_size_scale)
 
-    def surface_points_from_mesh(self, fb, headobj, keyframe=-1):
+    def surface_points_from_mesh(self, fb: Any, headobj: Object,
+                                 keyframe: int=-1) -> List[Any]:
         verts = []
         for i in range(fb.pins_count(keyframe)):
             pin = fb.pin(keyframe, i)
-            p = coords.pin_to_xyz_from_mesh(pin, headobj)
+            p = pin_to_xyz_from_mesh(pin, headobj)
             verts.append(p)
         return verts
 
-    def surface_points_from_fb(self, fb, keyframe=-1):
+    def surface_points_from_fb(self, fb: Any, keyframe: int=-1) -> List[Tuple]:
         geo = fb.applied_args_model_at(keyframe)
         geo_mesh = geo.mesh(0)
         pins_count = fb.pins_count(keyframe)
         verts = np.empty((pins_count, 3), dtype=np.float32)
         for i in range(fb.pins_count(keyframe)):
             pin = fb.pin(keyframe, i)
-            p = coords.pin_to_xyz_from_fb_geo_mesh(pin, geo_mesh)
+            p = pin_to_xyz_from_fb_geo_mesh(pin, geo_mesh)
             verts[i] = p
         # tolist() is needed by shader batch on Mac
-        return (verts @ coords.xy_to_xz_rotation_matrix_3x3()).tolist()
+        return (verts @ xy_to_xz_rotation_matrix_3x3()).tolist()
 
-    def img_points(self, fb, keyframe):
-        scene = bpy.context.scene
-        w = scene.render.resolution_x
-        h = scene.render.resolution_y
-
+    def img_points(self, fb: Any, keyframe: int) -> List[Tuple]:
+        w, h = bpy_render_frame()
         pins_count = fb.pins_count(keyframe)
-
         verts = []
         for i in range(pins_count):
             pin = fb.pin(keyframe, i)
             x, y = pin.img_pos
-            verts.append((coords.frame_to_image_space(x, y, w, h)))
+            verts.append(frame_to_image_space(x, y, w, h))
         return verts
 
-    def create_batch_2d(self, area):
-        def _add_markers_at_camera_corners(points, vertex_colors):
+    def create_batch_2d(self, area: Area) -> None:
+        def _add_markers_at_camera_corners(points: List[Tuple],
+                                           vertex_colors: List[Tuple]) -> None:
+            asp = ry / rx
             points.append(
-                (coords.image_space_to_region(
-                    -0.5, -asp * 0.5, x1, y1, x2, y2))
-            )
+                image_space_to_region(-0.5, -asp * 0.5, x1, y1, x2, y2))
             points.append(
-                (coords.image_space_to_region(
-                    0.5, asp * 0.5,
-                    x1, y1, x2, y2))
-            )
+                image_space_to_region(0.5, asp * 0.5, x1, y1, x2, y2))
             vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # left camera corner
-            vertex_colors.append((1.0, 0, 1.0, 0.2))  # right camera corner
+            vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # right camera corner
 
         points = self.pins().arr().copy()
 
-        scene = bpy.context.scene
-        rx = scene.render.resolution_x
-        ry = scene.render.resolution_y
-        asp = ry / rx
-
-        x1, y1, x2, y2 = coords.get_camera_border(area)
+        rx, ry = bpy_render_frame()
+        x1, y1, x2, y2 = get_camera_border(area)
 
         for i, p in enumerate(points):
-            x, y = coords.image_space_to_region(p[0], p[1], x1, y1, x2, y2)
-            points[i] = (x, y)
+            points[i] = image_space_to_region(p[0], p[1], x1, y1, x2, y2)
 
         vertex_colors = [FBConfig.pin_color for _ in range(len(points))]
 
@@ -168,12 +169,9 @@ class FBViewport(KTViewport):
         rectangler.prepare_shader_data(area)
         rectangler.create_batch()
 
-    def update_residuals(self, fb, keyframe, area):
-        scene = bpy.context.scene
-        rx = scene.render.resolution_x
-        ry = scene.render.resolution_y
-
-        x1, y1, x2, y2 = coords.get_camera_border(area)
+    def update_residuals(self, fb: Any, keyframe: int, area: Area) -> None:
+        rx, ry = bpy_render_frame()
+        x1, y1, x2, y2 = get_camera_border(area)
 
         p2d = self.img_points(fb, keyframe)
         p3d = self.points3d().get_vertices()
@@ -183,39 +181,35 @@ class FBViewport(KTViewport):
         wire.edge_lengths = []
         wire.vertices_colors = []
 
-        # Pins count != Surf points count
         if len(p2d) != len(p3d):
             return
 
         if len(p3d) == 0:
-            # Empty shader
-            wire.create_batch()
+            wire.create_batch()  # Empty shader
             return
 
         if not area:
             return
-        r3d = coords.get_area_region_3d(area)
+        r3d = get_area_region_3d(area)
         if not r3d:
             return
 
         projection = fb.projection_mat(keyframe).T
-        vv = coords.to_homogeneous(p3d)
+        vv = to_homogeneous(p3d)
         vv = vv @ np.array(r3d.view_matrix.transposed()) @ projection
         vv = (vv.T / vv[:, 3]).T
 
         verts2 = []
         for i, v in enumerate(vv):
-            x, y = coords.frame_to_image_space(v[0], v[1], rx, ry)
-            verts2.append(coords.image_space_to_region(x, y,
-                                                       x1, y1, x2, y2))
+            x, y = frame_to_image_space(v[0], v[1], rx, ry)
+            verts2.append(image_space_to_region(x, y, x1, y1, x2, y2))
             wire.edge_lengths.append(0)
-            verts2.append(coords.image_space_to_region(p2d[i][0], p2d[i][1],
-                                                       x1, y1, x2, y2))
+            verts2.append(image_space_to_region(p2d[i][0], p2d[i][1],
+                                                x1, y1, x2, y2))
             # length = np.linalg.norm((v[0]-p2d[i][0], v[1]-p2d[i][1]))
             length = 22.0
             wire.edge_lengths.append(length)
 
         wire.vertices = verts2
-        wire.vertices_colors = np.full((len(verts2), 4),
-                                       FBConfig.residual_color).tolist()
+        wire.vertices_colors = [FBConfig.residual_color] * len(verts2)
         wire.create_batch()
