@@ -330,13 +330,13 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     wireframe_opacity: bpy.props.FloatProperty(
         description='From 0.0 to 1.0',
         name='Wireframe opacity',
-        default=GTConfig.wireframe_opacity, min=0.0, max=1.0,
+        default=GTConfig.wireframe_color[3], min=0.0, max=1.0,
         update=update_wireframe_func)
 
     wireframe_color: bpy.props.FloatVectorProperty(
         description='Color of mesh wireframe in pin-mode',
         name='Wireframe Color', subtype='COLOR',
-        default=GTConfig.wireframe_color, min=0.0, max=1.0,
+        default=GTConfig.wireframe_color[:3], min=0.0, max=1.0,
         update=update_wireframe_func)
 
     wireframe_backface_culling: bpy.props.BoolProperty(

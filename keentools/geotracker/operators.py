@@ -448,8 +448,8 @@ class GT_OT_DefaultWireframeSettings(ButtonOperator, Operator):
 
     def execute(self, context):
         settings = get_gt_settings()
-        settings.wireframe_color = GTConfig.wireframe_color
-        settings.wireframe_opacity = GTConfig.wireframe_opacity
+        settings.wireframe_color = GTConfig.wireframe_color[:3]
+        settings.wireframe_opacity = GTConfig.wireframe_color[3]
         settings.wireframe_backface_culling = False
         return {'FINISHED'}
 
