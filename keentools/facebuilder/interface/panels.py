@@ -136,9 +136,10 @@ class FB_PT_HeaderPanel(Common, Panel):
     def draw_header_preset(self, context):
         layout = self.layout
         row = layout.row()
-        row.operator(
+        op = row.operator(
             Config.kt_addon_settings_idname,
             text='', icon='PREFERENCES')
+        op.show = 'facebuilder'
 
     def _create_head_button(self, layout, icon='USER'):
         row = layout.row()
@@ -169,9 +170,10 @@ class FB_PT_HeaderPanel(Common, Panel):
 
         row = layout.row()
         row.scale_y = 2.0
-        row.operator(
+        op = row.operator(
             Config.kt_addon_settings_idname,
             text='Install Core library', icon='PREFERENCES')
+        op.show = 'none'
 
     def _draw_start_panel(self, layout):
         if not pkt_is_installed():

@@ -139,7 +139,7 @@ class KT_OT_AddonWarning(bpy.types.Operator):
             return {'FINISHED'}
 
         op = get_operator(Config.kt_addon_settings_idname)
-        op('EXEC_DEFAULT')
+        op('EXEC_DEFAULT', show='all')
         return {'FINISHED'}
 
     def _output_error_to_console(self):

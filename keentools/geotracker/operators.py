@@ -20,7 +20,10 @@ from bpy.types import Operator
 from bpy.props import IntProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import get_operator, Config, show_user_preferences
+from ..addon_config import (get_operator,
+                            Config,
+                            show_user_preferences,
+                            show_tool_preferences)
 from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
 from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_background_mode,
@@ -639,6 +642,7 @@ class GT_OT_AddonSetupDefaults(Operator):
 
     def execute(self, context):
         show_user_preferences(facebuilder=False, geotracker=True)
+        show_tool_preferences(facebuilder=False, geotracker=True)
         bpy_show_addon_preferences()
         return {'FINISHED'}
 

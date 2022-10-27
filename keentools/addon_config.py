@@ -155,6 +155,14 @@ def show_user_preferences(*, facebuilder=None, geotracker=None):
         prefs.show_gt_user_preferences = geotracker
 
 
+def show_tool_preferences(*, facebuilder=None, geotracker=None):
+    prefs = get_addon_preferences()
+    if facebuilder is not None:
+        prefs.facebuilder_expanded = facebuilder
+    if geotracker is not None:
+        prefs.geotracker_expanded = geotracker
+
+
 def get_operator(operator_id_name):
     def _rgetattr(obj, attr, *args):
         import functools

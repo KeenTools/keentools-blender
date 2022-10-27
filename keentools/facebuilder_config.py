@@ -231,6 +231,10 @@ class FBConfig:
         'prevent_gt_view_rotation': {'value': True, 'type': 'bool'},
         'gt_wireframe_color': {'value': (0.0, 1.0, 0.0), 'type': 'color'},
         'gt_wireframe_opacity': {'value': 0.45, 'type': 'float'},
+        'gt_mask_3d_color': {'value': (0.0, 0.0, 1.0), 'type': 'color'},
+        'gt_mask_3d_opacity': {'value': 0.4, 'type': 'float'},
+        'gt_mask_2d_color': {'value': (0.0, 1.0, 0.0), 'type': 'color'},
+        'gt_mask_2d_opacity': {'value': 0.35, 'type': 'float'},
     }
 
 

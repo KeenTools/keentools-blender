@@ -75,13 +75,10 @@ def _expandable_button(layout, data, property, text=None):
     prop_value = getattr(data, property)
     if text is None:
         layout.prop(data, property,
-                    icon=_expand_icon(prop_value),
-                    invert_checkbox=prop_value)
+                    icon=_expand_icon(prop_value))
     else:
-        layout.prop(data, property,
-                    icon=_expand_icon(prop_value),
-                    invert_checkbox=prop_value,
-                    text=text)
+        layout.prop(data, property, text=text,
+                    icon=_expand_icon(prop_value))
     return prop_value
 
 
@@ -421,13 +418,6 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         get=_universal_getter('prevent_gt_view_rotation', 'bool'),
         set=_universal_setter('prevent_gt_view_rotation'),
     )
-    gt_wireframe_opacity: bpy.props.FloatProperty(
-        description='From 0.0 to 1.0',
-        name='GeoTracker wireframe opacity',
-        default=GTConfig.wireframe_color[3], min=0.0, max=1.0,
-        get=_universal_getter('gt_wireframe_opacity', 'float'),
-        set=_universal_setter('gt_wireframe_opacity')
-    )
     gt_wireframe_color: bpy.props.FloatVectorProperty(
         description='Color of GeoTracker mesh wireframe in pin-mode',
         name='Wireframe Color', subtype='COLOR',
@@ -435,12 +425,47 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         get=_universal_getter('gt_wireframe_color', 'color'),
         set=_universal_setter('gt_wireframe_color')
     )
+    gt_wireframe_opacity: bpy.props.FloatProperty(
+        description='From 0.0 to 1.0',
+        name='GeoTracker wireframe opacity',
+        default=GTConfig.wireframe_color[3], min=0.0, max=1.0,
+        get=_universal_getter('gt_wireframe_opacity', 'float'),
+        set=_universal_setter('gt_wireframe_opacity')
+    )
+    gt_mask_3d_color: bpy.props.FloatVectorProperty(
+        description='Color of GeoTracker masked mesh excluded from tracking',
+        name='Wireframe Color', subtype='COLOR',
+        default=GTConfig.mask_3d_color[:3],
+        get=_universal_getter('gt_mask_3d_color', 'color'),
+        set=_universal_setter('gt_mask_3d_color')
+    )
+    gt_mask_3d_opacity: bpy.props.FloatProperty(
+        description='From 0.0 to 1.0',
+        name='GeoTracker masked mesh opacity',
+        default=GTConfig.mask_3d_color[3], min=0.0, max=1.0,
+        get=_universal_getter('gt_mask_3d_opacity', 'float'),
+        set=_universal_setter('gt_mask_3d_opacity')
+    )
+    gt_mask_2d_color: bpy.props.FloatVectorProperty(
+        description='Color of GeoTracker masked mesh excluded from tracking',
+        name='Wireframe Color', subtype='COLOR',
+        default=GTConfig.mask_2d_color[:3],
+        get=_universal_getter('gt_mask_2d_color', 'color'),
+        set=_universal_setter('gt_mask_2d_color')
+    )
+    gt_mask_2d_opacity: bpy.props.FloatProperty(
+        description='From 0.0 to 1.0',
+        name='GeoTracker masked mesh opacity',
+        default=GTConfig.mask_2d_color[3], min=0.0, max=1.0,
+        get=_universal_getter('gt_mask_2d_opacity', 'float'),
+        set=_universal_setter('gt_mask_2d_opacity')
+    )
 
     def _license_was_accepted(self):
         return pkt_is_installed() or self.license_accepted
 
     def _draw_fb_license_info(self, layout):
-        layout.label(text='License info:')
+        layout.label(text='FaceBuilder license info:')
         box = layout.box()
 
         lm = get_product_license_manager('facebuilder')
@@ -764,6 +789,25 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
                                  text='Reset')
         op.action = 'revert_default_colors'
 
+        box = main_box.box()
+        colors_row = box.split(factor=0.7)
+        row = colors_row.row()
+        row.label(text='3d mask color')
+        row.prop(self, 'gt_mask_3d_color', text='')
+        row.prop(self, 'gt_mask_3d_opacity', text='', slider=True)
+        op = colors_row.operator(FBConfig.fb_user_preferences_changer,
+                                 text='Reset')
+        op.action = 'revert_default_colors'
+
+        colors_row = box.split(factor=0.7)
+        row = colors_row.row()
+        row.label(text='2d mask color')
+        row.prop(self, 'gt_mask_2d_color', text='')
+        row.prop(self, 'gt_mask_2d_opacity', text='', slider=True)
+        op = colors_row.operator(FBConfig.fb_user_preferences_changer,
+                                 text='Reset')
+        op.action = 'revert_default_colors'
+
         main_box.operator(FBConfig.fb_user_preferences_reset_all)
 
     def _draw_core_python_problem(self, layout):
@@ -818,7 +862,7 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         return False
 
     def _draw_gt_license_info(self, layout):
-        layout.label(text='License info:')
+        layout.label(text='GeoTracker license info:')
         box = layout.box()
 
         lm = get_product_license_manager('geotracker')

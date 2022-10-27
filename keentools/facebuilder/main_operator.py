@@ -26,7 +26,10 @@ from bpy.props import (
 )
 from bpy.types import Operator
 
-from ..addon_config import Config, get_operator, show_user_preferences
+from ..addon_config import (Config,
+                            get_operator,
+                            show_user_preferences,
+                            show_tool_preferences)
 from ..utils.bpy_common import (bpy_background_mode,
                                 bpy_show_addon_preferences,
                                 bpy_view_camera)
@@ -403,6 +406,7 @@ class FB_OT_AddonSetupDefaults(Operator):
 
     def execute(self, context):
         show_user_preferences(facebuilder=True, geotracker=False)
+        show_tool_preferences(facebuilder=True, geotracker=False)
         bpy_show_addon_preferences()
         return {'FINISHED'}
 
