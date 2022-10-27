@@ -536,8 +536,11 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
 
     def draw_header_preset(self, context):
         layout = self.layout
-        row = layout.row()
+        row = layout.row(align=True)
         row.active = False
+        row.operator(
+            GTConfig.gt_addon_setup_defaults_idname,
+            text='', icon='PREFERENCES')
         row.operator(
             GTConfig.gt_help_appearance_idname,
             text='', icon='QUESTION')

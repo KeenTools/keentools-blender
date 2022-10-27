@@ -23,7 +23,7 @@ import bpy
 from bpy.types import Area
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, get_operator, ErrorType
+from ..addon_config import Config, get_operator, ErrorType, show_user_preferences
 from ..geotracker_config import get_gt_settings, get_current_geotracker_item
 from .viewport import GTViewport
 from ..utils.coords import (image_space_to_frame,
@@ -361,8 +361,7 @@ class GTLoader:
         except pkt_module().UnlicensedException as err:
             _log.error(f'solve UnlicensedException: \n{str(err)}')
             cls.out_pinmode()
-            settings = get_gt_settings()
-            settings.hide_user_preferences()
+            show_user_preferences(facebuilder=False, geotracker=False)
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
             return False

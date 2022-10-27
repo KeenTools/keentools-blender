@@ -565,9 +565,3 @@ class GTSceneSettings(bpy.types.PropertyGroup):
 
     def preferences(self):
         return get_addon_preferences()
-
-    def show_user_preferences(self):
-        self.preferences().show_user_preferences = True
-
-    def hide_user_preferences(self):
-        self.preferences().show_user_preferences = False

@@ -223,11 +223,14 @@ class FBConfig:
     default_user_preferences = {
         'pin_size': {'value': 7.0, 'type': 'float'},
         'pin_sensitivity': {'value': 16.0, 'type': 'float'},
-        'prevent_view_rotation': {'value': True, 'type': 'bool'},
-        'wireframe_color': {'value': color_schemes['default'][0], 'type': 'color'},
-        'wireframe_special_color': {'value': color_schemes['default'][1], 'type': 'color'},
-        'wireframe_midline_color': {'value': midline_color, 'type': 'color'},
-        'wireframe_opacity': {'value': wireframe_opacity, 'type': 'float'}
+        'prevent_fb_view_rotation': {'value': True, 'type': 'bool'},
+        'fb_wireframe_color': {'value': color_schemes['default'][0], 'type': 'color'},
+        'fb_wireframe_special_color': {'value': color_schemes['default'][1], 'type': 'color'},
+        'fb_wireframe_midline_color': {'value': midline_color, 'type': 'color'},
+        'fb_wireframe_opacity': {'value': wireframe_opacity, 'type': 'float'},
+        'prevent_gt_view_rotation': {'value': True, 'type': 'bool'},
+        'gt_wireframe_color': {'value': (0.0, 1.0, 0.0), 'type': 'color'},
+        'gt_wireframe_opacity': {'value': 0.45, 'type': 'float'},
     }
 
 

@@ -26,8 +26,10 @@ from bpy.props import (
 )
 from bpy.types import Operator
 
-from ..addon_config import Config, get_operator
-from ..utils.bpy_common import bpy_background_mode
+from ..addon_config import Config, get_operator, show_user_preferences
+from ..utils.bpy_common import (bpy_background_mode,
+                                bpy_show_addon_preferences,
+                                bpy_view_camera)
 from ..facebuilder_config import FBConfig, get_fb_settings
 from .fbloader import FBLoader
 from ..utils import manipulate, materials, coords, images
@@ -392,17 +394,16 @@ class FB_OT_ProperViewMenuExec(Operator):
 
 class FB_OT_AddonSetupDefaults(Operator):
     bl_idname = FBConfig.fb_addon_setup_defaults_idname
-    bl_label = 'Setup defaults'
+    bl_label = 'Setup FaceBuilder defaults'
     bl_options = {'REGISTER'}
-    bl_description = 'Open Addon Settings in Preferences window'
+    bl_description = 'Open FaceBuilder Settings in Preferences window'
 
     def draw(self, context):
         pass
 
     def execute(self, context):
-        settings = get_fb_settings()
-        settings.show_user_preferences()
-        bpy.ops.preferences.addon_show(module=Config.addon_name)
+        show_user_preferences(facebuilder=True, geotracker=False)
+        bpy_show_addon_preferences()
         return {'FINISHED'}
 
 
@@ -437,7 +438,7 @@ class FB_OT_BakeTexture(Operator):
             if settings.pinmode:
                 settings.force_out_pinmode = True
                 if head.should_use_emotions():
-                    bpy.ops.view3d.view_camera()
+                    bpy_view_camera()
 
         return {'FINISHED'}
 
@@ -771,7 +772,7 @@ class FB_OT_DefaultWireframeSettings(ButtonOperator, Operator):
         settings.wireframe_color = prefs.wireframe_color
         settings.wireframe_special_color = prefs.wireframe_special_color
         settings.wireframe_midline_color = prefs.wireframe_midline_color
-        settings.wireframe_opacity = prefs.wireframe_opacity
+        settings.wireframe_opacity = prefs.fb_wireframe_opacity
         return {'FINISHED'}
 
 

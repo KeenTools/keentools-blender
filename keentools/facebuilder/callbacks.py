@@ -320,7 +320,7 @@ def update_wireframe_image(self, context):
     wf.init_colors((settings.wireframe_color,
                     settings.wireframe_special_color,
                     settings.wireframe_midline_color),
-                    settings.wireframe_opacity)
+                   settings.wireframe_opacity)
     wf.init_wireframe_image(FBLoader.get_builder(), settings.show_specials)
     vp.update_wireframe_colors()
 

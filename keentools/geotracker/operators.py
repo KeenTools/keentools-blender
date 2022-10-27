@@ -20,9 +20,11 @@ from bpy.types import Operator
 from bpy.props import IntProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import get_operator, Config
+from ..addon_config import get_operator, Config, show_user_preferences
 from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
-from ..utils.bpy_common import bpy_current_frame, bpy_background_mode
+from ..utils.bpy_common import (bpy_current_frame,
+                                bpy_background_mode,
+                                bpy_show_addon_preferences)
 from .utils.geotracker_acts import (create_geotracker_act,
                                     delete_geotracker_act,
                                     add_keyframe_act,
@@ -626,6 +628,21 @@ class GT_OT_SelectGeotrackerObjects(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class GT_OT_AddonSetupDefaults(Operator):
+    bl_idname = GTConfig.gt_addon_setup_defaults_idname
+    bl_label = 'Setup FaceBuilder defaults'
+    bl_options = {'REGISTER'}
+    bl_description = 'Open FaceBuilder Settings in Preferences window'
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        show_user_preferences(facebuilder=False, geotracker=True)
+        bpy_show_addon_preferences()
+        return {'FINISHED'}
+
+
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_DeleteGeoTracker,
                   GT_OT_CreatePrecalc,
@@ -667,4 +684,5 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_MoveTrackingToGeometry,
                   GT_OT_RemoveFocalKeyframe,
                   GT_OT_RemoveFocalKeyframes,
-                  GT_OT_SelectGeotrackerObjects)
+                  GT_OT_SelectGeotrackerObjects,
+                  GT_OT_AddonSetupDefaults)

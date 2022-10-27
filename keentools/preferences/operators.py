@@ -33,6 +33,7 @@ from ..utils.ui_redraw import (force_ui_redraw,
                                collapse_all_modules,
                                mark_old_modules)
 from ..messages import get_system_info, get_gpu_info
+from ..utils.bpy_common import bpy_show_addon_preferences
 
 
 _please_accept_eula = 'You need to accept our EULA before installation'
@@ -246,8 +247,8 @@ class KTPREF_OT_InstallLicenseOnline(bpy.types.Operator):
     license_key: bpy.props.StringProperty()
 
     def _clear_license_key(self):
-        pref = get_addon_preferences()
-        pref.license_key = ''
+        prefs = get_addon_preferences()
+        prefs.license_key = ''
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
@@ -409,7 +410,7 @@ class KT_OT_AddonSettings(bpy.types.Operator):
         pass
 
     def execute(self, context):
-        bpy.ops.preferences.addon_show(module=Config.addon_name)
+        bpy_show_addon_preferences()
         return {'FINISHED'}
 
 

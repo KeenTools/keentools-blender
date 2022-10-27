@@ -16,12 +16,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
-
+from ..utils.kt_logging import KTLogger
 from ..addon_config import Config
 from ..facebuilder_config import FBConfig
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed)
+
+
+_log = KTLogger(__name__)
 
 
 class UserPreferences:
@@ -46,8 +48,7 @@ class UserPreferences:
     @classmethod
     def print_dict(cls):
         d = pkt_module().utils.load_settings(cls._DICT_NAME)
-        logger = logging.getLogger(__name__)
-        logger.debug('UserPreferences: {}'.format(d))
+        _log.output(f'UserPreferences:\n{d}')
 
     @classmethod
     def _get_value(cls, name, type):
@@ -68,8 +69,7 @@ class UserPreferences:
             row = cls._defaults[name]
             cls.set_value(name, row['value'])
             return row['value']
-        logger = logging.getLogger(__name__)
-        logger.error('UserPreferences problem: {} {}'.format(name, type))
+        _log.error(f'UserPreferences problem: {name} {type}')
         return None
 
     @classmethod
@@ -77,14 +77,13 @@ class UserPreferences:
         try:
             return cls._get_value(name, type)
         except Exception as err:
-            logger = logging.getLogger(__name__)
-            logger.error('UserPreferences Exception info: {}'.format(str(err)))
+            _log.error(f'UserPreferences Exception info:\n{str(err)}')
             if name in cls._defaults.keys():
                 row = cls._defaults[name]
                 cls.set_value(name, row['value'])
                 return row['value']
             else:
-                logger.error('Property error: {} {}'.format(name, type))
+                _log.error(f'Property error: {name} {type}')
                 return None
 
     @classmethod

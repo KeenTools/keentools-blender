@@ -87,6 +87,7 @@ class GTConfig:
     gt_move_tracking_to_geometry_idname = operators + '.move_tracking_to_geometry'
     gt_remove_focal_keyframe_idname = operators + '.remove_focal_keyframe'
     gt_remove_focal_keyframes_idname = operators + '.remove_focal_keyframes'
+    gt_addon_setup_defaults_idname = operators + '.addon_setup_defaults'
 
     # Panel ids
     gt_geotrackers_panel_idname = _PT + 'geotrackers_panel'

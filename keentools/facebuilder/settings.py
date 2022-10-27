@@ -702,35 +702,35 @@ class FBSceneSettings(PropertyGroup):
     wireframe_opacity: FloatProperty(
         description="From 0.0 to 1.0",
         name="Wireframe opacity",
-        default=FBConfig.default_user_preferences['wireframe_opacity']['value'],
+        default=FBConfig.default_user_preferences['fb_wireframe_opacity']['value'],
         min=0.0, max=1.0,
         update=update_wireframe_func,
-        get=universal_getter('wireframe_opacity', 'float'),
-        set=universal_setter('wireframe_opacity'))
+        get=universal_getter('fb_wireframe_opacity', 'float'),
+        set=universal_setter('fb_wireframe_opacity'))
     wireframe_color: FloatVectorProperty(
         description="Color of mesh wireframe in pin-mode",
         name="Wireframe Color", subtype='COLOR',
-        default=FBConfig.default_user_preferences['wireframe_color']['value'],
+        default=FBConfig.default_user_preferences['fb_wireframe_color']['value'],
         min=0.0, max=1.0,
         update=update_wireframe_image,
-        get=universal_getter('wireframe_color', 'color'),
-        set=universal_setter('wireframe_color'))
+        get=universal_getter('fb_wireframe_color', 'color'),
+        set=universal_setter('fb_wireframe_color'))
     wireframe_special_color: FloatVectorProperty(
         description="Color of special parts in pin-mode",
         name="Wireframe Special Color", subtype='COLOR',
-        default=FBConfig.default_user_preferences['wireframe_special_color']['value'],
+        default=FBConfig.default_user_preferences['fb_wireframe_special_color']['value'],
         min=0.0, max=1.0,
         update=update_wireframe_image,
-        get=universal_getter('wireframe_special_color', 'color'),
-        set=universal_setter('wireframe_special_color'))
+        get=universal_getter('fb_wireframe_special_color', 'color'),
+        set=universal_setter('fb_wireframe_special_color'))
     wireframe_midline_color: FloatVectorProperty(
         description="Color of midline in pin-mode",
         name="Wireframe Midline Color", subtype='COLOR',
-        default=FBConfig.default_user_preferences['wireframe_midline_color']['value'],
+        default=FBConfig.default_user_preferences['fb_wireframe_midline_color']['value'],
         min=0.0, max=1.0,
         update=update_wireframe_image,
-        get=universal_getter('wireframe_midline_color', 'color'),
-        set=universal_setter('wireframe_midline_color'))
+        get=universal_getter('fb_wireframe_midline_color', 'color'),
+        set=universal_setter('fb_wireframe_midline_color'))
     show_specials: BoolProperty(
         description="Use different colors for important head parts "
                     "on the mesh",
@@ -998,12 +998,6 @@ class FBSceneSettings(PropertyGroup):
 
     def preferences(self):
         return get_addon_preferences()
-
-    def show_user_preferences(self):
-        self.preferences().show_user_preferences = True
-
-    def hide_user_preferences(self):
-        self.preferences().show_user_preferences = False
 
     def mock_update_for_testing(self, value=True, ver=None,
                                 addon_path=Config.mock_update_addon_path,

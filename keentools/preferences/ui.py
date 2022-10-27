@@ -28,6 +28,7 @@ from ..blender_independent_packages.pykeentools_loader import (
     loaded as pkt_loaded)
 from ..addon_config import Config, get_operator, is_blender_supported
 from ..facebuilder_config import FBConfig, get_fb_settings
+from ..geotracker_config import GTConfig
 from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
@@ -119,7 +120,7 @@ class FB_OT_UserPreferencesGetColors(bpy.types.Operator):
         preferences.wireframe_color = settings.wireframe_color
         preferences.wireframe_special_color = settings.wireframe_special_color
         preferences.wireframe_midline_color = settings.wireframe_midline_color
-        preferences.wireframe_opacity = settings.wireframe_opacity
+        preferences.fb_wireframe_opacity = settings.wireframe_opacity
         return {'FINISHED'}
 
 
@@ -143,10 +144,10 @@ class FB_OT_UserPreferencesChanger(bpy.types.Operator):
             _reset_user_preferences_parameter_to_default(self.param_string)
             return {'FINISHED'}
         elif self.action == 'revert_default_colors':
-            _reset_user_preferences_parameter_to_default('wireframe_color')
-            _reset_user_preferences_parameter_to_default('wireframe_special_color')
-            _reset_user_preferences_parameter_to_default('wireframe_midline_color')
-            _reset_user_preferences_parameter_to_default('wireframe_opacity')
+            _reset_user_preferences_parameter_to_default('fb_wireframe_color')
+            _reset_user_preferences_parameter_to_default('fb_wireframe_special_color')
+            _reset_user_preferences_parameter_to_default('fb_wireframe_midline_color')
+            _reset_user_preferences_parameter_to_default('fb_wireframe_opacity')
             return {'FINISHED'}
 
         return {'CANCELLED'}
@@ -355,57 +356,84 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         default=False
     )
 
-    # User preferences
-    show_user_preferences: bpy.props.BoolProperty(
-        name='FaceBuilder Settings',
-        default=False
-    )
+    # Common User Preferences
     pin_size: bpy.props.FloatProperty(
-        description="Set pin size in pixels",
-        name="Size", min=1.0, max=100.0,
+        description='Set pin size in pixels',
+        name='Size', min=1.0, max=100.0,
         precision=1,
         get=_universal_getter('pin_size', 'float'),
         set=_universal_setter('pin_size'),
         update=_update_user_preferences_pin_size)
     pin_sensitivity: bpy.props.FloatProperty(
-        description="Set active area in pixels",
-        name="Active area", min=1.0, max=100.0,
+        description='Set active area in pixels',
+        name='Active area', min=1.0, max=100.0,
         precision=1,
         get=_universal_getter('pin_sensitivity', 'float'),
         set=_universal_setter('pin_sensitivity'),
         update=_update_user_preferences_pin_sensitivity)
-    prevent_view_rotation: bpy.props.BoolProperty(
-        name='Prevent accidental exit from Pin Mode',
-        get=_universal_getter('prevent_view_rotation', 'bool'),
-        set=_universal_setter('prevent_view_rotation'),
+
+    # FaceBuilder User preferences
+    show_fb_user_preferences: bpy.props.BoolProperty(
+        name='FaceBuilder Settings',
+        default=False
     )
-    wireframe_opacity: bpy.props.FloatProperty(
-        description="From 0.0 to 1.0",
-        name="Wireframe opacity",
+    prevent_fb_view_rotation: bpy.props.BoolProperty(
+        name='Prevent accidental exit from Pin Mode in FaceBuilder',
+        get=_universal_getter('prevent_fb_view_rotation', 'bool'),
+        set=_universal_setter('prevent_fb_view_rotation'),
+    )
+    fb_wireframe_opacity: bpy.props.FloatProperty(
+        description='From 0.0 to 1.0',
+        name='FaceBuilder wireframe opacity',
         default=FBConfig.wireframe_opacity, min=0.0, max=1.0,
-        get=_universal_getter('wireframe_opacity', 'float'),
-        set=_universal_setter('wireframe_opacity')
+        get=_universal_getter('fb_wireframe_opacity', 'float'),
+        set=_universal_setter('fb_wireframe_opacity')
     )
-    wireframe_color: bpy.props.FloatVectorProperty(
-        description="Color of mesh wireframe in pin-mode",
+    fb_wireframe_color: bpy.props.FloatVectorProperty(
+        description='Color of mesh wireframe in FaceBuilder pin-mode',
         name="Wireframe Color", subtype='COLOR',
         default=FBConfig.color_schemes['default'][0],
-        get=_universal_getter('wireframe_color', 'color'),
-        set=_universal_setter('wireframe_color')
+        get=_universal_getter('fb_wireframe_color', 'color'),
+        set=_universal_setter('fb_wireframe_color')
     )
-    wireframe_special_color: bpy.props.FloatVectorProperty(
-        description="Color of special parts in pin-mode",
-        name="Wireframe Special Color", subtype='COLOR',
+    fb_wireframe_special_color: bpy.props.FloatVectorProperty(
+        description='Color of special parts in FaceBuilder pin-mode',
+        name='Wireframe Special Color', subtype='COLOR',
         default=FBConfig.color_schemes['default'][1],
-        get=_universal_getter('wireframe_special_color', 'color'),
-        set=_universal_setter('wireframe_special_color')
+        get=_universal_getter('fb_wireframe_special_color', 'color'),
+        set=_universal_setter('fb_wireframe_special_color')
     )
-    wireframe_midline_color: bpy.props.FloatVectorProperty(
+    fb_wireframe_midline_color: bpy.props.FloatVectorProperty(
         description="Color of midline in pin-mode",
         name="Wireframe Midline Color", subtype='COLOR',
         default=FBConfig.midline_color,
-        get=_universal_getter('wireframe_midline_color', 'color'),
-        set=_universal_setter('wireframe_midline_color')
+        get=_universal_getter('fb_wireframe_midline_color', 'color'),
+        set=_universal_setter('fb_wireframe_midline_color')
+    )
+
+    # GeoTracker User Preferences
+    show_gt_user_preferences: bpy.props.BoolProperty(
+        name='GeoTracker Settings',
+        default=False
+    )
+    prevent_gt_view_rotation: bpy.props.BoolProperty(
+        name='Prevent accidental exit from Pin Mode in GeoTracker',
+        get=_universal_getter('prevent_gt_view_rotation', 'bool'),
+        set=_universal_setter('prevent_gt_view_rotation'),
+    )
+    gt_wireframe_opacity: bpy.props.FloatProperty(
+        description='From 0.0 to 1.0',
+        name='GeoTracker wireframe opacity',
+        default=GTConfig.wireframe_color[3], min=0.0, max=1.0,
+        get=_universal_getter('gt_wireframe_opacity', 'float'),
+        set=_universal_setter('gt_wireframe_opacity')
+    )
+    gt_wireframe_color: bpy.props.FloatVectorProperty(
+        description='Color of GeoTracker mesh wireframe in pin-mode',
+        name='Wireframe Color', subtype='COLOR',
+        default=GTConfig.wireframe_color[:3],
+        get=_universal_getter('gt_wireframe_color', 'color'),
+        set=_universal_setter('gt_wireframe_color')
     )
 
     def _license_was_accepted(self):
@@ -660,13 +688,13 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         col.scale_y = Config.text_scale_y
         draw_long_labels(col, info, 120)
 
-    def _draw_user_preferences(self, layout):
+    def _draw_fb_user_preferences(self, layout):
         main_box = layout
-        if not _expandable_button(main_box, self, 'show_user_preferences'):
+        if not _expandable_button(main_box, self, 'show_fb_user_preferences'):
             return
 
         box = main_box.box()
-        box.prop(self, 'prevent_view_rotation')
+        box.prop(self, 'prevent_fb_view_rotation')
 
         box = main_box.box()
         box.label(text='Default pin settings')
@@ -689,10 +717,48 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
 
         colors_row = box.split(factor=0.7)
         row = colors_row.row()
-        row.prop(self, 'wireframe_color', text='')
-        row.prop(self, 'wireframe_special_color', text='')
-        row.prop(self, 'wireframe_midline_color', text='')
-        row.prop(self, 'wireframe_opacity', text='', slider=True)
+        row.prop(self, 'fb_wireframe_color', text='')
+        row.prop(self, 'fb_wireframe_special_color', text='')
+        row.prop(self, 'fb_wireframe_midline_color', text='')
+        row.prop(self, 'fb_wireframe_opacity', text='', slider=True)
+
+        op = colors_row.operator(FBConfig.fb_user_preferences_changer,
+                                 text='Reset')
+        op.action = 'revert_default_colors'
+
+        main_box.operator(FBConfig.fb_user_preferences_reset_all)
+
+    def _draw_gt_user_preferences(self, layout):
+        main_box = layout
+        if not _expandable_button(main_box, self, 'show_gt_user_preferences'):
+            return
+
+        box = main_box.box()
+        box.prop(self, 'prevent_gt_view_rotation')
+
+        box = main_box.box()
+        box.label(text='Default pin settings')
+        row = box.split(factor=0.7)
+        row.prop(self, 'pin_size', slider=True)
+        op = row.operator(FBConfig.fb_user_preferences_changer, text='Reset')
+        op.action = 'revert_default'
+        op.param_string = 'pin_size'
+
+        row = box.split(factor=0.7)
+        row.prop(self, 'pin_sensitivity', slider=True)
+        op = row.operator(FBConfig.fb_user_preferences_changer, text='Reset')
+        op.action = 'revert_default'
+        op.param_string = 'pin_sensitivity'
+
+        box = main_box.box()
+        split = box.split(factor=0.7)
+        split.label(text='Default wireframe colors')
+        split.operator(FBConfig.fb_user_preferences_get_colors)
+
+        colors_row = box.split(factor=0.7)
+        row = colors_row.row()
+        row.prop(self, 'gt_wireframe_color', text='')
+        row.prop(self, 'gt_wireframe_opacity', text='', slider=True)
 
         op = colors_row.operator(FBConfig.fb_user_preferences_changer,
                                  text='Reset')
@@ -825,10 +891,11 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
 
     def _draw_facebuilder_preferences(self, layout):
         self._draw_fb_license_info(layout)
-        self._draw_user_preferences(layout)
+        self._draw_fb_user_preferences(layout)
 
     def _draw_geotracker_preferences(self, layout):
         self._draw_gt_license_info(layout)
+        self._draw_gt_user_preferences(layout)
 
     def draw(self, context):
         layout = self.layout

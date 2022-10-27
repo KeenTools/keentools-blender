@@ -23,9 +23,9 @@ import numpy as np
 import bpy
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, get_operator, ErrorType
+from ..addon_config import Config, get_operator, ErrorType, show_user_preferences
 from ..facebuilder_config import FBConfig, get_fb_settings
-from ..utils.bpy_common import operator_with_context
+from ..utils.bpy_common import operator_with_context, bpy_view_camera
 from ..utils import coords
 from .utils.manipulate import push_head_in_undo_history
 from .fbloader import FBLoader
@@ -402,14 +402,14 @@ class FB_OT_PinMode(bpy.types.Operator):
                 warn = get_operator(Config.kt_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
                 settings.license_error = False
-                settings.hide_user_preferences()
+                show_user_preferences(facebuilder=False, geotracker=False)
             return True
 
         # Quit when camera rotated by user
         if context.space_data.region_3d.view_perspective != 'CAMERA':
-            if settings.preferences().prevent_view_rotation:
+            if settings.preferences().prevent_fb_view_rotation:
                 # Return back to the camera view
-                bpy.ops.view3d.view_camera()
+                bpy_view_camera()
             else:
                 _log.output('CAMERA ROTATED PINMODE OUT')
                 _log.output(context.space_data.region_3d.view_perspective)
@@ -423,7 +423,7 @@ class FB_OT_PinMode(bpy.types.Operator):
                 pr = FBLoader.viewport().pr
                 pr.dump_stats('facebuilder.pstat')
             # --- PROFILING ---
-            bpy.ops.view3d.view_camera()
+            bpy_view_camera()
             return True
 
         return False
