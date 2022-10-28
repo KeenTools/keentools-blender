@@ -28,7 +28,7 @@ from ..blender_independent_packages.pykeentools_loader import (
     loaded as pkt_loaded)
 from ..addon_config import Config, get_operator, is_blender_supported
 from ..facebuilder_config import FBConfig, get_fb_settings
-from ..geotracker_config import GTConfig
+from ..geotracker_config import GTConfig, get_gt_settings
 from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
@@ -82,7 +82,7 @@ def _expandable_button(layout, data, property, text=None):
     return prop_value
 
 
-class FB_OT_UserPreferencesResetAll(bpy.types.Operator):
+class KTPREF_OT_UserPreferencesResetAll(bpy.types.Operator):
     bl_idname = FBConfig.fb_user_preferences_reset_all
     bl_label = 'Reset All'
     bl_options = {'REGISTER', 'UNDO'}
@@ -99,7 +99,7 @@ class FB_OT_UserPreferencesResetAll(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class FB_OT_UserPreferencesGetColors(bpy.types.Operator):
+class KRPREF_OT_UserPreferencesGetColors(bpy.types.Operator):
     bl_idname = FBConfig.fb_user_preferences_get_colors
     bl_label = 'Get from scene'
     bl_options = {'REGISTER', 'UNDO'}
@@ -121,7 +121,7 @@ class FB_OT_UserPreferencesGetColors(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class FB_OT_UserPreferencesChanger(bpy.types.Operator):
+class KTPREF_OT_UserPreferencesChanger(bpy.types.Operator):
     bl_idname = FBConfig.fb_user_preferences_changer
     bl_label = 'FaceBuilder Action'
     bl_options = {'REGISTER', 'UNDO'}
@@ -150,7 +150,7 @@ class FB_OT_UserPreferencesChanger(bpy.types.Operator):
         return {'CANCELLED'}
 
 
-class FB_OT_UserPreferencesResetAllWarning(bpy.types.Operator):
+class KTPREF_OT_UserPreferencesResetAllWarning(bpy.types.Operator):
     bl_idname = FBConfig.fb_user_preferences_reset_all_warning_idname
     bl_label = 'Reset All'
     bl_options = {'REGISTER', 'INTERNAL'}
@@ -195,6 +195,24 @@ def _update_user_preferences_pin_sensitivity(self, context):
 
     if prefs.pin_size > self.pin_sensitivity:
         prefs.pin_size = self.pin_sensitivity
+
+
+def _update_mask_3d(prefs, context):
+    settings = get_gt_settings()
+    settings.mask_3d_color = prefs.gt_mask_3d_color
+    settings.mask_3d_opacity = prefs.gt_mask_3d_opacity
+
+
+def _update_mask_2d(prefs, context):
+    settings = get_gt_settings()
+    settings.mask_2d_color = prefs.gt_mask_2d_color
+    settings.mask_2d_opacity = prefs.gt_mask_2d_opacity
+
+
+def _update_gt_wireframe(prefs, context):
+    settings = get_gt_settings()
+    settings.wireframe_color = prefs.gt_wireframe_color
+    settings.wireframe_opacity = prefs.gt_wireframe_opacity
 
 
 def _universal_getter(name, type):
@@ -388,7 +406,7 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
     )
     fb_wireframe_color: bpy.props.FloatVectorProperty(
         description='Color of mesh wireframe in FaceBuilder pin-mode',
-        name="Wireframe Color", subtype='COLOR',
+        name='Wireframe Color', subtype='COLOR',
         default=FBConfig.color_schemes['default'][0],
         get=_universal_getter('fb_wireframe_color', 'color'),
         set=_universal_setter('fb_wireframe_color')
@@ -402,7 +420,7 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
     )
     fb_wireframe_midline_color: bpy.props.FloatVectorProperty(
         description="Color of midline in pin-mode",
-        name="Wireframe Midline Color", subtype='COLOR',
+        name='Wireframe Midline Color', subtype='COLOR',
         default=FBConfig.midline_color,
         get=_universal_getter('fb_wireframe_midline_color', 'color'),
         set=_universal_setter('fb_wireframe_midline_color')
@@ -423,42 +441,48 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         name='Wireframe Color', subtype='COLOR',
         default=GTConfig.wireframe_color[:3],
         get=_universal_getter('gt_wireframe_color', 'color'),
-        set=_universal_setter('gt_wireframe_color')
+        set=_universal_setter('gt_wireframe_color'),
+        update=_update_gt_wireframe
     )
     gt_wireframe_opacity: bpy.props.FloatProperty(
         description='From 0.0 to 1.0',
         name='GeoTracker wireframe opacity',
         default=GTConfig.wireframe_color[3], min=0.0, max=1.0,
         get=_universal_getter('gt_wireframe_opacity', 'float'),
-        set=_universal_setter('gt_wireframe_opacity')
+        set=_universal_setter('gt_wireframe_opacity'),
+        update=_update_gt_wireframe
     )
     gt_mask_3d_color: bpy.props.FloatVectorProperty(
         description='Color of GeoTracker masked mesh excluded from tracking',
-        name='Wireframe Color', subtype='COLOR',
+        name='Mask 3D Color', subtype='COLOR',
         default=GTConfig.mask_3d_color[:3],
         get=_universal_getter('gt_mask_3d_color', 'color'),
-        set=_universal_setter('gt_mask_3d_color')
+        set=_universal_setter('gt_mask_3d_color'),
+        update=_update_mask_3d
     )
     gt_mask_3d_opacity: bpy.props.FloatProperty(
         description='From 0.0 to 1.0',
         name='GeoTracker masked mesh opacity',
         default=GTConfig.mask_3d_color[3], min=0.0, max=1.0,
         get=_universal_getter('gt_mask_3d_opacity', 'float'),
-        set=_universal_setter('gt_mask_3d_opacity')
+        set=_universal_setter('gt_mask_3d_opacity'),
+        update=_update_mask_3d
     )
     gt_mask_2d_color: bpy.props.FloatVectorProperty(
         description='Color of GeoTracker masked mesh excluded from tracking',
         name='Wireframe Color', subtype='COLOR',
         default=GTConfig.mask_2d_color[:3],
         get=_universal_getter('gt_mask_2d_color', 'color'),
-        set=_universal_setter('gt_mask_2d_color')
+        set=_universal_setter('gt_mask_2d_color'),
+        update=_update_mask_2d
     )
     gt_mask_2d_opacity: bpy.props.FloatProperty(
         description='From 0.0 to 1.0',
         name='GeoTracker masked mesh opacity',
         default=GTConfig.mask_2d_color[3], min=0.0, max=1.0,
         get=_universal_getter('gt_mask_2d_opacity', 'float'),
-        set=_universal_setter('gt_mask_2d_opacity')
+        set=_universal_setter('gt_mask_2d_opacity'),
+        update=_update_mask_2d
     )
 
     def _license_was_accepted(self):

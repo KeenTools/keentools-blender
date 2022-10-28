@@ -32,8 +32,6 @@ class FBConfig:
     default_fb_camera_data_name = 'fbCamData'
     default_fb_camera_name = 'fbCamera'
 
-    user_preferences_dict_name = 'keentools_facebuilder_addon'
-
     fb_global_var_name = prefix + '_settings'
     fb_tool_name = 'FaceBuilder'
 
@@ -219,23 +217,6 @@ class FBConfig:
 
     selected_rectangle_color = (0.871, 0.107, 0.001, 1.0)
     regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
-
-    default_user_preferences = {
-        'pin_size': {'value': 7.0, 'type': 'float'},
-        'pin_sensitivity': {'value': 16.0, 'type': 'float'},
-        'prevent_fb_view_rotation': {'value': True, 'type': 'bool'},
-        'fb_wireframe_color': {'value': color_schemes['default'][0], 'type': 'color'},
-        'fb_wireframe_special_color': {'value': color_schemes['default'][1], 'type': 'color'},
-        'fb_wireframe_midline_color': {'value': midline_color, 'type': 'color'},
-        'fb_wireframe_opacity': {'value': wireframe_opacity, 'type': 'float'},
-        'prevent_gt_view_rotation': {'value': True, 'type': 'bool'},
-        'gt_wireframe_color': {'value': (0.0, 1.0, 0.0), 'type': 'color'},
-        'gt_wireframe_opacity': {'value': 0.45, 'type': 'float'},
-        'gt_mask_3d_color': {'value': (0.0, 0.0, 1.0), 'type': 'color'},
-        'gt_mask_3d_opacity': {'value': 0.4, 'type': 'float'},
-        'gt_mask_2d_color': {'value': (0.0, 1.0, 0.0), 'type': 'color'},
-        'gt_mask_2d_opacity': {'value': 0.35, 'type': 'float'},
-    }
 
 
 def get_fb_settings_func():

@@ -56,8 +56,10 @@ from .callbacks import (update_mesh_with_dialog,
                         update_cam_image,
                         update_head_focal,
                         update_camera_focal,
-                        update_background_tone_mapping,
-                        universal_getter, universal_setter)
+                        update_background_tone_mapping)
+from ..preferences.user_preferences import (UserPreferences,
+                                            universal_attr_getter,
+                                            universal_attr_setter)
 from .utils.manipulate import get_current_head
 from ..utils.images import tone_mapping, reset_tone_mapping
 from ..blender_independent_packages.pykeentools_loader.config import set_mock_update_paths
@@ -700,61 +702,67 @@ class FBSceneSettings(PropertyGroup):
     # Model View parameters
     # ---------------------
     wireframe_opacity: FloatProperty(
-        description="From 0.0 to 1.0",
-        name="Wireframe opacity",
-        default=FBConfig.default_user_preferences['fb_wireframe_opacity']['value'],
+        description='From 0.0 to 1.0',
+        name='The FaceBuilder wireframe Opacity',
+        default=UserPreferences.get_value_safe('fb_wireframe_opacity',
+                                               UserPreferences.type_float),
         min=0.0, max=1.0,
         update=update_wireframe_func,
-        get=universal_getter('fb_wireframe_opacity', 'float'),
-        set=universal_setter('fb_wireframe_opacity'))
+        get=universal_attr_getter('fb_wireframe_opacity', 'float'),
+        set=universal_attr_setter('fb_wireframe_opacity'))
     wireframe_color: FloatVectorProperty(
-        description="Color of mesh wireframe in pin-mode",
-        name="Wireframe Color", subtype='COLOR',
-        default=FBConfig.default_user_preferences['fb_wireframe_color']['value'],
+        description='Color of the FaceBuilder mesh wireframe in pin-mode',
+        name='Wireframe Color', subtype='COLOR',
+        default=UserPreferences.get_value_safe('fb_wireframe_color',
+                                               UserPreferences.type_color),
         min=0.0, max=1.0,
         update=update_wireframe_image,
-        get=universal_getter('fb_wireframe_color', 'color'),
-        set=universal_setter('fb_wireframe_color'))
+        get=universal_attr_getter('fb_wireframe_color', 'color'),
+        set=universal_attr_setter('fb_wireframe_color'))
     wireframe_special_color: FloatVectorProperty(
-        description="Color of special parts in pin-mode",
-        name="Wireframe Special Color", subtype='COLOR',
-        default=FBConfig.default_user_preferences['fb_wireframe_special_color']['value'],
+        description='Color of special parts in pin-mode',
+        name='Wireframe Special Color', subtype='COLOR',
+        default=UserPreferences.get_value_safe('fb_wireframe_special_color',
+                                               UserPreferences.type_color),
         min=0.0, max=1.0,
         update=update_wireframe_image,
-        get=universal_getter('fb_wireframe_special_color', 'color'),
-        set=universal_setter('fb_wireframe_special_color'))
+        get=universal_attr_getter('fb_wireframe_special_color', 'color'),
+        set=universal_attr_setter('fb_wireframe_special_color'))
     wireframe_midline_color: FloatVectorProperty(
-        description="Color of midline in pin-mode",
-        name="Wireframe Midline Color", subtype='COLOR',
-        default=FBConfig.default_user_preferences['fb_wireframe_midline_color']['value'],
+        description='Color of midline in pin-mode',
+        name='Wireframe Midline Color', subtype='COLOR',
+        default=UserPreferences.get_value_safe('fb_wireframe_midline_color',
+                                               UserPreferences.type_color),
         min=0.0, max=1.0,
         update=update_wireframe_image,
-        get=universal_getter('fb_wireframe_midline_color', 'color'),
-        set=universal_setter('fb_wireframe_midline_color'))
+        get=universal_attr_getter('fb_wireframe_midline_color', 'color'),
+        set=universal_attr_setter('fb_wireframe_midline_color'))
     show_specials: BoolProperty(
-        description="Use different colors for important head parts "
-                    "on the mesh",
-        name="Special face parts", default=True, update=update_wireframe_image)
+        description='Use different colors for important head parts '
+                    'on the mesh',
+        name='Special face parts', default=True, update=update_wireframe_image)
 
     # Initial pin_size state in FBShaderPoints class
     pin_size: FloatProperty(
-        description="Set pin size in pixels",
-        name="Size",
-        default=FBConfig.default_user_preferences['pin_size']['value'],
+        description='Set pin size in pixels',
+        name='Size',
+        default=UserPreferences.get_value_safe('pin_size',
+                                               UserPreferences.type_float),
         min=1.0, max=100.0,
         precision=1,
         update=update_pin_size,
-        get=universal_getter('pin_size', 'float'),
-        set=universal_setter('pin_size'))
+        get=universal_attr_getter('pin_size', 'float'),
+        set=universal_attr_setter('pin_size'))
     pin_sensitivity: FloatProperty(
-        description="Set active area in pixels",
-        name="Active area",
-        default=FBConfig.default_user_preferences['pin_sensitivity']['value'],
+        description='Set active area in pixels',
+        name='Active area',
+        default=UserPreferences.get_value_safe('pin_sensitivity',
+                                               UserPreferences.type_float),
         min=1.0, max=100.0,
         precision=1,
         update=update_pin_sensitivity,
-        get=universal_getter('pin_sensitivity', 'float'),
-        set=universal_setter('pin_sensitivity')
+        get=universal_attr_getter('pin_sensitivity', 'float'),
+        set=universal_attr_setter('pin_sensitivity')
     )
 
     # Other settings
@@ -779,13 +787,12 @@ class FBSceneSettings(PropertyGroup):
         name='Neck movement rigidity', default=2.0, min=0.001, max=1000.0,
         update=update_neck_movement_rigidity)
 
-    # Internal use only.
     # Warning! current_headnum and current_camnum work only in Pinmode!
-    current_headnum: IntProperty(name="Current Head Number", default=-1)
-    current_camnum: IntProperty(name="Current Camera Number", default=-1)
+    current_headnum: IntProperty(name='Current Head Number', default=-1)
+    current_camnum: IntProperty(name='Current Camera Number', default=-1)
 
-    tmp_headnum: IntProperty(name="Temporary Head Number", default=-1)
-    tmp_camnum: IntProperty(name="Temporary Camera Number", default=-1)
+    tmp_headnum: IntProperty(name='Temporary Head Number', default=-1)
+    tmp_camnum: IntProperty(name='Temporary Camera Number', default=-1)
 
     # -------------------------
     # Texture Baking parameters
@@ -827,10 +834,6 @@ class FBSceneSettings(PropertyGroup):
     tex_auto_preview: BoolProperty(
         description="Automatically apply the created texture",
         name="Automatically apply the created texture", default=True)
-
-    defaults_loaded: BoolProperty(
-        description='Defaults are loaded flag',
-        name='Defaults loaded', default=False)
 
     @contextmanager
     def ui_write_mode_context(self):

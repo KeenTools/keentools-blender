@@ -41,12 +41,15 @@ from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_polygons_in_vertex_group)
 from ..utils.video import fit_render_size, fit_time_length
 from ..utils.bpy_common import bpy_render_frame, bpy_start_frame, bpy_end_frame
+from ..preferences.user_preferences import (UserPreferences,
+                                            universal_attr_getter,
+                                            universal_attr_setter)
 
 
 _log = KTLogger(__name__)
 
 
-def object_is_in_scene(obj):
+def object_is_in_scene(obj: Object) -> bool:
     return obj in bpy.context.scene.objects[:]
 
 
@@ -80,7 +83,7 @@ def update_geomobj(geotracker, context: Any) -> None:
     GTLoader.update_all_viewport_shaders()
 
 
-def update_movieclip(geotracker, context) -> None:
+def update_movieclip(geotracker, context: Any) -> None:
     _log.output('update_movieclip')
     settings = get_gt_settings()
     if settings.ui_write_mode:
@@ -93,17 +96,17 @@ def update_movieclip(geotracker, context) -> None:
         geotracker.precalc_end = bpy_end_frame()
 
 
-def update_wireframe_func(self, context) -> None:
+def update_wireframe(self, context: Any) -> None:
     GTLoader.update_viewport_wireframe()
 
 
-def update_mask_2d_color(settings, context) -> None:
+def update_mask_2d_color(settings, context: Any) -> None:
     vp = GTLoader.viewport()
     mask = vp.mask2d()
     mask.color = (*settings.mask_2d_color, settings.mask_2d_opacity)
 
 
-def update_mask_3d_color(settings, context) -> None:
+def update_mask_3d_color(settings, context: Any) -> None:
     vp = GTLoader.viewport()
     wf = vp.wireframer()
     wf.selection_fill_color = (*settings.mask_3d_color, settings.mask_3d_opacity)
@@ -111,7 +114,7 @@ def update_mask_3d_color(settings, context) -> None:
         GTLoader.update_viewport_wireframe()
 
 
-def update_wireframe_backface_culling(self, context) -> None:
+def update_wireframe_backface_culling(self, context: Any) -> None:
     if self.ui_write_mode:
         return
     gt = GTLoader.kt_geotracker()
@@ -121,7 +124,7 @@ def update_wireframe_backface_culling(self, context) -> None:
         GTLoader.update_viewport_wireframe()
 
 
-def update_background_tone_mapping(geotracker, context):
+def update_background_tone_mapping(geotracker, context: Any) -> None:
     bg_img = get_background_image_object(geotracker.camobj)
     if not bg_img or not bg_img.image:
         return
@@ -323,6 +326,18 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         return nm
 
 
+def _universal_getter(name, type):
+    def _getter(self):
+        return UserPreferences.get_value_safe(name, type)
+    return _getter
+
+
+def _universal_setter(name):
+    def _setter(self, value):
+        UserPreferences.set_value(name, value)
+    return _setter
+
+
 class GTSceneSettings(bpy.types.PropertyGroup):
     ui_write_mode: bpy.props.BoolProperty(name='UI Write mode', default=False)
     pinmode: bpy.props.BoolProperty(name='Pinmode status', default=False)
@@ -334,15 +349,19 @@ class GTSceneSettings(bpy.types.PropertyGroup):
 
     wireframe_opacity: bpy.props.FloatProperty(
         description='From 0.0 to 1.0',
-        name='Wireframe opacity',
-        default=GTConfig.wireframe_color[3], min=0.0, max=1.0,
-        update=update_wireframe_func)
+        name='GeoTracker wireframe Opacity',
+        default=UserPreferences.get_value_safe('gt_wireframe_opacity',
+                                               UserPreferences.type_float),
+        min=0.0, max=1.0,
+        update=update_wireframe)
 
     wireframe_color: bpy.props.FloatVectorProperty(
         description='Color of mesh wireframe in pin-mode',
-        name='Wireframe Color', subtype='COLOR',
-        default=GTConfig.wireframe_color[:3], min=0.0, max=1.0,
-        update=update_wireframe_func)
+        name='GeoTracker wireframe Color', subtype='COLOR',
+        default=UserPreferences.get_value_safe('gt_wireframe_color',
+                                               UserPreferences.type_color),
+        min=0.0, max=1.0,
+        update=update_wireframe)
 
     wireframe_backface_culling: bpy.props.BoolProperty(
         name='Backface culling',
@@ -352,18 +371,24 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     pin_size: bpy.props.FloatProperty(
         description='Set pin size in pixels',
         name='Size',
-        default=GTConfig.pin_size,
+        default=UserPreferences.get_value_safe('pin_size',
+                                               UserPreferences.type_float),
         min=1.0, max=100.0,
         precision=1,
-        update=update_pin_size
+        update=update_pin_size,
+        get=universal_attr_getter('pin_size', 'float'),
+        set=universal_attr_setter('pin_size')
     )
     pin_sensitivity: bpy.props.FloatProperty(
         description='Set active area in pixels',
         name='Active area',
-        default=GTConfig.pin_sensitivity,
+        default=UserPreferences.get_value_safe('pin_sensitivity',
+                                               UserPreferences.type_float),
         min=1.0, max=100.0,
         precision=1,
-        update=update_pin_sensitivity
+        update=update_pin_sensitivity,
+        get=universal_attr_getter('pin_sensitivity', 'float'),
+        set=universal_attr_setter('pin_sensitivity')
     )
 
     anim_start: bpy.props.IntProperty(name='from', default=1)
@@ -392,27 +417,31 @@ class GTSceneSettings(bpy.types.PropertyGroup):
                                          default=0.0)
 
     mask_3d_color: bpy.props.FloatVectorProperty(
-        description='Color of masked areas',
+        description='Color of masked polygons',
         name='Mask 3D Color', subtype='COLOR',
-        default=GTConfig.mask_3d_color[:3], min=0.0, max=1.0,
+        default=Config.default_user_preferences['gt_mask_3d_color']['value'],
+        min=0.0, max=1.0,
         update=update_mask_3d_color)
 
     mask_3d_opacity: bpy.props.FloatProperty(
         description='From 0.0 to 1.0',
         name='Mask 3D opacity',
-        default=GTConfig.mask_3d_color[3], min=0.0, max=1.0,
+        default=Config.default_user_preferences['gt_mask_3d_opacity']['value'],
+        min=0.0, max=1.0,
         update=update_mask_3d_color)
 
     mask_2d_color: bpy.props.FloatVectorProperty(
         description='Color of masked areas',
-        name='Mask 3D Color', subtype='COLOR',
-        default=GTConfig.mask_2d_color[:3], min=0.0, max=1.0,
+        name='Mask 2D Color', subtype='COLOR',
+        default=Config.default_user_preferences['gt_mask_2d_color']['value'],
+        min=0.0, max=1.0,
         update=update_mask_2d_color)
 
     mask_2d_opacity: bpy.props.FloatProperty(
         description='From 0.0 to 1.0',
         name='Mask 3D opacity',
-        default=GTConfig.mask_2d_color[3], min=0.0, max=1.0,
+        default=Config.default_user_preferences['gt_mask_3d_opacity']['value'],
+        min=0.0, max=1.0,
         update=update_mask_2d_color)
 
     @contextmanager

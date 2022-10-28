@@ -301,7 +301,7 @@ class GT_OT_PinMode(Operator):
             return {'FINISHED'}
 
         if context.space_data.region_3d.view_perspective != 'CAMERA':
-            if GTConfig.prevent_view_rotation:
+            if settings.preferences().prevent_gt_view_rotation:
                 # Return back to the camera view
                 bpy_view_camera()
             else:

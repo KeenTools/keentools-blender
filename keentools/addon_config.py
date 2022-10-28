@@ -105,6 +105,24 @@ class Config:
         'latest_installation_skip_version': {'value': '', 'type': 'string'},
         'latest_show_datetime_installation_reminder': {'value': '', 'type': 'string'}
     }
+    user_preferences_dict_name = 'keentools_facebuilder_addon'
+    default_user_preferences = {
+        'pin_size': {'value': 7.0, 'type': 'float'},
+        'pin_sensitivity': {'value': 16.0, 'type': 'float'},
+        'prevent_fb_view_rotation': {'value': True, 'type': 'bool'},
+        'fb_wireframe_color': {'value': (0.039, 0.04 , 0.039), 'type': 'color'},
+        'fb_wireframe_special_color': {'value': (0.0, 0.0, 0.85098), 'type': 'color'},
+        'fb_wireframe_midline_color': {'value': (0.960784, 0.007843, 0.615686), 'type': 'color'},
+        'fb_wireframe_opacity': {'value': 0.45, 'type': 'float'},
+        'prevent_gt_view_rotation': {'value': True, 'type': 'bool'},
+        'gt_wireframe_color': {'value': (0.0, 1.0, 0.0), 'type': 'color'},
+        'gt_wireframe_opacity': {'value': 0.45, 'type': 'float'},
+        'gt_mask_3d_color': {'value': (0.0, 0.0, 1.0), 'type': 'color'},
+        'gt_mask_3d_opacity': {'value': 0.4, 'type': 'float'},
+        'gt_mask_2d_color': {'value': (0.0, 1.0, 0.0), 'type': 'color'},
+        'gt_mask_2d_opacity': {'value': 0.35, 'type': 'float'},
+    }
+
     mock_update_for_testing_flag = False
     mock_update_version = (int(addon_version.partition('.')[0]), 6, 3)
     mock_update_addon_path = 'http://localhost/addon.zip'

@@ -336,21 +336,6 @@ def update_pin_sensitivity(settings, context):
     FBLoader.viewport().update_pin_sensitivity()
 
 
-def universal_getter(name, type):
-    def _getter(self):
-        if name in self.keys():
-            return self[name]
-        else:
-            return UserPreferences.get_value_safe(name, type)
-    return _getter
-
-
-def universal_setter(name):
-    def _setter(self, value):
-        self[name] = value
-    return _setter
-
-
 def update_pin_size(settings, context):
     if settings.pin_sensitivity < settings.pin_size:
         settings.pin_sensitivity = settings.pin_size

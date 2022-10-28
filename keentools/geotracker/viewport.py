@@ -39,6 +39,7 @@ from ..utils.edges import (KTEdgeShader2D,
                            KTEdgeShaderAll2D,
                            KTScreenDashedRectangleShader2D)
 from ..utils.polygons import KTRasterMask
+from ..preferences.user_preferences import UserPreferences
 
 
 class GTViewport(KTViewport):
@@ -48,12 +49,19 @@ class GTViewport(KTViewport):
         self._points3d = KTPoints3D(SpaceView3D)
         self._residuals = KTEdgeShader2D(SpaceView3D)
         self._texter = KTScreenText(SpaceView3D)
-        self._wireframer = KTEdgeShaderLocal3D(
-            SpaceView3D, selection_color=GTConfig.mask_3d_color)
+        self._wireframer = KTEdgeShaderLocal3D(SpaceView3D, mask_color=(
+            *UserPreferences.get_value_safe('gt_mask_3d_color',
+                                            UserPreferences.type_color),
+            UserPreferences.get_value_safe('gt_mask_3d_opacity',
+                                           UserPreferences.type_float)))
         self._timeliner = KTEdgeShaderAll2D(SpaceDopeSheetEditor,
                                             GTConfig.timeline_keyframe_color)
         self._selector = KTScreenDashedRectangleShader2D(SpaceView3D)
-        self._mask2d = KTRasterMask(SpaceView3D)
+        self._mask2d = KTRasterMask(SpaceView3D, mask_color=(
+            *UserPreferences.get_value_safe('gt_mask_2d_color',
+                                            UserPreferences.type_color),
+            UserPreferences.get_value_safe('gt_mask_2d_opacity',
+                                           UserPreferences.type_float)))
         self._draw_update_timer_handler = None
 
     def register_handlers(self, context):

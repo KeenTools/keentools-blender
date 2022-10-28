@@ -41,10 +41,10 @@ _log = KTLogger(__name__)
 
 
 class KTTrisShaderLocal3D(KTShaderBase):
-    def __init__(self, target_class: Any):
+    def __init__(self, target_class: Any, mask_color=GTConfig.mask_3d_color):
         self.vertices: List[Tuple[float, float, float]] = []
         self.triangle_indices: List[List[int]] = []
-        self.color: Tuple[float, float, float, float] = GTConfig.mask_3d_color
+        self.color: Tuple[float, float, float, float] = mask_color
         self.fill_shader: Any = None
         self.fill_batch: Any = None
         self.object_world_matrix: Any = np.eye(4, dtype=np.float32)
@@ -111,12 +111,12 @@ class KTTrisShaderLocal3D(KTShaderBase):
 
 
 class KTRasterMask(KTShaderBase):
-    def __init__(self, target_class: Any):
+    def __init__(self, target_class: Any, mask_color=GTConfig.mask_2d_color):
         self.square: List[Tuple[float, float]] = [(0., 0.), (1., 0.),
                                                   (1., 1), (0., 1)]
         self.vertices: List[Tuple[float, float]] = self.square
         self.uvs: List[Tuple[float, float]] = self.square
-        self.color: Tuple[float, float, float, float] = GTConfig.mask_2d_color
+        self.color: Tuple[float, float, float, float] = mask_color
         self.mask_shader: Any = None
         self.mask_batch: Any = None
         self.inverted: bool = False
