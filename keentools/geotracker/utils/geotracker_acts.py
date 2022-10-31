@@ -240,12 +240,14 @@ class _CommonTimer:
         _log.output(f'{self._operation_name} finish_computation call')
         attempts = 0
         max_attempts = 3
-        while attempts < max_attempts and not self.tracking_computation.is_finished():
+        while attempts < max_attempts and \
+                self.tracking_computation.state() == pkt_module().ComputationState.RUNNING:
             attempts += 1
             _log.output(f'TRY TO STOP COMPUTATION. ATTEMPT {attempts}')
             self.tracking_computation.cancel()
             self._safe_resume()
-        if attempts >= max_attempts and not self.tracking_computation.is_finished():
+        if attempts >= max_attempts and \
+                self.tracking_computation.state() == pkt_module().ComputationState.RUNNING:
             _log.error(f'PROBLEM WITH COMPUTATION STOP')
         GTLoader.viewport().revert_default_screen_message(unregister=False)
         self._stop_user_interrupt_operator()
@@ -266,7 +268,7 @@ class _CommonTimer:
 
     def _safe_resume(self) -> bool:
         try:
-            if not self.tracking_computation.is_finished():
+            if self.tracking_computation.state() == pkt_module().ComputationState.RUNNING:
                 self.tracking_computation.resume()
                 overall = self._overall_func()
                 if overall is None:
