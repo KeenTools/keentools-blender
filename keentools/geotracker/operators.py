@@ -16,12 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy
+from bpy.types import Operator
+from bpy.props import IntProperty
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import get_operator, Config
 from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
-from ..utils.bpy_common import bpy_current_frame
+from ..utils.bpy_common import bpy_current_frame, bpy_background_mode
 from .utils.geotracker_acts import (create_geotracker_act,
                                     delete_geotracker_act,
                                     add_keyframe_act,
@@ -52,7 +53,6 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     select_geotracker_objects_act)
 from .utils.precalc import precalc_with_runner_act
 from .gtloader import GTLoader
-from .utils.prechecks import common_checks
 from .ui_strings import buttons
 
 
@@ -66,7 +66,7 @@ class ButtonOperator:
         pass
 
 
-class GT_OT_CreateGeoTracker(ButtonOperator, bpy.types.Operator):
+class GT_OT_CreateGeoTracker(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_create_geotracker_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -78,12 +78,12 @@ class GT_OT_CreateGeoTracker(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_DeleteGeoTracker(ButtonOperator, bpy.types.Operator):
+class GT_OT_DeleteGeoTracker(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_delete_geotracker_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
-    geotracker_num: bpy.props.IntProperty(default=-1)
+    geotracker_num: IntProperty(default=-1)
 
     def execute(self, context):
         act_status = delete_geotracker_act(self.geotracker_num)
@@ -92,7 +92,7 @@ class GT_OT_DeleteGeoTracker(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_CreatePrecalc(ButtonOperator, bpy.types.Operator):
+class GT_OT_CreatePrecalc(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_create_precalc_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -104,7 +104,7 @@ class GT_OT_CreatePrecalc(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_PrevKeyframe(ButtonOperator, bpy.types.Operator):
+class GT_OT_PrevKeyframe(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_prev_keyframe_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -116,7 +116,7 @@ class GT_OT_PrevKeyframe(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_NextKeyframe(ButtonOperator, bpy.types.Operator):
+class GT_OT_NextKeyframe(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_next_keyframe_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -128,7 +128,7 @@ class GT_OT_NextKeyframe(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_TrackToStart(ButtonOperator, bpy.types.Operator):
+class GT_OT_TrackToStart(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_track_to_start_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -141,7 +141,7 @@ class GT_OT_TrackToStart(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_TrackToEnd(ButtonOperator, bpy.types.Operator):
+class GT_OT_TrackToEnd(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_track_to_end_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -154,7 +154,7 @@ class GT_OT_TrackToEnd(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_TrackNext(ButtonOperator, bpy.types.Operator):
+class GT_OT_TrackNext(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_track_next_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -167,7 +167,7 @@ class GT_OT_TrackNext(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_TrackPrev(ButtonOperator, bpy.types.Operator):
+class GT_OT_TrackPrev(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_track_prev_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -180,7 +180,7 @@ class GT_OT_TrackPrev(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_AddKeyframe(ButtonOperator, bpy.types.Operator):
+class GT_OT_AddKeyframe(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_add_keyframe_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -193,7 +193,7 @@ class GT_OT_AddKeyframe(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_RemoveKeyframe(ButtonOperator, bpy.types.Operator):
+class GT_OT_RemoveKeyframe(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_remove_keyframe_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -206,7 +206,7 @@ class GT_OT_RemoveKeyframe(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_ClearAllTracking(ButtonOperator, bpy.types.Operator):
+class GT_OT_ClearAllTracking(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_clear_all_tracking_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -219,7 +219,7 @@ class GT_OT_ClearAllTracking(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_ClearTrackingForward(ButtonOperator, bpy.types.Operator):
+class GT_OT_ClearTrackingForward(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_clear_tracking_forward_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -232,7 +232,7 @@ class GT_OT_ClearTrackingForward(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_ClearTrackingBackward(ButtonOperator, bpy.types.Operator):
+class GT_OT_ClearTrackingBackward(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_clear_tracking_backward_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -245,7 +245,7 @@ class GT_OT_ClearTrackingBackward(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_ClearTrackingBetween(ButtonOperator, bpy.types.Operator):
+class GT_OT_ClearTrackingBetween(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_clear_tracking_between_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -258,7 +258,7 @@ class GT_OT_ClearTrackingBetween(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_Refine(ButtonOperator, bpy.types.Operator):
+class GT_OT_Refine(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_refine_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -271,7 +271,7 @@ class GT_OT_Refine(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_RefineAll(ButtonOperator, bpy.types.Operator):
+class GT_OT_RefineAll(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_refine_all_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -284,7 +284,7 @@ class GT_OT_RefineAll(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_CenterGeo(ButtonOperator, bpy.types.Operator):
+class GT_OT_CenterGeo(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_center_geo_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -297,7 +297,7 @@ class GT_OT_CenterGeo(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_BtnMagicKeyframe(ButtonOperator, bpy.types.Operator):
+class GT_OT_BtnMagicKeyframe(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_magic_keyframe_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -308,7 +308,7 @@ class GT_OT_BtnMagicKeyframe(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_RemovePins(ButtonOperator, bpy.types.Operator):
+class GT_OT_RemovePins(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_remove_pins_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -321,7 +321,7 @@ class GT_OT_RemovePins(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_TogglePins(ButtonOperator, bpy.types.Operator):
+class GT_OT_TogglePins(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_toggle_pins_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -334,7 +334,7 @@ class GT_OT_TogglePins(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_CreateAnimatedEmpty(ButtonOperator, bpy.types.Operator):
+class GT_OT_CreateAnimatedEmpty(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_create_animated_empty_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -347,7 +347,7 @@ class GT_OT_CreateAnimatedEmpty(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_ExitPinMode(ButtonOperator, bpy.types.Operator):
+class GT_OT_ExitPinMode(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_exit_pinmode_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -357,7 +357,7 @@ class GT_OT_ExitPinMode(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_StopCalculating(bpy.types.Operator):
+class GT_OT_StopCalculating(Operator):
     bl_idname = GTConfig.gt_stop_calculating_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -368,7 +368,7 @@ class GT_OT_StopCalculating(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_InterruptModal(bpy.types.Operator):
+class GT_OT_InterruptModal(Operator):
     bl_idname = GTConfig.gt_interrupt_modal_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -378,7 +378,7 @@ class GT_OT_InterruptModal(bpy.types.Operator):
         settings = get_gt_settings()
         settings.user_interrupts = False
 
-        if not bpy.app.background:
+        if not bpy_background_mode():
             context.window_manager.modal_handler_add(self)
             _log.output('INTERRUPTOR START')
         else:
@@ -401,7 +401,7 @@ class GT_OT_InterruptModal(bpy.types.Operator):
         return {'PASS_THROUGH'}
 
 
-class GT_OT_ResetToneGain(ButtonOperator, bpy.types.Operator):
+class GT_OT_ResetToneGain(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_reset_tone_exposure_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -414,7 +414,7 @@ class GT_OT_ResetToneGain(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_ResetToneGamma(ButtonOperator, bpy.types.Operator):
+class GT_OT_ResetToneGamma(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_reset_tone_gamma_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -427,7 +427,7 @@ class GT_OT_ResetToneGamma(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_ResetToneMapping(ButtonOperator, bpy.types.Operator):
+class GT_OT_ResetToneMapping(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_reset_tone_mapping_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -441,20 +441,20 @@ class GT_OT_ResetToneMapping(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_DefaultWireframeSettings(ButtonOperator, bpy.types.Operator):
+class GT_OT_DefaultWireframeSettings(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_default_wireframe_settings_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
         settings = get_gt_settings()
-        settings.wireframe_color = GTConfig.wireframe_color
-        settings.wireframe_opacity = GTConfig.wireframe_opacity
+        settings.wireframe_color = GTConfig.wireframe_color[:3]
+        settings.wireframe_opacity = GTConfig.wireframe_color[3]
         settings.wireframe_backface_culling = False
         return {'FINISHED'}
 
 
-class FB_OT_DefaultPinSettings(ButtonOperator, bpy.types.Operator):
+class GT_OT_DefaultPinSettings(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_default_pin_settings_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -466,7 +466,7 @@ class FB_OT_DefaultPinSettings(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_ReprojectFrame(ButtonOperator, bpy.types.Operator):
+class GT_OT_ReprojectFrame(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_reproject_frame_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -479,7 +479,7 @@ class GT_OT_ReprojectFrame(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_SelectAllFrames(ButtonOperator, bpy.types.Operator):
+class GT_OT_SelectAllFrames(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_select_all_frames_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -493,7 +493,7 @@ class GT_OT_SelectAllFrames(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_DeselectAllFrames(ButtonOperator, bpy.types.Operator):
+class GT_OT_DeselectAllFrames(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_deselect_all_frames_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -507,7 +507,7 @@ class GT_OT_DeselectAllFrames(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_RelativeToCamera(ButtonOperator, bpy.types.Operator):
+class GT_OT_RelativeToCamera(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_relative_to_camera_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -520,7 +520,7 @@ class GT_OT_RelativeToCamera(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_RelativeToGeometry(ButtonOperator, bpy.types.Operator):
+class GT_OT_RelativeToGeometry(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_relative_to_geometry_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -533,7 +533,7 @@ class GT_OT_RelativeToGeometry(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_GeometryRepositioning(ButtonOperator, bpy.types.Operator):
+class GT_OT_GeometryRepositioning(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_geometry_repositioning_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -546,7 +546,7 @@ class GT_OT_GeometryRepositioning(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_CameraRepositioning(ButtonOperator, bpy.types.Operator):
+class GT_OT_CameraRepositioning(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_camera_repositioning_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -559,7 +559,7 @@ class GT_OT_CameraRepositioning(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_MoveTrackingToCamera(ButtonOperator, bpy.types.Operator):
+class GT_OT_MoveTrackingToCamera(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_move_tracking_to_camera_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -572,7 +572,7 @@ class GT_OT_MoveTrackingToCamera(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_MoveTrackingToGeometry(ButtonOperator, bpy.types.Operator):
+class GT_OT_MoveTrackingToGeometry(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_move_tracking_to_geometry_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -585,7 +585,7 @@ class GT_OT_MoveTrackingToGeometry(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_RemoveFocalKeyframe(ButtonOperator, bpy.types.Operator):
+class GT_OT_RemoveFocalKeyframe(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_remove_focal_keyframe_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -598,7 +598,7 @@ class GT_OT_RemoveFocalKeyframe(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_RemoveFocalKeyframes(ButtonOperator, bpy.types.Operator):
+class GT_OT_RemoveFocalKeyframes(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_remove_focal_keyframes_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -611,12 +611,12 @@ class GT_OT_RemoveFocalKeyframes(ButtonOperator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_SelectGeotrackerObjects(ButtonOperator, bpy.types.Operator):
+class GT_OT_SelectGeotrackerObjects(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_select_geotracker_objects_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
-    geotracker_num: bpy.props.IntProperty(default=0)
+    geotracker_num: IntProperty(default=0)
 
     def execute(self, context):
         act_status = select_geotracker_objects_act(self.geotracker_num)
@@ -655,7 +655,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_ResetToneGamma,
                   GT_OT_ResetToneMapping,
                   GT_OT_DefaultWireframeSettings,
-                  FB_OT_DefaultPinSettings,
+                  GT_OT_DefaultPinSettings,
                   GT_OT_ReprojectFrame,
                   GT_OT_SelectAllFrames,
                   GT_OT_DeselectAllFrames,

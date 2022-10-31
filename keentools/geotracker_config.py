@@ -135,8 +135,9 @@ class GTConfig:
     residual_color = (0.0, 1.0, 1.0, 0.5)
     timeline_keyframe_color = (0.0, 1.0, 0.0, 0.5)
 
-    wireframe_color = (0.0, 1.0, 0.0)
-    wireframe_opacity = 0.4
+    wireframe_color = (0.0, 1.0, 0.0, 0.4)
+    mask_2d_color = (0.0, 1.0, 0.0, 0.4)
+    mask_3d_color = (0.0, 0.0, 1.0, 0.4)
 
     serial_prop_name = prefix + '_serial'
     version_prop_name = prefix + '_version'
@@ -144,6 +145,7 @@ class GTConfig:
     prevent_view_rotation = True
     auto_render_size = True
     auto_time_length = True
+    hide_2d_mask = False
 
 
 def get_gt_settings():

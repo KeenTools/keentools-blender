@@ -15,8 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+
 import bpy
 import addon_utils
+
+from .bpy_common import bpy_background_mode
 
 
 def get_areas_by_type(area_type='VIEW_3D'):
@@ -79,5 +82,5 @@ def mark_old_modules(mods, filter_dict):
 
 
 def total_redraw_ui():
-    if not bpy.app.background:
+    if not bpy_background_mode():
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)

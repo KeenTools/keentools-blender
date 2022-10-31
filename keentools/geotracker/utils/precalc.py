@@ -34,7 +34,8 @@ from ...utils.images import (np_image_to_grayscale,
                              np_array_from_bpy_image)
 from ...utils.bpy_common import (bpy_render_frame,
                                  bpy_current_frame,
-                                 update_depsgraph)
+                                 update_depsgraph,
+                                 bpy_background_mode)
 from ..gt_class_loader import GTClassLoader
 from ...utils.timer import RepeatTimer
 from .calc_timer import CalcTimer
@@ -124,7 +125,7 @@ class PrecalcTimer(CalcTimer):
               'color': (1.0, 0., 0., 0.7)}])
 
         _func = self.timer_func
-        if not bpy.app.background:
+        if not bpy_background_mode():
             op = get_operator(GTConfig.gt_interrupt_modal_idname)
             op('INVOKE_DEFAULT')
             bpy.app.timers.register(_func, first_interval=self._interval)

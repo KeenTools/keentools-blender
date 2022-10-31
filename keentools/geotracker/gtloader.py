@@ -32,7 +32,9 @@ from ..utils.coords import (image_space_to_frame,
                             focal_by_projection_matrix_mm,
                             compensate_view_scale,
                             frame_to_image_space,
-                            camera_sensor_width)
+                            camera_sensor_width,
+                            get_camera_border,
+                            image_space_to_region)
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
                                 get_scene_camera_shift)

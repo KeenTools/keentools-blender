@@ -20,7 +20,8 @@ from typing import Any, Set, Optional
 from uuid import uuid4
 
 import bpy
-from bpy.types import Area
+from bpy.types import Area, Operator
+from bpy.props import IntProperty, StringProperty
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import get_operator
@@ -32,22 +33,23 @@ from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
                            unhide_viewport_ui_elements_from_object)
 from ..utils.images import set_background_image_by_movieclip
-from ..utils.bpy_common import bpy_current_frame
+from ..utils.bpy_common import (bpy_current_frame,
+                                bpy_background_mode,
+                                bpy_is_animation_playing)
 from ..utils.video import fit_render_size
 
 
 _log = KTLogger(__name__)
 
 
-class GT_OT_PinMode(bpy.types.Operator):
+class GT_OT_PinMode(Operator):
     bl_idname = GTConfig.gt_pinmode_idname
     bl_label = 'GeoTracker Pinmode'
     bl_description = 'Operator for in-Viewport drawing'
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    geotracker_num: bpy.props.IntProperty(default=-1)
-
-    pinmode_id: bpy.props.StringProperty(default='')
+    geotracker_num: IntProperty(default=-1)
+    pinmode_id: StringProperty(default='')
 
     _shift_pressed = False
     _prev_camera_state = ()
@@ -336,7 +338,7 @@ class GT_OT_PinMode(bpy.types.Operator):
                 vp = GTLoader.viewport()
                 vp.tag_redraw()
                 return {'RUNNING_MODAL'}
-            if not bpy.app.background and bpy.context.screen.is_animation_playing:
+            if not bpy_background_mode() and bpy_is_animation_playing():
                 _log.output('STOP ANIMATION PLAYBACK')
                 return {'PASS_THROUGH'}
             _log.output('Exit pinmode by ESC')

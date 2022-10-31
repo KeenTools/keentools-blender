@@ -16,8 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import Any, List, Tuple
 import numpy as np
-import bpy
+
+from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
 
 from ..geotracker_config import GTConfig, get_gt_settings
 from ..utils.coords import (get_camera_border,
@@ -26,7 +28,9 @@ from ..utils.coords import (get_camera_border,
                             multiply_verts_on_matrix_4x4,
                             to_homogeneous,
                             pin_to_xyz_from_mesh)
-from ..utils.bpy_common import bpy_render_frame, evaluated_object
+from ..utils.bpy_common import (bpy_render_frame,
+                                evaluated_object,
+                                bpy_scene_camera)
 from ..utils.viewport import KTViewport
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
@@ -34,24 +38,28 @@ from ..utils.edges import (KTEdgeShader2D,
                            KTEdgeShaderLocal3D,
                            KTEdgeShaderAll2D,
                            KTScreenDashedRectangleShader2D)
+from ..utils.polygons import KTRasterMask
 
 
 class GTViewport(KTViewport):
     def __init__(self):
         super().__init__()
-        self._points2d = KTPoints2D(bpy.types.SpaceView3D)
-        self._points3d = KTPoints3D(bpy.types.SpaceView3D)
-        self._residuals = KTEdgeShader2D(bpy.types.SpaceView3D)
-        self._texter = KTScreenText(bpy.types.SpaceView3D)
-        self._wireframer = KTEdgeShaderLocal3D(bpy.types.SpaceView3D)
-        self._timeliner = KTEdgeShaderAll2D(bpy.types.SpaceDopeSheetEditor,
+        self._points2d = KTPoints2D(SpaceView3D)
+        self._points3d = KTPoints3D(SpaceView3D)
+        self._residuals = KTEdgeShader2D(SpaceView3D)
+        self._texter = KTScreenText(SpaceView3D)
+        self._wireframer = KTEdgeShaderLocal3D(
+            SpaceView3D, selection_color=GTConfig.mask_3d_color)
+        self._timeliner = KTEdgeShaderAll2D(SpaceDopeSheetEditor,
                                             GTConfig.timeline_keyframe_color)
-        self._selector = KTScreenDashedRectangleShader2D(bpy.types.SpaceView3D)
+        self._selector = KTScreenDashedRectangleShader2D(SpaceView3D)
+        self._mask2d = KTRasterMask(SpaceView3D)
         self._draw_update_timer_handler = None
 
     def register_handlers(self, context):
         self.unregister_handlers()
         self.set_work_area(context.area)
+        self.mask2d().register_handler(context)
         self.residuals().register_handler(context)
         self.points3d().register_handler(context)
         self.points2d().register_handler(context)
@@ -70,10 +78,14 @@ class GTViewport(KTViewport):
         self.points2d().unregister_handler()
         self.points3d().unregister_handler()
         self.residuals().unregister_handler()
+        self.mask2d().unregister_handler()
         self.clear_work_area()
 
-    def update_surface_points(
-            self, gt, obj, keyframe, color=GTConfig.surface_point_color):
+    def mask2d(self) -> KTRasterMask:
+        return self._mask2d
+
+    def update_surface_points(self, gt: Any, obj: Object, keyframe: int,
+                              color: Tuple=GTConfig.surface_point_color) -> None:
         verts = self.surface_points_from_mesh(gt, obj, keyframe)
         colors = [color] * len(verts)
 
@@ -84,17 +96,18 @@ class GTViewport(KTViewport):
         self.points3d().set_vertices_colors(verts, colors)
         self.points3d().create_batch()
 
-    def update_pin_sensitivity(self):
+    def update_pin_sensitivity(self) -> None:
         settings = get_gt_settings()
         self._point_sensitivity = settings.pin_sensitivity
 
-    def update_pin_size(self):
+    def update_pin_size(self) -> None:
         settings = get_gt_settings()
         self.points2d().set_point_size(settings.pin_size)
         self.points3d().set_point_size(
             settings.pin_size * GTConfig.surf_pin_size_scale)
 
-    def surface_points_from_mesh(self, gt, headobj, keyframe):
+    def surface_points_from_mesh(self, gt: Any, headobj: Object,
+                                 keyframe: int) -> List:
         verts = []
         pins_count = gt.pins_count()
         obj = evaluated_object(headobj)
@@ -107,9 +120,9 @@ class GTViewport(KTViewport):
                 verts.append(p)
         return verts
 
-    def create_batch_2d(self, area):
-        def _add_markers_at_camera_corners(points, vertex_colors):
-            asp = ry / rx
+    def create_batch_2d(self, area: Area) -> None:
+        def _add_markers_at_camera_corners(points: List,
+                                           vertex_colors: List) -> None:
             points.append(
                 (image_space_to_region(-0.5, -asp * 0.5, x1, y1, x2, y2))
             )
@@ -117,9 +130,10 @@ class GTViewport(KTViewport):
                 (image_space_to_region(0.5, asp * 0.5, x1, y1, x2, y2))
             )
             vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # left camera corner
-            vertex_colors.append((1.0, 0, 1.0, 0.2))  # right camera corner
+            vertex_colors.append((1.0, 0.0, 1.0, 0.2))  # right camera corner
 
         rx, ry = bpy_render_frame()
+        asp = ry / rx
         x1, y1, x2, y2 = get_camera_border(area)
 
         pins = self.pins()
@@ -147,7 +161,12 @@ class GTViewport(KTViewport):
         self.points2d().set_vertices_colors(points, vertex_colors)
         self.points2d().create_batch()
 
-    def update_residuals(self, gt, area, keyframe):
+        mask = self.mask2d()
+        if mask.image is not None:
+            mask.left = image_space_to_region(-0.5, -asp * 0.5, x1, y1, x2, y2)
+            mask.right = image_space_to_region(0.5, asp * 0.5, x1, y1, x2, y2)
+
+    def update_residuals(self, gt: Any, area: Area, keyframe: int) -> None:
         rx, ry = bpy_render_frame()
         x1, y1, x2, y2 = get_camera_border(area)
 
@@ -161,23 +180,18 @@ class GTViewport(KTViewport):
         wire.edge_lengths = []
         wire.vertices_colors = []
 
-        # Pins count != Surf points count
         if len(p2d) != len(p3d):
             return
 
         if len(p3d) == 0:
-            # Empty shader
-            wire.create_batch()
+            wire.create_batch()  # Empty shader
             return
 
-        # ----------
-        # Projection
-        projection = gt.projection_mat(keyframe).T
-
-        camobj = bpy.context.scene.camera
+        camobj = bpy_scene_camera()
         if not camobj:
             return
 
+        projection = gt.projection_mat(keyframe).T
         m = camobj.matrix_world.inverted()
         # Object transform, inverse camera, projection apply -> numpy
         transform = np.array(m.transposed()) @ projection
@@ -198,12 +212,11 @@ class GTViewport(KTViewport):
             wire.edge_lengths.append(length)
 
         wire.vertices = verts2
-        wire.vertices_colors = np.full((len(verts2), 4),
-                                       GTConfig.residual_color).tolist()
+        wire.vertices_colors = [GTConfig.residual_color] * len(verts2)
         wire.create_batch()
 
-    def update_wireframe_colors(self):
+    def update_wireframe_colors(self) -> None:
         settings = get_gt_settings()
         self.wireframer().init_color_data((*settings.wireframe_color,
-                                          settings.wireframe_opacity))
+                                           settings.wireframe_opacity))
         self.wireframer().create_batches()

@@ -42,7 +42,8 @@ from ...utils.bpy_common import (create_empty_object,
                                  bpy_current_frame,
                                  bpy_set_current_frame,
                                  update_depsgraph,
-                                 reset_unsaved_animation_changes_in_frame)
+                                 reset_unsaved_animation_changes_in_frame,
+                                 bpy_background_mode)
 from ...utils.animation import (get_action,
                                 get_object_keyframe_numbers,
                                 create_animation_locrot_keyframe_force)
@@ -308,7 +309,7 @@ class _CommonTimer:
         return self._active_state_func()
 
     def start(self) -> None:
-        if not bpy.app.background:
+        if not bpy_background_mode():
             self._start_user_interrupt_operator()
         GTLoader.viewport().message_to_screen(
             [{'text': f'{self._operation_name} calculating... Please wait', 'y': 60,
@@ -319,7 +320,7 @@ class _CommonTimer:
         settings.calculating_mode = self._calc_mode
 
         _func = self.timer_func
-        if not bpy.app.background:
+        if not bpy_background_mode():
             bpy.app.timers.register(_func, first_interval=self._interval)
             res = bpy.app.timers.is_registered(_func)
             _log.output(f'{self._operation_name} timer registered: {res}')

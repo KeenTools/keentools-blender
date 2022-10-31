@@ -29,7 +29,8 @@ from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
 from ..utils.images import (get_background_image_object,
                             set_background_image_by_movieclip,
-                            tone_mapping)
+                            tone_mapping,
+                            find_bpy_image_by_name)
 from .utils.tracking import reload_precalc
 from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_scale_vec_4_from_matrix_world,
@@ -96,6 +97,20 @@ def update_wireframe_func(self, context) -> None:
     GTLoader.update_viewport_wireframe()
 
 
+def update_mask_2d_color(settings, context) -> None:
+    vp = GTLoader.viewport()
+    mask = vp.mask2d()
+    mask.color = (*settings.mask_2d_color, settings.mask_2d_opacity)
+
+
+def update_mask_3d_color(settings, context) -> None:
+    vp = GTLoader.viewport()
+    wf = vp.wireframer()
+    wf.selection_fill_color = (*settings.mask_3d_color, settings.mask_3d_opacity)
+    if settings.pinmode:
+        GTLoader.update_viewport_wireframe()
+
+
 def update_wireframe_backface_culling(self, context) -> None:
     if self.ui_write_mode:
         return
@@ -140,6 +155,13 @@ def update_mask_3d(geotracker, context):
     settings = get_gt_settings()
     settings.reload_current_geotracker()
     settings.reload_mask_3d()
+
+
+def update_mask_2d(geotracker, context):
+    GTLoader.update_viewport_wireframe()
+    settings = get_gt_settings()
+    settings.reload_current_geotracker()
+    settings.reload_mask_2d()
 
 
 def get_camera_focal_length(geotracker):
@@ -232,8 +254,8 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     selected_frames: bpy.props.CollectionProperty(type=FrameListItem,
                                                   name='Selected frames')
     mask_3d: bpy.props.StringProperty(
-        name='Mask 3D',
-        description='Polygons in selected Vertex Group '
+        name='3d mask',
+        description='The polygons in selected Vertex Group '
                     'will be excluded from tracking',
         update=update_mask_3d)
     mask_3d_inverted: bpy.props.BoolProperty(
@@ -241,6 +263,17 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         description='Invert Mask 3D Vertex Group',
         default=False,
         update=update_mask_3d)
+    mask_2d: bpy.props.StringProperty(
+        name='2d mask',
+        description='The masked areas will be excluded from tracking '
+                    '(It does not work yet)',
+        update=update_mask_2d)
+    mask_2d_inverted: bpy.props.BoolProperty(
+        name='Invert Mask 3D',
+        description='Invert Mask 3D Vertex Group',
+        default=False,
+        update=update_mask_2d)
+
     def get_serial_str(self) -> str:
         return self.serial_str
 
@@ -302,13 +335,13 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     wireframe_opacity: bpy.props.FloatProperty(
         description='From 0.0 to 1.0',
         name='Wireframe opacity',
-        default=GTConfig.wireframe_opacity, min=0.0, max=1.0,
+        default=GTConfig.wireframe_color[3], min=0.0, max=1.0,
         update=update_wireframe_func)
 
     wireframe_color: bpy.props.FloatVectorProperty(
         description='Color of mesh wireframe in pin-mode',
         name='Wireframe Color', subtype='COLOR',
-        default=GTConfig.wireframe_color, min=0.0, max=1.0,
+        default=GTConfig.wireframe_color[:3], min=0.0, max=1.0,
         update=update_wireframe_func)
 
     wireframe_backface_culling: bpy.props.BoolProperty(
@@ -357,6 +390,31 @@ class GTSceneSettings(bpy.types.PropertyGroup):
                                          default=0.0)
     selection_y: bpy.props.FloatProperty(name='Selection Y',
                                          default=0.0)
+
+    mask_3d_color: bpy.props.FloatVectorProperty(
+        description='Color of masked areas',
+        name='Mask 3D Color', subtype='COLOR',
+        default=GTConfig.mask_3d_color[:3], min=0.0, max=1.0,
+        update=update_mask_3d_color)
+
+    mask_3d_opacity: bpy.props.FloatProperty(
+        description='From 0.0 to 1.0',
+        name='Mask 3D opacity',
+        default=GTConfig.mask_3d_color[3], min=0.0, max=1.0,
+        update=update_mask_3d_color)
+
+    mask_2d_color: bpy.props.FloatVectorProperty(
+        description='Color of masked areas',
+        name='Mask 3D Color', subtype='COLOR',
+        default=GTConfig.mask_2d_color[:3], min=0.0, max=1.0,
+        update=update_mask_2d_color)
+
+    mask_2d_opacity: bpy.props.FloatProperty(
+        description='From 0.0 to 1.0',
+        name='Mask 3D opacity',
+        default=GTConfig.mask_2d_color[3], min=0.0, max=1.0,
+        update=update_mask_2d_color)
+
     @contextmanager
     def ui_write_mode_context(self):
         self.ui_write_mode = True
@@ -418,6 +476,15 @@ class GTSceneSettings(bpy.types.PropertyGroup):
                                              geotracker.mask_3d_inverted)
         gt.set_ignored_faces(polys)
         GTLoader.save_geotracker()
+
+    def reload_mask_2d(self) -> None:
+        geotracker = self.get_current_geotracker_item()
+        if not geotracker:
+            return
+        vp = GTLoader.viewport()
+        mask = vp.mask2d()
+        mask.image = find_bpy_image_by_name(geotracker.mask_2d)
+        mask.inverted = geotracker.mask_2d_inverted
 
     def add_geotracker_item(self) -> int:
         self.fix_geotrackers()

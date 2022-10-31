@@ -19,8 +19,7 @@
 import numpy as np
 from typing import Any, List, Callable, Tuple, Optional
 
-import bpy
-from bpy.types import Object, Area, Region
+from bpy.types import Object, Area, Region, SpaceView3D
 import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
@@ -39,7 +38,7 @@ from .coords import (get_mesh_verts,
                      get_scale_vec_4_from_matrix_world,
                      get_triangulation_indices,
                      get_triangles_in_vertex_group)
-from .bpy_common import evaluated_mesh
+from .bpy_common import evaluated_mesh, bpy_background_mode
 from .base_shaders import KTShaderBase
 
 
@@ -47,7 +46,7 @@ _log = KTLogger(__name__)
 
 
 class KTEdgeShaderBase(KTShaderBase):
-    def __init__(self, target_class: Any=bpy.types.SpaceView3D):
+    def __init__(self, target_class: Any=SpaceView3D):
         super().__init__(target_class)
         self.fill_shader: Optional[Any] = None
         self.line_shader: Optional[Any] = None
@@ -64,8 +63,7 @@ class KTEdgeShaderBase(KTShaderBase):
 
         self.backface_culling = False
 
-        # Check if blender started in background mode
-        if not bpy.app.background:
+        if not bpy_background_mode():
             self.init_shaders()
 
     def init_color_data(self, color: Tuple[float, float, float, float]):
@@ -117,7 +115,7 @@ class KTEdgeShader2D(KTEdgeShaderBase):
         self.line_batch.draw(self.line_shader)
 
     def create_batch(self) -> None:
-        if bpy.app.background:
+        if bpy_background_mode():
             return
 
         self.line_batch = batch_for_shader(
@@ -172,7 +170,7 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
         self.fill_batch.draw(self.fill_shader)
 
     def create_batch(self) -> None:
-        if bpy.app.background:
+        if bpy_background_mode():
             return
         self.edge_vertices_colors = [self.line_color] * len(self.edge_vertices)
 
@@ -205,7 +203,7 @@ class KTScreenDashedRectangleShader2D(KTScreenRectangleShader2D):
         self.fill_shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
 
     def create_batch(self) -> None:
-        if bpy.app.background:
+        if bpy_background_mode():
             return
         self.edge_vertices_colors = [self.line_color] * len(self.edge_vertices)
 
@@ -350,7 +348,7 @@ class KTEdgeShader3D(KTEdgeShaderBase):
         pass
 
     def create_batches(self) -> None:
-        if bpy.app.background:
+        if bpy_background_mode():
             return
         self.fill_batch = batch_for_shader(
                     self.fill_shader, 'TRIS',
@@ -387,10 +385,10 @@ class KTEdgeShader3D(KTEdgeShaderBase):
 
 
 class KTEdgeShaderLocal3D(KTEdgeShader3D):
-    def __init__(self, target_class: Any):
+    def __init__(self, target_class: Any, selection_color=(0.0, 0.0, 1.0, 0.4)):
         self.object_world_matrix: Any = np.eye(4, dtype=np.float32)
         self.selection_fill_color: Tuple[float, float, float, float] = \
-            (0.0, 0.0, 1.0, 0.4)
+            selection_color
         self.selection_fill_shader: Optional[Any] = None
         self.selection_fill_batch: Optional[Any] = None
         self.selection_triangle_indices: List[Tuple[int, int, int]] = []
@@ -407,7 +405,7 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
             uniform_3d_vertex_local_shader(), smooth_3d_fragment_shader())
 
     def create_batches(self) -> None:
-        if bpy.app.background:
+        if bpy_background_mode():
             return
         self.fill_batch = batch_for_shader(
                     self.fill_shader, 'TRIS',

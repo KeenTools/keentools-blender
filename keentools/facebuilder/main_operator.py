@@ -27,6 +27,7 @@ from bpy.props import (
 from bpy.types import Operator
 
 from ..addon_config import Config, get_operator
+from ..utils.bpy_common import bpy_background_mode
 from ..facebuilder_config import FBConfig, get_fb_settings
 from .fbloader import FBLoader
 from ..utils import manipulate, materials, coords, images
@@ -109,8 +110,7 @@ class FB_OT_DeleteHead(Operator):
         try:
             col = get_obj_collection(head.headobj)
             # Remove head object
-            bpy.data.objects.remove(
-                head.headobj)  # , do_unlink=True
+            bpy.data.objects.remove(head.headobj)  # , do_unlink=True
             safe_delete_collection(col)
         except Exception:
             pass
@@ -142,7 +142,7 @@ class FB_OT_SelectCamera(Operator):
         update_exif_sizes_message(self.headnum, camera.cam_image)
 
         pinmode_op = get_operator(FBConfig.fb_pinmode_idname)
-        if not bpy.app.background:
+        if not bpy_background_mode():
             pinmode_op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
 
         return {'FINISHED'}
@@ -712,6 +712,11 @@ class FB_OT_ExportHeadToFBX(ButtonOperator, Operator):
                      'for game engines (UE4, Unity, etc.)'
 
     def execute(self, context):
+        settings = get_fb_settings()
+        if settings.pinmode:
+            FBLoader.out_pinmode(settings.current_headnum)
+            exit_area_localview(context.area)
+
         return export_head_to_fbx(self)
 
 

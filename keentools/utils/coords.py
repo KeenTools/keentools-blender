@@ -15,16 +15,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
-from typing import Any, Tuple, List, Optional, Set
-
 import numpy as np
 import math
-import bpy
+from typing import Any, Tuple, List, Optional, Set
+
 from bpy.types import Area, Object
+
+from .kt_logging import KTLogger
 from .fake_context import get_fake_context
-from .bpy_common import bpy_current_frame, bpy_render_frame, evaluated_mesh
+from .bpy_common import (bpy_current_frame,
+                         bpy_render_frame,
+                         evaluated_mesh,
+                         bpy_background_mode)
 from .animation import get_safe_evaluated_fcurve
+
+
+_log = KTLogger(__name__)
 
 
 def nearest_point(x: float, y: float, points: List[Tuple[float, float]],
@@ -94,9 +100,7 @@ def update_head_mesh_non_neutral(fb: Any, head: Any) -> None:
             update_head_mesh_expressions(fb, head, kid)
             return
         else:
-            logger = logging.getLogger(__name__)
-            logger.error(
-                'NO KEYFRAME: {} in {}'.format(kid, fb.keyframes()))
+            _log.error(f'NO KEYFRAME: {kid} in {fb.keyframes()}')
     update_head_mesh_neutral(fb, head)
 
 
@@ -249,7 +253,7 @@ def get_area_overlay(area: Area) -> Optional[Any]:
 
 
 def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
-    if bpy.app.background:
+    if bpy_background_mode():
         context = get_fake_context()
         area = context.area
 
@@ -263,9 +267,7 @@ def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
     # Blender Zoom formula
     f = (z * 0.01 + math.sqrt(0.5)) ** 2  # f - scale factor
 
-    scene = bpy.context.scene
-    rx = scene.render.resolution_x
-    ry = scene.render.resolution_y
+    rx, ry = bpy_render_frame()
 
     a1 = w / h
     a2 = rx / ry
@@ -301,7 +303,7 @@ def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
 
 def is_safe_region(area: Area, x: float, y: float) -> bool:
     """ Safe region for pin operation """
-    if bpy.app.background:
+    if bpy_background_mode():
         context = get_fake_context()
         area = context.area
 
@@ -317,7 +319,7 @@ def is_safe_region(area: Area, x: float, y: float) -> bool:
 
 def is_in_area(area: Area, x: float, y: float) -> bool:
     """ Is point in area """
-    if bpy.app.background:
+    if bpy_background_mode():
         context = get_fake_context()
         area = context.area
 
@@ -326,7 +328,7 @@ def is_in_area(area: Area, x: float, y: float) -> bool:
 
 def get_pixel_relative_size(area: Area) -> float:
     """ One Pixel size in relative coords via current zoom """
-    if bpy.app.background:
+    if bpy_background_mode():
         context = get_fake_context()
         area = context.area
 

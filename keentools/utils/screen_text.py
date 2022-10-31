@@ -25,7 +25,7 @@ from .base_shaders import KTShaderBase
 
 
 class KTScreenText(KTShaderBase):
-    def __init__(self, target_class: str=bpy.types.SpaceView3D):
+    def __init__(self, target_class: Any=bpy.types.SpaceView3D):
         self.defaults: Dict = {'color': (1., 1., 1., 0.5),
                                'size': 24,
                                'shadow_color': (0., 0., 0., 0.75),
