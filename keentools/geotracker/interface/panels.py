@@ -141,9 +141,10 @@ class GT_PT_GeotrackersPanel(View3DPanel):
     def draw_header_preset(self, context):
         layout = self.layout
         row = layout.row()
-        row.operator(
+        op = row.operator(
             Config.kt_addon_settings_idname,
             text='', icon='PREFERENCES')
+        op.show = 'geotracker'
 
     def _geotracker_creation_offer(self, layout):
         settings = get_gt_settings()
@@ -212,9 +213,10 @@ class GT_PT_GeotrackersPanel(View3DPanel):
 
         row = layout.row()
         row.scale_y = 2.0
-        row.operator(
+        op = row.operator(
             Config.kt_addon_settings_idname,
             text='Install Core library', icon='PREFERENCES')
+        op.show = 'none'
 
     def draw(self, context):
         layout = self.layout
@@ -536,8 +538,11 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
 
     def draw_header_preset(self, context):
         layout = self.layout
-        row = layout.row()
+        row = layout.row(align=True)
         row.active = False
+        row.operator(
+            GTConfig.gt_addon_setup_defaults_idname,
+            text='', icon='PREFERENCES')
         row.operator(
             GTConfig.gt_help_appearance_idname,
             text='', icon='QUESTION')

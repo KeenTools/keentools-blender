@@ -35,7 +35,8 @@ from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
 from ..utils.images import set_background_image_by_movieclip
 from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_background_mode,
-                                bpy_is_animation_playing)
+                                bpy_is_animation_playing,
+                                bpy_view_camera)
 from ..utils.video import fit_render_size
 
 
@@ -300,9 +301,9 @@ class GT_OT_PinMode(Operator):
             return {'FINISHED'}
 
         if context.space_data.region_3d.view_perspective != 'CAMERA':
-            if GTConfig.prevent_view_rotation:
+            if settings.preferences().prevent_gt_view_rotation:
                 # Return back to the camera view
-                bpy.ops.view3d.view_camera()
+                bpy_view_camera()
             else:
                 _log.output('CAMERA ROTATED PINMODE OUT')
                 GTLoader.out_pinmode()

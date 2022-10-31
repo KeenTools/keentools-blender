@@ -20,9 +20,14 @@ from bpy.types import Operator
 from bpy.props import IntProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import get_operator, Config
+from ..addon_config import (get_operator,
+                            Config,
+                            show_user_preferences,
+                            show_tool_preferences)
 from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
-from ..utils.bpy_common import bpy_current_frame, bpy_background_mode
+from ..utils.bpy_common import (bpy_current_frame,
+                                bpy_background_mode,
+                                bpy_show_addon_preferences)
 from .utils.geotracker_acts import (create_geotracker_act,
                                     delete_geotracker_act,
                                     add_keyframe_act,
@@ -448,8 +453,9 @@ class GT_OT_DefaultWireframeSettings(ButtonOperator, Operator):
 
     def execute(self, context):
         settings = get_gt_settings()
-        settings.wireframe_color = GTConfig.wireframe_color[:3]
-        settings.wireframe_opacity = GTConfig.wireframe_color[3]
+        prefs = settings.preferences()
+        settings.wireframe_color = prefs.gt_wireframe_color
+        settings.wireframe_opacity = prefs.wireframe_opacity
         settings.wireframe_backface_culling = False
         return {'FINISHED'}
 
@@ -461,8 +467,9 @@ class GT_OT_DefaultPinSettings(ButtonOperator, Operator):
 
     def execute(self, context):
         settings = get_gt_settings()
-        settings.pin_size = GTConfig.pin_size
-        settings.pin_sensitivity = GTConfig.pin_sensitivity
+        prefs = settings.preferences()
+        settings.pin_size = prefs.pin_size
+        settings.pin_sensitivity = prefs.pin_sensitivity
         return {'FINISHED'}
 
 
@@ -626,6 +633,22 @@ class GT_OT_SelectGeotrackerObjects(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class GT_OT_AddonSetupDefaults(Operator):
+    bl_idname = GTConfig.gt_addon_setup_defaults_idname
+    bl_label = 'Setup FaceBuilder defaults'
+    bl_options = {'REGISTER'}
+    bl_description = 'Open FaceBuilder Settings in Preferences window'
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        show_user_preferences(facebuilder=False, geotracker=True)
+        show_tool_preferences(facebuilder=False, geotracker=True)
+        bpy_show_addon_preferences()
+        return {'FINISHED'}
+
+
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_DeleteGeoTracker,
                   GT_OT_CreatePrecalc,
@@ -667,4 +690,5 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_MoveTrackingToGeometry,
                   GT_OT_RemoveFocalKeyframe,
                   GT_OT_RemoveFocalKeyframes,
-                  GT_OT_SelectGeotrackerObjects)
+                  GT_OT_SelectGeotrackerObjects,
+                  GT_OT_AddonSetupDefaults)

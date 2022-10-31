@@ -24,7 +24,11 @@ from ..blender_independent_packages.pykeentools_loader import (
     core_filename_info as pkt_core_filename_info,
     MINIMUM_VERSION_REQUIRED as pkt_MINIMUM_VERSION_REQUIRED,
     os_name as pkt_os_name)
-from ..addon_config import Config, get_operator, get_addon_preferences
+from ..addon_config import (Config,
+                            get_operator,
+                            get_addon_preferences,
+                            show_user_preferences,
+                            show_tool_preferences)
 from .formatting import replace_newlines_with_spaces
 from ..preferences.progress import InstallationProgress
 from ..utils.ui_redraw import (force_ui_redraw,
@@ -33,6 +37,7 @@ from ..utils.ui_redraw import (force_ui_redraw,
                                collapse_all_modules,
                                mark_old_modules)
 from ..messages import get_system_info, get_gpu_info
+from ..utils.bpy_common import bpy_show_addon_preferences
 
 
 _please_accept_eula = 'You need to accept our EULA before installation'
@@ -246,8 +251,8 @@ class KTPREF_OT_InstallLicenseOnline(bpy.types.Operator):
     license_key: bpy.props.StringProperty()
 
     def _clear_license_key(self):
-        pref = get_addon_preferences()
-        pref.license_key = ''
+        prefs = get_addon_preferences()
+        prefs.license_key = ''
 
     def execute(self, context):
         logger = logging.getLogger(__name__)
@@ -405,11 +410,22 @@ class KT_OT_AddonSettings(bpy.types.Operator):
     bl_options = {'REGISTER'}
     bl_description = 'Open Addon Settings in Preferences window'
 
+    show: bpy.props.StringProperty(default='all')
+
     def draw(self, context):
         pass
 
     def execute(self, context):
-        bpy.ops.preferences.addon_show(module=Config.addon_name)
+        show_user_preferences(facebuilder=False, geotracker=False)
+        if self.show == 'facebuilder':
+            show_tool_preferences(facebuilder=True, geotracker=False)
+        elif self.show == 'geotracker':
+            show_tool_preferences(facebuilder=False, geotracker=True)
+        elif self.show == 'all':
+            show_tool_preferences(facebuilder=True, geotracker=True)
+        elif self.show == 'none':
+            show_tool_preferences(facebuilder=False, geotracker=False)
+        bpy_show_addon_preferences()
         return {'FINISHED'}
 
 

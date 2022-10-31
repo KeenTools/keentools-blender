@@ -32,8 +32,6 @@ class FBConfig:
     default_fb_camera_data_name = 'fbCamData'
     default_fb_camera_name = 'fbCamera'
 
-    user_preferences_dict_name = 'keentools_facebuilder_addon'
-
     fb_global_var_name = prefix + '_settings'
     fb_tool_name = 'FaceBuilder'
 
@@ -107,11 +105,8 @@ class FBConfig:
 
     fb_add_head_operator_idname = operators + '.add_head'
 
-    fb_user_preferences_changer = operators + '.user_pref_changer'
     fb_user_preferences_reset_all = operators + '.user_pref_reset_all'
     fb_user_preferences_get_colors = operators + '.user_pref_get_colors'
-    fb_user_preferences_reset_all_warning_idname = \
-        operators + '.user_pref_reset_all_warning'
 
     fb_default_pin_settings_idname = operators + '.default_pin_settings'
     fb_default_wireframe_settings_idname = \
@@ -219,16 +214,6 @@ class FBConfig:
 
     selected_rectangle_color = (0.871, 0.107, 0.001, 1.0)
     regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
-
-    default_user_preferences = {
-        'pin_size': {'value': 7.0, 'type': 'float'},
-        'pin_sensitivity': {'value': 16.0, 'type': 'float'},
-        'prevent_view_rotation': {'value': True, 'type': 'bool'},
-        'wireframe_color': {'value': color_schemes['default'][0], 'type': 'color'},
-        'wireframe_special_color': {'value': color_schemes['default'][1], 'type': 'color'},
-        'wireframe_midline_color': {'value': midline_color, 'type': 'color'},
-        'wireframe_opacity': {'value': wireframe_opacity, 'type': 'float'}
-    }
 
 
 def get_fb_settings_func():

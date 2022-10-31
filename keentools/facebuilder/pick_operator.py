@@ -26,6 +26,7 @@ from ..utils import coords
 from ..utils.focal_length import configure_focal_mode_and_fixes
 from .utils.manipulate import push_head_in_undo_history
 from ..utils.images import load_rgba
+from ..utils.bpy_common import bpy_view_camera
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
@@ -306,7 +307,7 @@ class FB_OT_PickMode(bpy.types.Operator):
 
         # Prevent camera rotation by user
         if context.space_data.region_3d.view_perspective != 'CAMERA':
-            bpy.ops.view3d.view_camera()
+            bpy_view_camera()
 
         return {'RUNNING_MODAL'}
 

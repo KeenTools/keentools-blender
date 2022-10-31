@@ -385,10 +385,9 @@ class KTEdgeShader3D(KTEdgeShaderBase):
 
 
 class KTEdgeShaderLocal3D(KTEdgeShader3D):
-    def __init__(self, target_class: Any, selection_color=(0.0, 0.0, 1.0, 0.4)):
+    def __init__(self, target_class: Any, mask_color=(0.0, 0.0, 1.0, 0.4)):
         self.object_world_matrix: Any = np.eye(4, dtype=np.float32)
-        self.selection_fill_color: Tuple[float, float, float, float] = \
-            selection_color
+        self.selection_fill_color: Tuple[float, float, float, float] = mask_color
         self.selection_fill_shader: Optional[Any] = None
         self.selection_fill_batch: Optional[Any] = None
         self.selection_triangle_indices: List[Tuple[int, int, int]] = []

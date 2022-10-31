@@ -69,6 +69,10 @@ class Config:
     kt_install_license_offline_idname = prefs_operators + '.install_license_offline'
     kt_floating_connect_idname = prefs_operators + '.floating_connect'
 
+    kt_user_preferences_changer = operators + '.user_pref_changer'
+    kt_user_preferences_reset_all_warning_idname = \
+        operators + '.user_pref_reset_all_warning'
+
     # Updater panels
     kt_update_panel_idname = _PT + 'update_panel'
     kt_download_notification_panel_idname = _PT + 'download_notification'
@@ -105,6 +109,24 @@ class Config:
         'latest_installation_skip_version': {'value': '', 'type': 'string'},
         'latest_show_datetime_installation_reminder': {'value': '', 'type': 'string'}
     }
+    user_preferences_dict_name = 'keentools_facebuilder_addon'
+    default_user_preferences = {
+        'pin_size': {'value': 7.0, 'type': 'float'},
+        'pin_sensitivity': {'value': 16.0, 'type': 'float'},
+        'prevent_fb_view_rotation': {'value': True, 'type': 'bool'},
+        'fb_wireframe_color': {'value': (0.039, 0.04 , 0.039), 'type': 'color'},
+        'fb_wireframe_special_color': {'value': (0.0, 0.0, 0.85098), 'type': 'color'},
+        'fb_wireframe_midline_color': {'value': (0.960784, 0.007843, 0.615686), 'type': 'color'},
+        'fb_wireframe_opacity': {'value': 0.45, 'type': 'float'},
+        'prevent_gt_view_rotation': {'value': True, 'type': 'bool'},
+        'gt_wireframe_color': {'value': (0.0, 1.0, 0.0), 'type': 'color'},
+        'gt_wireframe_opacity': {'value': 0.45, 'type': 'float'},
+        'gt_mask_3d_color': {'value': (0.0, 0.0, 1.0), 'type': 'color'},
+        'gt_mask_3d_opacity': {'value': 0.4, 'type': 'float'},
+        'gt_mask_2d_color': {'value': (0.0, 1.0, 0.0), 'type': 'color'},
+        'gt_mask_2d_opacity': {'value': 0.35, 'type': 'float'},
+    }
+
     mock_update_for_testing_flag = False
     mock_update_version = (int(addon_version.partition('.')[0]), 6, 3)
     mock_update_addon_path = 'http://localhost/addon.zip'
@@ -145,6 +167,22 @@ def facebuilder_enabled():
 def geotracker_enabled():
     prefs = get_addon_preferences()
     return prefs.geotracker_enabled
+
+
+def show_user_preferences(*, facebuilder=None, geotracker=None):
+    prefs = get_addon_preferences()
+    if facebuilder is not None:
+        prefs.show_fb_user_preferences = facebuilder
+    if geotracker is not None:
+        prefs.show_gt_user_preferences = geotracker
+
+
+def show_tool_preferences(*, facebuilder=None, geotracker=None):
+    prefs = get_addon_preferences()
+    if facebuilder is not None:
+        prefs.facebuilder_expanded = facebuilder
+    if geotracker is not None:
+        prefs.geotracker_expanded = geotracker
 
 
 def get_operator(operator_id_name):

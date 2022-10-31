@@ -20,6 +20,8 @@ from typing import Any, Dict, Callable, Tuple, List
 import bpy
 from bpy.types import Object, Mesh, Operator, Camera
 
+from ..addon_config import Config, get_addon_preferences
+
 
 def bpy_background_mode() -> bool:
     return bpy.app.background
@@ -152,3 +154,11 @@ def bpy_scene_selected_objects() -> List:
 
 def bpy_all_scene_objects() -> List:
     return bpy.data.objects
+
+
+def bpy_show_addon_preferences():
+    bpy.ops.preferences.addon_show(module=Config.addon_name)
+
+
+def bpy_view_camera():
+    bpy.ops.view3d.view_camera()

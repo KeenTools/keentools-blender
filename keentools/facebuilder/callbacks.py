@@ -320,7 +320,7 @@ def update_wireframe_image(self, context):
     wf.init_colors((settings.wireframe_color,
                     settings.wireframe_special_color,
                     settings.wireframe_midline_color),
-                    settings.wireframe_opacity)
+                   settings.wireframe_opacity)
     wf.init_wireframe_image(FBLoader.get_builder(), settings.show_specials)
     vp.update_wireframe_colors()
 
@@ -334,21 +334,6 @@ def update_pin_sensitivity(settings, context):
         settings.pin_size = settings.pin_sensitivity
 
     FBLoader.viewport().update_pin_sensitivity()
-
-
-def universal_getter(name, type):
-    def _getter(self):
-        if name in self.keys():
-            return self[name]
-        else:
-            return UserPreferences.get_value_safe(name, type)
-    return _getter
-
-
-def universal_setter(name):
-    def _setter(self, value):
-        self[name] = value
-    return _setter
 
 
 def update_pin_size(settings, context):
