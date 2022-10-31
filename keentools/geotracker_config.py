@@ -88,6 +88,8 @@ class GTConfig:
     gt_remove_focal_keyframe_idname = operators + '.remove_focal_keyframe'
     gt_remove_focal_keyframes_idname = operators + '.remove_focal_keyframes'
     gt_addon_setup_defaults_idname = operators + '.addon_setup_defaults'
+    gt_user_preferences_get_colors = operators + '.user_pref_get_colors'
+    gt_user_preferences_reset_all = operators + '.user_pref_reset_all'
 
     # Panel ids
     gt_geotrackers_panel_idname = _PT + 'geotrackers_panel'

@@ -42,8 +42,8 @@ from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
 from ..utils.video import fit_render_size, fit_time_length
 from ..utils.bpy_common import bpy_render_frame, bpy_start_frame, bpy_end_frame
 from ..preferences.user_preferences import (UserPreferences,
-                                            universal_attr_getter,
-                                            universal_attr_setter)
+                                            universal_cached_getter,
+                                            universal_cached_setter)
 
 
 _log = KTLogger(__name__)
@@ -326,18 +326,6 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         return nm
 
 
-def _universal_getter(name, type):
-    def _getter(self):
-        return UserPreferences.get_value_safe(name, type)
-    return _getter
-
-
-def _universal_setter(name):
-    def _setter(self, value):
-        UserPreferences.set_value(name, value)
-    return _setter
-
-
 class GTSceneSettings(bpy.types.PropertyGroup):
     ui_write_mode: bpy.props.BoolProperty(name='UI Write mode', default=False)
     pinmode: bpy.props.BoolProperty(name='Pinmode status', default=False)
@@ -376,8 +364,8 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         min=1.0, max=100.0,
         precision=1,
         update=update_pin_size,
-        get=universal_attr_getter('pin_size', 'float'),
-        set=universal_attr_setter('pin_size')
+        get=universal_cached_getter('pin_size', 'float'),
+        set=universal_cached_setter('pin_size')
     )
     pin_sensitivity: bpy.props.FloatProperty(
         description='Set active area in pixels',
@@ -387,8 +375,8 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         min=1.0, max=100.0,
         precision=1,
         update=update_pin_sensitivity,
-        get=universal_attr_getter('pin_sensitivity', 'float'),
-        set=universal_attr_setter('pin_sensitivity')
+        get=universal_cached_getter('pin_sensitivity', 'float'),
+        set=universal_cached_setter('pin_sensitivity')
     )
 
     anim_start: bpy.props.IntProperty(name='from', default=1)

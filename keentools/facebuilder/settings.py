@@ -58,8 +58,8 @@ from .callbacks import (update_mesh_with_dialog,
                         update_camera_focal,
                         update_background_tone_mapping)
 from ..preferences.user_preferences import (UserPreferences,
-                                            universal_attr_getter,
-                                            universal_attr_setter)
+                                            universal_cached_getter,
+                                            universal_cached_setter)
 from .utils.manipulate import get_current_head
 from ..utils.images import tone_mapping, reset_tone_mapping
 from ..blender_independent_packages.pykeentools_loader.config import set_mock_update_paths
@@ -708,8 +708,8 @@ class FBSceneSettings(PropertyGroup):
                                                UserPreferences.type_float),
         min=0.0, max=1.0,
         update=update_wireframe_func,
-        get=universal_attr_getter('fb_wireframe_opacity', 'float'),
-        set=universal_attr_setter('fb_wireframe_opacity'))
+        get=universal_cached_getter('fb_wireframe_opacity', 'float'),
+        set=universal_cached_setter('fb_wireframe_opacity'))
     wireframe_color: FloatVectorProperty(
         description='Color of the FaceBuilder mesh wireframe in pin-mode',
         name='Wireframe Color', subtype='COLOR',
@@ -717,8 +717,8 @@ class FBSceneSettings(PropertyGroup):
                                                UserPreferences.type_color),
         min=0.0, max=1.0,
         update=update_wireframe_image,
-        get=universal_attr_getter('fb_wireframe_color', 'color'),
-        set=universal_attr_setter('fb_wireframe_color'))
+        get=universal_cached_getter('fb_wireframe_color', 'color'),
+        set=universal_cached_setter('fb_wireframe_color'))
     wireframe_special_color: FloatVectorProperty(
         description='Color of special parts in pin-mode',
         name='Wireframe Special Color', subtype='COLOR',
@@ -726,8 +726,8 @@ class FBSceneSettings(PropertyGroup):
                                                UserPreferences.type_color),
         min=0.0, max=1.0,
         update=update_wireframe_image,
-        get=universal_attr_getter('fb_wireframe_special_color', 'color'),
-        set=universal_attr_setter('fb_wireframe_special_color'))
+        get=universal_cached_getter('fb_wireframe_special_color', 'color'),
+        set=universal_cached_setter('fb_wireframe_special_color'))
     wireframe_midline_color: FloatVectorProperty(
         description='Color of midline in pin-mode',
         name='Wireframe Midline Color', subtype='COLOR',
@@ -735,8 +735,8 @@ class FBSceneSettings(PropertyGroup):
                                                UserPreferences.type_color),
         min=0.0, max=1.0,
         update=update_wireframe_image,
-        get=universal_attr_getter('fb_wireframe_midline_color', 'color'),
-        set=universal_attr_setter('fb_wireframe_midline_color'))
+        get=universal_cached_getter('fb_wireframe_midline_color', 'color'),
+        set=universal_cached_setter('fb_wireframe_midline_color'))
     show_specials: BoolProperty(
         description='Use different colors for important head parts '
                     'on the mesh',
@@ -751,8 +751,8 @@ class FBSceneSettings(PropertyGroup):
         min=1.0, max=100.0,
         precision=1,
         update=update_pin_size,
-        get=universal_attr_getter('pin_size', 'float'),
-        set=universal_attr_setter('pin_size'))
+        get=universal_cached_getter('pin_size', 'float'),
+        set=universal_cached_setter('pin_size'))
     pin_sensitivity: FloatProperty(
         description='Set active area in pixels',
         name='Active area',
@@ -761,8 +761,8 @@ class FBSceneSettings(PropertyGroup):
         min=1.0, max=100.0,
         precision=1,
         update=update_pin_sensitivity,
-        get=universal_attr_getter('pin_sensitivity', 'float'),
-        set=universal_attr_setter('pin_sensitivity')
+        get=universal_cached_getter('pin_sensitivity', 'float'),
+        set=universal_cached_setter('pin_sensitivity')
     )
 
     # Other settings

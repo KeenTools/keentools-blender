@@ -69,6 +69,10 @@ class Config:
     kt_install_license_offline_idname = prefs_operators + '.install_license_offline'
     kt_floating_connect_idname = prefs_operators + '.floating_connect'
 
+    kt_user_preferences_changer = operators + '.user_pref_changer'
+    kt_user_preferences_reset_all_warning_idname = \
+        operators + '.user_pref_reset_all_warning'
+
     # Updater panels
     kt_update_panel_idname = _PT + 'update_panel'
     kt_download_notification_panel_idname = _PT + 'download_notification'

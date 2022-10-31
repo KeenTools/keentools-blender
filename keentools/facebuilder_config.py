@@ -105,11 +105,8 @@ class FBConfig:
 
     fb_add_head_operator_idname = operators + '.add_head'
 
-    fb_user_preferences_changer = operators + '.user_pref_changer'
     fb_user_preferences_reset_all = operators + '.user_pref_reset_all'
     fb_user_preferences_get_colors = operators + '.user_pref_get_colors'
-    fb_user_preferences_reset_all_warning_idname = \
-        operators + '.user_pref_reset_all_warning'
 
     fb_default_pin_settings_idname = operators + '.default_pin_settings'
     fb_default_wireframe_settings_idname = \

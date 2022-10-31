@@ -23,8 +23,10 @@ This module contains everything connected with the addon preferences
 from .operators import *
 from .ui import (reset_updater_preferences_to_default,
                  KTPREF_OT_UserPreferencesChanger,
-                 KRPREF_OT_UserPreferencesGetColors,
-                 KTPREF_OT_UserPreferencesResetAll,
+                 GTPREF_OT_UserPreferencesGetColors,
+                 FBPREF_OT_UserPreferencesGetColors,
+                 FBPREF_OT_UserPreferencesResetAll,
+                 GTPREF_OT_UserPreferencesResetAll,
                  KTPREF_OT_UserPreferencesResetAllWarning,
                  KTAddonPreferences)
 
@@ -46,8 +48,10 @@ CLASSES_TO_REGISTER = (
     KT_OT_OpenURL,
     KT_OT_UninstallCore,
     KTPREF_OT_UserPreferencesChanger,
-    KRPREF_OT_UserPreferencesGetColors,
-    KTPREF_OT_UserPreferencesResetAll,
+    GTPREF_OT_UserPreferencesGetColors,
+    FBPREF_OT_UserPreferencesGetColors,
+    FBPREF_OT_UserPreferencesResetAll,
+    GTPREF_OT_UserPreferencesResetAll,
     KTPREF_OT_UserPreferencesResetAllWarning,
     KTAddonPreferences
 )

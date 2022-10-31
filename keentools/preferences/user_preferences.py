@@ -120,7 +120,19 @@ class UpdaterPreferences(UserPreferences):
                      for k in Config.default_updater_preferences.keys()}
 
 
-def universal_attr_getter(name, type):
+def universal_direct_getter(name, type):
+    def _getter(self):
+        return UserPreferences.get_value_safe(name, type)
+    return _getter
+
+
+def universal_direct_setter(name):
+    def _setter(self, value):
+        UserPreferences.set_value(name, value)
+    return _setter
+
+
+def universal_cached_getter(name, type):
     def _getter(self):
         if name in self.keys():
             return self[name]
@@ -129,7 +141,7 @@ def universal_attr_getter(name, type):
     return _getter
 
 
-def universal_attr_setter(name):
+def universal_cached_setter(name):
     def _setter(self, value):
         self[name] = value
     return _setter
