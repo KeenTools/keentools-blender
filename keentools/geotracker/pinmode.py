@@ -19,7 +19,6 @@
 from typing import Any, Set, Optional
 from uuid import uuid4
 
-import bpy
 from bpy.types import Area, Operator
 from bpy.props import IntProperty, StringProperty
 
@@ -27,7 +26,10 @@ from ..utils.kt_logging import KTLogger
 from ..addon_config import get_operator
 from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
 from .gtloader import GTLoader
-from ..utils import coords
+from ..utils.coords import (point_is_in_area,
+                            point_is_in_service_region,
+                            get_image_space_coord,
+                            nearest_point)
 
 from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
@@ -78,7 +80,7 @@ class GT_OT_PinMode(Operator):
         vp = GTLoader.viewport()
         vp.update_view_relative_pixel_size(area)
 
-        if not coords.is_safe_region(area, mouse_x, mouse_y):
+        if point_is_in_service_region(area, mouse_x, mouse_y):
             return {'PASS_THROUGH'}
 
         pins = vp.pins()
@@ -87,8 +89,8 @@ class GT_OT_PinMode(Operator):
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y)
             return {'PASS_THROUGH'}
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, area)
-        nearest, dist2 = coords.nearest_point(x, y, vp.pins().arr())
+        x, y = get_image_space_coord(mouse_x, mouse_y, area)
+        nearest, dist2 = nearest_point(x, y, vp.pins().arr())
         if nearest >= 0 and dist2 < vp.tolerance_dist2():
             _log.output(f'CHANGE SELECTION PIN FOUND: {nearest}')
             pins.set_current_pin_num(nearest)
@@ -109,9 +111,9 @@ class GT_OT_PinMode(Operator):
         vp = GTLoader.viewport()
         vp.update_view_relative_pixel_size(area)
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, area)
+        x, y = get_image_space_coord(mouse_x, mouse_y, area)
 
-        nearest, dist2 = coords.nearest_point(x, y, vp.pins().arr())
+        nearest, dist2 = nearest_point(x, y, vp.pins().arr())
         if nearest >= 0 and dist2 < vp.tolerance_dist2():
             return self._delete_found_pin(nearest, area)
 
@@ -347,8 +349,8 @@ class GT_OT_PinMode(Operator):
             return {'FINISHED'}
 
         if event.type == 'TAB' and event.value == 'PRESS':
-            if coords.is_in_area(context.area,
-                                 event.mouse_region_x, event.mouse_region_y):
+            if point_is_in_area(context.area,
+                                event.mouse_region_x, event.mouse_region_y):
                 self._change_wireframe_visibility()
                 return {'RUNNING_MODAL'}
 

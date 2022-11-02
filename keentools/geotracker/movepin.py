@@ -28,7 +28,9 @@ from ..geotracker_config import (GTConfig,
 from .gtloader import GTLoader
 from ..utils.coords import (get_image_space_coord,
                             image_space_to_frame,
-                            nearest_point)
+                            nearest_point,
+                            point_is_in_area,
+                            point_is_in_service_region)
 from ..utils.manipulate import force_undo_push
 from ..utils.bpy_common import bpy_current_frame, get_scene_camera_shift
 
@@ -224,11 +226,18 @@ class GT_OT_MovePin(bpy.types.Operator):
 
     def invoke(self, context: Any, event: Any) -> Set:
         self.dragged = False
-        if not self.init_action(context,
-                                event.mouse_region_x, event.mouse_region_y):
+        mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
+        if not point_is_in_area(context.area, mouse_x, mouse_y):
+            _log.output(f'OUT OF AREA: {mouse_x}, {mouse_y}')
+            return {'CANCELLED'}
+        if point_is_in_service_region(context.area, mouse_x, mouse_y):
+            _log.output(f'OUT OF SAFE REGION: {mouse_x}, {mouse_y}')
+            return {'CANCELLED'}
+
+        if not self.init_action(context, mouse_x, mouse_y):
             settings = get_gt_settings()
-            settings.start_selection(event.mouse_region_x, event.mouse_region_y)
-            _log.output('START SELECTION')
+            settings.start_selection(mouse_x, mouse_y)
+            _log.output(f'START SELECTION: {mouse_x}, {mouse_y}')
             return {'CANCELLED'}
 
         self._move_pin_mode_on()
