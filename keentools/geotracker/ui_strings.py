@@ -24,6 +24,10 @@ from ..geotracker_config import GTConfig
 Button = namedtuple('Button', ['label', 'description'])
 
 buttons = {
+    GTConfig.gt_addon_setup_defaults_idname: Button(
+        'Setup GeoTracker defaults',
+        'Open GeoTracker Settings in Preferences window'
+    ),
     GTConfig.gt_create_geotracker_idname: Button(
         'Create GeoTracker',
         'Create a new GeoTracker object in scene'

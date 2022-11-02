@@ -635,9 +635,9 @@ class GT_OT_SelectGeotrackerObjects(ButtonOperator, Operator):
 
 class GT_OT_AddonSetupDefaults(Operator):
     bl_idname = GTConfig.gt_addon_setup_defaults_idname
-    bl_label = 'Setup FaceBuilder defaults'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER'}
-    bl_description = 'Open FaceBuilder Settings in Preferences window'
 
     def draw(self, context):
         pass

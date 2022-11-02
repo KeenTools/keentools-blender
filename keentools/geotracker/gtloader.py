@@ -411,8 +411,12 @@ class GTLoader:
             return False
 
         gt = cls.kt_geotracker()
-        if not gt.deserialize(serial):
-            _log.warning(f'DESERIALIZE ERROR: {serial}')
+        try:
+            if not gt.deserialize(serial):
+                _log.warning(f'DESERIALIZE ERROR: {serial}')
+                return False
+        except Exception as err:
+            _log.error(f'load_geotracker Exception:\n{str(err)}')
             return False
         cls._deserialize_global_options()
         return True
