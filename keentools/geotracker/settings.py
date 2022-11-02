@@ -167,19 +167,6 @@ def update_mask_2d(geotracker, context):
     settings.reload_mask_2d()
 
 
-def get_camera_focal_length(geotracker):
-    return camera_focal_length(geotracker.camobj)
-
-
-def set_camera_focal_length(geotracker, value):
-    if not geotracker or not geotracker.camobj:
-        return
-    geotracker.camobj.data.lens = value
-    settings = get_gt_settings()
-    if settings.pinmode:
-        GTLoader.update_all_viewport_shaders()
-
-
 class FrameListItem(bpy.types.PropertyGroup):
     num: bpy.props.IntProperty(name='Frame number', default=-1)
     selected: bpy.props.BoolProperty(name='Selected', default=False)
@@ -217,18 +204,14 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     spring_pins_back: bpy.props.BoolProperty(name='Spring pins back',
                                              default=True)
 
-    focal_length: bpy.props.FloatProperty(name='Focal Length',
-                                          default=50.0,
-                                          min=0.01, max=15000.0,
-                                          options={'HIDDEN'},  # to prevent animation
-                                          get=get_camera_focal_length,
-                                          set=set_camera_focal_length)
     focal_length_estimation: bpy.props.BoolProperty(
         name='Estimate focal length',
         description='To enable this you need choose STATIC FOCAL as mode',
         default=False)
-    track_focal_length: bpy.props.BoolProperty(name='Track focal length',
-                                               default=False)
+    track_focal_length: bpy.props.BoolProperty(
+        name='Track focal length',
+        description='This can be enabled only in ZOOM FOCAL LENGTH as mode',
+        default=False)
 
     tone_exposure: bpy.props.FloatProperty(
         name='Exposure', description='Tone gain',
@@ -239,20 +222,29 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         name='Gamma correction', description='Tone gamma correction',
         default=Config.default_tone_gamma, min=0.01, max=10.0, soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
-    default_zoom_focal_length: bpy.props.FloatProperty(name='Default Zoom FL',
-                                                       default=50.0 / 36.0 * 1920,
-                                                       min=0.01, max=15000.0 / 36.0 * 1920)
+    default_zoom_focal_length: bpy.props.FloatProperty(
+        name='Default Zoom FL',
+        default=50.0 / 36.0 * 1920,
+        min=0.01, max=15000.0 / 36.0 * 1920)
     static_focal_length: bpy.props.FloatProperty(name='Static FL',
                                                  default=50.0 / 36.0 * 1920,
                                                  min=0.01, max=15000.0 / 36.0 * 1920)
-    focal_length_mode: bpy.props.EnumProperty(name='Focal length mode', items=[
-        ('CAMERA_FOCAL_LENGTH', 'CAMERA FOCAL LENGTH', 'Camera focal length', 0),
-        ('STATIC_FOCAL_LENGTH', 'STATIC FOCAL LENGTH', 'Static focal length', 1),
-        ('ZOOM_FOCAL_LENGTH', 'ZOOM FOCAL LENGTH', 'Zoom focal length', 2),
-    ], description='Focal length mode', update=update_focal_length_mode)
+    focal_length_mode: bpy.props.EnumProperty(name='Focal length mode',
+        items=[
+            ('CAMERA_FOCAL_LENGTH', 'CAMERA FOCAL LENGTH',
+            'Use camera object focal length', 0),
+            ('STATIC_FOCAL_LENGTH', 'STATIC FOCAL LENGTH',
+            'Use the same static focal length in tracking', 1),
+            ('ZOOM_FOCAL_LENGTH', 'ZOOM FOCAL LENGTH',
+            'Use zooming focal length in tracking', 2)],
+        description='Focal length calculation mode',
+        update=update_focal_length_mode)
 
-    precalcless: bpy.props.BoolProperty(name='Precalcless tracking',
-                                        default=True)
+    precalcless: bpy.props.BoolProperty(
+        name='Precalcless tracking',
+        description='Using analysis (.precalc) file makes a tracking faster. '
+                    'Precalcless tracking can help in difficult situations',
+        default=True)
 
     selected_frames: bpy.props.CollectionProperty(type=FrameListItem,
                                                   name='Selected frames')
@@ -272,8 +264,8 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
                     '(It does not work yet)',
         update=update_mask_2d)
     mask_2d_inverted: bpy.props.BoolProperty(
-        name='Invert Mask 3D',
-        description='Invert Mask 3D Vertex Group',
+        name='Invert Mask 2D',
+        description='Invert Mask 2D area',
         default=False,
         update=update_mask_2d)
 
@@ -292,6 +284,11 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     def animatable_object(self) -> Optional[Object]:
         if self.camera_mode():
+            return self.camobj
+        return self.geomobj
+
+    def secondary_object(self) -> Optional[Object]:
+        if not self.camera_mode():
             return self.camobj
         return self.geomobj
 

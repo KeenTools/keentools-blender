@@ -79,11 +79,14 @@ def depsgraph_update_handler(scene, depsgraph):
     geotracker = settings.get_current_geotracker_item()
     if not geotracker:
         return
-    obj = geotracker.animatable_object()
-    if not obj:
-        return
 
-    if _check_updated(depsgraph, obj.name):
+    geomobj = geotracker.geomobj
+    camobj = geotracker.camobj
+
+    if geomobj and _check_updated(depsgraph, geomobj.name):
+        GTLoader.update_all_viewport_shaders()
+        return
+    if camobj and _check_updated(depsgraph, camobj.name):
         GTLoader.update_all_viewport_shaders()
 
 
