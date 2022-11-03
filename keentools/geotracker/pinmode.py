@@ -385,9 +385,8 @@ class GT_OT_PinMode(Operator):
 
         if GTLoader.geomobj_mode_changed_to_object():
             _log.output(_log.color('green', 'RETURNED TO OBJECT_MODE'))
-            vp.unhide_pins_and_residuals()
+            self._change_wireframe_visibility(toggle=False, value=True)
             GTLoader.update_all_viewport_shaders()
-            return {'PASS_THROUGH'}
 
         if self._check_camera_state_changed(context.space_data.region_3d) \
                 or self._check_area_state_changed(GTLoader.get_work_area()):
@@ -399,6 +398,15 @@ class GT_OT_PinMode(Operator):
 
         if event.type == 'TIMER' and GTLoader.get_stored_geomobj_mode() == 'EDIT':
             _log.output('TIMER IN EDIT_MODE')
+            vp.message_to_screen([
+                {'text': 'Object is in EDIT MODE',
+                 'color': (1., 0., 1., 0.7),
+                 'size': 24,
+                 'y': 60},  # line 1
+                {'text': 'ESC: Exit | TAB: Hide/Show',
+                 'color': (1., 1., 1., 0.5),
+                 'size': 20,
+                 'y': 30}])  # line 2
             GTLoader.update_geomobj_mesh()
             vp.hide_pins_and_residuals()
             GTLoader.update_all_viewport_shaders()
