@@ -24,6 +24,162 @@ from ..facebuilder_config import FBConfig
 Button = namedtuple('Button', ['label', 'description'])
 
 buttons = {
+    FBConfig.fb_select_head_idname: Button(
+        'Select head',
+        'Select head in the scene'
+    ),
+    FBConfig.fb_delete_head_idname: Button(
+        'Delete head',
+        'Delete the head and its cameras from the scene'
+    ),
+    FBConfig.fb_select_camera_idname: Button(
+        'Pin Mode Select Camera',
+        'Switch to Pin mode for this view'
+    ),
+    FBConfig.fb_center_geo_idname: Button(
+        'Reset Camera',
+        'Place the camera so the model will be centred in the view'
+    ),
+    FBConfig.fb_unmorph_idname: Button(
+        'Reset',
+        'Reset shape deformations to the default state. '
+        'It will remove all pins as well'
+    ),
+    FBConfig.fb_remove_pins_idname: Button(
+        'Remove pins',
+        'Remove all pins on this view'
+    ),
+    FBConfig.fb_wireframe_color_idname: Button(
+        'Wireframe color',
+        'Choose the wireframe coloring scheme'
+    ),
+    FBConfig.fb_filter_cameras_idname: Button(
+        'Camera Filter',
+        'Select cameras to use for texture baking'
+    ),
+    FBConfig.fb_delete_camera_idname: Button(
+        'Delete View',
+        'Delete this view and its camera from the scene'
+    ),
+    FBConfig.fb_proper_view_menu_exec_idname: Button(
+        'View operations',
+        'Delete the view or modify the image file path'
+    ),
+    FBConfig.fb_addon_setup_defaults_idname: Button(
+        'Setup FaceBuilder defaults',
+        'Open FaceBuilder Settings in Preferences window'
+    ),
+    FBConfig.fb_bake_tex_idname: Button(
+        'Bake Texture',
+        'Bake the texture using all selected cameras. '
+        'It can take a lot of time, be patient'
+    ),
+    FBConfig.fb_delete_texture_idname: Button(
+        'Delete texture',
+        'Delete the created texture from the scene'
+    ),
+    FBConfig.fb_rotate_image_cw_idname: Button(
+        'Rotate Image CW',
+        'Rotate image clock-wise'
+    ),
+    FBConfig.fb_rotate_image_ccw_idname: Button(
+        'Rotate Image CCW',
+        'Rotate image counter clock-wise'
+    ),
+    FBConfig.fb_reset_image_rotation_idname: Button(
+        'Reset Image Rotation',
+        'Reset Image Rotation'
+    ),
+    FBConfig.fb_reset_expression_idname: Button(
+        'Reset expression',
+        'Reset expression'
+    ),
+    FBConfig.fb_show_tex_idname: Button(
+        'Show Texture',
+        'Create a material from the generated texture and apply it to the model'
+    ),
+    FBConfig.fb_show_solid_idname: Button(
+        'Show Solid',
+        'Hide texture and go back to Solid mode'
+    ),
+    FBConfig.fb_exit_pinmode_idname: Button(
+        'Exit Pin mode',
+        'Exit Pin mode'
+    ),
+    FBConfig.fb_create_blendshapes_idname: Button(
+        'Create',
+        'Create FACS blendshapes'
+    ),
+    FBConfig.fb_delete_blendshapes_idname: Button(
+        'Delete',
+        'Delete all blendshapes (Shape Keys), unlink animation'
+    ),
+    FBConfig.fb_load_animation_from_csv_idname: Button(
+        'Load CSV',
+        'Load animation keyframes from a CSV file (LiveLinkFace format)'
+    ),
+    FBConfig.fb_create_example_animation_idname: Button(
+        'Example keyframes',
+        'Create example animation keyframes for each blendshape'
+    ),
+    FBConfig.fb_reset_blendshape_values_idname: Button(
+        'Reset values',
+        'Reset the values of blendshapes (Shape Keys), '
+        'so the model will be in the neutral state. '
+        'This doesn\'t affect any of the existing keyframes. '
+        'If you want to store the neutral state to a keyframe, '
+        'you need to do it manually'
+    ),
+    FBConfig.fb_clear_animation_idname: Button(
+        'Clear animation',
+        'Unlink animation from blendshapes (Shape Keys). '
+        'Effectively, removes the model animation. '
+        'You can "reattach" the animation to the head '
+        'until you close the project. Once the project is closed '
+        'all unlinked animation is lost'
+    ),
+    FBConfig.fb_export_head_to_fbx_idname: Button(
+        'Export as FBX',
+        'Export geometry with all blendshapes '
+        'and animation to FBX suitable '
+        'for game engines (UE4, Unity, etc.)'
+    ),
+    FBConfig.fb_update_blendshapes_idname: Button(
+        'Update',
+        'Update blendshapes'
+    ),
+    FBConfig.fb_unhide_head_idname: Button(
+        'Show Head',
+        'Show Head'
+    ),
+    FBConfig.fb_reconstruct_head_idname: Button(
+        'Reconstruct!',
+        'Reconstruct head by KeenTools attributes on mesh'
+    ),
+    FBConfig.fb_default_pin_settings_idname: Button(
+        'Revert to defaults',
+        'Set pin size and active area as in the saved defaults'
+    ),
+    FBConfig.fb_default_wireframe_settings_idname: Button(
+        'Revert to defaults',
+        'Set the wireframe colours and opacity as in the saved defaults'
+    ),
+    FBConfig.fb_select_current_head_idname: Button(
+        'Current head',
+        'Select current head in the scene'
+    ),
+    FBConfig.fb_select_current_camera_idname: Button(
+        'Current view',
+        'Current view. Press to exit from Pin mode'
+    ),
+    FBConfig.fb_reset_tone_exposure_idname: Button(
+        'Reset exposure',
+        'Reset exposure in tone mapping'
+    ),
+    FBConfig.fb_reset_tone_gamma_idname: Button(
+        'Reset gamma',
+        'Reset gamma in tone mapping'
+    ),
     # Help buttons
     FBConfig.fb_help_camera_idname: Button(
         'Camera settings',
