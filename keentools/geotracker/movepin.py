@@ -225,12 +225,14 @@ class GT_OT_MovePin(bpy.types.Operator):
             return {'FINISHED'}
 
     def invoke(self, context: Any, event: Any) -> Set:
+        _log.output('GT MOVEPIN invoke')
         self.dragged = False
+        area = GTLoader.get_work_area()
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
         if not point_is_in_area(context.area, mouse_x, mouse_y):
             _log.output(f'OUT OF AREA: {mouse_x}, {mouse_y}')
             return {'CANCELLED'}
-        if point_is_in_service_region(context.area, mouse_x, mouse_y):
+        if point_is_in_service_region(area, mouse_x, mouse_y):
             _log.output(f'OUT OF SAFE REGION: {mouse_x}, {mouse_y}')
             return {'CANCELLED'}
 

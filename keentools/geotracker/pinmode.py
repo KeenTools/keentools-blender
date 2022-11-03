@@ -40,6 +40,7 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_is_animation_playing,
                                 bpy_view_camera)
 from ..utils.video import fit_render_size
+from .utils.prechecks import common_checks
 
 
 _log = KTLogger(__name__)
@@ -56,6 +57,7 @@ class GT_OT_PinMode(Operator):
 
     _shift_pressed = False
     _prev_camera_state = ()
+    _prev_area_state = ()
 
     @classmethod
     def _check_camera_state_changed(cls, rv3d):
@@ -63,6 +65,16 @@ class GT_OT_PinMode(Operator):
 
         if camera_state != cls._prev_camera_state:
             cls._prev_camera_state = camera_state
+            return True
+
+        return False
+
+    @classmethod
+    def _check_area_state_changed(cls, area):
+        area_state = (area.x, area.y, area.width, area.height)
+
+        if area_state != cls._prev_area_state:
+            cls._prev_area_state = area_state
             return True
 
         return False
@@ -79,6 +91,9 @@ class GT_OT_PinMode(Operator):
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
         vp = GTLoader.viewport()
         vp.update_view_relative_pixel_size(area)
+
+        if not point_is_in_area(area, mouse_x, mouse_y):
+            return {'PASS_THROUGH'}
 
         if point_is_in_service_region(area, mouse_x, mouse_y):
             return {'PASS_THROUGH'}
@@ -103,6 +118,7 @@ class GT_OT_PinMode(Operator):
         else:
             settings = get_gt_settings()
             settings.start_selection(mouse_x, mouse_y)
+        GTLoader.update_all_viewport_shaders()
         vp.tag_redraw()
         return {'PASS_THROUGH'}
 
@@ -236,8 +252,15 @@ class GT_OT_PinMode(Operator):
     def invoke(self, context: Any, event: Any) -> Set:
         _log.output(f'INVOKE PINMODE: {self.geotracker_num}')
 
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     reload_geotracker=True, geotracker=True,
+                                     camera=True, geometry=True,
+                                     movie_clip=False)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         settings = get_gt_settings()
-        settings.fix_geotrackers()
         old_geotracker_num = settings.current_geotracker_num
         new_geotracker_num = old_geotracker_num if \
             self.geotracker_num == -1 else self.geotracker_num
@@ -328,6 +351,7 @@ class GT_OT_PinMode(Operator):
         if settings.selection_mode:
             if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
                 settings.end_selection(context.area, event.mouse_region_x, event.mouse_region_y)
+                GTLoader.update_all_viewport_shaders()
             else:
                 settings.do_selection(event.mouse_region_x, event.mouse_region_y)
             vp = GTLoader.viewport()
@@ -352,31 +376,31 @@ class GT_OT_PinMode(Operator):
             if point_is_in_area(context.area,
                                 event.mouse_region_x, event.mouse_region_y):
                 self._change_wireframe_visibility()
+                vp = GTLoader.viewport()
+                vp.tag_redraw()
                 return {'RUNNING_MODAL'}
 
         if GTLoader.geomobj_mode_changed_to_object():
             _log.output('RETURNED TO OBJECT_MODE')
             GTLoader.save_geotracker()
             GTLoader.load_geotracker()
-            GTLoader.update_all_viewport_shaders(context.area)
+            GTLoader.update_all_viewport_shaders()
             return {'PASS_THROUGH'}
 
-        if event.type == 'TIMER' and GTLoader.get_stored_geomobj_mode() == 'EDIT':
-            _log.output('TIMER IN EDIT_MODE')
-            GTLoader.update_geomobj_mesh()
-            GTLoader.save_geotracker()
-            GTLoader.load_geotracker()
-            GTLoader.update_all_viewport_shaders(context.area)
-            return {'PASS_THROUGH'}
-
-        if self._check_camera_state_changed(context.space_data.region_3d) or event.type == 'TIMER':
-            if event.type != 'TIMER':
-                _log.output('FORCE TAG REDRAW BY VIEWPORT ZOOM/OFFSET')
+        if self._check_camera_state_changed(context.space_data.region_3d) \
+                or self._check_area_state_changed(GTLoader.get_work_area()):
+            _log.output('FORCE TAG REDRAW BY VIEWPORT ZOOM/OFFSET')
             vp = GTLoader.viewport()
             vp.create_batch_2d(context.area)
             vp.update_residuals(GTLoader.kt_geotracker(), context.area,
                                 bpy_current_frame())
             vp.tag_redraw()
+
+        if event.type == 'TIMER' and GTLoader.get_stored_geomobj_mode() == 'EDIT':
+            _log.output('TIMER IN EDIT_MODE')
+            GTLoader.update_geomobj_mesh()
+            GTLoader.update_all_viewport_shaders()
+            return {'PASS_THROUGH'}
 
         if event.value == 'PRESS' and event.type == 'LEFTMOUSE':
             return self._on_left_mouse_press(context.area, event)
@@ -384,4 +408,4 @@ class GT_OT_PinMode(Operator):
         if event.value == 'PRESS' and event.type == 'RIGHTMOUSE':
             return self._on_right_mouse_press(context.area, event)
 
-        return {'PASS_THROUGH'}  # {'RUNNING_MODAL'}
+        return {'PASS_THROUGH'}

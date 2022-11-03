@@ -132,20 +132,20 @@ def update_background_tone_mapping(geotracker, context: Any) -> None:
                  exposure=geotracker.tone_exposure, gamma=geotracker.tone_gamma)
 
 
-def update_pin_sensitivity(settings, context):
+def update_pin_sensitivity(settings, context: Any) -> None:
     if settings.pin_size > settings.pin_sensitivity:
         settings.pin_size = settings.pin_sensitivity
 
     GTLoader.viewport().update_pin_sensitivity()
 
 
-def update_pin_size(settings, context):
+def update_pin_size(settings, context: Any) -> None:
     if settings.pin_sensitivity < settings.pin_size:
         settings.pin_sensitivity = settings.pin_size
     GTLoader.viewport().update_pin_size()
 
 
-def update_focal_length_mode(geotracker, context):
+def update_focal_length_mode(geotracker, context: Any) -> None:
     _log.output(f'update_focal_length_mode: {geotracker.focal_length_mode}')
     if geotracker.focal_length_mode == 'STATIC_FOCAL_LENGTH':
         geotracker.static_focal_length = focal_mm_to_px(
@@ -153,18 +153,29 @@ def update_focal_length_mode(geotracker, context):
             *bpy_render_frame(), camera_sensor_width(geotracker.camobj))
 
 
-def update_mask_3d(geotracker, context):
+def update_mask_3d(geotracker, context: Any) -> None:
     GTLoader.update_viewport_wireframe()
     settings = get_gt_settings()
     settings.reload_current_geotracker()
     settings.reload_mask_3d()
 
 
-def update_mask_2d(geotracker, context):
+def update_mask_2d(geotracker, context: Any) -> None:
     GTLoader.update_viewport_wireframe()
     settings = get_gt_settings()
     settings.reload_current_geotracker()
     settings.reload_mask_2d()
+
+
+def update_spring_pins_back(geotracker, context: Any) -> None:
+    if geotracker.spring_pins_back:
+        GTLoader.load_geotracker()
+        GTLoader.spring_pins_back()
+        GTLoader.save_geotracker()
+        settings = get_gt_settings()
+        if settings.pinmode:
+            GTLoader.update_all_viewport_shaders()
+            GTLoader.viewport_area_redraw()
 
 
 class FrameListItem(bpy.types.PropertyGroup):
@@ -201,8 +212,9 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         description='Which object will be tracked Geometry or Camera',
         default=False)
     reduce_pins: bpy.props.BoolProperty(name='Reduce pins', default=False)
-    spring_pins_back: bpy.props.BoolProperty(name='Spring pins back',
-                                             default=True)
+    spring_pins_back: bpy.props.BoolProperty(
+        name='Spring pins back', default=True,
+        update=update_spring_pins_back)
 
     focal_length_estimation: bpy.props.BoolProperty(
         name='Estimate focal length',
