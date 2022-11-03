@@ -228,3 +228,21 @@ class GTViewport(KTViewport):
         self.wireframer().init_color_data((*settings.wireframe_color,
                                            settings.wireframe_opacity))
         self.wireframer().create_batches()
+
+    def hide_pins_and_residuals(self):
+        self.points2d().hide_shader()
+        self.residuals().hide_shader()
+
+    def unhide_pins_and_residuals(self):
+        self.points2d().unhide_shader()
+        self.residuals().unhide_shader()
+
+    def unhide_all_shaders(self):
+        self.mask2d().unhide_shader()
+        self.residuals().unhide_shader()
+        self.points3d().unhide_shader()
+        self.points2d().unhide_shader()
+        self.texter().unhide_shader()
+        self.wireframer().unhide_shader()
+        self.timeliner().unhide_shader()
+        self.selector().unhide_shader()
