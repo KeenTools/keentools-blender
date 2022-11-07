@@ -25,6 +25,7 @@ from .addon_config import Config, ErrorType
 Button = namedtuple('Button', ['label', 'description'])
 
 buttons = {
+    # Preferences
     Config.kt_open_pkt_license_page_idname: Button(
         'read license',
         'Open KeenTools license in web browser'
@@ -89,6 +90,39 @@ buttons = {
     Config.kt_uninstall_core_idname: Button(
         'Uninstall Core',
         'Uninstall Core Library'
+    ),
+    # Updater
+    Config.kt_download_the_update_idname: Button(
+        'Download the update',
+        'Download and install the latest version of FaceBuilder'
+    ),
+    Config.kt_remind_later_idname: Button(
+        'Remind later',
+        'Remind about this update tomorrow'
+    ),
+    Config.kt_skip_version_idname: Button(
+        'Skip this version',
+        'Skip this version'
+    ),
+    Config.kt_retry_download_the_update_idname: Button(
+        'Retry download',
+        'Try downloading again'
+    ),
+    Config.kt_come_back_to_update_idname: Button(
+        'Cancel',
+        'Cancel updating'
+    ),
+    Config.kt_install_updates_idname: Button(
+        '',
+        'Press to install the update and relaunch Blender'
+    ),
+    Config.kt_remind_install_later_idname: Button(
+        'Remind install tomorrow',
+        'Remind install tomorrow'
+    ),
+    Config.kt_skip_installation_idname: Button(
+        'Skip installation',
+        'Skip installation'
     ),
 }
 

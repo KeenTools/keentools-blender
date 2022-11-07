@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
 from threading import Lock
 from collections import namedtuple
 from enum import IntEnum
@@ -25,16 +24,19 @@ from typing import Tuple, List, Optional, Any
 
 import bpy
 
+from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_operator, get_addon_preferences, ErrorType
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed,
     updates_downloaded, download_core_zip_async, download_addon_zip_async,
     install_downloaded_zips)
-
 from ..utils.html import parse_html, skip_new_lines_and_spaces, render_main
 from ..utils.ui_redraw import force_ui_redraw
-
 from ..preferences.progress import KTUpdateProgressTimer
+from ..ui_strings import buttons
+
+
+_log = KTLogger(__name__)
 
 
 def _mock_response(*, product: str='FaceBuilder', ver: Tuple) -> Any:
@@ -341,9 +343,9 @@ def _download_update():
 
 class KT_OT_DownloadTheUpdate(bpy.types.Operator):
     bl_idname = Config.kt_download_the_update_idname
-    bl_label = 'Download the update'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Download and install the latest version of FaceBuilder'
 
     def execute(self, context):
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.DOWNLOADING)
@@ -354,30 +356,28 @@ class KT_OT_DownloadTheUpdate(bpy.types.Operator):
 
 class KT_OT_RemindLater(bpy.types.Operator):
     bl_idname = Config.kt_remind_later_idname
-    bl_label = 'Remind later'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Remind about this update tomorrow'
 
     def execute(self, context):
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL,
                                                              set_preferences_updater_state=False)
-        logger = logging.getLogger(__name__)
-        logger.debug('REMIND LATER')
+        _log.output('REMIND LATER')
         KTUpdater.remind_later()
         return {'FINISHED'}
 
 
 class KT_OT_SkipVersion(bpy.types.Operator):
     bl_idname = Config.kt_skip_version_idname
-    bl_label = 'Skip this version'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Skip this version'
 
     def execute(self, context):
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL,
                                                              set_preferences_updater_state=False)
-        logger = logging.getLogger(__name__)
-        logger.debug('SKIP THIS VERSION')
+        _log.output('SKIP THIS VERSION')
         prefs = get_addon_preferences()
         if not prefs:
             return {'CANCELLED'}
@@ -427,9 +427,9 @@ class KTDownloadingProblem:
 
 class KT_OT_RetryDownloadUpdate(bpy.types.Operator):
     bl_idname = Config.kt_retry_download_the_update_idname
-    bl_label = 'Retry download'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Try downloading again'
 
     def execute(self, context):
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.DOWNLOADING)
@@ -440,9 +440,9 @@ class KT_OT_RetryDownloadUpdate(bpy.types.Operator):
 
 class KT_OT_ComeBackToUpdate(bpy.types.Operator):
     bl_idname = Config.kt_come_back_to_update_idname
-    bl_label = 'Cancel'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Cancel updating'
 
     def execute(self, context):
         _clear_updater_info()
@@ -500,9 +500,9 @@ def _clear_updater_info():
 
 class KT_OT_InstallUpdates(bpy.types.Operator):
     bl_idname = Config.kt_install_updates_idname
-    bl_label = ''
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Press to install the update and relaunch Blender'
 
     not_save_changes: bpy.props.BoolProperty(
         description="Discard changes, install the update and restart Blender",
@@ -549,9 +549,9 @@ class KT_OT_InstallUpdates(bpy.types.Operator):
 
 class KT_OT_RemindInstallLater(bpy.types.Operator):
     bl_idname = Config.kt_remind_install_later_idname
-    bl_label = 'Remind install tommorow'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Remind install tommorow'
 
     def execute(self, context):
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL,
@@ -562,9 +562,9 @@ class KT_OT_RemindInstallLater(bpy.types.Operator):
 
 class KT_OT_SkipInstallation(bpy.types.Operator):
     bl_idname = Config.kt_skip_installation_idname
-    bl_label = 'Skip installation'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Skip installation'
 
     def execute(self, context):
         CurrentStateExecutor.set_current_panel_updater_state(UpdateState.INITIAL,
