@@ -39,6 +39,7 @@ from ..utils.other import hide_viewport_ui_elements_and_store_on_object
 from ..utils.html import split_long_string
 from ..utils.localview import exit_area_localview, check_area_active_problem
 from ..utils.manipulate import switch_to_camera, center_viewports_on_object
+from .ui_strings import buttons
 
 
 _log = KTLogger(__name__)
@@ -78,8 +79,8 @@ def register_undo_handler():
 
 class FB_OT_PinMode(bpy.types.Operator):
     bl_idname = FBConfig.fb_pinmode_idname
-    bl_label = 'FaceBuilder Pinmode'
-    bl_description = 'Operator for in-Viewport drawing'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: bpy.props.IntProperty(default=0)

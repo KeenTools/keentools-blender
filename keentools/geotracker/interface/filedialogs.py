@@ -37,6 +37,7 @@ from ..utils.textures import (bake_texture,
                               preview_material_with_texture,
                               bake_texture_sequence)
 from ..utils.prechecks import common_checks, prepare_camera, revert_camera
+from ..ui_strings import buttons
 
 
 _log = KTLogger(__name__)
@@ -57,8 +58,8 @@ def _load_movieclip(dir_path: str, file_names: List[str]) -> Optional[MovieClip]
 
 class GT_OT_SequenceFilebrowser(bpy.types.Operator, ImportHelper):
     bl_idname = GTConfig.gt_sequence_filebrowser_idname
-    bl_label = 'Load footage'
-    bl_description = 'Both image sequences and movie files are supported'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
 
     filter_glob: bpy.props.StringProperty(
         default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.mp4;*.avi;*.mov;*.mpeg',
@@ -97,10 +98,9 @@ class GT_OT_SequenceFilebrowser(bpy.types.Operator, ImportHelper):
 
 class GT_OT_ChoosePrecalcFile(bpy.types.Operator, ExportHelper):
     bl_idname = GTConfig.gt_choose_precalc_file_idname
-    bl_label = 'Set precalc file'
-    bl_description = 'Choose an existing .precalc file ' \
-                     'or just enter a name for a new one'
-    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     filter_glob: bpy.props.StringProperty(
         default='*.precalc',
@@ -202,8 +202,8 @@ class _DirSelectionTemplate(bpy.types.Operator, ExportHelper):
 
 class GT_OT_SplitVideo(_DirSelectionTemplate):
     bl_idname = GTConfig.gt_split_video_to_frames_idname
-    bl_label = 'Split video to frames'
-    bl_description = 'Choose dir where to place video-file frames'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
 
     def execute(self, context):
         self.filename_ext = '.png' if self.file_format == 'PNG' else '.jpg'
@@ -228,8 +228,8 @@ class GT_OT_SplitVideo(_DirSelectionTemplate):
 
 class GT_OT_SplitVideoExec(bpy.types.Operator):
     bl_idname = GTConfig.gt_split_video_to_frames_exec_idname
-    bl_label = 'Split video-file.'
-    bl_description = 'Choose dir where to place video-file frames.'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def draw(self, context):
@@ -250,8 +250,8 @@ class GT_OT_SplitVideoExec(bpy.types.Operator):
 
 class GT_OT_FrameSelector(bpy.types.Operator):
     bl_idname = GTConfig.gt_select_frames_for_bake_idname
-    bl_label = 'Select frames:'
-    bl_description = 'Create texture using selected frames'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def draw(self, context):
@@ -337,8 +337,8 @@ class GT_OT_FrameSelector(bpy.types.Operator):
 
 class GT_OT_ReprojectTextureSequence(_DirSelectionTemplate):
     bl_idname = GTConfig.gt_reproject_tex_sequence_idname
-    bl_label = 'Reproject texture sequence'
-    bl_description = 'Choose dir where to place resulting sequence'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
 
     width: bpy.props.IntProperty(default=2048, description='Texture width')
     height: bpy.props.IntProperty(default=2048, description='Texture height')

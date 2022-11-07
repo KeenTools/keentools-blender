@@ -24,6 +24,35 @@ from ..geotracker_config import GTConfig
 Button = namedtuple('Button', ['label', 'description'])
 
 buttons = {
+    GTConfig.gt_actor_idname: Button(
+        'Actor Operator',
+        'GeoTracker Action'
+    ),
+    GTConfig.gt_sequence_filebrowser_idname: Button(
+        'Load footage',
+        'Both image sequences and movie files are supported'
+    ),
+    GTConfig.gt_choose_precalc_file_idname: Button(
+        'Set precalc file',
+        'Choose an existing .precalc file or just enter a name for a new one'
+    ),
+    GTConfig.gt_split_video_to_frames_idname: Button(
+        'Split video to frames',
+        'Choose dir where to place video-file frames'
+    ),
+    GTConfig.gt_split_video_to_frames_exec_idname: Button(
+        'Split video-file.',
+        'Choose dir where to place video-file frames.'
+    ),
+    GTConfig.gt_select_frames_for_bake_idname: Button(
+        'Select frames:',
+        'Create texture using selected frames'
+    ),
+    GTConfig.gt_reproject_tex_sequence_idname: Button(
+        'Reproject texture sequence',
+        'Choose dir where to place resulting sequence'
+    ),
+    # Main UI
     GTConfig.gt_addon_setup_defaults_idname: Button(
         'Setup GeoTracker defaults',
         'Open GeoTracker Settings in Preferences window'

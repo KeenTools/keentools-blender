@@ -16,20 +16,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
-import re
-
 import bpy
 from bpy.types import Operator
 
+from ...utils.kt_logging import KTLogger
 from ...addon_config import Config, get_operator
 from ...facebuilder_config import FBConfig, get_fb_settings
 from ..callbacks import mesh_update_accepted, mesh_update_canceled
+from ..ui_strings import buttons, warnings
+
+
+_log = KTLogger(__name__)
 
 
 class FB_OT_BlendshapesWarning(Operator):
     bl_idname = FBConfig.fb_blendshapes_warning_idname
-    bl_label = 'Warning'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: bpy.props.IntProperty(default=0)
@@ -67,28 +70,15 @@ class FB_OT_BlendshapesWarning(Operator):
         mesh_update_canceled(self.headnum)
 
     def invoke(self, context, event):
-        self.content_red = [
-            'Your model has FaceBuilder FACS blendshapes attached to it.',
-            'Once you change the topology, the blendshapes will be recreated.',
-            'All modifications added to the standard blendshapes, ',
-            'as well as all custom blendshapes are going to be lost.',
-            ' ']
-        self.content_white = [
-            'If you have animated the model using old blendshapes, ',
-            'the new ones will be linked to the same Action track,',
-            'so you\'re not going to lose your animation.',
-            'If you have deleted some of the standard FaceBuilder '
-            'FACS blendshapes, ',
-            'they\'re not going to be recreated again.',
-            ' ',
-            'We recommend saving a backup file before changing the topology.',
-            ' ']
+        self.content_red = warnings[FBConfig.fb_blendshapes_warning_idname].content_red
+        self.content_white = warnings[FBConfig.fb_blendshapes_warning_idname].content_white
         return context.window_manager.invoke_props_dialog(self, width=400)
 
 
 class FB_OT_NoBlendshapesUntilExpressionWarning(Operator):
     bl_idname = FBConfig.fb_noblenshapes_until_expression_warning_idname
-    bl_label = 'Blendshapes can\'t be created'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: bpy.props.IntProperty(default=0)
@@ -126,19 +116,15 @@ class FB_OT_NoBlendshapesUntilExpressionWarning(Operator):
         pass
 
     def invoke(self, context, event):
-        self.content_red = [
-            'Unfortunately, expressions extracted from photos ',
-            'can\'t be mixed with FACS blendshapes. ',
-            'You need a neutral expression in order to create FACS blendshapes.',
-            ' ']
+        self.content_red = warnings[FBConfig.fb_noblenshapes_until_expression_warning_idname].content_red
 
         return context.window_manager.invoke_props_dialog(self, width=400)
 
 
 class FB_OT_TexSelector(Operator):
     bl_idname = FBConfig.fb_tex_selector_idname
-    bl_label = "Select images:"
-    bl_description = "Create texture using pinned views"
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: bpy.props.IntProperty(default=0)
@@ -149,7 +135,7 @@ class FB_OT_TexSelector(Operator):
         layout = self.layout
 
         if not head.has_cameras():
-            layout.label(text="You need at least one image to create texture.",
+            layout.label(text='You need at least one image to create texture.',
                          icon='ERROR')
             return
 
@@ -185,12 +171,12 @@ class FB_OT_TexSelector(Operator):
         col.scale_y = Config.text_scale_y
 
         if checked_views:
-            col.label(text="Please note: texture creation is very "
-                           "time consuming.")
+            col.label(text='Please note: texture creation is very '
+                           'time consuming.')
         else:
             col.alert = True
-            col.label(text="You need to select at least one image "
-                           "to create texture.")
+            col.label(text='You need to select at least one image '
+                           'to create texture.')
 
         layout.prop(settings, 'tex_auto_preview')
 
@@ -198,12 +184,11 @@ class FB_OT_TexSelector(Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        logger.debug('START TEXTURE CREATION')
+        _log.output('START TEXTURE CREATION')
 
         head = get_fb_settings().get_head(self.headnum)
         if head is None:
-            logger.error('WRONG HEADNUM')
+            _log.error('WRONG HEADNUM')
             return {'CANCELLED'}
 
         if head.has_cameras():
@@ -211,10 +196,10 @@ class FB_OT_TexSelector(Operator):
             res = op('INVOKE_DEFAULT', headnum=self.headnum)
 
             if res == {'CANCELLED'}:
-                logger.debug('CANNOT CREATE TEXTURE')
-                self.report({'ERROR'}, "Can't create texture")
+                _log.output('CANNOT CREATE TEXTURE')
+                self.report({'ERROR'}, 'Can\'t create texture')
             elif res == {'FINISHED'}:
-                logger.debug('TEXTURE CREATED')
-                self.report({'INFO'}, "Texture has been created successfully")
+                _log.output('TEXTURE CREATED')
+                self.report({'INFO'}, 'Texture has been created successfully')
 
         return {'FINISHED'}

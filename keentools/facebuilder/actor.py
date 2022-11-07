@@ -16,15 +16,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
 import numpy as np
 
 import bpy
-from bpy.props import (
-    StringProperty,
-    IntProperty,
-)
+from bpy.props import StringProperty, IntProperty
 
+from ..utils.kt_logging import KTLogger
 from .utils.manipulate import get_current_head
 from ..utils.coords import xy_to_xz_rotation_matrix_4x4
 from ..facebuilder_config import FBConfig, get_fb_settings
@@ -37,13 +34,17 @@ from ..utils.blendshapes import (create_blendshape_controls,
                                  select_control_panel_sliders,
                                  has_blendshapes_action,
                                  convert_blendshapes_animation_to_controls)
+from .ui_strings import buttons
+
+
+_log = KTLogger(__name__)
 
 
 class FB_OT_HistoryActor(bpy.types.Operator):
     bl_idname = FBConfig.fb_history_actor_idname
-    bl_label = 'FaceBuilder Action'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = 'FaceBuilder'
 
     action: StringProperty(name='Action Name')
 
@@ -51,8 +52,7 @@ class FB_OT_HistoryActor(bpy.types.Operator):
         pass
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        logger.debug('History Actor: {}'.format(self.action))
+        _log.output(f'History Actor: {self.action}')
 
         if self.action == 'generate_control_panel':
             head = get_current_head()
@@ -117,9 +117,9 @@ class FB_OT_HistoryActor(bpy.types.Operator):
 
 class FB_OT_CameraActor(bpy.types.Operator):
     bl_idname = FBConfig.fb_camera_actor_idname
-    bl_label = "Camera parameters"
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
-    bl_description = "Parameters setup"
 
     action: StringProperty(name="Action Name")
     headnum: IntProperty(default=0)
@@ -130,10 +130,9 @@ class FB_OT_CameraActor(bpy.types.Operator):
         pass
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        logger.debug('Camera Actor: {}'.format(self.action))
-        logger.debug('headnum: {} camnum: {} num: {}'.format(
-            self.headnum, self.camnum, self.num))
+        _log.output(f'Camera Actor: {self.action}')
+        _log.output(f'headnum: {self.headnum} camnum: {self.camnum} '
+                    f'num: {self.num}')
 
         settings = get_fb_settings()
         head = settings.get_head(self.headnum)

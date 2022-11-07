@@ -24,6 +24,67 @@ from ..facebuilder_config import FBConfig
 Button = namedtuple('Button', ['label', 'description'])
 
 buttons = {
+    FBConfig.fb_add_head_operator_idname: Button(
+        'FaceBuilder Head',
+        'Add FaceBuilder Head into scene'
+    ),
+    FBConfig.fb_single_filebrowser_exec_idname: Button(
+        'File Browser Execute',
+        'Change the image file path'
+    ),
+    FBConfig.fb_single_filebrowser_idname: Button(
+        'Open Image',
+        'Open single image file'
+    ),
+    FBConfig.fb_texture_file_export_idname: Button(
+        'Export texture',
+        'Export the created texture to a file'
+    ),
+    FBConfig.fb_multiple_filebrowser_exec_idname: Button(
+        'Open Images',
+        'Load images and create views. You can select multiple images at once'
+    ),
+    FBConfig.fb_multiple_filebrowser_idname: Button(
+        'Open Images',
+        'Load images and create views. You can select multiple images at once'
+    ),
+    FBConfig.fb_animation_filebrowser_idname: Button(
+        'Load animation',
+        'Open animation file'
+    ),
+    FBConfig.fb_history_actor_idname: Button(
+        'FaceBuilder Action',
+        'FaceBuilder'
+    ),
+    FBConfig.fb_camera_actor_idname: Button(
+        'Camera parameters',
+        'Parameters setup'
+    ),
+    FBConfig.fb_blendshapes_warning_idname: Button(
+        'Warning',
+        ''
+    ),
+    FBConfig.fb_noblenshapes_until_expression_warning_idname: Button(
+        'Blendshapes can\'t be created',
+        ''
+    ),
+    FBConfig.fb_tex_selector_idname: Button(
+        'Select images:',
+        'Create texture using pinned views'
+    ),
+    FBConfig.fb_pickmode_idname: Button(
+        'FaceBuilder Pick Face mode',
+        'Modal Operator for Pick Face mode'
+    ),
+    FBConfig.fb_pickmode_starter_idname: Button(
+        'FaceBuilder Pick Face mode starter',
+        'Detect a face on the photo and pin the model to the selected face'
+    ),
+    FBConfig.fb_pinmode_idname: Button(
+        'FaceBuilder Pinmode',
+        'Operator for in-Viewport drawing'
+    ),
+    # Main UI
     FBConfig.fb_select_head_idname: Button(
         'Select head',
         'Select head in the scene'
@@ -365,5 +426,33 @@ help_texts = {
         'pre-setup the Blender ',
         'export dialog for you. Your free to change the settings before '
         'saving the file if you need.'
+    ]),
+}
+
+Warning = namedtuple('Warning', ['content_red', 'content_white'])
+warnings = {
+    FBConfig.fb_blendshapes_warning_idname: Warning([
+        'Your model has FaceBuilder FACS blendshapes attached to it.',
+        'Once you change the topology, the blendshapes will be recreated.',
+        'All modifications added to the standard blendshapes, ',
+        'as well as all custom blendshapes are going to be lost.',
+        ' '
+    ], [
+        'If you have animated the model using old blendshapes, ',
+        'the new ones will be linked to the same Action track,',
+        'so you\'re not going to lose your animation.',
+        'If you have deleted some of the standard FaceBuilder '
+        'FACS blendshapes, ',
+        'they\'re not going to be recreated again.',
+        ' ',
+        'We recommend saving a backup file before changing the topology.',
+        ' '
+    ]),
+    FBConfig.fb_noblenshapes_until_expression_warning_idname: Warning([
+        'Unfortunately, expressions extracted from photos ',
+        'can\'t be mixed with FACS blendshapes. ',
+        'You need a neutral expression in order to create FACS blendshapes.',
+        ' '
+    ], [
     ]),
 }

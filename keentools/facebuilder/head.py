@@ -26,12 +26,13 @@ from ..utils.ui_redraw import show_ui_panel
 from .fbloader import FBLoader
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..utils.manipulate import center_viewports_on_object
+from .ui_strings import buttons
 
 
 class MESH_OT_FBAddHead(bpy.types.Operator):
     bl_idname = FBConfig.fb_add_head_operator_idname
-    bl_label = 'FaceBuilder Head'
-    bl_description = 'Add FaceBuilder Head into scene'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
