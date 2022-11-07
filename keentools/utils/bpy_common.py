@@ -162,3 +162,7 @@ def bpy_show_addon_preferences():
 
 def bpy_view_camera():
     bpy.ops.view3d.view_camera()
+
+
+def bpy_url_open(url):
+    bpy.ops.wm.url_open(url=url)

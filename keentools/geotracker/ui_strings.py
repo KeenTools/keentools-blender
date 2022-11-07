@@ -24,6 +24,14 @@ from ..geotracker_config import GTConfig
 Button = namedtuple('Button', ['label', 'description'])
 
 buttons = {
+    GTConfig.gt_pinmode_idname: Button(
+        'GeoTracker Pinmode',
+        'Operator for in-Viewport drawing'
+    ),
+    GTConfig.gt_movepin_idname: Button(
+        'GeoTracker MovePin',
+        'GeoTracker MovePin operator'
+    ),
     GTConfig.gt_actor_idname: Button(
         'Actor Operator',
         'GeoTracker Action'

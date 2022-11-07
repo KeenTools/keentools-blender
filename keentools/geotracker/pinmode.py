@@ -41,6 +41,7 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_view_camera)
 from ..utils.video import fit_render_size
 from .utils.prechecks import common_checks
+from .ui_strings import buttons
 
 
 _log = KTLogger(__name__)
@@ -48,8 +49,8 @@ _log = KTLogger(__name__)
 
 class GT_OT_PinMode(Operator):
     bl_idname = GTConfig.gt_pinmode_idname
-    bl_label = 'GeoTracker Pinmode'
-    bl_description = 'Operator for in-Viewport drawing'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     geotracker_num: IntProperty(default=-1)

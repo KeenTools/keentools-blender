@@ -79,7 +79,7 @@ class GT_OT_CreateGeoTracker(ButtonOperator, Operator):
     def execute(self, context):
         act_status = create_geotracker_act()
         if not act_status.success:
-            self.report({'INFO'}, act_status.error_message)
+            self.report({'ERROR'}, act_status.error_message)
         return {'FINISHED'}
 
 
@@ -93,7 +93,7 @@ class GT_OT_DeleteGeoTracker(ButtonOperator, Operator):
     def execute(self, context):
         act_status = delete_geotracker_act(self.geotracker_num)
         if not act_status.success:
-            self.report({'INFO'}, act_status.error_message)
+            self.report({'ERROR'}, act_status.error_message)
         return {'FINISHED'}
 
 

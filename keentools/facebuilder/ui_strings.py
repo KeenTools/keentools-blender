@@ -84,6 +84,10 @@ buttons = {
         'FaceBuilder Pinmode',
         'Operator for in-Viewport drawing'
     ),
+    FBConfig.fb_movepin_idname: Button(
+        'FaceBuilder MovePin',
+        'FaceBuilder MovePin operator'
+    ),
     # Main UI
     FBConfig.fb_select_head_idname: Button(
         'Select head',

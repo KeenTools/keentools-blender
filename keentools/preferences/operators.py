@@ -15,10 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
 
 import bpy
+from bpy.types import Operator
+from bpy.props import BoolProperty, StringProperty, IntProperty
 
+from ..utils.kt_logging import KTLogger
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module,
     core_filename_info as pkt_core_filename_info,
@@ -37,7 +39,11 @@ from ..utils.ui_redraw import (force_ui_redraw,
                                collapse_all_modules,
                                mark_old_modules)
 from ..messages import get_system_info, get_gpu_info
-from ..utils.bpy_common import bpy_show_addon_preferences
+from ..utils.bpy_common import bpy_show_addon_preferences, bpy_url_open
+from ..ui_strings import buttons
+
+
+_log = KTLogger(__name__)
 
 
 _please_accept_eula = 'You need to accept our EULA before installation'
@@ -67,24 +73,24 @@ def _get_addon_and_core_version_info():
     return txt_arr
 
 
-class KTPREF_OT_OpenPktLicensePage(bpy.types.Operator):
+class KTPREF_OT_OpenPktLicensePage(Operator):
     bl_idname = Config.kt_open_pkt_license_page_idname
-    bl_label = 'read license'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Open KeenTools license in web browser"
 
     def execute(self, context):
-        bpy.ops.wm.url_open(url=Config.pykeentools_license_url)
+        bpy_url_open(url=Config.pykeentools_license_url)
         return {'FINISHED'}
 
 
-class KTPREF_OT_InstallPkt(bpy.types.Operator):
+class KTPREF_OT_InstallPkt(Operator):
     bl_idname = Config.kt_install_latest_pkt_idname
-    bl_label = 'Install online'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Install Core library from website'
 
-    license_accepted: bpy.props.BoolProperty()
+    license_accepted: BoolProperty()
 
     def invoke(self, context, event):
         if self.license_accepted:
@@ -98,15 +104,16 @@ class KTPREF_OT_InstallPkt(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class KTPREF_OT_InstalFromFilePktWithWarning(bpy.types.Operator):
+class KTPREF_OT_InstalFromFilePktWithWarning(Operator):
     bl_idname = Config.kt_install_pkt_from_file_with_warning_idname
-    bl_label = 'Please confirm installation'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    filepath: bpy.props.StringProperty()
-    filename: bpy.props.StringProperty()
-    warning: bpy.props.StringProperty()
-    confirm_install: bpy.props.BoolProperty(
+    filepath: StringProperty()
+    filename: StringProperty()
+    warning: StringProperty()
+    confirm_install: BoolProperty(
         name='Install anyway', default=False)
 
     content = []
@@ -139,27 +146,26 @@ class KTPREF_OT_InstalFromFilePktWithWarning(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self, width=600)
 
 
-class KTPREF_OT_InstallFromFilePkt(bpy.types.Operator):
+class KTPREF_OT_InstallFromFilePkt(Operator):
     bl_idname = Config.kt_install_pkt_from_file_idname
-    bl_label = 'Install from file'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'You can download Core library manually ' \
-                     'and install it using this button'
 
-    filter_glob: bpy.props.StringProperty(
+    filter_glob: StringProperty(
         default='*.zip',
         options={'HIDDEN'}
     )
 
     # can only have exactly that name
-    filepath: bpy.props.StringProperty(
+    filepath: StringProperty(
             name='',
             description='absolute path to keentools core zip file',
             default='',
             subtype='FILE_PATH'
     )
 
-    license_accepted: bpy.props.BoolProperty()
+    license_accepted: BoolProperty()
 
     def draw(self, context):
         layout = self.layout
@@ -214,25 +220,25 @@ class KTPREF_OT_InstallFromFilePkt(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class KTPREF_OT_OpenManualInstallPage(bpy.types.Operator):
+class KTPREF_OT_OpenManualInstallPage(Operator):
     bl_idname = Config.kt_open_manual_install_page_idname
-    bl_label = 'Open in web browser'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Open license activation webpage in browser'
 
-    product: bpy.props.StringProperty(default='')
+    product: StringProperty(default='')
 
     def execute(self, context):
         hardware_id = _get_hardware_id(self.product)
-        bpy.ops.wm.url_open(url=Config.manual_install_url + '#' + hardware_id)
+        bpy_url_open(url=Config.manual_install_url + '#' + hardware_id)
         return {'FINISHED'}
 
 
-class KTPREF_OT_CopyHardwareId(bpy.types.Operator):
+class KTPREF_OT_CopyHardwareId(Operator):
     bl_idname = Config.kt_copy_hardware_id_idname
-    bl_label = 'Copy'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Copy Hardware ID to clipboard'
 
     def execute(self, context):
         hardware_id = _get_hardware_id()
@@ -241,27 +247,26 @@ class KTPREF_OT_CopyHardwareId(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class KTPREF_OT_InstallLicenseOnline(bpy.types.Operator):
+class KTPREF_OT_InstallLicenseOnline(Operator):
     bl_idname = Config.kt_install_license_online_idname
-    bl_label = 'Activate'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Install online license'
 
-    product: bpy.props.StringProperty(default='')
-    license_key: bpy.props.StringProperty()
+    product: StringProperty(default='')
+    license_key: StringProperty()
 
     def _clear_license_key(self):
         prefs = get_addon_preferences()
         prefs.license_key = ''
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        logger.info('Start InstallLicenseOnline')
+        _log.info('Start InstallLicenseOnline')
         lm = get_product_license_manager(self.product)
         res = lm.install_license_online(self.license_key)
 
         if res is not None:
-            logger.error('InstallLicenseOnline error: {}'.format(res))
+            _log.error(f'InstallLicenseOnline error: {res}')
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
             return {'CANCELLED'}
 
@@ -269,40 +274,39 @@ class KTPREF_OT_InstallLicenseOnline(bpy.types.Operator):
             strategy=pkt_module().LicenseCheckStrategy.FORCE)
         lic_status = res_tuple[0].license_status
         if lic_status.status == 'failed':
-            logger.error('InstallLicenseOnline license check error: '
-                         '{}'.format(lic_status.message))
+            _log.error(f'InstallLicenseOnline license check '
+                       f'error: {lic_status.message}')
             self.report({'ERROR'},
                         replace_newlines_with_spaces(lic_status.message))
             return {'CANCELLED'}
 
         self._clear_license_key()
         msg = 'License installed online'
-        logger.info(msg)
+        _log.info(msg)
         self.report({'INFO'}, msg)
         return {'FINISHED'}
 
 
-class KTPREF_OT_InstallLicenseOffline(bpy.types.Operator):
+class KTPREF_OT_InstallLicenseOffline(Operator):
     bl_idname = Config.kt_install_license_offline_idname
-    bl_label = 'Install'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Install offline license'
 
-    product: bpy.props.StringProperty(default='')
-    lic_path: bpy.props.StringProperty()
+    product: StringProperty(default='')
+    lic_path: StringProperty()
 
     def _clear_license_path(self):
         pref = get_addon_preferences()
         pref.fb_lic_path = ''
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        logger.info('Start InstallLicenseOffline')
+        _log.info('Start InstallLicenseOffline')
         lm = get_product_license_manager(self.product)
         res = lm.install_license_offline(self.lic_path)
 
         if res is not None:
-            logger.error('InstallLicenseOffline error: {}'.format(res))
+            _log.error(f'InstallLicenseOffline error: {res}')
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
             return {'CANCELLED'}
 
@@ -310,37 +314,36 @@ class KTPREF_OT_InstallLicenseOffline(bpy.types.Operator):
             strategy=pkt_module().LicenseCheckStrategy.FORCE)
         lic_status = res_tuple[0].license_status
         if lic_status.status == 'failed':
-            logger.error('InstallLicenseOffline license check error: '
-                         '{}'.format(lic_status.message))
+            _log.error(f'InstallLicenseOffline license check error: '
+                       f'{lic_status.message}')
             self.report({'ERROR'},
                         replace_newlines_with_spaces(lic_status.message))
             return {'CANCELLED'}
 
         self._clear_license_path()
         msg = 'License installed offline'
-        logger.info(msg)
+        _log.info(msg)
         self.report({'INFO'}, msg)
         return {'FINISHED'}
 
 
-class KTPREF_OT_FloatingConnect(bpy.types.Operator):
+class KTPREF_OT_FloatingConnect(Operator):
     bl_idname = Config.kt_floating_connect_idname
-    bl_label = 'Connect'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Connect to floating license server'
 
-    product: bpy.props.StringProperty(default='')
-    license_server: bpy.props.StringProperty()
-    license_server_port: bpy.props.IntProperty()
+    product: StringProperty(default='')
+    license_server: StringProperty()
+    license_server_port: IntProperty()
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        logger.info('Start FloatingConnect')
+        _log.info('Start FloatingConnect')
         lm = get_product_license_manager(self.product)
         res = lm.install_floating_license(self.license_server,
                                           self.license_server_port)
         if res is not None:
-            logger.error('FloatingConnect error: {}'.format(res))
+            _log.error(f'FloatingConnect error: {res}')
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
             return {'CANCELLED'}
 
@@ -348,49 +351,49 @@ class KTPREF_OT_FloatingConnect(bpy.types.Operator):
             strategy=pkt_module().LicenseCheckStrategy.FORCE)
         lic_status = res_tuple[0].floating_status
         if lic_status.status == 'failed':
-            logger.error('FloatingConnect license check error: '
-                         '{}'.format(lic_status.message))
+            _log.error(f'FloatingConnect license check error: '
+                       f'{lic_status.message}')
             self.report({'ERROR'},
                         replace_newlines_with_spaces(lic_status.message))
             return {'CANCELLED'}
 
         msg = 'Floating server settings saved'
-        logger.info(msg)
+        _log.info(msg)
         self.report({'INFO'}, msg)
         return {'FINISHED'}
 
 
-class KTPREF_OT_OpenURL(bpy.types.Operator):
+class KTPREF_OT_OpenURL(Operator):
     bl_idname = Config.kt_pref_open_url_idname
-    bl_label = 'Open URL'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Open URL in web browser'
 
-    url: bpy.props.StringProperty(name='URL', default='')
+    url: StringProperty(name='URL', default='')
 
     def execute(self, context):
-        bpy.ops.wm.url_open(url=self.url)
+        bpy_url_open(url=self.url)
         return {'FINISHED'}
 
 
-class KTPREF_OT_DownloadsURL(bpy.types.Operator):
+class KTPREF_OT_DownloadsURL(Operator):
     bl_idname = Config.kt_pref_downloads_url_idname
-    bl_label = 'Download'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Open downloads page in web browser'
 
-    url: bpy.props.StringProperty(name='URL', default='')
+    url: StringProperty(name='URL', default='')
 
     def execute(self, context):
-        bpy.ops.wm.url_open(url=self.url)
+        bpy_url_open(url=self.url)
         return {'FINISHED'}
 
 
-class KTPREF_OT_ComputerInfo(bpy.types.Operator):
+class KTPREF_OT_ComputerInfo(Operator):
     bl_idname = Config.kt_pref_computer_info_idname
-    bl_label = 'Computer info'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Copy computer info to clipboard'
 
     def execute(self, context):
         addon_info = ['---'] + _get_addon_and_core_version_info()
@@ -398,19 +401,18 @@ class KTPREF_OT_ComputerInfo(bpy.types.Operator):
         gpu_info = ['---'] + get_gpu_info()
         all_info = '\n'.join(addon_info + system_info + gpu_info + ['---', ''])
         context.window_manager.clipboard = all_info
-        logger = logging.getLogger(__name__)
-        logger.info('\n' + all_info)
+        _log.info('\n' + all_info)
         self.report({'INFO'}, 'Computer info is in clipboard!')
         return {'FINISHED'}
 
 
-class KT_OT_AddonSettings(bpy.types.Operator):
+class KT_OT_AddonSettings(Operator):
     bl_idname = Config.kt_addon_settings_idname
-    bl_label = 'Addon Settings'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER'}
-    bl_description = 'Open Addon Settings in Preferences window'
 
-    show: bpy.props.StringProperty(default='all')
+    show: StringProperty(default='all')
 
     def draw(self, context):
         pass
@@ -429,13 +431,13 @@ class KT_OT_AddonSettings(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class KT_OT_AddonSearch(bpy.types.Operator):
+class KT_OT_AddonSearch(Operator):
     bl_idname = Config.kt_addon_search_idname
-    bl_label = 'Addon Search'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER'}
-    bl_description = 'Open Addon Search in Preferences window'
 
-    search: bpy.props.StringProperty(default='KeenTools')
+    search: StringProperty(default='KeenTools')
 
     def draw(self, context):
         pass
@@ -453,29 +455,28 @@ class KT_OT_AddonSearch(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class KT_OT_OpenURL(bpy.types.Operator):
+class KT_OT_OpenURL(Operator):
     bl_idname = Config.kt_open_url_idname
-    bl_label = 'Open URL'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Open URL in web browser'
 
-    url: bpy.props.StringProperty(name='URL', default='')
+    url: StringProperty(name='URL', default='')
 
     def execute(self, context):
-        bpy.ops.wm.url_open(url=self.url)
+        bpy_url_open(url=self.url)
         return {'FINISHED'}
 
 
-class KT_OT_UninstallCore(bpy.types.Operator):
+class KT_OT_UninstallCore(Operator):
     bl_idname = Config.kt_uninstall_core_idname
-    bl_label = 'Uninstall Core'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = 'Uninstall Core Library'
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
         from ..blender_independent_packages.pykeentools_loader import uninstall_core as pkt_uninstall
-        logger.debug("START CORE UNINSTALL")
+        _log.info('START CORE UNINSTALL')
         pkt_uninstall()
-        logger.debug("FINISH CORE UNINSTALL")
+        _log.info('FINISH CORE UNINSTALL')
         return {'FINISHED'}

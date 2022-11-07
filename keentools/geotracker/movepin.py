@@ -33,6 +33,7 @@ from ..utils.coords import (get_image_space_coord,
                             point_is_in_service_region)
 from ..utils.manipulate import force_undo_push
 from ..utils.bpy_common import bpy_current_frame, get_scene_camera_shift
+from .ui_strings import buttons
 
 
 _log = KTLogger(__name__)
@@ -40,8 +41,8 @@ _log = KTLogger(__name__)
 
 class GT_OT_MovePin(bpy.types.Operator):
     bl_idname = GTConfig.gt_movepin_idname
-    bl_label = 'GeoTracker MovePin operator'
-    bl_description = 'Operator MovePin'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER'}
 
     test_action: bpy.props.StringProperty(default="")

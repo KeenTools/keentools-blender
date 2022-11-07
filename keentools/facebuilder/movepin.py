@@ -16,15 +16,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
 from functools import wraps
-import bpy
 
+from bpy.types import Operator
+from bpy.props import IntProperty, FloatProperty, StringProperty
+
+from ..utils.kt_logging import KTLogger
 from ..utils.bpy_common import bpy_background_mode
 from ..utils import coords
 from .fbloader import FBLoader
 from ..facebuilder_config import FBConfig, get_fb_settings
 from .utils.manipulate import push_head_in_undo_history
+from .ui_strings import buttons
+
+
+_log = KTLogger(__name__)
 
 
 # Decorator for profiling
@@ -43,19 +49,19 @@ def profile_this(fn):
     return wrapped
 
 
-class FB_OT_MovePin(bpy.types.Operator):
+class FB_OT_MovePin(Operator):
     """ On Screen Face Builder MovePin Operator """
     bl_idname = FBConfig.fb_movepin_idname
-    bl_label = "FaceBuilder MovePin operator"
-    bl_description = "Operator MovePin"
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER'}
 
-    headnum: bpy.props.IntProperty(default=0)
-    camnum: bpy.props.IntProperty(default=0)
-    test_action: bpy.props.StringProperty(default="")
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+    test_action: StringProperty(default='')
 
-    pinx: bpy.props.FloatProperty(default=0)
-    piny: bpy.props.FloatProperty(default=0)
+    pinx: FloatProperty(default=0)
+    piny: FloatProperty(default=0)
 
     # Headnum & camnum unstable because of Blender operator params may changing
     # Possible we need store initial values, but unsure
@@ -67,7 +73,6 @@ class FB_OT_MovePin(bpy.types.Operator):
         return self.camnum
 
     def _new_pin(self, area, mouse_x, mouse_y):
-        logger = logging.getLogger(__name__)
         settings = get_fb_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
@@ -79,13 +84,13 @@ class FB_OT_MovePin(bpy.types.Operator):
             kid, (coords.image_space_to_frame(x, y))
         )
         if pin is not None:
-            logger.debug("ADD PIN")
+            _log.output('ADD PIN')
             vp = FBLoader.viewport()
             vp.pins().add_pin((x, y))
             vp.pins().set_current_pin_num_to_last()
             FBLoader.update_camera_pins_count(headnum, camnum)
         else:
-            logger.debug("MISS MODEL")
+            _log.output('MISS MODEL')
             FBLoader.viewport().pins().reset_current_pin()
             return {"FINISHED"}
         return None
@@ -179,8 +184,7 @@ class FB_OT_MovePin(bpy.types.Operator):
         self._pin_drag(kid, area, mouse_x, mouse_y)
 
         if not FBLoader.solve(headnum, camnum):
-            logger = logging.getLogger(__name__)
-            logger.error("MOVE PIN PROBLEM")
+            _log.error('MOVE PIN PROBLEM')
             return {'FINISHED'}
 
         fb = FBLoader.get_builder()
@@ -202,53 +206,48 @@ class FB_OT_MovePin(bpy.types.Operator):
 
     @staticmethod
     def on_default_modal():
-        logger = logging.getLogger(__name__)
         if FBLoader.viewport().pins().current_pin() is not None:
-            return {"RUNNING_MODAL"}
-        else:
-            logger.debug("MOVE PIN FINISH")
-            return {'FINISHED'}
+            return {'RUNNING_MODAL'}
+
+        _log.output('MOVE PIN FINISH')
+        return {'FINISHED'}
 
     # Integration testing purpose only
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-
-        if self.test_action == "add_pin":
-            logger.debug("ADD PIN TEST")
+        if self.test_action == 'add_pin':
+            _log.output('ADD PIN TEST')
             self.init_action(context, self.pinx, self.piny)
-        elif self.test_action == "mouse_move":
-            logger.debug("MOUSE MOVE TEST")
+        elif self.test_action == 'mouse_move':
+            _log.output('MOUSE MOVE TEST')
             self.on_mouse_move(context.area, self.pinx, self.piny)
-        elif self.test_action == "mouse_release":
-            logger.debug("MOUSE RELEASE TEST")
+        elif self.test_action == 'mouse_release':
+            _log.output('MOUSE RELEASE TEST')
             self.on_left_mouse_release(context.area, self.pinx, self.piny)
         return {"FINISHED"}
 
     @profile_this
     def invoke(self, context, event):
-        logger = logging.getLogger(__name__)
         ret = self.init_action(
             context, event.mouse_region_x, event.mouse_region_y)
         if ret in {'CANCELLED', 'FINISHED'}:
             return ret
         FBLoader.viewport().create_batch_2d(context.area)
         context.window_manager.modal_handler_add(self)
-        logger.debug("START PIN MOVING")
+        _log.output('START PIN MOVING')
         return {"RUNNING_MODAL"}
 
     @profile_this
     def modal(self, context, event):
-        logger = logging.getLogger(__name__)
         mouse_x = event.mouse_region_x
         mouse_y = event.mouse_region_y
 
-        if event.value == "RELEASE" and event.type == "LEFTMOUSE":
-            logger.debug("LEFT MOUSE RELEASE")
+        if event.value == 'RELEASE' and event.type == 'LEFTMOUSE':
+            _log.output('LEFT MOUSE RELEASE')
             return self.on_left_mouse_release(context.area, mouse_x, mouse_y)
 
-        if event.type == "MOUSEMOVE" \
+        if event.type == 'MOUSEMOVE' \
                 and FBLoader.viewport().pins().current_pin() is not None:
-            logger.debug("MOUSEMOVE {} {}".format(mouse_x, mouse_y))
+            _log.output(f'MOUSEMOVE {mouse_x} {mouse_y}')
             return self.on_mouse_move(context.area, mouse_x, mouse_y)
 
         return self.on_default_modal()
