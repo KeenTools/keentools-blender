@@ -17,8 +17,8 @@
 # ##### END GPL LICENSE BLOCK #####
 
 bl_info = {
-    "name": "KeenTools FaceBuilder 2022.2.2",  # (1/5)
-    "version": (2022, 2, 2),  # 2022.2.2 (2/5)
+    "name": "KeenTools FaceBuilder 2022.2.3",  # (1/5)
+    "version": (2022, 2, 3),  # 2022.2.3 (2/5)
     "author": "KeenTools",
     "description": "KeenTools bundle for Blender. "
                    "FaceBuilder: Creates Head and Face geometry with a few "
@@ -66,7 +66,7 @@ def _is_python_64bit():
 
 
 def _is_config_latest():
-    return Config.addon_version == '2022.2.2'  # (3/5)
+    return Config.addon_version == '2022.2.3'  # (3/5)
 
 
 def _is_blender_too_old():
