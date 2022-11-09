@@ -246,35 +246,11 @@ class GT_PT_InputsPanel(AllVisible):
                      text='', icon='FILEBROWSER')
 
         col = layout.column(align=True)
-        col.label(text='Tracked object:')
-        row = col.row(align=True)
-        row.prop(geotracker, 'solve_for_camera',
-                 text='Geometry', icon='MESH_ICOSPHERE',
-                 toggle=1, invert_checkbox=True)
-        row.prop(geotracker, 'solve_for_camera',
-                 text='Camera', icon='CAMERA_DATA',
-                 toggle=1)
-
-        col = layout.column(align=True)
         col.label(text='Cached data usage:')
         row = col.row(align=True)
         row.prop(geotracker, 'precalcless', text='Precalcless', toggle=1)
         row.prop(geotracker, 'precalcless', text='Use precalc', toggle=1,
                  invert_checkbox=True)
-
-        if geotracker.geomobj:
-            row = layout.row(align=True)
-            row.prop_search(geotracker, 'mask_3d',
-                            geotracker.geomobj, 'vertex_groups')
-            row.prop(geotracker, 'mask_3d_inverted',
-                     text='', icon='ARROW_LEFTRIGHT')
-
-        if not GTConfig.hide_2d_mask:
-            row = layout.row(align=True)
-            row.prop_search(geotracker, 'mask_2d',
-                            bpy.data, 'images')
-            row.prop(geotracker, 'mask_2d_inverted',
-                     text='', icon='ARROW_LEFTRIGHT')
 
 
 class GT_PT_AnalyzePanel(AllVisible):
@@ -339,6 +315,7 @@ class GT_PT_AnalyzePanel(AllVisible):
 class GT_PT_CameraPanel(AllVisible):
     bl_idname = GTConfig.gt_camera_panel_idname
     bl_label = 'Camera'
+    bl_options = {'DEFAULT_CLOSED'}
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
@@ -413,6 +390,16 @@ class GT_PT_TrackingPanel(AllVisible):
                               depress=settings.pinmode)
             op.geotracker_num = -1
 
+        col = layout.column(align=True)
+        col.label(text='Tracked object:')
+        row = col.row(align=True)
+        row.prop(geotracker, 'solve_for_camera',
+                 text='Geometry', icon='MESH_ICOSPHERE',
+                 toggle=1, invert_checkbox=True)
+        row.prop(geotracker, 'solve_for_camera',
+                 text='Camera', icon='CAMERA_DATA',
+                 toggle=1)
+
         box = layout.box()
 
         row = box.row(align=True)
@@ -473,19 +460,47 @@ class GT_PT_TrackingPanel(AllVisible):
         col.active = False
         col.operator(GTConfig.gt_magic_keyframe_idname)
 
-        box = layout.box()
-        box.prop(geotracker, 'spring_pins_back')
+        # box = layout.box()
+        # box.prop(geotracker, 'spring_pins_back')
+        #
+        # col = box.column()
+        # col.active = False
+        # op = col.operator(GTConfig.gt_actor_idname,
+        #                   text='stabilize view')
+        # op.action = 'stabilize_view'
 
-        col = box.column()
-        col.active = False
-        op = col.operator(GTConfig.gt_actor_idname,
-                          text='stabilize view')
-        op.action = 'stabilize_view'
+
+class GT_PT_MasksPanel(AllVisible):
+    bl_idname = GTConfig.gt_masks_panel_idname
+    bl_label = 'Masks'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context: Any) -> None:
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if not geotracker:
+            return
+
+        layout = self.layout
+        if geotracker.geomobj:
+            row = layout.row(align=True)
+            row.prop_search(geotracker, 'mask_3d',
+                            geotracker.geomobj, 'vertex_groups')
+            row.prop(geotracker, 'mask_3d_inverted',
+                     text='', icon='ARROW_LEFTRIGHT')
+
+        if not GTConfig.hide_2d_mask:
+            row = layout.row(align=True)
+            row.prop_search(geotracker, 'mask_2d',
+                            bpy.data, 'images')
+            row.prop(geotracker, 'mask_2d_inverted',
+                     text='', icon='ARROW_LEFTRIGHT')
 
 
 class GT_PT_AppearanceSettingsPanel(AllVisible):
     bl_idname = GTConfig.gt_appearance_panel_idname
     bl_label = 'Appearance'
+    bl_options = {'DEFAULT_CLOSED'}
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout

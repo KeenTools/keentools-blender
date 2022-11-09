@@ -98,6 +98,7 @@ class GTConfig:
     gt_camera_panel_idname = _PT + 'camera_panel'
     gt_tracking_panel_idname = _PT + 'tracking_panel'
     gt_appearance_panel_idname = _PT + 'appearance_panel'
+    gt_masks_panel_idname = _PT + 'masks_panel'
     gt_animation_panel_idname = _PT + 'animation_panel'
     gt_texture_panel_idname = _PT + 'texture_panel'
 
