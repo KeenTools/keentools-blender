@@ -40,6 +40,7 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,
                        GT_OT_SplitVideoExec,
                        GT_OT_ReprojectTextureSequence,
                        GT_OT_FrameSelector,
+                       GT_OT_AnalyzeCall,
                        GTHELP_OT_InputsHelp,  # helps
                        GTHELP_OT_AnalyzeHelp,
                        GTHELP_OT_CameraHelp,

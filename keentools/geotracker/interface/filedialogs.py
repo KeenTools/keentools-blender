@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-
+import re
 import os
 from typing import Optional, List
 
@@ -412,4 +412,58 @@ class GT_OT_ReprojectTextureSequence(_DirSelectionTemplate):
                               to_frame=self.to_frame,
                               file_format=self.file_format,
                               width=self.width, height=self.height)
+        return {'FINISHED'}
+
+
+class GT_OT_AnalyzeCall(bpy.types.Operator):
+    bl_idname = GTConfig.gt_analyze_call_idname
+    bl_label = 'Analyze'
+    bl_description = 'Call analyze dialog'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    headnum: bpy.props.IntProperty(default=0)
+
+    def draw(self, context):
+        layout = self.layout
+        geotracker = get_current_geotracker_item()
+        if not geotracker:
+            return
+
+        # box = layout.box()
+
+        block = layout.column(align=True)
+        block.operator(GTConfig.gt_choose_precalc_file_idname,
+                       text='Set precalc file')
+        if geotracker.precalc_path != '':
+            box = block.box()
+            col = box.column()
+            col.scale_y = Config.text_scale_y
+            col.label(text=geotracker.precalc_path)
+
+            if geotracker.precalc_message != '':
+                arr = re.split('\r\n|\n', geotracker.precalc_message)
+                for txt in arr:
+                    col.label(text=txt)
+
+        # layout.operator(GTConfig.gt_create_precalc_idname,
+        #                 text='Create precalc')
+
+        row = layout.row()
+        row.prop(geotracker, 'precalc_start')
+        row.prop(geotracker, 'precalc_end')
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def cancel(self, context):
+        _log.output('CANCEL ANALYZE')
+
+    def execute(self, context):
+        _log.output('START ANALYZE')
+        try:
+            op = get_operator(GTConfig.gt_create_precalc_idname)
+            op('EXEC_DEFAULT')
+        except RuntimeError as err:
+            _log.error(f'ANALYZE Exception:\n{str(err)}')
+            self.report({'ERROR'}, str(err))
         return {'FINISHED'}

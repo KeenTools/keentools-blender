@@ -91,6 +91,8 @@ class GTConfig:
     gt_user_preferences_get_colors = operators + '.user_pref_get_colors'
     gt_user_preferences_reset_all = operators + '.user_pref_reset_all'
 
+    gt_analyze_call_idname = operators + '.analyze_call'
+
     # Panel ids
     gt_geotrackers_panel_idname = _PT + 'geotrackers_panel'
     gt_input_panel_idname = _PT + 'input_panel'
