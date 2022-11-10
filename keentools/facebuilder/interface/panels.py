@@ -727,7 +727,7 @@ class FB_PT_AppearancePanel(AllVisible, Panel):
         box.prop(settings, 'show_specials', text='Highlight head parts')
 
 
-class FB_PT_BlendShapesPanel(AllVisible, Panel):
+class FB_PT_BlendShapesPanel(AllVisibleClosed, Panel):
     bl_idname = FBConfig.fb_blendshapes_panel_idname
     bl_label = 'Blendshapes'
 

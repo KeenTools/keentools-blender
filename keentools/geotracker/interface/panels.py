@@ -246,7 +246,8 @@ class GT_PT_InputsPanel(AllVisible):
                      text='', icon='FILEBROWSER')
 
         col = layout.column(align=True)
-        col.label(text='Cached data usage:')
+        if not settings.pinmode:
+            col.label(text='Cached data usage:')
         row = col.row(align=True)
         row.prop(geotracker, 'precalcless', text='Precalcless', toggle=1)
         row.prop(geotracker, 'precalcless', text='Use precalc', toggle=1,
@@ -340,6 +341,9 @@ class GT_PT_CameraPanel(AllVisible):
         col = layout.column()
         col.prop(geotracker, 'focal_length_mode', text='Mode')
         row = col.row()
+        row.enabled = geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH'
+        row.prop(geotracker, 'track_focal_length')
+        row = col.row()
         row.enabled = geotracker.focal_length_mode != 'CAMERA_FOCAL_LENGTH'
         row.prop(geotracker, 'focal_length_estimation')
 
@@ -391,7 +395,8 @@ class GT_PT_TrackingPanel(AllVisible):
             op.geotracker_num = -1
 
         col = layout.column(align=True)
-        col.label(text='Tracked object:')
+        if not settings.pinmode:
+            col.label(text='Tracked object:')
         row = col.row(align=True)
         row.prop(geotracker, 'solve_for_camera',
                  text='Geometry', icon='MESH_ICOSPHERE',
@@ -400,26 +405,25 @@ class GT_PT_TrackingPanel(AllVisible):
                  text='Camera', icon='CAMERA_DATA',
                  toggle=1)
 
+        # box = layout.box()
+        # row = box.row(align=True)
+        # row.operator(GTConfig.gt_prev_keyframe_idname, text=' ',
+        #              icon='PREV_KEYFRAME')
+        # row.operator(GTConfig.gt_next_keyframe_idname, text=' ',
+        #              icon='NEXT_KEYFRAME')
+        # row.operator(GTConfig.gt_add_keyframe_idname, text=' ',
+        #              icon='KEY_HLT')
+        # row.operator(GTConfig.gt_remove_keyframe_idname, text=' ',
+        #              icon='KEY_DEHLT')
+
         box = layout.box()
+        col = box.column(align=True)
+        # col = box.column()
+        # row = col.row()
+        # row.enabled = geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH'
+        # row.prop(geotracker, 'track_focal_length')
 
-        row = box.row(align=True)
-        row.operator(GTConfig.gt_prev_keyframe_idname, text=' ',
-                     icon='PREV_KEYFRAME')
-        row.operator(GTConfig.gt_next_keyframe_idname, text=' ',
-                     icon='NEXT_KEYFRAME')
-        row.operator(GTConfig.gt_add_keyframe_idname, text=' ',
-                     icon='KEY_HLT')
-        row.operator(GTConfig.gt_remove_keyframe_idname, text=' ',
-                     icon='KEY_DEHLT')
-
-        box = layout.box()
-        col = box.column()
-
-        row = col.row()
-        row.enabled = geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH'
-        row.prop(geotracker, 'track_focal_length')
-
-        row = box.row(align=True)
+        row = col.row(align=True)
         row.operator(GTConfig.gt_track_prev_idname, text=' ',
                      icon='TRACKING_BACKWARDS_SINGLE')
         row.operator(GTConfig.gt_track_to_start_idname, text=' ',
@@ -429,12 +433,16 @@ class GT_PT_TrackingPanel(AllVisible):
         row.operator(GTConfig.gt_track_next_idname, text=' ',
                      icon='TRACKING_FORWARDS_SINGLE')
 
-        row = box.row()
+        col.separator(factor=0.8)
+
+        row = col.row()
         row.scale_y = Config.btn_scale_y
         row.operator(GTConfig.gt_refine_idname)
         row.operator(GTConfig.gt_refine_all_idname)
 
-        row = box.row(align=True)
+        col.separator(factor=0.8)
+
+        row = col.row(align=True)
         part = row.split(factor=0.5, align=True)
         row = part.split(factor=0.5, align=True)
         row.operator(GTConfig.gt_clear_tracking_backward_idname,
@@ -449,16 +457,20 @@ class GT_PT_TrackingPanel(AllVisible):
         if settings.is_calculating('TRACKING') or settings.is_calculating('REFINE'):
             _draw_calculating_indicator(layout)
 
-        box = layout.box()
-        row = box.row(align=True)
+        box = layout # .box()
+        col = box.column(align=True)
+        row = col.row(align=True)
         row.operator(GTConfig.gt_remove_pins_idname, icon='X')
-        row.operator(GTConfig.gt_toggle_pins_idname, icon='UNPINNED')
+        col2 = row.column()
+        col2.operator(GTConfig.gt_toggle_pins_idname, icon='UNPINNED')
 
-        row = box.row(align=True)
+        col.separator(factor=0.8)
+
+        row = col.row(align=True)
         row.operator(GTConfig.gt_center_geo_idname)
-        col = row.column()
-        col.active = False
-        col.operator(GTConfig.gt_magic_keyframe_idname)
+        col2 = row.column()
+        col2.active = False
+        col2.operator(GTConfig.gt_magic_keyframe_idname)
 
         # box = layout.box()
         # box.prop(geotracker, 'spring_pins_back')

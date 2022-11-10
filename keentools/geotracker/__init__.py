@@ -47,18 +47,20 @@ def _remove_addon_settings_var():
 
 def tracking_panel(self, context):
     layout = self.layout
+    layout.separator()
+    layout.label(text='GT:')
     row = layout.row(align=True)
     row.operator(GTConfig.gt_prev_keyframe_idname, text='',
                  icon='PREV_KEYFRAME')
     row.operator(GTConfig.gt_next_keyframe_idname, text='',
                  icon='NEXT_KEYFRAME')
 
-    settings = get_gt_settings()
-    if settings.pinmode:
-        row.operator(GTConfig.gt_add_keyframe_idname, text='',
-                     icon='KEY_HLT')
-        row.operator(GTConfig.gt_remove_keyframe_idname, text='',
-                     icon='KEY_DEHLT')
+    # settings = get_gt_settings()
+    # if settings.pinmode:
+    row.operator(GTConfig.gt_add_keyframe_idname, text='',
+                 icon='KEY_HLT')
+    row.operator(GTConfig.gt_remove_keyframe_idname, text='',
+                 icon='KEY_DEHLT')
 
 
 def _add_buttons_to_timeline():
