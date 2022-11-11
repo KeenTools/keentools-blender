@@ -120,6 +120,12 @@ class GT_OT_ChoosePrecalcFile(bpy.types.Operator, ExportHelper):
         default=GTConfig.default_precalc_filename,
         subtype='FILE_PATH'
     )
+    return_to_dialog: bpy.props.BoolProperty(
+        name='Return to precalc dialog',
+        description='Return to precalc dialog if something went wrong',
+        default=False,
+        options={'HIDDEN'},
+    )
 
     def check(self, context):
         change_ext = False
@@ -161,7 +167,11 @@ class GT_OT_ChoosePrecalcFile(bpy.types.Operator, ExportHelper):
         status, msg, _ = geotracker.reload_precalc()
         if not status:
             _log.error(msg)
-            self.report({'ERROR'}, msg)
+            if not self.return_to_dialog:
+                self.report({'ERROR'}, msg)
+            else:
+                op = get_operator(GTConfig.gt_analyze_call_idname)
+                op('INVOKE_DEFAULT')
 
         _log.output('PRECALC PATH HAS BEEN CHANGED: {}'.format(self.filepath))
         return {'FINISHED'}
@@ -432,8 +442,9 @@ class GT_OT_AnalyzeCall(bpy.types.Operator):
         # box = layout.box()
 
         block = layout.column(align=True)
-        block.operator(GTConfig.gt_choose_precalc_file_idname,
-                       text='Set precalc file')
+        op = block.operator(GTConfig.gt_choose_precalc_file_idname,
+                            text='Set precalc file')
+        op.return_to_dialog = True
         if geotracker.precalc_path != '':
             box = block.box()
             col = box.column()
