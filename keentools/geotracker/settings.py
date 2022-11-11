@@ -44,6 +44,7 @@ from ..utils.bpy_common import bpy_render_frame, bpy_start_frame, bpy_end_frame
 from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_getter,
                                             universal_cached_setter)
+from ..utils.animation import count_fcurve_points
 
 
 _log = KTLogger(__name__)
@@ -153,6 +154,21 @@ def update_focal_length_mode(geotracker, context: Any) -> None:
             *bpy_render_frame(), camera_sensor_width(geotracker.camobj))
 
 
+def update_lens_mode(geotracker, context: Any=None) -> None:
+    _log.output(f'update_lens_mode: {geotracker.lens_mode}')
+    if geotracker.lens_mode == 'ZOOM':
+        geotracker.focal_length_mode = 'ZOOM_FOCAL_LENGTH'
+    else:
+        if geotracker.focal_length_estimation:
+            geotracker.focal_length_mode = 'STATIC_FOCAL_LENGTH'
+        else:
+            count = count_fcurve_points(geotracker.camobj.data, 'lens')
+            if count > 0:
+                geotracker.focal_length_mode = 'STATIC_FOCAL_LENGTH'
+            else:
+                geotracker.focal_length_mode = 'CAMERA_FOCAL_LENGTH'
+
+
 def update_mask_3d(geotracker, context: Any) -> None:
     GTLoader.update_viewport_wireframe()
     settings = get_gt_settings()
@@ -219,7 +235,8 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     focal_length_estimation: bpy.props.BoolProperty(
         name='Estimate focal length',
         description='To enable this you need choose STATIC FOCAL as mode',
-        default=False)
+        default=False,
+        update=update_lens_mode)
     track_focal_length: bpy.props.BoolProperty(
         name='Track focal length',
         description='This can be enabled only in ZOOM FOCAL LENGTH as mode',
@@ -251,6 +268,15 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
             'Use zooming focal length in tracking', 2)],
         description='Focal length calculation mode',
         update=update_focal_length_mode)
+
+    lens_mode: bpy.props.EnumProperty(name='Lens',
+        items=[
+            ('FIXED', 'Fixed',
+            'Use the same static focal length in tracking', 1),
+            ('ZOOM', 'Zoom',
+            'Use zooming focal length in tracking', 2)],
+        description='Focal length calculation mode',
+        update=update_lens_mode)
 
     precalcless: bpy.props.BoolProperty(
         name='Precalcless tracking',
