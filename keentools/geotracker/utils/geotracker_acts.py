@@ -30,11 +30,14 @@ from ...geotracker_config import (GTConfig,
                                   get_current_geotracker_item)
 from ..gtloader import GTLoader
 from ..gt_class_loader import GTClassLoader
-from ...utils.animation import (remove_fcurve_point,
+from ...utils.animation import (get_action,
+                                remove_fcurve_point,
                                 remove_fcurve_from_object,
                                 delete_locrot_keyframe,
                                 mark_all_points_in_locrot,
-                                mark_selected_points_in_locrot)
+                                mark_selected_points_in_locrot,
+                                get_object_keyframe_numbers,
+                                create_animation_locrot_keyframe_force)
 from ...utils.other import bpy_progress_begin, bpy_progress_end
 from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
@@ -44,9 +47,6 @@ from ...utils.bpy_common import (create_empty_object,
                                  update_depsgraph,
                                  reset_unsaved_animation_changes_in_frame,
                                  bpy_background_mode)
-from ...utils.animation import (get_action,
-                                get_object_keyframe_numbers,
-                                create_animation_locrot_keyframe_force)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.timer import RepeatTimer
 from ...utils.coords import xy_to_xz_rotation_matrix_4x4
@@ -130,18 +130,17 @@ def remove_keyframe_act() -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    area = GTLoader.get_work_area()
-    if not area:
-        return ActionStatus(False, 'Working area does not exist')
-
     gt = GTLoader.kt_geotracker()
+    current_frame = bpy_current_frame()
+    if gt.is_key_at(current_frame):
+        gt.remove_keyframe(current_frame)
+        GTLoader.save_geotracker()
+        return ActionStatus(True, 'ok')
 
-    if not gt.is_key_at(bpy_current_frame()):
-        return ActionStatus(False, 'No GeoTracker keyframe at this frame')
-
-    gt.remove_keyframe(bpy_current_frame())
-    GTLoader.save_geotracker()
-    return ActionStatus(True, 'ok')
+    geotracker = get_current_geotracker_item()
+    obj = geotracker.animatable_object()
+    delete_locrot_keyframe(obj)
+    return ActionStatus(True, 'No GeoTracker keyframe at this frame')
 
 
 def next_keyframe_act() -> ActionStatus:

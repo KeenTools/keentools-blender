@@ -301,29 +301,28 @@ def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
     return x1, y1, x2, y2
 
 
-def is_safe_region(area: Area, x: float, y: float) -> bool:
-    """ Safe region for pin operation """
+def point_is_in_area(area: Area, x: float, y: float) -> bool:
+    if bpy_background_mode():
+        context = get_fake_context()
+        area = context.area
+    return (0 <= x <= area.width) and (0 <= y <= area.height)
+
+
+def point_is_in_service_region(area: Area, x: float, y: float) -> bool:
+    """ No guarantee that point is in area!
+        Only check if point is in service region  """
     if bpy_background_mode():
         context = get_fake_context()
         area = context.area
 
     x0 = area.x
     y0 = area.y
-    for i, r in enumerate(area.regions):
+    for r in area.regions:
         if r.type != 'WINDOW':
             if (r.x <= x + x0 <= r.x + r.width) and (
                     r.y <= y + y0 <= r.y + r.height):
-                return False
-    return True
-
-
-def is_in_area(area: Area, x: float, y: float) -> bool:
-    """ Is point in area """
-    if bpy_background_mode():
-        context = get_fake_context()
-        area = context.area
-
-    return (0 <= x <= area.width) and (0 <= y <= area.height)
+                return True
+    return False
 
 
 def get_pixel_relative_size(area: Area) -> float:

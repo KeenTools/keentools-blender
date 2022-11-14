@@ -24,6 +24,47 @@ from ..geotracker_config import GTConfig
 Button = namedtuple('Button', ['label', 'description'])
 
 buttons = {
+    GTConfig.gt_pinmode_idname: Button(
+        'GeoTracker Pinmode',
+        'Operator for in-Viewport drawing'
+    ),
+    GTConfig.gt_movepin_idname: Button(
+        'GeoTracker MovePin',
+        'GeoTracker MovePin operator'
+    ),
+    GTConfig.gt_actor_idname: Button(
+        'Actor Operator',
+        'GeoTracker Action'
+    ),
+    GTConfig.gt_sequence_filebrowser_idname: Button(
+        'Load footage',
+        'Both image sequences and movie files are supported'
+    ),
+    GTConfig.gt_choose_precalc_file_idname: Button(
+        'Set precalc file',
+        'Choose an existing .precalc file or just enter a name for a new one'
+    ),
+    GTConfig.gt_split_video_to_frames_idname: Button(
+        'Split video to frames',
+        'Choose dir where to place video-file frames'
+    ),
+    GTConfig.gt_split_video_to_frames_exec_idname: Button(
+        'Split video-file.',
+        'Choose dir where to place video-file frames.'
+    ),
+    GTConfig.gt_select_frames_for_bake_idname: Button(
+        'Select frames:',
+        'Create texture using selected frames'
+    ),
+    GTConfig.gt_reproject_tex_sequence_idname: Button(
+        'Reproject texture sequence',
+        'Choose dir where to place resulting sequence'
+    ),
+    # Main UI
+    GTConfig.gt_addon_setup_defaults_idname: Button(
+        'Setup GeoTracker defaults',
+        'Open GeoTracker Settings in Preferences window'
+    ),
     GTConfig.gt_create_geotracker_idname: Button(
         'Create GeoTracker',
         'Create a new GeoTracker object in scene'
@@ -196,4 +237,69 @@ buttons = {
         'GeoTracker Interruptor',
         'Interrupt current operation by Esc'
     ),
+    # Help buttons
+    GTConfig.gt_help_inputs_idname: Button(
+        'Inputs help',
+        'Show help information about Inputs panel'
+    ),
+    GTConfig.gt_help_analyze_idname: Button(
+        'Analyze help',
+        'Show help information about Analyze panel'
+    ),
+    GTConfig.gt_help_camera_idname: Button(
+        'Camera help',
+        'Show help information about Camera settings panel'
+    ),
+    GTConfig.gt_help_tracking_idname: Button(
+        'Tracking help',
+        'Show help information about Tracking panel'
+    ),
+    GTConfig.gt_help_appearance_idname: Button(
+        'Appearance help',
+        'Show help information about Appearance panel'
+    ),
+    GTConfig.gt_help_texture_idname: Button(
+        'Texture help',
+        'Show help information about Texture panel'
+    ),
+    GTConfig.gt_help_animation_idname: Button(
+        'Animation help',
+        'Show help information about Animation panel'
+    ),
+}
+
+
+HelpText = namedtuple('HelpText', ['width', 'message'])
+_help_default_width = 500
+
+
+help_texts = {
+    GTConfig.gt_help_inputs_idname: HelpText(_help_default_width, [
+        'Inputs panel description will be here...',
+        ' '
+    ]),
+    GTConfig.gt_help_analyze_idname: HelpText(_help_default_width, [
+        'Analyze panel description will be here...',
+        ' '
+    ]),
+    GTConfig.gt_help_camera_idname: HelpText(_help_default_width, [
+        'Camera panel description will be here...',
+        ' '
+    ]),
+    GTConfig.gt_help_tracking_idname: HelpText(_help_default_width, [
+        'Tracking panel description will be here...',
+        ' '
+    ]),
+    GTConfig.gt_help_appearance_idname: HelpText(_help_default_width, [
+        'Appearance panel description will be here...',
+        ' '
+    ]),
+    GTConfig.gt_help_texture_idname: HelpText(_help_default_width, [
+        'Texture panel description will be here...',
+        ' '
+    ]),
+    GTConfig.gt_help_animation_idname: HelpText(_help_default_width, [
+        'Animation panel description will be here...',
+        ' '
+    ]),
 }

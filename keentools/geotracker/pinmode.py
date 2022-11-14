@@ -19,7 +19,6 @@
 from typing import Any, Set, Optional
 from uuid import uuid4
 
-import bpy
 from bpy.types import Area, Operator
 from bpy.props import IntProperty, StringProperty
 
@@ -27,7 +26,10 @@ from ..utils.kt_logging import KTLogger
 from ..addon_config import get_operator
 from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
 from .gtloader import GTLoader
-from ..utils import coords
+from ..utils.coords import (point_is_in_area,
+                            point_is_in_service_region,
+                            get_image_space_coord,
+                            nearest_point)
 
 from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
@@ -38,6 +40,8 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_is_animation_playing,
                                 bpy_view_camera)
 from ..utils.video import fit_render_size
+from .utils.prechecks import common_checks
+from .ui_strings import buttons
 
 
 _log = KTLogger(__name__)
@@ -45,8 +49,8 @@ _log = KTLogger(__name__)
 
 class GT_OT_PinMode(Operator):
     bl_idname = GTConfig.gt_pinmode_idname
-    bl_label = 'GeoTracker Pinmode'
-    bl_description = 'Operator for in-Viewport drawing'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     geotracker_num: IntProperty(default=-1)
@@ -54,6 +58,7 @@ class GT_OT_PinMode(Operator):
 
     _shift_pressed = False
     _prev_camera_state = ()
+    _prev_area_state = ()
 
     @classmethod
     def _check_camera_state_changed(cls, rv3d):
@@ -61,6 +66,16 @@ class GT_OT_PinMode(Operator):
 
         if camera_state != cls._prev_camera_state:
             cls._prev_camera_state = camera_state
+            return True
+
+        return False
+
+    @classmethod
+    def _check_area_state_changed(cls, area):
+        area_state = (area.x, area.y, area.width, area.height)
+
+        if area_state != cls._prev_area_state:
+            cls._prev_area_state = area_state
             return True
 
         return False
@@ -78,7 +93,16 @@ class GT_OT_PinMode(Operator):
         vp = GTLoader.viewport()
         vp.update_view_relative_pixel_size(area)
 
-        if not coords.is_safe_region(area, mouse_x, mouse_y):
+        if not point_is_in_area(area, mouse_x, mouse_y):
+            _log.output('LEFT CLICK OUTSIDE OF VIEWPORT AREA')
+            return {'PASS_THROUGH'}
+
+        if point_is_in_service_region(area, mouse_x, mouse_y):
+            _log.output('LEFT CLICK IN SERVICE REGION OF AREA')
+            return {'PASS_THROUGH'}
+
+        if not vp.points2d().is_visible():
+            _log.output('OBJECT IS IN EDIT MODE. LEFT CLICK HAS BEEN IGNORED')
             return {'PASS_THROUGH'}
 
         pins = vp.pins()
@@ -87,8 +111,8 @@ class GT_OT_PinMode(Operator):
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y)
             return {'PASS_THROUGH'}
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, area)
-        nearest, dist2 = coords.nearest_point(x, y, vp.pins().arr())
+        x, y = get_image_space_coord(mouse_x, mouse_y, area)
+        nearest, dist2 = nearest_point(x, y, vp.pins().arr())
         if nearest >= 0 and dist2 < vp.tolerance_dist2():
             _log.output(f'CHANGE SELECTION PIN FOUND: {nearest}')
             pins.set_current_pin_num(nearest)
@@ -101,6 +125,7 @@ class GT_OT_PinMode(Operator):
         else:
             settings = get_gt_settings()
             settings.start_selection(mouse_x, mouse_y)
+        GTLoader.update_all_viewport_shaders()
         vp.tag_redraw()
         return {'PASS_THROUGH'}
 
@@ -109,9 +134,9 @@ class GT_OT_PinMode(Operator):
         vp = GTLoader.viewport()
         vp.update_view_relative_pixel_size(area)
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, area)
+        x, y = get_image_space_coord(mouse_x, mouse_y, area)
 
-        nearest, dist2 = coords.nearest_point(x, y, vp.pins().arr())
+        nearest, dist2 = nearest_point(x, y, vp.pins().arr())
         if nearest >= 0 and dist2 < vp.tolerance_dist2():
             return self._delete_found_pin(nearest, area)
 
@@ -234,8 +259,15 @@ class GT_OT_PinMode(Operator):
     def invoke(self, context: Any, event: Any) -> Set:
         _log.output(f'INVOKE PINMODE: {self.geotracker_num}')
 
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     reload_geotracker=True, geotracker=True,
+                                     camera=True, geometry=True,
+                                     movie_clip=False)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         settings = get_gt_settings()
-        settings.fix_geotrackers()
         old_geotracker_num = settings.current_geotracker_num
         new_geotracker_num = old_geotracker_num if \
             self.geotracker_num == -1 else self.geotracker_num
@@ -284,11 +316,13 @@ class GT_OT_PinMode(Operator):
         GTLoader.start_shader_timer(settings.pinmode_id)
         context.window_manager.modal_handler_add(self)
         GTLoader.register_undo_redo_handlers()
+        vp.unhide_all_shaders()
         _log.output('PINMODE STARTED')
         return {'RUNNING_MODAL'}
 
     def modal(self, context: Any, event: Any) -> Set:
         settings = get_gt_settings()
+        vp = GTLoader.viewport()
 
         if self.pinmode_id != settings.pinmode_id:
             _log.error('Extreme GeoTracker pinmode operator stop')
@@ -313,22 +347,20 @@ class GT_OT_PinMode(Operator):
                 and event.value == 'PRESS':
             self._set_shift_pressed(True)
             if not settings.selection_mode:
-                vp = GTLoader.viewport()
                 vp.pins().set_add_selection_mode(True)
 
         if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
                 and event.value == 'RELEASE':
             self._set_shift_pressed(False)
             if not settings.selection_mode:
-                vp = GTLoader.viewport()
                 vp.pins().set_add_selection_mode(False)
 
         if settings.selection_mode:
             if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
                 settings.end_selection(context.area, event.mouse_region_x, event.mouse_region_y)
+                GTLoader.update_all_viewport_shaders()
             else:
                 settings.do_selection(event.mouse_region_x, event.mouse_region_y)
-            vp = GTLoader.viewport()
             vp.tag_redraw()
             return {'RUNNING_MODAL'}
 
@@ -336,7 +368,6 @@ class GT_OT_PinMode(Operator):
             if settings.selection_mode:
                 settings.cancel_selection()
                 settings.set_add_selection_mode(False)
-                vp = GTLoader.viewport()
                 vp.tag_redraw()
                 return {'RUNNING_MODAL'}
             if not bpy_background_mode() and bpy_is_animation_playing():
@@ -347,34 +378,40 @@ class GT_OT_PinMode(Operator):
             return {'FINISHED'}
 
         if event.type == 'TAB' and event.value == 'PRESS':
-            if coords.is_in_area(context.area,
-                                 event.mouse_region_x, event.mouse_region_y):
+            if point_is_in_area(context.area,
+                                event.mouse_region_x, event.mouse_region_y):
                 self._change_wireframe_visibility()
+                vp.tag_redraw()
                 return {'RUNNING_MODAL'}
 
         if GTLoader.geomobj_mode_changed_to_object():
-            _log.output('RETURNED TO OBJECT_MODE')
-            GTLoader.save_geotracker()
-            GTLoader.load_geotracker()
-            GTLoader.update_all_viewport_shaders(context.area)
-            return {'PASS_THROUGH'}
+            _log.output(_log.color('green', 'RETURNED TO OBJECT_MODE'))
+            self._change_wireframe_visibility(toggle=False, value=True)
+            GTLoader.update_all_viewport_shaders()
 
-        if event.type == 'TIMER' and GTLoader.get_stored_geomobj_mode() == 'EDIT':
-            _log.output('TIMER IN EDIT_MODE')
-            GTLoader.update_geomobj_mesh()
-            GTLoader.save_geotracker()
-            GTLoader.load_geotracker()
-            GTLoader.update_all_viewport_shaders(context.area)
-            return {'PASS_THROUGH'}
-
-        if self._check_camera_state_changed(context.space_data.region_3d) or event.type == 'TIMER':
-            if event.type != 'TIMER':
-                _log.output('FORCE TAG REDRAW BY VIEWPORT ZOOM/OFFSET')
-            vp = GTLoader.viewport()
+        if self._check_camera_state_changed(context.space_data.region_3d) \
+                or self._check_area_state_changed(GTLoader.get_work_area()):
+            _log.output('FORCE TAG REDRAW BY VIEWPORT ZOOM/OFFSET')
             vp.create_batch_2d(context.area)
             vp.update_residuals(GTLoader.kt_geotracker(), context.area,
                                 bpy_current_frame())
             vp.tag_redraw()
+
+        if event.type == 'TIMER' and GTLoader.get_stored_geomobj_mode() == 'EDIT':
+            _log.output('TIMER IN EDIT_MODE')
+            vp.message_to_screen([
+                {'text': 'Object is in EDIT MODE',
+                 'color': (1., 0., 1., 0.7),
+                 'size': 24,
+                 'y': 60},  # line 1
+                {'text': 'ESC: Exit | TAB: Hide/Show',
+                 'color': (1., 1., 1., 0.5),
+                 'size': 20,
+                 'y': 30}])  # line 2
+            GTLoader.update_geomobj_mesh()
+            vp.hide_pins_and_residuals()
+            GTLoader.update_all_viewport_shaders()
+            return {'PASS_THROUGH'}
 
         if event.value == 'PRESS' and event.type == 'LEFTMOUSE':
             return self._on_left_mouse_press(context.area, event)
@@ -382,4 +419,4 @@ class GT_OT_PinMode(Operator):
         if event.value == 'PRESS' and event.type == 'RIGHTMOUSE':
             return self._on_right_mouse_press(context.area, event)
 
-        return {'PASS_THROUGH'}  # {'RUNNING_MODAL'}
+        return {'PASS_THROUGH'}

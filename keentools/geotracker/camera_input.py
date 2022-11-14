@@ -300,3 +300,6 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         else:
             cam_data.lens = focal_px_to_mm(fl, *bpy_render_frame(),
                                            cam_data.sensor_width)
+
+    def reset(self) -> None:
+        _log.output('gt reset call')

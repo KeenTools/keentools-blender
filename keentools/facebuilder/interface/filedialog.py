@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
 
 import bpy
 import os
@@ -23,6 +22,7 @@ import os
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bpy.types import Operator
 
+from ...utils.kt_logging import KTLogger
 from ...addon_config import get_operator
 from ...facebuilder_config import FBConfig, get_fb_settings
 from ..fbloader import FBLoader
@@ -30,13 +30,17 @@ from ..utils.exif_reader import (read_exif_to_camera,
                                  auto_setup_camera_from_exif)
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.blendshapes import load_csv_animation_to_blendshapes
+from ..ui_strings import buttons
+
+
+_log = KTLogger(__name__)
 
 
 class FB_OT_SingleFilebrowserExec(Operator):
     bl_idname = FBConfig.fb_single_filebrowser_exec_idname
-    bl_label = "File Browser Execute"
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
-    bl_description = "Change the image file path"
 
     def draw(self, context):
         pass
@@ -52,9 +56,8 @@ class FB_OT_SingleFilebrowserExec(Operator):
 
 
 def load_single_image_file(headnum, camnum, filepath):
-        logger = logging.getLogger(__name__)
         settings = get_fb_settings()
-        logger.info('Load image file: {}'.format(filepath))
+        _log.info('Load image file: {}'.format(filepath))
 
         if not settings.check_heads_and_cams():
             settings.fix_heads()
@@ -67,13 +70,13 @@ def load_single_image_file(headnum, camnum, filepath):
             head = settings.get_head(headnum)
             head.get_camera(camnum).cam_image = img
         except RuntimeError:
-            logger.error('FILE READ ERROR: {}'.format(filepath))
+            _log.error(f'FILE READ ERROR: {filepath}')
             return {'CANCELLED'}
 
         try:
             read_exif_to_camera(headnum, camnum, filepath)
-        except RuntimeError:
-            logger.error('FILE EXIF READ ERROR: {}'.format(filepath))
+        except RuntimeError as err:
+            _log.error(f'FILE EXIF READ ERROR: {filepath}\n{str(err)}')
 
         camera = head.get_camera(camnum)
         camera.show_background_image()
@@ -85,8 +88,8 @@ def load_single_image_file(headnum, camnum, filepath):
 
 class FB_OT_SingleFilebrowser(Operator, ImportHelper):
     bl_idname = FBConfig.fb_single_filebrowser_idname
-    bl_label = "Open Image"
-    bl_description = "Open single image file"
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO'}
 
     filter_glob: bpy.props.StringProperty(
@@ -105,14 +108,14 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
 
 
 def update_format(self, context):
-    ext = ".png" if self.file_format == "PNG" else ".jpg"
+    ext = '.png' if self.file_format == 'PNG' else '.jpg'
     self.filename_ext = ext
 
 
 class FB_OT_TextureFileExport(Operator, ExportHelper):
     bl_idname = FBConfig.fb_texture_file_export_idname
-    bl_label = "Export texture"
-    bl_description = "Export the created texture to a file"
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     filter_glob: bpy.props.StringProperty(
@@ -163,8 +166,7 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
         layout.prop(self, 'file_format', expand=True)
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        logger.debug("START SAVE TEXTURE: {}".format(self.filepath))
+        _log.output(f'START SAVE TEXTURE: {self.filepath}')
         settings = get_fb_settings()
         head = settings.get_head(self.headnum)
         if head is None:
@@ -178,8 +180,7 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
         fix_for_blender_bug = tex.file_format  # Do not remove!
         tex.file_format = self.file_format
         tex.save()
-        logger.debug("SAVED TEXTURE: {} {}".format(tex.file_format,
-                                                   self.filepath))
+        _log.output(f'SAVED TEXTURE: {tex.file_format} {self.filepath}')
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -194,10 +195,9 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
 
 class FB_OT_MultipleFilebrowserExec(Operator):
     bl_idname = FBConfig.fb_multiple_filebrowser_exec_idname
-    bl_label = "Open Images"
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Load images and create views. " \
-                     "You can select multiple images at once"
 
     headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
 
@@ -213,9 +213,8 @@ class FB_OT_MultipleFilebrowserExec(Operator):
 
 class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
     bl_idname = FBConfig.fb_multiple_filebrowser_idname
-    bl_label = "Open Images"
-    bl_description = "Load images and create views. " \
-                     "You can select multiple images at once"
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
 
     filter_glob: bpy.props.StringProperty(
         default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp',
@@ -240,11 +239,10 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
 
     def execute(self, context):
         """ Selected files processing"""
-        logger = logging.getLogger(__name__)
         settings = get_fb_settings()
         if not settings.is_proper_headnum(self.headnum):
-            logger.error("WRONG HEADNUM: {}/{}".format(
-                self.headnum, settings.get_last_headnum()))
+            _log.error(f'WRONG HEADNUM: {self.headnum}/'
+                       f'{settings.get_last_headnum()}')
             return {'CANCELLED'}
 
         if not settings.check_heads_and_cams():
@@ -259,7 +257,7 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
         for f in self.files:
             try:
                 filepath = os.path.join(self.directory, f.name)
-                logger.debug("IMAGE FILE: {}".format(filepath))
+                _log.output(f'IMAGE FILE: {filepath}')
 
                 camera = FBLoader.add_new_camera_with_image(self.headnum,
                                                             filepath)
@@ -268,7 +266,7 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
                 camera.orientation = camera.exif.orientation
 
             except RuntimeError as ex:
-                logger.error("FILE READ ERROR: {}".format(f.name))
+                _log.error(f'FILE READ ERROR: {f.name}')
 
         for i, camera in enumerate(head.cameras):
             if i > last_camnum:
@@ -281,8 +279,8 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
 
 class FB_OT_AnimationFilebrowser(Operator, ImportHelper):
     bl_idname = FBConfig.fb_animation_filebrowser_idname
-    bl_label = 'Load animation'
-    bl_description = 'Open animation file'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO'}
 
     filter_glob: bpy.props.StringProperty(

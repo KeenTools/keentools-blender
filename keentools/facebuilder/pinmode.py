@@ -26,7 +26,12 @@ from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType, show_user_preferences
 from ..facebuilder_config import FBConfig, get_fb_settings
 from ..utils.bpy_common import operator_with_context, bpy_view_camera
-from ..utils import coords
+from ..utils.coords import (update_head_mesh_non_neutral,
+                            get_image_space_coord,
+                            nearest_point,
+                            point_is_in_area,
+                            point_is_in_service_region,
+                            get_area_region)
 from .utils.manipulate import push_head_in_undo_history
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
@@ -34,6 +39,7 @@ from ..utils.other import hide_viewport_ui_elements_and_store_on_object
 from ..utils.html import split_long_string
 from ..utils.localview import exit_area_localview, check_area_active_problem
 from ..utils.manipulate import switch_to_camera, center_viewports_on_object
+from .ui_strings import buttons
 
 
 _log = KTLogger(__name__)
@@ -73,8 +79,8 @@ def register_undo_handler():
 
 class FB_OT_PinMode(bpy.types.Operator):
     bl_idname = FBConfig.fb_pinmode_idname
-    bl_label = 'FaceBuilder Pinmode'
-    bl_description = 'Operator for in-Viewport drawing'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: bpy.props.IntProperty(default=0)
@@ -167,7 +173,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             unregister_undo_handler()
             return {'FINISHED'}
 
-        coords.update_head_mesh_non_neutral(fb, head)
+        update_head_mesh_non_neutral(fb, head)
         FBLoader.update_camera_pins_count(headnum, camnum)
 
         FBLoader.update_all_camera_positions(headnum)
@@ -197,9 +203,9 @@ class FB_OT_PinMode(bpy.types.Operator):
         vp = FBLoader.viewport()
         vp.update_view_relative_pixel_size(area)
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, area)
+        x, y = get_image_space_coord(mouse_x, mouse_y, area)
 
-        nearest, dist2 = coords.nearest_point(x, y, vp.pins().arr())
+        nearest, dist2 = nearest_point(x, y, vp.pins().arr())
         if nearest >= 0 and dist2 < FBLoader.viewport().tolerance_dist2():
             return self._delete_found_pin(nearest, area)
 
@@ -209,10 +215,10 @@ class FB_OT_PinMode(bpy.types.Operator):
     def _on_left_mouse_press(self, area, mouse_x, mouse_y):
         FBLoader.viewport().update_view_relative_pixel_size(area)
 
-        if not coords.is_in_area(area, mouse_x, mouse_y):
+        if not point_is_in_area(area, mouse_x, mouse_y):
             return {'PASS_THROUGH'}
 
-        if coords.is_safe_region(area, mouse_x, mouse_y):
+        if not point_is_in_service_region(area, mouse_x, mouse_y):
             settings = get_fb_settings()
             op = get_operator(FBConfig.fb_movepin_idname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
@@ -337,7 +343,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             return {'CANCELLED'}
 
         FBLoader.load_pins_into_viewport(settings.current_headnum, settings.current_camnum)
-        coords.update_head_mesh_non_neutral(FBLoader.get_builder(), head)
+        update_head_mesh_non_neutral(FBLoader.get_builder(), head)
 
         update_camera_focal(camera, fb)
 
@@ -365,7 +371,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             assert area.spaces.active.region_3d.view_perspective == 'CAMERA'
             _log.output('bpy.ops.view3d.view_center_camera call')
             operator_with_context(bpy.ops.view3d.view_center_camera,
-                {'area': area, 'region': coords.get_area_region(area)})
+                {'area': area, 'region': get_area_region(area)})
 
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
         push_head_in_undo_history(head, 'Pin Mode Start.')
