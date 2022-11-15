@@ -86,7 +86,7 @@ class GT_OT_MovePin(bpy.types.Operator):
     def init_action(self, context: Any, mouse_x: float, mouse_y: float) -> bool:
         def _enable_pin_safe(gt, keyframe, pin_index):
             pin = gt.pin(keyframe, pin_index)
-            if not pin.enabled:
+            if pin and not pin.enabled:
                 gt.pin_enable(keyframe, pin_index, True)
 
         geotracker = get_current_geotracker_item()
@@ -174,14 +174,7 @@ class GT_OT_MovePin(bpy.types.Operator):
             GTLoader.move_pin(kid, pin_index, (x, y), *get_scene_camera_shift())
             return GTLoader.solve()
 
-        gt = GTLoader.kt_geotracker()
-        old_positions = [gt.pin(kid, x).img_pos for x in range(gt.pins_count())]
         _drag_multiple_pins(kid, pin_index, selected_pins)
-
-        excluded_pins = set(selected_pins + pins.get_disabled_pins())
-        for i in [x for x in range(gt.pins_count()) if x not in excluded_pins]:
-            gt.move_pin(kid, i, old_positions[i])
-
         return GTLoader.solve()
 
     def on_mouse_move(self, area: Area, mouse_x: float, mouse_y: float) -> Set:
@@ -242,6 +235,12 @@ class GT_OT_MovePin(bpy.types.Operator):
             return {'CANCELLED'}
 
         self._move_pin_mode_on()
+
+        keyframe = bpy_current_frame()
+        gt = GTLoader.kt_geotracker()
+        if gt.is_key_at(keyframe):
+            gt.fixate_pins(keyframe)
+
         context.window_manager.modal_handler_add(self)
         _log.output('GT START PIN MOVING')
         return {'RUNNING_MODAL'}
