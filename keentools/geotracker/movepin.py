@@ -57,12 +57,10 @@ class GT_OT_MovePin(bpy.types.Operator):
     shift_y: bpy.props.FloatProperty(default=0.0)
 
     def _move_pin_mode_on(self) -> None:
-        settings = get_gt_settings()
-        settings.move_pin_mode = True
+        GTLoader.viewport().pins().set_move_pin_mode(True)
 
     def _move_pin_mode_off(self) -> None:
-        settings = get_gt_settings()
-        settings.move_pin_mode = False
+        GTLoader.viewport().pins().set_move_pin_mode(False)
 
     def _before_operator_finish(self) -> None:
         self._move_pin_mode_off()
@@ -145,8 +143,8 @@ class GT_OT_MovePin(bpy.types.Operator):
             GTLoader.spring_pins_back()
         GTLoader.save_geotracker()
 
-        GTLoader.update_all_viewport_shaders(area)
         self._before_operator_finish()
+        GTLoader.update_all_viewport_shaders(area)
         GTLoader.viewport_area_redraw()
 
         _push_action_in_undo_history()

@@ -74,7 +74,7 @@ def depsgraph_update_handler(scene, depsgraph):
     if not settings.pinmode:
         GTLoader.unregister_undo_redo_handlers()
         return
-    if settings.move_pin_mode:
+    if GTLoader.viewport().pins().move_pin_mode():
         return
     geotracker = settings.get_current_geotracker_item()
     if not geotracker:
