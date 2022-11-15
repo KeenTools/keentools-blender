@@ -86,7 +86,7 @@ class GT_OT_MovePin(bpy.types.Operator):
     def init_action(self, context: Any, mouse_x: float, mouse_y: float) -> bool:
         def _enable_pin_safe(gt, keyframe, pin_index):
             pin = gt.pin(keyframe, pin_index)
-            if not pin.enabled:
+            if pin and not pin.enabled:
                 gt.pin_enable(keyframe, pin_index, True)
 
         geotracker = get_current_geotracker_item()
