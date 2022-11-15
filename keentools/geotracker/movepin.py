@@ -236,8 +236,10 @@ class GT_OT_MovePin(bpy.types.Operator):
 
         self._move_pin_mode_on()
 
+        keyframe = bpy_current_frame()
         gt = GTLoader.kt_geotracker()
-        gt.fixate_pins(bpy_current_frame())
+        if gt.is_key_at(keyframe):
+            gt.fixate_pins(keyframe)
 
         context.window_manager.modal_handler_add(self)
         _log.output('GT START PIN MOVING')
