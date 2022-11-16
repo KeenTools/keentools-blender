@@ -40,7 +40,10 @@ from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             camera_sensor_width,
                             get_polygons_in_vertex_group)
 from ..utils.video import fit_render_size, fit_time_length
-from ..utils.bpy_common import bpy_render_frame, bpy_start_frame, bpy_end_frame
+from ..utils.bpy_common import (bpy_render_frame,
+                                bpy_start_frame,
+                                bpy_end_frame,
+                                bpy_current_frame)
 from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_getter,
                                             universal_cached_setter)
@@ -101,7 +104,11 @@ def update_geomobj(geotracker, context: Any) -> None:
             _log.output(f'WRONG PINS: {wrong_pins}')
             for i in reversed(wrong_pins):
                 gt.remove_pin(i)
-            gt.spring_pins_back(keyframes[0])
+            current_keyframe = bpy_current_frame()
+            if gt.is_key_at(current_keyframe):
+                gt.spring_pins_back(current_keyframe)
+            else:
+                gt.spring_pins_back(keyframes[0])
 
         return True
 
