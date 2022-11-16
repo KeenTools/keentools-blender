@@ -477,3 +477,23 @@ def get_triangles_in_vertex_group(obj: Object,
     mesh.calc_loop_triangles()
     return [tris.vertices[:] for tris in mesh.loop_triangles
             if tris.polygon_index in polys_in_group]
+
+
+def distance_between_objects(obj1: Object, obj2: Object) -> float:
+    ar1 = np.asarray(obj1.matrix_world)
+    ar2 = np.asarray(obj2.matrix_world)
+    return np.linalg.norm(ar1[:, 3] - ar2[:, 3], axis=0)
+
+
+def change_far_clip_plane(camobj: Object, geomobj: Object,
+                          step: float=1.01) -> bool:
+    if not camobj or not geomobj:
+        return False
+    dist = distance_between_objects(camobj, geomobj)
+    if camobj.data.clip_end > dist:
+        return False
+
+    _log.output(f'OBJECT IS BEYOND THE CAMERA FAR CLIP PLANE:\n '
+                f'DIST: {dist} OLD CLIP: {camobj.data.clip_end}')
+    camobj.data.clip_end = dist * step
+    return True

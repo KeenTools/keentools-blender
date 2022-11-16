@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from typing import Any, Set, Tuple, List
+from copy import deepcopy
 
 import bpy
 from bpy.types import Area
@@ -30,7 +31,8 @@ from ..utils.coords import (get_image_space_coord,
                             image_space_to_frame,
                             nearest_point,
                             point_is_in_area,
-                            point_is_in_service_region)
+                            point_is_in_service_region,
+                            change_far_clip_plane)
 from ..utils.manipulate import force_undo_push
 from ..utils.bpy_common import bpy_current_frame, get_scene_camera_shift
 from .ui_strings import buttons
@@ -189,12 +191,16 @@ class GT_OT_MovePin(bpy.types.Operator):
             return {'FINISHED'}
 
         self.dragged = True
+        vp = GTLoader.viewport()
 
         GTLoader.place_object_or_camera()
-        if geotracker.focal_length_estimation:
-            GTLoader.updated_focal_length()
+        if GTConfig.auto_increase_far_clip_distance and \
+                change_far_clip_plane(geotracker.camobj, geotracker.geomobj):
+            default_txt = deepcopy(vp.texter().get_default_text())
+            default_txt[0]['text'] = 'Camera far clip plane has been changed'
+            default_txt[0]['color'] = (1.0, 0.0, 1.0, 0.7)
+            GTLoader.viewport().message_to_screen(default_txt)
 
-        vp = GTLoader.viewport()
         gt = GTLoader.kt_geotracker()
         vp.update_surface_points(gt, geotracker.geomobj, frame)
 

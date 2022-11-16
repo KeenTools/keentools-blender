@@ -149,6 +149,7 @@ class GTConfig:
     auto_render_size = True
     auto_time_length = True
     hide_2d_mask = False
+    auto_increase_far_clip_distance = True
 
 
 def get_gt_settings():
