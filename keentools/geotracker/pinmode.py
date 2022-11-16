@@ -196,8 +196,9 @@ class GT_OT_PinMode(Operator):
         _log.output('GT REGISTER SHADER HANDLERS')
         GTLoader.update_all_viewport_shaders(area)
 
-        geotracker = get_current_geotracker_item()
-        change_far_clip_plane(geotracker.camobj, geotracker.geomobj)
+        if GTConfig.auto_increase_far_clip_distance:
+            geotracker = get_current_geotracker_item()
+            change_far_clip_plane(geotracker.camobj, geotracker.geomobj)
 
         if context is not None:
             vp.register_handlers(context)

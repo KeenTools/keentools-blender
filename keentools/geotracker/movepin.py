@@ -194,7 +194,8 @@ class GT_OT_MovePin(bpy.types.Operator):
         vp = GTLoader.viewport()
 
         GTLoader.place_object_or_camera()
-        if change_far_clip_plane(geotracker.camobj, geotracker.geomobj):
+        if GTConfig.auto_increase_far_clip_distance and \
+                change_far_clip_plane(geotracker.camobj, geotracker.geomobj):
             default_txt = deepcopy(vp.texter().get_default_text())
             default_txt[0]['text'] = 'Camera far clip plane has been changed'
             default_txt[0]['color'] = (1.0, 0.0, 1.0, 0.7)
