@@ -121,18 +121,19 @@ class GTViewport(KTViewport):
         self.points3d().set_point_size(
             settings.pin_size * GTConfig.surf_pin_size_scale)
 
-    def surface_points_from_mesh(self, gt: Any, headobj: Object,
+    def surface_points_from_mesh(self, gt: Any, geomobj: Object,
                                  keyframe: int) -> List:
         verts = []
         pins_count = gt.pins_count()
-        obj = evaluated_object(headobj)
+        obj = evaluated_object(geomobj)
         if len(obj.data.vertices) == 0:
             return verts
         for i in range(pins_count):
             pin = gt.pin(keyframe, i)
             if pin is not None:
                 p = pin_to_xyz_from_mesh(pin, obj)
-                verts.append(p)
+                if p is not None:
+                    verts.append(p)
         return verts
 
     def create_batch_2d(self, area: Area) -> None:

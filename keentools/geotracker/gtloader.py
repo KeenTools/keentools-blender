@@ -488,7 +488,9 @@ class GTLoader:
 
         if geotracker.spring_pins_back:
             gt = cls.kt_geotracker()
-            gt.spring_pins_back(bpy_current_frame())
+            current_frame = bpy_current_frame()
+            if gt.is_key_at(current_frame):
+                gt.spring_pins_back(current_frame)
 
     @classmethod
     def get_work_area(cls) -> Optional[Area]:
