@@ -32,7 +32,9 @@ from .shaders import (simple_fill_vertex_shader,
                       solid_line_vertex_shader, solid_line_fragment_shader,
                       simple_fill_vertex_local_shader,
                       smooth_3d_vertex_local_shader, smooth_3d_fragment_shader,
-                      uniform_3d_vertex_local_shader)
+                      uniform_3d_vertex_local_shader,
+                      lit_vertex_local_shader,
+                      lit_fragment_shader)
 from .coords import (get_mesh_verts,
                      multiply_verts_on_matrix_4x4,
                      get_scale_vec_4_from_matrix_world,
@@ -385,7 +387,7 @@ class KTEdgeShader3D(KTEdgeShaderBase):
 
 
 class KTEdgeShaderLocal3D(KTEdgeShader3D):
-    def __init__(self, target_class: Any, mask_color=(0.0, 0.0, 1.0, 0.4)):
+    def __init__(self, target_class: Any, mask_color: Tuple):
         self.object_world_matrix: Any = np.eye(4, dtype=np.float32)
         self.selection_fill_color: Tuple[float, float, float, float] = mask_color
         self.selection_fill_shader: Optional[Any] = None
@@ -481,3 +483,82 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
                                  inverted: bool) -> None:
         self.selection_triangle_indices = get_triangles_in_vertex_group(
             obj, mask_3d, inverted)
+
+
+class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
+    def __init__(self, target_class: Any, mask_color: Tuple):
+        self.lit_color: Tuple[float, float, float, float] = (0., 1., 0., 1.0)
+        self.lit_shader: Optional[Any] = None
+        self.lit_batch: Optional[Any] = None
+        self.lit_flag: bool = False
+        self.lit_edge_vertices: List = []
+        self.lit_edge_vertex_normals: List = []
+        super().__init__(target_class, mask_color)
+
+    def set_lit_wireframe(self, state: bool) -> None:
+        self.lit_flag = state
+
+    def init_shaders(self) -> None:
+        super().init_shaders()
+        self.lit_shader = gpu.types.GPUShader(
+            lit_vertex_local_shader(), lit_fragment_shader())
+
+    def init_geom_data_from_mesh(self, obj: Any) -> None:
+        super().init_geom_data_from_mesh(obj)
+        mesh = evaluated_mesh(obj)
+
+        loop_count = len(mesh.loops)
+        loops = np.empty((loop_count,), dtype=np.int32)
+        mesh.loops.foreach_get('vertex_index', np.reshape(loops, loop_count))
+
+        loop_normals = np.empty((loop_count, 3), dtype=np.float32)
+        mesh.calc_normals_split()
+        mesh.loops.foreach_get('normal', np.reshape(loop_normals,
+                                                    loop_count * 3))
+        poly_count = len(mesh.polygons)
+        polys = np.empty((poly_count,), dtype=np.int32)
+        mesh.polygons.foreach_get('loop_total', np.reshape(polys, poly_count))
+
+        edge_indices = np.empty((loop_count * 2,), dtype=np.int32)
+        edge_normals = np.empty((loop_count * 2, 3), dtype=np.float32)
+        i = 0
+        k = 0
+        for p_count in polys:
+            indices = loops[i: i + p_count]
+            normals = loop_normals[i: i + p_count]
+            delta = p_count * 2
+            edge_indices[k: k + delta] = \
+                np.roll(np.repeat(indices, 2), -1, axis=0)
+            edge_normals[k: k + delta] = \
+                np.roll(np.repeat(normals, 2, axis=0), -1, axis=0)
+            i += p_count
+            k += delta
+
+        self.lit_edge_vertices = self.vertices[edge_indices.ravel()]
+        self.lit_edge_vertex_normals = edge_normals
+
+    def init_color_data(self, color: Tuple[float, float, float, float]) -> None:
+        self.edges_colors = np.full(
+            (len(self.edges_vertices), 4), color).tolist()
+        self.lit_color = color
+
+    def create_batches(self) -> None:
+        if bpy_background_mode():
+            return
+        super().create_batches()
+        self.lit_batch = batch_for_shader(
+            self.lit_shader, 'LINES',
+            {'pos': self.lit_edge_vertices,
+             'vertNormal': self.lit_edge_vertex_normals})
+
+    def draw_edges(self) -> None:
+        if not self.lit_flag:
+            return super().draw_edges()
+
+        shader = self.lit_shader
+        shader.bind()
+        shader.uniform_float('color', self.lit_color)
+        shader.uniform_vector_float(
+            shader.uniform_from_name('modelMatrix'),
+            self.object_world_matrix.ravel(), 16)
+        self.lit_batch.draw(shader)

@@ -35,7 +35,7 @@ from ..utils.viewport import KTViewport
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
 from ..utils.edges import (KTEdgeShader2D,
-                           KTEdgeShaderLocal3D,
+                           KTLitEdgeShaderLocal3D,
                            KTEdgeShaderAll2D,
                            KTScreenDashedRectangleShader2D)
 from ..utils.polygons import KTRasterMask
@@ -49,7 +49,7 @@ class GTViewport(KTViewport):
         self._points3d = KTPoints3D(SpaceView3D)
         self._residuals = KTEdgeShader2D(SpaceView3D)
         self._texter = KTScreenText(SpaceView3D)
-        self._wireframer = KTEdgeShaderLocal3D(SpaceView3D, mask_color=(
+        self._wireframer = KTLitEdgeShaderLocal3D(SpaceView3D, mask_color=(
             *UserPreferences.get_value_safe('gt_mask_3d_color',
                                             UserPreferences.type_color),
             UserPreferences.get_value_safe('gt_mask_3d_opacity',
@@ -242,9 +242,11 @@ class GTViewport(KTViewport):
 
     def update_wireframe_colors(self) -> None:
         settings = get_gt_settings()
-        self.wireframer().init_color_data((*settings.wireframe_color,
-                                           settings.wireframe_opacity))
-        self.wireframer().create_batches()
+        wf = self.wireframer()
+        wf.init_color_data((*settings.wireframe_color,
+                            settings.wireframe_opacity))
+        wf.set_lit_wireframe(settings.lit_wireframe)
+        wf.create_batches()
 
     def hide_pins_and_residuals(self):
         self.points2d().hide_shader()
