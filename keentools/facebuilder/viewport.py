@@ -180,19 +180,17 @@ class FBViewport(KTViewport):
         x1, y1, x2, y2 = get_camera_border(area)
         kt_pins = fb.projected_pins(keyframe)
 
-        edge_lengths = []
         verts = []
-        length = 22.0
         for pin in kt_pins:
             x, y = frame_to_image_space(*pin.img_pos, rx, ry)
             verts.append(image_space_to_region(x, y, x1, y1, x2, y2))
-            edge_lengths.append(0.0)
             x, y = frame_to_image_space(*pin.surface_point, rx, ry)
             verts.append(image_space_to_region(x, y, x1, y1, x2, y2))
-            edge_lengths.append(length)
 
         wire = self.residuals()
         wire.vertices = verts
-        wire.edge_lengths = edge_lengths
         wire.vertices_colors = [FBConfig.residual_color] * len(wire.vertices)
+
+        # For pin dashes drawing template like this: O- - - -o
+        wire.edge_lengths = [0.0, 22.0] * len(kt_pins)
         wire.create_batch()
