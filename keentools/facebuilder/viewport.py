@@ -170,46 +170,29 @@ class FBViewport(KTViewport):
         rectangler.create_batch()
 
     def update_residuals(self, fb: Any, keyframe: int, area: Area) -> None:
-        rx, ry = bpy_render_frame()
-        x1, y1, x2, y2 = get_camera_border(area)
-
-        p2d = self.img_points(fb, keyframe)
-        p3d = self.points3d().get_vertices()
-
-        wire = self.residuals()
-        wire.clear_vertices()
-        wire.edge_lengths = []
-        wire.vertices_colors = []
-
-        if len(p2d) != len(p3d):
-            return
-
-        if len(p3d) == 0:
-            wire.create_batch()  # Empty shader
-            return
-
         if not area:
             return
         r3d = get_area_region_3d(area)
         if not r3d:
             return
 
-        projection = fb.projection_mat(keyframe).T
-        vv = to_homogeneous(p3d)
-        vv = vv @ np.array(r3d.view_matrix.transposed()) @ projection
-        vv = (vv.T / vv[:, 3]).T
+        rx, ry = bpy_render_frame()
+        x1, y1, x2, y2 = get_camera_border(area)
+        kt_pins = fb.projected_pins(keyframe)
 
-        verts2 = []
-        for i, v in enumerate(vv):
-            x, y = frame_to_image_space(v[0], v[1], rx, ry)
-            verts2.append(image_space_to_region(x, y, x1, y1, x2, y2))
-            wire.edge_lengths.append(0)
-            verts2.append(image_space_to_region(p2d[i][0], p2d[i][1],
-                                                x1, y1, x2, y2))
-            # length = np.linalg.norm((v[0]-p2d[i][0], v[1]-p2d[i][1]))
-            length = 22.0
-            wire.edge_lengths.append(length)
+        edge_lengths = []
+        verts = []
+        length = 22.0
+        for pin in kt_pins:
+            x, y = frame_to_image_space(*pin.img_pos, rx, ry)
+            verts.append(image_space_to_region(x, y, x1, y1, x2, y2))
+            edge_lengths.append(0.0)
+            x, y = frame_to_image_space(*pin.surface_point, rx, ry)
+            verts.append(image_space_to_region(x, y, x1, y1, x2, y2))
+            edge_lengths.append(length)
 
-        wire.vertices = verts2
-        wire.vertices_colors = [FBConfig.residual_color] * len(verts2)
+        wire = self.residuals()
+        wire.vertices = verts
+        wire.edge_lengths = edge_lengths
+        wire.vertices_colors = [FBConfig.residual_color] * len(wire.vertices)
         wire.create_batch()
