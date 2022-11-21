@@ -240,9 +240,11 @@ def _update_expressions(head, context):
     _log_output(f'EXPRESSIONS: {head.should_use_emotions()}')
 
     coords.update_head_mesh_non_neutral(fb, head)
+
+    FBLoader.save_fb_serial_str(head.get_headnum())
+
     if not settings.pinmode:
         return
-
     FBLoader.update_wireframe_shader_only(settings.current_headnum,
                                           settings.current_camnum)
 
