@@ -52,6 +52,18 @@ def _start_pinmode_escaper(context: Any) -> None:
     bpy.app.timers.register(_pinmode_escaper, first_interval = 0.01)
 
 
+def _geomobj_delete_handler() -> None:
+    settings = get_gt_settings()
+    if settings.pinmode:
+        GTLoader.out_pinmode()
+    settings.fix_geotrackers()
+    return None
+
+
+def _start_geomobj_delete_handler() -> None:
+    bpy.app.timers.register(_geomobj_delete_handler, first_interval = 0.01)
+
+
 def show_all_panels() -> bool:
     settings = get_gt_settings()
     return settings.current_geotracker_num >= 0
@@ -233,6 +245,9 @@ class GT_PT_InputsPanel(AllVisible):
         row = layout.row()
         row.alert = not geotracker.geomobj
         row.prop(geotracker, 'geomobj', text='Geometry')
+
+        if geotracker.geomobj and geotracker.geomobj.users == 1:
+            _start_geomobj_delete_handler()
 
         row = layout.row(align=True)
         col = row.column(align=True)
