@@ -76,6 +76,13 @@ def update_camobj(geotracker, context: Any) -> None:
 
 
 def update_geomobj(geotracker, context: Any) -> None:
+    def _polygon_exists(vertices: List, poly_sets: List) -> bool:
+        vert_set = set(vertices)
+        for poly_set in poly_sets:
+            if poly_set.issuperset(vert_set):
+                return True
+        return False
+
     def _check_geometry(gt: Any, geomobj: Object) -> bool:
         if not geomobj or not geomobj.type == 'MESH':
             gt.remove_pins()
@@ -86,6 +93,11 @@ def update_geomobj(geotracker, context: Any) -> None:
         if len(keyframes) == 0:
             gt.remove_pins()
             return False
+
+        mesh = geomobj.data
+        poly_set_list = []
+        for p in mesh.polygons:
+            poly_set_list.append(set(p.vertices[:]))
 
         wrong_pins = []
         for i in range(gt.pins_count()):
@@ -99,6 +111,8 @@ def update_geomobj(geotracker, context: Any) -> None:
                     gp[1] >= verts_count or gp[2] >= verts_count:
                 wrong_pins.append(i)
                 continue
+            if not _polygon_exists(sp.geo_point_idxs[:], poly_set_list):
+                wrong_pins.append(i)
 
         if len(wrong_pins) > 0:
             _log.output(f'WRONG PINS: {wrong_pins}')
