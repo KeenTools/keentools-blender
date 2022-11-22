@@ -219,7 +219,6 @@ def reconstruct_by_head():
         head.sensor_width = params['sensor_width']
         head.sensor_height = params['sensor_height']
         head.focal = params['focal']
-        head.use_emotions = False
         scene.render.resolution_x = params['frame_width']
         scene.render.resolution_y = params['frame_height']
 

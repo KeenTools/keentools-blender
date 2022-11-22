@@ -241,7 +241,7 @@ def _update_expressions(head, context):
 
     coords.update_head_mesh_non_neutral(fb, head)
 
-    FBLoader.save_fb_serial_str(head.get_headnum())
+    FBLoader.save_fb_serial_str(headnum)
 
     if not settings.pinmode:
         return
