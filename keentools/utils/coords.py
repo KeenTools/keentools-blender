@@ -450,11 +450,11 @@ def get_triangulation_indices(mesh: Any, calculate: bool = True) -> Any:
 def get_polygons_in_vertex_group(obj: Object,
                                  vertex_group_name: str,
                                  inverted=False) -> Set[int]:
-    mesh = evaluated_mesh(obj)
     vertex_group_index = obj.vertex_groups.find(vertex_group_name)
     if vertex_group_index < 0:
         return set()
 
+    mesh = evaluated_mesh(obj)
     verts_in_group = set([v.index for v in mesh.vertices
                           if vertex_group_index in
                           [g.group for g in v.groups]])
@@ -476,8 +476,14 @@ def get_polygons_in_vertex_group(obj: Object,
 def get_triangles_in_vertex_group(obj: Object,
                                   vertex_group_name: str,
                                   inverted=False) -> List:
+    if vertex_group_name == '':
+        return []
+
     polys_in_group = get_polygons_in_vertex_group(obj, vertex_group_name,
                                                   inverted)
+    if len(polys_in_group) == 0:
+        return []
+
     mesh = evaluated_mesh(obj)
     mesh.calc_loop_triangles()
     return [tris.vertices[:] for tris in mesh.loop_triangles

@@ -436,6 +436,7 @@ class GTLoader:
         wf.init_selection_from_mesh(geotracker.geomobj, geotracker.mask_3d,
                                     geotracker.mask_3d_inverted)
         wf.set_backface_culling(settings.wireframe_backface_culling)
+        wf.set_lit_wireframe(settings.lit_wireframe)
         wf.create_batches()
 
     @classmethod

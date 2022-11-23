@@ -533,6 +533,7 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         split.prop(settings, 'wireframe_color', text='')
         split.prop(settings, 'wireframe_opacity', text='', slider=True)
         col.prop(settings, 'wireframe_backface_culling')
+        col.prop(settings, 'lit_wireframe')
 
         geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:

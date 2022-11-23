@@ -172,13 +172,18 @@ def update_mask_3d_color(settings, context: Any) -> None:
         GTLoader.update_viewport_wireframe()
 
 
-def update_wireframe_backface_culling(self, context: Any) -> None:
-    if self.ui_write_mode:
+def update_wireframe_backface_culling(settings, context: Any) -> None:
+    if settings.ui_write_mode:
         return
     gt = GTLoader.kt_geotracker()
-    gt.set_back_face_culling(self.wireframe_backface_culling)
+    gt.set_back_face_culling(settings.wireframe_backface_culling)
     GTLoader.save_geotracker()
-    if self.pinmode:
+    if settings.pinmode:
+        GTLoader.update_viewport_wireframe()
+
+
+def update_lit_wireframe(settings, context: Any) -> None:
+    if settings.pinmode:
         GTLoader.update_viewport_wireframe()
 
 
@@ -421,6 +426,11 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         name='Backface culling',
         default=True,
         update=update_wireframe_backface_culling)
+
+    lit_wireframe: bpy.props.BoolProperty(
+        name='Lit wireframe',
+        default=False,
+        update=update_lit_wireframe)
 
     pin_size: bpy.props.FloatProperty(
         description='Set pin size in pixels',

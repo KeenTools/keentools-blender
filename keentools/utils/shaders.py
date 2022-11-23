@@ -15,10 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+
 import bpy
 
 
-def flat_color_3d_vertex_shader():
+blender_srgb_to_framebuffer_space_enabled: bool = bpy.app.version >= (2, 83, 0)
+
+
+def flat_color_3d_vertex_shader() -> str:
     return '''
     uniform mat4 ModelViewProjectionMatrix;
     #ifdef USE_WORLD_CLIP_PLANES
@@ -56,7 +60,7 @@ def flat_color_3d_vertex_shader():
     '''
 
 
-def circular_dot_fragment_shader():
+def circular_dot_fragment_shader() -> str:
     return '''
     flat in vec4 finalColor;
     out vec4 fragColor;
@@ -70,7 +74,7 @@ def circular_dot_fragment_shader():
     '''
 
 
-def flat_color_2d_vertex_shader():
+def flat_color_2d_vertex_shader() -> str:
     return '''
     uniform mat4 ModelViewProjectionMatrix;
 
@@ -87,7 +91,7 @@ def flat_color_2d_vertex_shader():
     '''
 
 
-def simple_fill_vertex_shader():
+def simple_fill_vertex_shader() -> str:
     return '''
     uniform mat4 ModelViewProjectionMatrix;
     #ifdef USE_WORLD_CLIP_PLANES
@@ -107,7 +111,7 @@ def simple_fill_vertex_shader():
     '''
 
 
-def simple_fill_vertex_local_shader():
+def simple_fill_vertex_local_shader() -> str:
     return '''
     uniform mat4 ModelViewProjectionMatrix;
     uniform mat4 modelMatrix;
@@ -128,7 +132,7 @@ def simple_fill_vertex_local_shader():
     '''
 
 
-def smooth_3d_vertex_local_shader():
+def smooth_3d_vertex_local_shader() -> str:
     return '''
     uniform mat4 ModelViewProjectionMatrix;
     uniform mat4 modelMatrix;
@@ -154,35 +158,24 @@ def smooth_3d_vertex_local_shader():
     '''
 
 
-def smooth_3d_fragment_shader_new():
-    return '''
+def smooth_3d_fragment_shader() -> str:
+    txt = '''
     // Based on gpu.shader.code_from_builtin('3D_SMOOTH_COLOR')['fragment_shader']
     in vec4 finalColor;
     out vec4 fragColor;
     void main()
     {
       fragColor = finalColor;
-      fragColor = blender_srgb_to_framebuffer_space(fragColor);
+    '''
+    if blender_srgb_to_framebuffer_space_enabled:
+        txt += 'fragColor = blender_srgb_to_framebuffer_space(fragColor);'
+    txt += '''
     }
     '''
+    return txt
 
 
-def smooth_3d_fragment_shader_old():
-    return '''
-    in vec4 finalColor;
-    out vec4 fragColor;
-    void main()
-    {
-      fragColor = finalColor;
-    }
-    '''
-
-
-smooth_3d_fragment_shader = smooth_3d_fragment_shader_new \
-    if bpy.app.version >= (2, 83, 0) else smooth_3d_fragment_shader_old
-
-
-def uniform_3d_vertex_local_shader():
+def uniform_3d_vertex_local_shader() -> str:
     return '''
     uniform mat4 ModelViewProjectionMatrix;
     uniform mat4 modelMatrix;
@@ -208,7 +201,7 @@ def uniform_3d_vertex_local_shader():
     '''
 
 
-def black_fill_fragment_shader():
+def black_fill_fragment_shader() -> str:
     return '''
     out vec4 fragColor;
     void main()
@@ -218,7 +211,7 @@ def black_fill_fragment_shader():
     '''
 
 
-def residual_vertex_shader():
+def residual_vertex_shader() -> str:
     return '''
     uniform mat4 ModelViewProjectionMatrix;
     in vec2 pos;
@@ -237,7 +230,7 @@ def residual_vertex_shader():
     '''
 
 
-def residual_fragment_shader():
+def residual_fragment_shader() -> str:
     return '''
     in float v_LineLength;            
     flat in vec4 finalColor;
@@ -251,7 +244,7 @@ def residual_fragment_shader():
     '''
 
 
-def dashed_fragment_shader():
+def dashed_fragment_shader() -> str:
     return '''
     in float v_LineLength;
     flat in vec4 finalColor;
@@ -265,7 +258,7 @@ def dashed_fragment_shader():
     '''
 
 
-def solid_line_vertex_shader():
+def solid_line_vertex_shader() -> str:
     return '''
     uniform mat4 ModelViewProjectionMatrix;
     in vec2 pos;
@@ -281,7 +274,7 @@ def solid_line_vertex_shader():
     '''
 
 
-def solid_line_fragment_shader():
+def solid_line_fragment_shader() -> str:
     return '''
     flat in vec4 finalColor;
     out vec4 fragColor;
@@ -293,7 +286,7 @@ def solid_line_fragment_shader():
     '''
 
 
-def raster_image_vertex_shader():
+def raster_image_vertex_shader() -> str:
     return '''
     uniform mat4 ModelViewProjectionMatrix;
 
@@ -309,7 +302,7 @@ def raster_image_vertex_shader():
     '''
 
 
-def raster_image_fragment_shader():
+def raster_image_fragment_shader() -> str:
     return '''
     in vec2 texCoord_interp;
     out vec4 fragColor;
@@ -324,7 +317,7 @@ def raster_image_fragment_shader():
     '''
 
 
-def raster_image_mask_vertex_shader():
+def raster_image_mask_vertex_shader() -> str:
     return '''
     uniform mat4 ModelViewProjectionMatrix;
     uniform vec2 left;
@@ -346,7 +339,7 @@ def raster_image_mask_vertex_shader():
     '''
 
 
-def raster_image_mask_fragment_shader():
+def raster_image_mask_fragment_shader() -> str:
     return '''
     uniform sampler2D image;
     uniform vec4 color;
@@ -367,3 +360,82 @@ def raster_image_mask_fragment_shader():
         }
     }
     '''
+
+
+def lit_vertex_local_shader() -> str:
+    return '''
+    uniform mat4 ModelViewProjectionMatrix;
+    uniform mat4 modelMatrix;
+
+    #ifdef USE_WORLD_CLIP_PLANES
+    uniform mat4 ModelMatrix;
+    #endif
+
+    in vec3 pos;
+    in vec3 vertNormal;
+    out vec3 calcNormal;
+    out vec3 outPos;
+
+    void main()
+    {
+        mat4 resultMatrix = ModelViewProjectionMatrix * modelMatrix;
+        gl_Position = resultMatrix * vec4(pos, 1.0);
+        calcNormal = normalize(resultMatrix * vec4(vertNormal, 0.0)).xyz;
+        outPos = gl_Position.xyz;
+
+    #ifdef USE_WORLD_CLIP_PLANES
+        world_clip_planes_calc_clip_distance((ModelMatrix * vec4(pos, 1.0)).xyz);
+    #endif
+    }
+    '''
+
+
+def lit_fragment_shader() -> str:
+    txt = '''
+    uniform vec4 color;
+    in vec4 finalColor;
+    in vec3 outPos;
+    in vec3 calcNormal;
+    out vec4 fragColor;
+
+    struct Light
+    {
+      vec3 position;
+      float constant;
+      float linear;
+      float quadratic;
+      vec3 ambient;
+      vec3 diffuse;
+    };
+
+    vec3 evaluatePointLight(Light light, vec3 surfColor, vec3 normal, vec3 fragPos)
+    {
+        vec3 lightDir = normalize(light.position - fragPos);
+        float diff = max(dot(normal, lightDir), 0f); // cos(angle)
+
+        float distance    = length(light.position - fragPos);
+        float attenuation = 1.0 / (light.constant + light.linear * distance +
+                            light.quadratic * (distance * distance));
+        vec3 ambient  = light.ambient;
+        vec3 diffuse  = light.diffuse * diff ;
+
+        return attenuation * (ambient + diffuse) * surfColor;
+    };
+
+    void main()
+    {
+        float dist = 1000f;
+        Light light1 = Light(vec3( 0f,  0f, -dist * 0.1), 1f, 0f, 0f, vec3(0f, 0f, 0f), vec3(1f, 1f, 1f));
+        Light light2 = Light(vec3(-2f * dist, 0f, -dist), 1f, 0f, 0f, vec3(0f, 0f, 0f), vec3(1f, 1f, 1f));
+        Light light3 = Light(vec3( 2f * dist, 0f, -dist), 1f, 0f, 0f, vec3(0f, 0f, 0f), vec3(1f, 1f, 1f));
+        fragColor = vec4(
+            evaluatePointLight(light1, color.rgb, calcNormal, outPos) +
+            evaluatePointLight(light2, color.rgb, calcNormal, outPos) +
+            evaluatePointLight(light3, color.rgb, calcNormal, outPos), color.a);
+    '''
+    if blender_srgb_to_framebuffer_space_enabled:
+        txt += 'fragColor = blender_srgb_to_framebuffer_space(fragColor);'
+    txt += '''
+    }
+    '''
+    return txt
