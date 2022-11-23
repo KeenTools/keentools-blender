@@ -54,12 +54,8 @@ class Config:
     manual_install_url = keentools_website_url + '/manual-installation'
     pykeentools_license_url = 'https://link.keentools.io/eula'
 
-    kt_warning_idname = operators + '.common_addon_warning'
-    kt_addon_settings_idname = operators + '.addon_settings'
-    kt_addon_search_idname = operators + '.addon_search'
-    kt_open_url_idname = operators + '.open_url'
-    kt_uninstall_core_idname = operators + '.uninstall_core'
-
+    # Preferences operators
+    kt_uninstall_core_idname = prefs_operators + '.uninstall_core'
     kt_open_pkt_license_page_idname = prefs_operators + '.open_pkt_license_page'
     kt_install_latest_pkt_idname = prefs_operators + '.install_latest_pkt'
     kt_install_pkt_from_file_with_warning_idname = \
@@ -78,6 +74,13 @@ class Config:
     kt_user_preferences_changer = operators + '.user_pref_changer'
     kt_user_preferences_reset_all_warning_idname = \
         operators + '.user_pref_reset_all_warning'
+    # Common operators
+    kt_addon_settings_idname = operators + '.addon_settings'
+    kt_open_url_idname = operators + '.open_url'
+    kt_addon_search_idname = operators + '.addon_search'
+    kt_exit_localview_idname = operators + '.exit_localview'
+
+    kt_warning_idname = operators + '.common_addon_warning'
 
     # Updater panels
     kt_update_panel_idname = _PT + 'update_panel'
@@ -94,9 +97,6 @@ class Config:
     kt_install_updates_idname = operators + '.install_updates'
     kt_remind_install_later_idname = operators + '.remind_install_later'
     kt_skip_installation_idname = operators + '.skip_installation'
-
-    # Common operators
-    kt_exit_localview_idname = operators + '.exit_localview'
 
     # Object Custom Properties
     core_version_prop_name = _company + '_version'
