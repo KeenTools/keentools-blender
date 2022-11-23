@@ -23,7 +23,11 @@ import numpy as np
 import bpy
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, get_operator, ErrorType, show_user_preferences
+from ..addon_config import (Config,
+                            get_operator,
+                            ErrorType,
+                            show_user_preferences,
+                            gt_pinmode)
 from ..facebuilder_config import FBConfig, get_fb_settings
 from ..utils.bpy_common import operator_with_context, bpy_view_camera
 from ..utils.coords import (update_head_mesh_non_neutral,
@@ -242,6 +246,12 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         if not settings.check_heads_and_cams():
             self._fix_heads_with_warning()
+            return {'CANCELLED'}
+
+        if gt_pinmode():
+            msg = 'Cannot start while GeoTracker is in Pin mode!'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
             return {'CANCELLED'}
 
         head = settings.get_head(self.headnum)

@@ -23,7 +23,7 @@ from bpy.types import Area, Operator
 from bpy.props import IntProperty, StringProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import get_operator
+from ..addon_config import get_operator, fb_pinmode
 from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
 from .gtloader import GTLoader
 from ..utils.coords import (point_is_in_area,
@@ -271,6 +271,12 @@ class GT_OT_PinMode(Operator):
                                      movie_clip=False)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        if fb_pinmode():
+            msg = 'Cannot start while FaceBuilder is in Pin mode!'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
             return {'CANCELLED'}
 
         settings = get_gt_settings()
