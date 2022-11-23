@@ -166,3 +166,7 @@ def bpy_view_camera():
 
 def bpy_url_open(url):
     bpy.ops.wm.url_open(url=url)
+
+
+def bpy_localview() -> None:
+    bpy.ops.view3d.localview()

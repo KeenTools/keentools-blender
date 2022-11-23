@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+
+from typing import Any, Callable, Optional, Tuple
 import os
 
 import bpy
@@ -34,6 +36,10 @@ class Config:
 
     fb_tab_category = 'FaceBuilder'
     gt_tab_category = 'GeoTracker'
+
+    fb_global_var_name = 'keentools_fb_settings'
+    gt_global_var_name = 'keentools_gt_settings'
+
     operators = 'keentools'
     prefs_operators = 'keentools_preferences'
     addon_name = __package__  # the same as module name
@@ -89,6 +95,9 @@ class Config:
     kt_remind_install_later_idname = operators + '.remind_install_later'
     kt_skip_installation_idname = operators + '.skip_installation'
 
+    # Common operators
+    kt_exit_localview_idname = operators + '.exit_localview'
+
     # Object Custom Properties
     core_version_prop_name = _company + '_version'
     viewport_state_prop_name = _company + '_viewport_state'
@@ -136,8 +145,11 @@ class Config:
     hide_geotracker = not 'KEENTOOLS_ENABLE_BLENDER_GEOTRACKER' in os.environ
 
     @classmethod
-    def mock_update_for_testing(cls, value=True, *, ver=None,
-                                addon_path=None, core_path=None, product=None):
+    def mock_update_for_testing(cls, value: bool=True, *,
+                                ver: Optional[Tuple]=None,
+                                addon_path: Optional[str]=None,
+                                core_path: Optional[str]=None,
+                                product: Optional[str]=None) -> None:
         if ver is not None:
             cls.mock_update_version = ver
 
@@ -147,7 +159,7 @@ class Config:
         cls.mock_update_for_testing_flag = value
 
 
-def is_blender_supported():
+def is_blender_supported() -> bool:
     ver = bpy.app.version
     for supported_ver in Config.supported_blender_versions:
         if ver[:len(supported_ver)] == supported_ver:
@@ -155,21 +167,68 @@ def is_blender_supported():
     return False
 
 
-def get_addon_preferences():
+def get_addon_preferences() -> Any:
     return bpy.context.preferences.addons[Config.addon_name].preferences
 
 
-def facebuilder_enabled():
+def facebuilder_enabled() -> bool:
     prefs = get_addon_preferences()
     return prefs.facebuilder_enabled
 
 
-def geotracker_enabled():
+def geotracker_enabled() -> bool:
     prefs = get_addon_preferences()
     return prefs.geotracker_enabled
 
 
-def show_user_preferences(*, facebuilder=None, geotracker=None):
+def _get_fb_settings() -> Optional[Any]:
+    name = Config.fb_global_var_name
+    if not hasattr(bpy.context.scene, name):
+        return None
+    return getattr(bpy.context.scene, name)
+
+
+def _get_gt_settings() -> Optional[Any]:
+    name = Config.gt_global_var_name
+    if not hasattr(bpy.context.scene, name):
+        return None
+    return getattr(bpy.context.scene, name)
+
+
+fb_settings: Callable = _get_fb_settings
+gt_settings: Callable = _get_gt_settings
+
+
+def set_fb_settings_func(func: Callable) -> None:
+    global fb_settings
+    fb_settings = func
+
+
+def set_gt_settings_func(func: Callable) -> None:
+    global gt_settings
+    gt_settings = func
+
+
+def gt_pinmode() -> bool:
+    if not geotracker_enabled():
+        return False
+    settings = _get_gt_settings()
+    return settings.pinmode
+
+
+def fb_pinmode() -> bool:
+    if not facebuilder_enabled():
+        return False
+    settings = _get_fb_settings()
+    return settings.pinmode
+
+
+def addon_pinmode() -> bool:
+    return fb_pinmode() or gt_pinmode()
+
+
+def show_user_preferences(*, facebuilder: Optional[bool]=None,
+                          geotracker: Optional[bool]=None) -> None:
     prefs = get_addon_preferences()
     if facebuilder is not None:
         prefs.show_fb_user_preferences = facebuilder
@@ -177,7 +236,8 @@ def show_user_preferences(*, facebuilder=None, geotracker=None):
         prefs.show_gt_user_preferences = geotracker
 
 
-def show_tool_preferences(*, facebuilder=None, geotracker=None):
+def show_tool_preferences(*, facebuilder: Optional[bool]=None,
+                          geotracker: Optional[bool]=None) -> None:
     prefs = get_addon_preferences()
     if facebuilder is not None:
         prefs.facebuilder_expanded = facebuilder
@@ -185,7 +245,7 @@ def show_tool_preferences(*, facebuilder=None, geotracker=None):
         prefs.geotracker_expanded = geotracker
 
 
-def get_operator(operator_id_name):
+def get_operator(operator_id_name: str) -> Any:
     def _rgetattr(obj, attr, *args):
         import functools
         def _getattr(obj, attr):

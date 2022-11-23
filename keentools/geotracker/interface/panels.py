@@ -22,7 +22,7 @@ from typing import Tuple, Optional, Any
 import bpy
 from bpy.types import Area
 
-from ...addon_config import Config, geotracker_enabled
+from ...addon_config import Config, geotracker_enabled, addon_pinmode
 from ...geotracker_config import GTConfig, get_gt_settings
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...updater.panels import (KTUpdater,
@@ -31,7 +31,7 @@ from ...updater.panels import (KTUpdater,
                                KT_PT_DownloadingProblemPanel,
                                KT_PT_UpdatesInstallationPanel)
 from ..gtloader import GTLoader
-from ...utils.localview import exit_area_localview
+from ...utils.localview import exit_area_localview, check_context_localview
 from ...utils.other import force_show_ui_overlays
 
 
@@ -62,6 +62,14 @@ def _geomobj_delete_handler() -> None:
 
 def _start_geomobj_delete_handler() -> None:
     bpy.app.timers.register(_geomobj_delete_handler, first_interval = 0.01)
+
+
+def _exit_from_localview_button(layout, context):
+    if not addon_pinmode() and check_context_localview(context):
+        col = layout.column()
+        col.alert = True
+        col.scale_y = 2.0
+        col.operator(Config.kt_exit_localview_idname)
 
 
 def show_all_panels() -> bool:
@@ -189,6 +197,7 @@ class GT_PT_GeotrackersPanel(View3DPanel):
 
         self._output_geotrackers_list(layout)
         self._geotracker_creation_offer(layout)
+        _exit_from_localview_button(layout, context)
         KTUpdater.call_updater('GeoTracker')
 
 

@@ -331,8 +331,8 @@ class GT_OT_PinMode(Operator):
         vp = GTLoader.viewport()
 
         if self.pinmode_id != settings.pinmode_id:
-            _log.error('Extreme GeoTracker pinmode operator stop')
-            _log.error('{} != {}'.format(self.pinmode_id, settings.pinmode_id))
+            _log.output('Extreme GeoTracker pinmode operator stop')
+            _log.output(f'{self.pinmode_id} != {settings.pinmode_id}')
             return {'FINISHED'}
 
         if not context.space_data:

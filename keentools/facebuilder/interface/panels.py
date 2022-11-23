@@ -27,7 +27,7 @@ from ...updater.panels import (KT_PT_UpdatePanel,
                                KT_PT_DownloadingProblemPanel,
                                KT_PT_UpdatesInstallationPanel)
 from ...updater.utils import KTUpdater
-from ...addon_config import Config, facebuilder_enabled
+from ...addon_config import Config, facebuilder_enabled, addon_pinmode
 from ...facebuilder_config import FBConfig, get_fb_settings
 
 from ..fbloader import FBLoader
@@ -37,7 +37,7 @@ from ..utils.manipulate import (what_is_state, get_current_head, get_obj_from_co
 from ...utils.materials import find_bpy_image_by_name
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...utils.other import unhide_viewport_ui_elements_from_object
-from ...utils.localview import exit_area_localview
+from ...utils.localview import exit_area_localview, check_context_localview
 
 
 _log = KTLogger(__name__)
@@ -99,6 +99,14 @@ def _start_pinmode_escaper(context):
     _escaper_context_area = context.area
     _log.output(f'_start_pinmode_escaper: area={_escaper_context_area}')
     bpy.app.timers.register(_pinmode_escaper, first_interval = 0.01)
+
+
+def _exit_from_localview_button(layout, context):
+    if not addon_pinmode() and check_context_localview(context):
+        col = layout.column()
+        col.alert = True
+        col.scale_y = 2.0
+        col.operator(Config.kt_exit_localview_idname)
 
 
 class Common:
@@ -239,15 +247,18 @@ class FB_PT_HeaderPanel(Common, Panel):
 
         elif state == 'RECONSTRUCT':
             self._draw_reconstruct(layout)
+            _exit_from_localview_button(layout, context)
             return
 
         elif state == 'NO_HEADS':
             self._draw_start_panel(layout)
             KTUpdater.call_updater('FaceBuilder')
+            _exit_from_localview_button(layout, context)
             return
 
         else:
             self._draw_many_heads(layout)
+            _exit_from_localview_button(layout, context)
             KTUpdater.call_updater('FaceBuilder')
 
 
