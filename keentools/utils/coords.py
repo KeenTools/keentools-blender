@@ -204,12 +204,17 @@ def region_to_image_space(x: float, y: float, x1: float, y1: float,
     return (x - (x1 + x2) * 0.5) / sc, (y - (y1 + y2) * 0.5) / sc
 
 
-def pin_to_xyz_from_mesh(pin: Any, headobj: Any) -> Tuple[float, float, float]:
+def pin_to_xyz_from_mesh(
+        pin: Any, obj: Object) -> Optional[Tuple[float, float, float]]:
     """ Surface point from barycentric to XYZ using passed mesh"""
     sp = pin.surface_point
     gp = sp.geo_point_idxs
     bar = sp.barycentric_coordinates
-    vv = headobj.data.vertices
+    vv = obj.data.vertices
+    verts_count = len(vv)
+    if len(gp) < 3 or gp[0] >= verts_count or \
+            gp[1] >= verts_count or gp[2] >= verts_count:
+        return None
     p = vv[gp[0]].co * bar[0] + vv[gp[1]].co * bar[1] + vv[gp[2]].co * bar[2]
     return p
 

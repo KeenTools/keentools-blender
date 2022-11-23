@@ -40,7 +40,10 @@ from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             camera_sensor_width,
                             get_polygons_in_vertex_group)
 from ..utils.video import fit_render_size, fit_time_length
-from ..utils.bpy_common import bpy_render_frame, bpy_start_frame, bpy_end_frame
+from ..utils.bpy_common import (bpy_render_frame,
+                                bpy_start_frame,
+                                bpy_end_frame,
+                                bpy_current_frame)
 from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_getter,
                                             universal_cached_setter)
@@ -73,14 +76,69 @@ def update_camobj(geotracker, context: Any) -> None:
 
 
 def update_geomobj(geotracker, context: Any) -> None:
-    _log.output('update_geomobj')
-    _log.output(f'self: {geotracker.geomobj}')
+    def _polygon_exists(vertices: List, poly_sets: List) -> bool:
+        vert_set = set(vertices)
+        for poly_set in poly_sets:
+            if poly_set.issuperset(vert_set):
+                return True
+        return False
+
+    def _check_geometry(gt: Any, geomobj: Object) -> bool:
+        if not geomobj or not geomobj.type == 'MESH':
+            gt.remove_pins()
+            return False
+        verts_count = len(geomobj.data.vertices)
+
+        keyframes = gt.keyframes()
+        if len(keyframes) == 0:
+            gt.remove_pins()
+            return False
+
+        mesh = geomobj.data
+        poly_set_list = []
+        for p in mesh.polygons:
+            poly_set_list.append(set(p.vertices[:]))
+
+        wrong_pins = []
+        for i in range(gt.pins_count()):
+            pin = gt.pin(keyframes[0], i)
+            if not pin:
+                wrong_pins.append(i)
+                continue
+            sp = pin.surface_point
+            gp = sp.geo_point_idxs
+            if len(gp) < 3 or gp[0] >= verts_count or \
+                    gp[1] >= verts_count or gp[2] >= verts_count:
+                wrong_pins.append(i)
+                continue
+            if not _polygon_exists(sp.geo_point_idxs[:], poly_set_list):
+                wrong_pins.append(i)
+
+        if len(wrong_pins) > 0:
+            _log.output(f'WRONG PINS: {wrong_pins}')
+            for i in reversed(wrong_pins):
+                gt.remove_pin(i)
+            current_keyframe = bpy_current_frame()
+            if gt.is_key_at(current_keyframe):
+                gt.spring_pins_back(current_keyframe)
+            else:
+                gt.spring_pins_back(keyframes[0])
+
+        return True
+
+    _log.output(f'update_geomobj: {geotracker.geomobj}')
+    settings = get_gt_settings()
     if not geotracker.geomobj:
-        settings = get_gt_settings()
         if settings.pinmode:
             GTLoader.out_pinmode()
-            return
-    GTLoader.update_all_viewport_shaders()
+        return
+
+    GTLoader.load_geotracker()
+    gt = GTLoader.kt_geotracker()
+    _check_geometry(gt, geotracker.geomobj)
+    GTLoader.save_geotracker()
+    if settings.pinmode:
+        GTLoader.update_all_viewport_shaders()
 
 
 def update_movieclip(geotracker, context: Any) -> None:
