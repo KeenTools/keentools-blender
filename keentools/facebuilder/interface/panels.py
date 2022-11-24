@@ -116,6 +116,17 @@ def _start_geomobj_delete_handler() -> None:
     bpy_timer_register(_geomobj_delete_handler, first_interval=0.01)
 
 
+def _autoloader_handler(headnum: int) -> None:
+    _log.output(f'Head autoloader started: {headnum}')
+    if not FBLoader.load_model(headnum):
+        _log.error(f'Head autoloader failed: {headnum}')
+    return None
+
+
+def _start_autoloader_handler(headnum: int) -> None:
+    bpy_timer_register(partial(_autoloader_handler, headnum), first_interval=0.01)
+
+
 class Common:
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -240,7 +251,7 @@ class FB_PT_HeaderPanel(Common, Panel):
         state, headnum = what_is_state()
 
         if headnum >= 0 and FBLoader.is_not_loaded():
-            FBLoader.load_model(headnum)
+            _start_autoloader_handler(headnum)
 
         if state == 'PINMODE':
             # Unhide Button if Head is hidden in pinmode (by ex. after Undo)
