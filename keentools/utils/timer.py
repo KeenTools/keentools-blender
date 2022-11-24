@@ -15,19 +15,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
+
 import threading
 from typing import Any
 
 import bpy
 
+from .kt_logging import KTLogger
 
-_logger: Any = logging.getLogger(__name__)
 
-
-def _log_output(message: str) -> None:
-    global _logger
-    _logger.debug(message)
+_log: Any = KTLogger(__name__)
 
 
 class KTTimer:
@@ -44,16 +41,14 @@ class KTTimer:
         return self._active
 
     def _start(self, callback, persistent=True):
-        logger = logging.getLogger(__name__)
         self._stop(callback)
         bpy.app.timers.register(callback, persistent=persistent)
-        logger.debug('REGISTER TIMER')
+        _log.output('REGISTER TIMER')
         self.set_active()
 
     def _stop(self, callback):
-        logger = logging.getLogger(__name__)
         if bpy.app.timers.is_registered(callback):
-            logger.debug('UNREGISTER TIMER')
+            _log.output('UNREGISTER TIMER')
             bpy.app.timers.unregister(callback)
         self.set_inactive()
 
@@ -66,27 +61,26 @@ class KTStopShaderTimer(KTTimer):
         self._get_settings_func = get_settings_func
 
     def check_pinmode(self):
-        logger = logging.getLogger(__name__)
         settings = self._get_settings_func()
         if not self.is_active():
             # Timer works when shouldn't
-            logger.debug('STOP SHADER INACTIVE')
+            _log.output('STOP SHADER INACTIVE')
             return None
         # Timer is active
         if not settings.pinmode:
             # But we are not in pinmode
-            logger.debug('CALL STOP SHADERS')
+            _log.output('CALL STOP SHADERS')
             self._stop_func()
             self.stop()
-            logger.debug('STOP SHADER FORCE')
+            _log.output('STOP SHADER FORCE')
             return None
         else:
             if settings.pinmode_id != self.get_uuid():
                 # pinmode id externally changed
-                logger.debug('CALL STOP SHADERS')
+                _log.output('CALL STOP SHADERS')
                 self._stop_func()
                 self.stop()
-                logger.debug('STOP SHADER FORCED BY PINMODE_ID')
+                _log.output('STOP SHADER FORCED BY PINMODE_ID')
                 return None
         # Interval to next call
         return 1.0
@@ -105,10 +99,10 @@ class KTStopShaderTimer(KTTimer):
 class RepeatTimer(threading.Timer):
     def run(self):
         interval = self.interval
-        _log_output('RepeatTimer start')
+        _log.output('RepeatTimer start')
         while not self.finished.wait(interval):
-            _log_output(f'RepeatTimer: {interval}')
+            _log.output(f'RepeatTimer: {interval}')
             interval = self.function()
             if interval == None:
-                _log_output('RepeatTimer out')
+                _log.output('RepeatTimer out')
                 break

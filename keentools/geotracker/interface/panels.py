@@ -18,6 +18,7 @@
 
 import re
 from typing import Tuple, Optional, Any
+from functools import partial
 
 import bpy
 from bpy.types import Area
@@ -33,23 +34,20 @@ from ...updater.panels import (KTUpdater,
 from ..gtloader import GTLoader
 from ...utils.localview import exit_area_localview, check_context_localview
 from ...utils.other import force_show_ui_overlays
+from ...utils.bpy_common import bpy_timer_register
 
 
-_pinmode_escaper_context_area: Optional[Area] = None
-
-
-def _pinmode_escaper() -> None:
-    global _pinmode_escaper_context_area
+def _pinmode_escaper(area: Area) -> None:
     GTLoader.out_pinmode()
-    exit_area_localview(_pinmode_escaper_context_area)
-    force_show_ui_overlays(_pinmode_escaper_context_area)
+    exit_area_localview(area)
+    force_show_ui_overlays(area)
     return None
 
 
 def _start_pinmode_escaper(context: Any) -> None:
-    global _pinmode_escaper_context_area
-    _pinmode_escaper_context_area = context.area
-    bpy.app.timers.register(_pinmode_escaper, first_interval = 0.01)
+    if context.area:
+        bpy_timer_register(partial(_pinmode_escaper, context.area),
+                           first_interval=0.01)
 
 
 def _geomobj_delete_handler() -> None:
@@ -61,7 +59,7 @@ def _geomobj_delete_handler() -> None:
 
 
 def _start_geomobj_delete_handler() -> None:
-    bpy.app.timers.register(_geomobj_delete_handler, first_interval = 0.01)
+    bpy_timer_register(_geomobj_delete_handler, first_interval=0.01)
 
 
 def _exit_from_localview_button(layout, context):

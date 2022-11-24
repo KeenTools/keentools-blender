@@ -38,6 +38,7 @@ from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
 from ..utils.ui_redraw import (find_modules_by_name_starting_with,
                                collapse_all_modules,
                                mark_old_modules)
+from ..utils.bpy_common import bpy_timer_register
 
 
 _log = KTLogger(__name__)
@@ -150,7 +151,7 @@ def menu_func(self, context):
 def get_fb_settings_safe():
     name = FBConfig.fb_global_var_name
     if not hasattr(bpy.context.scene, name):
-        bpy.app.timers.register(_add_addon_settings_var, first_interval=0.1)
+        bpy_timer_register(_add_addon_settings_var, first_interval=0.1)
         return None
     return getattr(bpy.context.scene, name)
 

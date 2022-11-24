@@ -23,7 +23,9 @@ import bpy
 from bpy.types import Object, Area
 
 from ...utils.kt_logging import KTLogger
-from ...utils.bpy_common import bpy_current_frame, bpy_set_current_frame
+from ...utils.bpy_common import (bpy_current_frame,
+                                 bpy_set_current_frame,
+                                 bpy_timer_register)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.mesh_builder import build_geo
 from ...utils.images import np_array_from_background_image
@@ -195,4 +197,4 @@ def bake_texture_sequence(context: Any, geotracker: Any, filepath_pattern: str,
     if not settings.pinmode:
         vp = GTLoader.viewport()
         vp.texter().register_handler(context)
-    bpy.app.timers.register(_bake_caller, first_interval=0.0)
+    bpy_timer_register(_bake_caller, first_interval=0.0)

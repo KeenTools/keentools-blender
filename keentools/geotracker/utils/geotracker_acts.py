@@ -46,7 +46,8 @@ from ...utils.bpy_common import (create_empty_object,
                                  bpy_set_current_frame,
                                  update_depsgraph,
                                  reset_unsaved_animation_changes_in_frame,
-                                 bpy_background_mode)
+                                 bpy_background_mode,
+                                 bpy_timer_register)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.timer import RepeatTimer
 from ...utils.coords import xy_to_xz_rotation_matrix_4x4
@@ -322,7 +323,7 @@ class _CommonTimer:
 
         _func = self.timer_func
         if not bpy_background_mode():
-            bpy.app.timers.register(_func, first_interval=self._interval)
+            bpy_timer_register(_func, first_interval=self._interval)
             res = bpy.app.timers.is_registered(_func)
             _log.output(f'{self._operation_name} timer registered: {res}')
         else:

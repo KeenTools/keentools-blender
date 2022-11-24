@@ -170,3 +170,7 @@ def bpy_url_open(url):
 
 def bpy_localview() -> None:
     bpy.ops.view3d.localview()
+
+
+def bpy_timer_register(func: Callable, first_interval: float=0.01) -> None:
+    bpy.app.timers.register(func, first_interval=0.01)
