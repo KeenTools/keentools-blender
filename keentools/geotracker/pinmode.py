@@ -23,7 +23,7 @@ from bpy.types import Area, Operator
 from bpy.props import IntProperty, StringProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import get_operator
+from ..addon_config import get_operator, fb_pinmode
 from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
 from .gtloader import GTLoader
 from ..utils.coords import (point_is_in_area,
@@ -273,6 +273,12 @@ class GT_OT_PinMode(Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
+        if fb_pinmode():
+            msg = 'Cannot start while FaceBuilder is in Pin mode!'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
+            return {'CANCELLED'}
+
         settings = get_gt_settings()
         old_geotracker_num = settings.current_geotracker_num
         new_geotracker_num = old_geotracker_num if \
@@ -331,8 +337,8 @@ class GT_OT_PinMode(Operator):
         vp = GTLoader.viewport()
 
         if self.pinmode_id != settings.pinmode_id:
-            _log.error('Extreme GeoTracker pinmode operator stop')
-            _log.error('{} != {}'.format(self.pinmode_id, settings.pinmode_id))
+            _log.output('Extreme GeoTracker pinmode operator stop')
+            _log.output(f'{self.pinmode_id} != {settings.pinmode_id}')
             return {'FINISHED'}
 
         if not context.space_data:

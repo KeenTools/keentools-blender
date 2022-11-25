@@ -18,11 +18,12 @@
 
 import re
 from typing import Tuple, Optional, Any
+from functools import partial
 
 import bpy
 from bpy.types import Area
 
-from ...addon_config import Config, geotracker_enabled
+from ...addon_config import Config, geotracker_enabled, addon_pinmode
 from ...geotracker_config import GTConfig, get_gt_settings
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...updater.panels import (KTUpdater,
@@ -31,25 +32,22 @@ from ...updater.panels import (KTUpdater,
                                KT_PT_DownloadingProblemPanel,
                                KT_PT_UpdatesInstallationPanel)
 from ..gtloader import GTLoader
-from ...utils.localview import exit_area_localview
+from ...utils.localview import exit_area_localview, check_context_localview
 from ...utils.other import force_show_ui_overlays
+from ...utils.bpy_common import bpy_timer_register
 
 
-_pinmode_escaper_context_area: Optional[Area] = None
-
-
-def _pinmode_escaper() -> None:
-    global _pinmode_escaper_context_area
+def _pinmode_escaper(area: Area) -> None:
     GTLoader.out_pinmode()
-    exit_area_localview(_pinmode_escaper_context_area)
-    force_show_ui_overlays(_pinmode_escaper_context_area)
+    exit_area_localview(area)
+    force_show_ui_overlays(area)
     return None
 
 
 def _start_pinmode_escaper(context: Any) -> None:
-    global _pinmode_escaper_context_area
-    _pinmode_escaper_context_area = context.area
-    bpy.app.timers.register(_pinmode_escaper, first_interval = 0.01)
+    if context.area:
+        bpy_timer_register(partial(_pinmode_escaper, context.area),
+                           first_interval=0.01)
 
 
 def _geomobj_delete_handler() -> None:
@@ -61,7 +59,15 @@ def _geomobj_delete_handler() -> None:
 
 
 def _start_geomobj_delete_handler() -> None:
-    bpy.app.timers.register(_geomobj_delete_handler, first_interval = 0.01)
+    bpy_timer_register(_geomobj_delete_handler, first_interval=0.01)
+
+
+def _exit_from_localview_button(layout, context):
+    if not addon_pinmode() and check_context_localview(context):
+        col = layout.column()
+        col.alert = True
+        col.scale_y = 2.0
+        col.operator(Config.kt_exit_localview_idname)
 
 
 def show_all_panels() -> bool:
@@ -189,6 +195,7 @@ class GT_PT_GeotrackersPanel(View3DPanel):
 
         self._output_geotrackers_list(layout)
         self._geotracker_creation_offer(layout)
+        _exit_from_localview_button(layout, context)
         KTUpdater.call_updater('GeoTracker')
 
 
