@@ -72,7 +72,7 @@ def update_camobj(geotracker, context: Any) -> None:
         if settings.pinmode:
             GTLoader.out_pinmode()
             return
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
 
 
 def update_geomobj(geotracker, context: Any) -> None:
@@ -138,7 +138,7 @@ def update_geomobj(geotracker, context: Any) -> None:
     _check_geometry(gt, geotracker.geomobj)
     GTLoader.save_geotracker()
     if settings.pinmode:
-        GTLoader.update_all_viewport_shaders()
+        GTLoader.update_viewport_shaders()
 
 
 def update_movieclip(geotracker, context: Any) -> None:
@@ -184,7 +184,7 @@ def update_wireframe_backface_culling(settings, context: Any) -> None:
 
 def update_lit_wireframe(settings, context: Any) -> None:
     if settings.pinmode:
-        GTLoader.update_viewport_wireframe()
+        GTLoader.update_viewport_wireframe(normals=settings.lit_wireframe)
 
 
 def update_background_tone_mapping(geotracker, context: Any) -> None:
@@ -237,7 +237,7 @@ def update_spring_pins_back(geotracker, context: Any) -> None:
         GTLoader.save_geotracker()
         settings = get_gt_settings()
         if settings.pinmode:
-            GTLoader.update_all_viewport_shaders()
+            GTLoader.update_viewport_shaders()
             GTLoader.viewport_area_redraw()
 
 

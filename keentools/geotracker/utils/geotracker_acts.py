@@ -467,7 +467,7 @@ def refine_act() -> ActionStatus:
 
     _log.output(f'Refined frames: {progress_callback.refined_frames}')
     GTLoader.save_geotracker()
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     if not result:
         return ActionStatus(False, 'Some problem. See console for details')
@@ -509,7 +509,7 @@ def refine_all_act() -> ActionStatus:
         _log.output('Refine calculation time: {:.2f} sec'.format(overall_time))
 
     GTLoader.save_geotracker()
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     if not result:
         return ActionStatus(False, 'Some problem. See console for details')
@@ -532,7 +532,7 @@ def clear_between_keyframes_act() -> ActionStatus:
         show_warning_dialog(err)
 
     GTLoader.save_geotracker()
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -554,7 +554,7 @@ def clear_direction_act(forward: bool) -> ActionStatus:
         show_warning_dialog(err)
 
     GTLoader.save_geotracker()
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -574,7 +574,7 @@ def clear_all_act() -> ActionStatus:
         show_warning_dialog(err)
 
     GTLoader.save_geotracker()
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -630,7 +630,7 @@ def remove_pins_act() -> ActionStatus:
 
     pins.reset_current_pin()
     GTLoader.save_geotracker()
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -655,7 +655,7 @@ def toggle_pins_act() -> ActionStatus:
         pins.clear_selected_pins()
         GTLoader.save_geotracker()
 
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -668,7 +668,7 @@ def center_geo_act() -> ActionStatus:
         return check_status
 
     GTLoader.center_geo()
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 

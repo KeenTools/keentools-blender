@@ -84,10 +84,10 @@ def depsgraph_update_handler(scene, depsgraph):
     camobj = geotracker.camobj
 
     if geomobj and _check_updated(depsgraph, geomobj.name):
-        GTLoader.update_all_viewport_shaders()
+        GTLoader.update_viewport_shaders()
         return
     if camobj and _check_updated(depsgraph, camobj.name):
-        GTLoader.update_all_viewport_shaders()
+        GTLoader.update_viewport_shaders()
 
 
 def undo_redo_handler(scene):
@@ -102,7 +102,7 @@ def undo_redo_handler(scene):
             return
 
         GTLoader.load_geotracker()
-        GTLoader.update_all_viewport_shaders(area)
+        GTLoader.update_viewport_shaders(area)
 
     except Exception as err:
         _log.error(f'gt_undo_handler {str(err)}')
@@ -132,7 +132,7 @@ def frame_change_post_handler(scene):
     geotracker = get_current_geotracker_item()
     geotracker.reset_focal_length_estimation()
     GTLoader.place_object_or_camera()
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
 
 
 class GTLoader:
@@ -422,7 +422,7 @@ class GTLoader:
         return True
 
     @classmethod
-    def update_viewport_wireframe(cls) -> None:
+    def update_viewport_wireframe(cls, normals: bool=False) -> None:
         settings = get_gt_settings()
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.geomobj:
@@ -431,6 +431,8 @@ class GTLoader:
         vp = cls.viewport()
         wf = vp.wireframer()
         wf.init_geom_data_from_mesh(geotracker.geomobj)
+        if normals:
+            wf.init_vertex_normals(geotracker.geomobj)
         wf.init_color_data((*settings.wireframe_color,
                             settings.wireframe_opacity))
         wf.init_selection_from_mesh(geotracker.geomobj, geotracker.mask_3d,
@@ -455,15 +457,22 @@ class GTLoader:
         vp.update_residuals(gt, area, kid)
 
     @classmethod
-    def update_all_viewport_shaders(cls, area: Optional[Area]=None) -> None:
+    def update_viewport_shaders(cls, area: Optional[Area]=None, *,
+                                wireframe: bool=True,
+                                normals: bool=False,
+                                pins_and_residuals: bool=True,
+                                timeline: bool=True) -> None:
         if area is None:
             vp = cls.viewport()
             area = vp.get_work_area()
             if not area:
                 return
-        cls.update_viewport_wireframe()
-        cls.update_viewport_pins_and_residuals(area)
-        cls.update_timeline()
+        if wireframe:
+            cls.update_viewport_wireframe(normals)
+        if pins_and_residuals:
+            cls.update_viewport_pins_and_residuals(area)
+        if timeline:
+            cls.update_timeline()
 
     @classmethod
     def _update_all_timelines(cls) -> None:

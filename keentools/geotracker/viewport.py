@@ -250,10 +250,12 @@ class GTViewport(KTViewport):
 
     def hide_pins_and_residuals(self):
         self.points2d().hide_shader()
+        self.points3d().hide_shader()
         self.residuals().hide_shader()
 
     def unhide_pins_and_residuals(self):
         self.points2d().unhide_shader()
+        self.points3d().unhide_shader()
         self.residuals().unhide_shader()
 
     def unhide_all_shaders(self):
