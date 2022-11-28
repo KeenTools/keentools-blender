@@ -146,7 +146,7 @@ class GT_OT_MovePin(bpy.types.Operator):
         GTLoader.save_geotracker()
 
         self._before_operator_finish()
-        GTLoader.update_all_viewport_shaders(area)
+        GTLoader.update_viewport_shaders(area)
         GTLoader.viewport_area_redraw()
 
         _push_action_in_undo_history()
@@ -206,7 +206,7 @@ class GT_OT_MovePin(bpy.types.Operator):
 
         if not geotracker.camera_mode():
             wf = vp.wireframer()
-            wf.init_geom_data_from_mesh(geotracker.geomobj)
+            wf.set_object_world_matrix(geotracker.geomobj.matrix_world)
             wf.create_batches()
 
         vp.create_batch_2d(area)

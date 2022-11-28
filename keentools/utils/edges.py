@@ -385,6 +385,9 @@ class KTEdgeShader3D(KTEdgeShaderBase):
 
         self.edges_vertices = self.vertices[edges.ravel()]
 
+    def init_vertex_normals(self, obj: Object) -> None:
+        pass
+
 
 class KTEdgeShaderLocal3D(KTEdgeShader3D):
     def __init__(self, target_class: Any, mask_color: Tuple):
@@ -503,8 +506,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_shader = gpu.types.GPUShader(
             lit_vertex_local_shader(), lit_fragment_shader())
 
-    def init_geom_data_from_mesh(self, obj: Any) -> None:
-        super().init_geom_data_from_mesh(obj)
+    def init_vertex_normals(self, obj: Object) -> None:
         mesh = evaluated_mesh(obj)
 
         loop_count = len(mesh.loops)

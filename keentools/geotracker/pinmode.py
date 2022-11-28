@@ -126,7 +126,7 @@ class GT_OT_PinMode(Operator):
         else:
             settings = get_gt_settings()
             settings.start_selection(mouse_x, mouse_y)
-        GTLoader.update_all_viewport_shaders()
+        GTLoader.update_viewport_shaders()
         vp.tag_redraw()
         return {'PASS_THROUGH'}
 
@@ -194,7 +194,8 @@ class GT_OT_PinMode(Operator):
         vp = GTLoader.viewport()
         vp.create_batch_2d(area)
         _log.output('GT REGISTER SHADER HANDLERS')
-        GTLoader.update_all_viewport_shaders(area)
+        settings = get_gt_settings()
+        GTLoader.update_viewport_shaders(area, normals=settings.lit_wireframe)
 
         if GTConfig.auto_increase_far_clip_distance:
             geotracker = get_current_geotracker_item()
@@ -370,7 +371,7 @@ class GT_OT_PinMode(Operator):
         if settings.selection_mode:
             if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
                 settings.end_selection(context.area, event.mouse_region_x, event.mouse_region_y)
-                GTLoader.update_all_viewport_shaders()
+                GTLoader.update_viewport_shaders()
             else:
                 settings.do_selection(event.mouse_region_x, event.mouse_region_y)
             vp.tag_redraw()
@@ -399,7 +400,7 @@ class GT_OT_PinMode(Operator):
         if GTLoader.geomobj_mode_changed_to_object():
             _log.output(_log.color('green', 'RETURNED TO OBJECT_MODE'))
             self._change_wireframe_visibility(toggle=False, value=True)
-            GTLoader.update_all_viewport_shaders()
+            GTLoader.update_viewport_shaders()
 
         if self._check_camera_state_changed(context.space_data.region_3d) \
                 or self._check_area_state_changed(GTLoader.get_work_area()):
@@ -422,7 +423,9 @@ class GT_OT_PinMode(Operator):
                  'y': 30}])  # line 2
             GTLoader.update_geomobj_mesh()
             vp.hide_pins_and_residuals()
-            GTLoader.update_all_viewport_shaders()
+            settings = get_gt_settings()
+            settings.lit_wireframe = False
+            GTLoader.update_viewport_shaders()
             return {'PASS_THROUGH'}
 
         if event.value == 'PRESS' and event.type == 'LEFTMOUSE':

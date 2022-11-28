@@ -425,7 +425,7 @@ def lit_fragment_shader() -> str:
     void main()
     {
         float dist = 1000f;
-        Light light1 = Light(vec3( 0f,  0f, -dist * 0.1), 1f, 0f, 0f, vec3(0f, 0f, 0f), vec3(1f, 1f, 1f));
+        Light light1 = Light(vec3( 0f,  0f, -dist), 1f, 0f, 0f, vec3(0f, 0f, 0f), vec3(1f, 1f, 1f));
         Light light2 = Light(vec3(-2f * dist, 0f, -dist), 1f, 0f, 0f, vec3(0f, 0f, 0f), vec3(1f, 1f, 1f));
         Light light3 = Light(vec3( 2f * dist, 0f, -dist), 1f, 0f, 0f, vec3(0f, 0f, 0f), vec3(1f, 1f, 1f));
         fragColor = vec4(
