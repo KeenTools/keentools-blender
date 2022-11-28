@@ -14,6 +14,7 @@ import keentools.utils.coords as coords
 from keentools.facebuilder.fbloader import FBLoader
 from keentools.facebuilder.interface.filedialog import load_single_image_file
 from keentools.utils.images import assign_pixels_data
+from keentools.utils.manipulate import deselect_all
 
 
 _TEST_DIR = os.path.join(tempfile.gettempdir(), 'keentools_tests')
@@ -29,7 +30,9 @@ def clear_test_dir():
 
 
 def create_test_dir():
-    os.makedirs(test_dir(), exist_ok=True)
+    dir_path = test_dir()
+    os.makedirs(dir_path, exist_ok=True)
+    return dir_path
 
 
 def create_image(image_name, width=1920, height=1080, color=(0, 0, 0, 1)):
@@ -158,10 +161,6 @@ def change_scene_camera(headnum, camnum):
     bpy.context.scene.camera = camera.camobj
 
 
-def deselect_all():
-    bpy.ops.object.select_all(action='DESELECT')
-
-
 def wireframe_coloring(action='wireframe_green'):
     op = get_operator(FBConfig.fb_wireframe_color_idname)
     op('EXEC_DEFAULT', action=action)
@@ -174,6 +173,11 @@ def new_scene():
 def save_scene(filename):
     filepath = os.path.join(test_dir(), filename)
     bpy.ops.wm.save_mainfile(filepath=filepath, check_existing=False)
+
+
+def load_scene(filename):
+    filepath = os.path.join(test_dir(), filename)
+    bpy.ops.wm.open_mainfile(filepath=filepath)
 
 
 def create_blendshapes():
@@ -226,7 +230,7 @@ def create_head_images():
     bpy.ops.object.light_add(type='SUN', align='WORLD', location=(0, 0, 0),
                              rotation=(math.pi * 0.45, 0.0, math.pi * 0.3),
                              scale=(1, 1, 1))
-    bpy.ops.object.select_all(action='DESELECT')
+    deselect_all()
 
     filename1 = 'head_render1.jpg'
     filepath1 = os.path.join(test_dir(), filename1)

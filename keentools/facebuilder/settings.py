@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 import logging
 import math
+from contextlib import contextmanager
 
 import bpy
 import numpy as np
@@ -39,8 +40,13 @@ from .fbloader import FBLoader
 from ..utils import coords
 from .callbacks import (update_mesh_with_dialog,
                         update_mesh_simple,
-                        update_expressions,
-                        update_expression_options,
+                        update_shape_rigidity,
+                        update_expression_rigidity,
+                        update_blinking_rigidity,
+                        update_neck_movement_rigidity,
+                        update_use_emotions,
+                        update_lock_blinking,
+                        update_lock_neck_movement,
                         update_expression_view,
                         update_wireframe_image,
                         update_wireframe_func,
@@ -50,10 +56,12 @@ from .callbacks import (update_mesh_with_dialog,
                         update_cam_image,
                         update_head_focal,
                         update_camera_focal,
-                        update_background_tone_mapping,
-                        universal_getter, universal_setter)
+                        update_background_tone_mapping)
+from ..preferences.user_preferences import (UserPreferences,
+                                            universal_cached_getter,
+                                            universal_cached_setter)
 from .utils.manipulate import get_current_head
-from ..utils.images import np_array_from_bpy_image, assign_pixels_data
+from ..utils.images import tone_mapping, reset_tone_mapping
 from ..blender_independent_packages.pykeentools_loader.config import set_mock_update_paths
 
 
@@ -153,13 +161,13 @@ class FBCameraItem(PropertyGroup):
 
     tone_exposure: FloatProperty(
         name='Exposure', description='Tone gain',
-        default=FBConfig.default_tone_exposure,
+        default=Config.default_tone_exposure,
         min=-10.0, max=10.0, soft_min=-4.0, soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
 
     tone_gamma: FloatProperty(
         name='Gamma correction', description='Tone gamma correction',
-        default=FBConfig.default_tone_gamma, min=0.01, max=10.0, soft_max=4.0, precision=2,
+        default=Config.default_tone_gamma, min=0.01, max=10.0, soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
 
     def update_scene_frame_size(self):
@@ -378,37 +386,13 @@ class FBCameraItem(PropertyGroup):
         return sc * w / FBConfig.default_sensor_width
 
     def reset_tone_mapping(self):
-        if not self.cam_image:
-            return
-        if self.cam_image.is_dirty:
-            self.cam_image.reload()
-            logger = logging.getLogger(__name__)
-            logger.debug('reset_tone_mapping: IMAGE RELOADED')
-
-    def tone_mapping(self, exposure=FBConfig.default_tone_exposure,
-                     gamma=FBConfig.default_tone_gamma):
-        if not self.cam_image:
-            return
-        self.reset_tone_mapping()
-        logger = logging.getLogger(__name__)
-
-        if np.all(np.isclose([exposure, gamma], [FBConfig.default_tone_exposure,
-                                                 FBConfig.default_tone_gamma],
-                                                 atol=0.001)):
-            logger.debug('SKIP tone mapping, only reload()')
-            return
-        np_img = np_array_from_bpy_image(self.cam_image)
-
-        gain = pow(2, exposure / 2.2)
-        np_img[:, :, :3] = np.power(gain * np_img[:, :, :3], 1.0 / gamma)
-        assign_pixels_data(self.cam_image.pixels, np_img.ravel())
-        logger.debug('restore_tone_mapping: exposure: {} '
-                     '(gain: {}) gamma: {}'.format(exposure, gain, gamma))
+        reset_tone_mapping(self.cam_image)
 
     def apply_tone_mapping(self):
         if not self.cam_image:
             return
-        self.tone_mapping(exposure=self.tone_exposure, gamma=self.tone_gamma)
+        tone_mapping(self.cam_image,
+                     exposure=self.tone_exposure, gamma=self.tone_gamma)
 
 
 def uv_items_callback(self, context):
@@ -441,18 +425,18 @@ def expression_views_callback(self, context):
     for i, camera in enumerate(self.cameras):
         kid = camera.get_keyframe()
         res.append(('{}'.format(kid), camera.get_image_name(),
-                    '', 'HIDE_OFF', kid))
+                    '', 'PINNED' if camera.has_pins() else 'HIDE_OFF', kid))
     return res
 
 
 class FBHeadItem(PropertyGroup):
     use_emotions: bpy.props.BoolProperty(name="Allow facial expressions",
                                          default=False,
-                                         update=update_expressions)
+                                         update=update_use_emotions)
     lock_blinking: BoolProperty(
-        name="Lock eye blinking", default=False, update=update_expression_options)
+        name="Lock eye blinking", default=False, update=update_lock_blinking)
     lock_neck_movement: BoolProperty(
-        name="Lock neck movement", default=False, update=update_expression_options)
+        name="Lock neck movement", default=False, update=update_lock_neck_movement)
 
     headobj: PointerProperty(name="Head", type=bpy.types.Object)
     blendshapes_control_panel: PointerProperty(name="Blendshapes Control Panel",
@@ -713,90 +697,102 @@ class FBSceneSettings(PropertyGroup):
     force_out_pinmode: BoolProperty(name="Pin Mode Out", default=False)
     license_error: BoolProperty(name="License Error", default=False)
 
+    ui_write_mode: bpy.props.BoolProperty(name='UI Write mode', default=False)
     # ---------------------
     # Model View parameters
     # ---------------------
     wireframe_opacity: FloatProperty(
-        description="From 0.0 to 1.0",
-        name="Wireframe opacity",
-        default=FBConfig.default_user_preferences['wireframe_opacity']['value'],
+        description='From 0.0 to 1.0',
+        name='The FaceBuilder wireframe Opacity',
+        default=UserPreferences.get_value_safe('fb_wireframe_opacity',
+                                               UserPreferences.type_float),
         min=0.0, max=1.0,
         update=update_wireframe_func,
-        get=universal_getter('wireframe_opacity', 'float'),
-        set=universal_setter('wireframe_opacity'))
+        get=universal_cached_getter('fb_wireframe_opacity', 'float'),
+        set=universal_cached_setter('fb_wireframe_opacity'))
     wireframe_color: FloatVectorProperty(
-        description="Color of mesh wireframe in pin-mode",
-        name="Wireframe Color", subtype='COLOR',
-        default=FBConfig.default_user_preferences['wireframe_color']['value'],
+        description='Color of the FaceBuilder mesh wireframe in pin-mode',
+        name='Wireframe Color', subtype='COLOR',
+        default=UserPreferences.get_value_safe('fb_wireframe_color',
+                                               UserPreferences.type_color),
         min=0.0, max=1.0,
         update=update_wireframe_image,
-        get=universal_getter('wireframe_color', 'color'),
-        set=universal_setter('wireframe_color'))
+        get=universal_cached_getter('fb_wireframe_color', 'color'),
+        set=universal_cached_setter('fb_wireframe_color'))
     wireframe_special_color: FloatVectorProperty(
-        description="Color of special parts in pin-mode",
-        name="Wireframe Special Color", subtype='COLOR',
-        default=FBConfig.default_user_preferences['wireframe_special_color']['value'],
+        description='Color of special parts in pin-mode',
+        name='Wireframe Special Color', subtype='COLOR',
+        default=UserPreferences.get_value_safe('fb_wireframe_special_color',
+                                               UserPreferences.type_color),
         min=0.0, max=1.0,
         update=update_wireframe_image,
-        get=universal_getter('wireframe_special_color', 'color'),
-        set=universal_setter('wireframe_special_color'))
+        get=universal_cached_getter('fb_wireframe_special_color', 'color'),
+        set=universal_cached_setter('fb_wireframe_special_color'))
     wireframe_midline_color: FloatVectorProperty(
-        description="Color of midline in pin-mode",
-        name="Wireframe Midline Color", subtype='COLOR',
-        default=FBConfig.default_user_preferences['wireframe_midline_color']['value'],
+        description='Color of midline in pin-mode',
+        name='Wireframe Midline Color', subtype='COLOR',
+        default=UserPreferences.get_value_safe('fb_wireframe_midline_color',
+                                               UserPreferences.type_color),
         min=0.0, max=1.0,
         update=update_wireframe_image,
-        get=universal_getter('wireframe_midline_color', 'color'),
-        set=universal_setter('wireframe_midline_color'))
+        get=universal_cached_getter('fb_wireframe_midline_color', 'color'),
+        set=universal_cached_setter('fb_wireframe_midline_color'))
     show_specials: BoolProperty(
-        description="Use different colors for important head parts "
-                    "on the mesh",
-        name="Special face parts", default=True, update=update_wireframe_image)
-    overall_opacity: FloatProperty(
-        description="Overall opacity in pin-mode.",
-        name="Overall opacity",
-        default=1.00, min=0.0, max=1.0)
+        description='Use different colors for important head parts '
+                    'on the mesh',
+        name='Special face parts', default=True, update=update_wireframe_image)
 
     # Initial pin_size state in FBShaderPoints class
     pin_size: FloatProperty(
-        description="Set pin size in pixels",
-        name="Size",
-        default=FBConfig.default_user_preferences['pin_size']['value'],
+        description='Set pin size in pixels',
+        name='Size',
+        default=UserPreferences.get_value_safe('pin_size',
+                                               UserPreferences.type_float),
         min=1.0, max=100.0,
         precision=1,
         update=update_pin_size,
-        get=universal_getter('pin_size', 'float'),
-        set=universal_setter('pin_size'))
+        get=universal_cached_getter('pin_size', 'float'),
+        set=universal_cached_setter('pin_size'))
     pin_sensitivity: FloatProperty(
-        description="Set active area in pixels",
-        name="Active area",
-        default=FBConfig.default_user_preferences['pin_sensitivity']['value'],
+        description='Set active area in pixels',
+        name='Active area',
+        default=UserPreferences.get_value_safe('pin_sensitivity',
+                                               UserPreferences.type_float),
         min=1.0, max=100.0,
         precision=1,
         update=update_pin_sensitivity,
-        get=universal_getter('pin_sensitivity', 'float'),
-        set=universal_setter('pin_sensitivity')
+        get=universal_cached_getter('pin_sensitivity', 'float'),
+        set=universal_cached_setter('pin_sensitivity')
     )
 
     # Other settings
     shape_rigidity: FloatProperty(
-        description="Change how much pins affect the model shape",
-        name="Shape rigidity", default=1.0, min=0.001, max=1000.0)
+        description='Change how much pins affect the model shape. '
+                    'Accessible in Pinmode only',
+        name='Shape rigidity', default=1.0, min=0.001, max=1000.0,
+        update=update_shape_rigidity)
     expression_rigidity: FloatProperty(
-        description="Change how much pins affect the model expressions",
-        name="Expression rigidity", default=2.0, min=0.001, max=1000.0)
+        description='Change how much pins affect the model expressions. '
+                    'Accessible in Pinmode only',
+        name='Expression rigidity', default=2.0, min=0.001, max=1000.0,
+        update=update_expression_rigidity)
     blinking_rigidity: FloatProperty(
-        name="Eye blinking rigidity", default=2.0, min=0.001, max=1000.0)
+        description='Change how much pins affect blinking. '
+                    'Accessible in Pinmode only',
+        name='Eye blinking rigidity', default=2.0, min=0.001, max=1000.0,
+        update=update_blinking_rigidity)
     neck_movement_rigidity: FloatProperty(
-        name="Neck movement rigidity", default=2.0, min=0.001, max=1000.0)
+        description='Change how much pins affect neck movement. '
+                    'Accessible in Pinmode only',
+        name='Neck movement rigidity', default=2.0, min=0.001, max=1000.0,
+        update=update_neck_movement_rigidity)
 
-    # Internal use only.
     # Warning! current_headnum and current_camnum work only in Pinmode!
-    current_headnum: IntProperty(name="Current Head Number", default=-1)
-    current_camnum: IntProperty(name="Current Camera Number", default=-1)
+    current_headnum: IntProperty(name='Current Head Number', default=-1)
+    current_camnum: IntProperty(name='Current Camera Number', default=-1)
 
-    tmp_headnum: IntProperty(name="Temporary Head Number", default=-1)
-    tmp_camnum: IntProperty(name="Temporary Camera Number", default=-1)
+    tmp_headnum: IntProperty(name='Temporary Head Number', default=-1)
+    tmp_camnum: IntProperty(name='Temporary Camera Number', default=-1)
 
     # -------------------------
     # Texture Baking parameters
@@ -839,15 +835,11 @@ class FBSceneSettings(PropertyGroup):
         description="Automatically apply the created texture",
         name="Automatically apply the created texture", default=True)
 
-    defaults_loaded: BoolProperty(
-        description='Defaults are loaded flag',
-        name='Defaults loaded', default=False)
-
-    # Updater
-    not_save_changes: BoolProperty(
-        description="Discard changes, install the update and restart Blender",
-        name="Discard changes, install the update and restart Blender", default=False
-    )
+    @contextmanager
+    def ui_write_mode_context(self):
+        self.ui_write_mode = True
+        yield
+        self.ui_write_mode = False
 
     def reset_pinmode_id(self):
         self.pinmode_id = 'stop'
@@ -1010,15 +1002,10 @@ class FBSceneSettings(PropertyGroup):
     def preferences(self):
         return get_addon_preferences()
 
-    def show_user_preferences(self):
-        self.preferences().show_user_preferences = True
-
-    def hide_user_preferences(self):
-        self.preferences().show_user_preferences = False
-
     def mock_update_for_testing(self, value=True, ver=None,
                                 addon_path=Config.mock_update_addon_path,
-                                core_path=Config.mock_update_core_path):
+                                core_path=Config.mock_update_core_path,
+                                product=Config.mock_product):
         """Enable mock for update testing
 
         :param value: Mock status. True for active, False for inactive
@@ -1036,5 +1023,5 @@ class FBSceneSettings(PropertyGroup):
         bpy.context.scene.keentools_fb_settings.mock_update_for_testing(True)
         """
         Config.mock_update_for_testing(value, ver=ver, addon_path=addon_path,
-                                       core_path=core_path)
+                                       core_path=core_path, product=product)
         set_mock_update_paths(addon_path=addon_path, core_path=core_path)

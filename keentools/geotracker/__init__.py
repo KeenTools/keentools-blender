@@ -20,22 +20,19 @@ import logging
 import bpy
 
 from ..geotracker_config import GTConfig, get_gt_settings
-from .settings import FileListItem, GeoTrackerItem, GTSceneSettings
+from .settings import FrameListItem, GeoTrackerItem, GTSceneSettings
 from .actor import GT_OT_Actor
 from .pinmode import GT_OT_PinMode
 from .movepin import GT_OT_MovePin
-from .interface.filedialogs import GT_OT_MultipleFilebrowser, GT_OT_ChoosePrecalcFile
 from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
 from .operators import BUTTON_CLASSES
 
 
-CLASSES_TO_REGISTER = (FileListItem,
+CLASSES_TO_REGISTER = (FrameListItem,
                        GeoTrackerItem,
                        GT_OT_Actor,
                        GT_OT_PinMode,
                        GT_OT_MovePin,
-                       GT_OT_MultipleFilebrowser,
-                       GT_OT_ChoosePrecalcFile,
                        GTSceneSettings) + BUTTON_CLASSES + INTERFACE_CLASSES
 
 

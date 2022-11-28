@@ -17,9 +17,16 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import sys
-import logging
 
-import bpy
+from bpy.types import Operator, AddonPreferences
+from bpy.props import (BoolProperty,
+                       StringProperty,
+                       IntProperty,
+                       EnumProperty,
+                       FloatProperty,
+                       FloatVectorProperty)
+
+from ..utils.kt_logging import KTLogger
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module,
     is_installed as pkt_is_installed,
@@ -28,14 +35,24 @@ from ..blender_independent_packages.pykeentools_loader import (
     loaded as pkt_loaded)
 from ..addon_config import Config, get_operator, is_blender_supported
 from ..facebuilder_config import FBConfig, get_fb_settings
+from ..geotracker_config import GTConfig, get_gt_settings
 from .formatting import split_by_br_or_newlines
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
                         draw_warning_labels, draw_long_labels)
-from ..preferences.user_preferences import UserPreferences, UpdaterPreferences
-from ..facebuilder.interface.updater import preferences_current_active_updater_operators_info, UpdateState, \
-    render_active_message, FBUpdater, CurrentStateExecutor
+from ..preferences.user_preferences import (UserPreferences,
+                                            UpdaterPreferences,
+                                            universal_direct_getter,
+                                            universal_direct_setter)
+from ..updater.utils import (preferences_current_active_updater_operators_info,
+                             UpdateState,
+                             render_active_message,
+                             KTUpdater,
+                             CurrentStateExecutor)
 from .operators import get_product_license_manager
+
+
+_log = KTLogger(__name__)
 
 
 def _multi_line_text_to_output_labels(layout, txt):
@@ -71,17 +88,14 @@ def _expandable_button(layout, data, property, text=None):
     prop_value = getattr(data, property)
     if text is None:
         layout.prop(data, property,
-                    icon=_expand_icon(prop_value),
-                    invert_checkbox=prop_value)
+                    icon=_expand_icon(prop_value))
     else:
-        layout.prop(data, property,
-                    icon=_expand_icon(prop_value),
-                    invert_checkbox=prop_value,
-                    text=text)
+        layout.prop(data, property, text=text,
+                    icon=_expand_icon(prop_value))
     return prop_value
 
 
-class FB_OT_UserPreferencesResetAll(bpy.types.Operator):
+class FBPREF_OT_UserPreferencesResetAll(Operator):
     bl_idname = FBConfig.fb_user_preferences_reset_all
     bl_label = 'Reset All'
     bl_options = {'REGISTER', 'UNDO'}
@@ -91,14 +105,29 @@ class FB_OT_UserPreferencesResetAll(bpy.types.Operator):
         pass
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        logger.debug('user_preferences_reset_all call')
-        warn = get_operator(FBConfig.fb_user_preferences_reset_all_warning_idname)
-        warn('INVOKE_DEFAULT')
+        _log.output('user_preferences_reset_all call')
+        warn = get_operator(Config.kt_user_preferences_reset_all_warning_idname)
+        warn('INVOKE_DEFAULT', tool='facebuilder')
         return {'FINISHED'}
 
 
-class FB_OT_UserPreferencesGetColors(bpy.types.Operator):
+class GTPREF_OT_UserPreferencesResetAll(Operator):
+    bl_idname = GTConfig.gt_user_preferences_reset_all
+    bl_label = 'Reset All'
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = 'Reset All'
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        _log.output('gt user_preferences_reset_all call')
+        warn = get_operator(Config.kt_user_preferences_reset_all_warning_idname)
+        warn('INVOKE_DEFAULT', tool='geotracker')
+        return {'FINISHED'}
+
+
+class FBPREF_OT_UserPreferencesGetColors(Operator):
     bl_idname = FBConfig.fb_user_preferences_get_colors
     bl_label = 'Get from scene'
     bl_options = {'REGISTER', 'UNDO'}
@@ -108,67 +137,123 @@ class FB_OT_UserPreferencesGetColors(bpy.types.Operator):
         pass
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        logger.debug('user_preferences_get_colors')
-
+        _log.output('user_preferences_get_colors')
         settings = get_fb_settings()
-        preferences = settings.preferences()
-        preferences.wireframe_color = settings.wireframe_color
-        preferences.wireframe_special_color = settings.wireframe_special_color
-        preferences.wireframe_midline_color = settings.wireframe_midline_color
-        preferences.wireframe_opacity = settings.wireframe_opacity
+        prefs = settings.preferences()
+        prefs.fb_wireframe_color = settings.wireframe_color
+        prefs.fb_wireframe_special_color = settings.wireframe_special_color
+        prefs.fb_wireframe_midline_color = settings.wireframe_midline_color
+        prefs.fb_wireframe_opacity = settings.wireframe_opacity
         return {'FINISHED'}
 
 
-class FB_OT_UserPreferencesChanger(bpy.types.Operator):
-    bl_idname = FBConfig.fb_user_preferences_changer
-    bl_label = 'FaceBuilder Action'
+class GTPREF_OT_UserPreferencesGetColors(Operator):
+    bl_idname = GTConfig.gt_user_preferences_get_colors
+    bl_label = 'Get from scene'
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = 'Reset'
-
-    param_string: bpy.props.StringProperty(name='String parameter')
-    action: bpy.props.StringProperty(name='Action Name')
+    bl_description = 'Get color settings from the current scene'
 
     def draw(self, context):
         pass
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        logger.debug('user_preferences_changer: {}'.format(self.action))
+        _log.output('gt user_preferences_get_colors')
+        settings = get_gt_settings()
+        prefs = settings.preferences()
+        color = settings.wireframe_color
+        opacity = settings.wireframe_opacity
+        prefs.gt_wireframe_color = color
+        prefs.gt_wireframe_opacity = opacity
+        return {'FINISHED'}
+
+
+class KTPREF_OT_UserPreferencesChanger(Operator):
+    bl_idname = Config.kt_user_preferences_changer
+    bl_label = 'KeenTools user preferences action'
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = 'Reset'
+
+    param_string: StringProperty(name='String parameter')
+    action: StringProperty(name='Action Name')
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        _log.output('user_preferences_changer: {}'.format(self.action))
 
         if self.action == 'revert_default':
             _reset_user_preferences_parameter_to_default(self.param_string)
             return {'FINISHED'}
-        elif self.action == 'revert_default_colors':
-            _reset_user_preferences_parameter_to_default('wireframe_color')
-            _reset_user_preferences_parameter_to_default('wireframe_special_color')
-            _reset_user_preferences_parameter_to_default('wireframe_midline_color')
-            _reset_user_preferences_parameter_to_default('wireframe_opacity')
+        elif self.action == 'revert_fb_default_colors':
+            _reset_user_preferences_parameter_to_default('fb_wireframe_color')
+            _reset_user_preferences_parameter_to_default('fb_wireframe_special_color')
+            _reset_user_preferences_parameter_to_default('fb_wireframe_midline_color')
+            _reset_user_preferences_parameter_to_default('fb_wireframe_opacity')
+            return {'FINISHED'}
+        elif self.action == 'revert_gt_default_colors':
+            _reset_user_preferences_parameter_to_default('gt_wireframe_color')
+            _reset_user_preferences_parameter_to_default('gt_wireframe_opacity')
+            return {'FINISHED'}
+        elif self.action == 'revert_gt_default_mask_2d_colors':
+            _reset_user_preferences_parameter_to_default('gt_mask_2d_color')
+            _reset_user_preferences_parameter_to_default('gt_mask_2d_opacity')
+            return {'FINISHED'}
+        elif self.action == 'revert_gt_default_mask_3d_colors':
+            _reset_user_preferences_parameter_to_default('gt_mask_3d_color')
+            _reset_user_preferences_parameter_to_default('gt_mask_3d_opacity')
             return {'FINISHED'}
 
         return {'CANCELLED'}
 
 
-class FB_OT_UserPreferencesResetAllWarning(bpy.types.Operator):
-    bl_idname = FBConfig.fb_user_preferences_reset_all_warning_idname
+class KTPREF_OT_UserPreferencesResetAllWarning(Operator):
+    bl_idname = Config.kt_user_preferences_reset_all_warning_idname
     bl_label = 'Reset All'
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    accept: bpy.props.BoolProperty(name='Yes, I really want '
-                                        'to reset all settings',
-                                   default=False)
+    accept: BoolProperty(name='Yes, I really want to reset all settings',
+                         default=False)
+    tool: StringProperty(name='all')
 
     def draw(self, context):
         layout = self.layout.column()
         col = layout.column()
         col.scale_y = Config.text_scale_y
-        layout.prop(self, 'accept')
+        name = ''
+        if self.tool == 'facebuilder':
+            name = 'FaceBuilder'
+        elif self.tool == 'geotracker':
+            name = 'GeoTracker'
+
+        layout.prop(self, 'accept',
+                    text='Yes, I really want '
+                         'to reset all {} settings'.format(name))
 
     def execute(self, context):
-        if (self.accept):
-            logger = logging.getLogger(__name__)
-            logger.debug('user_preferences_reset_all')
+        _log.output(f'user_preferences_reset_all {self.tool}')
+        if not self.accept:
+            return {'CANCELLED'}
+        if self.tool == 'all':
             _set_all_user_preferences_to_default()
+        elif self.tool == 'facebuilder':
+            _reset_user_preferences_parameter_to_default('pin_size')
+            _reset_user_preferences_parameter_to_default('pin_sensitivity')
+            _reset_user_preferences_parameter_to_default('prevent_fb_view_rotation')
+            _reset_user_preferences_parameter_to_default('fb_wireframe_color')
+            _reset_user_preferences_parameter_to_default('fb_wireframe_special_color')
+            _reset_user_preferences_parameter_to_default('fb_wireframe_midline_color')
+            _reset_user_preferences_parameter_to_default('fb_wireframe_opacity')
+        elif self.tool == 'geotracker':
+            _reset_user_preferences_parameter_to_default('pin_size')
+            _reset_user_preferences_parameter_to_default('pin_sensitivity')
+            _reset_user_preferences_parameter_to_default('prevent_gt_view_rotation')
+            _reset_user_preferences_parameter_to_default('gt_wireframe_color')
+            _reset_user_preferences_parameter_to_default('gt_wireframe_opacity')
+            _reset_user_preferences_parameter_to_default('gt_mask_2d_color')
+            _reset_user_preferences_parameter_to_default('gt_mask_2d_opacity')
+            _reset_user_preferences_parameter_to_default('gt_mask_3d_color')
+            _reset_user_preferences_parameter_to_default('gt_mask_3d_opacity')
         return {'FINISHED'}
 
     def cancel(self, context):
@@ -196,16 +281,22 @@ def _update_user_preferences_pin_sensitivity(self, context):
         prefs.pin_size = self.pin_sensitivity
 
 
-def _universal_getter(name, type):
-    def _getter(self):
-        return UserPreferences.get_value_safe(name, type)
-    return _getter
+def _update_mask_3d(prefs, context):
+    settings = get_gt_settings()
+    settings.mask_3d_color = prefs.gt_mask_3d_color
+    settings.mask_3d_opacity = prefs.gt_mask_3d_opacity
 
 
-def _universal_setter(name):
-    def _setter(self, value):
-        UserPreferences.set_value(name, value)
-    return _setter
+def _update_mask_2d(prefs, context):
+    settings = get_gt_settings()
+    settings.mask_2d_color = prefs.gt_mask_2d_color
+    settings.mask_2d_opacity = prefs.gt_mask_2d_opacity
+
+
+def _update_gt_wireframe(prefs, context):
+    settings = get_gt_settings()
+    settings.wireframe_color = prefs.gt_wireframe_color
+    settings.wireframe_opacity = prefs.gt_wireframe_opacity
 
 
 def _universal_updater_getter(name, type):
@@ -225,191 +316,268 @@ _lic_type_items = (('ONLINE', 'Online', 'Online license management', 0),
             ('FLOATING', 'Floating', 'Floating license management', 2))
 
 
-class KTAddonPreferences(bpy.types.AddonPreferences):
+class KTAddonPreferences(AddonPreferences):
     bl_idname = Config.addon_name
 
-    facebuilder_enabled: bpy.props.BoolProperty(
+    facebuilder_enabled: BoolProperty(
         name='Enable KeenTools FaceBuilder',
         default=True
     )
-    facebuilder_expanded: bpy.props.BoolProperty(
+    facebuilder_expanded: BoolProperty(
         name='KeenTools FaceBuilder',
         default=False
     )
 
-    geotracker_enabled: bpy.props.BoolProperty(
+    geotracker_enabled: BoolProperty(
         name='Enable KeenTools GeoTracker',
         default=not Config.hide_geotracker
     )
-    geotracker_expanded: bpy.props.BoolProperty(
+    geotracker_expanded: BoolProperty(
         name='KeenTools GeoTracker',
         default=False
     )
 
-    latest_show_datetime_update_reminder: bpy.props.StringProperty(
+    latest_show_datetime_update_reminder: StringProperty(
         name='Latest show update reminder', default='',
         get=_universal_updater_getter('latest_show_datetime_update_reminder', 'string'),
         set=_universal_updater_setter('latest_show_datetime_update_reminder')
     )
 
-    latest_update_skip_version: bpy.props.StringProperty(
+    latest_update_skip_version: StringProperty(
         name='Latest update skip version', default='',
         get=_universal_updater_getter('latest_update_skip_version', 'string'),
         set=_universal_updater_setter('latest_update_skip_version')
     )
 
-    updater_state: bpy.props.IntProperty(
+    updater_state: IntProperty(
         name='Updater state', default=1,
         get=_universal_updater_getter('updater_state', 'int'),
         set=_universal_updater_setter('updater_state')
     )
 
-    downloaded_version: bpy.props.StringProperty(
+    downloaded_version: StringProperty(
         name='Downloaded version', default='',
         get=_universal_updater_getter('downloaded_version', 'string'),
         set=_universal_updater_setter('downloaded_version')
     )
 
-    latest_installation_skip_version: bpy.props.StringProperty(
+    latest_installation_skip_version: StringProperty(
         name='Latest installation skip version', default='',
         get=_universal_updater_getter('latest_installation_skip_version', 'string'),
         set=_universal_updater_setter('latest_installation_skip_version')
     )
 
-    latest_show_datetime_installation_reminder: bpy.props.StringProperty(
+    latest_show_datetime_installation_reminder: StringProperty(
         name='Latest show installation reminder', default='',
         get=_universal_updater_getter('latest_show_datetime_installation_reminder', 'string'),
         set=_universal_updater_setter('latest_show_datetime_installation_reminder')
     )
 
-    license_accepted: bpy.props.BoolProperty(
+    license_accepted: BoolProperty(
         name='I have read and I agree to KeenTools End-user License Agreement',
         default=False
     )
 
-    license_key: bpy.props.StringProperty(
+    license_key: StringProperty(
         name="License key", default=""
     )
 
-    fb_license_server: bpy.props.StringProperty(
+    fb_license_server: StringProperty(
         name="License Server host/IP", default="localhost"
     )
-    gt_license_server: bpy.props.StringProperty(
+    gt_license_server: StringProperty(
         name="License Server host/IP", default="localhost"
     )
 
-    fb_license_server_port: bpy.props.IntProperty(
+    fb_license_server_port: IntProperty(
         name="License Server port", default=7096, min=0, max=65535
     )
-    gt_license_server_port: bpy.props.IntProperty(
+    gt_license_server_port: IntProperty(
         name="License Server port", default=7096, min=0, max=65535
     )
 
-    fb_license_server_lock: bpy.props.BoolProperty(
+    fb_license_server_lock: BoolProperty(
         name="Variables from ENV", default=False
     )
-    gt_license_server_lock: bpy.props.BoolProperty(
+    gt_license_server_lock: BoolProperty(
         name="Variables from ENV", default=False
     )
 
-    fb_license_server_auto: bpy.props.BoolProperty(
+    fb_license_server_auto: BoolProperty(
         name="Auto settings from Environment", default=True
     )
-    gt_license_server_auto: bpy.props.BoolProperty(
+    gt_license_server_auto: BoolProperty(
         name="Auto settings from Environment", default=True
     )
 
-    hardware_id: bpy.props.StringProperty(
+    hardware_id: StringProperty(
         name="Hardware ID", default=""
     )
 
-    fb_lic_type: bpy.props.EnumProperty(
+    fb_lic_type: EnumProperty(
         name="Type",
         items=_lic_type_items,
         default='ONLINE')
 
-    gt_lic_type: bpy.props.EnumProperty(
+    gt_lic_type: EnumProperty(
         name="Type",
         items=_lic_type_items,
         default='ONLINE')
 
-    fb_lic_path: bpy.props.StringProperty(
+    fb_lic_path: StringProperty(
             name="License file",
             description="absolute path to license file",
             default="",
             subtype="FILE_PATH"
     )
 
-    gt_lic_path: bpy.props.StringProperty(
+    gt_lic_path: StringProperty(
             name="License file",
             description="absolute path to license file",
             default="",
             subtype="FILE_PATH"
     )
 
-    more_info: bpy.props.BoolProperty(
+    more_info: BoolProperty(
         name='More Info',
         default=False
     )
 
-    # User preferences
-    show_user_preferences: bpy.props.BoolProperty(
+    # Common User Preferences
+    pin_size: FloatProperty(
+        description='Set pin size in pixels',
+        name='Size', min=1.0, max=100.0,
+        precision=1,
+        get=universal_direct_getter('pin_size', 'float'),
+        set=universal_direct_setter('pin_size'),
+        update=_update_user_preferences_pin_size)
+    pin_sensitivity: FloatProperty(
+        description='Set active area in pixels',
+        name='Active area', min=1.0, max=100.0,
+        precision=1,
+        get=universal_direct_getter('pin_sensitivity', 'float'),
+        set=universal_direct_setter('pin_sensitivity'),
+        update=_update_user_preferences_pin_sensitivity)
+
+    # FaceBuilder User preferences
+    show_fb_user_preferences: BoolProperty(
         name='FaceBuilder Settings',
         default=False
     )
-    pin_size: bpy.props.FloatProperty(
-        description="Set pin size in pixels",
-        name="Size", min=1.0, max=100.0,
-        precision=1,
-        get=_universal_getter('pin_size', 'float'),
-        set=_universal_setter('pin_size'),
-        update=_update_user_preferences_pin_size)
-    pin_sensitivity: bpy.props.FloatProperty(
-        description="Set active area in pixels",
-        name="Active area", min=1.0, max=100.0,
-        precision=1,
-        get=_universal_getter('pin_sensitivity', 'float'),
-        set=_universal_setter('pin_sensitivity'),
-        update=_update_user_preferences_pin_sensitivity)
-    prevent_view_rotation: bpy.props.BoolProperty(
-        name='Prevent accidental exit from Pin Mode',
-        get=_universal_getter('prevent_view_rotation', 'bool'),
-        set=_universal_setter('prevent_view_rotation'),
+    prevent_fb_view_rotation: BoolProperty(
+        name='Prevent accidental exit from Pin Mode in FaceBuilder',
+        get=universal_direct_getter('prevent_fb_view_rotation', 'bool'),
+        set=universal_direct_setter('prevent_fb_view_rotation'),
+        default=True
     )
-    wireframe_opacity: bpy.props.FloatProperty(
-        description="From 0.0 to 1.0",
-        name="Wireframe opacity",
-        default=FBConfig.wireframe_opacity, min=0.0, max=1.0,
-        get=_universal_getter('wireframe_opacity', 'float'),
-        set=_universal_setter('wireframe_opacity')
+    fb_wireframe_opacity: FloatProperty(
+        description='From 0.0 to 1.0',
+        name='FaceBuilder wireframe opacity',
+        default=UserPreferences.get_value_safe('fb_wireframe_opacity',
+                                               UserPreferences.type_float),
+        min=0.0, max=1.0,
+        get=universal_direct_getter('fb_wireframe_opacity', 'float'),
+        set=universal_direct_setter('fb_wireframe_opacity')
     )
-    wireframe_color: bpy.props.FloatVectorProperty(
-        description="Color of mesh wireframe in pin-mode",
-        name="Wireframe Color", subtype='COLOR',
-        default=FBConfig.color_schemes['default'][0],
-        get=_universal_getter('wireframe_color', 'color'),
-        set=_universal_setter('wireframe_color')
+    fb_wireframe_color: FloatVectorProperty(
+        description='Color of mesh wireframe in FaceBuilder pin-mode',
+        name='Wireframe Color', subtype='COLOR',
+        default=UserPreferences.get_value_safe('fb_wireframe_color',
+                                               UserPreferences.type_color),
+        get=universal_direct_getter('fb_wireframe_color', 'color'),
+        set=universal_direct_setter('fb_wireframe_color')
     )
-    wireframe_special_color: bpy.props.FloatVectorProperty(
-        description="Color of special parts in pin-mode",
-        name="Wireframe Special Color", subtype='COLOR',
-        default=FBConfig.color_schemes['default'][1],
-        get=_universal_getter('wireframe_special_color', 'color'),
-        set=_universal_setter('wireframe_special_color')
+    fb_wireframe_special_color: FloatVectorProperty(
+        description='Color of special parts in FaceBuilder pin-mode',
+        name='Wireframe Special Color', subtype='COLOR',
+        default=UserPreferences.get_value_safe('fb_wireframe_special_color',
+                                               UserPreferences.type_color),
+        get=universal_direct_getter('fb_wireframe_special_color', 'color'),
+        set=universal_direct_setter('fb_wireframe_special_color')
     )
-    wireframe_midline_color: bpy.props.FloatVectorProperty(
+    fb_wireframe_midline_color: FloatVectorProperty(
         description="Color of midline in pin-mode",
-        name="Wireframe Midline Color", subtype='COLOR',
-        default=FBConfig.midline_color,
-        get=_universal_getter('wireframe_midline_color', 'color'),
-        set=_universal_setter('wireframe_midline_color')
+        name='Wireframe Midline Color', subtype='COLOR',
+        default=UserPreferences.get_value_safe('fb_wireframe_midline_color',
+                                               UserPreferences.type_color),
+        get=universal_direct_getter('fb_wireframe_midline_color', 'color'),
+        set=universal_direct_setter('fb_wireframe_midline_color')
+    )
+
+    # GeoTracker User Preferences
+    show_gt_user_preferences: BoolProperty(
+        name='GeoTracker Settings',
+        default=False
+    )
+    prevent_gt_view_rotation: BoolProperty(
+        name='Prevent accidental exit from Pin Mode in GeoTracker',
+        get=universal_direct_getter('prevent_gt_view_rotation', 'bool'),
+        set=universal_direct_setter('prevent_gt_view_rotation'),
+        default=True
+    )
+    gt_wireframe_color: FloatVectorProperty(
+        description='Color of GeoTracker mesh wireframe in pin-mode',
+        name='GeoTracker wireframe color', subtype='COLOR',
+        default=UserPreferences.get_value_safe('gt_wireframe_color',
+                                               UserPreferences.type_color),
+        get=universal_direct_getter('gt_wireframe_color', 'color'),
+        set=universal_direct_setter('gt_wireframe_color'),
+        update=_update_gt_wireframe
+    )
+    gt_wireframe_opacity: FloatProperty(
+        description='From 0.0 to 1.0',
+        name='GeoTracker wireframe opacity',
+        default=UserPreferences.get_value_safe('gt_wireframe_opacity',
+                                               UserPreferences.type_float),
+        min=0.0, max=1.0,
+        get=universal_direct_getter('gt_wireframe_opacity', 'float'),
+        set=universal_direct_setter('gt_wireframe_opacity'),
+        update=_update_gt_wireframe
+    )
+    gt_mask_3d_color: FloatVectorProperty(
+        description='Color of GeoTracker masked mesh excluded from tracking',
+        name='Mask 3D Color', subtype='COLOR',
+        default=UserPreferences.get_value_safe('gt_mask_3d_color',
+                                               UserPreferences.type_color),
+        get=universal_direct_getter('gt_mask_3d_color', 'color'),
+        set=universal_direct_setter('gt_mask_3d_color'),
+        update=_update_mask_3d
+    )
+    gt_mask_3d_opacity: FloatProperty(
+        description='From 0.0 to 1.0',
+        name='GeoTracker masked mesh opacity',
+        default=UserPreferences.get_value_safe('gt_mask_3d_opacity',
+                                               UserPreferences.type_float),
+        min=0.0, max=1.0,
+        get=universal_direct_getter('gt_mask_3d_opacity', 'float'),
+        set=universal_direct_setter('gt_mask_3d_opacity'),
+        update=_update_mask_3d
+    )
+    gt_mask_2d_color: FloatVectorProperty(
+        description='Color of GeoTracker masked mesh excluded from tracking',
+        name='Wireframe Color', subtype='COLOR',
+        default=UserPreferences.get_value_safe('gt_mask_2d_color',
+                                               UserPreferences.type_color),
+        get=universal_direct_getter('gt_mask_2d_color', 'color'),
+        set=universal_direct_setter('gt_mask_2d_color'),
+        update=_update_mask_2d
+    )
+    gt_mask_2d_opacity: FloatProperty(
+        description='From 0.0 to 1.0',
+        name='GeoTracker masked mesh opacity',
+        default=UserPreferences.get_value_safe('gt_mask_2d_opacity',
+                                               UserPreferences.type_float),
+        min=0.0, max=1.0,
+        get=universal_direct_getter('gt_mask_2d_opacity', 'float'),
+        set=universal_direct_setter('gt_mask_2d_opacity'),
+        update=_update_mask_2d
     )
 
     def _license_was_accepted(self):
         return pkt_is_installed() or self.license_accepted
 
     def _draw_fb_license_info(self, layout):
-        layout.label(text='License info:')
+        layout.label(text='FaceBuilder license info:')
         box = layout.box()
 
         lm = get_product_license_manager('facebuilder')
@@ -577,12 +745,11 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
                                                 pkt_module().build_time)
             return txt
         except Exception as err:
-            logger = logging.getLogger(__name__)
-            logger.error('_get_core_version_text: {}'.format(str(err)))
+            _log.error('_get_core_version_text: {}'.format(str(err)))
             return None
 
     def _draw_updater_info(self, layout):
-        FBUpdater.init_updater()
+        KTUpdater.call_updater('FaceBuilder')
         CurrentStateExecutor.compute_current_panel_updater_state()
         settings = get_fb_settings()
         if settings is None:
@@ -657,25 +824,25 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         col.scale_y = Config.text_scale_y
         draw_long_labels(col, info, 120)
 
-    def _draw_user_preferences(self, layout):
+    def _draw_fb_user_preferences(self, layout):
         main_box = layout
-        if not _expandable_button(main_box, self, 'show_user_preferences'):
+        if not _expandable_button(main_box, self, 'show_fb_user_preferences'):
             return
 
         box = main_box.box()
-        box.prop(self, 'prevent_view_rotation')
+        box.prop(self, 'prevent_fb_view_rotation')
 
         box = main_box.box()
         box.label(text='Default pin settings')
         row = box.split(factor=0.7)
         row.prop(self, 'pin_size', slider=True)
-        op = row.operator(FBConfig.fb_user_preferences_changer, text='Reset')
+        op = row.operator(Config.kt_user_preferences_changer, text='Reset')
         op.action = 'revert_default'
         op.param_string = 'pin_size'
 
         row = box.split(factor=0.7)
         row.prop(self, 'pin_sensitivity', slider=True)
-        op = row.operator(FBConfig.fb_user_preferences_changer, text='Reset')
+        op = row.operator(Config.kt_user_preferences_changer, text='Reset')
         op.action = 'revert_default'
         op.param_string = 'pin_sensitivity'
 
@@ -686,16 +853,73 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
 
         colors_row = box.split(factor=0.7)
         row = colors_row.row()
-        row.prop(self, 'wireframe_color', text='')
-        row.prop(self, 'wireframe_special_color', text='')
-        row.prop(self, 'wireframe_midline_color', text='')
-        row.prop(self, 'wireframe_opacity', text='', slider=True)
+        row.prop(self, 'fb_wireframe_color', text='')
+        row.prop(self, 'fb_wireframe_special_color', text='')
+        row.prop(self, 'fb_wireframe_midline_color', text='')
+        row.prop(self, 'fb_wireframe_opacity', text='', slider=True)
 
-        op = colors_row.operator(FBConfig.fb_user_preferences_changer,
+        op = colors_row.operator(Config.kt_user_preferences_changer,
                                  text='Reset')
-        op.action = 'revert_default_colors'
+        op.action = 'revert_fb_default_colors'
 
         main_box.operator(FBConfig.fb_user_preferences_reset_all)
+
+    def _draw_gt_user_preferences(self, layout):
+        main_box = layout
+        if not _expandable_button(main_box, self, 'show_gt_user_preferences'):
+            return
+
+        box = main_box.box()
+        box.prop(self, 'prevent_gt_view_rotation')
+
+        box = main_box.box()
+        box.label(text='Default pin settings')
+        row = box.split(factor=0.7)
+        row.prop(self, 'pin_size', slider=True)
+        op = row.operator(Config.kt_user_preferences_changer, text='Reset')
+        op.action = 'revert_default'
+        op.param_string = 'pin_size'
+
+        row = box.split(factor=0.7)
+        row.prop(self, 'pin_sensitivity', slider=True)
+        op = row.operator(Config.kt_user_preferences_changer, text='Reset')
+        op.action = 'revert_default'
+        op.param_string = 'pin_sensitivity'
+
+        box = main_box.box()
+        split = box.split(factor=0.7)
+        split.label(text='Default wireframe colors')
+        split.operator(GTConfig.gt_user_preferences_get_colors)
+
+        colors_row = box.split(factor=0.7)
+        row = colors_row.row()
+        row.prop(self, 'gt_wireframe_color', text='')
+        row.prop(self, 'gt_wireframe_opacity', text='', slider=True)
+
+        op = colors_row.operator(Config.kt_user_preferences_changer,
+                                 text='Reset')
+        op.action = 'revert_gt_default_colors'
+
+        box = main_box.box()
+        colors_row = box.split(factor=0.7)
+        row = colors_row.row()
+        row.label(text='3d mask color')
+        row.prop(self, 'gt_mask_3d_color', text='')
+        row.prop(self, 'gt_mask_3d_opacity', text='', slider=True)
+        op = colors_row.operator(Config.kt_user_preferences_changer,
+                                 text='Reset')
+        op.action = 'revert_gt_default_mask_3d_colors'
+
+        colors_row = box.split(factor=0.7)
+        row = colors_row.row()
+        row.label(text='2d mask color')
+        row.prop(self, 'gt_mask_2d_color', text='')
+        row.prop(self, 'gt_mask_2d_opacity', text='', slider=True)
+        op = colors_row.operator(Config.kt_user_preferences_changer,
+                                 text='Reset')
+        op.action = 'revert_gt_default_mask_2d_colors'
+
+        main_box.operator(GTConfig.gt_user_preferences_reset_all)
 
     def _draw_core_python_problem(self, layout):
         if not pkt_is_python_supported():
@@ -749,7 +973,7 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
         return False
 
     def _draw_gt_license_info(self, layout):
-        layout.label(text='License info:')
+        layout.label(text='GeoTracker license info:')
         box = layout.box()
 
         lm = get_product_license_manager('geotracker')
@@ -822,10 +1046,11 @@ class KTAddonPreferences(bpy.types.AddonPreferences):
 
     def _draw_facebuilder_preferences(self, layout):
         self._draw_fb_license_info(layout)
-        self._draw_user_preferences(layout)
+        self._draw_fb_user_preferences(layout)
 
     def _draw_geotracker_preferences(self, layout):
         self._draw_gt_license_info(layout)
+        self._draw_gt_user_preferences(layout)
 
     def draw(self, context):
         layout = self.layout

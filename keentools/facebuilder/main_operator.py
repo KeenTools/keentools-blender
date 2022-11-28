@@ -26,7 +26,13 @@ from bpy.props import (
 )
 from bpy.types import Operator
 
-from ..addon_config import Config, get_operator
+from ..addon_config import (Config,
+                            get_operator,
+                            show_user_preferences,
+                            show_tool_preferences)
+from ..utils.bpy_common import (bpy_background_mode,
+                                bpy_show_addon_preferences,
+                                bpy_view_camera)
 from ..facebuilder_config import FBConfig, get_fb_settings
 from .fbloader import FBLoader
 from ..utils import manipulate, materials, coords, images
@@ -109,8 +115,7 @@ class FB_OT_DeleteHead(Operator):
         try:
             col = get_obj_collection(head.headobj)
             # Remove head object
-            bpy.data.objects.remove(
-                head.headobj)  # , do_unlink=True
+            bpy.data.objects.remove(head.headobj)  # , do_unlink=True
             safe_delete_collection(col)
         except Exception:
             pass
@@ -142,7 +147,7 @@ class FB_OT_SelectCamera(Operator):
         update_exif_sizes_message(self.headnum, camera.cam_image)
 
         pinmode_op = get_operator(FBConfig.fb_pinmode_idname)
-        if not bpy.app.background:
+        if not bpy_background_mode():
             pinmode_op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
 
         return {'FINISHED'}
@@ -392,17 +397,17 @@ class FB_OT_ProperViewMenuExec(Operator):
 
 class FB_OT_AddonSetupDefaults(Operator):
     bl_idname = FBConfig.fb_addon_setup_defaults_idname
-    bl_label = 'Setup defaults'
+    bl_label = 'Setup FaceBuilder defaults'
     bl_options = {'REGISTER'}
-    bl_description = 'Open Addon Settings in Preferences window'
+    bl_description = 'Open FaceBuilder Settings in Preferences window'
 
     def draw(self, context):
         pass
 
     def execute(self, context):
-        settings = get_fb_settings()
-        settings.show_user_preferences()
-        bpy.ops.preferences.addon_show(module=Config.addon_name)
+        show_user_preferences(facebuilder=True, geotracker=False)
+        show_tool_preferences(facebuilder=True, geotracker=False)
+        bpy_show_addon_preferences()
         return {'FINISHED'}
 
 
@@ -437,7 +442,7 @@ class FB_OT_BakeTexture(Operator):
             if settings.pinmode:
                 settings.force_out_pinmode = True
                 if head.should_use_emotions():
-                    bpy.ops.view3d.view_camera()
+                    bpy_view_camera()
 
         return {'FINISHED'}
 
@@ -712,6 +717,11 @@ class FB_OT_ExportHeadToFBX(ButtonOperator, Operator):
                      'for game engines (UE4, Unity, etc.)'
 
     def execute(self, context):
+        settings = get_fb_settings()
+        if settings.pinmode:
+            FBLoader.out_pinmode(settings.current_headnum)
+            exit_area_localview(context.area)
+
         return export_head_to_fbx(self)
 
 
@@ -766,7 +776,7 @@ class FB_OT_DefaultWireframeSettings(ButtonOperator, Operator):
         settings.wireframe_color = prefs.wireframe_color
         settings.wireframe_special_color = prefs.wireframe_special_color
         settings.wireframe_midline_color = prefs.wireframe_midline_color
-        settings.wireframe_opacity = prefs.wireframe_opacity
+        settings.wireframe_opacity = prefs.fb_wireframe_opacity
         return {'FINISHED'}
 
 
@@ -805,7 +815,7 @@ class FB_OT_ResetToneGain(ButtonOperator, Operator):
     def execute(self, context):
         settings = get_fb_settings()
         cam = settings.get_camera(self.headnum, self.camnum)
-        cam.tone_exposure = FBConfig.default_tone_exposure
+        cam.tone_exposure = Config.default_tone_exposure
         return {'FINISHED'}
 
 
@@ -820,7 +830,7 @@ class FB_OT_ResetToneGamma(ButtonOperator, Operator):
     def execute(self, context):
         settings = get_fb_settings()
         cam = settings.get_camera(self.headnum, self.camnum)
-        cam.tone_gamma = FBConfig.default_tone_gamma
+        cam.tone_gamma = Config.default_tone_gamma
         return {'FINISHED'}
 
 

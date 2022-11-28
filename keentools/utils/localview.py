@@ -16,32 +16,50 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
+from typing import Optional
 
 import bpy
+from bpy.types import Area
+
+from .kt_logging import KTLogger
+from .bpy_common import operator_with_context
 
 
-def check_area_active_problem(area):
+_log = KTLogger(__name__)
+
+
+def check_area_active_problem(area: Optional[Area]) -> bool:
     return not area or not area.spaces or not area.spaces.active
 
 
-def enter_area_localview(area):
+def enter_area_localview(area: Optional[Area]):
     if check_area_active_problem(area):
         return False
     if not area.spaces.active.local_view:
-        bpy.ops.view3d.localview({'area':area})
+        operator_with_context(bpy.ops.view3d.localview,
+                              {'window': bpy.context.window,  # Fix for new temp_context
+                               'area': area})
         return True
     return False
 
 
-def exit_area_localview(area):
-    logger = logging.getLogger(__name__)
-    log_output = logger.debug
-    log_output(f'exit_area_localview: area={id(area)}')
+def exit_area_localview(area: Optional[Area]):
+    _log.output(f'exit_area_localview: area={area}')
     if check_area_active_problem(area):
+        _log.output('exit_area_localview check_area_active_problem')
         return False
     if area.spaces.active.local_view:
-        bpy.ops.view3d.localview({'area':area})
-        log_output('exit_area_localview success')
+        operator_with_context(bpy.ops.view3d.localview,
+                              {'window': bpy.context.window,  # Fix
+                               'area':area})
+        _log.output('exit_area_localview success')
         return True
     return False
+
+
+def check_localview(area: Optional[Area]) -> bool:
+    if check_area_active_problem(area):
+        return False
+    if not area.spaces.active.local_view:
+        return False
+    return True

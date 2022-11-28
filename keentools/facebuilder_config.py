@@ -32,8 +32,6 @@ class FBConfig:
     default_fb_camera_data_name = 'fbCamData'
     default_fb_camera_name = 'fbCamera'
 
-    user_preferences_dict_name = 'keentools_facebuilder_addon'
-
     fb_global_var_name = prefix + '_settings'
     fb_tool_name = 'FaceBuilder'
 
@@ -107,11 +105,8 @@ class FBConfig:
 
     fb_add_head_operator_idname = operators + '.add_head'
 
-    fb_user_preferences_changer = operators + '.user_pref_changer'
     fb_user_preferences_reset_all = operators + '.user_pref_reset_all'
     fb_user_preferences_get_colors = operators + '.user_pref_get_colors'
-    fb_user_preferences_reset_all_warning_idname = \
-        operators + '.user_pref_reset_all_warning'
 
     fb_default_pin_settings_idname = operators + '.default_pin_settings'
     fb_default_wireframe_settings_idname = \
@@ -138,22 +133,11 @@ class FBConfig:
     fb_help_texture_idname = operators + '.help_texture'
     fb_help_blendshapes_idname = operators + '.help_blendshapes'
 
-    # TODO: Updater panels are not for FB only
+    # Updater panels
     fb_update_panel_idname = _PT + 'update_panel'
     fb_download_notification_panel_idname = _PT + 'download_notification'
     fb_downloading_problem_panel_idname = _PT + 'downloading_problem'
     fb_updates_installation_panel_idname = _PT + 'updates_installation_panel'
-
-    # Updater operators
-    fb_download_the_update_idname = operators + '.download_the_update'
-    fb_retry_download_the_update_idname = operators + '.retry_download_the_update'
-    fb_open_url_idname = operators + '.open_url'
-    fb_remind_later_idname = operators + '.remind_later'
-    fb_skip_version_idname = operators + '.skip_version'
-    fb_come_back_to_update_idname = operators + '.come_back_to_update'
-    fb_install_updates_idname = operators + '.install_updates'
-    fb_remind_install_later_idname = operators + '.remind_install_later'
-    fb_skip_installation_idname = operators + '.skip_installation'
 
     # Menu ids
     fb_proper_view_menu_idname = _MT + 'proper_view_menu'
@@ -205,9 +189,6 @@ class FBConfig:
     show_markers_at_camera_corners = False
     recreate_vertex_groups = True
 
-    default_tone_exposure = 0.0
-    default_tone_gamma = 1.0
-
     # In Material
     image_node_layout_coord = (-300, 0)
 
@@ -233,16 +214,6 @@ class FBConfig:
 
     selected_rectangle_color = (0.871, 0.107, 0.001, 1.0)
     regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
-
-    default_user_preferences = {
-        'pin_size': {'value': 7.0, 'type': 'float'},
-        'pin_sensitivity': {'value': 16.0, 'type': 'float'},
-        'prevent_view_rotation': {'value': True, 'type': 'bool'},
-        'wireframe_color': {'value': color_schemes['default'][0], 'type': 'color'},
-        'wireframe_special_color': {'value': color_schemes['default'][1], 'type': 'color'},
-        'wireframe_midline_color': {'value': midline_color, 'type': 'color'},
-        'wireframe_opacity': {'value': wireframe_opacity, 'type': 'float'}
-    }
 
 
 def get_fb_settings_func():

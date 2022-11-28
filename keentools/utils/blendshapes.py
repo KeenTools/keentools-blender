@@ -17,42 +17,50 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import math
-import bpy
 import numpy as np
-import logging
 import os
+from typing import Any, List, Optional, Tuple, Dict
 
+import bpy
+from bpy.types import Object, Action, FCurve
+
+from .kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType
+from ..utils.bpy_common import operator_with_context, extend_scene_timeline_end
 from ..facebuilder_config import FBConfig
 from ..utils.rig_slider import create_slider, create_rectangle, create_label
 from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
                             xz_to_xy_rotation_matrix_3x3)
+from ..utils.manipulate import deselect_all
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
-def _has_no_blendshapes(obj):
+_log = KTLogger(__name__)
+
+
+def _has_no_blendshapes(obj: Object) -> bool:
     return not obj.data.shape_keys
 
 
-def has_blendshapes_action(obj):
+def has_blendshapes_action(obj: Object) -> bool:
     return obj.data.shape_keys and obj.data.shape_keys.animation_data and \
            obj.data.shape_keys.animation_data.action
 
 
-def _create_basis_blendshape(obj):
+def _create_basis_blendshape(obj: Object) -> None:
     if _has_no_blendshapes(obj):
         obj.shape_key_add(name='Basis')
 
 
-def _get_all_blendshape_names(obj):
+def _get_all_blendshape_names(obj: Object) -> List[str]:
     if _has_no_blendshapes(obj):
         return []
     res = [kb.name for kb in obj.data.shape_keys.key_blocks]
     return res[1:]
 
 
-def _get_safe_blendshapes_action(
-        obj, action_name=FBConfig.default_blendshapes_action_name):
+def _get_safe_blendshapes_action(obj: Object,
+        action_name: str=FBConfig.default_blendshapes_action_name) -> Optional[Any]:
     if _has_no_blendshapes(obj):
         return None
     animation_data = obj.data.shape_keys.animation_data
@@ -66,35 +74,31 @@ def _get_safe_blendshapes_action(
     return animation_data.action
 
 
-def _extend_scene_timeline(keyframe_num):
-    scene = bpy.context.scene
-    if scene.frame_end < keyframe_num:
-        scene.frame_end = keyframe_num
-
-
-def _get_action_fcurve(action, data_path, index=0):
+def _get_action_fcurve(action: Action, data_path: str,
+                       index: int=0) -> Optional[FCurve]:
     return action.fcurves.find(data_path, index=index)
 
 
-def _get_safe_action_fcurve(action, data_path, index=0):
+def _get_safe_action_fcurve(action: Action, data_path: str,
+                            index: int=0) -> FCurve:
     fcurve = _get_action_fcurve(action, data_path, index=index)
     if fcurve:
         return fcurve
     return action.fcurves.new(data_path, index=index)
 
 
-def _get_fcurve_data(fcurve):
+def _get_fcurve_data(fcurve: Optional[FCurve]) -> List[Tuple[float, float]]:
     if not fcurve:
         return []
     return [p.co for p in fcurve.keyframe_points]
 
 
-def _clear_fcurve(fcurve):
+def _clear_fcurve(fcurve: FCurve) -> None:
     for p in reversed(fcurve.keyframe_points):
         fcurve.keyframe_points.remove(p)
 
 
-def _put_anim_data_in_fcurve(fcurve, anim_data):
+def _put_anim_data_in_fcurve(fcurve: Optional[FCurve], anim_data: Any) -> None:
     if not fcurve:
         return
     start_index = len(fcurve.keyframe_points)
@@ -104,14 +108,14 @@ def _put_anim_data_in_fcurve(fcurve, anim_data):
     fcurve.update()
 
 
-def remove_blendshapes(obj):
+def remove_blendshapes(obj: Object) -> None:
     if _has_no_blendshapes(obj):
         return
     for blendshape in reversed([kb for kb in obj.data.shape_keys.key_blocks]):
         obj.shape_key_remove(blendshape)
 
 
-def disconnect_blendshapes_action(obj):
+def disconnect_blendshapes_action(obj: Object) -> Optional[Action]:
     if has_blendshapes_action(obj):
         action = obj.data.shape_keys.animation_data.action
         obj.data.shape_keys.animation_data.action = None
@@ -120,7 +124,7 @@ def disconnect_blendshapes_action(obj):
     return None
 
 
-def zero_all_blendshape_weights(obj):
+def zero_all_blendshape_weights(obj: Object) -> int:
     if _has_no_blendshapes(obj):
         return -1
     counter = 0
@@ -130,7 +134,7 @@ def zero_all_blendshape_weights(obj):
     return counter
 
 
-def _get_obj_verts(obj):
+def _get_obj_verts(obj: Object) -> Any:
     assert obj.type == 'MESH'
     mesh = obj.data
     verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
@@ -138,31 +142,29 @@ def _get_obj_verts(obj):
     return verts @ xz_to_xy_rotation_matrix_3x3()
 
 
-def _get_facs_executor(obj, scale):
-    logger = logging.getLogger(__name__)
+def _get_facs_executor(obj: Object, scale: float) -> Optional[Any]:
     verts = _get_obj_verts(obj)
 
     try:
         fe = pkt_module().FacsExecutor(verts, scale)
-    except pkt_module().FacsLoadingException:
-        logger.error('CANNOT_LOAD_FACS: FacsLoadingException')
+    except pkt_module().FacsLoadingException as err:
+        _log.error(f'CANNOT_LOAD_FACS: FacsLoadingException\n{str(err)}')
         return None
-    except Exception as error:
-        logger.error('CANNOT_LOAD_FACS: Unknown Exception')
-        logger.error('info: {} -- {}'.format(type(error), error))
+    except Exception as err:
+        _log.error(f'CANNOT_LOAD_FACS: Unknown Exception\n{str(err)}')
         return None
     if not fe.facs_enabled():
-        logger.error('CANNOT_LOAD_FACS: FACS are not enabled')
+        _log.error('CANNOT_LOAD_FACS: FACS are not enabled')
         return None
     return fe
 
 
-def _update_blendshape_verts(shape, verts):
+def _update_blendshape_verts(shape: Any, verts: Any) -> None:
     shape.data.foreach_set(
         'co', (verts @ xy_to_xz_rotation_matrix_3x3()).ravel())
 
 
-def create_facs_blendshapes(obj, scale):
+def create_facs_blendshapes(obj: Object, scale: float) -> int:
     facs_executor = _get_facs_executor(obj, scale)
     if not facs_executor:
         return -1
@@ -178,7 +180,7 @@ def create_facs_blendshapes(obj, scale):
     return counter
 
 
-def update_facs_blendshapes(obj, scale):
+def update_facs_blendshapes(obj: Object, scale: float) -> int:
     assert not _has_no_blendshapes(obj)
     facs_executor = _get_facs_executor(obj, scale)
     if not facs_executor:
@@ -196,7 +198,8 @@ def update_facs_blendshapes(obj, scale):
     return counter
 
 
-def restore_facs_blendshapes(obj, scale, restore_names):
+def restore_facs_blendshapes(obj: Object, scale: float,
+                             restore_names: List[str]) -> int:
     _create_basis_blendshape(obj)
     facs_executor = _get_facs_executor(obj, scale)
     if not facs_executor:
@@ -214,29 +217,33 @@ def restore_facs_blendshapes(obj, scale, restore_names):
     return counter
 
 
-def _cleanup_interval(start_keyframe, end_keyframe):
+def _cleanup_interval(start_keyframe: float, end_keyframe: float):
     return min(start_keyframe, round(start_keyframe)), end_keyframe
 
 
-def _animation_interval(start_keyframe, end_keyframe):
+def _animation_interval(start_keyframe: float,
+                        end_keyframe: float) -> Tuple[int, int]:
     return round(start_keyframe), math.floor(end_keyframe)
 
 
-def _cleanup_keys_in_interval(fcurve, start_keyframe, end_keyframe):
+def _cleanup_keys_in_interval(fcurve: FCurve, start_keyframe: float,
+                              end_keyframe: float) -> None:
     for p in reversed(fcurve.keyframe_points):
         if start_keyframe <= p.co[0] <= end_keyframe:
             fcurve.keyframe_points.remove(p)
     fcurve.update()
 
 
-def _add_zero_keys_at_start_and_end(fcurve, start_keyframe, end_keyframe):
+def _add_zero_keys_at_start_and_end(fcurve: FCurve, start_keyframe: float,
+                                    end_keyframe: float) -> None:
     left_keyframe, right_keyframe = _animation_interval(start_keyframe,
                                                         end_keyframe)
     anim_data = [(left_keyframe, 0), (right_keyframe,0)]
     _put_anim_data_in_fcurve(fcurve, anim_data)
 
 
-def _snap_keys_in_interval(fcurve, start_keyframe, end_keyframe):
+def _snap_keys_in_interval(fcurve: FCurve, start_keyframe: float,
+                           end_keyframe: float) -> None:
     anim_data = [(x, fcurve.evaluate(x)) for x in
                  range(*_animation_interval(start_keyframe, end_keyframe))]
     _cleanup_keys_in_interval(fcurve, *_cleanup_interval(start_keyframe,
@@ -244,26 +251,26 @@ def _snap_keys_in_interval(fcurve, start_keyframe, end_keyframe):
     _put_anim_data_in_fcurve(fcurve, anim_data)
 
 
-def load_csv_animation_to_blendshapes(obj, filepath):
-    logger = logging.getLogger(__name__)
-    log_error = logger.error
+def load_csv_animation_to_blendshapes(obj: Object, filepath: str) -> Dict:
     try:
+        _log.info(f'LOADING CSV FILE: {filepath}')
         fan = pkt_module().FacsAnimation()
         read_facs, ignored_columns = fan.load_from_csv_file(filepath)
         facs_names = pkt_module().FacsExecutor.facs_names
     except pkt_module().FacsLoadingException as err:
-        log_error('CANNOT_LOAD_CSV_ANIMATION: {}'.format(err))
+        _log.error(f'CANNOT_LOAD_CSV_ANIMATION:\n{str(err)}')
         return {'status': False, 'message': str(err),
                 'ignored': [], 'read_facs': []}
-    except pkt_module().UnlicensedException:
-        log_error('UnlicensedException load_csv_animation_to_blendshapes')
+    except pkt_module().UnlicensedException as err:
+        _log.error(f'UnlicensedException load_csv_animation_to_blendshapes:\n'
+                   f'{str(err)}')
         warn = get_operator(Config.kt_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
         # status=True in result for non-conflict operator report as {'INFO'}
         return {'status': True, 'message': 'No FaceBuilder license',
                 'ignored': [], 'read_facs': []}
     except Exception as err:
-        log_error('CANNOT_LOAD_CSV_ANIMATION!: {} {}'.format(type(err), err))
+        _log.error(f'CANNOT_LOAD_CSV_ANIMATION!:\n{str(err)}')
         return {'status': False, 'message': str(err),
                 'ignored': [], 'read_facs': []}
 
@@ -298,19 +305,21 @@ def load_csv_animation_to_blendshapes(obj, filepath):
                                             start_keyframe, end_keyframe)
     obj.data.update()
     if len(keyframes) > 0:
-        _extend_scene_timeline(keyframes[-1])
+        extend_scene_timeline_end(int(keyframes[-1]))
 
-    logger.info('FACS CSV-Animation file: {}'.format(filepath))
-    logger.info('Timecodes enabled: {}'.format(fan.timecodes_enabled()))
+    _log.info(f'FACS CSV-Animation file: {filepath}')
+    _log.info(f'Timecodes enabled: {fan.timecodes_enabled()}')
     if len(ignored_columns) > 0:
-        logger.info('Ignored columns: {}'.format(ignored_columns))
+        _log.info(f'Ignored columns: {ignored_columns}')
     if len(read_facs) > 0:
-        logger.info('Read facs: {}'.format(read_facs))
+        _log.info('Read facs: {read_facs}')
     return {'status': True, 'message': 'Loaded animation.',
             'ignored': ignored_columns, 'read_facs': read_facs}
 
 
-def create_facs_test_animation_on_blendshapes(obj, start_time=1, dtime=4):
+def create_facs_test_animation_on_blendshapes(obj: Object,
+                                              start_time: float=1,
+                                              dtime: float=4) -> int:
     if _has_no_blendshapes(obj):
         return -1
     counter = 0
@@ -327,11 +336,12 @@ def create_facs_test_animation_on_blendshapes(obj, start_time=1, dtime=4):
         _put_anim_data_in_fcurve(blendshape_fcurve, anim_data)
         counter += 1
     obj.data.update()
-    _extend_scene_timeline(time)
+    extend_scene_timeline_end(int(time))
     return counter
 
 
-def _create_driver(target, control_obj, driver_name, control_prop='location.x'):
+def _create_driver(target: Any, control_obj: Object, driver_name: str,
+                   control_prop: str='location.x') -> Any:
     res = target.driver_add('value')
     res.driver.type = 'AVERAGE'
     drv_var = res.driver.variables.new()
@@ -342,7 +352,7 @@ def _create_driver(target, control_obj, driver_name, control_prop='location.x'):
     return res
 
 
-def create_blendshape_controls(obj):
+def create_blendshape_controls(obj: Object) -> Dict:
     if _has_no_blendshapes(obj):
         return {}
     blendshape_names = _get_all_blendshape_names(obj)
@@ -356,7 +366,7 @@ def create_blendshape_controls(obj):
     return controls
 
 
-def make_control_panel(controls_dict):
+def make_control_panel(controls_dict: Dict) -> Object:
     count = len(controls_dict)
     columns_count = 4
     max_in_column = (count + columns_count - 1) // columns_count
@@ -393,39 +403,40 @@ def make_control_panel(controls_dict):
     return main_rect
 
 
-def remove_blendshape_drivers(obj):
+def remove_blendshape_drivers(obj: Object) -> None:
     all_dict = _get_blendshapes_drivers(obj)
     for name in all_dict:
         obj.data.shape_keys.animation_data.drivers.remove(all_dict[name]['driver'])
 
 
-def _find_all_children(obj, obj_list):
+def _find_all_children(obj: Object, obj_list: List) -> None:
     for child in obj.children:
         _find_all_children(child, obj_list)
     obj_list.append(obj)
 
 
-def delete_with_children(obj):
+def delete_with_children(obj: Object) -> None:
     arr = []
     _find_all_children(obj, arr)
     if arr:
-        bpy.ops.object.delete({'selected_objects': arr})
+        operator_with_context(bpy.ops.object.delete,
+                              {'selected_objects': arr})
 
 
-def select_control_panel_sliders(panel_obj):
+def select_control_panel_sliders(panel_obj: Object) -> int:
     arr = []
     _find_all_children(panel_obj, arr)
     empties = [obj for obj in arr if obj.type == 'EMPTY']
     counter = 0
     if empties:
-        bpy.ops.object.select_all(action='DESELECT')
+        deselect_all()
         for obj in empties:
             obj.select_set(state=True)
             counter += 1
     return counter
 
 
-def _get_blendshapes_drivers(obj):
+def _get_blendshapes_drivers(obj: Object) -> Dict:
     if _has_no_blendshapes(obj):
         return {}
     drivers_dict = {}
@@ -436,7 +447,7 @@ def _get_blendshapes_drivers(obj):
     return drivers_dict
 
 
-def get_control_panel_by_drivers(obj):
+def get_control_panel_by_drivers(obj: Object) -> Object:
     drivers_dict = _get_blendshapes_drivers(obj)
     if len(drivers_dict) == 0:
         return None
@@ -447,7 +458,7 @@ def get_control_panel_by_drivers(obj):
     return rect.parent
 
 
-def convert_controls_animation_to_blendshapes(obj):
+def convert_controls_animation_to_blendshapes(obj: Object) -> bool:
     if _has_no_blendshapes(obj):
         return False
     all_dict = _get_blendshapes_drivers(obj)
@@ -466,7 +477,7 @@ def convert_controls_animation_to_blendshapes(obj):
     return True
 
 
-def convert_blendshapes_animation_to_controls(obj):
+def convert_blendshapes_animation_to_controls(obj: Object) -> bool:
     if _has_no_blendshapes(obj):
         return False
     all_dict = _get_blendshapes_drivers(obj)
@@ -492,7 +503,8 @@ def convert_blendshapes_animation_to_controls(obj):
     return True
 
 
-def create_facs_test_animation_on_sliders(obj, start_time=1, dtime=4):
+def create_facs_test_animation_on_sliders(obj: Object, start_time: float=1,
+                                          dtime: float=4) -> bool:
     if _has_no_blendshapes(obj):
         return False
     all_dict = _get_blendshapes_drivers(obj)

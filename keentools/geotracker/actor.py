@@ -20,11 +20,8 @@ import logging
 
 import bpy
 
-from ..geotracker_config import GTConfig
-from .utils.geotracker_acts import (add_keyframe_act,
-                                    fit_render_size_act,
-                                    fit_time_length_act)
-from .utils.precalc import precalc_with_runner_act
+from ..geotracker_config import GTConfig, get_current_geotracker_item
+from .utils.geotracker_acts import (center_geo_act,)
 
 
 class GT_OT_Actor(bpy.types.Operator):
@@ -42,31 +39,8 @@ class GT_OT_Actor(bpy.types.Operator):
         logger = logging.getLogger(__name__)
         logger.debug('ACTION call: {}'.format(self.action))
 
-        if self.action == 'add_keyframe':
-            act_status = add_keyframe_act()
-            if not act_status.success:
-                self.report({'ERROR'}, act_status.error_message)
-                return {'CANCELLED'}
-
-            self.report({'INFO'}, self.action)
-            return {'FINISHED'}
-
-        elif self.action == 'create_precalc':
-            status, msg = precalc_with_runner_act(context)
-            if not status:
-                self.report({'ERROR'}, msg)
-            return {'FINISHED'}
-
-        elif self.action == 'fit_render_size':
-            act_status = fit_render_size_act()
-            if not act_status.success:
-                self.report({'ERROR'}, act_status.error_message)
-            else:
-                self.report({'INFO'}, act_status.error_message)
-            return {'FINISHED'}
-
-        elif self.action == 'fit_time_length':
-            act_status = fit_time_length_act()
+        if self.action == 'none':
+            act_status = center_geo_act()
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
             else:

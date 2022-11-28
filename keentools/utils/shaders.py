@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+import bpy
+
 
 def flat_color_3d_vertex_shader():
     return '''
@@ -152,7 +154,7 @@ def smooth_3d_vertex_local_shader():
     '''
 
 
-def smooth_3d_fragment_shader():
+def smooth_3d_fragment_shader_new():
     return '''
     // Based on gpu.shader.code_from_builtin('3D_SMOOTH_COLOR')['fragment_shader']
     in vec4 finalColor;
@@ -161,6 +163,47 @@ def smooth_3d_fragment_shader():
     {
       fragColor = finalColor;
       fragColor = blender_srgb_to_framebuffer_space(fragColor);
+    }
+    '''
+
+
+def smooth_3d_fragment_shader_old():
+    return '''
+    in vec4 finalColor;
+    out vec4 fragColor;
+    void main()
+    {
+      fragColor = finalColor;
+    }
+    '''
+
+
+smooth_3d_fragment_shader = smooth_3d_fragment_shader_new \
+    if bpy.app.version >= (2, 83, 0) else smooth_3d_fragment_shader_old
+
+
+def uniform_3d_vertex_local_shader():
+    return '''
+    uniform mat4 ModelViewProjectionMatrix;
+    uniform mat4 modelMatrix;
+    uniform vec4 color;
+
+    #ifdef USE_WORLD_CLIP_PLANES
+    uniform mat4 ModelMatrix;
+    #endif
+
+    in vec3 pos;
+
+    out vec4 finalColor;
+
+    void main()
+    {
+      gl_Position = ModelViewProjectionMatrix * modelMatrix * vec4(pos, 1.0);
+      finalColor = color;
+
+    #ifdef USE_WORLD_CLIP_PLANES
+      world_clip_planes_calc_clip_distance((ModelMatrix * modelMatrix * vec4(pos, 1.0)).xyz);
+    #endif
     }
     '''
 
@@ -203,6 +246,20 @@ def residual_fragment_shader():
     void main()
     {
         if (step(sin(v_LineLength), -0.3f) == 1) discard;
+        fragColor = finalColor;
+    }
+    '''
+
+
+def dashed_fragment_shader():
+    return '''
+    in float v_LineLength;
+    flat in vec4 finalColor;
+    out vec4 fragColor;
+
+    void main()
+    {
+        if (mod(v_LineLength + 5.0f, 10.0f) > 5.5f) discard;
         fragColor = finalColor;
     }
     '''
@@ -263,5 +320,50 @@ def raster_image_fragment_shader():
     {
         fragColor = texture(image, texCoord_interp);
         fragColor.a = opacity;
+    }
+    '''
+
+
+def raster_image_mask_vertex_shader():
+    return '''
+    uniform mat4 ModelViewProjectionMatrix;
+    uniform vec2 left;
+    uniform vec2 right;
+
+    in vec2 texCoord;
+    in vec2 pos;
+    out vec2 texCoord_interp;
+
+    void main()
+    {
+        gl_Position = ModelViewProjectionMatrix * vec4(
+            left.x + pos.x * (right.x - left.x),
+            left.y + pos.y * (right.y - left.y),
+            0.0f, 1.0f);
+        gl_Position.z = 1.0;
+        texCoord_interp = texCoord;
+    }
+    '''
+
+
+def raster_image_mask_fragment_shader():
+    return '''
+    uniform sampler2D image;
+    uniform vec4 color;
+    uniform bool inverted;
+
+    in vec2 texCoord_interp;
+    out vec4 fragColor;
+
+    void main()
+    {
+        vec4 tex = texture(image, texCoord_interp);
+        if ((tex[0] == 0) && (tex[1] == 0) && (tex[2] == 0)) {
+            if (!inverted) discard;
+            fragColor = color;
+        } else {
+            if (inverted) discard;
+            fragColor = color;
+        }
     }
     '''

@@ -20,6 +20,7 @@ import logging
 from functools import wraps
 import bpy
 
+from ..utils.bpy_common import bpy_background_mode
 from ..utils import coords
 from .fbloader import FBLoader
 from ..facebuilder_config import FBConfig, get_fb_settings
@@ -151,7 +152,7 @@ class FB_OT_MovePin(bpy.types.Operator):
 
         # Load 3D pins
         vp.update_surface_points(fb, head.headobj, kid)
-        vp.update_residuals(fb, head.headobj, kid, area)
+        vp.update_residuals(fb, kid, area)
         head.mark_model_changed_by_pinmode()
 
         pins.reset_current_pin()
@@ -194,7 +195,7 @@ class FB_OT_MovePin(bpy.types.Operator):
         vp.update_surface_points(fb, headobj, kid)
 
         # Try to force viewport redraw
-        if not bpy.app.background:
+        if not bpy_background_mode():
             vp.tag_redraw()
 
         return self.on_default_modal()

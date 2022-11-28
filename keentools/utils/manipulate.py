@@ -16,22 +16,29 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
+from typing import Optional, Dict, List
 
 import bpy
+from bpy.types import Object, Area
 
+from .kt_logging import KTLogger
+from .coords import get_area_region
 from .localview import (enter_area_localview,
                         exit_area_localview,
                         check_area_active_problem)
 from .ui_redraw import get_areas_by_type
+from .bpy_common import operator_with_context, bpy_background_mode
 
 
-def has_no_blendshape(obj):
+_log = KTLogger(__name__)
+
+
+def has_no_blendshape(obj: Optional[Object]) -> bool:
     return not obj or obj.type != 'MESH' or not obj.data or \
            not obj.data.shape_keys
 
 
-def has_blendshapes_action(obj):
+def has_blendshapes_action(obj: Optional[Object]) -> bool:
     if obj and obj.type == 'MESH' \
            and obj.data.shape_keys \
            and obj.data.shape_keys.animation_data \
@@ -40,19 +47,22 @@ def has_blendshapes_action(obj):
     return False
 
 
-def force_undo_push(msg='KeenTools operation'):
-    logger = logging.getLogger(__name__)
-    logger.debug('UNDO PUSH: {}'.format(msg))
+def force_undo_push(msg: str='KeenTools operation') -> None:
+    _log.output(f'UNDO PUSH: {msg}')
     bpy.ops.ed.undo_push(message=msg)
 
 
-def select_object_only(obj):
+def deselect_all():
     bpy.ops.object.select_all(action='DESELECT')
+
+
+def select_object_only(obj: Object) -> None:
+    deselect_all()
     obj.select_set(state=True)
     bpy.context.view_layer.objects.active = obj
 
 
-def get_vertex_groups(obj):
+def get_vertex_groups(obj: Object) -> Dict:
     vertices = obj.data.vertices
     vertex_groups = [x for x in obj.vertex_groups]
     vg_dict = {}
@@ -63,7 +73,7 @@ def get_vertex_groups(obj):
     return vg_dict
 
 
-def create_vertex_groups(obj, vg_dict):
+def create_vertex_groups(obj: Object, vg_dict: Dict) -> None:
     for vg_name in vg_dict.keys():
         if vg_name in obj.vertex_groups.keys():
             vg = obj.vertex_groups[vg_name]
@@ -73,7 +83,8 @@ def create_vertex_groups(obj, vg_dict):
             vg.add([i], w, 'REPLACE')
 
 
-def switch_to_camera(area, camobj, select_obj=None):
+def switch_to_camera(area: Area, camobj: Object,
+                     select_obj: Optional[Object]=None) -> None:
     exit_area_localview(area)
     camobj.hide_set(False)
     select_object_only(camobj)
@@ -89,10 +100,32 @@ def switch_to_camera(area, camobj, select_obj=None):
         select_object_only(select_obj)
 
 
-def center_viewports_on_object(obj=None):
+def center_viewport(area):
+    operator_with_context(bpy.ops.view3d.view_selected,
+                          {'window': bpy.context.window,
+                           'area': area,
+                           'region': get_area_region(area)},
+                          use_all_regions=True)
+
+
+def center_viewports_on_object(obj: Optional[Object]=None) -> None:
     if obj is not None:
         select_object_only(obj)
+    if bpy_background_mode():
+        return
+
     areas = get_areas_by_type(area_type='VIEW_3D')
     for area in areas:
-        if not bpy.app.background:
-            bpy.ops.view3d.view_selected({'area': area}, use_all_regions=True)
+        center_viewport(area)
+
+
+def select_objects_only(obj_list: List[Object]) -> None:
+    deselect_all()
+    selected = -1
+    for i, obj in enumerate(obj_list):
+        if obj:
+            obj.select_set(state=True)
+            if selected < 0:
+                selected = i
+    if len(obj_list) > 0 and selected >=0:
+        bpy.context.view_layer.objects.active = obj_list[selected]

@@ -20,7 +20,7 @@ import logging
 import os
 from typing import Tuple, Optional, Any
 
-from ...utils.coords import render_frame
+from ...utils.bpy_common import bpy_render_frame
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
@@ -44,12 +44,12 @@ def get_precalc_info(precalc_path: str) -> Tuple[Optional[Any], str]:
             msg = 'Wrong frame indices'
             log_error(msg)
             return None, msg
-    except pkt_module().precalc.PrecalcLoadingException:
-        msg = 'Precalc is damaged'
+    except pkt_module().precalc.PrecalcLoadingException as err:
+        msg = f'get_precalc_info. Precalc is damaged:\n{str(err)}'
         log_error(msg)
         return None, msg
     except Exception as err:
-        msg = str(err)
+        msg = f'get_precalc_info: {str(err)}'
         log_error(msg)
         return None, msg
     return precalc_info, 'ok'
@@ -76,7 +76,7 @@ def check_precalc(precalc_info: Any,
             log_error(msg)
             return False, msg
 
-    rw, rh = render_frame()
+    rw, rh = bpy_render_frame()
     if rw != precalc_info.image_w or rh != precalc_info.image_h:
         msg = 'Render size differs from precalculated'
         log_error(msg)

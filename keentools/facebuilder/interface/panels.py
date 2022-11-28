@@ -17,9 +17,16 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import re
+import bpy
 from bpy.types import Panel
 
-from .updater import (FBUpdater, FBDownloadNotification, FBDownloadingProblem, FBInstallationReminder)
+
+from ...utils.kt_logging import KTLogger
+from ...updater.panels import (KT_PT_UpdatePanel,
+                               KT_PT_DownloadNotification,
+                               KT_PT_DownloadingProblemPanel,
+                               KT_PT_UpdatesInstallationPanel)
+from ...updater.utils import KTUpdater
 from ...addon_config import Config, facebuilder_enabled
 from ...facebuilder_config import FBConfig, get_fb_settings
 
@@ -29,6 +36,11 @@ from ...utils.manipulate import (has_no_blendshape,
 from ..utils.manipulate import (what_is_state, get_current_head, get_obj_from_context)
 from ...utils.materials import find_bpy_image_by_name
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
+from ...utils.other import unhide_viewport_ui_elements_from_object
+from ...utils.localview import exit_area_localview
+
+
+_log = KTLogger(__name__)
 
 
 def _state_valid_to_show(state):
@@ -63,6 +75,30 @@ def _draw_update_blendshapes_panel(layout):
     col.label(text='The shape has been changed,')
     col.label(text='blendshapes need to be updated')
     box.operator(FBConfig.fb_update_blendshapes_idname)
+
+
+_pinmode_escaper_context_area = None
+
+
+def _pinmode_escaper():
+    settings = get_fb_settings()
+    head = settings.get_head(settings.current_headnum)
+    if head is None or not head.headobj:
+        _log.error('_pinmode_escaper: could not find head object')
+    exit_area_localview(_pinmode_escaper_context_area)
+    settings.pinmode = False
+    if not head.headobj:
+        _log.error('_pinmode_escaper: could not find head.headobj')
+    unhide_viewport_ui_elements_from_object(_pinmode_escaper_context_area,
+                                            head.headobj)
+    return None
+
+
+def _start_pinmode_escaper(context):
+    global _pinmode_escaper_context_area
+    _escaper_context_area = context.area
+    _log.output(f'_start_pinmode_escaper: area={_escaper_context_area}')
+    bpy.app.timers.register(_pinmode_escaper, first_interval = 0.01)
 
 
 class Common:
@@ -100,9 +136,10 @@ class FB_PT_HeaderPanel(Common, Panel):
     def draw_header_preset(self, context):
         layout = self.layout
         row = layout.row()
-        row.operator(
+        op = row.operator(
             Config.kt_addon_settings_idname,
             text='', icon='PREFERENCES')
+        op.show = 'facebuilder'
 
     def _create_head_button(self, layout, icon='USER'):
         row = layout.row()
@@ -133,9 +170,10 @@ class FB_PT_HeaderPanel(Common, Panel):
 
         row = layout.row()
         row.scale_y = 2.0
-        row.operator(
+        op = row.operator(
             Config.kt_addon_settings_idname,
             text='Install Core library', icon='PREFERENCES')
+        op.show = 'none'
 
     def _draw_start_panel(self, layout):
         if not pkt_is_installed():
@@ -196,6 +234,7 @@ class FB_PT_HeaderPanel(Common, Panel):
                 row.scale_y = 2.0
                 row.alert = True
                 row.operator(FBConfig.fb_unhide_head_idname, icon='HIDE_OFF')
+                _start_pinmode_escaper(context)
             return
 
         elif state == 'RECONSTRUCT':
@@ -204,124 +243,38 @@ class FB_PT_HeaderPanel(Common, Panel):
 
         elif state == 'NO_HEADS':
             self._draw_start_panel(layout)
-            if not FBUpdater.has_response_message():
-                FBUpdater.init_updater()
+            KTUpdater.call_updater('FaceBuilder')
             return
 
         else:
             self._draw_many_heads(layout)
-            if not FBUpdater.has_response_message():
-                FBUpdater.init_updater()
+            KTUpdater.call_updater('FaceBuilder')
 
 
-class FB_PT_UpdatePanel(Common, Panel):
+class FB_PT_UpdatePanel(KT_PT_UpdatePanel):
     bl_idname = FBConfig.fb_update_panel_idname
-    bl_label = 'Update available'
+    bl_category = Config.fb_tab_category
 
     @classmethod
     def poll(cls, context):
         if not facebuilder_enabled():
             return False
-        return FBUpdater.is_active()
-
-    def _draw_response(self, layout):
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-
-        for txt in FBUpdater.render_message(limit=32):
-            col.label(text=txt)
-
-        layout.operator(FBConfig.fb_download_the_update_idname,
-            text='Download the update', icon='IMPORT')
-
-        res = FBUpdater.get_response()
-        if res is None:
-            return
-        layout.operator(FBConfig.fb_remind_later_idname,
-            text='Remind tomorrow', icon='RECOVER_LAST')
-        layout.operator(FBConfig.fb_skip_version_idname,
-            text='Skip this version', icon='X')
-
-    def draw(self, context):
-        layout = self.layout
-        self._draw_response(layout)
+        return KTUpdater.is_active()
 
 
-class FB_PT_DownloadNotification(Common, Panel):
+class FB_PT_DownloadNotification(KT_PT_DownloadNotification):
     bl_idname = FBConfig.fb_download_notification_panel_idname
-    bl_label = 'Update available'
-
-    @classmethod
-    def poll(cls, context):
-        if not facebuilder_enabled():
-            return False
-        return FBDownloadNotification.is_active()
-
-    def _draw_response(self, layout):
-        for txt in FBDownloadNotification.render_message():
-            layout.label(text=txt)
-
-    def draw(self, context):
-        layout = self.layout
-        self._draw_response(layout)
+    bl_category = Config.fb_tab_category
 
 
-class FB_PT_DownloadingProblemPanel(Common, Panel):
+class FB_PT_DownloadingProblemPanel(KT_PT_DownloadingProblemPanel):
     bl_idname = FBConfig.fb_downloading_problem_panel_idname
-    bl_label = 'Downloading problem'
-
-    @classmethod
-    def poll(cls, context):
-        if not facebuilder_enabled():
-            return False
-        return FBDownloadingProblem.is_active()
-
-    def _draw_response(self, layout):
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-
-        for txt in FBDownloadingProblem.render_message(limit=32):
-            col.label(text=txt)
-
-        layout.operator(FBConfig.fb_retry_download_the_update_idname,
-                        text='Try again', icon='FILE_REFRESH')
-        layout.operator(FBConfig.fb_come_back_to_update_idname,
-                        text='Cancel', icon='PANEL_CLOSE')
-
-    def draw(self, context):
-        layout = self.layout
-        self._draw_response(layout)
+    bl_category = Config.fb_tab_category
 
 
-class FB_PT_UpdatesInstallationPanel(Common, Panel):
+class FB_PT_UpdatesInstallationPanel(KT_PT_UpdatesInstallationPanel):
     bl_idname = FBConfig.fb_updates_installation_panel_idname
-    bl_label = 'Update available'
-
-    @classmethod
-    def poll(cls, context):
-        if not facebuilder_enabled():
-            return False
-        return FBInstallationReminder.is_active()
-
-    def _draw_response(self, layout):
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-
-        for txt in FBInstallationReminder.render_message():
-            col.label(text=txt)
-
-        if not FBInstallationReminder.is_active():
-            return
-        layout.operator(FBConfig.fb_install_updates_idname,
-            text='Install and restart', icon='FILE_REFRESH')
-        layout.operator(FBConfig.fb_remind_install_later_idname,
-            text='Remind tomorrow', icon='RECOVER_LAST')
-        layout.operator(FBConfig.fb_skip_installation_idname,
-            text='Skip this version', icon='X')
-
-    def draw(self, context):
-        layout = self.layout
-        self._draw_response(layout)
+    bl_category = Config.fb_tab_category
 
 
 class FB_PT_CameraPanel(AllVisibleClosed, Panel):
@@ -576,17 +529,20 @@ class FB_PT_Model(AllVisibleClosed, Panel):
         op.camnum = settings.current_camnum
 
         col = layout.column(align=True)
+        col.enabled = settings.pinmode
         col.prop(settings, 'shape_rigidity')
-        expression_rigidity_row = col.row(align=True)
-        expression_rigidity_row.prop(settings, 'expression_rigidity')  
-        expression_rigidity_row.active = head.should_use_emotions()
 
-        blinking_row = col.row(align=True)
-        blinking_row.prop(settings, 'blinking_rigidity')
-        blinking_row.active = not head.lock_blinking and head.should_use_emotions()
-        neck_row =  col.row(align=True)
-        neck_row.prop(settings, 'neck_movement_rigidity')
-        neck_row.active = not head.lock_neck_movement and head.should_use_emotions()
+        row = col.row(align=True)
+        row.prop(settings, 'expression_rigidity')
+        row.enabled = head.should_use_emotions()
+
+        row = col.row(align=True)
+        row.prop(settings, 'blinking_rigidity')
+        row.enabled = not head.lock_blinking and head.should_use_emotions()
+
+        row =  col.row(align=True)
+        row.prop(settings, 'neck_movement_rigidity')
+        row.enabled = not head.lock_neck_movement and head.should_use_emotions()
 
         layout.prop(head, 'model_scale')
 

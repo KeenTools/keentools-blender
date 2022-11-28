@@ -17,8 +17,8 @@
 # ##### END GPL LICENSE BLOCK #####
 
 bl_info = {
-    "name": "KeenTools FaceBuilder 2022.2.0",  # (1/5)
-    "version": (2022, 2, 0),  # 2022.2.0 (2/5)
+    "name": "KeenTools FaceBuilder 2022.2.4",  # (1/5)
+    "version": (2022, 2, 4),  # 2022.2.4 (2/5)
     "author": "KeenTools",
     "description": "KeenTools bundle for Blender. "
                    "FaceBuilder: Creates Head and Face geometry with a few "
@@ -46,8 +46,10 @@ from .messages import (ERROR_MESSAGES, draw_warning_labels, get_system_info,
 
 # Init logging system via config file
 base_dir = os.path.dirname(os.path.abspath(__file__))
-logging.config.fileConfig(os.path.join(base_dir, 'logging.conf'),
-                          disable_existing_loggers=False)
+logging.config.fileConfig(os.path.join(base_dir,
+    'logging_debug_console.conf' if 'KEENTOOLS_ENABLE_DEBUG_LOGGING'
+    in os.environ else 'logging.conf'),
+    disable_existing_loggers=False)
 logger = logging.getLogger(__name__)
 txt = get_system_info()
 txt.append('Addon: {}'.format(bl_info['name']))
@@ -64,7 +66,7 @@ def _is_python_64bit():
 
 
 def _is_config_latest():
-    return Config.addon_version == '2022.2.0'  # (3/5)
+    return Config.addon_version == '2022.2.4'  # (3/5)
 
 
 def _is_blender_too_old():
@@ -162,8 +164,11 @@ else:
     from .facebuilder import facebuilder_register, facebuilder_unregister
     from .geotracker import geotracker_register, geotracker_unregister
     from .utils.warning import KT_OT_AddonWarning
+    from .updater import CLASSES_TO_REGISTER as UPDATER_CLASSES
 
-    CLASSES_TO_REGISTER = PREFERENCES_CLASSES + (KT_OT_AddonWarning,)
+
+    CLASSES_TO_REGISTER = PREFERENCES_CLASSES + UPDATER_CLASSES + (KT_OT_AddonWarning,)
+
 
     def register():
         logger = logging.getLogger(__name__)

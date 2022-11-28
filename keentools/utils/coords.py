@@ -15,15 +15,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
-
 import numpy as np
 import math
-import bpy
-from . fake_context import get_fake_context
+from typing import Any, Tuple, List, Optional, Set
+
+from bpy.types import Area, Object
+
+from .kt_logging import KTLogger
+from .fake_context import get_fake_context
+from .bpy_common import (bpy_current_frame,
+                         bpy_render_frame,
+                         evaluated_mesh,
+                         bpy_background_mode)
+from .animation import get_safe_evaluated_fcurve
 
 
-def nearest_point(x, y, points, dist=4000000):  # dist squared
+_log = KTLogger(__name__)
+
+
+def nearest_point(x: float, y: float, points: List[Tuple[float, float]],
+                  dist: float=4000000.0) -> Tuple[int, float]:  # dist squared
     dist2 = dist
     nearest = -1
     for i, p in enumerate(points):
@@ -34,33 +45,33 @@ def nearest_point(x, y, points, dist=4000000):  # dist squared
     return nearest, dist2
 
 
-def xy_to_xz_rotation_matrix_3x3():
+def xy_to_xz_rotation_matrix_3x3() -> Any:
     return np.array([[1., 0., 0.],
                      [0., 0., 1.],
                      [0., -1., 0.]], dtype=np.float32)
 
 
-def xz_to_xy_rotation_matrix_3x3():
+def xz_to_xy_rotation_matrix_3x3() -> Any:
     return np.array([[1., 0., 0.],
                      [0., 0., -1.],
                      [0., 1., 0.]], dtype=np.float32)
 
 
-def xy_to_xz_rotation_matrix_4x4():
+def xy_to_xz_rotation_matrix_4x4() -> Any:
     return np.array([[1., 0., 0., 0.],
                      [0., 0., 1., 0.],
                      [0., -1., 0., 0.],
                      [0., 0., 0., 1.]], dtype=np.float32)
 
 
-def xz_to_xy_rotation_matrix_4x4():
+def xz_to_xy_rotation_matrix_4x4() -> Any:
     return np.array([[1., 0., 0., 0.],
                      [0., 0., -1., 0.],
                      [0., 1., 0., 0.],
                      [0., 0., 0., 1.]], dtype=np.float32)
 
 
-def update_head_mesh_geom(obj, geom):
+def update_head_mesh_geom(obj: Any, geom: Any) -> None:
     mesh = obj.data
     assert(len(geom) == len(mesh.vertices))
     npbuffer = geom @ xy_to_xz_rotation_matrix_3x3()
@@ -70,17 +81,17 @@ def update_head_mesh_geom(obj, geom):
     mesh.update()
 
 
-def update_head_mesh_neutral(fb, head):
+def update_head_mesh_neutral(fb: Any, head: Any) -> None:
     geom = fb.applied_args_vertices()
     update_head_mesh_geom(head.headobj, geom)
 
 
-def update_head_mesh_expressions(fb, head, keyframe):
+def update_head_mesh_expressions(fb: Any, head: Any, keyframe: int) -> None:
     geom = fb.applied_args_model_vertices_at(keyframe)
     update_head_mesh_geom(head.headobj, geom)
 
 
-def update_head_mesh_non_neutral(fb, head):
+def update_head_mesh_non_neutral(fb: Any, head: Any) -> None:
     if head.should_use_emotions():
         kid = head.get_expression_view_keyframe()
         if kid == 0:  # Neutral selected
@@ -89,13 +100,12 @@ def update_head_mesh_non_neutral(fb, head):
             update_head_mesh_expressions(fb, head, kid)
             return
         else:
-            logger = logging.getLogger(__name__)
-            logger.error(
-                'NO KEYFRAME: {} in {}'.format(kid, fb.keyframes()))
+            _log.error(f'NO KEYFRAME: {kid} in {fb.keyframes()}')
     update_head_mesh_neutral(fb, head)
 
 
-def projection_matrix(w, h, fl, sw, near, far, scale=1.0):
+def projection_matrix(w: float, h: float, fl: float, sw: float,
+                      near: float, far: float, scale=1.0) -> Any:
     z_diff = near - far
     fl_to_sw = fl / sw
     return np.array(
@@ -106,43 +116,74 @@ def projection_matrix(w, h, fl, sw, near, far, scale=1.0):
     ).transpose()
 
 
-def focal_by_projection_matrix_mm(pm, sw):
-    return - 0.5 * pm[0][0] * sw / pm[0][2]
+def _compensate_view_scale(w: float, h: float, inverse=False) -> float:
+    if w == 0 or h == 0:
+        return 1.0
+    if w >= h:
+        return 1.0
+    if inverse:
+        return w / h
+    else:
+        return h / w
 
 
-def focal_by_projection_matrix_px(pm):
+def custom_projection_matrix(w: float, h: float, fl: float, sw: float,
+                             near: float, far: float) -> Any:
+    return projection_matrix(w, h, fl, sw, near, far,
+                             scale=_compensate_view_scale(w, h))
+
+
+def focal_by_projection_matrix_mm(pm: Any, sw: float) -> float:
+    return -0.5 * pm[0][0] * sw / pm[0][2]
+
+
+def focal_by_projection_matrix_px(pm: Any) -> float:
     return pm[0][0]
 
 
-def focal_mm_to_px(fl, sw, w):
-    return fl / sw * w
+def focal_mm_to_px(fl_mm: float, image_width: float, image_height: float,
+                   sensor_width: float=36.0) -> float:
+    sc = _compensate_view_scale(image_width, image_height)
+    return  sc * fl_mm * image_width / sensor_width
 
 
-def render_frame():
-    """ Just get frame size from scene render settings """
-    scene = bpy.context.scene
-    rx = scene.render.resolution_x
-    ry = scene.render.resolution_y
-    w = rx if rx != 0.0 else 1.0
-    h = ry if ry != 0.0 else 1.0
-    return w, h
+def focal_px_to_mm(fl_px: float, image_width: float, image_height: float,
+                   sensor_width: float=36.0) -> float:
+    sc = _compensate_view_scale(image_width, image_height, inverse=True)
+    return sc * fl_px * sensor_width / image_width
 
 
-def image_space_to_frame(x, y):
+def camera_sensor_width(camobj: Any) -> float:
+    if not camobj or not camobj.data:
+        return 36.0
+    return camobj.data.sensor_width
+
+
+def camera_focal_length(camobj: Any) -> float:
+    if not camobj or not camobj.data:
+        return 50.0
+    return camobj.data.lens
+
+
+def image_space_to_frame(x: float, y: float, shift_x: float=0.0,
+                         shift_y: float=0.0) -> Tuple[float, float]:
     """ Image centered Relative coords to Frame pixels """
-    w, h = render_frame()
-    return (x + 0.5) * w, y * w + 0.5 * h
+    w, h = bpy_render_frame()
+    return (x + shift_x + 0.5) * w, (y + shift_y) * w + 0.5 * h
 
 
-def frame_to_image_space(x, y, w, h):
-    return x / w - 0.5, (y - 0.5 * h) / w
+def frame_to_image_space(x: float, y: float, w: float, h: float,
+                         shift_x: float=0.0,
+                         shift_y: float=0.0) -> Tuple[float, float]:
+    return x / w - 0.5 - shift_x, (y - 0.5 * h) / w - shift_y
 
 
-def get_mouse_coords(event):
+def get_mouse_coords(event: Any) -> Tuple[float, float]:
     return event.mouse_region_x, event.mouse_region_y
 
 
-def image_space_to_region(x, y, x1, y1, x2, y2):
+def image_space_to_region(x: float, y: float, x1: float, y1: float,
+                          x2: float, y2: float) -> Tuple[float, float]:
     """ Relative coords to Region (screen) space """
     w = (x2 - x1)
     h = (y2 - y1)
@@ -150,19 +191,20 @@ def image_space_to_region(x, y, x1, y1, x2, y2):
     return x1 + (x + 0.5) * sc, (y1 + y2) * 0.5 + y * sc
 
 
-def get_image_space_coord(px, py, area):
+def get_image_space_coord(px: float, py: float, area: Area) -> Tuple[float, float]:
     x1, y1, x2, y2 = get_camera_border(area)
     x, y = region_to_image_space(px, py, x1, y1, x2, y2)
     return x, y
 
 
-def region_to_image_space(x, y, x1, y1, x2, y2):
+def region_to_image_space(x: float, y: float, x1: float, y1: float,
+                          x2: float, y2: float) -> Tuple[float, float]:
     w = (x2 - x1) if x2 != x1 else 1.0
     sc = w
     return (x - (x1 + x2) * 0.5) / sc, (y - (y1 + y2) * 0.5) / sc
 
 
-def pin_to_xyz_from_mesh(pin, headobj):
+def pin_to_xyz_from_mesh(pin: Any, headobj: Any) -> Tuple[float, float, float]:
     """ Surface point from barycentric to XYZ using passed mesh"""
     sp = pin.surface_point
     gp = sp.geo_point_idxs
@@ -172,7 +214,7 @@ def pin_to_xyz_from_mesh(pin, headobj):
     return p
 
 
-def pin_to_xyz_from_fb_geo_mesh(pin, geo_mesh):
+def pin_to_xyz_from_fb_geo_mesh(pin: Any, geo_mesh: Any) -> Tuple[float, float, float]:
     """ Surface point from barycentric to XYZ using fb geo_mesh"""
     sp = pin.surface_point
     gp = sp.geo_point_idxs
@@ -184,7 +226,7 @@ def pin_to_xyz_from_fb_geo_mesh(pin, geo_mesh):
     return p
 
 
-def calc_model_mat(model_mat, head_mat):
+def calc_model_mat(model_mat: Any, head_mat: Any) -> Optional[Any]:
     """ Convert model matrix to camera matrix """
     rot_mat = xy_to_xz_rotation_matrix_4x4()
 
@@ -196,22 +238,22 @@ def calc_model_mat(model_mat, head_mat):
         return None
 
 
-def get_area_region_3d(area):
+def get_area_region_3d(area: Area) -> Optional[Any]:
     return area.spaces.active.region_3d
 
 
-def get_area_region(area):
+def get_area_region(area: Area) -> Optional[Any]:
     return area.regions[-1]
 
 
-def get_area_overlay(area):
-    if not area:
+def get_area_overlay(area: Area) -> Optional[Any]:
+    if not area or not area.spaces.active:
         return None
     return area.spaces.active.overlay
 
 
-def get_camera_border(area):
-    if bpy.app.background:
+def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
+    if bpy_background_mode():
         context = get_fake_context()
         area = context.area
 
@@ -225,9 +267,7 @@ def get_camera_border(area):
     # Blender Zoom formula
     f = (z * 0.01 + math.sqrt(0.5)) ** 2  # f - scale factor
 
-    scene = bpy.context.scene
-    rx = scene.render.resolution_x
-    ry = scene.render.resolution_y
+    rx, ry = bpy_render_frame()
 
     a1 = w / h
     a2 = rx / ry
@@ -261,9 +301,9 @@ def get_camera_border(area):
     return x1, y1, x2, y2
 
 
-def is_safe_region(area, x, y):
+def is_safe_region(area: Area, x: float, y: float) -> bool:
     """ Safe region for pin operation """
-    if bpy.app.background:
+    if bpy_background_mode():
         context = get_fake_context()
         area = context.area
 
@@ -277,18 +317,18 @@ def is_safe_region(area, x, y):
     return True
 
 
-def is_in_area(area, x, y):
+def is_in_area(area: Area, x: float, y: float) -> bool:
     """ Is point in area """
-    if bpy.app.background:
+    if bpy_background_mode():
         context = get_fake_context()
         area = context.area
 
     return (0 <= x <= area.width) and (0 <= y <= area.height)
 
 
-def get_pixel_relative_size(area):
+def get_pixel_relative_size(area: Area) -> float:
     """ One Pixel size in relative coords via current zoom """
-    if bpy.app.background:
+    if bpy_background_mode():
         context = get_fake_context()
         area = context.area
 
@@ -302,66 +342,139 @@ def get_pixel_relative_size(area):
     return ps
 
 
-def get_depsgraph():
-    return bpy.context.evaluated_depsgraph_get()
-
-
-def evaluated_mesh(obj):
-    depsgraph = get_depsgraph()
-    return obj.evaluated_get(depsgraph)
-
-
-def update_depsgraph():
-    depsgraph = get_depsgraph()
-    depsgraph.update()
-    return depsgraph
-
-
-def get_mesh_verts(obj):
-    mesh = obj.data
+def get_mesh_verts(mesh: Any) -> Any:
     verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
     mesh.vertices.foreach_get(
         'co', np.reshape(verts, len(mesh.vertices) * 3))
     return verts
 
 
-def to_homogeneous(verts):
+def get_obj_verts(obj: Any) -> Any:
+    return get_mesh_verts(obj.data)
+
+
+def to_homogeneous(verts: Any) -> Any:
     vv = np.ones((len(verts), 4), dtype=np.float32)
     vv[:, :-1] = verts
     return vv
 
 
-def multiply_verts_on_matrix_4x4(verts, mat):
+def multiply_verts_on_matrix_4x4(verts: Any, mat: Any) -> Any:
     vv = to_homogeneous(verts) @ mat
     return vv[:, :3]
 
 
-def get_scale_vec_3_from_matrix_world(obj_matrix_world):
+def get_scale_vec_3_from_matrix_world(obj_matrix_world: Any) -> Any:
     return np.array(obj_matrix_world.to_scale(), dtype=np.float32)
 
 
-def get_scale_vec_4_from_matrix_world(obj_matrix_world):
+def get_scale_vec_4_from_matrix_world(obj_matrix_world: Any) -> Any:
     return np.array(obj_matrix_world.to_scale().to_4d(), dtype=np.float32)
 
 
-def get_scale_matrix_4x4_from_matrix_world(obj_matrix_world):
+def get_scale_matrix_4x4_from_matrix_world(obj_matrix_world: Any) -> Any:
     scale_vec = get_scale_vec_4_from_matrix_world(obj_matrix_world)
     return np.diag(scale_vec)
 
 
-def get_world_matrix_without_scale(obj_matrix_world):
+def get_world_matrix_without_scale(obj_matrix_world: Any) -> Any:
     scale_vec = get_scale_vec_4_from_matrix_world(obj_matrix_world)
     scminv = np.diag(1.0 / scale_vec)
     return scminv @ np.array(obj_matrix_world, dtype=np.float32).transpose()
 
 
-def get_scale_matrix_3x3_from_matrix_world(obj_matrix_world):
+def get_scale_matrix_3x3_from_matrix_world(obj_matrix_world: Any) -> Any:
     scale_vec = get_scale_vec_3_from_matrix_world(obj_matrix_world)
     return np.diag(scale_vec)
 
 
-def compensate_view_scale():
-    image_width, image_height = render_frame()
+def compensate_view_scale() -> float:
+    image_width, image_height = bpy_render_frame()
     if image_width >= image_height:
         return 1.0
     return image_width / image_height
+
+
+def calc_bpy_camera_mat_relative_to_model(model: Any, gt_model_mat: Any) -> Any:
+    rot_mat2 = xz_to_xy_rotation_matrix_4x4()
+    scale_vec = get_scale_vec_4_from_matrix_world(model.matrix_world)
+    scminv = np.diag(1.0 / scale_vec)
+
+    try:
+        mat = np.array(
+            model.matrix_world) @ scminv @ rot_mat2 @ np.linalg.inv(
+            gt_model_mat)
+        return mat.transpose()
+    except Exception:
+        return np.eye(4)
+
+
+def calc_bpy_model_mat_relative_to_camera(camera: Any, model: Any,
+                                          gt_model_mat: Any) -> Any:
+    rot_mat = xy_to_xz_rotation_matrix_4x4()
+    scale_mat = get_scale_matrix_4x4_from_matrix_world(model.matrix_world)
+    np_mw = np.array(camera.matrix_world) @ (gt_model_mat @
+                                             rot_mat @ scale_mat)
+    return np_mw.transpose()
+
+
+def camera_projection(camobj: Object, frame: Optional[int]=None,
+                      image_width: Optional[int]=None,
+                      image_height: Optional[int]=None) -> Any:
+    cam_data = camobj.data
+    near = cam_data.clip_start
+    far = cam_data.clip_end
+    if image_width is None or image_height is None:
+        image_width, image_height = bpy_render_frame()
+    if frame is None:
+        frame =bpy_current_frame()
+    lens = get_safe_evaluated_fcurve(cam_data, frame, 'lens')
+    proj_mat = custom_projection_matrix(image_width, image_height, lens,
+                                        cam_data.sensor_width, near, far)
+    return proj_mat
+
+
+def get_triangulation_indices(mesh: Any, calculate: bool = True) -> Any:
+    if calculate:
+        mesh.calc_loop_triangles()
+    indices = np.empty((len(mesh.loop_triangles), 3), dtype=np.int32)
+    mesh.loop_triangles.foreach_get(
+        'vertices', np.reshape(indices, len(mesh.loop_triangles) * 3))
+    return indices
+
+
+def get_polygons_in_vertex_group(obj: Object,
+                                 vertex_group_name: str,
+                                 inverted=False) -> Set[int]:
+    mesh = evaluated_mesh(obj)
+    vertex_group_index = obj.vertex_groups.find(vertex_group_name)
+    if vertex_group_index < 0:
+        return set()
+
+    verts_in_group = set([v.index for v in mesh.vertices
+                          if vertex_group_index in
+                          [g.group for g in v.groups]])
+
+    polys_in_group = set()
+
+    if not inverted:
+        for polygon in mesh.polygons:
+            if verts_in_group.issuperset(polygon.vertices[:]):
+                polys_in_group.add(polygon.index)
+    else:
+        for polygon in mesh.polygons:
+            if not verts_in_group.issuperset(polygon.vertices[:]):
+                polys_in_group.add(polygon.index)
+
+    return polys_in_group
+
+
+def get_triangles_in_vertex_group(obj: Object,
+                                  vertex_group_name: str,
+                                  inverted=False) -> List:
+    polys_in_group = get_polygons_in_vertex_group(obj, vertex_group_name,
+                                                  inverted)
+    mesh = evaluated_mesh(obj)
+    mesh.calc_loop_triangles()
+    return [tris.vertices[:] for tris in mesh.loop_triangles
+            if tris.polygon_index in polys_in_group]

@@ -15,19 +15,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+import os
+
 import bpy
+from dataclasses import dataclass
+
 
 _company = 'keentools'
+_PT = 'KEENTOOLS_PT_'
 
 
 class Config:
-    # Version dependent
-    addon_version = '2022.2.0'  # (5/5)
+    addon_version = '2022.2.4'  # (5/5)
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),
-                                  (3, 0), (3, 1))
+                                  (3, 0), (3, 1), (3, 2), (3, 3))
     minimal_blender_api = (2, 80, 60)
 
+    fb_tab_category = 'FaceBuilder'
+    gt_tab_category = 'GeoTracker'
     operators = 'keentools'
     prefs_operators = 'keentools_preferences'
     addon_name = __package__  # the same as module name
@@ -55,12 +61,34 @@ class Config:
     kt_install_pkt_from_file_idname = prefs_operators + '.install_pkt_from_file'
     kt_pref_open_url_idname = prefs_operators + '.open_url'
     kt_pref_downloads_url_idname = prefs_operators + '.downloads_url'
+    kt_pref_computer_info_idname = prefs_operators + '.computer_info'
 
     kt_open_manual_install_page_idname = prefs_operators + '.gt_open_manual_install_page'
     kt_copy_hardware_id_idname = prefs_operators + '.copy_hardware_id'
     kt_install_license_online_idname = prefs_operators + '.install_license_online'
     kt_install_license_offline_idname = prefs_operators + '.install_license_offline'
     kt_floating_connect_idname = prefs_operators + '.floating_connect'
+
+    kt_user_preferences_changer = operators + '.user_pref_changer'
+    kt_user_preferences_reset_all_warning_idname = \
+        operators + '.user_pref_reset_all_warning'
+
+    # Updater panels
+    kt_update_panel_idname = _PT + 'update_panel'
+    kt_download_notification_panel_idname = _PT + 'download_notification'
+    kt_downloading_problem_panel_idname = _PT + 'downloading_problem'
+    kt_updates_installation_panel_idname = _PT + 'updates_installation_panel'
+
+    # Updater operators
+    kt_download_the_update_idname = operators + '.download_the_update'
+    kt_retry_download_the_update_idname = operators + '.retry_download_the_update'
+    kt_remind_later_idname = operators + '.remind_later'
+    kt_skip_version_idname = operators + '.skip_version'
+    kt_come_back_to_update_idname = operators + '.come_back_to_update'
+    kt_install_updates_idname = operators + '.install_updates'
+    kt_remind_install_later_idname = operators + '.remind_install_later'
+    kt_skip_installation_idname = operators + '.skip_installation'
+
     # Object Custom Properties
     core_version_prop_name = _company + '_version'
     viewport_state_prop_name = _company + '_viewport_state'
@@ -70,6 +98,9 @@ class Config:
     text_scale_y = 0.75
     btn_scale_y = 1.2
 
+    default_tone_exposure = 0.0
+    default_tone_gamma = 1.0
+
     default_updater_preferences = {
         'latest_show_datetime_update_reminder': {'value': '', 'type': 'string'},
         'latest_update_skip_version': {'value': '', 'type': 'string'},
@@ -78,21 +109,41 @@ class Config:
         'latest_installation_skip_version': {'value': '', 'type': 'string'},
         'latest_show_datetime_installation_reminder': {'value': '', 'type': 'string'}
     }
+    user_preferences_dict_name = 'keentools_facebuilder_addon'
+    default_user_preferences = {
+        'pin_size': {'value': 7.0, 'type': 'float'},
+        'pin_sensitivity': {'value': 16.0, 'type': 'float'},
+        'prevent_fb_view_rotation': {'value': True, 'type': 'bool'},
+        'fb_wireframe_color': {'value': (0.039, 0.04 , 0.039), 'type': 'color'},
+        'fb_wireframe_special_color': {'value': (0.0, 0.0, 0.85098), 'type': 'color'},
+        'fb_wireframe_midline_color': {'value': (0.960784, 0.007843, 0.615686), 'type': 'color'},
+        'fb_wireframe_opacity': {'value': 0.45, 'type': 'float'},
+        'prevent_gt_view_rotation': {'value': True, 'type': 'bool'},
+        'gt_wireframe_color': {'value': (0.0, 1.0, 0.0), 'type': 'color'},
+        'gt_wireframe_opacity': {'value': 0.45, 'type': 'float'},
+        'gt_mask_3d_color': {'value': (0.0, 0.0, 1.0), 'type': 'color'},
+        'gt_mask_3d_opacity': {'value': 0.4, 'type': 'float'},
+        'gt_mask_2d_color': {'value': (0.0, 1.0, 0.0), 'type': 'color'},
+        'gt_mask_2d_opacity': {'value': 0.35, 'type': 'float'},
+    }
+
     mock_update_for_testing_flag = False
     mock_update_version = (int(addon_version.partition('.')[0]), 6, 3)
     mock_update_addon_path = 'http://localhost/addon.zip'
     mock_update_core_path = 'http://localhost/core.zip'
+    mock_product = None
 
-    hide_geotracker = True
+    hide_geotracker = not 'KEENTOOLS_ENABLE_BLENDER_GEOTRACKER' in os.environ
 
     @classmethod
     def mock_update_for_testing(cls, value=True, *, ver=None,
-                                addon_path=None, core_path=None):
+                                addon_path=None, core_path=None, product=None):
         if ver is not None:
             cls.mock_update_version = ver
 
         cls.mock_update_addon_path = addon_path
         cls.mock_update_core_path = core_path
+        cls.mock_product = product
         cls.mock_update_for_testing_flag = value
 
 
@@ -118,6 +169,22 @@ def geotracker_enabled():
     return prefs.geotracker_enabled
 
 
+def show_user_preferences(*, facebuilder=None, geotracker=None):
+    prefs = get_addon_preferences()
+    if facebuilder is not None:
+        prefs.show_fb_user_preferences = facebuilder
+    if geotracker is not None:
+        prefs.show_gt_user_preferences = geotracker
+
+
+def show_tool_preferences(*, facebuilder=None, geotracker=None):
+    prefs = get_addon_preferences()
+    if facebuilder is not None:
+        prefs.facebuilder_expanded = facebuilder
+    if geotracker is not None:
+        prefs.geotracker_expanded = geotracker
+
+
 def get_operator(operator_id_name):
     def _rgetattr(obj, attr, *args):
         import functools
@@ -138,3 +205,9 @@ class ErrorType:
     PktProblem = 6
     PktModelProblem = 7
     DownloadingProblem = 8
+
+
+@dataclass(frozen=True)
+class ActionStatus:
+    success: bool = False
+    error_message: str = None

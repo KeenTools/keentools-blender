@@ -16,19 +16,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
-
+from ..utils.kt_logging import KTLogger
 from ..addon_config import Config
-from ..facebuilder_config import FBConfig
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module, is_installed as pkt_is_installed)
 
 
+_log = KTLogger(__name__)
+
+
 class UserPreferences:
-    _DICT_NAME = FBConfig.user_preferences_dict_name
-    _defaults = FBConfig.default_user_preferences
-    _str_defaults = {k: str(FBConfig.default_user_preferences[k]['value'])
-                     for k in FBConfig.default_user_preferences.keys()}
+    _DICT_NAME = Config.user_preferences_dict_name
+    _defaults = Config.default_user_preferences
+    _str_defaults = {k: str(Config.default_user_preferences[k]['value'])
+                     for k in Config.default_user_preferences.keys()}
     type_float = 'float'
     type_string = 'string'
     type_int = 'int'
@@ -46,8 +47,7 @@ class UserPreferences:
     @classmethod
     def print_dict(cls):
         d = pkt_module().utils.load_settings(cls._DICT_NAME)
-        logger = logging.getLogger(__name__)
-        logger.debug('UserPreferences: {}'.format(d))
+        _log.output(f'UserPreferences:\n{d}')
 
     @classmethod
     def _get_value(cls, name, type):
@@ -68,8 +68,7 @@ class UserPreferences:
             row = cls._defaults[name]
             cls.set_value(name, row['value'])
             return row['value']
-        logger = logging.getLogger(__name__)
-        logger.error('UserPreferences problem: {} {}'.format(name, type))
+        _log.error(f'UserPreferences problem: {name} {type}')
         return None
 
     @classmethod
@@ -77,14 +76,13 @@ class UserPreferences:
         try:
             return cls._get_value(name, type)
         except Exception as err:
-            logger = logging.getLogger(__name__)
-            logger.error('UserPreferences Exception info: {}'.format(str(err)))
+            _log.error(f'UserPreferences Exception info:\n{str(err)}')
             if name in cls._defaults.keys():
                 row = cls._defaults[name]
                 cls.set_value(name, row['value'])
                 return row['value']
             else:
-                logger.error('Property error: {} {}'.format(name, type))
+                _log.error(f'Property error: {name} {type}')
                 return None
 
     @classmethod
@@ -120,3 +118,30 @@ class UpdaterPreferences(UserPreferences):
     _defaults = Config.default_updater_preferences
     _str_defaults = {k: str(Config.default_updater_preferences[k]['value'])
                      for k in Config.default_updater_preferences.keys()}
+
+
+def universal_direct_getter(name, type):
+    def _getter(self):
+        return UserPreferences.get_value_safe(name, type)
+    return _getter
+
+
+def universal_direct_setter(name):
+    def _setter(self, value):
+        UserPreferences.set_value(name, value)
+    return _setter
+
+
+def universal_cached_getter(name, type):
+    def _getter(self):
+        if name in self.keys():
+            return self[name]
+        else:
+            return UserPreferences.get_value_safe(name, type)
+    return _getter
+
+
+def universal_cached_setter(name):
+    def _setter(self, value):
+        self[name] = value
+    return _setter

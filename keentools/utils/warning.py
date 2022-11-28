@@ -15,11 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
 import re
 import bpy
+
+from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType
 from ..facebuilder_config import FBConfig
+
+
+_log = KTLogger(__name__)
 
 
 _default_width = 400
@@ -135,13 +139,12 @@ class KT_OT_AddonWarning(bpy.types.Operator):
             return {'FINISHED'}
 
         op = get_operator(Config.kt_addon_settings_idname)
-        op('EXEC_DEFAULT')
+        op('EXEC_DEFAULT', show='all')
         return {'FINISHED'}
 
     def _output_error_to_console(self):
-        logger = logging.getLogger(__name__)
-        logger.error('KT_OT_AddonWarning: {}\n---\n'
-                     '{}\n---'.format(self.msg,'\n'.join(self.content)))
+        _log.warning('\n--- KeenTools Addon Warning [{}] ---\n'
+                     '{}\n---\n'.format(self.msg, '\n'.join(self.content)))
 
     def invoke(self, context, event):
         if self.msg == ErrorType.CustomMessage:

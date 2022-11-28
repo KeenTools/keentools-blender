@@ -7,6 +7,7 @@ from keentools.facebuilder_config import FBConfig, get_fb_settings
 import keentools.utils.coords as coords
 from keentools.utils.fake_context import get_fake_context
 from keentools.facebuilder.fbloader import FBLoader
+from keentools.utils.manipulate import deselect_all
 
 
 class TestsOperator(Operator):
@@ -222,7 +223,7 @@ def test_move_pins():
 
 
 def test_duplicate_and_reconstruct():
-    bpy.ops.object.select_all(action='DESELECT')
+    deselect_all()
     bpy.ops.object.duplicate_move(
         OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
         TRANSFORM_OT_translate={"value": (-3.0, 0, 0)})

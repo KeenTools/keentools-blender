@@ -16,45 +16,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import List, Dict, Any
+
 import bpy
 import blf
 
+from .base_shaders import KTShaderBase
 
-class KTScreenText:
-    """ Text on screen output in Modal view"""
-    _counter = 0
 
-    # Store all draw handlers registered by class objects
-    handler_list = []
-
-    @classmethod
-    def add_handler_list(cls, handler):
-        cls.handler_list.append(handler)
-
-    @classmethod
-    def remove_handler_list(cls, handler):
-        if handler in cls.handler_list:
-            cls.handler_list.remove(handler)
-
-    @classmethod
-    def is_handler_list_empty(cls):
-        return len(cls.handler_list) == 0
-
-    def __init__(self, target_class=bpy.types.SpaceView3D):
-        self.text_draw_handler = None
-        self._target_class = target_class
-        self._work_area = None
-
-        self.defaults = {'color': (1., 1., 1., 0.5),
-                         'size': 24,
-                         'shadow_color': (0., 0., 0., 0.75),
-                         'shadow_blur': 5,
-                         'x': None,
-                         'y': 60}
-        self.set_message(self.get_default_text())
-
-    def get_default_text(self):
-        return [
+class KTScreenText(KTShaderBase):
+    def __init__(self, target_class: Any=bpy.types.SpaceView3D):
+        self.defaults: Dict = {'color': (1., 1., 1., 0.5),
+                               'size': 24,
+                               'shadow_color': (0., 0., 0., 0.75),
+                               'shadow_blur': 5,
+                               'x': None,
+                               'y': 60}
+        self.message: List[Dict] = []
+        self.default_text: List[Dict] = [
             {'text': 'Pin Mode ',
              'color': (1., 1., 1., 0.5),
              'size': 24,
@@ -65,40 +44,33 @@ class KTScreenText:
              'size': 20,
              'y': 30}  # line 2
         ]
+        self.set_message(self.get_default_text())
+        super().__init__(target_class)
 
-    def _fill_all_fields(self, text_arr):
+    def get_default_text(self) -> List[Dict]:
+        return self.default_text
+
+    def set_default_text(self, default_text: List[Dict]) -> None:
+        self.default_text = default_text
+
+    def _fill_all_fields(self, text_arr: List[Dict]) -> List[Dict]:
         for row in text_arr:
             for name in self.defaults:
                 if name not in row.keys():
                     row[name] = self.defaults[name]
         return text_arr
 
-    def get_target_class(self):
-        return self._target_class
-
-    def set_target_class(self, target_class):
-        self._target_class = target_class
-
-    def set_message(self, msg):
+    def set_message(self, msg: List[Dict]) -> None:
         self.message = self._fill_all_fields(msg)
 
-    @classmethod
-    def inc_counter(cls):
-        cls._counter += 1
-        return cls._counter
-
-    @classmethod
-    def get_counter(cls):
-        return cls._counter
-
-    def text_draw_callback(self, context):
+    def draw_callback(self, context: Any) -> None:
         # Force Stop
         if self.is_handler_list_empty():
             self.unregister_handler()
             return
 
         area = context.area
-        if self._work_area != area:
+        if self.work_area != area:
             return
 
         if len(self.message) == 0:
@@ -106,6 +78,7 @@ class KTScreenText:
 
         region = area.regions[-1]
         assert region.type == 'WINDOW'
+
         xc = int(region.width * 0.5)  # horizontal center
         yc = int(region.height * 0.5)  # vertical center
         font_id = 0
@@ -125,16 +98,6 @@ class KTScreenText:
             blf.position(font_id, xp, yp, 0)
             blf.draw(font_id, row['text'])
 
-    def register_handler(self, context):
-        self._work_area = context.area
-        self.text_draw_handler = self.get_target_class().draw_handler_add(
-            self.text_draw_callback, (context,), 'WINDOW', 'POST_PIXEL')
-        self.add_handler_list(self.text_draw_handler)
-
-    def unregister_handler(self):
-        if self.text_draw_handler is not None:
-            self.get_target_class().draw_handler_remove(
-                self.text_draw_handler, 'WINDOW')
-            self.remove_handler_list(self.text_draw_handler)
-        self.text_draw_handler = None
-        self._work_area = None
+    def register_handler(self, context: Any,
+                         post_type: str='POST_PIXEL') -> None:
+        super().register_handler(context, post_type)
