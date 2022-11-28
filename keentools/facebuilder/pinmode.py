@@ -19,6 +19,7 @@
 from typing import Any
 from uuid import uuid4
 import numpy as np
+from copy import deepcopy
 
 import bpy
 
@@ -167,17 +168,10 @@ class FB_OT_PinMode(bpy.types.Operator):
         if flag:
             vp.revert_default_screen_message(unregister=False)
         else:
-            vp.message_to_screen([
-            {'text': 'Wireframe is hidden. Press Tab to reveal',
-             'color': (1., 0., 1., 0.7),
-             'size': 24,
-             'y': 60},  # line 1
-            {'text': 'ESC: Exit | LEFT CLICK: Create Pin | '
-                     'RIGHT CLICK: Delete Pin | TAB: Hide/Show',
-             'color': (1., 1., 1., 0.5),
-             'size': 20,
-             'y': 30}  # line 2
-        ])
+            default_txt = deepcopy(vp.texter().get_default_text())
+            default_txt[0]['text'] = 'Wireframe is hidden. Press Tab to reveal'
+            default_txt[0]['color'] = (1., 0., 1., 0.7)
+            vp.message_to_screen(default_txt)
 
     def _delete_found_pin(self, nearest, area):
         settings = get_fb_settings()
