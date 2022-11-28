@@ -46,7 +46,8 @@ from ...utils.bpy_common import (create_empty_object,
                                  bpy_set_current_frame,
                                  update_depsgraph,
                                  reset_unsaved_animation_changes_in_frame,
-                                 bpy_background_mode)
+                                 bpy_background_mode,
+                                 bpy_timer_register)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.timer import RepeatTimer
 from ...utils.coords import xy_to_xz_rotation_matrix_4x4
@@ -322,7 +323,7 @@ class _CommonTimer:
 
         _func = self.timer_func
         if not bpy_background_mode():
-            bpy.app.timers.register(_func, first_interval=self._interval)
+            bpy_timer_register(_func, first_interval=self._interval)
             res = bpy.app.timers.is_registered(_func)
             _log.output(f'{self._operation_name} timer registered: {res}')
         else:
@@ -466,7 +467,7 @@ def refine_act() -> ActionStatus:
 
     _log.output(f'Refined frames: {progress_callback.refined_frames}')
     GTLoader.save_geotracker()
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     if not result:
         return ActionStatus(False, 'Some problem. See console for details')
@@ -508,7 +509,7 @@ def refine_all_act() -> ActionStatus:
         _log.output('Refine calculation time: {:.2f} sec'.format(overall_time))
 
     GTLoader.save_geotracker()
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     if not result:
         return ActionStatus(False, 'Some problem. See console for details')
@@ -531,7 +532,7 @@ def clear_between_keyframes_act() -> ActionStatus:
         show_warning_dialog(err)
 
     GTLoader.save_geotracker()
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -553,7 +554,7 @@ def clear_direction_act(forward: bool) -> ActionStatus:
         show_warning_dialog(err)
 
     GTLoader.save_geotracker()
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -573,7 +574,7 @@ def clear_all_act() -> ActionStatus:
         show_warning_dialog(err)
 
     GTLoader.save_geotracker()
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -629,7 +630,7 @@ def remove_pins_act() -> ActionStatus:
 
     pins.reset_current_pin()
     GTLoader.save_geotracker()
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -654,7 +655,7 @@ def toggle_pins_act() -> ActionStatus:
         pins.clear_selected_pins()
         GTLoader.save_geotracker()
 
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -667,7 +668,7 @@ def center_geo_act() -> ActionStatus:
         return check_status
 
     GTLoader.center_geo()
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 

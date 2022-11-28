@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Optional
+from typing import Optional, Any
 
 import bpy
 from bpy.types import Area
@@ -26,6 +26,12 @@ from .bpy_common import operator_with_context
 
 
 _log = KTLogger(__name__)
+
+
+def check_context_localview(context: Any) -> bool:
+    return context.area and context.area.spaces \
+           and context.area.spaces.active \
+           and context.area.spaces.active.local_view
 
 
 def check_area_active_problem(area: Optional[Area]) -> bool:

@@ -16,20 +16,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Set, Optional
+from typing import Any, Set, Optional, Tuple
 from uuid import uuid4
+from copy import deepcopy
 
 from bpy.types import Area, Operator
-from bpy.props import IntProperty, StringProperty
+from bpy.props import IntProperty, StringProperty, FloatProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import get_operator
+from ..addon_config import get_operator, fb_pinmode
 from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
 from .gtloader import GTLoader
 from ..utils.coords import (point_is_in_area,
                             point_is_in_service_region,
                             get_image_space_coord,
-                            nearest_point)
+                            nearest_point,
+                            change_far_clip_plane,
+                            get_camera_border)
 
 from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
@@ -38,13 +41,23 @@ from ..utils.images import set_background_image_by_movieclip
 from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_background_mode,
                                 bpy_is_animation_playing,
-                                bpy_view_camera)
+                                bpy_view_camera,
+                                bpy_render_frame)
 from ..utils.video import fit_render_size
 from .utils.prechecks import common_checks
 from .ui_strings import buttons
 
 
 _log = KTLogger(__name__)
+
+
+def _calc_adaptive_opacity(area):
+    settings = get_gt_settings()
+    rx, ry = bpy_render_frame()
+    x1, y1, x2, y2 = get_camera_border(area)
+    settings.adaptive_opacity = (x2 - x1) / rx
+    vp = GTLoader.viewport()
+    vp.update_wireframe_colors()
 
 
 class GT_OT_PinMode(Operator):
@@ -55,29 +68,26 @@ class GT_OT_PinMode(Operator):
 
     geotracker_num: IntProperty(default=-1)
     pinmode_id: StringProperty(default='')
+    camera_clip_end: FloatProperty(default=1000.0)
 
-    _shift_pressed = False
-    _prev_camera_state = ()
-    _prev_area_state = ()
+    _shift_pressed: bool = False
+    _prev_camera_state: Tuple = ()
+    _prev_area_state: Tuple = ()
 
     @classmethod
-    def _check_camera_state_changed(cls, rv3d):
+    def _check_camera_state_changed(cls, rv3d: Any) -> bool:
         camera_state = (rv3d.view_camera_zoom, *rv3d.view_camera_offset)
-
         if camera_state != cls._prev_camera_state:
             cls._prev_camera_state = camera_state
             return True
-
         return False
 
     @classmethod
-    def _check_area_state_changed(cls, area):
+    def _check_area_state_changed(cls, area: Area) -> bool:
         area_state = (area.x, area.y, area.width, area.height)
-
         if area_state != cls._prev_area_state:
             cls._prev_area_state = area_state
             return True
-
         return False
 
     @classmethod
@@ -108,7 +118,8 @@ class GT_OT_PinMode(Operator):
         pins = vp.pins()
         if not pins.get_add_selection_mode():
             op = get_operator(GTConfig.gt_movepin_idname)
-            op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y)
+            op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
+               camera_clip_end=self.camera_clip_end)
             return {'PASS_THROUGH'}
 
         x, y = get_image_space_coord(mouse_x, mouse_y, area)
@@ -125,7 +136,7 @@ class GT_OT_PinMode(Operator):
         else:
             settings = get_gt_settings()
             settings.start_selection(mouse_x, mouse_y)
-        GTLoader.update_all_viewport_shaders()
+        GTLoader.update_viewport_shaders()
         vp.tag_redraw()
         return {'PASS_THROUGH'}
 
@@ -193,7 +204,24 @@ class GT_OT_PinMode(Operator):
         vp = GTLoader.viewport()
         vp.create_batch_2d(area)
         _log.output('GT REGISTER SHADER HANDLERS')
-        GTLoader.update_all_viewport_shaders(area)
+        settings = get_gt_settings()
+
+        _calc_adaptive_opacity(area)
+        GTLoader.update_viewport_shaders(area, normals=settings.lit_wireframe)
+
+        geotracker = get_current_geotracker_item()
+        self.camera_clip_end = geotracker.camobj.data.clip_end
+        if GTConfig.auto_increase_far_clip_distance:
+            changed, dist = change_far_clip_plane(
+                geotracker.camobj, geotracker.geomobj,
+                prev_clip_end=self.camera_clip_end)
+            if changed:
+                default_txt = deepcopy(vp.texter().get_default_text())
+                default_txt[0]['text'] = f'Camera far clip plane ' \
+                                         f'has been changed to {dist:.1f}'
+                default_txt[0]['color'] = (1.0, 0.0, 1.0, 0.85)
+                GTLoader.viewport().message_to_screen(default_txt)
+
         if context is not None:
             vp.register_handlers(context)
         vp.tag_redraw()
@@ -244,17 +272,10 @@ class GT_OT_PinMode(Operator):
         if flag:
             vp.revert_default_screen_message(unregister=False)
         else:
-            vp.message_to_screen([
-            {'text': 'Wireframe is hidden. Press Tab to reveal',
-             'color': (1., 0., 1., 0.7),
-             'size': 24,
-             'y': 60},  # line 1
-            {'text': 'ESC: Exit | LEFT CLICK: Create Pin | '
-                     'RIGHT CLICK: Delete Pin | TAB: Hide/Show',
-             'color': (1., 1., 1., 0.5),
-             'size': 20,
-             'y': 30}  # line 2
-        ])
+            default_txt = deepcopy(vp.texter().get_default_text())
+            default_txt[0]['text'] = 'Wireframe is hidden. Press Tab to reveal'
+            default_txt[0]['color'] = (1., 0., 1., 0.85)
+            GTLoader.viewport().message_to_screen(default_txt)
 
     def invoke(self, context: Any, event: Any) -> Set:
         _log.output(f'INVOKE PINMODE: {self.geotracker_num}')
@@ -265,6 +286,12 @@ class GT_OT_PinMode(Operator):
                                      movie_clip=False)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        if fb_pinmode():
+            msg = 'Cannot start while FaceBuilder is in Pin mode!'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
             return {'CANCELLED'}
 
         settings = get_gt_settings()
@@ -325,8 +352,8 @@ class GT_OT_PinMode(Operator):
         vp = GTLoader.viewport()
 
         if self.pinmode_id != settings.pinmode_id:
-            _log.error('Extreme GeoTracker pinmode operator stop')
-            _log.error('{} != {}'.format(self.pinmode_id, settings.pinmode_id))
+            _log.output('Extreme GeoTracker pinmode operator stop')
+            _log.output(f'{self.pinmode_id} != {settings.pinmode_id}')
             return {'FINISHED'}
 
         if not context.space_data:
@@ -358,7 +385,7 @@ class GT_OT_PinMode(Operator):
         if settings.selection_mode:
             if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
                 settings.end_selection(context.area, event.mouse_region_x, event.mouse_region_y)
-                GTLoader.update_all_viewport_shaders()
+                GTLoader.update_viewport_shaders()
             else:
                 settings.do_selection(event.mouse_region_x, event.mouse_region_y)
             vp.tag_redraw()
@@ -387,11 +414,13 @@ class GT_OT_PinMode(Operator):
         if GTLoader.geomobj_mode_changed_to_object():
             _log.output(_log.color('green', 'RETURNED TO OBJECT_MODE'))
             self._change_wireframe_visibility(toggle=False, value=True)
-            GTLoader.update_all_viewport_shaders()
+            GTLoader.update_viewport_shaders()
 
         if self._check_camera_state_changed(context.space_data.region_3d) \
                 or self._check_area_state_changed(GTLoader.get_work_area()):
             _log.output('FORCE TAG REDRAW BY VIEWPORT ZOOM/OFFSET')
+
+            _calc_adaptive_opacity(context.area)
             vp.create_batch_2d(context.area)
             vp.update_residuals(GTLoader.kt_geotracker(), context.area,
                                 bpy_current_frame())
@@ -401,7 +430,7 @@ class GT_OT_PinMode(Operator):
             _log.output('TIMER IN EDIT_MODE')
             vp.message_to_screen([
                 {'text': 'Object is in EDIT MODE',
-                 'color': (1., 0., 1., 0.7),
+                 'color': (1., 0., 1., 0.85),
                  'size': 24,
                  'y': 60},  # line 1
                 {'text': 'ESC: Exit | TAB: Hide/Show',
@@ -410,7 +439,9 @@ class GT_OT_PinMode(Operator):
                  'y': 30}])  # line 2
             GTLoader.update_geomobj_mesh()
             vp.hide_pins_and_residuals()
-            GTLoader.update_all_viewport_shaders()
+            settings = get_gt_settings()
+            settings.lit_wireframe = False
+            GTLoader.update_viewport_shaders()
             return {'PASS_THROUGH'}
 
         if event.value == 'PRESS' and event.type == 'LEFTMOUSE':

@@ -17,9 +17,9 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import re
-import bpy
-from bpy.types import Panel
+from functools import partial
 
+from bpy.types import Panel
 
 from ...utils.kt_logging import KTLogger
 from ...updater.panels import (KT_PT_UpdatePanel,
@@ -27,7 +27,7 @@ from ...updater.panels import (KT_PT_UpdatePanel,
                                KT_PT_DownloadingProblemPanel,
                                KT_PT_UpdatesInstallationPanel)
 from ...updater.utils import KTUpdater
-from ...addon_config import Config, facebuilder_enabled
+from ...addon_config import Config, facebuilder_enabled, addon_pinmode
 from ...facebuilder_config import FBConfig, get_fb_settings
 
 from ..fbloader import FBLoader
@@ -36,8 +36,9 @@ from ...utils.manipulate import (has_no_blendshape,
 from ..utils.manipulate import (what_is_state, get_current_head, get_obj_from_context)
 from ...utils.materials import find_bpy_image_by_name
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
-from ...utils.other import unhide_viewport_ui_elements_from_object
-from ...utils.localview import exit_area_localview
+from ...utils.other import unhide_viewport_ui_elements_from_object, force_show_ui_overlays
+from ...utils.localview import exit_area_localview, check_context_localview
+from ...utils.bpy_common import bpy_timer_register
 
 
 _log = KTLogger(__name__)
@@ -77,28 +78,53 @@ def _draw_update_blendshapes_panel(layout):
     box.operator(FBConfig.fb_update_blendshapes_idname)
 
 
-_pinmode_escaper_context_area = None
-
-
-def _pinmode_escaper():
+def _pinmode_escaper(area):
     settings = get_fb_settings()
     head = settings.get_head(settings.current_headnum)
+    exit_area_localview(area)
+    settings.pinmode = False
+
     if head is None or not head.headobj:
         _log.error('_pinmode_escaper: could not find head object')
-    exit_area_localview(_pinmode_escaper_context_area)
-    settings.pinmode = False
-    if not head.headobj:
-        _log.error('_pinmode_escaper: could not find head.headobj')
-    unhide_viewport_ui_elements_from_object(_pinmode_escaper_context_area,
-                                            head.headobj)
+        force_show_ui_overlays(area)
+    else:
+        unhide_viewport_ui_elements_from_object(area, head.headobj)
     return None
 
 
 def _start_pinmode_escaper(context):
-    global _pinmode_escaper_context_area
-    _escaper_context_area = context.area
-    _log.output(f'_start_pinmode_escaper: area={_escaper_context_area}')
-    bpy.app.timers.register(_pinmode_escaper, first_interval = 0.01)
+    _log.output(f'_start_pinmode_escaper: area={context.area}')
+    bpy_timer_register(partial(_pinmode_escaper, context.area),
+                       first_interval=0.01)
+
+
+def _exit_from_localview_button(layout, context):
+    if not addon_pinmode() and check_context_localview(context):
+        col = layout.column()
+        col.alert = True
+        col.scale_y = 2.0
+        col.operator(Config.kt_exit_localview_idname)
+
+
+def _geomobj_delete_handler() -> None:
+    settings = get_fb_settings()
+    settings.force_out_pinmode = True
+    return None
+
+
+def _start_geomobj_delete_handler() -> None:
+    bpy_timer_register(_geomobj_delete_handler, first_interval=0.01)
+
+
+def _autoloader_handler(headnum: int) -> None:
+    _log.output(f'Head autoloader started: {headnum}')
+    if not FBLoader.load_model(headnum):
+        _log.error(f'Head autoloader failed: {headnum}')
+    return None
+
+
+def _start_autoloader_handler(headnum: int) -> None:
+    bpy_timer_register(partial(_autoloader_handler, headnum), first_interval=0.01)
 
 
 class Common:
@@ -225,7 +251,7 @@ class FB_PT_HeaderPanel(Common, Panel):
         state, headnum = what_is_state()
 
         if headnum >= 0 and FBLoader.is_not_loaded():
-            FBLoader.load_model(headnum)
+            _start_autoloader_handler(headnum)
 
         if state == 'PINMODE':
             # Unhide Button if Head is hidden in pinmode (by ex. after Undo)
@@ -239,15 +265,18 @@ class FB_PT_HeaderPanel(Common, Panel):
 
         elif state == 'RECONSTRUCT':
             self._draw_reconstruct(layout)
+            _exit_from_localview_button(layout, context)
             return
 
         elif state == 'NO_HEADS':
             self._draw_start_panel(layout)
             KTUpdater.call_updater('FaceBuilder')
+            _exit_from_localview_button(layout, context)
             return
 
         else:
             self._draw_many_heads(layout)
+            _exit_from_localview_button(layout, context)
             KTUpdater.call_updater('FaceBuilder')
 
 
@@ -484,6 +513,9 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         if not head.blenshapes_are_relevant() and head.model_changed_by_pinmode:
             _draw_update_blendshapes_panel(layout)
         self._draw_camera_list(headnum, layout)
+
+        if head.headobj and head.headobj.users == 1:
+            _start_geomobj_delete_handler()
 
         # Open sequence Button (large x2)
         col = layout.column()
@@ -724,7 +756,9 @@ class FB_PT_AppearancePanel(AllVisible, Panel):
         op = row.operator(FBConfig.fb_wireframe_color_idname, text='W')
         op.action = 'wireframe_white'
 
-        box.prop(settings, 'show_specials', text='Highlight head parts')
+        col = box.column(align=True)
+        col.prop(settings, 'show_specials', text='Highlight head parts')
+        col.prop(settings, 'use_adaptive_opacity')
 
 
 class FB_PT_BlendShapesPanel(AllVisibleClosed, Panel):

@@ -124,6 +124,11 @@ buttons = {
         'Skip installation',
         'Skip installation'
     ),
+    # Common operators
+    Config.kt_exit_localview_idname: Button(
+        'Exit Local view',
+        'Exit Local view'
+    ),
 }
 
 

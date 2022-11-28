@@ -40,6 +40,7 @@ class KTScreenPins:
         self._disabled_pins: List[int] = []
         self._selected_pins: List[int] = []
         self._add_selection_mode: bool = False
+        self._move_pin_mode: bool = False
 
     def arr(self) -> List:
         return self._pins
@@ -129,6 +130,12 @@ class KTScreenPins:
         self._disabled_pins = [x if x < index else x - 1
                                for x in self._disabled_pins]
         del self.arr()[index]
+
+    def move_pin_mode(self) -> bool:
+        return self._move_pin_mode
+
+    def set_move_pin_mode(self, state: bool) -> None:
+        self._move_pin_mode = state
 
 
 class KTShaderPoints(KTShaderBase):

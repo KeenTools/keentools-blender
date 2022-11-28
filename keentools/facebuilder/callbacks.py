@@ -240,9 +240,11 @@ def _update_expressions(head, context):
     _log_output(f'EXPRESSIONS: {head.should_use_emotions()}')
 
     coords.update_head_mesh_non_neutral(fb, head)
+
+    FBLoader.save_fb_serial_str(headnum)
+
     if not settings.pinmode:
         return
-
     FBLoader.update_wireframe_shader_only(settings.current_headnum,
                                           settings.current_camnum)
 
@@ -320,7 +322,7 @@ def update_wireframe_image(self, context):
     wf.init_colors((settings.wireframe_color,
                     settings.wireframe_special_color,
                     settings.wireframe_midline_color),
-                   settings.wireframe_opacity)
+                    settings.wireframe_opacity * settings.get_adaptive_opacity())
     wf.init_wireframe_image(FBLoader.get_builder(), settings.show_specials)
     vp.update_wireframe_colors()
 
