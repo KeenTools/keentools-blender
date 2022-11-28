@@ -434,7 +434,7 @@ class GTLoader:
         if normals:
             wf.init_vertex_normals(geotracker.geomobj)
         wf.init_color_data((*settings.wireframe_color,
-                            settings.wireframe_opacity))
+                            settings.wireframe_opacity * settings.get_adaptive_opacity()))
         wf.init_selection_from_mesh(geotracker.geomobj, geotracker.mask_3d,
                                     geotracker.mask_3d_inverted)
         wf.set_backface_culling(settings.wireframe_backface_culling)

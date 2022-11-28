@@ -406,6 +406,20 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     geotrackers: bpy.props.CollectionProperty(type=GeoTrackerItem, name='GeoTrackers')
     current_geotracker_num: bpy.props.IntProperty(name='Current Geotracker Number', default=-1)
 
+    adaptive_opacity: bpy.props.FloatProperty(
+        description='From 0.0 to 1.0',
+        name='GeoTracker adaptive Opacity',
+        default=1.0,
+        min=0.0, max=1.0)
+
+    use_adaptive_opacity: bpy.props.BoolProperty(
+        name='Use adaptive opacity',
+        default=True,
+        update=update_wireframe)
+
+    def get_adaptive_opacity(self):
+        return self.adaptive_opacity if self.use_adaptive_opacity else 1.0
+
     wireframe_opacity: bpy.props.FloatProperty(
         description='From 0.0 to 1.0',
         name='GeoTracker wireframe Opacity',

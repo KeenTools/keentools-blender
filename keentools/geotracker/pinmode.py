@@ -30,7 +30,8 @@ from ..utils.coords import (point_is_in_area,
                             point_is_in_service_region,
                             get_image_space_coord,
                             nearest_point,
-                            change_far_clip_plane)
+                            change_far_clip_plane,
+                            get_camera_border)
 
 from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
@@ -39,13 +40,23 @@ from ..utils.images import set_background_image_by_movieclip
 from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_background_mode,
                                 bpy_is_animation_playing,
-                                bpy_view_camera)
+                                bpy_view_camera,
+                                bpy_render_frame)
 from ..utils.video import fit_render_size
 from .utils.prechecks import common_checks
 from .ui_strings import buttons
 
 
 _log = KTLogger(__name__)
+
+
+def _calc_adaptive_opacity(area):
+    settings = get_gt_settings()
+    rx, ry = bpy_render_frame()
+    x1, y1, x2, y2 = get_camera_border(area)
+    settings.adaptive_opacity = (x2 - x1) / rx
+    vp = GTLoader.viewport()
+    vp.update_wireframe_colors()
 
 
 class GT_OT_PinMode(Operator):
@@ -64,21 +75,17 @@ class GT_OT_PinMode(Operator):
     @classmethod
     def _check_camera_state_changed(cls, rv3d):
         camera_state = (rv3d.view_camera_zoom, *rv3d.view_camera_offset)
-
         if camera_state != cls._prev_camera_state:
             cls._prev_camera_state = camera_state
             return True
-
         return False
 
     @classmethod
     def _check_area_state_changed(cls, area):
         area_state = (area.x, area.y, area.width, area.height)
-
         if area_state != cls._prev_area_state:
             cls._prev_area_state = area_state
             return True
-
         return False
 
     @classmethod
@@ -195,6 +202,8 @@ class GT_OT_PinMode(Operator):
         vp.create_batch_2d(area)
         _log.output('GT REGISTER SHADER HANDLERS')
         settings = get_gt_settings()
+
+        _calc_adaptive_opacity(area)
         GTLoader.update_viewport_shaders(area, normals=settings.lit_wireframe)
 
         if GTConfig.auto_increase_far_clip_distance:
@@ -405,6 +414,8 @@ class GT_OT_PinMode(Operator):
         if self._check_camera_state_changed(context.space_data.region_3d) \
                 or self._check_area_state_changed(GTLoader.get_work_area()):
             _log.output('FORCE TAG REDRAW BY VIEWPORT ZOOM/OFFSET')
+
+            _calc_adaptive_opacity(context.area)
             vp.create_batch_2d(context.area)
             vp.update_residuals(GTLoader.kt_geotracker(), context.area,
                                 bpy_current_frame())

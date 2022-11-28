@@ -165,7 +165,7 @@ def smooth_3d_fragment_shader() -> str:
     out vec4 fragColor;
     void main()
     {
-      fragColor = finalColor;
+        fragColor = finalColor;
     '''
     if blender_srgb_to_framebuffer_space_enabled:
         txt += 'fragColor = blender_srgb_to_framebuffer_space(fragColor);'
@@ -176,10 +176,11 @@ def smooth_3d_fragment_shader() -> str:
 
 
 def uniform_3d_vertex_local_shader() -> str:
-    return '''
+    txt = '''
     uniform mat4 ModelViewProjectionMatrix;
     uniform mat4 modelMatrix;
     uniform vec4 color;
+    uniform float adaptiveOpacity;
 
     #ifdef USE_WORLD_CLIP_PLANES
     uniform mat4 ModelMatrix;
@@ -191,14 +192,15 @@ def uniform_3d_vertex_local_shader() -> str:
 
     void main()
     {
-      gl_Position = ModelViewProjectionMatrix * modelMatrix * vec4(pos, 1.0);
-      finalColor = color;
-
+        gl_Position = ModelViewProjectionMatrix * modelMatrix * vec4(pos, 1.0);
+        finalColor = color;
+        finalColor.a = color.a * adaptiveOpacity;
     #ifdef USE_WORLD_CLIP_PLANES
-      world_clip_planes_calc_clip_distance((ModelMatrix * modelMatrix * vec4(pos, 1.0)).xyz);
+        world_clip_planes_calc_clip_distance((ModelMatrix * modelMatrix * vec4(pos, 1.0)).xyz);
     #endif
     }
     '''
+    return txt
 
 
 def black_fill_fragment_shader() -> str:
@@ -231,7 +233,7 @@ def residual_vertex_shader() -> str:
 
 
 def residual_fragment_shader() -> str:
-    return '''
+    txt = '''
     in float v_LineLength;            
     flat in vec4 finalColor;
     out vec4 fragColor;
@@ -240,12 +242,17 @@ def residual_fragment_shader() -> str:
     {
         if (step(sin(v_LineLength), -0.3f) == 1) discard;
         fragColor = finalColor;
+        '''
+    if blender_srgb_to_framebuffer_space_enabled:
+        txt += 'fragColor = blender_srgb_to_framebuffer_space(fragColor);'
+    txt += '''
     }
     '''
+    return txt
 
 
 def dashed_fragment_shader() -> str:
-    return '''
+    txt = '''
     in float v_LineLength;
     flat in vec4 finalColor;
     out vec4 fragColor;
@@ -254,8 +261,13 @@ def dashed_fragment_shader() -> str:
     {
         if (mod(v_LineLength + 5.0f, 10.0f) > 5.5f) discard;
         fragColor = finalColor;
+        '''
+    if blender_srgb_to_framebuffer_space_enabled:
+        txt += 'fragColor = blender_srgb_to_framebuffer_space(fragColor);'
+    txt += '''
     }
     '''
+    return txt
 
 
 def solid_line_vertex_shader() -> str:
@@ -275,15 +287,20 @@ def solid_line_vertex_shader() -> str:
 
 
 def solid_line_fragment_shader() -> str:
-    return '''
+    txt = '''
     flat in vec4 finalColor;
     out vec4 fragColor;
 
     void main()
     {
         fragColor = finalColor;
+        '''
+    if blender_srgb_to_framebuffer_space_enabled:
+        txt += 'fragColor = blender_srgb_to_framebuffer_space(fragColor);'
+    txt += '''
     }
     '''
+    return txt
 
 
 def raster_image_vertex_shader() -> str:

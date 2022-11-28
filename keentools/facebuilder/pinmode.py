@@ -29,13 +29,16 @@ from ..addon_config import (Config,
                             show_user_preferences,
                             gt_pinmode)
 from ..facebuilder_config import FBConfig, get_fb_settings
-from ..utils.bpy_common import operator_with_context, bpy_view_camera
+from ..utils.bpy_common import (operator_with_context,
+                                bpy_view_camera,
+                                bpy_render_frame)
 from ..utils.coords import (update_head_mesh_non_neutral,
                             get_image_space_coord,
                             nearest_point,
                             point_is_in_area,
                             point_is_in_service_region,
-                            get_area_region)
+                            get_area_region,
+                            get_camera_border)
 from .utils.manipulate import push_head_in_undo_history
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
@@ -81,6 +84,15 @@ def register_undo_handler():
     bpy.app.handlers.undo_post.append(_undo_handler)
 
 
+def _calc_adaptive_opacity(area):
+    settings = get_fb_settings()
+    rx, ry = bpy_render_frame()
+    x1, y1, x2, y2 = get_camera_border(area)
+    settings.adaptive_opacity = (x2 - x1) / rx
+    vp = FBLoader.viewport()
+    vp.update_wireframe_colors()
+
+
 class FB_OT_PinMode(bpy.types.Operator):
     bl_idname = FBConfig.fb_pinmode_idname
     bl_label = buttons[bl_idname].label
@@ -94,15 +106,22 @@ class FB_OT_PinMode(bpy.types.Operator):
 
     _shift_pressed = False
     _prev_camera_state = ()
+    _prev_area_state = ()
 
     @classmethod
     def _check_camera_state_changed(cls, rv3d):
         camera_state = (rv3d.view_camera_zoom, rv3d.view_camera_offset)
-
         if camera_state != cls._prev_camera_state:
             cls._prev_camera_state = camera_state
             return True
+        return False
 
+    @classmethod
+    def _check_area_state_changed(cls, area):
+        area_state = (area.x, area.y, area.width, area.height)
+        if area_state != cls._prev_area_state:
+            cls._prev_area_state = area_state
+            return True
         return False
 
     @classmethod
@@ -130,7 +149,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         wf.init_colors((settings.wireframe_color,
                        settings.wireframe_special_color,
                        settings.wireframe_midline_color),
-                       settings.wireframe_opacity)
+                       settings.wireframe_opacity * settings.get_adaptive_opacity())
 
         fb = FBLoader.get_builder()
         if not wf.init_wireframe_image(fb, settings.show_specials):
@@ -357,6 +376,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         update_camera_focal(camera, fb)
 
+        _calc_adaptive_opacity(context.area)
         self._init_wireframer_colors()
         if first_start:
             hide_viewport_ui_elements_and_store_on_object(context.area, headobj)
@@ -462,8 +482,11 @@ class FB_OT_PinMode(bpy.types.Operator):
             exit_area_localview(context.area)
             return {'FINISHED'}
 
-        if self._check_camera_state_changed(context.space_data.region_3d):
+        if self._check_camera_state_changed(context.space_data.region_3d) or \
+                self._check_area_state_changed(FBLoader.get_work_area()):
             _log.output('CAMERA STATE CHANGED. FORCE TAG REDRAW')
+
+            _calc_adaptive_opacity(context.area)
             context.area.tag_redraw()
 
         if event.value == 'PRESS' and event.type == 'TAB':
