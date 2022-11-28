@@ -756,7 +756,9 @@ class FB_PT_AppearancePanel(AllVisible, Panel):
         op = row.operator(FBConfig.fb_wireframe_color_idname, text='W')
         op.action = 'wireframe_white'
 
-        box.prop(settings, 'show_specials', text='Highlight head parts')
+        col = box.column(align=True)
+        col.prop(settings, 'show_specials', text='Highlight head parts')
+        col.prop(settings, 'use_adaptive_opacity')
 
 
 class FB_PT_BlendShapesPanel(AllVisible, Panel):

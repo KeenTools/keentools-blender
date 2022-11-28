@@ -55,22 +55,23 @@ class KTEdgeShaderBase(KTShaderBase):
         self.fill_batch: Optional[Any] = None
         self.line_batch: Optional[Any] = None
         # Triangle vertices & indices
-        self.vertices = []
-        self.triangle_indices = []
+        self.vertices: List = []
+        self.triangle_indices: List = []
         # Edge vertices
-        self.edges_vertices = []
-        self.edges_indices = []
-        self.edges_colors = []
+        self.edges_vertices: List = []
+        self.edges_indices: List = []
+        self.edges_colors: List = []
         self.vertices_colors = []
 
-        self.backface_culling = False
+        self.backface_culling: bool = False
+        self.adaptive_opacity: float = 1.0
+        self.edge_color: Tuple = (1., 1., 1., 1.)
 
         if not bpy_background_mode():
             self.init_shaders()
 
     def init_color_data(self, color: Tuple[float, float, float, float]):
-        self.edges_colors = np.full(
-            (len(self.edges_vertices), 4), color).tolist()
+        self.edges_colors = [color] * len(self.edges_vertices)
 
     def set_vertices_colors(self, verts: List, colors: List) -> None:
         self.vertices = verts
@@ -82,6 +83,9 @@ class KTEdgeShaderBase(KTShaderBase):
 
     def set_backface_culling(self, state: bool) -> None:
         self.backface_culling = state
+
+    def set_adaptive_opacity(self, value: float):
+        self.adaptive_opacity = value
 
 
 class KTEdgeShader2D(KTEdgeShaderBase):
@@ -476,6 +480,7 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
     def draw_selection_fill(self) -> None:
         shader = self.selection_fill_shader
         shader.bind()
+        shader.uniform_float('adaptiveOpacity', self.adaptive_opacity)
         shader.uniform_float('color', self.selection_fill_color)
         shader.uniform_vector_float(
             shader.uniform_from_name('modelMatrix'),
@@ -540,9 +545,9 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_edge_vertex_normals = edge_normals
 
     def init_color_data(self, color: Tuple[float, float, float, float]) -> None:
-        self.edges_colors = np.full(
-            (len(self.edges_vertices), 4), color).tolist()
+        self.edges_colors = [color] * len(self.edges_vertices)
         self.lit_color = color
+        self.edge_color = color
 
     def create_batches(self) -> None:
         if bpy_background_mode():

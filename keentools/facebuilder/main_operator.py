@@ -762,9 +762,9 @@ class FB_OT_DefaultWireframeSettings(ButtonOperator, Operator):
     def execute(self, context):
         settings = get_fb_settings()
         prefs = settings.preferences()
-        settings.wireframe_color = prefs.wireframe_color
-        settings.wireframe_special_color = prefs.wireframe_special_color
-        settings.wireframe_midline_color = prefs.wireframe_midline_color
+        settings.wireframe_color = prefs.fb_wireframe_color
+        settings.wireframe_special_color = prefs.fb_wireframe_special_color
+        settings.wireframe_midline_color = prefs.fb_wireframe_midline_color
         settings.wireframe_opacity = prefs.fb_wireframe_opacity
         return {'FINISHED'}
 

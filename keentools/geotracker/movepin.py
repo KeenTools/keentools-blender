@@ -21,6 +21,7 @@ from copy import deepcopy
 
 import bpy
 from bpy.types import Area
+from bpy.props import StringProperty, FloatProperty, BoolProperty
 
 from ..utils.kt_logging import KTLogger
 from ..geotracker_config import (GTConfig,
@@ -47,16 +48,18 @@ class GT_OT_MovePin(bpy.types.Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER'}
 
-    test_action: bpy.props.StringProperty(default="")
+    test_action: StringProperty(default="")
 
-    pinx: bpy.props.FloatProperty(default=0)
-    piny: bpy.props.FloatProperty(default=0)
+    pinx: FloatProperty(default=0)
+    piny: FloatProperty(default=0)
 
-    new_pin_flag: bpy.props.BoolProperty(default=False)
-    dragged: bpy.props.BoolProperty(default=False)
+    new_pin_flag: BoolProperty(default=False)
+    dragged: BoolProperty(default=False)
 
-    shift_x: bpy.props.FloatProperty(default=0.0)
-    shift_y: bpy.props.FloatProperty(default=0.0)
+    shift_x: FloatProperty(default=0.0)
+    shift_y: FloatProperty(default=0.0)
+
+    camera_clip_end: FloatProperty(default=1000.0)
 
     def _move_pin_mode_on(self) -> None:
         GTLoader.viewport().pins().set_move_pin_mode(True)
@@ -194,12 +197,19 @@ class GT_OT_MovePin(bpy.types.Operator):
         vp = GTLoader.viewport()
 
         GTLoader.place_object_or_camera()
-        if GTConfig.auto_increase_far_clip_distance and \
-                change_far_clip_plane(geotracker.camobj, geotracker.geomobj):
-            default_txt = deepcopy(vp.texter().get_default_text())
-            default_txt[0]['text'] = 'Camera far clip plane has been changed'
-            default_txt[0]['color'] = (1.0, 0.0, 1.0, 0.7)
-            GTLoader.viewport().message_to_screen(default_txt)
+        if GTConfig.auto_increase_far_clip_distance:
+            changed, dist = change_far_clip_plane(
+                geotracker.camobj, geotracker.geomobj,
+                prev_clip_end=self.camera_clip_end)
+            if changed:
+                if dist == self.camera_clip_end:
+                    GTLoader.viewport().revert_default_screen_message()
+                else:
+                    default_txt = deepcopy(vp.texter().get_default_text())
+                    default_txt[0]['text'] = f'Camera far clip plane ' \
+                                             f'has been changed to {dist:.1f}'
+                    default_txt[0]['color'] = (1.0, 0.0, 1.0, 0.85)
+                    GTLoader.viewport().message_to_screen(default_txt)
 
         gt = GTLoader.kt_geotracker()
         vp.update_surface_points(gt, geotracker.geomobj, frame)
