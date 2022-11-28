@@ -274,7 +274,7 @@ class GT_OT_PinMode(Operator):
         else:
             default_txt = deepcopy(vp.texter().get_default_text())
             default_txt[0]['text'] = 'Wireframe is hidden. Press Tab to reveal'
-            default_txt[0]['color'] = (1., 0., 1., 0.7)
+            default_txt[0]['color'] = (1., 0., 1., 0.85)
             GTLoader.viewport().message_to_screen(default_txt)
 
     def invoke(self, context: Any, event: Any) -> Set:
@@ -430,7 +430,7 @@ class GT_OT_PinMode(Operator):
             _log.output('TIMER IN EDIT_MODE')
             vp.message_to_screen([
                 {'text': 'Object is in EDIT MODE',
-                 'color': (1., 0., 1., 0.7),
+                 'color': (1., 0., 1., 0.85),
                  'size': 24,
                  'y': 60},  # line 1
                 {'text': 'ESC: Exit | TAB: Hide/Show',

@@ -170,7 +170,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         else:
             default_txt = deepcopy(vp.texter().get_default_text())
             default_txt[0]['text'] = 'Wireframe is hidden. Press Tab to reveal'
-            default_txt[0]['color'] = (1., 0., 1., 0.7)
+            default_txt[0]['color'] = (1., 0., 1., 0.85)
             vp.message_to_screen(default_txt)
 
     def _delete_found_pin(self, nearest, area):
