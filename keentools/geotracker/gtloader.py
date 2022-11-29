@@ -32,12 +32,11 @@ from ..utils.coords import (image_space_to_frame,
                             focal_by_projection_matrix_mm,
                             compensate_view_scale,
                             frame_to_image_space,
-                            camera_sensor_width,
-                            get_camera_border,
-                            image_space_to_region)
+                            camera_sensor_width)
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
-                                get_scene_camera_shift)
+                                get_scene_camera_shift,
+                                bpy_is_animation_playing)
 from .gt_class_loader import GTClassLoader
 from ..utils.timer import KTStopShaderTimer
 from ..utils.ui_redraw import force_ui_redraw
@@ -69,6 +68,9 @@ def depsgraph_update_handler(scene, depsgraph):
             _log.output(f'update.is_updated_shading: {update.is_updated_shading}')
             return True
         return False
+
+    if bpy_is_animation_playing():
+        return
 
     settings = get_gt_settings()
     if not settings.pinmode:
@@ -132,7 +134,8 @@ def frame_change_post_handler(scene):
     geotracker = get_current_geotracker_item()
     geotracker.reset_focal_length_estimation()
     GTLoader.place_object_or_camera()
-    GTLoader.update_viewport_shaders()
+    GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
+                                     timeline=False)
 
 
 class GTLoader:
@@ -458,6 +461,7 @@ class GTLoader:
 
     @classmethod
     def update_viewport_shaders(cls, area: Optional[Area]=None, *,
+                                geomobj_matrix: bool = False,
                                 wireframe: bool=True,
                                 normals: bool=False,
                                 pins_and_residuals: bool=True,
@@ -467,6 +471,11 @@ class GTLoader:
             area = vp.get_work_area()
             if not area:
                 return
+        if geomobj_matrix:
+            wf = cls.viewport().wireframer()
+            geotracker = get_current_geotracker_item()
+            if geotracker and geotracker.geomobj:
+                wf.set_object_world_matrix(geotracker.geomobj.matrix_world)
         if wireframe:
             cls.update_viewport_wireframe(normals)
         if pins_and_residuals:
