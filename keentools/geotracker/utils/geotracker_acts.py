@@ -278,7 +278,8 @@ class _CommonTimer:
                     [{'text': f'{self._operation_name} calculating: '
                               f'{finished_frames}/{total_frames}', 'y': 60,
                       'color': (1.0, 0.0, 0.0, 0.7)},
-                     {'text': 'ESC to interrupt', 'y': 30,
+                     {'text': 'ESC to interrupt. '
+                              'The scene now is BEFORE applying operation', 'y': 30,
                       'color': (1.0, 1.0, 1.0, 0.7)}])
                 settings = get_gt_settings()
                 total = total_frames if total_frames != 0 else 1
