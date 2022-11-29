@@ -60,6 +60,29 @@ def _calc_adaptive_opacity(area):
     vp.update_wireframe_colors()
 
 
+_playback_mode: bool = False
+
+
+def _playback_message():
+    global _playback_mode
+    current_playback_mode = bpy_is_animation_playing()
+    if current_playback_mode != _playback_mode:
+        _playback_mode = current_playback_mode
+        vp = GTLoader.viewport()
+        if _playback_mode:
+            vp.message_to_screen([
+                {'text': 'Playback animation',
+                 'color': (0., 1., 0., 0.85),
+                 'size': 24,
+                 'y': 60},  # line 1
+                {'text': 'ESC: Exit | TAB: Hide/Show',
+                 'color': (1., 1., 1., 0.5),
+                 'size': 20,
+                 'y': 30}])  # line 2
+        else:
+            vp.revert_default_screen_message()
+
+
 class GT_OT_PinMode(Operator):
     bl_idname = GTConfig.gt_pinmode_idname
     bl_label = buttons[bl_idname].label
@@ -369,6 +392,8 @@ class GT_OT_PinMode(Operator):
                 _log.output('CAMERA ROTATED PINMODE OUT')
                 GTLoader.out_pinmode()
                 return {'FINISHED'}
+
+        _playback_message()
 
         if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
                 and event.value == 'PRESS':
