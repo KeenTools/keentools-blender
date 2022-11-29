@@ -21,7 +21,7 @@ from typing import Tuple, Optional, Any
 from functools import partial
 
 import bpy
-from bpy.types import Area
+from bpy.types import Area, Panel
 
 from ...addon_config import Config, geotracker_enabled, addon_pinmode
 from ...geotracker_config import GTConfig, get_gt_settings
@@ -63,11 +63,15 @@ def _start_geomobj_delete_handler() -> None:
 
 
 def _exit_from_localview_button(layout, context):
-    if not addon_pinmode() and check_context_localview(context):
-        col = layout.column()
-        col.alert = True
-        col.scale_y = 2.0
-        col.operator(Config.kt_exit_localview_idname)
+    if addon_pinmode() or not check_context_localview(context):
+        return
+    settings = get_gt_settings()
+    if settings.is_calculating():
+        return
+    col = layout.column()
+    col.alert = True
+    col.scale_y = 2.0
+    col.operator(Config.kt_exit_localview_idname)
 
 
 def show_all_panels() -> bool:
@@ -75,7 +79,7 @@ def show_all_panels() -> bool:
     return settings.current_geotracker_num >= 0
 
 
-class View3DPanel(bpy.types.Panel):
+class View3DPanel(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     # bl_options = {'DEFAULT_CLOSED'}
