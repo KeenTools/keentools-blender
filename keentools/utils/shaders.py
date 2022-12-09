@@ -437,7 +437,7 @@ def lit_fragment_shader() -> str:
         vec3 diffuse  = light.diffuse * diff ;
 
         return attenuation * (ambient + diffuse) * surfColor;
-    };
+    }
 
     void main()
     {
