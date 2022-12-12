@@ -186,4 +186,14 @@ error_messages: Dict = {
         'If you want to manually update the add-on: remove the old add-on, ',
         'restart Blender and install the new version of the add-on.'
     ]),
+    ErrorType.FBGracePeriod: ErrorMessage(_default_width, [
+        'Your FaceBuilder License is switched to Grace period',
+        ' ',
+        'You have to check your license.'
+    ]),
+    ErrorType.GTGracePeriod: ErrorMessage(_default_width, [
+        'Your GeoTracker License is switched to Grace period',
+        ' ',
+        'You have to check your license.'
+    ]),
 }

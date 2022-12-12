@@ -172,5 +172,14 @@ def bpy_localview() -> None:
     bpy.ops.view3d.localview()
 
 
-def bpy_timer_register(func: Callable, first_interval: float=0.01) -> None:
-    bpy.app.timers.register(func, first_interval=0.01)
+def bpy_timer_register(func: Callable, *, first_interval: float=0.01,
+                       persistent: bool=False) -> None:
+    bpy.app.timers.register(func, first_interval=first_interval,
+                            persistent=persistent)
+
+
+def bpy_timer_unregister(func: Callable) -> bool:
+    if bpy.app.timers.is_registered(func):
+        bpy.app.timers.unregister(func)
+        return True
+    return False

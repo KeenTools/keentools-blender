@@ -17,11 +17,10 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import threading
-from typing import Any
-
-import bpy
+from typing import Any, Callable, Optional
 
 from .kt_logging import KTLogger
+from .bpy_common import bpy_timer_register, bpy_timer_unregister
 
 
 _log: Any = KTLogger(__name__)
@@ -29,38 +28,37 @@ _log: Any = KTLogger(__name__)
 
 class KTTimer:
     def __init__(self):
-        self._active = False
+        self._active: bool = False
 
-    def set_active(self, value=True):
+    def set_active(self, value: bool=True):
         self._active = value
 
-    def set_inactive(self):
+    def set_inactive(self) -> None:
         self._active = False
 
-    def is_active(self):
+    def is_active(self) -> bool:
         return self._active
 
-    def _start(self, callback, persistent=True):
+    def _start(self, callback: Callable, persistent: bool=True) -> None:
         self._stop(callback)
-        bpy.app.timers.register(callback, persistent=persistent)
-        _log.output('REGISTER TIMER')
         self.set_active()
+        bpy_timer_register(callback, persistent=persistent)
+        _log.output('REGISTER TIMER')
 
-    def _stop(self, callback):
-        if bpy.app.timers.is_registered(callback):
+    def _stop(self, callback: Callable) -> None:
+        if bpy_timer_unregister(callback):
             _log.output('UNREGISTER TIMER')
-            bpy.app.timers.unregister(callback)
         self.set_inactive()
 
 
 class KTStopShaderTimer(KTTimer):
-    def __init__(self, get_settings_func, stop_func):
+    def __init__(self, get_settings_func: Callable, stop_func: Callable):
         super().__init__()
-        self._uuid = ''
-        self._stop_func = stop_func
-        self._get_settings_func = get_settings_func
+        self._uuid: str = ''
+        self._stop_func: Callable = stop_func
+        self._get_settings_func: Callable = get_settings_func
 
-    def check_pinmode(self):
+    def check_pinmode(self) -> Optional[float]:
         settings = self._get_settings_func()
         if not self.is_active():
             # Timer works when shouldn't
@@ -85,14 +83,14 @@ class KTStopShaderTimer(KTTimer):
         # Interval to next call
         return 1.0
 
-    def get_uuid(self):
+    def get_uuid(self) -> str:
         return self._uuid
 
-    def start(self, uuid=''):
+    def start(self, uuid='') -> None:
         self._uuid = uuid
         self._start(self.check_pinmode, persistent=True)
 
-    def stop(self):
+    def stop(self) -> None:
         self._stop(self.check_pinmode)
 
 

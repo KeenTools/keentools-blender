@@ -265,6 +265,8 @@ class ErrorType:
     PktProblem = 6
     PktModelProblem = 7
     DownloadingProblem = 8
+    FBGracePeriod = 9
+    GTGracePeriod = 10
 
 
 @dataclass(frozen=True)

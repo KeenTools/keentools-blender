@@ -1,0 +1,59 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+# KeenTools for blender is a blender addon for using KeenTools in Blender.
+# Copyright (C) 2019-2022  KeenTools
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# ##### END GPL LICENSE BLOCK #####
+
+from typing import Optional
+
+from ..addon_config import Config, get_operator, ErrorType
+from .timer import KTTimer
+from ..preferences.operators import get_product_license_manager
+from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+
+
+class KTGraceTimer(KTTimer):
+    def __init__(self, product: str='facebuilder'):
+        super().__init__()
+        self._interval: float = 1.0
+        self._product: str = product
+        self._is_started: bool = False
+
+    def _callback(self) -> Optional[float]:
+        lm = get_product_license_manager(product=self._product)
+        res_tuple = lm.perform_license_and_trial_check(
+            strategy=pkt_module().LicenseCheckStrategy.LAZY)
+        lic_status = res_tuple[0].license_status
+        if lic_status.status == 'unchecked':
+            return self._interval
+        state = res_tuple[0].state
+        if state == 'running grace period':
+            if self._product == 'facebuilder':
+                warn = get_operator(Config.kt_warning_idname)
+                warn('INVOKE_DEFAULT', msg=ErrorType.FBGracePeriod)
+            elif self._product == 'geotracker':
+                warn = get_operator(Config.kt_warning_idname)
+                warn('INVOKE_DEFAULT', msg=ErrorType.GTGracePeriod)
+            self.stop()
+            return None
+        return self._interval
+
+    def start(self) -> None:
+        if not self._is_started:
+            self._start(self._callback, persistent=True)
+            self._is_started = True
+
+    def stop(self) -> None:
+        self._stop(self._callback)
