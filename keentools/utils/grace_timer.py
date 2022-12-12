@@ -25,7 +25,7 @@ from ..blender_independent_packages.pykeentools_loader import module as pkt_modu
 
 
 class KTGraceTimer(KTTimer):
-    def __init__(self, product: str='facebuilder'):
+    def __init__(self, product: str):
         super().__init__()
         self._interval: float = 1.0
         self._product: str = product
@@ -35,10 +35,9 @@ class KTGraceTimer(KTTimer):
         lm = get_product_license_manager(product=self._product)
         res_tuple = lm.perform_license_and_trial_check(
             strategy=pkt_module().LicenseCheckStrategy.LAZY)
-        lic_status = res_tuple[0].license_status
-        if lic_status.status == 'unchecked':
-            return self._interval
         state = res_tuple[0].state
+        if state == 'unknown state':
+            return self._interval
         if state == 'running grace period':
             if self._product == 'facebuilder':
                 warn = get_operator(Config.kt_warning_idname)
