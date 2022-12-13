@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import Any, List
+
 from bpy.types import Operator
 from bpy.props import BoolProperty, StringProperty, IntProperty
 
@@ -41,7 +43,7 @@ _log = KTLogger(__name__)
 _please_accept_eula = 'You need to accept our EULA before installation'
 
 
-def get_product_license_manager(product):
+def get_product_license_manager(product: str) -> Any:
     if product == 'facebuilder':
         return pkt_module().FaceBuilder.license_manager()
     elif product == 'geotracker':
@@ -49,12 +51,12 @@ def get_product_license_manager(product):
     assert False, 'Wrong product ID'
 
 
-def _get_hardware_id(product='facebuilder'):
+def _get_hardware_id(product: str='facebuilder') -> str:
     lm = get_product_license_manager(product)
     return lm.hardware_id()
 
 
-def _get_addon_and_core_version_info():
+def _get_addon_and_core_version_info() -> List[str]:
     txt_arr = []
     try:
         txt_arr.append(f'Addon: {Config.addon_name} {Config.addon_version}')

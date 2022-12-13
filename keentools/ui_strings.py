@@ -186,4 +186,26 @@ error_messages: Dict = {
         'If you want to manually update the add-on: remove the old add-on, ',
         'restart Blender and install the new version of the add-on.'
     ]),
+    ErrorType.FBGracePeriod: ErrorMessage(_default_width, [
+        'Sorry, there\'s a problem with your FaceBuilder subscription.',
+        ' ',
+        'If you\'re using \'Online\' mode, please check that your ',
+        'payment method is still valid and you have sufficient funds on your account.',
+        'We\'ll try to charge the subscription fee again in the next couple of days.',
+        ' ',
+        'If you\'re using \'Offline\' mode and have generated the license file manually,',
+        'it\'s time to renew the file. Please log in to User Portal, ',
+        'download a new file and activate it as you did before.'
+    ]),
+    ErrorType.GTGracePeriod: ErrorMessage(_default_width, [
+        'Sorry, there\'s a problem with your GeoTracker subscription.',
+        ' ',
+        'If you\'re using \'Online\' mode, please check that your ',
+        'payment method is still valid and you have sufficient funds on your account.',
+        'We\'ll try to charge the subscription fee again in the next couple of days.',
+        ' ',
+        'If you\'re using \'Offline\' mode and have generated the license file manually,',
+        'it\'s time to renew the file. Please log in to User Portal, ',
+        'download a new file and activate it as you did before.'
+    ]),
 }

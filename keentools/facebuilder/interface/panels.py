@@ -39,9 +39,13 @@ from ...blender_independent_packages.pykeentools_loader import is_installed as p
 from ...utils.other import unhide_viewport_ui_elements_from_object, force_show_ui_overlays
 from ...utils.localview import exit_area_localview, check_context_localview
 from ...utils.bpy_common import bpy_timer_register
+from ...utils.grace_timer import KTGraceTimer
 
 
 _log = KTLogger(__name__)
+
+
+_fb_grace_timer = KTGraceTimer('facebuilder')
 
 
 def _state_valid_to_show(state):
@@ -271,6 +275,7 @@ class FB_PT_HeaderPanel(Common, Panel):
         elif state == 'NO_HEADS':
             self._draw_start_panel(layout)
             KTUpdater.call_updater('FaceBuilder')
+            _fb_grace_timer.start()
             _exit_from_localview_button(layout, context)
             return
 
@@ -278,6 +283,7 @@ class FB_PT_HeaderPanel(Common, Panel):
             self._draw_many_heads(layout)
             _exit_from_localview_button(layout, context)
             KTUpdater.call_updater('FaceBuilder')
+            _fb_grace_timer.start()
 
 
 class FB_PT_UpdatePanel(KT_PT_UpdatePanel):
