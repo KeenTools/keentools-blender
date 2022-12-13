@@ -18,10 +18,15 @@
 
 from typing import Optional
 
+from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType
 from .timer import KTTimer
 from ..preferences.operators import get_product_license_manager
-from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..blender_independent_packages.pykeentools_loader \
+    import module as pkt_module, is_installed as pkt_is_installed
+
+
+_log = KTLogger(__name__)
 
 
 class KTGraceTimer(KTTimer):
@@ -46,11 +51,16 @@ class KTGraceTimer(KTTimer):
                 warn = get_operator(Config.kt_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.GTGracePeriod)
             self.stop()
+            _log.output('GRACE PERIOD HAS BEEN DETECTED. TIMER IS SWITCHED OFF')
+            return None
+        if state == 'running':
+            self.stop()
+            _log.output('LICENSING IS RUNNING. TIMER IS SWITCHED OFF')
             return None
         return self._interval
 
     def start(self) -> None:
-        if not self._is_started:
+        if not self._is_started and pkt_is_installed():
             self._start(self._callback, persistent=True)
             self._is_started = True
 

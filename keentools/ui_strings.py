@@ -189,11 +189,11 @@ error_messages: Dict = {
     ErrorType.FBGracePeriod: ErrorMessage(_default_width, [
         'Your FaceBuilder License is switched to Grace period',
         ' ',
-        'You have to check your license.'
+        'You need to check your license.'
     ]),
     ErrorType.GTGracePeriod: ErrorMessage(_default_width, [
         'Your GeoTracker License is switched to Grace period',
         ' ',
-        'You have to check your license.'
+        'You need to check your license.'
     ]),
 }
