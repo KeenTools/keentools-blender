@@ -51,11 +51,13 @@ class KTGraceTimer(KTTimer):
                 warn = get_operator(Config.kt_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.GTGracePeriod)
             self.stop()
-            _log.output('GRACE PERIOD HAS BEEN DETECTED. TIMER IS SWITCHED OFF')
+            _log.output(f'{self._product} GRACE PERIOD HAS BEEN DETECTED. '
+                        f'TIMER IS SWITCHED OFF')
             return None
         if state == 'running':
             self.stop()
-            _log.output('LICENSING IS RUNNING. TIMER IS SWITCHED OFF')
+            _log.output(f'{self._product} LICENSING IS RUNNING. '
+                        f'TIMER IS SWITCHED OFF')
             return None
         return self._interval
 
