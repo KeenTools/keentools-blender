@@ -18,8 +18,9 @@
 
 import re
 from functools import partial
+from typing import Optional
 
-from bpy.types import Panel
+from bpy.types import Panel, Area, Window, Screen
 
 from ...utils.kt_logging import KTLogger
 from ...updater.panels import (KT_PT_UpdatePanel,
@@ -82,10 +83,11 @@ def _draw_update_blendshapes_panel(layout):
     box.operator(FBConfig.fb_update_blendshapes_idname)
 
 
-def _pinmode_escaper(area):
+def _pinmode_escaper(area: Area, window: Optional[Window],
+                     screen: Optional[Screen]) -> None:
     settings = get_fb_settings()
     head = settings.get_head(settings.current_headnum)
-    exit_area_localview(area)
+    exit_area_localview(area, window, screen)
     settings.pinmode = False
 
     if head is None or not head.headobj:
@@ -98,8 +100,8 @@ def _pinmode_escaper(area):
 
 def _start_pinmode_escaper(context):
     _log.output(f'_start_pinmode_escaper: area={context.area}')
-    bpy_timer_register(partial(_pinmode_escaper, context.area),
-                       first_interval=0.01)
+    bpy_timer_register(partial(_pinmode_escaper, context.area, context.window,
+                               context.screen), first_interval=0.01)
 
 
 def _exit_from_localview_button(layout, context):

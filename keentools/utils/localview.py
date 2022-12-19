@@ -19,7 +19,7 @@
 from typing import Optional, Any
 
 import bpy
-from bpy.types import Area
+from bpy.types import Area, Window, Screen
 
 from .kt_logging import KTLogger
 from .bpy_common import operator_with_context
@@ -49,15 +49,19 @@ def enter_area_localview(area: Optional[Area]):
     return False
 
 
-def exit_area_localview(area: Optional[Area]):
+def exit_area_localview(area: Optional[Area], window: Optional[Window]=None,
+                        screen: Optional[Screen]=None):
     _log.output(f'exit_area_localview: area={area}')
     if check_area_active_problem(area):
         _log.output('exit_area_localview check_area_active_problem')
         return False
     if area.spaces.active.local_view:
+        win = bpy.context.window if window is None else window
+        scr = bpy.context.screen if screen is None else screen
         operator_with_context(bpy.ops.view3d.localview,
-                              {'window': bpy.context.window,  # Fix
-                               'area':area})
+                              {'window': win,
+                               'area':area,
+                               'screen': scr})
         _log.output('exit_area_localview success')
         return True
     return False
