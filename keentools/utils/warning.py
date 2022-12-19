@@ -15,114 +15,42 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+
+from typing import Any, List, Set
 import re
-import bpy
+
+from bpy.types import Operator
+from bpy.props import IntProperty, StringProperty
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType
 from ..facebuilder_config import FBConfig
+from ..ui_strings import error_messages
 
 
 _log = KTLogger(__name__)
 
 
-_default_width = 400
-_ERROR_MESSAGES = {
-    ErrorType.NoLicense: {
-        'width': _default_width,
-        'message': [
-                'License is not found',
-                ' ',
-                'You have 0 days of trial left and there is no license '
-                'installed',
-                'or something wrong has happened with the installed license.',
-                'Please check the license settings.'
-            ],
-    },
-    ErrorType.SceneDamaged: {
-        'width': _default_width,
-        'message': [
-                'Scene was damaged',
-                ' ',
-                'Some objects created by FaceBuilder were missing '
-                'from the scene.',
-                'The scene was restored automatically.'
-            ],
-    },
-    ErrorType.CannotReconstruct: {
-        'width': _default_width,
-        'message': [
-                'Reconstruction is impossible',
-                ' ',
-                'Object parameters are invalid or missing.'
-            ],
-    },
-    ErrorType.CannotCreateObject: {
-        'width': _default_width,
-        'message': [
-                'Cannot create object',
-                ' ',
-                'An error occurred while creating an object.'
-            ],
-    },
-    ErrorType.MeshCorrupted: {
-        'width': _default_width,
-        'message': [
-                'Wrong topology',
-                ' ',
-                'The FaceBuilder mesh is damaged and cannot be used.'
-            ],
-    },
-    ErrorType.PktProblem: {
-        'width': _default_width,
-        'message': [
-                'KeenTools Core is missing',
-                ' ',
-                'You need to install KeenTools Core library '
-                'before using FaceBuilder.'
-            ],
-    },
-    ErrorType.PktModelProblem: {
-        'width': _default_width,
-        'message': [
-                'KeenTools Core corrupted',
-                ' ',
-                'Model data cannot be loaded. You need to reinstall '
-                'FaceBuilder.'
-            ],
-    },
-    ErrorType.DownloadingProblem: {
-        'width': 650,
-        'message': [
-                'Downloading error',
-                ' ',
-                'An unknown error encountered. The downloaded files might be corrupted. ',
-                'You can try downloading them again, '
-                'restarting Blender or installing the update manually.',
-                'If you want to manually update the add-on: remove the old add-on, ',
-                'restart Blender and install the new version of the add-on.'
-            ],
-    },
-}
+_default_width: int = 400
 
 
-class KT_OT_AddonWarning(bpy.types.Operator):
+class KT_OT_AddonWarning(Operator):
     bl_idname = Config.kt_warning_idname
     bl_label = ''
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    msg: bpy.props.IntProperty(default=ErrorType.Unknown)
-    msg_content: bpy.props.StringProperty(default='')
-    msg_width: bpy.props.IntProperty(default=_default_width)
+    msg: IntProperty(default=ErrorType.Unknown)
+    msg_content: StringProperty(default='')
+    msg_width: IntProperty(default=_default_width)
 
-    content = []
-    width = _default_width
+    content: List[str] = []
+    width: int = _default_width
 
-    def set_content(self, txt_list):
+    def set_content(self, txt_list: List) -> None:
         self.content = txt_list
         self.content.append(' ')  # Additional line at the end
 
-    def draw(self, context):
+    def draw(self, context: Any) -> None:
         layout = self.layout.column()
         layout.scale_y = Config.text_scale_y
 
@@ -134,29 +62,31 @@ class KT_OT_AddonWarning(bpy.types.Operator):
                                       text='Purchase a license')
             op.url = FBConfig.fb_license_purchase_url
 
-    def execute(self, context):
-        if self.msg not in (ErrorType.PktProblem, ErrorType.NoLicense):
+    def execute(self, context: Any) -> Set:
+        if self.msg not in (ErrorType.PktProblem, ErrorType.NoLicense,
+                            ErrorType.FBGracePeriod, ErrorType.GTGracePeriod):
             return {'FINISHED'}
 
         op = get_operator(Config.kt_addon_settings_idname)
         op('EXEC_DEFAULT', show='all')
         return {'FINISHED'}
 
-    def _output_error_to_console(self):
+    def _output_error_to_console(self) -> None:
         _log.warning('\n--- KeenTools Addon Warning [{}] ---\n'
                      '{}\n---\n'.format(self.msg, '\n'.join(self.content)))
 
-    def invoke(self, context, event):
+    def invoke(self, context: Any, event: Any) -> Set:
         if self.msg == ErrorType.CustomMessage:
             self.set_content(re.split('\r\n|\n', self.msg_content))
             self._output_error_to_console()
-            return context.window_manager.invoke_props_dialog(self, width=self.msg_width)
+            return context.window_manager.invoke_props_dialog(
+                self, width=self.msg_width)
 
-        if self.msg not in _ERROR_MESSAGES.keys():
+        if self.msg not in error_messages.keys():
             return {'FINISHED'}
 
-        message_dict = _ERROR_MESSAGES[self.msg]
-        self.set_content(message_dict['message'])
+        message_named_tuple = error_messages[self.msg]
+        self.set_content(message_named_tuple.message)
         self._output_error_to_console()
         return context.window_manager.invoke_props_dialog(
-            self, width=message_dict['width'])
+            self, width=message_named_tuple.width)

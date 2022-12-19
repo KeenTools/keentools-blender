@@ -204,12 +204,17 @@ def region_to_image_space(x: float, y: float, x1: float, y1: float,
     return (x - (x1 + x2) * 0.5) / sc, (y - (y1 + y2) * 0.5) / sc
 
 
-def pin_to_xyz_from_mesh(pin: Any, headobj: Any) -> Tuple[float, float, float]:
+def pin_to_xyz_from_mesh(
+        pin: Any, obj: Object) -> Optional[Tuple[float, float, float]]:
     """ Surface point from barycentric to XYZ using passed mesh"""
     sp = pin.surface_point
     gp = sp.geo_point_idxs
     bar = sp.barycentric_coordinates
-    vv = headobj.data.vertices
+    vv = obj.data.vertices
+    verts_count = len(vv)
+    if len(gp) < 3 or gp[0] >= verts_count or \
+            gp[1] >= verts_count or gp[2] >= verts_count:
+        return None
     p = vv[gp[0]].co * bar[0] + vv[gp[1]].co * bar[1] + vv[gp[2]].co * bar[2]
     return p
 
@@ -301,29 +306,28 @@ def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
     return x1, y1, x2, y2
 
 
-def is_safe_region(area: Area, x: float, y: float) -> bool:
-    """ Safe region for pin operation """
+def point_is_in_area(area: Area, x: float, y: float) -> bool:
+    if bpy_background_mode():
+        context = get_fake_context()
+        area = context.area
+    return (0 <= x <= area.width) and (0 <= y <= area.height)
+
+
+def point_is_in_service_region(area: Area, x: float, y: float) -> bool:
+    """ No guarantee that point is in area!
+        Only check if point is in service region  """
     if bpy_background_mode():
         context = get_fake_context()
         area = context.area
 
     x0 = area.x
     y0 = area.y
-    for i, r in enumerate(area.regions):
+    for r in area.regions:
         if r.type != 'WINDOW':
             if (r.x <= x + x0 <= r.x + r.width) and (
                     r.y <= y + y0 <= r.y + r.height):
-                return False
-    return True
-
-
-def is_in_area(area: Area, x: float, y: float) -> bool:
-    """ Is point in area """
-    if bpy_background_mode():
-        context = get_fake_context()
-        area = context.area
-
-    return (0 <= x <= area.width) and (0 <= y <= area.height)
+                return True
+    return False
 
 
 def get_pixel_relative_size(area: Area) -> float:
@@ -446,11 +450,11 @@ def get_triangulation_indices(mesh: Any, calculate: bool = True) -> Any:
 def get_polygons_in_vertex_group(obj: Object,
                                  vertex_group_name: str,
                                  inverted=False) -> Set[int]:
-    mesh = evaluated_mesh(obj)
     vertex_group_index = obj.vertex_groups.find(vertex_group_name)
     if vertex_group_index < 0:
         return set()
 
+    mesh = evaluated_mesh(obj)
     verts_in_group = set([v.index for v in mesh.vertices
                           if vertex_group_index in
                           [g.group for g in v.groups]])
@@ -472,9 +476,42 @@ def get_polygons_in_vertex_group(obj: Object,
 def get_triangles_in_vertex_group(obj: Object,
                                   vertex_group_name: str,
                                   inverted=False) -> List:
+    if vertex_group_name == '':
+        return []
+
     polys_in_group = get_polygons_in_vertex_group(obj, vertex_group_name,
                                                   inverted)
+    if len(polys_in_group) == 0:
+        return []
+
     mesh = evaluated_mesh(obj)
     mesh.calc_loop_triangles()
     return [tris.vertices[:] for tris in mesh.loop_triangles
             if tris.polygon_index in polys_in_group]
+
+
+def distance_between_objects(obj1: Object, obj2: Object) -> float:
+    ar1 = np.asarray(obj1.matrix_world)
+    ar2 = np.asarray(obj2.matrix_world)
+    return np.linalg.norm(ar1[:, 3] - ar2[:, 3], axis=0)
+
+
+def change_far_clip_plane(camobj: Object, geomobj: Object, *, step: float=1.01,
+                          prev_clip_end=1000.0) -> Tuple[bool, float]:
+    if not camobj or not geomobj:
+        return False, prev_clip_end
+    dist = distance_between_objects(camobj, geomobj)
+
+    clip_end = camobj.data.clip_end
+    if clip_end < dist:
+        _log.output(f'OBJECT IS BEYOND THE CAMERA FAR CLIP PLANE:\n '
+                    f'DIST: {dist} OLD CLIP: {clip_end}')
+        camobj.data.clip_end = dist * step
+        return True, camobj.data.clip_end
+
+    if clip_end > prev_clip_end and dist * step < prev_clip_end:
+        _log.output(f'REVERT THE CAMERA FAR CLIP PLANE:\n '
+                    f'DIST: {dist} OLD CLIP: {clip_end} REVERT: {prev_clip_end}')
+        camobj.data.clip_end = prev_clip_end
+        return True, prev_clip_end
+    return False, dist

@@ -15,100 +15,92 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
+
 import threading
-from typing import Any
+from typing import Any, Callable, Optional
 
-import bpy
-
-
-_logger: Any = logging.getLogger(__name__)
+from .kt_logging import KTLogger
+from .bpy_common import bpy_timer_register, bpy_timer_unregister
 
 
-def _log_output(message: str) -> None:
-    global _logger
-    _logger.debug(message)
+_log: Any = KTLogger(__name__)
 
 
 class KTTimer:
     def __init__(self):
-        self._active = False
+        self._active: bool = False
 
-    def set_active(self, value=True):
+    def set_active(self, value: bool=True):
         self._active = value
 
-    def set_inactive(self):
+    def set_inactive(self) -> None:
         self._active = False
 
-    def is_active(self):
+    def is_active(self) -> bool:
         return self._active
 
-    def _start(self, callback, persistent=True):
-        logger = logging.getLogger(__name__)
+    def _start(self, callback: Callable, persistent: bool=True) -> None:
         self._stop(callback)
-        bpy.app.timers.register(callback, persistent=persistent)
-        logger.debug('REGISTER TIMER')
         self.set_active()
+        bpy_timer_register(callback, persistent=persistent)
+        _log.output('REGISTER TIMER')
 
-    def _stop(self, callback):
-        logger = logging.getLogger(__name__)
-        if bpy.app.timers.is_registered(callback):
-            logger.debug('UNREGISTER TIMER')
-            bpy.app.timers.unregister(callback)
+    def _stop(self, callback: Callable) -> None:
+        if bpy_timer_unregister(callback):
+            _log.output('UNREGISTER TIMER')
         self.set_inactive()
 
 
 class KTStopShaderTimer(KTTimer):
-    def __init__(self, get_settings_func, stop_func):
+    def __init__(self, get_settings_func: Callable, stop_func: Callable):
         super().__init__()
-        self._uuid = ''
-        self._stop_func = stop_func
-        self._get_settings_func = get_settings_func
+        self._uuid: str = ''
+        self._stop_func: Callable = stop_func
+        self._get_settings_func: Callable = get_settings_func
 
-    def check_pinmode(self):
-        logger = logging.getLogger(__name__)
+    def check_pinmode(self) -> Optional[float]:
         settings = self._get_settings_func()
         if not self.is_active():
             # Timer works when shouldn't
-            logger.debug('STOP SHADER INACTIVE')
+            _log.output('STOP SHADER INACTIVE')
             return None
         # Timer is active
         if not settings.pinmode:
             # But we are not in pinmode
-            logger.debug('CALL STOP SHADERS')
+            _log.output('CALL STOP SHADERS')
             self._stop_func()
             self.stop()
-            logger.debug('STOP SHADER FORCE')
+            _log.output('STOP SHADER FORCE')
             return None
         else:
             if settings.pinmode_id != self.get_uuid():
                 # pinmode id externally changed
-                logger.debug('CALL STOP SHADERS')
+                _log.output('CALL STOP SHADERS')
                 self._stop_func()
                 self.stop()
-                logger.debug('STOP SHADER FORCED BY PINMODE_ID')
+                _log.output('STOP SHADER FORCED BY PINMODE_ID')
                 return None
         # Interval to next call
         return 1.0
 
-    def get_uuid(self):
+    def get_uuid(self) -> str:
         return self._uuid
 
-    def start(self, uuid=''):
+    def start(self, uuid='') -> None:
         self._uuid = uuid
         self._start(self.check_pinmode, persistent=True)
 
-    def stop(self):
+    def stop(self) -> None:
         self._stop(self.check_pinmode)
 
 
 class RepeatTimer(threading.Timer):
     def run(self):
         interval = self.interval
-        _log_output('RepeatTimer start')
+        _log.output('RepeatTimer start')
         while not self.finished.wait(interval):
-            _log_output(f'RepeatTimer: {interval}')
+            _log.output(f'RepeatTimer: {interval}')
             interval = self.function()
             if interval == None:
-                _log_output('RepeatTimer out')
+                _log.output('RepeatTimer out')
                 break

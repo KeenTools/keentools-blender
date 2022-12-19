@@ -162,3 +162,24 @@ def bpy_show_addon_preferences():
 
 def bpy_view_camera():
     bpy.ops.view3d.view_camera()
+
+
+def bpy_url_open(url):
+    bpy.ops.wm.url_open(url=url)
+
+
+def bpy_localview() -> None:
+    bpy.ops.view3d.localview()
+
+
+def bpy_timer_register(func: Callable, *, first_interval: float=0.01,
+                       persistent: bool=False) -> None:
+    bpy.app.timers.register(func, first_interval=first_interval,
+                            persistent=persistent)
+
+
+def bpy_timer_unregister(func: Callable) -> bool:
+    if bpy.app.timers.is_registered(func):
+        bpy.app.timers.unregister(func)
+        return True
+    return False

@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
 import bpy
 import addon_utils
 
+from ..utils.kt_logging import KTLogger
 from ..addon_config import Config
 from ..facebuilder_config import (FBConfig,
                                   get_fb_settings,
@@ -38,6 +38,10 @@ from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
 from ..utils.ui_redraw import (find_modules_by_name_starting_with,
                                collapse_all_modules,
                                mark_old_modules)
+from ..utils.bpy_common import bpy_timer_register
+
+
+_log = KTLogger(__name__)
 
 
 class FB_PT_OldFaceBuilderWarning(bpy.types.Panel):
@@ -91,46 +95,41 @@ CLASSES_TO_REGISTER = (MESH_OT_FBAddHead,
 
 
 def _unregister_old_facebuilder():
-    logger = logging.getLogger(__name__)
-    log_error = logger.error
-    log_output = logger.debug
     if not check_addon_settings_var_exists():
-        log_output('NO OLD FACEBUILDER HAS BEEN FOUND')
+        _log.output('NO OLD FACEBUILDER HAS BEEN FOUND')
         return
 
-    log_error('OLD FACEBUILDER HAS BEEN FOUND! START DEACTIVATION')
+    _log.error('OLD FACEBUILDER HAS BEEN FOUND! START DEACTIVATION')
 
     import sys
     mod = sys.modules.get(Config.old_facebuilder_addon_name)
-    log_error(f'OLD MODULE:\n{mod}')
+    _log.error(f'OLD MODULE:\n{mod}')
 
     try:
         addon_utils.disable(Config.old_facebuilder_addon_name, default_set=True)
-        log_output('OLD FB ADDON HAS BEEN DISABLED')
+        _log.output('OLD FB ADDON HAS BEEN DISABLED')
     except Exception as err:
-        log_error(f'CANNOT DISABLE OLD FB: \n{str(err)}')
+        _log.error(f'CANNOT DISABLE OLD FB: \n{str(err)}')
 
     try:
         mod.unregister = old_facebuilder_unregister_replacement
         mod.register = old_facebuilder_register_replacement
-        log_output('OLD FB HANDLERS HAS BEEN REPLACED')
+        _log.output('OLD FB HANDLERS HAS BEEN REPLACED')
     except Exception as err:
-        log_error(f'CANNOT REGISTER HANDLERS: \n{str(err)}')
+        _log.error(f'CANNOT REGISTER HANDLERS: \n{str(err)}')
 
     try:
         bpy.utils.register_class(OldFBAddonPreferences)
     except Exception as err:
-        log_error(f'CANNOT REGISTER PREFERENCES REPLACEMENT CLASS: \n{str(err)}')
+        _log.error(f'CANNOT REGISTER PREFERENCES REPLACEMENT CLASS: \n{str(err)}')
 
 
 def old_facebuilder_register_replacement():
-    logger = logging.getLogger(__name__)
-    logger.error('OLD FACEBUILDER REGISTER CALL')
+    _log.error('OLD FACEBUILDER REGISTER CALL')
 
 
 def old_facebuilder_unregister_replacement():
-    logger = logging.getLogger(__name__)
-    logger.error('OLD FACEBUILDER UNREGISTER CALL')
+    _log.error('OLD FACEBUILDER UNREGISTER CALL')
 
 
 def _add_addon_settings_var():
@@ -152,14 +151,13 @@ def menu_func(self, context):
 def get_fb_settings_safe():
     name = FBConfig.fb_global_var_name
     if not hasattr(bpy.context.scene, name):
-        bpy.app.timers.register(_add_addon_settings_var, first_interval=0.1)
+        bpy_timer_register(_add_addon_settings_var, first_interval=0.1)
         return None
     return getattr(bpy.context.scene, name)
 
 
 def facebuilder_register():
     global CLASSES_TO_REGISTER
-    logger = logging.getLogger(__name__)
 
     _unregister_old_facebuilder()
 
@@ -173,37 +171,36 @@ def facebuilder_register():
         if FB_PT_OldFaceBuilderWarning not in CLASSES_TO_REGISTER:
             CLASSES_TO_REGISTER = (FB_PT_OldFaceBuilderWarning,) + CLASSES_TO_REGISTER
 
-    logger.debug('START FACEBUILDER REGISTER CLASSES')
+    _log.output('START FACEBUILDER REGISTER CLASSES')
     for cls in CLASSES_TO_REGISTER:
-        logger.debug('REGISTER FB CLASS: \n{}'.format(str(cls)))
+        _log.output(f'REGISTER FB CLASS:\n{str(cls)}')
         bpy.utils.register_class(cls)
 
     bpy.types.VIEW3D_MT_mesh_add.append(menu_func)
-    logger.debug('FACEBUILDER ADD MESH MENU REGISTERED')
+    _log.output('FACEBUILDER ADD MESH MENU REGISTERED')
     _add_addon_settings_var()
-    logger.debug('MAIN FACEBUILDER VARIABLE REGISTERED')
+    _log.output('MAIN FACEBUILDER VARIABLE REGISTERED')
 
     FBIcons.register()
-    logger.debug('FACEBUILDER ICONS REGISTERED')
+    _log.output('FACEBUILDER ICONS REGISTERED')
 
     set_fb_settings_func(get_fb_settings_safe)
 
 
 def facebuilder_unregister():
-    logger = logging.getLogger(__name__)
-    logger.debug('START UNREGISTER CLASSES')
+    _log.output('START UNREGISTER CLASSES')
 
     for cls in reversed(CLASSES_TO_REGISTER):
-        logger.debug('UNREGISTER FB CLASS: \n{}'.format(str(cls)))
+        _log.output(f'UNREGISTER FB CLASS:\n{str(cls)}')
         bpy.utils.unregister_class(cls)
 
     bpy.types.VIEW3D_MT_mesh_add.remove(menu_func)
-    logger.debug('FACEBUILDER ADD MESH MENU UNREGISTERED')
+    _log.output('FACEBUILDER ADD MESH MENU UNREGISTERED')
     if check_addon_settings_var_type() == FBSceneSettings:
         remove_addon_settings_var()
-        logger.debug('MAIN FACEBUILDER VARIABLE UNREGISTERED')
+        _log.output('MAIN FACEBUILDER VARIABLE UNREGISTERED')
     else:
-        logger.error('CANNOT UNREGISTER MAIN FB VAR')
+        _log.error('CANNOT UNREGISTER MAIN FB VAR')
 
     FBIcons.unregister()
-    logger.debug('FACEBUILDER ICONS UNREGISTERED')
+    _log.output('FACEBUILDER ICONS UNREGISTERED')

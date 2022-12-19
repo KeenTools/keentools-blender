@@ -19,14 +19,27 @@
 from typing import Any
 from uuid import uuid4
 import numpy as np
+from copy import deepcopy
 
 import bpy
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, get_operator, ErrorType, show_user_preferences
+from ..addon_config import (Config,
+                            get_operator,
+                            ErrorType,
+                            show_user_preferences,
+                            gt_pinmode)
 from ..facebuilder_config import FBConfig, get_fb_settings
-from ..utils.bpy_common import operator_with_context, bpy_view_camera
-from ..utils import coords
+from ..utils.bpy_common import (operator_with_context,
+                                bpy_view_camera,
+                                bpy_render_frame)
+from ..utils.coords import (update_head_mesh_non_neutral,
+                            get_image_space_coord,
+                            nearest_point,
+                            point_is_in_area,
+                            point_is_in_service_region,
+                            get_area_region,
+                            get_camera_border)
 from .utils.manipulate import push_head_in_undo_history
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
@@ -34,6 +47,7 @@ from ..utils.other import hide_viewport_ui_elements_and_store_on_object
 from ..utils.html import split_long_string
 from ..utils.localview import exit_area_localview, check_area_active_problem
 from ..utils.manipulate import switch_to_camera, center_viewports_on_object
+from .ui_strings import buttons
 
 
 _log = KTLogger(__name__)
@@ -71,10 +85,19 @@ def register_undo_handler():
     bpy.app.handlers.undo_post.append(_undo_handler)
 
 
+def _calc_adaptive_opacity(area):
+    settings = get_fb_settings()
+    rx, ry = bpy_render_frame()
+    x1, y1, x2, y2 = get_camera_border(area)
+    settings.adaptive_opacity = (x2 - x1) / rx
+    vp = FBLoader.viewport()
+    vp.update_wireframe_colors()
+
+
 class FB_OT_PinMode(bpy.types.Operator):
     bl_idname = FBConfig.fb_pinmode_idname
-    bl_label = 'FaceBuilder Pinmode'
-    bl_description = 'Operator for in-Viewport drawing'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: bpy.props.IntProperty(default=0)
@@ -84,15 +107,22 @@ class FB_OT_PinMode(bpy.types.Operator):
 
     _shift_pressed = False
     _prev_camera_state = ()
+    _prev_area_state = ()
 
     @classmethod
     def _check_camera_state_changed(cls, rv3d):
         camera_state = (rv3d.view_camera_zoom, rv3d.view_camera_offset)
-
         if camera_state != cls._prev_camera_state:
             cls._prev_camera_state = camera_state
             return True
+        return False
 
+    @classmethod
+    def _check_area_state_changed(cls, area):
+        area_state = (area.x, area.y, area.width, area.height)
+        if area_state != cls._prev_area_state:
+            cls._prev_area_state = area_state
+            return True
         return False
 
     @classmethod
@@ -120,7 +150,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         wf.init_colors((settings.wireframe_color,
                        settings.wireframe_special_color,
                        settings.wireframe_midline_color),
-                       settings.wireframe_opacity)
+                       settings.wireframe_opacity * settings.get_adaptive_opacity())
 
         fb = FBLoader.get_builder()
         if not wf.init_wireframe_image(fb, settings.show_specials):
@@ -138,17 +168,10 @@ class FB_OT_PinMode(bpy.types.Operator):
         if flag:
             vp.revert_default_screen_message(unregister=False)
         else:
-            vp.message_to_screen([
-            {'text': 'Wireframe is hidden. Press Tab to reveal',
-             'color': (1., 0., 1., 0.7),
-             'size': 24,
-             'y': 60},  # line 1
-            {'text': 'ESC: Exit | LEFT CLICK: Create Pin | '
-                     'RIGHT CLICK: Delete Pin | TAB: Hide/Show',
-             'color': (1., 1., 1., 0.5),
-             'size': 20,
-             'y': 30}  # line 2
-        ])
+            default_txt = deepcopy(vp.texter().get_default_text())
+            default_txt[0]['text'] = 'Wireframe is hidden. Press Tab to reveal'
+            default_txt[0]['color'] = (1., 0., 1., 0.85)
+            vp.message_to_screen(default_txt)
 
     def _delete_found_pin(self, nearest, area):
         settings = get_fb_settings()
@@ -167,7 +190,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             unregister_undo_handler()
             return {'FINISHED'}
 
-        coords.update_head_mesh_non_neutral(fb, head)
+        update_head_mesh_non_neutral(fb, head)
         FBLoader.update_camera_pins_count(headnum, camnum)
 
         FBLoader.update_all_camera_positions(headnum)
@@ -197,9 +220,9 @@ class FB_OT_PinMode(bpy.types.Operator):
         vp = FBLoader.viewport()
         vp.update_view_relative_pixel_size(area)
 
-        x, y = coords.get_image_space_coord(mouse_x, mouse_y, area)
+        x, y = get_image_space_coord(mouse_x, mouse_y, area)
 
-        nearest, dist2 = coords.nearest_point(x, y, vp.pins().arr())
+        nearest, dist2 = nearest_point(x, y, vp.pins().arr())
         if nearest >= 0 and dist2 < FBLoader.viewport().tolerance_dist2():
             return self._delete_found_pin(nearest, area)
 
@@ -209,10 +232,10 @@ class FB_OT_PinMode(bpy.types.Operator):
     def _on_left_mouse_press(self, area, mouse_x, mouse_y):
         FBLoader.viewport().update_view_relative_pixel_size(area)
 
-        if not coords.is_in_area(area, mouse_x, mouse_y):
+        if not point_is_in_area(area, mouse_x, mouse_y):
             return {'PASS_THROUGH'}
 
-        if coords.is_safe_region(area, mouse_x, mouse_y):
+        if not point_is_in_service_region(area, mouse_x, mouse_y):
             settings = get_fb_settings()
             op = get_operator(FBConfig.fb_movepin_idname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
@@ -236,6 +259,12 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         if not settings.check_heads_and_cams():
             self._fix_heads_with_warning()
+            return {'CANCELLED'}
+
+        if gt_pinmode():
+            msg = 'Cannot start while GeoTracker is in Pin mode!'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
             return {'CANCELLED'}
 
         head = settings.get_head(self.headnum)
@@ -337,10 +366,11 @@ class FB_OT_PinMode(bpy.types.Operator):
             return {'CANCELLED'}
 
         FBLoader.load_pins_into_viewport(settings.current_headnum, settings.current_camnum)
-        coords.update_head_mesh_non_neutral(FBLoader.get_builder(), head)
+        update_head_mesh_non_neutral(FBLoader.get_builder(), head)
 
         update_camera_focal(camera, fb)
 
+        _calc_adaptive_opacity(context.area)
         self._init_wireframer_colors()
         if first_start:
             hide_viewport_ui_elements_and_store_on_object(context.area, headobj)
@@ -365,7 +395,7 @@ class FB_OT_PinMode(bpy.types.Operator):
             assert area.spaces.active.region_3d.view_perspective == 'CAMERA'
             _log.output('bpy.ops.view3d.view_center_camera call')
             operator_with_context(bpy.ops.view3d.view_center_camera,
-                {'area': area, 'region': coords.get_area_region(area)})
+                {'area': area, 'region': get_area_region(area)})
 
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
         push_head_in_undo_history(head, 'Pin Mode Start.')
@@ -446,8 +476,11 @@ class FB_OT_PinMode(bpy.types.Operator):
             exit_area_localview(context.area)
             return {'FINISHED'}
 
-        if self._check_camera_state_changed(context.space_data.region_3d):
+        if self._check_camera_state_changed(context.space_data.region_3d) or \
+                self._check_area_state_changed(FBLoader.get_work_area()):
             _log.output('CAMERA STATE CHANGED. FORCE TAG REDRAW')
+
+            _calc_adaptive_opacity(context.area)
             context.area.tag_redraw()
 
         if event.value == 'PRESS' and event.type == 'TAB':

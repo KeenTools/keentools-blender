@@ -16,153 +16,92 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy
+from typing import Any, Callable
+
+from bpy.types import Operator
 
 from ...addon_config import Config
 from ...geotracker_config import GTConfig
+from ..ui_strings import buttons, help_texts
 
 
-_help_window_width = 500
+def _universal_draw(id: str) -> Callable:
+    def _draw(self, context: Any) -> None:
+        layout = self.layout
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        content = help_texts[id].message
+
+        for txt in content:
+            col.label(text=txt)
+        layout.separator()
+    return _draw
+
+
+def _universal_invoke(id: str) -> Callable:
+    def _invoke(self, context: Any, event: Any) -> None:
+        return context.window_manager.invoke_props_dialog(
+            self, width=help_texts[id].width)
+    return _invoke
 
 
 class GTHELP_Common:
     bl_options = {'REGISTER', 'INTERNAL'}
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(
-            self, width=_help_window_width)
-
     def execute(self, context):
         return {'FINISHED'}
 
 
-class GTHELP_OT_InputsHelp(GTHELP_Common, bpy.types.Operator):
+class GTHELP_OT_InputsHelp(GTHELP_Common, Operator):
     bl_idname = GTConfig.gt_help_inputs_idname
-    bl_label = 'Inputs help'
-    bl_description = 'Show help information about Inputs panel'
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-        content = [
-            'Inputs panel description will be here...',
-            ' '
-        ]
-
-        for txt in content:
-            col.label(text=txt)
-        layout.separator()
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    draw = _universal_draw(bl_idname)
+    invoke = _universal_invoke(bl_idname)
 
 
-class GTHELP_OT_AnalyzeHelp(GTHELP_Common, bpy.types.Operator):
+class GTHELP_OT_AnalyzeHelp(GTHELP_Common, Operator):
     bl_idname = GTConfig.gt_help_analyze_idname
-    bl_label = 'Analyze help'
-    bl_description = 'Show help information about Analyze panel'
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-        content = [
-            'Analyze panel description will be here...',
-            ' '
-        ]
-
-        for txt in content:
-            col.label(text=txt)
-        layout.separator()
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    draw = _universal_draw(bl_idname)
+    invoke = _universal_invoke(bl_idname)
 
 
-class GTHELP_OT_CameraHelp(GTHELP_Common, bpy.types.Operator):
+class GTHELP_OT_CameraHelp(GTHELP_Common, Operator):
     bl_idname = GTConfig.gt_help_camera_idname
-    bl_label = 'Camera help'
-    bl_description = 'Show help information about Camera settings panel'
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-        content = [
-            'Camera panel description will be here...',
-            ' '
-        ]
-
-        for txt in content:
-            col.label(text=txt)
-        layout.separator()
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    draw = _universal_draw(bl_idname)
+    invoke = _universal_invoke(bl_idname)
 
 
-class GTHELP_OT_TrackingHelp(GTHELP_Common, bpy.types.Operator):
+class GTHELP_OT_TrackingHelp(GTHELP_Common, Operator):
     bl_idname = GTConfig.gt_help_tracking_idname
-    bl_label = 'Tracking help'
-    bl_description = 'Show help information about Tracking panel'
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-        content = [
-            'Tracking panel description will be here...',
-            ' '
-        ]
-
-        for txt in content:
-            col.label(text=txt)
-        layout.separator()
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    draw = _universal_draw(bl_idname)
+    invoke = _universal_invoke(bl_idname)
 
 
-class GTHELP_OT_AppearanceHelp(GTHELP_Common, bpy.types.Operator):
+class GTHELP_OT_AppearanceHelp(GTHELP_Common, Operator):
     bl_idname = GTConfig.gt_help_appearance_idname
-    bl_label = 'Appearance help'
-    bl_description = 'Show help information about Appearance panel'
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-        content = [
-            'Appearance panel description will be here...',
-            ' '
-        ]
-
-        for txt in content:
-            col.label(text=txt)
-        layout.separator()
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    draw = _universal_draw(bl_idname)
+    invoke = _universal_invoke(bl_idname)
 
 
-class GTHELP_OT_TextureHelp(GTHELP_Common, bpy.types.Operator):
+class GTHELP_OT_TextureHelp(GTHELP_Common, Operator):
     bl_idname = GTConfig.gt_help_texture_idname
-    bl_label = 'Texture help'
-    bl_description = 'Show help information about Texture panel'
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-        content = [
-            'Texture panel description will be here...',
-            ' '
-        ]
-
-        for txt in content:
-            col.label(text=txt)
-        layout.separator()
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    draw = _universal_draw(bl_idname)
+    invoke = _universal_invoke(bl_idname)
 
 
-class GTHELP_OT_AnimationHelp(GTHELP_Common, bpy.types.Operator):
+class GTHELP_OT_AnimationHelp(GTHELP_Common, Operator):
     bl_idname = GTConfig.gt_help_animation_idname
-    bl_label = 'Animation help'
-    bl_description = 'Show help information about Animation panel'
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-        content = [
-            'Animation panel description will be here...',
-            ' '
-        ]
-
-        for txt in content:
-            col.label(text=txt)
-        layout.separator()
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    draw = _universal_draw(bl_idname)
+    invoke = _universal_invoke(bl_idname)

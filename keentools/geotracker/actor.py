@@ -22,11 +22,13 @@ import bpy
 
 from ..geotracker_config import GTConfig, get_current_geotracker_item
 from .utils.geotracker_acts import (center_geo_act,)
+from .ui_strings import buttons
 
 
 class GT_OT_Actor(bpy.types.Operator):
     bl_idname = GTConfig.gt_actor_idname
-    bl_label = 'Actor Operator'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER'}
 
     action: bpy.props.StringProperty(name='Action string', default='none')

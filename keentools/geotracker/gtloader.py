@@ -32,12 +32,11 @@ from ..utils.coords import (image_space_to_frame,
                             focal_by_projection_matrix_mm,
                             compensate_view_scale,
                             frame_to_image_space,
-                            camera_sensor_width,
-                            get_camera_border,
-                            image_space_to_region)
+                            camera_sensor_width)
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
-                                get_scene_camera_shift)
+                                get_scene_camera_shift,
+                                bpy_is_animation_playing)
 from .gt_class_loader import GTClassLoader
 from ..utils.timer import KTStopShaderTimer
 from ..utils.ui_redraw import force_ui_redraw
@@ -70,21 +69,27 @@ def depsgraph_update_handler(scene, depsgraph):
             return True
         return False
 
+    if bpy_is_animation_playing():
+        return
+
     settings = get_gt_settings()
     if not settings.pinmode:
         GTLoader.unregister_undo_redo_handlers()
         return
-    if settings.move_pin_mode:
+    if GTLoader.viewport().pins().move_pin_mode():
         return
     geotracker = settings.get_current_geotracker_item()
     if not geotracker:
         return
-    obj = geotracker.animatable_object()
-    if not obj:
-        return
 
-    if _check_updated(depsgraph, obj.name):
-        GTLoader.update_all_viewport_shaders()
+    geomobj = geotracker.geomobj
+    camobj = geotracker.camobj
+
+    if geomobj and _check_updated(depsgraph, geomobj.name):
+        GTLoader.update_viewport_shaders()
+        return
+    if camobj and _check_updated(depsgraph, camobj.name):
+        GTLoader.update_viewport_shaders()
 
 
 def undo_redo_handler(scene):
@@ -99,7 +104,7 @@ def undo_redo_handler(scene):
             return
 
         GTLoader.load_geotracker()
-        GTLoader.update_all_viewport_shaders(area)
+        GTLoader.update_viewport_shaders(area)
 
     except Exception as err:
         _log.error(f'gt_undo_handler {str(err)}')
@@ -129,7 +134,8 @@ def frame_change_post_handler(scene):
     geotracker = get_current_geotracker_item()
     geotracker.reset_focal_length_estimation()
     GTLoader.place_object_or_camera()
-    GTLoader.update_all_viewport_shaders()
+    GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
+                                     timeline=False)
 
 
 class GTLoader:
@@ -408,14 +414,18 @@ class GTLoader:
             return False
 
         gt = cls.kt_geotracker()
-        if not gt.deserialize(serial):
-            _log.warning(f'DESERIALIZE ERROR: {serial}')
+        try:
+            if not gt.deserialize(serial):
+                _log.warning(f'DESERIALIZE ERROR: {serial}')
+                return False
+        except Exception as err:
+            _log.error(f'load_geotracker Exception:\n{str(err)}')
             return False
         cls._deserialize_global_options()
         return True
 
     @classmethod
-    def update_viewport_wireframe(cls) -> None:
+    def update_viewport_wireframe(cls, normals: bool=False) -> None:
         settings = get_gt_settings()
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.geomobj:
@@ -424,11 +434,14 @@ class GTLoader:
         vp = cls.viewport()
         wf = vp.wireframer()
         wf.init_geom_data_from_mesh(geotracker.geomobj)
+        if normals:
+            wf.init_vertex_normals(geotracker.geomobj)
         wf.init_color_data((*settings.wireframe_color,
-                            settings.wireframe_opacity))
+                            settings.wireframe_opacity * settings.get_adaptive_opacity()))
         wf.init_selection_from_mesh(geotracker.geomobj, geotracker.mask_3d,
                                     geotracker.mask_3d_inverted)
         wf.set_backface_culling(settings.wireframe_backface_culling)
+        wf.set_lit_wireframe(settings.lit_wireframe)
         wf.create_batches()
 
     @classmethod
@@ -447,15 +460,28 @@ class GTLoader:
         vp.update_residuals(gt, area, kid)
 
     @classmethod
-    def update_all_viewport_shaders(cls, area: Optional[Area]=None) -> None:
+    def update_viewport_shaders(cls, area: Optional[Area]=None, *,
+                                geomobj_matrix: bool = False,
+                                wireframe: bool=True,
+                                normals: bool=False,
+                                pins_and_residuals: bool=True,
+                                timeline: bool=True) -> None:
         if area is None:
             vp = cls.viewport()
             area = vp.get_work_area()
             if not area:
                 return
-        cls.update_viewport_wireframe()
-        cls.update_viewport_pins_and_residuals(area)
-        cls.update_timeline()
+        if geomobj_matrix:
+            wf = cls.viewport().wireframer()
+            geotracker = get_current_geotracker_item()
+            if geotracker and geotracker.geomobj:
+                wf.set_object_world_matrix(geotracker.geomobj.matrix_world)
+        if wireframe:
+            cls.update_viewport_wireframe(normals)
+        if pins_and_residuals:
+            cls.update_viewport_pins_and_residuals(area)
+        if timeline:
+            cls.update_timeline()
 
     @classmethod
     def _update_all_timelines(cls) -> None:
@@ -481,7 +507,9 @@ class GTLoader:
 
         if geotracker.spring_pins_back:
             gt = cls.kt_geotracker()
-            gt.spring_pins_back(bpy_current_frame())
+            current_frame = bpy_current_frame()
+            if gt.is_key_at(current_frame):
+                gt.spring_pins_back(current_frame)
 
     @classmethod
     def get_work_area(cls) -> Optional[Area]:

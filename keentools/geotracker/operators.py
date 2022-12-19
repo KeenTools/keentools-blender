@@ -79,7 +79,7 @@ class GT_OT_CreateGeoTracker(ButtonOperator, Operator):
     def execute(self, context):
         act_status = create_geotracker_act()
         if not act_status.success:
-            self.report({'INFO'}, act_status.error_message)
+            self.report({'ERROR'}, act_status.error_message)
         return {'FINISHED'}
 
 
@@ -93,7 +93,7 @@ class GT_OT_DeleteGeoTracker(ButtonOperator, Operator):
     def execute(self, context):
         act_status = delete_geotracker_act(self.geotracker_num)
         if not act_status.success:
-            self.report({'INFO'}, act_status.error_message)
+            self.report({'ERROR'}, act_status.error_message)
         return {'FINISHED'}
 
 
@@ -455,8 +455,7 @@ class GT_OT_DefaultWireframeSettings(ButtonOperator, Operator):
         settings = get_gt_settings()
         prefs = settings.preferences()
         settings.wireframe_color = prefs.gt_wireframe_color
-        settings.wireframe_opacity = prefs.wireframe_opacity
-        settings.wireframe_backface_culling = False
+        settings.wireframe_opacity = prefs.gt_wireframe_opacity
         return {'FINISHED'}
 
 
@@ -635,9 +634,9 @@ class GT_OT_SelectGeotrackerObjects(ButtonOperator, Operator):
 
 class GT_OT_AddonSetupDefaults(Operator):
     bl_idname = GTConfig.gt_addon_setup_defaults_idname
-    bl_label = 'Setup FaceBuilder defaults'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER'}
-    bl_description = 'Open FaceBuilder Settings in Preferences window'
 
     def draw(self, context):
         pass

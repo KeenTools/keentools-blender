@@ -16,9 +16,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
-import bpy
+from typing import Any, Optional, List, Tuple, Set
 
+from bpy.types import Operator, Area
+from bpy.props import IntProperty
+
+from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType
 from ..facebuilder_config import FBConfig, get_fb_settings
 from .fbloader import FBLoader
@@ -28,32 +31,34 @@ from .utils.manipulate import push_head_in_undo_history
 from ..utils.images import load_rgba
 from ..utils.bpy_common import bpy_view_camera
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from .ui_strings import buttons
 
 
-_DETECTED_FACES = []
+_log = KTLogger(__name__)
 
 
-def reset_detected_faces():
+_DETECTED_FACES: List = []
+
+
+def reset_detected_faces() -> None:
     global _DETECTED_FACES
     _DETECTED_FACES = []
 
 
-def get_detected_faces():
+def get_detected_faces() -> List[Any]:
     global _DETECTED_FACES
     return _DETECTED_FACES
 
 
-def _set_detected_faces(faces_info):
+def _set_detected_faces(faces_info: List[Any]) -> None:
     global _DETECTED_FACES
     _DETECTED_FACES = faces_info
-    logger = logging.getLogger(__name__)
-    logger.debug('_DETECTED_FACES: {}'.format(len(_DETECTED_FACES)))
+    _log.output(f'_DETECTED_FACES: {len(_DETECTED_FACES)}')
 
 
-def _get_detected_faces_rectangles():
+def _get_detected_faces_rectangles() -> List[Tuple]:
     faces = get_detected_faces()
-    logger = logging.getLogger(__name__)
-    logger.debug('_get_detected_faces: {}'.format(faces))
+    _log.output(f'_get_detected_faces: {faces}')
     rects = []
     for i, face in enumerate(faces):
         x1, y1 = face.xy_min
@@ -66,7 +71,7 @@ def _get_detected_faces_rectangles():
     return rects
 
 
-def init_detected_faces(fb, headnum, camnum):
+def init_detected_faces(fb: Any, headnum: int, camnum: int) -> Optional[Any]:
     settings = get_fb_settings()
     head = settings.get_head(headnum)
     if head is None:
@@ -85,21 +90,18 @@ def init_detected_faces(fb, headnum, camnum):
     return img
 
 
-def sort_detected_faces():
+def sort_detected_faces() -> List[Tuple]:
     faces = get_detected_faces()
     rects = _get_detected_faces_rectangles()
-    logger = logging.getLogger(__name__)
-    logger.debug('RECTS BEFORE: {}'.format(rects))
+    _log.output(f'RECTS BEFORE: {rects}')
     rects.sort(key=lambda x: x[0])  # order by x1
-    logger.debug('RECTS AFTER: {}'.format(rects))
+    _log.output(f'RECTS AFTER: {rects}')
     _set_detected_faces([faces[x[4]] for x in rects])
     return rects
 
 
-def _add_pins_to_face(headnum, camnum, rectangle_index, context):
-    logger = logging.getLogger(__name__)
-    log_error = logger.error
-    log_output = logger.debug
+def _add_pins_to_face(headnum: int, camnum: int, rectangle_index: int,
+                      context: Any) -> Optional[bool]:
     fb = FBLoader.get_builder()
     faces = get_detected_faces()
 
@@ -113,23 +115,23 @@ def _add_pins_to_face(headnum, camnum, rectangle_index, context):
 
     try:
         result_flag = fb.detect_face_pose(kid, faces[rectangle_index])
-    except pkt_module().UnlicensedException:
-        log_error('UnlicensedException _add_pins_to_face')
+    except pkt_module().UnlicensedException as err:
+        _log.error(f'UnlicensedException _add_pins_to_face\n{str(err)}')
         warn = get_operator(Config.kt_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
         return None
     except Exception as err:
-        log_error('UNKNOWN EXCEPTION detect_face_pose in _add_pins_to_face')
-        log_error('Exception info: {}'.format(str(err)))
+        _log.error(f'UNKNOWN EXCEPTION detect_face_pose '
+                   f'in _add_pins_to_face\n{str(err)}')
         return None
 
     if result_flag:
         fb.remove_pins(kid)
         fb.add_preset_pins_and_solve(kid)
         coords.update_head_mesh_non_neutral(fb, head)
-        log_output('auto_pins_added kid: {}'.format(kid))
+        _log.output(f'auto_pins_added kid: {kid}')
     else:
-        log_output('detect_face_pose failed kid: {}'.format(kid))
+        _log.output(f'detect_face_pose failed kid: {kid}')
 
     FBLoader.update_camera_pins_count(headnum, camnum)
     FBLoader.load_pins_into_viewport(headnum, camnum)
@@ -144,73 +146,70 @@ def _add_pins_to_face(headnum, camnum, rectangle_index, context):
     return result_flag
 
 
-def _not_enough_face_features_warning():
+def _not_enough_face_features_warning() -> None:
     error_message = 'Sorry, could not find enough facial features \n' \
                     'to pin the model! Please try pinning the model manually.'
     warn = get_operator(Config.kt_warning_idname)
     warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
          msg_content=error_message)
-    logger = logging.getLogger(__name__)
-    logger.error('could not find enough facial features')
+    _log.error('could not find enough facial features')
 
 
-class FB_OT_PickMode(bpy.types.Operator):
+class FB_OT_PickMode(Operator):
     bl_idname = FBConfig.fb_pickmode_idname
-    bl_label = 'FaceBuilder Pick Face mode'
-    bl_description = 'Modal Operator for Pick Face mode'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    headnum: bpy.props.IntProperty(default=0)
-    camnum: bpy.props.IntProperty(default=0)
-    selected: bpy.props.IntProperty(default=-1)
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+    selected: IntProperty(default=-1)
 
-    def _init_rectangler(self, area):
+    def _init_rectangler(self, area: Area) -> None:
         vp = FBLoader.viewport()
         rectangler = vp.rectangler()
         rectangler.prepare_shader_data(area)
         rectangler.create_batch()
         vp.create_batch_2d(area)
 
-    def _get_rectangler(self):
+    def _get_rectangler(self) -> Any:
         return FBLoader.viewport().rectangler()
 
-    def _update_rectangler_shader(self, area):
+    def _update_rectangler_shader(self, area: Area) -> None:
         rectangler = self._get_rectangler()
         rectangler.prepare_shader_data(area)
         rectangler.create_batch()
         area.tag_redraw()
 
-    def _before_operator_stop(self, area):
-        logger = logging.getLogger(__name__)
-        logger.debug('_before_operator_stop')
+    def _before_operator_stop(self, area: Area) -> None:
+        _log.output('_before_operator_stop')
         rectangler = self._get_rectangler()
         rectangler.clear_rectangles()
         self._update_rectangler_shader(area)
         self._show_wireframe()
 
-    def _selected_rectangle(self, area, event):
+    def _selected_rectangle(self, area: Area, event: Any) -> int:
         rectangler = self._get_rectangler()
         mouse_x, mouse_y = coords.get_image_space_coord(
             event.mouse_region_x, event.mouse_region_y, area)
         return rectangler.active_rectangle_index(mouse_x, mouse_y)
 
-    def _hide_wireframe(self):
+    def _hide_wireframe(self) -> None:
         vp = FBLoader.viewport()
         vp.wireframer().hide_shader()
         vp.points2d().hide_shader()
         vp.points3d().hide_shader()
         vp.residuals().hide_shader()
 
-    def _show_wireframe(self):
+    def _show_wireframe(self) -> None:
         vp = FBLoader.viewport()
         vp.wireframer().unhide_shader()
         vp.points2d().unhide_shader()
         vp.points3d().unhide_shader()
         vp.residuals().unhide_shader()
 
-    def invoke(self, context, event):
-        logger = logging.getLogger(__name__)
-        logger.debug('PickMode invoke call')
+    def invoke(self, context: Any, event: Any) -> Set:
+        _log.output('PickMode invoke call')
 
         settings = get_fb_settings()
         if not settings.pinmode:
@@ -221,16 +220,15 @@ class FB_OT_PickMode(bpy.types.Operator):
         self._hide_wireframe()
 
         context.window_manager.modal_handler_add(self)
-        logger.debug('PICKMODE STARTED')
+        _log.output('PICKMODE STARTED')
         return {'RUNNING_MODAL'}
 
-    def execute(self, context):  # Testing purpose only
-        logger = logging.getLogger(__name__)
-        logger.debug('PickMode execute call')
+    def execute(self, context: Any) -> Set:  # Testing purpose only
+        _log.output('PickMode execute call')
         if self.selected < 0:
             message = 'No selected rectangle index'
             self.report({'ERROR'}, message)
-            logger.error(message)
+            _log.error(message)
             return {'CANCELLED'}
         result = _add_pins_to_face(self.headnum, self.camnum, self.selected, context)
         if result is None:
@@ -238,23 +236,22 @@ class FB_OT_PickMode(bpy.types.Operator):
         if not result:
             message = '_add_pins_to_face fail'
             self.report({'INFO'}, message)
-            logger.error(message)
+            _log.error(message)
         else:
             message = '_add_pins_to_face success'
             self.report({'INFO'}, message)
-            logger.debug(message)
+            _log.output(message)
 
         return {'FINISHED'}
 
-    def modal(self, context, event):
-        logger = logging.getLogger(__name__)
+    def modal(self, context: Any, event: Any) -> Set:
         vp = FBLoader.viewport()
         rectangler = vp.rectangler()
 
         if event.type == 'WINDOW_DEACTIVATE':
             message = 'Face detection was aborted by context changing'
             self.report({'INFO'}, message)
-            logger.debug(message)
+            _log.output(message)
 
             self._before_operator_stop(context.area)
             return {'FINISHED'}
@@ -280,7 +277,7 @@ class FB_OT_PickMode(bpy.types.Operator):
                     return {'CANCELLED'}
                 if not result:
                     message = 'A face was chosen but not pinned'
-                    logger.debug(message)
+                    _log.output(message)
                     _not_enough_face_features_warning()
                 else:
                     head = get_fb_settings().get_head(self.headnum)
@@ -288,11 +285,11 @@ class FB_OT_PickMode(bpy.types.Operator):
 
                     message = 'A face was chosen and pinned'
                     self.report({'INFO'}, message)
-                    logger.debug(message)
+                    _log.output(message)
             else:
                 message = 'Face selection was aborted'
                 self.report({'INFO'}, message)
-                logger.debug(message)
+                _log.output(message)
 
             self._before_operator_stop(context.area)
             return {'FINISHED'}
@@ -300,7 +297,7 @@ class FB_OT_PickMode(bpy.types.Operator):
         if event.type == 'ESC' and event.value == 'RELEASE':
             message = 'Face detection was aborted with Esc'
             self.report({'INFO'}, message)
-            logger.debug(message)
+            _log.output(message)
 
             self._before_operator_stop(context.area)
             return {'FINISHED'}
@@ -312,19 +309,17 @@ class FB_OT_PickMode(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
 
-class FB_OT_PickModeStarter(bpy.types.Operator):
+class FB_OT_PickModeStarter(Operator):
     bl_idname = FBConfig.fb_pickmode_starter_idname
-    bl_label = 'FaceBuilder Pick Face mode starter'
-    bl_description = 'Detect a face on the photo ' \
-                     'and pin the model to the selected face'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    headnum: bpy.props.IntProperty(default=0)
-    camnum: bpy.props.IntProperty(default=0)
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
 
-    def _action(self, context, event, invoked=True):
-        logger = logging.getLogger(__name__)
-        logger.debug('PickModeStarter action call')
+    def _action(self, context: Any, event: Any, invoked: bool=True) -> Set:
+        _log.output('PickModeStarter action call')
 
         FBLoader.load_model(self.headnum)
         fb = FBLoader.get_builder()
@@ -332,14 +327,14 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
         if not fb.is_face_detector_available():
             message = 'Face detector is not available'
             self.report({'ERROR'}, message)
-            logger.error(message)
+            _log.error(message)
             return {'CANCELLED'}
 
         img = init_detected_faces(fb, self.headnum, self.camnum)
         if img is None:
             message = 'Face detection failed because of a corrupted image'
             self.report({'ERROR'}, message)
-            logger.error(message)
+            _log.error(message)
             return {'CANCELLED'}
 
         h, w, _ = img.shape
@@ -363,7 +358,7 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
                 return {'CANCELLED'}
             if not result:
                 message = 'A face was detected but not pinned'
-                logger.debug(message)
+                _log.output(message)
                 _not_enough_face_features_warning()
             else:
                 head = get_fb_settings().get_head(self.headnum)
@@ -371,26 +366,24 @@ class FB_OT_PickModeStarter(bpy.types.Operator):
 
                 message = 'A face was detected and pinned'
                 self.report({'INFO'}, message)
-                logger.debug(message)
+                _log.output(message)
         else:
             message = 'Could not detect a face'
             self.report({'ERROR'}, message)
-            logger.error(message)
+            _log.error(message)
 
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        logger = logging.getLogger(__name__)
-        logger.debug('PickModeStarter invoke call')
+    def invoke(self, context: Any, event: Any) -> Set:
+        _log.output('PickModeStarter invoke call')
         settings = get_fb_settings()
         if not settings.pinmode:
             message = 'Not in pinmode call'
             self.report({'ERROR'}, message)
-            logger.error(message)
+            _log.error(message)
             return {'CANCELLED'}
         return self._action(context, event, invoked=True)
 
-    def execute(self, context):  # Used only for integration testing
-        logger = logging.getLogger(__name__)
-        logger.debug('PickModeStarter execute call')
+    def execute(self, context: Any) -> Set:  # Used only for integration testing
+        _log.output('PickModeStarter execute call')
         return self._action(context, event=None, invoked=False)

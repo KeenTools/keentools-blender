@@ -17,11 +17,13 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import re
-from typing import Tuple
+from typing import Tuple, Optional, Any
+from functools import partial
 
 import bpy
+from bpy.types import Area, Panel
 
-from ...addon_config import Config, geotracker_enabled
+from ...addon_config import Config, geotracker_enabled, addon_pinmode
 from ...geotracker_config import GTConfig, get_gt_settings
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...updater.panels import (KTUpdater,
@@ -30,73 +32,50 @@ from ...updater.panels import (KTUpdater,
                                KT_PT_DownloadingProblemPanel,
                                KT_PT_UpdatesInstallationPanel)
 from ..gtloader import GTLoader
-from ...utils.localview import exit_area_localview
+from ...utils.localview import exit_area_localview, check_context_localview
 from ...utils.other import force_show_ui_overlays
+from ...utils.bpy_common import bpy_timer_register
+from ...utils.grace_timer import KTGraceTimer
 
 
-_pinmode_escaper_context_area = None
+_gt_grace_timer = KTGraceTimer('geotracker')
 
 
-def _pinmode_escaper():
-    global _pinmode_escaper_context_area
+def _pinmode_escaper(area: Area) -> None:
     GTLoader.out_pinmode()
-    exit_area_localview(_pinmode_escaper_context_area)
-    force_show_ui_overlays(_pinmode_escaper_context_area)
+    exit_area_localview(area)
+    force_show_ui_overlays(area)
     return None
 
 
-def _start_pinmode_escaper(context):
-    global _pinmode_escaper_context_area
-    _pinmode_escaper_context_area = context.area
-    bpy.app.timers.register(_pinmode_escaper, first_interval = 0.01)
+def _start_pinmode_escaper(context: Any) -> None:
+    if context.area:
+        bpy_timer_register(partial(_pinmode_escaper, context.area),
+                           first_interval=0.01)
 
 
-def _is_keentools_object(obj) -> bool:
-    return GTConfig.version_prop_name in obj.keys()
-
-
-def what_is_state() -> Tuple[str, int]:
-    def _how_many_geotrackers():
-        settings = get_gt_settings()
-        unknown_geotracker = -1
-        geotrackers_count = len(settings.geotrackers)
-        if geotrackers_count == 0:
-            return 'NO_GEOTRACKERS', unknown_geotracker
-        elif geotrackers_count == 1:
-            return 'ONE_GEOTRACKER', 0
-        else:
-            return 'MANY_GEOTRACKERS', unknown_geotracker
-
-    context = bpy.context
+def _geomobj_delete_handler() -> None:
     settings = get_gt_settings()
-    unknown_geotracker = -1
-
     if settings.pinmode:
-        return 'PINMODE', settings.current_geotracker_num
+        GTLoader.out_pinmode()
+    settings.fix_geotrackers()
+    return None
 
-    obj = context.object
 
-    if not obj:
-        return _how_many_geotrackers()
+def _start_geomobj_delete_handler() -> None:
+    bpy_timer_register(_geomobj_delete_handler, first_interval=0.01)
 
-    if not _is_keentools_object(obj):
-        return _how_many_geotrackers()
 
-    if obj.type == 'MESH':
-        ind = settings.find_geotracker_index(obj)
-        if ind >= 0:
-            return 'THIS_GEOTRACKER', ind
-        else:
-            return 'RECONSTRUCT', unknown_geotracker
-
-    elif obj.type == 'CAMERA':
-        ind, _ = settings.find_cam_index(obj)
-        if ind >= 0:
-            return 'THIS_GEOTRACKER', ind
-        else:
-            return _how_many_geotrackers()
-
-    return _how_many_geotrackers()
+def _exit_from_localview_button(layout, context):
+    if addon_pinmode() or not check_context_localview(context):
+        return
+    settings = get_gt_settings()
+    if settings.is_calculating():
+        return
+    col = layout.column()
+    col.alert = True
+    col.scale_y = 2.0
+    col.operator(Config.kt_exit_localview_idname)
 
 
 def show_all_panels() -> bool:
@@ -104,26 +83,26 @@ def show_all_panels() -> bool:
     return settings.current_geotracker_num >= 0
 
 
-class View3DPanel(bpy.types.Panel):
+class View3DPanel(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     # bl_options = {'DEFAULT_CLOSED'}
     bl_category = GTConfig.gt_tab_category
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: Any) -> bool:
         return geotracker_enabled()
 
 
 class AllVisible(View3DPanel):
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: Any) -> bool:
         if not geotracker_enabled():
             return False
         return show_all_panels()
 
 
-def _draw_calculating_indicator(layout):
+def _draw_calculating_indicator(layout: Any) -> None:
     settings = get_gt_settings()
     row = layout.row(align=True)
     row.prop(settings, 'user_percent', text='Calculating...')
@@ -138,7 +117,7 @@ class GT_PT_GeotrackersPanel(View3DPanel):
     bl_label = '{} {}'.format(GTConfig.gt_tool_name,
                               Config.addon_version)
 
-    def draw_header_preset(self, context):
+    def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
         row = layout.row()
         op = row.operator(
@@ -146,7 +125,7 @@ class GT_PT_GeotrackersPanel(View3DPanel):
             text='', icon='PREFERENCES')
         op.show = 'geotracker'
 
-    def _geotracker_creation_offer(self, layout):
+    def _geotracker_creation_offer(self, layout: Any) -> None:
         settings = get_gt_settings()
         if settings.pinmode:
             return
@@ -155,12 +134,10 @@ class GT_PT_GeotrackersPanel(View3DPanel):
         row.operator(GTConfig.gt_create_geotracker_idname,
                      text='Create a new GeoTracker', icon='ADD')
 
-    def _output_geotrackers_list(self, layout):
+    def _output_geotrackers_list(self, layout: Any) -> None:
         settings = get_gt_settings()
-        state, geotracker_num = what_is_state()
+        geotracker_num = settings.current_geotracker_num
 
-        if geotracker_num < 0:
-            geotracker_num = settings.current_geotracker_num
         for i, geotracker in enumerate(settings.geotrackers):
 
             row = layout.row(align=True)
@@ -204,7 +181,7 @@ class GT_PT_GeotrackersPanel(View3DPanel):
                                   text='', icon='CANCEL')
                 op.geotracker_num = i
 
-    def _pkt_install_offer(self, layout):
+    def _pkt_install_offer(self, layout: Any) -> None:
         col = layout.column(align=True)
         col.scale_y = Config.text_scale_y
         col.label(text='You need to install')
@@ -218,7 +195,7 @@ class GT_PT_GeotrackersPanel(View3DPanel):
             text='Install Core library', icon='PREFERENCES')
         op.show = 'none'
 
-    def draw(self, context):
+    def draw(self, context: Any) -> None:
         layout = self.layout
         if not pkt_is_installed():
             self._pkt_install_offer(layout)
@@ -226,7 +203,9 @@ class GT_PT_GeotrackersPanel(View3DPanel):
 
         self._output_geotrackers_list(layout)
         self._geotracker_creation_offer(layout)
+        _exit_from_localview_button(layout, context)
         KTUpdater.call_updater('GeoTracker')
+        _gt_grace_timer.start()
 
 
 class GT_PT_UpdatePanel(KT_PT_UpdatePanel):
@@ -234,7 +213,7 @@ class GT_PT_UpdatePanel(KT_PT_UpdatePanel):
     bl_category = Config.gt_tab_category
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: Any) -> bool:
         if not geotracker_enabled():
             return False
         return KTUpdater.is_active()
@@ -259,7 +238,7 @@ class GT_PT_InputsPanel(AllVisible):
     bl_idname = GTConfig.gt_input_panel_idname
     bl_label = 'Inputs'
 
-    def draw_header_preset(self, context):
+    def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
         row = layout.row()
         row.active = False
@@ -267,7 +246,7 @@ class GT_PT_InputsPanel(AllVisible):
             GTConfig.gt_help_inputs_idname,
             text='', icon='QUESTION')
 
-    def draw(self, context):
+    def draw(self, context: Any) -> None:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
@@ -282,6 +261,9 @@ class GT_PT_InputsPanel(AllVisible):
         row = layout.row()
         row.alert = not geotracker.geomobj
         row.prop(geotracker, 'geomobj', text='Geometry')
+
+        if geotracker.geomobj and geotracker.geomobj.users == 1:
+            _start_geomobj_delete_handler()
 
         row = layout.row(align=True)
         col = row.column(align=True)
@@ -331,7 +313,7 @@ class GT_PT_AnalyzePanel(AllVisible):
     bl_label = 'Analyze input'
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: Any) -> bool:
         if not geotracker_enabled():
             return False
         settings = get_gt_settings()
@@ -340,7 +322,7 @@ class GT_PT_AnalyzePanel(AllVisible):
             return False
         return not geotracker.precalcless
 
-    def draw_header_preset(self, context):
+    def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
         row = layout.row()
         row.active = False
@@ -348,7 +330,7 @@ class GT_PT_AnalyzePanel(AllVisible):
             GTConfig.gt_help_analyze_idname,
             text='', icon='QUESTION')
 
-    def draw(self, context):
+    def draw(self, context: Any) -> None:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
@@ -357,7 +339,7 @@ class GT_PT_AnalyzePanel(AllVisible):
         layout = self.layout
         block = layout.column(align=True)
         block.operator(GTConfig.gt_choose_precalc_file_idname,
-                        text='Set precalc file')
+                       text='Set precalc file')
         if geotracker.precalc_path != '':
             box = block.box()
             col = box.column()
@@ -389,7 +371,7 @@ class GT_PT_CameraPanel(AllVisible):
     bl_idname = GTConfig.gt_camera_panel_idname
     bl_label = 'Camera'
 
-    def draw_header_preset(self, context):
+    def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
         row = layout.row()
         row.active = False
@@ -397,7 +379,7 @@ class GT_PT_CameraPanel(AllVisible):
             GTConfig.gt_help_camera_idname,
             text='', icon='QUESTION')
 
-    def draw(self, context):
+    def draw(self, context: Any) -> None:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
@@ -416,7 +398,7 @@ class GT_PT_CameraPanel(AllVisible):
         row.prop(geotracker, 'focal_length_estimation')
 
         row = col.row(align=True)
-        row.prop(geotracker, 'focal_length')
+        row.prop(cam_data, 'lens')
 
         row.operator(GTConfig.gt_remove_focal_keyframe_idname,
                      text='', icon='KEY_DEHLT')
@@ -432,7 +414,7 @@ class GT_PT_TrackingPanel(AllVisible):
     bl_idname = GTConfig.gt_tracking_panel_idname
     bl_label = 'Tracking'
 
-    def draw_header_preset(self, context):
+    def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
         row = layout.row()
         row.active = False
@@ -440,7 +422,7 @@ class GT_PT_TrackingPanel(AllVisible):
             GTConfig.gt_help_tracking_idname,
             text='', icon='QUESTION')
 
-    def draw(self, context):
+    def draw(self, context: Any) -> None:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
@@ -536,7 +518,7 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
     bl_idname = GTConfig.gt_appearance_panel_idname
     bl_label = 'Appearance'
 
-    def draw_header_preset(self, context):
+    def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
         row = layout.row(align=True)
         row.active = False
@@ -547,7 +529,7 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
             GTConfig.gt_help_appearance_idname,
             text='', icon='QUESTION')
 
-    def draw(self, context):
+    def draw(self, context: Any) -> None:
         layout = self.layout
         settings = get_gt_settings()
 
@@ -567,6 +549,8 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         split.prop(settings, 'wireframe_color', text='')
         split.prop(settings, 'wireframe_opacity', text='', slider=True)
         col.prop(settings, 'wireframe_backface_culling')
+        col.prop(settings, 'lit_wireframe')
+        col.prop(settings, 'use_adaptive_opacity')
 
         geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
@@ -615,7 +599,7 @@ class GT_PT_TexturePanel(AllVisible):
     bl_label = 'Texture'
     bl_options = {'DEFAULT_CLOSED'}
 
-    def draw_header_preset(self, context):
+    def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
         row = layout.row()
         row.active = False
@@ -623,7 +607,7 @@ class GT_PT_TexturePanel(AllVisible):
             GTConfig.gt_help_texture_idname,
             text='', icon='QUESTION')
 
-    def draw(self, context):
+    def draw(self, context: Any) -> None:
         layout = self.layout
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
@@ -644,7 +628,7 @@ class GT_PT_AnimationPanel(AllVisible):
     bl_label = 'Animation'
     bl_options = {'DEFAULT_CLOSED'}
 
-    def draw_header_preset(self, context):
+    def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
         row = layout.row()
         row.active = False
@@ -652,7 +636,7 @@ class GT_PT_AnimationPanel(AllVisible):
             GTConfig.gt_help_animation_idname,
             text='', icon='QUESTION')
 
-    def draw(self, context):
+    def draw(self, context: Any) -> None:
         layout = self.layout
         layout.label(text='Create helpers')
         col = layout.column(align=True)
