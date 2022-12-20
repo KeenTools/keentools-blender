@@ -343,6 +343,12 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         description='Invert Mask 2D area',
         default=False,
         update=update_mask_2d)
+    mask_2d_threshold: bpy.props.FloatProperty(
+        default=0.01, min=0.0, max=1.0,
+        precision=4,
+        name='2d mask threshold',
+        description='Cutout threshold',
+        update=update_mask_2d)
 
     def get_serial_str(self) -> str:
         return self.serial_str
@@ -592,6 +598,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         mask = vp.mask2d()
         mask.image = find_bpy_image_by_name(geotracker.mask_2d)
         mask.inverted = geotracker.mask_2d_inverted
+        mask.mask_threshold = geotracker.mask_2d_threshold
 
     def add_geotracker_item(self) -> int:
         self.fix_geotrackers()

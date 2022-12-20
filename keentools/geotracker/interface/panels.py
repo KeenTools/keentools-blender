@@ -306,6 +306,10 @@ class GT_PT_InputsPanel(AllVisible):
                             bpy.data, 'images')
             row.prop(geotracker, 'mask_2d_inverted',
                      text='', icon='ARROW_LEFTRIGHT')
+            row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
+                         text='', icon='FILEBROWSER')
+            row = layout.row(align=True)
+            row.prop(geotracker, 'mask_2d_threshold')
 
 
 class GT_PT_AnalyzePanel(AllVisible):
