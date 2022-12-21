@@ -344,7 +344,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         default=False,
         update=update_mask_2d)
     mask_2d_threshold: bpy.props.FloatProperty(
-        default=0.01, min=0.0, max=1.0,
+        default=0.01, soft_min=0.0, soft_max=1.0, min=-0.1, max=1.1,
         precision=4,
         name='2d mask threshold',
         description='Cutout threshold',

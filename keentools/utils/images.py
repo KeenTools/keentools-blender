@@ -216,8 +216,14 @@ def np_image_to_grayscale(np_img: Any) -> Any:
             255 * 0.1140 * np_img[:, :, 2]).astype(np.uint8)
 
 
-def np_array_from_background_image(camobj: Camera) -> Optional[Any]:
-    bg_img = get_background_image_object(camobj)
+def np_image_to_average_grayscale(np_img: Any) -> Any:
+    return (255.0 * (np_img[:, :, 0] +
+                     np_img[:, :, 1] +
+                     np_img[:, :, 2]) / 3.0).astype(np.uint8)
+
+
+def np_array_from_background_image(camobj: Camera, index: int=0) -> Optional[Any]:
+    bg_img = get_background_image_object(camobj, index)
     np_img = np_array_from_bpy_image(bg_img.image)
     return np_img
 
