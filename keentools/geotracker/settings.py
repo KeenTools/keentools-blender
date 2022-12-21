@@ -596,6 +596,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
             return
         vp = GTLoader.viewport()
         mask = vp.mask2d()
+        _log.output(f'RELOAD MASK: {geotracker.mask_2d}')
         mask.image = find_bpy_image_by_name(geotracker.mask_2d)
         mask.inverted = geotracker.mask_2d_inverted
         mask.mask_threshold = geotracker.mask_2d_threshold

@@ -231,6 +231,7 @@ class GT_OT_PinMode(Operator):
         settings = get_gt_settings()
 
         _calc_adaptive_opacity(area)
+        settings.reload_mask_2d()
         GTLoader.update_viewport_shaders(area, normals=settings.lit_wireframe)
 
         geotracker = get_current_geotracker_item()

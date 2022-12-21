@@ -39,7 +39,7 @@ from ..utils.bpy_common import (bpy_current_frame,
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..geotracker.gtloader import GTLoader
 from ..utils.images import (np_array_from_background_image,
-                            np_image_to_average_grayscale)
+                            np_threshold_image)
 from ..utils.ui_redraw import total_redraw_ui
 from ..utils.mesh_builder import build_geo
 from ..utils.materials import find_bpy_image_by_name
@@ -148,8 +148,9 @@ class GTMask2DInput(pkt_module().Mask2DInputI):
             return None
 
         _log.output(f'MASK INPUT HAS BEEN CALCULATED AT FRAME: {frame}')
-        grayscale = np_image_to_average_grayscale(np_img)
+        grayscale = np_threshold_image(np_img, geotracker.mask_2d_threshold)
         _log.output(f'MASK SIZE: {grayscale.shape}')
+        _log.output(grayscale)
         return pkt_module().LoadedMask(grayscale, geotracker.mask_2d_inverted)
 
 
