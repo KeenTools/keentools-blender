@@ -225,13 +225,14 @@ class GT_OT_PinMode(Operator):
 
         _log.output('GT START SHADERS')
         GTLoader.load_pins_into_viewport()
+
+        settings = get_gt_settings()
+        settings.reload_mask_2d()
+        _calc_adaptive_opacity(area)
+
         vp = GTLoader.viewport()
         vp.create_batch_2d(area)
         _log.output('GT REGISTER SHADER HANDLERS')
-        settings = get_gt_settings()
-
-        _calc_adaptive_opacity(area)
-        settings.reload_mask_2d()
         GTLoader.update_viewport_shaders(area, normals=settings.lit_wireframe)
 
         geotracker = get_current_geotracker_item()

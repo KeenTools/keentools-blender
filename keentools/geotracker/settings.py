@@ -228,6 +228,9 @@ def update_mask_2d(geotracker, context: Any) -> None:
     settings = get_gt_settings()
     settings.reload_current_geotracker()
     settings.reload_mask_2d()
+    vp = GTLoader.viewport()
+    if vp.is_working():
+        vp.create_batch_2d(context.area)
 
 
 def update_spring_pins_back(geotracker, context: Any) -> None:
@@ -344,11 +347,16 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         default=False,
         update=update_mask_2d)
     mask_2d_threshold: bpy.props.FloatProperty(
-        default=0.01, soft_min=0.0, soft_max=1.0, min=-0.1, max=1.1,
+        default=0.002, soft_min=0.0, soft_max=1.0, min=-0.1, max=1.1,
         precision=4,
         name='2d mask threshold',
         description='Cutout threshold',
         update=update_mask_2d)
+    mask_2d_info: bpy.props.StringProperty(
+        default='',
+        name='2d mask info',
+        description='About 2d mask'
+    )
 
     def get_serial_str(self) -> str:
         return self.serial_str
@@ -600,6 +608,15 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         mask.image = find_bpy_image_by_name(geotracker.mask_2d)
         mask.inverted = geotracker.mask_2d_inverted
         mask.mask_threshold = geotracker.mask_2d_threshold
+        if mask.image:
+            rw, rh = bpy_render_frame()
+            size = mask.image.size[:]
+            if rw == size[0] or rh == size[1]:
+                geotracker.mask_2d_info = ''
+            else:
+                geotracker.mask_2d_info = f'Wrong size: {size[0]} x {size[1]} px'
+        else:
+            geotracker.mask_2d_info = ''
 
     def add_geotracker_item(self) -> int:
         self.fix_geotrackers()

@@ -158,7 +158,7 @@ def set_background_image_mask(camobj: Camera, mask_2d: str) -> bool:
     mask = find_bpy_image_by_name(mask_2d)
     if mask is not None:
         bg_img = get_background_image_object(camobj, index=1)
-        bg_img.alpha = 0.01
+        bg_img.alpha = 0.0
         bg_img.source = 'IMAGE'
         bg_img.image = mask
         bg_img.image_user.frame_start = 1
