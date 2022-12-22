@@ -145,12 +145,10 @@ class GTMask2DInput(pkt_module().Mask2DInputI):
         rw, rh = bpy_render_frame()
         if np_img.shape[0] != rh and np_img.shape[1] != rw:
             _log.error(f'MASK HAS DIFFERENT SIZE: {np_img.shape} RW: {rw} RH: {rh}')
-            return None
 
         _log.output(f'MASK INPUT HAS BEEN CALCULATED AT FRAME: {frame}')
         grayscale = np_threshold_image(np_img, geotracker.mask_2d_threshold)
         _log.output(f'MASK SIZE: {grayscale.shape}')
-        _log.output(grayscale)
         return pkt_module().LoadedMask(grayscale, geotracker.mask_2d_inverted)
 
 
