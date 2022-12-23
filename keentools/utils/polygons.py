@@ -123,6 +123,7 @@ class KTRasterMask(KTShaderBase):
         self.left: Tuple[float, float] = (100., 100.)
         self.right: Tuple[float, float] = (400., 200.)
         self.image: Optional[Image] = None
+        self.mask_threshold: float = 0.0
         super().__init__(target_class)
         if not bpy_background_mode():
             self.init_shaders()
@@ -167,6 +168,7 @@ class KTRasterMask(KTShaderBase):
         shader.uniform_float('right', self.right)
         shader.uniform_float('color', self.color)
         shader.uniform_int('inverted', 1 if self.inverted else 0)
+        shader.uniform_float('maskThreshold', self.mask_threshold)
         shader.uniform_int('image', 0)
         self.mask_batch.draw(shader)
 

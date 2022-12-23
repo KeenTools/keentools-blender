@@ -306,6 +306,17 @@ class GT_PT_InputsPanel(AllVisible):
                             bpy.data, 'images')
             row.prop(geotracker, 'mask_2d_inverted',
                      text='', icon='ARROW_LEFTRIGHT')
+            row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
+                         text='', icon='FILEBROWSER')
+            row = layout.row(align=True)
+            row.prop(geotracker, 'mask_2d_threshold', slider=True)
+            if geotracker.mask_2d_info == '':
+                return
+            arr = re.split('\r\n|\n', geotracker.mask_2d_info)
+            for txt in arr:
+                col = layout.column(align=True)
+                col.scale_y = Config.text_scale_y
+                col.label(text=txt)
 
 
 class GT_PT_AnalyzePanel(AllVisible):

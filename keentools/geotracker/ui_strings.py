@@ -40,6 +40,10 @@ buttons = {
         'Load footage',
         'Both image sequences and movie files are supported'
     ),
+    GTConfig.gt_mask_sequence_filebrowser_idname: Button(
+        'Load mask sequence',
+        'Both image sequences and movie files are supported'
+    ),
     GTConfig.gt_choose_precalc_file_idname: Button(
         'Set precalc file',
         'Choose an existing .precalc file or just enter a name for a new one'

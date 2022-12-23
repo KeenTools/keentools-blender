@@ -285,9 +285,9 @@ class _CommonTimer:
                 total = total_frames if total_frames != 0 else 1
                 settings.user_percent = 100 * finished_frames / total
                 return True
-        except pkt_module().ComputationException as err:
+        except RuntimeError as err:
             msg = f'{self._operation_name} _safe_resume ' \
-                  f'ComputationException.\n{str(err)}'
+                  f'Computation Exception.\n{str(err)}'
             _log.error(msg)
             show_warning_dialog(err)
         except Exception as err:

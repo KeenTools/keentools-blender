@@ -26,6 +26,7 @@ from bpy.types import Image, Camera, Object, MovieClip
 
 from ..addon_config import Config
 from .kt_logging import KTLogger
+from .bpy_common import bpy_end_frame
 
 
 _log = KTLogger(__name__)
@@ -83,13 +84,26 @@ def gamma_np_image(np_img: Any, gamma: float=1.0) -> Any:
     return res_img
 
 
-def get_background_image_object(camobj: Camera) -> Any:
+def get_background_image_object(camobj: Camera, index: int=0) -> Any:
     cam_data = camobj.data
-    if len(cam_data.background_images) == 0:
-        bg_img = cam_data.background_images.new()
-    else:
-        bg_img = cam_data.background_images[0]
-    return bg_img
+    while len(cam_data.background_images) <= index:
+        cam_data.background_images.new()
+    return cam_data.background_images[index]
+
+
+def remove_background_image_object(camobj: Camera, index: int) -> bool:
+    cam_data = camobj.data
+    if len(cam_data.background_images) <= index:
+        return False
+    cam_data.background_images.remove(cam_data.background_images[index])
+    return True
+
+
+def show_background_images(camobj: Camera, reload: bool=False) -> None:
+    cam_data = camobj.data
+    if reload:
+        cam_data.show_background_images = False  # Fix to prevent Blender caching
+    cam_data.show_background_images = True
 
 
 def _get_file_number(filename: str) -> int:
@@ -140,6 +154,24 @@ def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
             bg_img.image_user.frame_offset = file_number - 1
 
 
+def set_background_image_mask(camobj: Camera, mask_2d: str) -> bool:
+    mask = find_bpy_image_by_name(mask_2d)
+    if mask is not None:
+        bg_img = get_background_image_object(camobj, index=1)
+        bg_img.alpha = 0.0
+        bg_img.source = 'IMAGE'
+        bg_img.image = mask
+        bg_img.image_user.frame_start = 1
+        bg_img.image_user.use_auto_refresh = True
+        bg_img.image_user.frame_duration = bpy_end_frame()
+        camobj.data.show_background_images = True
+        return True
+    else:
+        remove_background_image_object(camobj, index=1)
+        show_background_images(camobj, reload=True)
+    return False
+
+
 def find_bpy_image_by_name(image_name: str) -> Optional[Image]:
     image_num = bpy.data.images.find(image_name)
     if image_num >= 0:
@@ -184,8 +216,20 @@ def np_image_to_grayscale(np_img: Any) -> Any:
             255 * 0.1140 * np_img[:, :, 2]).astype(np.uint8)
 
 
-def np_array_from_background_image(camobj: Camera) -> Optional[Any]:
-    bg_img = get_background_image_object(camobj)
+def np_image_to_average_grayscale(np_img: Any) -> Any:
+    return (255.0 * (np_img[:, :, 0] +
+                     np_img[:, :, 1] +
+                     np_img[:, :, 2]) / 3.0).astype(np.uint8)
+
+
+def np_threshold_image(np_img: Any, threshold: float=0.0) -> Any:
+    return (255 * ((np_img[:, :, 0] +
+                    np_img[:, :, 1] +
+                    np_img[:, :, 2]) / 3.0 > threshold)).astype(np.uint8)
+
+
+def np_array_from_background_image(camobj: Camera, index: int=0) -> Optional[Any]:
+    bg_img = get_background_image_object(camobj, index)
     np_img = np_array_from_bpy_image(bg_img.image)
     return np_img
 

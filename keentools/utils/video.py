@@ -20,8 +20,9 @@ import logging
 from typing import Any, Tuple, List, Optional
 
 import bpy
-from bpy.types import MovieClip
+from bpy.types import MovieClip, Image
 
+from .kt_logging import KTLogger
 from ..addon_config import ActionStatus
 from .bpy_common import (operator_with_context,
                          extend_scene_timeline_start,
@@ -29,17 +30,7 @@ from .bpy_common import (operator_with_context,
 from .ui_redraw import get_all_areas
 
 
-_logger: Any = logging.getLogger(__name__)
-
-
-def _log_output(message: str) -> None:
-    global _logger
-    _logger.debug(message)
-
-
-def _log_error(message: str) -> None:
-    global _logger
-    _logger.error(message)
+_log = KTLogger(__name__)
 
 
 def get_movieclip_size(movie_clip: Optional[MovieClip]) -> Tuple[int, int]:
@@ -76,7 +67,7 @@ def make_movieclip_proxy(movie_clip: Optional[MovieClip],
     area.spaces.active.clip = movie_clip
     bpy.ops.clip.rebuild_proxy({'area': area})
     area.type = area_type_old
-    _log_output(f'make_proxy success')
+    _log.output('make_proxy success')
     return True
 
 
@@ -95,42 +86,57 @@ def find_movieclip(filepath: str) -> Optional[MovieClip]:
             if os.path.samefile(movieclip.filepath, filepath):
                 return movieclip
         except FileNotFoundError as err:
-            _log_error(f'find_movieclip FILE NOT FOUND:\n{str(err)}')
+            _log.error(f'find_movieclip FILE NOT FOUND:\n{str(err)}')
         except Exception as err:
-            _log_error(f'find_movieclip error:\n{str(err)}')
+            _log.error(f'find_movieclip error:\n{str(err)}')
     return None
 
 
-def load_movieclip(directory: str, file_names: List[str]) -> Optional[MovieClip]:
+def load_image_sequence(directory: str, file_names: List[str]) -> Optional[Image]:
     if len(file_names) == 0:
-        _log_error('NO FILES HAVE BEEN SELECTED')
+        _log.error('NO FILES HAVE BEEN SELECTED')
         return None
 
     file_names.sort()
     frame_files = [{'name': name} for name in file_names]
-    _log_output(f'load_movieclip DIR: {directory}')
+
+    image = bpy.data.images.load(os.path.join(directory, file_names[0]))
+    if image and image.source == 'FILE' and len(frame_files) > 1:
+        image.source = 'SEQUENCE'
+    _log.output(f'loaded image: {image}')
+    return image
+
+
+def load_movieclip(directory: str, file_names: List[str]) -> Optional[MovieClip]:
+    if len(file_names) == 0:
+        _log.error('NO FILES HAVE BEEN SELECTED')
+        return None
+
+    file_names.sort()
+    frame_files = [{'name': name} for name in file_names]
+    _log.output(f'load_movieclip DIR: {directory}')
 
     old_movieclips = bpy.data.movieclips[:]
     try:
         res = bpy.ops.clip.open('EXEC_DEFAULT', files=frame_files,
                                 directory=directory)
-        _log_output(f'Operator result: {res}')
+        _log.output(f'Operator result: {res}')
     except RuntimeError as err:
-        _log_error('MOVIECLIP OPEN ERROR: {}'.format(str(err)))
+        _log.error('MOVIECLIP OPEN ERROR: {}'.format(str(err)))
         return None
 
     new_movieclip = get_new_movieclip(old_movieclips)
     if new_movieclip is not None:
         return new_movieclip
 
-    _log_error('NO NEW MOVIECLIP HAS BEEN CREATED')
+    _log.error('NO NEW MOVIECLIP HAS BEEN CREATED')
 
     new_movieclip = find_movieclip(os.path.join(directory, file_names[0]))
     if new_movieclip is None:
-        _log_error('NO NEW MOVIECLIP IN EXISTING')
+        _log.error('NO NEW MOVIECLIP IN EXISTING')
         return None
 
-    _log_output(f'EXISTING MOVICLIP HAS BEEN FOUND: {new_movieclip}')
+    _log.output(f'EXISTING MOVICLIP HAS BEEN FOUND: {new_movieclip}')
     return new_movieclip
 
 
@@ -183,7 +189,7 @@ def convert_movieclip_to_frames(movie_clip: Optional[MovieClip],
                                   {'scene': scene}, animation=True)
     except Exception as err:
         output_filepath = None
-        _log_error(f'convert_movieclip_to_frames Exception:\n{str(err)}')
+        _log.error(f'convert_movieclip_to_frames Exception:\n{str(err)}')
     finally:
         _cleanup_scene()
     return output_filepath
@@ -193,7 +199,7 @@ def fit_render_size(movie_clip: Optional[MovieClip]) -> ActionStatus:
     w, h = get_movieclip_size(movie_clip)
     if w <= 0 or h <= 0:
         msg = f'Wrong precalc frame size {w} x {h}'
-        _log_error(msg)
+        _log.error(msg)
         return ActionStatus(False, msg)
 
     scene = bpy.context.scene

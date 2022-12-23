@@ -361,6 +361,7 @@ def raster_image_mask_fragment_shader() -> str:
     uniform sampler2D image;
     uniform vec4 color;
     uniform bool inverted;
+    uniform float maskThreshold;
 
     in vec2 texCoord_interp;
     out vec4 fragColor;
@@ -368,7 +369,7 @@ def raster_image_mask_fragment_shader() -> str:
     void main()
     {
         vec4 tex = texture(image, texCoord_interp);
-        if ((tex[0] == 0) && (tex[1] == 0) && (tex[2] == 0)) {
+        if ((tex[0] + tex[1] + tex[2]) / 3.0 <= maskThreshold) {
             if (!inverted) discard;
             fragColor = color;
         } else {

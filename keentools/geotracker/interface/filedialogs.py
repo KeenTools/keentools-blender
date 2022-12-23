@@ -19,9 +19,14 @@
 import os
 from typing import Optional, List
 
-import bpy
-from bpy.types import MovieClip
+from bpy.types import MovieClip, Operator, OperatorFileListElement
+from bpy.props import (StringProperty,
+                       IntProperty,
+                       CollectionProperty,
+                       BoolProperty,
+                       EnumProperty)
 from bpy_extras.io_utils import ImportHelper, ExportHelper
+from bpy.path import ensure_ext
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import Config, get_operator
@@ -29,6 +34,7 @@ from ...geotracker_config import GTConfig, get_current_geotracker_item
 from ...utils.images import set_background_image_by_movieclip
 from ...utils.video import (convert_movieclip_to_frames,
                             load_movieclip,
+                            load_image_sequence,
                             get_movieclip_duration)
 from ..gtloader import GTLoader
 from ...utils.bpy_common import (bpy_start_frame,
@@ -56,22 +62,23 @@ def _load_movieclip(dir_path: str, file_names: List[str]) -> Optional[MovieClip]
     return new_movieclip
 
 
-class GT_OT_SequenceFilebrowser(bpy.types.Operator, ImportHelper):
+class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
     bl_idname = GTConfig.gt_sequence_filebrowser_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
-    filter_glob: bpy.props.StringProperty(
-        default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.mp4;*.avi;*.mov;*.mpeg',
+    filter_glob: StringProperty(
+        default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.mp4;*.avi;*.mov;*.mpeg;*.exr',
         options={'HIDDEN'}
     )
 
-    files: bpy.props.CollectionProperty(
+    files: CollectionProperty(
         name='File Path',
-        type=bpy.types.OperatorFileListElement,
+        type=OperatorFileListElement,
     )
 
-    directory: bpy.props.StringProperty(
+    directory: StringProperty(
             subtype='DIR_PATH',
     )
 
@@ -96,27 +103,69 @@ class GT_OT_SequenceFilebrowser(bpy.types.Operator, ImportHelper):
         return {'FINISHED'}
 
 
-class GT_OT_ChoosePrecalcFile(bpy.types.Operator, ExportHelper):
+class GT_OT_MaskSequenceFilebrowser(Operator, ImportHelper):
+    bl_idname = GTConfig.gt_mask_sequence_filebrowser_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+
+    filter_glob: StringProperty(
+        default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.mp4;*.avi;*.mov;*.mpeg;*.exr',
+        options={'HIDDEN'}
+    )
+
+    files: CollectionProperty(
+        name='File Path',
+        type=OperatorFileListElement,
+    )
+
+    directory: StringProperty(
+            subtype='DIR_PATH',
+    )
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        col.label(text='Load mask image sequence or movie. ')
+        col.label(text='Just select first image in sequence')
+
+    def execute(self, context):
+        geotracker = get_current_geotracker_item()
+        if not geotracker:
+            return {'CANCELLED'}
+
+        new_sequence = load_image_sequence(self.directory,
+                                           [f.name for f in self.files])
+        if not new_sequence:
+            return {'CANCELLED'}
+
+        geotracker.mask_2d = new_sequence.name
+        _log.output(f'LOADED MASK: {new_sequence.name}')
+        return {'FINISHED'}
+
+
+class GT_OT_ChoosePrecalcFile(Operator, ExportHelper):
     bl_idname = GTConfig.gt_choose_precalc_file_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
-    filter_glob: bpy.props.StringProperty(
+    filter_glob: StringProperty(
         default='*.precalc',
         options={'HIDDEN'}
     )
 
-    check_existing: bpy.props.BoolProperty(
+    check_existing: BoolProperty(
         name='Check Existing',
         description='Check and warn on overwriting existing files',
         default=True,
         options={'HIDDEN'},
     )
 
-    filename_ext: bpy.props.StringProperty(default='.precalc')
+    filename_ext: StringProperty(default='.precalc')
 
-    filepath: bpy.props.StringProperty(
+    filepath: StringProperty(
         default=GTConfig.default_precalc_filename,
         subtype='FILE_PATH'
     )
@@ -130,7 +179,7 @@ class GT_OT_ChoosePrecalcFile(bpy.types.Operator, ExportHelper):
         if sp[1] in {'.precalc', '.'}:
             filepath = sp[0]
 
-        filepath = bpy.path.ensure_ext(filepath, self.filename_ext)
+        filepath = ensure_ext(filepath, self.filename_ext)
 
         if filepath != self.filepath:
             self.filepath = filepath
@@ -167,28 +216,28 @@ class GT_OT_ChoosePrecalcFile(bpy.types.Operator, ExportHelper):
         return {'FINISHED'}
 
 
-class _DirSelectionTemplate(bpy.types.Operator, ExportHelper):
+class _DirSelectionTemplate(Operator, ExportHelper):
     bl_label = 'Choose dir'
     bl_description = 'Choose dir where to place files'
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    use_filter: bpy.props.BoolProperty(default=True)
-    use_filter_folder: bpy.props.BoolProperty(default=True)
+    use_filter: BoolProperty(default=True)
+    use_filter_folder: BoolProperty(default=True)
 
-    filter_glob: bpy.props.StringProperty(
+    filter_glob: StringProperty(
           options={'HIDDEN'}
     )
-    filepath: bpy.props.StringProperty(
+    filepath: StringProperty(
         default='',
         subtype='FILE_PATH'
     )
-    file_format: bpy.props.EnumProperty(name='Image file format', items=[
+    file_format: EnumProperty(name='Image file format', items=[
         ('PNG', 'PNG', 'Default image file format with transparency', 0),
         ('JPEG', 'JPEG', 'Data loss image format without transparency', 1),
     ], description='Choose image file format')
-    from_frame: bpy.props.IntProperty(name='from', default=1)
-    to_frame: bpy.props.IntProperty(name='to', default=1)
-    filename_ext: bpy.props.StringProperty()
+    from_frame: IntProperty(name='from', default=1)
+    to_frame: IntProperty(name='to', default=1)
+    filename_ext: StringProperty()
 
     def draw(self, context):
         layout = self.layout
@@ -226,7 +275,7 @@ class GT_OT_SplitVideo(_DirSelectionTemplate):
         return {'FINISHED'}
 
 
-class GT_OT_SplitVideoExec(bpy.types.Operator):
+class GT_OT_SplitVideoExec(Operator):
     bl_idname = GTConfig.gt_split_video_to_frames_exec_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -248,7 +297,7 @@ class GT_OT_SplitVideoExec(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GT_OT_FrameSelector(bpy.types.Operator):
+class GT_OT_FrameSelector(Operator):
     bl_idname = GTConfig.gt_select_frames_for_bake_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -340,8 +389,8 @@ class GT_OT_ReprojectTextureSequence(_DirSelectionTemplate):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
-    width: bpy.props.IntProperty(default=2048, description='Texture width')
-    height: bpy.props.IntProperty(default=2048, description='Texture height')
+    width: IntProperty(default=2048, description='Texture width')
+    height: IntProperty(default=2048, description='Texture height')
 
     def draw(self, context):
         layout = self.layout
