@@ -506,6 +506,9 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
     def set_lit_wireframe(self, state: bool) -> None:
         self.lit_flag = state
 
+    def lit_is_working(self) -> bool:
+        return self.lit_flag
+
     def init_shaders(self) -> None:
         super().init_shaders()
         self.lit_shader = gpu.types.GPUShader(
@@ -559,7 +562,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
              'vertNormal': self.lit_edge_vertex_normals})
 
     def draw_edges(self) -> None:
-        if not self.lit_flag:
+        if not self.lit_is_working():
             return super().draw_edges()
 
         shader = self.lit_shader
