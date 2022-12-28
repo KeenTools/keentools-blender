@@ -256,7 +256,7 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
         self.edge_lengths = [x for _ in pos for x in (bottom, top * 0.5)]
 
     def _get_region(self, area: Area) -> Optional[Region]:
-        return area.regions[3]
+        return area.regions[-1]
 
     def draw_callback(self, context: Any) -> None:
         # Force Stop
