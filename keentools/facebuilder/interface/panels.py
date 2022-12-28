@@ -18,8 +18,9 @@
 
 import re
 from functools import partial
+from typing import Optional
 
-from bpy.types import Panel
+from bpy.types import Panel, Area, Window, Screen
 
 from ...utils.kt_logging import KTLogger
 from ...updater.panels import (KT_PT_UpdatePanel,
@@ -39,9 +40,13 @@ from ...blender_independent_packages.pykeentools_loader import is_installed as p
 from ...utils.other import unhide_viewport_ui_elements_from_object, force_show_ui_overlays
 from ...utils.localview import exit_area_localview, check_context_localview
 from ...utils.bpy_common import bpy_timer_register
+from ...utils.grace_timer import KTGraceTimer
 
 
 _log = KTLogger(__name__)
+
+
+_fb_grace_timer = KTGraceTimer('facebuilder')
 
 
 def _state_valid_to_show(state):
@@ -78,10 +83,11 @@ def _draw_update_blendshapes_panel(layout):
     box.operator(FBConfig.fb_update_blendshapes_idname)
 
 
-def _pinmode_escaper(area):
+def _pinmode_escaper(area: Area, window: Optional[Window],
+                     screen: Optional[Screen]) -> None:
     settings = get_fb_settings()
     head = settings.get_head(settings.current_headnum)
-    exit_area_localview(area)
+    exit_area_localview(area, window, screen)
     settings.pinmode = False
 
     if head is None or not head.headobj:
@@ -94,8 +100,8 @@ def _pinmode_escaper(area):
 
 def _start_pinmode_escaper(context):
     _log.output(f'_start_pinmode_escaper: area={context.area}')
-    bpy_timer_register(partial(_pinmode_escaper, context.area),
-                       first_interval=0.01)
+    bpy_timer_register(partial(_pinmode_escaper, context.area, context.window,
+                               context.screen), first_interval=0.01)
 
 
 def _exit_from_localview_button(layout, context):
@@ -271,6 +277,7 @@ class FB_PT_HeaderPanel(Common, Panel):
         elif state == 'NO_HEADS':
             self._draw_start_panel(layout)
             KTUpdater.call_updater('FaceBuilder')
+            _fb_grace_timer.start()
             _exit_from_localview_button(layout, context)
             return
 
@@ -278,6 +285,7 @@ class FB_PT_HeaderPanel(Common, Panel):
             self._draw_many_heads(layout)
             _exit_from_localview_button(layout, context)
             KTUpdater.call_updater('FaceBuilder')
+            _fb_grace_timer.start()
 
 
 class FB_PT_UpdatePanel(KT_PT_UpdatePanel):

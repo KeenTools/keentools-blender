@@ -42,6 +42,7 @@ class GTConfig:
     gt_movepin_idname = operators + '.movepin'
     gt_create_precalc_idname = operators + '.create_precalc'
     gt_sequence_filebrowser_idname = operators + '.sequence_filebrowser'
+    gt_mask_sequence_filebrowser_idname = operators + '.mask_sequence_filebrowser'
     gt_choose_precalc_file_idname = operators + '.choose_precalc_file'
     gt_split_video_to_frames_idname = operators + '.split_video_to_frames'
     gt_split_video_to_frames_exec_idname = operators + '.split_video_to_frames_exec'

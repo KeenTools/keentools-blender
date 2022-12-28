@@ -35,6 +35,10 @@ from ..gtloader import GTLoader
 from ...utils.localview import exit_area_localview, check_context_localview
 from ...utils.other import force_show_ui_overlays
 from ...utils.bpy_common import bpy_timer_register
+from ...utils.grace_timer import KTGraceTimer
+
+
+_gt_grace_timer = KTGraceTimer('geotracker')
 
 
 def _pinmode_escaper(area: Area) -> None:
@@ -201,6 +205,7 @@ class GT_PT_GeotrackersPanel(View3DPanel):
         self._geotracker_creation_offer(layout)
         _exit_from_localview_button(layout, context)
         KTUpdater.call_updater('GeoTracker')
+        _gt_grace_timer.start()
 
 
 class GT_PT_UpdatePanel(KT_PT_UpdatePanel):
@@ -278,11 +283,6 @@ class GT_PT_InputsPanel(AllVisible):
         row.prop(geotracker, 'precalcless', text='Precalcless', toggle=1)
         row.prop(geotracker, 'precalcless', text='Use precalc', toggle=1,
                  invert_checkbox=True)
-
-        if settings.is_calculating('PRECALC'):
-            _draw_calculating_indicator(layout)
-        elif not geotracker.precalcless:
-            col.operator(GTConfig.gt_analyze_call_idname)
 
 
 class GT_PT_AnalyzePanel(AllVisible):
@@ -549,6 +549,17 @@ class GT_PT_MasksPanel(AllVisible):
                             bpy.data, 'images')
             row.prop(geotracker, 'mask_2d_inverted',
                      text='', icon='ARROW_LEFTRIGHT')
+            row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
+                         text='', icon='FILEBROWSER')
+            row = layout.row(align=True)
+            row.prop(geotracker, 'mask_2d_threshold', slider=True)
+            if geotracker.mask_2d_info == '':
+                return
+            arr = re.split('\r\n|\n', geotracker.mask_2d_info)
+            for txt in arr:
+                col = layout.column(align=True)
+                col.scale_y = Config.text_scale_y
+                col.label(text=txt)
 
 
 class GT_PT_AppearanceSettingsPanel(AllVisible):

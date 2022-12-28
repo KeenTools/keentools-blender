@@ -63,7 +63,8 @@ class KT_OT_AddonWarning(Operator):
             op.url = FBConfig.fb_license_purchase_url
 
     def execute(self, context: Any) -> Set:
-        if self.msg not in (ErrorType.PktProblem, ErrorType.NoLicense):
+        if self.msg not in (ErrorType.PktProblem, ErrorType.NoLicense,
+                            ErrorType.FBGracePeriod, ErrorType.GTGracePeriod):
             return {'FINISHED'}
 
         op = get_operator(Config.kt_addon_settings_idname)

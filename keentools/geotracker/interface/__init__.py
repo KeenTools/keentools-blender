@@ -35,6 +35,7 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,
                        GT_PT_TexturePanel,
                        GT_PT_AnimationPanel,
                        GT_OT_SequenceFilebrowser,  # file dialogs
+                       GT_OT_MaskSequenceFilebrowser,
                        GT_OT_ChoosePrecalcFile,
                        GT_OT_SplitVideo,
                        GT_OT_SplitVideoExec,

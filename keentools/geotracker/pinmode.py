@@ -37,7 +37,8 @@ from ..utils.coords import (point_is_in_area,
 from ..utils.manipulate import force_undo_push, switch_to_camera
 from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
                            unhide_viewport_ui_elements_from_object)
-from ..utils.images import set_background_image_by_movieclip
+from ..utils.images import (set_background_image_by_movieclip,
+                            set_background_image_mask)
 from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_background_mode,
                                 bpy_is_animation_playing,
@@ -224,12 +225,14 @@ class GT_OT_PinMode(Operator):
 
         _log.output('GT START SHADERS')
         GTLoader.load_pins_into_viewport()
+
+        settings = get_gt_settings()
+        settings.reload_mask_2d()
+        _calc_adaptive_opacity(area)
+
         vp = GTLoader.viewport()
         vp.create_batch_2d(area)
         _log.output('GT REGISTER SHADER HANDLERS')
-        settings = get_gt_settings()
-
-        _calc_adaptive_opacity(area)
         GTLoader.update_viewport_shaders(area, normals=settings.lit_wireframe)
 
         geotracker = get_current_geotracker_item()
@@ -268,6 +271,7 @@ class GT_OT_PinMode(Operator):
 
         set_background_image_by_movieclip(geotracker.camobj,
                                           geotracker.movie_clip)
+        set_background_image_mask(geotracker.camobj, geotracker.mask_2d)
 
         GTLoader.place_object_or_camera()
         switch_to_camera(area, geotracker.camobj,

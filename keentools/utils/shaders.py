@@ -45,10 +45,10 @@ def flat_color_3d_vertex_shader() -> str:
 
     #if defined(USE_COLOR_U32)
         finalColor = vec4(
-            ((color      ) & uint(0xFF)) * (1.0f / 255.0f),
-            ((color >>  8) & uint(0xFF)) * (1.0f / 255.0f),
-            ((color >> 16) & uint(0xFF)) * (1.0f / 255.0f),
-            ((color >> 24)             ) * (1.0f / 255.0f));
+            ((color      ) & uint(0xFF)) * (1.0 / 255.0),
+            ((color >>  8) & uint(0xFF)) * (1.0 / 255.0),
+            ((color >> 16) & uint(0xFF)) * (1.0 / 255.0),
+            ((color >> 24)             ) * (1.0 / 255.0));
     #else
         finalColor = color;
     #endif
@@ -226,7 +226,7 @@ def residual_vertex_shader() -> str:
     void main()
     {
         v_LineLength = lineLength;
-        gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0f);
+        gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);
         finalColor = color;
     }
     '''
@@ -259,7 +259,7 @@ def dashed_fragment_shader() -> str:
 
     void main()
     {
-        if (mod(v_LineLength + 5.0f, 10.0f) > 5.5f) discard;
+        if (mod(v_LineLength + 5.0, 10.0) > 5.5) discard;
         fragColor = finalColor;
         '''
     if blender_srgb_to_framebuffer_space_enabled:
@@ -280,7 +280,7 @@ def solid_line_vertex_shader() -> str:
 
     void main()
     {
-        gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0f);
+        gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);
         finalColor = color;
     }
     '''
@@ -313,7 +313,7 @@ def raster_image_vertex_shader() -> str:
 
     void main()
     {
-      gl_Position = ModelViewProjectionMatrix * vec4(pos, 1.0f);
+      gl_Position = ModelViewProjectionMatrix * vec4(pos, 1.0);
       texCoord_interp = texCoord;
     }
     '''
@@ -349,7 +349,7 @@ def raster_image_mask_vertex_shader() -> str:
         gl_Position = ModelViewProjectionMatrix * vec4(
             left.x + pos.x * (right.x - left.x),
             left.y + pos.y * (right.y - left.y),
-            0.0f, 1.0f);
+            0.0, 1.0);
         gl_Position.z = 1.0;
         texCoord_interp = texCoord;
     }
@@ -361,6 +361,7 @@ def raster_image_mask_fragment_shader() -> str:
     uniform sampler2D image;
     uniform vec4 color;
     uniform bool inverted;
+    uniform float maskThreshold;
 
     in vec2 texCoord_interp;
     out vec4 fragColor;
@@ -368,7 +369,7 @@ def raster_image_mask_fragment_shader() -> str:
     void main()
     {
         vec4 tex = texture(image, texCoord_interp);
-        if ((tex[0] == 0) && (tex[1] == 0) && (tex[2] == 0)) {
+        if ((tex[0] + tex[1] + tex[2]) / 3.0 <= maskThreshold) {
             if (!inverted) discard;
             fragColor = color;
         } else {
@@ -428,7 +429,7 @@ def lit_fragment_shader() -> str:
     vec3 evaluatePointLight(Light light, vec3 surfColor, vec3 normal, vec3 fragPos)
     {
         vec3 lightDir = normalize(light.position - fragPos);
-        float diff = max(dot(normal, lightDir), 0f); // cos(angle)
+        float diff = max(dot(normal, lightDir), 0.0); // cos(angle)
 
         float distance    = length(light.position - fragPos);
         float attenuation = 1.0 / (light.constant + light.linear * distance +
@@ -437,14 +438,14 @@ def lit_fragment_shader() -> str:
         vec3 diffuse  = light.diffuse * diff ;
 
         return attenuation * (ambient + diffuse) * surfColor;
-    };
+    }
 
     void main()
     {
-        float dist = 1000f;
-        Light light1 = Light(vec3( 0f,  0f, -dist), 1f, 0f, 0f, vec3(0f, 0f, 0f), vec3(1f, 1f, 1f));
-        Light light2 = Light(vec3(-2f * dist, 0f, -dist), 1f, 0f, 0f, vec3(0f, 0f, 0f), vec3(1f, 1f, 1f));
-        Light light3 = Light(vec3( 2f * dist, 0f, -dist), 1f, 0f, 0f, vec3(0f, 0f, 0f), vec3(1f, 1f, 1f));
+        float dist = 1000.0;
+        Light light1 = Light(vec3( 0.0,  0.0, -dist), 1.0, 0.0, 0.0, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0));
+        Light light2 = Light(vec3(-2.0 * dist, 0.0, -dist), 1.0, 0.0, 0.0, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0));
+        Light light3 = Light(vec3( 2.0 * dist, 0.0, -dist), 1.0, 0.0, 0.0, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0));
         fragColor = vec4(
             evaluatePointLight(light1, color.rgb, calcNormal, outPos) +
             evaluatePointLight(light2, color.rgb, calcNormal, outPos) +
