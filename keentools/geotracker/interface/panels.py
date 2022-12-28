@@ -283,7 +283,10 @@ class GT_PT_InputsPanel(AllVisible):
         row.prop(geotracker, 'precalcless', text='Precalcless', toggle=1)
         row.prop(geotracker, 'precalcless', text='Use precalc', toggle=1,
                  invert_checkbox=True)
-
+        if settings.is_calculating('PRECALC'):
+            _draw_calculating_indicator(layout)
+        elif not geotracker.precalcless:
+            col.operator(GTConfig.gt_analyze_call_idname)
 
 class GT_PT_AnalyzePanel(AllVisible):
     bl_idname = GTConfig.gt_analyze_panel_idname
