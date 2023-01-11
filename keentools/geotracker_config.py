@@ -95,6 +95,7 @@ class GTConfig:
     # Panel ids
     gt_geotrackers_panel_idname = _PT + 'geotrackers_panel'
     gt_input_panel_idname = _PT + 'input_panel'
+    gt_masks_panel_idname = _PT + 'masks_panel'
     gt_analyze_panel_idname = _PT + 'analyze_panel'
     gt_camera_panel_idname = _PT + 'camera_panel'
     gt_tracking_panel_idname = _PT + 'tracking_panel'
