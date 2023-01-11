@@ -206,8 +206,7 @@ def bpy_new_image(name: str, **kwargs) -> Image:
 
 def bpy_render_single_frame(scene: Scene, frame: Optional[int]=None) -> None:
     if frame is not None:
-        if scene.frame_current != frame:
-            scene.frame_current = frame
+        scene.frame_current = frame
     _log.output(_log.color('yellow', f'bpy_render_single_frame: {frame}'))
     bpy.ops.render.render({'scene': scene}, animation=False)
 

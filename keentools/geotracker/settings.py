@@ -395,7 +395,8 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     def update_compositing_mask(self, *, frame: Optional[int]=None,
                                 recreate_nodes: bool=False) -> Image:
-        _log.output(f'update_compositing_mask. recreate_nodes={recreate_nodes}')
+        _log.output(f'update_compositing_mask enter. '
+                    f'recreate_nodes={recreate_nodes}')
         shadow_scene = get_compositing_shadow_scene(
             GTConfig.gt_shadow_compositing_scene_name)
         if recreate_nodes:
