@@ -302,6 +302,8 @@ class GT_PT_InputsPanel(AllVisible):
 
         if not GTConfig.hide_2d_mask:
             row = layout.row(align=True)
+            row.prop(geotracker, 'mask_source', expand=True)
+            row = layout.row(align=True)
             row.prop_search(geotracker, 'mask_2d',
                             bpy.data, 'images')
             row.prop(geotracker, 'mask_2d_inverted',
@@ -310,13 +312,20 @@ class GT_PT_InputsPanel(AllVisible):
                          text='', icon='FILEBROWSER')
             row = layout.row(align=True)
             row.prop(geotracker, 'mask_2d_threshold', slider=True)
-            if geotracker.mask_2d_info == '':
-                return
-            arr = re.split('\r\n|\n', geotracker.mask_2d_info)
-            for txt in arr:
-                col = layout.column(align=True)
-                col.scale_y = Config.text_scale_y
-                col.label(text=txt)
+            if geotracker.mask_2d_info != '':
+                arr = re.split('\r\n|\n', geotracker.mask_2d_info)
+                for txt in arr:
+                    col = layout.column(align=True)
+                    col.scale_y = Config.text_scale_y
+                    col.label(text=txt)
+
+            row = layout.row(align=True)
+            row.prop_search(geotracker, 'compositing_mask',
+                            bpy.data, 'masks')
+            row.prop(geotracker, 'compositing_mask_inverted',
+                     text='', icon='ARROW_LEFTRIGHT')
+            row = layout.row(align=True)
+            row.prop(geotracker, 'compositing_mask_threshold', slider=True)
 
 
 class GT_PT_AnalyzePanel(AllVisible):

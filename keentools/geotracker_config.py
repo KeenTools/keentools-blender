@@ -152,6 +152,9 @@ class GTConfig:
     hide_2d_mask = False
     auto_increase_far_clip_distance = True
 
+    gt_rendered_mask_image_name = 'gt_rendered_mask'
+    gt_shadow_compositing_scene_name = 'gt_shadow_compositing_scene'
+
 
 def get_gt_settings():
     return getattr(bpy.context.scene, GTConfig.gt_global_var_name)
