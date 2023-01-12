@@ -26,10 +26,13 @@ from bpy.types import Image, Camera, Object, MovieClip
 
 from ..addon_config import Config
 from .kt_logging import KTLogger
-from .bpy_common import bpy_end_frame
+from .bpy_common import bpy_app_version, bpy_end_frame
 
 
 _log = KTLogger(__name__)
+
+
+pixels_foreach_methods_exist = bpy_app_version() >= (2, 83, 0)
 
 
 def _assign_pixels_data_new(pixels: Any, data: Any) -> None:
@@ -41,7 +44,7 @@ def _assign_pixels_data_old(pixels: Any, data: Any) -> None:
 
 
 assign_pixels_data: Callable = _assign_pixels_data_new \
-    if bpy.app.version >= (2, 83, 0) else _assign_pixels_data_old
+    if pixels_foreach_methods_exist else _assign_pixels_data_old
 
 
 def _get_pixels_data_new(pixels: Any, data: Any) -> None:
@@ -53,7 +56,19 @@ def _get_pixels_data_old(pixels: Any, data: Any) -> None:
 
 
 get_pixels_data: Callable = _get_pixels_data_new \
-    if bpy.app.version >= (2, 83, 0) else _get_pixels_data_old
+    if pixels_foreach_methods_exist else _get_pixels_data_old
+
+
+def _copy_pixels_data_new(src_pixels: Any, dst_pixels: Any) -> None:
+    dst_pixels.foreach_set(src_pixels[:])
+
+
+def _copy_pixels_data_old(src_pixels: Any, dst_pixels: Any) -> None:
+    dst_pixels[:] = src_pixels[:]
+
+
+copy_pixels_data = _copy_pixels_data_new \
+    if pixels_foreach_methods_exist else _copy_pixels_data_old
 
 
 def np_array_from_bpy_image(bpy_image: Optional[Image]) -> Optional[Any]:

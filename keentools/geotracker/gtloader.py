@@ -130,12 +130,15 @@ def unregister_app_handler(app_handlers, handler) -> None:
 
 
 def frame_change_post_handler(scene):
-    _log.output('KEYFRAME UPDATED')
+    _log.output(f'KEYFRAME UPDATED: {scene.name}')
     geotracker = get_current_geotracker_item()
+    if geotracker is None:
+        _log.output('EARLY EXIT')
+        return
     geotracker.reset_focal_length_estimation()
     GTLoader.place_object_or_camera()
     GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
-                                     timeline=False)
+                                     timeline=False, mask=True)
 
 
 class GTLoader:
@@ -465,7 +468,8 @@ class GTLoader:
                                 wireframe: bool=True,
                                 normals: bool=False,
                                 pins_and_residuals: bool=True,
-                                timeline: bool=True) -> None:
+                                timeline: bool=True,
+                                mask: bool=False) -> None:
         if area is None:
             vp = cls.viewport()
             area = vp.get_work_area()
@@ -476,6 +480,10 @@ class GTLoader:
             geotracker = get_current_geotracker_item()
             if geotracker and geotracker.geomobj:
                 wf.set_object_world_matrix(geotracker.geomobj.matrix_world)
+        if mask:
+            geotracker = get_current_geotracker_item()
+            if geotracker.mask_source == 'COMP_MASK':
+                geotracker.update_compositing_mask()
         if wireframe:
             cls.update_viewport_wireframe(normals)
         if pins_and_residuals:

@@ -39,7 +39,8 @@ from ..utils.bpy_common import (bpy_current_frame,
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..geotracker.gtloader import GTLoader
 from ..utils.images import (np_array_from_background_image,
-                            np_threshold_image)
+                            np_threshold_image,
+                            np_array_from_bpy_image)
 from ..utils.ui_redraw import total_redraw_ui
 from ..utils.mesh_builder import build_geo
 from ..utils.materials import find_bpy_image_by_name
@@ -118,7 +119,7 @@ class GTImageInput(pkt_module().ImageInputI):
 
 
 class GTMask2DInput(pkt_module().Mask2DInputI):
-    def load_2d_mask_at(self, frame: int) -> Any:
+    def load_image_2d_mask_at(self, frame: int) -> Any:
         geotracker = get_current_geotracker_item()
         if not geotracker or geotracker.mask_2d == '':
             return None
@@ -150,6 +151,27 @@ class GTMask2DInput(pkt_module().Mask2DInputI):
         grayscale = np_threshold_image(np_img, geotracker.mask_2d_threshold)
         _log.output(f'MASK SIZE: {grayscale.shape}')
         return pkt_module().LoadedMask(grayscale, geotracker.mask_2d_inverted)
+
+    def load_compositing_2d_mask_at(self, frame: int) -> Any:
+        geotracker = get_current_geotracker_item()
+        if not geotracker or geotracker.compositing_mask == '':
+            return None
+        mask_image = geotracker.update_compositing_mask(frame)
+        np_img = np_array_from_bpy_image(mask_image)
+        if np_img is None:
+            _log.output('NO COMP MASK IMAGE')
+            return None
+        grayscale = np_threshold_image(np_img, geotracker.mask_2d_threshold)
+        _log.output(f'COMP MASK INPUT HAS BEEN CALCULATED AT FRAME: {frame}')
+        return pkt_module().LoadedMask(grayscale, geotracker.compositing_mask_inverted)
+
+    def load_2d_mask_at(self, frame: int) -> Any:
+        geotracker = get_current_geotracker_item()
+        if geotracker.mask_source == 'MASK_2D':
+            return self.load_image_2d_mask_at(frame)
+        elif geotracker.mask_source == 'COMP_MASK':
+            return self.load_compositing_2d_mask_at(frame)
+        return None
 
 
 class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):

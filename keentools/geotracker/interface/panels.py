@@ -293,6 +293,19 @@ class GT_PT_InputsPanel(AllVisible):
         row.prop(geotracker, 'precalcless', text='Use precalc', toggle=1,
                  invert_checkbox=True)
 
+
+class GT_PT_MasksPanel(AllVisible):
+    bl_idname = GTConfig.gt_masks_panel_idname
+    bl_label = 'Masks'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context: Any) -> None:
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if not geotracker:
+            return
+
+        layout = self.layout
         if geotracker.geomobj:
             row = layout.row(align=True)
             row.prop_search(geotracker, 'mask_3d',
@@ -302,21 +315,34 @@ class GT_PT_InputsPanel(AllVisible):
 
         if not GTConfig.hide_2d_mask:
             row = layout.row(align=True)
+            row.prop(geotracker, 'mask_source', expand=True)
+
+            box = layout.box()
+            row = box.row(align=True)
             row.prop_search(geotracker, 'mask_2d',
                             bpy.data, 'images')
             row.prop(geotracker, 'mask_2d_inverted',
                      text='', icon='ARROW_LEFTRIGHT')
             row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
                          text='', icon='FILEBROWSER')
-            row = layout.row(align=True)
+            row = box.row(align=True)
             row.prop(geotracker, 'mask_2d_threshold', slider=True)
-            if geotracker.mask_2d_info == '':
-                return
-            arr = re.split('\r\n|\n', geotracker.mask_2d_info)
-            for txt in arr:
-                col = layout.column(align=True)
-                col.scale_y = Config.text_scale_y
-                col.label(text=txt)
+
+            if geotracker.mask_2d_info != '':
+                arr = re.split('\r\n|\n', geotracker.mask_2d_info)
+                for txt in arr:
+                    col = layout.column(align=True)
+                    col.scale_y = Config.text_scale_y
+                    col.label(text=txt)
+
+            box = layout.box()
+            row = box.row(align=True)
+            row.prop_search(geotracker, 'compositing_mask',
+                            bpy.data, 'masks')
+            row.prop(geotracker, 'compositing_mask_inverted',
+                     text='', icon='ARROW_LEFTRIGHT')
+            row = box.row(align=True)
+            row.prop(geotracker, 'compositing_mask_threshold', slider=True)
 
 
 class GT_PT_AnalyzePanel(AllVisible):

@@ -15,12 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-from typing import Any, Dict, Callable, Tuple, List
+from typing import Any, Dict, Callable, Tuple, List, Optional
 
 import bpy
-from bpy.types import Object, Mesh, Operator, Camera
+from bpy.types import Object, Mesh, Operator, Camera, Scene, Image
 
-from ..addon_config import Config, get_addon_preferences
+from .kt_logging import KTLogger
+from ..addon_config import Config
+
+
+_log = KTLogger(__name__)
+
+
+def bpy_app_version() -> Tuple:
+    return bpy.app.version
+
+
+operator_with_context_exists = bpy_app_version() >= (3, 2, 0)
 
 
 def bpy_background_mode() -> bool:
@@ -95,7 +106,7 @@ def _operator_with_context_new(operator: Operator,
 
 
 operator_with_context: Callable = _operator_with_context_new \
-    if bpy.app.version >= (3, 2, 0) else _operator_with_context_old
+    if operator_with_context_exists else _operator_with_context_old
 
 
 def extend_scene_timeline_end(keyframe_num: int, force=False) -> None:
@@ -183,3 +194,25 @@ def bpy_timer_unregister(func: Callable) -> bool:
         bpy.app.timers.unregister(func)
         return True
     return False
+
+
+def bpy_new_scene(name: str) -> Scene:
+    return bpy.data.scenes.new(name)
+
+
+def bpy_new_image(name: str, **kwargs) -> Image:
+    return bpy.data.images.new(name, **kwargs)
+
+
+def bpy_render_single_frame(scene: Scene, frame: Optional[int]=None) -> None:
+    if frame is not None:
+        scene.frame_current = frame
+    _log.output(_log.color('yellow', f'bpy_render_single_frame: {frame}'))
+    bpy.ops.render.render({'scene': scene}, animation=False)
+
+
+def get_scene_by_name(scene_name: str) -> Optional[Scene]:
+    scene_num = bpy.data.scenes.find(scene_name)
+    if scene_num >= 0:
+        return bpy.data.scenes[scene_num]
+    return None

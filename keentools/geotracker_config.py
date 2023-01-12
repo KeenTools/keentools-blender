@@ -95,6 +95,7 @@ class GTConfig:
     # Panel ids
     gt_geotrackers_panel_idname = _PT + 'geotrackers_panel'
     gt_input_panel_idname = _PT + 'input_panel'
+    gt_masks_panel_idname = _PT + 'masks_panel'
     gt_analyze_panel_idname = _PT + 'analyze_panel'
     gt_camera_panel_idname = _PT + 'camera_panel'
     gt_tracking_panel_idname = _PT + 'tracking_panel'
@@ -151,6 +152,9 @@ class GTConfig:
     auto_time_length = True
     hide_2d_mask = False
     auto_increase_far_clip_distance = True
+
+    gt_rendered_mask_image_name = 'gt_rendered_mask'
+    gt_shadow_compositing_scene_name = 'gt_shadow_compositing_scene'
 
 
 def get_gt_settings():
