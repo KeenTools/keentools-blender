@@ -156,7 +156,7 @@ class GTMask2DInput(pkt_module().Mask2DInputI):
         geotracker = get_current_geotracker_item()
         if not geotracker or geotracker.compositing_mask == '':
             return None
-        mask_image = geotracker.update_compositing_mask(frame)
+        mask_image = geotracker.update_compositing_mask(frame=frame)
         np_img = np_array_from_bpy_image(mask_image)
         if np_img is None:
             _log.output('NO COMP MASK IMAGE')
