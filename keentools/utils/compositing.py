@@ -211,5 +211,5 @@ def revert_default_compositing(scene: Scene) -> bool:
         for link in node_tree.links:
             if link.to_node == node_composite and link.to_socket == node_composite.inputs['Image']:
                 node_tree.links.remove(link)
-                break
+                return False
     return True
