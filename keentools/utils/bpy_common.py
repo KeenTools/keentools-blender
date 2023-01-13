@@ -47,6 +47,8 @@ def bpy_scene_camera() -> Camera:
 
 
 def bpy_is_animation_playing() -> bool:
+    if not bpy.context.screen:
+        return False
     return bpy.context.screen.is_animation_playing
 
 
