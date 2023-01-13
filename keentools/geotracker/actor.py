@@ -21,7 +21,9 @@ import logging
 import bpy
 
 from ..geotracker_config import GTConfig, get_current_geotracker_item
-from .utils.geotracker_acts import (center_geo_act,)
+from .utils.geotracker_acts import (center_geo_act,
+                                    render_with_background_act,
+                                    revert_default_render_act)
 from .ui_strings import buttons
 
 
@@ -48,6 +50,10 @@ class GT_OT_Actor(bpy.types.Operator):
             else:
                 self.report({'INFO'}, act_status.error_message)
             return {'FINISHED'}
+        elif self.action == 'render_with_background':
+            render_with_background_act()
+        elif self.action == 'default_render':
+            revert_default_render_act()
 
         self.report({'INFO'}, self.action)
         return {'FINISHED'}

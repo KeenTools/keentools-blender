@@ -246,6 +246,10 @@ buttons = {
         'Inputs help',
         'Show help information about Inputs panel'
     ),
+    GTConfig.gt_help_masks_idname: Button(
+        'Masks help',
+        'Show help information about Masks panel'
+    ),
     GTConfig.gt_help_analyze_idname: Button(
         'Analyze help',
         'Show help information about Analyze panel'
@@ -269,6 +273,10 @@ buttons = {
     GTConfig.gt_help_animation_idname: Button(
         'Animation help',
         'Show help information about Animation panel'
+    ),
+    GTConfig.gt_help_rendering_idname: Button(
+        'Rendering help',
+        'Show help information about Rendering panel'
     ),
 }
 

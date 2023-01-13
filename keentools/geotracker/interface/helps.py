@@ -59,6 +59,14 @@ class GTHELP_OT_InputsHelp(GTHELP_Common, Operator):
     invoke = _universal_invoke(bl_idname)
 
 
+class GTHELP_OT_MasksHelp(GTHELP_Common, Operator):
+    bl_idname = GTConfig.gt_help_masks_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    draw = _universal_draw(bl_idname)
+    invoke = _universal_invoke(bl_idname)
+
+
 class GTHELP_OT_AnalyzeHelp(GTHELP_Common, Operator):
     bl_idname = GTConfig.gt_help_analyze_idname
     bl_label = buttons[bl_idname].label
@@ -101,6 +109,14 @@ class GTHELP_OT_TextureHelp(GTHELP_Common, Operator):
 
 class GTHELP_OT_AnimationHelp(GTHELP_Common, Operator):
     bl_idname = GTConfig.gt_help_animation_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    draw = _universal_draw(bl_idname)
+    invoke = _universal_invoke(bl_idname)
+
+
+class GTHELP_OT_RenderingHelp(GTHELP_Common, Operator):
+    bl_idname = GTConfig.gt_help_rendering_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
     draw = _universal_draw(bl_idname)
