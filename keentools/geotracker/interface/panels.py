@@ -729,14 +729,12 @@ class GT_PT_RenderingPanel(AllVisible):
         layout = self.layout
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
-        op = col.operator(GTConfig.gt_actor_idname,
-                          text='Render with Background')
-        op.action = 'render_with_background'
-        op = col.operator(GTConfig.gt_actor_idname,
-                          text='Default render settings')
-        op.action = 'default_render'
+        col.operator(GTConfig.gt_render_with_background_idname)
+        col.operator(GTConfig.gt_revert_default_render_idname)
 
         box = layout.box()
         col = box.column(align=True)
-        col.prop(bpy.context.scene.render, 'film_transparent', text='Transparent background')
-        col.prop(bpy.context.scene, 'use_nodes', text='Use compositing nodes')
+        col.prop(bpy.context.scene.render, 'film_transparent',
+                 text='Transparent background')
+        col.prop(bpy.context.scene, 'use_nodes',
+                 text='Use compositing nodes')

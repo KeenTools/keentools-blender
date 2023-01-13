@@ -237,6 +237,14 @@ buttons = {
         'Remove all focal keyframes',
         'Remove all focal keyframes'
     ),
+    GTConfig.gt_render_with_background_idname: Button(
+        'Render with background',
+        'Enable rendering with background using compositing nodes'
+    ),
+    GTConfig.gt_revert_default_render_idname: Button(
+        'Revert default rendering',
+        'Setup scene rendering settings to match default render view'
+    ),
     GTConfig.gt_interrupt_modal_idname: Button(
         'GeoTracker Interruptor',
         'Interrupt current operation by Esc'
