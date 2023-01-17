@@ -161,9 +161,11 @@ class GTMask2DInput(pkt_module().Mask2DInputI):
         if np_img is None:
             _log.output('NO COMP MASK IMAGE')
             return None
-        grayscale = np_threshold_image(np_img, geotracker.mask_2d_threshold)
+        grayscale = np_threshold_image(np_img,
+                                       geotracker.compositing_mask_threshold)
         _log.output(f'COMP MASK INPUT HAS BEEN CALCULATED AT FRAME: {frame}')
-        return pkt_module().LoadedMask(grayscale, geotracker.compositing_mask_inverted)
+        return pkt_module().LoadedMask(grayscale,
+                                       geotracker.compositing_mask_inverted)
 
     def load_2d_mask_at(self, frame: int) -> Any:
         geotracker = get_current_geotracker_item()

@@ -299,6 +299,14 @@ class GT_PT_MasksPanel(AllVisible):
     bl_label = 'Masks'
     bl_options = {'DEFAULT_CLOSED'}
 
+    def draw_header_preset(self, context: Any) -> None:
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        row.operator(
+            GTConfig.gt_help_masks_idname,
+            text='', icon='QUESTION')
+
     def draw(self, context: Any) -> None:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
@@ -702,3 +710,31 @@ class GT_PT_AnimationPanel(AllVisible):
                      text='Geom. tracking -> Camera')
         col.operator(GTConfig.gt_move_tracking_to_geometry_idname,
                      text='Cam. tracking -> Geom.')
+
+
+class GT_PT_RenderingPanel(AllVisible):
+    bl_idname = GTConfig.gt_rendering_panel_idname
+    bl_label = 'Rendering'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw_header_preset(self, context: Any) -> None:
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        row.operator(
+            GTConfig.gt_help_rendering_idname,
+            text='', icon='QUESTION')
+
+    def draw(self, context: Any) -> None:
+        layout = self.layout
+        col = layout.column(align=True)
+        col.scale_y = Config.btn_scale_y
+        col.operator(GTConfig.gt_render_with_background_idname)
+        col.operator(GTConfig.gt_revert_default_render_idname)
+
+        box = layout.box()
+        col = box.column(align=True)
+        col.prop(bpy.context.scene.render, 'film_transparent',
+                 text='Transparent background')
+        col.prop(bpy.context.scene, 'use_nodes',
+                 text='Use compositing nodes')

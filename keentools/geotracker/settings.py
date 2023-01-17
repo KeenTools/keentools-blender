@@ -380,7 +380,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         default=False,
         update=update_mask_source)
     compositing_mask_threshold: bpy.props.FloatProperty(
-        default=0.002, soft_min=0.0, soft_max=1.0, min=-0.1, max=1.1,
+        default=0.5, soft_min=0.0, soft_max=1.0, min=-0.1, max=1.1,
         precision=4,
         name='Compositing mask threshold',
         description='Compositing mask cutout threshold',
@@ -668,7 +668,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
             _log.output('RELOAD 2D COMP_MASK')
             mask.image = mask_image
             mask.inverted = geotracker.compositing_mask_inverted
-            mask.mask_threshold = geotracker.mask_2d_threshold
+            mask.mask_threshold = geotracker.compositing_mask_threshold
         else:
             mask.image = None
 

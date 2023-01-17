@@ -237,6 +237,14 @@ buttons = {
         'Remove all focal keyframes',
         'Remove all focal keyframes'
     ),
+    GTConfig.gt_render_with_background_idname: Button(
+        'Render with background',
+        'Enable rendering with background using compositing nodes'
+    ),
+    GTConfig.gt_revert_default_render_idname: Button(
+        'Revert default rendering',
+        'Setup scene rendering settings to match default render view'
+    ),
     GTConfig.gt_interrupt_modal_idname: Button(
         'GeoTracker Interruptor',
         'Interrupt current operation by Esc'
@@ -245,6 +253,10 @@ buttons = {
     GTConfig.gt_help_inputs_idname: Button(
         'Inputs help',
         'Show help information about Inputs panel'
+    ),
+    GTConfig.gt_help_masks_idname: Button(
+        'Masks help',
+        'Show help information about Masks panel'
     ),
     GTConfig.gt_help_analyze_idname: Button(
         'Analyze help',
@@ -269,6 +281,10 @@ buttons = {
     GTConfig.gt_help_animation_idname: Button(
         'Animation help',
         'Show help information about Animation panel'
+    ),
+    GTConfig.gt_help_rendering_idname: Button(
+        'Rendering help',
+        'Show help information about Rendering panel'
     ),
 }
 

@@ -34,6 +34,7 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,
                        GT_PT_AppearanceSettingsPanel,
                        GT_PT_TexturePanel,
                        GT_PT_AnimationPanel,
+                       GT_PT_RenderingPanel,
                        GT_OT_SequenceFilebrowser,  # file dialogs
                        GT_OT_MaskSequenceFilebrowser,
                        GT_OT_ChoosePrecalcFile,
@@ -42,9 +43,11 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,
                        GT_OT_ReprojectTextureSequence,
                        GT_OT_FrameSelector,
                        GTHELP_OT_InputsHelp,  # helps
+                       GTHELP_OT_MasksHelp,
                        GTHELP_OT_AnalyzeHelp,
                        GTHELP_OT_CameraHelp,
                        GTHELP_OT_TrackingHelp,
                        GTHELP_OT_AppearanceHelp,
                        GTHELP_OT_TextureHelp,
-                       GTHELP_OT_AnimationHelp)
+                       GTHELP_OT_AnimationHelp,
+                       GTHELP_OT_RenderingHelp)

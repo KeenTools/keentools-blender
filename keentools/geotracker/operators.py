@@ -55,7 +55,9 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     move_tracking_to_geometry_act,
                                     remove_focal_keyframe_act,
                                     remove_focal_keyframes_act,
-                                    select_geotracker_objects_act)
+                                    select_geotracker_objects_act,
+                                    render_with_background_act,
+                                    revert_default_render_act)
 from .utils.precalc import precalc_with_runner_act
 from .gtloader import GTLoader
 from .ui_strings import buttons
@@ -632,6 +634,32 @@ class GT_OT_SelectGeotrackerObjects(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class GT_OT_RenderWithBackground(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_render_with_background_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        act_status = render_with_background_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class GT_OT_RevertDefaultRender(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_revert_default_render_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        act_status = revert_default_render_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
 class GT_OT_AddonSetupDefaults(Operator):
     bl_idname = GTConfig.gt_addon_setup_defaults_idname
     bl_label = buttons[bl_idname].label
@@ -690,4 +718,6 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_RemoveFocalKeyframe,
                   GT_OT_RemoveFocalKeyframes,
                   GT_OT_SelectGeotrackerObjects,
+                  GT_OT_RenderWithBackground,
+                  GT_OT_RevertDefaultRender,
                   GT_OT_AddonSetupDefaults)
