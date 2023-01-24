@@ -285,7 +285,7 @@ def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
         if a2 >= 1.0:
             # Horizontal image in horizontal View
             kx = f
-            ky = f * a1 * a2  # (ry / rx) * (w / h)
+            ky = f * a1 / a2  # (ry / rx) * (w / h)
         else:
             kx = f * a2  # (rx / ry)
             ky = f * a1  # (w / h)
@@ -304,6 +304,40 @@ def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
     y1 = h * 0.5 - ky * h * 0.5 - offset[1]
     y2 = h * 0.5 + ky * h * 0.5 - offset[1]
     return x1, y1, x2, y2
+
+
+def calc_view_camera_parameters(area: Area, x1: int, y1: int,
+                                width: int) -> Tuple[float, Tuple[float, float]]:
+    region = get_area_region(area)
+    w = region.width
+    h = region.height
+    rx, ry = bpy_render_frame()
+    a1 = w / h
+    a2 = rx / ry
+    x2 = x1 + width
+    y2 = width / a2
+    kx = (x2 - x1) / w
+    ky = (y2 - y1) / h
+    if a1 >= 1.0:
+        if a2 >= 1.0:
+            f = kx
+            ky = f * a1 / a2
+        else:
+            f = kx / a2
+            ky = f * a1
+    else:
+        if a2 < 1.0:
+            f = kx * a1 / a2
+            ky = f
+        else:
+            f = kx * a1
+            ky = f / a2
+    z = (math.sqrt(f) - math.sqrt(0.5)) * 100.0
+    offset_x = w * 0.5 - kx * w * 0.5 - x1
+    offset_y = h * 0.5 - ky * h * 0.5 - y1
+    offset = (offset_x / (w * 2 * f),
+              offset_y / (h * 2 * f))
+    return z, offset
 
 
 def point_is_in_area(area: Area, x: float, y: float) -> bool:
