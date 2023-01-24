@@ -185,6 +185,7 @@ class FBConfig:
     camera_z_step = 0.5
 
     next_head_step = (2.5, 0., 0.)
+    face_selection_frame_width = 3.0
 
     show_markers_at_camera_corners = False
     recreate_vertex_groups = True
