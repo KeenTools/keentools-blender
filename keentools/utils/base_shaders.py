@@ -69,7 +69,14 @@ class KTShaderBase:
     def create_batch(self) -> None:
         pass
 
-    def draw_callback(self, context) -> None:
+    def draw_callback(self, context: Any) -> None:
+        if self.draw_checks(context):
+            self.draw_main(context)
+
+    def draw_checks(self, context: Any) -> bool:
+        return True
+
+    def draw_main(self, context: Any) -> None:
         pass
 
     def register_handler(self, context: Any,

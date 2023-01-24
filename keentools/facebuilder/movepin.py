@@ -193,7 +193,7 @@ class FB_OT_MovePin(Operator):
 
         vp = FBLoader.viewport()
         vp.wireframer().init_geom_data_from_fb(fb, headobj, kid)
-        vp.wireframer().update_edges_vertices()
+        vp.wireframer().update_edge_vertices()
         vp.wireframer().create_batches()
         vp.create_batch_2d(area)
         vp.update_surface_points(fb, headobj, kid)
