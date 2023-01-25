@@ -325,7 +325,9 @@ class FB_OT_PickModeStarter(Operator):
         fb = FBLoader.get_builder()
 
         if not fb.is_face_detector_available():
-            message = 'Face detector is not available'
+            message = 'Align face is unavailable on your system ' \
+                      'because Windows 7 doesn\'t support ' \
+                      'ONNX neural network runtime'
             self.report({'ERROR'}, message)
             _log.error(message)
             return {'CANCELLED'}
