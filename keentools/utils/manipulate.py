@@ -56,10 +56,15 @@ def deselect_all():
     bpy.ops.object.select_all(action='DESELECT')
 
 
+def object_is_on_view_layer(obj: Object) -> bool:
+    return obj in bpy.context.view_layer.objects[:]
+
+
 def select_object_only(obj: Object) -> None:
     deselect_all()
-    obj.select_set(state=True)
-    bpy.context.view_layer.objects.active = obj
+    if object_is_on_view_layer(obj):
+        obj.select_set(state=True)
+        bpy.context.view_layer.objects.active = obj
 
 
 def get_vertex_groups(obj: Object) -> Dict:

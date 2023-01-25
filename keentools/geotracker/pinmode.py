@@ -34,7 +34,9 @@ from ..utils.coords import (point_is_in_area,
                             change_near_and_far_clip_planes,
                             get_camera_border)
 
-from ..utils.manipulate import force_undo_push, switch_to_camera
+from ..utils.manipulate import (force_undo_push,
+                                switch_to_camera,
+                                object_is_on_view_layer)
 from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
                            unhide_viewport_ui_elements_from_object)
 from ..utils.images import (set_background_image_by_movieclip,
@@ -350,7 +352,8 @@ class GT_OT_PinMode(Operator):
 
         new_geotracker = settings.get_geotracker_item(new_geotracker_num)
 
-        if not new_geotracker.geomobj:
+        if not new_geotracker.geomobj or \
+                not object_is_on_view_layer(new_geotracker.geomobj):
             msg = f'No Geometry object in GeoTracker {new_geotracker_num}'
             _log.error(msg)
             self.report({'INFO'}, msg)
