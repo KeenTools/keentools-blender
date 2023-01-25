@@ -530,22 +530,53 @@ def distance_between_objects(obj1: Object, obj2: Object) -> float:
     return np.linalg.norm(ar1[:, 3] - ar2[:, 3], axis=0)
 
 
-def change_far_clip_plane(camobj: Object, geomobj: Object, *, step: float=1.01,
-                          prev_clip_end=1000.0) -> Tuple[bool, float]:
+def change_near_and_far_clip_planes(camobj: Object, geomobj: Object,
+                                    *, step: float=1.01,
+                                    prev_clip_start: float,
+                                    prev_clip_end: float) -> bool:
     if not camobj or not geomobj:
-        return False, prev_clip_end
+        return False
     dist = distance_between_objects(camobj, geomobj)
 
+    changed_flag = False
     clip_end = camobj.data.clip_end
+    clip_start = camobj.data.clip_start
+    new_far_dist = dist * step
+
     if clip_end < dist:
         _log.output(f'OBJECT IS BEYOND THE CAMERA FAR CLIP PLANE:\n '
-                    f'DIST: {dist} OLD CLIP: {clip_end}')
-        camobj.data.clip_end = dist * step
-        return True, camobj.data.clip_end
-
-    if clip_end > prev_clip_end and dist * step < prev_clip_end:
+                    f'DIST: {dist} OLD CLIP_END: {clip_end}')
+        camobj.data.clip_end = new_far_dist
+        changed_flag = True
+    elif clip_end > prev_clip_end > new_far_dist:
         _log.output(f'REVERT THE CAMERA FAR CLIP PLANE:\n '
-                    f'DIST: {dist} OLD CLIP: {clip_end} REVERT: {prev_clip_end}')
+                    f'DIST: {dist} OLD CLIP_END: {clip_end}\n'
+                    f'REVERT: {prev_clip_end}')
         camobj.data.clip_end = prev_clip_end
-        return True, prev_clip_end
-    return False, dist
+        changed_flag = True
+
+    # Magic formula for near clip distance calculation to prevent Z-fighting
+    safe_clip_start = new_far_dist * new_far_dist / 65536
+    if safe_clip_start > clip_start:
+        camobj.data.clip_start = safe_clip_start
+        changed_flag = True
+        clip_start = camobj.data.clip_start
+
+    new_clip_start = dist * 0.5
+    too_close_limit = dist * 0.75
+    if clip_start > too_close_limit:
+        _log.output(f'OBJECT IS TOO CLOSE TO THE CAMERA NEAR CLIP PLANE:\n '
+                    f'DIST: {dist} OLD CLIP_START: {clip_start}')
+        camobj.data.clip_start = new_clip_start \
+            if new_clip_start < prev_clip_start else prev_clip_start
+        changed_flag = True
+        clip_start = camobj.data.clip_start
+
+    if clip_start > prev_clip_start >= safe_clip_start:
+        _log.output(f'REVERT THE CAMERA NEAR CLIP PLANE:\n '
+                    f'DIST: {dist} OLD CLIP_START: {clip_start}\n'
+                    f'REVERT: {prev_clip_start}')
+        camobj.data.clip_start = prev_clip_start
+        changed_flag = True
+
+    return changed_flag

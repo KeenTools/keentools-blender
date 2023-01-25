@@ -31,7 +31,7 @@ from ..utils.coords import (point_is_in_area,
                             point_is_in_service_region,
                             get_image_space_coord,
                             nearest_point,
-                            change_far_clip_plane,
+                            change_near_and_far_clip_planes,
                             get_camera_border)
 
 from ..utils.manipulate import force_undo_push, switch_to_camera
@@ -92,6 +92,8 @@ class GT_OT_PinMode(Operator):
 
     geotracker_num: IntProperty(default=-1)
     pinmode_id: StringProperty(default='')
+
+    camera_clip_start: FloatProperty(default=0.1)
     camera_clip_end: FloatProperty(default=1000.0)
 
     _shift_pressed: bool = False
@@ -143,6 +145,7 @@ class GT_OT_PinMode(Operator):
         if not pins.get_add_selection_mode():
             op = get_operator(GTConfig.gt_movepin_idname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
+               camera_clip_start=self.camera_clip_start,
                camera_clip_end=self.camera_clip_end)
             return {'PASS_THROUGH'}
 
@@ -236,17 +239,20 @@ class GT_OT_PinMode(Operator):
         GTLoader.update_viewport_shaders(area, normals=settings.lit_wireframe)
 
         geotracker = get_current_geotracker_item()
+        self.camera_clip_start = geotracker.camobj.data.clip_start
         self.camera_clip_end = geotracker.camobj.data.clip_end
-        if GTConfig.auto_increase_far_clip_distance:
-            changed, dist = change_far_clip_plane(
-                geotracker.camobj, geotracker.geomobj,
-                prev_clip_end=self.camera_clip_end)
-            if changed:
-                default_txt = deepcopy(vp.texter().get_default_text())
-                default_txt[0]['text'] = f'Camera far clip plane ' \
-                                         f'has been changed to {dist:.1f}'
-                default_txt[0]['color'] = (1.0, 0.0, 1.0, 0.85)
-                GTLoader.viewport().message_to_screen(default_txt)
+        if GTConfig.auto_increase_far_clip_distance and geotracker.camobj and \
+                change_near_and_far_clip_planes(geotracker.camobj, geotracker.geomobj,
+                                                prev_clip_start=self.camera_clip_start,
+                                                prev_clip_end=self.camera_clip_end):
+            near = geotracker.camobj.data.clip_start
+            far = geotracker.camobj.data.clip_end
+            default_txt = deepcopy(vp.texter().get_default_text())
+            default_txt[0]['text'] = f'Camera clip planes ' \
+                                     f'have been changed ' \
+                                     f'to {near:.1f} / {far:.1f}'
+            default_txt[0]['color'] = (1.0, 0.0, 1.0, 0.85)
+            GTLoader.viewport().message_to_screen(default_txt)
 
         if context is not None:
             vp.register_handlers(context)
