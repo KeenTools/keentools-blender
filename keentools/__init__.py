@@ -26,6 +26,7 @@ bl_info = {
     "blender": (2, 80, 0),
     "location": "View UI (press N to open tab bar)",
     "wiki_url": "https://keentools.io",
+    "doc_url": "https://keentools.io",
     "tracker_url": "https://link.keentools.io/new-support-request",
     "warning": "",
     "category": "Interface"
