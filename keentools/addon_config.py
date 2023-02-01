@@ -143,7 +143,7 @@ class Config:
     mock_product = None
 
     hide_geotracker = not 'KEENTOOLS_ENABLE_BLENDER_GEOTRACKER' in os.environ
-    allow_use_gpu_instead_of_bgl = True
+    allow_use_gpu_instead_of_bgl = False
 
     @classmethod
     def mock_update_for_testing(cls, value: bool=True, *,
