@@ -293,6 +293,23 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
         self.line_shader.bind()
         self.line_batch.draw(self.line_shader)
 
+    def draw_main_gpu(self, context: Any) -> None:
+        area = context.area
+        reg = self._get_area_region(area)
+        current_state = (reg.view2d.view_to_region(0, 0, clip=False),
+                         reg.view2d.view_to_region(100, 0, clip=False))
+        if self.batch_needs_update or current_state != self.state:
+            self.state = current_state
+            self._update_keyframe_lines(area)
+            self.batch_needs_update = False
+            self.create_batch()
+
+        gpu.state.line_width_set(self.line_width * 2)
+        gpu.state.blend_set('ALPHA')
+
+        self.line_shader.bind()
+        self.line_batch.draw(self.line_shader)
+
 
 class KTEdgeShader3D(KTEdgeShaderBase):
     def draw_empty_fill(self) -> None:
