@@ -167,26 +167,33 @@ class KTShaderPoints(KTShaderBase):
         self.vertices = []
         self.vertices_colors = []
 
-    def draw_callback(self, context: Any) -> None:
-        # Force Stop
+    def draw_checks(self, context: Any) -> bool:
         if self.is_handler_list_empty():
             self.unregister_handler()
-            return
+            return False
 
         if not self.is_visible():
-            return
+            return False
 
         if self.work_area != context.area:
-            return
+            return False
 
         if not self.shader or not self.batch:
-            return
+            return False
+        return True
 
+    def draw_main_bgl(self, context: Any) -> None:
         bgl.glPointSize(self.get_point_size())
         bgl.glEnable(bgl.GL_BLEND)
         self.shader.bind()
         self.batch.draw(self.shader)
         bgl.glDisable(bgl.GL_BLEND)
+
+    def draw_main_gpu(self, context: Any) -> None:
+        gpu.state.point_size_set(self.get_point_size())
+        gpu.state.blend_set('ALPHA')
+        self.shader.bind()
+        self.batch.draw(self.shader)
 
 
 class KTPoints2D(KTShaderPoints):

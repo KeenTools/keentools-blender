@@ -20,7 +20,7 @@ from typing import Any, List, Callable, Tuple, Optional
 
 from bpy.types import Object, Area, Region, SpaceView3D
 
-from .bpy_common import bpy_background_mode
+from .bpy_common import bpy_background_mode, use_gpu_instead_of_bgl
 
 
 class KTShaderBase:
@@ -44,6 +44,8 @@ class KTShaderBase:
         self.target_class: Any = target_class
         self.work_area: Optional[Area] = None
         self.is_shader_visible: bool = True
+        self.draw_main = self.draw_main_gpu if use_gpu_instead_of_bgl \
+            else self.draw_main_bgl
 
         if not bpy_background_mode():
             self.init_shaders()
@@ -76,8 +78,11 @@ class KTShaderBase:
     def draw_checks(self, context: Any) -> bool:
         return True
 
-    def draw_main(self, context: Any) -> None:
+    def draw_main_bgl(self, context: Any) -> None:
         pass
+
+    def draw_main_gpu(self, context: Any) -> None:
+        self.draw_main_bgl(context)  # for undefined
 
     def register_handler(self, context: Any,
                          post_type: str='POST_VIEW') -> None:

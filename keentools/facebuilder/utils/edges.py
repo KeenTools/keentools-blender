@@ -118,7 +118,7 @@ class FBRectangleShader2D(KTEdgeShader2D):
 
         return True
 
-    def draw_main(self, context: Any) -> None:
+    def draw_main_bgl(self, context: Any) -> None:
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
@@ -204,6 +204,9 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             self._activate_coloring_image(image)
         return True
 
+    def draw_empty_fill(self) -> None:
+        self.fill_batch.draw(self.fill_shader)
+
     def draw_checks(self, context: Any) -> bool:
         if self.is_handler_list_empty():
             self.unregister_handler()
@@ -217,7 +220,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
 
         return True
 
-    def draw_main(self, context: Any) -> None:
+    def draw_main_bgl(self, context: Any) -> None:
         wireframe_image = find_bpy_image_by_name(FBConfig.coloring_texture_name)
         if not self._check_coloring_image(wireframe_image):
             self.unregister_handler()
@@ -235,7 +238,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         bgl.glColorMask(bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE)
         bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_FILL)
 
-        self.fill_batch.draw(self.fill_shader)
+        self.draw_empty_fill()
 
         bgl.glColorMask(bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE)
         bgl.glDisable(bgl.GL_POLYGON_OFFSET_FILL)
@@ -268,6 +271,41 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_FILL)
         bgl.glDepthMask(bgl.GL_TRUE)
         bgl.glDisable(bgl.GL_DEPTH_TEST)
+
+    def draw_simple_line_gpu(self):
+        gpu.state.line_width_set(self.line_width * 2)
+        gpu.state.blend_set('ALPHA')
+        self.simple_line_shader.bind()
+        self.simple_line_shader.uniform_float(
+            'color', ((*self.texture_colors[0][:3], self.opacity)))
+        self.simple_line_batch.draw(self.simple_line_shader)
+
+    def draw_textured_line_gpu(self):
+        wireframe_image = find_bpy_image_by_name(FBConfig.coloring_texture_name)
+        if not self._check_coloring_image(wireframe_image):
+            self.unregister_handler()
+            return
+        if not wireframe_image or wireframe_image.bindcode == 0:
+            self.switch_to_simple_shader()
+            self.draw_simple_line_gpu()
+        else:
+            gpu.state.line_width_set(self.line_width * 2)
+            gpu.state.blend_set('ALPHA')
+            self.line_shader.bind()
+            self.line_shader.uniform_sampler(
+                'image', gpu.texture.from_image(wireframe_image))
+            self.line_shader.uniform_float('opacity', self.opacity)
+            self.line_batch.draw(self.line_shader)
+
+    def draw_main_gpu(self, context: Any) -> None:
+        gpu.state.depth_test_set('LESS_EQUAL')
+        gpu.state.color_mask_set(False, False, False, False)
+        self.draw_empty_fill()
+        gpu.state.color_mask_set(True, True, True, True)
+        if not self.use_simple_shader:
+            self.draw_textured_line_gpu()
+        else:
+            self.draw_simple_line_gpu()
 
     def create_batches(self) -> None:
         if bpy_background_mode():
