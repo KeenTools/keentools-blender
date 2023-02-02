@@ -40,7 +40,9 @@ from .coords import (get_mesh_verts,
                      get_scale_vec_4_from_matrix_world,
                      get_triangulation_indices,
                      get_triangles_in_vertex_group)
-from .bpy_common import evaluated_mesh, bpy_background_mode
+from .bpy_common import (evaluated_mesh,
+                         bpy_background_mode,
+                         use_gpu_instead_of_bgl)
 from .base_shaders import KTShaderBase
 
 
@@ -117,13 +119,19 @@ class KTEdgeShader2D(KTEdgeShaderBase):
 
         return True
 
-    def draw_main(self, context: Any) -> None:
+    def draw_main_bgl(self, context: Any) -> None:
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
         bgl.glLineWidth(self.line_width)
 
+        self.line_shader.bind()
+        self.line_batch.draw(self.line_shader)
+
+    def draw_main_gpu(self, context: Any) -> None:
+        gpu.state.line_width_set(self.line_width)
+        gpu.state.blend_set('ALPHA')
         self.line_shader.bind()
         self.line_batch.draw(self.line_shader)
 
@@ -155,7 +163,7 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
             solid_line_vertex_shader(), solid_line_fragment_shader())
         self.fill_shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
 
-    def draw_main(self, context: Any) -> None:
+    def draw_main_bgl(self, context: Any) -> None:
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
         bgl.glLineWidth(self.line_width)
@@ -265,7 +273,7 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
 
         return True
 
-    def draw_main(self, context: Any) -> None:
+    def draw_main_bgl(self, context: Any) -> None:
         area = context.area
         reg = self._get_area_region(area)
         current_state = (reg.view2d.view_to_region(0, 0, clip=False),
@@ -281,6 +289,23 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
         bgl.glLineWidth(self.line_width)
+
+        self.line_shader.bind()
+        self.line_batch.draw(self.line_shader)
+
+    def draw_main_gpu(self, context: Any) -> None:
+        area = context.area
+        reg = self._get_area_region(area)
+        current_state = (reg.view2d.view_to_region(0, 0, clip=False),
+                         reg.view2d.view_to_region(100, 0, clip=False))
+        if self.batch_needs_update or current_state != self.state:
+            self.state = current_state
+            self._update_keyframe_lines(area)
+            self.batch_needs_update = False
+            self.create_batch()
+
+        gpu.state.line_width_set(self.line_width * 2)
+        gpu.state.blend_set('ALPHA')
 
         self.line_shader.bind()
         self.line_batch.draw(self.line_shader)
@@ -310,7 +335,7 @@ class KTEdgeShader3D(KTEdgeShaderBase):
 
         return True
 
-    def draw_main(self, context: Any) -> None:
+    def draw_main_bgl(self, context: Any) -> None:
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
@@ -346,6 +371,16 @@ class KTEdgeShader3D(KTEdgeShaderBase):
 
         bgl.glDepthMask(bgl.GL_TRUE)
         bgl.glDisable(bgl.GL_DEPTH_TEST)
+
+    def draw_main_gpu(self, context: Any) -> None:
+        gpu.state.depth_test_set('LESS_EQUAL')
+        gpu.state.color_mask_set(False, False, False, False)
+        self.draw_empty_fill()
+        gpu.state.color_mask_set(True, True, True, True)
+
+        gpu.state.line_width_set(self.line_width * 2)
+        gpu.state.blend_set('ALPHA')
+        self.draw_edges()
 
     def draw_selection_fill(self):
         pass

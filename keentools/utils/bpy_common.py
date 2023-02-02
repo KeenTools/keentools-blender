@@ -31,7 +31,9 @@ def bpy_app_version() -> Tuple:
     return bpy.app.version
 
 
-operator_with_context_exists = bpy_app_version() >= (3, 2, 0)
+operator_with_context_exists: bool = bpy_app_version() >= (3, 2, 0)
+use_gpu_instead_of_bgl: bool = Config.allow_use_gpu_instead_of_bgl and \
+                               bpy_app_version() >= (3, 5, 0)
 
 
 def bpy_background_mode() -> bool:
