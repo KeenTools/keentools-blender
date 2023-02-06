@@ -76,9 +76,18 @@ def _get_addons_in_use() -> Set:
     return {addon.module for addon in prefs.addons}
 
 
+def _get_addon_utils_modules_safe() -> List:
+    try:
+        mods = addon_utils.modules(refresh=False)
+    except Exception as err:
+        logger.error(f'get_addon_utils_modules_safe:\n{str(err)}')
+        mods = []
+    return mods
+
+
 def _get_all_addons_info() -> List:
     return [{'module': mod, 'bl_info': addon_utils.module_bl_info(mod)}
-            for mod in addon_utils.modules(refresh=False)]
+            for mod in _get_addon_utils_modules_safe()]
 
 
 def _get_all_modules_info() -> Dict:
