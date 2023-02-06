@@ -129,11 +129,14 @@ def unregister_app_handler(app_handlers, handler) -> None:
             app_handlers.remove(handler)
 
 
-def frame_change_post_handler(scene):
+def frame_change_post_handler(scene) -> None:
     _log.output(f'KEYFRAME UPDATED: {scene.name}')
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     if geotracker is None:
         _log.output('EARLY EXIT')
+        return
+    if settings.calculating_mode == 'ESTIMATE_FL':
         return
     geotracker.reset_focal_length_estimation()
     GTLoader.place_object_or_camera()

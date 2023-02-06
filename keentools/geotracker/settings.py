@@ -553,6 +553,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         ('TRACKING', 'TRACKING', 'Tracking is calculating', 2),
         ('REFINE', 'REFINE', 'Refine is calculating', 3),
         ('REPROJECT', 'REPROJECT', 'Reproject is calculating', 4),
+        ('ESTIMATE_FL', 'ESTIMATE_FL', 'Focal length estimation is calculating', 5)
     ])
 
     selection_mode: bpy.props.BoolProperty(name='Selection mode',
