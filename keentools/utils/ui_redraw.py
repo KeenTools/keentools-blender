@@ -15,14 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+from typing import List, Any, Dict
 
 import bpy
+from bpy.types import Area
 import addon_utils
 
+from .kt_logging import KTLogger
 from .bpy_common import bpy_background_mode
 
 
-def get_areas_by_type(area_type='VIEW_3D'):
+_log = KTLogger(__name__)
+
+
+def get_areas_by_type(area_type: str='VIEW_3D') -> List[Area]:
     areas = []
     for window in bpy.data.window_managers['WinMan'].windows:
         for area in window.screen.areas:
@@ -31,18 +37,18 @@ def get_areas_by_type(area_type='VIEW_3D'):
     return areas
 
 
-def get_all_areas():
+def get_all_areas() -> List[Area]:
     return [area for window in bpy.data.window_managers['WinMan'].windows
                  for area in window.screen.areas]
 
 
-def force_ui_redraw(area_type='PREFERENCES'):
+def force_ui_redraw(area_type: str='PREFERENCES') -> None:
     areas = get_areas_by_type(area_type)
     for area in areas:
         area.tag_redraw()
 
 
-def show_ui_panel(context):
+def show_ui_panel(context: Any) -> None:
     try:
         area = context.area
         area.spaces[0].show_region_ui = True
@@ -50,22 +56,40 @@ def show_ui_panel(context):
         pass
 
 
-def find_modules_by_name_starting_with(name_start='KeenTools'):
-    return [mod for mod in addon_utils.modules() if
-            mod.bl_info['name'][:len(name_start)].lower() == name_start.lower()]
+def filter_module_list_by_name_starting_with(module_list: List[Any],
+                                             name_start: str) -> List[Any]:
+    mods = []
+    for mod in module_list:
+        if hasattr(mod, 'bl_info') and mod.bl_info \
+                and 'name' in mod.bl_info.keys() \
+                and type(mod.bl_info['name']) == str:
+            if mod.bl_info['name'][:len(name_start)].lower() == name_start.lower():
+                mods.append(mod)
+        else:
+            try:
+                _log.error(f'Problem with addon description:\n{mod.bl_info}')
+            except Exception as err:
+                _log.error(f'Exception:\n{str(err)}')
+                _log.error(f'Critical error with addon:\n{mod}')
+    return mods
 
 
-def filter_module_list_by_name_starting_with(module_list, name_start):
-    return [mod for mod in module_list if
-            mod.bl_info['name'][:len(name_start)].lower() == name_start.lower()]
+def find_modules_by_name_starting_with(name_start: str='KeenTools') -> List[Any]:
+    try:
+        mods = filter_module_list_by_name_starting_with(addon_utils.modules(),
+                                                        name_start)
+        return mods
+    except Exception as err:
+        _log.error(f'Module analysis error: {str(err)}')
+    return []
 
 
-def collapse_all_modules(mods):
+def collapse_all_modules(mods: List[Any]) -> None:
     for mod in mods:
         mod.bl_info['show_expanded'] = False
 
 
-def mark_old_modules(mods, filter_dict):
+def mark_old_modules(mods: List[Any], filter_dict: Dict) -> None:
     def _mark_outdated(mod):
         mark_text = ' OUTDATED \u2014 REMOVE THIS'  # \u2014 - em dash
         if mod.bl_info['name'][-len(mark_text):] != mark_text:
@@ -81,6 +105,6 @@ def mark_old_modules(mods, filter_dict):
             _mark_outdated(mod)
 
 
-def total_redraw_ui():
+def total_redraw_ui() -> None:
     if not bpy_background_mode():
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
