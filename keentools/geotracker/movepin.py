@@ -33,9 +33,14 @@ from ..utils.coords import (get_image_space_coord,
                             nearest_point,
                             point_is_in_area,
                             point_is_in_service_region,
-                            change_near_and_far_clip_planes)
+                            change_near_and_far_clip_planes,
+                            focal_mm_to_px,
+                            camera_focal_length,
+                            camera_sensor_width)
 from ..utils.manipulate import force_undo_push
-from ..utils.bpy_common import bpy_current_frame, get_scene_camera_shift
+from ..utils.bpy_common import (bpy_current_frame,
+                                get_scene_camera_shift,
+                                bpy_render_frame)
 from .ui_strings import buttons
 
 
@@ -61,6 +66,8 @@ class GT_OT_MovePin(bpy.types.Operator):
 
     camera_clip_start: FloatProperty(default=0.1)
     camera_clip_end: FloatProperty(default=1000.0)
+
+    old_focal_length: FloatProperty(default=50.0)
 
     def _move_pin_mode_on(self) -> None:
         GTLoader.viewport().pins().set_move_pin_mode(True)
@@ -135,6 +142,25 @@ class GT_OT_MovePin(bpy.types.Operator):
         vp.register_handlers(context)
         return True
 
+    def update_focal_length_in_all_keyframes(self) -> None:
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if geotracker.focal_length_mode != 'STATIC_FOCAL_LENGTH':
+            return
+        new_focal_length = focal_mm_to_px(
+            camera_focal_length(geotracker.camobj),
+            *bpy_render_frame(), camera_sensor_width(geotracker.camobj))
+        _log.output(_log.color('red',
+                               f'old: {self.old_focal_length} new: {new_focal_length}'))
+        if self.old_focal_length != new_focal_length:
+            settings.calculating_mode = 'ESTIMATE_FL'
+            gt = GTLoader.kt_geotracker()
+            gt.recalculate_model_for_new_focal_length(self.old_focal_length,
+                                                      new_focal_length, False,
+                                                      bpy_current_frame())
+            settings.stop_calculating()
+            _log.output('FOCAL LENGTH CHANGED')
+
     def on_left_mouse_release(self, area: Area) -> Set:
         def _push_action_in_undo_history() -> None:
             if self.new_pin_flag:
@@ -146,6 +172,7 @@ class GT_OT_MovePin(bpy.types.Operator):
         GTLoader.viewport().pins().reset_current_pin()
 
         if self.dragged:
+            self.update_focal_length_in_all_keyframes()
             GTLoader.spring_pins_back()
         GTLoader.save_geotracker()
 
@@ -254,6 +281,10 @@ class GT_OT_MovePin(bpy.types.Operator):
             return {'CANCELLED'}
 
         self._move_pin_mode_on()
+        geotracker = get_current_geotracker_item()
+        self.old_focal_length = focal_mm_to_px(
+            camera_focal_length(geotracker.camobj),
+            *bpy_render_frame(), camera_sensor_width(geotracker.camobj))
 
         keyframe = bpy_current_frame()
         gt = GTLoader.kt_geotracker()
