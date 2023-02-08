@@ -171,16 +171,26 @@ class GT_OT_PinMode(Operator):
 
     def _on_right_mouse_press(self, area: Area, event: Any) -> Set:
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
+
+        if not point_is_in_area(area, mouse_x, mouse_y):
+            _log.output('RIGHT CLICK OUTSIDE OF VIEWPORT AREA')
+            return {'PASS_THROUGH'}
+
+        if point_is_in_service_region(area, mouse_x, mouse_y):
+            _log.output('RIGHT CLICK IN SERVICE REGION OF AREA')
+            return {'PASS_THROUGH'}
+
         vp = GTLoader.viewport()
         vp.update_view_relative_pixel_size(area)
-
         x, y = get_image_space_coord(mouse_x, mouse_y, area)
 
         nearest, dist2 = nearest_point(x, y, vp.pins().arr())
         if nearest >= 0 and dist2 < vp.tolerance_dist2():
             return self._delete_found_pin(nearest, area)
 
+        vp.pins().clear_selected_pins()
         vp.create_batch_2d(area)
+        vp.tag_redraw()
         return {'RUNNING_MODAL'}
 
     def _delete_found_pin(self, nearest: int, area: Area) -> Set:
