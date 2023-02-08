@@ -21,6 +21,7 @@ import numpy as np
 
 import bpy
 from bpy.types import Area
+from mathutils import Matrix
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType, show_user_preferences
@@ -300,9 +301,9 @@ class GTLoader:
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.geomobj or not geotracker.camobj:
             return
-        mat = calc_bpy_model_mat_relative_to_camera(geotracker.camobj,
-                                                    geotracker.geomobj,
-                                                    gt_model_mat)
+        mat = calc_bpy_model_mat_relative_to_camera(
+                geotracker.geomobj.matrix_world,
+                geotracker.camobj.matrix_world, gt_model_mat)
         geotracker.geomobj.matrix_world = mat
 
     @classmethod
@@ -310,8 +311,10 @@ class GTLoader:
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.geomobj or not geotracker.camobj:
             return
-        mat = calc_bpy_camera_mat_relative_to_model(geotracker.geomobj,
-                                                    gt_model_mat)
+
+        mat = calc_bpy_camera_mat_relative_to_model(
+            geotracker.geomobj.matrix_world,
+            geotracker.camobj.matrix_world, gt_model_mat)
         geotracker.camobj.matrix_world = mat
 
     @classmethod
