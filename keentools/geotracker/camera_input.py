@@ -247,15 +247,16 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
             bpy_set_current_frame(frame)
 
         if geotracker.camera_mode():
-            mat = calc_bpy_camera_mat_relative_to_model(geotracker.geomobj,
-                                                        model_mat)
-            _log.output(f'set_model_mat2')
+            mat = calc_bpy_camera_mat_relative_to_model(
+                geotracker.geomobj.matrix_world,
+                geotracker.camobj.matrix_world, model_mat)
+            _log.output(f'set_model_mat_at2')
             geotracker.camobj.matrix_world = mat
         else:
-            mat = calc_bpy_model_mat_relative_to_camera(geotracker.camobj,
-                                                        geotracker.geomobj,
-                                                        model_mat)
-            _log.output(f'set_model_mat3')
+            mat = calc_bpy_model_mat_relative_to_camera(
+                geotracker.geomobj.matrix_world,
+                geotracker.camobj.matrix_world, model_mat)
+            _log.output(f'set_model_mat_at3')
             geotracker.geomobj.matrix_world = mat
 
         gt = GTLoader.kt_geotracker()

@@ -22,6 +22,7 @@ from contextlib import contextmanager
 
 import bpy
 from bpy.types import Object, CameraBackgroundImage, Area, Image, Mask
+from mathutils import Matrix
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_addon_preferences
@@ -455,11 +456,13 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
         rot_mat = xz_to_xy_rotation_matrix_4x4()
 
-        cam_mat = self.camobj.matrix_world
+        t, r, s = self.camobj.matrix_world.decompose()
+        cam_mat = Matrix.LocRotScale(t, r, (1, 1, 1))
+
         geom_mw = self.geomobj.matrix_world
-        scale_vec = get_scale_vec_4_from_matrix_world(geom_mw)
-        scminv = np.diag(1.0 / scale_vec)
-        geom_mat = np.array(geom_mw, dtype=np.float32) @ scminv
+        geom_scale_vec = get_scale_vec_4_from_matrix_world(geom_mw)
+        geom_scale_inv = np.diag(1.0 / geom_scale_vec)
+        geom_mat = np.array(geom_mw, dtype=np.float32) @ geom_scale_inv
 
         nm = np.array(cam_mat.inverted_safe(),
                       dtype=np.float32) @ geom_mat @ rot_mat
