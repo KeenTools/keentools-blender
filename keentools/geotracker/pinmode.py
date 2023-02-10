@@ -225,6 +225,7 @@ class GT_OT_PinMode(Operator):
         vp.update_residuals(gt, area, kid)
         vp.tag_redraw()
 
+        GTLoader.save_geotracker()
         force_undo_push('Delete GeoTracker pin')
         return {'RUNNING_MODAL'}
 
