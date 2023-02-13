@@ -19,9 +19,11 @@
 import time
 from typing import Optional, Any, Callable, List
 import numpy as np
+import math
 
 import bpy
 from bpy.types import Object
+from mathutils import Matrix, Euler
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import get_operator, ActionStatus
@@ -741,7 +743,9 @@ def relative_to_camera_act() -> ActionStatus:
     current_frame = bpy_current_frame()
 
     # Default camera position at (0, 0, 0) and +90 deg rotated on X
-    cam_matrix = xy_to_xz_rotation_matrix_4x4()
+    scale = camobj.matrix_world.to_scale()
+    cam_matrix = Matrix.LocRotScale(
+        (0, 0, 0), Euler((math.radians(90), 0, 0), 'XYZ'), scale)
     for frame in matrices:
         bpy_set_current_frame(frame)
         delete_locrot_keyframe(camobj)
@@ -781,7 +785,9 @@ def relative_to_geometry_act() -> ActionStatus:
 
     current_frame = bpy_current_frame()
 
-    geom_matrix = np.eye(4)  # Object at (0, 0, 0)
+    # Object at (0, 0, 0) keeping its scale
+    scale = geomobj.matrix_world.to_scale()
+    geom_matrix = Matrix.LocRotScale((0, 0, 0), Euler((0, 0, 0), 'XYZ'), scale)
     for frame in matrices:
         bpy_set_current_frame(frame)
         delete_locrot_keyframe(geomobj)
