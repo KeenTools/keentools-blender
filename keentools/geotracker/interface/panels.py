@@ -386,7 +386,7 @@ class GT_PT_AnalyzePanel(AllVisible):
         layout = self.layout
         block = layout.column(align=True)
         block.operator(GTConfig.gt_choose_precalc_file_idname,
-                       text='Set precalc file')
+                       text='Create / Load precalc file')
         if geotracker.precalc_path != '':
             box = block.box()
             col = box.column()
@@ -403,9 +403,7 @@ class GT_PT_AnalyzePanel(AllVisible):
                 _draw_calculating_indicator(layout)
             else:
                 col = layout.column(align=True)
-                icon = 'ERROR' if not geotracker.movie_clip or \
-                       geotracker.movie_clip.source == 'MOVIE' else 'NONE'
-
+                icon = 'ERROR' if not geotracker.movie_clip else 'NONE'
                 col.operator(GTConfig.gt_create_precalc_idname,
                              text='Create precalc', icon=icon)
 
@@ -619,33 +617,6 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         col.prop(settings, 'lit_wireframe')
         col.prop(settings, 'use_adaptive_opacity')
 
-        geotracker = settings.get_current_geotracker_item(safe=True)
-        if not geotracker:
-            return
-
-        box = layout.box()
-        col = box.column(align=True)
-        row = col.row(align=True)
-        row.label(text='Background adjustment')
-        col.separator(factor=0.4)
-        btn = row.column(align=True)
-        btn.active = False
-        btn.scale_y = 0.75
-        btn.operator(
-            GTConfig.gt_reset_tone_mapping_idname,
-            text='', icon='LOOP_BACK', emboss=False, depress=False)
-
-        col2 = col.column(align=True)
-        row = col2.row(align=True)
-        row.prop(geotracker, 'tone_exposure', slider=True)
-        row.operator(GTConfig.gt_reset_tone_exposure_idname,
-                     text='', icon='LOOP_BACK')
-
-        row = col.row(align=True)
-        row.prop(geotracker, 'tone_gamma', slider=True)
-        row.operator(GTConfig.gt_reset_tone_gamma_idname,
-                     text='', icon='LOOP_BACK')
-
         box = layout.box()
         col = box.column(align=True)
         row = col.row(align=True)
@@ -659,6 +630,30 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
             text='', icon='LOOP_BACK', emboss=False, depress=False)
         col.prop(settings, 'pin_size', slider=True)
         col.prop(settings, 'pin_sensitivity', slider=True)
+
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if not geotracker:
+            return
+
+        box = layout.box()
+        col = box.column(align=True)
+        row = col.row(align=True)
+        row.label(text='Background adjustment')
+        col.separator(factor=0.4)
+        btn = row.column(align=True)
+        btn.active = False
+        btn.scale_y = 0.75
+        btn.operator(GTConfig.gt_reset_tone_mapping_idname,
+                     text='', icon='LOOP_BACK', emboss=False, depress=False)
+        col2 = col.column(align=True)
+        row = col2.row(align=True)
+        row.prop(geotracker, 'tone_exposure', slider=True)
+        row.operator(GTConfig.gt_reset_tone_exposure_idname,
+                     text='', icon='LOOP_BACK')
+        row = col.row(align=True)
+        row.prop(geotracker, 'tone_gamma', slider=True)
+        row.operator(GTConfig.gt_reset_tone_gamma_idname,
+                     text='', icon='LOOP_BACK')
 
 
 class GT_PT_TexturePanel(AllVisible):

@@ -45,7 +45,7 @@ buttons = {
         'Both image sequences and movie files are supported'
     ),
     GTConfig.gt_choose_precalc_file_idname: Button(
-        'Set precalc file',
+        'Choose precalc filename',
         'Choose an existing .precalc file or just enter a name for a new one'
     ),
     GTConfig.gt_split_video_to_frames_idname: Button(
