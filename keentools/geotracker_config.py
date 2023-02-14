@@ -30,9 +30,6 @@ class GTConfig:
     gt_tab_category = 'GeoTracker'
     gt_global_var_name = prefix + '_settings'
 
-    # Properties
-    viewport_state_prop_name = 'keentools_viewport_state'
-
     # Operators
     gt_create_geotracker_idname = operators + '.create_geotracker'
     gt_delete_geotracker_idname = operators + '.delete_geotracker'
@@ -123,6 +120,9 @@ class GTConfig:
     gt_download_notification_panel_idname = _PT + 'download_notification'
     gt_downloading_problem_panel_idname = _PT + 'downloading_problem'
     gt_updates_installation_panel_idname = _PT + 'updates_installation_panel'
+
+    # Menu
+    gt_precalc_menu_idname = _MT + 'precalc_menu'
 
     # Constants
     text_scale_y = 0.75

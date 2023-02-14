@@ -16,12 +16,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from .menus import *
 from .panels import *
 from .filedialogs import *
 from .helps import *
 
 
-CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
+CLASSES_TO_REGISTER = (GT_MT_PrecalcMenu, GT_OT_PrecalcWindow, GT_OT_ResizeWindow,  # menu
+                       GT_PT_GeotrackersPanel,  # UI panels
                        GT_PT_UpdatePanel,
                        GT_PT_DownloadNotification,
                        GT_PT_DownloadingProblemPanel,

@@ -385,23 +385,34 @@ class GT_PT_AnalyzePanel(AllVisible):
 
         layout = self.layout
         block = layout.column(align=True)
-        block.operator(GTConfig.gt_choose_precalc_file_idname,
-                       text='Create / Load precalc file')
-        if geotracker.precalc_path != '':
+        if geotracker.precalc_path == '':
+            block.operator(GTConfig.gt_choose_precalc_file_idname,
+                           text='Create / Load precalc file')
+        else:
             box = block.box()
             col = box.column()
             col.scale_y = Config.text_scale_y
             col.label(text=geotracker.precalc_path)
 
-            if geotracker.precalc_message != '':
-                arr = re.split('\r\n|\n', geotracker.precalc_message)
-                for txt in arr:
-                    col.label(text=txt)
+            arr = re.split('\r\n|\n', geotracker.precalc_message)
+            for txt in arr[:-1]:
+                col.label(text=txt)
+            row = col.row()
+            row.label(text=arr[-1] if len(arr) > 0 else '--')
+            # row.operator(GTConfig.gt_choose_precalc_file_idname,
+            #              text='', icon='OPTIONS')
+            # row.menu(GTConfig.gt_precalc_menu_idname, text='',
+            #          icon='COLLAPSEMENU')
 
-        if geotracker.precalc_path != '':
+            # row.menu(GTConfig.gt_precalc_menu_idname, text='',
+            #          icon='COLLAPSEMENU')
+            row.operator('kt_geotracker.precalc_window', text='',
+                     icon='COLLAPSEMENU')
+
             if settings.is_calculating('PRECALC'):
                 _draw_calculating_indicator(layout)
-            else:
+            elif geotracker.precalc_message in ['* Precalc file is corrupted',
+                                                '* Precalc needs to be built']:
                 col = layout.column(align=True)
                 icon = 'ERROR' if not geotracker.movie_clip else 'NONE'
                 col.operator(GTConfig.gt_create_precalc_idname,
@@ -687,7 +698,7 @@ class GT_PT_TexturePanel(AllVisible):
 
 class GT_PT_AnimationPanel(AllVisible):
     bl_idname = GTConfig.gt_animation_panel_idname
-    bl_label = 'Animation'
+    bl_label = 'Animation / Convert'
     bl_options = {'DEFAULT_CLOSED'}
 
     def draw_header_preset(self, context: Any) -> None:
@@ -700,6 +711,9 @@ class GT_PT_AnimationPanel(AllVisible):
 
     def draw(self, context: Any) -> None:
         layout = self.layout
+
+        layout.operator('kt_geotracker.resize_window')
+
         layout.label(text='Create helpers')
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
