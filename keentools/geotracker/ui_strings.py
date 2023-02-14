@@ -45,7 +45,7 @@ buttons = {
         'Both image sequences and movie files are supported'
     ),
     GTConfig.gt_choose_precalc_file_idname: Button(
-        'Set precalc file',
+        'Choose precalc filename',
         'Choose an existing .precalc file or just enter a name for a new one'
     ),
     GTConfig.gt_split_video_to_frames_idname: Button(
@@ -87,11 +87,11 @@ buttons = {
     ),
     GTConfig.gt_prev_keyframe_idname: Button(
         'Prev keyframe',
-        'Move to previous keyframe on timeline',
+        'Move to the previous GeoTracker keyframe on the timeline',
     ),
     GTConfig.gt_next_keyframe_idname: Button(
         'Next keyframe',
-        'Move to next keyframe on timeline'
+        'Move to the next GeoTracker keyframe on the timeline'
     ),
     GTConfig.gt_track_to_start_idname: Button(
         'Track to start',
@@ -110,11 +110,11 @@ buttons = {
         'track prev'
     ),
     GTConfig.gt_add_keyframe_idname: Button(
-        'Add GT keyframe',
+        'Add GeoTracker keyframe',
         'add keyframe'
     ),
     GTConfig.gt_remove_keyframe_idname: Button(
-        'Remove keyframe',
+        'Remove GeoTracker keyframe',
         'remove keyframe'
     ),
     GTConfig.gt_clear_all_tracking_idname: Button(
@@ -298,6 +298,10 @@ help_texts = {
         'Inputs panel description will be here...',
         ' '
     ]),
+    GTConfig.gt_help_masks_idname: HelpText(_help_default_width, [
+        'Masks panel description will be here...',
+        ' '
+    ]),
     GTConfig.gt_help_analyze_idname: HelpText(_help_default_width, [
         'Analyze panel description will be here...',
         ' '
@@ -320,6 +324,10 @@ help_texts = {
     ]),
     GTConfig.gt_help_animation_idname: HelpText(_help_default_width, [
         'Animation panel description will be here...',
+        ' '
+    ]),
+    GTConfig.gt_help_rendering_idname: HelpText(_help_default_width, [
+        'Rendering panel description will be here...',
         ' '
     ]),
 }
