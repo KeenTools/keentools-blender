@@ -32,11 +32,12 @@ CLASSES_TO_REGISTER = (GT_MT_PrecalcMenu, GT_OT_PrecalcWindow, GT_OT_ResizeWindo
                        GT_PT_AnalyzePanel,
                        GT_PT_CameraPanel,
                        GT_PT_TrackingPanel,
+                       GT_PT_MasksPanel,
                        GT_PT_AnimationPanel,
                        GT_PT_AppearanceSettingsPanel,
-                       GT_PT_MasksPanel,
                        GT_PT_TexturePanel,
                        GT_PT_RenderingPanel,
+                       GT_PT_ExportPanel,
                        GT_OT_SequenceFilebrowser,  # file dialogs
                        GT_OT_MaskSequenceFilebrowser,
                        GT_OT_ChoosePrecalcFile,

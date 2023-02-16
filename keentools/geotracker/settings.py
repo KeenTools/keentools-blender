@@ -159,6 +159,7 @@ def update_movieclip(geotracker, context: Any) -> None:
         fit_time_length(geotracker.movie_clip)
         geotracker.precalc_start = bpy_start_frame()
         geotracker.precalc_end = bpy_end_frame()
+        geotracker.precalcless = True
 
 
 def update_wireframe(self, context: Any) -> None:
@@ -430,6 +431,12 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         if self.camera_mode():
             return self.camobj
         return self.geomobj
+
+    def animatable_object_name(self) -> str:
+        obj = self.camobj if self.camera_mode() else self.geomobj
+        if not obj:
+            return '# Undefined'
+        return obj.name
 
     def secondary_object(self) -> Optional[Object]:
         if not self.camera_mode():

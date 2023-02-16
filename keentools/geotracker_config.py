@@ -102,7 +102,8 @@ class GTConfig:
     gt_appearance_panel_idname = _PT + 'appearance_panel'
     gt_animation_panel_idname = _PT + 'animation_panel'
     gt_texture_panel_idname = _PT + 'texture_panel'
-    gt_rendering_panel_idname = _PT + 'rendering_panel_idname'
+    gt_rendering_panel_idname = _PT + 'rendering_panel'
+    gt_export_panel_idname = _PT + 'export_panel'
 
     # Help ids
     gt_help_inputs_idname = operators + '.help_inputs'

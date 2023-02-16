@@ -143,10 +143,7 @@ class GT_PT_GeotrackersPanel(View3DPanel):
             row = layout.row(align=True)
             row.scale_y = Config.btn_scale_y
 
-            if geotracker.geomobj:
-                name = geotracker.geomobj.name
-            else:
-                name = '# Undefined'
+            name = geotracker.animatable_object_name()
 
             if settings.pinmode and geotracker_num == i:
                 row.operator(GTConfig.gt_exit_pinmode_idname,
@@ -252,18 +249,10 @@ class GT_PT_InputsPanel(AllVisible):
         if not geotracker:
             return
 
-        layout = self.layout
-
-        row = layout.row()
-        row.alert = not geotracker.camobj
-        row.prop(geotracker, 'camobj', text='Camera')
-
-        row = layout.row()
-        row.alert = not geotracker.geomobj
-        row.prop(geotracker, 'geomobj', text='Geometry')
-
         if geotracker.geomobj and geotracker.geomobj.users == 1:
             _start_geomobj_delete_handler()
+
+        layout = self.layout
 
         row = layout.row(align=True)
         col = row.column(align=True)
@@ -276,24 +265,13 @@ class GT_PT_InputsPanel(AllVisible):
         row.operator(GTConfig.gt_sequence_filebrowser_idname,
                      text='', icon='FILEBROWSER')
 
-        col = layout.column(align=True)
-        if not settings.pinmode:
-            col.label(text='Tracked object:')
-        row = col.row(align=True)
-        row.prop(geotracker, 'solve_for_camera',
-                 text='Geometry', icon='MESH_ICOSPHERE',
-                 toggle=1, invert_checkbox=True)
-        row.prop(geotracker, 'solve_for_camera',
-                 text='Camera', icon='CAMERA_DATA',
-                 toggle=1)
+        row = layout.row()
+        row.alert = not geotracker.geomobj
+        row.prop(geotracker, 'geomobj', text='Geometry')
 
-        col = layout.column(align=True)
-        if not settings.pinmode:
-            col.label(text='Cached data usage:')
-        row = col.row(align=True)
-        row.prop(geotracker, 'precalcless', text='Precalcless', toggle=1)
-        row.prop(geotracker, 'precalcless', text='Use precalc', toggle=1,
-                 invert_checkbox=True)
+        row = layout.row()
+        row.alert = not geotracker.camobj
+        row.prop(geotracker, 'camobj', text='Camera')
 
 
 class GT_PT_MasksPanel(AllVisible):
@@ -317,7 +295,8 @@ class GT_PT_MasksPanel(AllVisible):
 
         layout = self.layout
         if geotracker.geomobj:
-            row = layout.row(align=True)
+            box = layout.box()
+            row = box.row(align=True)
             row.prop_search(geotracker, 'mask_3d',
                             geotracker.geomobj, 'vertex_groups')
             row.prop(geotracker, 'mask_3d_inverted',
@@ -365,9 +344,9 @@ class GT_PT_AnalyzePanel(AllVisible):
             return False
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
-        if not geotracker:
+        if not geotracker or not geotracker.movie_clip:
             return False
-        return not geotracker.precalcless
+        return True
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
@@ -378,12 +357,20 @@ class GT_PT_AnalyzePanel(AllVisible):
             text='', icon='QUESTION')
 
     def draw(self, context: Any) -> None:
+        layout = self.layout
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
             return
 
-        layout = self.layout
+        col = layout.column(align=True)
+        # if not settings.pinmode:
+        #     col.label(text='Cached data usage:')
+        row = col.row(align=True)
+        row.prop(geotracker, 'precalcless', text='Precalcless', toggle=1)
+        row.prop(geotracker, 'precalcless', text='Use precalc', toggle=1,
+                 invert_checkbox=True)
+
         block = layout.column(align=True)
         if geotracker.precalc_path == '':
             block.operator(GTConfig.gt_choose_precalc_file_idname,
@@ -479,9 +466,112 @@ class GT_PT_CameraPanel(AllVisible):
         col.prop(cam_data, 'sensor_height')
 
 
+def _tracking_mode_selector(layout, geotracker):
+    col = layout.column(align=True)
+    row = col.row(align=True)
+    row.prop(geotracker, 'solve_for_camera',
+             text='Geometry', icon='MESH_ICOSPHERE',
+             toggle=1, invert_checkbox=True)
+    row.prop(geotracker, 'solve_for_camera',
+             text='Camera', icon='CAMERA_DATA',
+             toggle=1)
+
+
+def _tracking_pinmode_button(layout, context):
+    settings = get_gt_settings()
+    row = layout.row()
+    row.scale_y = 2.0
+    if settings.pinmode:
+        row.operator(GTConfig.gt_exit_pinmode_idname,
+                     icon='LOOP_BACK',
+                     depress=settings.pinmode)
+        if not GTLoader.viewport().is_working():
+            _start_pinmode_escaper(context)
+    else:
+        op = row.operator(GTConfig.gt_pinmode_idname,
+                          text='Start Pinmode', icon='HIDE_OFF',
+                          depress=settings.pinmode)
+        op.geotracker_num = -1
+
+
+def _tracking_center_block(layout):
+    settings = get_gt_settings()
+    row = layout.row(align=True)
+    row.active = settings.pinmode
+    row.operator(GTConfig.gt_center_geo_idname)
+    row = layout.row(align=True)
+    row.active = settings.pinmode
+    row.operator(GTConfig.gt_toggle_pins_idname, icon='UNPINNED')
+    row.operator(GTConfig.gt_remove_pins_idname, icon='X')
+
+
+def _tracking_track_row(layout):
+    settings = get_gt_settings()
+    row = layout.row(align=True)
+    row.active = settings.pinmode
+    row.operator(GTConfig.gt_track_prev_idname, text=' ',
+                 icon='TRACKING_BACKWARDS_SINGLE')
+    row.operator(GTConfig.gt_track_to_start_idname, text=' ',
+                 icon='TRACKING_BACKWARDS')
+    row.operator(GTConfig.gt_track_to_end_idname, text=' ',
+                 icon='TRACKING_FORWARDS')
+    row.operator(GTConfig.gt_track_next_idname, text=' ',
+                 icon='TRACKING_FORWARDS_SINGLE')
+
+
+def _tracking_refine_row(layout):
+    settings = get_gt_settings()
+    row = layout.row()
+    row.active = settings.pinmode
+    row.scale_y = 1.5
+    row.operator(GTConfig.gt_refine_idname)
+    row.operator(GTConfig.gt_refine_all_idname)
+
+
+def _tracking_keyframes_row(layout):
+    settings = get_gt_settings()
+    row = layout.row(align=True)
+    row.operator(GTConfig.gt_prev_keyframe_idname, text=' ',
+                 icon='PREV_KEYFRAME')
+    row.operator(GTConfig.gt_next_keyframe_idname, text=' ',
+                 icon='NEXT_KEYFRAME')
+    row2 = row.row(align=True)
+    row2.active = settings.pinmode
+    row2.operator(GTConfig.gt_add_keyframe_idname, text=' ',
+                  icon='KEY_HLT')
+    row2.operator(GTConfig.gt_remove_keyframe_idname, text=' ',
+                  icon='KEY_DEHLT')
+
+
+def _tracking_remove_keys_row(layout):
+    settings = get_gt_settings()
+    row = layout.row(align=True)
+    row.active = settings.pinmode
+    part = row.split(factor=0.5, align=True)
+    row = part.split(factor=0.5, align=True)
+    row.operator(GTConfig.gt_clear_tracking_backward_idname,
+                 icon='TRACKING_CLEAR_BACKWARDS', text='')
+    row.operator(GTConfig.gt_clear_tracking_between_idname, text='| Xk |')
+    part = part.row(align=True)
+    row = part.split(factor=0.5, align=True)
+    row.operator(GTConfig.gt_clear_tracking_forward_idname,
+                 icon='TRACKING_CLEAR_FORWARDS', text='')
+    row.operator(GTConfig.gt_clear_all_tracking_idname, text='X')
+
+
 class GT_PT_TrackingPanel(AllVisible):
     bl_idname = GTConfig.gt_tracking_panel_idname
     bl_label = 'Tracking'
+
+    @classmethod
+    def poll(cls, context: Any) -> bool:
+        if not geotracker_enabled():
+            return False
+        if not show_all_panels():
+            return False
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+        return geotracker.geomobj and geotracker.camobj
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
@@ -499,100 +589,28 @@ class GT_PT_TrackingPanel(AllVisible):
 
         layout = self.layout
 
-        row = layout.row()
-        row.scale_y = 2.0
-        if settings.pinmode:
-            row.operator(GTConfig.gt_exit_pinmode_idname,
-                         icon='LOOP_BACK',
-                         depress=settings.pinmode)
-            if not GTLoader.viewport().is_working():
-                _start_pinmode_escaper(context)
-        else:
-            op = row.operator(GTConfig.gt_pinmode_idname,
-                              text='Start Pinmode', icon='HIDE_OFF',
-                              depress=settings.pinmode)
-            op.geotracker_num = -1
+        _tracking_mode_selector(layout, geotracker)
+        _tracking_pinmode_button(layout, context)
 
         box = layout.box()
-
-        row = box.row(align=True)
-        row.operator(GTConfig.gt_prev_keyframe_idname, text=' ',
-                     icon='PREV_KEYFRAME')
-        row.operator(GTConfig.gt_next_keyframe_idname, text=' ',
-                     icon='NEXT_KEYFRAME')
-        row2 = row.row(align=True)
-        row2.active = settings.pinmode
-        row2.operator(GTConfig.gt_add_keyframe_idname, text=' ',
-                     icon='KEY_HLT')
-        row2.operator(GTConfig.gt_remove_keyframe_idname, text=' ',
-                     icon='KEY_DEHLT')
+        _tracking_center_block(box)
 
         box = layout.box()
-        col = box.column()
+        _tracking_track_row(box)
+        _tracking_refine_row(box)
 
-        row = col.row()
-        row.enabled = geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH'
-        row.prop(geotracker, 'track_focal_length')
-
-        row = box.row(align=True)
-        row.active = settings.pinmode
-        row.operator(GTConfig.gt_track_prev_idname, text=' ',
-                     icon='TRACKING_BACKWARDS_SINGLE')
-        row.operator(GTConfig.gt_track_to_start_idname, text=' ',
-                     icon='TRACKING_BACKWARDS')
-        row.operator(GTConfig.gt_track_to_end_idname, text=' ',
-                     icon='TRACKING_FORWARDS')
-        row.operator(GTConfig.gt_track_next_idname, text=' ',
-                     icon='TRACKING_FORWARDS_SINGLE')
-
-        row = box.row()
-        row.active = settings.pinmode
-        row.scale_y = 1.5
-        row.operator(GTConfig.gt_refine_idname)
-        row.operator(GTConfig.gt_refine_all_idname)
-
-        row = box.row(align=True)
-        row.active = settings.pinmode
-        part = row.split(factor=0.5, align=True)
-        row = part.split(factor=0.5, align=True)
-        row.operator(GTConfig.gt_clear_tracking_backward_idname,
-                     icon='TRACKING_CLEAR_BACKWARDS', text='')
-        row.operator(GTConfig.gt_clear_tracking_between_idname, text='| Xk |')
-        part = part.row(align=True)
-        row = part.split(factor=0.5, align=True)
-        row.operator(GTConfig.gt_clear_tracking_forward_idname,
-                     icon='TRACKING_CLEAR_FORWARDS', text='')
-        row.operator(GTConfig.gt_clear_all_tracking_idname, text='X')
+        box = layout.box()
+        _tracking_keyframes_row(box)
+        _tracking_remove_keys_row(box)
 
         if settings.is_calculating('TRACKING') or settings.is_calculating('REFINE'):
             _draw_calculating_indicator(layout)
-
-        box = layout.box()
-        row = box.row(align=True)
-        row.active = settings.pinmode
-        row.operator(GTConfig.gt_remove_pins_idname, icon='X')
-        row.operator(GTConfig.gt_toggle_pins_idname, icon='UNPINNED')
-
-        row = box.row(align=True)
-        row.active = settings.pinmode
-        row.operator(GTConfig.gt_center_geo_idname)
-        col = row.column()
-        col.active = False
-        col.operator(GTConfig.gt_magic_keyframe_idname)
-
-        box = layout.box()
-        box.prop(geotracker, 'spring_pins_back')
-
-        col = box.column()
-        col.active = False
-        op = col.operator(GTConfig.gt_actor_idname,
-                          text='stabilize view')
-        op.action = 'stabilize_view'
 
 
 class GT_PT_AppearanceSettingsPanel(AllVisible):
     bl_idname = GTConfig.gt_appearance_panel_idname
     bl_label = 'Appearance'
+    bl_options = {'DEFAULT_CLOSED'}
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
@@ -698,7 +716,7 @@ class GT_PT_TexturePanel(AllVisible):
 
 class GT_PT_AnimationPanel(AllVisible):
     bl_idname = GTConfig.gt_animation_panel_idname
-    bl_label = 'Animation / Convert'
+    bl_label = 'Scene alignment'
     bl_options = {'DEFAULT_CLOSED'}
 
     def draw_header_preset(self, context: Any) -> None:
@@ -714,10 +732,6 @@ class GT_PT_AnimationPanel(AllVisible):
 
         layout.operator('kt_geotracker.resize_window')
 
-        layout.label(text='Create helpers')
-        col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-        col.operator(GTConfig.gt_create_animated_empty_idname)
         layout.label(text='Move to default position')
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
@@ -769,3 +783,16 @@ class GT_PT_RenderingPanel(AllVisible):
                  text='Transparent background')
         col.prop(bpy.context.scene, 'use_nodes',
                  text='Use compositing nodes')
+
+
+class GT_PT_ExportPanel(AllVisible):
+    bl_idname = GTConfig.gt_export_panel_idname
+    bl_label = 'Export'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context: Any) -> None:
+        layout = self.layout
+
+        col = layout.column(align=True)
+        col.scale_y = Config.btn_scale_y
+        col.operator(GTConfig.gt_create_animated_empty_idname)
