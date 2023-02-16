@@ -474,10 +474,8 @@ class GT_PT_CameraPanel(AllVisible):
                      text='', icon='CANCEL')
 
         col = layout.column(align=True)
-        col.label(text='Sensor size (in mm)')
-        row = col.row(align=True)
-        row.prop(cam_data, 'sensor_width', text='W')
-        row.prop(cam_data, 'sensor_height', text='H')
+        col.prop(cam_data, 'sensor_width')
+        col.prop(cam_data, 'sensor_height')
 
 
 def _tracking_mode_selector(layout, geotracker):
@@ -510,10 +508,11 @@ def _tracking_pinmode_button(layout, context):
 
 def _tracking_center_block(layout):
     settings = get_gt_settings()
-    row = layout.row(align=True)
+    col = layout.column(align=True)
+    row = col.row(align=True)
     row.active = settings.pinmode
     row.operator(GTConfig.gt_center_geo_idname)
-    row = layout.row(align=True)
+    row = col.row(align=True)
     row.active = settings.pinmode
     row.operator(GTConfig.gt_toggle_pins_idname, icon='UNPINNED')
     row.operator(GTConfig.gt_remove_pins_idname, icon='X')
@@ -523,19 +522,23 @@ def _tracking_track_row(layout):
     settings = get_gt_settings()
     row = layout.row(align=True)
     row.active = settings.pinmode
-    row.operator(GTConfig.gt_track_prev_idname, text=' ',
+    row.scale_y = 1.2
+    split = row.split(factor=0.5, align=True)
+    split.operator(GTConfig.gt_track_prev_idname, text='',
                  icon='TRACKING_BACKWARDS_SINGLE')
-    row.operator(GTConfig.gt_track_to_start_idname, text=' ',
+    split.operator(GTConfig.gt_track_to_start_idname, text='',
                  icon='TRACKING_BACKWARDS')
-    row.operator(GTConfig.gt_track_to_end_idname, text=' ',
+
+    split = row.split(factor=0.5, align=True)
+    split.operator(GTConfig.gt_track_to_end_idname, text='',
                  icon='TRACKING_FORWARDS')
-    row.operator(GTConfig.gt_track_next_idname, text=' ',
+    split.operator(GTConfig.gt_track_next_idname, text='',
                  icon='TRACKING_FORWARDS_SINGLE')
 
 
 def _tracking_refine_row(layout):
     settings = get_gt_settings()
-    row = layout.row()
+    row = layout.row(align=True)
     row.active = settings.pinmode
     row.scale_y = 1.5
     row.operator(GTConfig.gt_refine_idname)
@@ -545,15 +548,17 @@ def _tracking_refine_row(layout):
 def _tracking_keyframes_row(layout):
     settings = get_gt_settings()
     row = layout.row(align=True)
-    row.operator(GTConfig.gt_prev_keyframe_idname, text=' ',
+    split = row.split(factor=0.5, align=True)
+    split.operator(GTConfig.gt_prev_keyframe_idname, text='',
                  icon='PREV_KEYFRAME')
-    row.operator(GTConfig.gt_next_keyframe_idname, text=' ',
+    split.operator(GTConfig.gt_next_keyframe_idname, text='',
                  icon='NEXT_KEYFRAME')
-    row2 = row.row(align=True)
-    row2.active = settings.pinmode
-    row2.operator(GTConfig.gt_add_keyframe_idname, text=' ',
+
+    split = row.split(factor=0.5, align=True)
+    split.active = settings.pinmode
+    split.operator(GTConfig.gt_add_keyframe_idname, text='',
                   icon='KEY_HLT')
-    row2.operator(GTConfig.gt_remove_keyframe_idname, text=' ',
+    split.operator(GTConfig.gt_remove_keyframe_idname, text='',
                   icon='KEY_DEHLT')
 
 
@@ -606,16 +611,15 @@ class GT_PT_TrackingPanel(AllVisible):
         _tracking_mode_selector(layout, geotracker)
         _tracking_pinmode_button(layout, context)
 
-        box = layout.box()
-        _tracking_center_block(box)
+        _tracking_center_block(layout)
 
-        box = layout.box()
-        _tracking_track_row(box)
-        _tracking_refine_row(box)
+        col = layout.column(align=True)
+        _tracking_track_row(col)
+        _tracking_refine_row(col)
 
-        box = layout.box()
-        _tracking_keyframes_row(box)
-        _tracking_remove_keys_row(box)
+        col = layout.column(align=True)
+        _tracking_keyframes_row(col)
+        _tracking_remove_keys_row(col)
 
         if settings.is_calculating('TRACKING') or settings.is_calculating('REFINE'):
             _draw_calculating_indicator(layout)
