@@ -91,6 +91,7 @@ class GTConfig:
 
     gt_render_with_background_idname = operators + '.render_with_background'
     gt_revert_default_render_idname = operators + '.revert_default_render'
+    gt_analyze_call_idname = operators + '.analyze_call'
 
     # Panel ids
     gt_geotrackers_panel_idname = _PT + 'geotrackers_panel'

@@ -371,6 +371,14 @@ class GT_PT_AnalyzePanel(AllVisible):
         row.prop(geotracker, 'precalcless', text='Use precalc', toggle=1,
                  invert_checkbox=True)
 
+        if not geotracker.precalcless:
+            txt = 'Analyze' if geotracker.precalc_path == '' else geotracker.precalc_path
+            icon = 'ERROR' if geotracker.precalc_message in [
+                '* Precalc file is corrupted',
+                '* Precalc needs to be built'] else 'NONE'
+            col.operator(GTConfig.gt_analyze_call_idname,
+                         text=txt, icon=icon)
+        '''
         block = layout.column(align=True)
         if geotracker.precalc_path == '':
             block.operator(GTConfig.gt_choose_precalc_file_idname,
@@ -408,7 +416,7 @@ class GT_PT_AnalyzePanel(AllVisible):
                 row = layout.row()
                 row.prop(geotracker, 'precalc_start')
                 row.prop(geotracker, 'precalc_end')
-
+        '''
 
 class GT_PT_CameraPanel(AllVisible):
     bl_idname = GTConfig.gt_camera_panel_idname

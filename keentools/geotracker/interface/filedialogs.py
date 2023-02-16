@@ -18,6 +18,7 @@
 
 import os
 from typing import Optional, List
+import re
 
 from bpy.types import MovieClip, Operator, OperatorFileListElement
 from bpy.props import (StringProperty,
@@ -169,6 +170,12 @@ class GT_OT_ChoosePrecalcFile(Operator, ExportHelper):
         default=GTConfig.default_precalc_filename,
         subtype='FILE_PATH'
     )
+    return_to_dialog: BoolProperty(
+        name='Return to precalc dialog',
+        description='Return to precalc dialog if something went wrong',
+        default=False,
+        options={'HIDDEN'},
+    )
 
     def check(self, context):
         change_ext = False
@@ -210,7 +217,11 @@ class GT_OT_ChoosePrecalcFile(Operator, ExportHelper):
         status, msg, _ = geotracker.reload_precalc()
         if not status:
             _log.error(msg)
-            self.report({'ERROR'}, msg)
+            if not self.return_to_dialog:
+                self.report({'ERROR'}, msg)
+            else:
+                op = get_operator(GTConfig.gt_analyze_call_idname)
+                op('INVOKE_DEFAULT')
 
         _log.output('PRECALC PATH HAS BEEN CHANGED: {}'.format(self.filepath))
         return {'FINISHED'}
@@ -461,4 +472,55 @@ class GT_OT_ReprojectTextureSequence(_DirSelectionTemplate):
                               to_frame=self.to_frame,
                               file_format=self.file_format,
                               width=self.width, height=self.height)
+        return {'FINISHED'}
+
+
+class GT_OT_AnalyzeCall(Operator):
+    bl_idname = GTConfig.gt_analyze_call_idname
+    bl_label = 'Analyze'
+    bl_description = 'Call analyze dialog'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def draw(self, context):
+        layout = self.layout
+        geotracker = get_current_geotracker_item()
+        if not geotracker:
+            return
+
+        block = layout.column(align=True)
+        op = block.operator(GTConfig.gt_choose_precalc_file_idname,
+                            text='Load / Create precalc file')
+        op.return_to_dialog = True
+        if geotracker.precalc_path != '':
+            box = block.box()
+            col = box.column()
+            col.scale_y = Config.text_scale_y
+            col.label(text=geotracker.precalc_path)
+
+            if geotracker.precalc_message != '':
+                arr = re.split('\r\n|\n', geotracker.precalc_message)
+                for txt in arr:
+                    col.label(text=txt)
+
+        # layout.operator(GTConfig.gt_create_precalc_idname,
+        #                 text='Create precalc')
+
+        row = layout.row()
+        row.prop(geotracker, 'precalc_start')
+        row.prop(geotracker, 'precalc_end')
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def cancel(self, context):
+        _log.output('CANCEL ANALYZE')
+
+    def execute(self, context):
+        _log.output('START ANALYZE')
+        try:
+            op = get_operator(GTConfig.gt_create_precalc_idname)
+            op('EXEC_DEFAULT')
+        except RuntimeError as err:
+            _log.error(f'ANALYZE Exception:\n{str(err)}')
+            self.report({'ERROR'}, str(err))
         return {'FINISHED'}

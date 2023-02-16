@@ -61,6 +61,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
 from .utils.precalc import precalc_with_runner_act
 from .gtloader import GTLoader
 from .ui_strings import buttons
+from .utils.prechecks import common_checks
 
 
 _log = KTLogger(__name__)
@@ -105,6 +106,14 @@ class GT_OT_CreatePrecalc(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        check_status = common_checks(object_mode=False, is_calculating=True,
+                                     reload_geotracker=False, geotracker=True,
+                                     camera=True, geometry=False,
+                                     movie_clip=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         act_status = precalc_with_runner_act(context)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
