@@ -456,10 +456,14 @@ class GT_PT_CameraPanel(AllVisible):
         cam_data = geotracker.camobj.data
 
         col = layout.column()
-        col.prop(geotracker, 'focal_length_mode', text='Mode')
+        col.prop(geotracker, 'lens_mode')
+
         row = col.row()
-        row.enabled = geotracker.focal_length_mode != 'CAMERA_FOCAL_LENGTH'
         row.prop(geotracker, 'focal_length_estimation')
+
+        if geotracker.lens_mode == 'ZOOM':
+            row = col.row()
+            row.prop(geotracker, 'track_focal_length')
 
         row = col.row(align=True)
         row.prop(cam_data, 'lens')
@@ -470,8 +474,10 @@ class GT_PT_CameraPanel(AllVisible):
                      text='', icon='CANCEL')
 
         col = layout.column(align=True)
-        col.prop(cam_data, 'sensor_width')
-        col.prop(cam_data, 'sensor_height')
+        col.label(text='Sensor size (in mm)')
+        row = col.row(align=True)
+        row.prop(cam_data, 'sensor_width', text='W')
+        row.prop(cam_data, 'sensor_height', text='H')
 
 
 def _tracking_mode_selector(layout, geotracker):
