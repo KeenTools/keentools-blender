@@ -20,7 +20,7 @@ import numpy as np
 from typing import Any, Tuple, List, Dict, Optional
 
 from ..utils.kt_logging import KTLogger
-from ..geotracker_config import get_current_geotracker_item
+from ..geotracker_config import get_current_geotracker_item, get_gt_settings
 from ..utils.coords import (focal_mm_to_px,
                             focal_px_to_mm,
                             camera_sensor_width,
@@ -66,7 +66,8 @@ class GTCameraInput(pkt_module().TrackerCameraInputI):
 
 class GTGeoInput(pkt_module().GeoInputI):
     def geo_hash(self) -> Any:
-        return pkt_module().Hash(bpy_current_frame())
+        settings = get_gt_settings()
+        return pkt_module().Hash(abs(hash(settings.pinmode_id)))
 
     def geo(self) -> Any:
         geotracker = get_current_geotracker_item()
