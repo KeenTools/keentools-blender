@@ -98,7 +98,7 @@ def reload_precalc(geotracker: Any) -> Tuple[bool, str, Any]:
 
     geotracker.precalc_message = '* Precalc needs to be built'
     geotracker.precalc_path = precalc_path
-    return True, 'Precalc file has not been created yet', None
+    return False, 'Precalc file has not been created yet', None
 
 
 def get_next_tracking_keyframe(kt_geotracker: Any, current_frame: int) -> int:

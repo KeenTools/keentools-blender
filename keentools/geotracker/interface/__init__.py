@@ -45,6 +45,7 @@ CLASSES_TO_REGISTER = (GT_MT_PrecalcMenu, GT_OT_PrecalcWindow, GT_OT_ResizeWindo
                        GT_OT_SplitVideoExec,
                        GT_OT_ReprojectTextureSequence,
                        GT_OT_AnalyzeCall,
+                       GT_OT_ConfirmRecreatePrecalc,
                        GT_OT_FrameSelector,
                        GTHELP_OT_InputsHelp,  # helps
                        GTHELP_OT_MasksHelp,

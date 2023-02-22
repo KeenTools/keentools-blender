@@ -55,6 +55,7 @@ from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_getter,
                                             universal_cached_setter)
 from ..utils.animation import count_fcurve_points
+from ..utils.manipulate import select_object_only
 
 
 _log = KTLogger(__name__)
@@ -275,6 +276,20 @@ def update_spring_pins_back(geotracker, context: Any) -> None:
             GTLoader.viewport_area_redraw()
 
 
+def update_solve_for_camera(geotracker, context: Any) -> None:
+    settings = get_gt_settings()
+    if not settings.pinmode:
+        return
+    obj = geotracker.animatable_object()
+    if not obj:
+        return
+    select_object_only(obj)
+    second_obj = geotracker.non_animatable_object()
+    if not second_obj:
+        return
+    second_obj.select_set(state=False)
+
+
 class FrameListItem(bpy.types.PropertyGroup):
     num: bpy.props.IntProperty(name='Frame number', default=-1)
     selected: bpy.props.BoolProperty(name='Selected', default=False)
@@ -307,7 +322,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     solve_for_camera: bpy.props.BoolProperty(
         name='Track for Camera or Geometry',
         description='Which object will be tracked Geometry or Camera',
-        default=False)
+        default=False, update=update_solve_for_camera)
     reduce_pins: bpy.props.BoolProperty(name='Reduce pins', default=False)
     spring_pins_back: bpy.props.BoolProperty(
         name='Spring pins back', default=True,
@@ -457,6 +472,11 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         if self.camera_mode():
             return self.camobj
         return self.geomobj
+
+    def non_animatable_object(self) -> Optional[Object]:
+        if self.camera_mode():
+            return self.geomobj
+        return self.camobj
 
     def animatable_object_name(self) -> str:
         obj = self.camobj if self.camera_mode() else self.geomobj
