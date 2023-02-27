@@ -258,6 +258,18 @@ def update_spring_pins_back(geotracker, context: Any) -> None:
             GTLoader.viewport_area_redraw()
 
 
+def update_smoothing(geotracker, context: Any) -> None:
+    settings = get_gt_settings()
+    if settings.ui_write_mode:
+        return
+    gt = GTLoader.kt_geotracker()
+    gt.set_smoothing_depth_coeff(geotracker.smoothing_depth_coeff)
+    gt.set_smoothing_focal_length_coeff(geotracker.smoothing_focal_length_coeff)
+    gt.set_smoothing_rotations_coeff(geotracker.smoothing_rotations_coeff)
+    gt.set_smoothing_xy_translations_coeff(geotracker.smoothing_xy_translations_coeff)
+    GTLoader.save_geotracker()
+
+
 class FrameListItem(bpy.types.PropertyGroup):
     num: bpy.props.IntProperty(name='Frame number', default=-1)
     selected: bpy.props.BoolProperty(name='Selected', default=False)
@@ -393,6 +405,27 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
             ('COMP_MASK', 'Compositing', 'Use compositing mask', 2)],
         description='2D mask source',
         update=update_mask_source)
+
+    smoothing_depth_coeff: bpy.props.FloatProperty(
+        default=0.0,
+        precision=2,
+        name='Z Translation',
+        description='smoothing depth coefficient', update=update_smoothing)
+    smoothing_focal_length_coeff: bpy.props.FloatProperty(
+        default=0.0,
+        precision=2,
+        name='Focal Length',
+        description='Focal Length coefficient', update=update_smoothing)
+    smoothing_rotations_coeff: bpy.props.FloatProperty(
+        default=0.0,
+        precision=2,
+        name='Rotations',
+        description='Rotation coefficient', update=update_smoothing)
+    smoothing_xy_translations_coeff: bpy.props.FloatProperty(
+        default=0.0,
+        precision=2,
+        name='XY Translations',
+        description='XY Translation coefficient', update=update_smoothing)
 
     def update_compositing_mask(self, *, frame: Optional[int]=None,
                                 recreate_nodes: bool=False) -> Image:
