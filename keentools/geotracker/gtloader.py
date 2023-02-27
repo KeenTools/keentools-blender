@@ -400,10 +400,15 @@ class GTLoader:
     @classmethod
     def _deserialize_global_options(cls):
         settings = get_gt_settings()
+        geotracker = get_current_geotracker_item()
         gt = cls.kt_geotracker()
         with settings.ui_write_mode_context():
             try:
                 settings.wireframe_backface_culling = gt.back_face_culling()
+                geotracker.smoothing_depth_coeff = gt.get_smoothing_depth_coeff()
+                geotracker.smoothing_focal_length_coeff = gt.get_smoothing_focal_length_coeff()
+                geotracker.smoothing_rotations_coeff = gt.get_smoothing_rotations_coeff()
+                geotracker.smoothing_xy_translations_coeff = gt.get_smoothing_xy_translations_coeff()
             except Exception as err:
                 _log.error(f'_deserialize_global_options:\n{str(err)}')
 

@@ -755,3 +755,30 @@ class GT_PT_RenderingPanel(AllVisible):
                  text='Transparent background')
         col.prop(bpy.context.scene, 'use_nodes',
                  text='Use compositing nodes')
+
+
+class GT_PT_SmoothingPanel(AllVisible):
+    bl_idname = GTConfig.gt_smoothing_panel_idname
+    bl_label = 'Smoothing'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw_header_preset(self, context: Any) -> None:
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        row.operator(
+            GTConfig.gt_help_smoothing_idname,
+            text='', icon='QUESTION')
+
+    def draw(self, context: Any) -> None:
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if not geotracker:
+            return
+
+        layout = self.layout
+        col = layout.column(align=True)
+        col.prop(geotracker, 'smoothing_depth_coeff')
+        col.prop(geotracker, 'smoothing_xy_translations_coeff')
+        col.prop(geotracker, 'smoothing_focal_length_coeff')
+        col.prop(geotracker, 'smoothing_rotations_coeff')

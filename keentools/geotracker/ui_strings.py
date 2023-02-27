@@ -286,6 +286,10 @@ buttons = {
         'Rendering help',
         'Show help information about Rendering panel'
     ),
+    GTConfig.gt_help_smoothing_idname: Button(
+        'Smoothing help',
+        'Show help information about Smoothing panel'
+    ),
 }
 
 
@@ -328,6 +332,10 @@ help_texts = {
     ]),
     GTConfig.gt_help_rendering_idname: HelpText(_help_default_width, [
         'Rendering panel description will be here...',
+        ' '
+    ]),
+    GTConfig.gt_help_smoothing_idname: HelpText(_help_default_width, [
+        'Smoothing panel description will be here...',
         ' '
     ]),
 }

@@ -105,7 +105,8 @@ class GTConfig:
     gt_appearance_panel_idname = _PT + 'appearance_panel'
     gt_animation_panel_idname = _PT + 'animation_panel'
     gt_texture_panel_idname = _PT + 'texture_panel'
-    gt_rendering_panel_idname = _PT + 'rendering_panel_idname'
+    gt_rendering_panel_idname = _PT + 'rendering_panel'
+    gt_smoothing_panel_idname = _PT + 'smoothing_panel'
 
     # Help ids
     gt_help_inputs_idname = operators + '.help_inputs'
@@ -117,6 +118,7 @@ class GTConfig:
     gt_help_texture_idname = operators + '.help_texture'
     gt_help_animation_idname = operators + '.help_animation'
     gt_help_rendering_idname = operators + '.help_rendering'
+    gt_help_smoothing_idname = operators + '.help_smoothing'
 
     # Updater panels
     gt_update_panel_idname = _PT + 'update_panel'

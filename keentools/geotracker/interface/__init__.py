@@ -33,6 +33,7 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
                        GT_PT_AnimationPanel,
                        GT_PT_AppearanceSettingsPanel,
                        GT_PT_MasksPanel,
+                       GT_PT_SmoothingPanel,
                        GT_PT_TexturePanel,
                        GT_PT_RenderingPanel,
                        GT_OT_SequenceFilebrowser,  # file dialogs
@@ -50,4 +51,5 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
                        GTHELP_OT_AppearanceHelp,
                        GTHELP_OT_TextureHelp,
                        GTHELP_OT_AnimationHelp,
-                       GTHELP_OT_RenderingHelp)
+                       GTHELP_OT_RenderingHelp,
+                       GTHELP_OT_SmoothingHelp)
