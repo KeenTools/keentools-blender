@@ -20,7 +20,7 @@ import numpy as np
 from typing import Any, Tuple, List, Dict, Optional
 
 from ..utils.kt_logging import KTLogger
-from ..geotracker_config import get_current_geotracker_item, get_gt_settings
+from ..geotracker_config import get_gt_settings, get_current_geotracker_item
 from ..utils.coords import (focal_mm_to_px,
                             focal_px_to_mm,
                             camera_sensor_width,

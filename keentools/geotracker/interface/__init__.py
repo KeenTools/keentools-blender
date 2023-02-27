@@ -35,6 +35,7 @@ CLASSES_TO_REGISTER = (GT_MT_PrecalcMenu, GT_OT_PrecalcWindow, GT_OT_ResizeWindo
                        GT_PT_MasksPanel,
                        GT_PT_AnimationPanel,
                        GT_PT_AppearanceSettingsPanel,
+                       GT_PT_SmoothingPanel,
                        GT_PT_TexturePanel,
                        GT_PT_RenderingPanel,
                        GT_PT_ExportPanel,
@@ -55,4 +56,5 @@ CLASSES_TO_REGISTER = (GT_MT_PrecalcMenu, GT_OT_PrecalcWindow, GT_OT_ResizeWindo
                        GTHELP_OT_AppearanceHelp,
                        GTHELP_OT_TextureHelp,
                        GTHELP_OT_AnimationHelp,
-                       GTHELP_OT_RenderingHelp)
+                       GTHELP_OT_RenderingHelp,
+                       GTHELP_OT_SmoothingHelp)

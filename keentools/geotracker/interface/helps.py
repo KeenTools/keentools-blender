@@ -121,3 +121,11 @@ class GTHELP_OT_RenderingHelp(GTHELP_Common, Operator):
     bl_description = buttons[bl_idname].description
     draw = _universal_draw(bl_idname)
     invoke = _universal_invoke(bl_idname)
+
+
+class GTHELP_OT_SmoothingHelp(GTHELP_Common, Operator):
+    bl_idname = GTConfig.gt_help_smoothing_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    draw = _universal_draw(bl_idname)
+    invoke = _universal_invoke(bl_idname)
