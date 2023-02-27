@@ -407,7 +407,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         update=update_mask_source)
 
     smoothing_depth_coeff: bpy.props.FloatProperty(
-        default=0.11,
+        default=0.0,
         precision=2,
         name='Z Translation',
         description='smoothing depth coefficient', update=update_smoothing)
@@ -417,12 +417,12 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         name='Focal Length',
         description='Focal Length coefficient', update=update_smoothing)
     smoothing_rotations_coeff: bpy.props.FloatProperty(
-        default=0.12,
+        default=0.0,
         precision=2,
         name='Rotations',
         description='Rotation coefficient', update=update_smoothing)
     smoothing_xy_translations_coeff: bpy.props.FloatProperty(
-        default=0.10,
+        default=0.0,
         precision=2,
         name='XY Translations',
         description='XY Translation coefficient', update=update_smoothing)
