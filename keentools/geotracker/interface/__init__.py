@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from .menus import *
 from .panels import *
 from .filedialogs import *
 from .helps import *
@@ -55,4 +56,8 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
                        GTHELP_OT_TextureHelp,
                        GTHELP_OT_AnimationHelp,
                        GTHELP_OT_RenderingHelp,
-                       GTHELP_OT_SmoothingHelp)
+                       GTHELP_OT_ExportHelp,
+                       GTHELP_OT_SmoothingHelp,
+                       GT_MT_ClipMenu,  # menus
+                       GT_MT_ClearAllTrackingMenu,
+                       GT_OT_ClearAllTrackingMenuExec)

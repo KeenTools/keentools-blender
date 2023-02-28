@@ -98,6 +98,12 @@ class GTConfig:
     gt_precalc_window_idname = operators + '.precalc_window'
     gt_resize_window_idname = operators + '.resize_window'
 
+    # Menu ids
+    gt_clip_menu_idname = _MT + 'clip_menu'
+    gt_clear_tracking_menu_idname = _MT + 'clear_tracking_menu'
+
+    gt_clear_tracking_menu_exec_idname = operators + '.clip_menu_exec'
+
     # Panel ids
     gt_geotrackers_panel_idname = _PT + 'geotrackers_panel'
     gt_input_panel_idname = _PT + 'input_panel'
@@ -122,6 +128,7 @@ class GTConfig:
     gt_help_texture_idname = operators + '.help_texture'
     gt_help_animation_idname = operators + '.help_animation'
     gt_help_rendering_idname = operators + '.help_rendering'
+    gt_help_export_idname = operators + '.help_export'
     gt_help_smoothing_idname = operators + '.help_smoothing'
 
     # Updater panels

@@ -258,10 +258,10 @@ class GT_PT_InputsPanel(AllVisible):
         col.prop(geotracker, 'movie_clip', text='Clip')
 
         if geotracker.movie_clip and geotracker.movie_clip.source == 'MOVIE':
-            row.operator(GTConfig.gt_split_video_to_frames_exec_idname,
-                         text='', icon='RENDER_RESULT')
-        row.operator(GTConfig.gt_sequence_filebrowser_idname,
-                     text='', icon='FILEBROWSER')
+            row.menu(GTConfig.gt_clip_menu_idname, text='', icon='COLLAPSEMENU')
+        else:
+            row.operator(GTConfig.gt_sequence_filebrowser_idname,
+                         text='', icon='FILEBROWSER')
 
         row = layout.row()
         row.alert = not geotracker.geomobj
@@ -520,7 +520,7 @@ class GT_PT_TrackingPanel(AllVisible):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.active = settings.pinmode
-        row.operator(GTConfig.gt_center_geo_idname)
+        row.operator(GTConfig.gt_center_geo_idname, icon='SNAP_FACE_CENTER')
         row = col.row(align=True)
         row.active = settings.pinmode
         row.operator(GTConfig.gt_toggle_pins_idname, icon='UNPINNED')
@@ -565,23 +565,34 @@ class GT_PT_TrackingPanel(AllVisible):
                        icon='KEY_DEHLT')
 
     def _tracking_remove_keys_row(self, settings: Any, layout: Any) -> None:
+        active = settings.pinmode
         row = layout.row(align=True)
-        row.active = settings.pinmode
         part = row.split(factor=0.5, align=True)
         row = part.split(factor=0.5, align=True)
+        row.active = active
         row.operator(GTConfig.gt_clear_tracking_backward_idname,
                      icon='TRACKING_CLEAR_BACKWARDS', text='')
         row.operator(GTConfig.gt_clear_tracking_between_idname, text='| Xk |')
+
         part = part.row(align=True)
         row = part.split(factor=0.5, align=True)
-        row.operator(GTConfig.gt_clear_tracking_forward_idname,
+        btn = row.column(align=True)
+        btn.active = active
+        btn.operator(GTConfig.gt_clear_tracking_forward_idname,
                      icon='TRACKING_CLEAR_FORWARDS', text='')
-        row.operator(GTConfig.gt_clear_all_tracking_idname, text='X')
+
+        btn = row.column(align=True)
+        btn.operator(GTConfig.gt_clear_tracking_menu_exec_idname,
+                     text='', icon='X')
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
         row = layout.row()
         row.active = False
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if geotracker:
+            row.label(text='Camera' if geotracker.camera_mode() else 'Geometry')
         row.operator(
             GTConfig.gt_help_tracking_idname,
             text='', icon='QUESTION')
@@ -795,6 +806,14 @@ class GT_PT_ExportPanel(AllVisible):
     bl_idname = GTConfig.gt_export_panel_idname
     bl_label = 'Export'
     bl_options = {'DEFAULT_CLOSED'}
+
+    def draw_header_preset(self, context: Any) -> None:
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        row.operator(
+            GTConfig.gt_help_export_idname,
+            text='', icon='QUESTION')
 
     def draw(self, context: Any) -> None:
         layout = self.layout

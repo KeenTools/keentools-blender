@@ -69,16 +69,26 @@ class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
-    filter_glob: StringProperty(
-        default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.mp4;*.avi;*.mov;*.mpeg;*.exr',
-        options={'HIDDEN'}
+    filter_folder: BoolProperty(
+        name='Filter folders',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_image: BoolProperty(
+        name='Filter image',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_movie: BoolProperty(
+        name='Filter movie',
+        default=True,
+        options={'HIDDEN'},
     )
 
     files: CollectionProperty(
         name='File Path',
         type=OperatorFileListElement,
     )
-
     directory: StringProperty(
             subtype='DIR_PATH',
     )
@@ -110,9 +120,20 @@ class GT_OT_MaskSequenceFilebrowser(Operator, ImportHelper):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
-    filter_glob: StringProperty(
-        default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.mp4;*.avi;*.mov;*.mpeg;*.exr',
-        options={'HIDDEN'}
+    filter_folder: BoolProperty(
+        name='Filter folders',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_image: BoolProperty(
+        name='Filter image',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_movie: BoolProperty(
+        name='Filter movie',
+        default=True,
+        options={'HIDDEN'},
     )
 
     files: CollectionProperty(
@@ -265,6 +286,8 @@ class GT_OT_SplitVideo(_DirSelectionTemplate):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    convert_current_movieclip: BoolProperty(default=False)
+
     def execute(self, context):
         self.filename_ext = '.png' if self.file_format == 'PNG' else '.jpg'
         _log.output(f'OUTPUT filepath: {self.filepath}')
@@ -279,7 +302,7 @@ class GT_OT_SplitVideo(_DirSelectionTemplate):
                                                   start_frame=self.from_frame,
                                                   end_frame=self.to_frame)
         _log.output(f'OUTPUT PATH2: {output_path}')
-        if output_path is not None:
+        if output_path is not None and self.convert_current_movieclip:
             new_movieclip = _load_movieclip(os.path.dirname(output_path),
                                             [os.path.basename(output_path)])
             _log.output(f'new_movieclip: {new_movieclip}')
