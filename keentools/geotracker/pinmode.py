@@ -463,6 +463,8 @@ class GT_OT_PinMode(Operator):
         if GTLoader.geomobj_mode_changed_to_object():
             _log.output(_log.color('green', 'RETURNED TO OBJECT_MODE'))
             self._change_wireframe_visibility(toggle=False, value=True)
+            GTLoader.load_geotracker()
+            GTLoader.load_pins_into_viewport()
             GTLoader.update_viewport_shaders()
 
         if self._check_camera_state_changed(context.space_data.region_3d) \

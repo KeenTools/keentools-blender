@@ -54,6 +54,8 @@ from ..utils.compositing import (get_compositing_shadow_scene,
 from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_getter,
                                             universal_cached_setter)
+from ..utils.animation import count_fcurve_points
+from ..utils.manipulate import select_object_only
 
 
 _log = KTLogger(__name__)
@@ -159,6 +161,7 @@ def update_movieclip(geotracker, context: Any) -> None:
         fit_time_length(geotracker.movie_clip)
         geotracker.precalc_start = bpy_start_frame()
         geotracker.precalc_end = bpy_end_frame()
+        geotracker.precalcless = True
 
 
 def update_wireframe(self, context: Any) -> None:
@@ -223,6 +226,21 @@ def update_focal_length_mode(geotracker, context: Any) -> None:
             *bpy_render_frame(), camera_sensor_width(geotracker.camobj))
 
 
+def update_lens_mode(geotracker, context: Any=None) -> None:
+    _log.output(f'update_lens_mode: {geotracker.lens_mode}')
+    if geotracker.lens_mode == 'ZOOM':
+        geotracker.focal_length_mode = 'ZOOM_FOCAL_LENGTH'
+    else:
+        if geotracker.focal_length_estimation:
+            geotracker.focal_length_mode = 'STATIC_FOCAL_LENGTH'
+        else:
+            count = count_fcurve_points(geotracker.camobj.data, 'lens')
+            if count > 0:
+                geotracker.focal_length_mode = 'STATIC_FOCAL_LENGTH'
+            else:
+                geotracker.focal_length_mode = 'CAMERA_FOCAL_LENGTH'
+
+
 def update_mask_3d(geotracker, context: Any) -> None:
     GTLoader.update_viewport_wireframe()
     settings = get_gt_settings()
@@ -256,6 +274,20 @@ def update_spring_pins_back(geotracker, context: Any) -> None:
         if settings.pinmode:
             GTLoader.update_viewport_shaders()
             GTLoader.viewport_area_redraw()
+
+
+def update_solve_for_camera(geotracker, context: Any) -> None:
+    settings = get_gt_settings()
+    if not settings.pinmode:
+        return
+    obj = geotracker.animatable_object()
+    if not obj:
+        return
+    select_object_only(obj)
+    second_obj = geotracker.non_animatable_object()
+    if not second_obj:
+        return
+    second_obj.select_set(state=False)
 
 
 def update_smoothing(geotracker, context: Any) -> None:
@@ -302,7 +334,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     solve_for_camera: bpy.props.BoolProperty(
         name='Track for Camera or Geometry',
         description='Which object will be tracked Geometry or Camera',
-        default=False)
+        default=False, update=update_solve_for_camera)
     reduce_pins: bpy.props.BoolProperty(name='Reduce pins', default=False)
     spring_pins_back: bpy.props.BoolProperty(
         name='Spring pins back', default=True,
@@ -311,7 +343,8 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     focal_length_estimation: bpy.props.BoolProperty(
         name='Estimate focal length',
         description='To enable this you need choose STATIC FOCAL as mode',
-        default=False)
+        default=False,
+        update=update_lens_mode)
     track_focal_length: bpy.props.BoolProperty(
         name='Track focal length',
         description='This can be enabled only in ZOOM FOCAL LENGTH as mode',
@@ -343,6 +376,15 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
             'Use zooming focal length in tracking', 2)],
         description='Focal length calculation mode',
         update=update_focal_length_mode)
+
+    lens_mode: bpy.props.EnumProperty(name='Lens',
+        items=[
+            ('FIXED', 'Fixed',
+            'Use the same static focal length in tracking', 0),
+            ('ZOOM', 'Zoom',
+            'Use zooming focal length in tracking', 1)],
+        description='Focal length calculation mode',
+        update=update_lens_mode)
 
     precalcless: bpy.props.BoolProperty(
         name='Precalcless tracking',
@@ -463,6 +505,17 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         if self.camera_mode():
             return self.camobj
         return self.geomobj
+
+    def non_animatable_object(self) -> Optional[Object]:
+        if self.camera_mode():
+            return self.geomobj
+        return self.camobj
+
+    def animatable_object_name(self) -> str:
+        obj = self.camobj if self.camera_mode() else self.geomobj
+        if not obj:
+            return '# Undefined'
+        return obj.name
 
     def secondary_object(self) -> Optional[Object]:
         if not self.camera_mode():

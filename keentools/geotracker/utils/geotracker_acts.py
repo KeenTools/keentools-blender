@@ -68,6 +68,7 @@ from .prechecks import (common_checks,
 from ...utils.compositing import (create_nodes_for_rendering_with_background,
                                   revert_default_compositing)
 from ...utils.images import get_background_image_object
+from ...utils.ui_redraw import total_redraw_ui
 
 
 _log = KTLogger(__name__)
@@ -499,6 +500,17 @@ def refine_all_act() -> ActionStatus:
     bpy_progress_begin(0, 100)
     settings.calculating_mode = 'REFINE'
     result = False
+    vp = GTLoader.viewport()
+    vp.message_to_screen([
+        {'text': 'REFINE ALL operation is performing',
+         'color': (1., 0., 1., 0.85),
+         'size': 24,
+         'y': 60},  # line 1
+        {'text': 'For better performance you can\'t interrupt operation',
+         'color': (1., 1., 1., 0.5),
+         'size': 20,
+         'y': 30}])
+    total_redraw_ui()
     try:
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
         result = gt.refine_all(precalc_path, progress_callback)
@@ -515,6 +527,7 @@ def refine_all_act() -> ActionStatus:
         bpy_progress_end()
         overall_time = time.time() - start_time
         _log.output('Refine calculation time: {:.2f} sec'.format(overall_time))
+        vp.revert_default_screen_message(unregister=False)
 
     GTLoader.save_geotracker()
     GTLoader.update_viewport_shaders()

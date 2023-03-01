@@ -18,6 +18,7 @@
 
 import os
 from typing import Optional, List
+import re
 
 from bpy.types import MovieClip, Operator, OperatorFileListElement
 from bpy.props import (StringProperty,
@@ -68,16 +69,26 @@ class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
-    filter_glob: StringProperty(
-        default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.mp4;*.avi;*.mov;*.mpeg;*.exr',
-        options={'HIDDEN'}
+    filter_folder: BoolProperty(
+        name='Filter folders',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_image: BoolProperty(
+        name='Filter image',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_movie: BoolProperty(
+        name='Filter movie',
+        default=True,
+        options={'HIDDEN'},
     )
 
     files: CollectionProperty(
         name='File Path',
         type=OperatorFileListElement,
     )
-
     directory: StringProperty(
             subtype='DIR_PATH',
     )
@@ -109,9 +120,20 @@ class GT_OT_MaskSequenceFilebrowser(Operator, ImportHelper):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
-    filter_glob: StringProperty(
-        default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.mp4;*.avi;*.mov;*.mpeg;*.exr',
-        options={'HIDDEN'}
+    filter_folder: BoolProperty(
+        name='Filter folders',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_image: BoolProperty(
+        name='Filter image',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_movie: BoolProperty(
+        name='Filter movie',
+        default=True,
+        options={'HIDDEN'},
     )
 
     files: CollectionProperty(
@@ -169,6 +191,12 @@ class GT_OT_ChoosePrecalcFile(Operator, ExportHelper):
         default=GTConfig.default_precalc_filename,
         subtype='FILE_PATH'
     )
+    return_to_dialog: BoolProperty(
+        name='Return to precalc dialog',
+        description='Return to precalc dialog if something went wrong',
+        default=False,
+        options={'HIDDEN'},
+    )
 
     def check(self, context):
         change_ext = False
@@ -210,7 +238,11 @@ class GT_OT_ChoosePrecalcFile(Operator, ExportHelper):
         status, msg, _ = geotracker.reload_precalc()
         if not status:
             _log.error(msg)
-            self.report({'ERROR'}, msg)
+            if not self.return_to_dialog:
+                self.report({'ERROR'}, msg)
+            else:
+                op = get_operator(GTConfig.gt_analyze_call_idname)
+                op('INVOKE_DEFAULT')
 
         _log.output('PRECALC PATH HAS BEEN CHANGED: {}'.format(self.filepath))
         return {'FINISHED'}
@@ -254,6 +286,8 @@ class GT_OT_SplitVideo(_DirSelectionTemplate):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    convert_current_movieclip: BoolProperty(default=False)
+
     def execute(self, context):
         self.filename_ext = '.png' if self.file_format == 'PNG' else '.jpg'
         _log.output(f'OUTPUT filepath: {self.filepath}')
@@ -268,7 +302,7 @@ class GT_OT_SplitVideo(_DirSelectionTemplate):
                                                   start_frame=self.from_frame,
                                                   end_frame=self.to_frame)
         _log.output(f'OUTPUT PATH2: {output_path}')
-        if output_path is not None:
+        if output_path is not None and self.convert_current_movieclip:
             new_movieclip = _load_movieclip(os.path.dirname(output_path),
                                             [os.path.basename(output_path)])
             _log.output(f'new_movieclip: {new_movieclip}')
@@ -461,4 +495,115 @@ class GT_OT_ReprojectTextureSequence(_DirSelectionTemplate):
                               to_frame=self.to_frame,
                               file_format=self.file_format,
                               width=self.width, height=self.height)
+        return {'FINISHED'}
+
+
+class GT_OT_AnalyzeCall(Operator):
+    bl_idname = GTConfig.gt_analyze_call_idname
+    bl_label = 'Analyze'
+    bl_description = 'Call analyze dialog'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def _precalc_range_row(self, layout, geotracker):
+        row = layout.row()
+        row.prop(geotracker, 'precalc_start')
+        row.prop(geotracker, 'precalc_end')
+
+    def _precalc_load_button(self, layout):
+        op = layout.operator(GTConfig.gt_choose_precalc_file_idname,
+                            text='Load new precalc')
+        op.return_to_dialog = True
+
+    def _precalc_file_info(self, layout, geotracker):
+        arr = re.split('\r\n|\n', geotracker.precalc_message)
+        for txt in arr:
+            layout.label(text=txt)
+
+    def _draw_first(self, layout):
+        self._precalc_load_button(layout)
+
+    def _draw_next(self, layout, geotracker):
+        self._precalc_load_button(layout)
+
+        layout.label(text='Precalc file info:')
+
+        block = layout.column(align=True)
+        box = block.box()
+        col = box.column()
+        col.scale_y = Config.text_scale_y
+        col.label(text=geotracker.precalc_path)
+
+        if geotracker.precalc_message != '':
+            self._precalc_file_info(col, geotracker)
+
+        layout.label(text='Create precalc:')
+        self._precalc_range_row(layout, geotracker)
+
+    def draw(self, context):
+        layout = self.layout
+        geotracker = get_current_geotracker_item()
+        if not geotracker:
+            return
+
+        if geotracker.precalc_path == '':
+            return self._draw_first(layout)
+
+        self._draw_next(layout, geotracker)
+
+    def invoke(self, context, event):
+        geotracker = get_current_geotracker_item()
+        if not geotracker:
+            return {'CANCELLED'}
+        if geotracker.precalc_path == '':
+            op = get_operator(GTConfig.gt_choose_precalc_file_idname)
+            op('INVOKE_DEFAULT', return_to_dialog=True)
+            return {'FINISHED'}
+        return context.window_manager.invoke_props_dialog(self)
+
+    def cancel(self, context):
+        _log.output('CANCEL ANALYZE')
+
+    def execute(self, context):
+        _log.output('START ANALYZE')
+        geotracker = get_current_geotracker_item()
+        if not geotracker or geotracker.precalc_path == '':
+            return {'FINISHED'}
+
+        try:
+            status, msg, precalc_info = geotracker.reload_precalc()
+            if status:
+                op = get_operator(GTConfig.gt_confirm_recreate_precalc_idname)
+                op('INVOKE_DEFAULT')
+                return {'FINISHED'}
+
+            op = get_operator(GTConfig.gt_create_precalc_idname)
+            op('EXEC_DEFAULT')
+        except RuntimeError as err:
+            _log.error(f'ANALYZE Exception:\n{str(err)}')
+            self.report({'ERROR'}, str(err))
+        return {'FINISHED'}
+
+
+class GT_OT_ConfirmRecreatePrecalc(Operator):
+    bl_idname = GTConfig.gt_confirm_recreate_precalc_idname
+    bl_label = 'Recreate precalc'
+    bl_description = 'Are you sure?'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def draw(self, context):
+        layout = self.layout
+        info = ['All your previous precalc data will be lost!',
+                'Do you really want to rebuild precalc file?',
+                '(click outside of this window to keep old precalc file)']
+        col = layout.column(align=True)
+        col.scale_y = Config.text_scale_y
+        for txt in info:
+            col.label(text=txt)
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+    def execute(self, context):
+        op = get_operator(GTConfig.gt_create_precalc_idname)
+        op('EXEC_DEFAULT')
         return {'FINISHED'}

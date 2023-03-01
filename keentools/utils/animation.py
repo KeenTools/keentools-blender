@@ -69,6 +69,16 @@ def clear_whole_fcurve(obj: Object, data_path: str, index: int=0,
     return value
 
 
+def count_fcurve_points(obj: Object, data_path: str, index: int=0) -> int:
+    action = get_action(obj)
+    if action is None:
+        return -1
+    fcurve = _get_action_fcurve(action, data_path, index=index)
+    if not fcurve:
+        return -1
+    return len(fcurve.keyframe_points)
+
+
 def remove_fcurve_point(obj: Object, frame: int, data_path: str,
                         index: int=0, remove_empty_curve=True,
                         remove_empty_action=True) -> None:

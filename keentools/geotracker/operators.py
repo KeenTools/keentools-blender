@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from bpy.types import Operator
-from bpy.props import IntProperty
+from bpy.props import IntProperty, FloatProperty
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (get_operator,
@@ -27,7 +27,8 @@ from ..addon_config import (get_operator,
 from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
 from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_background_mode,
-                                bpy_show_addon_preferences)
+                                bpy_show_addon_preferences,
+                                bpy_transform_resize)
 from .utils.geotracker_acts import (create_geotracker_act,
                                     delete_geotracker_act,
                                     add_keyframe_act,
@@ -61,6 +62,9 @@ from .utils.geotracker_acts import (create_geotracker_act,
 from .utils.precalc import precalc_with_runner_act
 from .gtloader import GTLoader
 from .ui_strings import buttons
+from .utils.prechecks import common_checks
+from ..utils.coords import distance_between_objects
+from ..utils.manipulate import select_object_only
 
 
 _log = KTLogger(__name__)
@@ -105,6 +109,14 @@ class GT_OT_CreatePrecalc(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        check_status = common_checks(object_mode=False, is_calculating=True,
+                                     reload_geotracker=False, geotracker=True,
+                                     camera=True, geometry=False,
+                                     movie_clip=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         act_status = precalc_with_runner_act(context)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
@@ -676,6 +688,82 @@ class GT_OT_AddonSetupDefaults(Operator):
         return {'FINISHED'}
 
 
+class GT_OT_PrecalcWindow(Operator):
+    bl_idname = GTConfig.gt_precalc_window_idname
+    bl_label = 'Precalc window label'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def draw(self, context) -> None:
+        layout = self.layout
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+
+        layout.separator()
+        row = layout.row()
+        row.prop(geotracker, 'precalc_start')
+        row.prop(geotracker, 'precalc_end')
+        row.operator(GTConfig.gt_create_precalc_idname,
+                     text='Create precalc')
+        layout.separator()
+        layout.operator(GTConfig.gt_choose_precalc_file_idname,
+                        text='Load / New precalc')
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_popup(self, width=300)
+
+
+class GT_OT_ResizeWindow(Operator):
+    bl_idname = GTConfig.gt_resize_window_idname
+    bl_label = 'Resize object & distance'
+    bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
+
+    value: FloatProperty(default=1.0, precision=4, step=0.03)
+
+    def draw(self, context) -> None:
+        layout = self.layout
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+
+        layout.separator()
+        layout.prop(self, 'value', text='Scale:')
+        dx, dy, dz = geotracker.geomobj.dimensions
+        sx, sy, sz = geotracker.geomobj.scale
+        dist = distance_between_objects(geotracker.camobj, geotracker.geomobj)
+        row = layout.row()
+        col = row.column()
+        col.label(text='Dimensions')
+        col.label(text=f'X: {dx:.4f}')
+        col.label(text=f'Y: {dy:.4f}')
+        col.label(text=f'Z: {dz:.4f}')
+
+        col = row.column()
+        col.label(text='Scale')
+        col.label(text=f'X: {sx:.4f}')
+        col.label(text=f'Y: {sy:.4f}')
+        col.label(text=f'Z: {sz:.4f}')
+
+        col = row.column()
+        col.label(text='Distance:')
+        col.label(text=f'{dist:.4f}')
+
+        layout.separator()
+
+    def execute(self, context):
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+        select_object_only(geotracker.geomobj)
+        bpy_transform_resize(value=(self.value, self.value, self.value),
+                             center_override=geotracker.camobj.location)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        self.value = 1.0
+        return context.window_manager.invoke_props_popup(self, event)
+
+
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_DeleteGeoTracker,
                   GT_OT_CreatePrecalc,
@@ -720,4 +808,6 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_SelectGeotrackerObjects,
                   GT_OT_RenderWithBackground,
                   GT_OT_RevertDefaultRender,
-                  GT_OT_AddonSetupDefaults)
+                  GT_OT_AddonSetupDefaults,
+                  GT_OT_PrecalcWindow,
+                  GT_OT_ResizeWindow)

@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from .menus import *
 from .panels import *
 from .filedialogs import *
 from .helps import *
@@ -30,12 +31,13 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
                        GT_PT_AnalyzePanel,
                        GT_PT_CameraPanel,
                        GT_PT_TrackingPanel,
-                       GT_PT_AnimationPanel,
-                       GT_PT_AppearanceSettingsPanel,
                        GT_PT_MasksPanel,
+                       GT_PT_AnimationPanel,
                        GT_PT_SmoothingPanel,
+                       GT_PT_AppearanceSettingsPanel,
                        GT_PT_TexturePanel,
                        GT_PT_RenderingPanel,
+                       GT_PT_ExportPanel,
                        GT_OT_SequenceFilebrowser,  # file dialogs
                        GT_OT_MaskSequenceFilebrowser,
                        GT_OT_ChoosePrecalcFile,
@@ -43,6 +45,8 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
                        GT_OT_SplitVideoExec,
                        GT_OT_ReprojectTextureSequence,
                        GT_OT_FrameSelector,
+                       GT_OT_AnalyzeCall,
+                       GT_OT_ConfirmRecreatePrecalc,
                        GTHELP_OT_InputsHelp,  # helps
                        GTHELP_OT_MasksHelp,
                        GTHELP_OT_AnalyzeHelp,
@@ -52,4 +56,8 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
                        GTHELP_OT_TextureHelp,
                        GTHELP_OT_AnimationHelp,
                        GTHELP_OT_RenderingHelp,
-                       GTHELP_OT_SmoothingHelp)
+                       GTHELP_OT_ExportHelp,
+                       GTHELP_OT_SmoothingHelp,
+                       GT_MT_ClipMenu,  # menus
+                       GT_MT_ClearAllTrackingMenu,
+                       GT_OT_ClearAllTrackingMenuExec)

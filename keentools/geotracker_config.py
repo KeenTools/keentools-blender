@@ -30,9 +30,6 @@ class GTConfig:
     gt_tab_category = 'GeoTracker'
     gt_global_var_name = prefix + '_settings'
 
-    # Properties
-    viewport_state_prop_name = 'keentools_viewport_state'
-
     # Operators
     gt_create_geotracker_idname = operators + '.create_geotracker'
     gt_delete_geotracker_idname = operators + '.delete_geotracker'
@@ -94,6 +91,18 @@ class GTConfig:
 
     gt_render_with_background_idname = operators + '.render_with_background'
     gt_revert_default_render_idname = operators + '.revert_default_render'
+    gt_analyze_call_idname = operators + '.analyze_call'
+    gt_confirm_recreate_precalc_idname = operators + '.confirm_recreate_precalc'
+
+    # Window ids
+    gt_precalc_window_idname = operators + '.precalc_window'
+    gt_resize_window_idname = operators + '.resize_window'
+
+    # Menu ids
+    gt_clip_menu_idname = _MT + 'clip_menu'
+    gt_clear_tracking_menu_idname = _MT + 'clear_tracking_menu'
+
+    gt_clear_tracking_menu_exec_idname = operators + '.clip_menu_exec'
 
     # Panel ids
     gt_geotrackers_panel_idname = _PT + 'geotrackers_panel'
@@ -106,6 +115,7 @@ class GTConfig:
     gt_animation_panel_idname = _PT + 'animation_panel'
     gt_texture_panel_idname = _PT + 'texture_panel'
     gt_rendering_panel_idname = _PT + 'rendering_panel'
+    gt_export_panel_idname = _PT + 'export_panel'
     gt_smoothing_panel_idname = _PT + 'smoothing_panel'
 
     # Help ids
@@ -118,6 +128,7 @@ class GTConfig:
     gt_help_texture_idname = operators + '.help_texture'
     gt_help_animation_idname = operators + '.help_animation'
     gt_help_rendering_idname = operators + '.help_rendering'
+    gt_help_export_idname = operators + '.help_export'
     gt_help_smoothing_idname = operators + '.help_smoothing'
 
     # Updater panels
@@ -158,7 +169,6 @@ class GTConfig:
     prevent_view_rotation = True
     auto_render_size = True
     auto_time_length = True
-    hide_2d_mask = False
     auto_increase_far_clip_distance = True
 
     gt_rendered_mask_image_name = 'gt_rendered_mask'
