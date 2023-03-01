@@ -169,7 +169,6 @@ class GTConfig:
     prevent_view_rotation = True
     auto_render_size = True
     auto_time_length = True
-    hide_2d_mask = False
     auto_increase_far_clip_distance = True
 
     gt_rendered_mask_image_name = 'gt_rendered_mask'

@@ -353,9 +353,6 @@ class GT_PT_MasksPanel(AllVisible):
         layout = self.layout
         self._mask_3d_block(layout, geotracker)
 
-        if GTConfig.hide_2d_mask:
-            return
-
         row = layout.row(align=True)
         row.prop(geotracker, 'mask_source', expand=True)
 
