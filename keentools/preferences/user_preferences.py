@@ -35,7 +35,7 @@ class UserPreferences:
                            for k in Config.default_user_preferences.keys()}
 
     _cached_dict: Optional[Dict] = None
-    _cache_enabled: bool = False
+    _cache_enabled: bool = True
 
     type_float: str = 'float'
     type_string: str = 'string'
