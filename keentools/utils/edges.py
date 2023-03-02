@@ -144,6 +144,7 @@ class KTEdgeShader2D(KTEdgeShaderBase):
             {'pos': self.vertices, 'color': self.vertices_colors,
              'lineLength': self.edge_lengths}
         )
+        self.increment_batch_counter()
 
     def register_handler(self, context: Any,
                          post_type: str='POST_PIXEL') -> None:

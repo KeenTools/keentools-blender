@@ -153,8 +153,9 @@ def remove_keyframe_act() -> ActionStatus:
 
 
 def next_keyframe_act() -> ActionStatus:
+    settings = get_gt_settings()
     check_status = common_checks(object_mode=False, is_calculating=True,
-                                 reload_geotracker=True,
+                                 reload_geotracker=not settings.pinmode,
                                  geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
@@ -169,8 +170,9 @@ def next_keyframe_act() -> ActionStatus:
 
 
 def prev_keyframe_act() -> ActionStatus:
+    settings = get_gt_settings()
     check_status = common_checks(object_mode=False, is_calculating=True,
-                                 reload_geotracker=True,
+                                 reload_geotracker=not settings.pinmode,
                                  geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
