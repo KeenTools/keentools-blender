@@ -180,9 +180,11 @@ class GTViewport(KTViewport):
         self.points2d().create_batch()
 
         mask = self.mask2d()
-        if mask.image is not None:
+        if mask.image:
             mask.left = image_space_to_region(-0.5, -asp * 0.5, x1, y1, x2, y2)
-            mask.right = image_space_to_region(0.5, asp * 0.5, x1, y1, x2, y2)
+            w, h = mask.image.size[:]
+            mask.right = image_space_to_region(
+                *frame_to_image_space(w, h, rx, ry), x1, y1, x2, y2)
 
     def update_residuals(self, gt: Any, area: Area, keyframe: int) -> None:
         rx, ry = bpy_render_frame()

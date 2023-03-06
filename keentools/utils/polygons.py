@@ -76,23 +76,34 @@ class KTTrisShaderLocal3D(KTShaderBase):
             self.fill_shader, 'TRIS', {'pos': verts},
             indices=indices)
 
-    def draw_callback(self, context: Any) -> None:
-        # Force Stop
+    def draw_checks(self, context: Any) -> bool:
         if self.is_handler_list_empty():
             self.unregister_handler()
-            return
+            return False
 
         if self.fill_shader is None or self.fill_batch is None:
-            return
+            return False
 
         if self.work_area != context.area:
-            return
+            return False
 
+        return True
+
+    def draw_main_bgl(self, context: Any) -> None:
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
         bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
 
+        self.fill_shader.bind()
+        self.fill_shader.uniform_float('color', self.color)
+        self.fill_shader.uniform_vector_float(
+            self.fill_shader.uniform_from_name('modelMatrix'),
+            self.object_world_matrix.ravel(), 16)
+        self.fill_batch.draw(self.fill_shader)
+
+    def draw_main_gpu(self, context: Any) -> None:
+        gpu.state.blend_set('ALPHA')
         self.fill_shader.bind()
         self.fill_shader.uniform_float('color', self.color)
         self.fill_shader.uniform_vector_float(
@@ -123,6 +134,7 @@ class KTRasterMask(KTShaderBase):
         self.left: Tuple[float, float] = (100., 100.)
         self.right: Tuple[float, float] = (400., 200.)
         self.image: Optional[Image] = None
+        self.mask_threshold: float = 0.0
         super().__init__(target_class)
         if not bpy_background_mode():
             self.init_shaders()
@@ -140,21 +152,22 @@ class KTRasterMask(KTShaderBase):
             self.mask_shader, 'TRI_FAN', {'pos': self.vertices,
                                           'texCoord': self.uvs})
 
-    def draw_callback(self, context: Any) -> None:
-        # Force Stop
+    def draw_checks(self, context: Any) -> bool:
         if self.is_handler_list_empty():
             self.unregister_handler()
-            return
+            return False
 
         if self.mask_shader is None or self.mask_batch is None:
-            return
+            return False
 
         if self.work_area != context.area:
-            return
+            return False
 
         if not check_gl_image(self.image):
-            return
+            return False
+        return True
 
+    def draw_main_bgl(self, context: Any) -> None:
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
 
@@ -167,6 +180,7 @@ class KTRasterMask(KTShaderBase):
         shader.uniform_float('right', self.right)
         shader.uniform_float('color', self.color)
         shader.uniform_int('inverted', 1 if self.inverted else 0)
+        shader.uniform_float('maskThreshold', self.mask_threshold)
         shader.uniform_int('image', 0)
         self.mask_batch.draw(shader)
 

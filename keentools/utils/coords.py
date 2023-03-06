@@ -20,6 +20,7 @@ import math
 from typing import Any, Tuple, List, Optional, Set
 
 from bpy.types import Area, Object
+from mathutils import Matrix
 
 from .kt_logging import KTLogger
 from .fake_context import get_fake_context
@@ -285,7 +286,7 @@ def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
         if a2 >= 1.0:
             # Horizontal image in horizontal View
             kx = f
-            ky = f * a1 * a2  # (ry / rx) * (w / h)
+            ky = f * a1 / a2  # (ry / rx) * (w / h)
         else:
             kx = f * a2  # (rx / ry)
             ky = f * a1  # (w / h)
@@ -304,6 +305,40 @@ def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
     y1 = h * 0.5 - ky * h * 0.5 - offset[1]
     y2 = h * 0.5 + ky * h * 0.5 - offset[1]
     return x1, y1, x2, y2
+
+
+def calc_view_camera_parameters(area: Area, x1: int, y1: int,
+                                width: int) -> Tuple[float, Tuple[float, float]]:
+    region = get_area_region(area)
+    w = region.width
+    h = region.height
+    rx, ry = bpy_render_frame()
+    a1 = w / h
+    a2 = rx / ry
+    x2 = x1 + width
+    y2 = width / a2
+    kx = (x2 - x1) / w
+    ky = (y2 - y1) / h
+    if a1 >= 1.0:
+        if a2 >= 1.0:
+            f = kx
+            ky = f * a1 / a2
+        else:
+            f = kx / a2
+            ky = f * a1
+    else:
+        if a2 < 1.0:
+            f = kx * a1 / a2
+            ky = f
+        else:
+            f = kx * a1
+            ky = f / a2
+    z = (math.sqrt(f) - math.sqrt(0.5)) * 100.0
+    offset_x = w * 0.5 - kx * w * 0.5 - x1
+    offset_y = h * 0.5 - ky * h * 0.5 - y1
+    offset = (offset_x / (w * 2 * f),
+              offset_y / (h * 2 * f))
+    return z, offset
 
 
 def point_is_in_area(area: Area, x: float, y: float) -> bool:
@@ -399,27 +434,32 @@ def compensate_view_scale() -> float:
     return image_width / image_height
 
 
-def calc_bpy_camera_mat_relative_to_model(model: Any, gt_model_mat: Any) -> Any:
+def calc_bpy_camera_mat_relative_to_model(geom_matrix_world: Matrix,
+                                          camera_matrix_world: Matrix,
+                                          gt_model_mat: Any) -> Matrix:
     rot_mat2 = xz_to_xy_rotation_matrix_4x4()
-    scale_vec = get_scale_vec_4_from_matrix_world(model.matrix_world)
-    scminv = np.diag(1.0 / scale_vec)
-
+    geom_scale_vec = get_scale_vec_4_from_matrix_world(geom_matrix_world)
+    geom_scale_inv = np.diag(1.0 / geom_scale_vec)
+    sc = camera_matrix_world.to_scale()
     try:
-        mat = np.array(
-            model.matrix_world) @ scminv @ rot_mat2 @ np.linalg.inv(
-            gt_model_mat)
-        return mat.transpose()
+        mat = np.array(geom_matrix_world) @ geom_scale_inv \
+              @ rot_mat2 @ np.linalg.inv(gt_model_mat)
+        t, r, _ = Matrix(mat).decompose()
+        new_mat = Matrix.LocRotScale(t, r, sc)
     except Exception:
-        return np.eye(4)
+        new_mat = Matrix.Identity(4)
+    return new_mat
 
 
-def calc_bpy_model_mat_relative_to_camera(camera: Any, model: Any,
-                                          gt_model_mat: Any) -> Any:
+def calc_bpy_model_mat_relative_to_camera(geom_matrix_world: Matrix,
+                                          camera_matrix_world: Matrix,
+                                          gt_model_mat: Any) -> Matrix:
     rot_mat = xy_to_xz_rotation_matrix_4x4()
-    scale_mat = get_scale_matrix_4x4_from_matrix_world(model.matrix_world)
-    np_mw = np.array(camera.matrix_world) @ (gt_model_mat @
-                                             rot_mat @ scale_mat)
-    return np_mw.transpose()
+    t, r, _ = camera_matrix_world.decompose()
+    camera_mat = Matrix.LocRotScale(t, r, (1, 1, 1))
+    scale_mat = get_scale_matrix_4x4_from_matrix_world(geom_matrix_world)
+    np_mw = np.array(camera_mat) @ gt_model_mat @ rot_mat @ scale_mat
+    return Matrix(np_mw)
 
 
 def camera_projection(camobj: Object, frame: Optional[int]=None,
@@ -496,22 +536,53 @@ def distance_between_objects(obj1: Object, obj2: Object) -> float:
     return np.linalg.norm(ar1[:, 3] - ar2[:, 3], axis=0)
 
 
-def change_far_clip_plane(camobj: Object, geomobj: Object, *, step: float=1.01,
-                          prev_clip_end=1000.0) -> Tuple[bool, float]:
+def change_near_and_far_clip_planes(camobj: Object, geomobj: Object,
+                                    *, step: float=1.01,
+                                    prev_clip_start: float,
+                                    prev_clip_end: float) -> bool:
     if not camobj or not geomobj:
-        return False, prev_clip_end
+        return False
     dist = distance_between_objects(camobj, geomobj)
 
+    changed_flag = False
     clip_end = camobj.data.clip_end
+    clip_start = camobj.data.clip_start
+    new_far_dist = dist * step
+
     if clip_end < dist:
         _log.output(f'OBJECT IS BEYOND THE CAMERA FAR CLIP PLANE:\n '
-                    f'DIST: {dist} OLD CLIP: {clip_end}')
-        camobj.data.clip_end = dist * step
-        return True, camobj.data.clip_end
-
-    if clip_end > prev_clip_end and dist * step < prev_clip_end:
+                    f'DIST: {dist} OLD CLIP_END: {clip_end}')
+        camobj.data.clip_end = new_far_dist
+        changed_flag = True
+    elif clip_end > prev_clip_end > new_far_dist:
         _log.output(f'REVERT THE CAMERA FAR CLIP PLANE:\n '
-                    f'DIST: {dist} OLD CLIP: {clip_end} REVERT: {prev_clip_end}')
+                    f'DIST: {dist} OLD CLIP_END: {clip_end}\n'
+                    f'REVERT: {prev_clip_end}')
         camobj.data.clip_end = prev_clip_end
-        return True, prev_clip_end
-    return False, dist
+        changed_flag = True
+
+    # Magic formula for near clip distance calculation to prevent Z-fighting
+    safe_clip_start = new_far_dist * new_far_dist / 65536
+    if safe_clip_start > clip_start:
+        camobj.data.clip_start = safe_clip_start
+        changed_flag = True
+        clip_start = camobj.data.clip_start
+
+    new_clip_start = dist * 0.5
+    too_close_limit = dist * 0.75
+    if clip_start > too_close_limit:
+        _log.output(f'OBJECT IS TOO CLOSE TO THE CAMERA NEAR CLIP PLANE:\n '
+                    f'DIST: {dist} OLD CLIP_START: {clip_start}')
+        camobj.data.clip_start = new_clip_start \
+            if new_clip_start < prev_clip_start else prev_clip_start
+        changed_flag = True
+        clip_start = camobj.data.clip_start
+
+    if clip_start > prev_clip_start >= safe_clip_start:
+        _log.output(f'REVERT THE CAMERA NEAR CLIP PLANE:\n '
+                    f'DIST: {dist} OLD CLIP_START: {clip_start}\n'
+                    f'REVERT: {prev_clip_start}')
+        camobj.data.clip_start = prev_clip_start
+        changed_flag = True
+
+    return changed_flag

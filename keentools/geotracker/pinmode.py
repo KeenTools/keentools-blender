@@ -31,13 +31,16 @@ from ..utils.coords import (point_is_in_area,
                             point_is_in_service_region,
                             get_image_space_coord,
                             nearest_point,
-                            change_far_clip_plane,
+                            change_near_and_far_clip_planes,
                             get_camera_border)
 
-from ..utils.manipulate import force_undo_push, switch_to_camera
+from ..utils.manipulate import (force_undo_push,
+                                switch_to_camera,
+                                object_is_on_view_layer)
 from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
                            unhide_viewport_ui_elements_from_object)
-from ..utils.images import set_background_image_by_movieclip
+from ..utils.images import (set_background_image_by_movieclip,
+                            set_background_image_mask)
 from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_background_mode,
                                 bpy_is_animation_playing,
@@ -91,6 +94,8 @@ class GT_OT_PinMode(Operator):
 
     geotracker_num: IntProperty(default=-1)
     pinmode_id: StringProperty(default='')
+
+    camera_clip_start: FloatProperty(default=0.1)
     camera_clip_end: FloatProperty(default=1000.0)
 
     _shift_pressed: bool = False
@@ -142,6 +147,7 @@ class GT_OT_PinMode(Operator):
         if not pins.get_add_selection_mode():
             op = get_operator(GTConfig.gt_movepin_idname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
+               camera_clip_start=self.camera_clip_start,
                camera_clip_end=self.camera_clip_end)
             return {'PASS_THROUGH'}
 
@@ -165,16 +171,26 @@ class GT_OT_PinMode(Operator):
 
     def _on_right_mouse_press(self, area: Area, event: Any) -> Set:
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
+
+        if not point_is_in_area(area, mouse_x, mouse_y):
+            _log.output('RIGHT CLICK OUTSIDE OF VIEWPORT AREA')
+            return {'PASS_THROUGH'}
+
+        if point_is_in_service_region(area, mouse_x, mouse_y):
+            _log.output('RIGHT CLICK IN SERVICE REGION OF AREA')
+            return {'PASS_THROUGH'}
+
         vp = GTLoader.viewport()
         vp.update_view_relative_pixel_size(area)
-
         x, y = get_image_space_coord(mouse_x, mouse_y, area)
 
         nearest, dist2 = nearest_point(x, y, vp.pins().arr())
         if nearest >= 0 and dist2 < vp.tolerance_dist2():
             return self._delete_found_pin(nearest, area)
 
+        vp.pins().clear_selected_pins()
         vp.create_batch_2d(area)
+        vp.tag_redraw()
         return {'RUNNING_MODAL'}
 
     def _delete_found_pin(self, nearest: int, area: Area) -> Set:
@@ -209,6 +225,7 @@ class GT_OT_PinMode(Operator):
         vp.update_residuals(gt, area, kid)
         vp.tag_redraw()
 
+        GTLoader.save_geotracker()
         force_undo_push('Delete GeoTracker pin')
         return {'RUNNING_MODAL'}
 
@@ -224,26 +241,31 @@ class GT_OT_PinMode(Operator):
 
         _log.output('GT START SHADERS')
         GTLoader.load_pins_into_viewport()
+
+        settings = get_gt_settings()
+        settings.reload_mask_2d()
+        _calc_adaptive_opacity(area)
+
         vp = GTLoader.viewport()
         vp.create_batch_2d(area)
         _log.output('GT REGISTER SHADER HANDLERS')
-        settings = get_gt_settings()
-
-        _calc_adaptive_opacity(area)
         GTLoader.update_viewport_shaders(area, normals=settings.lit_wireframe)
 
         geotracker = get_current_geotracker_item()
+        self.camera_clip_start = geotracker.camobj.data.clip_start
         self.camera_clip_end = geotracker.camobj.data.clip_end
-        if GTConfig.auto_increase_far_clip_distance:
-            changed, dist = change_far_clip_plane(
-                geotracker.camobj, geotracker.geomobj,
-                prev_clip_end=self.camera_clip_end)
-            if changed:
-                default_txt = deepcopy(vp.texter().get_default_text())
-                default_txt[0]['text'] = f'Camera far clip plane ' \
-                                         f'has been changed to {dist:.1f}'
-                default_txt[0]['color'] = (1.0, 0.0, 1.0, 0.85)
-                GTLoader.viewport().message_to_screen(default_txt)
+        if GTConfig.auto_increase_far_clip_distance and geotracker.camobj and \
+                change_near_and_far_clip_planes(geotracker.camobj, geotracker.geomobj,
+                                                prev_clip_start=self.camera_clip_start,
+                                                prev_clip_end=self.camera_clip_end):
+            near = geotracker.camobj.data.clip_start
+            far = geotracker.camobj.data.clip_end
+            default_txt = deepcopy(vp.texter().get_default_text())
+            default_txt[0]['text'] = f'Camera clip planes ' \
+                                     f'have been changed ' \
+                                     f'to {near:.1f} / {far:.1f}'
+            default_txt[0]['color'] = (1.0, 0.0, 1.0, 0.85)
+            GTLoader.viewport().message_to_screen(default_txt)
 
         if context is not None:
             vp.register_handlers(context)
@@ -268,6 +290,7 @@ class GT_OT_PinMode(Operator):
 
         set_background_image_by_movieclip(geotracker.camobj,
                                           geotracker.movie_clip)
+        set_background_image_mask(geotracker.camobj, geotracker.mask_2d)
 
         GTLoader.place_object_or_camera()
         switch_to_camera(area, geotracker.camobj,
@@ -340,7 +363,8 @@ class GT_OT_PinMode(Operator):
 
         new_geotracker = settings.get_geotracker_item(new_geotracker_num)
 
-        if not new_geotracker.geomobj:
+        if not new_geotracker.geomobj or \
+                not object_is_on_view_layer(new_geotracker.geomobj):
             msg = f'No Geometry object in GeoTracker {new_geotracker_num}'
             _log.error(msg)
             self.report({'INFO'}, msg)

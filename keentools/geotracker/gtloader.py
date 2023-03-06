@@ -21,6 +21,7 @@ import numpy as np
 
 import bpy
 from bpy.types import Area
+from mathutils import Matrix
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType, show_user_preferences
@@ -129,13 +130,19 @@ def unregister_app_handler(app_handlers, handler) -> None:
             app_handlers.remove(handler)
 
 
-def frame_change_post_handler(scene):
-    _log.output('KEYFRAME UPDATED')
-    geotracker = get_current_geotracker_item()
+def frame_change_post_handler(scene) -> None:
+    _log.output(f'KEYFRAME UPDATED: {scene.name}')
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if geotracker is None:
+        _log.output('EARLY EXIT')
+        return
+    if settings.calculating_mode == 'ESTIMATE_FL':
+        return
     geotracker.reset_focal_length_estimation()
     GTLoader.place_object_or_camera()
     GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
-                                     timeline=False)
+                                     timeline=False, mask=True)
 
 
 class GTLoader:
@@ -294,9 +301,9 @@ class GTLoader:
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.geomobj or not geotracker.camobj:
             return
-        mat = calc_bpy_model_mat_relative_to_camera(geotracker.camobj,
-                                                    geotracker.geomobj,
-                                                    gt_model_mat)
+        mat = calc_bpy_model_mat_relative_to_camera(
+                geotracker.geomobj.matrix_world,
+                geotracker.camobj.matrix_world, gt_model_mat)
         geotracker.geomobj.matrix_world = mat
 
     @classmethod
@@ -304,8 +311,10 @@ class GTLoader:
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.geomobj or not geotracker.camobj:
             return
-        mat = calc_bpy_camera_mat_relative_to_model(geotracker.geomobj,
-                                                    gt_model_mat)
+
+        mat = calc_bpy_camera_mat_relative_to_model(
+            geotracker.geomobj.matrix_world,
+            geotracker.camobj.matrix_world, gt_model_mat)
         geotracker.camobj.matrix_world = mat
 
     @classmethod
@@ -465,7 +474,8 @@ class GTLoader:
                                 wireframe: bool=True,
                                 normals: bool=False,
                                 pins_and_residuals: bool=True,
-                                timeline: bool=True) -> None:
+                                timeline: bool=True,
+                                mask: bool=False) -> None:
         if area is None:
             vp = cls.viewport()
             area = vp.get_work_area()
@@ -476,6 +486,10 @@ class GTLoader:
             geotracker = get_current_geotracker_item()
             if geotracker and geotracker.geomobj:
                 wf.set_object_world_matrix(geotracker.geomobj.matrix_world)
+        if mask:
+            geotracker = get_current_geotracker_item()
+            if geotracker.mask_source == 'COMP_MASK':
+                geotracker.update_compositing_mask()
         if wireframe:
             cls.update_viewport_wireframe(normals)
         if pins_and_residuals:

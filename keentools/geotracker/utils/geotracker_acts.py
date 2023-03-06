@@ -19,9 +19,11 @@
 import time
 from typing import Optional, Any, Callable, List
 import numpy as np
+import math
 
 import bpy
 from bpy.types import Object
+from mathutils import Matrix, Euler
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import get_operator, ActionStatus
@@ -47,7 +49,9 @@ from ...utils.bpy_common import (create_empty_object,
                                  update_depsgraph,
                                  reset_unsaved_animation_changes_in_frame,
                                  bpy_background_mode,
-                                 bpy_timer_register)
+                                 bpy_timer_register,
+                                 bpy_scene,
+                                 bpy_render_single_frame)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.timer import RepeatTimer
 from ...utils.coords import xy_to_xz_rotation_matrix_4x4
@@ -61,6 +65,9 @@ from .prechecks import (common_checks,
                         revert_camera,
                         show_warning_dialog,
                         show_unlicensed_warning)
+from ...utils.compositing import (create_nodes_for_rendering_with_background,
+                                  revert_default_compositing)
+from ...utils.images import get_background_image_object
 
 
 _log = KTLogger(__name__)
@@ -285,9 +292,9 @@ class _CommonTimer:
                 total = total_frames if total_frames != 0 else 1
                 settings.user_percent = 100 * finished_frames / total
                 return True
-        except pkt_module().ComputationException as err:
+        except RuntimeError as err:
             msg = f'{self._operation_name} _safe_resume ' \
-                  f'ComputationException.\n{str(err)}'
+                  f'Computation Exception.\n{str(err)}'
             _log.error(msg)
             show_warning_dialog(err)
         except Exception as err:
@@ -736,7 +743,9 @@ def relative_to_camera_act() -> ActionStatus:
     current_frame = bpy_current_frame()
 
     # Default camera position at (0, 0, 0) and +90 deg rotated on X
-    cam_matrix = xy_to_xz_rotation_matrix_4x4()
+    scale = camobj.matrix_world.to_scale()
+    cam_matrix = Matrix.LocRotScale(
+        (0, 0, 0), Euler((math.radians(90), 0, 0), 'XYZ'), scale)
     for frame in matrices:
         bpy_set_current_frame(frame)
         delete_locrot_keyframe(camobj)
@@ -776,7 +785,9 @@ def relative_to_geometry_act() -> ActionStatus:
 
     current_frame = bpy_current_frame()
 
-    geom_matrix = np.eye(4)  # Object at (0, 0, 0)
+    # Object at (0, 0, 0) keeping its scale
+    scale = geomobj.matrix_world.to_scale()
+    geom_matrix = Matrix.LocRotScale((0, 0, 0), Euler((0, 0, 0), 'XYZ'), scale)
     for frame in matrices:
         bpy_set_current_frame(frame)
         delete_locrot_keyframe(geomobj)
@@ -1010,4 +1021,55 @@ def select_geotracker_objects_act(geotracker_num: int) -> ActionStatus:
 
     center_viewport(bpy.context.area)
 
+    return ActionStatus(True, 'ok')
+
+
+def render_with_background_act() -> ActionStatus:
+    check_status = common_checks(object_mode=True, is_calculating=True,
+                                 reload_geotracker=True, geotracker=True,
+                                 camera=True, geometry=True)
+    if not check_status.success:
+        return check_status
+
+    geotracker = get_current_geotracker_item()
+    scene = bpy_scene()
+    scene.use_nodes = True
+    scene.render.film_transparent = True
+
+    bg_img = get_background_image_object(geotracker.camobj)
+    if not bg_img:
+        return ActionStatus(False, 'Camera background is not initialized')
+    img = bg_img.image
+    if not img:
+        return ActionStatus(False, 'Camera background is not initialized2')
+    node_bg_image = create_nodes_for_rendering_with_background(scene)
+    node_bg_image.image = img
+    node_bg_image.frame_duration = scene.frame_end
+
+    bpy.ops.render.view_show('INVOKE_DEFAULT')
+    bpy_render_single_frame(scene)
+    return ActionStatus(True, 'ok')
+
+
+def revert_default_render_act() -> ActionStatus:
+    check_status = common_checks(object_mode=True, is_calculating=True,
+                                 reload_geotracker=True, geotracker=True,
+                                 camera=True, geometry=True)
+    if not check_status.success:
+        return check_status
+
+    geotracker = get_current_geotracker_item()
+    scene = bpy_scene()
+    scene.render.film_transparent = False
+
+    bg_img = get_background_image_object(geotracker.camobj)
+    if not bg_img:
+        return ActionStatus(False, 'Camera background is not initialized')
+    img = bg_img.image
+    if not img:
+        return ActionStatus(False, 'Camera background is not initialized2')
+    if not revert_default_compositing(scene):
+        scene.use_nodes = False
+    bpy.ops.render.view_show('INVOKE_DEFAULT')
+    bpy_render_single_frame(scene)
     return ActionStatus(True, 'ok')

@@ -198,6 +198,10 @@ class KTPREF_OT_UserPreferencesChanger(Operator):
         elif self.action == 'revert_gt_default_mask_2d_colors':
             _reset_user_preferences_parameter_to_default('gt_mask_2d_color')
             _reset_user_preferences_parameter_to_default('gt_mask_2d_opacity')
+            settings = get_gt_settings()
+            prefs = settings.preferences()
+            settings.mask_2d_color = prefs.gt_mask_2d_color
+            settings.mask_2d_opacity = prefs.gt_mask_2d_opacity
             return {'FINISHED'}
         elif self.action == 'revert_gt_default_mask_3d_colors':
             _reset_user_preferences_parameter_to_default('gt_mask_3d_color')

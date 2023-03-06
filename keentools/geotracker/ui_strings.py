@@ -40,8 +40,12 @@ buttons = {
         'Load footage',
         'Both image sequences and movie files are supported'
     ),
+    GTConfig.gt_mask_sequence_filebrowser_idname: Button(
+        'Load mask sequence',
+        'Both image sequences and movie files are supported'
+    ),
     GTConfig.gt_choose_precalc_file_idname: Button(
-        'Set precalc file',
+        'Choose precalc filename',
         'Choose an existing .precalc file or just enter a name for a new one'
     ),
     GTConfig.gt_split_video_to_frames_idname: Button(
@@ -83,11 +87,11 @@ buttons = {
     ),
     GTConfig.gt_prev_keyframe_idname: Button(
         'Prev keyframe',
-        'Move to previous keyframe on timeline',
+        'Move to the previous GeoTracker keyframe on the timeline',
     ),
     GTConfig.gt_next_keyframe_idname: Button(
         'Next keyframe',
-        'Move to next keyframe on timeline'
+        'Move to the next GeoTracker keyframe on the timeline'
     ),
     GTConfig.gt_track_to_start_idname: Button(
         'Track to start',
@@ -106,11 +110,11 @@ buttons = {
         'track prev'
     ),
     GTConfig.gt_add_keyframe_idname: Button(
-        'Add GT keyframe',
+        'Add GeoTracker keyframe',
         'add keyframe'
     ),
     GTConfig.gt_remove_keyframe_idname: Button(
-        'Remove keyframe',
+        'Remove GeoTracker keyframe',
         'remove keyframe'
     ),
     GTConfig.gt_clear_all_tracking_idname: Button(
@@ -233,6 +237,14 @@ buttons = {
         'Remove all focal keyframes',
         'Remove all focal keyframes'
     ),
+    GTConfig.gt_render_with_background_idname: Button(
+        'Render with background',
+        'Enable rendering with background using compositing nodes'
+    ),
+    GTConfig.gt_revert_default_render_idname: Button(
+        'Revert default rendering',
+        'Setup scene rendering settings to match default render view'
+    ),
     GTConfig.gt_interrupt_modal_idname: Button(
         'GeoTracker Interruptor',
         'Interrupt current operation by Esc'
@@ -241,6 +253,10 @@ buttons = {
     GTConfig.gt_help_inputs_idname: Button(
         'Inputs help',
         'Show help information about Inputs panel'
+    ),
+    GTConfig.gt_help_masks_idname: Button(
+        'Masks help',
+        'Show help information about Masks panel'
     ),
     GTConfig.gt_help_analyze_idname: Button(
         'Analyze help',
@@ -266,6 +282,10 @@ buttons = {
         'Animation help',
         'Show help information about Animation panel'
     ),
+    GTConfig.gt_help_rendering_idname: Button(
+        'Rendering help',
+        'Show help information about Rendering panel'
+    ),
 }
 
 
@@ -276,6 +296,10 @@ _help_default_width = 500
 help_texts = {
     GTConfig.gt_help_inputs_idname: HelpText(_help_default_width, [
         'Inputs panel description will be here...',
+        ' '
+    ]),
+    GTConfig.gt_help_masks_idname: HelpText(_help_default_width, [
+        'Masks panel description will be here...',
         ' '
     ]),
     GTConfig.gt_help_analyze_idname: HelpText(_help_default_width, [
@@ -300,6 +324,10 @@ help_texts = {
     ]),
     GTConfig.gt_help_animation_idname: HelpText(_help_default_width, [
         'Animation panel description will be here...',
+        ' '
+    ]),
+    GTConfig.gt_help_rendering_idname: HelpText(_help_default_width, [
+        'Rendering panel description will be here...',
         ' '
     ]),
 }

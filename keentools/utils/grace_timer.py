@@ -57,8 +57,8 @@ class KTGraceTimer(KTTimer):
         if state == 'running':
             self.stop()
             _log.output(f'{self._product} LICENSING IS RUNNING. '
-                        f'TIMER IS SWITCHED OFF')
-            return None
+                        f'TIMER IS DELAYED')
+            return 3600.0  # 60 min * 60 secs
         return self._interval
 
     def start(self) -> None:

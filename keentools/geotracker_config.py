@@ -42,6 +42,7 @@ class GTConfig:
     gt_movepin_idname = operators + '.movepin'
     gt_create_precalc_idname = operators + '.create_precalc'
     gt_sequence_filebrowser_idname = operators + '.sequence_filebrowser'
+    gt_mask_sequence_filebrowser_idname = operators + '.mask_sequence_filebrowser'
     gt_choose_precalc_file_idname = operators + '.choose_precalc_file'
     gt_split_video_to_frames_idname = operators + '.split_video_to_frames'
     gt_split_video_to_frames_exec_idname = operators + '.split_video_to_frames_exec'
@@ -91,24 +92,31 @@ class GTConfig:
     gt_user_preferences_get_colors = operators + '.user_pref_get_colors'
     gt_user_preferences_reset_all = operators + '.user_pref_reset_all'
 
+    gt_render_with_background_idname = operators + '.render_with_background'
+    gt_revert_default_render_idname = operators + '.revert_default_render'
+
     # Panel ids
     gt_geotrackers_panel_idname = _PT + 'geotrackers_panel'
     gt_input_panel_idname = _PT + 'input_panel'
+    gt_masks_panel_idname = _PT + 'masks_panel'
     gt_analyze_panel_idname = _PT + 'analyze_panel'
     gt_camera_panel_idname = _PT + 'camera_panel'
     gt_tracking_panel_idname = _PT + 'tracking_panel'
     gt_appearance_panel_idname = _PT + 'appearance_panel'
     gt_animation_panel_idname = _PT + 'animation_panel'
     gt_texture_panel_idname = _PT + 'texture_panel'
+    gt_rendering_panel_idname = _PT + 'rendering_panel_idname'
 
     # Help ids
     gt_help_inputs_idname = operators + '.help_inputs'
+    gt_help_masks_idname = operators + '.help_masks'
     gt_help_analyze_idname = operators + '.help_analyze'
     gt_help_camera_idname = operators + '.help_camera'
     gt_help_tracking_idname = operators + '.help_tracking'
     gt_help_appearance_idname = operators + '.help_appearance'
     gt_help_texture_idname = operators + '.help_texture'
     gt_help_animation_idname = operators + '.help_animation'
+    gt_help_rendering_idname = operators + '.help_rendering'
 
     # Updater panels
     gt_update_panel_idname = _PT + 'update_panel'
@@ -150,6 +158,9 @@ class GTConfig:
     auto_time_length = True
     hide_2d_mask = False
     auto_increase_far_clip_distance = True
+
+    gt_rendered_mask_image_name = 'gt_rendered_mask'
+    gt_shadow_compositing_scene_name = 'gt_shadow_compositing_scene'
 
 
 def get_gt_settings():

@@ -20,7 +20,7 @@ import numpy as np
 from typing import Any, Tuple, List, Dict, Optional
 
 from ..utils.kt_logging import KTLogger
-from ..geotracker_config import get_current_geotracker_item
+from ..geotracker_config import get_gt_settings, get_current_geotracker_item
 from ..utils.coords import (focal_mm_to_px,
                             focal_px_to_mm,
                             camera_sensor_width,
@@ -38,9 +38,12 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_render_frame)
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..geotracker.gtloader import GTLoader
-from ..utils.images import np_array_from_background_image
+from ..utils.images import (np_array_from_background_image,
+                            np_threshold_image,
+                            np_array_from_bpy_image)
 from ..utils.ui_redraw import total_redraw_ui
 from ..utils.mesh_builder import build_geo
+from ..utils.materials import find_bpy_image_by_name
 
 
 _log = KTLogger(__name__)
@@ -63,7 +66,8 @@ class GTCameraInput(pkt_module().TrackerCameraInputI):
 
 class GTGeoInput(pkt_module().GeoInputI):
     def geo_hash(self) -> Any:
-        return pkt_module().Hash(bpy_current_frame())
+        settings = get_gt_settings()
+        return pkt_module().Hash(abs(hash(settings.pinmode_id)))
 
     def geo(self) -> Any:
         geotracker = get_current_geotracker_item()
@@ -116,7 +120,60 @@ class GTImageInput(pkt_module().ImageInputI):
 
 
 class GTMask2DInput(pkt_module().Mask2DInputI):
+    def load_image_2d_mask_at(self, frame: int) -> Any:
+        geotracker = get_current_geotracker_item()
+        if not geotracker or geotracker.mask_2d == '':
+            return None
+        bpy_img = find_bpy_image_by_name(geotracker.mask_2d)
+        if bpy_img is None:
+            return None
+
+        current_frame = bpy_current_frame()
+        if current_frame != frame:
+            _log.output(f'FORCE CHANGE FRAME TO: {frame}')
+            bpy_set_current_frame(frame)
+
+        total_redraw_ui()
+        np_img = np_array_from_background_image(geotracker.camobj, index=1)
+
+        if current_frame != frame:
+            _log.output(f'REVERT FRAME TO: {frame}')
+            bpy_set_current_frame(current_frame)
+
+        if np_img is None:
+            _log.output('NO MASK IMAGE')
+            return None
+
+        rw, rh = bpy_render_frame()
+        if np_img.shape[0] != rh and np_img.shape[1] != rw:
+            _log.error(f'MASK HAS DIFFERENT SIZE: {np_img.shape} RW: {rw} RH: {rh}')
+
+        _log.output(f'MASK INPUT HAS BEEN CALCULATED AT FRAME: {frame}')
+        grayscale = np_threshold_image(np_img, geotracker.mask_2d_threshold)
+        _log.output(f'MASK SIZE: {grayscale.shape}')
+        return pkt_module().LoadedMask(grayscale, geotracker.mask_2d_inverted)
+
+    def load_compositing_2d_mask_at(self, frame: int) -> Any:
+        geotracker = get_current_geotracker_item()
+        if not geotracker or geotracker.compositing_mask == '':
+            return None
+        mask_image = geotracker.update_compositing_mask(frame=frame)
+        np_img = np_array_from_bpy_image(mask_image)
+        if np_img is None:
+            _log.output('NO COMP MASK IMAGE')
+            return None
+        grayscale = np_threshold_image(np_img,
+                                       geotracker.compositing_mask_threshold)
+        _log.output(f'COMP MASK INPUT HAS BEEN CALCULATED AT FRAME: {frame}')
+        return pkt_module().LoadedMask(grayscale,
+                                       geotracker.compositing_mask_inverted)
+
     def load_2d_mask_at(self, frame: int) -> Any:
+        geotracker = get_current_geotracker_item()
+        if geotracker.mask_source == 'MASK_2D':
+            return self.load_image_2d_mask_at(frame)
+        elif geotracker.mask_source == 'COMP_MASK':
+            return self.load_compositing_2d_mask_at(frame)
         return None
 
 
@@ -191,15 +248,16 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
             bpy_set_current_frame(frame)
 
         if geotracker.camera_mode():
-            mat = calc_bpy_camera_mat_relative_to_model(geotracker.geomobj,
-                                                        model_mat)
-            _log.output(f'set_model_mat2')
+            mat = calc_bpy_camera_mat_relative_to_model(
+                geotracker.geomobj.matrix_world,
+                geotracker.camobj.matrix_world, model_mat)
+            _log.output(f'set_model_mat_at2')
             geotracker.camobj.matrix_world = mat
         else:
-            mat = calc_bpy_model_mat_relative_to_camera(geotracker.camobj,
-                                                        geotracker.geomobj,
-                                                        model_mat)
-            _log.output(f'set_model_mat3')
+            mat = calc_bpy_model_mat_relative_to_camera(
+                geotracker.geomobj.matrix_world,
+                geotracker.camobj.matrix_world, model_mat)
+            _log.output(f'set_model_mat_at3')
             geotracker.geomobj.matrix_world = mat
 
         gt = GTLoader.kt_geotracker()

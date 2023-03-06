@@ -21,7 +21,7 @@ from .filedialogs import *
 from .helps import *
 
 
-CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,
+CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
                        GT_PT_UpdatePanel,
                        GT_PT_DownloadNotification,
                        GT_PT_DownloadingProblemPanel,
@@ -30,19 +30,24 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,
                        GT_PT_AnalyzePanel,
                        GT_PT_CameraPanel,
                        GT_PT_TrackingPanel,
-                       GT_PT_AppearanceSettingsPanel,
-                       GT_PT_TexturePanel,
                        GT_PT_AnimationPanel,
+                       GT_PT_AppearanceSettingsPanel,
+                       GT_PT_MasksPanel,
+                       GT_PT_TexturePanel,
+                       GT_PT_RenderingPanel,
                        GT_OT_SequenceFilebrowser,  # file dialogs
+                       GT_OT_MaskSequenceFilebrowser,
                        GT_OT_ChoosePrecalcFile,
                        GT_OT_SplitVideo,
                        GT_OT_SplitVideoExec,
                        GT_OT_ReprojectTextureSequence,
                        GT_OT_FrameSelector,
                        GTHELP_OT_InputsHelp,  # helps
+                       GTHELP_OT_MasksHelp,
                        GTHELP_OT_AnalyzeHelp,
                        GTHELP_OT_CameraHelp,
                        GTHELP_OT_TrackingHelp,
                        GTHELP_OT_AppearanceHelp,
                        GTHELP_OT_TextureHelp,
-                       GTHELP_OT_AnimationHelp)
+                       GTHELP_OT_AnimationHelp,
+                       GTHELP_OT_RenderingHelp)

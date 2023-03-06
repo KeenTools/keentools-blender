@@ -21,7 +21,8 @@ from typing import Optional, Tuple, Any, List
 from contextlib import contextmanager
 
 import bpy
-from bpy.types import Object, CameraBackgroundImage, Area
+from bpy.types import Object, CameraBackgroundImage, Area, Image, Mask
+from mathutils import Matrix
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_addon_preferences
@@ -43,7 +44,13 @@ from ..utils.video import fit_render_size, fit_time_length
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_start_frame,
                                 bpy_end_frame,
-                                bpy_current_frame)
+                                bpy_current_frame,
+                                bpy_render_single_frame)
+from ..utils.compositing import (get_compositing_shadow_scene,
+                                 create_mask_compositing_node_tree,
+                                 get_mask_by_name,
+                                 viewer_node_to_image,
+                                 get_rendered_mask_bpy_image)
 from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_getter,
                                             universal_cached_setter)
@@ -228,6 +235,16 @@ def update_mask_2d(geotracker, context: Any) -> None:
     settings = get_gt_settings()
     settings.reload_current_geotracker()
     settings.reload_mask_2d()
+    vp = GTLoader.viewport()
+    if vp.is_working():
+        vp.create_batch_2d(context.area)
+
+
+def update_mask_source(geotracker, context: Any) -> None:
+    if geotracker.mask_source == 'COMP_MASK':
+        _log.output('switch to COMP_MASK')
+        geotracker.update_compositing_mask(recreate_nodes=True)
+    update_mask_2d(geotracker, context)
 
 
 def update_spring_pins_back(geotracker, context: Any) -> None:
@@ -343,6 +360,58 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         description='Invert Mask 2D area',
         default=False,
         update=update_mask_2d)
+    mask_2d_threshold: bpy.props.FloatProperty(
+        default=0.002, soft_min=0.0, soft_max=1.0, min=-0.1, max=1.1,
+        precision=4,
+        name='2d mask threshold',
+        description='Cutout threshold',
+        update=update_mask_2d)
+    mask_2d_info: bpy.props.StringProperty(
+        default='',
+        name='2d mask info',
+        description='About 2d mask')
+    compositing_mask: bpy.props.StringProperty(
+        default='',
+        name='Compositing 2D mask',
+        description='Compositing 2D mask for tracking',
+        update=update_mask_source)
+    compositing_mask_inverted: bpy.props.BoolProperty(
+        name='Invert Compositing Mask 2D',
+        description='Invert Compositing Mask',
+        default=False,
+        update=update_mask_source)
+    compositing_mask_threshold: bpy.props.FloatProperty(
+        default=0.5, soft_min=0.0, soft_max=1.0, min=-0.1, max=1.1,
+        precision=4,
+        name='Compositing mask threshold',
+        description='Compositing mask cutout threshold',
+        update=update_mask_source)
+    mask_source: bpy.props.EnumProperty(name='2D mask source',
+        items=[
+            ('NONE', 'No mask', 'Don\'t use mask', 0),
+            ('MASK_2D', '2D image', 'Use 2D mask image', 1),
+            ('COMP_MASK', 'Compositing', 'Use compositing mask', 2)],
+        description='2D mask source',
+        update=update_mask_source)
+
+    def update_compositing_mask(self, *, frame: Optional[int]=None,
+                                recreate_nodes: bool=False) -> Image:
+        _log.output(f'update_compositing_mask enter. '
+                    f'recreate_nodes={recreate_nodes}')
+        shadow_scene = get_compositing_shadow_scene(
+            GTConfig.gt_shadow_compositing_scene_name)
+        if recreate_nodes:
+            create_mask_compositing_node_tree(shadow_scene,
+                                              self.compositing_mask,
+                                              clear_nodes=True)
+        frame_at = frame if frame is not None else bpy_current_frame()
+        if recreate_nodes or self.compositing_mask != '':
+            bpy_render_single_frame(shadow_scene, frame_at)
+        mask_image = get_rendered_mask_bpy_image(
+            GTConfig.gt_rendered_mask_image_name)
+        viewer_node_to_image(mask_image)
+        _log.output('update_compositing_mask exit')
+        return mask_image
 
     def get_serial_str(self) -> str:
         return self.serial_str
@@ -387,11 +456,13 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
         rot_mat = xz_to_xy_rotation_matrix_4x4()
 
-        cam_mat = self.camobj.matrix_world
+        t, r, s = self.camobj.matrix_world.decompose()
+        cam_mat = Matrix.LocRotScale(t, r, (1, 1, 1))
+
         geom_mw = self.geomobj.matrix_world
-        scale_vec = get_scale_vec_4_from_matrix_world(geom_mw)
-        scminv = np.diag(1.0 / scale_vec)
-        geom_mat = np.array(geom_mw, dtype=np.float32) @ scminv
+        geom_scale_vec = get_scale_vec_4_from_matrix_world(geom_mw)
+        geom_scale_inv = np.diag(1.0 / geom_scale_vec)
+        geom_mat = np.array(geom_mw, dtype=np.float32) @ geom_scale_inv
 
         nm = np.array(cam_mat.inverted_safe(),
                       dtype=np.float32) @ geom_mat @ rot_mat
@@ -485,6 +556,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         ('TRACKING', 'TRACKING', 'Tracking is calculating', 2),
         ('REFINE', 'REFINE', 'Refine is calculating', 3),
         ('REPROJECT', 'REPROJECT', 'Reproject is calculating', 4),
+        ('ESTIMATE_FL', 'ESTIMATE_FL', 'Focal length estimation is calculating', 5)
     ])
 
     selection_mode: bpy.props.BoolProperty(name='Selection mode',
@@ -590,8 +662,29 @@ class GTSceneSettings(bpy.types.PropertyGroup):
             return
         vp = GTLoader.viewport()
         mask = vp.mask2d()
-        mask.image = find_bpy_image_by_name(geotracker.mask_2d)
-        mask.inverted = geotracker.mask_2d_inverted
+        if geotracker.mask_source == 'MASK_2D':
+            _log.output(f'RELOAD 2D MASK: {geotracker.mask_2d}')
+            mask.image = find_bpy_image_by_name(geotracker.mask_2d)
+            mask.inverted = geotracker.mask_2d_inverted
+            mask.mask_threshold = geotracker.mask_2d_threshold
+        elif geotracker.mask_source == 'COMP_MASK':
+            mask_image = geotracker.update_compositing_mask()
+            _log.output('RELOAD 2D COMP_MASK')
+            mask.image = mask_image
+            mask.inverted = geotracker.compositing_mask_inverted
+            mask.mask_threshold = geotracker.compositing_mask_threshold
+        else:
+            mask.image = None
+
+        if mask.image:
+            rw, rh = bpy_render_frame()
+            size = mask.image.size[:]
+            if rw == size[0] or rh == size[1]:
+                geotracker.mask_2d_info = ''
+            else:
+                geotracker.mask_2d_info = f'Wrong size: {size[0]} x {size[1]} px'
+        else:
+            geotracker.mask_2d_info = ''
 
     def add_geotracker_item(self) -> int:
         self.fix_geotrackers()
