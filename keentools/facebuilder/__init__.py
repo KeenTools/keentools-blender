@@ -196,11 +196,14 @@ def facebuilder_unregister():
 
     bpy.types.VIEW3D_MT_mesh_add.remove(menu_func)
     _log.output('FACEBUILDER ADD MESH MENU UNREGISTERED')
-    if check_addon_settings_var_type() == FBSceneSettings:
-        remove_addon_settings_var()
-        _log.output('MAIN FACEBUILDER VARIABLE UNREGISTERED')
-    else:
-        _log.error('CANNOT UNREGISTER MAIN FB VAR')
+    try:
+        if check_addon_settings_var_type() == FBSceneSettings:
+            remove_addon_settings_var()
+            _log.output('MAIN FACEBUILDER VARIABLE UNREGISTERED')
+        else:
+            _log.error('CANNOT UNREGISTER MAIN FB VAR')
+    except Exception as err:
+        _log.error(f'FACEBUILDER UNREGISTER VARIABLE ERROR:\n{str(err)}')
 
     FBIcons.unregister()
     _log.output('FACEBUILDER ICONS UNREGISTERED')
