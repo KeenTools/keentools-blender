@@ -461,16 +461,16 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
             return self.geomobj
         return self.camobj
 
+    def object_pair(self) -> Tuple[Object, Object]:
+        if self.camera_mode():
+            return self.camobj, self.geomobj
+        return self.geomobj, self.camobj
+
     def animatable_object_name(self) -> str:
-        obj = self.camobj if self.camera_mode() else self.geomobj
+        obj = self.animatable_object()
         if not obj:
             return '# Undefined'
         return obj.name
-
-    def secondary_object(self) -> Optional[Object]:
-        if not self.camera_mode():
-            return self.camobj
-        return self.geomobj
 
     def get_background_image_object(self) -> Optional[CameraBackgroundImage]:
         return get_background_image_object(self.camobj)

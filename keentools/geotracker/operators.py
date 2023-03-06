@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from bpy.types import Operator
-from bpy.props import IntProperty, FloatProperty
+from bpy.props import BoolProperty, IntProperty, FloatProperty, FloatVectorProperty
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (get_operator,
@@ -715,12 +715,63 @@ class GT_OT_PrecalcWindow(Operator):
         return context.window_manager.invoke_popup(self, width=300)
 
 
+def _revert_objects(self):
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker.geomobj or not geotracker.camobj:
+        return False
+    geomobj = geotracker.geomobj
+    camobj = geotracker.camobj
+    obj, origin = geotracker.object_pair()
+    obj.location = self.location
+    obj.rotation_euler = self.rotation_euler
+    camobj.scale = self.cam_scale
+    geomobj.scale = self.geom_scale
+    return True
+
+
+def _scale_object(self, context):
+    if not _revert_objects(self):
+        return
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    geomobj = geotracker.geomobj
+    camobj = geotracker.camobj
+    cammode = geotracker.camera_mode()
+    if not geomobj or not camobj:
+        return
+
+    obj, origin = geotracker.object_pair()
+    select_object_only(obj)
+    bpy_transform_resize(value=(self.value, self.value, self.value),
+                         center_override=origin.location)
+    if cammode:
+        geomobj.scale = (self.geom_scale[0] * self.value,
+                         self.geom_scale[1] * self.value,
+                         self.geom_scale[2] * self.value)
+
+    if self.keep_cam_scale:
+        geotracker.camobj.scale = self.cam_scale
+
+    if not cammode and not self.keep_cam_scale:
+        camobj.scale = (self.cam_scale[0] * self.value,
+                        self.cam_scale[1] * self.value,
+                        self.cam_scale[2] * self.value)
+
+
 class GT_OT_ResizeWindow(Operator):
     bl_idname = GTConfig.gt_resize_window_idname
     bl_label = 'Resize object & distance'
     bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
 
-    value: FloatProperty(default=1.0, precision=4, step=0.03)
+    value: FloatProperty(default=1.0, precision=4, step=0.03,
+                         update=_scale_object)
+    location: FloatVectorProperty(default=(0, 0, 0))
+    rotation_euler: FloatVectorProperty(default=(0, 0, 0))
+    geom_scale: FloatVectorProperty(default=(1, 1, 1))
+    cam_scale:  FloatVectorProperty(default=(1, 1, 1))
+    keep_cam_scale: BoolProperty(default=True, name='Keep camera scale',
+                                 update=_scale_object)
 
     def draw(self, context) -> None:
         layout = self.layout
@@ -729,6 +780,7 @@ class GT_OT_ResizeWindow(Operator):
 
         layout.separator()
         layout.prop(self, 'value', text='Scale:')
+        layout.prop(self, 'keep_cam_scale')
         dx, dy, dz = geotracker.geomobj.dimensions
         sx, sy, sz = geotracker.geomobj.scale
         dist = distance_between_objects(geotracker.camobj, geotracker.geomobj)
@@ -752,16 +804,26 @@ class GT_OT_ResizeWindow(Operator):
         layout.separator()
 
     def execute(self, context):
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
-        select_object_only(geotracker.geomobj)
-        bpy_transform_resize(value=(self.value, self.value, self.value),
-                             center_override=geotracker.camobj.location)
+        _scale_object(self, context)
         return {'FINISHED'}
 
+    def cancel(self, context):
+        _revert_objects(self)
+        return {'CANCELLED'}
+
     def invoke(self, context, event):
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if not geotracker.geomobj or not geotracker.camobj:
+            return {'CANCELLED'}
+        obj = geotracker.animatable_object()
+        self.location = obj.location
+        self.rotation_euler = obj.rotation_euler
+
+        self.geom_scale = geotracker.geomobj.scale
+        self.cam_scale = geotracker.camobj.scale
         self.value = 1.0
-        return context.window_manager.invoke_props_popup(self, event)
+        return context.window_manager.invoke_props_dialog(self, width=400)
 
 
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
