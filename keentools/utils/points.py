@@ -210,6 +210,7 @@ class KTPoints2D(KTShaderPoints):
             self.shader, 'POINTS',
             {'pos': self.vertices, 'color': self.vertices_colors},
             indices=None)
+        self.increment_batch_counter()
 
     def register_handler(self, context: Any,
                          post_type: str='POST_PIXEL') -> None:
@@ -230,6 +231,7 @@ class KTPoints3D(KTShaderPoints):
             self.shader, 'POINTS',
             {'pos': self.vertices, 'color': self.vertices_colors},
             indices=None)
+        self.increment_batch_counter()
 
     def __init__(self, target_class: Any):
         super().__init__(target_class)

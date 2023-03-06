@@ -54,8 +54,10 @@ from .ui_strings import buttons
 _log = KTLogger(__name__)
 
 
-def _calc_adaptive_opacity(area):
+def _calc_adaptive_opacity(area: Area) -> None:
     settings = get_gt_settings()
+    if not settings.use_adaptive_opacity:
+        return
     rx, ry = bpy_render_frame()
     x1, y1, x2, y2 = get_camera_border(area)
     settings.adaptive_opacity = (x2 - x1) / rx
@@ -239,10 +241,13 @@ class GT_OT_PinMode(Operator):
             _log.output('NEW KT_GEOTRACKER')
             GTLoader.new_kt_geotracker()
 
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+        geotracker.check_pins_on_geometry(GTLoader.kt_geotracker())
+
         _log.output('GT START SHADERS')
         GTLoader.load_pins_into_viewport()
 
-        settings = get_gt_settings()
         settings.reload_mask_2d()
         _calc_adaptive_opacity(area)
 
@@ -251,7 +256,6 @@ class GT_OT_PinMode(Operator):
         _log.output('GT REGISTER SHADER HANDLERS')
         GTLoader.update_viewport_shaders(area, normals=settings.lit_wireframe)
 
-        geotracker = get_current_geotracker_item()
         self.camera_clip_start = geotracker.camobj.data.clip_start
         self.camera_clip_end = geotracker.camobj.data.clip_end
         if GTConfig.auto_increase_far_clip_distance and geotracker.camobj and \
@@ -469,13 +473,15 @@ class GT_OT_PinMode(Operator):
 
         if self._check_camera_state_changed(context.space_data.region_3d) \
                 or self._check_area_state_changed(GTLoader.get_work_area()):
-            _log.output('FORCE TAG REDRAW BY VIEWPORT ZOOM/OFFSET')
+            _log.output('VIEWPORT ZOOM/OFFSET')
 
             _calc_adaptive_opacity(context.area)
             vp.create_batch_2d(context.area)
             vp.update_residuals(GTLoader.kt_geotracker(), context.area,
                                 bpy_current_frame())
-            vp.tag_redraw()
+            if vp.needs_to_be_drawn():
+                _log.output('TAG REDRAW')
+                vp.tag_redraw()
 
         if event.type == 'TIMER' and GTLoader.get_stored_geomobj_mode() == 'EDIT':
             _log.output('TIMER IN EDIT_MODE')

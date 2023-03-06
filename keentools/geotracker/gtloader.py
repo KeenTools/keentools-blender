@@ -56,8 +56,7 @@ def force_stop_gt_shaders() -> None:
 
 def depsgraph_update_handler(scene, depsgraph):
     def _check_updated(depsgraph, name):
-        _log.output('COUNT UPDATES: {}'.format(len(depsgraph.updates)))
-        _log.output('ids: {}'.format([update.id.name for update in depsgraph.updates]))
+        _log.output('DEPSGRAPH UPDATES: {}'.format(len(depsgraph.updates)))
         for update in depsgraph.updates:
             if update.id.name != name:
                 continue
@@ -87,10 +86,10 @@ def depsgraph_update_handler(scene, depsgraph):
     camobj = geotracker.camobj
 
     if geomobj and _check_updated(depsgraph, geomobj.name):
-        GTLoader.update_viewport_shaders()
+        GTLoader.update_viewport_shaders(wireframe=False)
         return
     if camobj and _check_updated(depsgraph, camobj.name):
-        GTLoader.update_viewport_shaders()
+        GTLoader.update_viewport_shaders(wireframe=False)
 
 
 def undo_redo_handler(scene):
@@ -133,14 +132,14 @@ def unregister_app_handler(app_handlers, handler) -> None:
 def frame_change_post_handler(scene) -> None:
     _log.output(f'KEYFRAME UPDATED: {scene.name}')
     settings = get_gt_settings()
+    if settings.calculating_mode == 'ESTIMATE_FL':
+        return
     geotracker = settings.get_current_geotracker_item()
     if geotracker is None:
         _log.output('EARLY EXIT')
         return
-    if settings.calculating_mode == 'ESTIMATE_FL':
-        return
-    geotracker.reset_focal_length_estimation()
-    GTLoader.place_object_or_camera()
+    if geotracker.focal_length_estimation:
+        geotracker.reset_focal_length_estimation()
     GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
                                      timeline=False, mask=True)
 

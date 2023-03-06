@@ -269,3 +269,7 @@ class GTViewport(KTViewport):
         self.wireframer().unhide_shader()
         self.timeliner().unhide_shader()
         self.selector().unhide_shader()
+
+    def needs_to_be_drawn(self):
+        return self.points2d().needs_to_be_drawn() or \
+               self.residuals().needs_to_be_drawn()

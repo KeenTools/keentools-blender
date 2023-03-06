@@ -318,12 +318,12 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
 
         self.simple_line_batch = batch_for_shader(
             self.simple_line_shader, 'LINES',
-            {'pos': self.edges_vertices},
+            {'pos': self.edge_vertices},
         )
 
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
-            {'pos': self.edges_vertices, 'texCoord': self.edge_uvs}
+            {'pos': self.edge_vertices, 'texCoord': self.edge_uvs}
         )
 
     def init_shaders(self) -> None:
@@ -394,4 +394,4 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         self.update_edge_vertices()
 
     def update_edge_vertices(self) -> None:
-        self.edges_vertices = self.vertices[self.edge_indices.ravel()]
+        self.edge_vertices = self.vertices[self.edge_indices.ravel()]

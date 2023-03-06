@@ -67,7 +67,11 @@ class GTCameraInput(pkt_module().TrackerCameraInputI):
 class GTGeoInput(pkt_module().GeoInputI):
     def geo_hash(self) -> Any:
         settings = get_gt_settings()
-        return pkt_module().Hash(abs(hash(settings.pinmode_id)))
+        geotracker = settings.get_current_geotracker_item()
+        vert_count = len(geotracker.geomobj.data.vertices) \
+            if geotracker and geotracker.geomobj else 0
+        val = abs(hash(settings.pinmode_id) + vert_count)
+        return pkt_module().Hash(val)
 
     def geo(self) -> Any:
         geotracker = get_current_geotracker_item()

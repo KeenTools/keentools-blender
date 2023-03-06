@@ -53,16 +53,15 @@ class KTEdgeShaderBase(KTShaderBase):
     def __init__(self, target_class: Any=SpaceView3D):
         super().__init__(target_class)
         self.fill_shader: Optional[Any] = None
-        self.line_shader: Optional[Any] = None
         self.fill_batch: Optional[Any] = None
+        self.line_shader: Optional[Any] = None
         self.line_batch: Optional[Any] = None
         # Triangle vertices & indices
         self.vertices: List = []
         self.triangle_indices: List = []
         # Edge vertices
-        self.edges_vertices: List = []
-        self.edges_indices: List = []
-        self.edges_colors: List = []
+        self.edge_vertices: List = []
+        self.edge_colors: List = []
         self.vertices_colors: List = []
 
         self.backface_culling: bool = False
@@ -74,7 +73,7 @@ class KTEdgeShaderBase(KTShaderBase):
             self.init_shaders()
 
     def init_color_data(self, color: Tuple[float, float, float, float]):
-        self.edges_colors = [color] * len(self.edges_vertices)
+        self.edge_colors = [color] * len(self.edge_vertices)
 
     def set_vertices_colors(self, verts: List, colors: List) -> None:
         self.vertices = verts
@@ -144,6 +143,7 @@ class KTEdgeShader2D(KTEdgeShaderBase):
             {'pos': self.vertices, 'color': self.vertices_colors,
              'lineLength': self.edge_lengths}
         )
+        self.increment_batch_counter()
 
     def register_handler(self, context: Any,
                          post_type: str='POST_PIXEL') -> None:
@@ -395,7 +395,7 @@ class KTEdgeShader3D(KTEdgeShaderBase):
                 )
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
-            {'pos': self.edges_vertices, 'color': self.edges_colors})
+            {'pos': self.edge_vertices, 'color': self.edge_colors})
 
     def init_shaders(self) -> None:
         self.fill_shader = gpu.types.GPUShader(
@@ -404,8 +404,6 @@ class KTEdgeShader3D(KTEdgeShaderBase):
         self.line_shader = gpu.shader.from_builtin('3D_SMOOTH_COLOR')
 
     def init_geom_data_from_mesh(self, obj: Any) -> None:
-        # self.triangle_indices are for hidden mesh drawing
-        # self.edges_vertices are for wireframe drawing
         mesh = obj.data
         verts = get_mesh_verts(mesh)
 
@@ -418,7 +416,7 @@ class KTEdgeShader3D(KTEdgeShaderBase):
         mesh.edges.foreach_get(
             'vertices', np.reshape(edges, len(mesh.edges) * 2))
 
-        self.edges_vertices = self.vertices[edges.ravel()]
+        self.edge_vertices = self.vertices[edges.ravel()]
 
     def init_vertex_normals(self, obj: Object) -> None:
         pass
@@ -438,7 +436,7 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
             simple_fill_vertex_local_shader(), black_fill_fragment_shader())
 
         self.line_shader = gpu.types.GPUShader(
-            smooth_3d_vertex_local_shader(), smooth_3d_fragment_shader())
+            uniform_3d_vertex_local_shader(), smooth_3d_fragment_shader())
 
         self.selection_fill_shader = gpu.types.GPUShader(
             uniform_3d_vertex_local_shader(), smooth_3d_fragment_shader())
@@ -452,7 +450,7 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
                     indices=self.triangle_indices)
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
-            {'pos': self.edges_vertices, 'color': self.edges_colors})
+            {'pos': self.edge_vertices})
 
         verts = []
         indices = []
@@ -489,11 +487,13 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
         mesh.edges.foreach_get(
             'vertices', np.reshape(edges, len(mesh.edges) * 2))
 
-        self.edges_vertices = self.vertices[edges.ravel()]
+        self.edge_vertices = self.vertices[edges.ravel()]
 
     def draw_edges(self) -> None:
         shader = self.line_shader
         shader.bind()
+        shader.uniform_float('adaptiveOpacity', self.adaptive_opacity)
+        shader.uniform_float('color', self.line_color)
         shader.uniform_vector_float(shader.uniform_from_name('modelMatrix'),
                                     self.object_world_matrix.ravel(), 16)
         self.line_batch.draw(shader)
@@ -509,7 +509,7 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
     def draw_selection_fill(self) -> None:
         shader = self.selection_fill_shader
         shader.bind()
-        shader.uniform_float('adaptiveOpacity', self.adaptive_opacity)
+        shader.uniform_float('adaptiveOpacity', 1.0)
         shader.uniform_float('color', self.selection_fill_color)
         shader.uniform_vector_float(
             shader.uniform_from_name('modelMatrix'),
@@ -577,7 +577,6 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_edge_vertex_normals = edge_normals
 
     def init_color_data(self, color: Tuple[float, float, float, float]) -> None:
-        self.edges_colors = [color] * len(self.edges_vertices)
         self.lit_color = color
         self.line_color = color
 

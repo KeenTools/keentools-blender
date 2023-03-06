@@ -44,11 +44,22 @@ class KTShaderBase:
         self.target_class: Any = target_class
         self.work_area: Optional[Area] = None
         self.is_shader_visible: bool = True
+        self.batch_counter: int = 0
+        self.draw_counter: int = -1
         self.draw_main = self.draw_main_gpu if use_gpu_instead_of_bgl \
             else self.draw_main_bgl
 
         if not bpy_background_mode():
             self.init_shaders()
+
+    def needs_to_be_drawn(self) -> bool:
+        return self.batch_counter != self.draw_counter
+
+    def increment_batch_counter(self) -> None:
+        self.batch_counter += 1
+
+    def count_draw_call(self) -> None:
+        self.draw_counter = self.batch_counter
 
     def is_visible(self) -> bool:
         return self.is_shader_visible
@@ -69,11 +80,12 @@ class KTShaderBase:
         pass
 
     def create_batch(self) -> None:
-        pass
+        self.increment_batch_counter()
 
     def draw_callback(self, context: Any) -> None:
         if self.draw_checks(context):
             self.draw_main(context)
+            self.count_draw_call()
 
     def draw_checks(self, context: Any) -> bool:
         return True

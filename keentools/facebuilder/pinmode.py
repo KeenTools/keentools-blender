@@ -87,6 +87,8 @@ def register_undo_handler():
 
 def _calc_adaptive_opacity(area):
     settings = get_fb_settings()
+    if not settings.use_adaptive_opacity:
+        return
     rx, ry = bpy_render_frame()
     x1, y1, x2, y2 = get_camera_border(area)
     settings.adaptive_opacity = (x2 - x1) / rx
@@ -147,10 +149,10 @@ class FB_OT_PinMode(bpy.types.Operator):
         head = settings.get_head(settings.current_headnum)
 
         wf = FBLoader.viewport().wireframer()
-        wf.init_colors((settings.wireframe_color,
-                       settings.wireframe_special_color,
-                       settings.wireframe_midline_color),
-                       settings.wireframe_opacity * settings.get_adaptive_opacity())
+        wf.init_colors(
+            (settings.wireframe_color, settings.wireframe_special_color,
+             settings.wireframe_midline_color),
+            settings.wireframe_opacity * settings.get_adaptive_opacity())
 
         fb = FBLoader.get_builder()
         if not wf.init_wireframe_image(fb, settings.show_specials):
