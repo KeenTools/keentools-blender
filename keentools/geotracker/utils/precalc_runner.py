@@ -118,7 +118,7 @@ class PrecalcRunner:
 
     def _run_calculate(self, *args):
         try:
-            pkt_module().precalc.calculate(*args)
+            pkt_module().precalc.calculate_srgb_input(*args)
         except Exception as e:
             with self._lock:
                 self._canceled = True
