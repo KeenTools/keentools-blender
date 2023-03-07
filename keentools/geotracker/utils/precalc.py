@@ -108,8 +108,7 @@ class PrecalcTimer(CalcTimer):
             np_img = np_array_from_bpy_image(img)
             bpy.data.images.remove(img)
 
-        grayscale = np_image_to_grayscale(np_img)
-        self._runner.fulfill_loading_request(grayscale)
+        self._runner.fulfill_loading_request(np_img[:, :, :3])
         return self._interval
 
     def start(self) -> bool:
