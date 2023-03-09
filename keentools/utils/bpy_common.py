@@ -222,8 +222,8 @@ def get_scene_by_name(scene_name: str) -> Optional[Scene]:
     return None
 
 
-def bpy_transform_resize(**kwargs) -> None:
-    bpy.ops.transform.resize(**kwargs)
+def bpy_transform_resize(*args, **kwargs) -> None:
+    bpy.ops.transform.resize(*args, **kwargs)
 
 
 def bpy_call_menu(*args, **kwargs) -> None:

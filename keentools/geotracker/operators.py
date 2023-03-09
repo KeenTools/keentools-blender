@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from bpy.types import Operator
-from bpy.props import IntProperty, FloatProperty
+from bpy.props import BoolProperty, IntProperty, FloatProperty, FloatVectorProperty
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (get_operator,
@@ -58,13 +58,16 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     remove_focal_keyframes_act,
                                     select_geotracker_objects_act,
                                     render_with_background_act,
-                                    revert_default_render_act)
+                                    revert_default_render_act,
+                                    get_object_states,
+                                    resize_object,
+                                    revert_object_states,
+                                    scale_tracking_act)
 from .utils.precalc import precalc_with_runner_act
 from .gtloader import GTLoader
 from .ui_strings import buttons
 from .utils.prechecks import common_checks
 from ..utils.coords import distance_between_objects
-from ..utils.manipulate import select_object_only
 
 
 _log = KTLogger(__name__)
@@ -715,12 +718,32 @@ class GT_OT_PrecalcWindow(Operator):
         return context.window_manager.invoke_popup(self, width=300)
 
 
+def resize_object_func(operator, context):
+    if not revert_object_states(operator):
+        return
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+
+    if not geotracker.geomobj or not geotracker.camobj:
+        return
+    resize_object(operator, context)
+
+
 class GT_OT_ResizeWindow(Operator):
     bl_idname = GTConfig.gt_resize_window_idname
     bl_label = 'Resize object & distance'
     bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
 
-    value: FloatProperty(default=1.0, precision=4, step=0.03)
+    value: FloatProperty(default=1.0, precision=4, step=0.03,
+                         update=resize_object_func)
+    geom_location: FloatVectorProperty(default=(0, 0, 0))
+    geom_rotation_euler: FloatVectorProperty(default=(0, 0, 0))
+    geom_scale: FloatVectorProperty(default=(1, 1, 1))
+    cam_location: FloatVectorProperty(default=(0, 0, 0))
+    cam_rotation_euler: FloatVectorProperty(default=(0, 0, 0))
+    cam_scale:  FloatVectorProperty(default=(1, 1, 1))
+    keep_cam_scale: BoolProperty(default=True, name='Keep camera scale',
+                                 update=resize_object_func)
 
     def draw(self, context) -> None:
         layout = self.layout
@@ -729,6 +752,7 @@ class GT_OT_ResizeWindow(Operator):
 
         layout.separator()
         layout.prop(self, 'value', text='Scale:')
+        layout.prop(self, 'keep_cam_scale')
         dx, dy, dz = geotracker.geomobj.dimensions
         sx, sy, sz = geotracker.geomobj.scale
         dist = distance_between_objects(geotracker.camobj, geotracker.geomobj)
@@ -752,16 +776,28 @@ class GT_OT_ResizeWindow(Operator):
         layout.separator()
 
     def execute(self, context):
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
-        select_object_only(geotracker.geomobj)
-        bpy_transform_resize(value=(self.value, self.value, self.value),
-                             center_override=geotracker.camobj.location)
+        act_status = scale_tracking_act(self, context)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
+    def cancel(self, context):
+        revert_object_states(self)
+
     def invoke(self, context, event):
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     reload_geotracker=True, geotracker=True,
+                                     camera=True, geometry=True,
+                                     movie_clip=False)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        geotracker = get_current_geotracker_item()
+        get_object_states(self, geotracker)
         self.value = 1.0
-        return context.window_manager.invoke_props_popup(self, event)
+        return context.window_manager.invoke_props_dialog(self, width=400)
 
 
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,

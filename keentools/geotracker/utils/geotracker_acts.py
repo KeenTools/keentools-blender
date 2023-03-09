@@ -18,11 +18,10 @@
 
 import time
 from typing import Optional, Any, Callable, List
-import numpy as np
 import math
 
 import bpy
-from bpy.types import Object
+from bpy.types import Object, Operator
 from mathutils import Matrix, Euler
 
 from ...utils.kt_logging import KTLogger
@@ -51,11 +50,11 @@ from ...utils.bpy_common import (create_empty_object,
                                  bpy_background_mode,
                                  bpy_timer_register,
                                  bpy_scene,
-                                 bpy_render_single_frame)
+                                 bpy_render_single_frame,
+                                 bpy_transform_resize)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.timer import RepeatTimer
-from ...utils.coords import xy_to_xz_rotation_matrix_4x4
-from ...utils.manipulate import select_objects_only, center_viewport
+from ...utils.manipulate import select_objects_only, center_viewport, select_object_only
 from .textures import bake_texture, preview_material_with_texture
 from .prechecks import (common_checks,
                         track_checks,
@@ -1087,4 +1086,117 @@ def revert_default_render_act() -> ActionStatus:
         scene.use_nodes = False
     bpy.ops.render.view_show('INVOKE_DEFAULT')
     bpy_render_single_frame(scene)
+    return ActionStatus(True, 'ok')
+
+
+def get_object_states(operator: Operator, geotracker: Any) -> None:
+    operator.geom_location = geotracker.geomobj.location
+    operator.geom_rotation_euler = geotracker.geomobj.rotation_euler
+    operator.geom_scale = geotracker.geomobj.scale
+
+    operator.cam_location = geotracker.camobj.location
+    operator.cam_rotation_euler = geotracker.camobj.rotation_euler
+    operator.cam_scale = geotracker.camobj.scale
+
+
+def revert_object_states(operator: Operator) -> bool:
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    geomobj = geotracker.geomobj
+    camobj = geotracker.camobj
+    if not geomobj or not camobj:
+        return False
+
+    geomobj.location = operator.geom_location
+    geomobj.rotation_euler = operator.geom_rotation_euler
+    geomobj.scale = operator.geom_scale
+
+    camobj.location = operator.cam_location
+    camobj.rotation_euler = operator.cam_rotation_euler
+    camobj.scale = operator.cam_scale
+    return True
+
+
+def _resize_geometry(operator: Operator) -> None:
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+
+    select_object_only(geotracker.geomobj)
+    bpy_transform_resize(value=(operator.value, operator.value, operator.value),
+                         center_override=geotracker.camobj.location)
+
+    if operator.keep_cam_scale:
+        geotracker.camobj.scale = operator.cam_scale
+    else:
+        geotracker.camobj.scale = (operator.cam_scale[0] * operator.value,
+                                   operator.cam_scale[1] * operator.value,
+                                   operator.cam_scale[2] * operator.value)
+
+
+def _resize_camera(operator: Operator) -> None:
+    geotracker = get_current_geotracker_item()
+
+    select_object_only(geotracker.camobj)
+    bpy_transform_resize(value=(operator.value, operator.value, operator.value),
+                         center_override=geotracker.geomobj.location)
+
+    geotracker.geomobj.scale = (operator.geom_scale[0] * operator.value,
+                                operator.geom_scale[1] * operator.value,
+                                operator.geom_scale[2] * operator.value)
+
+    if operator.keep_cam_scale:
+        geotracker.camobj.scale = operator.cam_scale
+
+
+def resize_object(operator: Operator, context: Any) -> None:
+    geotracker = get_current_geotracker_item()
+
+    if geotracker.camera_mode():
+        _resize_camera(operator)
+    else:
+        _resize_geometry(operator)
+
+
+def scale_tracking_act(operator: Operator, context: Any) -> ActionStatus:
+    check_status = common_checks(object_mode=True, is_calculating=True,
+                                 reload_geotracker=True, geotracker=True,
+                                 camera=True, geometry=True)
+    if not check_status.success:
+        return check_status
+
+    geotracker = get_current_geotracker_item()
+    geomobj = geotracker.geomobj
+    camobj = geotracker.camobj
+
+    geom_animated_frames = get_object_keyframe_numbers(geomobj)
+    cam_animated_frames = get_object_keyframe_numbers(camobj)
+    all_animated_frames = cam_animated_frames if geotracker.camera_mode() \
+        else geom_animated_frames
+    _log.output(f'ALL FRAMES: {all_animated_frames}')
+
+    if len(all_animated_frames) == 0:
+        msg = 'Tracked object does not have any keyframes'
+        _log.error(msg)
+        return ActionStatus(False, msg)
+
+    current_frame = bpy_current_frame()
+
+    revert_object_states(operator)
+    last_scale = (1, 1, 1)
+    for frame in all_animated_frames:
+        bpy_set_current_frame(frame)
+        get_object_states(operator, geotracker)
+        resize_object(operator, context)
+
+        if geotracker.camera_mode():
+            create_animation_locrot_keyframe_force(camobj)
+        else:
+            create_animation_locrot_keyframe_force(geomobj)
+
+        last_scale = geotracker.geomobj.scale.copy()
+        geotracker.geomobj.scale = operator.geom_scale
+
+    geotracker.geomobj.scale = last_scale
+
+    bpy_set_current_frame(current_frame)
     return ActionStatus(True, 'ok')
