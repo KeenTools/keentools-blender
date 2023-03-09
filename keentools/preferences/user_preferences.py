@@ -105,18 +105,25 @@ class UserPreferences:
 
     @classmethod
     def set_value(cls, name: str, value: str) -> None:
+        _log.output(f'set_value: {name} {value}')
         _dict = cls.get_dict()
         _dict[name] = str(value)
         cls.save_dict(_dict)
 
     @classmethod
     def clear_dict(cls) -> None:
-        pkt_module().utils.reset_settings(cls._DICT_NAME)
+        try:
+            pkt_module().utils.reset_settings(cls._DICT_NAME)
+        except Exception as err:
+            _log.error(f'clear_dict: {cls._DICT_NAME}')
         cls.clear_cache()
 
     @classmethod
     def save_dict(cls, dict_to_save: Dict) -> None:
-        pkt_module().utils.save_settings(cls._DICT_NAME, dict_to_save)
+        try:
+            pkt_module().utils.save_settings(cls._DICT_NAME, dict_to_save)
+        except Exception as err:
+            _log.error(f'save_dict: {dict_to_save}')
         # cls.print_dict()  # Debug only call
 
     @classmethod
