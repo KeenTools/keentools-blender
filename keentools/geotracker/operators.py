@@ -801,6 +801,7 @@ class GT_OT_ResizeWindow(Operator):
 
     def invoke(self, context, event):
         check_status = common_checks(object_mode=True, is_calculating=True,
+                                     pinmode_out=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True,
                                      movie_clip=False)
