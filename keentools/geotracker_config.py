@@ -53,6 +53,7 @@ class GTConfig:
     gt_add_keyframe_idname = operators + '.add_keyframe_btn'
     gt_remove_keyframe_idname = operators + '.remove_keyframe_btn'
     gt_clear_all_tracking_idname = operators + '.clear_all_tracking_btn'
+    gt_clear_tracking_except_keyframes_idname = operators + '.clear_tracking_except_keyframes_btn'
     gt_clear_tracking_forward_idname = operators + '.clear_tracking_forward_btn'
     gt_clear_tracking_backward_idname = operators + '.clear_tracking_backward_btn'
     gt_clear_tracking_between_idname = operators + '.clear_tracking_between_btn'

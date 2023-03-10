@@ -601,6 +601,40 @@ def clear_all_act() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
+def clear_all_except_keyframes_act() -> ActionStatus:
+    check_status = common_checks(object_mode=True, pinmode=True,
+                                 is_calculating=True, reload_geotracker=True,
+                                 geotracker=True, camera=True, geometry=True)
+    if not check_status.success:
+        return check_status
+
+    gt = GTLoader.kt_geotracker()
+
+    keyframes = gt.keyframes()
+    if len(keyframes) < 1:
+        return ActionStatus(False, 'No keyframes')
+
+    if len(keyframes) == 1:
+        gt.remove_track_in_direction(keyframes[0], False)
+        gt.remove_track_in_direction(keyframes[0], True)
+        GTLoader.save_geotracker()
+        return ActionStatus(True, 'ok')
+
+    for i in range(len(keyframes) - 1):
+        start = keyframes[i]
+        end = keyframes[i + 1]
+        current = start + 1
+        if current in [start, end]:
+            continue
+        gt.remove_track_between_keyframes(current)
+
+    gt.remove_track_in_direction(keyframes[0], False)
+    gt.remove_track_in_direction(keyframes[-1], True)
+
+    GTLoader.save_geotracker()
+    return ActionStatus(True, 'ok')
+
+
 def remove_focal_keyframe_act() -> ActionStatus:
     check_status = common_checks(object_mode=False, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,

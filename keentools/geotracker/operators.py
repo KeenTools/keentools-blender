@@ -43,6 +43,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     clear_between_keyframes_act,
                                     clear_direction_act,
                                     clear_all_act,
+                                    clear_all_except_keyframes_act,
                                     remove_pins_act,
                                     toggle_pins_act,
                                     center_geo_act,
@@ -235,6 +236,19 @@ class GT_OT_ClearAllTracking(ButtonOperator, Operator):
 
     def execute(self, context):
         act_status = clear_all_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class GT_OT_ClearTrackingExceptKeyframes(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_clear_tracking_except_keyframes_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        act_status = clear_all_except_keyframes_act()
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -812,6 +826,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_TrackNext,
                   GT_OT_TrackToEnd,
                   GT_OT_ClearAllTracking,
+                  GT_OT_ClearTrackingExceptKeyframes,
                   GT_OT_ClearTrackingForward,
                   GT_OT_ClearTrackingBackward,
                   GT_OT_ClearTrackingBetween,

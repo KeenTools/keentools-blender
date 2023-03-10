@@ -121,6 +121,10 @@ buttons = {
         'Clear all',
         'Clear all tracking data'
     ),
+    GTConfig.gt_clear_tracking_except_keyframes_idname: Button(
+        'Clear tracking except GT keyframes',
+        'Clear tracking except GeoTracker keyframes'
+    ),
     GTConfig.gt_clear_tracking_forward_idname: Button(
         'Clear forward',
         'Clear tracking data forward'

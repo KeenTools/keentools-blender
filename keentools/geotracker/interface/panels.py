@@ -579,6 +579,7 @@ class GT_PT_TrackingPanel(AllVisible):
                      icon='TRACKING_CLEAR_FORWARDS', text='')
 
         btn = row.column(align=True)
+        btn.active = active
         btn.operator(GTConfig.gt_clear_tracking_menu_exec_idname,
                      text='', icon='X')
 
@@ -613,7 +614,8 @@ class GT_PT_TrackingPanel(AllVisible):
 
         col = layout.column(align=True)
         self._tracking_keyframes_row(settings, col)
-        self._tracking_remove_keys_row(settings, col)
+        if settings.pinmode:
+            self._tracking_remove_keys_row(settings, col)
 
         if settings.is_calculating('TRACKING') or settings.is_calculating('REFINE'):
             _draw_calculating_indicator(layout)

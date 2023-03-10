@@ -52,12 +52,10 @@ class GT_MT_ClearAllTrackingMenu(Menu):
         layout = self.layout
 
         col = layout.column()
-        col.operator(GTConfig.gt_clear_all_tracking_idname,
-                     text='Clear tracking keys but keep GeoTracker keyframes',
+        col.operator(GTConfig.gt_clear_tracking_except_keyframes_idname,
                      icon='PANEL_CLOSE')
         col.separator()
         col.operator(GTConfig.gt_clear_all_tracking_idname,
-                     text='Clear all animation keys on object',
                      icon='CANCEL')
 
 
