@@ -740,7 +740,7 @@ def resize_object_func(operator, context):
 
     if not geotracker.geomobj or not geotracker.camobj:
         return
-    resize_object(operator, context)
+    resize_object(operator)
 
 
 class GT_OT_ResizeWindow(Operator):
@@ -750,11 +750,7 @@ class GT_OT_ResizeWindow(Operator):
 
     value: FloatProperty(default=1.0, precision=4, step=0.03,
                          update=resize_object_func)
-    geom_location: FloatVectorProperty(default=(0, 0, 0))
-    geom_rotation_euler: FloatVectorProperty(default=(0, 0, 0))
     geom_scale: FloatVectorProperty(default=(1, 1, 1))
-    cam_location: FloatVectorProperty(default=(0, 0, 0))
-    cam_rotation_euler: FloatVectorProperty(default=(0, 0, 0))
     cam_scale:  FloatVectorProperty(default=(1, 1, 1))
     keep_cam_scale: BoolProperty(default=True, name='Keep camera scale',
                                  update=resize_object_func)
@@ -790,18 +786,17 @@ class GT_OT_ResizeWindow(Operator):
         layout.separator()
 
     def execute(self, context):
-        act_status = scale_tracking_act(self, context)
+        act_status = scale_tracking_act(self)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
         return {'FINISHED'}
 
     def cancel(self, context):
-        revert_object_states(self)
+        revert_object_states()
 
     def invoke(self, context, event):
         check_status = common_checks(object_mode=True, is_calculating=True,
-                                     pinmode_out=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True,
                                      movie_clip=False)
