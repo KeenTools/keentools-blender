@@ -19,6 +19,7 @@
 import time
 from typing import Optional, Any, Callable, List
 import math
+import numpy as np
 
 import bpy
 from bpy.types import Object, Operator
@@ -743,10 +744,73 @@ def create_animated_empty_act() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
+def switch_to_mode_unsafe(mode='OBJECT') -> None:
+    bpy.ops.object.mode_set(mode=mode, toggle=False)
+
+
+def check_uv_overlapping() -> ActionStatus:
+    geotracker = get_current_geotracker_item()
+    geomobj = geotracker.geomobj
+    old_mode = geomobj.mode
+    if not geomobj or not geomobj.data.uv_layers.active:
+        return ActionStatus(False, 'No UV map on object')
+
+    select_object_only(geomobj)
+    if old_mode != 'OBJECT':
+        switch_to_mode_unsafe('OBJECT')
+
+    mesh = geomobj.data
+    mesh.polygons.foreach_set('select', [True] * len(mesh.polygons))
+
+    switch_to_mode_unsafe('EDIT')
+    bpy.ops.uv.select_overlap()
+    switch_to_mode_unsafe('OBJECT')
+
+    uvmap = geomobj.data.uv_layers.active.data
+    selected = np.empty((len(uvmap),), dtype=np.bool)
+    uvmap.foreach_get('select', selected.ravel())
+
+    switch_to_mode_unsafe(old_mode)
+    if np.any(selected):
+        return ActionStatus(False, 'UV map has overlapping')
+    return ActionStatus(True, 'ok')
+
+
+def create_non_overlapping_uv_act() -> ActionStatus:
+    check_status = common_checks(object_mode=True, is_calculating=True,
+                                 reload_geotracker=True, geotracker=True,
+                                 camera=True, geometry=True)
+    if not check_status.success:
+        return check_status
+
+    geotracker = get_current_geotracker_item()
+    geomobj = geotracker.geomobj
+    old_mode = geomobj.mode
+    if not geomobj.data.uv_layers.active:
+        uv_layer = geomobj.data.uv_layers.new()
+
+    select_object_only(geomobj)
+    if old_mode != 'OBJECT':
+        switch_to_mode_unsafe('OBJECT')
+
+    mesh = geomobj.data
+    mesh.polygons.foreach_set('select', [True] * len(mesh.polygons))
+
+    switch_to_mode_unsafe('EDIT')
+    bpy.ops.uv.smart_project()
+    switch_to_mode_unsafe(old_mode)
+    return ActionStatus(True, 'ok')
+
+
 def bake_texture_from_frames_act(selected_frames: List) -> ActionStatus:
+    _log.output(f'bake_texture_from_frames_act: {selected_frames}')
     check_status = common_checks(object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True, movie_clip=True)
+    if not check_status.success:
+        return check_status
+
+    check_status = check_uv_overlapping()
     if not check_status.success:
         return check_status
 
@@ -756,6 +820,8 @@ def bake_texture_from_frames_act(selected_frames: List) -> ActionStatus:
     built_texture = bake_texture(geotracker, selected_frames)
     revert_camera(area)
     preview_material_with_texture(built_texture, geotracker.geomobj)
+    if not check_status.success:
+        return check_status
     return ActionStatus(True, 'ok')
 
 
