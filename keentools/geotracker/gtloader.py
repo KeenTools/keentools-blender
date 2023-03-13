@@ -86,10 +86,10 @@ def depsgraph_update_handler(scene, depsgraph):
     camobj = geotracker.camobj
 
     if geomobj and _check_updated(depsgraph, geomobj.name):
-        GTLoader.update_viewport_shaders(wireframe=False)
+        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True)
         return
     if camobj and _check_updated(depsgraph, camobj.name):
-        GTLoader.update_viewport_shaders(wireframe=False)
+        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True)
 
 
 def undo_redo_handler(scene):

@@ -733,7 +733,7 @@ class GT_OT_PrecalcWindow(Operator):
 
 
 def resize_object_func(operator, context):
-    if not revert_object_states(operator):
+    if not revert_object_states():
         return
     settings = get_gt_settings()
     geotracker = settings.get_current_geotracker_item()

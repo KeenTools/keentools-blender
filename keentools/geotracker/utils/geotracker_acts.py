@@ -1218,7 +1218,8 @@ def scale_tracking_act(operator: Operator) -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
 
@@ -1254,4 +1255,14 @@ def scale_tracking_act(operator: Operator) -> ActionStatus:
     geotracker.geomobj.scale = last_scale
 
     bpy_set_current_frame(current_frame)
+
+    GTLoader.save_geotracker()
+    if not settings.reload_current_geotracker():
+        msg = 'Cannot reload GeoTracker data'
+        _log.error(msg)
+        return ActionStatus(False, msg)
+
+    if settings.pinmode:
+        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
+                                         pins_and_residuals=True)
     return ActionStatus(True, 'ok')
