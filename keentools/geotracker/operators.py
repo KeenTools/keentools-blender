@@ -63,7 +63,8 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     get_object_states,
                                     resize_object,
                                     revert_object_states,
-                                    scale_tracking_act)
+                                    scale_tracking_act,
+                                    create_non_overlapping_uv_act)
 from .utils.precalc import precalc_with_runner_act
 from .gtloader import GTLoader
 from .ui_strings import buttons
@@ -503,6 +504,19 @@ class GT_OT_DefaultPinSettings(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class GT_OT_CreateNonOverlappingUV(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_create_non_overlapping_uv_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        act_status = create_non_overlapping_uv_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
 class GT_OT_ReprojectFrame(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_reproject_frame_idname
     bl_label = buttons[bl_idname].label
@@ -841,6 +855,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_ResetToneMapping,
                   GT_OT_DefaultWireframeSettings,
                   GT_OT_DefaultPinSettings,
+                  GT_OT_CreateNonOverlappingUV,
                   GT_OT_ReprojectFrame,
                   GT_OT_SelectAllFrames,
                   GT_OT_DeselectAllFrames,

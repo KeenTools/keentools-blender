@@ -193,6 +193,10 @@ buttons = {
         'Revert to defaults',
         'Set pin size and active area as in the saved defaults'
     ),
+    GTConfig.gt_create_non_overlapping_uv_idname: Button(
+        'Create non-overlapping UV',
+        'Create non-overlapping UV using Smart UV operation'
+    ),
     GTConfig.gt_reproject_frame_idname: Button(
         'Reproject frame',
         'Reproject current frame to get texture'

@@ -75,6 +75,7 @@ class GTConfig:
         operators + '.default_wireframe_settings'
     gt_default_pin_settings_idname = operators + '.default_pin_settings'
     gt_select_frames_for_bake_idname = operators + '.select_frames_for_bake'
+    gt_create_non_overlapping_uv_idname = operators + '.create_non_overlapping_uv'
     gt_reproject_frame_idname = operators + '.reproject_current_frame'
     gt_select_all_frames_idname = operators + '.select_all_frames'
     gt_deselect_all_frames_idname = operators + '.deselect_all_frames'

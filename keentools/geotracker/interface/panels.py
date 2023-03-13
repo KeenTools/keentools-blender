@@ -715,9 +715,9 @@ class GT_PT_TexturePanel(AllVisible):
         row.operator(GTConfig.gt_help_texture_idname,
                      text='', icon='QUESTION')
 
-    def draw(self, context: Any) -> None:
-        layout = self.layout
+    def _draw_buttons(self, layout, active=True):
         col = layout.column(align=True)
+        col.active = active
         col.scale_y = Config.btn_scale_y
         col.operator(GTConfig.gt_reproject_frame_idname,
                      text='Reproject current frame')
@@ -726,7 +726,31 @@ class GT_PT_TexturePanel(AllVisible):
         col.operator(GTConfig.gt_reproject_tex_sequence_idname,
                         text='Reproject to sequence')
 
+        layout.operator(GTConfig.gt_create_non_overlapping_uv_idname)
+
+    def _draw_no_uv_warning(self, layout):
+        box = layout.box()
+        box.alert = True
+        row = box.split(factor=0.15, align=True)
+        row.label(text='', icon='ERROR')
+        col = row.column(align=True)
+        col.scale_y = Config.text_scale_y
+        for i, txt in enumerate(['Geometry object','has no UV map!']):
+            col.label(text=txt)
+        layout.operator(GTConfig.gt_create_non_overlapping_uv_idname)
+
+    def draw(self, context: Any) -> None:
+        layout = self.layout
         settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+
+        if not geotracker or not geotracker.geomobj or \
+                not geotracker.geomobj.data.uv_layers.active:
+            self._draw_no_uv_warning(layout)
+            return
+
+        self._draw_buttons(layout)
+
         if settings.is_calculating('REPROJECT'):
             _draw_calculating_indicator(layout)
 
