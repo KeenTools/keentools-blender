@@ -612,13 +612,7 @@ def clear_all_except_keyframes_act() -> ActionStatus:
 
     keyframes = gt.keyframes()
     if len(keyframes) < 1:
-        return ActionStatus(False, 'No keyframes')
-
-    if len(keyframes) == 1:
-        gt.remove_track_in_direction(keyframes[0], False)
-        gt.remove_track_in_direction(keyframes[0], True)
-        GTLoader.save_geotracker()
-        return ActionStatus(True, 'ok')
+        return clear_all_act()
 
     for i in range(len(keyframes) - 1):
         start = keyframes[i]
