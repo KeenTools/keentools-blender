@@ -43,6 +43,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     clear_between_keyframes_act,
                                     clear_direction_act,
                                     clear_all_act,
+                                    clear_all_except_keyframes_act,
                                     remove_pins_act,
                                     toggle_pins_act,
                                     center_geo_act,
@@ -235,6 +236,19 @@ class GT_OT_ClearAllTracking(ButtonOperator, Operator):
 
     def execute(self, context):
         act_status = clear_all_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class GT_OT_ClearTrackingExceptKeyframes(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_clear_tracking_except_keyframes_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        act_status = clear_all_except_keyframes_act()
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -719,14 +733,14 @@ class GT_OT_PrecalcWindow(Operator):
 
 
 def resize_object_func(operator, context):
-    if not revert_object_states(operator):
+    if not revert_object_states():
         return
     settings = get_gt_settings()
     geotracker = settings.get_current_geotracker_item()
 
     if not geotracker.geomobj or not geotracker.camobj:
         return
-    resize_object(operator, context)
+    resize_object(operator)
 
 
 class GT_OT_ResizeWindow(Operator):
@@ -736,11 +750,7 @@ class GT_OT_ResizeWindow(Operator):
 
     value: FloatProperty(default=1.0, precision=4, step=0.03,
                          update=resize_object_func)
-    geom_location: FloatVectorProperty(default=(0, 0, 0))
-    geom_rotation_euler: FloatVectorProperty(default=(0, 0, 0))
     geom_scale: FloatVectorProperty(default=(1, 1, 1))
-    cam_location: FloatVectorProperty(default=(0, 0, 0))
-    cam_rotation_euler: FloatVectorProperty(default=(0, 0, 0))
     cam_scale:  FloatVectorProperty(default=(1, 1, 1))
     keep_cam_scale: BoolProperty(default=True, name='Keep camera scale',
                                  update=resize_object_func)
@@ -776,14 +786,14 @@ class GT_OT_ResizeWindow(Operator):
         layout.separator()
 
     def execute(self, context):
-        act_status = scale_tracking_act(self, context)
+        act_status = scale_tracking_act(self)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
         return {'FINISHED'}
 
     def cancel(self, context):
-        revert_object_states(self)
+        revert_object_states()
 
     def invoke(self, context, event):
         check_status = common_checks(object_mode=True, is_calculating=True,
@@ -812,6 +822,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_TrackNext,
                   GT_OT_TrackToEnd,
                   GT_OT_ClearAllTracking,
+                  GT_OT_ClearTrackingExceptKeyframes,
                   GT_OT_ClearTrackingForward,
                   GT_OT_ClearTrackingBackward,
                   GT_OT_ClearTrackingBetween,
