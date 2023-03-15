@@ -340,7 +340,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         name='Precalcless tracking',
         description='Using analysis (.precalc) file makes a tracking faster. '
                     'Precalcless tracking can help in difficult situations',
-        default=True)
+        default=False)
 
     selected_frames: bpy.props.CollectionProperty(type=FrameListItem,
                                                   name='Selected frames')

@@ -94,6 +94,7 @@ class GTConfig:
     gt_render_with_background_idname = operators + '.render_with_background'
     gt_revert_default_render_idname = operators + '.revert_default_render'
     gt_analyze_call_idname = operators + '.analyze_call'
+    gt_precalc_info_idname = operators + '.precalc_info'
     gt_confirm_recreate_precalc_idname = operators + '.confirm_recreate_precalc'
 
     # Window ids
