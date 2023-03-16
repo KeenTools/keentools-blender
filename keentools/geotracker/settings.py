@@ -106,12 +106,25 @@ def update_movieclip(geotracker, context: Any) -> None:
     if settings.ui_write_mode:
         return
     set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
+    geotracker.precalc_path = ''
+
     if geotracker.movie_clip:
         fit_render_size(geotracker.movie_clip)
         fit_time_length(geotracker.movie_clip)
         geotracker.precalc_start = bpy_start_frame()
         geotracker.precalc_end = bpy_end_frame()
-        geotracker.precalcless = True
+
+
+def update_precalc_path(geotracker, context: Any) -> None:
+    _log.output('update_precalc_path')
+    settings = get_gt_settings()
+    if settings.ui_write_mode:
+        return
+    ending = '.precalc'
+    if geotracker.precalc_path != '' and \
+            geotracker.precalc_path[-len(ending):] != ending:
+        with settings.ui_write_mode_context():
+            geotracker.precalc_path += ending
 
 
 def update_wireframe(settings, context: Any) -> None:
@@ -276,10 +289,17 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     dir_name: bpy.props.StringProperty(name='Dir name')
 
-    precalc_path: bpy.props.StringProperty(name='Precalc path')
+    precalc_path: bpy.props.StringProperty(name='Precalc path',
+                                           update=update_precalc_path)
     precalc_start: bpy.props.IntProperty(name='from', default=1)
     precalc_end: bpy.props.IntProperty(name='to', default=250)
     precalc_message: bpy.props.StringProperty(name='Precalc info')
+
+    def precalc_message_error(self):
+        return self.precalc_message in [
+            '',
+            '* Precalc file is corrupted',
+            '* Precalc needs to be built']
 
     solve_for_camera: bpy.props.BoolProperty(
         name='Track for Camera or Geometry',

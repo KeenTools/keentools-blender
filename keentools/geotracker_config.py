@@ -96,6 +96,7 @@ class GTConfig:
     gt_analyze_call_idname = operators + '.analyze_call'
     gt_precalc_info_idname = operators + '.precalc_info'
     gt_confirm_recreate_precalc_idname = operators + '.confirm_recreate_precalc'
+    gt_auto_name_precalc_idname = operators + '.auto_name_precalc'
 
     # Window ids
     gt_precalc_window_idname = operators + '.precalc_window'

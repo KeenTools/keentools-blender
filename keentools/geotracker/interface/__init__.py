@@ -28,7 +28,6 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
                        GT_PT_DownloadingProblemPanel,
                        GT_PT_UpdatesInstallationPanel,
                        GT_PT_InputsPanel,
-                       GT_PT_AnalyzePanel,  # Hidden
                        GT_PT_CameraPanel,
                        GT_PT_TrackingPanel,
                        GT_PT_MasksPanel,

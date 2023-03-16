@@ -767,6 +767,20 @@ class GT_OT_PrecalcWindow(Operator):
         return context.window_manager.invoke_popup(self, width=300)
 
 
+class GT_OT_AutoNamePrecalc(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_auto_name_precalc_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        geotracker = get_current_geotracker_item()
+        if not geotracker or not geotracker.movie_clip:
+            self.report({'ERROR'}, 'No movie clip')
+            return {'CANCELLED'}
+        geotracker.precalc_path = f'/tmp\\{geotracker.movie_clip.name}'
+        return {'FINISHED'}
+
+
 def resize_object_func(operator, context):
     if not revert_object_states():
         return
@@ -780,7 +794,7 @@ def resize_object_func(operator, context):
 
 class GT_OT_ResizeWindow(Operator):
     bl_idname = GTConfig.gt_resize_window_idname
-    bl_label = 'Resize object & distance'
+    bl_label = 'Scale'
     bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
 
     value: FloatProperty(default=1.0, precision=4, step=0.03,
@@ -893,4 +907,5 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_RevertDefaultRender,
                   GT_OT_AddonSetupDefaults,
                   GT_OT_PrecalcWindow,
+                  GT_OT_AutoNamePrecalc,
                   GT_OT_ResizeWindow)
