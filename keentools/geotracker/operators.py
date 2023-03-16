@@ -64,12 +64,15 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     resize_object,
                                     revert_object_states,
                                     scale_tracking_act,
-                                    create_non_overlapping_uv_act)
-from .utils.precalc import precalc_with_runner_act
+                                    create_non_overlapping_uv_act,
+                                    TrackTimer,
+                                    RefineTimer)
+from .utils.precalc import precalc_with_runner_act, PrecalcTimer
 from .gtloader import GTLoader
 from .ui_strings import buttons
 from .utils.prechecks import common_checks
 from ..utils.coords import distance_between_objects
+from .utils.precalc_runner import PrecalcRunner
 
 
 _log = KTLogger(__name__)
@@ -401,7 +404,25 @@ class GT_OT_StopCalculating(Operator):
 
     def execute(self, context):
         settings = get_gt_settings()
-        settings.user_interrupts = True
+        _log.output(f'StopCalculating btn: {settings.user_interrupts}')
+
+        if not settings.user_interrupts:
+            settings.user_interrupts = True
+            return {'FINISHED'}
+
+        if settings.calculating_mode == 'PRECALC':
+            _log.output(f'PrecalcTimer: {PrecalcTimer.active_timers()}')
+            if len(PrecalcTimer.active_timers()) == 0:
+                settings.stop_calculating()
+        elif settings.calculating_mode == 'TRACKING':
+            _log.output(f'TrackTimer: {TrackTimer.active_timers()}')
+            if len(TrackTimer.active_timers()) == 0:
+                settings.stop_calculating()
+        elif settings.calculating_mode == 'REFINE':
+            _log.output(f'RefineTimer: {RefineTimer.active_timers()}')
+            if len(RefineTimer.active_timers()) == 0:
+                settings.stop_calculating()
+
         return {'FINISHED'}
 
 

@@ -640,6 +640,10 @@ class GT_OT_ConfirmRecreatePrecalc(Operator):
         return context.window_manager.invoke_props_dialog(self, width=400)
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_create_precalc_idname)
-        op('EXEC_DEFAULT')
+        try:
+            op = get_operator(GTConfig.gt_create_precalc_idname)
+            op('EXEC_DEFAULT')
+        except RuntimeError as err:
+            _log.error(f'PRECACLC Exception:\n{str(err)}')
+            self.report({'ERROR'}, str(err))
         return {'FINISHED'}

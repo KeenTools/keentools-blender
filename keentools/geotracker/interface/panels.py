@@ -108,8 +108,9 @@ def _draw_calculating_indicator(layout: Any) -> None:
     row.prop(settings, 'user_percent', text='Calculating...')
     col = row.column(align=True)
     col.alert = True
+    icon = 'CANCEL' if not settings.user_interrupts else 'X'
     col.operator(GTConfig.gt_stop_calculating_idname, text='',
-                 icon='CANCEL')
+                 icon=icon)
 
 
 class GT_PT_GeotrackersPanel(View3DPanel):
@@ -319,7 +320,11 @@ class GT_PT_InputsPanel(AllVisible):
         if geotracker.precalc_path != '':
             row.operator(GTConfig.gt_precalc_info_idname,
                          text='', icon='INFO')
-        self._draw_analyze_btn(col, geotracker)
+
+        if settings.is_calculating('PRECALC'):
+            _draw_calculating_indicator(layout)
+        else:
+            self._draw_analyze_btn(col, geotracker)
 
 
 class GT_PT_MasksPanel(AllVisible):
