@@ -191,12 +191,6 @@ class GT_OT_ChoosePrecalcFile(Operator, ExportHelper):
         default=GTConfig.default_precalc_filename,
         subtype='FILE_PATH'
     )
-    return_to_dialog: BoolProperty(
-        name='Return to precalc dialog',
-        description='Return to precalc dialog if something went wrong',
-        default=False,
-        options={'HIDDEN'},
-    )
 
     def check(self, context):
         change_ext = False
@@ -238,11 +232,7 @@ class GT_OT_ChoosePrecalcFile(Operator, ExportHelper):
         status, msg, _ = geotracker.reload_precalc()
         if not status:
             _log.error(msg)
-            if not self.return_to_dialog:
-                self.report({'ERROR'}, msg)
-            else:
-                op = get_operator(GTConfig.gt_analyze_call_idname)
-                op('INVOKE_DEFAULT')
+            self.report({'ERROR'}, msg)
 
         _log.output('PRECALC PATH HAS BEEN CHANGED: {}'.format(self.filepath))
         return {'FINISHED'}
@@ -555,34 +545,12 @@ class GT_OT_AnalyzeCall(Operator):
         row.prop(geotracker, 'precalc_start')
         row.prop(geotracker, 'precalc_end')
 
-    def _precalc_load_button(self, layout):
-        op = layout.operator(GTConfig.gt_choose_precalc_file_idname,
-                            text='Load new precalc')
-        op.return_to_dialog = True
-
-
-    def _draw_first(self, layout):
-        self._precalc_load_button(layout)
-
-    def _draw_next(self, layout, geotracker):
-        # self._precalc_load_button(layout)
-
-        # layout.label(text='Precalc file info:')
-        # _draw_precalc_file_info(layout, geotracker)
-
-        # layout.label(text='Create precalc:')
-        self._precalc_range_row(layout, geotracker)
-
     def draw(self, context):
         layout = self.layout
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return
-
-        if geotracker.precalc_path == '':
-            return self._draw_first(layout)
-
-        self._draw_next(layout, geotracker)
+        self._precalc_range_row(layout, geotracker)
 
     def invoke(self, context, event):
         geotracker = get_current_geotracker_item()
@@ -590,7 +558,7 @@ class GT_OT_AnalyzeCall(Operator):
             return {'CANCELLED'}
         if geotracker.precalc_path == '':
             op = get_operator(GTConfig.gt_choose_precalc_file_idname)
-            op('INVOKE_DEFAULT', return_to_dialog=True)
+            op('INVOKE_DEFAULT')
             return {'FINISHED'}
         return context.window_manager.invoke_props_dialog(self)
 
