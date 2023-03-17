@@ -191,12 +191,6 @@ class GT_OT_ChoosePrecalcFile(Operator, ExportHelper):
         default=GTConfig.default_precalc_filename,
         subtype='FILE_PATH'
     )
-    return_to_dialog: BoolProperty(
-        name='Return to precalc dialog',
-        description='Return to precalc dialog if something went wrong',
-        default=False,
-        options={'HIDDEN'},
-    )
 
     def check(self, context):
         change_ext = False
@@ -238,11 +232,7 @@ class GT_OT_ChoosePrecalcFile(Operator, ExportHelper):
         status, msg, _ = geotracker.reload_precalc()
         if not status:
             _log.error(msg)
-            if not self.return_to_dialog:
-                self.report({'ERROR'}, msg)
-            else:
-                op = get_operator(GTConfig.gt_analyze_call_idname)
-                op('INVOKE_DEFAULT')
+            self.report({'ERROR'}, msg)
 
         _log.output('PRECALC PATH HAS BEEN CHANGED: {}'.format(self.filepath))
         return {'FINISHED'}
@@ -498,6 +488,52 @@ class GT_OT_ReprojectTextureSequence(_DirSelectionTemplate):
         return {'FINISHED'}
 
 
+def _precalc_file_info(layout, geotracker):
+    arr = re.split('\r\n|\n', geotracker.precalc_message)
+    for txt in arr:
+        layout.label(text=txt)
+
+
+def _draw_precalc_file_info(layout, geotracker):
+    if geotracker.precalc_message == '':
+        return
+
+    block = layout.column(align=True)
+    box = block.box()
+    col = box.column()
+    col.scale_y = Config.text_scale_y
+    col.label(text=geotracker.precalc_path)
+    _precalc_file_info(col, geotracker)
+
+
+class GT_OT_PrecalcInfo(Operator):
+    bl_idname = GTConfig.gt_precalc_info_idname
+    bl_label = 'Precalc info'
+    bl_description = 'Precalc file info'
+    bl_options = {'REGISTER', 'INTERNAL', 'UNDO'}
+
+    def draw(self, context):
+        layout = self.layout
+        geotracker = get_current_geotracker_item()
+        if not geotracker:
+            return
+        layout.label(text='Precalc file info:')
+        _draw_precalc_file_info(layout, geotracker)
+
+    def cancel(self, context):
+        _log.output('CANCEL PRECALC INFO')
+
+    def execute(self, context):
+        _log.output('EXECUTE PRECALC INFO')
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        geotracker = get_current_geotracker_item()
+        if not geotracker:
+            return {'CANCELLED'}
+        return context.window_manager.invoke_popup(self, width=350)
+
+
 class GT_OT_AnalyzeCall(Operator):
     bl_idname = GTConfig.gt_analyze_call_idname
     bl_label = 'Analyze'
@@ -509,46 +545,12 @@ class GT_OT_AnalyzeCall(Operator):
         row.prop(geotracker, 'precalc_start')
         row.prop(geotracker, 'precalc_end')
 
-    def _precalc_load_button(self, layout):
-        op = layout.operator(GTConfig.gt_choose_precalc_file_idname,
-                            text='Load new precalc')
-        op.return_to_dialog = True
-
-    def _precalc_file_info(self, layout, geotracker):
-        arr = re.split('\r\n|\n', geotracker.precalc_message)
-        for txt in arr:
-            layout.label(text=txt)
-
-    def _draw_first(self, layout):
-        self._precalc_load_button(layout)
-
-    def _draw_next(self, layout, geotracker):
-        self._precalc_load_button(layout)
-
-        layout.label(text='Precalc file info:')
-
-        block = layout.column(align=True)
-        box = block.box()
-        col = box.column()
-        col.scale_y = Config.text_scale_y
-        col.label(text=geotracker.precalc_path)
-
-        if geotracker.precalc_message != '':
-            self._precalc_file_info(col, geotracker)
-
-        layout.label(text='Create precalc:')
-        self._precalc_range_row(layout, geotracker)
-
     def draw(self, context):
         layout = self.layout
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return
-
-        if geotracker.precalc_path == '':
-            return self._draw_first(layout)
-
-        self._draw_next(layout, geotracker)
+        self._precalc_range_row(layout, geotracker)
 
     def invoke(self, context, event):
         geotracker = get_current_geotracker_item()
@@ -556,7 +558,7 @@ class GT_OT_AnalyzeCall(Operator):
             return {'CANCELLED'}
         if geotracker.precalc_path == '':
             op = get_operator(GTConfig.gt_choose_precalc_file_idname)
-            op('INVOKE_DEFAULT', return_to_dialog=True)
+            op('INVOKE_DEFAULT')
             return {'FINISHED'}
         return context.window_manager.invoke_props_dialog(self)
 
@@ -571,13 +573,13 @@ class GT_OT_AnalyzeCall(Operator):
 
         try:
             status, msg, precalc_info = geotracker.reload_precalc()
-            if status:
+            if not status and msg == 'Precalc file has not been created yet':
+                op = get_operator(GTConfig.gt_create_precalc_idname)
+                op('EXEC_DEFAULT')
+            else:
                 op = get_operator(GTConfig.gt_confirm_recreate_precalc_idname)
                 op('INVOKE_DEFAULT')
-                return {'FINISHED'}
-
-            op = get_operator(GTConfig.gt_create_precalc_idname)
-            op('EXEC_DEFAULT')
+            return {'FINISHED'}
         except RuntimeError as err:
             _log.error(f'ANALYZE Exception:\n{str(err)}')
             self.report({'ERROR'}, str(err))
@@ -594,7 +596,9 @@ class GT_OT_ConfirmRecreatePrecalc(Operator):
         layout = self.layout
         info = ['All your previous precalc data will be lost!',
                 'Do you really want to rebuild precalc file?',
-                '(click outside of this window to keep old precalc file)']
+                ' ',
+                'Click outside of this window to keep old precalc file',
+                'or press Ok to start calculation']
         col = layout.column(align=True)
         col.scale_y = Config.text_scale_y
         for txt in info:
@@ -604,6 +608,10 @@ class GT_OT_ConfirmRecreatePrecalc(Operator):
         return context.window_manager.invoke_props_dialog(self, width=400)
 
     def execute(self, context):
-        op = get_operator(GTConfig.gt_create_precalc_idname)
-        op('EXEC_DEFAULT')
+        try:
+            op = get_operator(GTConfig.gt_create_precalc_idname)
+            op('EXEC_DEFAULT')
+        except RuntimeError as err:
+            _log.error(f'PRECACLC Exception:\n{str(err)}')
+            self.report({'ERROR'}, str(err))
         return {'FINISHED'}

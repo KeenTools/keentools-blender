@@ -70,7 +70,7 @@ buttons = {
         'Open GeoTracker Settings in Preferences window'
     ),
     GTConfig.gt_create_geotracker_idname: Button(
-        'Create GeoTracker',
+        'Create a new GeoTracker',
         'Create a new GeoTracker object in scene'
     ),
     GTConfig.gt_delete_geotracker_idname: Button(
@@ -84,6 +84,10 @@ buttons = {
     GTConfig.gt_create_precalc_idname: Button(
         'Create precalc',
         'Create precalc for current MovieClip'
+    ),
+    GTConfig.gt_auto_name_precalc_idname: Button(
+        'Generate precalc filename',
+        'Generate precalc filename'
     ),
     GTConfig.gt_prev_keyframe_idname: Button(
         'Prev keyframe',

@@ -41,6 +41,8 @@ from ..gt_class_loader import GTClassLoader
 from ...utils.timer import RepeatTimer
 from .calc_timer import CalcTimer
 from .prechecks import common_checks, prepare_camera
+from ...blender_independent_packages.pykeentools_loader import module as pkt_module
+from .prechecks import show_warning_dialog, show_unlicensed_warning
 
 
 _log = KTLogger(__name__)
@@ -52,12 +54,24 @@ class PrecalcTimer(CalcTimer):
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
         geotracker.precalc_message = err_message
+        _log.output(f'precalc_message: {err_message}')
 
     def runner_state(self) -> Optional[float]:
         settings = get_gt_settings()
 
         _log.output('runner_state call')
         if self._runner.is_finished():
+            _log.output('runner is_finished')
+            err = self._runner.exception()
+            if err is not None:
+                _log.error(f'runner Exception:\n{str(err)}\n{type(err)}')
+                try:
+                    if type(err) == pkt_module().precalc.PrecalcUnlicensedException:
+                        show_unlicensed_warning()
+                    else:
+                        show_warning_dialog(str(err))
+                except Exception as err2:
+                    show_warning_dialog(str(err) + '\n\n' + str(err2))
             self.finish_calc_mode()
             geotracker = settings.get_current_geotracker_item()
             geotracker.reload_precalc()
@@ -155,7 +169,8 @@ def precalc_with_runner_act(context: Any) -> ActionStatus:
 
     _log.output('precalc_with_runner_act start')
     vp = GTLoader.viewport()
-    vp.texter().register_handler(context)
+    if not settings.pinmode:
+        vp.texter().register_handler(context)
 
     _log.output(f'precalc_path: {geotracker.precalc_path}')
 

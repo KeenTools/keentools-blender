@@ -78,11 +78,6 @@ def _exit_from_localview_button(layout, context):
     col.operator(Config.kt_exit_localview_idname)
 
 
-def show_all_panels() -> bool:
-    settings = get_gt_settings()
-    return settings.current_geotracker_num >= 0
-
-
 class View3DPanel(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -99,7 +94,11 @@ class AllVisible(View3DPanel):
     def poll(cls, context: Any) -> bool:
         if not geotracker_enabled():
             return False
-        return show_all_panels()
+        settings = get_gt_settings()
+        if not settings.current_geotracker_num >= 0:
+            return False
+        geotracker = settings.get_current_geotracker_item()
+        return geotracker.geomobj and geotracker.camobj
 
 
 def _draw_calculating_indicator(layout: Any) -> None:
@@ -108,8 +107,9 @@ def _draw_calculating_indicator(layout: Any) -> None:
     row.prop(settings, 'user_percent', text='Calculating...')
     col = row.column(align=True)
     col.alert = True
+    icon = 'CANCEL' if not settings.user_interrupts else 'X'
     col.operator(GTConfig.gt_stop_calculating_idname, text='',
-                 icon='CANCEL')
+                 icon=icon)
 
 
 class GT_PT_GeotrackersPanel(View3DPanel):
@@ -126,12 +126,11 @@ class GT_PT_GeotrackersPanel(View3DPanel):
 
     def _geotracker_creation_offer(self, layout: Any) -> None:
         settings = get_gt_settings()
-        if settings.pinmode:
-            return
         row = layout.row()
-        row.scale_y = 2.0
-        row.operator(GTConfig.gt_create_geotracker_idname,
-                     text='Create a new GeoTracker', icon='ADD')
+        row.active = not settings.pinmode
+        row.enabled = not settings.pinmode
+        row.scale_y = 2.0 if len(settings.geotrackers) == 0 else Config.btn_scale_y
+        row.operator(GTConfig.gt_create_geotracker_idname, icon='ADD')
 
     def _output_geotrackers_list(self, layout: Any) -> None:
         settings = get_gt_settings()
@@ -234,12 +233,67 @@ class GT_PT_InputsPanel(AllVisible):
     bl_idname = GTConfig.gt_input_panel_idname
     bl_label = 'Inputs'
 
+    @classmethod
+    def poll(cls, context: Any) -> bool:
+        if not geotracker_enabled():
+            return False
+        settings = get_gt_settings()
+        if not settings.current_geotracker_num >= 0:
+            return False
+        return True
+
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
         row = layout.row()
         row.active = False
         row.operator(GTConfig.gt_help_inputs_idname,
                      text='', icon='QUESTION')
+
+    def _draw_main_inputs(self, layout, geotracker):
+        factor = 0.35
+        split = layout.split(factor=factor, align=True)
+        split.label(text='Clip')
+
+        row = split.row(align=True)
+        row.alert = not geotracker.movie_clip
+        row.prop(geotracker, 'movie_clip', text='')
+
+        if geotracker.movie_clip:
+            row.menu(GTConfig.gt_clip_menu_idname, text='', icon='COLLAPSEMENU')
+        else:
+            row.operator(GTConfig.gt_sequence_filebrowser_idname,
+                         text='', icon='FILEBROWSER')
+
+        split = layout.split(factor=factor, align=True)
+        split.label(text='Geometry')
+
+        row = split.row()
+        row.alert = not geotracker.geomobj
+        row.prop(geotracker, 'geomobj', text='')
+
+        split = layout.split(factor=factor, align=True)
+        split.label(text='Camera')
+
+        row = split.row()
+        row.alert = not geotracker.camobj
+        row.prop(geotracker, 'camobj', text='')
+
+    def _draw_precalc_switcher(self, layout, geotracker):
+        row = layout.row(align=True)
+        row.prop(geotracker, 'precalcless', text='Auto', toggle=1)
+        row.prop(geotracker, 'precalcless', text='Use file', toggle=1,
+                 invert_checkbox=True)
+
+    def _draw_analyze_btn(self, layout, geotracker):
+        no_movie_clip = not geotracker.movie_clip
+        precalc_path_is_empty = geotracker.precalc_path == ''
+
+        col = layout.column()
+        if no_movie_clip or precalc_path_is_empty or not geotracker.camobj:
+            col.enabled = False
+        else:
+            col.alert = geotracker.precalc_message_error()
+        col.operator(GTConfig.gt_analyze_call_idname, text='Analyse')
 
     def draw(self, context: Any) -> None:
         settings = get_gt_settings()
@@ -251,25 +305,40 @@ class GT_PT_InputsPanel(AllVisible):
             _start_geomobj_delete_handler()
 
         layout = self.layout
+        self._draw_main_inputs(layout, geotracker)
 
-        row = layout.row(align=True)
-        col = row.column(align=True)
-        col.alert = not geotracker.movie_clip
-        col.prop(geotracker, 'movie_clip', text='Clip')
+        col = layout.column(align=True)
+        col.label(text='Analyse clip')
+        self._draw_precalc_switcher(col, geotracker)
 
-        if geotracker.movie_clip and geotracker.movie_clip.source == 'MOVIE':
-            row.menu(GTConfig.gt_clip_menu_idname, text='', icon='COLLAPSEMENU')
+        if geotracker.precalcless:
+            return
+
+        row = col.row(align=True)
+        no_movie_clip = not geotracker.movie_clip
+        precalc_path_is_empty = geotracker.precalc_path == ''
+
+        if no_movie_clip or not geotracker.camobj:
+            row.enabled = False
         else:
-            row.operator(GTConfig.gt_sequence_filebrowser_idname,
-                         text='', icon='FILEBROWSER')
+            if precalc_path_is_empty:
+                row.alert = True
+        row.prop(geotracker, 'precalc_path', text='')
+        row.operator(GTConfig.gt_choose_precalc_file_idname,
+                     text='', icon='FILEBROWSER')
 
-        row = layout.row()
-        row.alert = not geotracker.geomobj
-        row.prop(geotracker, 'geomobj', text='Geometry')
+        if not precalc_path_is_empty:
+            row.operator(GTConfig.gt_precalc_info_idname,
+                         text='', icon='INFO')
+        else:
+            if not no_movie_clip:
+                row.operator(GTConfig.gt_auto_name_precalc_idname,
+                             text='', icon='FILE_HIDDEN')
 
-        row = layout.row()
-        row.alert = not geotracker.camobj
-        row.prop(geotracker, 'camobj', text='Camera')
+        if settings.is_calculating('PRECALC'):
+            _draw_calculating_indicator(layout)
+        else:
+            self._draw_analyze_btn(col, geotracker)
 
 
 class GT_PT_MasksPanel(AllVisible):
@@ -360,9 +429,9 @@ class GT_PT_MasksPanel(AllVisible):
         self._mask_compositing_block(layout, geotracker)
 
 
-class GT_PT_AnalyzePanel(AllVisible):
-    bl_idname = GTConfig.gt_analyze_panel_idname
-    bl_label = 'Analyze input'
+class GT_PT_CameraPanel(AllVisible):
+    bl_idname = GTConfig.gt_camera_panel_idname
+    bl_label = 'Camera'
     bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -370,50 +439,10 @@ class GT_PT_AnalyzePanel(AllVisible):
         if not geotracker_enabled():
             return False
         settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item(safe=True)
-        if not geotracker or not geotracker.movie_clip:
+        if not settings.current_geotracker_num >= 0:
             return False
-        return True
-
-    def draw_header_preset(self, context: Any) -> None:
-        layout = self.layout
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item(safe=True)
-        row = layout.row()
-        row.active = False
-        txt = 'Auto' if not geotracker or geotracker.precalcless else 'Cache'
-        row.label(text=txt)
-        row.operator(GTConfig.gt_help_analyze_idname,
-                     text='', icon='QUESTION')
-
-    def draw(self, context: Any) -> None:
-        layout = self.layout
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item(safe=True)
-        if not geotracker:
-            return
-
-        col = layout.column(align=True)
-
-        row = col.row(align=True)
-        row.prop(geotracker, 'precalcless', text='Precalcless', toggle=1)
-        row.prop(geotracker, 'precalcless', text='Use precalc', toggle=1,
-                 invert_checkbox=True)
-
-        if not geotracker.precalcless:
-            txt = 'Analyze' if geotracker.precalc_path == '' else geotracker.precalc_path
-            icon = 'ERROR' if geotracker.precalc_message in [
-                '',
-                '* Precalc file is corrupted',
-                '* Precalc needs to be built'] else 'NONE'
-            col.operator(GTConfig.gt_analyze_call_idname,
-                         text=txt, icon=icon)
-
-
-class GT_PT_CameraPanel(AllVisible):
-    bl_idname = GTConfig.gt_camera_panel_idname
-    bl_label = 'Camera'
-    bl_options = {'DEFAULT_CLOSED'}
+        geotracker = settings.get_current_geotracker_item()
+        return True if geotracker.camobj else False
 
     def _camera_lens_row(self, layout: Any, cam_data: Any) -> None:
         row = layout.row(align=True)
@@ -480,9 +509,9 @@ class GT_PT_TrackingPanel(AllVisible):
     def poll(cls, context: Any) -> bool:
         if not geotracker_enabled():
             return False
-        if not show_all_panels():
-            return False
         settings = get_gt_settings()
+        if not settings.current_geotracker_num >= 0:
+            return False
         geotracker = settings.get_current_geotracker_item()
         return geotracker.geomobj and geotracker.camobj
 
@@ -757,7 +786,7 @@ class GT_PT_TexturePanel(AllVisible):
 
 class GT_PT_AnimationPanel(AllVisible):
     bl_idname = GTConfig.gt_animation_panel_idname
-    bl_label = 'Convert tracking'
+    bl_label = 'Scene'
     bl_options = {'DEFAULT_CLOSED'}
 
     def draw_header_preset(self, context: Any) -> None:
@@ -780,6 +809,14 @@ class GT_PT_AnimationPanel(AllVisible):
         col.operator(GTConfig.gt_relative_to_geometry_idname,
                      text='Object to default')
 
+        layout.label(text='Convert tracked keys')
+        col = layout.column(align=True)
+        col.scale_y = Config.btn_scale_y
+        col.operator(GTConfig.gt_move_tracking_to_camera_idname,
+                     text='Geo tracking -> Camera')
+        col.operator(GTConfig.gt_move_tracking_to_geometry_idname,
+                     text='Camera tracking -> Geo')
+
         layout.label(text='Repositioning of animated')
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
@@ -788,19 +825,22 @@ class GT_PT_AnimationPanel(AllVisible):
         col.operator(GTConfig.gt_camera_repositioning_idname,
                      text='Reorient Camera')
 
-        layout.label(text='Convert tracked keys')
+        layout.label(text='Export animation')
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
-        col.operator(GTConfig.gt_move_tracking_to_camera_idname,
-                     text='Geom. tracking -> Camera')
-        col.operator(GTConfig.gt_move_tracking_to_geometry_idname,
-                     text='Cam. tracking -> Geom.')
+        col.operator(GTConfig.gt_create_animated_empty_idname)
 
 
 class GT_PT_RenderingPanel(AllVisible):
     bl_idname = GTConfig.gt_rendering_panel_idname
     bl_label = 'Rendering'
     bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context: Any) -> bool:
+        if GTConfig.hidden_feature:
+            return False
+        return super().poll(context)
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
@@ -823,27 +863,6 @@ class GT_PT_RenderingPanel(AllVisible):
                  text='Transparent background')
         col.prop(bpy.context.scene, 'use_nodes',
                  text='Use compositing nodes')
-
-
-class GT_PT_ExportPanel(AllVisible):
-    bl_idname = GTConfig.gt_export_panel_idname
-    bl_label = 'Export'
-    bl_options = {'DEFAULT_CLOSED'}
-
-    def draw_header_preset(self, context: Any) -> None:
-        layout = self.layout
-        row = layout.row()
-        row.active = False
-        row.operator(
-            GTConfig.gt_help_export_idname,
-            text='', icon='QUESTION')
-
-    def draw(self, context: Any) -> None:
-        layout = self.layout
-
-        col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-        col.operator(GTConfig.gt_create_animated_empty_idname)
 
 
 class GT_PT_SmoothingPanel(AllVisible):

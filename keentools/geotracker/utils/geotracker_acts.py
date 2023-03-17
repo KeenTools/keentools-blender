@@ -69,6 +69,7 @@ from ...utils.compositing import (create_nodes_for_rendering_with_background,
                                   revert_default_compositing)
 from ...utils.images import get_background_image_object
 from ...utils.ui_redraw import total_redraw_ui
+from .calc_timer import TimerMixin
 
 
 _log = KTLogger(__name__)
@@ -186,7 +187,7 @@ def prev_keyframe_act() -> ActionStatus:
     return ActionStatus(False, 'No previous GeoTracker keyframe')
 
 
-class _CommonTimer:
+class _CommonTimer(TimerMixin):
     def __init__(self, computation: Any, from_frame: int = -1,
                  revert_current_frame: bool=False):
         self._interval: float = 0.001
@@ -199,6 +200,7 @@ class _CommonTimer:
         self._overall_func: Callable = lambda: None
         self._start_frame: int = from_frame
         self._revert_current_frame: bool = revert_current_frame
+        self.add_timer(self)
 
     def timeline_state(self) -> Optional[float]:
         settings = get_gt_settings()
@@ -264,6 +266,7 @@ class _CommonTimer:
         GTLoader.save_geotracker()
         settings = get_gt_settings()
         settings.stop_calculating()
+        self.remove_timer(self)
         if self._revert_current_frame:
             bpy_set_current_frame(self._start_frame)
         return None

@@ -94,7 +94,9 @@ class GTConfig:
     gt_render_with_background_idname = operators + '.render_with_background'
     gt_revert_default_render_idname = operators + '.revert_default_render'
     gt_analyze_call_idname = operators + '.analyze_call'
+    gt_precalc_info_idname = operators + '.precalc_info'
     gt_confirm_recreate_precalc_idname = operators + '.confirm_recreate_precalc'
+    gt_auto_name_precalc_idname = operators + '.auto_name_precalc'
 
     # Window ids
     gt_precalc_window_idname = operators + '.precalc_window'
@@ -117,7 +119,6 @@ class GTConfig:
     gt_animation_panel_idname = _PT + 'animation_panel'
     gt_texture_panel_idname = _PT + 'texture_panel'
     gt_rendering_panel_idname = _PT + 'rendering_panel'
-    gt_export_panel_idname = _PT + 'export_panel'
     gt_smoothing_panel_idname = _PT + 'smoothing_panel'
 
     # Help ids
@@ -175,6 +176,8 @@ class GTConfig:
 
     gt_rendered_mask_image_name = 'gt_rendered_mask'
     gt_shadow_compositing_scene_name = 'gt_shadow_compositing_scene'
+
+    hidden_feature = True
 
 
 def get_gt_settings():

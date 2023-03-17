@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import time
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, List
 
 from bpy.types import Area
 
@@ -33,7 +33,30 @@ from ...utils.ui_redraw import force_ui_redraw
 _log = KTLogger(__name__)
 
 
-class CalcTimer():
+class TimerMixin:
+    _timers: List = []
+
+    @classmethod
+    def active_timers(cls) -> List:
+        return cls._timers
+
+    @classmethod
+    def add_timer(cls, timer: Any) -> None:
+        cls._timers.append(timer)
+
+    @classmethod
+    def remove_timer(cls, timer: Any) -> bool:
+        if timer in cls._timers:
+            cls._timers.remove(timer)
+            return True
+        return False
+
+    @classmethod
+    def clear_timers(cls) -> None:
+        cls._timers = []
+
+
+class CalcTimer(TimerMixin):
     def __init__(self, area: Optional[Area]=None, runner: Optional[Any]=None):
         self._interval: float = 0.001
         self._target_frame: int = -1
@@ -44,6 +67,8 @@ class CalcTimer():
         self._active_state_func: Callable = self.dummy_state
         settings = get_gt_settings()
         self._started_in_pinmode = settings.pinmode
+        self._start_frame = bpy_current_frame()
+        self.add_timer(self)
 
     def dummy_state(self) -> None:
         pass
@@ -56,6 +81,7 @@ class CalcTimer():
         area.header_text_set(txt)
 
     def finish_calc_mode(self) -> None:
+        self.remove_timer(self)
         self._state = 'over'
         settings = get_gt_settings()
         settings.stop_calculating()
@@ -68,6 +94,7 @@ class CalcTimer():
             unhide_viewport_ui_elements_from_object(area, geotracker.camobj)
             exit_area_localview(area)
         settings.user_interrupts = True
+        bpy_set_current_frame(self._start_frame)
         force_ui_redraw('VIEW_3D')
 
         _log.info('Calculation is over: {:.2f} sec.'.format(

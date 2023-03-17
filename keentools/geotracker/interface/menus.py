@@ -36,11 +36,17 @@ class GT_MT_ClipMenu(Menu):
         col = layout.column()
         col.operator(GTConfig.gt_sequence_filebrowser_idname,
                      text='Open movie or image sequence', icon='FILEBROWSER')
-        if geotracker and geotracker.movie_clip \
-                and geotracker.movie_clip.source == 'MOVIE':
-            col.separator()
-            col.operator(GTConfig.gt_split_video_to_frames_exec_idname,
-                         text='Split video to frames', icon='RENDER_RESULT')
+        if not geotracker or not geotracker.movie_clip:
+            return
+        col.separator()
+        col.operator(GTConfig.gt_split_video_to_frames_exec_idname,
+                     text='Make snapshot of the current frame', icon='IMAGE')
+
+        if GTConfig.hidden_feature:
+            return
+        col.separator()
+        col.operator(GTConfig.gt_split_video_to_frames_exec_idname,
+                     text='Split video to frames', icon='RENDER_RESULT')
 
 
 class GT_MT_ClearAllTrackingMenu(Menu):
