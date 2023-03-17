@@ -35,8 +35,7 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
                        GT_PT_AnimationPanel,
                        GT_PT_AppearanceSettingsPanel,
                        GT_PT_TexturePanel,
-                       # GT_PT_RenderingPanel,  # Hidden
-                       # GT_PT_ExportPanel,  # Hidden
+                       GT_PT_RenderingPanel,
                        GT_OT_SequenceFilebrowser,  # file dialogs
                        GT_OT_MaskSequenceFilebrowser,
                        GT_OT_ChoosePrecalcFile,

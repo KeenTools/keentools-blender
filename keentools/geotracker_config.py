@@ -119,7 +119,6 @@ class GTConfig:
     gt_animation_panel_idname = _PT + 'animation_panel'
     gt_texture_panel_idname = _PT + 'texture_panel'
     gt_rendering_panel_idname = _PT + 'rendering_panel'
-    gt_export_panel_idname = _PT + 'export_panel'
     gt_smoothing_panel_idname = _PT + 'smoothing_panel'
 
     # Help ids
@@ -177,6 +176,8 @@ class GTConfig:
 
     gt_rendered_mask_image_name = 'gt_rendered_mask'
     gt_shadow_compositing_scene_name = 'gt_shadow_compositing_scene'
+
+    hidden_feature = True
 
 
 def get_gt_settings():

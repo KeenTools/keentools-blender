@@ -813,9 +813,9 @@ class GT_PT_AnimationPanel(AllVisible):
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
         col.operator(GTConfig.gt_move_tracking_to_camera_idname,
-                     text='Geom. tracking -> Camera')
+                     text='Geo tracking -> Camera')
         col.operator(GTConfig.gt_move_tracking_to_geometry_idname,
-                     text='Cam. tracking -> Geom.')
+                     text='Camera tracking -> Geo')
 
         layout.label(text='Repositioning of animated')
         col = layout.column(align=True)
@@ -835,6 +835,12 @@ class GT_PT_RenderingPanel(AllVisible):
     bl_idname = GTConfig.gt_rendering_panel_idname
     bl_label = 'Rendering'
     bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context: Any) -> bool:
+        if GTConfig.hidden_feature:
+            return False
+        return super().poll(context)
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
@@ -857,27 +863,6 @@ class GT_PT_RenderingPanel(AllVisible):
                  text='Transparent background')
         col.prop(bpy.context.scene, 'use_nodes',
                  text='Use compositing nodes')
-
-
-class GT_PT_ExportPanel(AllVisible):
-    bl_idname = GTConfig.gt_export_panel_idname
-    bl_label = 'Export'
-    bl_options = {'DEFAULT_CLOSED'}
-
-    def draw_header_preset(self, context: Any) -> None:
-        layout = self.layout
-        row = layout.row()
-        row.active = False
-        row.operator(
-            GTConfig.gt_help_export_idname,
-            text='', icon='QUESTION')
-
-    def draw(self, context: Any) -> None:
-        layout = self.layout
-
-        col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-        col.operator(GTConfig.gt_create_animated_empty_idname)
 
 
 class GT_PT_SmoothingPanel(AllVisible):
