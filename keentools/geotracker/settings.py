@@ -31,7 +31,8 @@ from .gtloader import GTLoader
 from ..utils.images import (get_background_image_object,
                             set_background_image_by_movieclip,
                             tone_mapping,
-                            find_bpy_image_by_name)
+                            find_bpy_image_by_name,
+                            remove_background_image_object)
 from .utils.tracking import reload_precalc
 from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_scale_vec_4_from_matrix_world,
@@ -102,17 +103,19 @@ def update_geomobj(geotracker, context: Any) -> None:
 
 def update_movieclip(geotracker, context: Any) -> None:
     _log.output('update_movieclip')
-    settings = get_gt_settings()
-    if settings.ui_write_mode:
-        return
-    set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
+
     geotracker.precalc_path = ''
 
-    if geotracker.movie_clip:
-        fit_render_size(geotracker.movie_clip)
-        fit_time_length(geotracker.movie_clip)
-        geotracker.precalc_start = bpy_start_frame()
-        geotracker.precalc_end = bpy_end_frame()
+    if not geotracker.movie_clip:
+        if geotracker.camobj:
+            remove_background_image_object(geotracker.camobj, index=0)
+        return
+
+    set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
+    fit_render_size(geotracker.movie_clip)
+    fit_time_length(geotracker.movie_clip)
+    geotracker.precalc_start = bpy_start_frame()
+    geotracker.precalc_end = bpy_end_frame()
 
 
 def update_precalc_path(geotracker, context: Any) -> None:

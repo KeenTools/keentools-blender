@@ -67,6 +67,7 @@ class CalcTimer(TimerMixin):
         self._active_state_func: Callable = self.dummy_state
         settings = get_gt_settings()
         self._started_in_pinmode = settings.pinmode
+        self._start_frame = bpy_current_frame()
         self.add_timer(self)
 
     def dummy_state(self) -> None:
@@ -93,6 +94,7 @@ class CalcTimer(TimerMixin):
             unhide_viewport_ui_elements_from_object(area, geotracker.camobj)
             exit_area_localview(area)
         settings.user_interrupts = True
+        bpy_set_current_frame(self._start_frame)
         force_ui_redraw('VIEW_3D')
 
         _log.info('Calculation is over: {:.2f} sec.'.format(

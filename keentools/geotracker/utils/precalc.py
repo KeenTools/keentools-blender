@@ -169,7 +169,8 @@ def precalc_with_runner_act(context: Any) -> ActionStatus:
 
     _log.output('precalc_with_runner_act start')
     vp = GTLoader.viewport()
-    vp.texter().register_handler(context)
+    if not settings.pinmode:
+        vp.texter().register_handler(context)
 
     _log.output(f'precalc_path: {geotracker.precalc_path}')
 
