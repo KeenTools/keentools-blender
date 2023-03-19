@@ -176,6 +176,7 @@ class GTConfig:
 
     gt_rendered_mask_image_name = 'gt_rendered_mask'
     gt_shadow_compositing_scene_name = 'gt_shadow_compositing_scene'
+    gt_precalc_folder = '/tmp\\'
 
     hidden_feature = True
 

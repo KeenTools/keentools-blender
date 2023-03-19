@@ -531,6 +531,7 @@ class GT_OT_PrecalcInfo(Operator):
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
+        geotracker.reload_precalc()
         return context.window_manager.invoke_popup(self, width=350)
 
 

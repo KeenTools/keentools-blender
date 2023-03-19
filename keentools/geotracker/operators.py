@@ -777,7 +777,12 @@ class GT_OT_AutoNamePrecalc(ButtonOperator, Operator):
         if not geotracker or not geotracker.movie_clip:
             self.report({'ERROR'}, 'No movie clip')
             return {'CANCELLED'}
-        geotracker.precalc_path = f'/tmp\\{geotracker.movie_clip.name}'
+        geotracker.precalc_path = f'{GTConfig.gt_precalc_folder}' \
+                                  f'{geotracker.movie_clip.name}'
+        status, msg, _ = geotracker.reload_precalc()
+        if not status:
+            _log.error(msg)
+            self.report({'INFO'}, msg)
         return {'FINISHED'}
 
 

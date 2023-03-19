@@ -97,7 +97,6 @@ def reload_precalc(geotracker: Any) -> Tuple[bool, str, Any]:
             return True, 'ok', precalc_info
 
     geotracker.precalc_message = '* Precalc needs to be built'
-    geotracker.precalc_path = precalc_path
     return False, 'Precalc file has not been created yet', None
 
 
