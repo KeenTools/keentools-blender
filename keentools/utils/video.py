@@ -146,6 +146,7 @@ def convert_movieclip_to_frames(movie_clip: Optional[MovieClip],
                                 quality: int=100,
                                 start_frame: int=1,
                                 end_frame: int=-1,
+                                single_frame: bool=False,
                                 opengl_render: bool=True) -> Optional[str]:
     def _cleanup_scene() -> None:
         sequence_editor.sequences.remove(strip)
@@ -177,11 +178,14 @@ def convert_movieclip_to_frames(movie_clip: Optional[MovieClip],
         scene.render.image_settings.quality = quality
     scene.frame_start = start_frame
     scene.frame_end = end_frame if end_frame >= 0 else movie_clip.frame_duration
-    output_filepath = scene.render.frame_path(frame=start_frame)
+    scene.frame_set(start_frame)
+    output_filepath = scene.render.frame_path(frame=start_frame) \
+        if not single_frame else filepath
     try:
         if opengl_render:
             operator_with_context(bpy.ops.render.opengl,
-                                  {'scene': scene}, animation=True,
+                                  {'scene': scene}, animation=not single_frame,
+                                  write_still=single_frame,
                                   sequencer=True, view_context=False)
         else:
             # Much slower but works everywhere

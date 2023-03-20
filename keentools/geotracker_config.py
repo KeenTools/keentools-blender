@@ -43,6 +43,7 @@ class GTConfig:
     gt_choose_precalc_file_idname = operators + '.choose_precalc_file'
     gt_split_video_to_frames_idname = operators + '.split_video_to_frames'
     gt_split_video_to_frames_exec_idname = operators + '.split_video_to_frames_exec'
+    gt_video_snapshot_idname = operators + '.video_snapshot'
     gt_reproject_tex_sequence_idname = operators + '.reproject_tex_sequence'
     gt_track_to_start_idname = operators + '.track_to_start_btn'
     gt_track_to_end_idname = operators + '.track_to_end_btn'

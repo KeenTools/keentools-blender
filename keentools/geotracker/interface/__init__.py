@@ -41,6 +41,7 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
                        GT_OT_ChoosePrecalcFile,
                        GT_OT_SplitVideo,
                        GT_OT_SplitVideoExec,
+                       GT_OT_VideoSnapshot,
                        GT_OT_ReprojectTextureSequence,
                        GT_OT_FrameSelector,
                        GT_OT_AnalyzeCall,

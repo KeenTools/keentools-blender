@@ -56,6 +56,10 @@ buttons = {
         'Split video-file.',
         'Choose dir where to place video-file frames.'
     ),
+    GTConfig.gt_video_snapshot_idname: Button(
+        'Make snapshot',
+        'Make snapshot from current frame'
+    ),
     GTConfig.gt_select_frames_for_bake_idname: Button(
         'Select frames:',
         'Create texture using selected frames'
