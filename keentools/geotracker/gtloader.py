@@ -492,7 +492,7 @@ class GTLoader:
                 wf.set_object_world_matrix(geotracker.geomobj.matrix_world)
         if mask:
             geotracker = get_current_geotracker_item()
-            if geotracker.mask_source == 'COMP_MASK':
+            if geotracker.get_mask_source() == 'COMP_MASK':
                 geotracker.update_compositing_mask()
         if wireframe:
             cls.update_viewport_wireframe(normals)

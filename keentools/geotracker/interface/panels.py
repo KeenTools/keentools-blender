@@ -350,16 +350,16 @@ class GT_PT_MasksPanel(AllVisible):
         if not geotracker.geomobj:
             return
 
-        box = layout.box()
-        row = box.row(align=True)
+        col = layout.column(align=True)
+        col.label(text='Surface mask')
+        row = col.row(align=True)
         row.prop_search(geotracker, 'mask_3d',
-                        geotracker.geomobj, 'vertex_groups')
+                        geotracker.geomobj, 'vertex_groups', text='')
         row.prop(geotracker, 'mask_3d_inverted',
                  text='', icon='ARROW_LEFTRIGHT')
 
     def _mask_2d_block(self, layout: Any, geotracker: Any) -> None:
         box = layout.box()
-        box.active = geotracker.mask_source == 'MASK_2D'
         row = box.row(align=True)
         row.prop_search(geotracker, 'mask_2d',
                         bpy.data, 'images')
@@ -380,21 +380,23 @@ class GT_PT_MasksPanel(AllVisible):
             col.label(text=txt)
 
     def _mask_compositing_block(self, layout: Any, geotracker: Any) -> None:
-        box = layout.box()
-        box.active = geotracker.mask_source == 'COMP_MASK'
-        row = box.row(align=True)
+        col = layout.column(align=True)
+        col.label(text='Compositing mask')
+        row = col.row(align=True)
         row.prop_search(geotracker, 'compositing_mask',
-                        bpy.data, 'masks')
+                        bpy.data, 'masks', text='')
         row.prop(geotracker, 'compositing_mask_inverted',
                  text='', icon='ARROW_LEFTRIGHT')
-        row = box.row(align=True)
-        row.prop(geotracker, 'compositing_mask_threshold', slider=True)
+
+        if not GTConfig.hidden_feature:
+            row = col.row(align=True)
+            row.prop(geotracker, 'compositing_mask_threshold', slider=True)
 
     def _mask_3d_enabled(self, geotracker: Any) -> bool:
         return geotracker and geotracker.geomobj and geotracker.mask_3d != ''
 
     def _mask_2d_enabled(self, geotracker: Any) -> bool:
-        return geotracker and geotracker.mask_source != 'NONE'
+        return geotracker and geotracker.get_mask_source() != 'NONE'
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
@@ -422,10 +424,8 @@ class GT_PT_MasksPanel(AllVisible):
         layout = self.layout
         self._mask_3d_block(layout, geotracker)
 
-        row = layout.row(align=True)
-        row.prop(geotracker, 'mask_source', expand=True)
-
-        self._mask_2d_block(layout, geotracker)
+        if not GTConfig.hidden_feature:
+            self._mask_2d_block(layout, geotracker)
         self._mask_compositing_block(layout, geotracker)
 
 

@@ -39,7 +39,8 @@ from ...utils.video import (convert_movieclip_to_frames,
                             get_movieclip_duration)
 from ..gtloader import GTLoader
 from ...utils.bpy_common import (bpy_start_frame,
-                                 bpy_end_frame)
+                                 bpy_end_frame,
+                                 bpy_current_frame)
 from ..utils.textures import (bake_texture,
                               preview_material_with_texture,
                               bake_texture_sequence)
@@ -257,6 +258,7 @@ class _DirSelectionTemplate(Operator, ExportHelper):
         ('PNG', 'PNG', 'Default image file format with transparency', 0),
         ('JPEG', 'JPEG', 'Data loss image format without transparency', 1),
     ], description='Choose image file format')
+    quality: IntProperty(name='Image quality', default=100, min=0, max=100)
     from_frame: IntProperty(name='from', default=1)
     to_frame: IntProperty(name='to', default=1)
     filename_ext: StringProperty()
@@ -269,6 +271,8 @@ class _DirSelectionTemplate(Operator, ExportHelper):
         row = layout.row()
         row.prop(self, 'from_frame', expand=True)
         row.prop(self, 'to_frame', expand=True)
+        if self.file_format == 'JPEG':
+            layout.prop(self, 'quality')
 
 
 class GT_OT_SplitVideo(_DirSelectionTemplate):
@@ -289,6 +293,7 @@ class GT_OT_SplitVideo(_DirSelectionTemplate):
         output_path = convert_movieclip_to_frames(geotracker.movie_clip,
                                                   self.filepath,
                                                   file_format=self.file_format,
+                                                  quality=self.quality,
                                                   start_frame=self.from_frame,
                                                   end_frame=self.to_frame)
         _log.output(f'OUTPUT PATH2: {output_path}')
@@ -318,6 +323,48 @@ class GT_OT_SplitVideoExec(Operator):
         op('INVOKE_DEFAULT', from_frame=1,
            to_frame=get_movieclip_duration(geotracker.movie_clip),
            filepath=os.path.join(os.path.dirname(geotracker.movie_clip.filepath),''))
+        return {'FINISHED'}
+
+
+class GT_OT_VideoSnapshot(_DirSelectionTemplate):
+    bl_idname = GTConfig.gt_video_snapshot_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    filepath: StringProperty(
+        default='',
+        subtype='FILE_PATH'
+    )
+    digits: IntProperty(default=4)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text='Output files format:')
+        layout.prop(self, 'file_format', expand=True)
+        if self.file_format == 'JPEG':
+            layout.prop(self, 'quality')
+
+    def invoke(self, context, event):
+        self.filepath = str(bpy_current_frame()).zfill(self.digits)
+        return super().invoke(context, event)
+
+    def execute(self, context):
+        self.filename_ext = '.png' if self.file_format == 'PNG' else '.jpg'
+        _log.output(f'OUTPUT filepath: {self.filepath}')
+
+        geotracker = get_current_geotracker_item()
+        if not geotracker or not geotracker.movie_clip:
+            return {'CANCELLED'}
+
+        current_frame = bpy_current_frame()
+        output_path = convert_movieclip_to_frames(geotracker.movie_clip,
+                                                  self.filepath,
+                                                  file_format=self.file_format,
+                                                  quality=self.quality,
+                                                  single_frame=True,
+                                                  start_frame=current_frame,
+                                                  end_frame=current_frame)
+        _log.output(f'OUTPUT PATH: {output_path}')
         return {'FINISHED'}
 
 
@@ -531,6 +578,7 @@ class GT_OT_PrecalcInfo(Operator):
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
+        geotracker.reload_precalc()
         return context.window_manager.invoke_popup(self, width=350)
 
 

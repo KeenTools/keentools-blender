@@ -128,6 +128,7 @@ def update_precalc_path(geotracker, context: Any) -> None:
             geotracker.precalc_path[-len(ending):] != ending:
         with settings.ui_write_mode_context():
             geotracker.precalc_path += ending
+    geotracker.reload_precalc()
 
 
 def update_wireframe(settings, context: Any) -> None:
@@ -225,7 +226,7 @@ def update_mask_2d(geotracker, context: Any) -> None:
 
 
 def update_mask_source(geotracker, context: Any) -> None:
-    if geotracker.mask_source == 'COMP_MASK':
+    if geotracker.get_mask_source() == 'COMP_MASK':
         _log.output('switch to COMP_MASK')
         geotracker.update_compositing_mask(recreate_nodes=True)
     update_mask_2d(geotracker, context)
@@ -368,7 +369,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     selected_frames: bpy.props.CollectionProperty(type=FrameListItem,
                                                   name='Selected frames')
     mask_3d: bpy.props.StringProperty(
-        name='3d mask',
+        name='Surface mask',
         description='The polygons in selected Vertex Group '
                     'will be excluded from tracking',
         update=update_mask_3d)
@@ -413,13 +414,13 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         name='Compositing mask threshold',
         description='Compositing mask cutout threshold',
         update=update_mask_source)
-    mask_source: bpy.props.EnumProperty(name='2D mask source',
-        items=[
-            ('NONE', 'No mask', 'Don\'t use mask', 0),
-            ('MASK_2D', '2D image', 'Use 2D mask image', 1),
-            ('COMP_MASK', 'Compositing', 'Use compositing mask', 2)],
-        description='2D mask source',
-        update=update_mask_source)
+
+    def get_mask_source(self):
+        if self.compositing_mask != '':
+            return 'COMP_MASK'
+        if self.mask_2d != '':
+            return 'MASK_2D'
+        return 'NONE'
 
     smoothing_depth_coeff: bpy.props.FloatProperty(
         default=0.0,
@@ -776,12 +777,13 @@ class GTSceneSettings(bpy.types.PropertyGroup):
             return
         vp = GTLoader.viewport()
         mask = vp.mask2d()
-        if geotracker.mask_source == 'MASK_2D':
+        mask_source = geotracker.get_mask_source()
+        if mask_source == 'MASK_2D':
             _log.output(f'RELOAD 2D MASK: {geotracker.mask_2d}')
             mask.image = find_bpy_image_by_name(geotracker.mask_2d)
             mask.inverted = geotracker.mask_2d_inverted
             mask.mask_threshold = geotracker.mask_2d_threshold
-        elif geotracker.mask_source == 'COMP_MASK':
+        elif mask_source == 'COMP_MASK':
             mask_image = geotracker.update_compositing_mask()
             _log.output('RELOAD 2D COMP_MASK')
             mask.image = mask_image

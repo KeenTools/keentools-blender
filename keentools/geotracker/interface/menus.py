@@ -39,7 +39,7 @@ class GT_MT_ClipMenu(Menu):
         if not geotracker or not geotracker.movie_clip:
             return
         col.separator()
-        col.operator(GTConfig.gt_split_video_to_frames_exec_idname,
+        col.operator(GTConfig.gt_video_snapshot_idname,
                      text='Make snapshot of the current frame', icon='IMAGE')
 
         if GTConfig.hidden_feature:

@@ -174,10 +174,11 @@ class GTMask2DInput(pkt_module().Mask2DInputI):
 
     def load_2d_mask_at(self, frame: int) -> Any:
         geotracker = get_current_geotracker_item()
-        if geotracker.mask_source == 'MASK_2D':
-            return self.load_image_2d_mask_at(frame)
-        elif geotracker.mask_source == 'COMP_MASK':
+        mask_source = geotracker.get_mask_source()
+        if mask_source == 'COMP_MASK':
             return self.load_compositing_2d_mask_at(frame)
+        elif mask_source == 'MASK_2D':
+            return self.load_image_2d_mask_at(frame)
         return None
 
 
