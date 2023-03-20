@@ -116,16 +116,12 @@ class GTImageInput(pkt_module().ImageInputI):
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return 1
-        if not geotracker.precalcless:
-            return geotracker.precalc_start
         return bpy_start_frame()
 
     def last_frame(self) -> int:
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return 0
-        if not geotracker.precalcless:
-            return geotracker.precalc_end
         return bpy_end_frame()
 
 
