@@ -281,9 +281,13 @@ class _CommonTimer(TimerMixin):
 
     def _safe_resume(self) -> bool:
         try:
-            if self.tracking_computation.state() == pkt_module().ComputationState.RUNNING:
+            state = self.tracking_computation.state()
+            _log.output(f'_safe_resume: {state}')
+            if state == pkt_module().ComputationState.RUNNING:
                 self.tracking_computation.resume()
+                _log.output(f'_safe_resume _overall_func: {self._overall_func}')
                 overall = self._overall_func()
+                _log.output(f'_safe_resume overall: {overall}')
                 if overall is None:
                     return False
                 finished_frames, total_frames = overall
@@ -363,16 +367,22 @@ class RefineTimer(_CommonTimer):
 
 
 def track_to(forward: bool) -> ActionStatus:
+    _log.output(f'track_to: {forward}')
     check_status = track_checks()
     if not check_status.success:
         return check_status
 
     geotracker = get_current_geotracker_item()
-
     gt = GTLoader.kt_geotracker()
     current_frame = bpy_current_frame()
+    precalcless = geotracker.precalcless
+    if not precalcless and not \
+            geotracker.precalc_start <= current_frame <= geotracker.precalc_end:
+        return ActionStatus(False, 'Current frame is outside '
+                                   'of the precalc-file range')
     try:
-        precalc_path = None if geotracker.precalcless else geotracker.precalc_path
+        precalc_path = None if precalcless else geotracker.precalc_path
+        _log.output(f'gt.track_async({current_frame}, {forward}, {precalc_path})')
         tracking_computation = gt.track_async(current_frame, forward, precalc_path)
         tracking_timer = TrackTimer(tracking_computation, current_frame)
         tracking_timer.start()
@@ -538,6 +548,10 @@ def refine_all_act() -> ActionStatus:
     GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     if not result:
+        if progress_callback.refined_frames == 0:
+            msg = 'Frames have not been processed'
+            _log.error(msg)
+            return ActionStatus(False, msg)
         return ActionStatus(False, 'Some problem. See console for details')
     return ActionStatus(True, 'ok')
 

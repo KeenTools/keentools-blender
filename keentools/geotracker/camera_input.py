@@ -35,7 +35,9 @@ from ..utils.animation import (get_safe_evaluated_fcurve,
                                remove_fcurve_from_object)
 from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_set_current_frame,
-                                bpy_render_frame)
+                                bpy_render_frame,
+                                bpy_start_frame,
+                                bpy_end_frame)
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..geotracker.gtloader import GTLoader
 from ..utils.images import (np_array_from_background_image,
@@ -114,13 +116,17 @@ class GTImageInput(pkt_module().ImageInputI):
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return 1
-        return geotracker.precalc_start
+        if not geotracker.precalcless:
+            return geotracker.precalc_start
+        return bpy_start_frame()
 
     def last_frame(self) -> int:
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return 0
-        return geotracker.precalc_end
+        if not geotracker.precalcless:
+            return geotracker.precalc_end
+        return bpy_end_frame()
 
 
 class GTMask2DInput(pkt_module().Mask2DInputI):
