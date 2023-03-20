@@ -121,7 +121,7 @@ class GT_PT_GeotrackersPanel(View3DPanel):
         layout = self.layout
         row = layout.row()
         op = row.operator(Config.kt_addon_settings_idname,
-                          text='', icon='PREFERENCES')
+                          text='', icon='PREFERENCES', emboss=False)
         op.show = 'geotracker'
 
     def _geotracker_creation_offer(self, layout: Any) -> None:
@@ -247,7 +247,7 @@ class GT_PT_InputsPanel(AllVisible):
         row = layout.row()
         row.active = False
         row.operator(GTConfig.gt_help_inputs_idname,
-                     text='', icon='QUESTION')
+                     text='', icon='QUESTION', emboss=False)
 
     def _draw_main_inputs(self, layout, geotracker):
         factor = 0.35
@@ -413,7 +413,7 @@ class GT_PT_MasksPanel(AllVisible):
             if self._mask_2d_enabled(geotracker):
                 row.label(text='2D')
         row.operator(GTConfig.gt_help_masks_idname,
-                     text='', icon='QUESTION')
+                     text='', icon='QUESTION', emboss=False)
 
     def draw(self, context: Any) -> None:
         settings = get_gt_settings()
@@ -469,7 +469,8 @@ class GT_PT_CameraPanel(AllVisible):
     def _camera_header_help_button(self, layout: Any) -> None:
         col = layout.column()
         col.active = False
-        col.operator(GTConfig.gt_help_camera_idname, text='', icon='QUESTION')
+        col.operator(GTConfig.gt_help_camera_idname,
+                     text='', icon='QUESTION', emboss=False)
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
@@ -622,7 +623,7 @@ class GT_PT_TrackingPanel(AllVisible):
             row.label(text='Camera' if geotracker.camera_mode() else 'Geometry')
         row.operator(
             GTConfig.gt_help_tracking_idname,
-            text='', icon='QUESTION')
+            text='', icon='QUESTION', emboss=False)
 
     def draw(self, context: Any) -> None:
         settings = get_gt_settings()
@@ -720,9 +721,9 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         row = layout.row(align=True)
         row.active = False
         row.operator(GTConfig.gt_addon_setup_defaults_idname,
-                     text='', icon='PREFERENCES')
+                     text='', icon='PREFERENCES', emboss=False)
         row.operator(GTConfig.gt_help_appearance_idname,
-                     text='', icon='QUESTION')
+                     text='', icon='QUESTION', emboss=False)
 
     def draw(self, context: Any) -> None:
         layout = self.layout
@@ -742,7 +743,7 @@ class GT_PT_TexturePanel(AllVisible):
         row = layout.row()
         row.active = False
         row.operator(GTConfig.gt_help_texture_idname,
-                     text='', icon='QUESTION')
+                     text='', icon='QUESTION', emboss=False)
 
     def _draw_buttons(self, layout, active=True):
         col = layout.column(align=True)
@@ -794,7 +795,7 @@ class GT_PT_AnimationPanel(AllVisible):
         row = layout.row()
         row.active = False
         row.operator(GTConfig.gt_help_animation_idname,
-                     text='', icon='QUESTION')
+                     text='', icon='QUESTION', emboss=False)
 
     def draw(self, context: Any) -> None:
         layout = self.layout
@@ -848,7 +849,7 @@ class GT_PT_RenderingPanel(AllVisible):
         row.active = False
         row.operator(
             GTConfig.gt_help_rendering_idname,
-            text='', icon='QUESTION')
+            text='', icon='QUESTION', emboss=False)
 
     def draw(self, context: Any) -> None:
         layout = self.layout
@@ -886,7 +887,7 @@ class GT_PT_SmoothingPanel(AllVisible):
 
         row.operator(
             GTConfig.gt_help_smoothing_idname,
-            text='', icon='QUESTION')
+            text='', icon='QUESTION', emboss=False)
 
     def draw(self, context: Any) -> None:
         settings = get_gt_settings()

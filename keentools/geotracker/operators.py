@@ -72,7 +72,6 @@ from .gtloader import GTLoader
 from .ui_strings import buttons
 from .utils.prechecks import common_checks
 from ..utils.coords import distance_between_objects
-from .utils.precalc_runner import PrecalcRunner
 
 
 _log = KTLogger(__name__)
@@ -811,32 +810,9 @@ class GT_OT_ResizeWindow(Operator):
 
     def draw(self, context) -> None:
         layout = self.layout
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
-
         layout.separator()
         layout.prop(self, 'value', text='Scale:')
         layout.prop(self, 'keep_cam_scale')
-        dx, dy, dz = geotracker.geomobj.dimensions
-        sx, sy, sz = geotracker.geomobj.scale
-        dist = distance_between_objects(geotracker.camobj, geotracker.geomobj)
-        row = layout.row()
-        col = row.column()
-        col.label(text='Dimensions')
-        col.label(text=f'X: {dx:.4f}')
-        col.label(text=f'Y: {dy:.4f}')
-        col.label(text=f'Z: {dz:.4f}')
-
-        col = row.column()
-        col.label(text='Scale')
-        col.label(text=f'X: {sx:.4f}')
-        col.label(text=f'Y: {sy:.4f}')
-        col.label(text=f'Z: {sz:.4f}')
-
-        col = row.column()
-        col.label(text='Distance:')
-        col.label(text=f'{dist:.4f}')
-
         layout.separator()
 
     def execute(self, context):
