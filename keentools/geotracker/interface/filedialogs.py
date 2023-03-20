@@ -588,10 +588,15 @@ class GT_OT_AnalyzeCall(Operator):
     bl_description = 'Call analyze dialog'
     bl_options = {'REGISTER', 'INTERNAL'}
 
+    precalc_start: IntProperty(default=1, name='from',
+                               description='starting frame')
+    precalc_end: IntProperty(default=250, name='to',
+                             description='ending frame')
+
     def _precalc_range_row(self, layout, geotracker):
         row = layout.row()
-        row.prop(geotracker, 'precalc_start')
-        row.prop(geotracker, 'precalc_end')
+        row.prop(self, 'precalc_start')
+        row.prop(self, 'precalc_end')
 
     def draw(self, context):
         layout = self.layout
@@ -608,6 +613,8 @@ class GT_OT_AnalyzeCall(Operator):
             op = get_operator(GTConfig.gt_choose_precalc_file_idname)
             op('INVOKE_DEFAULT')
             return {'FINISHED'}
+        self.precalc_start = bpy_start_frame()
+        self.precalc_end = bpy_end_frame()
         return context.window_manager.invoke_props_dialog(self)
 
     def cancel(self, context):
@@ -620,8 +627,9 @@ class GT_OT_AnalyzeCall(Operator):
             return {'FINISHED'}
 
         try:
-            status, msg, precalc_info = geotracker.reload_precalc()
-            if not status and msg == 'Precalc file has not been created yet':
+            geotracker.precalc_start = self.precalc_start
+            geotracker.precalc_end = self.precalc_end
+            if not os.path.exists(geotracker.precalc_path):
                 op = get_operator(GTConfig.gt_create_precalc_idname)
                 op('EXEC_DEFAULT')
             else:
