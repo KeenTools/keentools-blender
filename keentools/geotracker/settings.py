@@ -25,7 +25,10 @@ from bpy.types import Object, CameraBackgroundImage, Area, Image, Mask
 from mathutils import Matrix
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, get_addon_preferences
+from ..addon_config import (Config,
+                            get_addon_preferences,
+                            get_operator,
+                            ErrorType)
 from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
 from ..utils.images import (get_background_image_object,
@@ -84,6 +87,17 @@ def update_camobj(geotracker, context: Any) -> None:
             return
     GTLoader.update_viewport_shaders()
 
+    if geotracker.camobj and len(geotracker.camobj.constraints) > 0:
+        msg = 'Camera object has constraints!\n' \
+              'It is highly recommended to remove or bake them.\n' \
+              ' \n' \
+              'If you have used Blender tracking,\n' \
+              'you need to use \'Constraint to F-Curve button\'\n' \
+              'of the solver constraint.'
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+             msg_content=msg)
+
 
 def update_geomobj(geotracker, context: Any) -> None:
     _log.output(f'update_geomobj: {geotracker.geomobj}')
@@ -99,6 +113,17 @@ def update_geomobj(geotracker, context: Any) -> None:
     GTLoader.save_geotracker()
     if settings.pinmode:
         GTLoader.update_viewport_shaders()
+
+    if geotracker.geomobj and len(geotracker.geomobj.constraints) > 0:
+        msg = 'Geometry object has constraints!\n' \
+              'It is highly recommended to remove or bake them.\n' \
+              ' \n' \
+              'If you have used Blender tracking,\n' \
+              'you need to use \'Constraint to F-Curve button\'\n' \
+              'of the solver constraint.'
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+             msg_content=msg)
 
 
 def update_movieclip(geotracker, context: Any) -> None:
