@@ -39,7 +39,8 @@ from ...utils.animation import (get_action,
                                 mark_all_points_in_locrot,
                                 mark_selected_points_in_locrot,
                                 get_object_keyframe_numbers,
-                                create_animation_locrot_keyframe_force)
+                                create_animation_locrot_keyframe_force,
+                                create_locrot_keyframe)
 from ...utils.other import bpy_progress_begin, bpy_progress_end
 from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
@@ -387,12 +388,12 @@ def track_to(forward: bool) -> ActionStatus:
         tracking_timer = TrackTimer(tracking_computation, current_frame)
         tracking_timer.start()
     except pkt_module().UnlicensedException as err:
-        _log.error(f'UnlicensedException refine_act: {str(err)}')
+        _log.error(f'UnlicensedException track_to: {str(err)}')
         show_unlicensed_warning()
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
-        _log.error(f'Unknown Exception refine_act: {str(err)}')
+        _log.error(f'Unknown Exception track_to: {str(err)}')
         show_warning_dialog(err)
         return ActionStatus(False, 'Some problem (see console)')
 
@@ -843,6 +844,7 @@ def bake_texture_from_frames_act(selected_frames: List) -> ActionStatus:
 
 
 def relative_to_camera_act() -> ActionStatus:
+    _log.output('relative_to_camera_act call')
     check_status = common_checks(object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
@@ -871,13 +873,23 @@ def relative_to_camera_act() -> ActionStatus:
     scale = camobj.matrix_world.to_scale()
     cam_matrix = Matrix.LocRotScale(
         (0, 0, 0), Euler((math.radians(90), 0, 0), 'XYZ'), scale)
-    for frame in matrices:
+
+    bpy.context.window_manager.progress_begin(0, len(matrices))
+    for i, frame in enumerate(matrices):
+        bpy.context.window_manager.progress_update(i)
+        _log.output(f'relative_to_camera_act frame:{frame}')
         bpy_set_current_frame(frame)
+        _log.output(f'relative_to_camera_act before delete')
         delete_locrot_keyframe(camobj)
+        _log.output(f'relative_to_camera_act after delete_locrot_keyframe')
         camobj.matrix_world = cam_matrix
         GTLoader.place_object_relative_to_camera(matrices[frame])
+        _log.output(f'relative_to_camera_act place_object_relative_to_camera')
         update_depsgraph()
-        create_animation_locrot_keyframe_force(geomobj)
+        _log.output(f'relative_to_camera_act update_depsgraph')
+        create_locrot_keyframe(geomobj)
+
+    bpy.context.window_manager.progress_end()
 
     bpy_set_current_frame(current_frame)
     geotracker.solve_for_camera = False
@@ -913,13 +925,19 @@ def relative_to_geometry_act() -> ActionStatus:
     # Object at (0, 0, 0) keeping its scale
     scale = geomobj.matrix_world.to_scale()
     geom_matrix = Matrix.LocRotScale((0, 0, 0), Euler((0, 0, 0), 'XYZ'), scale)
-    for frame in matrices:
+
+    bpy.context.window_manager.progress_begin(0, len(matrices))
+    for i, frame in enumerate(matrices):
+        bpy.context.window_manager.progress_update(i)
+        _log.output(f'relative_to_geometry_act frame:{frame}')
         bpy_set_current_frame(frame)
         delete_locrot_keyframe(geomobj)
         geomobj.matrix_world = geom_matrix
         GTLoader.place_camera_relative_to_object(matrices[frame])
         update_depsgraph()
         create_animation_locrot_keyframe_force(camobj)
+
+    bpy.context.window_manager.progress_end()
 
     bpy_set_current_frame(current_frame)
     geotracker.solve_for_camera = True
