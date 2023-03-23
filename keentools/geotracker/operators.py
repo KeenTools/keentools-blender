@@ -17,7 +17,11 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from bpy.types import Operator
-from bpy.props import BoolProperty, IntProperty, FloatProperty, FloatVectorProperty
+from bpy.props import (BoolProperty,
+                       IntProperty,
+                       FloatProperty,
+                       FloatVectorProperty,
+                       EnumProperty)
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (get_operator,
@@ -60,10 +64,11 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     select_geotracker_objects_act,
                                     render_with_background_act,
                                     revert_default_render_act,
-                                    get_object_states,
+                                    get_camobj_state,
+                                    get_geomobj_state,
                                     resize_object,
                                     revert_object_states,
-                                    scale_tracking_act,
+                                    scale_scene_tracking_act,
                                     create_non_overlapping_uv_act,
                                     TrackTimer,
                                     RefineTimer)
@@ -801,22 +806,39 @@ class GT_OT_ResizeWindow(Operator):
     bl_label = 'Scale'
     bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
 
-    value: FloatProperty(default=1.0, precision=4, step=0.03,
+    value: FloatProperty(default=1.0, precision=4, step=0.03, min=0.0001,
                          update=resize_object_func)
     geom_scale: FloatVectorProperty(default=(1, 1, 1))
     cam_scale:  FloatVectorProperty(default=(1, 1, 1))
     keep_cam_scale: BoolProperty(default=True, name='Keep camera scale',
                                  update=resize_object_func)
+    keep_geom_scale: BoolProperty(default=False, name='Keep object scale',
+                                 update=resize_object_func)
+    origin_point: EnumProperty(name='Pivot point', items=[
+        ('WORLD', 'World Origin', 'Use world center', 0),
+        ('GEOMETRY', 'Geometry', 'Use geometry as center', 1),
+        ('CAMERA', 'Camera', 'Use camera as center', 2),
+        ('3D_CURSOR', '3D Cursor', 'Use 3D cursor', 3),
+    ], update=resize_object_func)
 
     def draw(self, context) -> None:
         layout = self.layout
         layout.separator()
-        layout.prop(self, 'value', text='Scale:')
-        layout.prop(self, 'keep_cam_scale')
+        row = layout.row(align=True)
+        row.prop(self, 'origin_point')  # , expand=True
+
+        row = layout.row()
+        row.scale_y = 1.5
+        row.prop(self, 'value', text='Scale:')
+        # col.label(text='Scale pivot point:')
+
+        row = layout.row(align=True)
+        row.prop(self, 'keep_cam_scale')
+        row.prop(self, 'keep_geom_scale')
         layout.separator()
 
     def execute(self, context):
-        act_status = scale_tracking_act(self)
+        act_status = scale_scene_tracking_act(self)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -835,9 +857,12 @@ class GT_OT_ResizeWindow(Operator):
             return {'CANCELLED'}
 
         geotracker = get_current_geotracker_item()
-        get_object_states(self, geotracker)
+        get_camobj_state(self, geotracker.camobj)
+        get_geomobj_state(self, geotracker.geomobj)
         self.value = 1.0
-        return context.window_manager.invoke_props_dialog(self, width=400)
+        self.keep_cam_scale = True
+        self.keep_geom_scale = False
+        return context.window_manager.invoke_props_dialog(self, width=350)
 
 
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,

@@ -1224,14 +1224,14 @@ def _set_cam_mw(value: Matrix) -> None:
     _cam_mw = value
 
 
-def get_object_states(operator: Operator, geotracker: Any) -> None:
-    geomobj = geotracker.geomobj
-    camobj = geotracker.camobj
-    _set_geom_mw(geomobj.matrix_world.copy())
+def get_camobj_state(operator: Operator, camobj: Object) -> None:
     _set_cam_mw(camobj.matrix_world.copy())
-
-    operator.geom_scale = geomobj.scale
     operator.cam_scale = camobj.scale
+
+
+def get_geomobj_state(operator: Operator, geomobj: Object) -> None:
+    _set_geom_mw(geomobj.matrix_world.copy())
+    operator.geom_scale = geomobj.scale
 
 
 def revert_object_states() -> bool:
@@ -1247,48 +1247,55 @@ def revert_object_states() -> bool:
     return True
 
 
-def _calc_resize_matrix(origin: Object, scale: float) -> Matrix:
+def _calc_resize_matrix(origin_matrix: Matrix, scale: float) -> Matrix:
     scale_mat = Matrix.Scale(scale, 4)
-    origin_mw = origin.matrix_world
-    return origin_mw @ scale_mat @ origin_mw.inverted()
+    return origin_matrix @ scale_mat @ origin_matrix.inverted()
 
 
-def _resize_geometry(operator: Operator) -> None:
-    geotracker = get_current_geotracker_item()
-    geotracker.geomobj.matrix_world = _calc_resize_matrix(
-        geotracker.camobj, operator.value) @ geotracker.geomobj.matrix_world
-
-    if operator.keep_cam_scale:
-        geotracker.camobj.scale = operator.cam_scale
+def _apply_geomobj_scale(geomobj: Object, operator: Operator) -> None:
+    if operator.keep_geom_scale:
+        geomobj.scale = operator.geom_scale
     else:
-        geotracker.camobj.scale = (operator.cam_scale[0] * operator.value,
-                                   operator.cam_scale[1] * operator.value,
-                                   operator.cam_scale[2] * operator.value)
+        geomobj.scale = (operator.geom_scale[0] * operator.value,
+                         operator.geom_scale[1] * operator.value,
+                         operator.geom_scale[2] * operator.value)
 
 
-def _resize_camera(operator: Operator) -> None:
-    geotracker = get_current_geotracker_item()
-    geotracker.camobj.matrix_world = _calc_resize_matrix(
-        geotracker.geomobj, operator.value) @ geotracker.camobj.matrix_world
-
-    geotracker.geomobj.scale = (operator.geom_scale[0] * operator.value,
-                                operator.geom_scale[1] * operator.value,
-                                operator.geom_scale[2] * operator.value)
-
+def _apply_camobj_scale(camobj: Object, operator: Operator) -> None:
     if operator.keep_cam_scale:
-        geotracker.camobj.scale = operator.cam_scale
+        camobj.scale = operator.cam_scale
+    else:
+        camobj.scale = (operator.cam_scale[0] * operator.value,
+                        operator.cam_scale[1] * operator.value,
+                        operator.cam_scale[2] * operator.value)
+
+
+def _get_operator_origin_matrix(operator: Operator) -> Matrix:
+    geotracker = get_current_geotracker_item()
+    origin_matrix = Matrix.Identity(4)
+    if operator.origin_point == 'GEOMETRY':
+        origin_matrix = geotracker.geomobj.matrix_world.copy()
+    elif operator.origin_point == 'CAMERA':
+        origin_matrix = geotracker.camobj.matrix_world.copy()
+    elif operator.origin_point == '3D_CURSOR':
+        origin_matrix = bpy_scene().cursor.matrix.copy()
+    return origin_matrix
 
 
 def resize_object(operator: Operator) -> None:
     geotracker = get_current_geotracker_item()
 
-    if geotracker.camera_mode():
-        _resize_camera(operator)
-    else:
-        _resize_geometry(operator)
+    origin_matrix = _get_operator_origin_matrix(operator)
+    rescale_matrix = _calc_resize_matrix(origin_matrix, operator.value)
+    geotracker.camobj.matrix_world = rescale_matrix @ \
+                                     geotracker.camobj.matrix_world
+    _apply_camobj_scale(geotracker.camobj, operator)
+    geotracker.geomobj.matrix_world = rescale_matrix @ \
+                                      geotracker.geomobj.matrix_world
+    _apply_geomobj_scale(geotracker.geomobj, operator)
 
 
-def scale_tracking_act(operator: Operator) -> ActionStatus:
+def scale_scene_tracking_act(operator: Operator) -> ActionStatus:
     check_status = common_checks(object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
@@ -1299,38 +1306,44 @@ def scale_tracking_act(operator: Operator) -> ActionStatus:
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
+    current_frame = bpy_current_frame()
 
     geom_animated_frames = get_object_keyframe_numbers(geomobj)
     cam_animated_frames = get_object_keyframe_numbers(camobj)
-    all_animated_frames = cam_animated_frames if geotracker.camera_mode() \
-        else geom_animated_frames
-    _log.output(f'ALL FRAMES: {all_animated_frames}')
 
-    if len(all_animated_frames) == 0:
-        msg = 'Tracked object does not have any keyframes'
-        _log.error(msg)
-        return ActionStatus(False, msg)
-
-    current_frame = bpy_current_frame()
+    origin_matrix = _get_operator_origin_matrix(operator)
+    rescale_matrix = _calc_resize_matrix(origin_matrix, operator.value)
 
     revert_object_states()
-    last_scale = (1, 1, 1)
-    for frame in all_animated_frames:
+
+    for frame in cam_animated_frames:
         bpy_set_current_frame(frame)
-        get_object_states(operator, geotracker)
-        resize_object(operator)
+        geotracker.camobj.matrix_world = rescale_matrix @ \
+                                         geotracker.camobj.matrix_world
+        _apply_camobj_scale(geotracker.camobj, operator)
         update_depsgraph()
+        create_animation_locrot_keyframe_force(camobj)
+        geotracker.camobj.scale = operator.cam_scale
 
-        if geotracker.camera_mode():
-            create_animation_locrot_keyframe_force(camobj)
-        else:
-            create_animation_locrot_keyframe_force(geomobj)
+    if len(cam_animated_frames) == 0:
+        geotracker.camobj.matrix_world = rescale_matrix @ \
+                                         geotracker.camobj.matrix_world
 
-        last_scale = geotracker.geomobj.scale.copy()
+    for frame in geom_animated_frames:
+        bpy_set_current_frame(frame)
+        geotracker.geomobj.matrix_world = rescale_matrix @ \
+                                          geotracker.geomobj.matrix_world
+        _apply_geomobj_scale(geotracker.geomobj, operator)
+        update_depsgraph()
+        create_animation_locrot_keyframe_force(geomobj)
         geotracker.geomobj.scale = operator.geom_scale
 
-    geotracker.geomobj.scale = last_scale
+    if len(geom_animated_frames) == 0:
+        geotracker.geomobj.matrix_world = rescale_matrix @ \
+                                          geotracker.geomobj.matrix_world
 
+    _apply_camobj_scale(geotracker.camobj, operator)
+    _apply_geomobj_scale(geotracker.geomobj, operator)
     bpy_set_current_frame(current_frame)
 
     GTLoader.save_geotracker()
