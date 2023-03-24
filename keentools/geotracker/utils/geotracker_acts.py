@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import time
 from typing import List
 import math
 import numpy as np
@@ -30,17 +29,14 @@ from ...addon_config import ActionStatus
 from ...geotracker_config import (get_gt_settings,
                                   get_current_geotracker_item)
 from ..gtloader import GTLoader
-from ..gt_class_loader import GTClassLoader
 from ...utils.animation import (get_action,
                                 remove_fcurve_point,
                                 remove_fcurve_from_object,
                                 delete_locrot_keyframe,
-                                mark_all_points_in_locrot,
                                 mark_selected_points_in_locrot,
                                 get_object_keyframe_numbers,
                                 create_animation_locrot_keyframe_force,
                                 create_locrot_keyframe)
-from ...utils.other import bpy_progress_begin, bpy_progress_end
 from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
 from ...utils.bpy_common import (create_empty_object,
@@ -64,7 +60,6 @@ from .prechecks import (common_checks,
 from ...utils.compositing import (create_nodes_for_rendering_with_background,
                                   revert_default_compositing)
 from ...utils.images import get_background_image_object
-from ...utils.ui_redraw import total_redraw_ui
 from .calc_timer import (TrackTimer,
                          RefineTimer,
                          RefineTimerFast)
@@ -254,9 +249,16 @@ def refine_async_act() -> ActionStatus:
         return check_status
 
     geotracker = get_current_geotracker_item()
-
     gt = GTLoader.kt_geotracker()
     current_frame = bpy_current_frame()
+
+    if not geotracker.precalcless:
+        next_frame = get_next_tracking_keyframe(gt, current_frame)
+        prev_frame = get_previous_tracking_keyframe(gt, current_frame)
+        if not (geotracker.precalc_start <= prev_frame <= geotracker.precalc_end and
+                geotracker.precalc_start <= next_frame <= geotracker.precalc_end):
+            return ActionStatus(False, 'Selected frame range is outside '
+                                       'of the precalc range')
     try:
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
         refine_computation = gt.refine_async(current_frame, precalc_path)
