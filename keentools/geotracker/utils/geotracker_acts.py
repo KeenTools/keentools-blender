@@ -16,8 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import time
-from typing import Optional, Any, Callable, List
+from typing import List
 import math
 import numpy as np
 
@@ -26,22 +25,18 @@ from bpy.types import Object, Operator
 from mathutils import Matrix, Euler
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import get_operator, ActionStatus
-from ...geotracker_config import (GTConfig,
-                                  get_gt_settings,
+from ...addon_config import ActionStatus
+from ...geotracker_config import (get_gt_settings,
                                   get_current_geotracker_item)
 from ..gtloader import GTLoader
-from ..gt_class_loader import GTClassLoader
 from ...utils.animation import (get_action,
                                 remove_fcurve_point,
                                 remove_fcurve_from_object,
                                 delete_locrot_keyframe,
-                                mark_all_points_in_locrot,
                                 mark_selected_points_in_locrot,
                                 get_object_keyframe_numbers,
                                 create_animation_locrot_keyframe_force,
                                 create_locrot_keyframe)
-from ...utils.other import bpy_progress_begin, bpy_progress_end
 from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
 from ...utils.bpy_common import (create_empty_object,
@@ -49,13 +44,9 @@ from ...utils.bpy_common import (create_empty_object,
                                  bpy_set_current_frame,
                                  update_depsgraph,
                                  reset_unsaved_animation_changes_in_frame,
-                                 bpy_background_mode,
-                                 bpy_timer_register,
                                  bpy_scene,
-                                 bpy_render_single_frame,
-                                 bpy_transform_resize)
+                                 bpy_render_single_frame)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
-from ...utils.timer import RepeatTimer
 from ...utils.manipulate import select_objects_only, center_viewport, select_object_only
 from .textures import bake_texture, preview_material_with_texture
 from .prechecks import (common_checks,
@@ -69,8 +60,9 @@ from .prechecks import (common_checks,
 from ...utils.compositing import (create_nodes_for_rendering_with_background,
                                   revert_default_compositing)
 from ...utils.images import get_background_image_object
-from ...utils.ui_redraw import total_redraw_ui
-from .calc_timer import TimerMixin
+from .calc_timer import (TrackTimer,
+                         RefineTimer,
+                         RefineTimerFast)
 
 
 _log = KTLogger(__name__)
@@ -188,185 +180,6 @@ def prev_keyframe_act() -> ActionStatus:
     return ActionStatus(False, 'No previous GeoTracker keyframe')
 
 
-class _CommonTimer(TimerMixin):
-    def __init__(self, computation: Any, from_frame: int = -1,
-                 revert_current_frame: bool=False):
-        self._interval: float = 0.001
-        self._target_frame: int = from_frame
-        self._state: str = 'timeline'
-        self._active_state_func: Callable = self.timeline_state
-        self.tracking_computation: Any = computation
-        self._operation_name: str = 'common operation'
-        self._calc_mode: str = 'NONE'
-        self._overall_func: Callable = lambda: None
-        self._start_frame: int = from_frame
-        self._revert_current_frame: bool = revert_current_frame
-        self.add_timer(self)
-
-    def timeline_state(self) -> Optional[float]:
-        settings = get_gt_settings()
-        if settings.user_interrupts or not settings.pinmode:
-            self._cancel()
-
-        if bpy_current_frame() == self._target_frame:
-            self._state = 'computation'
-            self._active_state_func = self.computation_state
-            return self.computation_state()
-        bpy_set_current_frame(self._target_frame)
-        _log.output(f'{self._operation_name} timeline_state: '
-                    f'set_current_frame({self._target_frame})')
-        return self._interval
-
-    def computation_state(self) -> Optional[float]:
-        settings = get_gt_settings()
-        if settings.user_interrupts or not settings.pinmode:
-            self._cancel()
-
-        current_frame = bpy_current_frame()
-        _log.output(f'{self._operation_name} computation_state '
-                    f'scene={current_frame} target={self._target_frame}')
-
-        result = self._safe_resume()
-
-        tracking_current_frame = self.tracking_computation.current_frame()
-        _log.output(f'{self._operation_name} '
-                    f'CURRENT FRAME: scene={current_frame} '
-                    f'track={tracking_current_frame} result={result}')
-
-        overall = self._overall_func()
-        if not result or overall is None:
-            self._output_statistics()
-            self._state = 'finish'
-            self._active_state_func = self.finish_computation
-            return self.finish_computation()
-
-        if result and tracking_current_frame != current_frame:
-            self._target_frame = tracking_current_frame
-            self._state = 'timeline'
-            self._active_state_func = self.timeline_state
-            bpy_set_current_frame(self._target_frame)
-            return self._interval
-
-        return self._interval
-
-    def finish_computation(self) -> None:
-        _log.output(f'{self._operation_name} finish_computation call')
-        attempts = 0
-        max_attempts = 3
-        while attempts < max_attempts and \
-                self.tracking_computation.state() == pkt_module().ComputationState.RUNNING:
-            attempts += 1
-            _log.output(f'TRY TO STOP COMPUTATION. ATTEMPT {attempts}')
-            self.tracking_computation.cancel()
-            self._safe_resume()
-        if attempts >= max_attempts and \
-                self.tracking_computation.state() == pkt_module().ComputationState.RUNNING:
-            _log.error(f'PROBLEM WITH COMPUTATION STOP')
-        GTLoader.viewport().revert_default_screen_message(unregister=False)
-        self._stop_user_interrupt_operator()
-        GTLoader.save_geotracker()
-        settings = get_gt_settings()
-        settings.stop_calculating()
-        self.remove_timer(self)
-        if self._revert_current_frame:
-            bpy_set_current_frame(self._start_frame)
-        return None
-
-    def _start_user_interrupt_operator(self) -> None:
-        op = get_operator(GTConfig.gt_interrupt_modal_idname)
-        op('INVOKE_DEFAULT')
-
-    def _stop_user_interrupt_operator(self) -> None:
-        settings = get_gt_settings()
-        settings.user_interrupts = True
-
-    def _safe_resume(self) -> bool:
-        try:
-            state = self.tracking_computation.state()
-            _log.output(f'_safe_resume: {state}')
-            if state == pkt_module().ComputationState.RUNNING:
-                self.tracking_computation.resume()
-                _log.output(f'_safe_resume _overall_func: {self._overall_func}')
-                overall = self._overall_func()
-                _log.output(f'_safe_resume overall: {overall}')
-                if overall is None:
-                    return False
-                finished_frames, total_frames = overall
-                GTLoader.viewport().message_to_screen(
-                    [{'text': f'{self._operation_name} calculating: '
-                              f'{finished_frames}/{total_frames}', 'y': 60,
-                      'color': (1.0, 0.0, 0.0, 0.7)},
-                     {'text': 'ESC to interrupt. '
-                              'The scene now is BEFORE applying operation', 'y': 30,
-                      'color': (1.0, 1.0, 1.0, 0.7)}])
-                settings = get_gt_settings()
-                total = total_frames if total_frames != 0 else 1
-                settings.user_percent = 100 * finished_frames / total
-                return True
-        except RuntimeError as err:
-            msg = f'{self._operation_name} _safe_resume ' \
-                  f'Computation Exception.\n{str(err)}'
-            _log.error(msg)
-            show_warning_dialog(err)
-        except Exception as err:
-            msg = f'{self._operation_name} _safe_resume Exception. {str(err)}'
-            _log.error(msg)
-            show_warning_dialog(err)
-        return False
-
-    def _output_statistics(self) -> None:
-        overall = self._overall_func()
-        _log.output(f'--- {self._operation_name} statistics ---')
-        _log.output(f'Total calc frames: {overall}')
-        gt = GTLoader.kt_geotracker()
-        _log.output(f'KEYFRAMES: {gt.keyframes()}')
-        _log.output(f'TRACKED FRAMES: {gt.track_frames()}\n')
-
-    def _cancel(self) -> None:
-        _log.output(f'{self._operation_name} Cancel call. State={self._state}')
-        self.tracking_computation.cancel()
-
-    def timer_func(self) -> Optional[float]:
-        return self._active_state_func()
-
-    def start(self) -> None:
-        if not bpy_background_mode():
-            self._start_user_interrupt_operator()
-        GTLoader.viewport().message_to_screen(
-            [{'text': f'{self._operation_name} calculating... Please wait', 'y': 60,
-              'color': (1.0, 0.0, 0.0, 0.7)},
-             {'text': 'ESC to cancel', 'y': 30,
-              'color': (1.0, 1.0, 1.0, 0.7)}])
-        settings = get_gt_settings()
-        settings.calculating_mode = self._calc_mode
-
-        _func = self.timer_func
-        if not bpy_background_mode():
-            bpy_timer_register(_func, first_interval=self._interval)
-            res = bpy.app.timers.is_registered(_func)
-            _log.output(f'{self._operation_name} timer registered: {res}')
-        else:
-            # Testing purpose
-            timer = RepeatTimer(self._interval, _func)
-            timer.start()
-
-
-class TrackTimer(_CommonTimer):
-    def __init__(self, computation: Any, from_frame: int = -1):
-        super().__init__(computation, from_frame)
-        self._operation_name = 'Tracking'
-        self._calc_mode = 'TRACKING'
-        self._overall_func = computation.finished_and_total_frames
-
-
-class RefineTimer(_CommonTimer):
-    def __init__(self, computation: Any, from_frame: int = -1):
-        super().__init__(computation, from_frame, revert_current_frame=True)
-        self._operation_name = 'Refine'
-        self._calc_mode = 'REFINE'
-        self._overall_func = computation.finished_and_total_stage_frames
-
-
 def track_to(forward: bool) -> ActionStatus:
     _log.output(f'track_to: {forward}')
     check_status = track_checks()
@@ -430,6 +243,45 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
 
 
 def refine_async_act() -> ActionStatus:
+    _log.output('refine_async_act call')
+    check_status = track_checks()
+    if not check_status.success:
+        return check_status
+
+    geotracker = get_current_geotracker_item()
+    gt = GTLoader.kt_geotracker()
+    current_frame = bpy_current_frame()
+
+    if not geotracker.precalcless:
+        next_frame = get_next_tracking_keyframe(gt, current_frame)
+        prev_frame = get_previous_tracking_keyframe(gt, current_frame)
+        if not (geotracker.precalc_start <= prev_frame <= geotracker.precalc_end and
+                geotracker.precalc_start <= next_frame <= geotracker.precalc_end):
+            return ActionStatus(False, 'Selected frame range is outside '
+                                       'of the precalc range')
+    try:
+        precalc_path = None if geotracker.precalcless else geotracker.precalc_path
+        refine_computation = gt.refine_async(current_frame, precalc_path)
+        if geotracker.precalcless:
+            refine_timer = RefineTimer(refine_computation, current_frame)
+        else:
+            refine_timer = RefineTimerFast(refine_computation, current_frame)
+        refine_timer.start()
+    except pkt_module().UnlicensedException as err:
+        _log.error(f'UnlicensedException refine_async_act: {str(err)}')
+        show_unlicensed_warning()
+        # Return True to prevent doubling dialogs
+        return ActionStatus(True, 'Unlicensed error')
+    except Exception as err:
+        _log.error(f'Unknown Exception refine_async_act: {str(err)}')
+        show_warning_dialog(err)
+        return ActionStatus(False, 'Some problem (see console)')
+
+    return ActionStatus(True, 'Ok')
+
+
+def refine_all_async_act() -> ActionStatus:
+    _log.output('refine_all_async_act call')
     check_status = track_checks()
     if not check_status.success:
         return check_status
@@ -440,121 +292,23 @@ def refine_async_act() -> ActionStatus:
     current_frame = bpy_current_frame()
     try:
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
-        tracking_computation = gt.refine_async(current_frame, precalc_path)
-        tracking_timer = RefineTimer(tracking_computation, current_frame)
-        tracking_timer.start()
+        refine_computation = gt.refine_all_async(precalc_path)
+        if geotracker.precalcless:
+            refine_timer = RefineTimer(refine_computation, current_frame)
+        else:
+            refine_timer = RefineTimerFast(refine_computation, current_frame)
+        refine_timer.start()
     except pkt_module().UnlicensedException as err:
-        _log.error(f'UnlicensedException refine_act: {str(err)}')
+        _log.error(f'UnlicensedException refine_all_async_act: {str(err)}')
         show_unlicensed_warning()
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
-        _log.error(f'Unknown Exception refine_act: {str(err)}')
+        _log.error(f'Unknown Exception refine_all_async_act: {str(err)}')
         show_warning_dialog(err)
         return ActionStatus(False, 'Some problem (see console)')
 
     return ActionStatus(True, 'Ok')
-
-
-def refine_act() -> ActionStatus:
-    check_status = track_checks()
-    if not check_status.success:
-        return check_status
-
-    settings = get_gt_settings()
-    geotracker = settings.get_current_geotracker_item()
-    gt = GTLoader.kt_geotracker()
-    current_frame = bpy_current_frame()
-    _log.output(f'REFINE AT: {current_frame}')
-
-    progress_callback = GTClassLoader.RFProgressCallBack_class()()
-
-    start_time = time.time()
-    bpy_progress_begin(0, 100)
-    settings.calculating_mode = 'REFINE'
-    result = False
-    try:
-        precalc_path = None if geotracker.precalcless else geotracker.precalc_path
-        result = gt.refine(current_frame, precalc_path, progress_callback)
-    except pkt_module().UnlicensedException as err:
-        _log.error(f'UnlicensedException refine_act: {str(err)}')
-        show_unlicensed_warning()
-        # Return True to prevent doubling dialogs
-        return ActionStatus(True, 'Unlicensed error')
-    except Exception as err:
-        _log.error(f'Unknown Exception refine_act: {str(err)}')
-        show_warning_dialog(err)
-    finally:
-        settings.stop_calculating()
-        bpy_progress_end()
-        overall_time = time.time() - start_time
-        _log.output('Refine calculation time: {:.2f} sec'.format(overall_time))
-
-    _log.output(f'Refined frames: {progress_callback.refined_frames}')
-    GTLoader.save_geotracker()
-    GTLoader.update_viewport_shaders()
-    GTLoader.viewport_area_redraw()
-    if not result:
-        return ActionStatus(False, 'Some problem. See console for details')
-    return ActionStatus(True, 'ok')
-
-
-def refine_all_act() -> ActionStatus:
-    check_status = track_checks()
-    if not check_status.success:
-        return check_status
-
-    settings = get_gt_settings()
-    geotracker = settings.get_current_geotracker_item()
-    gt = GTLoader.kt_geotracker()
-    current_frame = bpy_current_frame()
-    _log.output('REFINE AT: {}'.format(current_frame))
-
-    progress_callback = GTClassLoader.RFProgressCallBack_class()()
-
-    start_time = time.time()
-    bpy_progress_begin(0, 100)
-    settings.calculating_mode = 'REFINE'
-    result = False
-    vp = GTLoader.viewport()
-    vp.message_to_screen([
-        {'text': 'REFINE ALL operation is performing',
-         'color': (1., 0., 1., 0.85),
-         'size': 24,
-         'y': 60},  # line 1
-        {'text': 'For better performance you can\'t interrupt operation',
-         'color': (1., 1., 1., 0.5),
-         'size': 20,
-         'y': 30}])
-    total_redraw_ui()
-    try:
-        precalc_path = None if geotracker.precalcless else geotracker.precalc_path
-        result = gt.refine_all(precalc_path, progress_callback)
-    except pkt_module().UnlicensedException as err:
-        _log.error(f'UnlicensedException refine_all_act: {str(err)}')
-        show_unlicensed_warning()
-        # Return True to prevent doubling dialogs
-        return ActionStatus(True, 'Unlicensed error')
-    except Exception as err:
-        _log.error(f'Unknown Exception refine_all_act: {str(err)}')
-        show_warning_dialog(err)
-    finally:
-        settings.stop_calculating()
-        bpy_progress_end()
-        overall_time = time.time() - start_time
-        _log.output('Refine calculation time: {:.2f} sec'.format(overall_time))
-        vp.revert_default_screen_message(unregister=False)
-
-    GTLoader.save_geotracker()
-    GTLoader.update_viewport_shaders()
-    GTLoader.viewport_area_redraw()
-    if not result:
-        if progress_callback.refined_frames == 0:
-            msg = 'Frames have not been processed'
-            _log.error(msg)
-            return ActionStatus(False, msg)
-        return ActionStatus(False, 'Some problem. See console for details')
-    return ActionStatus(True, 'ok')
 
 
 def clear_between_keyframes_act() -> ActionStatus:
