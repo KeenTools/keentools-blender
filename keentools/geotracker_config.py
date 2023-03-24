@@ -130,7 +130,6 @@ class GTConfig:
     gt_help_texture_idname = operators + '.help_texture'
     gt_help_animation_idname = operators + '.help_animation'
     gt_help_rendering_idname = operators + '.help_rendering'
-    gt_help_export_idname = operators + '.help_export'
     gt_help_smoothing_idname = operators + '.help_smoothing'
 
     # Updater panels

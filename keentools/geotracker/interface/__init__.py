@@ -56,7 +56,6 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
                        GTHELP_OT_TextureHelp,
                        GTHELP_OT_AnimationHelp,
                        GTHELP_OT_RenderingHelp,
-                       GTHELP_OT_ExportHelp,
                        GTHELP_OT_SmoothingHelp,
                        GT_MT_ClipMenu,  # menus
                        GT_MT_ClearAllTrackingMenu,
