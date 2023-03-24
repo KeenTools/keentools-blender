@@ -28,11 +28,12 @@ from ..addon_config import (get_operator,
                             Config,
                             show_user_preferences,
                             show_tool_preferences)
-from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
+from ..geotracker_config import (GTConfig,
+                                 get_gt_settings,
+                                 get_current_geotracker_item)
 from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_background_mode,
-                                bpy_show_addon_preferences,
-                                bpy_transform_resize)
+                                bpy_show_addon_preferences)
 from .utils.geotracker_acts import (create_geotracker_act,
                                     delete_geotracker_act,
                                     add_keyframe_act,
@@ -41,9 +42,8 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     next_keyframe_act,
                                     track_to,
                                     track_next_frame_act,
-                                    refine_act,
                                     refine_async_act,
-                                    refine_all_act,
+                                    refine_all_async_act,
                                     clear_between_keyframes_act,
                                     clear_direction_act,
                                     clear_all_act,
@@ -69,14 +69,12 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     resize_object,
                                     revert_object_states,
                                     scale_scene_tracking_act,
-                                    create_non_overlapping_uv_act,
-                                    TrackTimer,
-                                    RefineTimer)
+                                    create_non_overlapping_uv_act)
+from .utils.calc_timer import TrackTimer, RefineTimer
 from .utils.precalc import precalc_with_runner_act, PrecalcTimer
 from .gtloader import GTLoader
 from .ui_strings import buttons
 from .utils.prechecks import common_checks
-from ..utils.coords import distance_between_objects
 
 
 _log = KTLogger(__name__)
@@ -321,7 +319,7 @@ class GT_OT_RefineAll(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        act_status = refine_all_act()
+        act_status = refine_all_async_act()
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}

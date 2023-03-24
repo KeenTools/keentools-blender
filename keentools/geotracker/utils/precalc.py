@@ -126,13 +126,13 @@ class PrecalcTimer(CalcTimer):
         return self._interval
 
     def start(self) -> bool:
+        self._start_time = time.time()
         prepare_camera(self.get_area())
         settings = get_gt_settings()
         settings.calculating_mode = 'PRECALC'
 
         self._state = 'runner'
         self._active_state_func = self.runner_state
-        self._start_time = time.time()
         # self._area_header('Precalc is calculating... Please wait')
         GTLoader.viewport().message_to_screen(
             [{'text':'Precalc is calculating... Please wait',
