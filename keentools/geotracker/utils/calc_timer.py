@@ -184,7 +184,7 @@ class _CommonTimer(TimerMixin):
               'y': 30, 'color': (1.0, 1.0, 1.0, 0.7)}])
 
     def get_stage_info(self) -> Tuple[int, int]:
-        return 1, 1
+        return 0, 1
 
     def timeline_state(self) -> Optional[float]:
         settings = get_gt_settings()
