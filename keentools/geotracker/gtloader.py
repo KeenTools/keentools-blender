@@ -394,7 +394,6 @@ class GTLoader:
 
         gt = cls.kt_geotracker()
         geotracker.save_serial_str(gt.serialize())
-        geotracker.store_serial_str_on_geomobj()
 
     @classmethod
     def _deserialize_global_options(cls):
