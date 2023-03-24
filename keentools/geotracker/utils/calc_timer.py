@@ -167,7 +167,7 @@ class _CommonTimer(TimerMixin):
         self._overall_func: Callable = lambda: None
         self._start_frame: int = from_frame
         self._revert_current_frame: bool = revert_current_frame
-        self._prevent_playback = False
+        self._prevent_playback: bool = False
         self._start_time: float = 0
         self.add_timer(self)
 
