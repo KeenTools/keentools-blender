@@ -447,7 +447,7 @@ def remove_pins_act() -> ActionStatus:
         for i in reversed(selected_pins):
             gt.remove_pin(i)
             selected_pins.remove(i)
-        if not GTLoader.solve():
+        if gt.is_key_at(bpy_current_frame()) and not GTLoader.solve():
             return ActionStatus(False, 'Could not remove selected pins')
         GTLoader.load_pins_into_viewport()
 
