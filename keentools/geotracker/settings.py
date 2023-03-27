@@ -493,10 +493,6 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     def save_serial_str(self, serial: str) -> None:
         self.serial_str = serial
 
-    def store_serial_str_on_geomobj(self) -> None:
-        if self.geomobj:
-            self.geomobj[GTConfig.serial_prop_name] = self.get_serial_str()
-
     def camera_mode(self) -> None:
         return self.solve_for_camera
 

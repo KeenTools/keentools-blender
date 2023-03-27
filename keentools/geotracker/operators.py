@@ -537,6 +537,7 @@ class GT_OT_CreateNonOverlappingUV(ButtonOperator, Operator):
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+        self.report({'INFO'}, 'Non-overlapping UV has been created')
         return {'FINISHED'}
 
 
@@ -742,33 +743,6 @@ class GT_OT_AddonSetupDefaults(Operator):
         return {'FINISHED'}
 
 
-class GT_OT_PrecalcWindow(Operator):
-    bl_idname = GTConfig.gt_precalc_window_idname
-    bl_label = 'Precalc window label'
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def draw(self, context) -> None:
-        layout = self.layout
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
-
-        layout.separator()
-        row = layout.row()
-        row.prop(geotracker, 'precalc_start')
-        row.prop(geotracker, 'precalc_end')
-        row.operator(GTConfig.gt_create_precalc_idname,
-                     text='Create precalc')
-        layout.separator()
-        layout.operator(GTConfig.gt_choose_precalc_file_idname,
-                        text='Load / New precalc')
-
-    def execute(self, context):
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_popup(self, width=300)
-
-
 class GT_OT_AutoNamePrecalc(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_auto_name_precalc_idname
     bl_label = buttons[bl_idname].label
@@ -799,8 +773,8 @@ def resize_object_func(operator, context):
     resize_object(operator)
 
 
-class GT_OT_ResizeWindow(Operator):
-    bl_idname = GTConfig.gt_resize_window_idname
+class GT_OT_RescaleWindow(Operator):
+    bl_idname = GTConfig.gt_rescale_window_idname
     bl_label = 'Scale'
     bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
 
@@ -823,12 +797,11 @@ class GT_OT_ResizeWindow(Operator):
         layout = self.layout
         layout.separator()
         row = layout.row(align=True)
-        row.prop(self, 'origin_point')  # , expand=True
+        row.prop(self, 'origin_point')
 
         row = layout.row()
         row.scale_y = 1.5
         row.prop(self, 'value', text='Scale:')
-        # col.label(text='Scale pivot point:')
 
         row = layout.row(align=True)
         row.prop(self, 'keep_cam_scale')
@@ -910,6 +883,5 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_RenderWithBackground,
                   GT_OT_RevertDefaultRender,
                   GT_OT_AddonSetupDefaults,
-                  GT_OT_PrecalcWindow,
                   GT_OT_AutoNamePrecalc,
-                  GT_OT_ResizeWindow)
+                  GT_OT_RescaleWindow)

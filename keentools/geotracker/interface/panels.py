@@ -800,7 +800,7 @@ class GT_PT_AnimationPanel(AllVisible):
     def draw(self, context: Any) -> None:
         layout = self.layout
 
-        layout.operator(GTConfig.gt_resize_window_idname)
+        layout.operator(GTConfig.gt_rescale_window_idname)
 
         layout.label(text='Move to default position')
         col = layout.column(align=True)

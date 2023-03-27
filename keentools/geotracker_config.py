@@ -100,13 +100,11 @@ class GTConfig:
     gt_auto_name_precalc_idname = operators + '.auto_name_precalc'
 
     # Window ids
-    gt_precalc_window_idname = operators + '.precalc_window'
-    gt_resize_window_idname = operators + '.resize_window'
+    gt_rescale_window_idname = operators + '.rescale_window'
 
     # Menu ids
     gt_clip_menu_idname = _MT + 'clip_menu'
     gt_clear_tracking_menu_idname = _MT + 'clear_tracking_menu'
-
     gt_clear_tracking_menu_exec_idname = operators + '.clip_menu_exec'
 
     # Panel ids
@@ -132,7 +130,6 @@ class GTConfig:
     gt_help_texture_idname = operators + '.help_texture'
     gt_help_animation_idname = operators + '.help_animation'
     gt_help_rendering_idname = operators + '.help_rendering'
-    gt_help_export_idname = operators + '.help_export'
     gt_help_smoothing_idname = operators + '.help_smoothing'
 
     # Updater panels
@@ -166,9 +163,6 @@ class GTConfig:
     wireframe_color = (0.0, 1.0, 0.0, 0.4)
     mask_2d_color = (0.0, 1.0, 0.0, 0.4)
     mask_3d_color = (0.0, 0.0, 1.0, 0.4)
-
-    serial_prop_name = prefix + '_serial'
-    version_prop_name = prefix + '_version'
 
     prevent_view_rotation = True
     auto_render_size = True
