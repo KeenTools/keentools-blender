@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import os
 import bpy
 
 _company = 'keentools'
@@ -171,7 +172,7 @@ class GTConfig:
 
     gt_rendered_mask_image_name = 'gt_rendered_mask'
     gt_shadow_compositing_scene_name = 'gt_shadow_compositing_scene'
-    gt_precalc_folder = '/tmp\\'
+    gt_precalc_folder = f'/tmp{os.path.sep}'
 
     hidden_feature = True
 

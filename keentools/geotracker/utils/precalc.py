@@ -18,6 +18,7 @@
 
 from typing import Any, Optional, Tuple
 import time
+import os
 
 import bpy
 
@@ -167,17 +168,30 @@ def precalc_with_runner_act(context: Any) -> ActionStatus:
         _log.error(msg)
         return ActionStatus(False, msg)
 
+    precalc_path = os.path.abspath(geotracker.precalc_path)
+    _log.output(f'\nprecalc_path: {geotracker.precalc_path}\n'
+                f'abs_path: {precalc_path}')
+
+    dirpath, filename = os.path.split(precalc_path)
+    try:
+        os.makedirs(dirpath, exist_ok=True)
+    except Exception as err:
+        show_warning_dialog(f'An error occurred while trying '
+                            f'to create a folder:\n{str(err)}')
+        return ActionStatus(True, 'Folder access error')
+
+    if not os.path.exists(dirpath) or not os.path.isdir(dirpath):
+        return ActionStatus(False, 'Target folder cannot be created')
+
     _log.output('precalc_with_runner_act start')
     vp = GTLoader.viewport()
     if not settings.pinmode:
         vp.texter().register_handler(context)
 
-    _log.output(f'precalc_path: {geotracker.precalc_path}')
-
     rw, rh = bpy_render_frame()
     area = context.area
     runner = GTClassLoader.PrecalcRunner_class()(
-        geotracker.precalc_path, rw, rh,
+        precalc_path, rw, rh,
         geotracker.precalc_start, geotracker.precalc_end,
         GTClassLoader.GeoTracker_class().license_manager(), True)
 
