@@ -257,6 +257,8 @@ class _CommonTimer(TimerMixin):
         self.remove_timer(self)
         if self._revert_current_frame:
             bpy_set_current_frame(self._start_frame)
+
+        GTLoader.viewport().tag_redraw()
         return None
 
     def _start_user_interrupt_operator(self) -> None:
