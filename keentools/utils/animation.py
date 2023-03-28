@@ -299,7 +299,7 @@ def create_locrot_keyframe(obj: Object, keyframe_type: str='KEYFRAME') -> None:
     locrot_dict = get_locrot_dict()
     current_frame = bpy_current_frame()
 
-    mat = obj.matrix_world if obj.parent is None else obj.matrix_basis
+    mat = obj.matrix_basis
     loc = mat.to_translation()
     rot = mat.to_euler()
 
