@@ -794,6 +794,13 @@ class GT_PT_AnimationPanel(AllVisible):
         layout = self.layout
         row = layout.row()
         row.active = False
+
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if geotracker and geotracker.geomobj and geotracker.camobj:
+            dist = (geotracker.geomobj.location - geotracker.camobj.location).length
+            row.label(text=f'{dist:.3f}')
+
         row.operator(GTConfig.gt_help_animation_idname,
                      text='', icon='QUESTION', emboss=False)
 
