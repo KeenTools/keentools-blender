@@ -794,7 +794,7 @@ class GT_PT_AnimationPanel(AllVisible):
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
-        row = layout.row()
+        row = layout.row(align=True)
         row.active = False
 
         settings = get_gt_settings()
@@ -803,7 +803,7 @@ class GT_PT_AnimationPanel(AllVisible):
             geom_loc = geotracker.geomobj.matrix_world.to_translation()
             cam_loc = geotracker.camobj.matrix_world.to_translation()
             dist = (geom_loc - cam_loc).length
-            row.label(text=f'{dist:.3f}')
+            row.label(text=f'Dist: {dist:.3f}')
 
         row.operator(GTConfig.gt_help_animation_idname,
                      text='', icon='QUESTION', emboss=False)
