@@ -280,20 +280,23 @@ class GT_PT_InputsPanel(AllVisible):
 
     def _draw_precalc_switcher(self, layout, geotracker):
         row = layout.row(align=True)
-        row.prop(geotracker, 'precalcless', text='Auto', toggle=1)
-        row.prop(geotracker, 'precalcless', text='Use file', toggle=1,
-                 invert_checkbox=True)
+        row.prop(geotracker, 'precalcless',
+                 text='Analyse Clip to file', invert_checkbox=True)
 
     def _draw_analyze_btn(self, layout, geotracker):
         no_movie_clip = not geotracker.movie_clip
         precalc_path_is_empty = geotracker.precalc_path == ''
 
         col = layout.column()
+        txt = 'Analyse'
         if no_movie_clip or precalc_path_is_empty or not geotracker.camobj:
             col.enabled = False
         else:
-            col.alert = geotracker.precalc_message_error()
-        col.operator(GTConfig.gt_analyze_call_idname, text='Analyse')
+            error = geotracker.precalc_message_error()
+            col.alert = error
+            if not error:
+                txt = 'Re-analyse'
+        col.operator(GTConfig.gt_analyze_call_idname, text=txt)
 
     def draw(self, context: Any) -> None:
         settings = get_gt_settings()
@@ -308,7 +311,6 @@ class GT_PT_InputsPanel(AllVisible):
         self._draw_main_inputs(layout, geotracker)
 
         col = layout.column(align=True)
-        col.label(text='Analyse clip')
         self._draw_precalc_switcher(col, geotracker)
 
         if geotracker.precalcless:
@@ -792,7 +794,7 @@ class GT_PT_AnimationPanel(AllVisible):
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
-        row = layout.row()
+        row = layout.row(align=True)
         row.active = False
 
         settings = get_gt_settings()
@@ -801,7 +803,7 @@ class GT_PT_AnimationPanel(AllVisible):
             geom_loc = geotracker.geomobj.matrix_world.to_translation()
             cam_loc = geotracker.camobj.matrix_world.to_translation()
             dist = (geom_loc - cam_loc).length
-            row.label(text=f'{dist:.3f}')
+            row.label(text=f'Dist: {dist:.3f}')
 
         row.operator(GTConfig.gt_help_animation_idname,
                      text='', icon='QUESTION', emboss=False)
@@ -810,6 +812,10 @@ class GT_PT_AnimationPanel(AllVisible):
         layout = self.layout
 
         layout.operator(GTConfig.gt_rescale_window_idname)
+
+        layout.operator(GTConfig.gt_create_empty_idname)
+
+        layout.operator(GTConfig.gt_bake_locrot_animation_idname)
 
         layout.label(text='Move to default position')
         col = layout.column(align=True)

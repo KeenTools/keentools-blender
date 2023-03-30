@@ -20,8 +20,12 @@ from typing import Optional, List, Set, Dict
 
 import bpy
 from bpy.types import Object, Action, FCurve, Keyframe
-from mathutils import Vector
-from .bpy_common import bpy_current_frame, create_empty_object, operator_with_context
+from mathutils import Vector, Matrix
+from .bpy_common import (bpy_current_frame,
+                         bpy_set_current_frame,
+                         create_empty_object,
+                         operator_with_context,
+                         update_depsgraph)
 
 from .kt_logging import KTLogger
 
@@ -358,3 +362,33 @@ def get_object_keyframe_numbers(obj: Object) -> List[int]:
         points: Set = {int(p.co[0]) for p in fcurves[name].keyframe_points}
         keys_set = keys_set.union(points)
     return list(keys_set)
+
+
+def get_world_matrices_in_frames(obj: Object,
+                                 bake_frames: List[int]) -> Dict[int, Matrix]:
+    all_matrices = {}
+    current_frame = bpy_current_frame()
+    for frame in bake_frames:
+        bpy_set_current_frame(frame)
+        all_matrices[frame] = obj.matrix_world.copy()
+    bpy_set_current_frame(current_frame)
+    return all_matrices
+
+
+def apply_world_matrices_in_frames(obj: Object,
+                                   matrices: Dict[int, Matrix]) -> None:
+    current_frame = bpy_current_frame()
+    for frame in matrices:
+        bpy_set_current_frame(frame)
+        obj.matrix_world = matrices[frame]
+        update_depsgraph()
+        create_animation_locrot_keyframe_force(obj)
+    bpy_set_current_frame(current_frame)
+
+
+def bake_locrot_to_world(obj: Object, bake_frames: List[int]) -> None:
+    obj_matrix_world = obj.matrix_world.copy()
+    all_matrices = get_world_matrices_in_frames(obj, bake_frames)
+    obj.parent = None
+    apply_world_matrices_in_frames(obj, all_matrices)
+    obj.matrix_world = obj_matrix_world

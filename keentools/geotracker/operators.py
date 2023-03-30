@@ -52,6 +52,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     toggle_pins_act,
                                     center_geo_act,
                                     create_animated_empty_act,
+                                    create_empty_act,
                                     bake_texture_from_frames_act,
                                     relative_to_camera_act,
                                     relative_to_geometry_act,
@@ -69,7 +70,8 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     resize_object,
                                     revert_object_states,
                                     scale_scene_tracking_act,
-                                    create_non_overlapping_uv_act)
+                                    create_non_overlapping_uv_act,
+                                    bake_locrot_act)
 from .utils.calc_timer import TrackTimer, RefineTimer
 from .utils.precalc import precalc_with_runner_act, PrecalcTimer
 from .gtloader import GTLoader
@@ -389,6 +391,19 @@ class GT_OT_CreateAnimatedEmpty(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class GT_OT_CreateEmpty(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_create_empty_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        act_status = create_empty_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
 class GT_OT_ExitPinMode(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_exit_pinmode_idname
     bl_label = buttons[bl_idname].label
@@ -660,6 +675,19 @@ class GT_OT_MoveTrackingToGeometry(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class GT_OT_BakeLocrotAnimation(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_bake_locrot_animation_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        act_status = bake_locrot_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
 class GT_OT_RemoveFocalKeyframe(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_remove_focal_keyframe_idname
     bl_label = buttons[bl_idname].label
@@ -859,6 +887,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_RemovePins,
                   GT_OT_TogglePins,
                   GT_OT_CreateAnimatedEmpty,
+                  GT_OT_CreateEmpty,
                   GT_OT_ExitPinMode,
                   GT_OT_InterruptModal,
                   GT_OT_StopCalculating,
@@ -877,6 +906,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_CameraRepositioning,
                   GT_OT_MoveTrackingToCamera,
                   GT_OT_MoveTrackingToGeometry,
+                  GT_OT_BakeLocrotAnimation,
                   GT_OT_RemoveFocalKeyframe,
                   GT_OT_RemoveFocalKeyframes,
                   GT_OT_SelectGeotrackerObjects,

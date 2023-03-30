@@ -27,6 +27,7 @@ from mathutils import Matrix, Euler
 from ...utils.kt_logging import KTLogger
 from ...addon_config import ActionStatus
 from ...geotracker_config import (get_gt_settings,
+                                  GTConfig,
                                   get_current_geotracker_item)
 from ..gtloader import GTLoader
 from ...utils.animation import (get_action,
@@ -36,12 +37,17 @@ from ...utils.animation import (get_action,
                                 mark_selected_points_in_locrot,
                                 get_object_keyframe_numbers,
                                 create_animation_locrot_keyframe_force,
-                                create_locrot_keyframe)
+                                create_locrot_keyframe,
+                                bake_locrot_to_world,
+                                get_world_matrices_in_frames,
+                                apply_world_matrices_in_frames)
 from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
 from ...utils.bpy_common import (create_empty_object,
                                  bpy_current_frame,
                                  bpy_set_current_frame,
+                                 bpy_start_frame,
+                                 bpy_end_frame,
                                  update_depsgraph,
                                  reset_unsaved_animation_changes_in_frame,
                                  bpy_scene,
@@ -63,6 +69,7 @@ from ...utils.images import get_background_image_object
 from .calc_timer import (TrackTimer,
                          RefineTimer,
                          RefineTimerFast)
+from ..settings import is_mesh, is_camera
 
 
 _log = KTLogger(__name__)
@@ -497,22 +504,54 @@ def center_geo_act() -> ActionStatus:
 
 
 def create_animated_empty_act() -> ActionStatus:
-    check_status = common_checks(object_mode=True, is_calculating=True,
-                                 reload_geotracker=True, geotracker=True,
-                                 camera=True, geometry=True)
+    check_status = common_checks(object_mode=True, is_calculating=True)
     if not check_status.success:
         return check_status
 
-    geotracker = get_current_geotracker_item()
-    action = get_action(geotracker.animatable_object())
-    if not action:
-        msg = 'Tracked object has no animation'
-        _log.error(msg)
+    obj = bpy.context.object
+    if not is_mesh(None, obj) and not is_camera(None, obj):
+        msg = 'Selected object is not Geometry or Camera'
         return ActionStatus(False, msg)
 
-    obj = create_empty_object('GTEmpty')
-    anim_data = obj.animation_data_create()
-    anim_data.action = action
+    action = get_action(obj)
+    if not action and obj.parent is None:
+        msg = 'Tracked object has no animation'
+        _log.error(msg)
+
+    empty = create_empty_object(GTConfig.gt_empty_name)
+    if obj.parent is None:
+        anim_data = empty.animation_data_create()
+        anim_data.action = action
+    else:
+        obj_animated_frames = get_object_keyframe_numbers(obj)
+        if len(obj_animated_frames) == 0:
+            obj_animated_frames = [x for x in range(bpy_start_frame(),
+                                                    bpy_end_frame() + 1)]
+        obj_matrix_world = obj.matrix_world.copy()
+        all_matrices = get_world_matrices_in_frames(obj, obj_animated_frames)
+        empty.parent = None
+        apply_world_matrices_in_frames(empty, all_matrices)
+        obj.matrix_world = obj_matrix_world
+
+    return ActionStatus(True, 'ok')
+
+
+def create_empty_act() -> ActionStatus:
+    check_status = common_checks(object_mode=True, is_calculating=True)
+    if not check_status.success:
+        return check_status
+
+    obj = bpy.context.object
+    if not is_mesh(None, obj) and not is_camera(None, obj):
+        msg = 'Selected object is not Geometry or Camera'
+        return ActionStatus(False, msg)
+
+    obj_matrix_world = obj.matrix_world.copy()
+
+    empty = create_empty_object(GTConfig.gt_empty_name)
+    empty.matrix_world = obj_matrix_world
+    empty.scale = (1, 1, 1)
+    select_object_only(empty)
     return ActionStatus(True, 'ok')
 
 
@@ -1127,4 +1166,37 @@ def scale_scene_tracking_act(operator: Operator) -> ActionStatus:
     if settings.pinmode:
         GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
                                          pins_and_residuals=True)
+    return ActionStatus(True, 'ok')
+
+
+def bake_locrot_act() -> ActionStatus:
+    def _remove_all_constraints(obj: Object):
+        if len(obj.constraints) != 0:
+            all_constraints = [x for x in obj.constraints]
+            for x in all_constraints:
+                obj.constraints.remove(x)
+
+    _log.output('bake_locrot_act call')
+    check_status = common_checks(object_mode=True, is_calculating=True)
+    if not check_status.success:
+        return check_status
+
+    obj = bpy.context.object
+    if not is_mesh(None, obj) and not is_camera(None, obj):
+        msg = 'Selected object is not Geometry or Camera'
+        return ActionStatus(False, msg)
+
+    if not obj.parent and len(obj.constraints) == 0:
+        msg = 'Selected object has no parent'
+        return ActionStatus(False, msg)
+
+    obj_animated_frames = get_object_keyframe_numbers(obj)
+
+    if len(obj_animated_frames) == 0:
+        obj_animated_frames = [x for x in range(bpy_start_frame(),
+                                                bpy_end_frame() + 1)]
+
+    bake_locrot_to_world(obj, obj_animated_frames)
+    _remove_all_constraints(obj)
+
     return ActionStatus(True, 'ok')

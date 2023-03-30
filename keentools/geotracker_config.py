@@ -66,6 +66,7 @@ class GTConfig:
     gt_remove_pins_idname = operators + '.remove_pins_btn'
     gt_toggle_pins_idname = operators + '.toggle_pins_btn'
     gt_create_animated_empty_idname = operators + '.create_animated_empty_btn'
+    gt_create_empty_idname = operators + '.create_empty'
     gt_exit_pinmode_idname = operators + '.exit_pinmode_btn'
     gt_interrupt_modal_idname = operators + '.interrupt_modal'
     gt_stop_calculating_idname = operators + '.stop_calculating_btn'
@@ -87,6 +88,7 @@ class GTConfig:
     gt_camera_repositioning_idname = operators + '.camera_repositioning'
     gt_move_tracking_to_camera_idname = operators + '.move_tracking_to_camera'
     gt_move_tracking_to_geometry_idname = operators + '.move_tracking_to_geometry'
+    gt_bake_locrot_animation_idname = operators + '.bake_locrot_animation'
     gt_remove_focal_keyframe_idname = operators + '.remove_focal_keyframe'
     gt_remove_focal_keyframes_idname = operators + '.remove_focal_keyframes'
     gt_addon_setup_defaults_idname = operators + '.addon_setup_defaults'
@@ -170,9 +172,10 @@ class GTConfig:
     auto_time_length = True
     auto_increase_far_clip_distance = True
 
+    gt_empty_name = 'gtEmpty'
     gt_rendered_mask_image_name = 'gt_rendered_mask'
     gt_shadow_compositing_scene_name = 'gt_shadow_compositing_scene'
-    gt_precalc_folder = f'/tmp{os.path.sep}'
+    gt_precalc_folder = f'/tmp{os.path.sep}kt_cache{os.path.sep}'
 
     hidden_feature = True
 

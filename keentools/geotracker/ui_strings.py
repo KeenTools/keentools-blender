@@ -173,6 +173,10 @@ buttons = {
         'Create animated Empty',
         'Copy animation to Empty'
     ),
+    GTConfig.gt_create_empty_idname: Button(
+        'Create Empty',
+        'Create Empty in current position'
+    ),
     GTConfig.gt_exit_pinmode_idname: Button(
         'Exit Pinmode',
         'Exit from PinMode'
@@ -244,6 +248,10 @@ buttons = {
     GTConfig.gt_move_tracking_to_geometry_idname: Button(
         'Move tracking to Geometry',
         'Move both objects animation to Geometry only'
+    ),
+    GTConfig.gt_bake_locrot_animation_idname: Button(
+        'Bake animation',
+        'Bake animation to world space'
     ),
     GTConfig.gt_remove_focal_keyframe_idname: Button(
         'Remove focal keyframe',
