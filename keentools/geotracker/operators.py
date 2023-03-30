@@ -52,6 +52,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     toggle_pins_act,
                                     center_geo_act,
                                     create_animated_empty_act,
+                                    create_empty_act,
                                     bake_texture_from_frames_act,
                                     relative_to_camera_act,
                                     relative_to_geometry_act,
@@ -384,6 +385,19 @@ class GT_OT_CreateAnimatedEmpty(ButtonOperator, Operator):
 
     def execute(self, context):
         act_status = create_animated_empty_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class GT_OT_CreateEmpty(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_create_empty_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        act_status = create_empty_act()
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -873,6 +887,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_RemovePins,
                   GT_OT_TogglePins,
                   GT_OT_CreateAnimatedEmpty,
+                  GT_OT_CreateEmpty,
                   GT_OT_ExitPinMode,
                   GT_OT_InterruptModal,
                   GT_OT_StopCalculating,

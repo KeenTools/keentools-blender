@@ -27,6 +27,7 @@ from mathutils import Matrix, Euler
 from ...utils.kt_logging import KTLogger
 from ...addon_config import ActionStatus
 from ...geotracker_config import (get_gt_settings,
+                                  GTConfig,
                                   get_current_geotracker_item)
 from ..gtloader import GTLoader
 from ...utils.animation import (get_action,
@@ -514,9 +515,28 @@ def create_animated_empty_act() -> ActionStatus:
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    obj = create_empty_object('GTEmpty')
+    obj = create_empty_object(GTConfig.gt_empty_name)
     anim_data = obj.animation_data_create()
     anim_data.action = action
+    return ActionStatus(True, 'ok')
+
+
+def create_empty_act() -> ActionStatus:
+    check_status = common_checks(object_mode=True, is_calculating=True)
+    if not check_status.success:
+        return check_status
+
+    obj = bpy.context.object
+    if not is_mesh(None, obj) and not is_camera(None, obj):
+        msg = 'Selected object is not Geometry or Camera'
+        return ActionStatus(False, msg)
+
+    obj_matrix_world = obj.matrix_world.copy()
+
+    empty = create_empty_object(GTConfig.gt_empty_name)
+    empty.matrix_world = obj_matrix_world
+    empty.scale = (1, 1, 1)
+    select_object_only(empty)
     return ActionStatus(True, 'ok')
 
 

@@ -811,9 +811,11 @@ class GT_PT_AnimationPanel(AllVisible):
     def draw(self, context: Any) -> None:
         layout = self.layout
 
-        layout.operator(GTConfig.gt_bake_locrot_animation_idname)
-
         layout.operator(GTConfig.gt_rescale_window_idname)
+
+        layout.operator(GTConfig.gt_create_empty_idname)
+
+        layout.operator(GTConfig.gt_bake_locrot_animation_idname)
 
         layout.label(text='Move to default position')
         col = layout.column(align=True)

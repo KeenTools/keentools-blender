@@ -66,6 +66,7 @@ class GTConfig:
     gt_remove_pins_idname = operators + '.remove_pins_btn'
     gt_toggle_pins_idname = operators + '.toggle_pins_btn'
     gt_create_animated_empty_idname = operators + '.create_animated_empty_btn'
+    gt_create_empty_idname = operators + '.create_empty'
     gt_exit_pinmode_idname = operators + '.exit_pinmode_btn'
     gt_interrupt_modal_idname = operators + '.interrupt_modal'
     gt_stop_calculating_idname = operators + '.stop_calculating_btn'
@@ -171,6 +172,7 @@ class GTConfig:
     auto_time_length = True
     auto_increase_far_clip_distance = True
 
+    gt_empty_name = 'gtEmpty'
     gt_rendered_mask_image_name = 'gt_rendered_mask'
     gt_shadow_compositing_scene_name = 'gt_shadow_compositing_scene'
     gt_precalc_folder = f'/tmp{os.path.sep}kt_cache{os.path.sep}'

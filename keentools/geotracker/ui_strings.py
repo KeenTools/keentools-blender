@@ -173,6 +173,10 @@ buttons = {
         'Create animated Empty',
         'Copy animation to Empty'
     ),
+    GTConfig.gt_create_empty_idname: Button(
+        'Create Empty',
+        'Create Empty in current position'
+    ),
     GTConfig.gt_exit_pinmode_idname: Button(
         'Exit Pinmode',
         'Exit from PinMode'
