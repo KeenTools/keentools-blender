@@ -245,6 +245,10 @@ buttons = {
         'Move tracking to Geometry',
         'Move both objects animation to Geometry only'
     ),
+    GTConfig.gt_bake_locrot_animation_idname: Button(
+        'Bake animation',
+        'Bake animation to world space'
+    ),
     GTConfig.gt_remove_focal_keyframe_idname: Button(
         'Remove focal keyframe',
         'Remove a single keyframe in the current frame'

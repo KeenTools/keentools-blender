@@ -87,6 +87,7 @@ class GTConfig:
     gt_camera_repositioning_idname = operators + '.camera_repositioning'
     gt_move_tracking_to_camera_idname = operators + '.move_tracking_to_camera'
     gt_move_tracking_to_geometry_idname = operators + '.move_tracking_to_geometry'
+    gt_bake_locrot_animation_idname = operators + '.bake_locrot_animation'
     gt_remove_focal_keyframe_idname = operators + '.remove_focal_keyframe'
     gt_remove_focal_keyframes_idname = operators + '.remove_focal_keyframes'
     gt_addon_setup_defaults_idname = operators + '.addon_setup_defaults'
@@ -172,7 +173,7 @@ class GTConfig:
 
     gt_rendered_mask_image_name = 'gt_rendered_mask'
     gt_shadow_compositing_scene_name = 'gt_shadow_compositing_scene'
-    gt_precalc_folder = f'/tmp{os.path.sep}'
+    gt_precalc_folder = f'/tmp{os.path.sep}kt_cache{os.path.sep}'
 
     hidden_feature = True
 

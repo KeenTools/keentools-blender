@@ -36,12 +36,15 @@ from ...utils.animation import (get_action,
                                 mark_selected_points_in_locrot,
                                 get_object_keyframe_numbers,
                                 create_animation_locrot_keyframe_force,
-                                create_locrot_keyframe)
+                                create_locrot_keyframe,
+                                bake_locrot_to_world)
 from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
 from ...utils.bpy_common import (create_empty_object,
                                  bpy_current_frame,
                                  bpy_set_current_frame,
+                                 bpy_start_frame,
+                                 bpy_end_frame,
                                  update_depsgraph,
                                  reset_unsaved_animation_changes_in_frame,
                                  bpy_scene,
@@ -63,6 +66,7 @@ from ...utils.images import get_background_image_object
 from .calc_timer import (TrackTimer,
                          RefineTimer,
                          RefineTimerFast)
+from ..settings import is_mesh, is_camera
 
 
 _log = KTLogger(__name__)
@@ -1127,4 +1131,37 @@ def scale_scene_tracking_act(operator: Operator) -> ActionStatus:
     if settings.pinmode:
         GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
                                          pins_and_residuals=True)
+    return ActionStatus(True, 'ok')
+
+
+def bake_locrot_act() -> ActionStatus:
+    def _remove_all_constraints(obj: Object):
+        if len(obj.constraints) != 0:
+            all_constraints = [x for x in obj.constraints]
+            for x in all_constraints:
+                obj.constraints.remove(x)
+
+    _log.output('bake_locrot_act call')
+    check_status = common_checks(object_mode=True, is_calculating=True)
+    if not check_status.success:
+        return check_status
+
+    obj = bpy.context.object
+    if not is_mesh(None, obj) and not is_camera(None, obj):
+        msg = 'Selected object is not Geometry or Camera'
+        return ActionStatus(False, msg)
+
+    if not obj.parent and len(obj.constraints) == 0:
+        msg = 'Selected object has no parent'
+        return ActionStatus(False, msg)
+
+    obj_animated_frames = get_object_keyframe_numbers(obj)
+
+    if len(obj_animated_frames) == 0:
+        obj_animated_frames = [x for x in range(bpy_start_frame(),
+                                                bpy_end_frame() + 1)]
+
+    bake_locrot_to_world(obj, obj_animated_frames)
+    _remove_all_constraints(obj)
+
     return ActionStatus(True, 'ok')

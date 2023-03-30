@@ -21,7 +21,11 @@ from typing import Optional, List, Set, Dict
 import bpy
 from bpy.types import Object, Action, FCurve, Keyframe
 from mathutils import Vector
-from .bpy_common import bpy_current_frame, create_empty_object, operator_with_context
+from .bpy_common import (bpy_current_frame,
+                         bpy_set_current_frame,
+                         create_empty_object,
+                         operator_with_context,
+                         update_depsgraph)
 
 from .kt_logging import KTLogger
 
@@ -358,3 +362,24 @@ def get_object_keyframe_numbers(obj: Object) -> List[int]:
         points: Set = {int(p.co[0]) for p in fcurves[name].keyframe_points}
         keys_set = keys_set.union(points)
     return list(keys_set)
+
+
+def bake_locrot_to_world(obj: Object, bake_frames: List[int]) -> None:
+    obj_matrix_world = obj.matrix_world.copy()
+    current_frame = bpy_current_frame()
+
+    all_matrices = {}
+    for frame in bake_frames:
+        bpy_set_current_frame(frame)
+        all_matrices[frame] = obj.matrix_world.copy()
+
+    obj.parent = None
+
+    for frame in all_matrices:
+        bpy_set_current_frame(frame)
+        obj.matrix_world = all_matrices[frame]
+        update_depsgraph()
+        create_animation_locrot_keyframe_force(obj)
+
+    bpy_set_current_frame(current_frame)
+    obj.matrix_world = obj_matrix_world
