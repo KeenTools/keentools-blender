@@ -38,7 +38,9 @@ from ...utils.animation import (get_action,
                                 get_object_keyframe_numbers,
                                 create_animation_locrot_keyframe_force,
                                 create_locrot_keyframe,
-                                bake_locrot_to_world)
+                                bake_locrot_to_world,
+                                get_world_matrices_in_frames,
+                                apply_world_matrices_in_frames)
 from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
 from ...utils.bpy_common import (create_empty_object,
@@ -502,22 +504,35 @@ def center_geo_act() -> ActionStatus:
 
 
 def create_animated_empty_act() -> ActionStatus:
-    check_status = common_checks(object_mode=True, is_calculating=True,
-                                 reload_geotracker=True, geotracker=True,
-                                 camera=True, geometry=True)
+    check_status = common_checks(object_mode=True, is_calculating=True)
     if not check_status.success:
         return check_status
 
-    geotracker = get_current_geotracker_item()
-    action = get_action(geotracker.animatable_object())
-    if not action:
-        msg = 'Tracked object has no animation'
-        _log.error(msg)
+    obj = bpy.context.object
+    if not is_mesh(None, obj) and not is_camera(None, obj):
+        msg = 'Selected object is not Geometry or Camera'
         return ActionStatus(False, msg)
 
-    obj = create_empty_object(GTConfig.gt_empty_name)
-    anim_data = obj.animation_data_create()
-    anim_data.action = action
+    action = get_action(obj)
+    if not action and obj.parent is None:
+        msg = 'Tracked object has no animation'
+        _log.error(msg)
+
+    empty = create_empty_object(GTConfig.gt_empty_name)
+    if obj.parent is None:
+        anim_data = empty.animation_data_create()
+        anim_data.action = action
+    else:
+        obj_animated_frames = get_object_keyframe_numbers(obj)
+        if len(obj_animated_frames) == 0:
+            obj_animated_frames = [x for x in range(bpy_start_frame(),
+                                                    bpy_end_frame() + 1)]
+        obj_matrix_world = obj.matrix_world.copy()
+        all_matrices = get_world_matrices_in_frames(obj, obj_animated_frames)
+        empty.parent = None
+        apply_world_matrices_in_frames(empty, all_matrices)
+        obj.matrix_world = obj_matrix_world
+
     return ActionStatus(True, 'ok')
 
 
