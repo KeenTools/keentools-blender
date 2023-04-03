@@ -175,7 +175,7 @@ class GTConfig:
     gt_empty_name = 'gtEmpty'
     gt_rendered_mask_image_name = 'gt_rendered_mask'
     gt_shadow_compositing_scene_name = 'gt_shadow_compositing_scene'
-    gt_precalc_folder = f'/tmp{os.path.sep}kt_cache{os.path.sep}'
+    gt_precalc_folder = f'/tmp{os.path.sep}kt_analysis{os.path.sep}'
 
     hidden_feature = True
 

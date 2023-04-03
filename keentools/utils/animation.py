@@ -22,6 +22,8 @@ import bpy
 from bpy.types import Object, Action, FCurve, Keyframe
 from mathutils import Vector, Matrix
 from .bpy_common import (bpy_current_frame,
+                         bpy_start_frame,
+                         bpy_end_frame,
                          bpy_set_current_frame,
                          create_empty_object,
                          operator_with_context,
@@ -392,3 +394,7 @@ def bake_locrot_to_world(obj: Object, bake_frames: List[int]) -> None:
     obj.parent = None
     apply_world_matrices_in_frames(obj, all_matrices)
     obj.matrix_world = obj_matrix_world
+
+
+def scene_frame_list() -> List[int]:
+    return [x for x in range(bpy_start_frame(), bpy_end_frame() + 1)]

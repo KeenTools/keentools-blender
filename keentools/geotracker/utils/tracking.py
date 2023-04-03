@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
 import os
 from typing import Tuple, Optional, Any
 
@@ -42,7 +41,7 @@ def get_precalc_info(precalc_path: str) -> Tuple[Optional[Any], str]:
             msg = 'Problem with frame indices'
             _log.error(msg)
             return None, msg
-        if left <= 0 or right <= 0 or right < left:
+        if left < 0 or right < 0 or right < left:
             msg = 'Wrong frame indices'
             _log.error(msg)
             return None, msg

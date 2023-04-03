@@ -549,7 +549,7 @@ class GT_PT_TrackingPanel(AllVisible):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.active = settings.pinmode
-        row.operator(GTConfig.gt_center_geo_idname, icon='SNAP_FACE_CENTER')
+        row.operator(GTConfig.gt_center_geo_idname, icon='PIVOT_BOUNDBOX')
         row = col.row(align=True)
         row.active = settings.pinmode
         row.operator(GTConfig.gt_toggle_pins_idname, icon='UNPINNED')

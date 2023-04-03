@@ -40,7 +40,8 @@ from ...utils.animation import (get_action,
                                 create_locrot_keyframe,
                                 bake_locrot_to_world,
                                 get_world_matrices_in_frames,
-                                apply_world_matrices_in_frames)
+                                apply_world_matrices_in_frames,
+                                scene_frame_list)
 from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
 from ...utils.bpy_common import (create_empty_object,
@@ -70,6 +71,7 @@ from .calc_timer import (TrackTimer,
                          RefineTimer,
                          RefineTimerFast)
 from ..settings import is_mesh, is_camera
+from ...utils.coords import LocRotScale
 
 
 _log = KTLogger(__name__)
@@ -525,8 +527,7 @@ def create_animated_empty_act() -> ActionStatus:
     else:
         obj_animated_frames = get_object_keyframe_numbers(obj)
         if len(obj_animated_frames) == 0:
-            obj_animated_frames = [x for x in range(bpy_start_frame(),
-                                                    bpy_end_frame() + 1)]
+            obj_animated_frames = scene_frame_list()
         obj_matrix_world = obj.matrix_world.copy()
         all_matrices = get_world_matrices_in_frames(obj, obj_animated_frames)
         empty.parent = None
@@ -664,8 +665,9 @@ def relative_to_camera_act() -> ActionStatus:
 
     # Default camera position at (0, 0, 0) and +90 deg rotated on X
     scale = camobj.matrix_world.to_scale()
-    cam_matrix = Matrix.LocRotScale(
-        (0, 0, 0), Euler((math.radians(90), 0, 0), 'XYZ'), scale)
+    cam_matrix = LocRotScale((0, 0, 0),
+                             Euler((math.radians(90), 0, 0), 'XYZ'),
+                             scale)
 
     bpy.context.window_manager.progress_begin(0, len(matrices))
     for i, frame in enumerate(matrices):
@@ -717,7 +719,7 @@ def relative_to_geometry_act() -> ActionStatus:
 
     # Object at (0, 0, 0) keeping its scale
     scale = geomobj.matrix_world.to_scale()
-    geom_matrix = Matrix.LocRotScale((0, 0, 0), Euler((0, 0, 0), 'XYZ'), scale)
+    geom_matrix = LocRotScale((0, 0, 0), Euler((0, 0, 0), 'XYZ'), scale)
 
     bpy.context.window_manager.progress_begin(0, len(matrices))
     for i, frame in enumerate(matrices):
@@ -1193,8 +1195,7 @@ def bake_locrot_act() -> ActionStatus:
     obj_animated_frames = get_object_keyframe_numbers(obj)
 
     if len(obj_animated_frames) == 0:
-        obj_animated_frames = [x for x in range(bpy_start_frame(),
-                                                bpy_end_frame() + 1)]
+        obj_animated_frames = scene_frame_list()
 
     bake_locrot_to_world(obj, obj_animated_frames)
     _remove_all_constraints(obj)

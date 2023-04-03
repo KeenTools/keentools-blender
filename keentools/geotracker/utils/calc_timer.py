@@ -114,7 +114,8 @@ class CalcTimer(TimerMixin):
 
     def common_checks(self) -> bool:
         settings = get_gt_settings()
-        _log.output(f'Timer: state={self._state} target={self._target_frame} '
+        _log.output(f'common_checks: state={self._state} '
+                    f'target={self._target_frame} '
                     f'current={bpy_current_frame()}')
         if settings.user_interrupts:
             settings.stop_calculating()
@@ -130,13 +131,15 @@ class CalcTimer(TimerMixin):
         if self._target_frame >= 0:
             if bpy_current_frame() == self._target_frame:
                 self._target_frame = -1
-                self._state = 'runner'
-                self._active_state_func = self.runner_state
+            else:
+                bpy_set_current_frame(self._target_frame)
                 return self._interval
-            bpy_set_current_frame(self._target_frame)
-            return self._interval
         else:
             _log.output(f'FRAME PROBLEM {self._target_frame}')
+            self.finish_calc_mode_with_error('Impossible frame number')
+            return None
+        self._state = 'runner'
+        self._active_state_func = self.runner_state
         return self._interval
 
     def runner_state(self) -> Optional[float]:

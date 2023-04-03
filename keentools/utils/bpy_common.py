@@ -20,6 +20,7 @@ from typing import Any, Dict, Callable, Tuple, List, Optional
 import bpy
 from bpy.types import Object, Mesh, Operator, Camera, Scene, Image
 
+from .version import BVersion
 from .kt_logging import KTLogger
 from ..addon_config import Config
 
@@ -31,7 +32,6 @@ def bpy_app_version() -> Tuple:
     return bpy.app.version
 
 
-operator_with_context_exists: bool = bpy_app_version() >= (3, 2, 0)
 use_gpu_instead_of_bgl: bool = Config.allow_use_gpu_instead_of_bgl and \
                                bpy_app_version() >= (3, 5, 0)
 
@@ -110,7 +110,7 @@ def _operator_with_context_new(operator: Operator,
 
 
 operator_with_context: Callable = _operator_with_context_new \
-    if operator_with_context_exists else _operator_with_context_old
+    if BVersion.operator_with_context_exists else _operator_with_context_old
 
 
 def extend_scene_timeline_end(keyframe_num: int, force=False) -> None:

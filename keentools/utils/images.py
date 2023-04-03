@@ -24,15 +24,13 @@ import os
 import bpy
 from bpy.types import Image, Camera, Object, MovieClip
 
-from ..addon_config import Config
+from .version import BVersion
 from .kt_logging import KTLogger
-from .bpy_common import bpy_app_version, bpy_end_frame
+from ..addon_config import Config
+from .bpy_common import bpy_start_frame, bpy_end_frame
 
 
 _log = KTLogger(__name__)
-
-
-pixels_foreach_methods_exist = bpy_app_version() >= (2, 83, 0)
 
 
 def _assign_pixels_data_new(pixels: Any, data: Any) -> None:
@@ -44,7 +42,7 @@ def _assign_pixels_data_old(pixels: Any, data: Any) -> None:
 
 
 assign_pixels_data: Callable = _assign_pixels_data_new \
-    if pixels_foreach_methods_exist else _assign_pixels_data_old
+    if BVersion.pixels_foreach_methods_exist else _assign_pixels_data_old
 
 
 def _get_pixels_data_new(pixels: Any, data: Any) -> None:
@@ -56,7 +54,7 @@ def _get_pixels_data_old(pixels: Any, data: Any) -> None:
 
 
 get_pixels_data: Callable = _get_pixels_data_new \
-    if pixels_foreach_methods_exist else _get_pixels_data_old
+    if BVersion.pixels_foreach_methods_exist else _get_pixels_data_old
 
 
 def _copy_pixels_data_new(src_pixels: Any, dst_pixels: Any) -> None:
@@ -68,7 +66,7 @@ def _copy_pixels_data_old(src_pixels: Any, dst_pixels: Any) -> None:
 
 
 copy_pixels_data = _copy_pixels_data_new \
-    if pixels_foreach_methods_exist else _copy_pixels_data_old
+    if BVersion.pixels_foreach_methods_exist else _copy_pixels_data_old
 
 
 def np_array_from_bpy_image(bpy_image: Optional[Image]) -> Optional[Any]:
@@ -121,7 +119,7 @@ def show_background_images(camobj: Camera, reload: bool=False) -> None:
     cam_data.show_background_images = True
 
 
-def _get_file_number(filename: str) -> int:
+def get_sequence_file_number(filename: str) -> int:
     name, _ = os.path.splitext(filename)
     regex = re.compile(r'\d+$')
     regex.findall(name)
@@ -160,13 +158,8 @@ def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
 
     img.filepath = movie_clip.filepath
     bg_img.image_user.frame_duration = movie_clip.frame_duration
-    bg_img.image_user.frame_start = 1
+    bg_img.image_user.frame_start = movie_clip.frame_start
     bg_img.image_user.use_auto_refresh = True
-
-    if movie_clip.source == 'SEQUENCE':
-        file_number = _get_file_number(os.path.basename(movie_clip.filepath))
-        if file_number > 1:
-            bg_img.image_user.frame_offset = file_number - 1
 
 
 def set_background_image_mask(camobj: Camera, mask_2d: str) -> bool:
@@ -176,9 +169,9 @@ def set_background_image_mask(camobj: Camera, mask_2d: str) -> bool:
         bg_img.alpha = 0.0
         bg_img.source = 'IMAGE'
         bg_img.image = mask
-        bg_img.image_user.frame_start = 1
+        bg_img.image_user.frame_start = bpy_start_frame()
         bg_img.image_user.use_auto_refresh = True
-        bg_img.image_user.frame_duration = bpy_end_frame()
+        bg_img.image_user.frame_duration = bpy_end_frame() - bpy_start_frame() + 1
         camobj.data.show_background_images = True
         return True
     else:
