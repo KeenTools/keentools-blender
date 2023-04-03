@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import os
-from typing import Optional, List
+from typing import Optional, List, Tuple
 import re
 
 from bpy.types import MovieClip, Operator, OperatorFileListElement
@@ -32,7 +32,8 @@ from bpy.path import ensure_ext
 from ...utils.kt_logging import KTLogger
 from ...addon_config import Config, get_operator
 from ...geotracker_config import GTConfig, get_current_geotracker_item
-from ...utils.images import set_background_image_by_movieclip
+from ...utils.images import (set_background_image_by_movieclip,
+                             get_sequence_file_number)
 from ...utils.video import (convert_movieclip_to_frames,
                             load_movieclip,
                             load_image_sequence,
@@ -58,10 +59,37 @@ def _load_movieclip(dir_path: str, file_names: List[str]) -> Optional[MovieClip]
 
     new_movieclip = load_movieclip(dir_path, file_names)
 
+    if new_movieclip and new_movieclip.source == 'SEQUENCE':
+        file_number = get_sequence_file_number(
+            os.path.basename(new_movieclip.filepath))
+        if file_number >= 0:
+            new_movieclip.frame_start = file_number
+
     geotracker.movie_clip = new_movieclip
     set_background_image_by_movieclip(geotracker.camobj,
                                       geotracker.movie_clip)
     return new_movieclip
+
+
+def _image_format_items(default: str='PNG') -> List[Tuple]:
+    if default == 'PNG':
+        png_num, jpg_num = 0, 1
+    else:
+        png_num, jpg_num = 1, 0
+    return [
+        ('PNG', 'PNG', 'Default image file format with transparency', png_num),
+        ('JPEG', 'JPEG', 'Data loss image format without transparency', jpg_num),
+    ]
+
+
+def _orientation_items() -> List[Tuple]:
+    return [
+        ('NORMAL', 'Normal (do not change)', 'Do not change orientation', 0),
+        ('CW', '+90 degree (CW)',
+         'Rotate every frame on 90 degree clock-wise', 1),
+        ('CCW', '-90 degree (CCW)',
+         'Rotate every frame on 90 degree counter clock-wise', 2),
+    ]
 
 
 class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
@@ -239,29 +267,34 @@ class GT_OT_ChoosePrecalcFile(Operator, ExportHelper):
         return {'FINISHED'}
 
 
-class _DirSelectionTemplate(Operator, ExportHelper):
-    bl_label = 'Choose dir'
-    bl_description = 'Choose dir where to place files'
-    bl_options = {'REGISTER', 'INTERNAL'}
+class GT_OT_SplitVideo(Operator, ExportHelper):
+    bl_idname = GTConfig.gt_split_video_to_frames_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
 
-    use_filter: BoolProperty(default=True)
-    use_filter_folder: BoolProperty(default=True)
+    filter_folder: BoolProperty(
+        name='Filter folders',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_image: BoolProperty(
+        name='Filter image',
+        default=True,
+        options={'HIDDEN'},
+    )
 
-    filter_glob: StringProperty(
-          options={'HIDDEN'}
-    )
-    filepath: StringProperty(
-        default='',
-        subtype='FILE_PATH'
-    )
-    file_format: EnumProperty(name='Image file format', items=[
-        ('PNG', 'PNG', 'Default image file format with transparency', 0),
-        ('JPEG', 'JPEG', 'Data loss image format without transparency', 1),
-    ], description='Choose image file format')
-    quality: IntProperty(name='Image quality', default=100, min=0, max=100)
+    file_format: EnumProperty(name='Image file format',
+                              items=_image_format_items(default='JPEG'),
+                              description='Choose image file format')
+    quality: IntProperty(name='Image quality', default=100,
+                         min=0, max=100)
     from_frame: IntProperty(name='from', default=1)
     to_frame: IntProperty(name='to', default=1)
     filename_ext: StringProperty()
+
+    orientation: EnumProperty(name='Orientation',
+                              items=_orientation_items(),
+                              description='Change orientation')
 
     def draw(self, context):
         layout = self.layout
@@ -272,15 +305,10 @@ class _DirSelectionTemplate(Operator, ExportHelper):
         row.prop(self, 'from_frame', expand=True)
         row.prop(self, 'to_frame', expand=True)
         if self.file_format == 'JPEG':
-            layout.prop(self, 'quality')
+            layout.prop(self, 'quality', slider=True)
 
-
-class GT_OT_SplitVideo(_DirSelectionTemplate):
-    bl_idname = GTConfig.gt_split_video_to_frames_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    convert_current_movieclip: BoolProperty(default=False)
+        layout.label(text='Rotation:')
+        layout.prop(self, 'orientation', text='')
 
     def execute(self, context):
         self.filename_ext = '.png' if self.file_format == 'PNG' else '.jpg'
@@ -290,17 +318,20 @@ class GT_OT_SplitVideo(_DirSelectionTemplate):
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
 
-        output_path = convert_movieclip_to_frames(geotracker.movie_clip,
-                                                  self.filepath,
-                                                  file_format=self.file_format,
-                                                  quality=self.quality,
-                                                  start_frame=self.from_frame,
-                                                  end_frame=self.to_frame)
+        orientation = 0
+        if self.orientation == 'CW':
+            orientation = -1
+        elif self.orientation == 'CCW':
+            orientation = 1
+        output_path = convert_movieclip_to_frames(
+            geotracker.movie_clip, self.filepath,
+            file_format=self.file_format,
+            quality=self.quality,
+            start_frame=self.from_frame,
+            end_frame=self.to_frame,
+            orientation=orientation,
+            video_scene_name=Config.kt_convert_video_scene_name)
         _log.output(f'OUTPUT PATH2: {output_path}')
-        if output_path is not None and self.convert_current_movieclip:
-            new_movieclip = _load_movieclip(os.path.dirname(output_path),
-                                            [os.path.basename(output_path)])
-            _log.output(f'new_movieclip: {new_movieclip}')
         return {'FINISHED'}
 
 
@@ -326,23 +357,40 @@ class GT_OT_SplitVideoExec(Operator):
         return {'FINISHED'}
 
 
-class GT_OT_VideoSnapshot(_DirSelectionTemplate):
+class GT_OT_VideoSnapshot(Operator, ExportHelper):
     bl_idname = GTConfig.gt_video_snapshot_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    filter_folder: BoolProperty(
+        name='Filter folders',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_image: BoolProperty(
+        name='Filter image',
+        default=True,
+        options={'HIDDEN'},
+    )
     filepath: StringProperty(
         default='',
         subtype='FILE_PATH'
     )
     digits: IntProperty(default=4)
+    file_format: EnumProperty(name='Image file format',
+                              items=_image_format_items(default='JPEG'),
+                              description='Choose image file format')
+    quality: IntProperty(name='Image quality', default=100, min=0, max=100)
+    from_frame: IntProperty(name='from', default=1)
+    to_frame: IntProperty(name='to', default=1)
+    filename_ext: StringProperty()
 
     def draw(self, context):
         layout = self.layout
         layout.label(text='Output files format:')
         layout.prop(self, 'file_format', expand=True)
         if self.file_format == 'JPEG':
-            layout.prop(self, 'quality')
+            layout.prop(self, 'quality', slider=True)
 
     def invoke(self, context, event):
         self.filepath = str(bpy_current_frame()).zfill(self.digits)
@@ -357,13 +405,14 @@ class GT_OT_VideoSnapshot(_DirSelectionTemplate):
             return {'CANCELLED'}
 
         current_frame = bpy_current_frame()
-        output_path = convert_movieclip_to_frames(geotracker.movie_clip,
-                                                  self.filepath,
-                                                  file_format=self.file_format,
-                                                  quality=self.quality,
-                                                  single_frame=True,
-                                                  start_frame=current_frame,
-                                                  end_frame=current_frame)
+        output_path = convert_movieclip_to_frames(
+            geotracker.movie_clip, self.filepath,
+            file_format=self.file_format,
+            quality=self.quality,
+            single_frame=True,
+            start_frame=current_frame,
+            end_frame=current_frame,
+            video_scene_name=Config.kt_convert_video_scene_name)
         _log.output(f'OUTPUT PATH: {output_path}')
         return {'FINISHED'}
 
@@ -455,10 +504,25 @@ class GT_OT_FrameSelector(Operator):
         return {'FINISHED'}
 
 
-class GT_OT_ReprojectTextureSequence(_DirSelectionTemplate):
+class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
     bl_idname = GTConfig.gt_reproject_tex_sequence_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
+
+    filter_glob: StringProperty(
+          options={'HIDDEN'}
+    )
+    filepath: StringProperty(
+        default='',
+        subtype='FILE_PATH'
+    )
+    file_format: EnumProperty(name='Image file format',
+                              items=_image_format_items(default='PNG'),
+                              description='Choose image file format')
+    quality: IntProperty(name='Image quality', default=100, min=0, max=100)
+    from_frame: IntProperty(name='from', default=1)
+    to_frame: IntProperty(name='to', default=1)
+    filename_ext: StringProperty()
 
     width: IntProperty(default=2048, description='Texture width')
     height: IntProperty(default=2048, description='Texture height')
@@ -589,12 +653,20 @@ class GT_OT_AnalyzeCall(Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     precalc_start: IntProperty(default=1, name='from',
-                               description='starting frame')
+                               description='starting frame', min=0)
     precalc_end: IntProperty(default=250, name='to',
-                             description='ending frame')
+                             description='ending frame', min=0)
+
+    def check_precalc_range(self) -> bool:
+        scene_start = bpy_start_frame()
+        scene_end = bpy_end_frame()
+        return (self.precalc_start < self.precalc_end) and \
+               (scene_start <= self.precalc_start <= scene_end) and \
+               (scene_start <= self.precalc_end <= scene_end)
 
     def _precalc_range_row(self, layout, geotracker):
         row = layout.row()
+        row.alert = not self.check_precalc_range()
         row.prop(self, 'precalc_start')
         row.prop(self, 'precalc_end')
 
@@ -625,6 +697,11 @@ class GT_OT_AnalyzeCall(Operator):
         geotracker = get_current_geotracker_item()
         if not geotracker or geotracker.precalc_path == '':
             return {'FINISHED'}
+
+        if self.precalc_start >= self.precalc_end:
+            msg = 'Precalc start should be lower than precalc end'
+            self.report({'ERROR'}, msg)
+            return {'CANCELLED'}
 
         try:
             geotracker.precalc_start = self.precalc_start

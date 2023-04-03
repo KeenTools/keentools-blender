@@ -145,6 +145,8 @@ class Config:
     hide_geotracker = not 'KEENTOOLS_ENABLE_BLENDER_GEOTRACKER' in os.environ
     allow_use_gpu_instead_of_bgl = False
 
+    kt_convert_video_scene_name = 'gt_convert_video'
+
     @classmethod
     def mock_update_for_testing(cls, value: bool=True, *,
                                 ver: Optional[Tuple]=None,

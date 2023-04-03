@@ -121,7 +121,7 @@ def show_background_images(camobj: Camera, reload: bool=False) -> None:
     cam_data.show_background_images = True
 
 
-def _get_file_number(filename: str) -> int:
+def get_sequence_file_number(filename: str) -> int:
     name, _ = os.path.splitext(filename)
     regex = re.compile(r'\d+$')
     regex.findall(name)
@@ -160,13 +160,8 @@ def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
 
     img.filepath = movie_clip.filepath
     bg_img.image_user.frame_duration = movie_clip.frame_duration
-    bg_img.image_user.frame_start = 1
+    bg_img.image_user.frame_start = movie_clip.frame_start
     bg_img.image_user.use_auto_refresh = True
-
-    if movie_clip.source == 'SEQUENCE':
-        file_number = _get_file_number(os.path.basename(movie_clip.filepath))
-        if file_number > 1:
-            bg_img.image_user.frame_offset = file_number - 1
 
 
 def set_background_image_mask(camobj: Camera, mask_2d: str) -> bool:

@@ -16,17 +16,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 import os
-import logging
 from typing import Any, Tuple, List, Optional
 
 import bpy
-from bpy.types import MovieClip, Image
+from bpy.types import MovieClip, Image, Scene
 
 from .kt_logging import KTLogger
 from ..addon_config import ActionStatus
-from .bpy_common import (operator_with_context,
-                         extend_scene_timeline_start,
-                         extend_scene_timeline_end)
+from .bpy_common import operator_with_context, bpy_scene
 from .ui_redraw import get_all_areas
 
 
@@ -140,34 +137,36 @@ def load_movieclip(directory: str, file_names: List[str]) -> Optional[MovieClip]
     return new_movieclip
 
 
-def convert_movieclip_to_frames(movie_clip: Optional[MovieClip],
-                                filepath: str, *,
-                                file_format: str='PNG',
-                                quality: int=100,
-                                start_frame: int=1,
-                                end_frame: int=-1,
-                                single_frame: bool=False,
-                                opengl_render: bool=True) -> Optional[str]:
-    def _cleanup_scene() -> None:
-        sequence_editor.sequences.remove(strip)
-        scene.sequence_editor_clear()
-        bpy.data.objects.remove(cam_ob, do_unlink=True)
-        bpy.data.scenes.remove(scene)
-
+def convert_movieclip_to_frames(
+        movie_clip: Optional[MovieClip],
+        filepath: str, *,
+        file_format: str='PNG',
+        quality: int=100,
+        start_frame: int=1,
+        end_frame: int=-1,
+        orientation: int=0,
+        single_frame: bool=False,
+        opengl_render: bool=True,
+        video_scene_name: str='video_scene') -> Optional[str]:
     w, h = get_movieclip_size(movie_clip)
     if w <= 0 or h <= 0:
-        _cleanup_scene()
         return None
 
-    scene = bpy.data.scenes.new('convert_video_to_frames')
+    scene = bpy.data.scenes.new(video_scene_name)
+    scene_name = scene.name
     sequence_editor = scene.sequence_editor_create()
-    strip = sequence_editor.sequences.new_clip('video', movie_clip, 1, 1)
+    sequence_editor.use_cache_final = False
+    strip = sequence_editor.sequences.new_clip('video', movie_clip, 2, 1)
+    strip.transform.rotation = orientation * 1.5707963  # pi/2 works worse!
 
     cam_data = bpy.data.cameras.new('output_cam_data')
     cam_data.show_background_images = True
     cam_ob = bpy.data.objects.new('output_camera', cam_data)
     scene.collection.objects.link(cam_ob)
+    scene.camera = cam_ob
 
+    if orientation != 0:
+        w, h = h, w
     scene.render.resolution_x = w
     scene.render.resolution_y = h
     scene.render.filepath = filepath
@@ -195,7 +194,10 @@ def convert_movieclip_to_frames(movie_clip: Optional[MovieClip],
         output_filepath = None
         _log.error(f'convert_movieclip_to_frames Exception:\n{str(err)}')
     finally:
-        _cleanup_scene()
+        _log.output('_cleanup_scene')
+        scene = bpy.data.scenes[scene_name]
+        scene.sequence_editor_clear()
+        bpy.data.scenes.remove(scene)
     return output_filepath
 
 
@@ -217,7 +219,9 @@ def fit_time_length(movie_clip: Optional[MovieClip]) -> ActionStatus:
     if duration < 2:
         return ActionStatus(False, f'Image sequence too short: {duration}!')
 
-    extend_scene_timeline_start(1)
-    extend_scene_timeline_end(duration, force=True)
+    scene = bpy_scene()
+    scene.frame_start = movie_clip.frame_start
+    scene.frame_end = movie_clip.frame_start + duration
 
-    return ActionStatus(True, f'Timeline duration 1 - {duration}')
+    return ActionStatus(
+        True, f'Timeline duration {scene.frame_start} - {scene.frame_end}')
