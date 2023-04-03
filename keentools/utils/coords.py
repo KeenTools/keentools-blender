@@ -17,21 +17,25 @@
 # ##### END GPL LICENSE BLOCK #####
 import numpy as np
 import math
-from typing import Any, Tuple, List, Optional, Set
+from typing import Any, Tuple, List, Optional, Set, Callable
 
 from bpy.types import Area, Object
-from mathutils import Matrix
+from mathutils import Matrix, Quaternion
 
 from .kt_logging import KTLogger
 from .fake_context import get_fake_context
 from .bpy_common import (bpy_current_frame,
                          bpy_render_frame,
                          evaluated_mesh,
-                         bpy_background_mode)
+                         bpy_background_mode,
+                         bpy_app_version)
 from .animation import get_safe_evaluated_fcurve
 
 
 _log = KTLogger(__name__)
+
+
+LocRotScale_exist: bool = bpy_app_version() >= (3, 0, 0)
 
 
 def nearest_point(x: float, y: float, points: List[Tuple[float, float]],
@@ -434,6 +438,25 @@ def compensate_view_scale() -> float:
     return image_width / image_height
 
 
+def ScaleMatrix(sc: Tuple) -> Matrix:
+    scm = Matrix.Identity(4)
+    scm[0][0], scm[1][1], scm[2][2] = sc[:]
+    return scm
+
+
+def RotationMatrix(r: Quaternion) -> Matrix:
+    r.normalized().to_matrix().to_4x4()
+
+
+def LocRotScale_old(t: Tuple[float, float, float], r: Quaternion,
+                    sc: Tuple[float, float, float]) -> Matrix:
+    scm = ScaleMatrix(sc)
+    return Matrix.Translation(t) @ r.normalized().to_matrix().to_4x4() @ scm
+
+
+LocRotScale: Callable = Matrix.LocRotScale if LocRotScale_exist else LocRotScale_old
+
+
 def calc_bpy_camera_mat_relative_to_model(geom_matrix_world: Matrix,
                                           camera_matrix_world: Matrix,
                                           gt_model_mat: Any) -> Matrix:
@@ -445,7 +468,7 @@ def calc_bpy_camera_mat_relative_to_model(geom_matrix_world: Matrix,
         mat = np.array(geom_matrix_world) @ geom_scale_inv \
               @ rot_mat2 @ np.linalg.inv(gt_model_mat)
         t, r, _ = Matrix(mat).decompose()
-        new_mat = Matrix.LocRotScale(t, r, sc)
+        new_mat = LocRotScale(t, r, sc)
     except Exception:
         new_mat = Matrix.Identity(4)
     return new_mat
@@ -456,7 +479,7 @@ def calc_bpy_model_mat_relative_to_camera(geom_matrix_world: Matrix,
                                           gt_model_mat: Any) -> Matrix:
     rot_mat = xy_to_xz_rotation_matrix_4x4()
     t, r, _ = camera_matrix_world.decompose()
-    camera_mat = Matrix.LocRotScale(t, r, (1, 1, 1))
+    camera_mat = LocRotScale(t, r, (1, 1, 1))
     scale_mat = get_scale_matrix_4x4_from_matrix_world(geom_matrix_world)
     np_mw = np.array(camera_mat) @ gt_model_mat @ rot_mat @ scale_mat
     return Matrix(np_mw)
