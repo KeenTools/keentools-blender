@@ -322,7 +322,7 @@ class FBLoader:
         vertices2 = vertices @ xy_to_xz_rotation_matrix_3x3()
 
         f_count = me.faces_count()
-        faces = np.empty(f_count, dtype=np.object)
+        faces = np.empty(f_count, dtype=np.object_)
 
         for i in range(f_count):
             faces[i] = [me.face_point(i, j) for j in range(me.face_size(i))]
