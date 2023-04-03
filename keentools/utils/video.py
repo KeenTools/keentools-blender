@@ -221,7 +221,7 @@ def fit_time_length(movie_clip: Optional[MovieClip]) -> ActionStatus:
 
     scene = bpy_scene()
     scene.frame_start = movie_clip.frame_start
-    scene.frame_end = movie_clip.frame_start + duration
+    scene.frame_end = movie_clip.frame_start + duration - 1
 
     return ActionStatus(
         True, f'Timeline duration {scene.frame_start} - {scene.frame_end}')

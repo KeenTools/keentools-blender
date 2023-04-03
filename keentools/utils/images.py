@@ -161,6 +161,10 @@ def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
     bg_img.image_user.frame_start = movie_clip.frame_start
     bg_img.image_user.use_auto_refresh = True
 
+    if movie_clip.source == 'SEQUENCE':
+        if movie_clip.frame_start > 1:
+            bg_img.image_user.frame_offset = movie_clip.frame_start - 1
+
 
 def set_background_image_mask(camobj: Camera, mask_2d: str) -> bool:
     mask = find_bpy_image_by_name(mask_2d)
