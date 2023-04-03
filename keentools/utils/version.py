@@ -24,8 +24,7 @@ _bpy_ver = bpy.app.version
 
 class BVersion:
     property_keywords_enabled: bool = _bpy_ver >= (2, 93, 0)
-    blender_srgb_to_framebuffer_space_enabled: bool = \
-        bpy.app.version >= (2, 83, 0)
+    blender_srgb_to_framebuffer_space_enabled: bool = _bpy_ver >= (2, 83, 0)
     LocRotScale_exist: bool = _bpy_ver >= (3, 0, 0)
     operator_with_context_exists: bool = _bpy_ver >= (3, 2, 0)
     pixels_foreach_methods_exist: bool = _bpy_ver >= (2, 83, 0)
