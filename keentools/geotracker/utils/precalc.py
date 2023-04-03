@@ -79,7 +79,7 @@ class PrecalcTimer(CalcTimer):
             return None
 
         progress, message = self._runner.current_progress()
-        _log.output(f'runner_state: {progress} {message}')
+        _log.output(f'precalc runner_state: {progress} {message}')
         GTLoader.viewport().message_to_screen(
             [{'text': 'Precalc calculating... Please wait', 'y': 60,
               'color': (1.0, 0.0, 0.0, 0.7)},
@@ -182,6 +182,9 @@ def precalc_with_runner_act(context: Any) -> ActionStatus:
 
     if not os.path.exists(dirpath) or not os.path.isdir(dirpath):
         return ActionStatus(False, 'Target folder cannot be created')
+
+    if geotracker.precalc_start >= geotracker.precalc_end:
+        return ActionStatus(False, 'Precalc start should be lower than precalc end')
 
     _log.output('precalc_with_runner_act start')
     vp = GTLoader.viewport()

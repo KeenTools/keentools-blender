@@ -43,13 +43,16 @@ from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             focal_mm_to_px,
                             camera_focal_length,
                             camera_sensor_width,
-                            get_polygons_in_vertex_group)
+                            get_polygons_in_vertex_group,
+                            LocRotScale)
 from ..utils.video import fit_render_size, fit_time_length
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_start_frame,
                                 bpy_end_frame,
                                 bpy_current_frame,
-                                bpy_render_single_frame)
+                                bpy_set_current_frame,
+                                bpy_render_single_frame,
+                                bpy_scene)
 from ..utils.compositing import (get_compositing_shadow_scene,
                                  create_mask_compositing_node_tree,
                                  get_mask_by_name,
@@ -129,18 +132,27 @@ def update_geomobj(geotracker, context: Any) -> None:
 def update_movieclip(geotracker, context: Any) -> None:
     _log.output('update_movieclip')
 
-    geotracker.precalc_path = ''
-
     if not geotracker.movie_clip:
+        geotracker.precalc_path = ''
         if geotracker.camobj:
             remove_background_image_object(geotracker.camobj, index=0)
         return
 
-    set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
-    fit_render_size(geotracker.movie_clip)
+    current_frame = bpy_current_frame()
+    scene = context.scene
     fit_time_length(geotracker.movie_clip)
+    if not (scene.frame_start <= current_frame <= scene.frame_end):
+        bpy_set_current_frame(scene.frame_start)
+
+    fit_render_size(geotracker.movie_clip)
+
+    set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
+
     geotracker.precalc_start = bpy_start_frame()
     geotracker.precalc_end = bpy_end_frame()
+
+    geotracker.precalc_path = f'{GTConfig.gt_precalc_folder}' \
+                              f'{geotracker.movie_clip.name}'
 
 
 def update_precalc_path(geotracker, context: Any) -> None:
@@ -320,8 +332,8 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     precalc_path: bpy.props.StringProperty(name='Precalc path',
                                            update=update_precalc_path)
-    precalc_start: bpy.props.IntProperty(name='from', default=1)
-    precalc_end: bpy.props.IntProperty(name='to', default=250)
+    precalc_start: bpy.props.IntProperty(name='from', default=1, min=0)
+    precalc_end: bpy.props.IntProperty(name='to', default=250, min=0)
     precalc_message: bpy.props.StringProperty(name='Precalc info')
 
     def precalc_message_error(self):
@@ -538,7 +550,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         rot_mat = xz_to_xy_rotation_matrix_4x4()
 
         t, r, s = self.camobj.matrix_world.decompose()
-        cam_mat = Matrix.LocRotScale(t, r, (1, 1, 1))
+        cam_mat = LocRotScale(t, r, (1, 1, 1))
 
         geom_mw = self.geomobj.matrix_world
         geom_scale_vec = get_scale_vec_4_from_matrix_world(geom_mw)
