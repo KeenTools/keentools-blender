@@ -105,7 +105,7 @@ class PrecalcTimer(CalcTimer):
             bg_img = get_background_image_object(geotracker.camobj)
             if not bg_img.image:
                 _log.output('no image in background')
-                self.finish_calc_mode_with_error('* Cannot load images')
+                self.finish_calc_mode_with_error('* Cannot load images 1')
                 return None
 
             im_user = bg_img.image_user
@@ -113,11 +113,17 @@ class PrecalcTimer(CalcTimer):
             _log.output(bg_img.image.filepath)
             path = bg_img.image.filepath_from_user(image_user=im_user)
             _log.output(f'user_path: {current_frame} {path}')
-            img = bpy.data.images.load(path)
+
+            try:
+                img = bpy.data.images.load(path)
+            except Exception as err:
+                _log.error(f'runner_state load image Exception:\n{str(err)}')
+                self.finish_calc_mode_with_error('* Cannot load images 2')
+                return None
 
             if not check_bpy_image_size(img):
                 _log.output('cannot load image')
-                self.finish_calc_mode_with_error('* Cannot load images')
+                self.finish_calc_mode_with_error('* Cannot load images 3')
                 return None
 
             np_img = np_array_from_bpy_image(img)

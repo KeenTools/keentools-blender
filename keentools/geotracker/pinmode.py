@@ -501,10 +501,12 @@ class GT_OT_PinMode(Operator):
             GTLoader.update_viewport_shaders()
             return {'PASS_THROUGH'}
 
-        if event.value == 'PRESS' and event.type == 'LEFTMOUSE':
+        if event.value == 'PRESS' and event.type == 'LEFTMOUSE' \
+                and not settings.is_calculating():
             return self._on_left_mouse_press(context.area, event)
 
-        if event.value == 'PRESS' and event.type == 'RIGHTMOUSE':
+        if event.value == 'PRESS' and event.type == 'RIGHTMOUSE' \
+                and not settings.is_calculating():
             return self._on_right_mouse_press(context.area, event)
 
         return {'PASS_THROUGH'}
