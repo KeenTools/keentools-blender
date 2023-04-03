@@ -18,6 +18,8 @@
 import math
 import bpy
 
+from .utils.version import BVersion
+
 
 _company = 'keentools'
 _PT = 'FBUILDER_PT_'
@@ -243,12 +245,10 @@ def remove_addon_settings_var():
 
 
 def check_addon_settings_var_type():
-    property_keywords_enabled: bool = bpy.app.version >= (2, 93, 0)
-
     if not hasattr(bpy.types.Scene, FBConfig.fb_global_var_name):
         return None
     attr = getattr(bpy.types.Scene, FBConfig.fb_global_var_name)
-    if property_keywords_enabled:
+    if BVersion.property_keywords_enabled:
         return attr.keywords['type']
     else:
         return attr[1]['type']

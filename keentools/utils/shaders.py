@@ -16,10 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy
-
-
-blender_srgb_to_framebuffer_space_enabled: bool = bpy.app.version >= (2, 83, 0)
+from .version import BVersion
 
 
 def flat_color_3d_vertex_shader() -> str:
@@ -167,7 +164,7 @@ def smooth_3d_fragment_shader() -> str:
     {
         fragColor = finalColor;
     '''
-    if blender_srgb_to_framebuffer_space_enabled:
+    if BVersion.blender_srgb_to_framebuffer_space_enabled:
         txt += 'fragColor = blender_srgb_to_framebuffer_space(fragColor);'
     txt += '''
     }
@@ -243,7 +240,7 @@ def residual_fragment_shader() -> str:
         if (step(sin(v_LineLength), -0.3f) == 1) discard;
         fragColor = finalColor;
         '''
-    if blender_srgb_to_framebuffer_space_enabled:
+    if BVersion.blender_srgb_to_framebuffer_space_enabled:
         txt += 'fragColor = blender_srgb_to_framebuffer_space(fragColor);'
     txt += '''
     }
@@ -262,7 +259,7 @@ def dashed_fragment_shader() -> str:
         if (mod(v_LineLength + 5.0, 10.0) > 5.5) discard;
         fragColor = finalColor;
         '''
-    if blender_srgb_to_framebuffer_space_enabled:
+    if BVersion.blender_srgb_to_framebuffer_space_enabled:
         txt += 'fragColor = blender_srgb_to_framebuffer_space(fragColor);'
     txt += '''
     }
@@ -295,7 +292,7 @@ def solid_line_fragment_shader() -> str:
     {
         fragColor = finalColor;
         '''
-    if blender_srgb_to_framebuffer_space_enabled:
+    if BVersion.blender_srgb_to_framebuffer_space_enabled:
         txt += 'fragColor = blender_srgb_to_framebuffer_space(fragColor);'
     txt += '''
     }
@@ -451,7 +448,7 @@ def lit_fragment_shader() -> str:
             evaluatePointLight(light2, color.rgb, calcNormal, outPos) +
             evaluatePointLight(light3, color.rgb, calcNormal, outPos), color.a);
     '''
-    if blender_srgb_to_framebuffer_space_enabled:
+    if BVersion.blender_srgb_to_framebuffer_space_enabled:
         txt += 'fragColor = blender_srgb_to_framebuffer_space(fragColor);'
     txt += '''
     }

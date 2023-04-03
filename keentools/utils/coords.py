@@ -22,6 +22,7 @@ from typing import Any, Tuple, List, Optional, Set, Callable
 from bpy.types import Area, Object
 from mathutils import Matrix, Quaternion
 
+from .version import BVersion
 from .kt_logging import KTLogger
 from .fake_context import get_fake_context
 from .bpy_common import (bpy_current_frame,
@@ -33,9 +34,6 @@ from .animation import get_safe_evaluated_fcurve
 
 
 _log = KTLogger(__name__)
-
-
-LocRotScale_exist: bool = bpy_app_version() >= (3, 0, 0)
 
 
 def nearest_point(x: float, y: float, points: List[Tuple[float, float]],
@@ -454,7 +452,8 @@ def LocRotScale_old(t: Tuple[float, float, float], r: Quaternion,
     return Matrix.Translation(t) @ r.normalized().to_matrix().to_4x4() @ scm
 
 
-LocRotScale: Callable = Matrix.LocRotScale if LocRotScale_exist else LocRotScale_old
+LocRotScale: Callable = Matrix.LocRotScale \
+    if BVersion.LocRotScale_exist else LocRotScale_old
 
 
 def calc_bpy_camera_mat_relative_to_model(geom_matrix_world: Matrix,
