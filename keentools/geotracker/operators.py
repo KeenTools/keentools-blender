@@ -67,16 +67,22 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     revert_default_render_act,
                                     get_camobj_state,
                                     get_geomobj_state,
-                                    resize_object,
+                                    scale_scene_tracking_preview_func,
                                     revert_object_states,
                                     scale_scene_tracking_act,
+                                    scale_scene_trajectory_act,
                                     create_non_overlapping_uv_act,
-                                    bake_locrot_act)
+                                    bake_locrot_act,
+                                    store_cam_matrices,
+                                    store_geom_matrices)
 from .utils.calc_timer import TrackTimer, RefineTimer
 from .utils.precalc import precalc_with_runner_act, PrecalcTimer
 from .gtloader import GTLoader
 from .ui_strings import buttons
 from .utils.prechecks import common_checks
+from ..utils.animation import (get_object_keyframe_numbers,
+                               get_world_matrices_in_frames,
+                               scene_frame_list)
 
 
 _log = KTLogger(__name__)
@@ -790,15 +796,8 @@ class GT_OT_AutoNamePrecalc(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
-def resize_object_func(operator, context):
-    if not revert_object_states():
-        return
-    settings = get_gt_settings()
-    geotracker = settings.get_current_geotracker_item()
-
-    if not geotracker.geomobj or not geotracker.camobj:
-        return
-    resize_object(operator)
+def _rescale_preview_func(operator, context):
+    scale_scene_tracking_preview_func(operator, context)
 
 
 class GT_OT_RescaleWindow(Operator):
@@ -807,19 +806,23 @@ class GT_OT_RescaleWindow(Operator):
     bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
 
     value: FloatProperty(default=1.0, precision=4, step=0.03, min=0.0001,
-                         update=resize_object_func)
+                         update=_rescale_preview_func)
     geom_scale: FloatVectorProperty(default=(1, 1, 1))
     cam_scale:  FloatVectorProperty(default=(1, 1, 1))
     keep_cam_scale: BoolProperty(default=True, name='Keep camera scale',
-                                 update=resize_object_func)
+                                 update=_rescale_preview_func)
     keep_geom_scale: BoolProperty(default=False, name='Keep object scale',
-                                 update=resize_object_func)
+                                  update=_rescale_preview_func)
+    origin_frame: IntProperty(name='Aligned frame number', default=1,
+                              update=_rescale_preview_func)
+    every_frame: BoolProperty(default=False, name='Rescale in every frame',
+                              update=_rescale_preview_func)
     origin_point: EnumProperty(name='Pivot point', items=[
         ('WORLD', 'World Origin', 'Use world center', 0),
         ('GEOMETRY', 'Geometry', 'Use geometry as center', 1),
         ('CAMERA', 'Camera', 'Use camera as center', 2),
         ('3D_CURSOR', '3D Cursor', 'Use 3D cursor', 3),
-    ], update=resize_object_func)
+    ], update=_rescale_preview_func)
 
     def draw(self, context) -> None:
         layout = self.layout
@@ -834,10 +837,18 @@ class GT_OT_RescaleWindow(Operator):
         row = layout.row(align=True)
         row.prop(self, 'keep_cam_scale')
         row.prop(self, 'keep_geom_scale')
+
+        if self.origin_point in ['GEOMETRY', 'CAMERA']:
+            row = layout.row()
+            row.prop(self, 'every_frame')
+            col = row.column(align=True)
+            col.enabled = not self.every_frame
+            col.prop(self, 'origin_frame')
         layout.separator()
 
     def execute(self, context):
-        act_status = scale_scene_tracking_act(self)
+        # act_status = scale_scene_tracking_act(self)
+        act_status = scale_scene_trajectory_act(self)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -861,6 +872,21 @@ class GT_OT_RescaleWindow(Operator):
         self.value = 1.0
         self.keep_cam_scale = True
         self.keep_geom_scale = False
+        self.origin_frame = bpy_current_frame()
+
+        frame_list = scene_frame_list()
+
+        geom_animated_frames = get_object_keyframe_numbers(geotracker.geomobj)
+        cam_animated_frames = get_object_keyframe_numbers(geotracker.camobj)
+        all_animated_frames = list(set(geom_animated_frames)
+                                   .union(set(cam_animated_frames))
+                                   .union(set(frame_list)))
+        all_animated_frames.sort()
+
+        store_geom_matrices(get_world_matrices_in_frames(geotracker.geomobj,
+                                                         all_animated_frames))
+        store_cam_matrices(get_world_matrices_in_frames(geotracker.camobj,
+                                                        all_animated_frames))
         return context.window_manager.invoke_props_dialog(self, width=350)
 
 

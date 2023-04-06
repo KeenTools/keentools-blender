@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import List
+from typing import List, Dict, Any
 import math
 import numpy as np
 
@@ -47,8 +47,6 @@ from .tracking import (get_next_tracking_keyframe,
 from ...utils.bpy_common import (create_empty_object,
                                  bpy_current_frame,
                                  bpy_set_current_frame,
-                                 bpy_start_frame,
-                                 bpy_end_frame,
                                  update_depsgraph,
                                  reset_unsaved_animation_changes_in_frame,
                                  bpy_scene,
@@ -71,7 +69,11 @@ from .calc_timer import (TrackTimer,
                          RefineTimer,
                          RefineTimerFast)
 from ..settings import is_mesh, is_camera
-from ...utils.coords import LocRotScale
+from ...utils.coords import (LocRotScale,
+                             LocRotWithoutScale,
+                             ScaleMatrix,
+                             InvScaleMatrix,
+                             UniformScaleMatrix)
 
 
 _log = KTLogger(__name__)
@@ -1016,6 +1018,9 @@ def revert_default_render_act() -> ActionStatus:
 _geom_mw: Matrix = Matrix.Identity(4)
 _cam_mw: Matrix = Matrix.Identity(4)
 
+_geom_matrices: Dict[int, Matrix] = {}
+_cam_matrices: Dict[int, Matrix] = {}
+
 
 def _get_geom_mw() -> Matrix:
     global _geom_mw
@@ -1035,6 +1040,26 @@ def _set_geom_mw(value: Matrix) -> None:
 def _set_cam_mw(value: Matrix) -> None:
     global _cam_mw
     _cam_mw = value
+
+
+def get_geom_matrices() -> Dict[int, Matrix]:
+    global _geom_matrices
+    return _geom_matrices
+
+
+def get_cam_matrices() -> Dict[int, Matrix]:
+    global _cam_matrices
+    return _cam_matrices
+
+
+def store_geom_matrices(value: Dict[int, Matrix]) -> None:
+    global _geom_matrices
+    _geom_matrices = value
+
+
+def store_cam_matrices(value: Dict[int, Matrix]) -> None:
+    global _cam_matrices
+    _cam_matrices = value
 
 
 def get_camobj_state(operator: Operator, camobj: Object) -> None:
@@ -1087,9 +1112,9 @@ def _get_operator_origin_matrix(operator: Operator) -> Matrix:
     geotracker = get_current_geotracker_item()
     origin_matrix = Matrix.Identity(4)
     if operator.origin_point == 'GEOMETRY':
-        origin_matrix = geotracker.geomobj.matrix_world.copy()
+        origin_matrix = LocRotWithoutScale(geotracker.geomobj.matrix_world)
     elif operator.origin_point == 'CAMERA':
-        origin_matrix = geotracker.camobj.matrix_world.copy()
+        origin_matrix = LocRotWithoutScale(geotracker.camobj.matrix_world)
     elif operator.origin_point == '3D_CURSOR':
         origin_matrix = bpy_scene().cursor.matrix.copy()
     return origin_matrix
@@ -1106,6 +1131,18 @@ def resize_object(operator: Operator) -> None:
     geotracker.geomobj.matrix_world = rescale_matrix @ \
                                       geotracker.geomobj.matrix_world
     _apply_geomobj_scale(geotracker.geomobj, operator)
+
+
+def scale_scene_tracking_preview_func(operator: Operator,
+                                       context: Any) -> None:
+    if not revert_object_states():
+        return
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+
+    if not geotracker.geomobj or not geotracker.camobj:
+        return
+    resize_object(operator)
 
 
 def scale_scene_tracking_act(operator: Operator) -> ActionStatus:
@@ -1131,29 +1168,25 @@ def scale_scene_tracking_act(operator: Operator) -> ActionStatus:
 
     for frame in cam_animated_frames:
         bpy_set_current_frame(frame)
-        geotracker.camobj.matrix_world = rescale_matrix @ \
-                                         geotracker.camobj.matrix_world
-        _apply_camobj_scale(geotracker.camobj, operator)
+        geotracker.camobj.matrix_world = rescale_matrix @ camobj.matrix_world
+        _apply_camobj_scale(camobj, operator)
         update_depsgraph()
         create_animation_locrot_keyframe_force(camobj)
         geotracker.camobj.scale = operator.cam_scale
 
     if len(cam_animated_frames) == 0:
-        geotracker.camobj.matrix_world = rescale_matrix @ \
-                                         geotracker.camobj.matrix_world
+        geotracker.camobj.matrix_world = rescale_matrix @ camobj.matrix_world
 
     for frame in geom_animated_frames:
         bpy_set_current_frame(frame)
-        geotracker.geomobj.matrix_world = rescale_matrix @ \
-                                          geotracker.geomobj.matrix_world
+        geotracker.geomobj.matrix_world = rescale_matrix @ geomobj.matrix_world
         _apply_geomobj_scale(geotracker.geomobj, operator)
         update_depsgraph()
         create_animation_locrot_keyframe_force(geomobj)
         geotracker.geomobj.scale = operator.geom_scale
 
     if len(geom_animated_frames) == 0:
-        geotracker.geomobj.matrix_world = rescale_matrix @ \
-                                          geotracker.geomobj.matrix_world
+        geotracker.geomobj.matrix_world = rescale_matrix @ geomobj.matrix_world
 
     _apply_camobj_scale(geotracker.camobj, operator)
     _apply_geomobj_scale(geotracker.geomobj, operator)
@@ -1169,6 +1202,75 @@ def scale_scene_tracking_act(operator: Operator) -> ActionStatus:
         GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
                                          pins_and_residuals=True)
     return ActionStatus(True, 'ok')
+
+
+def scale_scene_trajectory_act(operator: Operator) -> ActionStatus:
+    check_status = common_checks(object_mode=True, is_calculating=True,
+                                 reload_geotracker=True, geotracker=True,
+                                 camera=True, geometry=True)
+    if not check_status.success:
+        return check_status
+
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    geomobj = geotracker.geomobj
+    camobj = geotracker.camobj
+    current_frame = bpy_current_frame()
+
+    geom_animated_frames = get_object_keyframe_numbers(geomobj)
+    cam_animated_frames = get_object_keyframe_numbers(camobj)
+
+    origin_matrix = _get_operator_origin_matrix(operator)
+    rescale_matrix = _calc_resize_matrix(origin_matrix, operator.value)
+
+    cam_scale_matrix = ScaleMatrix(operator.cam_scale)
+    cam_scale_matrix_inv = InvScaleMatrix(operator.cam_scale)
+    _log.output(f'cam_scale_matrix_inv: {cam_scale_matrix_inv}')
+
+    operator_scale_matrix = Matrix.Scale(operator.value, 4)
+    operator_scale_matrix_inv = Matrix.Scale(1.0 / operator.value, 4)
+    rescale_matrix = origin_matrix @ operator_scale_matrix @ origin_matrix.inverted()
+
+    geom_matrices = get_geom_matrices()
+    cam_matrices = get_cam_matrices()
+    all_animated_frames = [x for x in geom_matrices]
+
+    model_matrices = [LocRotWithoutScale(cam_matrices[x].inverted() @ geom_matrices[x])
+                      for x in all_animated_frames]
+
+    revert_object_states()
+
+    for frame in all_animated_frames:
+        bpy_set_current_frame(frame)
+        mat = rescale_matrix @ LocRotWithoutScale(cam_matrices[frame])
+        # camobj.matrix_world = mat.copy()
+        camobj.matrix_world = rescale_matrix @ camobj.matrix_world
+        camobj.scale = operator.cam_scale
+        _log.output(f'camera scale: {camobj.scale}')
+
+        geomobj.matrix_world = LocRotWithoutScale(mat) @ model_matrices[frame]
+        geomobj.scale = operator.geom_scale
+
+        update_depsgraph()
+        if frame in cam_animated_frames:
+            create_animation_locrot_keyframe_force(camobj)
+        if frame in geom_animated_frames:
+            create_animation_locrot_keyframe_force(geomobj)
+        # camobj.scale = operator.cam_scale
+
+    bpy_set_current_frame(current_frame)
+
+    GTLoader.save_geotracker()
+    if not settings.reload_current_geotracker():
+        msg = 'Cannot reload GeoTracker data'
+        _log.error(msg)
+        return ActionStatus(False, msg)
+
+    if settings.pinmode:
+        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
+                                         pins_and_residuals=True)
+    return ActionStatus(True, 'ok')
+
 
 
 def bake_locrot_act() -> ActionStatus:
