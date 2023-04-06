@@ -442,6 +442,16 @@ def ScaleMatrix(sc: Tuple) -> Matrix:
     return scm
 
 
+def InvScaleMatrix(sc: Tuple) -> Matrix:
+    scm = Matrix.Identity(4)
+    scm[0][0], scm[1][1], scm[2][2] = 1.0 / sc[0], 1.0 / sc[1], 1.0 / sc[2]
+    return scm
+
+
+def UniformScaleMatrix(sc: float) -> Matrix:
+    return ScaleMatrix((sc, sc, sc))
+
+
 def RotationMatrix(r: Quaternion) -> Matrix:
     r.normalized().to_matrix().to_4x4()
 
@@ -454,6 +464,11 @@ def LocRotScale_old(t: Tuple[float, float, float], r: Quaternion,
 
 LocRotScale: Callable = Matrix.LocRotScale \
     if BVersion.LocRotScale_exist else LocRotScale_old
+
+
+def LocRotWithoutScale(mat: Matrix) -> Matrix:
+    t, r, s = mat.decompose()
+    return LocRotScale(t, r, (1, 1, 1))
 
 
 def calc_bpy_camera_mat_relative_to_model(geom_matrix_world: Matrix,

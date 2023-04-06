@@ -367,10 +367,10 @@ def get_object_keyframe_numbers(obj: Object) -> List[int]:
 
 
 def get_world_matrices_in_frames(obj: Object,
-                                 bake_frames: List[int]) -> Dict[int, Matrix]:
+                                 frame_list: List[int]) -> Dict[int, Matrix]:
     all_matrices = {}
     current_frame = bpy_current_frame()
-    for frame in bake_frames:
+    for frame in frame_list:
         bpy_set_current_frame(frame)
         all_matrices[frame] = obj.matrix_world.copy()
     bpy_set_current_frame(current_frame)
