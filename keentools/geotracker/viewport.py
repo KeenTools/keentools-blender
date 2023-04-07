@@ -21,6 +21,8 @@ import numpy as np
 
 from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
 
+from ..utils.kt_logging import KTLogger
+from ..addon_config import Config, get_operator, ErrorType
 from ..geotracker_config import GTConfig, get_gt_settings
 from ..utils.coords import (get_camera_border,
                             image_space_to_region,
@@ -30,7 +32,8 @@ from ..utils.coords import (get_camera_border,
                             pin_to_xyz_from_mesh)
 from ..utils.bpy_common import (bpy_render_frame,
                                 evaluated_object,
-                                bpy_scene_camera)
+                                bpy_scene_camera,
+                                bpy_background_mode)
 from ..utils.viewport import KTViewport
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
@@ -40,6 +43,9 @@ from ..utils.edges import (KTEdgeShader2D,
                            KTScreenDashedRectangleShader2D)
 from ..utils.polygons import KTRasterMask
 from ..preferences.user_preferences import UserPreferences
+
+
+_log = KTLogger(__name__)
 
 
 class GTViewport(KTViewport):
@@ -63,6 +69,31 @@ class GTViewport(KTViewport):
             UserPreferences.get_value_safe('gt_mask_2d_opacity',
                                            UserPreferences.type_float)))
         self._draw_update_timer_handler = None
+
+    def load_all_shaders(self):
+        if bpy_background_mode():
+            return True
+        all_draw_objects = [self._points2d,
+                            self._points3d,
+                            self._residuals,
+                            self._texter,
+                            self._wireframer,
+                            self._timeliner,
+                            self._selector,
+                            self._mask2d]
+        _log.output('--- GT Shaders initialization ---')
+        try:
+            for item in all_draw_objects:
+                _log.output(f'{item}')
+                item.init_shaders()
+        except Exception as err:
+            _log.error(f'GT viewport shaders Exception:\n{str(err)}\n===')
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.ShaderProblem)
+            return False
+
+        _log.output('--- End of GT shaders initialization ---')
+        return True
 
     def register_handlers(self, context):
         self.unregister_handlers()

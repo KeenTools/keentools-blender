@@ -49,9 +49,6 @@ class KTShaderBase:
         self.draw_main = self.draw_main_gpu if use_gpu_instead_of_bgl \
             else self.draw_main_bgl
 
-        if not bpy_background_mode():
-            self.init_shaders()
-
     def needs_to_be_drawn(self) -> bool:
         return self.batch_counter != self.draw_counter
 

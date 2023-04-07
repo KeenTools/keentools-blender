@@ -208,4 +208,10 @@ error_messages: Dict = {
         'it\'s time to renew the file. Please log in to User Portal, ',
         'download a new file and activate it as you did before.'
     ]),
+    ErrorType.ShaderProblem: ErrorMessage(_default_width, [
+        'Shader problem',
+        ' ',
+        'Something happened during shader compilation.',
+        'See the System Console to get a detailed error information.'
+    ]),
 }

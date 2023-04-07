@@ -270,6 +270,7 @@ class ErrorType:
     DownloadingProblem = 8
     FBGracePeriod = 9
     GTGracePeriod = 10
+    ShaderProblem = 11
 
 
 @dataclass(frozen=True)

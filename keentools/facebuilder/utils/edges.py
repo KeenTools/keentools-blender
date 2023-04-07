@@ -102,6 +102,8 @@ class FBRectangleShader2D(KTEdgeShader2D):
         self.set_vertices_colors(rect_points, rect_colors)
 
     def init_shaders(self) -> None:
+        if self.line_shader is not None:
+            return
         self.line_shader = gpu.types.GPUShader(
             solid_line_vertex_shader(), solid_line_fragment_shader())
 
@@ -129,7 +131,7 @@ class FBRectangleShader2D(KTEdgeShader2D):
         self.line_batch.draw(self.line_shader)
 
     def create_batch(self) -> None:
-        if bpy_background_mode():
+        if self.line_shader is None:
             return
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
@@ -143,7 +145,8 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         self.edge_uvs: List = []
         self.texture_colors: List = [(1., 0., 0.), (0., 1., 0.), (0., 0., 1.)]
         self.opacity: float = 0.5
-        self.use_simple_shader = False
+        self.use_simple_shader: bool = False
+        self.simple_line_shader: Optional[Any] = None
         super().__init__(target_class)
 
     def init_colors(self, colors: List, opacity: float) -> None:
@@ -308,32 +311,36 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             self.draw_simple_line_gpu()
 
     def create_batches(self) -> None:
-        if bpy_background_mode():
-            return
-        self.fill_batch = batch_for_shader(
-            self.fill_shader, 'TRIS',
-            {'pos': self.vertices},
-            indices=self.triangle_indices,
-        )
+        if self.fill_shader is not None:
+            self.fill_batch = batch_for_shader(
+                self.fill_shader, 'TRIS',
+                {'pos': self.vertices},
+                indices=self.triangle_indices,
+            )
 
-        self.simple_line_batch = batch_for_shader(
-            self.simple_line_shader, 'LINES',
-            {'pos': self.edge_vertices},
-        )
+        if self.simple_line_shader is not None:
+            self.simple_line_batch = batch_for_shader(
+                self.simple_line_shader, 'LINES',
+                {'pos': self.edge_vertices},
+            )
 
-        self.line_batch = batch_for_shader(
-            self.line_shader, 'LINES',
-            {'pos': self.edge_vertices, 'texCoord': self.edge_uvs}
-        )
+        if self.line_shader is not None:
+            self.line_batch = batch_for_shader(
+                self.line_shader, 'LINES',
+                {'pos': self.edge_vertices, 'texCoord': self.edge_uvs}
+            )
 
     def init_shaders(self) -> None:
-        self.fill_shader = gpu.types.GPUShader(
-            simple_fill_vertex_shader(), black_fill_fragment_shader())
+        if self.fill_shader is None:
+            self.fill_shader = gpu.types.GPUShader(
+                simple_fill_vertex_shader(), black_fill_fragment_shader())
 
-        self.line_shader = gpu.types.GPUShader(
-            raster_image_vertex_shader(), raster_image_fragment_shader())
+        if self.line_shader is None:
+            self.line_shader = gpu.types.GPUShader(
+                raster_image_vertex_shader(), raster_image_fragment_shader())
 
-        self.simple_line_shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+        if self.simple_line_shader is None:
+            self.simple_line_shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
     def init_geom_data_from_fb(self, fb: Any, obj: Object,
                                keyframe: Optional[int]=None) -> None:

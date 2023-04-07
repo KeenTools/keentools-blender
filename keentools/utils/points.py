@@ -198,13 +198,13 @@ class KTShaderPoints(KTShaderBase):
 
 class KTPoints2D(KTShaderPoints):
     def init_shaders(self) -> None:
-        if bpy_background_mode():
+        if self.shader is not None:
             return
         self.shader = gpu.types.GPUShader(flat_color_2d_vertex_shader(),
                                           circular_dot_fragment_shader())
 
     def create_batch(self) -> None:
-        if bpy_background_mode():
+        if self.shader is None:
             return
         self.batch = batch_for_shader(
             self.shader, 'POINTS',
@@ -219,13 +219,13 @@ class KTPoints2D(KTShaderPoints):
 
 class KTPoints3D(KTShaderPoints):
     def init_shaders(self) -> None:
-        if bpy_background_mode():
+        if self.shader is not None:
             return
         self.shader = gpu.types.GPUShader(flat_color_3d_vertex_shader(),
                                           circular_dot_fragment_shader())
 
     def create_batch(self) -> None:
-        if bpy_background_mode():
+        if self.shader is None:
             return
         self.batch = batch_for_shader(
             self.shader, 'POINTS',
