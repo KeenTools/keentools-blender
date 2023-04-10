@@ -43,7 +43,6 @@ from ..geotracker.gtloader import GTLoader
 from ..utils.images import (np_array_from_background_image,
                             np_threshold_image,
                             np_array_from_bpy_image)
-from ..utils.ui_redraw import total_redraw_ui
 from ..utils.mesh_builder import build_geo
 from ..utils.materials import find_bpy_image_by_name
 
@@ -102,7 +101,6 @@ class GTImageInput(pkt_module().ImageInputI):
         if current_frame != frame:
             bpy_set_current_frame(frame)
 
-        total_redraw_ui()
         np_img = np_array_from_background_image(geotracker.camobj)
 
         if (current_frame != frame) and not settings.is_calculating():
@@ -141,7 +139,6 @@ class GTMask2DInput(pkt_module().Mask2DInputI):
             _log.output(f'FORCE CHANGE FRAME TO: {frame}')
             bpy_set_current_frame(frame)
 
-        total_redraw_ui()
         np_img = np_array_from_background_image(geotracker.camobj, index=1)
 
         if (current_frame != frame) and not settings.is_calculating():
