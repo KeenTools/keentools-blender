@@ -1059,9 +1059,7 @@ class KTAddonPreferences(AddonPreferences):
         self._draw_gt_license_info(layout)
         self._draw_gt_user_preferences(layout)
 
-    def _draw_metal_detected(self, layout):
-        if supported_gpu_backend():
-            return
+    def _draw_unsupported_gpu_detected(self, layout):
         box = layout.box()
         box.alert = True
         draw_warning_labels(box, ERROR_MESSAGES['UNSUPPORTED_GPU_BACKEND'])
@@ -1069,7 +1067,8 @@ class KTAddonPreferences(AddonPreferences):
     def draw(self, context):
         layout = self.layout
 
-        self._draw_metal_detected(layout)
+        if not supported_gpu_backend():
+            self._draw_unsupported_gpu_detected(layout)
 
         if self._draw_core_python_problem(layout):
             return
