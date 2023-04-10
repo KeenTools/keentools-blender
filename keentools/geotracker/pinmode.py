@@ -28,7 +28,7 @@ from ..addon_config import (Config,
                             ErrorType,
                             get_operator,
                             fb_pinmode,
-                            get_gpu_backend)
+                            supported_gpu_backend)
 from ..geotracker_config import (GTConfig,
                                  get_gt_settings,
                                  get_current_geotracker_item)
@@ -359,9 +359,9 @@ class GT_OT_PinMode(Operator):
             _log.error(f'WRONG GEOTRACKER NUMBER: {new_geotracker_num}')
             return {'CANCELLED'}
 
-        if get_gpu_backend() == 'METAL':
+        if not supported_gpu_backend():
             warn = get_operator(Config.kt_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.UnsupportedMetal)
+            warn('INVOKE_DEFAULT', msg=ErrorType.UnsupportedGPUBackend)
             return {'CANCELLED'}
 
         vp = GTLoader.viewport()

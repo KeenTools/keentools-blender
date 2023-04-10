@@ -214,7 +214,7 @@ error_messages: Dict = {
         'Something happened during shader compilation.',
         'See the System Console to get a detailed error information.'
     ]),
-    ErrorType.UnsupportedMetal: ErrorMessage(_default_width, [
+    ErrorType.UnsupportedGPUBackend: ErrorMessage(_default_width, [
         'GPU-backend is not supported',
         ' ',
         'Error (1120): this version of addon does not support Metal shaders. ',

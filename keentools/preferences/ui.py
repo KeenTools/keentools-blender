@@ -36,7 +36,7 @@ from ..blender_independent_packages.pykeentools_loader import (
 from ..addon_config import (Config,
                             get_operator,
                             is_blender_supported,
-                            get_gpu_backend)
+                            supported_gpu_backend)
 from ..facebuilder_config import FBConfig, get_fb_settings
 from ..geotracker_config import GTConfig, get_gt_settings
 from .formatting import split_by_br_or_newlines
@@ -1060,12 +1060,11 @@ class KTAddonPreferences(AddonPreferences):
         self._draw_gt_user_preferences(layout)
 
     def _draw_metal_detected(self, layout):
-        gpu_backend = get_gpu_backend()
-        if gpu_backend is None or gpu_backend != 'METAL':
+        if supported_gpu_backend():
             return
         box = layout.box()
         box.alert = True
-        draw_warning_labels(box, ERROR_MESSAGES['METAL_UNSUPPORTED'])
+        draw_warning_labels(box, ERROR_MESSAGES['UNSUPPORTED_GPU_BACKEND'])
 
     def draw(self, context):
         layout = self.layout

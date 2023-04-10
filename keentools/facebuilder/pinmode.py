@@ -28,7 +28,7 @@ from ..addon_config import (Config,
                             ErrorType,
                             show_user_preferences,
                             gt_pinmode,
-                            get_gpu_backend)
+                            supported_gpu_backend)
 from ..facebuilder_config import FBConfig, get_fb_settings
 from ..utils.bpy_common import (operator_with_context,
                                 bpy_view_camera,
@@ -274,9 +274,9 @@ class FB_OT_PinMode(bpy.types.Operator):
             _log.error('FB CANNOT FIND head or headobj')
             return {'CANCELLED'}
 
-        if get_gpu_backend() == 'METAL':
+        if not supported_gpu_backend():
             warn = get_operator(Config.kt_warning_idname)
-            warn('INVOKE_DEFAULT', msg=ErrorType.UnsupportedMetal)
+            warn('INVOKE_DEFAULT', msg=ErrorType.UnsupportedGPUBackend)
             return {'CANCELLED'}
 
         headobj = head.headobj

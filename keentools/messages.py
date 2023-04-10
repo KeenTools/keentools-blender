@@ -100,7 +100,7 @@ ERROR_MESSAGES = {
         'You can experience issues. ',
         'We recommend you to update the addon and the Core library.'],
 
-    'METAL_UNSUPPORTED': [
+    'UNSUPPORTED_GPU_BACKEND': [
         'Error (1120): this version of addon does not support Metal shaders. ',
         'You won\'t be able to use its full functionality ',
         'until you change the back-end to OpenGL.',

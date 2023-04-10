@@ -176,7 +176,7 @@ def get_addon_preferences() -> Any:
 
 
 _gpu_backend: Optional[str] = None if BVersion.property_gpu_backend_exists \
-    else 'Undefined in this version'
+    else 'Undefined'
 
 
 def get_gpu_backend() -> Optional[str]:
@@ -188,6 +188,10 @@ def get_gpu_backend() -> Optional[str]:
     except Exception:
         pass
     return _gpu_backend
+
+
+def supported_gpu_backend() -> bool:
+    return get_gpu_backend() in ['OPENGL', 'Undefined']
 
 
 def facebuilder_enabled() -> bool:
@@ -287,7 +291,7 @@ class ErrorType:
     FBGracePeriod = 9
     GTGracePeriod = 10
     ShaderProblem = 11
-    UnsupportedMetal = 12
+    UnsupportedGPUBackend = 12
 
 
 @dataclass(frozen=True)
