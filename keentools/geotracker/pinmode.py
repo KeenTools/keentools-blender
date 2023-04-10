@@ -24,8 +24,14 @@ from bpy.types import Area, Operator
 from bpy.props import IntProperty, StringProperty, FloatProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import get_operator, fb_pinmode
-from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
+from ..addon_config import (Config,
+                            ErrorType,
+                            get_operator,
+                            fb_pinmode,
+                            supported_gpu_backend)
+from ..geotracker_config import (GTConfig,
+                                 get_gt_settings,
+                                 get_current_geotracker_item)
 from .gtloader import GTLoader
 from ..utils.coords import (point_is_in_area,
                             point_is_in_service_region,
@@ -349,7 +355,15 @@ class GT_OT_PinMode(Operator):
             _log.error(f'WRONG GEOTRACKER NUMBER: {new_geotracker_num}')
             return {'CANCELLED'}
 
+        if not supported_gpu_backend():
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.UnsupportedGPUBackend)
+            return {'CANCELLED'}
+
         vp = GTLoader.viewport()
+        if not vp.load_all_shaders():
+            return {'CANCELLED'}
+
         vp.pins().on_start()
         self._change_wireframe_visibility(toggle=False, value=True)
 

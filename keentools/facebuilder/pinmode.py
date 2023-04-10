@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any
 from uuid import uuid4
 import numpy as np
 from copy import deepcopy
@@ -28,7 +27,8 @@ from ..addon_config import (Config,
                             get_operator,
                             ErrorType,
                             show_user_preferences,
-                            gt_pinmode)
+                            gt_pinmode,
+                            supported_gpu_backend)
 from ..facebuilder_config import FBConfig, get_fb_settings
 from ..utils.bpy_common import (operator_with_context,
                                 bpy_view_camera,
@@ -271,10 +271,18 @@ class FB_OT_PinMode(bpy.types.Operator):
         if not head or not head.headobj:
             _log.error('FB CANNOT FIND head or headobj')
             return {'CANCELLED'}
+
+        if not supported_gpu_backend():
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.UnsupportedGPUBackend)
+            return {'CANCELLED'}
+
         headobj = head.headobj
         first_start = True
 
         vp = FBLoader.viewport()
+        if not vp.load_all_shaders():
+            return {'CANCELLED'}
         # Stopped shaders means that we need to restart pinmode
         if not vp.wireframer().is_working():
             settings.pinmode = False
