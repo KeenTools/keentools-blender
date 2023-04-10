@@ -25,8 +25,8 @@ import bgl
 import gpu
 from gpu_extras.batch import batch_for_shader
 
+from ...utils.kt_logging import KTLogger
 from ...facebuilder_config import FBConfig
-from ...utils.bpy_common import bpy_background_mode
 from ...utils.edges import KTEdgeShaderBase, KTEdgeShader2D
 from ...utils.coords import (frame_to_image_space,
                              get_camera_border,
@@ -45,6 +45,9 @@ from ...utils.images import (check_bpy_image_has_same_size,
                              remove_bpy_image,
                              assign_pixels_data,
                              inverse_gamma_color)
+
+
+_log = KTLogger(__name__)
 
 
 class FBRectangleShader2D(KTEdgeShader2D):
@@ -101,11 +104,15 @@ class FBRectangleShader2D(KTEdgeShader2D):
 
         self.set_vertices_colors(rect_points, rect_colors)
 
-    def init_shaders(self) -> None:
+    def init_shaders(self) -> Optional[bool]:
         if self.line_shader is not None:
-            return
+            _log.output(f'{self.__class__.__name__}.line_shader: skip')
+            return None
         self.line_shader = gpu.types.GPUShader(
             solid_line_vertex_shader(), solid_line_fragment_shader())
+        res = self.line_shader is not None
+        _log.output(f'{self.__class__.__name__}.line_shader: {res}')
+        return res
 
     def draw_checks(self, context: Any) -> bool:
         if self.is_handler_list_empty():
@@ -330,17 +337,39 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
                 {'pos': self.edge_vertices, 'texCoord': self.edge_uvs}
             )
 
-    def init_shaders(self) -> None:
+    def init_shaders(self) -> Optional[bool]:
+        changes = False
+        res = [True] * 3
+
         if self.fill_shader is None:
             self.fill_shader = gpu.types.GPUShader(
                 simple_fill_vertex_shader(), black_fill_fragment_shader())
+            res[0] = self.fill_shader is not None
+            _log.output(f'{self.__class__.__name__}.fill_shader: {res[0]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.fill_shader: skip')
 
         if self.line_shader is None:
             self.line_shader = gpu.types.GPUShader(
                 raster_image_vertex_shader(), raster_image_fragment_shader())
+            res[1] = self.line_shader is not None
+            _log.output(f'{self.__class__.__name__}.line_shader: {res[1]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.line_shader: skip')
 
         if self.simple_line_shader is None:
             self.simple_line_shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+            res[2] = self.simple_line_shader is not None
+            _log.output(f'{self.__class__.__name__}.simple_line_shader: {res[2]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.simple_line_shader: skip')
+
+        if changes:
+            return res[0] and res[1] and res[2]
+        return None
 
     def init_geom_data_from_fb(self, fb: Any, obj: Object,
                                keyframe: Optional[int]=None) -> None:

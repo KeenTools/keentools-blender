@@ -24,8 +24,14 @@ from bpy.types import Area, Operator
 from bpy.props import IntProperty, StringProperty, FloatProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import get_operator, fb_pinmode
-from ..geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
+from ..addon_config import (Config,
+                            ErrorType,
+                            get_operator,
+                            fb_pinmode,
+                            get_gpu_backend)
+from ..geotracker_config import (GTConfig,
+                                 get_gt_settings,
+                                 get_current_geotracker_item)
 from .gtloader import GTLoader
 from ..utils.coords import (point_is_in_area,
                             point_is_in_service_region,
@@ -351,6 +357,11 @@ class GT_OT_PinMode(Operator):
 
         if not settings.is_proper_geotracker_number(new_geotracker_num):
             _log.error(f'WRONG GEOTRACKER NUMBER: {new_geotracker_num}')
+            return {'CANCELLED'}
+
+        if get_gpu_backend() == 'METAL':
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.UnsupportedMetal)
             return {'CANCELLED'}
 
         vp = GTLoader.viewport()

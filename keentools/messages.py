@@ -20,7 +20,7 @@ import sys
 import platform
 import bpy
 
-from .addon_config import Config
+from .addon_config import Config, get_gpu_backend
 
 
 USER_MESSAGES = {
@@ -100,6 +100,18 @@ ERROR_MESSAGES = {
         'You can experience issues. ',
         'We recommend you to update the addon and the Core library.'],
 
+    'METAL_UNSUPPORTED': [
+        'Error (1120): this version of addon does not support Metal shaders. ',
+        'You won\'t be able to use its full functionality ',
+        'until you change the back-end to OpenGL.',
+        ' ',
+        'You can switch to OpenGL back-end in Blender Preferences -> System.',
+        'Just select \'OpenGL\' instead of \'Metal\' in dropdown menu.',
+        'Then you must restart Blender to apply these changes.',
+        ' ',
+        'We are working hard to support new shaders in our next versions '
+        'of the addon.'],
+
     'UNKNOWN': ['Unknown error (0000)']
 }
 
@@ -124,7 +136,8 @@ def get_system_info():
     txt_arr.append('Platform: {} / {}'.format(arch[1], arch[0]))
     txt_arr.append('Machine: {}, {}'.format(platform.machine(),
                                      platform.processor()))
-    txt_arr.append('System: {}'.format(format(platform.platform())))
+    txt_arr.append('System: {}'.format(platform.platform()))
+    txt_arr.append('GPU backend: {}'.format(get_gpu_backend()))
     return txt_arr
 
 

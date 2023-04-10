@@ -64,18 +64,30 @@ class FBViewport(KTViewport):
                             self._texter,
                             self._wireframer,
                             self._rectangler]
-        _log.output('--- GT Shaders initialization ---')
+        tmp_log = '--- FB Shaders ---'
+        show_tmp_log = False
+        _log.output(tmp_log)
         try:
             for item in all_draw_objects:
-                _log.output(f'{item}')
-                item.init_shaders()
+                item_type = f'* {item.__class__.__name__}'
+                tmp_log += '\n' + item_type + ' -- '
+
+                _log.output(item_type)
+                res = item.init_shaders()
+
+                tmp_log += 'skipped' if res is None else f'{res}'
+                if res is not None:
+                    show_tmp_log = True
         except Exception as err:
-            _log.error(f'GT viewport shaders Exception:\n{str(err)}\n===')
+            _log.error(f'FB viewport shaders Exception:\n{tmp_log}\n---\n'
+                       f'{str(err)}\n===')
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.ShaderProblem)
             return False
 
-        _log.output('--- End of GT shaders initialization ---')
+        _log.output('--- End of FB Shaders ---')
+        if show_tmp_log:
+            _log.info(tmp_log)
         return True
 
     def register_handlers(self, context: Any) -> None:

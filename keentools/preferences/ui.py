@@ -33,7 +33,10 @@ from ..blender_independent_packages.pykeentools_loader import (
     is_python_supported as pkt_is_python_supported,
     installation_status as pkt_installation_status,
     loaded as pkt_loaded)
-from ..addon_config import Config, get_operator, is_blender_supported
+from ..addon_config import (Config,
+                            get_operator,
+                            is_blender_supported,
+                            get_gpu_backend)
 from ..facebuilder_config import FBConfig, get_fb_settings
 from ..geotracker_config import GTConfig, get_gt_settings
 from .formatting import split_by_br_or_newlines
@@ -1056,8 +1059,18 @@ class KTAddonPreferences(AddonPreferences):
         self._draw_gt_license_info(layout)
         self._draw_gt_user_preferences(layout)
 
+    def _draw_metal_detected(self, layout):
+        gpu_backend = get_gpu_backend()
+        if gpu_backend is None or gpu_backend != 'METAL':
+            return
+        box = layout.box()
+        box.alert = True
+        draw_warning_labels(box, ERROR_MESSAGES['METAL_UNSUPPORTED'])
+
     def draw(self, context):
         layout = self.layout
+
+        self._draw_metal_detected(layout)
 
         if self._draw_core_python_problem(layout):
             return
@@ -1065,6 +1078,7 @@ class KTAddonPreferences(AddonPreferences):
             return
         if self._draw_pykeentools_problem(layout):
             return
+
         if not self._draw_core_info(layout):
             return
         self._draw_updater_info(layout)

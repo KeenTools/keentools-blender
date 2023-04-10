@@ -20,7 +20,11 @@ from typing import Any, List, Callable, Tuple, Optional
 
 from bpy.types import Object, Area, Region, SpaceView3D
 
-from .bpy_common import bpy_background_mode, use_gpu_instead_of_bgl
+from .kt_logging import KTLogger
+from .bpy_common import use_gpu_instead_of_bgl
+
+
+_log = KTLogger(__name__)
 
 
 class KTShaderBase:
@@ -73,8 +77,9 @@ class KTShaderBase:
     def is_working(self) -> bool:
         return not (self.draw_handler is None)
 
-    def init_shaders(self) -> None:
-        pass
+    def init_shaders(self) -> Optional[bool]:
+        _log.output(f'{self.__class__.__name__}.init_shaders: pass')
+        return None
 
     def create_batch(self) -> None:
         self.increment_batch_counter()

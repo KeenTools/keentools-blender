@@ -95,11 +95,15 @@ class KTEdgeShader2D(KTEdgeShaderBase):
         self.edge_lengths: List[float] = []
         super().__init__(target_class)
 
-    def init_shaders(self) -> None:
+    def init_shaders(self) -> Optional[bool]:
         if self.line_shader is not None:
-            return
+            _log.output(f'{self.__class__.__name__}.line_shader: skip')
+            return None
         self.line_shader = gpu.types.GPUShader(
             residual_vertex_shader(), residual_fragment_shader())
+        res = self.line_shader is not None
+        _log.output(f'{self.__class__.__name__}.line_shader: {res}')
+        return res
 
     def draw_checks(self, context: Any) -> bool:
         if self.is_handler_list_empty():
@@ -157,12 +161,30 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
         self.fill_indices: List[Tuple[int, int, int]] = [(0, 1, 3), (4, 5, 0)]
         super().__init__(target_class)
 
-    def init_shaders(self) -> None:
+    def init_shaders(self) -> Optional[bool]:
+        changes = False
+        res = [True] * 2
+
         if self.line_shader is None:
             self.line_shader = gpu.types.GPUShader(
                 solid_line_vertex_shader(), solid_line_fragment_shader())
+            res[0] = self.line_shader is not None
+            _log.output(f'line_shader: {res[0]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.line_shader: skip')
+
         if self.fill_shader is None:
             self.fill_shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
+            res[1] = self.fill_shader is not None
+            _log.output(f'fill_shader: {res[1]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.fill_shader: skip')
+
+        if changes:
+            return res[0] and res[1]
+        return None
 
     def draw_main_bgl(self, context: Any) -> None:
         bgl.glEnable(bgl.GL_BLEND)
@@ -203,12 +225,30 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
 
 
 class KTScreenDashedRectangleShader2D(KTScreenRectangleShader2D):
-    def init_shaders(self) -> None:
+    def init_shaders(self) -> Optional[bool]:
+        changes = False
+        res = [True] * 2
+
         if self.line_shader is None:
             self.line_shader = gpu.types.GPUShader(
                 residual_vertex_shader(), dashed_fragment_shader())
+            res[0] = self.line_shader is not None
+            _log.output(f'line_shader: {res[0]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.line_shader: skip')
+
         if self.fill_shader is None:
             self.fill_shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
+            res[1] = self.fill_shader is not None
+            _log.output(f'fill_shader: {res[1]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.fill_shader: skip')
+
+        if changes:
+            return res[0] and res[1]
+        return None
 
     def create_batch(self) -> None:
         self.edge_vertices_colors = [self.line_color] * len(self.edge_vertices)
@@ -400,13 +440,30 @@ class KTEdgeShader3D(KTEdgeShaderBase):
                 self.line_shader, 'LINES',
                 {'pos': self.edge_vertices, 'color': self.edge_colors})
 
-    def init_shaders(self) -> None:
+    def init_shaders(self) -> Optional[bool]:
+        changes = False
+        res = [True] * 2
+
         if self.fill_shader is None:
             self.fill_shader = gpu.types.GPUShader(
                 simple_fill_vertex_shader(), black_fill_fragment_shader())
+            res[0] = self.fill_shader is not None
+            _log.output(f'fill_shader: {res[0]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.fill_shader: skip')
 
         if self.line_shader is None:
             self.line_shader = gpu.shader.from_builtin('3D_SMOOTH_COLOR')
+            res[1] = self.line_shader is not None
+            _log.output(f'line_shader: {res[1]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.line_shader: skip')
+
+        if changes:
+            return res[0] and res[1]
+        return None
 
     def init_geom_data_from_mesh(self, obj: Any) -> None:
         mesh = obj.data
@@ -436,18 +493,40 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
         self.selection_triangle_indices: List[Tuple[int, int, int]] = []
         super().__init__(target_class)
 
-    def init_shaders(self) -> None:
+    def init_shaders(self) -> Optional[bool]:
+        changes = False
+        res = [True] * 3
+
         if self.fill_shader is None:
             self.fill_shader = gpu.types.GPUShader(
                 simple_fill_vertex_local_shader(), black_fill_fragment_shader())
+            res[0] = self.fill_shader is not None
+            _log.output(f'fill_shader: {res[0]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.fill_shader: skip')
 
         if self.line_shader is None:
             self.line_shader = gpu.types.GPUShader(
                 uniform_3d_vertex_local_shader(), smooth_3d_fragment_shader())
+            res[1] = self.line_shader is not None
+            _log.output(f'line_shader: {res[1]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.line_shader: skip')
 
         if self.selection_fill_shader is None:
             self.selection_fill_shader = gpu.types.GPUShader(
                 uniform_3d_vertex_local_shader(), smooth_3d_fragment_shader())
+            res[2] = self.selection_fill_shader is not None
+            _log.output(f'selection_fill_shader: {res[2]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.selection_fill_shader: skip')
+
+        if changes:
+            return res[0] and res[1] and res[2]
+        return None
 
     def create_batches(self) -> None:
         if self.fill_shader is None \
@@ -553,13 +632,23 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
     def lit_is_working(self) -> bool:
         return self.lit_flag
 
-    def init_shaders(self) -> None:
-        super().init_shaders()
+    def init_shaders(self) -> Optional[bool]:
+        res = [True] * 2
+
+        res[0] = super().init_shaders()
+
         if self.lit_shader is not None:
-            return
+            _log.output(f'{self.__class__.__name__}.lit_shader: skip')
+            return res[0]
 
         self.lit_shader = gpu.types.GPUShader(
             lit_vertex_local_shader(), lit_fragment_shader())
+        res[1] = self.lit_shader is not None
+        _log.output(f'{self.__class__.__name__}.lit_shader: {res[1]}')
+
+        if res[0] is None:
+            return res[1]
+        return res[0] and res[1]
 
     def init_vertex_normals(self, obj: Object) -> None:
         mesh = evaluated_mesh(obj)
