@@ -21,8 +21,10 @@ import numpy as np
 
 from bpy.types import Object, Area, SpaceView3D
 
+from ..utils.kt_logging import KTLogger
+from ..addon_config import Config, get_operator, ErrorType
 from ..facebuilder_config import FBConfig, get_fb_settings
-from ..utils.bpy_common import bpy_render_frame
+from ..utils.bpy_common import bpy_render_frame, bpy_background_mode
 from ..utils.coords import (multiply_verts_on_matrix_4x4,
                             pin_to_xyz_from_mesh,
                             pin_to_xyz_from_fb_geo_mesh,
@@ -39,6 +41,9 @@ from ..utils.points import KTPoints2D, KTPoints3D
 from .utils.edges import FBRasterEdgeShader3D, FBRectangleShader2D
 
 
+_log = KTLogger(__name__)
+
+
 class FBViewport(KTViewport):
     def __init__(self):
         super().__init__()
@@ -49,6 +54,41 @@ class FBViewport(KTViewport):
         self._wireframer: Any = FBRasterEdgeShader3D(SpaceView3D)
         self._rectangler: Any = FBRectangleShader2D(SpaceView3D)
         self._draw_update_timer_handler: Optional[Callable] = None
+
+    def load_all_shaders(self) -> bool:
+        if bpy_background_mode():
+            return True
+        all_draw_objects = [self._points2d,
+                            self._points3d,
+                            self._residuals,
+                            self._texter,
+                            self._wireframer,
+                            self._rectangler]
+        tmp_log = '--- FB Shaders ---'
+        show_tmp_log = False
+        _log.output(tmp_log)
+        try:
+            for item in all_draw_objects:
+                item_type = f'* {item.__class__.__name__}'
+                tmp_log += '\n' + item_type + ' -- '
+
+                _log.output(item_type)
+                res = item.init_shaders()
+
+                tmp_log += 'skipped' if res is None else f'{res}'
+                if res is not None:
+                    show_tmp_log = True
+        except Exception as err:
+            _log.error(f'FB viewport shaders Exception:\n{tmp_log}\n---\n'
+                       f'{str(err)}\n===')
+            warn = get_operator(Config.kt_warning_idname)
+            warn('INVOKE_DEFAULT', msg=ErrorType.ShaderProblem)
+            return False
+
+        _log.output('--- End of FB Shaders ---')
+        if show_tmp_log:
+            _log.info(tmp_log)
+        return True
 
     def register_handlers(self, context: Any) -> None:
         self.unregister_handlers()

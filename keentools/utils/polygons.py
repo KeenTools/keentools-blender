@@ -32,7 +32,7 @@ from .shaders import (smooth_3d_fragment_shader,
                       raster_image_mask_fragment_shader)
 from .coords import (get_mesh_verts,
                      get_triangulation_indices)
-from .bpy_common import evaluated_mesh, bpy_background_mode
+from .bpy_common import evaluated_mesh
 from .images import check_gl_image
 from .base_shaders import KTShaderBase
 
@@ -54,12 +54,18 @@ class KTTrisShaderLocal3D(KTShaderBase):
         self.object_world_matrix = np.array(bpy_matrix_world,
                                             dtype=np.float32).transpose()
 
-    def init_shaders(self) -> None:
+    def init_shaders(self) -> Optional[bool]:
+        if self.fill_shader is not None:
+            _log.output(f'{self.__class__.__name__}.fill_shader: skip')
+            return None
         self.fill_shader = gpu.types.GPUShader(
             uniform_3d_vertex_local_shader(), smooth_3d_fragment_shader())
+        res = self.fill_shader is not None
+        _log.output(f'{self.__class__.__name__}.fill_shader: {res}')
+        return res
 
     def create_batch(self) -> None:
-        if bpy_background_mode():
+        if self.fill_shader is None:
             return
         verts = []
         indices = []
@@ -136,17 +142,20 @@ class KTRasterMask(KTShaderBase):
         self.image: Optional[Image] = None
         self.mask_threshold: float = 0.0
         super().__init__(target_class)
-        if not bpy_background_mode():
-            self.init_shaders()
-            self.create_batch()
 
-    def init_shaders(self) -> None:
+    def init_shaders(self) -> Optional[bool]:
+        if self.mask_shader is not None:
+            _log.output(f'{self.__class__.__name__}.mask_shader: skip')
+            return None
         self.mask_shader = gpu.types.GPUShader(
             raster_image_mask_vertex_shader(),
             raster_image_mask_fragment_shader())
+        res = self.mask_shader is not None
+        _log.output(f'{self.__class__.__name__}.mask_shader: {res}')
+        return res
 
     def create_batch(self) -> None:
-        if bpy_background_mode():
+        if self.mask_shader is None:
             return
         self.mask_batch = batch_for_shader(
             self.mask_shader, 'TRI_FAN', {'pos': self.vertices,

@@ -23,13 +23,16 @@ import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
 
+from .kt_logging import KTLogger
 from ..addon_config import Config
-from .bpy_common import bpy_background_mode
 from .shaders import (flat_color_3d_vertex_shader,
                       circular_dot_fragment_shader,
                       flat_color_2d_vertex_shader)
 from ..preferences.user_preferences import UserPreferences
 from .base_shaders import KTShaderBase
+
+
+_log = KTLogger(__name__)
 
 
 class KTScreenPins:
@@ -197,14 +200,18 @@ class KTShaderPoints(KTShaderBase):
 
 
 class KTPoints2D(KTShaderPoints):
-    def init_shaders(self) -> None:
-        if bpy_background_mode():
-            return
+    def init_shaders(self) -> Optional[bool]:
+        if self.shader is not None:
+            _log.output(f'{self.__class__.__name__}.shader: skip')
+            return None
         self.shader = gpu.types.GPUShader(flat_color_2d_vertex_shader(),
                                           circular_dot_fragment_shader())
+        res = self.shader is not None
+        _log.output(f'{self.__class__.__name__}.shader: {res}')
+        return res
 
     def create_batch(self) -> None:
-        if bpy_background_mode():
+        if self.shader is None:
             return
         self.batch = batch_for_shader(
             self.shader, 'POINTS',
@@ -218,14 +225,18 @@ class KTPoints2D(KTShaderPoints):
 
 
 class KTPoints3D(KTShaderPoints):
-    def init_shaders(self) -> None:
-        if bpy_background_mode():
-            return
+    def init_shaders(self) -> Optional[bool]:
+        if self.shader is not None:
+            _log.output(f'{self.__class__.__name__}.shader: skip')
+            return None
         self.shader = gpu.types.GPUShader(flat_color_3d_vertex_shader(),
                                           circular_dot_fragment_shader())
+        res = self.shader is not None
+        _log.output(f'{self.__class__.__name__}.shader: {res}')
+        return res
 
     def create_batch(self) -> None:
-        if bpy_background_mode():
+        if self.shader is None:
             return
         self.batch = batch_for_shader(
             self.shader, 'POINTS',

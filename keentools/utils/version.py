@@ -28,3 +28,4 @@ class BVersion:
     LocRotScale_exist: bool = _bpy_ver >= (3, 0, 0)
     operator_with_context_exists: bool = _bpy_ver >= (3, 2, 0)
     pixels_foreach_methods_exist: bool = _bpy_ver >= (2, 83, 0)
+    property_gpu_backend_exists: bool = _bpy_ver >= (3, 5, 0)
