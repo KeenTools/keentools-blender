@@ -18,9 +18,10 @@
 
 from typing import Any, Callable, Optional, Tuple
 import os
+from dataclasses import dataclass
 
 import bpy
-from dataclasses import dataclass
+from .utils.version import BVersion
 
 
 _company = 'keentools'
@@ -31,7 +32,7 @@ class Config:
     addon_version = '2023.1.0'  # (5/5)
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),
-                                  (3, 0), (3, 1), (3, 2), (3, 3), (3, 4))
+                                  (3, 0), (3, 1), (3, 2), (3, 3), (3, 4), (3, 5))
     minimal_blender_api = (2, 80, 60)
 
     fb_tab_category = 'FaceBuilder'
@@ -174,6 +175,25 @@ def get_addon_preferences() -> Any:
     return bpy.context.preferences.addons[Config.addon_name].preferences
 
 
+_gpu_backend: Optional[str] = None if BVersion.property_gpu_backend_exists \
+    else 'Undefined'
+
+
+def get_gpu_backend() -> Optional[str]:
+    global _gpu_backend
+    if _gpu_backend is not None:
+        return _gpu_backend
+    try:
+        _gpu_backend = bpy.context.preferences.system.gpu_backend
+    except Exception:
+        pass
+    return _gpu_backend
+
+
+def supported_gpu_backend() -> bool:
+    return get_gpu_backend() in ['OPENGL', 'Undefined']
+
+
 def facebuilder_enabled() -> bool:
     prefs = get_addon_preferences()
     return prefs.facebuilder_enabled
@@ -270,6 +290,8 @@ class ErrorType:
     DownloadingProblem = 8
     FBGracePeriod = 9
     GTGracePeriod = 10
+    ShaderProblem = 11
+    UnsupportedGPUBackend = 12
 
 
 @dataclass(frozen=True)
