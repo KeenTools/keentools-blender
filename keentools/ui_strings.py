@@ -208,4 +208,24 @@ error_messages: Dict = {
         'it\'s time to renew the file. Please log in to User Portal, ',
         'download a new file and activate it as you did before.'
     ]),
+    ErrorType.ShaderProblem: ErrorMessage(_default_width, [
+        'Shader problem',
+        ' ',
+        'Something happened during shader compilation.',
+        'See the System Console to get a detailed error information.'
+    ]),
+    ErrorType.UnsupportedGPUBackend: ErrorMessage(_default_width, [
+        'GPU-backend is not supported',
+        ' ',
+        'Error (1120): this version of addon does not support Metal shaders.',
+        'You won\'t be able to use its full functionality',
+        'until you change the back-end to OpenGL.',
+        ' ',
+        'You can switch to OpenGL back-end in Blender Preferences -> System.',
+        'Just select \'OpenGL\' instead of \'Metal\' in dropdown menu.',
+        'Then you must restart Blender to apply these changes.',
+        ' ',
+        'We are working hard to support new shaders in our next versions',
+        'of the addon.'
+    ]),
 }
