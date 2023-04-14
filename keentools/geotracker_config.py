@@ -70,9 +70,6 @@ class GTConfig:
     gt_remove_pins_idname = operators + '.remove_pins_btn'
     gt_toggle_pins_idname = operators + '.toggle_pins_btn'
 
-    gt_export_animated_empty_idname = operators + '.export_animated_empty'
-    gt_create_animated_empty_idname = operators + '.create_animated_empty_btn'
-    gt_create_empty_idname = operators + '.create_empty'
     gt_exit_pinmode_idname = operators + '.exit_pinmode_btn'
     gt_interrupt_modal_idname = operators + '.interrupt_modal'
     gt_stop_calculating_idname = operators + '.stop_calculating_btn'
@@ -89,19 +86,10 @@ class GTConfig:
     gt_reproject_frame_idname = operators + '.reproject_current_frame'
     gt_select_all_frames_idname = operators + '.select_all_frames'
     gt_deselect_all_frames_idname = operators + '.deselect_all_frames'
-    gt_relative_to_camera_idname = operators + '.relative_to_camera'
-    gt_relative_to_geometry_idname = operators + '.relative_to_geometry'
-    gt_geometry_repositioning_idname = operators + '.geometry_repositioning'
-    gt_camera_repositioning_idname = operators + '.camera_repositioning'
 
+    gt_export_animated_empty_idname = operators + '.export_animated_empty'
     gt_transfer_tracking_idname = operators + '.transfer_tracking'
-    gt_transfer_tracking_to_camera_idname = \
-        operators + '.transfer_tracking_to_camera'
-    gt_transfer_tracking_to_geometry_idname = \
-        operators + '.transfer_tracking_to_geometry'
-
     gt_bake_animation_to_world_idname = operators + '.bake_animation_to_world'
-    gt_bake_locrot_animation_idname = operators + '.bake_locrot_animation'
     gt_remove_focal_keyframe_idname = operators + '.remove_focal_keyframe'
     gt_remove_focal_keyframes_idname = operators + '.remove_focal_keyframes'
     gt_addon_setup_defaults_idname = operators + '.addon_setup_defaults'

@@ -842,44 +842,6 @@ class GT_PT_AnimationPanel(AllVisible):
         row.prop(settings, 'export_linked_locator', text='Linked')
         row.operator(GTConfig.gt_export_animated_empty_idname, text='Export')
 
-        return
-
-        layout.separator()
-        layout.label(text='Old interface')
-
-        layout.operator(GTConfig.gt_create_empty_idname)
-
-        layout.operator(GTConfig.gt_bake_locrot_animation_idname)
-
-        layout.label(text='Move to default position')
-        col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-        col.operator(GTConfig.gt_relative_to_camera_idname,
-                     text='Camera to default')
-        col.operator(GTConfig.gt_relative_to_geometry_idname,
-                     text='Object to default')
-
-        layout.label(text='Convert tracked keys')
-        col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-        col.operator(GTConfig.gt_transfer_tracking_to_camera_idname,
-                     text='Geo tracking -> Camera')
-        col.operator(GTConfig.gt_transfer_tracking_to_geometry_idname,
-                     text='Camera tracking -> Geo')
-
-        layout.label(text='Repositioning of animated')
-        col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-        col.operator(GTConfig.gt_geometry_repositioning_idname,
-                     text='Reorient Geometry')
-        col.operator(GTConfig.gt_camera_repositioning_idname,
-                     text='Reorient Camera')
-
-        layout.label(text='Export animation')
-        col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-        col.operator(GTConfig.gt_create_animated_empty_idname)
-
 
 class GT_PT_RenderingPanel(AllVisible):
     bl_idname = GTConfig.gt_rendering_panel_idname

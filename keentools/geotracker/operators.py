@@ -61,12 +61,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     toggle_pins_act,
                                     center_geo_act,
                                     create_animated_empty_act,
-                                    create_empty_act,
                                     bake_texture_from_frames_act,
-                                    relative_to_camera_act,
-                                    relative_to_geometry_act,
-                                    geometry_repositioning_act,
-                                    camera_repositioning_act,
                                     transfer_tracking_to_camera_act,
                                     transfer_tracking_to_geometry_act,
                                     remove_focal_keyframe_act,
@@ -420,32 +415,6 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
-class GT_OT_CreateAnimatedEmpty(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_create_animated_empty_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        act_status = create_animated_empty_act(bpy.context.object)
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
-            return {'CANCELLED'}
-        return {'FINISHED'}
-
-
-class GT_OT_CreateEmpty(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_create_empty_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        act_status = create_empty_act()
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
-            return {'CANCELLED'}
-        return {'FINISHED'}
-
-
 class GT_OT_ExitPinMode(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_exit_pinmode_idname
     bl_label = buttons[bl_idname].label
@@ -639,58 +608,6 @@ class GT_OT_DeselectAllFrames(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
-class GT_OT_RelativeToCamera(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_relative_to_camera_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        act_status = relative_to_camera_act()
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
-            return {'CANCELLED'}
-        return {'FINISHED'}
-
-
-class GT_OT_RelativeToGeometry(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_relative_to_geometry_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        act_status = relative_to_geometry_act()
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
-            return {'CANCELLED'}
-        return {'FINISHED'}
-
-
-class GT_OT_GeometryRepositioning(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_geometry_repositioning_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        act_status = geometry_repositioning_act()
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
-            return {'CANCELLED'}
-        return {'FINISHED'}
-
-
-class GT_OT_CameraRepositioning(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_camera_repositioning_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        act_status = camera_repositioning_act()
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
-            return {'CANCELLED'}
-        return {'FINISHED'}
-
-
 class GT_OT_TransferTracking(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_transfer_tracking_idname
     bl_label = buttons[bl_idname].label
@@ -705,32 +622,6 @@ class GT_OT_TransferTracking(ButtonOperator, Operator):
         else:
             act_status = (False, 'Unknown selector state')
 
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
-            return {'CANCELLED'}
-        return {'FINISHED'}
-
-
-class GT_OT_TransferTrackingToCamera(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_transfer_tracking_to_camera_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        act_status = transfer_tracking_to_camera_act()
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
-            return {'CANCELLED'}
-        return {'FINISHED'}
-
-
-class GT_OT_TransferTrackingToGeometry(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_transfer_tracking_to_geometry_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        act_status = transfer_tracking_to_geometry_act()
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -775,19 +666,6 @@ class GT_OT_BakeAnimationToWorld(ButtonOperator, Operator):
             self.report({'ERROR'}, msg)
             return {'CANCELLED'}
 
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
-            return {'CANCELLED'}
-        return {'FINISHED'}
-
-
-class GT_OT_BakeLocrotAnimation(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_bake_locrot_animation_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        act_status = bake_locrot_act(bpy.context.object)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -1308,8 +1186,6 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_RemovePins,
                   GT_OT_TogglePins,
                   GT_OT_ExportAnimatedEmpty,
-                  GT_OT_CreateAnimatedEmpty,
-                  GT_OT_CreateEmpty,
                   GT_OT_ExitPinMode,
                   GT_OT_InterruptModal,
                   GT_OT_StopCalculating,
@@ -1322,15 +1198,8 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_ReprojectFrame,
                   GT_OT_SelectAllFrames,
                   GT_OT_DeselectAllFrames,
-                  GT_OT_RelativeToCamera,
-                  GT_OT_RelativeToGeometry,
-                  GT_OT_GeometryRepositioning,
-                  GT_OT_CameraRepositioning,
                   GT_OT_TransferTracking,
-                  GT_OT_TransferTrackingToCamera,
-                  GT_OT_TransferTrackingToGeometry,
                   GT_OT_BakeAnimationToWorld,
-                  GT_OT_BakeLocrotAnimation,
                   GT_OT_RemoveFocalKeyframe,
                   GT_OT_RemoveFocalKeyframes,
                   GT_OT_SelectGeotrackerObjects,
