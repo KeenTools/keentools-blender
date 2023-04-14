@@ -169,6 +169,10 @@ buttons = {
         'toggle pins',
         'toggle pins operation'
     ),
+    GTConfig.gt_export_animated_empty_idname: Button(
+        'Create animated Empty',
+        'Copy animation to Empty'
+    ),
     GTConfig.gt_create_animated_empty_idname: Button(
         'Create animated Empty',
         'Copy animation to Empty'
@@ -241,13 +245,21 @@ buttons = {
         'Move the whole Camera animation according to '
         'current (changed but not saved) position'
     ),
-    GTConfig.gt_move_tracking_to_camera_idname: Button(
+    GTConfig.gt_transfer_tracking_idname: Button(
+        'Convert tracking animation',
+        'Transfer animation from Geometry to Camera and vice versa'
+    ),
+    GTConfig.gt_transfer_tracking_to_camera_idname: Button(
         'Move tracking to Camera',
         'Move both objects animation to Camera only'
     ),
-    GTConfig.gt_move_tracking_to_geometry_idname: Button(
+    GTConfig.gt_transfer_tracking_to_geometry_idname: Button(
         'Move tracking to Geometry',
         'Move both objects animation to Geometry only'
+    ),
+    GTConfig.gt_bake_animation_to_world_idname: Button(
+        'Bake animation',
+        'Bake animation to world space'
     ),
     GTConfig.gt_bake_locrot_animation_idname: Button(
         'Bake animation',

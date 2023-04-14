@@ -91,7 +91,7 @@ class GTImageInput(pkt_module().ImageInputI):
             w, h = bpy_render_frame()
             return np.full((h, w, 3), (0.0, 0.0, 0.0), dtype=np.float32)
 
-        _log.output(f'load_linear_rgb_image_at: {frame}')
+        _log.output(_log.color('magenta', f'load_linear_rgb_image_at: {frame}'))
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:

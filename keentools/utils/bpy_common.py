@@ -98,6 +98,16 @@ def create_empty_object(name: str) -> Object:
     return control
 
 
+def bpy_remove_object(obj: Object) -> bool:
+    try:
+        if obj:
+            bpy.data.objects.remove(obj, do_unlink=True)
+            return True
+    except Exception as err:
+        _log.error(f'bpy_remove_object Exception: {str(err)}')
+    return False
+
+
 def _operator_with_context_old(operator: Operator,
                                context_override_dict: Dict, **kwargs) -> None:
     return operator(context_override_dict, **kwargs)

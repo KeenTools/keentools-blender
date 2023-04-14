@@ -40,10 +40,12 @@ class GTConfig:
     gt_movepin_idname = operators + '.movepin'
     gt_create_precalc_idname = operators + '.create_precalc'
     gt_sequence_filebrowser_idname = operators + '.sequence_filebrowser'
-    gt_mask_sequence_filebrowser_idname = operators + '.mask_sequence_filebrowser'
+    gt_mask_sequence_filebrowser_idname = \
+        operators + '.mask_sequence_filebrowser'
     gt_choose_precalc_file_idname = operators + '.choose_precalc_file'
     gt_split_video_to_frames_idname = operators + '.split_video_to_frames'
-    gt_split_video_to_frames_exec_idname = operators + '.split_video_to_frames_exec'
+    gt_split_video_to_frames_exec_idname = \
+        operators + '.split_video_to_frames_exec'
     gt_video_snapshot_idname = operators + '.video_snapshot'
     gt_reproject_tex_sequence_idname = operators + '.reproject_tex_sequence'
     gt_track_to_start_idname = operators + '.track_to_start_btn'
@@ -55,9 +57,11 @@ class GTConfig:
     gt_add_keyframe_idname = operators + '.add_keyframe_btn'
     gt_remove_keyframe_idname = operators + '.remove_keyframe_btn'
     gt_clear_all_tracking_idname = operators + '.clear_all_tracking_btn'
-    gt_clear_tracking_except_keyframes_idname = operators + '.clear_tracking_except_keyframes_btn'
+    gt_clear_tracking_except_keyframes_idname = \
+        operators + '.clear_tracking_except_keyframes_btn'
     gt_clear_tracking_forward_idname = operators + '.clear_tracking_forward_btn'
-    gt_clear_tracking_backward_idname = operators + '.clear_tracking_backward_btn'
+    gt_clear_tracking_backward_idname = \
+        operators + '.clear_tracking_backward_btn'
     gt_clear_tracking_between_idname = operators + '.clear_tracking_between_btn'
     gt_refine_idname = operators + '.refine_btn'
     gt_refine_all_idname = operators + '.refine_all_btn'
@@ -65,6 +69,8 @@ class GTConfig:
     gt_magic_keyframe_idname = operators + '.magic_keyframe_btn'
     gt_remove_pins_idname = operators + '.remove_pins_btn'
     gt_toggle_pins_idname = operators + '.toggle_pins_btn'
+
+    gt_export_animated_empty_idname = operators + '.export_animated_empty'
     gt_create_animated_empty_idname = operators + '.create_animated_empty_btn'
     gt_create_empty_idname = operators + '.create_empty'
     gt_exit_pinmode_idname = operators + '.exit_pinmode_btn'
@@ -78,7 +84,8 @@ class GTConfig:
         operators + '.default_wireframe_settings'
     gt_default_pin_settings_idname = operators + '.default_pin_settings'
     gt_select_frames_for_bake_idname = operators + '.select_frames_for_bake'
-    gt_create_non_overlapping_uv_idname = operators + '.create_non_overlapping_uv'
+    gt_create_non_overlapping_uv_idname = \
+        operators + '.create_non_overlapping_uv'
     gt_reproject_frame_idname = operators + '.reproject_current_frame'
     gt_select_all_frames_idname = operators + '.select_all_frames'
     gt_deselect_all_frames_idname = operators + '.deselect_all_frames'
@@ -86,8 +93,14 @@ class GTConfig:
     gt_relative_to_geometry_idname = operators + '.relative_to_geometry'
     gt_geometry_repositioning_idname = operators + '.geometry_repositioning'
     gt_camera_repositioning_idname = operators + '.camera_repositioning'
-    gt_move_tracking_to_camera_idname = operators + '.move_tracking_to_camera'
-    gt_move_tracking_to_geometry_idname = operators + '.move_tracking_to_geometry'
+
+    gt_transfer_tracking_idname = operators + '.transfer_tracking'
+    gt_transfer_tracking_to_camera_idname = \
+        operators + '.transfer_tracking_to_camera'
+    gt_transfer_tracking_to_geometry_idname = \
+        operators + '.transfer_tracking_to_geometry'
+
+    gt_bake_animation_to_world_idname = operators + '.bake_animation_to_world'
     gt_bake_locrot_animation_idname = operators + '.bake_locrot_animation'
     gt_remove_focal_keyframe_idname = operators + '.remove_focal_keyframe'
     gt_remove_focal_keyframes_idname = operators + '.remove_focal_keyframes'
@@ -104,6 +117,8 @@ class GTConfig:
 
     # Window ids
     gt_rescale_window_idname = operators + '.rescale_window'
+    gt_move_window_idname = operators + '.move_window'
+    gt_rig_window_idname = operators + '.rig_window'
 
     # Menu ids
     gt_clip_menu_idname = _MT + 'clip_menu'
