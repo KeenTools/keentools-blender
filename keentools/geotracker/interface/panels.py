@@ -792,59 +792,55 @@ class GT_PT_AnimationPanel(AllVisible):
     bl_label = 'Scene'
     bl_options = {'DEFAULT_CLOSED'}
 
-    def draw_header_preset(self, context: Any) -> None:
-        layout = self.layout
-        row = layout.row(align=True)
-        row.active = False
-
+    def _draw_dist_between_camera_and_object(self, layout):
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if geotracker and geotracker.geomobj and geotracker.camobj:
             geom_loc = geotracker.geomobj.matrix_world.to_translation()
             cam_loc = geotracker.camobj.matrix_world.to_translation()
             dist = (geom_loc - cam_loc).length
-            row.label(text=f'Dist: {dist:.3f}')
+            layout.label(text=f'Dist: {dist:.3f}')
+
+    def draw_header_preset(self, context: Any) -> None:
+        layout = self.layout
+        row = layout.row(align=True)
+        row.active = False
 
         row.operator(GTConfig.gt_help_animation_idname,
                      text='', icon='QUESTION', emboss=False)
 
     def draw(self, context: Any) -> None:
         layout = self.layout
+        settings = get_gt_settings()
 
-        layout.operator(GTConfig.gt_rescale_window_idname)
+        layout.label(text='Transform')
 
-        layout.operator(GTConfig.gt_create_empty_idname)
+        col = layout.row(align=True)
+        col.operator(GTConfig.gt_rescale_window_idname)
 
-        layout.operator(GTConfig.gt_bake_locrot_animation_idname)
+        col.operator(GTConfig.gt_move_window_idname)
 
-        layout.label(text='Move to default position')
+        layout.operator(GTConfig.gt_rig_window_idname)
+
+        layout.label(text='Animation')
+
         col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-        col.operator(GTConfig.gt_relative_to_camera_idname,
-                     text='Camera to default')
-        col.operator(GTConfig.gt_relative_to_geometry_idname,
-                     text='Object to default')
+        col.prop(settings, 'transfer_animation_selector', text='')
+        col.operator(GTConfig.gt_transfer_tracking_idname, text='Convert')
 
-        layout.label(text='Convert tracked keys')
-        col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-        col.operator(GTConfig.gt_move_tracking_to_camera_idname,
-                     text='Geo tracking -> Camera')
-        col.operator(GTConfig.gt_move_tracking_to_geometry_idname,
-                     text='Camera tracking -> Geo')
+        layout.separator()
 
-        layout.label(text='Repositioning of animated')
         col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-        col.operator(GTConfig.gt_geometry_repositioning_idname,
-                     text='Reorient Geometry')
-        col.operator(GTConfig.gt_camera_repositioning_idname,
-                     text='Reorient Camera')
+        col.prop(settings, 'bake_animation_selector', text='')
+        col.operator(GTConfig.gt_bake_animation_to_world_idname, text='Bake')
 
-        layout.label(text='Export animation')
+        layout.separator()
+
         col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-        col.operator(GTConfig.gt_create_animated_empty_idname)
+        col.prop(settings, 'export_locator_selector', text='')
+        row = col.split(factor=0.4, align=True)
+        row.prop(settings, 'export_linked_locator', text='Linked')
+        row.operator(GTConfig.gt_export_animated_empty_idname, text='Export')
 
 
 class GT_PT_RenderingPanel(AllVisible):

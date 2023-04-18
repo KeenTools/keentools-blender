@@ -169,13 +169,9 @@ buttons = {
         'toggle pins',
         'toggle pins operation'
     ),
-    GTConfig.gt_create_animated_empty_idname: Button(
+    GTConfig.gt_export_animated_empty_idname: Button(
         'Create animated Empty',
         'Copy animation to Empty'
-    ),
-    GTConfig.gt_create_empty_idname: Button(
-        'Create Empty',
-        'Create Empty in current position'
     ),
     GTConfig.gt_exit_pinmode_idname: Button(
         'Exit Pinmode',
@@ -221,35 +217,11 @@ buttons = {
         'Deselect All',
         'Deselect all keyframes for getting texture by reprojection'
     ),
-    GTConfig.gt_relative_to_camera_idname: Button(
-        'Relative to Camera',
-        'Move the Camera to default position and place '
-        'the Geometry according to this position'
+    GTConfig.gt_transfer_tracking_idname: Button(
+        'Convert tracking animation',
+        'Transfer animation from Geometry to Camera and vice versa'
     ),
-    GTConfig.gt_relative_to_geometry_idname: Button(
-        'Relative to Geometry',
-        'Move the Geometry to default position and place '
-        'the Camera according to this position'
-    ),
-    GTConfig.gt_geometry_repositioning_idname: Button(
-        'Geometry repositioning',
-        'Move the whole Geometry animation according to '
-        'current (changed but not saved) position'
-    ),
-    GTConfig.gt_camera_repositioning_idname: Button(
-        'Camera repositioning',
-        'Move the whole Camera animation according to '
-        'current (changed but not saved) position'
-    ),
-    GTConfig.gt_move_tracking_to_camera_idname: Button(
-        'Move tracking to Camera',
-        'Move both objects animation to Camera only'
-    ),
-    GTConfig.gt_move_tracking_to_geometry_idname: Button(
-        'Move tracking to Geometry',
-        'Move both objects animation to Geometry only'
-    ),
-    GTConfig.gt_bake_locrot_animation_idname: Button(
+    GTConfig.gt_bake_animation_to_world_idname: Button(
         'Bake animation',
         'Bake animation to world space'
     ),

@@ -16,12 +16,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from bpy.types import Operator
+from bpy.types import Operator, Object
 from bpy.props import (BoolProperty,
                        IntProperty,
                        FloatProperty,
                        FloatVectorProperty,
-                       EnumProperty)
+                       EnumProperty,
+                       PointerProperty)
+from math import radians
+
+import bpy
+from mathutils import Matrix, Quaternion
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (get_operator,
@@ -33,7 +38,11 @@ from ..geotracker_config import (GTConfig,
                                  get_current_geotracker_item)
 from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_background_mode,
-                                bpy_show_addon_preferences)
+                                bpy_show_addon_preferences,
+                                bpy_scene,
+                                create_empty_object,
+                                bpy_remove_object,
+                                operator_with_context)
 from .utils.geotracker_acts import (create_geotracker_act,
                                     delete_geotracker_act,
                                     add_keyframe_act,
@@ -52,31 +61,32 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     toggle_pins_act,
                                     center_geo_act,
                                     create_animated_empty_act,
-                                    create_empty_act,
                                     bake_texture_from_frames_act,
-                                    relative_to_camera_act,
-                                    relative_to_geometry_act,
-                                    geometry_repositioning_act,
-                                    camera_repositioning_act,
-                                    move_tracking_to_camera_act,
-                                    move_tracking_to_geometry_act,
+                                    transfer_tracking_to_camera_act,
+                                    transfer_tracking_to_geometry_act,
                                     remove_focal_keyframe_act,
                                     remove_focal_keyframes_act,
                                     select_geotracker_objects_act,
                                     render_with_background_act,
                                     revert_default_render_act,
-                                    get_camobj_state,
-                                    get_geomobj_state,
-                                    resize_object,
+                                    store_camobj_state,
+                                    store_geomobj_state,
+                                    get_stored_camobj_matrix,
+                                    get_stored_geomobj_matrix,
+                                    scale_scene_tracking_preview_func,
                                     revert_object_states,
                                     scale_scene_tracking_act,
+                                    scale_scene_trajectory_act,
                                     create_non_overlapping_uv_act,
-                                    bake_locrot_act)
+                                    bake_locrot_act,
+                                    get_operator_reposition_matrix,
+                                    move_scene_tracking_act)
 from .utils.calc_timer import TrackTimer, RefineTimer
 from .utils.precalc import precalc_with_runner_act, PrecalcTimer
 from .gtloader import GTLoader
 from .ui_strings import buttons
 from .utils.prechecks import common_checks
+from ..utils.coords import LocRotScale
 
 
 _log = KTLogger(__name__)
@@ -378,26 +388,27 @@ class GT_OT_TogglePins(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
-class GT_OT_CreateAnimatedEmpty(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_create_animated_empty_idname
+class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_export_animated_empty_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        act_status = create_animated_empty_act()
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     geotracker=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
-        return {'FINISHED'}
 
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
 
-class GT_OT_CreateEmpty(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_create_empty_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
+        obj = geotracker.geomobj \
+            if settings.export_locator_selector == 'GEOMETRY' \
+            else geotracker.camobj
 
-    def execute(self, context):
-        act_status = create_empty_act()
+        act_status = create_animated_empty_act(obj,
+                                               settings.export_linked_locator)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -597,91 +608,64 @@ class GT_OT_DeselectAllFrames(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
-class GT_OT_RelativeToCamera(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_relative_to_camera_idname
+class GT_OT_TransferTracking(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_transfer_tracking_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        act_status = relative_to_camera_act()
+        settings = get_gt_settings()
+        if settings.transfer_animation_selector == 'CAMERA_TO_GEOMETRY':
+            act_status = transfer_tracking_to_geometry_act()
+        elif settings.transfer_animation_selector == 'GEOMETRY_TO_CAMERA':
+            act_status = transfer_tracking_to_camera_act()
+        else:
+            act_status = (False, 'Unknown selector state')
+
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
         return {'FINISHED'}
 
 
-class GT_OT_RelativeToGeometry(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_relative_to_geometry_idname
+class GT_OT_BakeAnimationToWorld(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_bake_animation_to_world_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        act_status = relative_to_geometry_act()
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     reload_geotracker=True, geotracker=True,
+                                     camera=True, geometry=True,
+                                     movie_clip=False)
+
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
-        return {'FINISHED'}
 
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
 
-class GT_OT_GeometryRepositioning(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_geometry_repositioning_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        act_status = geometry_repositioning_act()
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
+        if settings.bake_animation_selector == 'GEOMETRY':
+            act_status = bake_locrot_act(geotracker.geomobj)
+        elif settings.bake_animation_selector == 'CAMERA':
+            act_status = bake_locrot_act(geotracker.camobj)
+        elif settings.bake_animation_selector == 'GEOMETRY_AND_CAMERA':
+            act_status = None
+            if geotracker.geomobj and geotracker.geomobj.parent:
+                act_status = bake_locrot_act(geotracker.geomobj)
+            if act_status is None or (act_status.success and geotracker.camobj
+                    and geotracker.camobj.parent):
+                act_status = bake_locrot_act(geotracker.camobj)
+            if act_status is None:
+                self.report({'ERROR'}, 'Unknown error with both objects')
+                return {'CANCELLED'}
+        else:
+            msg = f'Wrong bake selector identifier: ' \
+                  f'{settings.bake_animation_selector}'
+            self.report({'ERROR'}, msg)
             return {'CANCELLED'}
-        return {'FINISHED'}
 
-
-class GT_OT_CameraRepositioning(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_camera_repositioning_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        act_status = camera_repositioning_act()
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
-            return {'CANCELLED'}
-        return {'FINISHED'}
-
-
-class GT_OT_MoveTrackingToCamera(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_move_tracking_to_camera_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        act_status = move_tracking_to_camera_act()
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
-            return {'CANCELLED'}
-        return {'FINISHED'}
-
-
-class GT_OT_MoveTrackingToGeometry(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_move_tracking_to_geometry_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        act_status = move_tracking_to_geometry_act()
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
-            return {'CANCELLED'}
-        return {'FINISHED'}
-
-
-class GT_OT_BakeLocrotAnimation(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_bake_locrot_animation_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        act_status = bake_locrot_act()
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -790,15 +774,22 @@ class GT_OT_AutoNamePrecalc(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
-def resize_object_func(operator, context):
-    if not revert_object_states():
-        return
-    settings = get_gt_settings()
-    geotracker = settings.get_current_geotracker_item()
+def _rescale_preview_func(operator, context):
+    scale_scene_tracking_preview_func(operator, context)
 
-    if not geotracker.geomobj or not geotracker.camobj:
-        return
-    resize_object(operator)
+
+def _update_rescale_mode(operator, context):
+    if operator.mode == 'GEOMETRY':
+        operator.origin_point = 'CAMERA'
+        operator.keep_geom_scale = False
+        operator.keep_cam_scale = True
+    elif operator.mode == 'CAMERA':
+        operator.origin_point = 'GEOMETRY'
+        operator.keep_geom_scale = False
+        operator.keep_cam_scale = True
+    else:
+        operator.keep_geom_scale = False
+        operator.keep_cam_scale = True
 
 
 class GT_OT_RescaleWindow(Operator):
@@ -806,37 +797,75 @@ class GT_OT_RescaleWindow(Operator):
     bl_label = 'Scale'
     bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
 
-    value: FloatProperty(default=1.0, precision=4, step=0.03, min=0.0001,
-                         update=resize_object_func)
+    mode: EnumProperty(name='Mode', items=[
+        ('BOTH', 'Scene', 'Use both camera and geometry', 0),
+        ('GEOMETRY', 'Geometry', 'Affect geometry only according to camera', 1),
+        ('CAMERA', 'Camera', 'Affect camera only according to geometry', 2),
+    ], update=_update_rescale_mode)
+
+    value: FloatProperty(default=1.0, precision=4, min=0.0001,
+                         update=_rescale_preview_func)
     geom_scale: FloatVectorProperty(default=(1, 1, 1))
     cam_scale:  FloatVectorProperty(default=(1, 1, 1))
     keep_cam_scale: BoolProperty(default=True, name='Keep camera scale',
-                                 update=resize_object_func)
+                                 update=_rescale_preview_func)
     keep_geom_scale: BoolProperty(default=False, name='Keep object scale',
-                                 update=resize_object_func)
+                                  update=_rescale_preview_func)
+
     origin_point: EnumProperty(name='Pivot point', items=[
-        ('WORLD', 'World Origin', 'Use world center', 0),
-        ('GEOMETRY', 'Geometry', 'Use geometry as center', 1),
-        ('CAMERA', 'Camera', 'Use camera as center', 2),
+        ('WORLD', 'World Origin', 'Use a world center (0, 0, 0)', 0),
+        ('GEOMETRY', 'Geometry', 'Use a geometry pivot as a center', 1),
+        ('CAMERA', 'Camera', 'Use a camera pivot as a center', 2),
         ('3D_CURSOR', '3D Cursor', 'Use 3D cursor', 3),
-    ], update=resize_object_func)
+    ], update=_rescale_preview_func)
 
-    def draw(self, context) -> None:
-        layout = self.layout
-        layout.separator()
-        row = layout.row(align=True)
-        row.prop(self, 'origin_point')
+    done: BoolProperty(default=False)
 
+    def _draw_scale_slider(self, layout):
         row = layout.row()
         row.scale_y = 1.5
         row.prop(self, 'value', text='Scale:')
 
-        row = layout.row(align=True)
-        row.prop(self, 'keep_cam_scale')
-        row.prop(self, 'keep_geom_scale')
+    def _draw_geometry_scale(self, layout):
+        self._draw_scale_slider(layout)
+
+    def _draw_camera_scale(self, layout):
+        layout.prop(self, 'keep_cam_scale')
+        self._draw_scale_slider(layout)
+
+    def _draw_both_scale(self, layout):
+        row = layout.split(factor=0.5)
+        col = row.column(align=True)
+        row2 = col.split(factor=0.4, align=True)
+        row2.label(text='Pivot point:')
+        row2.prop(self, 'origin_point', text='')
+
+        col = row.column(align=True)
+        col.prop(self, 'keep_cam_scale')
+        col.prop(self, 'keep_geom_scale')
+
+        self._draw_scale_slider(layout)
+
+    def draw(self, context) -> None:
+        layout = self.layout
+        if self.done:
+            layout.label(text='Operator has been done')
+            return
+
+        layout.separator()
+        layout.prop(self, 'mode', expand=True)
+
+        if self.mode == 'GEOMETRY':
+            self._draw_geometry_scale(layout)
+        elif self.mode == 'CAMERA':
+            self._draw_camera_scale(layout)
+        else:
+            self._draw_both_scale(layout)
+
         layout.separator()
 
     def execute(self, context):
+        self.done = True
         act_status = scale_scene_tracking_act(self)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
@@ -844,6 +873,7 @@ class GT_OT_RescaleWindow(Operator):
         return {'FINISHED'}
 
     def cancel(self, context):
+        self.done = True
         revert_object_states()
 
     def invoke(self, context, event):
@@ -856,11 +886,280 @@ class GT_OT_RescaleWindow(Operator):
             return {'CANCELLED'}
 
         geotracker = get_current_geotracker_item()
-        get_camobj_state(self, geotracker.camobj)
-        get_geomobj_state(self, geotracker.geomobj)
+        store_camobj_state(self, geotracker.camobj)
+        store_geomobj_state(self, geotracker.geomobj)
         self.value = 1.0
         self.keep_cam_scale = True
         self.keep_geom_scale = False
+        self.done = False
+        return context.window_manager.invoke_props_dialog(self, width=350)
+
+
+def _move_preview_func(operator, context):
+    revert_object_states()
+    transform_matrix = get_operator_reposition_matrix(operator)
+
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    geomobj = geotracker.geomobj
+    camobj = geotracker.camobj
+
+    geomobj.matrix_world = transform_matrix @ geomobj.matrix_world
+    camobj.matrix_world = transform_matrix @ camobj.matrix_world
+
+
+def _update_move_target_point(operator, context):
+    if operator.no_updates:
+        return
+    operator.no_updates = True
+    if operator.target_point == 'WORLD':
+        operator.location = (0, 0, 0)
+        operator.euler_rotation = (radians(90), 0, 0) \
+            if operator.mode == 'CAMERA' else (0, 0, 0)
+    elif operator.target_point == '3D_CURSOR':
+        cursor = bpy_scene().cursor
+        operator.location = cursor.location
+        operator.euler_rotation = (0, 0, 0)
+    operator.no_updates = False
+    _move_preview_func(operator, context)
+
+
+def _update_move_mode(operator, context):
+    if operator.no_updates:
+        return
+    mat = get_stored_camobj_matrix() if operator.mode == 'CAMERA' else \
+        get_stored_geomobj_matrix()
+    t, r, s = mat.decompose()
+    operator.location = t
+    operator.euler_rotation = r.to_euler()
+
+
+def _update_move_coords(operator, context):
+    if operator.no_updates:
+        return
+    operator.target_point = 'CUSTOM'
+    _move_preview_func(operator, context)
+
+
+class GT_OT_MoveWindow(Operator):
+    bl_idname = GTConfig.gt_move_window_idname
+    bl_label = 'Move'
+    bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
+
+    no_updates: BoolProperty(default=False)
+
+    mode: EnumProperty(name='Mode', items=[
+        ('CAMERA', 'Camera', 'Move camera', 0),
+        ('GEOMETRY', 'Geometry', 'Move geometry', 1),
+    ], update=_update_move_mode)
+
+    target_point: EnumProperty(name='Target point', items=[
+        ('WORLD', 'World Origin', 'Use world center', 0),
+        ('3D_CURSOR', '3D Cursor', 'Use 3D cursor', 1),
+        ('CUSTOM', 'Custom', 'Use camera as center', 2)
+    ], update=_update_move_target_point)
+
+    location: FloatVectorProperty(name='Target Location',
+                                  subtype='TRANSLATION',
+                                  update=_update_move_coords)
+    euler_rotation: FloatVectorProperty(name='Target rotation',
+                                        subtype='EULER',
+                                        update=_update_move_coords)
+    done: BoolProperty(default=False)
+
+    def draw(self, context) -> None:
+        layout = self.layout
+        if self.done:
+            layout.label(text='Operator has been done')
+            return
+
+        layout.separator()
+        layout.prop(self, 'mode', expand=True)
+
+        layout.prop(self, 'target_point', text='Preset')
+
+        row = layout.row()
+        col = row.column()
+        col.prop(self, 'location')
+
+        col = row.column()
+        col.prop(self, 'euler_rotation')
+
+        layout.separator()
+
+    def execute(self, context):
+        self.done = True
+        act_status = move_scene_tracking_act(self)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+    def cancel(self, context):
+        self.done = True
+        revert_object_states()
+
+    def invoke(self, context, event):
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     reload_geotracker=True, geotracker=True,
+                                     camera=True, geometry=True,
+                                     movie_clip=False)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        geotracker = get_current_geotracker_item()
+        store_camobj_state(self, geotracker.camobj)
+        store_geomobj_state(self, geotracker.geomobj)
+
+        _update_move_mode(self, context)
+        self.done = False
+        return context.window_manager.invoke_props_dialog(self, width=350)
+
+
+_rig_empty = None
+
+
+def _rig_preview_func(operator, context):
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+
+    mat = Matrix.Identity(4)
+    if operator.target_point == 'GEOMETRY' and geotracker.geomobj:
+        mat = geotracker.geomobj.matrix_world
+    elif operator.target_point == 'CAMERA' and geotracker.camobj:
+        mat = geotracker.camobj.matrix_world
+    elif operator.target_point == '3D_CURSOR':
+        mat = bpy_scene().cursor.matrix
+
+    global _rig_empty
+    if _rig_empty is None:
+        return
+
+    if not operator.reset_scale and operator.keep_orientation:
+        _rig_empty.matrix_world = mat
+        return
+
+    t, r, s = mat.decompose()
+    if operator.reset_scale:
+        s = (1, 1, 1)
+    if not operator.keep_orientation:
+        r = Quaternion((1, 0, 0, 0))
+    _rig_empty.matrix_world = LocRotScale(t, r, s)
+
+
+class GT_OT_RigWindow(Operator):
+    bl_idname = GTConfig.gt_rig_window_idname
+    bl_label = 'Rig'
+    bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
+
+    target_point: EnumProperty(name='Target point', items=[
+        ('WORLD', 'World Origin', 'Use world center', 0),
+        ('CAMERA', 'Camera', 'Affect camera only', 1),
+        ('GEOMETRY', 'Geometry', 'Affect geometry only', 2),
+        ('3D_CURSOR', '3D Cursor', 'Use 3D cursor', 3),
+    ], update=_rig_preview_func)
+
+    reset_scale: BoolProperty(name='Reset Scale', default=True,
+                              update=_rig_preview_func)
+    keep_orientation: BoolProperty(name='Keep Orientation', default=True,
+                                   update=_rig_preview_func)
+
+    parent_geometry: BoolProperty(name='Parent Geometry', default=True)
+    parent_camera: BoolProperty(name='Parent Camera', default=True)
+
+    parent_camera_active: BoolProperty(default=True)
+    parent_geometry_active: BoolProperty(default=True)
+    done: BoolProperty(default=False)
+
+    def draw(self, context) -> None:
+        layout = self.layout
+        if self.done:
+            layout.label(text='Operator has been done')
+            return
+
+        layout.separator()
+        layout.prop(self, 'target_point', text='Empty location')
+        layout.prop(self, 'reset_scale')
+        layout.prop(self, 'keep_orientation')
+
+        row = layout.row()
+        row.enabled = self.parent_geometry_active
+        row.prop(self, 'parent_geometry')
+
+        row = layout.row()
+        row.enabled = self.parent_camera_active
+        row.prop(self, 'parent_camera')
+
+        layout.separator()
+
+    def execute(self, context):
+        self.done = True
+        global _rig_empty
+
+        if not _rig_empty:
+            return {'CANCELLED'}
+
+        if _rig_empty:
+            _rig_empty.show_in_front = False
+            _rig_empty.show_name = False
+
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+
+        objects = []
+        if self.parent_camera and geotracker.camobj:
+            objects.append(geotracker.camobj)
+        if self.parent_geometry and geotracker.geomobj:
+            objects.append(geotracker.geomobj)
+
+        for obj in objects:
+            obj.parent = _rig_empty
+            obj.matrix_parent_inverse = _rig_empty.matrix_world.inverted()
+
+        _rig_empty = None
+        return {'FINISHED'}
+
+    def cancel(self, context):
+        self.done = True
+        global _rig_empty
+        if _rig_empty is None:
+            return
+        bpy_remove_object(_rig_empty)
+        _rig_empty = None
+
+    def _reset_to_default_options(self):
+        self.reset_scale = True
+        self.keep_orientation = True
+        self.parent_geometry = True
+        self.parent_geometry_active = True
+        self.parent_camera = True
+        self.parent_camera_active = True
+
+    def invoke(self, context, event):
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     reload_geotracker=True, geotracker=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+
+        global _rig_empty
+        _rig_empty = create_empty_object(GTConfig.gt_empty_name)
+        _rig_empty.show_in_front = True
+        _rig_empty.show_name = True
+
+        self._reset_to_default_options()
+        if not geotracker.geomobj or geotracker.geomobj.parent:
+            self.parent_geometry = False
+            self.parent_geometry_active = False
+        if not geotracker.camobj or geotracker.camobj.parent:
+            self.parent_camera = False
+            self.parent_camera_active = False
+
+        self.done = False
         return context.window_manager.invoke_props_dialog(self, width=350)
 
 
@@ -886,8 +1185,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_BtnMagicKeyframe,
                   GT_OT_RemovePins,
                   GT_OT_TogglePins,
-                  GT_OT_CreateAnimatedEmpty,
-                  GT_OT_CreateEmpty,
+                  GT_OT_ExportAnimatedEmpty,
                   GT_OT_ExitPinMode,
                   GT_OT_InterruptModal,
                   GT_OT_StopCalculating,
@@ -900,13 +1198,8 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_ReprojectFrame,
                   GT_OT_SelectAllFrames,
                   GT_OT_DeselectAllFrames,
-                  GT_OT_RelativeToCamera,
-                  GT_OT_RelativeToGeometry,
-                  GT_OT_GeometryRepositioning,
-                  GT_OT_CameraRepositioning,
-                  GT_OT_MoveTrackingToCamera,
-                  GT_OT_MoveTrackingToGeometry,
-                  GT_OT_BakeLocrotAnimation,
+                  GT_OT_TransferTracking,
+                  GT_OT_BakeAnimationToWorld,
                   GT_OT_RemoveFocalKeyframe,
                   GT_OT_RemoveFocalKeyframes,
                   GT_OT_SelectGeotrackerObjects,
@@ -914,4 +1207,6 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_RevertDefaultRender,
                   GT_OT_AddonSetupDefaults,
                   GT_OT_AutoNamePrecalc,
-                  GT_OT_RescaleWindow)
+                  GT_OT_RescaleWindow,
+                  GT_OT_MoveWindow,
+                  GT_OT_RigWindow)

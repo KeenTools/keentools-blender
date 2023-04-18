@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 from typing import Any, Dict, Callable, Tuple, List, Optional
+import traceback
 
 import bpy
 from bpy.types import Object, Mesh, Operator, Camera, Scene, Image
@@ -61,6 +62,7 @@ def bpy_current_frame() -> int:
 def bpy_start_frame() -> int:
     return bpy.context.scene.frame_start
 
+
 def bpy_end_frame() -> int:
     return bpy.context.scene.frame_end
 
@@ -96,6 +98,16 @@ def create_empty_object(name: str) -> Object:
     control.rotation_euler = (0, 0, 0)
     control.location = (0, 0, 0)
     return control
+
+
+def bpy_remove_object(obj: Object) -> bool:
+    try:
+        if obj:
+            bpy.data.objects.remove(obj, do_unlink=True)
+            return True
+    except Exception as err:
+        _log.error(f'bpy_remove_object Exception: {str(err)}')
+    return False
 
 
 def _operator_with_context_old(operator: Operator,
@@ -228,3 +240,7 @@ def bpy_transform_resize(*args, **kwargs) -> None:
 
 def bpy_call_menu(*args, **kwargs) -> None:
     bpy.ops.wm.call_menu(*args, **kwargs)
+
+
+def get_traceback(skip_last=1) -> str:
+    return ''.join(traceback.format_stack()[:-skip_last])

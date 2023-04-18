@@ -22,7 +22,6 @@ from contextlib import contextmanager
 
 import bpy
 from bpy.types import Object, CameraBackgroundImage, Area, Image, Mask
-from mathutils import Matrix
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
@@ -51,8 +50,7 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_end_frame,
                                 bpy_current_frame,
                                 bpy_set_current_frame,
-                                bpy_render_single_frame,
-                                bpy_scene)
+                                bpy_render_single_frame)
 from ..utils.compositing import (get_compositing_shadow_scene,
                                  create_mask_compositing_node_tree,
                                  get_mask_by_name,
@@ -245,6 +243,18 @@ def update_lens_mode(geotracker, context: Any=None) -> None:
                 geotracker.focal_length_mode = 'CAMERA_FOCAL_LENGTH'
 
 
+def update_track_focal_length(geotracker, context: Any) -> None:
+    _log.output('update_track_focal_length')
+    settings = get_gt_settings()
+    if settings.ui_write_mode:
+        return
+    gt = GTLoader.kt_geotracker()
+    gt.set_track_focal_length(geotracker.track_focal_length)
+    GTLoader.save_geotracker()
+    if settings.pinmode:
+        GTLoader.update_viewport_wireframe()
+
+
 def update_mask_3d(geotracker, context: Any) -> None:
     GTLoader.update_viewport_wireframe()
     settings = get_gt_settings()
@@ -353,13 +363,15 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     focal_length_estimation: bpy.props.BoolProperty(
         name='Estimate focal length',
-        description='To enable this you need choose STATIC FOCAL as mode',
+        description='Estimate focal length while pinning in the current frame '
+                    'only. Automatically switch off when the frame is changed',
         default=False,
         update=update_lens_mode)
     track_focal_length: bpy.props.BoolProperty(
         name='Track focal length',
-        description='This can be enabled only in ZOOM FOCAL LENGTH as mode',
-        default=False)
+        description='Track the focal length in calculation mode',
+        default=False,
+        update=update_track_focal_length)
 
     tone_exposure: bpy.props.FloatProperty(
         name='Exposure', description='Tone gain',
@@ -741,6 +753,39 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         default=Config.default_user_preferences['gt_mask_3d_opacity']['value'],
         min=0.0, max=1.0,
         update=update_mask_2d_color)
+
+    transfer_animation_selector: bpy.props.EnumProperty(
+        name='Transfer selector',
+        items=[
+            ('CAMERA_TO_GEOMETRY', 'Camera to Geometry',
+            'Camera to Geometry description', 0),
+            ('GEOMETRY_TO_CAMERA', 'Geometry to Camera',
+             'Geometry to Camera description', 1),],
+        description='Choose a direction of transfering animation')
+
+    bake_animation_selector: bpy.props.EnumProperty(name='Bake selector',
+        items=[
+            ('GEOMETRY_AND_CAMERA', 'Geometry & Camera',
+             'Both object will be baked to World space', 0),
+            ('GEOMETRY', 'Geometry',
+             'Geometry animation will be baked to World space', 1),
+            ('CAMERA', 'Camera',
+             'Camera animation will be baked to World space', 2),],
+        description='Convert animation to World space')
+
+    export_locator_selector: bpy.props.EnumProperty(name='Animation selector',
+        items=[
+            ('GEOMETRY', 'Geometry',
+            'Use Geometry as an animation source', 0),
+            ('CAMERA', 'Camera',
+             'Use Camera as an animation source', 1),],
+        description='Create an animated Empty from')
+
+    export_linked_locator: bpy.props.BoolProperty(
+        name='Export linked',
+        description='Use a shared animation Action with GeoTracker object '
+                    'or duplicate an animation independent way',
+        default=False)
 
     @contextmanager
     def ui_write_mode_context(self):
