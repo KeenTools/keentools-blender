@@ -18,8 +18,6 @@
 
 from typing import List, Dict, Any
 import numpy as np
-from mathutils import Quaternion
-from math import radians
 
 import bpy
 from bpy.types import Object, Operator
@@ -201,6 +199,7 @@ def track_to(forward: bool) -> ActionStatus:
     geotracker = get_current_geotracker_item()
     gt = GTLoader.kt_geotracker()
     current_frame = bpy_current_frame()
+    _log.output(GTLoader.get_geotracker_state())
     precalcless = geotracker.precalcless
     if not precalcless and not \
             geotracker.precalc_start <= current_frame <= geotracker.precalc_end:
@@ -230,10 +229,13 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
     if not check_status.success:
         return check_status
 
+    settings = get_gt_settings()
     geotracker = get_current_geotracker_item()
     gt = GTLoader.kt_geotracker()
     current_frame = bpy_current_frame()
+    settings.calculating_mode = 'TRACKING'
     try:
+        _log.output(GTLoader.get_geotracker_state())
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
         gt.track_frame(current_frame, forward, precalc_path)
     except pkt_module().UnlicensedException as err:
@@ -246,10 +248,13 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
         _log.error(f'{msg}\n{str(err)}')
         show_warning_dialog(err)
         return ActionStatus(False, msg)
+    finally:
+        settings.stop_calculating()
 
     GTLoader.save_geotracker()
     current_frame += 1 if forward else -1
-    bpy_set_current_frame(current_frame)
+    if bpy_current_frame() != current_frame:
+        bpy_set_current_frame(current_frame)
 
     return ActionStatus(True, 'Ok')
 

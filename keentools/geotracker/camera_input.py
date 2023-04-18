@@ -37,7 +37,8 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_set_current_frame,
                                 bpy_render_frame,
                                 bpy_start_frame,
-                                bpy_end_frame)
+                                bpy_end_frame,
+                                get_traceback)
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..geotracker.gtloader import GTLoader
 from ..utils.images import (np_array_from_background_image,
@@ -100,12 +101,15 @@ class GTImageInput(pkt_module().ImageInputI):
 
         current_frame = bpy_current_frame()
         if current_frame != frame:
+            _log.output('load_linear_rgb_image_at1')
             bpy_set_current_frame(frame)
+            _log.output('load_linear_rgb_image_at2')
 
         total_redraw_ui()
         np_img = np_array_from_background_image(geotracker.camobj)
 
         if (current_frame != frame) and not settings.is_calculating():
+            _log.output('load_linear_rgb_image_at3')
             bpy_set_current_frame(current_frame)
         if np_img is not None:
             return np_img[:, :, :3]
@@ -114,15 +118,9 @@ class GTImageInput(pkt_module().ImageInputI):
             return _empty_image()
 
     def first_frame(self) -> int:
-        geotracker = get_current_geotracker_item()
-        if not geotracker:
-            return 1
         return bpy_start_frame()
 
     def last_frame(self) -> int:
-        geotracker = get_current_geotracker_item()
-        if not geotracker:
-            return 0
         return bpy_end_frame()
 
 
@@ -305,6 +303,8 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         _log.output(f'zoom_focal_length_at: {frame}')
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.camobj:
+            _log.output(f'zoom_focal_length_at default: '
+                        f'{geotracker.default_zoom_focal_length}')
             return geotracker.default_zoom_focal_length
         return focal_mm_to_px(
             get_safe_evaluated_fcurve(geotracker.camobj.data, frame, 'lens'),

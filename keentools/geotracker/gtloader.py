@@ -37,7 +37,8 @@ from ..utils.coords import (image_space_to_frame,
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
                                 get_scene_camera_shift,
-                                bpy_is_animation_playing)
+                                bpy_is_animation_playing,
+                                get_traceback)
 from .gt_class_loader import GTClassLoader
 from ..utils.timer import KTStopShaderTimer
 from ..utils.ui_redraw import force_ui_redraw
@@ -59,6 +60,7 @@ def depsgraph_update_handler(scene, depsgraph):
         _log.output('DEPSGRAPH UPDATES: {}'.format(len(depsgraph.updates)))
         for update in depsgraph.updates:
             if update.id.name != name:
+                _log.output(f'update.id.name: {update.id.name}')
                 continue
             if not update.is_updated_transform:
                 continue
@@ -130,7 +132,7 @@ def unregister_app_handler(app_handlers, handler) -> None:
 
 
 def frame_change_post_handler(scene) -> None:
-    _log.output(f'KEYFRAME UPDATED: {scene.name}')
+    _log.output(f'CURRENT FRAME UPDATED: {scene.name} {scene.frame_current}')
     settings = get_gt_settings()
     if settings.calculating_mode == 'ESTIMATE_FL':
         return
@@ -403,6 +405,7 @@ class GTLoader:
         with settings.ui_write_mode_context():
             try:
                 settings.wireframe_backface_culling = gt.back_face_culling()
+                settings.track_focal_length = gt.track_focal_length()
                 geotracker.smoothing_depth_coeff = gt.get_smoothing_depth_coeff()
                 geotracker.smoothing_focal_length_coeff = gt.get_smoothing_focal_length_coeff()
                 geotracker.smoothing_rotations_coeff = gt.get_smoothing_rotations_coeff()
@@ -479,6 +482,7 @@ class GTLoader:
                                 pins_and_residuals: bool=True,
                                 timeline: bool=True,
                                 mask: bool=False) -> None:
+        _log.output(_log.color('blue', 'update_viewport_shaders'))
         if area is None:
             vp = cls.viewport()
             area = vp.get_work_area()
@@ -563,6 +567,21 @@ class GTLoader:
                f'frame_change_post_handler): ' \
                f'{is_registered(bpy.app.handlers.frame_change_post, frame_change_post_handler)}\n'
         return txt
+
+    @classmethod
+    def get_geotracker_state(cls) -> str:
+        gt = cls.kt_geotracker()
+        return f'\n--- geotracker state ---' \
+               f'\nfocal_length_mode: {gt.focal_length_mode()}' \
+               f'\ntrack_focal_length: {gt.track_focal_length()}' \
+               f'\nback_face_culling: {gt.back_face_culling()}' \
+               f'\nsmoothing_depth_coeff: {gt.get_smoothing_depth_coeff()}' \
+               f'\nsmoothing_focal_length_coeff: ' \
+               f'{gt.get_smoothing_focal_length_coeff()}' \
+               f'\nsmoothing_rotations_coeff: {gt.get_smoothing_rotations_coeff()}' \
+               f'\nsmoothing_xy_translations_coeff: ' \
+               f'{gt.get_smoothing_xy_translations_coeff()}' \
+               f'\n---'
 
     @classmethod
     def out_pinmode(cls) -> None:

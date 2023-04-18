@@ -243,6 +243,18 @@ def update_lens_mode(geotracker, context: Any=None) -> None:
                 geotracker.focal_length_mode = 'CAMERA_FOCAL_LENGTH'
 
 
+def update_track_focal_length(geotracker, context: Any) -> None:
+    _log.output('update_track_focal_length')
+    settings = get_gt_settings()
+    if settings.ui_write_mode:
+        return
+    gt = GTLoader.kt_geotracker()
+    gt.set_track_focal_length(geotracker.track_focal_length)
+    GTLoader.save_geotracker()
+    if settings.pinmode:
+        GTLoader.update_viewport_wireframe()
+
+
 def update_mask_3d(geotracker, context: Any) -> None:
     GTLoader.update_viewport_wireframe()
     settings = get_gt_settings()
@@ -351,13 +363,15 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     focal_length_estimation: bpy.props.BoolProperty(
         name='Estimate focal length',
-        description='To enable this you need choose STATIC FOCAL as mode',
+        description='Estimate focal length while pinning in the current frame '
+                    'only. Automatically switch off when the frame is changed',
         default=False,
         update=update_lens_mode)
     track_focal_length: bpy.props.BoolProperty(
         name='Track focal length',
-        description='This can be enabled only in ZOOM FOCAL LENGTH as mode',
-        default=False)
+        description='Track the focal length in calculation mode',
+        default=False,
+        update=update_track_focal_length)
 
     tone_exposure: bpy.props.FloatProperty(
         name='Exposure', description='Tone gain',
