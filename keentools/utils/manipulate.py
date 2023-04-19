@@ -60,7 +60,15 @@ def object_is_on_view_layer(obj: Object) -> bool:
     return obj in bpy.context.view_layer.objects[:]
 
 
-def select_object_only(obj: Object) -> None:
+def switch_to_mode(mode: str='OBJECT') -> None:
+    bpy.ops.object.mode_set(mode=mode, toggle=False)
+
+
+def select_object_only(obj: Optional[Object]) -> None:
+    if not obj:
+        return
+    if bpy.context.mode != 'OBJECT':
+        switch_to_mode('OBJECT')
     deselect_all()
     if object_is_on_view_layer(obj):
         obj.select_set(state=True)

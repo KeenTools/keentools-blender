@@ -112,9 +112,8 @@ _bake_generator_var = None
 
 
 def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
-                   *, file_format: str='PNG',
-                   from_frame: int=1, to_frame: int=10, digits: int=4,
-                   width: int=2048, height: int=2048):
+                   *, file_format: str='PNG', frames: List[int],
+                   digits: int=4, width: int=2048, height: int=2048):
     def _finish():
         settings.stop_calculating()
         GTLoader.viewport().revert_default_screen_message(
@@ -131,38 +130,38 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
     settings.calculating_mode = 'REPROJECT'
     op = get_operator(GTConfig.gt_interrupt_modal_idname)
     op('INVOKE_DEFAULT')
+
     GTLoader.viewport().message_to_screen(
         [{'text': 'Reproject is calculating... Please wait',
           'color': (1.0, 0., 0., 0.7)}])
 
     tex = None
-    total_frames = to_frame - from_frame + 1
-    for frame in range(total_frames):
-        current_frame = from_frame + frame
+    total_frames = len(frames)
+    for num, frame in enumerate(frames):
         if settings.user_interrupts:
             _finish()
             return None
 
         GTLoader.viewport().message_to_screen(
             [{'text': 'Reprojection: '
-                      f'{frame + 1}/{total_frames}', 'y': 60,
+                      f'{num + 1}/{total_frames}', 'y': 60,
               'color': (1.0, 0.0, 0.0, 0.7)},
              {'text': 'ESC to interrupt', 'y': 30,
               'color': (1.0, 1.0, 1.0, 0.7)}])
-        settings.user_percent = 100 * frame / total_frames
-        bpy_set_current_frame(current_frame)
+        settings.user_percent = 100 * num / total_frames
+        bpy_set_current_frame(frame)
 
         yield delta
 
-        built_texture = bake_texture(geotracker, [current_frame],
+        built_texture = bake_texture(geotracker, [frame],
                                      tex_width=width, tex_height=height)
         if tex is None:
             tex = create_compatible_bpy_image(built_texture)
-        tex.filepath_raw = filepath_pattern.format(str(current_frame).zfill(digits))
+        tex.filepath_raw = filepath_pattern.format(str(frame).zfill(digits))
         tex.file_format = file_format
         assign_pixels_data(tex.pixels, built_texture.ravel())
         tex.save()
-        _log.output(f'TEXTURE SAVED: {tex.filepath}')
+        _log.info(f'TEXTURE SAVED: {tex.filepath}')
 
         yield delta
 
@@ -183,14 +182,14 @@ def _bake_caller() -> Optional[float]:
 
 
 def bake_texture_sequence(context: Any, geotracker: Any, filepath_pattern: str,
-                          *, file_format: str='PNG',
-                          from_frame: int=1, to_frame: int=10, digits: int=4,
+                          *, file_format: str='PNG', frames: List[int],
+                          digits: int=4,
                           width: int=2048, height: int=2048) -> None:
     global _bake_generator_var
-    _bake_generator_var = bake_generator(context.area, geotracker, filepath_pattern,
+    _bake_generator_var = bake_generator(context.area, geotracker,
+                                         filepath_pattern,
                                          file_format=file_format,
-                                         from_frame=from_frame,
-                                         to_frame=to_frame, digits=digits,
+                                         frames=frames, digits=digits,
                                          width=width, height=height)
     prepare_camera(context.area)
     settings = get_gt_settings()

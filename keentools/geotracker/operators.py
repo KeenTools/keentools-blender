@@ -77,7 +77,10 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     revert_object_states,
                                     scale_scene_tracking_act,
                                     scale_scene_trajectory_act,
+                                    check_uv_exists,
+                                    check_uv_overlapping,
                                     create_non_overlapping_uv_act,
+                                    repack_uv_act,
                                     bake_locrot_act,
                                     get_operator_reposition_matrix,
                                     move_scene_tracking_act)
@@ -87,6 +90,7 @@ from .gtloader import GTLoader
 from .ui_strings import buttons
 from .utils.prechecks import common_checks
 from ..utils.coords import LocRotScale
+from ..utils.manipulate import select_object_only
 
 
 _log = KTLogger(__name__)
@@ -553,12 +557,78 @@ class GT_OT_DefaultPinSettings(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class GT_OT_CheckUVOverlapping(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_check_uv_overlapping_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     reload_geotracker=True, geotracker=True,
+                                     camera=True, geometry=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        geotracker = get_current_geotracker_item()
+
+        check_status = check_uv_exists(geotracker.geomobj)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        check_status = check_uv_overlapping(geotracker.geomobj)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        self.report({'INFO'}, 'UV check success!')
+        return {'FINISHED'}
+
+
+class GT_OT_RepackOverlappingUV(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_repack_overlapping_uv_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        check_status = common_checks(pinmode_out=True,
+                                     object_mode=False, is_calculating=True,
+                                     reload_geotracker=True, geotracker=True,
+                                     camera=True, geometry=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        act_status = repack_uv_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+
+        geotracker = get_current_geotracker_item()
+        check_status = check_uv_overlapping(geotracker.geomobj)
+        if not check_status.success:
+            self.report({'ERROR'}, f'Done but {check_status.error_message}')
+            return {'FINISHED'}
+
+        self.report({'INFO'}, 'Non-overlapping UV has been created')
+        return {'FINISHED'}
+
+
 class GT_OT_CreateNonOverlappingUV(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_create_non_overlapping_uv_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        check_status = common_checks(pinmode_out=True,
+                                     object_mode=False, is_calculating=True,
+                                     reload_geotracker=True, geotracker=True,
+                                     camera=True, geometry=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         act_status = create_non_overlapping_uv_act()
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
@@ -572,8 +642,33 @@ class GT_OT_ReprojectFrame(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    def start_text_on_screen(self, context):
+        settings = get_gt_settings()
+        vp = GTLoader.viewport()
+        vp.message_to_screen(
+            [{'text': 'Reproject is calculating... Please wait',
+              'color': (1.0, 0., 0., 0.7)}],
+            register=not settings.pinmode, context=context)
+
+    def finish_text_on_screen(self):
+        settings = get_gt_settings()
+        GTLoader.viewport().revert_default_screen_message(
+            unregister=not settings.pinmode)
+
     def execute(self, context):
-        act_status = bake_texture_from_frames_act([bpy_current_frame()])
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     reload_geotracker=True, geotracker=True,
+                                     camera=True, geometry=True,
+                                     movie_clip=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        self.start_text_on_screen(context)
+        act_status = bake_texture_from_frames_act(context.area,
+                                                  [bpy_current_frame()])
+        self.finish_text_on_screen()
+
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -1051,6 +1146,8 @@ def _rig_preview_func(operator, context):
 class GT_OT_RigWindow(Operator):
     bl_idname = GTConfig.gt_rig_window_idname
     bl_label = 'Rig'
+    bl_description = 'Create independent Empty with/without parenting ' \
+                     'GeoTracker objects to it'
     bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
 
     target_point: EnumProperty(name='Target point', items=[
@@ -1116,6 +1213,8 @@ class GT_OT_RigWindow(Operator):
         for obj in objects:
             obj.parent = _rig_empty
             obj.matrix_parent_inverse = _rig_empty.matrix_world.inverted()
+
+        select_object_only(_rig_empty)
 
         _rig_empty = None
         return {'FINISHED'}
@@ -1194,6 +1293,8 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_ResetToneMapping,
                   GT_OT_DefaultWireframeSettings,
                   GT_OT_DefaultPinSettings,
+                  GT_OT_CheckUVOverlapping,
+                  GT_OT_RepackOverlappingUV,
                   GT_OT_CreateNonOverlappingUV,
                   GT_OT_ReprojectFrame,
                   GT_OT_SelectAllFrames,

@@ -81,6 +81,8 @@ class GTConfig:
         operators + '.default_wireframe_settings'
     gt_default_pin_settings_idname = operators + '.default_pin_settings'
     gt_select_frames_for_bake_idname = operators + '.select_frames_for_bake'
+    gt_check_uv_overlapping_idname = operators + '.check_uv_overlapping'
+    gt_repack_overlapping_uv_idname = operators + '.repack_overlapping_uv'
     gt_create_non_overlapping_uv_idname = \
         operators + '.create_non_overlapping_uv'
     gt_reproject_frame_idname = operators + '.reproject_current_frame'
