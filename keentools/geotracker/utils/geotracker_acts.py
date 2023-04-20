@@ -16,11 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import numpy as np
 
 import bpy
-from bpy.types import Object, Operator
+from bpy.types import Object, Operator, Area
 from mathutils import Matrix, Euler
 
 from ...utils.kt_logging import KTLogger
@@ -51,7 +51,10 @@ from ...utils.bpy_common import (create_empty_object,
                                  bpy_scene,
                                  bpy_render_single_frame)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
-from ...utils.manipulate import select_objects_only, center_viewport, select_object_only
+from ...utils.manipulate import (select_object_only,
+                                 select_objects_only,
+                                 center_viewport,
+                                 switch_to_mode)
 from .textures import bake_texture, preview_material_with_texture
 from .prechecks import (common_checks,
                         track_checks,
@@ -565,45 +568,34 @@ def create_animated_empty_act(obj: Object, linked: bool=False,
     return ActionStatus(True, 'ok')
 
 
-def switch_to_mode_unsafe(mode='OBJECT') -> None:
-    bpy.ops.object.mode_set(mode=mode, toggle=False)
-
-
-def check_uv_overlapping() -> ActionStatus:
-    geotracker = get_current_geotracker_item()
-    geomobj = geotracker.geomobj
-    old_mode = geomobj.mode
-    if not geomobj or not geomobj.data.uv_layers.active:
+def check_uv_exists(obj: Optional[Object]) -> ActionStatus:
+    if not obj or not obj.data.uv_layers.active:
         return ActionStatus(False, 'No UV map on object')
+    return ActionStatus(True, 'ok')
 
-    select_object_only(geomobj)
-    if old_mode != 'OBJECT':
-        switch_to_mode_unsafe('OBJECT')
 
-    mesh = geomobj.data
+def check_uv_overlapping(obj: Optional[Object]) -> ActionStatus:
+    old_mode = obj.mode
+    select_object_only(obj)
+
+    mesh = obj.data
     mesh.polygons.foreach_set('select', [True] * len(mesh.polygons))
 
-    switch_to_mode_unsafe('EDIT')
+    switch_to_mode('EDIT')
     bpy.ops.uv.select_overlap()
-    switch_to_mode_unsafe('OBJECT')
+    switch_to_mode('OBJECT')
 
-    uvmap = geomobj.data.uv_layers.active.data
+    uvmap = obj.data.uv_layers.active.data
     selected = np.empty((len(uvmap),), dtype=np.bool)
     uvmap.foreach_get('select', selected.ravel())
 
-    switch_to_mode_unsafe(old_mode)
+    switch_to_mode(old_mode)
     if np.any(selected):
         return ActionStatus(False, 'UV map has overlapping')
     return ActionStatus(True, 'ok')
 
 
 def create_non_overlapping_uv_act() -> ActionStatus:
-    check_status = common_checks(object_mode=True, is_calculating=True,
-                                 reload_geotracker=True, geotracker=True,
-                                 camera=True, geometry=True)
-    if not check_status.success:
-        return check_status
-
     geotracker = get_current_geotracker_item()
     geomobj = geotracker.geomobj
     old_mode = geomobj.mode
@@ -611,38 +603,72 @@ def create_non_overlapping_uv_act() -> ActionStatus:
         uv_layer = geomobj.data.uv_layers.new()
 
     select_object_only(geomobj)
-    if old_mode != 'OBJECT':
-        switch_to_mode_unsafe('OBJECT')
 
     mesh = geomobj.data
     mesh.polygons.foreach_set('select', [True] * len(mesh.polygons))
 
-    switch_to_mode_unsafe('EDIT')
-    bpy.ops.uv.smart_project()
-    switch_to_mode_unsafe(old_mode)
+    switch_to_mode('EDIT')
+    bpy.ops.uv.smart_project(island_margin=0.01)
+    switch_to_mode(old_mode)
     return ActionStatus(True, 'ok')
 
 
-def bake_texture_from_frames_act(selected_frames: List) -> ActionStatus:
-    _log.output(f'bake_texture_from_frames_act: {selected_frames}')
-    check_status = common_checks(object_mode=True, is_calculating=True,
-                                 reload_geotracker=True, geotracker=True,
-                                 camera=True, geometry=True, movie_clip=True)
-    if not check_status.success:
-        return check_status
-
-    check_status = check_uv_overlapping()
-    if not check_status.success:
-        return check_status
-
-    area = bpy.context.area
-    prepare_camera(area)
+def repack_uv_act() -> ActionStatus:
     geotracker = get_current_geotracker_item()
+    geomobj = geotracker.geomobj
+    old_mode = geomobj.mode
+
+    select_object_only(geomobj)
+
+    mesh = geomobj.data
+    uv_layer = mesh.uv_layers.active
+    if not uv_layer :
+        uv_layer = mesh.uv_layers.new()
+    uvmap = uv_layer.data
+
+    mesh.polygons.foreach_set('select', [True] * len(mesh.polygons))
+    uvmap.foreach_set('select', [True] * len(uvmap))
+
+    switch_to_mode('EDIT')
+    bpy.ops.uv.average_islands_scale()
+    bpy.ops.uv.pack_islands(margin=0.01)
+    switch_to_mode(old_mode)
+    return ActionStatus(True, 'ok')
+
+
+def bake_texture_from_frames_act(area: Area,
+                                 selected_frames: List) -> ActionStatus:
+    _log.output(f'bake_texture_from_frames_act: {selected_frames}')
+    if not area:
+        return ActionStatus(False, 'Improper context area')
+
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+
+    check_status = check_uv_exists(geotracker.geomobj)
+    if not check_status.success:
+        return check_status
+
+    check_status = check_uv_overlapping(geotracker.geomobj)
+
+    prepare_camera(area)
     built_texture = bake_texture(geotracker, selected_frames)
     revert_camera(area)
+
+    if settings.pinmode:
+        settings.reload_current_geotracker()
+        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
+                                         pins_and_residuals=True)
+
+    if built_texture is None:
+        msg = 'Texture has not been created'
+        _log.error(msg)
+        return ActionStatus(False, msg)
+
     preview_material_with_texture(built_texture, geotracker.geomobj)
+
     if not check_status.success:
-        return check_status
+        return ActionStatus(False, f'Done but {check_status.error_message}')
     return ActionStatus(True, 'ok')
 
 

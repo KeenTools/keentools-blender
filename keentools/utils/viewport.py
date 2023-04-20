@@ -140,8 +140,12 @@ class KTViewport:
         self.points3d().set_visible(state)
         self.residuals().set_visible(state)
 
-    def message_to_screen(self, msg: List) -> None:
-        self.texter().set_message(msg)
+    def message_to_screen(self, msg: List, register: bool=False,
+                          context: Optional[Any]=None) -> None:
+        texter = self.texter()
+        if register and context is not None:
+            texter.register_handler(context)
+        texter.set_message(msg)
 
     def revert_default_screen_message(self, unregister=False) -> None:
         texter = self.texter()

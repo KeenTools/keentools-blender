@@ -31,7 +31,9 @@ from bpy.path import ensure_ext
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import Config, get_operator
-from ...geotracker_config import GTConfig, get_current_geotracker_item
+from ...geotracker_config import (GTConfig,
+                                  get_gt_settings,
+                                  get_current_geotracker_item)
 from ...utils.images import (set_background_image_by_movieclip,
                              get_sequence_file_number)
 from ...utils.video import (convert_movieclip_to_frames,
@@ -47,6 +49,9 @@ from ..utils.textures import (bake_texture,
                               bake_texture_sequence)
 from ..utils.prechecks import common_checks, prepare_camera, revert_camera
 from ..ui_strings import buttons
+from ..utils.geotracker_acts import (check_uv_exists,
+                                     check_uv_overlapping,
+                                     bake_texture_from_frames_act)
 
 
 _log = KTLogger(__name__)
@@ -417,101 +422,22 @@ class GT_OT_VideoSnapshot(Operator, ExportHelper):
         return {'FINISHED'}
 
 
-class GT_OT_FrameSelector(Operator):
-    bl_idname = GTConfig.gt_select_frames_for_bake_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def draw(self, context):
-        geotracker = get_current_geotracker_item()
-        if not geotracker or not geotracker.movie_clip:
-            return {'CANCELLED'}
-
-        layout = self.layout
-        checked_views = False
-
-        box = layout.box()
-        col = box.column(align=True)
-        col.scale_y = Config.text_scale_y
-        for item in geotracker.selected_frames:
-            row = col.row(align=True)
-            row.prop(item, 'selected', text='')
-            row.label(text=f'{item.num}', icon='FILE_IMAGE')
-            if item.selected:
-                checked_views = True
-
-        row = box.row(align=True)
-        row.operator(GTConfig.gt_select_all_frames_idname, text='All')
-        row.operator(GTConfig.gt_deselect_all_frames_idname, text='None')
-
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-
-        if checked_views:
-            col.label(text='Please note: texture creation is very '
-                           'time consuming.')
-        else:
-            col.alert = True
-            col.label(text='You need to select at least one image '
-                           'to create texture.')
-
-    def invoke(self, context, event):
-        check_status = common_checks(object_mode=True, is_calculating=True,
-                                     reload_geotracker=True, geotracker=True,
-                                     camera=True, geometry=True,
-                                     movie_clip=True)
-        if not check_status.success:
-            self.report({'ERROR'}, check_status.error_message)
-            return {'CANCELLED'}
-
-        geotracker = get_current_geotracker_item()
-        gt = GTLoader.kt_geotracker()
-        selected_frames = geotracker.selected_frames
-        old_selected_frame_numbers = set([x.num for x in selected_frames if x.selected])
-        selected_frames.clear()
-        for frame in gt.keyframes():
-            item = selected_frames.add()
-            item.num = frame
-            item.selected = frame in old_selected_frame_numbers
-
-        return context.window_manager.invoke_props_dialog(self)
-
-    def execute(self, context):
-        check_status = common_checks(object_mode=True, is_calculating=True,
-                                     geotracker=True, camera=True,
-                                     geometry=True, movie_clip=True)
-        if not check_status.success:
-            self.report({'ERROR'}, check_status.error_message)
-            return {'CANCELLED'}
-
-        geotracker = get_current_geotracker_item()
-        selected_keyframes = [x.num for x in geotracker.selected_frames if x.selected]
-        if len(selected_keyframes) == 0:
-            self.report({'ERROR'}, 'No keyframes have been selected')
-            return {'CANCELLED'}
-
-        _log.output('GT START TEXTURE CREATION')
-        area = context.area
-        prepare_camera(area)
-        built_texture = bake_texture(geotracker, selected_keyframes)
-        if built_texture is None:
-            _log.error('GT TEXTURE HAS NOT BEEN CREATED')
-        else:
-            preview_material_with_texture(built_texture, geotracker.geomobj)
-            _log.output('GT TEXTURE HAS BEEN CREATED')
-        revert_camera(area)
-        return {'FINISHED'}
-
-
 class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
     bl_idname = GTConfig.gt_reproject_tex_sequence_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
-    filter_glob: StringProperty(
-          options={'HIDDEN'}
+    filter_folder: BoolProperty(
+        name='Filter folders',
+        default=True,
+        options={'HIDDEN'},
     )
+    filter_image: BoolProperty(
+        name='Filter image',
+        default=True,
+        options={'HIDDEN'},
+    )
+
     filepath: StringProperty(
         default='',
         subtype='FILE_PATH'
@@ -591,9 +517,14 @@ class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
 
         filepath_pattern = self._file_pattern()
 
+        if self.to_frame < self.from_frame:
+            msg = 'Wrong frame range'
+            _log.error(msg)
+            self.report({'ERROR'}, msg)
+            return {'CANCELLED'}
+        frames = [x for x in range(self.from_frame, self.to_frame + 1)]
         bake_texture_sequence(context, geotracker, filepath_pattern,
-                              from_frame=self.from_frame,
-                              to_frame=self.to_frame,
+                              frames=frames,
                               file_format=self.file_format,
                               width=self.width, height=self.height)
         return {'FINISHED'}

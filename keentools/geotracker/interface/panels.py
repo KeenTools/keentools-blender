@@ -748,17 +748,28 @@ class GT_PT_TexturePanel(AllVisible):
                      text='', icon='QUESTION', emboss=False)
 
     def _draw_buttons(self, layout, active=True):
+        settings = get_gt_settings()
+        layout.label(text='Reproject to texture')
         col = layout.column(align=True)
         col.active = active
         col.scale_y = Config.btn_scale_y
         col.operator(GTConfig.gt_reproject_frame_idname,
-                     text='Reproject current frame')
+                     text='Current frame')
         col.operator(GTConfig.gt_select_frames_for_bake_idname,
-                        text='Reproject from keyframes')
+                        text='GeoTracker keyframes')
         col.operator(GTConfig.gt_reproject_tex_sequence_idname,
-                        text='Reproject to sequence')
+                        text='Animated sequence')
 
-        layout.operator(GTConfig.gt_create_non_overlapping_uv_idname)
+        col = layout.column(align=True)
+        col.scale_y = Config.btn_scale_y
+        col.label(text='UV Map')
+        col.operator(GTConfig.gt_check_uv_overlapping_idname)
+
+        col = layout.column(align=True)
+        col.scale_y = Config.btn_scale_y
+        col.active = not settings.pinmode
+        col.operator(GTConfig.gt_repack_overlapping_uv_idname)
+        col.operator(GTConfig.gt_create_non_overlapping_uv_idname)
 
     def _draw_no_uv_warning(self, layout):
         box = layout.box()
@@ -781,7 +792,7 @@ class GT_PT_TexturePanel(AllVisible):
             self._draw_no_uv_warning(layout)
             return
 
-        self._draw_buttons(layout)
+        self._draw_buttons(layout, not not geotracker.movie_clip)
 
         if settings.is_calculating('REPROJECT'):
             _draw_calculating_indicator(layout)
@@ -812,6 +823,7 @@ class GT_PT_AnimationPanel(AllVisible):
     def draw(self, context: Any) -> None:
         layout = self.layout
         settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
 
         layout.label(text='Transform')
 
@@ -832,7 +844,20 @@ class GT_PT_AnimationPanel(AllVisible):
 
         col = layout.column(align=True)
         col.prop(settings, 'bake_animation_selector', text='')
-        col.operator(GTConfig.gt_bake_animation_to_world_idname, text='Bake')
+        btn = col.row()
+        if settings.bake_animation_selector == 'CAMERA' \
+                and geotracker.camobj and geotracker.camobj.parent:
+            btn.enabled = True
+        elif settings.bake_animation_selector == 'GEOMETRY' \
+                and geotracker.geomobj and geotracker.geomobj.parent:
+            btn.enabled = True
+        elif settings.bake_animation_selector == 'GEOMETRY_AND_CAMERA' \
+                and geotracker.geomobj and geotracker.camobj \
+                and geotracker.geomobj.parent and geotracker.camobj.parent:
+            btn.enabled = True
+        else:
+            btn.enabled = False
+        btn.operator(GTConfig.gt_bake_animation_to_world_idname, text='Bake')
 
         layout.separator()
 

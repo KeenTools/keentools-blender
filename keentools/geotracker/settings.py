@@ -757,16 +757,16 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     transfer_animation_selector: bpy.props.EnumProperty(
         name='Transfer selector',
         items=[
-            ('CAMERA_TO_GEOMETRY', 'Camera to Geometry',
-            'Camera to Geometry description', 0),
             ('GEOMETRY_TO_CAMERA', 'Geometry to Camera',
-             'Geometry to Camera description', 1),],
+             'Geometry to Camera description', 0),
+            ('CAMERA_TO_GEOMETRY', 'Camera to Geometry',
+            'Camera to Geometry description', 1),],
         description='Choose a direction of transfering animation')
 
     bake_animation_selector: bpy.props.EnumProperty(name='Bake selector',
         items=[
             ('GEOMETRY_AND_CAMERA', 'Geometry & Camera',
-             'Both object will be baked to World space', 0),
+             'Both objects will be baked to World space', 0),
             ('GEOMETRY', 'Geometry',
              'Geometry animation will be baked to World space', 1),
             ('CAMERA', 'Camera',
