@@ -79,8 +79,11 @@ def find_movieclip(filepath: str) -> Optional[MovieClip]:
     if not os.path.exists(filepath):
         return None
     for movieclip in bpy.data.movieclips:
+        _log.output(f'find_movieclip: {movieclip}')
         try:
-            if os.path.samefile(movieclip.filepath, filepath):
+            _log.output(f'\n{movieclip.filepath}\n{filepath}')
+            if os.path.samefile(bpy.path.abspath(movieclip.filepath),
+                                bpy.path.abspath(filepath)):
                 return movieclip
         except FileNotFoundError as err:
             _log.error(f'find_movieclip FILE NOT FOUND:\n{str(err)}')
