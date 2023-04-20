@@ -61,7 +61,7 @@ buttons = {
         'Make snapshot from current frame'
     ),
     GTConfig.gt_select_frames_for_bake_idname: Button(
-        'Select frames:',
+        'Select frames for reproject',
         'Create texture using selected frames'
     ),
     GTConfig.gt_reproject_tex_sequence_idname: Button(
@@ -217,11 +217,11 @@ buttons = {
         'Reproject frame',
         'Reproject current frame to get texture'
     ),
-    GTConfig.gt_select_all_frames_idname: Button(
+    GTConfig.gt_select_all_bake_frames_idname: Button(
         'Select All',
         'Select all keyframes for getting texture by reprojection'
     ),
-    GTConfig.gt_deselect_all_frames_idname: Button(
+    GTConfig.gt_deselect_all_bake_frames_idname: Button(
         'Deselect All',
         'Deselect all keyframes for getting texture by reprojection'
     ),

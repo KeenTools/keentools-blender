@@ -16,6 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import List
+from math import radians
+
 from bpy.types import Operator, Object
 from bpy.props import (BoolProperty,
                        IntProperty,
@@ -23,9 +26,6 @@ from bpy.props import (BoolProperty,
                        FloatVectorProperty,
                        EnumProperty,
                        PointerProperty)
-from math import radians
-
-import bpy
 from mathutils import Matrix, Quaternion
 
 from ..utils.kt_logging import KTLogger
@@ -637,10 +637,26 @@ class GT_OT_CreateNonOverlappingUV(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+_overlapping_warning_message: List[str] = [
+    'Geometry object has overlapping UV!',
+    'It means that a resulting texture could have artifacts.',
+    'If you don\'t know how to fix UV layout manually, ',
+    'you could try to fix it by \'Repack UV\' or ',
+    '\'Create non-overlapping UV\' operations.',
+    ' ',
+    'Do you still want to create a reprojected texture',
+    'without fixing UVs?',
+    ' ',
+    'Click outside of this window to stop the texture creation',
+    'or press Ok to start calculation.']
+
+
 class GT_OT_ReprojectFrame(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_reproject_frame_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
+
+    done: BoolProperty(default=False)
 
     def start_text_on_screen(self, context):
         settings = get_gt_settings()
@@ -656,6 +672,34 @@ class GT_OT_ReprojectFrame(ButtonOperator, Operator):
             unregister=not settings.pinmode)
 
     def execute(self, context):
+        self.done = True
+        self.start_text_on_screen(context)
+        act_status = bake_texture_from_frames_act(context.area,
+                                                  [bpy_current_frame()])
+        self.finish_text_on_screen()
+
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'FINISHED'}
+        return {'FINISHED'}
+
+    def cancel(self, context):
+        self.done = True
+
+    def draw(self, context):
+        global _overlapping_warning_message
+        layout = self.layout
+        if self.done:
+            layout.label(text='Operation has been done')
+            return
+
+        col = layout.column(align=True)
+        col.scale_y = Config.text_scale_y
+        for txt in _overlapping_warning_message:
+            col.label(text=txt)
+
+    def invoke(self, context, event):
+        self.done = False
         check_status = common_checks(object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True,
@@ -664,19 +708,159 @@ class GT_OT_ReprojectFrame(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+
+        check_status = check_uv_exists(geotracker.geomobj)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        check_status = check_uv_overlapping(geotracker.geomobj)
+        if not check_status.success:
+            return context.window_manager.invoke_props_dialog(self, width=400)
+
+        return self.execute(context)
+
+
+class GT_OT_BakeFrameSelector(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_select_frames_for_bake_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    warning: BoolProperty(default=False)
+
+    def _draw_selection_dialog(self, context):
+        geotracker = get_current_geotracker_item()
+        if not geotracker or not geotracker.movie_clip:
+            return
+
+        layout = self.layout
+        checked_views = False
+
+        box = layout.box()
+        col = box.column(align=True)
+        col.scale_y = Config.text_scale_y
+        for item in geotracker.selected_frames:
+            row = col.row(align=True)
+            row.prop(item, 'selected', text='')
+            row.label(text=f'{item.num}', icon='FILE_IMAGE')
+            if item.selected:
+                checked_views = True
+
+        row = box.row(align=True)
+        row.operator(GTConfig.gt_select_all_bake_frames_idname, text='All')
+        row.operator(GTConfig.gt_deselect_all_bake_frames_idname, text='None')
+
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+
+        if checked_views:
+            col.label(text='Please note: texture creation is very '
+                           'time consuming.')
+        else:
+            col.alert = True
+            col.label(text='You need to select at least one image '
+                           'to create texture.')
+
+    def _draw_overlapping_warning(self, context):
+        global _overlapping_warning_message
+        layout = self.layout
+        col = layout.column(align=True)
+        col.scale_y = Config.text_scale_y
+        for txt in _overlapping_warning_message:
+            col.label(text=txt)
+
+    def draw(self, context):
+        if self.warning:
+            self._draw_overlapping_warning(context)
+        else:
+            self._draw_selection_dialog(context)
+
+    def invoke(self, context, event):
+        self.warning = False
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     reload_geotracker=True, geotracker=True,
+                                     camera=True, geometry=True,
+                                     movie_clip=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        geotracker = get_current_geotracker_item()
+
+        check_status = check_uv_exists(geotracker.geomobj)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        gt = GTLoader.kt_geotracker()
+        if len(gt.keyframes()) == 0:
+            self.report({'ERROR'}, 'No GeoTracker keyframes')
+            return {'CANCELLED'}
+
+        selected_frames = geotracker.selected_frames
+        old_selected_frame_numbers = set([x.num for x in selected_frames
+                                          if x.selected])
+        selected_frames.clear()
+        for frame in gt.keyframes():
+            item = selected_frames.add()
+            item.num = frame
+            item.selected = frame in old_selected_frame_numbers
+
+        check_status = check_uv_overlapping(geotracker.geomobj)
+        if not check_status.success:
+            self.warning = True
+
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+    def start_text_on_screen(self, context):
+        settings = get_gt_settings()
+        vp = GTLoader.viewport()
+        vp.message_to_screen(
+            [{'text': 'Reproject is calculating... Please wait',
+              'color': (1.0, 0., 0., 0.7)}],
+            register=not settings.pinmode, context=context)
+
+    def finish_text_on_screen(self):
+        settings = get_gt_settings()
+        GTLoader.viewport().revert_default_screen_message(
+            unregister=not settings.pinmode)
+
+    def execute(self, context):
+        if self.warning:
+            self.warning = False
+            return context.window_manager.invoke_props_dialog(self, width=400)
+
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     geotracker=True, camera=True,
+                                     geometry=True, movie_clip=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        geotracker = get_current_geotracker_item()
+        selected_keyframes = [x.num for x in geotracker.selected_frames
+                              if x.selected]
+        if len(selected_keyframes) == 0:
+            self.report({'ERROR'}, 'No keyframes have been selected')
+            return {'CANCELLED'}
+
+        _log.output('GT START TEXTURE CREATION')
         self.start_text_on_screen(context)
         act_status = bake_texture_from_frames_act(context.area,
-                                                  [bpy_current_frame()])
+                                                  selected_keyframes)
         self.finish_text_on_screen()
 
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
-            return {'CANCELLED'}
+            return {'FINISHED'}
+
         return {'FINISHED'}
 
 
-class GT_OT_SelectAllFrames(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_select_all_frames_idname
+class GT_OT_SelectAllBakeFrames(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_select_all_bake_frames_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
@@ -689,8 +873,8 @@ class GT_OT_SelectAllFrames(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
-class GT_OT_DeselectAllFrames(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_deselect_all_frames_idname
+class GT_OT_DeselectAllBakeFrames(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_deselect_all_bake_frames_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
@@ -1297,8 +1481,9 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_RepackOverlappingUV,
                   GT_OT_CreateNonOverlappingUV,
                   GT_OT_ReprojectFrame,
-                  GT_OT_SelectAllFrames,
-                  GT_OT_DeselectAllFrames,
+                  GT_OT_BakeFrameSelector,
+                  GT_OT_SelectAllBakeFrames,
+                  GT_OT_DeselectAllBakeFrames,
                   GT_OT_TransferTracking,
                   GT_OT_BakeAnimationToWorld,
                   GT_OT_RemoveFocalKeyframe,

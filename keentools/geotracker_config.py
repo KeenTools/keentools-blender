@@ -80,14 +80,14 @@ class GTConfig:
     gt_default_wireframe_settings_idname = \
         operators + '.default_wireframe_settings'
     gt_default_pin_settings_idname = operators + '.default_pin_settings'
-    gt_select_frames_for_bake_idname = operators + '.select_frames_for_bake'
     gt_check_uv_overlapping_idname = operators + '.check_uv_overlapping'
     gt_repack_overlapping_uv_idname = operators + '.repack_overlapping_uv'
     gt_create_non_overlapping_uv_idname = \
         operators + '.create_non_overlapping_uv'
     gt_reproject_frame_idname = operators + '.reproject_current_frame'
-    gt_select_all_frames_idname = operators + '.select_all_frames'
-    gt_deselect_all_frames_idname = operators + '.deselect_all_frames'
+    gt_select_frames_for_bake_idname = operators + '.select_frames_for_bake'
+    gt_select_all_bake_frames_idname = operators + '.select_all_bake_frames'
+    gt_deselect_all_bake_frames_idname = operators + '.deselect_all_bake_frames'
 
     gt_export_animated_empty_idname = operators + '.export_animated_empty'
     gt_transfer_tracking_idname = operators + '.transfer_tracking'
