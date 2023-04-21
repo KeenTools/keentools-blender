@@ -90,7 +90,7 @@ from .gtloader import GTLoader
 from .ui_strings import buttons
 from .utils.prechecks import common_checks
 from ..utils.coords import LocRotScale
-from ..utils.manipulate import select_object_only
+from ..utils.manipulate import select_object_only, force_undo_push
 
 
 _log = KTLogger(__name__)
@@ -153,11 +153,23 @@ class GT_OT_PrevKeyframe(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_prev_keyframe_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER'}
 
     def execute(self, context):
+        settings = get_gt_settings()
+        check_status = common_checks(object_mode=False, is_calculating=True,
+                                     reload_geotracker=not settings.pinmode,
+                                     geotracker=True, camera=True,
+                                     geometry=True)
+        if not check_status.success:
+            self.report({'INFO'}, check_status.error_message)
+            return {'CANCELLED'}
+
         act_status = prev_keyframe_act()
         if not act_status.success:
             self.report({'INFO'}, act_status.error_message)
+            return {'CANCELLED'}
+
         return {'FINISHED'}
 
 
@@ -165,11 +177,23 @@ class GT_OT_NextKeyframe(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_next_keyframe_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER'}
 
     def execute(self, context):
+        settings = get_gt_settings()
+        check_status = common_checks(object_mode=False, is_calculating=True,
+                                     reload_geotracker=not settings.pinmode,
+                                     geotracker=True, camera=True,
+                                     geometry=True)
+        if not check_status.success:
+            self.report({'INFO'}, check_status.error_message)
+            return {'CANCELLED'}
+
         act_status = next_keyframe_act()
         if not act_status.success:
             self.report({'INFO'}, act_status.error_message)
+            return {'CANCELLED'}
+
         return {'FINISHED'}
 
 
@@ -229,12 +253,14 @@ class GT_OT_AddKeyframe(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_add_keyframe_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER'}
 
     def execute(self, context):
         act_status = add_keyframe_act()
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+        force_undo_push('Add GeoTracker keyframe')
         return {'FINISHED'}
 
 
@@ -242,12 +268,14 @@ class GT_OT_RemoveKeyframe(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_remove_keyframe_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER'}
 
     def execute(self, context):
         act_status = remove_keyframe_act()
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+        force_undo_push('Remove GeoTracker keyframe')
         return {'FINISHED'}
 
 

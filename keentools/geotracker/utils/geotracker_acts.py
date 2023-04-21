@@ -160,36 +160,36 @@ def remove_keyframe_act() -> ActionStatus:
 
 
 def next_keyframe_act() -> ActionStatus:
-    settings = get_gt_settings()
-    check_status = common_checks(object_mode=False, is_calculating=True,
-                                 reload_geotracker=not settings.pinmode,
-                                 geotracker=True, camera=True, geometry=True)
-    if not check_status.success:
-        return check_status
-
     current_frame = bpy_current_frame()
-    target_frame = get_next_tracking_keyframe(GTLoader.kt_geotracker(),
-                                              current_frame)
+    gt = GTLoader.kt_geotracker()
+    target_frame = get_next_tracking_keyframe(gt, current_frame)
+
+    if current_frame == target_frame:
+        track_frames = gt.track_frames()
+        if len(track_frames) > 0:
+            target_frame = track_frames[-1]
+
     if current_frame != target_frame:
         bpy_set_current_frame(target_frame)
         return ActionStatus(True, 'ok')
+
     return ActionStatus(False, 'No next GeoTracker keyframe')
 
 
 def prev_keyframe_act() -> ActionStatus:
-    settings = get_gt_settings()
-    check_status = common_checks(object_mode=False, is_calculating=True,
-                                 reload_geotracker=not settings.pinmode,
-                                 geotracker=True, camera=True, geometry=True)
-    if not check_status.success:
-        return check_status
-
     current_frame = bpy_current_frame()
-    target_frame = get_previous_tracking_keyframe(GTLoader.kt_geotracker(),
-                                                  current_frame)
+    gt = GTLoader.kt_geotracker()
+    target_frame = get_previous_tracking_keyframe(gt, current_frame)
+
+    if current_frame == target_frame:
+        track_frames = gt.track_frames()
+        if len(track_frames) > 0:
+            target_frame = track_frames[0]
+
     if current_frame != target_frame:
         bpy_set_current_frame(target_frame)
         return ActionStatus(True, 'ok')
+
     return ActionStatus(False, 'No previous GeoTracker keyframe')
 
 
