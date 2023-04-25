@@ -468,9 +468,9 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
     void main()
     {
         float dist = 1000.0;
-        Light light1 = Light(vec3( 0.0,  0.0, -dist), 1.0, 0.0, 0.0, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0));
-        Light light2 = Light(vec3(-2.0 * dist, 0.0, -dist), 1.0, 0.0, 0.0, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0));
-        Light light3 = Light(vec3( 2.0 * dist, 0.0, -dist), 1.0, 0.0, 0.0, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0));
+        Light light1 = {vec3( 0.0,  0.0, -dist), 1.0, 0.0, 0.0, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)};
+        Light light2 = {vec3(-2.0 * dist, 0.0, -dist), 1.0, 0.0, 0.0, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)};
+        Light light3 = {vec3( 2.0 * dist, 0.0, -dist), 1.0, 0.0, 0.0, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)};
         fragColor = vec4(
             evaluatePointLight(light1, color.rgb, calcNormal, outPos) +
             evaluatePointLight(light2, color.rgb, calcNormal, outPos) +
