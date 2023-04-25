@@ -34,12 +34,9 @@ from ...utils.coords import (frame_to_image_space,
                              xy_to_xz_rotation_matrix_3x3,
                              multiply_verts_on_matrix_4x4,
                              get_triangulation_indices)
-from ...utils.shaders import (solid_line_vertex_shader,
-                              solid_line_fragment_shader,
-                              simple_fill_vertex_shader,
-                              black_fill_fragment_shader,
-                              raster_image_vertex_shader,
-                              raster_image_fragment_shader)
+from ...utils.gpu_shaders import (solid_line_2d_shader,
+                                  black_fill_shader,
+                                  raster_image_shader)
 from ...utils.images import (check_bpy_image_has_same_size,
                              find_bpy_image_by_name,
                              remove_bpy_image,
@@ -108,8 +105,8 @@ class FBRectangleShader2D(KTEdgeShader2D):
         if self.line_shader is not None:
             _log.output(f'{self.__class__.__name__}.line_shader: skip')
             return None
-        self.line_shader = gpu.types.GPUShader(
-            solid_line_vertex_shader(), solid_line_fragment_shader())
+
+        self.line_shader = solid_line_2d_shader()
         res = self.line_shader is not None
         _log.output(f'{self.__class__.__name__}.line_shader: {res}')
         return res
@@ -139,6 +136,7 @@ class FBRectangleShader2D(KTEdgeShader2D):
 
     def create_batch(self) -> None:
         if self.line_shader is None:
+            _log.error(f'{self.__class__.__name__}.line_shader: is empty')
             return
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
@@ -261,7 +259,8 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         if not self.use_simple_shader:
             # coloring_image.bindcode should not be zero
             # if we don't want to destroy video driver in Blender
-            if not wireframe_image or wireframe_image.bindcode == 0:
+            if not wireframe_image or wireframe_image.bindcode == 0 \
+                    or not self.line_shader:
                 self.switch_to_simple_shader()
             else:
                 bgl.glActiveTexture(bgl.GL_TEXTURE0)
@@ -324,40 +323,36 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
                 {'pos': self.vertices},
                 indices=self.triangle_indices,
             )
+        else:
+            _log.error(f'{self.__class__.__name__}.fill_shader: is empty')
 
         if self.simple_line_shader is not None:
             self.simple_line_batch = batch_for_shader(
                 self.simple_line_shader, 'LINES',
                 {'pos': self.edge_vertices},
             )
+        else:
+            _log.error(f'{self.__class__.__name__}.simple_line_shader: is empty')
 
         if self.line_shader is not None:
             self.line_batch = batch_for_shader(
                 self.line_shader, 'LINES',
                 {'pos': self.edge_vertices, 'texCoord': self.edge_uvs}
             )
+        else:
+            _log.error(f'{self.__class__.__name__}.line_shader: is empty')
 
     def init_shaders(self) -> Optional[bool]:
         changes = False
         res = [True] * 3
 
         if self.fill_shader is None:
-            self.fill_shader = gpu.types.GPUShader(
-                simple_fill_vertex_shader(), black_fill_fragment_shader())
+            self.fill_shader = black_fill_shader()
             res[0] = self.fill_shader is not None
             _log.output(f'{self.__class__.__name__}.fill_shader: {res[0]}')
             changes = True
         else:
             _log.output(f'{self.__class__.__name__}.fill_shader: skip')
-
-        if self.line_shader is None:
-            self.line_shader = gpu.types.GPUShader(
-                raster_image_vertex_shader(), raster_image_fragment_shader())
-            res[1] = self.line_shader is not None
-            _log.output(f'{self.__class__.__name__}.line_shader: {res[1]}')
-            changes = True
-        else:
-            _log.output(f'{self.__class__.__name__}.line_shader: skip')
 
         if self.simple_line_shader is None:
             self.simple_line_shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
@@ -366,6 +361,14 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             changes = True
         else:
             _log.output(f'{self.__class__.__name__}.simple_line_shader: skip')
+
+        if self.line_shader is None:
+            self.line_shader = raster_image_shader()
+            res[1] = self.line_shader is not None
+            _log.output(f'{self.__class__.__name__}.line_shader: {res[1]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.line_shader: skip')
 
         if changes:
             return res[0] and res[1] and res[2]

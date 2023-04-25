@@ -16,16 +16,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy
+from typing import Tuple
 
-
-_bpy_ver = bpy.app.version
+from bpy.app import version as ver
 
 
 class BVersion:
-    property_keywords_enabled: bool = _bpy_ver >= (2, 93, 0)
-    blender_srgb_to_framebuffer_space_enabled: bool = _bpy_ver >= (2, 83, 0)
-    LocRotScale_exist: bool = _bpy_ver >= (3, 0, 0)
-    operator_with_context_exists: bool = _bpy_ver >= (3, 2, 0)
-    pixels_foreach_methods_exist: bool = _bpy_ver >= (2, 83, 0)
-    property_gpu_backend_exists: bool = _bpy_ver >= (3, 5, 0)
+    version: Tuple[int, int, int] = ver
+    property_keywords_enabled: bool = ver >= (2, 93, 0)
+    blender_srgb_to_framebuffer_space_enabled: bool = ver >= (2, 83, 0)
+    LocRotScale_exist: bool = version >= (3, 0, 0)
+    operator_with_context_exists: bool = ver >= (3, 2, 0)
+    pixels_foreach_methods_exist: bool = ver >= (2, 83, 0)
+    property_gpu_backend_exists: bool = ver >= (3, 5, 0)

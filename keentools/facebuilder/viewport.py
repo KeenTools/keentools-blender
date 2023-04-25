@@ -56,12 +56,13 @@ class FBViewport(KTViewport):
         self._draw_update_timer_handler: Optional[Callable] = None
 
     def load_all_shaders(self) -> bool:
+        _log.output('FB load_all_shaders')
         if bpy_background_mode():
             return True
-        all_draw_objects = [self._points2d,
+        all_draw_objects = [self._texter,
+                            self._points2d,
                             self._points3d,
                             self._residuals,
-                            self._texter,
                             self._wireframer,
                             self._rectangler]
         tmp_log = '--- FB Shaders ---'

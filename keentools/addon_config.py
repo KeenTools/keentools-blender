@@ -144,6 +144,9 @@ class Config:
     mock_product = None
 
     hide_geotracker = not 'KEENTOOLS_ENABLE_BLENDER_GEOTRACKER' in os.environ
+    supported_gpu_backends = {'OPENGL', 'Undefined'}
+    strict_shader_check = False
+    use_gpu_shaders = True
     allow_use_gpu_instead_of_bgl = False
 
     kt_convert_video_scene_name = 'gt_convert_video'
@@ -191,7 +194,7 @@ def get_gpu_backend() -> Optional[str]:
 
 
 def supported_gpu_backend() -> bool:
-    return get_gpu_backend() in ['OPENGL', 'Undefined']
+    return get_gpu_backend() in Config.supported_gpu_backends
 
 
 def facebuilder_enabled() -> bool:

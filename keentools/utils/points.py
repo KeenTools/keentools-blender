@@ -28,6 +28,8 @@ from ..addon_config import Config
 from .shaders import (flat_color_3d_vertex_shader,
                       circular_dot_fragment_shader,
                       flat_color_2d_vertex_shader)
+from .gpu_shaders import (circular_dot_2d_shader,
+                          circular_dot_3d_shader)
 from ..preferences.user_preferences import UserPreferences
 from .base_shaders import KTShaderBase
 
@@ -204,15 +206,17 @@ class KTPoints2D(KTShaderPoints):
         if self.shader is not None:
             _log.output(f'{self.__class__.__name__}.shader: skip')
             return None
-        self.shader = gpu.types.GPUShader(flat_color_2d_vertex_shader(),
-                                          circular_dot_fragment_shader())
+
+        self.shader = circular_dot_2d_shader()
         res = self.shader is not None
         _log.output(f'{self.__class__.__name__}.shader: {res}')
         return res
 
     def create_batch(self) -> None:
         if self.shader is None:
+            _log.error(f'{self.__class__.__name__}.shader: is empty')
             return
+
         self.batch = batch_for_shader(
             self.shader, 'POINTS',
             {'pos': self.vertices, 'color': self.vertices_colors},
@@ -229,14 +233,15 @@ class KTPoints3D(KTShaderPoints):
         if self.shader is not None:
             _log.output(f'{self.__class__.__name__}.shader: skip')
             return None
-        self.shader = gpu.types.GPUShader(flat_color_3d_vertex_shader(),
-                                          circular_dot_fragment_shader())
+
+        self.shader = circular_dot_3d_shader()
         res = self.shader is not None
         _log.output(f'{self.__class__.__name__}.shader: {res}')
         return res
 
     def create_batch(self) -> None:
         if self.shader is None:
+            _log.error(f'{self.__class__.__name__}.shader: is empty')
             return
         self.batch = batch_for_shader(
             self.shader, 'POINTS',

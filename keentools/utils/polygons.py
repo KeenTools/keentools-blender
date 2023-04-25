@@ -26,15 +26,12 @@ from gpu_extras.batch import batch_for_shader
 
 from ..utils.kt_logging import KTLogger
 from ..geotracker_config import GTConfig
-from .shaders import (smooth_3d_fragment_shader,
-                      uniform_3d_vertex_local_shader,
-                      raster_image_mask_vertex_shader,
-                      raster_image_mask_fragment_shader)
 from .coords import (get_mesh_verts,
                      get_triangulation_indices)
 from .bpy_common import evaluated_mesh
 from .images import check_gl_image
 from .base_shaders import KTShaderBase
+from .gpu_shaders import raster_image_mask_shader, line_3d_local_shader
 
 
 _log = KTLogger(__name__)
@@ -58,14 +55,15 @@ class KTTrisShaderLocal3D(KTShaderBase):
         if self.fill_shader is not None:
             _log.output(f'{self.__class__.__name__}.fill_shader: skip')
             return None
-        self.fill_shader = gpu.types.GPUShader(
-            uniform_3d_vertex_local_shader(), smooth_3d_fragment_shader())
+
+        self.fill_shader = line_3d_local_shader()
         res = self.fill_shader is not None
         _log.output(f'{self.__class__.__name__}.fill_shader: {res}')
         return res
 
     def create_batch(self) -> None:
         if self.fill_shader is None:
+            _log.error(f'{self.__class__.__name__}.fill_shader: is empty')
             return
         verts = []
         indices = []
@@ -147,15 +145,15 @@ class KTRasterMask(KTShaderBase):
         if self.mask_shader is not None:
             _log.output(f'{self.__class__.__name__}.mask_shader: skip')
             return None
-        self.mask_shader = gpu.types.GPUShader(
-            raster_image_mask_vertex_shader(),
-            raster_image_mask_fragment_shader())
+
+        self.mask_shader = raster_image_mask_shader()
         res = self.mask_shader is not None
         _log.output(f'{self.__class__.__name__}.mask_shader: {res}')
         return res
 
     def create_batch(self) -> None:
         if self.mask_shader is None:
+            _log.error(f'{self.__class__.__name__}.mask_shader: is empty')
             return
         self.mask_batch = batch_for_shader(
             self.mask_shader, 'TRI_FAN', {'pos': self.vertices,

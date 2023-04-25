@@ -71,12 +71,13 @@ class GTViewport(KTViewport):
         self._draw_update_timer_handler = None
 
     def load_all_shaders(self):
+        _log.output('GT load_all_shaders')
         if bpy_background_mode():
             return True
-        all_draw_objects = [self._points2d,
+        all_draw_objects = [self._texter,
+                            self._points2d,
                             self._points3d,
                             self._residuals,
-                            self._texter,
                             self._wireframer,
                             self._timeliner,
                             self._selector,

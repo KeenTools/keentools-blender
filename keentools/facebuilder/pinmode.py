@@ -283,8 +283,9 @@ class FB_OT_PinMode(bpy.types.Operator):
         first_start = True
 
         vp = FBLoader.viewport()
-        if not vp.load_all_shaders():
+        if not vp.load_all_shaders() and Config.strict_shader_check:
             return {'CANCELLED'}
+
         # Stopped shaders means that we need to restart pinmode
         if not vp.wireframer().is_working():
             settings.pinmode = False
