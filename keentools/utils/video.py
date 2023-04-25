@@ -207,7 +207,7 @@ def convert_movieclip_to_frames(
 def fit_render_size(movie_clip: Optional[MovieClip]) -> ActionStatus:
     w, h = get_movieclip_size(movie_clip)
     if w <= 0 or h <= 0:
-        msg = f'Wrong precalc frame size {w} x {h}'
+        msg = f'Wrong movie clip frame size {w} x {h}'
         _log.error(msg)
         return ActionStatus(False, msg)
 

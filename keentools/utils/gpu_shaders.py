@@ -23,7 +23,8 @@ import gpu
 from .kt_logging import KTLogger
 from .version import BVersion
 from ..addon_config import Config
-from .shaders import (flat_color_3d_vertex_shader,
+from .shaders import (flat_color_2d_vertex_shader,
+                      flat_color_3d_vertex_shader,
                       circular_dot_fragment_shader,
                       uniform_3d_vertex_local_shader,
                       smooth_3d_fragment_shader,
@@ -45,13 +46,14 @@ from .shaders import (flat_color_3d_vertex_shader,
 _log = KTLogger(__name__)
 
 
-_use_old_shaders: bool = BVersion.version >= (3, 5, 0) and not Config.use_gpu_shaders
+_use_old_shaders: bool = BVersion.version < (3, 5, 0) or not Config.use_gpu_shaders
+_log.output(f'_use_old_shaders: {_use_old_shaders}')
 
 
 def circular_dot_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_name = 'circular_dot_3d_shader'
     if use_old:
-        shader = gpu.types.GPUShader(flat_color_3d_vertex_shader(),
+        shader = gpu.types.GPUShader(flat_color_2d_vertex_shader(),
                                      circular_dot_fragment_shader())
         _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
         return shader
@@ -468,9 +470,30 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
     void main()
     {
         float dist = 1000.0;
-        Light light1 = {vec3( 0.0,  0.0, -dist), 1.0, 0.0, 0.0, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)};
-        Light light2 = {vec3(-2.0 * dist, 0.0, -dist), 1.0, 0.0, 0.0, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)};
-        Light light3 = {vec3( 2.0 * dist, 0.0, -dist), 1.0, 0.0, 0.0, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)};
+        Light light1;
+        light1.position = vec3( 0.0,  0.0, -dist);
+        light1.constantVal = 1.0;
+        light1.linear = 0.0;
+        light1.quadratic = 0.0;
+        light1.ambient = vec3(0.0, 0.0, 0.0);
+        light1.diffuse = vec3(1.0, 1.0, 1.0);
+
+        Light light2;
+        light2.position = vec3(-2.0 * dist, 0.0, -dist);
+        light2.constantVal = 1.0;
+        light2.linear = 0.0;
+        light2.quadratic = 0.0;
+        light2.ambient = vec3(0.0, 0.0, 0.0);
+        light2.diffuse = vec3(1.0, 1.0, 1.0);
+
+        Light light3;
+        light3.position = vec3( 2.0 * dist, 0.0, -dist);
+        light3.constantVal = 1.0;
+        light3.linear = 0.0;
+        light3.quadratic = 0.0;
+        light3.ambient = vec3(0.0, 0.0, 0.0);
+        light3.diffuse = vec3(1.0, 1.0, 1.0);
+
         fragColor = vec4(
             evaluatePointLight(light1, color.rgb, calcNormal, outPos) +
             evaluatePointLight(light2, color.rgb, calcNormal, outPos) +
