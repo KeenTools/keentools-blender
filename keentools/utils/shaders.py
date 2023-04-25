@@ -416,7 +416,7 @@ def lit_fragment_shader() -> str:
     struct Light
     {
       vec3 position;
-      float constant;
+      float constantVal;
       float linear;
       float quadratic;
       vec3 ambient;
@@ -429,7 +429,7 @@ def lit_fragment_shader() -> str:
         float diff = max(dot(normal, lightDir), 0.0); // cos(angle)
 
         float distance    = length(light.position - fragPos);
-        float attenuation = 1.0 / (light.constant + light.linear * distance +
+        float attenuation = 1.0 / (light.constantVal + light.linear * distance +
                             light.quadratic * (distance * distance));
         vec3 ambient  = light.ambient;
         vec3 diffuse  = light.diffuse * diff ;

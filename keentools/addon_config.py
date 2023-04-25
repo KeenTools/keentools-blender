@@ -144,10 +144,10 @@ class Config:
     mock_product = None
 
     hide_geotracker = not 'KEENTOOLS_ENABLE_BLENDER_GEOTRACKER' in os.environ
-    supported_gpu_backends = {'OPENGL', 'Undefined'}
+    supported_gpu_backends = {'OPENGL', 'Undefined', 'METAL'}
     strict_shader_check = False
     use_gpu_shaders = True
-    allow_use_gpu_instead_of_bgl = False
+    allow_use_gpu_instead_of_bgl = True
 
     kt_convert_video_scene_name = 'gt_convert_video'
 
