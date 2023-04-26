@@ -366,7 +366,7 @@ class GT_OT_PinMode(Operator):
 
         vp = GTLoader.viewport()
         if not vp.load_all_shaders() and Config.strict_shader_check:
-                return {'CANCELLED'}
+            return {'CANCELLED'}
 
         vp.pins().on_start()
         self._change_wireframe_visibility(toggle=False, value=True)

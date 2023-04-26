@@ -25,16 +25,6 @@ import bgl
 from gpu_extras.batch import batch_for_shader
 
 from .kt_logging import KTLogger
-from .shaders import (simple_fill_vertex_shader,
-                      black_fill_fragment_shader, residual_vertex_shader,
-                      residual_fragment_shader,
-                      dashed_fragment_shader,
-                      solid_line_vertex_shader, solid_line_fragment_shader,
-                      simple_fill_vertex_local_shader,
-                      smooth_3d_vertex_local_shader, smooth_3d_fragment_shader,
-                      uniform_3d_vertex_local_shader,
-                      lit_vertex_local_shader,
-                      lit_fragment_shader)
 from .gpu_shaders import (line_3d_local_shader,
                           solid_line_2d_shader,
                           residual_2d_shader,
