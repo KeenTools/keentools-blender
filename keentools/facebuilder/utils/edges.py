@@ -298,7 +298,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         if not self._check_coloring_image(wireframe_image):
             self.unregister_handler()
             return
-        if not wireframe_image or wireframe_image.bindcode == 0:
+        if not wireframe_image:
             self.switch_to_simple_shader()
             self.draw_simple_line_gpu()
             _log.error('draw_textured_line_gpu switched to simple')
