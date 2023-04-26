@@ -144,10 +144,10 @@ class Config:
     mock_product = None
 
     hide_geotracker = not 'KEENTOOLS_ENABLE_BLENDER_GEOTRACKER' in os.environ
-    supported_gpu_backends = {'OPENGL', 'Undefined', 'METAL'}
+    supported_gpu_backends = {'OPENGL', 'Undefined'}  # METAL
     strict_shader_check = False
     use_gpu_shaders = True
-    allow_use_gpu_instead_of_bgl = True
+    allow_use_gpu_instead_of_bgl = False
 
     kt_convert_video_scene_name = 'gt_convert_video'
 
@@ -178,23 +178,8 @@ def get_addon_preferences() -> Any:
     return bpy.context.preferences.addons[Config.addon_name].preferences
 
 
-_gpu_backend: Optional[str] = None if BVersion.property_gpu_backend_exists \
-    else 'Undefined'
-
-
-def get_gpu_backend() -> Optional[str]:
-    global _gpu_backend
-    if _gpu_backend is not None:
-        return _gpu_backend
-    try:
-        _gpu_backend = bpy.context.preferences.system.gpu_backend
-    except Exception:
-        pass
-    return _gpu_backend
-
-
 def supported_gpu_backend() -> bool:
-    return get_gpu_backend() in Config.supported_gpu_backends
+    return BVersion.gpu_backend in Config.supported_gpu_backends
 
 
 def facebuilder_enabled() -> bool:

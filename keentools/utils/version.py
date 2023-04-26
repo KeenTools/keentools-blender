@@ -16,9 +16,34 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Tuple
+from sys import platform
+from typing import Tuple, Optional
 
+import bpy
 from bpy.app import version as ver
+
+from .kt_logging import KTLogger
+
+
+_log = KTLogger(__name__)
+
+
+def _os_name() -> str:
+    if platform == 'win32':
+        return 'windows'
+    if platform == 'linux' or platform == 'linux2':
+        return 'linux'
+    if platform == 'darwin':
+        return 'macos'
+
+
+def _get_gpu_backend(property_exists: bool=False) -> Optional[str]:
+    if property_exists:
+        try:
+            return bpy.context.preferences.system.gpu_backend
+        except Exception as err:
+            _log.error(f'_get_gpu_backend Exception: {str(err)}')
+    return 'Undefined'
 
 
 class BVersion:
@@ -29,3 +54,6 @@ class BVersion:
     operator_with_context_exists: bool = ver >= (3, 2, 0)
     pixels_foreach_methods_exist: bool = ver >= (2, 83, 0)
     property_gpu_backend_exists: bool = ver >= (3, 5, 0)
+
+    os_name: str = _os_name()
+    gpu_backend: str = _get_gpu_backend(property_gpu_backend_exists)
