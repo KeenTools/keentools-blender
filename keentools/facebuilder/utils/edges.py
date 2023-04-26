@@ -165,8 +165,10 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         self.use_simple_shader = False
 
     def init_wireframe_image(self, fb: Any, show_specials: bool) -> bool:
+        _log.output('init_wireframe_image call')
         if not show_specials or not fb.face_texture_available():
             self.switch_to_simple_shader()
+            _log.error('init_wireframe_image cannot initialize image 1')
             return False
 
         fb.set_face_texture_colors(self.texture_colors)
@@ -190,6 +192,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             wireframe_image.pack()
             self.switch_to_complex_shader()
             return True
+        _log.error('init_wireframe_image cannot initialize image 2')
         self.switch_to_simple_shader()
         return False
 
@@ -262,6 +265,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             if not wireframe_image or wireframe_image.bindcode == 0 \
                     or not self.line_shader:
                 self.switch_to_simple_shader()
+                _log.error('draw_main_bgl switch_to_simple_shader call')
             else:
                 bgl.glActiveTexture(bgl.GL_TEXTURE0)
                 bgl.glBindTexture(bgl.GL_TEXTURE_2D,
@@ -297,6 +301,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         if not wireframe_image or wireframe_image.bindcode == 0:
             self.switch_to_simple_shader()
             self.draw_simple_line_gpu()
+            _log.error('draw_textured_line_gpu switched to simple')
         else:
             gpu.state.line_width_set(self.line_width * 2)
             gpu.state.blend_set('ALPHA')
