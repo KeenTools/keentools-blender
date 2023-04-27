@@ -20,7 +20,8 @@ import sys
 import platform
 import bpy
 
-from .addon_config import Config, get_gpu_backend
+from .utils.version import BVersion
+from .addon_config import Config
 
 
 USER_MESSAGES = {
@@ -137,7 +138,7 @@ def get_system_info():
     txt_arr.append('Machine: {}, {}'.format(platform.machine(),
                                      platform.processor()))
     txt_arr.append('System: {}'.format(platform.platform()))
-    txt_arr.append('GPU backend: {}'.format(get_gpu_backend()))
+    txt_arr.append('GPU backend: {}'.format(BVersion.gpu_backend))
     return txt_arr
 
 

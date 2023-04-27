@@ -416,7 +416,7 @@ def lit_fragment_shader() -> str:
     struct Light
     {
       vec3 position;
-      float constant;
+      float constantVal;
       float linear;
       float quadratic;
       vec3 ambient;
@@ -429,7 +429,7 @@ def lit_fragment_shader() -> str:
         float diff = max(dot(normal, lightDir), 0.0); // cos(angle)
 
         float distance    = length(light.position - fragPos);
-        float attenuation = 1.0 / (light.constant + light.linear * distance +
+        float attenuation = 1.0 / (light.constantVal + light.linear * distance +
                             light.quadratic * (distance * distance));
         vec3 ambient  = light.ambient;
         vec3 diffuse  = light.diffuse * diff ;
@@ -440,9 +440,31 @@ def lit_fragment_shader() -> str:
     void main()
     {
         float dist = 1000.0;
-        Light light1 = Light(vec3( 0.0,  0.0, -dist), 1.0, 0.0, 0.0, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0));
-        Light light2 = Light(vec3(-2.0 * dist, 0.0, -dist), 1.0, 0.0, 0.0, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0));
-        Light light3 = Light(vec3( 2.0 * dist, 0.0, -dist), 1.0, 0.0, 0.0, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0));
+
+        Light light1;
+        light1.position = vec3( 0.0,  0.0, -dist);
+        light1.constantVal = 1.0;
+        light1.linear = 0.0;
+        light1.quadratic = 0.0;
+        light1.ambient = vec3(0.0, 0.0, 0.0);
+        light1.diffuse = vec3(1.0, 1.0, 1.0);
+
+        Light light2;
+        light2.position = vec3(-2.0 * dist, 0.0, -dist);
+        light2.constantVal = 1.0;
+        light2.linear = 0.0;
+        light2.quadratic = 0.0;
+        light2.ambient = vec3(0.0, 0.0, 0.0);
+        light2.diffuse = vec3(1.0, 1.0, 1.0);
+
+        Light light3;
+        light3.position = vec3( 2.0 * dist, 0.0, -dist);
+        light3.constantVal = 1.0;
+        light3.linear = 0.0;
+        light3.quadratic = 0.0;
+        light3.ambient = vec3(0.0, 0.0, 0.0);
+        light3.diffuse = vec3(1.0, 1.0, 1.0);
+
         fragColor = vec4(
             evaluatePointLight(light1, color.rgb, calcNormal, outPos) +
             evaluatePointLight(light2, color.rgb, calcNormal, outPos) +

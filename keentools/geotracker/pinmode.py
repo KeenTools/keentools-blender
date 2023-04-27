@@ -365,7 +365,7 @@ class GT_OT_PinMode(Operator):
             return {'CANCELLED'}
 
         vp = GTLoader.viewport()
-        if not vp.load_all_shaders():
+        if not vp.load_all_shaders() and Config.strict_shader_check:
             return {'CANCELLED'}
 
         vp.pins().on_start()
