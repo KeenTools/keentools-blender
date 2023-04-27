@@ -109,6 +109,8 @@ class GTConfig:
     gt_rescale_window_idname = operators + '.rescale_window'
     gt_move_window_idname = operators + '.move_window'
     gt_rig_window_idname = operators + '.rig_window'
+    gt_switch_camera_to_fixed_warning_idname = \
+        operators + '.switch_camera_to_fixed_warning_idname'
 
     # Menu ids
     gt_clip_menu_idname = _MT + 'clip_menu'

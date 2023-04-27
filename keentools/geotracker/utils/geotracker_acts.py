@@ -1213,7 +1213,7 @@ def bake_locrot_act(obj: Object) -> ActionStatus:
     obj_animated_frames = get_object_keyframe_numbers(obj)
 
     if len(obj_animated_frames) == 0:
-        obj_animated_frames = scene_frame_list()
+        obj_animated_frames = [bpy_current_frame()]
 
     bake_locrot_to_world(obj, obj_animated_frames)
     _remove_all_constraints(obj)
