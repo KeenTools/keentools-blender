@@ -91,6 +91,7 @@ from .ui_strings import buttons
 from .utils.prechecks import common_checks
 from ..utils.coords import LocRotScale
 from ..utils.manipulate import select_object_only, force_undo_push
+from ..utils.animation import count_fcurve_points, remove_fcurve_from_object
 
 
 _log = KTLogger(__name__)
@@ -1389,16 +1390,33 @@ class GT_OT_RigWindow(Operator):
 
         layout.separator()
         layout.prop(self, 'target_point', text='Empty location')
-        layout.prop(self, 'reset_scale')
-        layout.prop(self, 'keep_orientation')
 
         row = layout.row()
-        row.enabled = self.parent_geometry_active
-        row.prop(self, 'parent_geometry')
+        row.label(text='Match')
+        row.prop(self, 'keep_orientation', text='Rotation')
+        row.prop(self, 'reset_scale', text='Scale', invert_checkbox=True)
 
         row = layout.row()
-        row.enabled = self.parent_camera_active
-        row.prop(self, 'parent_camera')
+        row.label(text='Parent')
+
+        btn = row.column()
+        btn.enabled = self.parent_geometry_active
+        btn.prop(self, 'parent_geometry', text='Geometry')
+
+        btn = row.column()
+        btn.enabled = self.parent_camera_active
+        btn.prop(self, 'parent_camera', text='Camera')
+
+        if not self.parent_geometry_active or not self.parent_camera_active:
+            box = layout.box()
+            col = box.column()
+            col.alert = True
+            col.scale_y = Config.text_scale_y
+            msg = ['Parenting is not available for objects '
+                   'that already have a parent.',
+                   'Use \'Bake\' button for safe unparenting objects.']
+            for txt in msg:
+                col.label(text=txt)
 
         layout.separator()
 
@@ -1471,7 +1489,57 @@ class GT_OT_RigWindow(Operator):
             self.parent_camera_active = False
 
         self.done = False
-        return context.window_manager.invoke_props_dialog(self, width=350)
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+
+class GT_OT_SwitchCameraToFixedWarning(Operator):
+    bl_idname = GTConfig.gt_switch_camera_to_fixed_warning_idname
+    bl_label = 'Remove focal length animation'
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def draw(self, context) -> None:
+        layout = self.layout
+        col = layout.column(align=True)
+        col.scale_y = Config.text_scale_y
+        info = ['All your focal length animation will be lost!',
+                'Do you really want to switch to Fixed mode?',
+                ' ',
+                'Click outside of this window to keep your animation data',
+                'or press Ok to remove the animation data '
+                'and switch to Fixed mode.']
+        for txt in info:
+            col.label(text=txt)
+
+    def invoke(self, context, event):
+        check_status = common_checks(is_calculating=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            self.cancel(context)
+            return {'CANCELLED'}
+
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+    def cancel(self, context):
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+        with settings.ui_write_mode_context():
+            geotracker.lens_mode = 'ZOOM'
+
+    def execute(self, context):
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if geotracker.camobj:
+            remove_fcurve_from_object(geotracker.camobj.data, 'lens')
+
+            if geotracker.focal_length_estimation:
+                geotracker.focal_length_mode = 'STATIC_FOCAL_LENGTH'
+            else:
+                count = count_fcurve_points(geotracker.camobj.data, 'lens')
+                if count > 0:
+                    geotracker.focal_length_mode = 'STATIC_FOCAL_LENGTH'
+                else:
+                    geotracker.focal_length_mode = 'CAMERA_FOCAL_LENGTH'
+        return {'FINISHED'}
 
 
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
@@ -1523,4 +1591,5 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_AutoNamePrecalc,
                   GT_OT_RescaleWindow,
                   GT_OT_MoveWindow,
-                  GT_OT_RigWindow)
+                  GT_OT_RigWindow,
+                  GT_OT_SwitchCameraToFixedWarning)

@@ -853,7 +853,7 @@ class GT_PT_AnimationPanel(AllVisible):
             btn.enabled = True
         elif settings.bake_animation_selector == 'GEOMETRY_AND_CAMERA' \
                 and geotracker.geomobj and geotracker.camobj \
-                and geotracker.geomobj.parent and geotracker.camobj.parent:
+                and (geotracker.geomobj.parent or geotracker.camobj.parent):
             btn.enabled = True
         else:
             btn.enabled = False

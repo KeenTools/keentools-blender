@@ -230,9 +230,20 @@ def update_focal_length_mode(geotracker, context: Any) -> None:
 
 def update_lens_mode(geotracker, context: Any=None) -> None:
     _log.output(f'update_lens_mode: {geotracker.lens_mode}')
+    settings = get_gt_settings()
+    if settings.ui_write_mode:
+        return
+
     if geotracker.lens_mode == 'ZOOM':
         geotracker.focal_length_mode = 'ZOOM_FOCAL_LENGTH'
     else:
+        if geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH' and geotracker.camobj:
+            count = count_fcurve_points(geotracker.camobj.data, 'lens')
+            if count > 0:
+                warn = get_operator(GTConfig.gt_switch_camera_to_fixed_warning_idname)
+                warn('INVOKE_DEFAULT')
+                return
+
         if geotracker.focal_length_estimation:
             geotracker.focal_length_mode = 'STATIC_FOCAL_LENGTH'
         else:
@@ -472,22 +483,22 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         return 'NONE'
 
     smoothing_depth_coeff: bpy.props.FloatProperty(
-        default=0.0,
+        default=0.0, min=0.0, max=1.0,
         precision=2,
         name='Z Translation',
         description='smoothing depth coefficient', update=update_smoothing)
     smoothing_focal_length_coeff: bpy.props.FloatProperty(
-        default=0.0,
+        default=0.0, min=0.0, max=1.0,
         precision=2,
         name='Focal Length',
         description='Focal Length coefficient', update=update_smoothing)
     smoothing_rotations_coeff: bpy.props.FloatProperty(
-        default=0.0,
+        default=0.0, min=0.0, max=1.0,
         precision=2,
         name='Rotations',
         description='Rotation coefficient', update=update_smoothing)
     smoothing_xy_translations_coeff: bpy.props.FloatProperty(
-        default=0.0,
+        default=0.0, min=0.0, max=1.0,
         precision=2,
         name='XY Translations',
         description='XY Translation coefficient', update=update_smoothing)
