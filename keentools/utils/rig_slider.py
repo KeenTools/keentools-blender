@@ -19,12 +19,14 @@
 import math
 import bpy
 
-from .bpy_common import link_object_to_current_scene_collection
+from .bpy_common import (link_object_to_current_scene_collection,
+                         bpy_create_object,
+                         bpy_create_empty)
 
 
 def create_label(name, label='Label', size=0.2):
     text_curve = bpy.data.curves.new(name + 'LabelSpline', type='FONT')
-    text_obj = bpy.data.objects.new(name + 'Label', text_curve)
+    text_obj = bpy_create_object(name + 'Label', text_curve)
     text_curve.body = label
     text_curve.size = size
     text_obj.hide_select = True
@@ -47,7 +49,7 @@ def create_rectangle(name, width=1.0, height=0.2):
     pline.points[3].co = (0, 0.5 * height, 0, point_weight)
     pline.use_cyclic_u = True  # closed spline
 
-    obj = bpy.data.objects.new(name, curve)
+    obj = bpy_create_object(name, curve)
     link_object_to_current_scene_collection(obj)
     return obj
 
@@ -55,7 +57,7 @@ def create_rectangle(name, width=1.0, height=0.2):
 def create_slider(name, label='Label', width=1.0, height=0.2):
     rect = create_rectangle(name + 'Rect', width, height)
 
-    control = bpy.data.objects.new(name + 'Slider', None)  # Empty-object
+    control = bpy_create_empty(name + 'Slider')
     link_object_to_current_scene_collection(control)
 
     control.empty_display_type = 'CIRCLE'

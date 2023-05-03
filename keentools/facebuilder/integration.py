@@ -22,7 +22,6 @@ import os
 import tempfile
 from uuid import uuid4
 
-import bpy
 from bpy.types import Operator, Object
 
 from ..utils.kt_logging import KTLogger
@@ -31,7 +30,10 @@ from ..facebuilder_config import FBConfig, get_fb_settings
 from .ui_strings import buttons
 from .fbloader import FBLoader
 from ..utils.manipulate import select_object_only
-from ..utils.bpy_common import bpy_remove_object
+from ..utils.bpy_common import (bpy_create_object,
+                                bpy_remove_object,
+                                bpy_link_to_scene,
+                                bpy_export_fbx)
 
 
 _log = KTLogger(__name__)
@@ -78,8 +80,8 @@ def _create_head() -> Optional[Object]:
                                      uv_set=head.tex_uv_shape,
                                      keyframe=None)
     _revert_masks(fb, masks)
-    obj = bpy.data.objects.new(_cc_headobj_name, mesh)
-    bpy.context.scene.collection.objects.link(obj)
+    obj = bpy_create_object(_cc_headobj_name, mesh)
+    bpy_link_to_scene(obj)
     return obj
 
 
@@ -124,16 +126,16 @@ def _call_cc(cc_path: str) -> ActionStatus:
     modelpath = os.path.join(temp_dir, f'head_{num}.fbx')
 
     try:
-        bpy.ops.export_scene.fbx('EXEC_DEFAULT',
-                                 filepath=modelpath,
-                                 use_selection=True,
-                                 bake_anim_use_all_actions=False,
-                                 bake_anim_use_nla_strips=False,
-                                 add_leaf_bones=False,
-                                 mesh_smooth_type='FACE',
-                                 axis_forward='Y',
-                                 axis_up='Z',
-                                 bake_space_transform=False)
+        bpy_export_fbx('EXEC_DEFAULT',
+                       filepath=modelpath,
+                       use_selection=True,
+                       bake_anim_use_all_actions=False,
+                       bake_anim_use_nla_strips=False,
+                       add_leaf_bones=False,
+                       mesh_smooth_type='FACE',
+                       axis_forward='Y',
+                       axis_up='Z',
+                       bake_space_transform=False)
 
         output = subprocess.Popen([cc_path, '-headshot', modelpath,
                                    '-app', 'FaceBuilder for Blender',
