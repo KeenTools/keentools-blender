@@ -23,7 +23,10 @@ from bpy.types import MovieClip, Image, Scene
 
 from .kt_logging import KTLogger
 from ..addon_config import ActionStatus
-from .bpy_common import operator_with_context, bpy_scene
+from .bpy_common import (operator_with_context,
+                         bpy_scene,
+                         bpy_create_object,
+                         bpy_create_camera_data)
 from .ui_redraw import get_all_areas
 
 
@@ -162,9 +165,9 @@ def convert_movieclip_to_frames(
     strip = sequence_editor.sequences.new_clip('video', movie_clip, 2, 1)
     strip.transform.rotation = orientation * 1.5707963  # pi/2 works worse!
 
-    cam_data = bpy.data.cameras.new('output_cam_data')
+    cam_data = bpy_create_camera_data('output_cam_data')
     cam_data.show_background_images = True
-    cam_ob = bpy.data.objects.new('output_camera', cam_data)
+    cam_ob = bpy_create_object('output_camera', cam_data)
     scene.collection.objects.link(cam_ob)
     scene.camera = cam_ob
 

@@ -45,6 +45,10 @@ def bpy_scene() -> Any:
     return bpy.context.scene
 
 
+def bpy_context() -> Any:
+    return bpy.context
+
+
 def bpy_scene_camera() -> Camera:
     return bpy.context.scene.camera
 
@@ -80,6 +84,10 @@ def bpy_render_frame() -> Tuple[int, int]:
     return w, h
 
 
+def bpy_link_to_scene(obj: Object) -> None:
+    bpy.context.scene.collection.objects.link(obj)
+
+
 def link_object_to_current_scene_collection(obj: Object) -> None:
     act_col = bpy.context.view_layer.active_layer_collection
     index = bpy.data.collections.find(act_col.name)
@@ -90,8 +98,22 @@ def link_object_to_current_scene_collection(obj: Object) -> None:
     col.objects.link(obj)
 
 
+def bpy_create_object(name: str, data: Any) -> Object:
+    obj = bpy.data.objects.new(name, data)
+    return obj
+
+
+def bpy_create_empty(name:str) -> Object:
+    return bpy_create_object(name, None)
+
+
+def bpy_create_camera_data(name: str) -> Any:
+    cam = bpy.data.cameras.new(name)
+    return cam
+
+
 def create_empty_object(name: str) -> Object:
-    control = bpy.data.objects.new(name, None)  # Empty-object
+    control = bpy_create_empty(name)
     link_object_to_current_scene_collection(control)
     control.empty_display_type = 'PLAIN_AXES'
     control.empty_display_size = 2.5
@@ -240,6 +262,10 @@ def bpy_transform_resize(*args, **kwargs) -> None:
 
 def bpy_call_menu(*args, **kwargs) -> None:
     bpy.ops.wm.call_menu(*args, **kwargs)
+
+
+def bpy_export_fbx(*args, **kwargs) -> None:
+    bpy.ops.export_scene.fbx(*args, **kwargs)
 
 
 def get_traceback(skip_last=1) -> str:

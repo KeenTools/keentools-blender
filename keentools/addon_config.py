@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Callable, Optional, Tuple, Set
 import os
 from dataclasses import dataclass
 
@@ -137,19 +137,21 @@ class Config:
         'gt_mask_2d_opacity': {'value': 0.35, 'type': 'float'},
     }
 
-    mock_update_for_testing_flag = False
-    mock_update_version = (int(addon_version.partition('.')[0]), 6, 3)
-    mock_update_addon_path = 'http://localhost/addon.zip'
-    mock_update_core_path = 'http://localhost/core.zip'
-    mock_product = None
+    mock_update_for_testing_flag: bool = False
+    mock_update_version: Tuple[int, int, int] = (int(addon_version.partition('.')[0]), 6, 3)
+    mock_update_addon_path: str = 'http://localhost/addon.zip'
+    mock_update_core_path: str = 'http://localhost/core.zip'
+    mock_product: Optional[str] = None
 
-    hide_geotracker = not 'KEENTOOLS_ENABLE_BLENDER_GEOTRACKER' in os.environ
-    supported_gpu_backends = {'OPENGL', 'Undefined'}  # METAL
-    strict_shader_check = False
-    use_gpu_shaders = True
-    allow_use_gpu_instead_of_bgl = False
+    hide_geotracker: bool = not 'KEENTOOLS_ENABLE_BLENDER_GEOTRACKER' in os.environ
+    supported_gpu_backends: Set = {'OPENGL', 'Undefined'}  # METAL
+    strict_shader_check: bool = False
+    use_gpu_shaders: bool = True
+    allow_use_gpu_instead_of_bgl: bool = False
 
-    kt_convert_video_scene_name = 'gt_convert_video'
+    integration_enabled: bool = True
+
+    kt_convert_video_scene_name: str = 'gt_convert_video'
 
     @classmethod
     def mock_update_for_testing(cls, value: bool=True, *,

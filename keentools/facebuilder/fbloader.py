@@ -33,6 +33,9 @@ from ..utils.other import unhide_viewport_ui_elements_from_object
 from ..utils.ui_redraw import force_ui_redraw
 from .viewport import FBViewport
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..utils.bpy_common import (bpy_create_object,
+                                bpy_create_camera_data,
+                                bpy_link_to_scene)
 
 
 _logger: Any = logging.getLogger(__name__)
@@ -517,8 +520,8 @@ class FBLoader:
         settings = get_fb_settings()
         head = settings.get_head(headnum)
 
-        cam_data = bpy.data.cameras.new(FBConfig.default_fb_camera_data_name)
-        cam_ob = bpy.data.objects.new(FBConfig.default_fb_camera_name, cam_data)
+        cam_data = bpy_create_camera_data(FBConfig.default_fb_camera_data_name)
+        cam_ob = bpy_create_object(FBConfig.default_fb_camera_name, cam_data)
         cam_ob.rotation_euler = FBConfig.default_camera_rotation
         cam_ob.location = (FBConfig.camera_x_step * camnum,
                            - FBConfig.camera_y_step - headnum,
@@ -530,12 +533,12 @@ class FBLoader:
         cam_data.sensor_height = FBConfig.default_sensor_height
         cam_data.show_background_images = True
 
-        col = attrs.get_obj_collection(head.headobj)
-        if col is not None:
-            col.objects.link(cam_ob)  # link to headobj collection
+        headobj_collection = attrs.get_obj_collection(head.headobj)
+        if headobj_collection is not None:
+            headobj_collection.objects.link(cam_ob)
         else:
             _log_error('ERROR IN COLLECTIONS')
-            bpy.context.scene.collection.objects.link(cam_ob)  # Link to Scene
+            bpy_link_to_scene(cam_ob)
 
         return cam_ob
 
