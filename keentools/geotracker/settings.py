@@ -100,6 +100,9 @@ def update_camobj(geotracker, context: Any) -> None:
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=msg)
 
+    set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
+
+
 
 def update_geomobj(geotracker, context: Any) -> None:
     _log.output(f'update_geomobj: {geotracker.geomobj}')
