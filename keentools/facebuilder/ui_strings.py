@@ -247,8 +247,8 @@ buttons = {
     ),
     FBConfig.fb_export_to_cc_idname: Button(
         'Character Creator',
-        'Export to CharacterCreator. '
-        'Requirements: CharacterCreator 4.0, Headshot 2.0'
+        'Export to Character Creator. '
+        'Requirements: Character Creator 4.0, Headshot 2.0'
     ),
     # Help buttons
     FBConfig.fb_help_camera_idname: Button(
