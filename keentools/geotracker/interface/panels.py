@@ -33,7 +33,7 @@ from ...updater.panels import (KTUpdater,
                                KT_PT_UpdatesInstallationPanel)
 from ..gtloader import GTLoader
 from ...utils.localview import exit_area_localview, check_context_localview
-from ...utils.other import force_show_ui_overlays
+from ...utils.viewport_state import force_show_ui_overlays
 from ...utils.bpy_common import bpy_timer_register
 from ...utils.grace_timer import KTGraceTimer
 
@@ -935,5 +935,5 @@ class GT_PT_SmoothingPanel(AllVisible):
         col = layout.column(align=True)
         col.prop(geotracker, 'smoothing_depth_coeff')
         col.prop(geotracker, 'smoothing_xy_translations_coeff')
-        col.prop(geotracker, 'smoothing_focal_length_coeff')
         col.prop(geotracker, 'smoothing_rotations_coeff')
+        col.prop(geotracker, 'smoothing_focal_length_coeff')

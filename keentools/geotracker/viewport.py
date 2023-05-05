@@ -138,7 +138,11 @@ class GTViewport(KTViewport):
 
     def update_surface_points(self, gt: Any, obj: Object, keyframe: int,
                               color: Tuple=GTConfig.surface_point_color) -> None:
-        verts = self.surface_points_from_mesh(gt, obj, keyframe)
+        if obj:
+            verts = self.surface_points_from_mesh(gt, obj, keyframe)
+        else:
+            verts = []
+
         colors = [color] * len(verts)
 
         pins = self.pins()

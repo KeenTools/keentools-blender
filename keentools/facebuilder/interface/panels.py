@@ -37,7 +37,6 @@ from ...utils.manipulate import (has_no_blendshape,
 from ..utils.manipulate import (what_is_state, get_current_head, get_obj_from_context)
 from ...utils.materials import find_bpy_image_by_name
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
-from ...utils.other import unhide_viewport_ui_elements_from_object, force_show_ui_overlays
 from ...utils.localview import exit_area_localview, check_context_localview
 from ...utils.bpy_common import bpy_timer_register
 from ...utils.grace_timer import KTGraceTimer
@@ -86,15 +85,9 @@ def _draw_update_blendshapes_panel(layout):
 def _pinmode_escaper(area: Area, window: Optional[Window],
                      screen: Optional[Screen]) -> None:
     settings = get_fb_settings()
-    head = settings.get_head(settings.current_headnum)
     exit_area_localview(area, window, screen)
     settings.pinmode = False
-
-    if head is None or not head.headobj:
-        _log.error('_pinmode_escaper: could not find head object')
-        force_show_ui_overlays(area)
-    else:
-        unhide_viewport_ui_elements_from_object(area, head.headobj)
+    settings.viewport_state.show_ui_elements(area)
     return None
 
 

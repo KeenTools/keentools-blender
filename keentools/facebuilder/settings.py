@@ -62,6 +62,7 @@ from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_setter)
 from .utils.manipulate import get_current_head
 from ..utils.images import tone_mapping, reset_tone_mapping
+from ..utils.viewport_state import ViewportStateItem
 from ..blender_independent_packages.pykeentools_loader.config import set_mock_update_paths
 
 
@@ -698,6 +699,7 @@ class FBSceneSettings(PropertyGroup):
     license_error: BoolProperty(name="License Error", default=False)
 
     ui_write_mode: bpy.props.BoolProperty(name='UI Write mode', default=False)
+    viewport_state: bpy.props.PointerProperty(type=ViewportStateItem)
     # ---------------------
     # Model View parameters
     # ---------------------

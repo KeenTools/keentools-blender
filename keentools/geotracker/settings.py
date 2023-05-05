@@ -61,6 +61,7 @@ from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_setter)
 from ..utils.animation import count_fcurve_points
 from ..utils.manipulate import select_object_only
+from ..utils.viewport_state import ViewportStateItem
 
 
 _log = KTLogger(__name__)
@@ -642,6 +643,8 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
 class GTSceneSettings(bpy.types.PropertyGroup):
     ui_write_mode: bpy.props.BoolProperty(name='UI Write mode', default=False)
+    viewport_state: bpy.props.PointerProperty(type=ViewportStateItem)
+
     pinmode: bpy.props.BoolProperty(name='Pinmode status', default=False)
     pinmode_id: bpy.props.StringProperty(name='Unique pinmode ID')
 

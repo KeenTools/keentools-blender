@@ -43,7 +43,6 @@ from .gt_class_loader import GTClassLoader
 from ..utils.timer import KTStopShaderTimer
 from ..utils.ui_redraw import force_ui_redraw
 from ..utils.localview import exit_area_localview, check_localview
-from ..utils.other import unhide_viewport_ui_elements_from_object
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
@@ -443,11 +442,13 @@ class GTLoader:
     def update_viewport_wireframe(cls, normals: bool=False) -> None:
         settings = get_gt_settings()
         geotracker = get_current_geotracker_item()
-        if not geotracker or not geotracker.geomobj:
-            return
-
         vp = cls.viewport()
         wf = vp.wireframer()
+        if not geotracker or not geotracker.geomobj:
+            wf.clear_all()
+            wf.create_batches()
+            return
+
         wf.init_geom_data_from_mesh(geotracker.geomobj)
         if normals:
             wf.init_vertex_normals(geotracker.geomobj)
@@ -467,7 +468,7 @@ class GTLoader:
         gt = cls.kt_geotracker()
 
         geotracker = get_current_geotracker_item()
-        if not geotracker or not geotracker.geomobj:
+        if not geotracker:
             return
 
         kid = bpy_current_frame()
@@ -601,6 +602,7 @@ class GTLoader:
                 f'out_pinmode CANNOT OUT FROM LOCALVIEW:\n{str(err)}'))
 
         settings.reset_pinmode_id()
+        settings.viewport_state.show_ui_elements(area)
 
         geotracker = cls.get_geotracker_item()
         if geotracker is None:
@@ -610,8 +612,6 @@ class GTLoader:
             return
 
         geotracker.reset_focal_length_estimation()
-        if geotracker.geomobj:
-            unhide_viewport_ui_elements_from_object(area, geotracker.geomobj)
 
         cls.set_geotracker_item(None)
         _log.output(f'\n--- After out\n{cls.status_info()}')

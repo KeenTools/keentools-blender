@@ -43,8 +43,6 @@ from ..utils.coords import (point_is_in_area,
 from ..utils.manipulate import (force_undo_push,
                                 switch_to_camera,
                                 object_is_on_view_layer)
-from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
-                           unhide_viewport_ui_elements_from_object)
 from ..utils.images import (set_background_image_by_movieclip,
                             set_background_image_mask)
 from ..utils.bpy_common import (bpy_current_frame,
@@ -306,7 +304,7 @@ class GT_OT_PinMode(Operator):
         switch_to_camera(area, geotracker.camobj,
                          geotracker.animatable_object())
 
-        hide_viewport_ui_elements_and_store_on_object(area, geotracker.geomobj)
+        settings.viewport_state.hide_ui_elements(area)
 
     def _switch_to_new_geotracker(self, num: int) -> None:
         _log.output('_switch_to_new_geotracker')
@@ -314,8 +312,7 @@ class GT_OT_PinMode(Operator):
         settings.pinmode = True
 
         area = GTLoader.get_work_area()
-        old_geotracker = settings.get_current_geotracker_item()
-        unhide_viewport_ui_elements_from_object(area, old_geotracker.geomobj)
+        settings.viewport_state.show_ui_elements(area)
 
         self._set_new_geotracker(area, num)
         self._init_pinmode(area)

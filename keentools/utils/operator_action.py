@@ -26,7 +26,6 @@ from ..facebuilder.utils.manipulate import (get_current_headnum,
                                             reconstruct_by_head)
 from .coords import update_head_mesh_non_neutral
 from ..facebuilder.utils.cameras import show_all_cameras
-from .other import unhide_viewport_ui_elements_from_object
 from ..facebuilder.fbloader import FBLoader
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from .blendshapes import (create_facs_blendshapes,
@@ -232,8 +231,7 @@ def unhide_head(operator, context):
             show_all_cameras(headnum)  # legacy scenes only
             head.headobj.hide_set(False)
 
-        if head.headobj:
-            unhide_viewport_ui_elements_from_object(context.area, head.headobj)
+        settings.viewport_state.show_ui_elements(context.area)
         settings.pinmode = False
 
         _log.output('head revealed')

@@ -84,6 +84,13 @@ class KTEdgeShaderBase(KTShaderBase):
     def set_line_width(self, width: float) -> None:
         self.line_width = width
 
+    def clear_all(self) -> None:
+        self.vertices = []
+        self.triangle_indices = []
+        self.edge_vertices = []
+        self.edge_colors = []
+        self.vertices_colors = []
+
 
 class KTEdgeShader2D(KTEdgeShaderBase):
     def __init__(self, target_class: Any):
@@ -712,3 +719,8 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
             shader.uniform_from_name('modelMatrix'),
             self.object_world_matrix.ravel(), 16)
         self.lit_batch.draw(shader)
+
+    def clear_all(self) -> None:
+        super().clear_all()
+        self.lit_edge_vertices = []
+        self.lit_edge_vertex_normals = []

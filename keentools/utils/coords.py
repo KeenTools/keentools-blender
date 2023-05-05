@@ -254,12 +254,6 @@ def get_area_region(area: Area) -> Optional[Any]:
     return area.regions[-1]
 
 
-def get_area_overlay(area: Area) -> Optional[Any]:
-    if not area or not area.spaces.active:
-        return None
-    return area.spaces.active.overlay
-
-
 def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
     if bpy_background_mode():
         context = get_fake_context()

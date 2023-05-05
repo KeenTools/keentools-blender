@@ -15,18 +15,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
 
-import bpy
+from typing import Any, Tuple, List
 import numpy as np
 
+import bpy
+from bpy.types import Object, Material
+
+from .kt_logging import KTLogger
 from ..facebuilder_config import FBConfig, get_fb_settings
 from ..facebuilder.fbloader import FBLoader
 from ..utils.images import load_rgba, find_bpy_image_by_name, assign_pixels_data
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from .bpy_common import bpy_progress_begin, bpy_progress_end, bpy_progress_update
 
 
-def switch_to_mode(mode='MATERIAL'):
+_log = KTLogger(__name__)
+
+
+def switch_to_mode(mode: str='MATERIAL') -> None:
     areas = bpy.context.workspace.screens[0].areas
     for area in areas:
         for space in area.spaces:
@@ -34,7 +41,7 @@ def switch_to_mode(mode='MATERIAL'):
                 space.shading.type = mode
 
 
-def toggle_mode(modes=('SOLID', 'MATERIAL')):
+def toggle_mode(modes: Tuple[str]=('SOLID', 'MATERIAL')) -> None:
     areas = bpy.context.workspace.screens[0].areas
     for area in areas:
         for space in area.spaces:
@@ -49,14 +56,14 @@ def toggle_mode(modes=('SOLID', 'MATERIAL')):
                 space.shading.type = modes[ind]
 
 
-def assign_material_to_object(obj, mat):
+def assign_material_to_object(obj: Object, mat: Material):
     if obj.data.materials:
         obj.data.materials[0] = mat
     else:
         obj.data.materials.append(mat)
 
 
-def get_mat_by_name(mat_name):
+def get_mat_by_name(mat_name: str) -> Material:
     if bpy.data.materials.find(mat_name) >= 0:
         return bpy.data.materials[mat_name]
 
@@ -65,20 +72,21 @@ def get_mat_by_name(mat_name):
     return new_mat
 
 
-def get_shader_node(mat, find_type, create_name):
+def get_shader_node(mat: Material, find_type: str,
+                    create_name: str) -> Material:
     for node in mat.node_tree.nodes:
         if node.type == find_type:
             return node
     return mat.node_tree.nodes.new(create_name)
 
 
-def remove_mat_by_name(name):
+def remove_mat_by_name(name: str) -> None:
     mat_num = bpy.data.materials.find(name)
     if mat_num >= 0:
         bpy.data.materials.remove(bpy.data.materials[mat_num])
 
 
-def show_texture_in_mat(tex_name, mat_name):
+def show_texture_in_mat(tex_name: str, mat_name: str) -> Material:
     tex = find_bpy_image_by_name(tex_name)
     mat = get_mat_by_name(mat_name)
     principled_node = get_shader_node(
@@ -94,17 +102,15 @@ def show_texture_in_mat(tex_name, mat_name):
     return mat
 
 
-def remove_bpy_texture_if_exists(tex_name):
-    logger = logging.getLogger(__name__)
+def remove_bpy_texture_if_exists(tex_name: str) -> None:
     tex_num = bpy.data.images.find(tex_name)
     if tex_num >= 0:
-        logger.debug("TEXTURE WITH THAT NAME ALREADY EXISTS. REMOVING")
+        _log.output('TEXTURE WITH THAT NAME ALREADY EXISTS. REMOVING')
         existing_tex = bpy.data.images[tex_num]
         bpy.data.images.remove(existing_tex)
 
 
-def _create_bpy_texture_from_img(img, tex_name):
-    logger = logging.getLogger(__name__)
+def _create_bpy_texture_from_img(img: Any, tex_name: str) -> None:
     assert(len(img.shape) == 3 and img.shape[2] == 4)
 
     remove_bpy_texture_if_exists(tex_name)
@@ -116,22 +122,22 @@ def _create_bpy_texture_from_img(img, tex_name):
     try:
         tex.colorspace_settings.name = 'sRGB'
     except TypeError as err:
-        logger.error('_create_bpy_texture_from_img '
-                     'color space sRGB is not found: {}'.format(str(err)))
+        _log.error(f'_create_bpy_texture_from_img '
+                   f'color space sRGB is not found:\n{str(err)}')
     assign_pixels_data(tex.pixels, img.ravel())
     tex.pack()
 
-    logger.debug("TEXTURE BAKED SUCCESSFULLY")
+    _log.output('TEXTURE BAKED SUCCESSFULLY')
 
 
-def _cam_image_data_exists(cam):
+def _cam_image_data_exists(cam: Any) -> bool:
     if not cam.cam_image:
         return False
     w, h = cam.cam_image.size[:2]
     return w > 0 and h > 0
 
 
-def _get_fb_for_bake_tex(headnum, head):
+def _get_fb_for_bake_tex(headnum: int, head: Any) -> Any:
     FBLoader.load_model(headnum)
     fb = FBLoader.get_builder()
     for i, m in enumerate(head.get_masks()):
@@ -141,14 +147,14 @@ def _get_fb_for_bake_tex(headnum, head):
     return fb
 
 
-def _sRGB_to_linear(img):
+def _sRGB_to_linear(img: Any) -> Any:
     img_rgb = img[:, :, :3]
     img_rgb[img_rgb < 0.04045] = 25 * img_rgb[img_rgb < 0.04045] / 323
     img_rgb[img_rgb >= 0.04045] = ((200 * img_rgb[img_rgb >= 0.04045] + 11) / 211) ** (12 / 5)
     return img
 
 
-def _create_frame_data_loader(settings, head, camnums, fb):
+def _create_frame_data_loader(head: Any, camnums: List, fb: Any) -> Any:
     def frame_data_loader(kf_idx):
         cam = head.cameras[camnums[kf_idx]]
         cam.reset_tone_mapping()
@@ -167,13 +173,12 @@ def _create_frame_data_loader(settings, head, camnums, fb):
     return frame_data_loader
 
 
-def bake_tex(headnum, tex_name):
-    logger = logging.getLogger(__name__)
+def bake_tex(headnum: int, tex_name: str) -> bool:
     settings = get_fb_settings()
     head = settings.get_head(headnum)
 
     if not head.has_cameras():
-        logger.debug("NO CAMERAS ON HEAD")
+        _log.output('NO CAMERAS ON HEAD')
         return False
 
     camnums = [cam_idx for cam_idx, cam in enumerate(head.cameras)
@@ -183,18 +188,17 @@ def bake_tex(headnum, tex_name):
 
     frames_count = len(camnums)
     if frames_count == 0:
-        logger.debug("NO FRAMES FOR TEXTURE BUILDING")
+        _log.output('NO FRAMES FOR TEXTURE BUILDING')
         return False
     
     fb = _get_fb_for_bake_tex(headnum, head)
-    frame_data_loader = _create_frame_data_loader(
-        settings, head, camnums, fb)
+    frame_data_loader = _create_frame_data_loader(head, camnums, fb)
 
-    bpy.context.window_manager.progress_begin(0, 1)
+    bpy_progress_begin(0, 1)
 
     class ProgressCallBack(pkt_module().ProgressCallback):
         def set_progress_and_check_abort(self, progress):
-            bpy.context.window_manager.progress_update(progress)
+            bpy_progress_update(progress)
             return False
 
     progress_callBack = ProgressCallBack()
@@ -203,7 +207,7 @@ def bake_tex(headnum, tex_name):
         settings.tex_height, settings.tex_width, settings.tex_face_angles_affection,
         settings.tex_uv_expand_percents, settings.tex_back_face_culling,
         settings.tex_equalize_brightness, settings.tex_equalize_colour, settings.tex_fill_gaps)
-    bpy.context.window_manager.progress_end()
+    bpy_progress_end()
 
     _create_bpy_texture_from_img(built_texture, tex_name)
     return True

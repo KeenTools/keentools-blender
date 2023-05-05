@@ -16,11 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy
-
 from ...utils.kt_logging import KTLogger
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...geotracker_config import get_gt_settings
+from ...utils.bpy_common import bpy_progress_update
 
 
 _log = KTLogger(__name__)
@@ -36,7 +35,7 @@ class TRProgressCallBack(pkt_module().TrackerProgressCallback):
 
     def set_progress_and_check_abort(self, progress):
         _log.output(f'set_progress_and_check_abort: {progress}')
-        bpy.context.window_manager.progress_update(progress)
+        bpy_progress_update(progress)
         self.last_progress = progress
         self.counter += 1
         assert not self.start <= progress <= self.end
@@ -53,7 +52,7 @@ class RFProgressCallBack(pkt_module().RefineProgressCallback):
         self.total_frames = 100
 
     def set_progress_and_check_abort(self, progress):
-        bpy.context.window_manager.progress_update(progress)
+        bpy_progress_update(progress)
         self.refined_frames += 1
         _log.output('Refine set_progress_and_check_abort: {}'.format(progress))
         _log.output(_log.color(
