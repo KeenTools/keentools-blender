@@ -32,7 +32,6 @@ from ..utils.focal_length import (configure_focal_mode_and_fixes,
 from ..utils.attrs import mark_keentools_object, get_obj_collection
 from ..facebuilder.utils.exif_reader import reload_all_camera_exif
 from ..utils.timer import KTStopShaderTimer
-from ..utils.other import unhide_viewport_ui_elements_from_object
 from ..utils.ui_redraw import force_ui_redraw
 from .viewport import FBViewport
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
@@ -150,7 +149,8 @@ class FBLoader:
                 area = bpy.context.area
                 _log.output('working area was redefined from context')
             _log.output(f'out_pinmode_without_save area={area}')
-            unhide_viewport_ui_elements_from_object(area, head.headobj)
+            settings.viewport_state.show_ui_elements(area)
+
         settings.pinmode = False
         _log.output('OUT PINMODE')
         camera = head.get_camera(settings.current_camnum)

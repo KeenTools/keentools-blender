@@ -46,7 +46,6 @@ from ..utils.coords import (update_head_mesh_non_neutral,
 from .utils.manipulate import push_head_in_undo_history
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
-from ..utils.other import hide_viewport_ui_elements_and_store_on_object
 from ..utils.html import split_long_string
 from ..utils.localview import exit_area_localview, check_area_active_problem
 from ..utils.manipulate import switch_to_camera, center_viewports_on_object
@@ -395,7 +394,7 @@ class FB_OT_PinMode(Operator):
 
         self._init_wireframer_colors()
         if first_start:
-            hide_viewport_ui_elements_and_store_on_object(context.area, headobj)
+            settings.viewport_state.hide_ui_elements(context.area)
 
             _log.output('START FB SHADERS')
             self._change_wireframe_visibility(toggle=False, value=True)

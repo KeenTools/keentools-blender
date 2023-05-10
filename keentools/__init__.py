@@ -164,13 +164,15 @@ else:
     from .preferences import CLASSES_TO_REGISTER as PREFERENCES_CLASSES
     from .facebuilder import facebuilder_register, facebuilder_unregister
     from .geotracker import geotracker_register, geotracker_unregister
+    from .utils.viewport_state import ViewportStateItem
     from .utils.warning import KT_OT_AddonWarning
     from .utils.common_operators import CLASSES_TO_REGISTER as COMMON_OPERATOR_CLASSES
     from .updater import CLASSES_TO_REGISTER as UPDATER_CLASSES
 
 
     CLASSES_TO_REGISTER = PREFERENCES_CLASSES + UPDATER_CLASSES + \
-                          COMMON_OPERATOR_CLASSES + (KT_OT_AddonWarning,)
+                          COMMON_OPERATOR_CLASSES + (ViewportStateItem,
+                                                     KT_OT_AddonWarning,)
 
 
     def register():

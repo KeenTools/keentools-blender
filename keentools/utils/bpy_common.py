@@ -268,5 +268,17 @@ def bpy_export_fbx(*args, **kwargs) -> None:
     bpy.ops.export_scene.fbx(*args, **kwargs)
 
 
+def bpy_progress_begin(start_val: float=0, end_val: float=1) -> None:
+    bpy.context.window_manager.progress_begin(start_val, end_val)
+
+
+def bpy_progress_end() -> None:
+    bpy.context.window_manager.progress_end()
+
+
+def bpy_progress_update(progress: float) -> None:
+    bpy.context.window_manager.progress_update(progress)
+
+
 def get_traceback(skip_last=1) -> str:
     return ''.join(traceback.format_stack()[:-skip_last])

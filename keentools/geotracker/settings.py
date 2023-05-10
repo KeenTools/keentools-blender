@@ -61,6 +61,7 @@ from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_setter)
 from ..utils.animation import count_fcurve_points
 from ..utils.manipulate import select_object_only
+from ..utils.viewport_state import ViewportStateItem
 
 
 _log = KTLogger(__name__)
@@ -98,6 +99,9 @@ def update_camobj(geotracker, context: Any) -> None:
         warn = get_operator(Config.kt_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=msg)
+
+    set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
+
 
 
 def update_geomobj(geotracker, context: Any) -> None:
@@ -642,6 +646,8 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
 class GTSceneSettings(bpy.types.PropertyGroup):
     ui_write_mode: bpy.props.BoolProperty(name='UI Write mode', default=False)
+    viewport_state: bpy.props.PointerProperty(type=ViewportStateItem)
+
     pinmode: bpy.props.BoolProperty(name='Pinmode status', default=False)
     pinmode_id: bpy.props.StringProperty(name='Unique pinmode ID')
 

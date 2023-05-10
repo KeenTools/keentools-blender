@@ -19,13 +19,15 @@
 import numpy as np
 from typing import Any, List, Optional
 
-import bpy
 from bpy.types import Object, Area
 
 from ...utils.kt_logging import KTLogger
 from ...utils.bpy_common import (bpy_current_frame,
                                  bpy_set_current_frame,
-                                 bpy_timer_register)
+                                 bpy_timer_register,
+                                 bpy_progress_begin,
+                                 bpy_progress_end,
+                                 bpy_progress_update)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.mesh_builder import build_geo
 from ...utils.images import np_array_from_background_image
@@ -43,7 +45,6 @@ from ...addon_config import get_operator
 from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
 from .prechecks import prepare_camera
-from ...utils.other import unhide_viewport_ui_elements_from_object
 from ...utils.localview import exit_area_localview
 
 
@@ -75,19 +76,19 @@ def bake_texture(geotracker: Any, selected_frames: List[int],
 
     class ProgressCallBack(pkt_module().ProgressCallback):
         def set_progress_and_check_abort(self, progress):
-            bpy.context.window_manager.progress_update(progress)
+            bpy_progress_update(progress)
             return False
 
     progress_callBack = ProgressCallBack()
 
     current_frame = bpy_current_frame()
-    bpy.context.window_manager.progress_begin(0, 1)
+    bpy_progress_begin(0, 1)
     built_texture = pkt_module().texture_builder.build_texture(
         len(selected_frames),
         _create_frame_data_loader(geotracker, selected_frames),
         progress_callBack, tex_height, tex_width, face_angles_affection=3.0)
 
-    bpy.context.window_manager.progress_end()
+    bpy_progress_end()
 
     bpy_set_current_frame(current_frame)
     return built_texture
@@ -121,7 +122,7 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
         if tex is not None:
             remove_bpy_image(tex)
         if not settings.pinmode:
-            unhide_viewport_ui_elements_from_object(area, geotracker.camobj)
+            settings.viewport_state.show_ui_elements(area)
             exit_area_localview(area)
         settings.user_interrupts = True
 

@@ -26,7 +26,6 @@ from ...utils.kt_logging import KTLogger
 from ...addon_config import get_operator
 from ...geotracker_config import get_gt_settings, GTConfig
 from ..gtloader import GTLoader
-from ...utils.other import unhide_viewport_ui_elements_from_object
 from ...utils.manipulate import exit_area_localview
 from ...utils.ui_redraw import force_ui_redraw
 from ...utils.bpy_common import (bpy_current_frame,
@@ -96,15 +95,14 @@ class CalcTimer(TimerMixin):
         GTLoader.viewport().revert_default_screen_message(
             unregister=not settings.pinmode)
 
-        geotracker = settings.get_current_geotracker_item()
         if not settings.pinmode:
             area = self.get_area()
-            unhide_viewport_ui_elements_from_object(area, geotracker.camobj)
+            settings.viewport_state.show_ui_elements(area)
             exit_area_localview(area)
+
         settings.user_interrupts = True
         bpy_set_current_frame(self._start_frame)
         force_ui_redraw('VIEW_3D')
-
         _log.info('Calculation is over: {:.2f} sec.'.format(
                   time.time() - self._start_time))
 
