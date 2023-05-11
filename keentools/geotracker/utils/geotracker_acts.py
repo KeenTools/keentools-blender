@@ -849,10 +849,7 @@ def revert_default_render_act() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-_stored_data: Dict = {
-    'geomobj_matrix_world': Matrix.Identity(4),
-    'camobj_matrix_world': Matrix.Identity(4),
-}
+_stored_data: Dict = {}
 
 
 def store_data(name: str, mat: Any) -> None:
@@ -870,12 +867,14 @@ def get_stored_data(name: str) -> Any:
 
 
 def store_camobj_state(operator: Operator, camobj: Object) -> None:
+    store_data('camobj_matrix_basis', camobj.matrix_basis.copy())
     store_data('camobj_matrix_world', camobj.matrix_world.copy())
     store_data('camobj_scale', camobj.scale.copy())
     operator.cam_scale = camobj.scale
 
 
 def store_geomobj_state(operator: Operator, geomobj: Object) -> None:
+    store_data('geomobj_matrix_basis', geomobj.matrix_basis.copy())
     store_data('geomobj_matrix_world', geomobj.matrix_world.copy())
     store_data('geomobj_scale', geomobj.scale.copy())
     operator.geom_scale = geomobj.scale
@@ -890,8 +889,8 @@ def revert_object_states() -> bool:
     if not geomobj or not camobj:
         return False
 
-    geomobj.matrix_world = get_stored_data('geomobj_matrix_world').copy()
-    camobj.matrix_world = get_stored_data('camobj_matrix_world').copy()
+    geomobj.matrix_basis = get_stored_data('geomobj_matrix_basis').copy()
+    camobj.matrix_basis = get_stored_data('camobj_matrix_basis').copy()
     return True
 
 
