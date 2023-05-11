@@ -103,7 +103,6 @@ def update_camobj(geotracker, context: Any) -> None:
     set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
 
 
-
 def update_geomobj(geotracker, context: Any) -> None:
     _log.output(f'update_geomobj: {geotracker.geomobj}')
     settings = get_gt_settings()

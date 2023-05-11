@@ -483,7 +483,13 @@ class GTLoader:
                                 pins_and_residuals: bool=True,
                                 timeline: bool=True,
                                 mask: bool=False) -> None:
-        _log.output(_log.color('blue', 'update_viewport_shaders'))
+        _log.output(_log.color('blue', f'update_viewport_shaders'
+            f'\ngeomobj_matrix: {geomobj_matrix}'
+            f' -- wireframe: {wireframe}'
+            f' -- normals: {normals}'
+            f'\npins_and_residuals: {pins_and_residuals}'
+            f' -- timeline: {timeline}'
+            f' -- mask: {mask}'))
         if area is None:
             vp = cls.viewport()
             area = vp.get_work_area()

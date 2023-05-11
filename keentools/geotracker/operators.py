@@ -71,8 +71,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     revert_default_render_act,
                                     store_camobj_state,
                                     store_geomobj_state,
-                                    get_stored_camobj_matrix,
-                                    get_stored_geomobj_matrix,
+                                    get_stored_data,
                                     scale_scene_tracking_preview_func,
                                     revert_object_states,
                                     scale_scene_tracking_act,
@@ -1204,6 +1203,7 @@ class GT_OT_RescaleWindow(Operator):
 
 
 def _move_preview_func(operator, context):
+    _log.output('_move_preview_func')
     revert_object_states()
     transform_matrix = get_operator_reposition_matrix(operator)
 
@@ -1217,6 +1217,7 @@ def _move_preview_func(operator, context):
 
 
 def _update_move_target_point(operator, context):
+    _log.output('_update_move_target_point')
     if operator.no_updates:
         return
     operator.no_updates = True
@@ -1233,16 +1234,18 @@ def _update_move_target_point(operator, context):
 
 
 def _update_move_mode(operator, context):
+    _log.output('_update_move_mode')
     if operator.no_updates:
         return
-    mat = get_stored_camobj_matrix() if operator.mode == 'CAMERA' else \
-        get_stored_geomobj_matrix()
+    mat = get_stored_data('camobj_matrix_world') if operator.mode == 'CAMERA' else \
+        get_stored_data('geomobj_matrix_world')
     t, r, s = mat.decompose()
     operator.location = t
     operator.euler_rotation = r.to_euler()
 
 
 def _update_move_coords(operator, context):
+    _log.output('_update_move_coords')
     if operator.no_updates:
         return
     operator.target_point = 'CUSTOM'
@@ -1296,6 +1299,7 @@ class GT_OT_MoveWindow(Operator):
         layout.separator()
 
     def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
         self.done = True
         act_status = move_scene_tracking_act(self)
         if not act_status.success:
@@ -1304,10 +1308,12 @@ class GT_OT_MoveWindow(Operator):
         return {'FINISHED'}
 
     def cancel(self, context):
+        _log.output(f'{self.__class__.__name__} cancel')
         self.done = True
         revert_object_states()
 
     def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke')
         check_status = common_checks(object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True,
