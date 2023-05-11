@@ -151,8 +151,10 @@ class GT_OT_MovePin(bpy.types.Operator):
         new_focal_length = focal_mm_to_px(
             camera_focal_length(geotracker.camobj),
             *bpy_render_frame(), camera_sensor_width(geotracker.camobj))
-        _log.output(_log.color('red',
-                               f'old: {self.old_focal_length} new: {new_focal_length}'))
+
+        _log.output(_log.color('red', f'old: {self.old_focal_length} '
+                                      f'new: {new_focal_length}'))
+
         if self.old_focal_length != new_focal_length:
             current_frame = bpy_current_frame()
             settings.calculating_mode = 'ESTIMATE_FL'
