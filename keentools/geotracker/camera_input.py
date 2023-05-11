@@ -68,12 +68,36 @@ class GTCameraInput(pkt_module().TrackerCameraInputI):
 
 
 class GTGeoInput(pkt_module().GeoInputI):
+    _previous_val: int = 0
+
+    @classmethod
+    def _set_previous_val(cls, val):
+        cls._previous_val = val
+
+    def _rounded(self, val: float) -> int:
+        return int(round(val, 0))
+
     def geo_hash(self) -> Any:
         settings = get_gt_settings()
+
+        if settings.is_calculating() and self._previous_val != 0:
+            return pkt_module().Hash(self._previous_val)
+
         geotracker = settings.get_current_geotracker_item()
-        vert_count = len(geotracker.geomobj.data.vertices) \
-            if geotracker and geotracker.geomobj else 0
-        val = abs(hash(settings.pinmode_id) + vert_count)
+        if geotracker and geotracker.geomobj:
+            vert_count = len(geotracker.geomobj.data.vertices)
+            scale = geotracker.geomobj.matrix_world.to_scale()
+            scale_val = self._rounded(scale[0] * 3000) + \
+                        self._rounded(scale[1] * 3700) + \
+                        self._rounded(scale[2] * 3920)
+        else:
+            vert_count = 0
+            scale_val = 0
+
+        val = abs(hash(settings.pinmode_id) + vert_count + scale_val)
+        if val != self._previous_val:
+            _log.output(_log.color('magenta', 'geo_hash changed'))
+            self._set_previous_val(val)
         return pkt_module().Hash(val)
 
     def geo(self) -> Any:
