@@ -18,6 +18,7 @@
 
 import numpy as np
 from typing import Any, Tuple, List, Dict, Optional
+from math import frexp
 
 from ..utils.kt_logging import KTLogger
 from ..geotracker_config import get_gt_settings, get_current_geotracker_item
@@ -75,7 +76,8 @@ class GTGeoInput(pkt_module().GeoInputI):
         cls._previous_val = val
 
     def _rounded(self, val: float) -> int:
-        return int(round(val, 0))
+        p = frexp(val)
+        return int(round(p[0] * 10000, 0) + 3 * p[1])
 
     def geo_hash(self) -> Any:
         settings = get_gt_settings()
@@ -87,9 +89,9 @@ class GTGeoInput(pkt_module().GeoInputI):
         if geotracker and geotracker.geomobj:
             vert_count = len(geotracker.geomobj.data.vertices)
             scale = geotracker.geomobj.matrix_world.to_scale()
-            scale_val = self._rounded(scale[0] * 3000) + \
-                        self._rounded(scale[1] * 3700) + \
-                        self._rounded(scale[2] * 3920)
+            scale_val = self._rounded(29 * scale[0]) + \
+                        self._rounded(31 * scale[1]) + \
+                        self._rounded(37 * scale[2])
         else:
             vert_count = 0
             scale_val = 0

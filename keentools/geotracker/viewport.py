@@ -260,7 +260,12 @@ class GTViewport(KTViewport):
             return
 
         projection = gt.projection_mat(keyframe).T
-        m = camobj.matrix_world.inverted()
+        try:
+            m = camobj.matrix_world.inverted()
+        except Exception as err:
+            _log.error(f'update_residuals Exception:\n{str(err)}'
+                       f'\n{camobj.matrix_world}')
+            return
         # Object transform, inverse camera, projection apply -> numpy
         transform = np.array(m.transposed()) @ projection
 

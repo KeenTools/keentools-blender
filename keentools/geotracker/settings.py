@@ -580,6 +580,8 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
         geom_mw = self.geomobj.matrix_world
         geom_scale_vec = get_scale_vec_4_from_matrix_world(geom_mw)
+        if not geom_scale_vec.all():
+            return np.eye(4)
         geom_scale_inv = np.diag(1.0 / geom_scale_vec)
         geom_mat = np.array(geom_mw, dtype=np.float32) @ geom_scale_inv
 
