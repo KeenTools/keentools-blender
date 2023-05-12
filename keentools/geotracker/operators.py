@@ -24,6 +24,7 @@ from bpy.props import (BoolProperty,
                        IntProperty,
                        FloatProperty,
                        FloatVectorProperty,
+                       StringProperty,
                        EnumProperty,
                        PointerProperty)
 from mathutils import Matrix, Quaternion
@@ -1147,6 +1148,17 @@ def _update_rescale_mode(operator, context):
         operator.keep_cam_scale = True
 
 
+def draw_constraint_warning_message(layout, warning_message):
+    col = layout.column(align=True)
+    col.scale_y = Config.text_scale_y
+    col.alert = True
+    col.label(text=warning_message)
+    info = ['Objects with constraints can lead to unpredictable results.',
+            'Click outside operator window to safe cancel this operation.']
+    for txt in info:
+        col.label(text=txt)
+
+
 class GT_OT_RescaleWindow(Operator):
     bl_idname = GTConfig.gt_rescale_window_idname
     bl_label = 'Scale'
@@ -1175,6 +1187,7 @@ class GT_OT_RescaleWindow(Operator):
     ], update=_rescale_preview_func)
 
     done: BoolProperty(default=False)
+    warning_message: StringProperty(default='')
 
     def _draw_scale_slider(self, layout):
         row = layout.row()
@@ -1207,7 +1220,11 @@ class GT_OT_RescaleWindow(Operator):
             layout.label(text='Operator has been done')
             return
 
-        layout.separator()
+        if self.warning_message != '':
+            draw_constraint_warning_message(layout, self.warning_message)
+        else:
+            layout.separator()
+
         layout.prop(self, 'mode', expand=True)
 
         if self.mode == 'GEOMETRY':
@@ -1242,6 +1259,10 @@ class GT_OT_RescaleWindow(Operator):
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
+
+        check_status = common_checks(constraints=True)
+        self.warning_message = '' if check_status.success else \
+            check_status.error_message
 
         geotracker = get_current_geotracker_item()
         store_camobj_state(self, geotracker.camobj)
@@ -1328,6 +1349,7 @@ class GT_OT_MoveWindow(Operator):
                                         subtype='EULER',
                                         update=_update_move_coords)
     done: BoolProperty(default=False)
+    warning_message: StringProperty(default='')
 
     def draw(self, context) -> None:
         layout = self.layout
@@ -1335,7 +1357,11 @@ class GT_OT_MoveWindow(Operator):
             layout.label(text='Operator has been done')
             return
 
-        layout.separator()
+        if self.warning_message != '':
+            draw_constraint_warning_message(layout, self.warning_message)
+        else:
+            layout.separator()
+
         layout.prop(self, 'mode', expand=True)
 
         layout.prop(self, 'target_point', text='Preset')
@@ -1372,6 +1398,10 @@ class GT_OT_MoveWindow(Operator):
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
+
+        check_status = common_checks(constraints=True)
+        self.warning_message = '' if check_status.success else \
+            check_status.error_message
 
         geotracker = get_current_geotracker_item()
         store_camobj_state(self, geotracker.camobj)
