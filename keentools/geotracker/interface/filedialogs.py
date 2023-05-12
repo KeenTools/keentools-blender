@@ -40,18 +40,12 @@ from ...utils.video import (convert_movieclip_to_frames,
                             load_movieclip,
                             load_image_sequence,
                             get_movieclip_duration)
-from ..gtloader import GTLoader
 from ...utils.bpy_common import (bpy_start_frame,
                                  bpy_end_frame,
                                  bpy_current_frame)
-from ..utils.textures import (bake_texture,
-                              preview_material_with_texture,
-                              bake_texture_sequence)
-from ..utils.prechecks import common_checks, prepare_camera, revert_camera
+from ..utils.textures import bake_texture_sequence
+from ..utils.prechecks import common_checks
 from ..ui_strings import buttons
-from ..utils.geotracker_acts import (check_uv_exists,
-                                     check_uv_overlapping,
-                                     bake_texture_from_frames_act)
 
 
 _log = KTLogger(__name__)

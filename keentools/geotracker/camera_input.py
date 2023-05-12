@@ -18,6 +18,7 @@
 
 import numpy as np
 from typing import Any, Tuple, List, Dict, Optional
+from math import frexp
 
 from ..utils.kt_logging import KTLogger
 from ..geotracker_config import get_gt_settings, get_current_geotracker_item
@@ -68,12 +69,37 @@ class GTCameraInput(pkt_module().TrackerCameraInputI):
 
 
 class GTGeoInput(pkt_module().GeoInputI):
+    _previous_val: int = 0
+
+    @classmethod
+    def _set_previous_val(cls, val):
+        cls._previous_val = val
+
+    def _rounded(self, val: float) -> int:
+        p = frexp(val)
+        return int(round(p[0] * 10000, 0) + 3 * p[1])
+
     def geo_hash(self) -> Any:
         settings = get_gt_settings()
+
+        if settings.is_calculating() and self._previous_val != 0:
+            return pkt_module().Hash(self._previous_val)
+
         geotracker = settings.get_current_geotracker_item()
-        vert_count = len(geotracker.geomobj.data.vertices) \
-            if geotracker and geotracker.geomobj else 0
-        val = abs(hash(settings.pinmode_id) + vert_count)
+        if geotracker and geotracker.geomobj:
+            vert_count = len(geotracker.geomobj.data.vertices)
+            scale = geotracker.geomobj.matrix_world.to_scale()
+            scale_val = self._rounded(29 * scale[0]) + \
+                        self._rounded(31 * scale[1]) + \
+                        self._rounded(37 * scale[2])
+        else:
+            vert_count = 0
+            scale_val = 0
+
+        val = abs(hash(settings.pinmode_id) + vert_count + scale_val)
+        if val != self._previous_val:
+            _log.output(_log.color('magenta', 'geo_hash changed'))
+            self._set_previous_val(val)
         return pkt_module().Hash(val)
 
     def geo(self) -> Any:

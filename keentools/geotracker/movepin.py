@@ -39,6 +39,7 @@ from ..utils.coords import (get_image_space_coord,
                             camera_sensor_width)
 from ..utils.manipulate import force_undo_push
 from ..utils.bpy_common import (bpy_current_frame,
+                                bpy_set_current_frame,
                                 get_scene_camera_shift,
                                 bpy_render_frame)
 from .ui_strings import buttons
@@ -150,14 +151,18 @@ class GT_OT_MovePin(bpy.types.Operator):
         new_focal_length = focal_mm_to_px(
             camera_focal_length(geotracker.camobj),
             *bpy_render_frame(), camera_sensor_width(geotracker.camobj))
-        _log.output(_log.color('red',
-                               f'old: {self.old_focal_length} new: {new_focal_length}'))
+
+        _log.output(_log.color('red', f'old: {self.old_focal_length} '
+                                      f'new: {new_focal_length}'))
+
         if self.old_focal_length != new_focal_length:
+            current_frame = bpy_current_frame()
             settings.calculating_mode = 'ESTIMATE_FL'
             gt = GTLoader.kt_geotracker()
             gt.recalculate_model_for_new_focal_length(self.old_focal_length,
                                                       new_focal_length, False,
-                                                      bpy_current_frame())
+                                                      current_frame)
+            bpy_set_current_frame(current_frame)
             settings.stop_calculating()
             _log.output('FOCAL LENGTH CHANGED')
 

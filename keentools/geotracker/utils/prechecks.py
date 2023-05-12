@@ -101,7 +101,8 @@ def common_checks(*, object_mode: bool=False,
                   geotracker: bool=False,
                   camera: bool=False,
                   geometry: bool=False,
-                  movie_clip: bool=False) -> ActionStatus:
+                  movie_clip: bool=False,
+                  constraints: bool=False) -> ActionStatus:
 
     if object_mode:
         if not hasattr(bpy.context, 'mode'):
@@ -151,6 +152,23 @@ def common_checks(*, object_mode: bool=False,
         msg = 'GeoTracker movie clip is not found'
         _log.error(msg)
         return ActionStatus(False, msg)
+    if constraints:
+        if not geotracker_item.camobj:
+            msg = 'GeoTracker does not contain Camera object!'
+            _log.error(msg)
+            return ActionStatus(False, msg)
+        if len(geotracker_item.camobj.constraints) != 0:
+            msg = 'Camera object has constraints!'
+            _log.error(msg)
+            return ActionStatus(False, msg)
+        if not geotracker_item.geomobj:
+            msg = 'GeoTracker does not contain Geometry object!'
+            _log.error(msg)
+            return ActionStatus(False, msg)
+        if len(geotracker_item.geomobj.constraints) != 0:
+            msg = 'Geometry object has constraints!'
+            _log.error(msg)
+            return ActionStatus(False, msg)
     return ActionStatus(True, 'Checks have been passed')
 
 

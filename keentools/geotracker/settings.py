@@ -103,7 +103,6 @@ def update_camobj(geotracker, context: Any) -> None:
     set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
 
 
-
 def update_geomobj(geotracker, context: Any) -> None:
     _log.output(f'update_geomobj: {geotracker.geomobj}')
     settings = get_gt_settings()
@@ -581,6 +580,8 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
         geom_mw = self.geomobj.matrix_world
         geom_scale_vec = get_scale_vec_4_from_matrix_world(geom_mw)
+        if not geom_scale_vec.all():
+            return np.eye(4)
         geom_scale_inv = np.diag(1.0 / geom_scale_vec)
         geom_mat = np.array(geom_mw, dtype=np.float32) @ geom_scale_inv
 
