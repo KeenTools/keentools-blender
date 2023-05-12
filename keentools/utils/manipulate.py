@@ -113,11 +113,12 @@ def switch_to_camera(area: Area, camobj: Object,
         select_object_only(select_obj)
 
 
-def center_viewport(area):
+def center_viewport(area, window=None):
+    override_context = {'window': bpy.context.window if window is None else window,
+                        'area': area,
+                        'region': get_area_region(area)}
     operator_with_context(bpy.ops.view3d.view_selected,
-                          {'window': bpy.context.window,
-                           'area': area,
-                           'region': get_area_region(area)},
+                          override_context,
                           use_all_regions=True)
 
 
@@ -127,9 +128,10 @@ def center_viewports_on_object(obj: Optional[Object]=None) -> None:
     if bpy_background_mode():
         return
 
-    areas = get_areas_by_type(area_type='VIEW_3D')
-    for area in areas:
-        center_viewport(area)
+    pairs = get_areas_by_type(area_type='VIEW_3D')
+    for area, window in pairs:
+        _log.output(area)
+        center_viewport(area, window=window)
 
 
 def select_objects_only(obj_list: List[Object]) -> None:

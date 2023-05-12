@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Tuple
 
 import bpy
-from bpy.types import Area
+from bpy.types import Area, Window
 import addon_utils
 
 from .kt_logging import KTLogger
@@ -28,13 +28,13 @@ from .bpy_common import bpy_background_mode
 _log = KTLogger(__name__)
 
 
-def get_areas_by_type(area_type: str='VIEW_3D') -> List[Area]:
-    areas = []
+def get_areas_by_type(area_type: str='VIEW_3D') -> List[Tuple]:
+    pairs = []
     for window in bpy.data.window_managers['WinMan'].windows:
         for area in window.screen.areas:
             if area.type == area_type:
-                areas.append(area)
-    return areas
+                pairs.append((area, window))
+    return pairs
 
 
 def get_all_areas() -> List[Area]:
@@ -43,8 +43,8 @@ def get_all_areas() -> List[Area]:
 
 
 def force_ui_redraw(area_type: str='PREFERENCES') -> None:
-    areas = get_areas_by_type(area_type)
-    for area in areas:
+    pairs = get_areas_by_type(area_type)
+    for area, _ in pairs:
         area.tag_redraw()
 
 
