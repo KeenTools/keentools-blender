@@ -24,6 +24,7 @@ from bpy.types import Object, Operator, Area
 from mathutils import Matrix, Euler
 
 from ...utils.kt_logging import KTLogger
+from ...utils.version import BVersion
 from ...addon_config import ActionStatus
 from ...geotracker_config import (get_gt_settings,
                                   GTConfig,
@@ -575,6 +576,9 @@ def check_uv_exists(obj: Optional[Object]) -> ActionStatus:
 
 
 def check_uv_overlapping(obj: Optional[Object]) -> ActionStatus:
+    if not BVersion.uv_select_overlap_exists:
+        return ActionStatus(False, 'Too old Blender version for overlapping check')
+
     old_mode = obj.mode
     select_object_only(obj)
 
