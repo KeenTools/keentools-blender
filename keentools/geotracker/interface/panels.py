@@ -94,6 +94,8 @@ class AllVisible(View3DPanel):
     def poll(cls, context: Any) -> bool:
         if not geotracker_enabled():
             return False
+        if not pkt_is_installed():
+            return False
         settings = get_gt_settings()
         if not settings.current_geotracker_num >= 0:
             return False
@@ -236,6 +238,8 @@ class GT_PT_InputsPanel(AllVisible):
     @classmethod
     def poll(cls, context: Any) -> bool:
         if not geotracker_enabled():
+            return False
+        if not pkt_is_installed():
             return False
         settings = get_gt_settings()
         if not settings.current_geotracker_num >= 0:
@@ -440,11 +444,13 @@ class GT_PT_CameraPanel(AllVisible):
     def poll(cls, context: Any) -> bool:
         if not geotracker_enabled():
             return False
+        if not pkt_is_installed():
+            return False
         settings = get_gt_settings()
         if not settings.current_geotracker_num >= 0:
             return False
         geotracker = settings.get_current_geotracker_item()
-        return True if geotracker.camobj else False
+        return not not geotracker.camobj
 
     def _camera_lens_row(self, layout: Any, cam_data: Any) -> None:
         row = layout.row(align=True)
@@ -508,26 +514,16 @@ class GT_PT_TrackingPanel(AllVisible):
     bl_idname = GTConfig.gt_tracking_panel_idname
     bl_label = 'Tracking'
 
-    @classmethod
-    def poll(cls, context: Any) -> bool:
-        if not geotracker_enabled():
-            return False
-        settings = get_gt_settings()
-        if not settings.current_geotracker_num >= 0:
-            return False
-        geotracker = settings.get_current_geotracker_item()
-        return geotracker.geomobj and geotracker.camobj
-
     def _tracking_mode_selector(self, settings: Any, layout: Any,
                                 geotracker: Any) -> None:
         col = layout.column(align=True)
         row = col.row(align=True)
-        row.prop(geotracker, 'solve_for_camera',
-                 text='Geometry', icon='MESH_ICOSPHERE',
-                 toggle=1, invert_checkbox=True)
-        row.prop(geotracker, 'solve_for_camera',
-                 text='Camera', icon='CAMERA_DATA',
-                 toggle=1)
+        row.operator(GTConfig.gt_switch_to_geometry_mode_idname,
+                     text='Geometry', icon='MESH_ICOSPHERE',
+                     depress=not geotracker.solve_for_camera)
+        row.operator(GTConfig.gt_switch_to_camera_mode_idname,
+                     text='Camera', icon='CAMERA_DATA',
+                     depress=geotracker.solve_for_camera)
 
     def _tracking_pinmode_button(self, settings: Any, layout: Any,
                                  context: Any) -> None:

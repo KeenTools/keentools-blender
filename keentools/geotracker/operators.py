@@ -131,6 +131,46 @@ class GT_OT_DeleteGeoTracker(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class GT_OT_SwitchToCameraMode(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_switch_to_camera_mode_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        check_status = common_checks(object_mode=False, is_calculating=True,
+                                     reload_geotracker=False, geotracker=True,
+                                     camera=False, geometry=False,
+                                     movie_clip=False)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        geotracker = get_current_geotracker_item()
+        geotracker.solve_for_camera = True
+        return {'FINISHED'}
+
+
+class GT_OT_SwitchToGeometryMode(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_switch_to_geometry_mode_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        check_status = common_checks(object_mode=False, is_calculating=True,
+                                     reload_geotracker=False, geotracker=True,
+                                     camera=False, geometry=False,
+                                     movie_clip=False)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        geotracker = get_current_geotracker_item()
+        geotracker.solve_for_camera = False
+        return {'FINISHED'}
+
+
 class GT_OT_CreatePrecalc(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_create_precalc_idname
     bl_label = buttons[bl_idname].label
@@ -1636,6 +1676,8 @@ class GT_OT_SwitchCameraToFixedWarning(Operator):
 
 BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_DeleteGeoTracker,
+                  GT_OT_SwitchToCameraMode,
+                  GT_OT_SwitchToGeometryMode,
                   GT_OT_CreatePrecalc,
                   GT_OT_AddKeyframe,
                   GT_OT_RemoveKeyframe,
