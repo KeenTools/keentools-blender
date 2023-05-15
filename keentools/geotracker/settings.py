@@ -354,8 +354,12 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     dir_name: bpy.props.StringProperty(name='Dir name')
 
-    precalc_path: bpy.props.StringProperty(name='Precalc path',
-                                           update=update_precalc_path)
+    precalc_path: bpy.props.StringProperty(
+        name='Analysis file name',
+        description='The path for the analysis file. '
+                    'The .precalc extension will be added '
+                    'automatically if not found',
+        update=update_precalc_path)
     precalc_start: bpy.props.IntProperty(name='from', default=1, min=0)
     precalc_end: bpy.props.IntProperty(name='to', default=250, min=0)
     precalc_message: bpy.props.StringProperty(name='Precalc info')
