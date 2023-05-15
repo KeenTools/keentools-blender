@@ -88,6 +88,8 @@ def _orientation_items() -> List[Tuple]:
          'Rotate every frame on 90 degree clock-wise', 1),
         ('CCW', '-90 degree (CCW)',
          'Rotate every frame on 90 degree counter clock-wise', 2),
+        ('ROT180', '180 degree',
+         'Rotate every frame on 180 degree', 3),
     ]
 
 
@@ -322,6 +324,8 @@ class GT_OT_SplitVideo(Operator, ExportHelper):
             orientation = -1
         elif self.orientation == 'CCW':
             orientation = 1
+        elif self.orientation == 'ROT180':
+            orientation = 2
         output_path = convert_movieclip_to_frames(
             geotracker.movie_clip, self.filepath,
             file_format=self.file_format,
@@ -331,6 +335,7 @@ class GT_OT_SplitVideo(Operator, ExportHelper):
             orientation=orientation,
             video_scene_name=Config.kt_convert_video_scene_name)
         _log.output(f'OUTPUT PATH2: {output_path}')
+        self.report({'INFO'}, 'File has been splitted to frame sequence')
         return {'FINISHED'}
 
 
@@ -544,8 +549,8 @@ def _draw_precalc_file_info(layout, geotracker):
 
 class GT_OT_PrecalcInfo(Operator):
     bl_idname = GTConfig.gt_precalc_info_idname
-    bl_label = 'Precalc info'
-    bl_description = 'Precalc file info'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL', 'UNDO'}
 
     def draw(self, context):
@@ -573,8 +578,8 @@ class GT_OT_PrecalcInfo(Operator):
 
 class GT_OT_AnalyzeCall(Operator):
     bl_idname = GTConfig.gt_analyze_call_idname
-    bl_label = 'Analyze'
-    bl_description = 'Call analyze dialog'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     precalc_start: IntProperty(default=1, name='from',
@@ -646,16 +651,16 @@ class GT_OT_AnalyzeCall(Operator):
 
 class GT_OT_ConfirmRecreatePrecalc(Operator):
     bl_idname = GTConfig.gt_confirm_recreate_precalc_idname
-    bl_label = 'Recreate precalc'
-    bl_description = 'Are you sure?'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def draw(self, context):
         layout = self.layout
-        info = ['All your previous precalc data will be lost!',
-                'Do you really want to rebuild precalc file?',
+        info = ['All your previous analysis data will be lost!',
+                'Do you really want to rebuild analysis file?',
                 ' ',
-                'Click outside of this window to keep old precalc file',
+                'Click outside of this window to keep old analysis file',
                 'or press Ok to start calculation']
         col = layout.column(align=True)
         col.scale_y = Config.text_scale_y

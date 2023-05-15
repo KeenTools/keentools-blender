@@ -171,7 +171,7 @@ def convert_movieclip_to_frames(
     scene.collection.objects.link(cam_ob)
     scene.camera = cam_ob
 
-    if orientation != 0:
+    if orientation % 2 != 0:
         w, h = h, w
     scene.render.resolution_x = w
     scene.render.resolution_y = h
