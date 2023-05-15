@@ -32,6 +32,14 @@ buttons = {
         'GeoTracker MovePin',
         'GeoTracker MovePin operator'
     ),
+    GTConfig.gt_switch_to_camera_mode_idname: Button(
+        'Camera',
+        'Camera object will be tracked'
+    ),
+    GTConfig.gt_switch_to_geometry_mode_idname: Button(
+        'Geometry',
+        'Geometry object will be tracked'
+    ),
     GTConfig.gt_actor_idname: Button(
         'Actor Operator',
         'GeoTracker Action'
