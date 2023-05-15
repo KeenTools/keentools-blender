@@ -614,6 +614,7 @@ def create_non_overlapping_uv_act() -> ActionStatus:
 
 
 def repack_uv_act() -> ActionStatus:
+    _log.output('repack_uv_act call')
     geotracker = get_current_geotracker_item()
     geomobj = geotracker.geomobj
     old_mode = geomobj.mode
@@ -628,11 +629,17 @@ def repack_uv_act() -> ActionStatus:
 
     mesh.polygons.foreach_set('select', [True] * len(mesh.polygons))
     uvmap.foreach_set('select', [True] * len(uvmap))
+    _log.output('repack_uv_act all polygons are selected')
 
+    _log.output(f'repack_uv_act mode: {old_mode}')
     switch_to_mode('EDIT')
+    _log.output('repack_uv_act average_islands_scale')
     bpy.ops.uv.average_islands_scale()
+    _log.output('repack_uv_act pack_islands')
     bpy.ops.uv.pack_islands(margin=0.01)
+    _log.output(f'repack_uv_act mode: {old_mode}')
     switch_to_mode(old_mode)
+    _log.output('repack_uv_act finished')
     return ActionStatus(True, 'ok')
 
 

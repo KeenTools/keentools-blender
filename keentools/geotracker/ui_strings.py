@@ -53,7 +53,7 @@ buttons = {
         'Both image sequences and movie files are supported'
     ),
     GTConfig.gt_choose_precalc_file_idname: Button(
-        'Choose precalc filename',
+        'Choose analysis filename',
         'Choose an existing .precalc file or just enter a name for a new one'
     ),
     GTConfig.gt_split_video_to_frames_idname: Button(
@@ -75,6 +75,18 @@ buttons = {
     GTConfig.gt_reproject_tex_sequence_idname: Button(
         'Reproject texture sequence',
         'Choose dir where to place resulting sequence'
+    ),
+    GTConfig.gt_precalc_info_idname: Button(
+        'Analysis file info',
+        'Click this button to see analysis file info'
+    ),
+    GTConfig.gt_analyze_call_idname: Button(
+        'Analyse',
+        'Call analyse dialog'
+    ),
+    GTConfig.gt_confirm_recreate_precalc_idname: Button(
+        'Recreate analysis file',
+        'Are you sure to recreate analysis file?'
     ),
     # Main UI
     GTConfig.gt_addon_setup_defaults_idname: Button(
