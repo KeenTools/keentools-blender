@@ -38,6 +38,8 @@ class GTConfig:
     gt_actor_idname = operators + '.actor'
     gt_pinmode_idname = operators + '.pinmode'
     gt_movepin_idname = operators + '.movepin'
+    gt_switch_to_camera_mode_idname = operators + '.switch_to_camera_mode'
+    gt_switch_to_geometry_mode_idname = operators + '.switch_to_geometry_mode'
     gt_create_precalc_idname = operators + '.create_precalc'
     gt_sequence_filebrowser_idname = operators + '.sequence_filebrowser'
     gt_mask_sequence_filebrowser_idname = \
