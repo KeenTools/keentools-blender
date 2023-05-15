@@ -347,7 +347,12 @@ help_texts = {
         ' '
     ]),
     GTConfig.gt_help_smoothing_idname: HelpText(_help_default_width, [
-        'Smoothing panel description will be here...',
+        'All smoothing settings are effective during tracking and refine only.',
+        'Once the tracking is done, changing them will not change the track,',
+        'you need to launch tracking or refine again to apply new smoothing settings.',
+        'You can tweak them differently for different parts of the footage,',
+        'the values are not being saved for different parts of the footage.',
+        '0 means no smoothing while 1 makes the smoothed parameter(s) almost static.',
         ' '
     ]),
 }

@@ -489,22 +489,24 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         default=0.0, min=0.0, max=1.0,
         precision=2,
         name='Z Translation',
-        description='smoothing depth coefficient', update=update_smoothing)
+        description='Z-axis (camera view) translation smoothing',
+        update=update_smoothing)
     smoothing_focal_length_coeff: bpy.props.FloatProperty(
         default=0.0, min=0.0, max=1.0,
         precision=2,
         name='Focal Length',
-        description='Focal Length coefficient', update=update_smoothing)
+        description='Smoothing of focal length estimation',
+        update=update_smoothing)
     smoothing_rotations_coeff: bpy.props.FloatProperty(
         default=0.0, min=0.0, max=1.0,
         precision=2,
         name='Rotations',
-        description='Rotation coefficient', update=update_smoothing)
+        description='Rotation smoothing', update=update_smoothing)
     smoothing_xy_translations_coeff: bpy.props.FloatProperty(
         default=0.0, min=0.0, max=1.0,
         precision=2,
         name='XY Translations',
-        description='XY Translation coefficient', update=update_smoothing)
+        description='XY translation smoothing', update=update_smoothing)
 
     def update_compositing_mask(self, *, frame: Optional[int]=None,
                                 recreate_nodes: bool=False) -> Image:
