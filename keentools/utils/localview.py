@@ -39,7 +39,9 @@ def check_area_active_problem(area: Optional[Area]) -> bool:
 
 
 def enter_area_localview(area: Optional[Area]):
+    _log.output(f'enter_area_localview: area={area}')
     if check_area_active_problem(area):
+        _log.output('area has problem!')
         return False
     if not area.spaces.active.local_view:
         operator_with_context(bpy.ops.view3d.localview,

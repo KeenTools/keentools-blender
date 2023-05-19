@@ -134,11 +134,13 @@ def bpy_remove_object(obj: Object) -> bool:
 
 def _operator_with_context_old(operator: Operator,
                                context_override_dict: Dict, **kwargs) -> None:
+    _log.output(f'_operator_with_context_old: {operator}')
     return operator(context_override_dict, **kwargs)
 
 
 def _operator_with_context_new(operator: Operator,
                                context_override_dict: Dict, **kwargs) -> None:
+    _log.output(f'_operator_with_context_new: {operator}')
     with bpy.context.temp_override(**context_override_dict):
         return operator(**kwargs)
 

@@ -199,7 +199,9 @@ def update_wireframe_backface_culling(settings, context: Any) -> None:
 
 def update_lit_wireframe(settings, context: Any) -> None:
     if settings.pinmode:
-        GTLoader.update_viewport_wireframe(normals=settings.lit_wireframe)
+        GTLoader.update_viewport_shaders(geomobj_matrix=True,
+                                         wireframe=True,
+                                         normals=settings.lit_wireframe)
 
 
 def update_background_tone_mapping(geotracker, context: Any) -> None:

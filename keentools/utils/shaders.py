@@ -382,10 +382,6 @@ def lit_vertex_local_shader() -> str:
     uniform mat4 ModelViewProjectionMatrix;
     uniform mat4 modelMatrix;
 
-    #ifdef USE_WORLD_CLIP_PLANES
-    uniform mat4 ModelMatrix;
-    #endif
-
     in vec3 pos;
     in vec3 vertNormal;
     out vec3 calcNormal;
@@ -395,19 +391,19 @@ def lit_vertex_local_shader() -> str:
     {
         mat4 resultMatrix = ModelViewProjectionMatrix * modelMatrix;
         gl_Position = resultMatrix * vec4(pos, 1.0);
-        calcNormal = normalize(resultMatrix * vec4(vertNormal, 0.0)).xyz;
-        outPos = gl_Position.xyz;
-
-    #ifdef USE_WORLD_CLIP_PLANES
-        world_clip_planes_calc_clip_distance((ModelMatrix * vec4(pos, 1.0)).xyz);
-    #endif
+        calcNormal = vertNormal;
+        outPos = pos;
     }
     '''
 
 
 def lit_fragment_shader() -> str:
-    txt = '''
+    return '''
     uniform vec4 color;
+    uniform vec3 pos1;
+    uniform vec3 pos2;
+    uniform vec3 pos3;
+
     in vec4 finalColor;
     in vec3 outPos;
     in vec3 calcNormal;
@@ -437,12 +433,20 @@ def lit_fragment_shader() -> str:
         return attenuation * (ambient + diffuse) * surfColor;
     }
 
+    vec3 to_srgb_gamma_vec3(vec3 color)
+    {
+        vec3 c = max(color, vec3(0.0));
+        vec3 c1 = c * (1.0 / 12.92);
+        vec3 c2 = pow((c + 0.055) * (1.0 / 1.055), vec3(2.4));
+        color = mix(c1, c2, step(vec3(0.04045), c));
+        return color;
+    }
+
     void main()
     {
         float dist = 1000.0;
-
         Light light1;
-        light1.position = vec3( 0.0,  0.0, -dist);
+        light1.position = pos1;
         light1.constantVal = 1.0;
         light1.linear = 0.0;
         light1.quadratic = 0.0;
@@ -450,7 +454,7 @@ def lit_fragment_shader() -> str:
         light1.diffuse = vec3(1.0, 1.0, 1.0);
 
         Light light2;
-        light2.position = vec3(-2.0 * dist, 0.0, -dist);
+        light2.position = pos2;
         light2.constantVal = 1.0;
         light2.linear = 0.0;
         light2.quadratic = 0.0;
@@ -458,7 +462,7 @@ def lit_fragment_shader() -> str:
         light2.diffuse = vec3(1.0, 1.0, 1.0);
 
         Light light3;
-        light3.position = vec3( 2.0 * dist, 0.0, -dist);
+        light3.position = pos3;
         light3.constantVal = 1.0;
         light3.linear = 0.0;
         light3.quadratic = 0.0;
@@ -466,13 +470,9 @@ def lit_fragment_shader() -> str:
         light3.diffuse = vec3(1.0, 1.0, 1.0);
 
         fragColor = vec4(
-            evaluatePointLight(light1, color.rgb, calcNormal, outPos) +
-            evaluatePointLight(light2, color.rgb, calcNormal, outPos) +
-            evaluatePointLight(light3, color.rgb, calcNormal, outPos), color.a);
-    '''
-    if BVersion.blender_srgb_to_framebuffer_space_enabled:
-        txt += 'fragColor = blender_srgb_to_framebuffer_space(fragColor);'
-    txt += '''
+            to_srgb_gamma_vec3(evaluatePointLight(light1, color.rgb, calcNormal, outPos)) +
+            to_srgb_gamma_vec3(evaluatePointLight(light2, color.rgb, calcNormal, outPos)) +
+            to_srgb_gamma_vec3(evaluatePointLight(light3, color.rgb, calcNormal, outPos)),
+            color.a);
     }
     '''
-    return txt

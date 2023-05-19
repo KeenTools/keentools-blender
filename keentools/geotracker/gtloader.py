@@ -498,8 +498,13 @@ class GTLoader:
         if geomobj_matrix:
             wf = cls.viewport().wireframer()
             geotracker = get_current_geotracker_item()
-            if geotracker and geotracker.geomobj:
-                wf.set_object_world_matrix(geotracker.geomobj.matrix_world)
+            if geotracker:
+                geom_mat = geotracker.geomobj.matrix_world if \
+                    geotracker.geomobj else Matrix.Identity(4)
+                cam_mat = geotracker.camobj.matrix_world if \
+                    geotracker.camobj else Matrix.Identity(4)
+                wf.set_object_world_matrix(geom_mat)
+                wf.set_lit_light_matrix(geom_mat, cam_mat)
         if mask:
             geotracker = get_current_geotracker_item()
             if geotracker.get_mask_source() == 'COMP_MASK':
