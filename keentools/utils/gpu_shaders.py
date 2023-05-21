@@ -425,6 +425,7 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
     shader_info.push_constant('MAT4', 'modelMatrix')
     shader_info.push_constant('VEC4', 'color')
+    shader_info.push_constant('FLOAT', 'adaptiveOpacity')
 
     shader_info.push_constant('VEC3', 'pos1')
     shader_info.push_constant('VEC3', 'pos2')
@@ -521,7 +522,7 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
             to_srgb_gamma_vec3(evaluatePointLight(light1, color.rgb, calcNormal, outPos)) +
             to_srgb_gamma_vec3(evaluatePointLight(light2, color.rgb, calcNormal, outPos)) +
             to_srgb_gamma_vec3(evaluatePointLight(light3, color.rgb, calcNormal, outPos)),
-            color.a);
+            color.a * adaptiveOpacity);
     }
     '''
 

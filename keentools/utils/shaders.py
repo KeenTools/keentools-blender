@@ -400,6 +400,7 @@ def lit_vertex_local_shader() -> str:
 def lit_fragment_shader() -> str:
     return '''
     uniform vec4 color;
+    uniform float adaptiveOpacity;
     uniform vec3 pos1;
     uniform vec3 pos2;
     uniform vec3 pos3;
@@ -473,6 +474,6 @@ def lit_fragment_shader() -> str:
             to_srgb_gamma_vec3(evaluatePointLight(light1, color.rgb, calcNormal, outPos)) +
             to_srgb_gamma_vec3(evaluatePointLight(light2, color.rgb, calcNormal, outPos)) +
             to_srgb_gamma_vec3(evaluatePointLight(light3, color.rgb, calcNormal, outPos)),
-            color.a);
+            color.a * adaptiveOpacity);
     }
     '''

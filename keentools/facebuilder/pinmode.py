@@ -91,10 +91,7 @@ def _calc_adaptive_opacity(area: Area) -> None:
     settings = get_fb_settings()
     if not settings.use_adaptive_opacity:
         return
-    rx, ry = bpy_render_frame()
-    x1, y1, x2, y2 = get_camera_border(area)
-    settings.adaptive_opacity = (x2 - x1) / rx
-    _log.output(_log.color('green', f'adaptive opacity: {settings.adaptive_opacity}'))
+    settings.calc_adaptive_opacity(area)
     vp = FBLoader.viewport()
     vp.update_wireframe_colors()
 

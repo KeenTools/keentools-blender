@@ -727,6 +727,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         shader = self.lit_shader
         shader.bind()
         shader.uniform_float('color', self.lit_color)
+        shader.uniform_float('adaptiveOpacity', self.adaptive_opacity)
         shader.uniform_vector_float(
             shader.uniform_from_name('modelMatrix'),
             self.object_world_matrix.ravel(), 16)

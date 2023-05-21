@@ -459,7 +459,8 @@ class GTLoader:
         if normals:
             wf.init_vertex_normals(geotracker.geomobj)
         wf.init_color_data((*settings.wireframe_color,
-                            settings.wireframe_opacity * settings.get_adaptive_opacity()))
+                            settings.wireframe_opacity))
+        wf.set_adaptive_opacity(settings.get_adaptive_opacity())
         wf.init_selection_from_mesh(geotracker.geomobj, geotracker.mask_3d,
                                     geotracker.mask_3d_inverted)
         wf.set_backface_culling(settings.wireframe_backface_culling)
@@ -483,7 +484,8 @@ class GTLoader:
 
     @classmethod
     def update_viewport_shaders(cls, area: Optional[Area]=None, *,
-                                geomobj_matrix: bool = False,
+                                adaptive_opacity: bool=False,
+                                geomobj_matrix: bool=False,
                                 wireframe: bool=True,
                                 normals: bool=False,
                                 pins_and_residuals: bool=True,
@@ -491,6 +493,7 @@ class GTLoader:
                                 mask: bool=False) -> None:
         _log.output(_log.color('blue', f'update_viewport_shaders'
             f'\ngeomobj_matrix: {geomobj_matrix}'
+            f' -- adaptive_opacity: {adaptive_opacity}'
             f' -- wireframe: {wireframe}'
             f' -- normals: {normals}'
             f'\npins_and_residuals: {pins_and_residuals}'
@@ -501,6 +504,9 @@ class GTLoader:
             area = vp.get_work_area()
             if not area:
                 return
+        if adaptive_opacity:
+            settings = get_gt_settings()
+            settings.calc_adaptive_opacity(area)
         if geomobj_matrix:
             wf = cls.viewport().wireframer()
             geotracker = get_current_geotracker_item()
