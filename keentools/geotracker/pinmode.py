@@ -62,11 +62,9 @@ def _calc_adaptive_opacity(area: Area) -> None:
     settings = get_gt_settings()
     if not settings.use_adaptive_opacity:
         return
-    rx, ry = bpy_render_frame()
-    x1, y1, x2, y2 = get_camera_border(area)
-    settings.adaptive_opacity = (x2 - x1) / rx
+    settings.calc_adaptive_opacity(area)
     vp = GTLoader.viewport()
-    vp.update_wireframe_colors()
+    vp.wireframer().set_adaptive_opacity(settings.get_adaptive_opacity())
 
 
 _playback_mode: bool = False

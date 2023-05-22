@@ -39,6 +39,7 @@ from .utils.tracking import reload_precalc
 from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_scale_vec_4_from_matrix_world,
                             get_image_space_coord,
+                            get_camera_border,
                             focal_mm_to_px,
                             camera_focal_length,
                             camera_sensor_width,
@@ -170,7 +171,12 @@ def update_precalc_path(geotracker, context: Any) -> None:
 
 
 def update_wireframe(settings, context: Any) -> None:
-    GTLoader.update_viewport_wireframe()
+    if not settings.pinmode:
+        return
+    GTLoader.update_viewport_shaders(adaptive_opacity=True,
+                                     geomobj_matrix=True,
+                                     wireframe=True,
+                                     normals=settings.lit_wireframe)
 
 
 def update_mask_2d_color(settings, context: Any) -> None:
@@ -195,11 +201,6 @@ def update_wireframe_backface_culling(settings, context: Any) -> None:
     GTLoader.save_geotracker()
     if settings.pinmode:
         GTLoader.update_viewport_wireframe()
-
-
-def update_lit_wireframe(settings, context: Any) -> None:
-    if settings.pinmode:
-        GTLoader.update_viewport_wireframe(normals=settings.lit_wireframe)
 
 
 def update_background_tone_mapping(geotracker, context: Any) -> None:
@@ -675,6 +676,13 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     def get_adaptive_opacity(self):
         return self.adaptive_opacity if self.use_adaptive_opacity else 1.0
 
+    def calc_adaptive_opacity(self, area: Area) -> None:
+        if not area:
+            return
+        rx, ry = bpy_render_frame()
+        x1, y1, x2, y2 = get_camera_border(area)
+        self.adaptive_opacity = (x2 - x1) / rx
+
     wireframe_opacity: bpy.props.FloatProperty(
         description='From 0.0 to 1.0',
         name='GeoTracker wireframe Opacity',
@@ -699,7 +707,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     lit_wireframe: bpy.props.BoolProperty(
         name='Lit wireframe',
         default=False,
-        update=update_lit_wireframe)
+        update=update_wireframe)
 
     pin_size: bpy.props.FloatProperty(
         description='Set pin size in pixels',

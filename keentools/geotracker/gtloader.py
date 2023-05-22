@@ -38,6 +38,7 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
                                 get_scene_camera_shift,
                                 bpy_is_animation_playing,
+                                get_depsgraph,
                                 get_traceback)
 from .gt_class_loader import GTClassLoader
 from ..utils.timer import KTStopShaderTimer
@@ -54,7 +55,7 @@ def force_stop_gt_shaders() -> None:
     force_ui_redraw('VIEW_3D')
 
 
-def depsgraph_update_handler(scene, depsgraph):
+def depsgraph_update_handler(scene, depsgraph=None):
     def _check_updated(depsgraph, name):
         _log.output('DEPSGRAPH UPDATES: {}'.format(len(depsgraph.updates)))
         for update in depsgraph.updates:
@@ -66,7 +67,6 @@ def depsgraph_update_handler(scene, depsgraph):
             _log.output(f'update.id: {update.id.name}')
             _log.output(f'update.is_updated_geometry: {update.is_updated_geometry}')
             _log.output(f'update.is_updated_transform: {update.is_updated_transform}')
-            _log.output(f'update.is_updated_shading: {update.is_updated_shading}')
             return True
         return False
 
@@ -82,6 +82,12 @@ def depsgraph_update_handler(scene, depsgraph):
     geotracker = settings.get_current_geotracker_item()
     if not geotracker:
         return
+
+    if not depsgraph:  # For old Blender api version only
+        _log.output(f'old depsgraph_update_handler:\n'
+                    f'scene={scene} depsgraph={depsgraph}')
+        depsgraph = get_depsgraph()
+        _log.output(f'new depsgraph={depsgraph}')
 
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
@@ -453,7 +459,8 @@ class GTLoader:
         if normals:
             wf.init_vertex_normals(geotracker.geomobj)
         wf.init_color_data((*settings.wireframe_color,
-                            settings.wireframe_opacity * settings.get_adaptive_opacity()))
+                            settings.wireframe_opacity))
+        wf.set_adaptive_opacity(settings.get_adaptive_opacity())
         wf.init_selection_from_mesh(geotracker.geomobj, geotracker.mask_3d,
                                     geotracker.mask_3d_inverted)
         wf.set_backface_culling(settings.wireframe_backface_culling)
@@ -477,7 +484,8 @@ class GTLoader:
 
     @classmethod
     def update_viewport_shaders(cls, area: Optional[Area]=None, *,
-                                geomobj_matrix: bool = False,
+                                adaptive_opacity: bool=False,
+                                geomobj_matrix: bool=False,
                                 wireframe: bool=True,
                                 normals: bool=False,
                                 pins_and_residuals: bool=True,
@@ -485,6 +493,7 @@ class GTLoader:
                                 mask: bool=False) -> None:
         _log.output(_log.color('blue', f'update_viewport_shaders'
             f'\ngeomobj_matrix: {geomobj_matrix}'
+            f' -- adaptive_opacity: {adaptive_opacity}'
             f' -- wireframe: {wireframe}'
             f' -- normals: {normals}'
             f'\npins_and_residuals: {pins_and_residuals}'
@@ -495,11 +504,19 @@ class GTLoader:
             area = vp.get_work_area()
             if not area:
                 return
+        if adaptive_opacity:
+            settings = get_gt_settings()
+            settings.calc_adaptive_opacity(area)
         if geomobj_matrix:
             wf = cls.viewport().wireframer()
             geotracker = get_current_geotracker_item()
-            if geotracker and geotracker.geomobj:
-                wf.set_object_world_matrix(geotracker.geomobj.matrix_world)
+            if geotracker:
+                geom_mat = geotracker.geomobj.matrix_world if \
+                    geotracker.geomobj else Matrix.Identity(4)
+                cam_mat = geotracker.camobj.matrix_world if \
+                    geotracker.camobj else Matrix.Identity(4)
+                wf.set_object_world_matrix(geom_mat)
+                wf.set_lit_light_matrix(geom_mat, cam_mat)
         if mask:
             geotracker = get_current_geotracker_item()
             if geotracker.get_mask_source() == 'COMP_MASK':

@@ -23,6 +23,7 @@ from bpy.types import Object, Area, Region, SpaceView3D
 import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
+from mathutils import Vector, Matrix
 
 from .kt_logging import KTLogger
 from .gpu_shaders import (line_3d_local_shader,
@@ -636,6 +637,11 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_flag: bool = False
         self.lit_edge_vertices: List = []
         self.lit_edge_vertex_normals: List = []
+        self.lit_light_dist: float = 1000
+        self.lit_light1_pos: Vector = Vector((0, 0, 0))
+        self.lit_light2_pos: Vector = Vector((-2, 0, 1))
+        self.lit_light3_pos: Vector = Vector((2, 0, 1))
+        self.lit_light_matrix: Matrix = Matrix.Identity(4)
         super().__init__(target_class, mask_color)
 
     def set_lit_wireframe(self, state: bool) -> None:
@@ -643,6 +649,12 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
 
     def lit_is_working(self) -> bool:
         return self.lit_flag
+
+    def set_lit_light_matrix(self, geomobj_matrix_world: Matrix,
+                             camobj_matrix_world: Matrix) -> None:
+        _log.output('set_lit_light_matrix')
+        mat = geomobj_matrix_world.inverted() @ camobj_matrix_world
+        self.lit_light_matrix = mat
 
     def init_shaders(self) -> Optional[bool]:
         res = [True] * 2
@@ -715,9 +727,16 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         shader = self.lit_shader
         shader.bind()
         shader.uniform_float('color', self.lit_color)
+        shader.uniform_float('adaptiveOpacity', self.adaptive_opacity)
         shader.uniform_vector_float(
             shader.uniform_from_name('modelMatrix'),
             self.object_world_matrix.ravel(), 16)
+        shader.uniform_float('pos1', self.lit_light_matrix @
+                             (self.lit_light1_pos * self.lit_light_dist))
+        shader.uniform_float('pos2', self.lit_light_matrix @
+                             (self.lit_light2_pos * self.lit_light_dist))
+        shader.uniform_float('pos3', self.lit_light_matrix @
+                             (self.lit_light3_pos * self.lit_light_dist))
         self.lit_batch.draw(shader)
 
     def clear_all(self) -> None:

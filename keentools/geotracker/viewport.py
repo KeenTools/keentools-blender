@@ -299,7 +299,8 @@ class GTViewport(KTViewport):
         settings = get_gt_settings()
         wf = self.wireframer()
         wf.init_color_data((*settings.wireframe_color,
-                            settings.wireframe_opacity * settings.get_adaptive_opacity()))
+                            settings.wireframe_opacity))
+        wf.set_adaptive_opacity(settings.get_adaptive_opacity())
         wf.set_lit_wireframe(settings.lit_wireframe)
         wf.create_batches()
 
