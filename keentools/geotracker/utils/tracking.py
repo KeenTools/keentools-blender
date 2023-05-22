@@ -88,7 +88,7 @@ def reload_precalc(geotracker: Any) -> Tuple[bool, str, Any]:
     if os.path.exists(precalc_path):
         precalc_info, msg = get_precalc_info(precalc_path)
         if precalc_info is None:
-            geotracker.precalc_message = '* Precalc file is corrupted'
+            geotracker.precalc_message = '* Analysis file is broken'
             return False, 'Warning! Precalc file seems corrupted', None
         try:
             geotracker.precalc_message = get_precalc_message(precalc_info)
@@ -101,7 +101,7 @@ def reload_precalc(geotracker: Any) -> Tuple[bool, str, Any]:
             return False, 'Precalc file exception', None
         return True, 'ok', precalc_info
 
-    geotracker.precalc_message = '* Precalc needs to be built'
+    geotracker.precalc_message = '* .precalc file is missing'
     return False, 'Precalc file has not been created yet', None
 
 

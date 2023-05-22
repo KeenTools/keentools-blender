@@ -45,8 +45,8 @@ buttons = {
         'GeoTracker Action'
     ),
     GTConfig.gt_sequence_filebrowser_idname: Button(
-        'Load footage',
-        'Both image sequences and movie files are supported'
+        'Load clip',
+        'Load a sequence of frames or a movie file'
     ),
     GTConfig.gt_mask_sequence_filebrowser_idname: Button(
         'Load mask sequence',
@@ -54,7 +54,7 @@ buttons = {
     ),
     GTConfig.gt_choose_precalc_file_idname: Button(
         'Choose analysis filename',
-        'Choose an existing .precalc file or just enter a name for a new one'
+        'Use existing .precalc file or enter new name'
     ),
     GTConfig.gt_split_video_to_frames_idname: Button(
         'Split video to frames',
@@ -78,7 +78,7 @@ buttons = {
     ),
     GTConfig.gt_precalc_info_idname: Button(
         'Analysis file info',
-        'Click this button to see analysis file info'
+        'Click this button to see .precalc file info'
     ),
     GTConfig.gt_analyze_call_idname: Button(
         'Analyse',
@@ -94,8 +94,8 @@ buttons = {
         'Open GeoTracker Settings in Preferences window'
     ),
     GTConfig.gt_create_geotracker_idname: Button(
-        'Create a new GeoTracker',
-        'Create a new GeoTracker object in scene'
+        'Create new GeoTracker',
+        'Track new object'
     ),
     GTConfig.gt_delete_geotracker_idname: Button(
         'Delete GeoTracker',

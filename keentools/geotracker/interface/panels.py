@@ -285,7 +285,7 @@ class GT_PT_InputsPanel(AllVisible):
     def _draw_precalc_switcher(self, layout, geotracker):
         row = layout.row(align=True)
         row.prop(geotracker, 'precalcless',
-                 text='Analyse Clip to file', invert_checkbox=True)
+                 text='Use analysis cache file', invert_checkbox=True)
 
     def _draw_analyze_btn(self, layout, geotracker):
         no_movie_clip = not geotracker.movie_clip
