@@ -70,11 +70,12 @@ def _calc_adaptive_opacity(area: Area) -> None:
 _playback_mode: bool = False
 
 
-def _playback_message():
+def _playback_message(area: Area) -> None:
     global _playback_mode
     current_playback_mode = bpy_is_animation_playing()
     if current_playback_mode != _playback_mode:
         _playback_mode = current_playback_mode
+        _log.output(_log.color('green', f'_playback_mode: {_playback_mode}'))
         vp = GTLoader.viewport()
         if _playback_mode:
             vp.message_to_screen([
@@ -88,6 +89,7 @@ def _playback_message():
                  'y': 30}])  # line 2
         else:
             vp.revert_default_screen_message()
+        area.tag_redraw()
 
 
 class GT_OT_PinMode(Operator):
@@ -430,7 +432,7 @@ class GT_OT_PinMode(Operator):
                 GTLoader.out_pinmode()
                 return {'FINISHED'}
 
-        _playback_message()
+        _playback_message(context.area)
 
         if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
                 and event.value == 'PRESS':
