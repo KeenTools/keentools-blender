@@ -26,7 +26,7 @@ Button = namedtuple('Button', ['label', 'description'])
 buttons = {
     GTConfig.gt_pinmode_idname: Button(
         'GeoTracker Pinmode',
-        'Operator for in-Viewport drawing'
+        'Align geometry with the target in your clip'
     ),
     GTConfig.gt_movepin_idname: Button(
         'GeoTracker MovePin',
@@ -123,19 +123,19 @@ buttons = {
     ),
     GTConfig.gt_track_to_start_idname: Button(
         'Track to start',
-        'track to start'
+        'Track backwards'
     ),
     GTConfig.gt_track_to_end_idname: Button(
         'Track to end',
-        'track to end'
+        'Track forward'
     ),
     GTConfig.gt_track_next_idname: Button(
         'Track next',
-        'track next'
+        'Track to next frame'
     ),
     GTConfig.gt_track_prev_idname: Button(
         'Track prev',
-        'track prev'
+        'Track to previous frame'
     ),
     GTConfig.gt_add_keyframe_idname: Button(
         'Add GeoTracker keyframe',
@@ -147,27 +147,27 @@ buttons = {
     ),
     GTConfig.gt_clear_all_tracking_idname: Button(
         'Clear all',
-        'Clear all tracking data'
+        'Delete all keyframes'
     ),
     GTConfig.gt_clear_tracking_except_keyframes_idname: Button(
-        'Clear tracking except GT keyframes',
-        'Clear tracking except GeoTracker keyframes'
+        'Clear tracking data only',
+        'Clear tracking data, keep GeoTracker keyframes'
     ),
     GTConfig.gt_clear_tracking_forward_idname: Button(
         'Clear forward',
-        'Clear tracking data forward'
+        'Clear keyframes to the right of current frame'
     ),
     GTConfig.gt_clear_tracking_backward_idname: Button(
-        'Clear backward',
-        'Clear tracking data backward'
+        'Clear backwards',
+        'Clear keyframes to the left of current frame'
     ),
     GTConfig.gt_clear_tracking_between_idname: Button(
         'Clear between',
-        'Clear tracking data between keyframes'
+        'Clear tracking data between nearest GeoTracker keyframes'
     ),
     GTConfig.gt_refine_idname: Button(
         'refine',
-        'Refine tracking between nearest keyframes'
+        'Refine tracking data between nearest keyframes'
     ),
     GTConfig.gt_refine_all_idname: Button(
         'refine all',
@@ -175,7 +175,7 @@ buttons = {
     ),
     GTConfig.gt_center_geo_idname: Button(
         'center geo',
-        'Center geometry in the view'
+        'Place target geometry in the center of your viewpoint'
     ),
     GTConfig.gt_magic_keyframe_idname: Button(
         'magic',
@@ -183,7 +183,7 @@ buttons = {
     ),
     GTConfig.gt_remove_pins_idname: Button(
         'remove pins',
-        'Remove all pins from view'
+        'Remove all pins'
     ),
     GTConfig.gt_toggle_pins_idname: Button(
         'toggle pins',
@@ -195,7 +195,7 @@ buttons = {
     ),
     GTConfig.gt_exit_pinmode_idname: Button(
         'Exit Pinmode',
-        'Exit from PinMode'
+        'Back to 3D scene'
     ),
     GTConfig.gt_stop_calculating_idname: Button(
         'Stop calculating',
@@ -272,6 +272,19 @@ buttons = {
     GTConfig.gt_interrupt_modal_idname: Button(
         'GeoTracker Interruptor',
         'Interrupt current operation by Esc'
+    ),
+    # Menu buttons
+    GTConfig.gt_clear_tracking_menu_exec_idname: Button(
+        'Clear menu',
+        'Clear all or tracking data only'
+    ),
+    GTConfig.gt_clear_tracking_menu_idname: Button(
+        'Clear menu (internal)',
+        'Clear menu list (internal)'
+    ),
+    GTConfig.gt_clip_menu_idname: Button(
+        'Clip menu',
+        'Load new clip / Make snapshot / Split video'
     ),
     # Help buttons
     GTConfig.gt_help_inputs_idname: Button(

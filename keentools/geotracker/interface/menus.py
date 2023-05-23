@@ -20,12 +20,13 @@ from bpy.types import Menu, Operator
 
 from ...geotracker_config import GTConfig, get_gt_settings
 from ...utils.bpy_common import bpy_call_menu
+from ..ui_strings import buttons
 
 
 class GT_MT_ClipMenu(Menu):
     bl_idname = GTConfig.gt_clip_menu_idname
-    bl_label = 'Clip menu'
-    bl_description = 'Clip menu list'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
 
     def draw(self, context):
         layout = self.layout
@@ -35,7 +36,7 @@ class GT_MT_ClipMenu(Menu):
         layout.separator()
         col = layout.column()
         col.operator(GTConfig.gt_sequence_filebrowser_idname,
-                     text='Open movie or image sequence', icon='FILEBROWSER')
+                     icon='FILEBROWSER')
         if not geotracker or not geotracker.movie_clip:
             return
         col.separator()
@@ -49,8 +50,8 @@ class GT_MT_ClipMenu(Menu):
 
 class GT_MT_ClearAllTrackingMenu(Menu):
     bl_idname = GTConfig.gt_clear_tracking_menu_idname
-    bl_label = 'Clear menu'
-    bl_description = 'Clear menu list'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
 
     def draw(self, context):
         layout = self.layout
@@ -65,8 +66,8 @@ class GT_MT_ClearAllTrackingMenu(Menu):
 
 class GT_OT_ClearAllTrackingMenuExec(Operator):
     bl_idname = GTConfig.gt_clear_tracking_menu_exec_idname
-    bl_label = 'Clear menu exec'
-    bl_description = 'Clear menu exec description'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO'}
 
     def draw(self, context):
