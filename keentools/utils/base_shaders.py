@@ -100,14 +100,18 @@ class KTShaderBase:
 
     def register_handler(self, context: Any,
                          post_type: str='POST_VIEW') -> None:
-        self.work_area = context.area
+        _log.output(f'{self.__class__.__name__}.register_handler')
         if self.draw_handler is not None:
+            _log.output('draw_handler is not empty, call unregister')
             self.unregister_handler()
+            _log.output('continue register')
+        self.work_area = context.area
         self.draw_handler = self.get_target_class().draw_handler_add(
             self.draw_callback, (context,), 'WINDOW', post_type)
         self.add_handler_list(self.draw_handler)
 
     def unregister_handler(self) -> None:
+        _log.output(f'{self.__class__.__name__}.unregister_handler')
         if self.draw_handler is not None:
             self.get_target_class().draw_handler_remove(
                 self.draw_handler, 'WINDOW')
@@ -116,7 +120,9 @@ class KTShaderBase:
         self.work_area = None
 
     def hide_shader(self) -> None:
+        _log.output(f'{self.__class__.__name__}.hide_shader')
         self.set_visible(False)
 
     def unhide_shader(self) -> None:
+        _log.output(f'{self.__class__.__name__}.unhide_shader')
         self.set_visible(True)
