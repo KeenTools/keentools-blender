@@ -48,28 +48,34 @@ def get_area():
     return None
 
 
-def get_override_context():
-    window = bpy.context.window
-    screen = window.screen
+def get_override_context(*, window=None, screen=None, area=None):
+    win = bpy.context.window if window is None else window
+    scr = bpy.context.screen if screen is None else screen
+    ar = get_area() if area is None else area
     override = bpy.context.copy()
-    area = get_area()
-    if area is not None:
-        override['window'] = window
-        override['screen'] = screen
-        override['area'] = area
-        override['region'] = get_region(area)
+    override['window'] = win
+    override['screen'] = scr
+    override['area'] = ar
+    override['region'] = get_region(area)
     return override
 
 
-def get_fake_context():
-    area = get_area()
-    space = get_space(area)
+def get_fake_context(*, window=None, screen=None, area=None,
+                     region=None, space=None, scene=None):
+    win = bpy.context.window if window is None else window
+    scr = bpy.context.screen if screen is None else screen
+    ar = get_area() if area is None else area
+    reg = get_region(ar) if region is None else region
+    sp = get_space(ar) if space is None else space
+    scn = bpy.context.scene if scene is None else scene
 
     fake_context = lambda: None
-    fake_context.area = area
-    fake_context.region = get_region(area)
+    fake_context.window = win
+    fake_context.screen = scr
+    fake_context.area = ar
+    fake_context.region = reg
     fake_context.space_data = lambda: None
-    if space is not None:
-        fake_context.space_data.region_3d = space.region_3d
-    fake_context.scene = bpy.context.scene
+    if sp is not None:
+        fake_context.space_data.region_3d = sp.region_3d
+    fake_context.scene = scn
     return fake_context
