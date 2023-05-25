@@ -62,21 +62,20 @@ def _calc_adaptive_opacity(area: Area) -> None:
     settings = get_gt_settings()
     if not settings.use_adaptive_opacity:
         return
-    rx, ry = bpy_render_frame()
-    x1, y1, x2, y2 = get_camera_border(area)
-    settings.adaptive_opacity = (x2 - x1) / rx
+    settings.calc_adaptive_opacity(area)
     vp = GTLoader.viewport()
-    vp.update_wireframe_colors()
+    vp.wireframer().set_adaptive_opacity(settings.get_adaptive_opacity())
 
 
 _playback_mode: bool = False
 
 
-def _playback_message():
+def _playback_message(area: Area) -> None:
     global _playback_mode
     current_playback_mode = bpy_is_animation_playing()
     if current_playback_mode != _playback_mode:
         _playback_mode = current_playback_mode
+        _log.output(_log.color('green', f'_playback_mode: {_playback_mode}'))
         vp = GTLoader.viewport()
         if _playback_mode:
             vp.message_to_screen([
@@ -90,6 +89,7 @@ def _playback_message():
                  'y': 30}])  # line 2
         else:
             vp.revert_default_screen_message()
+        area.tag_redraw()
 
 
 class GT_OT_PinMode(Operator):
@@ -326,7 +326,7 @@ class GT_OT_PinMode(Operator):
             vp.revert_default_screen_message(unregister=False)
         else:
             default_txt = deepcopy(vp.texter().get_default_text())
-            default_txt[0]['text'] = 'Wireframe is hidden. Press Tab to reveal'
+            default_txt[0]['text'] = 'Press TAB to show wireframe'
             default_txt[0]['color'] = (1., 0., 1., 0.85)
             GTLoader.viewport().message_to_screen(default_txt)
 
@@ -432,7 +432,7 @@ class GT_OT_PinMode(Operator):
                 GTLoader.out_pinmode()
                 return {'FINISHED'}
 
-        _playback_message()
+        _playback_message(context.area)
 
         if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
                 and event.value == 'PRESS':

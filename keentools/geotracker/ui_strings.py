@@ -26,7 +26,7 @@ Button = namedtuple('Button', ['label', 'description'])
 buttons = {
     GTConfig.gt_pinmode_idname: Button(
         'GeoTracker Pinmode',
-        'Operator for in-Viewport drawing'
+        'Align geometry with the target in your clip and proceed to tracking'
     ),
     GTConfig.gt_movepin_idname: Button(
         'GeoTracker MovePin',
@@ -34,19 +34,19 @@ buttons = {
     ),
     GTConfig.gt_switch_to_camera_mode_idname: Button(
         'Camera',
-        'Camera object will be tracked'
+        'Track Camera'
     ),
     GTConfig.gt_switch_to_geometry_mode_idname: Button(
         'Geometry',
-        'Geometry object will be tracked'
+        'Track Geometry'
     ),
     GTConfig.gt_actor_idname: Button(
         'Actor Operator',
         'GeoTracker Action'
     ),
     GTConfig.gt_sequence_filebrowser_idname: Button(
-        'Load footage',
-        'Both image sequences and movie files are supported'
+        'Load clip',
+        'Load a sequence of frames or a movie file'
     ),
     GTConfig.gt_mask_sequence_filebrowser_idname: Button(
         'Load mask sequence',
@@ -54,19 +54,19 @@ buttons = {
     ),
     GTConfig.gt_choose_precalc_file_idname: Button(
         'Choose analysis filename',
-        'Choose an existing .precalc file or just enter a name for a new one'
+        'Use existing .precalc file or enter new name'
     ),
     GTConfig.gt_split_video_to_frames_idname: Button(
         'Split video to frames',
-        'Choose dir where to place video-file frames'
+        'Choose folder'
     ),
     GTConfig.gt_split_video_to_frames_exec_idname: Button(
-        'Split video-file.',
-        'Choose dir where to place video-file frames.'
+        'Split video to frames',
+        'Choose folder'
     ),
     GTConfig.gt_video_snapshot_idname: Button(
-        'Make snapshot',
-        'Make snapshot from current frame'
+        'Take snapshot',
+        'Take snapshot of current frame'
     ),
     GTConfig.gt_select_frames_for_bake_idname: Button(
         'Select frames for reproject',
@@ -78,7 +78,7 @@ buttons = {
     ),
     GTConfig.gt_precalc_info_idname: Button(
         'Analysis file info',
-        'Click this button to see analysis file info'
+        'Click this button to see .precalc file info'
     ),
     GTConfig.gt_analyze_call_idname: Button(
         'Analyse',
@@ -94,8 +94,8 @@ buttons = {
         'Open GeoTracker Settings in Preferences window'
     ),
     GTConfig.gt_create_geotracker_idname: Button(
-        'Create a new GeoTracker',
-        'Create a new GeoTracker object in scene'
+        'Create new GeoTracker',
+        'Track new object'
     ),
     GTConfig.gt_delete_geotracker_idname: Button(
         'Delete GeoTracker',
@@ -103,7 +103,7 @@ buttons = {
     ),
     GTConfig.gt_select_geotracker_objects_idname: Button(
         'Select objects',
-        'Select GeoTracker objects in scene'
+        'Select assigned Geometry and Camera in scene'
     ),
     GTConfig.gt_create_precalc_idname: Button(
         'Create precalc',
@@ -123,19 +123,19 @@ buttons = {
     ),
     GTConfig.gt_track_to_start_idname: Button(
         'Track to start',
-        'track to start'
+        'Track backwards'
     ),
     GTConfig.gt_track_to_end_idname: Button(
         'Track to end',
-        'track to end'
+        'Track forward'
     ),
     GTConfig.gt_track_next_idname: Button(
         'Track next',
-        'track next'
+        'Track to next frame'
     ),
     GTConfig.gt_track_prev_idname: Button(
         'Track prev',
-        'track prev'
+        'Track to previous frame'
     ),
     GTConfig.gt_add_keyframe_idname: Button(
         'Add GeoTracker keyframe',
@@ -147,27 +147,27 @@ buttons = {
     ),
     GTConfig.gt_clear_all_tracking_idname: Button(
         'Clear all',
-        'Clear all tracking data'
+        'Delete all keyframes'
     ),
     GTConfig.gt_clear_tracking_except_keyframes_idname: Button(
-        'Clear tracking except GT keyframes',
-        'Clear tracking except GeoTracker keyframes'
+        'Clear tracking data only',
+        'Clear tracking data, keep GeoTracker keyframes'
     ),
     GTConfig.gt_clear_tracking_forward_idname: Button(
         'Clear forward',
-        'Clear tracking data forward'
+        'Clear all keyframes to the right of current frame'
     ),
     GTConfig.gt_clear_tracking_backward_idname: Button(
-        'Clear backward',
-        'Clear tracking data backward'
+        'Clear backwards',
+        'Clear all keyframes to the left of current frame'
     ),
     GTConfig.gt_clear_tracking_between_idname: Button(
         'Clear between',
-        'Clear tracking data between keyframes'
+        'Clear tracking data between nearest GeoTracker keyframes'
     ),
     GTConfig.gt_refine_idname: Button(
         'refine',
-        'Refine tracking between nearest keyframes'
+        'Refine tracking data between nearest keyframes'
     ),
     GTConfig.gt_refine_all_idname: Button(
         'refine all',
@@ -175,7 +175,7 @@ buttons = {
     ),
     GTConfig.gt_center_geo_idname: Button(
         'center geo',
-        'Center geometry in the view'
+        'Place target geometry in the center of your viewpoint'
     ),
     GTConfig.gt_magic_keyframe_idname: Button(
         'magic',
@@ -183,11 +183,11 @@ buttons = {
     ),
     GTConfig.gt_remove_pins_idname: Button(
         'remove pins',
-        'Remove all pins from view'
+        'Delete all or only selected pins'
     ),
     GTConfig.gt_toggle_pins_idname: Button(
         'toggle pins',
-        'toggle pins operation'
+        'Toggle all or only selected pins'
     ),
     GTConfig.gt_export_animated_empty_idname: Button(
         'Create animated Empty',
@@ -195,7 +195,7 @@ buttons = {
     ),
     GTConfig.gt_exit_pinmode_idname: Button(
         'Exit Pinmode',
-        'Exit from PinMode'
+        'Back to 3D scene'
     ),
     GTConfig.gt_stop_calculating_idname: Button(
         'Stop calculating',
@@ -272,6 +272,19 @@ buttons = {
     GTConfig.gt_interrupt_modal_idname: Button(
         'GeoTracker Interruptor',
         'Interrupt current operation by Esc'
+    ),
+    # Menu buttons
+    GTConfig.gt_clear_tracking_menu_exec_idname: Button(
+        'Clear menu',
+        'Clear all or tracking data only'
+    ),
+    GTConfig.gt_clear_tracking_menu_idname: Button(
+        'Clear menu (internal)',
+        'Clear menu list (internal)'
+    ),
+    GTConfig.gt_clip_menu_idname: Button(
+        'Clip menu',
+        'Load new clip / Make snapshot / Split video'
     ),
     # Help buttons
     GTConfig.gt_help_inputs_idname: Button(
@@ -368,3 +381,9 @@ help_texts = {
         ' '
     ]),
 }
+
+
+class PrecalcStatusMessage:
+    broken_file: str = '* Analysis file is broken'
+    missing_file: str = '* .precalc file is missing'
+    empty: str = ''

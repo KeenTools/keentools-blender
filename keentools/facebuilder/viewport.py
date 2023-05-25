@@ -93,6 +93,7 @@ class FBViewport(KTViewport):
 
     def register_handlers(self, context: Any) -> None:
         self.unregister_handlers()
+        _log.output(f'{self.__class__.__name__}.register_handlers')
         self.set_work_area(context.area)
         self.residuals().register_handler(context)
         self.rectangler().register_handler(context)
@@ -103,6 +104,7 @@ class FBViewport(KTViewport):
         self.register_draw_update_timer(time_step=FBConfig.viewport_redraw_interval)
 
     def unregister_handlers(self) -> None:
+        _log.output(f'{self.__class__.__name__}.unregister_handlers')
         self.unregister_draw_update_timer()
         self.wireframer().unregister_handler()
         self.texter().unregister_handler()

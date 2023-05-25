@@ -265,6 +265,9 @@ def tone_mapping(cam_image, exposure, gamma):
         _log.output('SKIP tone mapping, only reload()')
         return
     np_img = np_array_from_bpy_image(cam_image)
+    if not np_img:
+        _log.output('tone_mapping: Cannot load image')
+        return
 
     gain = pow(2, exposure / 2.2)
     np_img[:, :, :3] = np.power(gain * np_img[:, :, :3], 1.0 / gamma)

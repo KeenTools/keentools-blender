@@ -65,12 +65,14 @@ def switch_to_mode(mode: str='OBJECT') -> None:
 
 
 def select_object_only(obj: Optional[Object]) -> None:
+    _log.output(f'select_object_only: {obj}')
     if not obj:
         return
     if bpy.context.mode != 'OBJECT':
         switch_to_mode('OBJECT')
     deselect_all()
     if object_is_on_view_layer(obj):
+        _log.output('object_is_on_view_layer')
         obj.select_set(state=True)
         bpy.context.view_layer.objects.active = obj
 
@@ -98,6 +100,9 @@ def create_vertex_groups(obj: Object, vg_dict: Dict) -> None:
 
 def switch_to_camera(area: Area, camobj: Object,
                      select_obj: Optional[Object]=None) -> None:
+    _log.output(f'switch_to_camera: area={area}'
+                f'\ncamobj={camobj}'
+                f'\nselect_obj={select_obj}')
     exit_area_localview(area)
     camobj.hide_set(False)
     select_object_only(camobj)

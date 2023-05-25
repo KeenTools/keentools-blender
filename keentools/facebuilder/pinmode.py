@@ -91,10 +91,7 @@ def _calc_adaptive_opacity(area: Area) -> None:
     settings = get_fb_settings()
     if not settings.use_adaptive_opacity:
         return
-    rx, ry = bpy_render_frame()
-    x1, y1, x2, y2 = get_camera_border(area)
-    settings.adaptive_opacity = (x2 - x1) / rx
-    _log.output(_log.color('green', f'adaptive opacity: {settings.adaptive_opacity}'))
+    settings.calc_adaptive_opacity(area)
     vp = FBLoader.viewport()
     vp.update_wireframe_colors()
 
@@ -175,7 +172,7 @@ class FB_OT_PinMode(Operator):
             vp.revert_default_screen_message(unregister=False)
         else:
             default_txt = deepcopy(vp.texter().get_default_text())
-            default_txt[0]['text'] = 'Wireframe is hidden. Press Tab to reveal'
+            default_txt[0]['text'] = 'Press TAB to show wireframe'
             default_txt[0]['color'] = (1., 0., 1., 0.85)
             vp.message_to_screen(default_txt)
 

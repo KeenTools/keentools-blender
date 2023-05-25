@@ -110,6 +110,7 @@ class GTViewport(KTViewport):
 
     def register_handlers(self, context):
         self.unregister_handlers()
+        _log.output(f'{self.__class__.__name__}.register_handlers')
         self.set_work_area(context.area)
         self.mask2d().register_handler(context)
         self.residuals().register_handler(context)
@@ -122,6 +123,7 @@ class GTViewport(KTViewport):
         self.register_draw_update_timer(time_step=GTConfig.viewport_redraw_interval)
 
     def unregister_handlers(self):
+        _log.output(f'{self.__class__.__name__}.unregister_handlers')
         self.unregister_draw_update_timer()
         self.selector().unregister_handler()
         self.timeliner().unregister_handler()
@@ -229,10 +231,12 @@ class GTViewport(KTViewport):
 
         mask = self.mask2d()
         if mask.image:
+            _log.output(f'create_batch_2d mask.image:{mask.image}')
             mask.left = image_space_to_region(-0.5, -asp * 0.5, x1, y1, x2, y2)
             w, h = mask.image.size[:]
             mask.right = image_space_to_region(
                 *frame_to_image_space(w, h, rx, ry), x1, y1, x2, y2)
+            mask.create_batch()
 
     def update_residuals(self, gt: Any, area: Area, keyframe: int) -> None:
         rx, ry = bpy_render_frame()
@@ -299,7 +303,8 @@ class GTViewport(KTViewport):
         settings = get_gt_settings()
         wf = self.wireframer()
         wf.init_color_data((*settings.wireframe_color,
-                            settings.wireframe_opacity * settings.get_adaptive_opacity()))
+                            settings.wireframe_opacity))
+        wf.set_adaptive_opacity(settings.get_adaptive_opacity())
         wf.set_lit_wireframe(settings.lit_wireframe)
         wf.create_batches()
 

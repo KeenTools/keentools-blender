@@ -127,8 +127,8 @@ class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
         layout = self.layout
         col = layout.column()
         col.scale_y = Config.text_scale_y
-        col.label(text='Load image sequence or movie. ')
-        col.label(text='Just select first image in sequence')
+        col.label(text='Load a sequence of frames')
+        col.label(text='or a movie file')
 
     def execute(self, context):
         geotracker = get_current_geotracker_item()
@@ -243,8 +243,8 @@ class GT_OT_ChoosePrecalcFile(Operator, ExportHelper):
         layout = self.layout
         col = layout.column()
         col.scale_y = Config.text_scale_y
-        col.label(text='Choose an existing .precalc file')
-        col.label(text='or just enter a name for a new one')
+        col.label(text='Use existing .precalc file ')
+        col.label(text='or enter new name')
 
     def execute(self, context):
         _log.output('PRECALC PATH: {}'.format(self.filepath))
@@ -583,9 +583,9 @@ class GT_OT_AnalyzeCall(Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     precalc_start: IntProperty(default=1, name='from',
-                               description='starting frame', min=0)
+                               description='Start frame', min=0)
     precalc_end: IntProperty(default=250, name='to',
-                             description='ending frame', min=0)
+                             description='End frame', min=0)
 
     def check_precalc_range(self) -> bool:
         scene_start = bpy_start_frame()

@@ -54,6 +54,7 @@ class BVersion:
     operator_with_context_exists: bool = ver >= (3, 2, 0)
     pixels_foreach_methods_exist: bool = ver >= (2, 83, 0)
     property_gpu_backend_exists: bool = ver >= (3, 5, 0)
+    uv_select_overlap_exists: bool = ver >= (2, 81, 0)
 
     os_name: str = _os_name()
     gpu_backend: str = _get_gpu_backend(property_gpu_backend_exists)

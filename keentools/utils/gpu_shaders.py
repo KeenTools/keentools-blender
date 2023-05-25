@@ -425,6 +425,12 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
     shader_info.push_constant('MAT4', 'modelMatrix')
     shader_info.push_constant('VEC4', 'color')
+    shader_info.push_constant('FLOAT', 'adaptiveOpacity')
+
+    shader_info.push_constant('VEC3', 'pos1')
+    shader_info.push_constant('VEC3', 'pos2')
+    shader_info.push_constant('VEC3', 'pos3')
+
     shader_info.vertex_in(0, 'VEC3', 'pos')
     shader_info.vertex_in(1, 'VEC3', 'vertNormal')
     shader_info.vertex_out(vert_out)
@@ -436,8 +442,8 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
         {
             mat4 resultMatrix = ModelViewProjectionMatrix * modelMatrix;
             gl_Position = resultMatrix * vec4(pos, 1.0);
-            calcNormal = normalize(resultMatrix * vec4(vertNormal, 0.0)).xyz;
-            outPos = gl_Position.xyz;
+            calcNormal = vertNormal;
+            outPos = pos;
         }
         '''
     )
@@ -467,11 +473,29 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
         return attenuation * (ambient + diffuse) * surfColor;
     }
 
+    vec4 to_srgb_gamma_vec4(vec4 color)
+    {
+        vec3 c = max(color.rgb, vec3(0.0));
+        vec3 c1 = c * (1.0 / 12.92);
+        vec3 c2 = pow((c + 0.055) * (1.0 / 1.055), vec3(2.4));
+        color.rgb = mix(c1, c2, step(vec3(0.04045), c));
+        return color;
+    }
+
+    vec3 to_srgb_gamma_vec3(vec3 color)
+    {
+        vec3 c = max(color, vec3(0.0));
+        vec3 c1 = c * (1.0 / 12.92);
+        vec3 c2 = pow((c + 0.055) * (1.0 / 1.055), vec3(2.4));
+        color = mix(c1, c2, step(vec3(0.04045), c));
+        return color;
+    }
+
     void main()
     {
         float dist = 1000.0;
         Light light1;
-        light1.position = vec3( 0.0,  0.0, -dist);
+        light1.position = pos1;
         light1.constantVal = 1.0;
         light1.linear = 0.0;
         light1.quadratic = 0.0;
@@ -479,7 +503,7 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
         light1.diffuse = vec3(1.0, 1.0, 1.0);
 
         Light light2;
-        light2.position = vec3(-2.0 * dist, 0.0, -dist);
+        light2.position = pos2;
         light2.constantVal = 1.0;
         light2.linear = 0.0;
         light2.quadratic = 0.0;
@@ -487,7 +511,7 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
         light2.diffuse = vec3(1.0, 1.0, 1.0);
 
         Light light3;
-        light3.position = vec3( 2.0 * dist, 0.0, -dist);
+        light3.position = pos3;
         light3.constantVal = 1.0;
         light3.linear = 0.0;
         light3.quadratic = 0.0;
@@ -495,9 +519,10 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
         light3.diffuse = vec3(1.0, 1.0, 1.0);
 
         fragColor = vec4(
-            evaluatePointLight(light1, color.rgb, calcNormal, outPos) +
-            evaluatePointLight(light2, color.rgb, calcNormal, outPos) +
-            evaluatePointLight(light3, color.rgb, calcNormal, outPos), color.a);
+            to_srgb_gamma_vec3(evaluatePointLight(light1, color.rgb, calcNormal, outPos)) +
+            to_srgb_gamma_vec3(evaluatePointLight(light2, color.rgb, calcNormal, outPos)) +
+            to_srgb_gamma_vec3(evaluatePointLight(light3, color.rgb, calcNormal, outPos)),
+            color.a * adaptiveOpacity);
     }
     '''
 
@@ -519,7 +544,7 @@ def raster_image_mask_shader(use_old: bool=_use_old_shaders) -> Any:
         return shader
 
     vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
-    vert_out.flat('VEC2', 'texCoord_interp')
+    vert_out.smooth('VEC2', 'texCoord_interp')
 
     shader_info = gpu.types.GPUShaderCreateInfo()
     shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
@@ -580,7 +605,7 @@ def raster_image_shader(use_old: bool=_use_old_shaders) -> Any:
         return shader
 
     vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
-    vert_out.flat('VEC2', 'texCoord_interp')
+    vert_out.smooth('VEC2', 'texCoord_interp')
 
     shader_info = gpu.types.GPUShaderCreateInfo()
     shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')

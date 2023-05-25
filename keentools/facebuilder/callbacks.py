@@ -328,6 +328,9 @@ def update_wireframe_image(self, context):
 
 
 def update_wireframe_func(self, context):
+    settings = get_fb_settings()
+    if settings.use_adaptive_opacity:
+        settings.calc_adaptive_opacity(FBLoader.get_work_area())
     FBLoader.viewport().update_wireframe_colors()
 
 

@@ -39,6 +39,7 @@ from .utils.tracking import reload_precalc
 from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_scale_vec_4_from_matrix_world,
                             get_image_space_coord,
+                            get_camera_border,
                             focal_mm_to_px,
                             camera_focal_length,
                             camera_sensor_width,
@@ -62,6 +63,7 @@ from ..preferences.user_preferences import (UserPreferences,
 from ..utils.animation import count_fcurve_points
 from ..utils.manipulate import select_object_only
 from ..utils.viewport_state import ViewportStateItem
+from .ui_strings import PrecalcStatusMessage
 
 
 _log = KTLogger(__name__)
@@ -170,7 +172,12 @@ def update_precalc_path(geotracker, context: Any) -> None:
 
 
 def update_wireframe(settings, context: Any) -> None:
-    GTLoader.update_viewport_wireframe()
+    if not settings.pinmode:
+        return
+    GTLoader.update_viewport_shaders(adaptive_opacity=True,
+                                     geomobj_matrix=True,
+                                     wireframe=True,
+                                     normals=settings.lit_wireframe)
 
 
 def update_mask_2d_color(settings, context: Any) -> None:
@@ -195,11 +202,6 @@ def update_wireframe_backface_culling(settings, context: Any) -> None:
     GTLoader.save_geotracker()
     if settings.pinmode:
         GTLoader.update_viewport_wireframe()
-
-
-def update_lit_wireframe(settings, context: Any) -> None:
-    if settings.pinmode:
-        GTLoader.update_viewport_wireframe(normals=settings.lit_wireframe)
 
 
 def update_background_tone_mapping(geotracker, context: Any) -> None:
@@ -287,6 +289,7 @@ def update_mask_2d(geotracker, context: Any) -> None:
 
 
 def update_mask_source(geotracker, context: Any) -> None:
+    _log.output('update_mask_source')
     if geotracker.get_mask_source() == 'COMP_MASK':
         _log.output('switch to COMP_MASK')
         geotracker.update_compositing_mask(recreate_nodes=True)
@@ -337,28 +340,30 @@ class FrameListItem(bpy.types.PropertyGroup):
 
 class GeoTrackerItem(bpy.types.PropertyGroup):
     serial_str: bpy.props.StringProperty(name='GeoTracker Serialization string')
-    geomobj: bpy.props.PointerProperty(name='Geometry',
-                                       description='Geometry object in scene',
-                                       type=bpy.types.Object,
-                                       poll=is_mesh,
-                                       update=update_geomobj)
-    camobj: bpy.props.PointerProperty(name='Camera',
-                                      description='Camera object in scene',
-                                      type=bpy.types.Object,
-                                      poll=is_camera,
-                                      update=update_camobj)
+    geomobj: bpy.props.PointerProperty(
+        name='Geometry',
+        description='Select target geometry from the list '
+                    'of objects in your Scene',
+        type=bpy.types.Object,
+        poll=is_mesh,
+        update=update_geomobj)
+    camobj: bpy.props.PointerProperty(
+        name='Camera',
+        description='Choose which camera will be your viewpoint',
+        type=bpy.types.Object,
+        poll=is_camera,
+        update=update_camobj)
     movie_clip: bpy.props.PointerProperty(name='Movie Clip',
-                                          description='Footage for tracking',
+                                          description='Select Footage from list',
                                           type=bpy.types.MovieClip,
                                           update=update_movieclip)
 
     dir_name: bpy.props.StringProperty(name='Dir name')
 
     precalc_path: bpy.props.StringProperty(
-        name='Analysis file name',
+        name='Analysis cache file path',
         description='The path for the analysis file. '
-                    'The .precalc extension will be added '
-                    'automatically if not found',
+                    'The .precalc extension will be added automatically',
         update=update_precalc_path)
     precalc_start: bpy.props.IntProperty(name='from', default=1, min=0)
     precalc_end: bpy.props.IntProperty(name='to', default=250, min=0)
@@ -366,9 +371,9 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     def precalc_message_error(self):
         return self.precalc_message in [
-            '',
-            '* Precalc file is corrupted',
-            '* Precalc needs to be built']
+            PrecalcStatusMessage.empty,
+            PrecalcStatusMessage.broken_file,
+            PrecalcStatusMessage.missing_file]
 
     solve_for_camera: bpy.props.BoolProperty(
         name='Track for Camera or Geometry',
@@ -429,8 +434,8 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     precalcless: bpy.props.BoolProperty(
         name='Precalcless tracking',
-        description='Using analysis (.precalc) file makes a tracking faster. '
-                    'Precalcless tracking can help in difficult situations',
+        description='This will analyze the clip and create a .precalc '
+                    'cache file to make tracking faster',
         default=False)
 
     selected_frames: bpy.props.CollectionProperty(type=FrameListItem,
@@ -558,7 +563,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     def animatable_object_name(self) -> str:
         obj = self.animatable_object()
         if not obj:
-            return '# Undefined'
+            return 'N/A'
         return obj.name
 
     def get_background_image_object(self) -> Optional[CameraBackgroundImage]:
@@ -675,6 +680,13 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     def get_adaptive_opacity(self):
         return self.adaptive_opacity if self.use_adaptive_opacity else 1.0
 
+    def calc_adaptive_opacity(self, area: Area) -> None:
+        if not area:
+            return
+        rx, ry = bpy_render_frame()
+        x1, y1, x2, y2 = get_camera_border(area)
+        self.adaptive_opacity = (x2 - x1) / rx
+
     wireframe_opacity: bpy.props.FloatProperty(
         description='From 0.0 to 1.0',
         name='GeoTracker wireframe Opacity',
@@ -699,7 +711,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
     lit_wireframe: bpy.props.BoolProperty(
         name='Lit wireframe',
         default=False,
-        update=update_lit_wireframe)
+        update=update_wireframe)
 
     pin_size: bpy.props.FloatProperty(
         description='Set pin size in pixels',

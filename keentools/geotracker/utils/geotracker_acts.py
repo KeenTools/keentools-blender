@@ -24,6 +24,7 @@ from bpy.types import Object, Operator, Area
 from mathutils import Matrix, Euler
 
 from ...utils.kt_logging import KTLogger
+from ...utils.version import BVersion
 from ...addon_config import ActionStatus
 from ...geotracker_config import (get_gt_settings,
                                   GTConfig,
@@ -167,7 +168,9 @@ def next_keyframe_act() -> ActionStatus:
     if current_frame == target_frame:
         track_frames = gt.track_frames()
         if len(track_frames) > 0:
-            target_frame = track_frames[-1]
+            last_track_frame = track_frames[-1]
+            if last_track_frame > current_frame:
+                target_frame = last_track_frame
 
     if current_frame != target_frame:
         bpy_set_current_frame(target_frame)
@@ -184,7 +187,9 @@ def prev_keyframe_act() -> ActionStatus:
     if current_frame == target_frame:
         track_frames = gt.track_frames()
         if len(track_frames) > 0:
-            target_frame = track_frames[0]
+            first_track_frame = track_frames[0]
+            if first_track_frame < current_frame:
+                target_frame = first_track_frame
 
     if current_frame != target_frame:
         bpy_set_current_frame(target_frame)
@@ -575,6 +580,9 @@ def check_uv_exists(obj: Optional[Object]) -> ActionStatus:
 
 
 def check_uv_overlapping(obj: Optional[Object]) -> ActionStatus:
+    if not BVersion.uv_select_overlap_exists:
+        return ActionStatus(False, 'Too old Blender version for overlapping check')
+
     old_mode = obj.mode
     select_object_only(obj)
 

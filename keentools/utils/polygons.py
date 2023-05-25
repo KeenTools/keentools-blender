@@ -171,6 +171,8 @@ class KTRasterMask(KTShaderBase):
             return False
 
         if not check_gl_image(self.image):
+            _log.error(f'{self.__class__.__name__}.draw_checks '
+                       f'check_gl_image failed: {self.image}')
             return False
         return True
 
@@ -193,4 +195,5 @@ class KTRasterMask(KTShaderBase):
 
     def register_handler(self, context: Any,
                          post_type: str='POST_PIXEL') -> None:
+        _log.output(f'{self.__class__.__name__}.register_handler')
         super().register_handler(context, post_type)
