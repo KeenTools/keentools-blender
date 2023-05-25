@@ -381,3 +381,9 @@ help_texts = {
         ' '
     ]),
 }
+
+
+class PrecalcStatusMessage:
+    broken_file: str = '* Analysis file is broken'
+    missing_file: str = '* .precalc file is missing'
+    empty: str = ''

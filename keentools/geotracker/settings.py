@@ -63,6 +63,7 @@ from ..preferences.user_preferences import (UserPreferences,
 from ..utils.animation import count_fcurve_points
 from ..utils.manipulate import select_object_only
 from ..utils.viewport_state import ViewportStateItem
+from .ui_strings import PrecalcStatusMessage
 
 
 _log = KTLogger(__name__)
@@ -370,9 +371,9 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     def precalc_message_error(self):
         return self.precalc_message in [
-            '',
-            '* Analysis file is broken',
-            '* .precalc file is missing']
+            PrecalcStatusMessage.empty,
+            PrecalcStatusMessage.broken_file,
+            PrecalcStatusMessage.missing_file]
 
     solve_for_camera: bpy.props.BoolProperty(
         name='Track for Camera or Geometry',
