@@ -544,7 +544,7 @@ def raster_image_mask_shader(use_old: bool=_use_old_shaders) -> Any:
         return shader
 
     vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
-    vert_out.flat('VEC2', 'texCoord_interp')
+    vert_out.smooth('VEC2', 'texCoord_interp')
 
     shader_info = gpu.types.GPUShaderCreateInfo()
     shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
@@ -605,7 +605,7 @@ def raster_image_shader(use_old: bool=_use_old_shaders) -> Any:
         return shader
 
     vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
-    vert_out.flat('VEC2', 'texCoord_interp')
+    vert_out.smooth('VEC2', 'texCoord_interp')
 
     shader_info = gpu.types.GPUShaderCreateInfo()
     shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')

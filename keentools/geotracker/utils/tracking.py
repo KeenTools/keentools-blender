@@ -22,6 +22,7 @@ from typing import Tuple, Optional, Any
 from ...utils.kt_logging import KTLogger
 from ...utils.bpy_common import bpy_render_frame
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..ui_strings import PrecalcStatusMessage
 
 
 _log = KTLogger(__name__)
@@ -88,7 +89,7 @@ def reload_precalc(geotracker: Any) -> Tuple[bool, str, Any]:
     if os.path.exists(precalc_path):
         precalc_info, msg = get_precalc_info(precalc_path)
         if precalc_info is None:
-            geotracker.precalc_message = '* Precalc file is corrupted'
+            geotracker.precalc_message = PrecalcStatusMessage.broken_file
             return False, 'Warning! Precalc file seems corrupted', None
         try:
             geotracker.precalc_message = get_precalc_message(precalc_info)
@@ -101,7 +102,7 @@ def reload_precalc(geotracker: Any) -> Tuple[bool, str, Any]:
             return False, 'Precalc file exception', None
         return True, 'ok', precalc_info
 
-    geotracker.precalc_message = '* Precalc needs to be built'
+    geotracker.precalc_message = PrecalcStatusMessage.missing_file
     return False, 'Precalc file has not been created yet', None
 
 

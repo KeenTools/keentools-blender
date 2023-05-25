@@ -81,7 +81,7 @@ class PrecalcTimer(CalcTimer):
         progress, message = self._runner.current_progress()
         _log.output(f'precalc runner_state: {progress} {message}')
         GTLoader.viewport().message_to_screen(
-            [{'text': 'Precalc calculating... Please wait', 'y': 60,
+            [{'text': 'Analysing... Please wait', 'y': 60,
               'color': (1.0, 0.0, 0.0, 0.7)},
              {'text': message, 'y': 30,
               'color': (1.0, 1.0, 1.0, 0.7)}])

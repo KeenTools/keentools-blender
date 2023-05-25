@@ -21,7 +21,11 @@ from typing import List, Dict, Any
 import bpy
 import blf
 
+from .kt_logging import KTLogger
 from .base_shaders import KTShaderBase
+
+
+_log = KTLogger(__name__)
 
 
 class KTScreenText(KTShaderBase):
@@ -38,8 +42,8 @@ class KTScreenText(KTShaderBase):
              'color': (1., 1., 1., 0.5),
              'size': 24,
              'y': 60},  # line 1
-            {'text': 'ESC: Exit | LEFT CLICK: Create Pin | '
-                     'RIGHT CLICK: Delete Pin | TAB: Hide/Show',
+            {'text': 'ESC: Exit | LEFT CLICK: Create Pin '
+                     '| RIGHT CLICK: Delete Pin | TAB: Hide/Show',
              'color': (1., 1., 1., 0.5),
              'size': 20,
              'y': 30}  # line 2
@@ -100,4 +104,5 @@ class KTScreenText(KTShaderBase):
 
     def register_handler(self, context: Any,
                          post_type: str='POST_PIXEL') -> None:
+        _log.output(f'{self.__class__.__name__}.register_handler')
         super().register_handler(context, post_type)
