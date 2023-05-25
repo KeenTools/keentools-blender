@@ -326,7 +326,7 @@ class GT_OT_PinMode(Operator):
             vp.revert_default_screen_message(unregister=False)
         else:
             default_txt = deepcopy(vp.texter().get_default_text())
-            default_txt[0]['text'] = 'Wireframe is hidden. Press Tab to reveal'
+            default_txt[0]['text'] = 'Press TAB to show wireframe'
             default_txt[0]['color'] = (1., 0., 1., 0.85)
             GTLoader.viewport().message_to_screen(default_txt)
 

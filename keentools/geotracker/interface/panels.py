@@ -519,10 +519,10 @@ class GT_PT_TrackingPanel(AllVisible):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.operator(GTConfig.gt_switch_to_geometry_mode_idname,
-                     text='Geometry', icon='MESH_ICOSPHERE',
+                     icon='MESH_ICOSPHERE',
                      depress=not geotracker.solve_for_camera)
         row.operator(GTConfig.gt_switch_to_camera_mode_idname,
-                     text='Camera', icon='CAMERA_DATA',
+                     icon='CAMERA_DATA',
                      depress=geotracker.solve_for_camera)
 
     def _tracking_pinmode_button(self, settings: Any, layout: Any,

@@ -26,7 +26,7 @@ Button = namedtuple('Button', ['label', 'description'])
 buttons = {
     GTConfig.gt_pinmode_idname: Button(
         'GeoTracker Pinmode',
-        'Align geometry with the target in your clip'
+        'Align geometry with the target in your clip and proceed to tracking'
     ),
     GTConfig.gt_movepin_idname: Button(
         'GeoTracker MovePin',
@@ -34,11 +34,11 @@ buttons = {
     ),
     GTConfig.gt_switch_to_camera_mode_idname: Button(
         'Camera',
-        'Camera object will be tracked'
+        'Track Camera'
     ),
     GTConfig.gt_switch_to_geometry_mode_idname: Button(
         'Geometry',
-        'Geometry object will be tracked'
+        'Track Geometry'
     ),
     GTConfig.gt_actor_idname: Button(
         'Actor Operator',
@@ -58,15 +58,15 @@ buttons = {
     ),
     GTConfig.gt_split_video_to_frames_idname: Button(
         'Split video to frames',
-        'Choose dir where to place video-file frames'
+        'Choose folder'
     ),
     GTConfig.gt_split_video_to_frames_exec_idname: Button(
-        'Split video-file.',
-        'Choose dir where to place video-file frames.'
+        'Split video to frames',
+        'Choose folder'
     ),
     GTConfig.gt_video_snapshot_idname: Button(
-        'Make snapshot',
-        'Make snapshot from current frame'
+        'Take snapshot',
+        'Take snapshot of current frame'
     ),
     GTConfig.gt_select_frames_for_bake_idname: Button(
         'Select frames for reproject',
@@ -103,7 +103,7 @@ buttons = {
     ),
     GTConfig.gt_select_geotracker_objects_idname: Button(
         'Select objects',
-        'Select GeoTracker objects in scene'
+        'Select assigned Geometry and Camera in scene'
     ),
     GTConfig.gt_create_precalc_idname: Button(
         'Create precalc',
@@ -155,11 +155,11 @@ buttons = {
     ),
     GTConfig.gt_clear_tracking_forward_idname: Button(
         'Clear forward',
-        'Clear keyframes to the right of current frame'
+        'Clear all keyframes to the right of current frame'
     ),
     GTConfig.gt_clear_tracking_backward_idname: Button(
         'Clear backwards',
-        'Clear keyframes to the left of current frame'
+        'Clear all keyframes to the left of current frame'
     ),
     GTConfig.gt_clear_tracking_between_idname: Button(
         'Clear between',
@@ -183,11 +183,11 @@ buttons = {
     ),
     GTConfig.gt_remove_pins_idname: Button(
         'remove pins',
-        'Remove all pins'
+        'Delete all or only selected pins'
     ),
     GTConfig.gt_toggle_pins_idname: Button(
         'toggle pins',
-        'toggle pins operation'
+        'Toggle all or only selected pins'
     ),
     GTConfig.gt_export_animated_empty_idname: Button(
         'Create animated Empty',

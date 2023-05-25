@@ -288,6 +288,7 @@ def update_mask_2d(geotracker, context: Any) -> None:
 
 
 def update_mask_source(geotracker, context: Any) -> None:
+    _log.output('update_mask_source')
     if geotracker.get_mask_source() == 'COMP_MASK':
         _log.output('switch to COMP_MASK')
         geotracker.update_compositing_mask(recreate_nodes=True)
@@ -561,7 +562,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     def animatable_object_name(self) -> str:
         obj = self.animatable_object()
         if not obj:
-            return '# Undefined'
+            return 'N/A'
         return obj.name
 
     def get_background_image_object(self) -> Optional[CameraBackgroundImage]:
