@@ -363,7 +363,8 @@ def get_object_keyframe_numbers(obj: Object) -> List[int]:
     for name in fcurves.keys():
         points: Set = {int(p.co[0]) for p in fcurves[name].keyframe_points}
         keys_set = keys_set.union(points)
-    return list(keys_set)
+
+    return sorted(keys_set)
 
 
 def get_world_matrices_in_frames(obj: Object,

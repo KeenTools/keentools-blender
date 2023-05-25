@@ -168,7 +168,9 @@ def next_keyframe_act() -> ActionStatus:
     if current_frame == target_frame:
         track_frames = gt.track_frames()
         if len(track_frames) > 0:
-            target_frame = track_frames[-1]
+            last_track_frame = track_frames[-1]
+            if last_track_frame > current_frame:
+                target_frame = last_track_frame
 
     if current_frame != target_frame:
         bpy_set_current_frame(target_frame)
@@ -185,7 +187,9 @@ def prev_keyframe_act() -> ActionStatus:
     if current_frame == target_frame:
         track_frames = gt.track_frames()
         if len(track_frames) > 0:
-            target_frame = track_frames[0]
+            first_track_frame = track_frames[0]
+            if first_track_frame < current_frame:
+                target_frame = first_track_frame
 
     if current_frame != target_frame:
         bpy_set_current_frame(target_frame)

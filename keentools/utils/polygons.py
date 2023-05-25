@@ -165,8 +165,6 @@ class KTRasterMask(KTShaderBase):
             return False
 
         if self.mask_shader is None or self.mask_batch is None:
-            _log.error(f'{self.__class__.__name__}.draw_checks '
-                       f'{self.mask_shader} {self.mask_batch}')
             return False
 
         if self.work_area != context.area:
