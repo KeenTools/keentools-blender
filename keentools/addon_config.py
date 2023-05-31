@@ -38,6 +38,8 @@ class Config:
     fb_tab_category = 'FaceBuilder'
     gt_tab_category = 'GeoTracker'
 
+    kt_testing_tab_category = 'KeenTools Testing'
+
     fb_global_var_name = 'keentools_fb_settings'
     gt_global_var_name = 'keentools_gt_settings'
 
@@ -98,6 +100,14 @@ class Config:
     kt_install_updates_idname = operators + '.install_updates'
     kt_remind_install_later_idname = operators + '.remind_install_later'
     kt_skip_installation_idname = operators + '.skip_installation'
+
+    # Testing panels
+    kt_error_testing = _PT + 'error_testing_panel'
+    kt_gt_shader_testing = _PT + 'gt_shader_testing_panel'
+    kt_fb_shader_testing = _PT + 'fb_shader_testing_panel'
+
+    kt_gt_shader_testing_idname = operators + '.gt_shader_testing'
+    kt_fb_shader_testing_idname = operators + '.fb_shader_testing'
 
     # Object Custom Properties
     core_version_prop_name = _company + '_version'
