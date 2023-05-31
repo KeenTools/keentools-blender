@@ -237,3 +237,11 @@ class FBViewport(KTViewport):
         # For pin dashes drawing template like this: O- - - -o
         wire.edge_lengths = [0.0, 22.0] * len(kt_pins)
         wire.create_batch()
+
+    def unhide_all_shaders(self):
+        self.residuals().unhide_shader()
+        self.points3d().unhide_shader()
+        self.points2d().unhide_shader()
+        self.texter().unhide_shader()
+        self.wireframer().unhide_shader()
+        self.rectangler().unhide_shader()
