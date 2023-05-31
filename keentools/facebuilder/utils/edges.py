@@ -154,6 +154,15 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         self.simple_line_shader: Optional[Any] = None
         super().__init__(target_class)
 
+    def get_statistics(self):
+        return f'\nvertices: {len(self.vertices)}' \
+               f'\ntriangle_indices: {len(self.triangle_indices)}' \
+               f'\nedge_vertices: {len(self.edge_vertices)}' \
+               f'\nedge_colors: {len(self.edge_colors)}' \
+               f'\nedge_indices: {len(self.edge_indices)}' \
+               f'\nedge_uvs: {len(self.edge_uvs)}' \
+               f'\ntexture_colors: {self.texture_colors}' \
+
     def init_colors(self, colors: List, opacity: float) -> None:
         self.texture_colors = [inverse_gamma_color(color[:3]) for color in colors]
         self.opacity = opacity
@@ -234,6 +243,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
     def draw_main_bgl(self, context: Any) -> None:
         wireframe_image = find_bpy_image_by_name(FBConfig.coloring_texture_name)
         if not self._check_coloring_image(wireframe_image):
+            _log.error(f'draw_main_bgl _check_coloring_image failed: {wireframe_image}')
             self.unregister_handler()
             return
 
@@ -410,10 +420,8 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         if not builder.face_texture_available():
             self._clear_edge_indices()
             return
-        keyframes = builder.keyframes()
-        if len(keyframes) == 0:
-            return
-        geo = builder.applied_args_replaced_uvs_model_at(keyframes[0])
+
+        geo = builder.applied_args_replaced_uvs_model()
         me = geo.mesh(0)
         face_counts = [me.face_size(x) for x in range(me.faces_count())]
         indices = np.empty((sum(face_counts), 2), dtype=np.int32)

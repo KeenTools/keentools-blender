@@ -139,6 +139,11 @@ _default_width = 400
 
 
 error_messages: Dict = {
+    ErrorType.Unknown: ErrorMessage(_default_width, [
+        'Unknown error',
+        ' ',
+        'You should never see this error message. Let us now if it happened.'
+    ]),
     ErrorType.NoLicense: ErrorMessage(_default_width, [
         'License is not found',
         ' ',
