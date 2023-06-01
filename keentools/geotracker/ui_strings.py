@@ -189,9 +189,21 @@ buttons = {
         'toggle pins',
         'Toggle all or only selected pins'
     ),
+    GTConfig.gt_rescale_window_idname: Button(
+        'Scale',
+        'Scale scene'
+    ),
+    GTConfig.gt_move_window_idname: Button(
+        'Position',
+        'Move scene'
+    ),
+    GTConfig.gt_rig_window_idname: Button(
+        'Rig',
+        'Create an Empty with parented Camera and Geometry'
+    ),
     GTConfig.gt_export_animated_empty_idname: Button(
-        'Create animated Empty',
-        'Copy animation to Empty'
+        'Export',
+        'Create an animated Empty'
     ),
     GTConfig.gt_exit_pinmode_idname: Button(
         'Exit Pinmode',
@@ -246,12 +258,12 @@ buttons = {
         'Deselect all keyframes for getting texture by reprojection'
     ),
     GTConfig.gt_transfer_tracking_idname: Button(
-        'Convert tracking animation',
-        'Transfer animation from Geometry to Camera and vice versa'
+        'Convert',
+        'Convert all animation'
     ),
     GTConfig.gt_bake_animation_to_world_idname: Button(
         'Bake animation',
-        'Bake animation to world space'
+        'Convert animation to world space'
     ),
     GTConfig.gt_remove_focal_keyframe_idname: Button(
         'Remove focal keyframe',

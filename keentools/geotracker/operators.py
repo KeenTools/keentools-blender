@@ -1201,28 +1201,34 @@ def draw_constraint_warning_message(layout, warning_message):
 
 class GT_OT_RescaleWindow(Operator):
     bl_idname = GTConfig.gt_rescale_window_idname
-    bl_label = 'Scale'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
 
     mode: EnumProperty(name='Mode', items=[
-        ('BOTH', 'Scene', 'Use both camera and geometry', 0),
-        ('GEOMETRY', 'Geometry', 'Affect geometry only according to camera', 1),
-        ('CAMERA', 'Camera', 'Affect camera only according to geometry', 2),
+        ('BOTH', 'Scene',
+         'Scale both Camera and Geometry relative to pivot point', 0),
+        ('GEOMETRY', 'Geometry',
+         'Scale Geometry relative to Camera. '
+         'Lock Camera scale and animation', 1),
+        ('CAMERA', 'Camera',
+         'Scale Camera relative to Geometry. '
+         'Lock Geometry scale and animation', 2),
     ], update=_update_rescale_mode)
 
     value: FloatProperty(default=1.0, precision=4, min=0.0001,
                          update=_rescale_preview_func)
     geom_scale: FloatVectorProperty(default=(1, 1, 1))
     cam_scale:  FloatVectorProperty(default=(1, 1, 1))
-    keep_cam_scale: BoolProperty(default=True, name='Keep camera scale',
+    keep_cam_scale: BoolProperty(default=True, name='Lock Camera scale',
                                  update=_rescale_preview_func)
-    keep_geom_scale: BoolProperty(default=False, name='Keep object scale',
+    keep_geom_scale: BoolProperty(default=False, name='Lock Geometry scale',
                                   update=_rescale_preview_func)
 
     origin_point: EnumProperty(name='Pivot point', items=[
-        ('WORLD', 'World Origin', 'Use a world center (0, 0, 0)', 0),
-        ('GEOMETRY', 'Geometry', 'Use a geometry pivot as a center', 1),
-        ('CAMERA', 'Camera', 'Use a camera pivot as a center', 2),
+        ('WORLD', 'World Origin', 'Use world center (0, 0, 0)', 0),
+        ('GEOMETRY', 'Geometry', 'Use Geometry pivot as center', 1),
+        ('CAMERA', 'Camera', 'Use Camera pivot as center', 2),
         ('3D_CURSOR', '3D Cursor', 'Use 3D cursor', 3),
     ], update=_rescale_preview_func)
 
@@ -1366,26 +1372,27 @@ def _update_move_coords(operator, context):
 
 class GT_OT_MoveWindow(Operator):
     bl_idname = GTConfig.gt_move_window_idname
-    bl_label = 'Move'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
 
     no_updates: BoolProperty(default=False)
 
     mode: EnumProperty(name='Mode', items=[
-        ('CAMERA', 'Camera', 'Move camera', 0),
-        ('GEOMETRY', 'Geometry', 'Move geometry', 1),
+        ('CAMERA', 'by Camera', 'Origin point is Camera', 0),
+        ('GEOMETRY', 'by Geometry', 'Origin point is Geometry', 1),
     ], update=_update_move_mode)
 
     target_point: EnumProperty(name='Target point', items=[
         ('WORLD', 'World Origin', 'Use world center', 0),
         ('3D_CURSOR', '3D Cursor', 'Use 3D cursor', 1),
-        ('CUSTOM', 'Custom', 'Use camera as center', 2)
+        ('CUSTOM', 'Custom', 'Custom position', 2)
     ], update=_update_move_target_point)
 
-    location: FloatVectorProperty(name='Target Location',
+    location: FloatVectorProperty(name='Location',
                                   subtype='TRANSLATION',
                                   update=_update_move_coords)
-    euler_rotation: FloatVectorProperty(name='Target rotation',
+    euler_rotation: FloatVectorProperty(name='Rotation',
                                         subtype='EULER',
                                         update=_update_move_coords)
     done: BoolProperty(default=False)
@@ -1485,15 +1492,14 @@ def _rig_preview_func(operator, context):
 
 class GT_OT_RigWindow(Operator):
     bl_idname = GTConfig.gt_rig_window_idname
-    bl_label = 'Rig'
-    bl_description = 'Create independent Empty with/without parenting ' \
-                     'GeoTracker objects to it'
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
 
     target_point: EnumProperty(name='Target point', items=[
         ('WORLD', 'World Origin', 'Use world center', 0),
-        ('CAMERA', 'Camera', 'Affect camera only', 1),
-        ('GEOMETRY', 'Geometry', 'Affect geometry only', 2),
+        ('CAMERA', 'Camera', 'Use Camera Origin', 1),
+        ('GEOMETRY', 'Geometry', 'Use Geometry Origin', 2),
         ('3D_CURSOR', '3D Cursor', 'Use 3D cursor', 3),
     ], update=_rig_preview_func)
 
@@ -1539,9 +1545,8 @@ class GT_OT_RigWindow(Operator):
             col = box.column()
             col.alert = True
             col.scale_y = Config.text_scale_y
-            msg = ['Parenting is not available for objects '
-                   'that already have a parent.',
-                   'Use \'Bake\' button for safe unparenting objects.']
+            msg = ['Parenting disabled for already parented objects.',
+                   'You can use \'Bake\' button to safely remove parenting.']
             for txt in msg:
                 col.label(text=txt)
 

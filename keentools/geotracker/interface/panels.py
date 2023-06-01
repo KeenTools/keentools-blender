@@ -834,7 +834,7 @@ class GT_PT_AnimationPanel(AllVisible):
 
         col = layout.column(align=True)
         col.prop(settings, 'transfer_animation_selector', text='')
-        col.operator(GTConfig.gt_transfer_tracking_idname, text='Convert')
+        col.operator(GTConfig.gt_transfer_tracking_idname)
 
         layout.separator()
 
@@ -860,8 +860,8 @@ class GT_PT_AnimationPanel(AllVisible):
         col = layout.column(align=True)
         col.prop(settings, 'export_locator_selector', text='')
         row = col.split(factor=0.4, align=True)
-        row.prop(settings, 'export_linked_locator', text='Linked')
-        row.operator(GTConfig.gt_export_animated_empty_idname, text='Export')
+        row.prop(settings, 'export_linked_locator')
+        row.operator(GTConfig.gt_export_animated_empty_idname)
 
 
 class GT_PT_RenderingPanel(AllVisible):

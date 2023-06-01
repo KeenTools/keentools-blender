@@ -442,12 +442,11 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
                                                   name='Selected frames')
     mask_3d: bpy.props.StringProperty(
         name='Surface mask',
-        description='The polygons in selected Vertex Group '
-                    'will be excluded from tracking',
+        description='Exclude polygons of selected Vertex Group from tracking',
         update=update_mask_3d)
     mask_3d_inverted: bpy.props.BoolProperty(
-        name='Invert Mask 3D',
-        description='Invert Mask 3D Vertex Group',
+        name='Invert',
+        description='Invert Surface mask',
         default=False,
         update=update_mask_3d)
     mask_2d: bpy.props.StringProperty(
@@ -472,12 +471,12 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         description='About 2d mask')
     compositing_mask: bpy.props.StringProperty(
         default='',
-        name='Compositing 2D mask',
-        description='Compositing 2D mask for tracking',
+        name='Compositing mask',
+        description='Exclude area within selected Compositing mask from tracking',
         update=update_mask_source)
     compositing_mask_inverted: bpy.props.BoolProperty(
-        name='Invert Compositing Mask 2D',
-        description='Invert Compositing Mask',
+        name='Invert',
+        description='Invert Compositing mask',
         default=False,
         update=update_mask_source)
     compositing_mask_threshold: bpy.props.FloatProperty(
@@ -791,13 +790,13 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         update=update_mask_2d_color)
 
     transfer_animation_selector: bpy.props.EnumProperty(
-        name='Transfer selector',
+        name='Select direction',
         items=[
             ('GEOMETRY_TO_CAMERA', 'Geometry to Camera',
-             'Geometry to Camera description', 0),
+             '', 0),
             ('CAMERA_TO_GEOMETRY', 'Camera to Geometry',
-            'Camera to Geometry description', 1),],
-        description='Choose a direction of transfering animation')
+            '', 1),],
+        description='All animation will be converted from')
 
     bake_animation_selector: bpy.props.EnumProperty(name='Bake selector',
         items=[
@@ -809,18 +808,18 @@ class GTSceneSettings(bpy.types.PropertyGroup):
              'Camera animation will be baked to World space', 2),],
         description='Convert animation to World space')
 
-    export_locator_selector: bpy.props.EnumProperty(name='Animation selector',
+    export_locator_selector: bpy.props.EnumProperty(name='Select source',
         items=[
             ('GEOMETRY', 'Geometry',
-            'Use Geometry as an animation source', 0),
+            'Use Geometry as animation source', 0),
             ('CAMERA', 'Camera',
-             'Use Camera as an animation source', 1),],
+             'Use Camera as animation source', 1),],
         description='Create an animated Empty from')
 
     export_linked_locator: bpy.props.BoolProperty(
-        name='Export linked',
-        description='Use a shared animation Action with GeoTracker object '
-                    'or duplicate an animation independent way',
+        name='Linked',
+        description='Use shared animation Action or duplicate '
+                    'animation data to use it independently',
         default=False)
 
     @contextmanager
