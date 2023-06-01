@@ -420,16 +420,19 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
     vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
     vert_out.smooth('VEC3', 'calcNormal')
     vert_out.smooth('VEC3', 'outPos')
+    vert_out.smooth('VEC3', 'camDir')
 
     shader_info = gpu.types.GPUShaderCreateInfo()
     shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
     shader_info.push_constant('MAT4', 'modelMatrix')
     shader_info.push_constant('VEC4', 'color')
     shader_info.push_constant('FLOAT', 'adaptiveOpacity')
+    shader_info.push_constant('BOOL', 'ignoreBackface')
 
     shader_info.push_constant('VEC3', 'pos1')
     shader_info.push_constant('VEC3', 'pos2')
     shader_info.push_constant('VEC3', 'pos3')
+    shader_info.push_constant('VEC3', 'cameraPos')
 
     shader_info.vertex_in(0, 'VEC3', 'pos')
     shader_info.vertex_in(1, 'VEC3', 'vertNormal')
@@ -444,6 +447,7 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
             gl_Position = resultMatrix * vec4(pos, 1.0);
             calcNormal = vertNormal;
             outPos = pos;
+            camDir = cameraPos - pos;
         }
         '''
     )
@@ -493,6 +497,8 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
 
     void main()
     {
+        if (ignoreBackface && (dot(calcNormal, camDir) < 0.0f)) discard;
+
         float dist = 1000.0;
         Light light1;
         light1.position = pos1;
