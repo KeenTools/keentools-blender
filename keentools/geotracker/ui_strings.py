@@ -90,8 +90,8 @@ buttons = {
     ),
     # Main UI
     GTConfig.gt_addon_setup_defaults_idname: Button(
-        'Setup GeoTracker defaults',
-        'Open GeoTracker Settings in Preferences window'
+        'GeoTracker settings',
+        'Open Preferences/Add-ons for more settings'
     ),
     GTConfig.gt_create_geotracker_idname: Button(
         'Create new GeoTracker',
@@ -214,24 +214,24 @@ buttons = {
         'Stop calculating'
     ),
     GTConfig.gt_reset_tone_exposure_idname: Button(
-        'Reset exposure',
-        'Reset exposure in tone mapping'
+        'Reset',
+        'Reset exposure to default value'
     ),
     GTConfig.gt_reset_tone_gamma_idname: Button(
-        'Reset gamma',
-        'Reset gamma in tone mapping'
+        'Reset',
+        'Reset gamma to default value'
     ),
     GTConfig.gt_reset_tone_mapping_idname: Button(
-        'Reset tone mapping',
-        'Revert default values in tone mapping'
+        'Reset',
+        'Reset all to default values'
     ),
     GTConfig.gt_default_wireframe_settings_idname: Button(
-        'Revert to defaults',
-        'Set the wireframe colours and opacity as in the saved defaults'
+        'Reset',
+        'Reset colour and opacity to default values'
     ),
     GTConfig.gt_default_pin_settings_idname: Button(
-        'Revert to defaults',
-        'Set pin size and active area as in the saved defaults'
+        'Reset',
+        'Reset all to default values'
     ),
     GTConfig.gt_check_uv_overlapping_idname: Button(
         'Check UV',

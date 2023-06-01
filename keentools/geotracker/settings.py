@@ -397,13 +397,14 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         update=update_track_focal_length)
 
     tone_exposure: bpy.props.FloatProperty(
-        name='Exposure', description='Tone gain',
+        name='Exposure', description='Adjust exposure in current frame',
         default=Config.default_tone_exposure,
         min=-10.0, max=10.0, soft_min=-4.0, soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
     tone_gamma: bpy.props.FloatProperty(
-        name='Gamma correction', description='Tone gamma correction',
-        default=Config.default_tone_gamma, min=0.01, max=10.0, soft_max=4.0, precision=2,
+        name='Gamma', description='Adjust gamma in current frame',
+        default=Config.default_tone_gamma, min=0.01, max=10.0,
+        soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
     default_zoom_focal_length: bpy.props.FloatProperty(
         name='Default Zoom FL',
@@ -687,7 +688,6 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         self.adaptive_opacity = (x2 - x1) / rx
 
     wireframe_opacity: bpy.props.FloatProperty(
-        description='From 0.0 to 1.0',
         name='GeoTracker wireframe Opacity',
         default=UserPreferences.get_value_safe('gt_wireframe_opacity',
                                                UserPreferences.type_float),
@@ -695,7 +695,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         update=update_wireframe)
 
     wireframe_color: bpy.props.FloatVectorProperty(
-        description='Color of mesh wireframe in pin-mode',
+        description='Mesh wireframe color in Pinmode',
         name='GeoTracker wireframe Color', subtype='COLOR',
         default=UserPreferences.get_value_safe('gt_wireframe_color',
                                                UserPreferences.type_color),
@@ -713,8 +713,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         update=update_wireframe)
 
     pin_size: bpy.props.FloatProperty(
-        description='Set pin size in pixels',
-        name='Size',
+        name='Size', description='Pin size in pixels',
         default=UserPreferences.get_value_safe('pin_size',
                                                UserPreferences.type_float),
         min=1.0, max=100.0,
@@ -724,8 +723,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         set=universal_cached_setter('pin_size')
     )
     pin_sensitivity: bpy.props.FloatProperty(
-        description='Set active area in pixels',
-        name='Active area',
+        name='Sensitivity', description='Active area in pixels',
         default=UserPreferences.get_value_safe('pin_sensitivity',
                                                UserPreferences.type_float),
         min=1.0, max=100.0,

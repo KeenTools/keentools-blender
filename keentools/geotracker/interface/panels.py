@@ -697,7 +697,7 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         box = layout.box()
         col = box.column(align=True)
         row = col.row(align=True)
-        row.label(text='Background adjustment')
+        row.label(text='Background')
         col.separator(factor=0.4)
         btn = row.column(align=True)
         btn.active = False
