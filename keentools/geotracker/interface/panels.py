@@ -745,16 +745,13 @@ class GT_PT_TexturePanel(AllVisible):
 
     def _draw_buttons(self, layout, active=True):
         settings = get_gt_settings()
-        layout.label(text='Reproject to texture')
+        layout.label(text='Project from')
         col = layout.column(align=True)
         col.active = active
         col.scale_y = Config.btn_scale_y
-        col.operator(GTConfig.gt_reproject_frame_idname,
-                     text='Current frame')
-        col.operator(GTConfig.gt_select_frames_for_bake_idname,
-                        text='GeoTracker keyframes')
-        col.operator(GTConfig.gt_reproject_tex_sequence_idname,
-                        text='Animated sequence')
+        col.operator(GTConfig.gt_reproject_frame_idname)
+        col.operator(GTConfig.gt_select_frames_for_bake_idname)
+        col.operator(GTConfig.gt_reproject_tex_sequence_idname)
 
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y

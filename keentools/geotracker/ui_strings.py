@@ -69,12 +69,12 @@ buttons = {
         'Take snapshot of current frame'
     ),
     GTConfig.gt_select_frames_for_bake_idname: Button(
-        'Select frames for reproject',
-        'Create texture using selected frames'
+        'GeoTracker Keyframes',
+        'Project and bake texture in selected frames'
     ),
     GTConfig.gt_reproject_tex_sequence_idname: Button(
-        'Reproject texture sequence',
-        'Choose dir where to place resulting sequence'
+        'All Frames to Sequence',
+        'Project and bake texture in all frames and save as animated sequence'
     ),
     GTConfig.gt_precalc_info_idname: Button(
         'Analysis file info',
@@ -166,27 +166,27 @@ buttons = {
         'Clear tracking data between nearest GeoTracker keyframes'
     ),
     GTConfig.gt_refine_idname: Button(
-        'refine',
+        'Refine',
         'Refine tracking data between nearest keyframes'
     ),
     GTConfig.gt_refine_all_idname: Button(
-        'refine all',
+        'Refine All',
         'Refine all tracking data'
     ),
     GTConfig.gt_center_geo_idname: Button(
-        'center geo',
+        'Center Geo',
         'Place target geometry in the center of your viewpoint'
     ),
     GTConfig.gt_magic_keyframe_idname: Button(
-        'magic',
+        'Magic',
         'Magic keyframe detection'
     ),
     GTConfig.gt_remove_pins_idname: Button(
-        'remove pins',
+        'Remove Pins',
         'Delete all or only selected pins'
     ),
     GTConfig.gt_toggle_pins_idname: Button(
-        'toggle pins',
+        'Toggle Pins',
         'Toggle all or only selected pins'
     ),
     GTConfig.gt_rescale_window_idname: Button(
@@ -234,28 +234,28 @@ buttons = {
         'Reset all to default values'
     ),
     GTConfig.gt_check_uv_overlapping_idname: Button(
-        'Check UV',
-        'Check UV for overlapping'
+        'Check',
+        'Check for overlapping UVs'
     ),
     GTConfig.gt_repack_overlapping_uv_idname: Button(
-        'Repack UV',
-        'Repack UV to avoid overlapping'
+        'Repack',
+        'Attempt to reorganize UVs as non-overlapping islands'
     ),
     GTConfig.gt_create_non_overlapping_uv_idname: Button(
-        'Create non-overlapping UV',
-        'Create non-overlapping UV using Smart UV operation'
+        'Create smart UV',
+        'Create new non-overlapping UVs'
     ),
     GTConfig.gt_reproject_frame_idname: Button(
-        'Reproject frame',
-        'Reproject current frame to get texture'
+        'Current Frame',
+        'Project and bake texture in current frame'
     ),
     GTConfig.gt_select_all_bake_frames_idname: Button(
-        'Select All',
-        'Select all keyframes for getting texture by reprojection'
+        'All',
+        'Select all'
     ),
     GTConfig.gt_deselect_all_bake_frames_idname: Button(
-        'Deselect All',
-        'Deselect all keyframes for getting texture by reprojection'
+        'None',
+        'Deselect all'
     ),
     GTConfig.gt_transfer_tracking_idname: Button(
         'Convert',
@@ -266,12 +266,12 @@ buttons = {
         'Convert animation to world space'
     ),
     GTConfig.gt_remove_focal_keyframe_idname: Button(
-        'Remove focal keyframe',
-        'Remove a single keyframe in the current frame'
+        'Remove current',
+        'Remove focal length animation key in current keyframe'
     ),
     GTConfig.gt_remove_focal_keyframes_idname: Button(
-        'Remove all focal keyframes',
-        'Remove all focal keyframes'
+        'Remove all',
+        'Remove all focal length animation keys'
     ),
     GTConfig.gt_render_with_background_idname: Button(
         'Render with background',

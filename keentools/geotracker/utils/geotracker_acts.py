@@ -599,7 +599,7 @@ def check_uv_overlapping(obj: Optional[Object]) -> ActionStatus:
 
     switch_to_mode(old_mode)
     if np.any(selected):
-        return ActionStatus(False, 'UV map has overlapping')
+        return ActionStatus(False, 'Overlapping UVs detected')
     return ActionStatus(True, 'ok')
 
 

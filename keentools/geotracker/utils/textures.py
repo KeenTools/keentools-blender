@@ -133,7 +133,7 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
     op('INVOKE_DEFAULT')
 
     GTLoader.viewport().message_to_screen(
-        [{'text': 'Reproject is calculating... Please wait',
+        [{'text': 'Projecting and baking… Please wait',
           'color': (1.0, 0., 0., 0.7)}])
 
     tex = None
@@ -144,10 +144,10 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
             return None
 
         GTLoader.viewport().message_to_screen(
-            [{'text': 'Reprojection: '
+            [{'text': 'Projection: '
                       f'{num + 1}/{total_frames}', 'y': 60,
               'color': (1.0, 0.0, 0.0, 0.7)},
-             {'text': 'ESC to interrupt', 'y': 30,
+             {'text': 'ESC to abort', 'y': 30,
               'color': (1.0, 1.0, 1.0, 0.7)}])
         settings.user_percent = 100 * num / total_frames
         bpy_set_current_frame(frame)

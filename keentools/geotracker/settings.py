@@ -386,13 +386,14 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     focal_length_estimation: bpy.props.BoolProperty(
         name='Estimate focal length',
-        description='Estimate focal length while pinning in the current frame '
-                    'only. Automatically switch off when the frame is changed',
+        description='This will automatically calculate focal length '
+                    'value while pinning. Estimation will be disabled '
+                    'when you move on to another frame',
         default=False,
         update=update_lens_mode)
     track_focal_length: bpy.props.BoolProperty(
         name='Track focal length',
-        description='Track the focal length in calculation mode',
+        description='Track focal length change',
         default=False,
         update=update_track_focal_length)
 
@@ -427,10 +428,10 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     lens_mode: bpy.props.EnumProperty(name='Lens',
         items=[
             ('FIXED', 'Fixed',
-            'Use the same static focal length in tracking', 0),
+            'Fixed focal length', 0),
             ('ZOOM', 'Zoom',
-            'Use zooming focal length in tracking', 1)],
-        description='Focal length calculation mode',
+            'Variable focal length', 1)],
+        description='Selected lens type',
         update=update_lens_mode)
 
     precalcless: bpy.props.BoolProperty(
@@ -748,7 +749,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         ('PRECALC', 'PRECALC', 'Precalc is calculating', 1),
         ('TRACKING', 'TRACKING', 'Tracking is calculating', 2),
         ('REFINE', 'REFINE', 'Refine is calculating', 3),
-        ('REPROJECT', 'REPROJECT', 'Reproject is calculating', 4),
+        ('REPROJECT', 'REPROJECT', 'Project and bake texture is calculating', 4),
         ('ESTIMATE_FL', 'ESTIMATE_FL', 'Focal length estimation is calculating', 5)
     ])
 

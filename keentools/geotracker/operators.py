@@ -711,7 +711,7 @@ class GT_OT_RepackOverlappingUV(ButtonOperator, Operator):
             self.report({'ERROR'}, f'Done but {check_status.error_message}')
             return {'FINISHED'}
 
-        self.report({'INFO'}, 'Non-overlapping UV has been created')
+        self.report({'INFO'}, 'Non-overlapping UVs successfully created')
         return {'FINISHED'}
 
 
@@ -734,7 +734,7 @@ class GT_OT_CreateNonOverlappingUV(ButtonOperator, Operator):
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
-        self.report({'INFO'}, 'Non-overlapping UV has been created')
+        self.report({'INFO'}, 'Non-overlapping UVs successfully created')
         return {'FINISHED'}
 
 
@@ -763,7 +763,7 @@ class GT_OT_ReprojectFrame(ButtonOperator, Operator):
         settings = get_gt_settings()
         vp = GTLoader.viewport()
         vp.message_to_screen(
-            [{'text': 'Reproject is calculating... Please wait',
+            [{'text': 'Projecting and baking... Please wait',
               'color': (1.0, 0., 0., 0.7)}],
             register=not settings.pinmode, context=context)
 
@@ -853,8 +853,8 @@ class GT_OT_BakeFrameSelector(ButtonOperator, Operator):
                 checked_views = True
 
         row = box.row(align=True)
-        row.operator(GTConfig.gt_select_all_bake_frames_idname, text='All')
-        row.operator(GTConfig.gt_deselect_all_bake_frames_idname, text='None')
+        row.operator(GTConfig.gt_select_all_bake_frames_idname)
+        row.operator(GTConfig.gt_deselect_all_bake_frames_idname)
 
         col = layout.column()
         col.scale_y = Config.text_scale_y
@@ -901,7 +901,7 @@ class GT_OT_BakeFrameSelector(ButtonOperator, Operator):
 
         gt = GTLoader.kt_geotracker()
         if len(gt.keyframes()) == 0:
-            self.report({'ERROR'}, 'No GeoTracker keyframes')
+            self.report({'ERROR'}, 'No GeoTracker keyframes found')
             return {'CANCELLED'}
 
         selected_frames = geotracker.selected_frames
@@ -923,7 +923,7 @@ class GT_OT_BakeFrameSelector(ButtonOperator, Operator):
         settings = get_gt_settings()
         vp = GTLoader.viewport()
         vp.message_to_screen(
-            [{'text': 'Reproject is calculating... Please wait',
+            [{'text': 'Projecting and baking… Please wait',
               'color': (1.0, 0., 0., 0.7)}],
             register=not settings.pinmode, context=context)
 
