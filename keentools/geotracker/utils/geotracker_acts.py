@@ -75,8 +75,7 @@ from ..settings import is_mesh, is_camera
 from ...utils.coords import (LocRotScale,
                              LocRotWithoutScale,
                              ScaleMatrix,
-                             InvScaleMatrix,
-                             UniformScaleMatrix)
+                             InvScaleMatrix)
 
 
 _log = KTLogger(__name__)
@@ -1072,8 +1071,8 @@ def scale_scene_trajectory_act(operator: Operator) -> ActionStatus:
     rescale_matrix = _scale_relative_to_point_matrix(origin_matrix,
                                                      operator.value)
 
-    cam_scale_matrix = ScaleMatrix(operator.cam_scale)
-    cam_scale_matrix_inv = InvScaleMatrix(operator.cam_scale)
+    cam_scale_matrix = ScaleMatrix(4, operator.cam_scale)
+    cam_scale_matrix_inv = InvScaleMatrix(4, operator.cam_scale)
     _log.output(f'cam_scale_matrix_inv: {cam_scale_matrix_inv}')
 
     operator_scale_matrix = Matrix.Scale(operator.value, 4)

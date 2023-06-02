@@ -430,20 +430,23 @@ def compensate_view_scale() -> float:
     return image_width / image_height
 
 
-def ScaleMatrix(sc: Tuple) -> Matrix:
-    scm = Matrix.Identity(4)
+def ScaleMatrix(rank: int, sc: Tuple) -> Matrix:
+    scm = Matrix.Identity(rank)
     scm[0][0], scm[1][1], scm[2][2] = sc[:]
     return scm
 
 
-def InvScaleMatrix(sc: Tuple) -> Matrix:
-    scm = Matrix.Identity(4)
-    scm[0][0], scm[1][1], scm[2][2] = 1.0 / sc[0], 1.0 / sc[1], 1.0 / sc[2]
+def InvScaleMatrix(rank: int, sc: Tuple) -> Matrix:
+    scm = Matrix.Identity(rank)
+    try:
+        scm[0][0], scm[1][1], scm[2][2] = 1.0 / sc[0], 1.0 / sc[1], 1.0 / sc[2]
+    except ZeroDivisionError:
+        pass
     return scm
 
 
-def UniformScaleMatrix(sc: float) -> Matrix:
-    return ScaleMatrix((sc, sc, sc))
+def UniformScaleMatrix(rank: int, sc: float) -> Matrix:
+    return ScaleMatrix(rank, (sc, sc, sc))
 
 
 def RotationMatrix(r: Quaternion) -> Matrix:
@@ -452,7 +455,7 @@ def RotationMatrix(r: Quaternion) -> Matrix:
 
 def LocRotScale_old(t: Tuple[float, float, float], r: Quaternion,
                     sc: Tuple[float, float, float]) -> Matrix:
-    scm = ScaleMatrix(sc)
+    scm = ScaleMatrix(4, sc)
     return Matrix.Translation(t) @ r.normalized().to_matrix().to_4x4() @ scm
 
 

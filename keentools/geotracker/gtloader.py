@@ -34,7 +34,8 @@ from ..utils.coords import (image_space_to_frame,
                             compensate_view_scale,
                             frame_to_image_space,
                             camera_sensor_width,
-                            xy_to_xz_rotation_matrix_3x3)
+                            xy_to_xz_rotation_matrix_3x3,
+                            InvScaleMatrix)
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
                                 get_scene_camera_shift,
@@ -462,15 +463,23 @@ class GTLoader:
 
         if normals:
             _log.output('normals')
-            # gt = GTLoader.kt_geotracker()
-            # geo = gt.geo()
-            # _log.output('wf.triangle_vertices')
-            # wf.triangle_vertices = pkt_module().utils.get_independent_triangles(geo) @ xy_to_xz_rotation_matrix_3x3()
-            # _log.output('wf.lit_edge_vertex_normals')
-            # wf.lit_edge_vertex_normals = pkt_module().utils.get_normals_for_lines(geo) @ xy_to_xz_rotation_matrix_3x3()
-            # _log.output('wf.lit_edge_vertices')
-            # wf.lit_edge_vertices = pkt_module().utils.get_lines(geo) @ xy_to_xz_rotation_matrix_3x3()
-            wf.init_vertex_normals(geotracker.geomobj)
+            # wf.init_vertex_normals(geotracker.geomobj)
+
+            gt = GTLoader.kt_geotracker()
+            geo = gt.geo()
+            scale = InvScaleMatrix(3, geotracker.geomobj.matrix_world.to_scale())
+            mat = xy_to_xz_rotation_matrix_3x3() @ np.array(scale, dtype=np.float32)
+            _log.output('wf.triangle_vertices')
+            wf.triangle_vertices = np.array(
+                pkt_module().utils.get_independent_triangles(geo),
+                dtype=np.float32) @ mat
+            _log.output('wf.lit_edge_vertex_normals')
+            wf.lit_edge_vertex_normals = np.array(
+                pkt_module().utils.get_normals_for_lines(geo),
+                dtype=np.float32) @ mat
+            _log.output('wf.lit_edge_vertices')
+            wf.lit_edge_vertices = np.array(pkt_module().utils.get_lines(geo),
+                                            dtype=np.float32) @ mat
 
         _log.output('wf.init_color_data')
         wf.init_color_data((*settings.wireframe_color,

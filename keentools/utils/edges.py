@@ -582,8 +582,7 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
                                             dtype=np.float32).transpose()
 
     def init_geom_data_from_mesh(self, obj: Any) -> None:
-        self.object_world_matrix = np.array(obj.matrix_world,
-                                            dtype=np.float32).transpose()
+        self.set_object_world_matrix(obj.matrix_world)
         mesh = evaluated_mesh(obj)
         self.vertices = get_mesh_verts(mesh)
         self.triangle_indices = get_triangulation_indices(mesh)
@@ -641,6 +640,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_light3_pos: Vector = Vector((2, 0, 1))
         self.lit_camera_pos: Vector = Vector((0, 0, 0))
         self.lit_light_matrix: Matrix = Matrix.Identity(4)
+        self.fill_batch2: Optional[Any] = None
         super().__init__(target_class, mask_color)
 
     def set_lit_wireframe(self, state: bool) -> None:
@@ -721,6 +721,15 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
                  'vertNormal': self.lit_edge_vertex_normals})
         else:
             _log.error(f'{self.__class__.__name__}.lit_shader: is empty')
+
+        if self.fill_shader is not None:
+            if self.lit_is_working():
+                _log.output(_log.color('red', 'Extra self.fill_shader'))
+                self.fill_batch = batch_for_shader(
+                    self.fill_shader, 'TRIS',
+                    {'pos': self.triangle_vertices})
+        else:
+            _log.error(f'{self.__class__.__name__}.fill_shader2: is empty')
 
     def draw_edges(self) -> None:
         if not self.lit_is_working():
