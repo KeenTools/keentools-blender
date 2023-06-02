@@ -21,6 +21,7 @@ from typing import Any
 
 from bpy.types import Object
 
+from .kt_logging import KTLogger
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from .coords import (get_scale_matrix_3x3_from_matrix_world,
                      get_mesh_verts,
@@ -28,7 +29,11 @@ from .coords import (get_scale_matrix_3x3_from_matrix_world,
 from .bpy_common import evaluated_object
 
 
+_log = KTLogger(__name__)
+
+
 def build_geo(obj: Object, evaluated: bool=True, get_uv=False) -> Any:
+    _log.output(_log.color('magenta', 'build_geo start'))
     mb = pkt_module().MeshBuilder()
     _geo = pkt_module().Geo()
 
@@ -48,4 +53,5 @@ def build_geo(obj: Object, evaluated: bool=True, get_uv=False) -> Any:
             mb.set_uvs_attribute('VERTEX_BASED', uvs)
 
     _geo.add_mesh(mb.mesh())
+    _log.output('build_geo end')
     return _geo

@@ -33,7 +33,8 @@ from ..utils.coords import (image_space_to_frame,
                             focal_by_projection_matrix_mm,
                             compensate_view_scale,
                             frame_to_image_space,
-                            camera_sensor_width)
+                            camera_sensor_width,
+                            xy_to_xz_rotation_matrix_3x3)
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
                                 get_scene_camera_shift,
@@ -446,6 +447,7 @@ class GTLoader:
 
     @classmethod
     def update_viewport_wireframe(cls, normals: bool=False) -> None:
+        _log.output('update_viewport_wireframe')
         settings = get_gt_settings()
         geotracker = get_current_geotracker_item()
         vp = cls.viewport()
@@ -455,16 +457,31 @@ class GTLoader:
             wf.create_batches()
             return
 
+        _log.output('wf.init_geom_data_from_mesh')
         wf.init_geom_data_from_mesh(geotracker.geomobj)
+
         if normals:
+            _log.output('normals')
+            # gt = GTLoader.kt_geotracker()
+            # geo = gt.geo()
+            # _log.output('wf.triangle_vertices')
+            # wf.triangle_vertices = pkt_module().utils.get_independent_triangles(geo) @ xy_to_xz_rotation_matrix_3x3()
+            # _log.output('wf.lit_edge_vertex_normals')
+            # wf.lit_edge_vertex_normals = pkt_module().utils.get_normals_for_lines(geo) @ xy_to_xz_rotation_matrix_3x3()
+            # _log.output('wf.lit_edge_vertices')
+            # wf.lit_edge_vertices = pkt_module().utils.get_lines(geo) @ xy_to_xz_rotation_matrix_3x3()
             wf.init_vertex_normals(geotracker.geomobj)
+
+        _log.output('wf.init_color_data')
         wf.init_color_data((*settings.wireframe_color,
                             settings.wireframe_opacity))
         wf.set_adaptive_opacity(settings.get_adaptive_opacity())
+        _log.output('wf.init_selection_from_mesh')
         wf.init_selection_from_mesh(geotracker.geomobj, geotracker.mask_3d,
                                     geotracker.mask_3d_inverted)
         wf.set_backface_culling(settings.wireframe_backface_culling)
         wf.set_lit_wireframe(settings.lit_wireframe)
+        _log.output('wf.create_batches')
         wf.create_batches()
 
     @classmethod

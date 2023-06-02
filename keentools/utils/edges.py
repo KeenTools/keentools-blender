@@ -60,6 +60,10 @@ class KTEdgeShaderBase(KTShaderBase):
         self.edge_colors: List = []
         self.vertices_colors: List = []
 
+        # pykeentools data
+        self.triangle_vertices: List = []
+        self.edge_vertex_normals: List = []
+
         self.backface_culling: bool = False
         self.backface_culling_in_shader: bool = False
         self.adaptive_opacity: float = 1.0
@@ -578,18 +582,10 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
                                             dtype=np.float32).transpose()
 
     def init_geom_data_from_mesh(self, obj: Any) -> None:
-        mw = obj.matrix_world
-        scale_vec = get_scale_vec_4_from_matrix_world(mw)
-        scale_vec = np.array([1.0, 1.0, 1.0, 1.0], dtype=np.float32)
-        scm = np.diag(scale_vec)
-        scminv = np.diag(1.0 / scale_vec)
-
-        self.object_world_matrix = scminv @ np.array(mw, dtype=np.float32).transpose()
-
+        self.object_world_matrix = np.array(obj.matrix_world,
+                                            dtype=np.float32).transpose()
         mesh = evaluated_mesh(obj)
-        verts = get_mesh_verts(mesh)
-
-        self.vertices = multiply_verts_on_matrix_4x4(verts, scm)
+        self.vertices = get_mesh_verts(mesh)
         self.triangle_indices = get_triangulation_indices(mesh)
 
         edges = np.empty((len(mesh.edges), 2), dtype=np.int32)
@@ -678,6 +674,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         return res[0] and res[1]
 
     def init_vertex_normals(self, obj: Object) -> None:
+        _log.output(_log.color('green', 'init_vertex_normals start'))
         mesh = evaluated_mesh(obj)
 
         loop_count = len(mesh.loops)
@@ -709,6 +706,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
 
         self.lit_edge_vertices = self.vertices[edge_indices.ravel()]
         self.lit_edge_vertex_normals = edge_normals
+        _log.output(_log.color('green', 'init_vertex_normals end'))
 
     def init_color_data(self, color: Tuple[float, float, float, float]) -> None:
         self.lit_color = color
