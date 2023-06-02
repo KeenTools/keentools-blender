@@ -180,8 +180,8 @@ class _CommonTimer(TimerMixin):
             [{'text': f'{stages}{self._operation_name} calculating: '
                       f'{finished_frames}/{total_frames}',
               'y': 60, 'color': (1.0, 0.0, 0.0, 0.7)},
-             {'text': 'ESC to interrupt. '
-                      'The scene now is BEFORE applying operation',
+             {'text': 'ESC to abort. '
+                      'Changes have NOT yet been applied',
               'y': 30, 'color': (1.0, 1.0, 1.0, 0.7)}])
 
     def get_stage_info(self) -> Tuple[int, int]:
