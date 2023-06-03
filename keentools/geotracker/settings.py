@@ -710,7 +710,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
 
     lit_wireframe: bpy.props.BoolProperty(
         name='Lit wireframe',
-        default=False,
+        default=True,
         update=update_wireframe)
 
     pin_size: bpy.props.FloatProperty(

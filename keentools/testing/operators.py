@@ -64,7 +64,7 @@ def test_points3d(points3d: Any, *,
               (0, 1, 1), (1, 0, 1), (0, 0, 0), (1, 1, 1)]
     for i, col in enumerate(colors):
         for x in range(point_count):
-            verts.append((x_start + x * x_step, y_start + y_step * i))
+            verts.append((x_start + x * x_step, y_start + y_step * i, 0))
             vert_colors.append((*col, (x + 1)/point_count))
     points3d.set_vertices_colors(verts, vert_colors)
     points3d.create_batch()

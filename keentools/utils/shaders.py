@@ -381,11 +381,13 @@ def lit_vertex_local_shader() -> str:
     return '''
     uniform mat4 ModelViewProjectionMatrix;
     uniform mat4 modelMatrix;
+    uniform vec3 cameraPos;
 
     in vec3 pos;
     in vec3 vertNormal;
     out vec3 calcNormal;
     out vec3 outPos;
+    out vec3 camDir;
 
     void main()
     {
@@ -393,6 +395,7 @@ def lit_vertex_local_shader() -> str:
         gl_Position = resultMatrix * vec4(pos, 1.0);
         calcNormal = vertNormal;
         outPos = pos;
+        camDir = cameraPos - pos;
     }
     '''
 
@@ -401,12 +404,14 @@ def lit_fragment_shader() -> str:
     return '''
     uniform vec4 color;
     uniform float adaptiveOpacity;
+    uniform bool ignoreBackface;
     uniform vec3 pos1;
     uniform vec3 pos2;
     uniform vec3 pos3;
 
     in vec4 finalColor;
     in vec3 outPos;
+    in vec3 camDir;
     in vec3 calcNormal;
     out vec4 fragColor;
 
@@ -445,6 +450,8 @@ def lit_fragment_shader() -> str:
 
     void main()
     {
+        if (ignoreBackface && (dot(calcNormal, camDir) < 0.0f)) discard;
+
         float dist = 1000.0;
         Light light1;
         light1.position = pos1;
