@@ -30,7 +30,9 @@ from ..facebuilder.fbloader import FBLoader
 from ..facebuilder_config import FBConfig
 from ..utils.bpy_common import (bpy_remove_object,
                                 bpy_create_object,
-                                bpy_link_to_scene)
+                                bpy_link_to_scene,
+                                bpy_scene_camera)
+from ..utils.mesh_builder import build_geo
 
 
 _log = KTLogger(__name__)
@@ -116,9 +118,15 @@ def test_wireframe(wireframer: Any, *, obj: Any=None,
                    normals: bool=False, lit_wireframe: bool=False) -> None:
     if not obj:
         return
+    camera = bpy_scene_camera()
     wireframer.init_geom_data_from_mesh(obj)
+    wireframer.set_object_world_matrix(obj.matrix_world)
+    wireframer.set_lit_light_matrix(obj.matrix_world, camera.matrix_world)
     if normals:
-        wireframer.init_vertex_normals(obj)
+        geo = build_geo(obj)
+        wireframer.lit_edge_vertices, wireframer.lit_edge_vertex_normals, \
+        wireframer.triangle_vertices = GTLoader.get_geo_shader_data(
+            geo, obj.matrix_world)
     wireframer.init_color_data((0, 1, 0, 0.5))
     wireframer.set_adaptive_opacity(1.0)
     wireframer.set_backface_culling(True)

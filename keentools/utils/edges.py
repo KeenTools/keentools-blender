@@ -635,10 +635,10 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_edge_vertices: List = []
         self.lit_edge_vertex_normals: List = []
         self.lit_light_dist: float = 1000
-        self.lit_light1_pos: Vector = Vector((0, 0, 0))
-        self.lit_light2_pos: Vector = Vector((-2, 0, 1))
-        self.lit_light3_pos: Vector = Vector((2, 0, 1))
-        self.lit_camera_pos: Vector = Vector((0, 0, 0))
+        self.lit_light1_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
+        self.lit_light2_pos: Vector = Vector((-2, 0, 1)) * self.lit_light_dist
+        self.lit_light3_pos: Vector = Vector((2, 0, 1)) * self.lit_light_dist
+        self.lit_camera_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
         self.lit_light_matrix: Matrix = Matrix.Identity(4)
         self.fill_batch2: Optional[Any] = None
         super().__init__(target_class, mask_color)
@@ -744,11 +744,11 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
             shader.uniform_from_name('modelMatrix'),
             self.object_world_matrix.ravel(), 16)
         shader.uniform_float('pos1', self.lit_light_matrix @
-                             (self.lit_light1_pos * self.lit_light_dist))
+                             self.lit_light1_pos)
         shader.uniform_float('pos2', self.lit_light_matrix @
-                             (self.lit_light2_pos * self.lit_light_dist))
+                             self.lit_light2_pos)
         shader.uniform_float('pos3', self.lit_light_matrix @
-                             (self.lit_light3_pos * self.lit_light_dist))
+                             self.lit_light3_pos)
         shader.uniform_float('cameraPos', self.lit_light_matrix @
                              self.lit_camera_pos)
         self.lit_batch.draw(shader)

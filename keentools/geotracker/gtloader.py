@@ -447,6 +447,23 @@ class GTLoader:
         return True
 
     @classmethod
+    def get_geo_shader_data(cls, geo: Any, matrix_world: Matrix) -> Tuple:
+        scale = InvScaleMatrix(3, matrix_world.to_scale())
+        mat = xy_to_xz_rotation_matrix_3x3() @ np.array(scale, dtype=np.float32)
+        _log.output('get edge_vertices')
+        edge_vertices = np.array(pkt_module().utils.get_lines(geo),
+                                        dtype=np.float32) @ mat
+        _log.output('get edge_vertex_normals')
+        edge_vertex_normals = np.array(
+            pkt_module().utils.get_normals_for_lines(geo),
+            dtype=np.float32) @ mat
+        _log.output('get triangle_vertices')
+        triangle_vertices = np.array(
+            pkt_module().utils.get_independent_triangles(geo),
+            dtype=np.float32) @ mat
+        return edge_vertices, edge_vertex_normals, triangle_vertices
+
+    @classmethod
     def update_viewport_wireframe(cls, normals: bool=False) -> None:
         _log.output('update_viewport_wireframe')
         settings = get_gt_settings()
@@ -467,19 +484,10 @@ class GTLoader:
 
             gt = GTLoader.kt_geotracker()
             geo = gt.geo()
-            scale = InvScaleMatrix(3, geotracker.geomobj.matrix_world.to_scale())
-            mat = xy_to_xz_rotation_matrix_3x3() @ np.array(scale, dtype=np.float32)
-            _log.output('wf.triangle_vertices')
-            wf.triangle_vertices = np.array(
-                pkt_module().utils.get_independent_triangles(geo),
-                dtype=np.float32) @ mat
-            _log.output('wf.lit_edge_vertex_normals')
-            wf.lit_edge_vertex_normals = np.array(
-                pkt_module().utils.get_normals_for_lines(geo),
-                dtype=np.float32) @ mat
-            _log.output('wf.lit_edge_vertices')
-            wf.lit_edge_vertices = np.array(pkt_module().utils.get_lines(geo),
-                                            dtype=np.float32) @ mat
+
+            wf.lit_edge_vertices, wf.lit_edge_vertex_normals, \
+            wf.triangle_vertices = cls.get_geo_shader_data(
+                geo, geotracker.geomobj.matrix_world)
 
         _log.output('wf.init_color_data')
         wf.init_color_data((*settings.wireframe_color,
