@@ -386,24 +386,26 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
     focal_length_estimation: bpy.props.BoolProperty(
         name='Estimate focal length',
-        description='Estimate focal length while pinning in the current frame '
-                    'only. Automatically switch off when the frame is changed',
+        description='This will automatically calculate focal length '
+                    'value while pinning. Estimation will be disabled '
+                    'when you move on to another frame',
         default=False,
         update=update_lens_mode)
     track_focal_length: bpy.props.BoolProperty(
         name='Track focal length',
-        description='Track the focal length in calculation mode',
+        description='Track focal length change',
         default=False,
         update=update_track_focal_length)
 
     tone_exposure: bpy.props.FloatProperty(
-        name='Exposure', description='Tone gain',
+        name='Exposure', description='Adjust exposure in current frame',
         default=Config.default_tone_exposure,
         min=-10.0, max=10.0, soft_min=-4.0, soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
     tone_gamma: bpy.props.FloatProperty(
-        name='Gamma correction', description='Tone gamma correction',
-        default=Config.default_tone_gamma, min=0.01, max=10.0, soft_max=4.0, precision=2,
+        name='Gamma', description='Adjust gamma in current frame',
+        default=Config.default_tone_gamma, min=0.01, max=10.0,
+        soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
     default_zoom_focal_length: bpy.props.FloatProperty(
         name='Default Zoom FL',
@@ -426,10 +428,10 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
     lens_mode: bpy.props.EnumProperty(name='Lens',
         items=[
             ('FIXED', 'Fixed',
-            'Use the same static focal length in tracking', 0),
+            'Fixed focal length', 0),
             ('ZOOM', 'Zoom',
-            'Use zooming focal length in tracking', 1)],
-        description='Focal length calculation mode',
+            'Variable focal length', 1)],
+        description='Selected lens type',
         update=update_lens_mode)
 
     precalcless: bpy.props.BoolProperty(
@@ -442,12 +444,11 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
                                                   name='Selected frames')
     mask_3d: bpy.props.StringProperty(
         name='Surface mask',
-        description='The polygons in selected Vertex Group '
-                    'will be excluded from tracking',
+        description='Exclude polygons of selected Vertex Group from tracking',
         update=update_mask_3d)
     mask_3d_inverted: bpy.props.BoolProperty(
-        name='Invert Mask 3D',
-        description='Invert Mask 3D Vertex Group',
+        name='Invert',
+        description='Invert Surface mask',
         default=False,
         update=update_mask_3d)
     mask_2d: bpy.props.StringProperty(
@@ -472,12 +473,12 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         description='About 2d mask')
     compositing_mask: bpy.props.StringProperty(
         default='',
-        name='Compositing 2D mask',
-        description='Compositing 2D mask for tracking',
+        name='Compositing mask',
+        description='Exclude area within selected Compositing mask from tracking',
         update=update_mask_source)
     compositing_mask_inverted: bpy.props.BoolProperty(
-        name='Invert Compositing Mask 2D',
-        description='Invert Compositing Mask',
+        name='Invert',
+        description='Invert Compositing mask',
         default=False,
         update=update_mask_source)
     compositing_mask_threshold: bpy.props.FloatProperty(
@@ -688,7 +689,6 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         self.adaptive_opacity = (x2 - x1) / rx
 
     wireframe_opacity: bpy.props.FloatProperty(
-        description='From 0.0 to 1.0',
         name='GeoTracker wireframe Opacity',
         default=UserPreferences.get_value_safe('gt_wireframe_opacity',
                                                UserPreferences.type_float),
@@ -696,7 +696,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         update=update_wireframe)
 
     wireframe_color: bpy.props.FloatVectorProperty(
-        description='Color of mesh wireframe in pin-mode',
+        description='Mesh wireframe color in Pinmode',
         name='GeoTracker wireframe Color', subtype='COLOR',
         default=UserPreferences.get_value_safe('gt_wireframe_color',
                                                UserPreferences.type_color),
@@ -714,8 +714,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         update=update_wireframe)
 
     pin_size: bpy.props.FloatProperty(
-        description='Set pin size in pixels',
-        name='Size',
+        name='Size', description='Pin size in pixels',
         default=UserPreferences.get_value_safe('pin_size',
                                                UserPreferences.type_float),
         min=1.0, max=100.0,
@@ -725,8 +724,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         set=universal_cached_setter('pin_size')
     )
     pin_sensitivity: bpy.props.FloatProperty(
-        description='Set active area in pixels',
-        name='Active area',
+        name='Sensitivity', description='Active area in pixels',
         default=UserPreferences.get_value_safe('pin_sensitivity',
                                                UserPreferences.type_float),
         min=1.0, max=100.0,
@@ -751,7 +749,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         ('PRECALC', 'PRECALC', 'Precalc is calculating', 1),
         ('TRACKING', 'TRACKING', 'Tracking is calculating', 2),
         ('REFINE', 'REFINE', 'Refine is calculating', 3),
-        ('REPROJECT', 'REPROJECT', 'Reproject is calculating', 4),
+        ('REPROJECT', 'REPROJECT', 'Project and bake texture is calculating', 4),
         ('ESTIMATE_FL', 'ESTIMATE_FL', 'Focal length estimation is calculating', 5)
     ])
 
@@ -791,13 +789,13 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         update=update_mask_2d_color)
 
     transfer_animation_selector: bpy.props.EnumProperty(
-        name='Transfer selector',
+        name='Select direction',
         items=[
             ('GEOMETRY_TO_CAMERA', 'Geometry to Camera',
-             'Geometry to Camera description', 0),
+             '', 0),
             ('CAMERA_TO_GEOMETRY', 'Camera to Geometry',
-            'Camera to Geometry description', 1),],
-        description='Choose a direction of transfering animation')
+            '', 1),],
+        description='All animation will be converted from')
 
     bake_animation_selector: bpy.props.EnumProperty(name='Bake selector',
         items=[
@@ -809,18 +807,18 @@ class GTSceneSettings(bpy.types.PropertyGroup):
              'Camera animation will be baked to World space', 2),],
         description='Convert animation to World space')
 
-    export_locator_selector: bpy.props.EnumProperty(name='Animation selector',
+    export_locator_selector: bpy.props.EnumProperty(name='Select source',
         items=[
             ('GEOMETRY', 'Geometry',
-            'Use Geometry as an animation source', 0),
+            'Use Geometry as animation source', 0),
             ('CAMERA', 'Camera',
-             'Use Camera as an animation source', 1),],
+             'Use Camera as animation source', 1),],
         description='Create an animated Empty from')
 
     export_linked_locator: bpy.props.BoolProperty(
-        name='Export linked',
-        description='Use a shared animation Action with GeoTracker object '
-                    'or duplicate an animation independent way',
+        name='Linked',
+        description='Use shared animation Action or duplicate '
+                    'animation data to use it independently',
         default=False)
 
     @contextmanager

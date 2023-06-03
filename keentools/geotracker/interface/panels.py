@@ -697,7 +697,7 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         box = layout.box()
         col = box.column(align=True)
         row = col.row(align=True)
-        row.label(text='Background adjustment')
+        row.label(text='Background')
         col.separator(factor=0.4)
         btn = row.column(align=True)
         btn.active = False
@@ -745,16 +745,13 @@ class GT_PT_TexturePanel(AllVisible):
 
     def _draw_buttons(self, layout, active=True):
         settings = get_gt_settings()
-        layout.label(text='Reproject to texture')
+        layout.label(text='Project from')
         col = layout.column(align=True)
         col.active = active
         col.scale_y = Config.btn_scale_y
-        col.operator(GTConfig.gt_reproject_frame_idname,
-                     text='Current frame')
-        col.operator(GTConfig.gt_select_frames_for_bake_idname,
-                        text='GeoTracker keyframes')
-        col.operator(GTConfig.gt_reproject_tex_sequence_idname,
-                        text='Animated sequence')
+        col.operator(GTConfig.gt_reproject_frame_idname)
+        col.operator(GTConfig.gt_select_frames_for_bake_idname)
+        col.operator(GTConfig.gt_reproject_tex_sequence_idname)
 
         col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
@@ -834,7 +831,7 @@ class GT_PT_AnimationPanel(AllVisible):
 
         col = layout.column(align=True)
         col.prop(settings, 'transfer_animation_selector', text='')
-        col.operator(GTConfig.gt_transfer_tracking_idname, text='Convert')
+        col.operator(GTConfig.gt_transfer_tracking_idname)
 
         layout.separator()
 
@@ -860,8 +857,8 @@ class GT_PT_AnimationPanel(AllVisible):
         col = layout.column(align=True)
         col.prop(settings, 'export_locator_selector', text='')
         row = col.split(factor=0.4, align=True)
-        row.prop(settings, 'export_linked_locator', text='Linked')
-        row.operator(GTConfig.gt_export_animated_empty_idname, text='Export')
+        row.prop(settings, 'export_linked_locator')
+        row.operator(GTConfig.gt_export_animated_empty_idname)
 
 
 class GT_PT_RenderingPanel(AllVisible):
