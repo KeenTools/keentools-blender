@@ -213,7 +213,7 @@ class GTMask2DInput(pkt_module().Mask2DInputI):
 class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
     def __init__(self):
         super().__init__()
-        fl_mode = pkt_module().GeoTracker.FocalLengthMode
+        fl_mode = pkt_module().TrackerFocalLengthMode
         self._modes: Dict = {
             mode.name: mode for mode in [
             fl_mode.CAMERA_FOCAL_LENGTH,
@@ -224,7 +224,7 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
     def _mode_by_value(self, value: str) -> Any:
         if value in self._modes.keys():
             return self._modes[value]
-        return pkt_module().GeoTracker.FocalLengthMode.CAMERA_FOCAL_LENGTH
+        return pkt_module().TrackerFocalLengthMode.CAMERA_FOCAL_LENGTH
 
     def _set_fl_mode(self, enum_value) -> None:
         geotracker = get_current_geotracker_item()
@@ -355,7 +355,7 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
     def set_zoom_focal_length_mode(self, default_fl: float) -> None:
         _log.output('set_zoom_focal_length_mode call')
         self.set_default_zoom_focal_length(default_fl)
-        self._set_fl_mode(pkt_module().GeoTracker.FocalLengthMode.ZOOM_FOCAL_LENGTH)
+        self._set_fl_mode(pkt_module().TrackerFocalLengthMode.ZOOM_FOCAL_LENGTH)
 
     def set_static_focal_length(self, static_fl: float) -> None:
         _log.output(f'set_static_focal_length: {static_fl}')
@@ -363,7 +363,7 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
 
     def set_static_focal_length_mode(self, static_fl: float) -> None:
         _log.output(f'set_static_focal_length_mode: {static_fl}')
-        self._set_fl_mode(pkt_module().GeoTracker.FocalLengthMode.STATIC_FOCAL_LENGTH)
+        self._set_fl_mode(pkt_module().TrackerFocalLengthMode.STATIC_FOCAL_LENGTH)
         self._set_static_fl(static_fl)
 
     def static_focal_length(self) -> float:
@@ -374,12 +374,12 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
 
     def set_camera_focal_length_mode(self) -> None:
         _log.output('set_camera_focal_length_mode')
-        self._set_fl_mode(pkt_module().GeoTracker.FocalLengthMode.CAMERA_FOCAL_LENGTH)
+        self._set_fl_mode(pkt_module().TrackerFocalLengthMode.CAMERA_FOCAL_LENGTH)
 
     def focal_length_mode(self) -> Any:
         geotracker = get_current_geotracker_item()
         if not geotracker:
-            return pkt_module().GeoTracker.FocalLengthMode.CAMERA_FOCAL_LENGTH
+            return pkt_module().TrackerFocalLengthMode.CAMERA_FOCAL_LENGTH
         return self._mode_by_value(geotracker.focal_length_mode)
 
     def set_zoom_focal_length_at(self, frame: int, fl: float) -> None:
