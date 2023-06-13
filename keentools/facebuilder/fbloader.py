@@ -279,7 +279,7 @@ class FBLoader:
     @classmethod
     def get_builder_mesh(cls, builder: Any, mesh_name: str='keentools_mesh',
                          masks: List=(), uv_set: str='uv0',
-                         keyframe: Optional[int]=None) -> None:
+                         keyframe: Optional[int]=None) -> Any:
         for i, m in enumerate(masks):
             builder.set_mask(i, m)
 

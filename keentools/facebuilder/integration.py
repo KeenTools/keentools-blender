@@ -23,6 +23,7 @@ import tempfile
 from uuid import uuid4
 
 from bpy.types import Operator, Object
+from bpy.props import BoolProperty
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, ActionStatus
@@ -34,6 +35,7 @@ from ..utils.bpy_common import (bpy_create_object,
                                 bpy_remove_object,
                                 bpy_link_to_scene,
                                 bpy_export_fbx)
+from ..utils.materials import copy_materials_from_object
 
 
 _log = KTLogger(__name__)
@@ -82,6 +84,7 @@ def _create_head() -> Optional[Object]:
     _revert_masks(fb, masks)
     obj = bpy_create_object(_cc_headobj_name, mesh)
     bpy_link_to_scene(obj)
+    copy_materials_from_object(from_obj=head.headobj, to_obj=obj)
     return obj
 
 
@@ -110,24 +113,22 @@ def _get_hklm_registry_value_unsafe(reg_path: str, sub_key: str) -> str:
     return value
 
 
-def _call_cc(cc_path: str) -> ActionStatus:
-    head_obj = _create_head()
-    if head_obj is None:
-        msg = 'FB cannot find head and head-mesh'
-        _log.error(msg)
-        return ActionStatus(False, msg)
+def _get_fbx_export_path() -> Optional[str]:
+    try:
+        temp_dir = os.path.join(tempfile.gettempdir(), _integration_subfolder_name)
+        os.makedirs(temp_dir, exist_ok=True)
+        num = _get_random_num()
+        fbx_export_path = os.path.join(temp_dir, f'head_{num}.fbx')
+    except Exception as err:
+        _log.error(f'_get_fbx_export_path Exception:\n{str(err)}')
+        return None
+    return fbx_export_path
 
-    select_object_only(head_obj)
 
-    temp_dir = os.path.join(tempfile.gettempdir(), _integration_subfolder_name)
-    os.makedirs(temp_dir, exist_ok=True)
-
-    num = _get_random_num()
-    modelpath = os.path.join(temp_dir, f'head_{num}.fbx')
-
+def _export_fbx(fbx_export_path: str) -> ActionStatus:
     try:
         bpy_export_fbx('EXEC_DEFAULT',
-                       filepath=modelpath,
+                       filepath=fbx_export_path,
                        use_selection=True,
                        bake_anim_use_all_actions=False,
                        bake_anim_use_nla_strips=False,
@@ -135,9 +136,20 @@ def _call_cc(cc_path: str) -> ActionStatus:
                        mesh_smooth_type='FACE',
                        axis_forward='Y',
                        axis_up='Z',
-                       bake_space_transform=False)
+                       bake_space_transform=False,
+                       path_mode='COPY',
+                       embed_textures=True)
+    except Exception as err:
+        msg = f'FBX Export problem: {str(err)}'
+        _log.error(f'_export_fbx Exception:\n{msg}')
+        return ActionStatus(False, msg)
 
-        output = subprocess.Popen([cc_path, '-headshot', modelpath,
+    return ActionStatus(True, 'ok')
+
+
+def _call_cc(cc_path: str, fbx_export_path: str) -> ActionStatus:
+    try:
+        output = subprocess.Popen([cc_path, '-headshot', fbx_export_path,
                                    '-app', 'FaceBuilder for Blender',
                                    '-ver', Config.addon_version])
         _log.output(f'_call_cc\n{output}')
@@ -149,8 +161,7 @@ def _call_cc(cc_path: str) -> ActionStatus:
         msg = f'{str(err)}'
         _log.error(f'_call_cc Exception:\n{msg}')
         return ActionStatus(False, msg)
-    finally:
-        bpy_remove_object(head_obj)
+
     return ActionStatus(True, 'ok')
 
 
@@ -160,13 +171,17 @@ class FB_OT_ExportToCC(Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER'}
 
+    test_mode: BoolProperty(default=False)
+
     def execute(self, context):
         if not _check_hklm_registry_key(_cc_registry_path):
             msg = 'Cannot find Character Creator 4 on this computer'
             self.report({'ERROR'}, msg)
             _log.error(f'{msg}')
             _log.output(f'key: {_cc_registry_path}\n')
-            return {'CANCELLED'}
+
+            if not self.test_mode:
+                return {'CANCELLED'}
 
         try:
             cc_path = _get_hklm_registry_value_unsafe(
@@ -177,7 +192,12 @@ class FB_OT_ExportToCC(Operator):
             _log.error(f'{msg}\n{str(err)}')
             _log.output(f'key: {_cc_versioned_registry_path}\n'
                         f'subkey: {_cc_registry_subkey}\n')
-            return {'CANCELLED'}
+
+            if not self.test_mode:
+                return {'CANCELLED'}
+            else:
+                cc_path = r'C:\Program Files\Reallusion\Character Creator 4' \
+                          r'\Bin64\CharacterCreator.exe'
 
         _log.output(f'Character Creator path: {cc_path}')
 
@@ -186,7 +206,9 @@ class FB_OT_ExportToCC(Operator):
             self.report({'ERROR'}, msg)
             _log.error(f'{msg}')
             _log.output(f'key: {_headshot_registry_path}\n')
-            return {'CANCELLED'}
+
+            if not self.test_mode:
+                return {'CANCELLED'}
 
         try:
             headshot_version = _get_hklm_registry_value_unsafe(
@@ -197,7 +219,11 @@ class FB_OT_ExportToCC(Operator):
             _log.error(f'{msg}\n{str(err)}')
             _log.output(f'key: {_headshot_versioned_registry_path}\n'
                         f'subkey: {_headshot_subkey}\n')
-            return {'CANCELLED'}
+
+            if not self.test_mode:
+                return {'CANCELLED'}
+            else:
+                headshot_version = '200'
 
         _log.output(f'Headshot version: {headshot_version} '
                     f'[{type(headshot_version)}]')
@@ -206,9 +232,32 @@ class FB_OT_ExportToCC(Operator):
             msg = f'Incompatible Headshot version [{headshot_version}]'
             self.report({'ERROR'}, msg)
             _log.error(f'{msg}')
+            if not self.test_mode:
+                return {'CANCELLED'}
+
+        fbx_export_path = _get_fbx_export_path()
+        _log.info(f'FBX export path: {fbx_export_path}')
+        if fbx_export_path is None:
             return {'CANCELLED'}
 
-        act_status = _call_cc(cc_path)
+        head_obj = _create_head()
+        if head_obj is None:
+            msg = 'FB cannot find head and head-mesh'
+            self.report({'ERROR'}, msg)
+            _log.error(msg)
+            return {'CANCELLED'}
+
+        select_object_only(head_obj)
+
+        act_status = _export_fbx(fbx_export_path)
+        if not act_status.success:
+            bpy_remove_object(head_obj)
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+
+        act_status = _call_cc(cc_path, fbx_export_path)
+        bpy_remove_object(head_obj)
+
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
