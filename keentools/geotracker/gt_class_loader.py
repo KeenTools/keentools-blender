@@ -50,6 +50,10 @@ class GTClassLoader:
         return pkt_module().GeoTracker
 
     @staticmethod
+    def TrackerFocalLengthMode_class():
+        return pkt_module().TrackerFocalLengthMode
+
+    @staticmethod
     def PrecalcRunner_class():
         from .utils.precalc_runner import PrecalcRunner
         return PrecalcRunner
