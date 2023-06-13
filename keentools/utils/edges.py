@@ -36,7 +36,8 @@ from .coords import (get_mesh_verts,
                      multiply_verts_on_matrix_4x4,
                      get_scale_vec_4_from_matrix_world,
                      get_triangulation_indices,
-                     get_triangles_in_vertex_group)
+                     get_triangles_in_vertex_group,
+                     LocRotWithoutScale)
 from .bpy_common import (evaluated_mesh,
                          use_gpu_instead_of_bgl)
 from .base_shaders import KTShaderBase
@@ -642,10 +643,10 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_light_matrix: Matrix = Matrix.Identity(4)
         self.fill_batch2: Optional[Any] = None
         super().__init__(target_class, mask_color)
+        self.backface_culling_in_shader = True
 
     def set_lit_wireframe(self, state: bool) -> None:
         self.lit_flag = state
-        self.backface_culling_in_shader = state
 
     def lit_is_working(self) -> bool:
         return self.lit_flag
@@ -653,6 +654,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
     def set_lit_light_matrix(self, geomobj_matrix_world: Matrix,
                              camobj_matrix_world: Matrix) -> None:
         _log.output('set_lit_light_matrix')
+
         mat = geomobj_matrix_world.inverted() @ camobj_matrix_world
         self.lit_light_matrix = mat
 
@@ -732,14 +734,12 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
             _log.error(f'{self.__class__.__name__}.fill_shader2: is empty')
 
     def draw_edges(self) -> None:
-        if not self.lit_is_working():
-            return super().draw_edges()
-
         shader = self.lit_shader
         shader.bind()
         shader.uniform_float('color', self.lit_color)
         shader.uniform_float('adaptiveOpacity', self.adaptive_opacity)
-        shader.uniform_int('ignoreBackface', 1 if self.backface_culling else 0)
+        shader.uniform_bool('ignoreBackface', self.backface_culling)
+        shader.uniform_bool('litShading', self.lit_is_working())
         shader.uniform_vector_float(
             shader.uniform_from_name('modelMatrix'),
             self.object_world_matrix.ravel(), 16)
