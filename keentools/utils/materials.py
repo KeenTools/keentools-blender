@@ -56,11 +56,20 @@ def toggle_mode(modes: Tuple[str]=('SOLID', 'MATERIAL')) -> None:
                 space.shading.type = modes[ind]
 
 
-def assign_material_to_object(obj: Object, mat: Material):
+def assign_material_to_object(obj: Object, mat: Material) -> None:
     if obj.data.materials:
         obj.data.materials[0] = mat
     else:
         obj.data.materials.append(mat)
+
+
+def copy_materials_from_object(from_obj: Object, to_obj: Object) -> bool:
+    if not from_obj.data.materials:
+        return False
+    to_obj.data.materials.clear()
+    for mat in from_obj.data.materials:
+        to_obj.data.materials.append(mat)
+    return True
 
 
 def get_mat_by_name(mat_name: str) -> Material:
