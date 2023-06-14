@@ -393,7 +393,7 @@ def lit_vertex_local_shader() -> str:
     {
         mat4 resultMatrix = ModelViewProjectionMatrix * modelMatrix;
         gl_Position = resultMatrix * vec4(pos, 1.0);
-        calcNormal = vertNormal;
+        calcNormal = normalize(vertNormal);
         outPos = pos;
         camDir = cameraPos - pos;
     }

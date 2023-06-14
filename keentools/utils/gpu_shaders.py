@@ -446,7 +446,7 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
         {
             mat4 resultMatrix = ModelViewProjectionMatrix * modelMatrix;
             gl_Position = resultMatrix * vec4(pos, 1.0);
-            calcNormal = vertNormal;
+            calcNormal = normalize(vertNormal);
             outPos = pos;
             camDir = normalize(cameraPos - pos);
         }
