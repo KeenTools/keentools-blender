@@ -498,10 +498,9 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
 
     void main()
     {
-        if (ignoreBackface && (dot(calcNormal, camDir) < 0.0f)) discard;
+        if (ignoreBackface && (dot(calcNormal, camDir) < 0.0)) discard;
 
         if (litShading){
-            float dist = 1000.0;
             Light light1;
             light1.position = pos1;
             light1.constantVal = 1.0;

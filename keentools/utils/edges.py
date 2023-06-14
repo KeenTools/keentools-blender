@@ -37,7 +37,7 @@ from .coords import (get_mesh_verts,
                      get_scale_vec_4_from_matrix_world,
                      get_triangulation_indices,
                      get_triangles_in_vertex_group,
-                     LocRotWithoutScale)
+                     LocRotWithoutScale, InvScaleMatrix)
 from .bpy_common import (evaluated_mesh,
                          use_gpu_instead_of_bgl)
 from .base_shaders import KTShaderBase
@@ -654,7 +654,6 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
     def set_lit_light_matrix(self, geomobj_matrix_world: Matrix,
                              camobj_matrix_world: Matrix) -> None:
         _log.output('set_lit_light_matrix')
-
         mat = geomobj_matrix_world.inverted() @ camobj_matrix_world
         self.lit_light_matrix = mat
 
@@ -738,8 +737,9 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         shader.bind()
         shader.uniform_float('color', self.lit_color)
         shader.uniform_float('adaptiveOpacity', self.adaptive_opacity)
-        shader.uniform_bool('ignoreBackface', self.backface_culling)
-        shader.uniform_bool('litShading', self.lit_is_working())
+        # uniform_int is used instead of uniform_bool for backward compatibility
+        shader.uniform_int('ignoreBackface', 1 if self.backface_culling else 0)
+        shader.uniform_int('litShading', 1 if self.lit_is_working() else 0)
         shader.uniform_vector_float(
             shader.uniform_from_name('modelMatrix'),
             self.object_world_matrix.ravel(), 16)
