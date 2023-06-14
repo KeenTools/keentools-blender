@@ -372,11 +372,11 @@ class GTLoader:
         keyframe = bpy_current_frame()
         try:
             if geotracker.focal_length_mode == 'STATIC_FOCAL_LENGTH':
-                gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.STATIC_FOCAL_LENGTH)
+                gt.set_focal_length_mode(GTClassLoader.TrackerFocalLengthMode_class().STATIC_FOCAL_LENGTH)
             elif geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH':
-                gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.ZOOM_FOCAL_LENGTH)
+                gt.set_focal_length_mode(GTClassLoader.TrackerFocalLengthMode_class().ZOOM_FOCAL_LENGTH)
             else:
-                gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.CAMERA_FOCAL_LENGTH)
+                gt.set_focal_length_mode(GTClassLoader.TrackerFocalLengthMode_class().CAMERA_FOCAL_LENGTH)
                 geotracker.focal_length_estimation = False
 
             gt.solve_for_current_pins(keyframe, geotracker.focal_length_estimation)
