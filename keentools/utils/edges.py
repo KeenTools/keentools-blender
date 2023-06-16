@@ -34,12 +34,9 @@ from .gpu_shaders import (line_3d_local_shader,
                           lit_local_shader)
 from .coords import (get_mesh_verts,
                      multiply_verts_on_matrix_4x4,
-                     get_scale_vec_4_from_matrix_world,
                      get_triangulation_indices,
-                     get_triangles_in_vertex_group,
-                     LocRotWithoutScale, InvScaleMatrix)
-from .bpy_common import (evaluated_mesh,
-                         use_gpu_instead_of_bgl)
+                     get_triangles_in_vertex_group)
+from .bpy_common import evaluated_mesh
 from .base_shaders import KTShaderBase
 
 
@@ -743,14 +740,16 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         shader.uniform_vector_float(
             shader.uniform_from_name('modelMatrix'),
             self.object_world_matrix.ravel(), 16)
-        shader.uniform_float('pos1', self.lit_light_matrix @
-                             self.lit_light1_pos)
-        shader.uniform_float('pos2', self.lit_light_matrix @
-                             self.lit_light2_pos)
-        shader.uniform_float('pos3', self.lit_light_matrix @
-                             self.lit_light3_pos)
-        shader.uniform_float('cameraPos', self.lit_light_matrix @
-                             self.lit_camera_pos)
+
+        pos1 = self.lit_light_matrix @ self.lit_light1_pos
+        pos2 = self.lit_light_matrix @ self.lit_light2_pos
+        pos3 = self.lit_light_matrix @ self.lit_light3_pos
+        camera_pos = self.lit_light_matrix @ self.lit_camera_pos
+        shader.uniform_float('pos1', pos1)
+        shader.uniform_float('pos2', pos2)
+        shader.uniform_float('pos3', pos3)
+        shader.uniform_float('cameraPos', camera_pos)
+        _log.output(f'cameraPos: {camera_pos}')
         self.lit_batch.draw(shader)
 
     def clear_all(self) -> None:

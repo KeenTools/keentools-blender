@@ -35,6 +35,7 @@ from ..utils.coords import (image_space_to_frame,
                             frame_to_image_space,
                             camera_sensor_width,
                             xy_to_xz_rotation_matrix_3x3,
+                            xz_to_xy_rotation_matrix_3x3,
                             InvScaleMatrix)
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
@@ -448,15 +449,24 @@ class GTLoader:
 
     @classmethod
     def get_geo_shader_data(cls, geo: Any, matrix_world: Matrix) -> Tuple:
-        scale = InvScaleMatrix(3, matrix_world.to_scale())
-        mat = xy_to_xz_rotation_matrix_3x3() @ np.array(scale, dtype=np.float32)
+        sc = matrix_world.to_scale()
+        scale1 = InvScaleMatrix(3, sc)
+        scale2 = InvScaleMatrix(3, (sc[0], sc[2], sc[1]))
+        scale3 = InvScaleMatrix(3, (1, 1, 1))
+        mat = xy_to_xz_rotation_matrix_3x3() @ np.array(scale1, dtype=np.float32)
         _log.output('get edge_vertices')
         edge_vertices = np.array(pkt_module().utils.get_lines(geo),
-                                        dtype=np.float32) @ mat
+                                 dtype=np.float32) @ mat
+        _log.output(f'edge_vertices:\n{edge_vertices}')
         _log.output('get edge_vertex_normals')
+
+        # Warning! Normals can be not normalized!
         edge_vertex_normals = np.array(
             pkt_module().utils.get_normals_for_lines(geo),
-            dtype=np.float32) @ mat
+            dtype=np.float32) @ xy_to_xz_rotation_matrix_3x3()
+
+        _log.output(f'edge_vertex_normals:\n{edge_vertex_normals}')
+
         _log.output('get triangle_vertices')
         triangle_vertices = np.array(
             pkt_module().utils.get_independent_triangles(geo),
