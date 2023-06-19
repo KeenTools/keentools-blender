@@ -36,7 +36,8 @@ from ..utils.coords import (image_space_to_frame,
                             camera_sensor_width,
                             xy_to_xz_rotation_matrix_3x3,
                             xz_to_xy_rotation_matrix_3x3,
-                            InvScaleMatrix)
+                            InvScaleMatrix,
+                            ScaleMatrix)
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
                                 get_scene_camera_shift,
@@ -449,28 +450,27 @@ class GTLoader:
 
     @classmethod
     def get_geo_shader_data(cls, geo: Any, matrix_world: Matrix) -> Tuple:
-        sc = matrix_world.to_scale()
-        scale1 = InvScaleMatrix(3, sc)
-        scale2 = InvScaleMatrix(3, (sc[0], sc[2], sc[1]))
-        scale3 = InvScaleMatrix(3, (1, 1, 1))
-        mat = xy_to_xz_rotation_matrix_3x3() @ np.array(scale1, dtype=np.float32)
+        scale_vec = matrix_world.to_scale()
+        scale_inv = np.array(InvScaleMatrix(3, scale_vec), dtype=np.float32)
+        scale = np.array(ScaleMatrix(3, scale_vec), dtype=np.float32)
+        rotate = xy_to_xz_rotation_matrix_3x3()
+        mat = rotate @ scale_inv
+
         _log.output('get edge_vertices')
         edge_vertices = np.array(pkt_module().utils.get_lines(geo),
                                  dtype=np.float32) @ mat
-        _log.output(f'edge_vertices:\n{edge_vertices}')
-        _log.output('get edge_vertex_normals')
-
-        # Warning! Normals can be not normalized!
-        edge_vertex_normals = np.array(
-            pkt_module().utils.get_normals_for_lines(geo),
-            dtype=np.float32) @ xy_to_xz_rotation_matrix_3x3()
-
-        _log.output(f'edge_vertex_normals:\n{edge_vertex_normals}')
 
         _log.output('get triangle_vertices')
         triangle_vertices = np.array(
             pkt_module().utils.get_independent_triangles(geo),
             dtype=np.float32) @ mat
+
+        _log.output('get edge_vertex_normals')
+        # Warning! Normals can be not normalized!
+        edge_vertex_normals = np.array(
+            pkt_module().utils.get_normals_for_lines(geo),
+            dtype=np.float32) @ rotate @ scale
+
         return edge_vertices, edge_vertex_normals, triangle_vertices
 
     @classmethod
@@ -489,8 +489,7 @@ class GTLoader:
         wf.init_geom_data_from_mesh(geotracker.geomobj)
 
         if normals:
-            _log.output('normals')
-            # wf.init_vertex_normals(geotracker.geomobj)
+            _log.output(_log.color('green', 'normals'))
 
             gt = GTLoader.kt_geotracker()
             geo = gt.geo()
