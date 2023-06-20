@@ -153,7 +153,6 @@ class Config:
     mock_update_core_path: str = 'http://localhost/core.zip'
     mock_product: Optional[str] = None
 
-    hide_geotracker: bool = not 'KEENTOOLS_ENABLE_BLENDER_GEOTRACKER' in os.environ
     supported_gpu_backends: Set = {'OPENGL', 'Undefined'}  # METAL
     strict_shader_check: bool = False
     use_gpu_shaders: bool = True
