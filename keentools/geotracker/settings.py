@@ -89,7 +89,8 @@ def update_camobj(geotracker, context: Any) -> None:
         if settings.pinmode:
             GTLoader.out_pinmode()
             return
-    GTLoader.update_viewport_shaders()
+    GTLoader.update_viewport_shaders(wireframe=True, pins_and_residuals=True,
+                                     timeline=True)
 
     if geotracker.camobj and len(geotracker.camobj.constraints) > 0:
         msg = 'Camera object has constraints!\n' \
@@ -118,7 +119,9 @@ def update_geomobj(geotracker, context: Any) -> None:
     geotracker.check_pins_on_geometry(gt)
     GTLoader.save_geotracker()
     if settings.pinmode:
-        GTLoader.update_viewport_shaders()
+        GTLoader.update_viewport_shaders(update_geo_data=True,
+                                         geomobj_matrix=True, wireframe=True,
+                                         pins_and_residuals=True, timeline=True)
 
     if geotracker.geomobj and len(geotracker.geomobj.constraints) > 0:
         msg = 'Geometry object has constraints!\n' \
@@ -176,8 +179,7 @@ def update_wireframe(settings, context: Any) -> None:
         return
     GTLoader.update_viewport_shaders(adaptive_opacity=True,
                                      geomobj_matrix=True,
-                                     wireframe=True,
-                                     normals=settings.lit_wireframe)
+                                     wireframe=True)
 
 
 def update_mask_2d_color(settings, context: Any) -> None:
@@ -303,7 +305,7 @@ def update_spring_pins_back(geotracker, context: Any) -> None:
         GTLoader.save_geotracker()
         settings = get_gt_settings()
         if settings.pinmode:
-            GTLoader.update_viewport_shaders()
+            GTLoader.update_viewport_shaders(pins_and_residuals=True)
             GTLoader.viewport_area_redraw()
 
 

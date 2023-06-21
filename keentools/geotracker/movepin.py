@@ -182,7 +182,10 @@ class GT_OT_MovePin(bpy.types.Operator):
         GTLoader.save_geotracker()
 
         self._before_operator_finish()
-        GTLoader.update_viewport_shaders(area)
+        GTLoader.update_viewport_shaders(area, wireframe=True,
+                                         geomobj_matrix=True,
+                                         pins_and_residuals=True,
+                                         timeline=True)
         GTLoader.viewport_area_redraw()
 
         _push_action_in_undo_history()

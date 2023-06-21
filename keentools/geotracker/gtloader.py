@@ -97,10 +97,12 @@ def depsgraph_update_handler(scene, depsgraph=None):
     camobj = geotracker.camobj
 
     if geomobj and _check_updated(depsgraph, geomobj.name):
-        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True)
+        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
+                                         pins_and_residuals=True)
         return
     if camobj and _check_updated(depsgraph, camobj.name):
-        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True)
+        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
+                                         pins_and_residuals=True)
 
 
 def undo_redo_handler(scene):
@@ -115,8 +117,10 @@ def undo_redo_handler(scene):
             return
 
         GTLoader.load_geotracker()
-        GTLoader.update_viewport_shaders(area)
-
+        GTLoader.update_viewport_shaders(area, wireframe=True,
+                                         geomobj_matrix=True,
+                                         pins_and_residuals=True,
+                                         timeline=True)
     except Exception as err:
         _log.error(f'gt_undo_handler {str(err)}')
         GTLoader.unregister_undo_redo_handlers()
@@ -151,8 +155,9 @@ def frame_change_post_handler(scene) -> None:
         return
     if geotracker.focal_length_estimation:
         geotracker.reset_focal_length_estimation()
-    GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
-                                     timeline=False, mask=True)
+    GTLoader.update_viewport_shaders(geomobj_matrix=True,
+                                     pins_and_residuals=True,
+                                     mask=True)
 
 
 class GTLoader:
@@ -241,6 +246,10 @@ class GTLoader:
             cls._storage
         )
         return cls._kt_geotracker
+
+    @classmethod
+    def increment_geo_hash(cls):
+        cls._geo_input.increment_hash()
 
     @classmethod
     def kt_geotracker(cls) -> Any:
@@ -474,26 +483,24 @@ class GTLoader:
         return edge_vertices, edge_vertex_normals, triangle_vertices
 
     @classmethod
-    def update_viewport_wireframe(cls, normals: bool=False) -> None:
-        _log.output('update_viewport_wireframe')
+    def update_viewport_wireframe(cls, *, update_geo_data: bool=False) -> None:
+        _log.output(_log.color('blue', 'update_viewport_wireframe'))
         settings = get_gt_settings()
         geotracker = get_current_geotracker_item()
         vp = cls.viewport()
         wf = vp.wireframer()
         if not geotracker or not geotracker.geomobj:
+            _log.output(_log.color('red',
+                                   'update_viewport_wireframe wf.clear_all'))
             wf.clear_all()
             wf.create_batches()
             return
 
-        _log.output('wf.init_geom_data_from_mesh')
-        wf.init_geom_data_from_mesh(geotracker.geomobj)
-
-        if normals:
-            _log.output(_log.color('green', 'normals'))
-
+        if update_geo_data:
+            _log.output(_log.color('green', 'update_geo_data'))
+            GTLoader.increment_geo_hash()
             gt = GTLoader.kt_geotracker()
             geo = gt.geo()
-
             wf.lit_edge_vertices, wf.lit_edge_vertex_normals, \
             wf.triangle_vertices = cls.get_geo_shader_data(
                 geo, geotracker.geomobj.matrix_world)
@@ -527,18 +534,17 @@ class GTLoader:
 
     @classmethod
     def update_viewport_shaders(cls, area: Optional[Area]=None, *,
+                                update_geo_data: bool=False,
                                 adaptive_opacity: bool=False,
                                 geomobj_matrix: bool=False,
-                                wireframe: bool=True,
-                                normals: bool=False,
-                                pins_and_residuals: bool=True,
-                                timeline: bool=True,
+                                wireframe: bool=False,
+                                pins_and_residuals: bool=False,
+                                timeline: bool=False,
                                 mask: bool=False) -> None:
         _log.output(_log.color('blue', f'update_viewport_shaders'
             f'\ngeomobj_matrix: {geomobj_matrix}'
             f' -- adaptive_opacity: {adaptive_opacity}'
             f' -- wireframe: {wireframe}'
-            f' -- normals: {normals}'
             f'\npins_and_residuals: {pins_and_residuals}'
             f' -- timeline: {timeline}'
             f' -- mask: {mask}'))
@@ -565,7 +571,7 @@ class GTLoader:
             if geotracker.get_mask_source() == 'COMP_MASK':
                 geotracker.update_compositing_mask()
         if wireframe:
-            cls.update_viewport_wireframe(normals)
+            cls.update_viewport_wireframe(update_geo_data=update_geo_data)
         if pins_and_residuals:
             cls.update_viewport_pins_and_residuals(area)
         if timeline:

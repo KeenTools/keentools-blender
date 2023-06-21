@@ -351,7 +351,8 @@ def clear_between_keyframes_act() -> ActionStatus:
         show_warning_dialog(err)
 
     GTLoader.save_geotracker()
-    GTLoader.update_viewport_shaders()
+    GTLoader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
+                                     pins_and_residuals=True, timeline=True)
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -373,7 +374,8 @@ def clear_direction_act(forward: bool) -> ActionStatus:
         show_warning_dialog(err)
 
     GTLoader.save_geotracker()
-    GTLoader.update_viewport_shaders()
+    GTLoader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
+                                     pins_and_residuals=True, timeline=True)
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -393,7 +395,8 @@ def clear_all_act() -> ActionStatus:
         show_warning_dialog(err)
 
     GTLoader.save_geotracker()
-    GTLoader.update_viewport_shaders()
+    GTLoader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
+                                     pins_and_residuals=True, timeline=True)
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -423,6 +426,8 @@ def clear_all_except_keyframes_act() -> ActionStatus:
     gt.remove_track_in_direction(keyframes[-1], True)
 
     GTLoader.save_geotracker()
+    GTLoader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
+                                     pins_and_residuals=True, timeline=True)
     return ActionStatus(True, 'ok')
 
 
@@ -477,7 +482,7 @@ def remove_pins_act() -> ActionStatus:
 
     pins.reset_current_pin()
     GTLoader.save_geotracker()
-    GTLoader.update_viewport_shaders()
+    GTLoader.update_viewport_shaders(pins_and_residuals=True)
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -502,7 +507,7 @@ def toggle_pins_act() -> ActionStatus:
         pins.clear_selected_pins()
         GTLoader.save_geotracker()
 
-    GTLoader.update_viewport_shaders()
+    GTLoader.update_viewport_shaders(pins_and_residuals=True)
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -515,7 +520,8 @@ def center_geo_act() -> ActionStatus:
         return check_status
 
     GTLoader.center_geo()
-    GTLoader.update_viewport_shaders()
+    GTLoader.update_viewport_shaders(wireframe=True, geomobj_matrix=True,
+                                     pins_and_residuals=True)
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
