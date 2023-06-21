@@ -713,7 +713,6 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
 
     def create_batches(self) -> None:
         _log.output(_log.color('yellow', 'create_batches'))
-        super().create_batches()
         if self.lit_shader is not None:
             self.lit_batch = batch_for_shader(
                 self.lit_shader, 'LINES',
@@ -725,13 +724,29 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
             _log.error(f'{self.__class__.__name__}.lit_shader: is empty')
 
         if self.fill_shader is not None:
-            _log.output(_log.color('red', 'lit self.fill_shader'))
+            _log.output('lit self.fill_shader')
             self.fill_batch = batch_for_shader(
                 self.fill_shader, 'TRIS',
                 {'pos': self.triangle_vertices
                  if len(self.triangle_vertices) > 0 else []})
         else:
-            _log.error(f'{self.__class__.__name__}.fill_shader2: is empty')
+            _log.error(f'{self.__class__.__name__}.fill_shader: is empty')
+
+        if self.selection_fill_shader is not None:
+            verts = []
+            indices = []
+            verts_count = len(self.vertices)
+            if verts_count > 0 and len(self.selection_triangle_indices) > 0:
+                max_index = np.max(self.selection_triangle_indices)
+                if max_index < verts_count:
+                    verts = self.vertices
+                    indices = self.selection_triangle_indices
+
+            self.selection_fill_batch = batch_for_shader(
+                self.selection_fill_shader, 'TRIS', {'pos': verts},
+                indices=indices)
+        else:
+            _log.error(f'{self.__class__.__name__}.selection_fill_shader: is empty')
 
     def draw_checks(self, context: Any) -> bool:
         if self.is_handler_list_empty():
