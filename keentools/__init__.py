@@ -17,12 +17,13 @@
 # ##### END GPL LICENSE BLOCK #####
 
 bl_info = {
-    "name": "KeenTools FaceBuilder 2023.2.0",  # (1/5)
+    "name": "KeenTools 2023.2.0",  # (1/5)
     "version": (2023, 2, 0),  # 2023.2.0 (2/5)
     "author": "KeenTools",
     "description": "KeenTools bundle for Blender. "
                    "FaceBuilder: Creates Head and Face geometry with a few "
-                   "reference photos",
+                   "reference photos. "
+                   "GeoTracker: Tracks an object in a video using a 3D model.",
     "blender": (2, 80, 0),
     "location": "View UI (press N to open tab bar)",
     "wiki_url": "https://keentools.io",
