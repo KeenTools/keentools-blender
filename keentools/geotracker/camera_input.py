@@ -70,9 +70,20 @@ class GTCameraInput(pkt_module().TrackerCameraInputI):
 
 class GTGeoInput(pkt_module().GeoInputI):
     _previous_val: int = 0
+    _hash_counter: int = 0
 
     @classmethod
-    def _set_previous_val(cls, val):
+    def increment_hash(cls) -> None:
+        cls._hash_counter += 1
+        if cls._hash_counter > 1000:
+            cls._hash_counter = 0
+
+    @classmethod
+    def get_hash_counter(cls) -> int:
+        return cls._hash_counter
+
+    @classmethod
+    def _set_previous_val(cls, val) -> None:
         cls._previous_val = val
 
     def _rounded(self, val: float) -> int:
@@ -80,6 +91,7 @@ class GTGeoInput(pkt_module().GeoInputI):
         return int(round(p[0] * 10000, 0) + 3 * p[1])
 
     def geo_hash(self) -> Any:
+        _log.output(_log.color('magenta', 'get geo_hash'))
         settings = get_gt_settings()
 
         if settings.is_calculating() and self._previous_val != 0:
@@ -88,15 +100,18 @@ class GTGeoInput(pkt_module().GeoInputI):
         geotracker = settings.get_current_geotracker_item()
         if geotracker and geotracker.geomobj:
             vert_count = len(geotracker.geomobj.data.vertices)
+            poly_count = len(geotracker.geomobj.data.polygons) * 3  # empirical
             scale = geotracker.geomobj.matrix_world.to_scale()
             scale_val = self._rounded(29 * scale[0]) + \
                         self._rounded(31 * scale[1]) + \
                         self._rounded(37 * scale[2])
         else:
             vert_count = 0
+            poly_count = 0
             scale_val = 0
 
-        val = abs(hash(settings.pinmode_id) + vert_count + scale_val)
+        val = abs(hash(settings.pinmode_id) + vert_count + poly_count +
+                  scale_val + self.get_hash_counter())
         if val != self._previous_val:
             _log.output(_log.color('magenta', 'geo_hash changed'))
             self._set_previous_val(val)
@@ -106,7 +121,7 @@ class GTGeoInput(pkt_module().GeoInputI):
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return None
-        return build_geo(geotracker.geomobj, evaluated=True, get_uv=False)
+        return build_geo(geotracker.geomobj, get_uv=False)
 
 
 class GTImageInput(pkt_module().ImageInputI):
