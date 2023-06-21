@@ -100,7 +100,8 @@ class GTGeoInput(pkt_module().GeoInputI):
         geotracker = settings.get_current_geotracker_item()
         if geotracker and geotracker.geomobj:
             vert_count = len(geotracker.geomobj.data.vertices)
-            poly_count = len(geotracker.geomobj.data.polygons) * 3  # empirical
+            empirical_const = 3
+            poly_count = len(geotracker.geomobj.data.polygons) * empirical_const
             scale = geotracker.geomobj.matrix_world.to_scale()
             scale_val = self._rounded(29 * scale[0]) + \
                         self._rounded(31 * scale[1]) + \
