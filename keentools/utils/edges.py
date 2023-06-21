@@ -406,6 +406,7 @@ class KTEdgeShader3D(KTEdgeShaderBase):
         bgl.glColorMask(bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE)
 
         if self.backface_culling and not self.backface_culling_in_shader:
+            # Sandwich technique for back-face culling if shader does not support it
             bgl.glPolygonMode(bgl.GL_BACK, bgl.GL_FILL)
             bgl.glEnable(bgl.GL_CULL_FACE)
             bgl.glCullFace(bgl.GL_FRONT)
@@ -441,7 +442,7 @@ class KTEdgeShader3D(KTEdgeShaderBase):
         gpu.state.blend_set('ALPHA')
         self.draw_edges()
 
-    def draw_selection_fill(self):
+    def draw_selection_fill(self) -> None:
         pass
 
     def create_batches(self) -> None:
@@ -622,6 +623,9 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
                                  inverted: bool) -> None:
         self.selection_triangle_indices = get_triangles_in_vertex_group(
             obj, mask_3d, inverted)
+        if len(self.selection_triangle_indices) > 0:
+            mesh = evaluated_mesh(obj)
+            self.vertices = get_mesh_verts(mesh)
 
 
 class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
@@ -629,24 +633,21 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_color: Tuple[float, float, float, float] = (0., 1., 0., 1.0)
         self.lit_shader: Optional[Any] = None
         self.lit_batch: Optional[Any] = None
-        self.lit_flag: bool = False
-        self.lit_edge_vertices: List = []
-        self.lit_edge_vertex_normals: List = []
+        self.lit_shading: bool = True
+        self.lit_edge_vertices: Any = np.empty(shape=(0, 3), dtype=np.float32)
+        self.lit_edge_vertex_normals: Any = np.empty(shape=(0, 3),
+                                                     dtype=np.float32)
         self.lit_light_dist: float = 1000
         self.lit_light1_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
         self.lit_light2_pos: Vector = Vector((-2, 0, 1)) * self.lit_light_dist
         self.lit_light3_pos: Vector = Vector((2, 0, 1)) * self.lit_light_dist
         self.lit_camera_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
         self.lit_light_matrix: Matrix = Matrix.Identity(4)
-        self.fill_batch2: Optional[Any] = None
         super().__init__(target_class, mask_color)
         self.backface_culling_in_shader = True
 
     def set_lit_wireframe(self, state: bool) -> None:
-        self.lit_flag = state
-
-    def lit_is_working(self) -> bool:
-        return self.lit_flag
+        self.lit_shading = state
 
     def set_lit_light_matrix(self, geomobj_matrix_world: Matrix,
                              camobj_matrix_world: Matrix) -> None:
@@ -711,23 +712,43 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.line_color = color
 
     def create_batches(self) -> None:
+        _log.output(_log.color('yellow', 'create_batches'))
         super().create_batches()
-        if not self.lit_shader is None:
+        if self.lit_shader is not None:
             self.lit_batch = batch_for_shader(
                 self.lit_shader, 'LINES',
-                {'pos': self.lit_edge_vertices,
-                 'vertNormal': self.lit_edge_vertex_normals})
+                {'pos': self.lit_edge_vertices
+                 if len(self.lit_edge_vertices) > 0 else [],
+                 'vertNormal': self.lit_edge_vertex_normals
+                 if len(self.lit_edge_vertex_normals) > 0 else []})
         else:
             _log.error(f'{self.__class__.__name__}.lit_shader: is empty')
 
         if self.fill_shader is not None:
-            if self.lit_is_working():
-                _log.output(_log.color('red', 'Extra self.fill_shader'))
-                self.fill_batch = batch_for_shader(
-                    self.fill_shader, 'TRIS',
-                    {'pos': self.triangle_vertices})
+            _log.output(_log.color('red', 'lit self.fill_shader'))
+            self.fill_batch = batch_for_shader(
+                self.fill_shader, 'TRIS',
+                {'pos': self.triangle_vertices
+                 if len(self.triangle_vertices) > 0 else []})
         else:
             _log.error(f'{self.__class__.__name__}.fill_shader2: is empty')
+
+    def draw_checks(self, context: Any) -> bool:
+        if self.is_handler_list_empty():
+            self.unregister_handler()
+            return False
+
+        if not self.is_visible():
+            return False
+
+        if self.lit_shader is None or self.lit_batch is None \
+                or self.fill_shader is None or self.fill_batch is None:
+            return False
+
+        if self.work_area != context.area:
+            return False
+
+        return True
 
     def draw_edges(self) -> None:
         shader = self.lit_shader
@@ -736,7 +757,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         shader.uniform_float('adaptiveOpacity', self.adaptive_opacity)
         # uniform_int is used instead of uniform_bool for backward compatibility
         shader.uniform_int('ignoreBackface', 1 if self.backface_culling else 0)
-        shader.uniform_int('litShading', 1 if self.lit_is_working() else 0)
+        shader.uniform_int('litShading', 1 if self.lit_shading else 0)
         shader.uniform_vector_float(
             shader.uniform_from_name('modelMatrix'),
             self.object_world_matrix.ravel(), 16)
@@ -749,10 +770,9 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         shader.uniform_float('pos2', pos2)
         shader.uniform_float('pos3', pos3)
         shader.uniform_float('cameraPos', camera_pos)
-        _log.output(f'cameraPos: {camera_pos}')
         self.lit_batch.draw(shader)
 
     def clear_all(self) -> None:
         super().clear_all()
-        self.lit_edge_vertices = []
-        self.lit_edge_vertex_normals = []
+        self.lit_edge_vertices = np.empty(shape=(0, 3), dtype=np.float32)
+        self.lit_edge_vertex_normals = np.empty(shape=(0, 3), dtype=np.float32)
