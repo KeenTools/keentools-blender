@@ -420,16 +420,20 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
     vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
     vert_out.smooth('VEC3', 'calcNormal')
     vert_out.smooth('VEC3', 'outPos')
+    vert_out.smooth('VEC3', 'camDir')
 
     shader_info = gpu.types.GPUShaderCreateInfo()
     shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
     shader_info.push_constant('MAT4', 'modelMatrix')
     shader_info.push_constant('VEC4', 'color')
     shader_info.push_constant('FLOAT', 'adaptiveOpacity')
+    shader_info.push_constant('BOOL', 'ignoreBackface')
+    shader_info.push_constant('BOOL', 'litShading')
 
     shader_info.push_constant('VEC3', 'pos1')
     shader_info.push_constant('VEC3', 'pos2')
     shader_info.push_constant('VEC3', 'pos3')
+    shader_info.push_constant('VEC3', 'cameraPos')
 
     shader_info.vertex_in(0, 'VEC3', 'pos')
     shader_info.vertex_in(1, 'VEC3', 'vertNormal')
@@ -442,8 +446,9 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
         {
             mat4 resultMatrix = ModelViewProjectionMatrix * modelMatrix;
             gl_Position = resultMatrix * vec4(pos, 1.0);
-            calcNormal = vertNormal;
+            calcNormal = normalize(vertNormal);
             outPos = pos;
+            camDir = normalize(cameraPos - pos);
         }
         '''
     )
@@ -493,36 +498,41 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
 
     void main()
     {
-        float dist = 1000.0;
-        Light light1;
-        light1.position = pos1;
-        light1.constantVal = 1.0;
-        light1.linear = 0.0;
-        light1.quadratic = 0.0;
-        light1.ambient = vec3(0.0, 0.0, 0.0);
-        light1.diffuse = vec3(1.0, 1.0, 1.0);
+        if (ignoreBackface && (dot(calcNormal, camDir) < 0.0)) discard;
 
-        Light light2;
-        light2.position = pos2;
-        light2.constantVal = 1.0;
-        light2.linear = 0.0;
-        light2.quadratic = 0.0;
-        light2.ambient = vec3(0.0, 0.0, 0.0);
-        light2.diffuse = vec3(1.0, 1.0, 1.0);
+        if (litShading){
+            Light light1;
+            light1.position = pos1;
+            light1.constantVal = 1.0;
+            light1.linear = 0.0;
+            light1.quadratic = 0.0;
+            light1.ambient = vec3(0.0, 0.0, 0.0);
+            light1.diffuse = vec3(1.0, 1.0, 1.0);
 
-        Light light3;
-        light3.position = pos3;
-        light3.constantVal = 1.0;
-        light3.linear = 0.0;
-        light3.quadratic = 0.0;
-        light3.ambient = vec3(0.0, 0.0, 0.0);
-        light3.diffuse = vec3(1.0, 1.0, 1.0);
+            Light light2;
+            light2.position = pos2;
+            light2.constantVal = 1.0;
+            light2.linear = 0.0;
+            light2.quadratic = 0.0;
+            light2.ambient = vec3(0.0, 0.0, 0.0);
+            light2.diffuse = vec3(1.0, 1.0, 1.0);
 
-        fragColor = vec4(
-            to_srgb_gamma_vec3(evaluatePointLight(light1, color.rgb, calcNormal, outPos)) +
-            to_srgb_gamma_vec3(evaluatePointLight(light2, color.rgb, calcNormal, outPos)) +
-            to_srgb_gamma_vec3(evaluatePointLight(light3, color.rgb, calcNormal, outPos)),
-            color.a * adaptiveOpacity);
+            Light light3;
+            light3.position = pos3;
+            light3.constantVal = 1.0;
+            light3.linear = 0.0;
+            light3.quadratic = 0.0;
+            light3.ambient = vec3(0.0, 0.0, 0.0);
+            light3.diffuse = vec3(1.0, 1.0, 1.0);
+
+            fragColor = vec4(
+                to_srgb_gamma_vec3(evaluatePointLight(light1, color.rgb, calcNormal, outPos)) +
+                to_srgb_gamma_vec3(evaluatePointLight(light2, color.rgb, calcNormal, outPos)) +
+                to_srgb_gamma_vec3(evaluatePointLight(light3, color.rgb, calcNormal, outPos)),
+                color.a * adaptiveOpacity);
+        } else {
+            fragColor = vec4(color.rgb, color.a * adaptiveOpacity);
+        }
     }
     '''
 

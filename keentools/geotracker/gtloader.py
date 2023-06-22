@@ -33,7 +33,11 @@ from ..utils.coords import (image_space_to_frame,
                             focal_by_projection_matrix_mm,
                             compensate_view_scale,
                             frame_to_image_space,
-                            camera_sensor_width)
+                            camera_sensor_width,
+                            xy_to_xz_rotation_matrix_3x3,
+                            xz_to_xy_rotation_matrix_3x3,
+                            InvScaleMatrix,
+                            ScaleMatrix)
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
                                 get_scene_camera_shift,
@@ -93,10 +97,12 @@ def depsgraph_update_handler(scene, depsgraph=None):
     camobj = geotracker.camobj
 
     if geomobj and _check_updated(depsgraph, geomobj.name):
-        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True)
+        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
+                                         pins_and_residuals=True)
         return
     if camobj and _check_updated(depsgraph, camobj.name):
-        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True)
+        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
+                                         pins_and_residuals=True)
 
 
 def undo_redo_handler(scene):
@@ -111,8 +117,10 @@ def undo_redo_handler(scene):
             return
 
         GTLoader.load_geotracker()
-        GTLoader.update_viewport_shaders(area)
-
+        GTLoader.update_viewport_shaders(area, wireframe=True,
+                                         geomobj_matrix=True,
+                                         pins_and_residuals=True,
+                                         timeline=True)
     except Exception as err:
         _log.error(f'gt_undo_handler {str(err)}')
         GTLoader.unregister_undo_redo_handlers()
@@ -147,8 +155,9 @@ def frame_change_post_handler(scene) -> None:
         return
     if geotracker.focal_length_estimation:
         geotracker.reset_focal_length_estimation()
-    GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
-                                     timeline=False, mask=True)
+    GTLoader.update_viewport_shaders(geomobj_matrix=True,
+                                     pins_and_residuals=True,
+                                     mask=True)
 
 
 class GTLoader:
@@ -237,6 +246,10 @@ class GTLoader:
             cls._storage
         )
         return cls._kt_geotracker
+
+    @classmethod
+    def increment_geo_hash(cls):
+        cls._geo_input.increment_hash()
 
     @classmethod
     def kt_geotracker(cls) -> Any:
@@ -445,26 +458,63 @@ class GTLoader:
         return True
 
     @classmethod
-    def update_viewport_wireframe(cls, normals: bool=False) -> None:
+    def get_geo_shader_data(cls, geo: Any, matrix_world: Matrix) -> Tuple:
+        scale_vec = matrix_world.to_scale()
+        scale_inv = np.array(InvScaleMatrix(3, scale_vec), dtype=np.float32)
+        scale = np.array(ScaleMatrix(3, scale_vec), dtype=np.float32)
+        rotate = xy_to_xz_rotation_matrix_3x3()
+        mat = rotate @ scale_inv
+
+        _log.output('get edge_vertices')
+        edge_vertices = np.array(pkt_module().utils.get_lines(geo),
+                                 dtype=np.float32) @ mat
+
+        _log.output('get triangle_vertices')
+        triangle_vertices = np.array(
+            pkt_module().utils.get_independent_triangles(geo),
+            dtype=np.float32) @ mat
+
+        _log.output('get edge_vertex_normals')
+        # Warning! Normals can be not normalized!
+        edge_vertex_normals = np.array(
+            pkt_module().utils.get_normals_for_lines(geo),
+            dtype=np.float32) @ rotate @ scale
+
+        return edge_vertices, edge_vertex_normals, triangle_vertices
+
+    @classmethod
+    def update_viewport_wireframe(cls, *, update_geo_data: bool=False) -> None:
+        _log.output(_log.color('blue', 'update_viewport_wireframe'))
         settings = get_gt_settings()
         geotracker = get_current_geotracker_item()
         vp = cls.viewport()
         wf = vp.wireframer()
         if not geotracker or not geotracker.geomobj:
+            _log.output(_log.color('red',
+                                   'update_viewport_wireframe wf.clear_all'))
             wf.clear_all()
             wf.create_batches()
             return
 
-        wf.init_geom_data_from_mesh(geotracker.geomobj)
-        if normals:
-            wf.init_vertex_normals(geotracker.geomobj)
+        if update_geo_data:
+            _log.output(_log.color('green', 'update_geo_data'))
+            GTLoader.increment_geo_hash()
+            gt = GTLoader.kt_geotracker()
+            geo = gt.geo()
+            wf.lit_edge_vertices, wf.lit_edge_vertex_normals, \
+            wf.triangle_vertices = cls.get_geo_shader_data(
+                geo, geotracker.geomobj.matrix_world)
+
+        _log.output('wf.init_color_data')
         wf.init_color_data((*settings.wireframe_color,
                             settings.wireframe_opacity))
         wf.set_adaptive_opacity(settings.get_adaptive_opacity())
+        _log.output('wf.init_selection_from_mesh')
         wf.init_selection_from_mesh(geotracker.geomobj, geotracker.mask_3d,
                                     geotracker.mask_3d_inverted)
         wf.set_backface_culling(settings.wireframe_backface_culling)
         wf.set_lit_wireframe(settings.lit_wireframe)
+        _log.output('wf.create_batches')
         wf.create_batches()
 
     @classmethod
@@ -484,18 +534,17 @@ class GTLoader:
 
     @classmethod
     def update_viewport_shaders(cls, area: Optional[Area]=None, *,
+                                update_geo_data: bool=False,
                                 adaptive_opacity: bool=False,
                                 geomobj_matrix: bool=False,
-                                wireframe: bool=True,
-                                normals: bool=False,
-                                pins_and_residuals: bool=True,
-                                timeline: bool=True,
+                                wireframe: bool=False,
+                                pins_and_residuals: bool=False,
+                                timeline: bool=False,
                                 mask: bool=False) -> None:
         _log.output(_log.color('blue', f'update_viewport_shaders'
             f'\ngeomobj_matrix: {geomobj_matrix}'
             f' -- adaptive_opacity: {adaptive_opacity}'
             f' -- wireframe: {wireframe}'
-            f' -- normals: {normals}'
             f'\npins_and_residuals: {pins_and_residuals}'
             f' -- timeline: {timeline}'
             f' -- mask: {mask}'))
@@ -522,7 +571,7 @@ class GTLoader:
             if geotracker.get_mask_source() == 'COMP_MASK':
                 geotracker.update_compositing_mask()
         if wireframe:
-            cls.update_viewport_wireframe(normals)
+            cls.update_viewport_wireframe(update_geo_data=update_geo_data)
         if pins_and_residuals:
             cls.update_viewport_pins_and_residuals(area)
         if timeline:

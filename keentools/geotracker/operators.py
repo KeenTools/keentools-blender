@@ -310,6 +310,7 @@ class GT_OT_AddKeyframe(ButtonOperator, Operator):
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+        GTLoader.update_viewport_shaders(timeline=True)
         force_undo_push('Add GeoTracker keyframe')
         return {'FINISHED'}
 
@@ -326,6 +327,7 @@ class GT_OT_RemoveKeyframe(ButtonOperator, Operator):
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+        GTLoader.update_viewport_shaders(timeline=True)
         force_undo_push('Remove GeoTracker keyframe')
         return {'FINISHED'}
 
@@ -338,6 +340,7 @@ class GT_OT_ClearAllTracking(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         act_status = clear_all_act()
+        GTLoader.update_viewport_shaders(timeline=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -352,6 +355,7 @@ class GT_OT_ClearTrackingExceptKeyframes(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         act_status = clear_all_except_keyframes_act()
+        GTLoader.update_viewport_shaders(timeline=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -366,6 +370,7 @@ class GT_OT_ClearTrackingForward(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         act_status = clear_direction_act(forward=True)
+        GTLoader.update_viewport_shaders(timeline=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -380,6 +385,7 @@ class GT_OT_ClearTrackingBackward(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         act_status = clear_direction_act(forward=False)
+        GTLoader.update_viewport_shaders(timeline=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -394,6 +400,7 @@ class GT_OT_ClearTrackingBetween(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         act_status = clear_between_keyframes_act()
+        GTLoader.update_viewport_shaders(timeline=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -436,6 +443,7 @@ class GT_OT_CenterGeo(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         act_status = center_geo_act()
+        GTLoader.update_viewport_shaders(timeline=True, pins_and_residuals=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -462,6 +470,7 @@ class GT_OT_RemovePins(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         act_status = remove_pins_act()
+        GTLoader.update_viewport_shaders(pins_and_residuals=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -476,6 +485,7 @@ class GT_OT_TogglePins(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         act_status = toggle_pins_act()
+        GTLoader.update_viewport_shaders(pins_and_residuals=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
