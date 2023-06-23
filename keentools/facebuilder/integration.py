@@ -358,7 +358,7 @@ class FB_OT_ExportToCC(Operator):
         duplicate_img = None
         if tex_node is not None:
             img = tex_node.image
-            if img.packed_file:
+            if img and img.packed_file:
                 duplicate_img = img.copy()
                 duplicate_img.filepath = f'{export_path}.png'
                 duplicate_img.save()
