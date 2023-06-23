@@ -223,7 +223,7 @@ def _find_base_texture(obj: Object) -> Optional[ShaderNode]:
         _log.error('Material does not have output node')
         return None
     if len(output_nodes) > 1:
-        _log.error('Material has more then one output node')
+        _log.error('Material has more than one output node')
 
     node = get_node_from_input(output_nodes[0], 0)
     if node is None:
@@ -376,11 +376,9 @@ class FB_OT_ExportToCC(Operator):
 
         bpy_remove_image(duplicate_img)
         bpy_remove_material(mat)
-
-        act_status = _call_cc(cc_path, f'{export_path}.fbx')
-
         bpy_remove_object(head_obj)
 
+        act_status = _call_cc(cc_path, f'{export_path}.fbx')
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
