@@ -72,13 +72,22 @@ def copy_materials_from_object(from_obj: Object, to_obj: Object) -> bool:
     return True
 
 
+def new_material(mat_name: str) -> Material:
+    new_mat = bpy.data.materials.new(mat_name)
+    new_mat.use_nodes = True
+    return new_mat
+
+
 def get_mat_by_name(mat_name: str) -> Material:
     if bpy.data.materials.find(mat_name) >= 0:
         return bpy.data.materials[mat_name]
 
-    new_mat = bpy.data.materials.new(mat_name)
-    new_mat.use_nodes = True
+    new_mat = new_material(mat_name)
     return new_mat
+
+
+def new_shader_node(mat: Material, create_name: str) -> Any:
+    return mat.node_tree.nodes.new(create_name)
 
 
 def get_shader_node(mat: Material, find_type: str,
@@ -86,7 +95,7 @@ def get_shader_node(mat: Material, find_type: str,
     for node in mat.node_tree.nodes:
         if node.type == find_type:
             return node
-    return mat.node_tree.nodes.new(create_name)
+    return new_shader_node(mat, create_name)
 
 
 def remove_mat_by_name(name: str) -> None:
@@ -220,3 +229,20 @@ def bake_tex(headnum: int, tex_name: str) -> bool:
 
     _create_bpy_texture_from_img(built_texture, tex_name)
     return True
+
+
+def get_nodes_by_type(nodes: List, find_type: str) -> List:
+    found_nodes = []
+    for node in nodes:
+        if node.type == find_type:
+            found_nodes.append(node)
+    return found_nodes
+
+
+def get_node_from_input(node: Any, num: int=0) -> Any:
+    if len(node.inputs) < num + 1:
+        return None
+    input = node.inputs[num]
+    if len(input.links) < 1:
+        return None
+    return input.links[0].from_node
