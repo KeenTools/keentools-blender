@@ -657,7 +657,7 @@ def builtin_2d_uniform_color_shader(use_old: bool=False) -> Any:
 
 
 def builtin_3d_uniform_color_shader(use_old: bool=False) -> Any:
-    shader_name = 'builtin_2d_uniform_color_shader'
+    shader_name = 'builtin_3d_uniform_color_shader'
     if use_old or BVersion.builtin_shaders_are_using_old_names:
         shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
         _log.output(_log.color('magenta', f'{shader_name}: Old built-in Shader '
@@ -670,7 +670,7 @@ def builtin_3d_uniform_color_shader(use_old: bool=False) -> Any:
 
 
 def builtin_3d_smooth_color_shader(use_old: bool=False) -> Any:
-    shader_name = 'builtin_2d_uniform_color_shader'
+    shader_name = 'builtin_3d_smooth_color_shader'
     if use_old or BVersion.builtin_shaders_are_using_old_names:
         shader = gpu.shader.from_builtin('3D_SMOOTH_COLOR')
         _log.output(_log.color('magenta', f'{shader_name}: Old built-in Shader'
