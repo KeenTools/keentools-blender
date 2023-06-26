@@ -36,7 +36,8 @@ from ...utils.coords import (frame_to_image_space,
                              get_triangulation_indices)
 from ...utils.gpu_shaders import (solid_line_2d_shader,
                                   black_fill_shader,
-                                  raster_image_shader)
+                                  raster_image_shader,
+                                  builtin_3d_uniform_color_shader)
 from ...utils.images import (check_bpy_image_has_same_size,
                              find_bpy_image_by_name,
                              remove_bpy_image,
@@ -370,7 +371,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             _log.output(f'{self.__class__.__name__}.fill_shader: skip')
 
         if self.simple_line_shader is None:
-            self.simple_line_shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+            self.simple_line_shader = builtin_3d_uniform_color_shader()
             res[2] = self.simple_line_shader is not None
             _log.output(f'{self.__class__.__name__}.simple_line_shader: {res[2]}')
             changes = True
