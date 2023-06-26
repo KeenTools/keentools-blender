@@ -232,18 +232,27 @@ def _find_base_texture(obj: Object) -> Optional[ShaderNode]:
 
     node_list = [node]
     _log.output(_log.color('magenta', 'start material tree walking'))
+    base_color_input_index = 0
     while len(node_list) > 0:
         node = node_list.pop(0)
         _log.output(f'node: {node.type} {node}')
         if node.type == 'TEX_IMAGE':
             return node
         elif node.type == 'BSDF_PRINCIPLED':
-            node = get_node_from_input(node, 0)
+            node = get_node_from_input(node, base_color_input_index)
             node_list.insert(0, node)
-            _log.output(f'node_list: {node_list}')
         else:
+            _log.output('check node inputs')
             for x in range(len(node.inputs)):
-                node_list.append(get_node_from_input(node, x))
+                input = node.inputs[x]
+                color_data_flag = input.type in ['SHADER', 'RGBA']
+                _log.output(f'input: {"+" if color_data_flag else "-"} '
+                            f'{input.name} {input.type}')
+                if color_data_flag:
+                    node = get_node_from_input(node, x)
+                    if node is not None:
+                        node_list.append(node)
+        _log.output(f'node_list:\n{node_list}')
     return None
 
 
