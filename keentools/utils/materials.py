@@ -232,11 +232,7 @@ def bake_tex(headnum: int, tex_name: str) -> bool:
 
 
 def get_nodes_by_type(nodes: List, find_type: str) -> List:
-    found_nodes = []
-    for node in nodes:
-        if node.type == find_type:
-            found_nodes.append(node)
-    return found_nodes
+    return [node for node in nodes if node.type == find_type]
 
 
 def get_node_from_input(node: Any, num: int=0) -> Any:
