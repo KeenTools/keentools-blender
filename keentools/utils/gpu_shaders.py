@@ -91,8 +91,6 @@ def circular_dot_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     )
 
     shader = gpu.shader.create_from_info(shader_info)
-    del vert_out
-    del shader_info
     _log.output(f'{shader_name}: GPU Shader')
     return shader
 
@@ -139,8 +137,6 @@ def circular_dot_3d_shader(use_old: bool=_use_old_shaders) -> Any:
     )
 
     shader = gpu.shader.create_from_info(shader_info)
-    del vert_out
-    del shader_info
     _log.output(f'{shader_name}: GPU Shader')
     return shader
 
@@ -187,8 +183,6 @@ def line_3d_local_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_info.fragment_source(txt)
 
     shader = gpu.shader.create_from_info(shader_info)
-    del vert_out
-    del shader_info
     _log.output(f'{shader_name}: GPU Shader')
     return shader
 
@@ -232,8 +226,6 @@ def solid_line_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_info.fragment_source(txt)
 
     shader = gpu.shader.create_from_info(shader_info)
-    del vert_out
-    del shader_info
     _log.output(f'{shader_name}: GPU Shader')
     return shader
 
@@ -280,8 +272,6 @@ def residual_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_info.fragment_source(txt)
 
     shader = gpu.shader.create_from_info(shader_info)
-    del vert_out
-    del shader_info
     _log.output(f'{shader_name}: GPU Shader')
     return shader
 
@@ -328,8 +318,6 @@ def dashed_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_info.fragment_source(txt)
 
     shader = gpu.shader.create_from_info(shader_info)
-    del vert_out
-    del shader_info
     _log.output(f'{shader_name}: GPU Shader')
     return shader
 
@@ -366,7 +354,6 @@ def black_fill_shader(use_old: bool=_use_old_shaders) -> Any:
     )
 
     shader = gpu.shader.create_from_info(shader_info)
-    del shader_info
     _log.output(f'{shader_name}: GPU Shader')
     return shader
 
@@ -404,7 +391,6 @@ def black_fill_local_shader(use_old: bool=_use_old_shaders) -> Any:
     )
 
     shader = gpu.shader.create_from_info(shader_info)
-    del shader_info
     _log.output(f'{shader_name}: GPU Shader')
     return shader
 
@@ -540,8 +526,6 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_info.fragment_source(txt)
 
     shader = gpu.shader.create_from_info(shader_info)
-    del vert_out
-    del shader_info
     _log.output(f'{shader_name}: GPU Shader')
     return shader
 
@@ -601,8 +585,6 @@ def raster_image_mask_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_info.fragment_source(txt)
 
     shader = gpu.shader.create_from_info(shader_info)
-    del vert_out
-    del shader_info
     _log.output(f'{shader_name}: GPU Shader')
     return shader
 
@@ -648,7 +630,5 @@ def raster_image_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_info.fragment_source(txt)
 
     shader = gpu.shader.create_from_info(shader_info)
-    del vert_out
-    del shader_info
     _log.output(f'{shader_name}: GPU Shader')
     return shader
