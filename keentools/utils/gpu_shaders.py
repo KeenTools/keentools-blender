@@ -158,7 +158,7 @@ def line_3d_local_shader(use_old: bool=_use_old_shaders) -> Any:
 
     shader_info = gpu.types.GPUShaderCreateInfo()
     shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
-    shader_info.push_constant('MAT4', 'modelMatrix')
+    shader_info.uniform_buf(0, 'mat4', 'modelMatrix')
     shader_info.push_constant('VEC4', 'color')
     shader_info.push_constant('FLOAT', 'adaptiveOpacity')
 
@@ -381,7 +381,7 @@ def black_fill_local_shader(use_old: bool=_use_old_shaders) -> Any:
 
     shader_info = gpu.types.GPUShaderCreateInfo()
     shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
-    shader_info.push_constant('MAT4', 'modelMatrix')
+    shader_info.uniform_buf(0, 'mat4', 'modelMatrix')
     shader_info.vertex_in(0, 'VEC3', 'pos')
     shader_info.fragment_out(0, 'VEC4', 'fragColor')
 
@@ -424,15 +424,16 @@ def lit_local_shader(use_old: bool=_use_old_shaders) -> Any:
 
     shader_info = gpu.types.GPUShaderCreateInfo()
     shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
-    shader_info.push_constant('MAT4', 'modelMatrix')
+    shader_info.uniform_buf(0, 'mat4', 'modelMatrix')
     shader_info.push_constant('VEC4', 'color')
     shader_info.push_constant('FLOAT', 'adaptiveOpacity')
     shader_info.push_constant('BOOL', 'ignoreBackface')
     shader_info.push_constant('BOOL', 'litShading')
 
-    shader_info.push_constant('VEC3', 'pos1')
-    shader_info.push_constant('VEC3', 'pos2')
-    shader_info.push_constant('VEC3', 'pos3')
+    shader_info.uniform_buf(1, 'vec3', 'pos1')
+    shader_info.uniform_buf(2, 'vec3', 'pos2')
+    shader_info.uniform_buf(3, 'vec3', 'pos3')
+
     shader_info.push_constant('VEC3', 'cameraPos')
 
     shader_info.vertex_in(0, 'VEC3', 'pos')
