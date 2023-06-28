@@ -32,7 +32,8 @@ from .gpu_shaders import (line_3d_local_shader,
                           dashed_2d_shader,
                           black_fill_local_shader,
                           lit_local_shader,
-                          builtin_2d_uniform_color_shader)
+                          builtin_2d_uniform_color_shader,
+                          builtin_3d_smooth_color_shader)
 from .coords import (get_mesh_verts,
                      multiply_verts_on_matrix_4x4,
                      get_scale_vec_4_from_matrix_world,
@@ -470,7 +471,7 @@ class KTEdgeShader3D(KTEdgeShaderBase):
             _log.output(f'{self.__class__.__name__}.fill_shader: skip')
 
         if self.line_shader is None:
-            self.line_shader = gpu.shader.from_builtin('3D_SMOOTH_COLOR')
+            self.line_shader = builtin_3d_smooth_color_shader()
             res[1] = self.line_shader is not None
             _log.output(f'line_shader: {res[1]}')
             changes = True
