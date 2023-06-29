@@ -50,7 +50,11 @@ class KTShaderBase:
         self.is_shader_visible: bool = True
         self.batch_counter: int = 0
         self.draw_counter: int = -1
-        self.draw_main = self.draw_main_gpu if use_gpu_instead_of_bgl \
+        self.draw_main: Callable = self.draw_main_gpu \
+            if use_gpu_instead_of_bgl else self.draw_main_bgl
+
+    def switch_shader_to(self, mode: str='gpu') -> None:
+        self.draw_main = self.draw_main_gpu if mode == 'gpu' \
             else self.draw_main_bgl
 
     def needs_to_be_drawn(self) -> bool:
