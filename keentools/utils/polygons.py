@@ -16,113 +16,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import numpy as np
-from typing import Any, List, Callable, Tuple, Optional
+from typing import Any, List, Tuple, Optional
 
 from bpy.types import Object, Area, Region, Image
-import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
 
 from ..utils.kt_logging import KTLogger
 from ..geotracker_config import GTConfig
-from .coords import (get_mesh_verts,
-                     get_triangulation_indices)
-from .bpy_common import evaluated_mesh
 from .images import check_gl_image
 from .base_shaders import KTShaderBase
-from .gpu_shaders import raster_image_mask_shader, line_3d_local_shader
+from .gpu_shaders import raster_image_mask_shader
 
 
 _log = KTLogger(__name__)
-
-
-class KTTrisShaderLocal3D(KTShaderBase):
-    def __init__(self, target_class: Any, mask_color=GTConfig.mask_3d_color):
-        self.vertices: List[Tuple[float, float, float]] = []
-        self.triangle_indices: List[List[int]] = []
-        self.color: Tuple[float, float, float, float] = mask_color
-        self.fill_shader: Any = None
-        self.fill_batch: Any = None
-        self.object_world_matrix: Any = np.eye(4, dtype=np.float32)
-        super().__init__(target_class)
-
-    def set_object_world_matrix(self, bpy_matrix_world: Any) -> None:
-        self.object_world_matrix = np.array(bpy_matrix_world,
-                                            dtype=np.float32).transpose()
-
-    def init_shaders(self) -> Optional[bool]:
-        if self.fill_shader is not None:
-            _log.output(f'{self.__class__.__name__}.fill_shader: skip')
-            return None
-
-        self.fill_shader = line_3d_local_shader()
-        res = self.fill_shader is not None
-        _log.output(f'{self.__class__.__name__}.fill_shader: {res}')
-        return res
-
-    def create_batch(self) -> None:
-        if self.fill_shader is None:
-            _log.error(f'{self.__class__.__name__}.fill_shader: is empty')
-            return
-        verts = []
-        indices = []
-
-        verts_count = len(self.vertices)
-        if verts_count > 0:
-            if len(self.triangle_indices) > 0:
-                max_index = np.max(self.triangle_indices)
-                if max_index < verts_count:
-                    verts = self.vertices
-                    indices = self.triangle_indices
-
-        self.fill_batch = batch_for_shader(
-            self.fill_shader, 'TRIS', {'pos': verts},
-            indices=indices)
-
-    def draw_checks(self, context: Any) -> bool:
-        if self.is_handler_list_empty():
-            self.unregister_handler()
-            return False
-
-        if self.fill_shader is None or self.fill_batch is None:
-            return False
-
-        if self.work_area != context.area:
-            return False
-
-        return True
-
-    def draw_main_bgl(self, context: Any) -> None:
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-
-        self.fill_shader.bind()
-        self.fill_shader.uniform_float('color', self.color)
-        self.fill_shader.uniform_vector_float(
-            self.fill_shader.uniform_from_name('modelMatrix'),
-            self.object_world_matrix.ravel(), 16)
-        self.fill_batch.draw(self.fill_shader)
-
-    def draw_main_gpu(self, context: Any) -> None:
-        gpu.state.blend_set('ALPHA')
-        self.fill_shader.bind()
-        self.fill_shader.uniform_float('color', self.color)
-        self.fill_shader.uniform_vector_float(
-            self.fill_shader.uniform_from_name('modelMatrix'),
-            self.object_world_matrix.ravel(), 16)
-        self.fill_batch.draw(self.fill_shader)
-
-    def init_geom_data_from_mesh(self, obj: Object) -> None:
-        mesh = evaluated_mesh(obj)
-        verts = get_mesh_verts(mesh)
-        mw = np.array(obj.matrix_world, dtype=np.float32).transpose()
-
-        self.object_world_matrix = mw
-        self.vertices = verts
-        self.triangle_indices = get_triangulation_indices(mesh)
 
 
 class KTRasterMask(KTShaderBase):
