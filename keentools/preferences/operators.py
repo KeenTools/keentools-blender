@@ -21,6 +21,7 @@ from typing import Any, List
 from bpy.types import Operator
 from bpy.props import BoolProperty, StringProperty, IntProperty
 
+from ..utils.common_operators import KT_OT_OpenURLBase
 from ..utils.kt_logging import KTLogger
 from ..blender_independent_packages.pykeentools_loader import (
     module as pkt_module,
@@ -357,30 +358,16 @@ class KTPREF_OT_FloatingConnect(Operator):
         return {'FINISHED'}
 
 
-class KTPREF_OT_OpenURL(Operator):
+class KTPREF_OT_OpenURL(KT_OT_OpenURLBase, Operator):
     bl_idname = Config.kt_pref_open_url_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    url: StringProperty(name='URL', default='')
-
-    def execute(self, context):
-        bpy_url_open(url=self.url)
-        return {'FINISHED'}
 
 
-class KTPREF_OT_DownloadsURL(Operator):
+class KTPREF_OT_DownloadsURL(KT_OT_OpenURLBase, Operator):
     bl_idname = Config.kt_pref_downloads_url_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    url: StringProperty(name='URL', default='')
-
-    def execute(self, context):
-        bpy_url_open(url=self.url)
-        return {'FINISHED'}
 
 
 class KTPREF_OT_ComputerInfo(Operator):

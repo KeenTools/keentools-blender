@@ -59,10 +59,7 @@ class KT_OT_AddonSettings(Operator):
         return {'FINISHED'}
 
 
-class KT_OT_OpenURL(Operator):
-    bl_idname = Config.kt_open_url_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
+class KT_OT_OpenURLBase:
     bl_options = {'REGISTER', 'INTERNAL'}
 
     url: StringProperty(name='URL', default='')
@@ -70,6 +67,12 @@ class KT_OT_OpenURL(Operator):
     def execute(self, context):
         bpy_url_open(url=self.url)
         return {'FINISHED'}
+
+
+class KT_OT_OpenURL(KT_OT_OpenURLBase, Operator):
+    bl_idname = Config.kt_open_url_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
 
 
 class KT_OT_AddonSearch(Operator):
