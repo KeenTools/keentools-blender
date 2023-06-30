@@ -39,7 +39,7 @@ from ..addon_config import (Config,
                             supported_gpu_backend)
 from ..facebuilder_config import FBConfig, get_fb_settings
 from ..geotracker_config import GTConfig, get_gt_settings
-from .formatting import split_by_br_or_newlines
+from .formatting import split_by_br_or_newlines_ignore_empty
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
                         draw_warning_labels, draw_long_labels)
@@ -62,8 +62,7 @@ def _multi_line_text_to_output_labels(layout, txt):
     if txt is None:
         return
 
-    all_lines = split_by_br_or_newlines(txt)
-    non_empty_lines = filter(len, all_lines)
+    non_empty_lines = split_by_br_or_newlines_ignore_empty(txt)
 
     col = layout.column()
     col.scale_y = Config.text_scale_y
