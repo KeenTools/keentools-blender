@@ -16,9 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Optional, List, Set, Dict
+from typing import Optional, List
 
-from bpy.types import Object, Action, FCurve, Keyframe
+from bpy.types import Action, FCurve
 from mathutils import Vector, Matrix
 
 
