@@ -657,9 +657,9 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
 
     def init_ubo(self):
         super().init_ubo()
-        self.lit_light1_pos_ubo: Any = GPUUniformBuf(self.lit_light_pos_data[0][:].ravel())
-        self.lit_light2_pos_ubo: Any = GPUUniformBuf(self.lit_light_pos_data[1][:].ravel())
-        self.lit_light3_pos_ubo: Any = GPUUniformBuf(self.lit_light_pos_data[2][:].ravel())
+        self.lit_light1_pos_ubo = GPUUniformBuf(self.lit_light_pos_data[0][:].ravel())
+        self.lit_light2_pos_ubo = GPUUniformBuf(self.lit_light_pos_data[1][:].ravel())
+        self.lit_light3_pos_ubo = GPUUniformBuf(self.lit_light_pos_data[2][:].ravel())
 
     def set_lit_wireframe(self, state: bool) -> None:
         self.lit_shading = state
