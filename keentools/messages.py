@@ -133,9 +133,9 @@ def split_long_string(txt, length=80):
 
 
 def get_system_info():
-    txt_arr = []
+    txt_arr = list()
     txt_arr.append('Blender version: {} API: {}'.format(bpy.app.version_string,
-               '.'.join([str(x) for x in bpy.app.version])))
+                   '.'.join([str(x) for x in bpy.app.version])))
     txt_arr.append('Python: {}'.format(sys.version))
     arch = platform.architecture()
     txt_arr.append('Platform: {} / {}'.format(arch[1], arch[0]))

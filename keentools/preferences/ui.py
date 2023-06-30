@@ -319,8 +319,8 @@ def _universal_updater_setter(name):
 
 
 _lic_type_items = (('ONLINE', 'Online', 'Online license management', 0),
-            ('OFFLINE', 'Offline', 'Offline license management', 1),
-            ('FLOATING', 'Floating', 'Floating license management', 2))
+                   ('OFFLINE', 'Offline', 'Offline license management', 1),
+                   ('FLOATING', 'Floating', 'Floating license management', 2))
 
 
 class KTAddonPreferences(AddonPreferences):
