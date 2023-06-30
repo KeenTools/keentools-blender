@@ -21,7 +21,6 @@ from typing import Any, List, Callable, Tuple, Optional
 
 from bpy.types import Object, Area, Region, SpaceView3D
 import gpu
-from gpu.types import GPUUniformBuf
 import bgl
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector, Matrix
@@ -507,16 +506,11 @@ class KTEdgeShader3D(KTEdgeShaderBase):
 class KTEdgeShaderLocal3D(KTEdgeShader3D):
     def __init__(self, target_class: Any, mask_color: Tuple):
         self.object_world_matrix: Any = np.eye(4, dtype=np.float32)
-        self.object_world_matrix_ubo: Any = None
         self.selection_fill_color: Tuple[float, float, float, float] = mask_color
         self.selection_fill_shader: Optional[Any] = None
         self.selection_fill_batch: Optional[Any] = None
         self.selection_triangle_indices: List[Tuple[int, int, int]] = []
         super().__init__(target_class)
-
-    def init_ubo(self):
-        self.object_world_matrix_ubo = \
-            GPUUniformBuf(self.object_world_matrix.ravel())
 
     def init_shaders(self) -> Optional[bool]:
         changes = False
@@ -545,8 +539,6 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
             changes = True
         else:
             _log.output(f'{self.__class__.__name__}.selection_fill_shader: skip')
-
-        self.init_ubo()
 
         if changes:
             return res[0] and res[1] and res[2]
@@ -587,8 +579,6 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
     def set_object_world_matrix(self, bpy_matrix_world: Any) -> None:
         self.object_world_matrix = np.array(bpy_matrix_world,
                                             dtype=np.float32).transpose()
-        self.object_world_matrix_ubo = \
-            GPUUniformBuf(self.object_world_matrix.ravel())
 
     def init_geom_data_from_mesh(self, obj: Any) -> None:
         self.set_object_world_matrix(obj.matrix_world)
@@ -607,13 +597,17 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
         shader.bind()
         shader.uniform_float('adaptiveOpacity', self.adaptive_opacity)
         shader.uniform_float('color', self.line_color)
-        shader.uniform_block('modelMatrix', self.object_world_matrix_ubo)
+        shader.uniform_vector_float(
+            shader.uniform_from_name('modelMatrix'),
+            self.object_world_matrix.ravel(), 16)
         self.line_batch.draw(shader)
 
     def draw_empty_fill(self) -> None:
         shader = self.fill_shader
         shader.bind()
-        shader.uniform_block('modelMatrix', self.object_world_matrix_ubo)
+        shader.uniform_vector_float(
+            shader.uniform_from_name('modelMatrix'),
+            self.object_world_matrix.ravel(), 16)
         self.fill_batch.draw(shader)
 
     def draw_selection_fill(self) -> None:
@@ -621,7 +615,9 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
         shader.bind()
         shader.uniform_float('adaptiveOpacity', 1.0)
         shader.uniform_float('color', self.selection_fill_color)
-        shader.uniform_block('modelMatrix', self.object_world_matrix_ubo)
+        shader.uniform_vector_float(
+            shader.uniform_from_name('modelMatrix'),
+            self.object_world_matrix.ravel(), 16)
         self.selection_fill_batch.draw(shader)
 
     def init_selection_from_mesh(self, obj: Object, mask_3d: str,
@@ -647,19 +643,9 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_light2_pos: Vector = Vector((-2, 0, 1)) * self.lit_light_dist
         self.lit_light3_pos: Vector = Vector((2, 0, 1)) * self.lit_light_dist
         self.lit_camera_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
-        self.lit_light_pos_data: Any = np.zeros((3, 4), dtype=np.float32)
-        self.lit_light1_pos_ubo: Any = None
-        self.lit_light2_pos_ubo: Any = None
-        self.lit_light3_pos_ubo: Any = None
         self.lit_light_matrix: Matrix = Matrix.Identity(4)
         super().__init__(target_class, mask_color)
         self.backface_culling_in_shader = True
-
-    def init_ubo(self):
-        super().init_ubo()
-        self.lit_light1_pos_ubo = GPUUniformBuf(self.lit_light_pos_data[0][:].ravel())
-        self.lit_light2_pos_ubo = GPUUniformBuf(self.lit_light_pos_data[1][:].ravel())
-        self.lit_light3_pos_ubo = GPUUniformBuf(self.lit_light_pos_data[2][:].ravel())
 
     def set_lit_wireframe(self, state: bool) -> None:
         self.lit_shading = state
@@ -682,8 +668,6 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_shader = lit_local_shader()
         res[1] = self.lit_shader is not None
         _log.output(f'{self.__class__.__name__}.lit_shader: {res[1]}')
-
-        self.init_ubo()
 
         if res[0] is None:
             return res[1]
@@ -790,23 +774,18 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         # uniform_int is used instead of uniform_bool for backward compatibility
         shader.uniform_int('ignoreBackface', 1 if self.backface_culling else 0)
         shader.uniform_int('litShading', 1 if self.lit_shading else 0)
-        shader.uniform_block('modelMatrix', self.object_world_matrix_ubo)
+        shader.uniform_vector_float(
+            shader.uniform_from_name('modelMatrix'),
+            self.object_world_matrix.ravel(), 16)
 
-        pos1 = self.lit_light_matrix @ self.lit_light1_pos
-        pos2 = self.lit_light_matrix @ self.lit_light2_pos
-        pos3 = self.lit_light_matrix @ self.lit_light3_pos
-        camera_pos = self.lit_light_matrix @ self.lit_camera_pos
-
-        self.lit_light_pos_data[0][:3] = pos1
-        self.lit_light_pos_data[1][:3] = pos2
-        self.lit_light_pos_data[2][:3] = pos3
-        self.lit_light1_pos_ubo.update(self.lit_light_pos_data[0][:])
-        self.lit_light2_pos_ubo.update(self.lit_light_pos_data[1][:])
-        self.lit_light3_pos_ubo.update(self.lit_light_pos_data[2][:])
-        shader.uniform_block('pos1', self.lit_light1_pos_ubo)
-        shader.uniform_block('pos2', self.lit_light2_pos_ubo)
-        shader.uniform_block('pos3', self.lit_light3_pos_ubo)
-        shader.uniform_float('cameraPos', camera_pos)
+        shader.uniform_float('pos1', self.lit_light_matrix @
+                             (self.lit_light1_pos * self.lit_light_dist))
+        shader.uniform_float('pos2', self.lit_light_matrix @
+                             (self.lit_light2_pos * self.lit_light_dist))
+        shader.uniform_float('pos3', self.lit_light_matrix @
+                             (self.lit_light3_pos * self.lit_light_dist))
+        shader.uniform_float('cameraPos',
+                             self.lit_light_matrix @ self.lit_camera_pos)
         self.lit_batch.draw(shader)
 
     def clear_all(self) -> None:
