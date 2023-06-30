@@ -67,31 +67,31 @@ class UserPreferences:
         _log.output(f'UserPreferences:\n{d}')
 
     @classmethod
-    def _get_value(cls, name: str, type: str) -> Any:
+    def _get_value(cls, name: str, type_: str) -> Any:
         _dict = cls.get_dict()
 
         if name in _dict.keys():
-            if type == cls.type_int:
+            if type_ == cls.type_int:
                 return int(_dict[name])
-            elif type == cls.type_float:
+            elif type_ == cls.type_float:
                 return float(_dict[name])
-            elif type == cls.type_bool:
+            elif type_ == cls.type_bool:
                 return _dict[name] == 'True'
-            elif type == cls.type_string:
+            elif type_ == cls.type_string:
                 return _dict[name]
-            elif type == cls.type_color:
+            elif type_ == cls.type_color:
                 return eval(_dict[name])
         elif name in cls._defaults.keys():
             row = cls._defaults[name]
             cls.set_value(name, row['value'])
             return row['value']
-        _log.error(f'UserPreferences problem: {name} {type}')
+        _log.error(f'UserPreferences problem: {name} {type_}')
         return None
 
     @classmethod
-    def get_value_safe(cls, name: str, type: str) -> Any:
+    def get_value_safe(cls, name: str, type_: str) -> Any:
         try:
-            return cls._get_value(name, type)
+            return cls._get_value(name, type_)
         except Exception as err:
             _log.error(f'UserPreferences Exception info:\n{str(err)}')
             cls.clear_cache()
@@ -100,7 +100,7 @@ class UserPreferences:
                 cls.set_value(name, row['value'])
                 return row['value']
             else:
-                _log.error(f'Property error: {name} {type}')
+                _log.error(f'Property error: {name} {type_}')
                 return None
 
     @classmethod
@@ -114,7 +114,7 @@ class UserPreferences:
     def clear_dict(cls) -> None:
         try:
             pkt_module().utils.reset_settings(cls._DICT_NAME)
-        except Exception as err:
+        except Exception as _:
             _log.error(f'clear_dict: {cls._DICT_NAME}')
         cls.clear_cache()
 
@@ -122,7 +122,7 @@ class UserPreferences:
     def save_dict(cls, dict_to_save: Dict) -> None:
         try:
             pkt_module().utils.save_settings(cls._DICT_NAME, dict_to_save)
-        except Exception as err:
+        except Exception as _:
             _log.error(f'save_dict: {dict_to_save}')
         # cls.print_dict()  # Debug only call
 
@@ -146,24 +146,24 @@ class UpdaterPreferences(UserPreferences):
                      for k in Config.default_updater_preferences.keys()}
 
 
-def universal_direct_getter(name: str, type: str) -> Callable:
-    def _getter(self) -> Any:
-        return UserPreferences.get_value_safe(name, type)
+def universal_direct_getter(name: str, type_: str) -> Callable:
+    def _getter(_) -> Any:
+        return UserPreferences.get_value_safe(name, type_)
     return _getter
 
 
 def universal_direct_setter(name: str) -> Callable:
-    def _setter(self, value: Any) -> Any:
+    def _setter(_, value: Any) -> Any:
         UserPreferences.set_value(name, value)
     return _setter
 
 
-def universal_cached_getter(name: str, type: str) -> Callable:
+def universal_cached_getter(name: str, type_: str) -> Callable:
     def _getter(self):
         if name in self.keys():
             return self[name]
         else:
-            return UserPreferences.get_value_safe(name, type)
+            return UserPreferences.get_value_safe(name, type_)
     return _getter
 
 
