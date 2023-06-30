@@ -507,13 +507,16 @@ class KTEdgeShader3D(KTEdgeShaderBase):
 class KTEdgeShaderLocal3D(KTEdgeShader3D):
     def __init__(self, target_class: Any, mask_color: Tuple):
         self.object_world_matrix: Any = np.eye(4, dtype=np.float32)
-        self.object_world_matrix_ubo: Any = \
-            GPUUniformBuf(self.object_world_matrix.ravel())
+        self.object_world_matrix_ubo: Any = None
         self.selection_fill_color: Tuple[float, float, float, float] = mask_color
         self.selection_fill_shader: Optional[Any] = None
         self.selection_fill_batch: Optional[Any] = None
         self.selection_triangle_indices: List[Tuple[int, int, int]] = []
         super().__init__(target_class)
+
+    def init_ubo(self):
+        self.object_world_matrix_ubo = \
+            GPUUniformBuf(self.object_world_matrix.ravel())
 
     def init_shaders(self) -> Optional[bool]:
         changes = False
@@ -542,6 +545,8 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
             changes = True
         else:
             _log.output(f'{self.__class__.__name__}.selection_fill_shader: skip')
+
+        self.init_ubo()
 
         if changes:
             return res[0] and res[1] and res[2]
@@ -643,12 +648,18 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_light3_pos: Vector = Vector((2, 0, 1)) * self.lit_light_dist
         self.lit_camera_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
         self.lit_light_pos_data: Any = np.zeros((3, 4), dtype=np.float32)
-        self.lit_light1_pos_ubo: Any = GPUUniformBuf(self.lit_light_pos_data[0][:])
-        self.lit_light2_pos_ubo: Any = GPUUniformBuf(self.lit_light_pos_data[1][:])
-        self.lit_light3_pos_ubo: Any = GPUUniformBuf(self.lit_light_pos_data[2][:])
+        self.lit_light1_pos_ubo: Any = None
+        self.lit_light2_pos_ubo: Any = None
+        self.lit_light3_pos_ubo: Any = None
         self.lit_light_matrix: Matrix = Matrix.Identity(4)
         super().__init__(target_class, mask_color)
         self.backface_culling_in_shader = True
+
+    def init_ubo(self):
+        super().init_ubo()
+        self.lit_light1_pos_ubo: Any = GPUUniformBuf(self.lit_light_pos_data[0][:].ravel())
+        self.lit_light2_pos_ubo: Any = GPUUniformBuf(self.lit_light_pos_data[1][:].ravel())
+        self.lit_light3_pos_ubo: Any = GPUUniformBuf(self.lit_light_pos_data[2][:].ravel())
 
     def set_lit_wireframe(self, state: bool) -> None:
         self.lit_shading = state
@@ -671,6 +682,8 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_shader = lit_local_shader()
         res[1] = self.lit_shader is not None
         _log.output(f'{self.__class__.__name__}.lit_shader: {res[1]}')
+
+        self.init_ubo()
 
         if res[0] is None:
             return res[1]
