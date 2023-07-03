@@ -1242,20 +1242,21 @@ def unbreak_rotation_act() -> ActionStatus:
     if len(frame_list) < 2:
         return ActionStatus(False, 'Not enough keys to apply Unbreak Rotation')
 
-    euler_dict = dict()
+    euler_list = list()
     for frame in frame_list:
         x_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 0)
         y_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 1)
         z_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 2)
-        euler_dict[frame] = (x_rot, y_rot, z_rot)
+        euler_list.append((x_rot, y_rot, z_rot))
 
     x_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 0)
     y_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 1)
     z_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 2)
 
-    euler_prev = euler_dict[frame_list[0]]
-    for frame in frame_list[1:]:
-        rot = pkt_module().math.unbreak_rotation(euler_prev, euler_dict[frame])
+    euler_prev = euler_list[0]
+    for frame, euler_current in zip(frame_list[1:], euler_list[1:]):
+        rot = pkt_module().math.unbreak_rotation(euler_prev,
+                                                 euler_current)
         insert_point_in_fcurve(x_rot_fcurve, frame, rot[0])
         insert_point_in_fcurve(y_rot_fcurve, frame, rot[1])
         insert_point_in_fcurve(z_rot_fcurve, frame, rot[2])
