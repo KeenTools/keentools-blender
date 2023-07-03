@@ -39,8 +39,8 @@ def _get_action_fcurve(action: Action, data_path: str, index: int=0) -> Optional
     return action.fcurves.find(data_path, index=index)
 
 
-def _get_safe_action_fcurve(action: Action,
-                            data_path: str, index: int=0) -> FCurve:
+def get_safe_action_fcurve(action: Action,
+                           data_path: str, index: int=0) -> FCurve:
     fcurve = _get_action_fcurve(action, data_path, index=index)
     if fcurve:
         return fcurve
@@ -162,9 +162,9 @@ def create_animation_on_object(obj: Object, anim_dict: Dict,
     action = _get_safe_action(obj, action_name)
     locrot_dict = get_locrot_dict()
 
-    fcurves = {name: _get_safe_action_fcurve(action,
-                                             locrot_dict[name]['data_path'],
-                                             index=locrot_dict[name]['index'])
+    fcurves = {name: get_safe_action_fcurve(action,
+                                            locrot_dict[name]['data_path'],
+                                            index=locrot_dict[name]['index'])
                for name in locrot_dict.keys()}
 
     for name in fcurves.keys():
@@ -205,6 +205,18 @@ def get_locrot_dict() -> Dict:
             'location_y': {'data_path': 'location', 'index': 1},
             'location_z': {'data_path': 'location', 'index': 2},
             'rotation_euler_x': {'data_path': 'rotation_euler', 'index': 0},
+            'rotation_euler_y': {'data_path': 'rotation_euler', 'index': 1},
+            'rotation_euler_z': {'data_path': 'rotation_euler', 'index': 2}}
+
+
+def get_loc_dict() -> Dict:
+    return {'location_x': {'data_path': 'location', 'index': 0},
+            'location_y': {'data_path': 'location', 'index': 1},
+            'location_z': {'data_path': 'location', 'index': 2}}
+
+
+def get_rot_dict() -> Dict:
+    return {'rotation_euler_x': {'data_path': 'rotation_euler', 'index': 0},
             'rotation_euler_y': {'data_path': 'rotation_euler', 'index': 1},
             'rotation_euler_z': {'data_path': 'rotation_euler', 'index': 2}}
 
@@ -277,7 +289,7 @@ def insert_keyframe_in_fcurve(obj: Object, frame: int, value: float,
     action = _get_safe_action(obj, act_name)
     if action is None:
         return
-    fcurve = _get_safe_action_fcurve(action, data_path, index=index)
+    fcurve = get_safe_action_fcurve(action, data_path, index=index)
     insert_point_in_fcurve(fcurve, frame, value, keyframe_type)
 
 
@@ -311,8 +323,8 @@ def create_locrot_keyframe(obj: Object, keyframe_type: str='KEYFRAME') -> None:
 
     _log.output(f'{keyframe_type} at {current_frame}')
     for name, value in zip(locrot_dict.keys(), [*loc, *rot]):
-        fcurve = _get_safe_action_fcurve(action, locrot_dict[name]['data_path'],
-                                         index=locrot_dict[name]['index'])
+        fcurve = get_safe_action_fcurve(action, locrot_dict[name]['data_path'],
+                                        index=locrot_dict[name]['index'])
         insert_point_in_fcurve(fcurve, current_frame, value, keyframe_type)
 
 
@@ -348,16 +360,25 @@ def delete_animation_between_frames(obj: Object, from_frame: int, to_frame: int)
             fcurve.keyframe_points.remove(p)
 
 
-def get_object_keyframe_numbers(obj: Object) -> List[int]:
+def get_object_keyframe_numbers(obj: Object, *, loc: bool = True,
+                                rot: bool = True) -> List[int]:
     action: Action = get_action(obj)
     if action is None:
         return []
 
-    locrot_dict: Dict = get_locrot_dict()
-    fcurves: Dict = {name: _get_safe_action_fcurve(action,
-                                             locrot_dict[name]['data_path'],
-                                             index=locrot_dict[name]['index'])
-                     for name in locrot_dict.keys()}
+    if loc and rot:
+        fcurve_dict = get_locrot_dict()
+    elif loc:
+        fcurve_dict = get_loc_dict()
+    elif rot:
+        fcurve_dict = get_rot_dict()
+    else:
+        assert False, 'Improper flag usage'
+
+    fcurves: Dict = {name: get_safe_action_fcurve(action,
+                                                  fcurve_dict[name]['data_path'],
+                                                  index=fcurve_dict[name]['index'])
+                     for name in fcurve_dict.keys()}
 
     keys_set: Set = set()
     for name in fcurves.keys():

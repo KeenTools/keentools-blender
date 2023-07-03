@@ -189,6 +189,10 @@ buttons = {
         'Toggle Pins',
         'Toggle all or only selected pins'
     ),
+    GTConfig.gt_unbreak_rotation_idname: Button(
+        'Unbreak Rotation',
+        'Fix rotation making it continuous and removing 360 degrees jumps'
+    ),
     GTConfig.gt_rescale_window_idname: Button(
         'Scale',
         'Scale scene'

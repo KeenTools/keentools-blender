@@ -835,6 +835,10 @@ class GT_PT_AnimationPanel(AllVisible):
 
         layout.separator()
 
+        layout.operator(GTConfig.gt_unbreak_rotation_idname)
+
+        layout.separator()
+
         col = layout.column(align=True)
         col.prop(settings, 'bake_animation_selector', text='')
         btn = col.row()
