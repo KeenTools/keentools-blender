@@ -83,7 +83,8 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     repack_uv_act,
                                     bake_locrot_act,
                                     get_operator_reposition_matrix,
-                                    move_scene_tracking_act)
+                                    move_scene_tracking_act,
+                                    unbreak_rotation_act)
 from .utils.calc_timer import TrackTimer, RefineTimer
 from .utils.precalc import precalc_with_runner_act, PrecalcTimer
 from .gtloader import GTLoader
@@ -1170,6 +1171,29 @@ class GT_OT_AutoNamePrecalc(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class GT_OT_UnbreakRotation(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_unbreak_rotation_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     reload_geotracker=True, geotracker=True,
+                                     camera=True, geometry=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        act_status = unbreak_rotation_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+
+        self.report({'INFO'}, 'Unbreak Rotation has been done')
+        return {'FINISHED'}
+
+
 def _rescale_preview_func(operator, context):
     scale_scene_tracking_preview_func(operator, context)
 
@@ -1728,6 +1752,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_RevertDefaultRender,
                   GT_OT_AddonSetupDefaults,
                   GT_OT_AutoNamePrecalc,
+                  GT_OT_UnbreakRotation,
                   GT_OT_RescaleWindow,
                   GT_OT_MoveWindow,
                   GT_OT_RigWindow,

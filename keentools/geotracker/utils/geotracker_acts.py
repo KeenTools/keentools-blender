@@ -41,7 +41,10 @@ from ...utils.animation import (get_action,
                                 bake_locrot_to_world,
                                 get_world_matrices_in_frames,
                                 apply_world_matrices_in_frames,
-                                scene_frame_list)
+                                scene_frame_list,
+                                get_safe_evaluated_fcurve,
+                                get_safe_action_fcurve,
+                                insert_point_in_fcurve)
 from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
 from ...utils.bpy_common import (create_empty_object,
@@ -1221,5 +1224,44 @@ def bake_locrot_act(obj: Object) -> ActionStatus:
 
     bake_locrot_to_world(obj, obj_animated_frames)
     _remove_all_constraints(obj)
+
+    return ActionStatus(True, 'ok')
+
+
+def unbreak_rotation_act() -> ActionStatus:
+    geotracker = get_current_geotracker_item()
+    obj = geotracker.animatable_object()
+
+    action = get_action(obj)
+    if action is None:
+        msg = 'Selected object has no animation action'
+        _log.error(msg)
+        return ActionStatus(False, msg)
+
+    frame_list = get_object_keyframe_numbers(obj, loc=False, rot=True)
+    if len(frame_list) < 2:
+        return ActionStatus(False, 'Not enough keys to apply Unbreak Rotation')
+
+    euler_list = list()
+    for frame in frame_list:
+        x_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 0)
+        y_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 1)
+        z_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 2)
+        euler_list.append((x_rot, y_rot, z_rot))
+
+    x_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 0)
+    y_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 1)
+    z_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 2)
+
+    euler_prev = euler_list[0]
+    for frame, euler_current in zip(frame_list[1:], euler_list[1:]):
+        rot = pkt_module().math.unbreak_rotation(euler_prev,
+                                                 euler_current)
+        insert_point_in_fcurve(x_rot_fcurve, frame, rot[0])
+        insert_point_in_fcurve(y_rot_fcurve, frame, rot[1])
+        insert_point_in_fcurve(z_rot_fcurve, frame, rot[2])
+        euler_prev = rot
+
+    update_depsgraph()
 
     return ActionStatus(True, 'ok')
