@@ -200,15 +200,6 @@ def mark_selected_points_in_fcurve(fcurve: FCurve, selected_frames: List[int],
         keyframe.type = keyframe_type
 
 
-def get_locrot_dict() -> Dict:
-    return {'location_x': {'data_path': 'location', 'index': 0},
-            'location_y': {'data_path': 'location', 'index': 1},
-            'location_z': {'data_path': 'location', 'index': 2},
-            'rotation_euler_x': {'data_path': 'rotation_euler', 'index': 0},
-            'rotation_euler_y': {'data_path': 'rotation_euler', 'index': 1},
-            'rotation_euler_z': {'data_path': 'rotation_euler', 'index': 2}}
-
-
 def get_loc_dict() -> Dict:
     return {'location_x': {'data_path': 'location', 'index': 0},
             'location_y': {'data_path': 'location', 'index': 1},
@@ -219,6 +210,12 @@ def get_rot_dict() -> Dict:
     return {'rotation_euler_x': {'data_path': 'rotation_euler', 'index': 0},
             'rotation_euler_y': {'data_path': 'rotation_euler', 'index': 1},
             'rotation_euler_z': {'data_path': 'rotation_euler', 'index': 2}}
+
+
+def get_locrot_dict() -> Dict:
+    d = get_loc_dict()
+    d.update(get_rot_dict())
+    return d
 
 
 def mark_all_points_in_locrot(obj: Object,
