@@ -54,7 +54,7 @@ class Config:
     keentools_website_url = 'https://keentools.io'
     core_download_website_url = keentools_website_url + '/download/core'
 
-    manual_install_url = keentools_website_url + '/manual-installation'
+    manual_install_url = keentools_website_url + '/activate'
     pykeentools_license_url = 'https://link.keentools.io/eula'
 
     # Preferences operators
