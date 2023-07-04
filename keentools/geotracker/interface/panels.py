@@ -138,6 +138,9 @@ class GT_PT_GeotrackersPanel(View3DPanel):
         settings = get_gt_settings()
         geotracker_num = settings.current_geotracker_num
 
+        if len(settings.geotrackers) > 0:
+            layout.operator(GTConfig.gt_share_feedback_idname, icon='WORLD')
+
         for i, geotracker in enumerate(settings.geotrackers):
 
             row = layout.row(align=True)

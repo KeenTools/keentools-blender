@@ -18,6 +18,8 @@
 
 from typing import List
 from math import radians
+import platform
+from urllib.parse import urlencode
 
 from bpy.types import Operator, Object
 from bpy.props import (BoolProperty,
@@ -30,6 +32,7 @@ from bpy.props import (BoolProperty,
 from mathutils import Matrix, Quaternion
 
 from ..utils.kt_logging import KTLogger
+from ..utils.version import BVersion
 from ..addon_config import (get_operator,
                             Config,
                             show_user_preferences,
@@ -43,7 +46,8 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_scene,
                                 create_empty_object,
                                 bpy_remove_object,
-                                operator_with_context)
+                                operator_with_context,
+                                bpy_url_open)
 from .utils.geotracker_acts import (create_geotracker_act,
                                     delete_geotracker_act,
                                     add_keyframe_act,
@@ -691,8 +695,41 @@ class GT_OT_RepackOverlappingUV(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    done: BoolProperty(default=False)
+
+    def cancel(self, context):
+        _log.output(f'{self.__class__.__name__} cancel')
+        self.done = True
+
+    def draw(self, context):
+        warning_message = [
+            f'Warning! Blender {BVersion.version_string} has a known bug ',
+            'with pack island operator! ',
+            ' ',
+            'If you try to continue Blender could crash ',
+            'and ALL OF YOUR UNSAVED DATA WILL BE LOST!',
+            ' ',
+            'Click outside of this window to stop action',
+            'or press Ok to try this operation regardless of possible problems.']
+        layout = self.layout
+        if self.done:
+            layout.label(text='Operation has been done')
+            return
+        col = layout.column(align=True)
+        col.scale_y = Config.text_scale_y
+        for txt in warning_message:
+            col.label(text=txt)
+
+    def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke')
+        self.done = False
+        if BVersion.pack_uv_problem_exists:
+            return context.window_manager.invoke_props_dialog(self, width=400)
+        return self.execute(context)
+
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
+        self.done = True
         check_status = common_checks(pinmode_out=True,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
@@ -1191,6 +1228,29 @@ class GT_OT_UnbreakRotation(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         self.report({'INFO'}, 'Unbreak Rotation has been done')
+        return {'FINISHED'}
+
+
+class GT_OT_ShareFeedback(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_share_feedback_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        params = {
+            'hl': 'en',
+            'usp': 'pp_url',
+            'entry.783336314': f'{platform.platform()}',
+            'entry.1510351504': f'{platform.machine()} {platform.processor()}',
+            'entry.1095779847': f'{BVersion.version_string}',
+            'entry.1252663858': f'{Config.addon_name} {Config.addon_version}'
+        }
+        url = f'https://docs.google.com/forms/d/e/' \
+              f'1FAIpQLSf7Up-IPtqqSVjEy_BicDHE-1p31SynJsUUXHbBiMOpqpJ_2Q/' \
+              f'viewform?{urlencode(params)}'
+        _log.output(f'\n{url}')
+        bpy_url_open(url)
         return {'FINISHED'}
 
 
@@ -1753,6 +1813,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_AddonSetupDefaults,
                   GT_OT_AutoNamePrecalc,
                   GT_OT_UnbreakRotation,
+                  GT_OT_ShareFeedback,
                   GT_OT_RescaleWindow,
                   GT_OT_MoveWindow,
                   GT_OT_RigWindow,

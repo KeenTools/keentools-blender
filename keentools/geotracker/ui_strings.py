@@ -193,6 +193,11 @@ buttons = {
         'Unbreak Rotation',
         'Fix rotation making it continuous and removing 360 degrees jumps'
     ),
+    GTConfig.gt_share_feedback_idname: Button(
+        'Share Feedback',
+        'Provide valuable feedback on your experience. '
+        'Help us improve and make your voice heard!'
+    ),
     GTConfig.gt_rescale_window_idname: Button(
         'Scale',
         'Scale scene'
