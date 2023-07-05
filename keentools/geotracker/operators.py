@@ -702,6 +702,11 @@ class GT_OT_RepackOverlappingUV(ButtonOperator, Operator):
         self.done = True
 
     def draw(self, context):
+        layout = self.layout
+        if self.done:
+            layout.label(text='Operation has been done')
+            return
+
         warning_message = [
             f'Warning! There\'s a bug in Blender {BVersion.version_string} ',
             'that makes this operation unstable.',
@@ -711,10 +716,6 @@ class GT_OT_RepackOverlappingUV(ButtonOperator, Operator):
             ' ',
             'Click outside of this window to cancel repack',
             'or press OK to continue at your own risk.']
-        layout = self.layout
-        if self.done:
-            layout.label(text='Operation has been done')
-            return
         col = layout.column(align=True)
         col.scale_y = Config.text_scale_y
         for txt in warning_message:
