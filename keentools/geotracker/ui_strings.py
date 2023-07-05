@@ -251,7 +251,7 @@ buttons = {
         'Attempt to reorganize UVs as non-overlapping islands'
     ),
     GTConfig.gt_create_non_overlapping_uv_idname: Button(
-        'Create smart UV',
+        'Create Smart UV',
         'Create new non-overlapping UVs'
     ),
     GTConfig.gt_reproject_frame_idname: Button(

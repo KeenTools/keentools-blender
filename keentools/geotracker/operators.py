@@ -703,14 +703,14 @@ class GT_OT_RepackOverlappingUV(ButtonOperator, Operator):
 
     def draw(self, context):
         warning_message = [
-            f'Warning! Blender {BVersion.version_string} has a known bug ',
-            'with pack island operator! ',
+            f'Warning! There\'s a bug in Blender {BVersion.version_string} ',
+            'that makes this operation unstable.',
             ' ',
-            'If you try to continue Blender could crash ',
-            'and ALL OF YOUR UNSAVED DATA WILL BE LOST!',
+            'If you continue, there\'s a chance Blender',
+            'will crash and ALL UNSAVED DATA WILL BE LOST!',
             ' ',
-            'Click outside of this window to stop action',
-            'or press Ok to try this operation regardless of possible problems.']
+            'Click outside of this window to cancel repack',
+            'or press OK to continue at your own risk.']
         layout = self.layout
         if self.done:
             layout.label(text='Operation has been done')
