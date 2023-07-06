@@ -193,6 +193,11 @@ buttons = {
         'Unbreak Rotation',
         'Fix rotation making it continuous and removing 360 degrees jumps'
     ),
+    GTConfig.gt_share_feedback_idname: Button(
+        'Share Feedback',
+        'Provide valuable feedback on your experience. '
+        'Help us improve and make your voice heard!'
+    ),
     GTConfig.gt_rescale_window_idname: Button(
         'Scale',
         'Scale scene'
@@ -246,7 +251,7 @@ buttons = {
         'Attempt to reorganize UVs as non-overlapping islands'
     ),
     GTConfig.gt_create_non_overlapping_uv_idname: Button(
-        'Create smart UV',
+        'Create Smart UV',
         'Create new non-overlapping UVs'
     ),
     GTConfig.gt_reproject_frame_idname: Button(

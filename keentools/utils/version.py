@@ -20,7 +20,7 @@ from sys import platform
 from typing import Tuple, Optional
 
 import bpy
-from bpy.app import version as ver
+from bpy.app import version_string as ver_string, version as ver
 
 from .kt_logging import KTLogger
 
@@ -48,6 +48,7 @@ def _get_gpu_backend(property_exists: bool=False) -> Optional[str]:
 
 class BVersion:
     version: Tuple[int, int, int] = ver
+    version_string: str = ver_string
     property_keywords_enabled: bool = ver >= (2, 93, 0)
     blender_srgb_to_framebuffer_space_enabled: bool = ver >= (2, 83, 0)
     LocRotScale_exist: bool = version >= (3, 0, 0)
@@ -55,6 +56,7 @@ class BVersion:
     pixels_foreach_methods_exist: bool = ver >= (2, 83, 0)
     property_gpu_backend_exists: bool = ver >= (3, 5, 0)
     uv_select_overlap_exists: bool = ver >= (2, 81, 0)
+    pack_uv_problem_exists: bool = ver == (3, 6, 0)
 
     builtin_shaders_are_using_old_names: bool = ver < (4, 0, 0)
     blf_size_takes_3_arguments: bool = ver < (4, 0, 0)
