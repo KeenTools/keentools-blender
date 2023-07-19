@@ -87,9 +87,10 @@ def analysing_screen_message(message: str) -> None:
 def clipping_changed_screen_message(near: float, far: float) -> None:
     vp = _get_viewport()
     default_txt = deepcopy(vp.texter().get_default_text())
+    near_str = f'{near:.1f}' if near > 0.1 else f'{near:.3f}'
     default_txt[0]['text'] = f'Camera clipping planes ' \
                              f'have been changed: ' \
-                             f'{near:.1f} / {far:.1f}'
+                             f'{near_str} / {far:.1f}'
     default_txt[0]['color'] = (1.0, 0.0, 1.0, 0.85)
     vp.message_to_screen(default_txt)
 

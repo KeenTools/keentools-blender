@@ -568,9 +568,10 @@ def distance_between_objects(obj1: Object, obj2: Object) -> float:
 
 
 def change_near_and_far_clip_planes(camobj: Object, geomobj: Object,
-                                    *, step: float=1.01,
+                                    *, step: float = 1.05,
                                     prev_clip_start: float,
-                                    prev_clip_end: float) -> bool:
+                                    prev_clip_end: float,
+                                    minimal_clip_start: float = 1e-5) -> bool:
     if not camobj or not geomobj:
         return False
     dist = distance_between_objects(camobj, geomobj)
@@ -599,7 +600,7 @@ def change_near_and_far_clip_planes(camobj: Object, geomobj: Object,
         changed_flag = True
         clip_start = camobj.data.clip_start
 
-    new_clip_start = dist * 0.5
+    new_clip_start = max(dist * 0.5, minimal_clip_start)
     too_close_limit = dist * 0.75
     if clip_start > too_close_limit:
         _log.output(f'OBJECT IS TOO CLOSE TO THE CAMERA NEAR CLIP PLANE:\n '
