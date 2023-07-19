@@ -18,7 +18,6 @@
 
 from typing import Any, Set, Optional, Tuple
 from uuid import uuid4
-from copy import deepcopy
 
 from bpy.types import Area, Operator
 from bpy.props import IntProperty, StringProperty, FloatProperty
@@ -53,6 +52,11 @@ from ..utils.bpy_common import (bpy_current_frame,
 from ..utils.video import fit_render_size
 from .utils.prechecks import common_checks
 from .ui_strings import buttons
+from .interface.screen_mesages import (revert_default_screen_message,
+                                       playback_mode_screen_message,
+                                       in_edit_mode_screen_message,
+                                       how_to_show_wireframe_screen_message,
+                                       clipping_changed_screen_message)
 
 
 _log = KTLogger(__name__)
@@ -76,19 +80,10 @@ def _playback_message(area: Area) -> None:
     if current_playback_mode != _playback_mode:
         _playback_mode = current_playback_mode
         _log.output(_log.color('green', f'_playback_mode: {_playback_mode}'))
-        vp = GTLoader.viewport()
         if _playback_mode:
-            vp.message_to_screen([
-                {'text': 'Playback animation',
-                 'color': (0., 1., 0., 0.85),
-                 'size': 24,
-                 'y': 60},  # line 1
-                {'text': 'ESC: Exit | TAB: Hide/Show',
-                 'color': (1., 1., 1., 0.5),
-                 'size': 20,
-                 'y': 30}])  # line 2
+            playback_mode_screen_message()
         else:
-            vp.revert_default_screen_message()
+            revert_default_screen_message()
         area.tag_redraw()
 
 
@@ -269,12 +264,7 @@ class GT_OT_PinMode(Operator):
                                                 prev_clip_end=self.camera_clip_end):
             near = geotracker.camobj.data.clip_start
             far = geotracker.camobj.data.clip_end
-            default_txt = deepcopy(vp.texter().get_default_text())
-            default_txt[0]['text'] = f'Camera clip planes ' \
-                                     f'have been changed ' \
-                                     f'to {near:.1f} / {far:.1f}'
-            default_txt[0]['color'] = (1.0, 0.0, 1.0, 0.85)
-            GTLoader.viewport().message_to_screen(default_txt)
+            clipping_changed_screen_message(near, far)
 
         if context is not None:
             vp.register_handlers(context)
@@ -324,12 +314,9 @@ class GT_OT_PinMode(Operator):
         flag = not vp.wireframer().is_visible() if toggle else value
         vp.set_visible(flag)
         if flag:
-            vp.revert_default_screen_message(unregister=False)
+            revert_default_screen_message()
         else:
-            default_txt = deepcopy(vp.texter().get_default_text())
-            default_txt[0]['text'] = 'Press TAB to show wireframe'
-            default_txt[0]['color'] = (1., 0., 1., 0.85)
-            GTLoader.viewport().message_to_screen(default_txt)
+            how_to_show_wireframe_screen_message()
 
     def invoke(self, context: Any, event: Any) -> Set:
         _log.output(f'INVOKE PINMODE: {self.geotracker_num}')
@@ -497,15 +484,7 @@ class GT_OT_PinMode(Operator):
 
         if event.type == 'TIMER' and GTLoader.get_stored_geomobj_mode() == 'EDIT':
             _log.output('TIMER IN EDIT_MODE')
-            vp.message_to_screen([
-                {'text': 'Object is in EDIT MODE',
-                 'color': (1., 0., 1., 0.85),
-                 'size': 24,
-                 'y': 60},  # line 1
-                {'text': 'ESC: Exit | TAB: Hide/Show',
-                 'color': (1., 1., 1., 0.5),
-                 'size': 20,
-                 'y': 30}])  # line 2
+            in_edit_mode_screen_message()
             GTLoader.update_geomobj_mesh()
             vp.hide_pins_and_residuals()
             settings = get_gt_settings()

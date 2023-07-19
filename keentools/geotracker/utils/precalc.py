@@ -44,6 +44,7 @@ from .calc_timer import CalcTimer
 from .prechecks import common_checks, prepare_camera
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from .prechecks import show_warning_dialog, show_unlicensed_warning
+from ..interface.screen_mesages import analysing_screen_message
 
 
 _log = KTLogger(__name__)
@@ -80,11 +81,8 @@ class PrecalcTimer(CalcTimer):
 
         progress, message = self._runner.current_progress()
         _log.output(f'precalc runner_state: {progress} {message}')
-        GTLoader.viewport().message_to_screen(
-            [{'text': 'Analysing... Please wait', 'y': 60,
-              'color': (1.0, 0.0, 0.0, 0.7)},
-             {'text': message, 'y': 30,
-              'color': (1.0, 1.0, 1.0, 0.7)}])
+        analysing_screen_message(message)
+
         next_frame = self._runner.is_loading_frame_requested()
         if next_frame is None:
             return self._interval
@@ -141,9 +139,7 @@ class PrecalcTimer(CalcTimer):
         self._state = 'runner'
         self._active_state_func = self.runner_state
         # self._area_header('Precalc is calculating... Please wait')
-        GTLoader.viewport().message_to_screen(
-            [{'text':'Precalc is calculating... Please wait',
-              'color': (1.0, 0., 0., 0.7)}])
+        analysing_screen_message('Initialization')
 
         _func = self.timer_func
         if not bpy_background_mode():

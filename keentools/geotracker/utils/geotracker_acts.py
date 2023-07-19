@@ -59,7 +59,6 @@ from ...utils.manipulate import (select_object_only,
                                  select_objects_only,
                                  center_viewport,
                                  switch_to_mode)
-from .textures import bake_texture, preview_material_with_texture
 from .prechecks import (common_checks,
                         track_checks,
                         get_alone_object_in_scene_selection_by_type,
@@ -80,6 +79,7 @@ from ...utils.coords import (LocRotScale,
                              ScaleMatrix,
                              InvScaleMatrix,
                              UniformScaleMatrix)
+from .textures import bake_texture, preview_material_with_texture
 
 
 _log = KTLogger(__name__)

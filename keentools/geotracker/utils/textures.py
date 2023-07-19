@@ -46,6 +46,9 @@ from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
 from .prechecks import prepare_camera
 from ...utils.localview import exit_area_localview
+from ..interface.screen_mesages import (revert_default_screen_message,
+                                        single_line_screen_message,
+                                        texture_projection_screen_message)
 
 
 _log = KTLogger(__name__)
@@ -117,8 +120,7 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
                    digits: int=4, width: int=2048, height: int=2048):
     def _finish():
         settings.stop_calculating()
-        GTLoader.viewport().revert_default_screen_message(
-            unregister=not settings.pinmode)
+        revert_default_screen_message(unregister=not settings.pinmode)
         if tex is not None:
             remove_bpy_image(tex)
         if not settings.pinmode:
@@ -132,9 +134,7 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
     op = get_operator(GTConfig.gt_interrupt_modal_idname)
     op('INVOKE_DEFAULT')
 
-    GTLoader.viewport().message_to_screen(
-        [{'text': 'Projecting and baking… Please wait',
-          'color': (1.0, 0., 0., 0.7)}])
+    single_line_screen_message('Projecting and baking… Please wait')
 
     tex = None
     total_frames = len(frames)
@@ -143,12 +143,8 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
             _finish()
             return None
 
-        GTLoader.viewport().message_to_screen(
-            [{'text': 'Projection: '
-                      f'{num + 1}/{total_frames}', 'y': 60,
-              'color': (1.0, 0.0, 0.0, 0.7)},
-             {'text': 'ESC to abort', 'y': 30,
-              'color': (1.0, 1.0, 1.0, 0.7)}])
+        texture_projection_screen_message(num + 1, total_frames)
+
         settings.user_percent = 100 * num / total_frames
         bpy_set_current_frame(frame)
 
