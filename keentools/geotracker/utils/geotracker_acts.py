@@ -59,7 +59,6 @@ from ...utils.manipulate import (select_object_only,
                                  select_objects_only,
                                  center_viewport,
                                  switch_to_mode)
-from .textures import bake_texture, preview_material_with_texture
 from .prechecks import (common_checks,
                         track_checks,
                         get_alone_object_in_scene_selection_by_type,
@@ -79,7 +78,10 @@ from ...utils.coords import (LocRotScale,
                              LocRotWithoutScale,
                              ScaleMatrix,
                              InvScaleMatrix,
-                             UniformScaleMatrix)
+                             UniformScaleMatrix,
+                             change_near_and_far_clip_planes)
+from .textures import bake_texture, preview_material_with_texture
+from ..interface.screen_mesages import clipping_changed_screen_message
 
 
 _log = KTLogger(__name__)
@@ -519,6 +521,22 @@ def center_geo_act() -> ActionStatus:
         return check_status
 
     GTLoader.center_geo()
+
+    geotracker = get_current_geotracker_item()
+    camobj = geotracker.camobj
+    camera_clip_start = camobj.data.clip_start
+    camera_clip_end = camobj.data.clip_end
+
+    if GTConfig.auto_increase_far_clip_distance and camobj and \
+            change_near_and_far_clip_planes(geotracker.camobj,
+                                            geotracker.geomobj,
+                                            prev_clip_start=camera_clip_start,
+                                            prev_clip_end=camera_clip_end):
+        near = camobj.data.clip_start
+        far = camobj.data.clip_end
+        if near != camera_clip_start or far != camera_clip_end:
+            clipping_changed_screen_message(near, far)
+
     GTLoader.update_viewport_shaders()
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')

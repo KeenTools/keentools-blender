@@ -97,6 +97,8 @@ from .utils.prechecks import common_checks
 from ..utils.coords import LocRotScale
 from ..utils.manipulate import select_object_only, force_undo_push
 from ..utils.animation import count_fcurve_points, remove_fcurve_from_object
+from .interface.screen_mesages import (revert_default_screen_message,
+                                       single_line_screen_message)
 
 
 _log = KTLogger(__name__)
@@ -800,16 +802,13 @@ class GT_OT_ReprojectFrame(ButtonOperator, Operator):
 
     def start_text_on_screen(self, context):
         settings = get_gt_settings()
-        vp = GTLoader.viewport()
-        vp.message_to_screen(
-            [{'text': 'Projecting and baking... Please wait',
-              'color': (1.0, 0., 0., 0.7)}],
-            register=not settings.pinmode, context=context)
+        single_line_screen_message('Projecting and baking... Please wait',
+                                   register=not settings.pinmode,
+                                   context=context)
 
     def finish_text_on_screen(self):
         settings = get_gt_settings()
-        GTLoader.viewport().revert_default_screen_message(
-            unregister=not settings.pinmode)
+        revert_default_screen_message(unregister=not settings.pinmode)
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
@@ -960,16 +959,13 @@ class GT_OT_BakeFrameSelector(ButtonOperator, Operator):
 
     def start_text_on_screen(self, context):
         settings = get_gt_settings()
-        vp = GTLoader.viewport()
-        vp.message_to_screen(
-            [{'text': 'Projecting and baking… Please wait',
-              'color': (1.0, 0., 0., 0.7)}],
-            register=not settings.pinmode, context=context)
+        single_line_screen_message('Projecting and baking… Please wait',
+                                   register=not settings.pinmode,
+                                   context=context)
 
     def finish_text_on_screen(self):
         settings = get_gt_settings()
-        GTLoader.viewport().revert_default_screen_message(
-            unregister=not settings.pinmode)
+        revert_default_screen_message(unregister=not settings.pinmode)
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')

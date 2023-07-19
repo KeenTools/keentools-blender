@@ -35,6 +35,9 @@ from ...utils.bpy_common import (bpy_current_frame,
 from ...utils.timer import RepeatTimer
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from .prechecks import show_warning_dialog
+from ..interface.screen_mesages import (revert_default_screen_message,
+                                        operation_calculation_screen_message,
+                                        staged_calculation_screen_message)
 
 
 _log = KTLogger(__name__)
@@ -92,8 +95,7 @@ class CalcTimer(TimerMixin):
         self._state = 'over'
         settings = get_gt_settings()
         settings.stop_calculating()
-        GTLoader.viewport().revert_default_screen_message(
-            unregister=not settings.pinmode)
+        revert_default_screen_message(unregister=not settings.pinmode)
 
         if not settings.pinmode:
             area = self.get_area()
@@ -172,18 +174,6 @@ class _CommonTimer(TimerMixin):
         self._start_time: float = 0
         self.add_timer(self)
 
-    def _screen_message(self, *, finished_frames: int=0, total_frames: int=1,
-                       current_stage: int=0, total_stages: int=1) -> None:
-        stages = '' if total_stages == 1 else \
-            f'Stage {current_stage}/{total_stages}. '
-        GTLoader.viewport().message_to_screen(
-            [{'text': f'{stages}{self._operation_name} calculating: '
-                      f'{finished_frames}/{total_frames}',
-              'y': 60, 'color': (1.0, 0.0, 0.0, 0.7)},
-             {'text': 'ESC to abort. '
-                      'Changes have NOT yet been applied',
-              'y': 30, 'color': (1.0, 1.0, 1.0, 0.7)}])
-
     def get_stage_info(self) -> Tuple[int, int]:
         return 0, 1
 
@@ -250,7 +240,7 @@ class _CommonTimer(TimerMixin):
         if attempts >= max_attempts and \
                 self.tracking_computation.state() == pkt_module().ComputationState.RUNNING:
             _log.error(f'PROBLEM WITH COMPUTATION STOP')
-        GTLoader.viewport().revert_default_screen_message(unregister=False)
+        revert_default_screen_message()
         self._stop_user_interrupt_operator()
         GTLoader.save_geotracker()
         settings = get_gt_settings()
@@ -283,10 +273,12 @@ class _CommonTimer(TimerMixin):
                     return False
                 finished_frames, total_frames = overall
                 current_stage, total_stages = self.get_stage_info()
-                self._screen_message(finished_frames=finished_frames,
-                                     total_frames=total_frames,
-                                     current_stage=current_stage + 1,
-                                     total_stages=total_stages)
+                staged_calculation_screen_message(
+                    self._operation_name,
+                    finished_frames=finished_frames,
+                    total_frames=total_frames,
+                    current_stage=current_stage + 1,
+                    total_stages=total_stages)
                 settings = get_gt_settings()
                 total = total_frames if total_frames != 0 else 1
                 settings.user_percent = 100 * finished_frames / total
@@ -323,11 +315,7 @@ class _CommonTimer(TimerMixin):
         self._start_time = time.time()
         if not bpy_background_mode():
             self._start_user_interrupt_operator()
-        GTLoader.viewport().message_to_screen(
-            [{'text': f'{self._operation_name} calculating... Please wait',
-              'y': 60, 'color': (1.0, 0.0, 0.0, 0.7)},
-             {'text': 'ESC to cancel',
-              'y': 30, 'color': (1.0, 1.0, 1.0, 0.7)}])
+        operation_calculation_screen_message(self._operation_name)
         settings = get_gt_settings()
         settings.calculating_mode = self._calc_mode
 
