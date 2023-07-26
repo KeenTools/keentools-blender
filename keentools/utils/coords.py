@@ -337,11 +337,12 @@ def calc_view_camera_parameters(area: Area, x1: int, y1: int,
     return z, offset
 
 
-def point_is_in_area(area: Area, x: float, y: float) -> bool:
+def point_is_in_area(area: Area, x: float, y: float, *,
+                     bottom_limit: float = 0, left_limit: float = 0) -> bool:
     if bpy_background_mode():
         context = get_fake_context()
         area = context.area
-    return (0 <= x <= area.width) and (0 <= y <= area.height)
+    return (left_limit <= x <= area.width) and (bottom_limit <= y <= area.height)
 
 
 def point_is_in_service_region(area: Area, x: float, y: float) -> bool:
