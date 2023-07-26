@@ -118,6 +118,7 @@ class Config:
     surf_pin_size_scale = 0.85
     text_scale_y = 0.75
     btn_scale_y = 1.2
+    area_bottom_limit = 8
 
     default_tone_exposure = 0.0
     default_tone_gamma = 1.0

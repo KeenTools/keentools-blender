@@ -132,7 +132,8 @@ class GT_OT_PinMode(Operator):
         vp = GTLoader.viewport()
         vp.update_view_relative_pixel_size(area)
 
-        if not point_is_in_area(area, mouse_x, mouse_y):
+        if not point_is_in_area(area, mouse_x, mouse_y,
+                                bottom_limit=Config.area_bottom_limit):
             _log.output('LEFT CLICK OUTSIDE OF VIEWPORT AREA')
             return {'PASS_THROUGH'}
 

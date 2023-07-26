@@ -497,10 +497,11 @@ def toggle_pins_act() -> ActionStatus:
 
     gt = GTLoader.kt_geotracker()
     keyframe = bpy_current_frame()
-    if gt.pins_count() > 0:
+    pins_count = gt.pins_count()
+    if pins_count > 0:
         GTLoader.safe_keyframe_add(keyframe, update=True)
         pins = GTLoader.viewport().pins()
-        selected_pins = pins.get_selected_pins()
+        selected_pins = pins.get_selected_pins(pins_count)
         if len(selected_pins) == 0:
             gt.toggle_pins(keyframe)
         else:
