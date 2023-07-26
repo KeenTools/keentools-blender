@@ -632,3 +632,200 @@ def raster_image_shader(use_old: bool=_use_old_shaders) -> Any:
     shader = gpu.shader.create_from_info(shader_info)
     _log.output(f'{shader_name}: GPU Shader')
     return shader
+
+
+def black_offset_fill_local_shader(use_old: bool=_use_old_shaders) -> Any:
+    shader_name = 'black_offset_fill_local_shader'
+    if use_old:
+        shader = gpu.types.GPUShader(simple_fill_vertex_local_shader(),
+                                     black_fill_fragment_shader())
+        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
+        return shader
+
+    shader_info = gpu.types.GPUShaderCreateInfo()
+    shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
+    shader_info.push_constant('MAT4', 'modelMatrix')
+    shader_info.vertex_in(0, 'VEC3', 'pos')
+    shader_info.fragment_out(0, 'VEC4', 'fragColor')
+
+    shader_info.vertex_source(
+        '''
+        void main()
+        {
+            vec4 pp = ModelViewProjectionMatrix * modelMatrix * vec4(pos, 1.0);
+            gl_Position = pp + vec4(0.0, 0.0, ''' +
+            f'{Config.wireframe_offset_constant}' + ''' * (pp.w - pp.z), 0.0);
+        }
+        '''
+    )
+
+    shader_info.fragment_source(
+        '''
+        void main()
+        {
+            fragColor = vec4(0.0, 0.0, 0.0, 1.0);
+        }
+        '''
+    )
+
+    shader = gpu.shader.create_from_info(shader_info)
+    _log.output(f'{shader_name}: GPU Shader')
+    return shader
+
+
+def lit_aa_local_shader(use_old: bool=_use_old_shaders) -> Any:
+    shader_name = 'lit_aa_local_shader'
+    if use_old:
+        shader = gpu.types.GPUShader(lit_vertex_local_shader(),
+                                     lit_fragment_shader())
+        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
+        return shader
+
+    vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
+    vert_out.smooth('VEC3', 'calcNormal')
+    vert_out.smooth('VEC3', 'outPos')
+    vert_out.smooth('VEC3', 'camDir')
+
+    shader_info = gpu.types.GPUShaderCreateInfo()
+    shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
+    shader_info.push_constant('MAT4', 'modelMatrix')
+
+    shader_info.push_constant('VEC2', 'viewportSize')
+    shader_info.push_constant('FLOAT', 'lineWidth')
+    shader_info.push_constant('FLOAT', 'filterRadius')
+
+    shader_info.push_constant('VEC4', 'color')
+    shader_info.push_constant('FLOAT', 'adaptiveOpacity')
+    shader_info.push_constant('BOOL', 'ignoreBackface')
+    shader_info.push_constant('BOOL', 'litShading')
+
+    shader_info.push_constant('VEC3', 'pos1')
+    shader_info.push_constant('VEC3', 'pos2')
+    shader_info.push_constant('VEC3', 'pos3')
+
+    shader_info.push_constant('VEC3', 'cameraPos')
+
+    shader_info.vertex_in(0, 'VEC3', 'pos')
+    shader_info.vertex_in(1, 'VEC3', 'vertNormal')
+    shader_info.vertex_out(vert_out)
+    shader_info.fragment_out(0, 'VEC4', 'fragColor')
+
+    shader_info.vertex_source(
+        '''
+        void main()
+        {
+            mat4 resultMatrix = ModelViewProjectionMatrix * modelMatrix;
+
+            float bandWidth = lineWidth + 2.0 * filterRadius;
+
+            vec4 v1 = resultMatrix * vec4(pos, 1.0);
+            vec4 v2 = resultMatrix * vec4(opp, 1.0);
+            vec2 pix = vec2(2, 2) / viewportSize;
+
+            vCenterLine = v1;
+
+            vec2 p1 = v1.xy / v1.w;
+            vec2 p2 = v2.xy / v2.w;
+            vec2 dd = 0.5 * normalize(vec2(p1.y - p2.y, p2.x - p1.x) * viewportSize) * bandWidth;
+            if (gl_VertexID % 3 == 2){
+                dd = -dd;
+            }
+
+            v1.xy += dd * pix * v1.w;
+
+            gl_Position = v1;
+            calcNormal = normalize(vertNormal);
+            outPos = pos;
+            camDir = normalize(cameraPos - pos);
+        }
+        '''
+    )
+
+    txt = '''
+    struct Light
+    {
+      vec3 position;
+      float constantVal;
+      float linear;
+      float quadratic;
+      vec3 ambient;
+      vec3 diffuse;
+    };
+
+    vec3 evaluatePointLight(Light light, vec3 surfColor, vec3 normal, vec3 fragPos)
+    {
+        vec3 lightDir = normalize(light.position - fragPos);
+        float diff = max(dot(normal, lightDir), 0.0); // cos(angle)
+
+        float distance    = length(light.position - fragPos);
+        float attenuation = 1.0 / (light.constantVal + light.linear * distance +
+                            light.quadratic * (distance * distance));
+        vec3 ambient  = light.ambient;
+        vec3 diffuse  = light.diffuse * diff ;
+
+        return attenuation * (ambient + diffuse) * surfColor;
+    }
+
+    vec4 to_srgb_gamma_vec4(vec4 color)
+    {
+        vec3 c = max(color.rgb, vec3(0.0));
+        vec3 c1 = c * (1.0 / 12.92);
+        vec3 c2 = pow((c + 0.055) * (1.0 / 1.055), vec3(2.4));
+        color.rgb = mix(c1, c2, step(vec3(0.04045), c));
+        return color;
+    }
+
+    vec3 to_srgb_gamma_vec3(vec3 color)
+    {
+        vec3 c = max(color, vec3(0.0));
+        vec3 c1 = c * (1.0 / 12.92);
+        vec3 c2 = pow((c + 0.055) * (1.0 / 1.055), vec3(2.4));
+        color = mix(c1, c2, step(vec3(0.04045), c));
+        return color;
+    }
+
+    void main()
+    {
+        if (ignoreBackface && (dot(calcNormal, camDir) < 0.0)) discard;
+
+        if (litShading){
+            Light light1;
+            light1.position = pos1;
+            light1.constantVal = 1.0;
+            light1.linear = 0.0;
+            light1.quadratic = 0.0;
+            light1.ambient = vec3(0.0, 0.0, 0.0);
+            light1.diffuse = vec3(1.0, 1.0, 1.0);
+
+            Light light2;
+            light2.position = pos2;
+            light2.constantVal = 1.0;
+            light2.linear = 0.0;
+            light2.quadratic = 0.0;
+            light2.ambient = vec3(0.0, 0.0, 0.0);
+            light2.diffuse = vec3(1.0, 1.0, 1.0);
+
+            Light light3;
+            light3.position = pos3;
+            light3.constantVal = 1.0;
+            light3.linear = 0.0;
+            light3.quadratic = 0.0;
+            light3.ambient = vec3(0.0, 0.0, 0.0);
+            light3.diffuse = vec3(1.0, 1.0, 1.0);
+
+            fragColor = vec4(
+                to_srgb_gamma_vec3(evaluatePointLight(light1, color.rgb, calcNormal, outPos)) +
+                to_srgb_gamma_vec3(evaluatePointLight(light2, color.rgb, calcNormal, outPos)) +
+                to_srgb_gamma_vec3(evaluatePointLight(light3, color.rgb, calcNormal, outPos)),
+                color.a * adaptiveOpacity);
+        } else {
+            fragColor = vec4(color.rgb, color.a * adaptiveOpacity);
+        }
+    }
+    '''
+
+    shader_info.fragment_source(txt)
+
+    shader = gpu.shader.create_from_info(shader_info)
+    _log.output(f'{shader_name}: GPU Shader')
+    return shader

@@ -158,6 +158,7 @@ class Config:
     strict_shader_check: bool = False
     use_gpu_shaders: bool = True
     allow_use_gpu_instead_of_bgl: bool = False
+    wireframe_offset_constant: float = 0.005
 
     integration_enabled: bool = True
 
