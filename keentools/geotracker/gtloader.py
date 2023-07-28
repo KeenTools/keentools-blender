@@ -501,9 +501,8 @@ class GTLoader:
             GTLoader.increment_geo_hash()
             gt = GTLoader.kt_geotracker()
             geo = gt.geo()
-            wf.lit_edge_vertices, wf.lit_edge_vertex_normals, \
-            wf.triangle_vertices = cls.get_geo_shader_data(
-                geo, geotracker.geomobj.matrix_world)
+            wf.init_geom_data_from_core(*cls.get_geo_shader_data(
+                geo, geotracker.geomobj.matrix_world))
 
         _log.output('wf.init_color_data')
         wf.init_color_data((*settings.wireframe_color,

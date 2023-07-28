@@ -31,7 +31,8 @@ from .gpu_shaders import (line_3d_local_shader,
                           residual_2d_shader,
                           dashed_2d_shader,
                           black_fill_local_shader,
-                          lit_local_shader)
+                          black_offset_fill_local_shader,
+                          lit_aa_local_shader)
 from .coords import (get_mesh_verts,
                      multiply_verts_on_matrix_4x4,
                      get_triangulation_indices,
@@ -638,6 +639,10 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_edge_vertices: Any = np.empty(shape=(0, 3), dtype=np.float32)
         self.lit_edge_vertex_normals: Any = np.empty(shape=(0, 3),
                                                      dtype=np.float32)
+        self.lit_opposite_edge_vertices: Any = np.empty(shape=(0, 3), dtype=np.float32)
+        self.lit_vertex_pos_indices: Any = np.empty(shape=(0, 3), dtype=np.int32)
+        self.lit_vertex_opp_indices: Any = np.empty(shape=(0, 3), dtype=np.int32)
+        self.viewport_size: Tuple[float, float] = (1920, 1080)
         self.lit_light_dist: float = 1000
         self.lit_light1_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
         self.lit_light2_pos: Vector = Vector((-2, 0, 1)) * self.lit_light_dist
@@ -646,6 +651,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_light_matrix: Matrix = Matrix.Identity(4)
         super().__init__(target_class, mask_color)
         self.backface_culling_in_shader = True
+        self.draw_main = self.draw_main_gpu
 
     def set_lit_wireframe(self, state: bool) -> None:
         self.lit_shading = state
@@ -656,71 +662,100 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         mat = geomobj_matrix_world.inverted() @ camobj_matrix_world
         self.lit_light_matrix = mat
 
+    def set_viewport_size(self, region: Any):
+        if not region or not region.width or not region.height:
+            return
+        w, h = region.width, region.height
+        if w <= 0 or h <=0:
+            return
+        self.viewport_size = (w, h)
+
     def init_shaders(self) -> Optional[bool]:
-        res = [True] * 2
+        changes = False
+        res = [True] * 4
 
-        res[0] = super().init_shaders()
+        if self.fill_shader is None:
+            self.fill_shader = black_offset_fill_local_shader()
+            res[0] = self.fill_shader is not None
+            _log.output(f'fill_shader (offset): {res[0]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.fill_shader: skip')
 
-        if self.lit_shader is not None:
+        if self.line_shader is None:
+            self.line_shader = line_3d_local_shader()
+            res[1] = self.line_shader is not None
+            _log.output(f'line_shader: {res[1]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.line_shader: skip')
+
+        if self.selection_fill_shader is None:
+            self.selection_fill_shader = line_3d_local_shader()
+            res[2] = self.selection_fill_shader is not None
+            _log.output(f'selection_fill_shader: {res[2]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.selection_fill_shader: skip')
+
+        if self.lit_shader is None:
+            self.lit_shader = lit_aa_local_shader()
+            res[3] = self.lit_shader is not None
+            _log.output(f'{self.__class__.__name__}.lit_shader: {res[3]}')
+            changes = True
+        else:
             _log.output(f'{self.__class__.__name__}.lit_shader: skip')
-            return res[0]
 
-        self.lit_shader = lit_local_shader()
-        res[1] = self.lit_shader is not None
-        _log.output(f'{self.__class__.__name__}.lit_shader: {res[1]}')
-
-        if res[0] is None:
-            return res[1]
-        return res[0] and res[1]
-
-    def init_vertex_normals(self, obj: Object) -> None:
-        _log.output(_log.color('green', 'init_vertex_normals start'))
-        mesh = evaluated_mesh(obj)
-
-        loop_count = len(mesh.loops)
-        loops = np.empty((loop_count,), dtype=np.int32)
-        mesh.loops.foreach_get('vertex_index', np.reshape(loops, loop_count))
-
-        loop_normals = np.empty((loop_count, 3), dtype=np.float32)
-        mesh.calc_normals_split()
-        mesh.loops.foreach_get('normal', np.reshape(loop_normals,
-                                                    loop_count * 3))
-        poly_count = len(mesh.polygons)
-        polys = np.empty((poly_count,), dtype=np.int32)
-        mesh.polygons.foreach_get('loop_total', np.reshape(polys, poly_count))
-
-        edge_indices = np.empty((loop_count * 2,), dtype=np.int32)
-        edge_normals = np.empty((loop_count * 2, 3), dtype=np.float32)
-        i = 0
-        k = 0
-        for p_count in polys:
-            indices = loops[i: i + p_count]
-            normals = loop_normals[i: i + p_count]
-            delta = p_count * 2
-            edge_indices[k: k + delta] = \
-                np.roll(np.repeat(indices, 2), -1, axis=0)
-            edge_normals[k: k + delta] = \
-                np.roll(np.repeat(normals, 2, axis=0), -1, axis=0)
-            i += p_count
-            k += delta
-
-        self.lit_edge_vertices = self.vertices[edge_indices.ravel()]
-        self.lit_edge_vertex_normals = edge_normals
-        _log.output(_log.color('green', 'init_vertex_normals end'))
+        if changes:
+            return res[0] and res[1] and res[2] and res[3]
+        return None
 
     def init_color_data(self, color: Tuple[float, float, float, float]) -> None:
         self.lit_color = color
         self.line_color = color
 
+    def init_geom_data_from_core(self, edge_vertices: Any,
+                                 edge_vertex_normals: Any,
+                                 triangle_vertices: Any):
+        def _make_index_arrays(numb: int) -> Tuple[Any, Any]:
+            arr1 = np.empty((numb, 3), dtype=np.int32)
+            arr2 = np.empty((numb, 3), dtype=np.int32)
+            for i in range(int(numb / 2)):
+                first = (2 * i, 2 * i + 1, 2 * i)
+                second = (2 * i + 1, 2 * i, 2 * i + 1)
+                arr1[2 * i] = first
+                arr1[2 * i + 1] = second
+                arr2[2 * i] = second
+                arr2[2 * i + 1] = first
+            return arr1.ravel(), arr2.ravel()
+
+        len_edge_vertices = len(edge_vertices)
+        if len_edge_vertices * 3 != len(self.lit_vertex_pos_indices):
+            _log.output('init_geom_data_from_core recalc index arrays')
+            self.lit_vertex_pos_indices, self.lit_vertex_opp_indices = \
+                _make_index_arrays(len_edge_vertices)
+
+        self.lit_edge_vertices = edge_vertices[self.lit_vertex_pos_indices]
+        self.lit_edge_vertex_normals = edge_vertex_normals[self.lit_vertex_pos_indices]
+        self.lit_opposite_edge_vertices = edge_vertices[self.lit_vertex_opp_indices]
+        self.triangle_vertices = triangle_vertices
+
     def create_batches(self) -> None:
         _log.output(_log.color('yellow', 'create_batches'))
         if self.lit_shader is not None:
+            _log.output(_log.color('magenta', 'LIT WIREFRAME BATCH:'))
             self.lit_batch = batch_for_shader(
-                self.lit_shader, 'LINES',
+                self.lit_shader, 'TRIS',
                 {'pos': self.lit_edge_vertices
                  if len(self.lit_edge_vertices) > 0 else [],
+                 'opp': self.lit_opposite_edge_vertices
+                 if len(self.lit_opposite_edge_vertices) > 0 else [],
                  'vertNormal': self.lit_edge_vertex_normals
                  if len(self.lit_edge_vertex_normals) > 0 else []})
+            _log.output(f'\nbatch: {self.lit_batch}'
+                        f'pos: {self.lit_edge_vertices.shape}'
+                        f'opp: {self.lit_opposite_edge_vertices.shape}'
+                        f'vertNormal: {self.lit_edge_vertex_normals.shape}')
         else:
             _log.error(f'{self.__class__.__name__}.lit_shader: is empty')
 
@@ -786,7 +821,22 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
                              (self.lit_light3_pos * self.lit_light_dist))
         shader.uniform_float('cameraPos',
                              self.lit_light_matrix @ self.lit_camera_pos)
+
+        shader.uniform_float('viewportSize', self.viewport_size)
+        shader.uniform_float('lineWidth', 1.0)
+        shader.uniform_float('filterRadius', 0.5)
         self.lit_batch.draw(shader)
+
+    def draw_main_gpu(self, context: Any) -> None:
+        gpu.state.depth_test_set('LESS_EQUAL')
+        gpu.state.color_mask_set(False, False, False, False)
+        self.draw_empty_fill()
+        gpu.state.color_mask_set(True, True, True, True)
+        gpu.state.blend_set('ALPHA')
+        self.set_viewport_size(context.region)
+        self.draw_edges()
+        gpu.state.depth_test_set('LESS')
+        self.draw_selection_fill()
 
     def clear_all(self) -> None:
         super().clear_all()
