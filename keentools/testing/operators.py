@@ -124,9 +124,8 @@ def test_wireframe(wireframer: Any, *, obj: Any=None,
     wireframer.set_lit_light_matrix(obj.matrix_world, camera.matrix_world)
     if normals:
         geo = build_geo(obj, get_uv=True)
-        wireframer.lit_edge_vertices, wireframer.lit_edge_vertex_normals, \
-        wireframer.triangle_vertices = GTLoader.get_geo_shader_data(
-            geo, obj.matrix_world)
+        wireframer.init_geom_data_from_core(*GTLoader.get_geo_shader_data(
+                                            geo, obj.matrix_world))
     wireframer.init_color_data((0, 1, 0, 0.5))
     wireframer.set_adaptive_opacity(1.0)
     wireframer.set_backface_culling(True)
