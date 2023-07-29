@@ -200,6 +200,21 @@ def uniform_3d_vertex_local_shader() -> str:
     return txt
 
 
+def black_offset_fill_vertex_shader(*, offset: float = 0.0005) -> str:
+    return '''
+    uniform mat4 ModelViewProjectionMatrix;
+    uniform mat4 modelMatrix;
+    in vec3 pos;
+
+    void main()
+    {
+        vec4 pp = ModelViewProjectionMatrix * modelMatrix * vec4(pos, 1.0);
+        gl_Position = pp + vec4(0.0, 0.0, ''' + \
+        f'{offset}' + ''' * (pp.w - pp.z), 0.0);
+    }
+    '''
+
+
 def black_fill_fragment_shader() -> str:
     return '''
     out vec4 fragColor;
@@ -377,7 +392,7 @@ def raster_image_mask_fragment_shader() -> str:
     '''
 
 
-def lit_vertex_local_shader() -> str:
+def lit_vertex_local_shader1() -> str:
     return '''
     uniform mat4 ModelViewProjectionMatrix;
     uniform mat4 modelMatrix;
@@ -400,7 +415,54 @@ def lit_vertex_local_shader() -> str:
     '''
 
 
-def lit_fragment_shader() -> str:
+def lit_vertex_local_shader() -> str:
+    return '''
+    uniform mat4 ModelViewProjectionMatrix;
+    uniform mat4 modelMatrix;
+    uniform vec3 cameraPos;
+
+    uniform vec2 viewportSize;
+    uniform float lineWidth;
+    uniform float filterRadius;
+
+    in vec3 pos;
+    in vec3 vertNormal;
+    in vec3 opp;
+    out vec3 calcNormal;
+    out vec3 outPos;
+    out vec3 camDir;
+    out vec4 vCenterLine;
+
+    void main()
+    {
+        mat4 resultMatrix = ModelViewProjectionMatrix * modelMatrix;
+
+        float bandWidth = lineWidth + 2.0 * filterRadius;
+
+        vec4 v1 = resultMatrix * vec4(pos, 1.0);
+        vec4 v2 = resultMatrix * vec4(opp, 1.0);
+        vec2 pix = vec2(2, 2) / viewportSize;
+
+        vCenterLine = v1;
+
+        vec2 p1 = v1.xy / v1.w;
+        vec2 p2 = v2.xy / v2.w;
+        vec2 dd = 0.5 * normalize(vec2(p1.y - p2.y, p2.x - p1.x) * viewportSize) * bandWidth;
+        if (gl_VertexID % 3 == 2){
+            dd = -dd;
+        }
+
+        v1.xy += dd * pix * v1.w;
+
+        gl_Position = v1;
+        calcNormal = normalize(vertNormal);
+        outPos = pos;
+        camDir = normalize(cameraPos - pos);
+    }
+    '''
+
+
+def lit_fragment_shader1() -> str:
     return '''
     uniform vec4 color;
     uniform float adaptiveOpacity;
@@ -485,6 +547,119 @@ def lit_fragment_shader() -> str:
                 color.a * adaptiveOpacity);
         } else {
             fragColor = vec4(color.rgb, color.a * adaptiveOpacity);
+        }
+    }
+    '''
+
+
+def lit_fragment_shader() -> str:
+    return '''
+    uniform vec4 color;
+    uniform float adaptiveOpacity;
+    uniform bool ignoreBackface;
+    uniform bool litShading;
+    uniform vec3 pos1;
+    uniform vec3 pos2;
+    uniform vec3 pos3;
+
+    uniform vec2 viewportSize;
+    uniform float lineWidth;
+    uniform float filterRadius;
+
+    in vec4 finalColor;
+    in vec3 outPos;
+    in vec3 camDir;
+    in vec3 calcNormal;
+    in vec4 vCenterLine;
+    out vec4 fragColor;
+
+    struct Light
+    {
+      vec3 position;
+      float constantVal;
+      float linear;
+      float quadratic;
+      vec3 ambient;
+      vec3 diffuse;
+    };
+
+    vec3 evaluatePointLight(Light light, vec3 surfColor, vec3 normal, vec3 fragPos)
+    {
+        vec3 lightDir = normalize(light.position - fragPos);
+        float diff = max(dot(normal, lightDir), 0.0); // cos(angle)
+
+        float distance    = length(light.position - fragPos);
+        float attenuation = 1.0 / (light.constantVal + light.linear * distance +
+                            light.quadratic * (distance * distance));
+        vec3 ambient  = light.ambient;
+        vec3 diffuse  = light.diffuse * diff ;
+
+        return attenuation * (ambient + diffuse) * surfColor;
+    }
+
+    vec4 to_srgb_gamma_vec4(vec4 color)
+    {
+        vec3 c = max(color.rgb, vec3(0.0));
+        vec3 c1 = c * (1.0 / 12.92);
+        vec3 c2 = pow((c + 0.055) * (1.0 / 1.055), vec3(2.4));
+        color.rgb = mix(c1, c2, step(vec3(0.04045), c));
+        return color;
+    }
+
+    vec3 to_srgb_gamma_vec3(vec3 color)
+    {
+        vec3 c = max(color, vec3(0.0));
+        vec3 c1 = c * (1.0 / 12.92);
+        vec3 c2 = pow((c + 0.055) * (1.0 / 1.055), vec3(2.4));
+        color = mix(c1, c2, step(vec3(0.04045), c));
+        return color;
+    }
+
+    float calcAntialiasing(float d, float lineWidth, float filterRadius){
+        return min(1.0, 0.5 + (lineWidth * 0.5 - d) / (2.0 * filterRadius));
+    }
+
+    void main()
+    {
+        if (ignoreBackface && (dot(calcNormal, camDir) < 0.0)) discard;
+
+        float d = length(gl_FragCoord.xy - 0.5 * (vCenterLine.xy / vCenterLine.w + vec2(1, 1)) * viewportSize);
+        float antiAliasing = calcAntialiasing(d, lineWidth, filterRadius);
+        if (antiAliasing <= 0.0) discard;
+
+        if (litShading){
+            Light light1;
+            light1.position = pos1;
+            light1.constantVal = 1.0;
+            light1.linear = 0.0;
+            light1.quadratic = 0.0;
+            light1.ambient = vec3(0.0, 0.0, 0.0);
+            light1.diffuse = vec3(1.0, 1.0, 1.0);
+
+            Light light2;
+            light2.position = pos2;
+            light2.constantVal = 1.0;
+            light2.linear = 0.0;
+            light2.quadratic = 0.0;
+            light2.ambient = vec3(0.0, 0.0, 0.0);
+            light2.diffuse = vec3(1.0, 1.0, 1.0);
+
+            Light light3;
+            light3.position = pos3;
+            light3.constantVal = 1.0;
+            light3.linear = 0.0;
+            light3.quadratic = 0.0;
+            light3.ambient = vec3(0.0, 0.0, 0.0);
+            light3.diffuse = vec3(1.0, 1.0, 1.0);
+
+            fragColor = vec4(
+                to_srgb_gamma_vec3(
+                    evaluatePointLight(light1, color.rgb, calcNormal, outPos) +
+                    evaluatePointLight(light2, color.rgb, calcNormal, outPos) +
+                    evaluatePointLight(light3, color.rgb, calcNormal, outPos)),
+                color.a * antiAliasing * adaptiveOpacity);
+        } else {
+            fragColor = vec4(color.rgb, color.a * antiAliasing * adaptiveOpacity);
         }
     }
     '''

@@ -34,6 +34,7 @@ from .shaders import (flat_color_2d_vertex_shader,
                       residual_fragment_shader,
                       simple_fill_vertex_shader,
                       simple_fill_vertex_local_shader,
+                      black_offset_fill_vertex_shader,
                       black_fill_fragment_shader,
                       lit_vertex_local_shader,
                       lit_fragment_shader,
@@ -504,8 +505,9 @@ def black_offset_fill_local_shader(
         offset: float = Config.wireframe_offset_constant) -> Any:
     shader_name = 'black_offset_fill_local_shader'
     if use_old:
-        shader = gpu.types.GPUShader(simple_fill_vertex_local_shader(),
-                                     black_fill_fragment_shader())
+        shader = gpu.types.GPUShader(
+            black_offset_fill_vertex_shader(offset=offset),
+            black_fill_fragment_shader())
         _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
         return shader
 

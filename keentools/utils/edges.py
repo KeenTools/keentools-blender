@@ -651,7 +651,6 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_light_matrix: Matrix = Matrix.Identity(4)
         super().__init__(target_class, mask_color)
         self.backface_culling_in_shader = True
-        self.draw_main = self.draw_main_gpu
 
     def set_lit_wireframe(self, state: bool) -> None:
         self.lit_shading = state
@@ -823,9 +822,28 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
                              self.lit_light_matrix @ self.lit_camera_pos)
 
         shader.uniform_float('viewportSize', self.viewport_size)
-        shader.uniform_float('lineWidth', 1.0)
+        shader.uniform_float('lineWidth', self.line_width)
         shader.uniform_float('filterRadius', 0.5)
         self.lit_batch.draw(shader)
+
+    def draw_main_bgl(self, context: Any) -> None:
+        bgl.glEnable(bgl.GL_DEPTH_TEST)
+        bgl.glColorMask(bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE)
+
+        self.draw_empty_fill()
+
+        bgl.glColorMask(bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE)
+        bgl.glDepthMask(bgl.GL_FALSE)
+
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
+
+        self.set_viewport_size(context.region)
+        self.draw_edges()
+        self.draw_selection_fill()
+
+        bgl.glDepthMask(bgl.GL_TRUE)
+        bgl.glDisable(bgl.GL_DEPTH_TEST)
 
     def draw_main_gpu(self, context: Any) -> None:
         gpu.state.depth_test_set('LESS_EQUAL')
