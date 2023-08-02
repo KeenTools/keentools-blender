@@ -195,8 +195,7 @@ buttons = {
     ),
     GTConfig.gt_share_feedback_idname: Button(
         'Share Feedback',
-        'Provide valuable feedback on your experience. '
-        'Help us improve and make your voice heard!'
+        'Send feedback. Help us improve'
     ),
     GTConfig.gt_rescale_window_idname: Button(
         'Scale',
@@ -357,36 +356,82 @@ _help_default_width = 500
 
 help_texts = {
     GTConfig.gt_help_inputs_idname: HelpText(_help_default_width, [
-        'Inputs panel description will be here...',
-        ' '
+        'Select three main elements needed for successful tracking:',
+        ' ',
+        'Clip - your footage (sequence or a movie file)',
+        'Geometry - 3D model of a similar shape to the object you want to track',
+        'Camera - the viewing point relevant to which your object will be tracked',
+        ' ',
+        'Use Analyse option for faster tracking',
     ]),
     GTConfig.gt_help_masks_idname: HelpText(_help_default_width, [
-        'Masks panel description will be here...',
-        ' '
+        'Oftentimes various elements in the video get in the way of tracking and that results',
+        'in Geometry slipping away from the target object. You can use two types of masks',
+        'to exclude problematic areas from tracking.',
+        ' ',
+        'Surface mask allows you to select polygons right on the surface of your Geometry',
+        'to exclude them from tracking. This can be useful when dealing with reflection',
+        'or when you need to take out certain elements, like adjacent parts, of your 3D model',
+        'from tracking. Switch to Edit Mode and select the polygons you want to mask out,',
+        'then go to Object Data Properties and create a new vertex group. Return to Object Mode',
+        'and select the newly created group in the Surface mask dropdown list.',
+        ' ',
+        'Compositing mask works for most overlays like the character’s hand or other elements',
+        'in the foreground crossing the path of the track. Go to Blender Movie Clip Editor',
+        'and select your clip. Switch the Tracking mode to Mask and click on Add > Circle',
+        '(or other shape that fits for your situation). Press Move and place your mask',
+        'over the element you want GeoTracker to ignore when tracking. Go back to the 3D viewport',
+        'and select your mask in the Compositing mask tab',
     ]),
     GTConfig.gt_help_analyze_idname: HelpText(_help_default_width, [
         'Analyze panel description will be here...',
         ' '
     ]),
     GTConfig.gt_help_camera_idname: HelpText(_help_default_width, [
-        'Camera panel description will be here...',
-        ' '
+        'Specify your camera settings to match them with the ones of the camera on the set.',
+        ' ',
+        'Use automatic focal length estimation if those values are unknown.',
+        'Note that it works only for the current frame and you\'ll need to have',
+        'at least 4 pins set on the wireframe.',
+        ' ',
+        'Select whether the focal length in your shot is variable or fixed',
     ]),
     GTConfig.gt_help_tracking_idname: HelpText(_help_default_width, [
-        'Tracking panel description will be here...',
-        ' '
+        'Select whether you’ll be tracking Geometry or Camera.',
+        'Overlay Geometry on top of the shot in Pinmode as precisely as possible.',
+        'Track forward or backwards using tracking buttons.',
+        'Adjust Geometry position manually whenever you see it\'s off.',
+        'Use the Refine button to update tracking data',
     ]),
     GTConfig.gt_help_appearance_idname: HelpText(_help_default_width, [
-        'Appearance panel description will be here...',
-        ' '
+        'Here you can tweak how pins look and react to mouse and change ',
+        'the colours used for the wireframe of FaceBuilder '
+        'visible in pin mode.'
     ]),
     GTConfig.gt_help_texture_idname: HelpText(_help_default_width, [
         'Texture panel description will be here...',
-        ' '
     ]),
     GTConfig.gt_help_animation_idname: HelpText(_help_default_width, [
-        'Animation panel description will be here...',
-        ' '
+        'Transform: Scale and position your scene in 3D space right from GeoTracker.',
+        'You can scale either the whole scene relative to selected Pivot point',
+        'or Geometry relevant to Camera, or Camera relevant to Geometry.',
+        ' ',
+        'You can position your scene by selecting either Camera or Geometry as the pivot point.',
+        'Set the Location and Rotation values manually or use preset positions',
+        'such as World Origin and 3D Cursor. ',
+        ' ',
+        'The Rig button lets you create an Empty with parented Camera and/or Geometry',
+        'that you can use as a handle when building your 3D scene.',
+        ' ',
+        'Animation: Convert animation according to your purposes',
+        'Convert your Camera animation to Geometry or the vice versa. Note that',
+        'if both the Camera and Geometry are animated, pressing the Convert button will convert',
+        'all animation to one and then this operation will not be reversible!',
+        'Bake animation to World space to unparent Camera and Geometry.',
+        ' ',
+        'Export your tracking results as an animated Empty.',
+        'Select whether it’s the Geometry or Camera animation to be exported.',
+        'Use Linked option to keep your animated Empty synced with further tracking data changes.'
     ]),
     GTConfig.gt_help_rendering_idname: HelpText(_help_default_width, [
         'Rendering panel description will be here...',
@@ -399,7 +444,6 @@ help_texts = {
         'You can tweak them differently for different parts of the footage,',
         'the values are not being saved for different parts of the footage.',
         '0 means no smoothing while 1 makes the smoothed parameter(s) almost static.',
-        ' '
     ]),
 }
 
