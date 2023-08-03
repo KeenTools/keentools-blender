@@ -509,8 +509,8 @@ def raster_image_shader(use_old: bool=_use_old_shaders) -> Any:
     '''
 
     fragment_glsl = '''
-    float calcAntialiasing(float d, float lineWidth, float filterRadius){
-        return min(1.0, 0.5 + (lineWidth * 0.5 - d) / (2.0 * filterRadius));
+    float calcAntialiasing(float d, float width, float filterRad){
+        return min(1.0, 0.5 + (width * 0.5 - d) / (2.0 * filterRad));
     }
 
     void main()
