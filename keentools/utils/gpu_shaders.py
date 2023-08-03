@@ -697,26 +697,26 @@ def lit_aa_local_shader(use_old: bool=_use_old_shaders) -> Any:
         return attenuation * (ambient + diffuse) * surfColor;
     }
 
-    vec4 to_srgb_gamma_vec4(vec4 color)
+    vec4 to_srgb_gamma_vec4(vec4 col)
     {
-        vec3 c = max(color.rgb, vec3(0.0));
+        vec3 c = max(col.rgb, vec3(0.0));
         vec3 c1 = c * (1.0 / 12.92);
         vec3 c2 = pow((c + 0.055) * (1.0 / 1.055), vec3(2.4));
-        color.rgb = mix(c1, c2, step(vec3(0.04045), c));
-        return color;
+        col.rgb = mix(c1, c2, step(vec3(0.04045), c));
+        return col;
     }
 
-    vec3 to_srgb_gamma_vec3(vec3 color)
+    vec3 to_srgb_gamma_vec3(vec3 col)
     {
-        vec3 c = max(color, vec3(0.0));
+        vec3 c = max(col, vec3(0.0));
         vec3 c1 = c * (1.0 / 12.92);
         vec3 c2 = pow((c + 0.055) * (1.0 / 1.055), vec3(2.4));
-        color = mix(c1, c2, step(vec3(0.04045), c));
-        return color;
+        col = mix(c1, c2, step(vec3(0.04045), c));
+        return col;
     }
 
-    float calcAntialiasing(float d, float lineWidth, float filterRadius){
-        return min(1.0, 0.5 + (lineWidth * 0.5 - d) / (2.0 * filterRadius));
+    float calcAntialiasing(float d, float width, float filterRad){
+        return min(1.0, 0.5 + (width * 0.5 - d) / (2.0 * filterRad));
     }
 
     void main()
