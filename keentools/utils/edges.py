@@ -47,6 +47,8 @@ _log = KTLogger(__name__)
 class KTEdgeShaderBase(KTShaderBase):
     def __init__(self, target_class: Any=SpaceView3D):
         super().__init__(target_class)
+        self.object_world_matrix: Any = np.eye(4, dtype=np.float32)
+
         self.fill_shader: Optional[Any] = None
         self.fill_batch: Optional[Any] = None
         self.line_shader: Optional[Any] = None
@@ -68,6 +70,10 @@ class KTEdgeShaderBase(KTShaderBase):
         self.adaptive_opacity: float = 1.0
         self.line_color: Tuple[float, float, float, float] = (1., 1., 1., 1.)
         self.line_width: float = 1.0
+
+    def set_object_world_matrix(self, bpy_matrix_world: Any) -> None:
+        self.object_world_matrix = np.array(bpy_matrix_world,
+                                            dtype=np.float32).transpose()
 
     def init_color_data(self, color: Tuple[float, float, float, float]):
         self.edge_colors = [color] * len(self.edge_vertices)
@@ -506,7 +512,6 @@ class KTEdgeShader3D(KTEdgeShaderBase):
 
 class KTEdgeShaderLocal3D(KTEdgeShader3D):
     def __init__(self, target_class: Any, mask_color: Tuple):
-        self.object_world_matrix: Any = np.eye(4, dtype=np.float32)
         self.selection_fill_color: Tuple[float, float, float, float] = mask_color
         self.selection_fill_shader: Optional[Any] = None
         self.selection_fill_batch: Optional[Any] = None
@@ -577,11 +582,8 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
         else:
             _log.error(f'{self.__class__.__name__}.selection_fill_shader: is empty')
 
-    def set_object_world_matrix(self, bpy_matrix_world: Any) -> None:
-        self.object_world_matrix = np.array(bpy_matrix_world,
-                                            dtype=np.float32).transpose()
-
     def init_geom_data_from_mesh(self, obj: Any) -> None:
+        _log.output(_log.color('red', 'init_geom_data_from_mesh'))
         self.set_object_world_matrix(obj.matrix_world)
         mesh = evaluated_mesh(obj)
         self.vertices = get_mesh_verts(mesh)

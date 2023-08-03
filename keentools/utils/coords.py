@@ -28,8 +28,7 @@ from .fake_context import get_fake_context
 from .bpy_common import (bpy_current_frame,
                          bpy_render_frame,
                          evaluated_mesh,
-                         bpy_background_mode,
-                         bpy_app_version)
+                         bpy_background_mode)
 from .animation import get_safe_evaluated_fcurve
 
 
@@ -74,7 +73,7 @@ def xz_to_xy_rotation_matrix_4x4() -> Any:
                      [0., 0., 0., 1.]], dtype=np.float32)
 
 
-def update_head_mesh_geom(obj: Any, geom: Any) -> None:
+def update_head_mesh_geom(obj: Object, geom: Any) -> None:
     mesh = obj.data
     assert(len(geom) == len(mesh.vertices))
     npbuffer = geom @ xy_to_xz_rotation_matrix_3x3()
@@ -246,7 +245,9 @@ def calc_model_mat(model_mat: Any, head_mat: Any) -> Optional[Any]:
         return None
 
 
-def get_area_region_3d(area: Area) -> Optional[Any]:
+def get_area_region_3d(area: Optional[Area]) -> Optional[Any]:
+    if not area or not area.spaces or not area.spaces.active:
+        return None
     return area.spaces.active.region_3d
 
 

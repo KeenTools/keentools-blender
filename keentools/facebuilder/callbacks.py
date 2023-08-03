@@ -245,8 +245,10 @@ def _update_expressions(head, context):
 
     if not settings.pinmode:
         return
-    FBLoader.update_wireframe_shader_only(settings.current_headnum,
-                                          settings.current_camnum)
+    FBLoader.update_viewport_shaders(FBLoader.get_work_area(),
+                                     settings.current_headnum,
+                                     settings.current_camnum,
+                                     wireframe=True, pins_and_residuals=True)
 
 
 def update_use_emotions(head, context):
@@ -276,7 +278,8 @@ def _update_head_shape_with_expressions(head, context):
 
     FBLoader.update_viewport_shaders(context.area,
                                      settings.current_headnum,
-                                     settings.current_camnum)
+                                     settings.current_camnum,
+                                     wireframe=True, pins_and_residuals=True)
 
 
 def update_lock_blinking(head, context):

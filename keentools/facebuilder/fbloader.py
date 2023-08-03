@@ -595,24 +595,22 @@ class FBLoader:
         vp.create_batch_2d(area)
 
     @classmethod
-    def update_viewport_shaders(cls, area: Area,
-                                headnum: int, camnum: int) -> None:
+    def update_viewport_shaders(cls, area: Area = None,
+                                headnum: int = 0, camnum: int = 0, *,
+                                wireframe: bool = False,
+                                pins_and_residuals: bool = False) -> None:
         settings = get_fb_settings()
         head = settings.get_head(headnum)
         if not head or not head.headobj:
             return
         kid = head.get_keyframe(camnum)
-        cls._update_wireframe(head.headobj, kid)
-        cls._update_points_and_residuals(area, head.headobj, kid)
 
-    @classmethod
-    def update_wireframe_shader_only(cls, headnum: int, camnum: int) -> None:
-        settings = get_fb_settings()
-        head = settings.get_head(headnum)
-        if not head or not head.headobj:
-            return
-        kid = head.get_keyframe(camnum)
-        cls._update_wireframe(head.headobj, kid)
+        work_area = area if not area is None else cls.get_work_area()
+
+        if wireframe:
+            cls._update_wireframe(head.headobj, kid)
+        if pins_and_residuals:
+            cls._update_points_and_residuals(work_area, head.headobj, kid)
 
     @classmethod
     def load_pins_into_viewport(cls, headnum: int, camnum: int) -> None:
@@ -627,3 +625,16 @@ class FBLoader:
     def get_work_area(cls) -> Optional[Area]:
         vp = cls.viewport()
         return vp.get_work_area()
+
+    @classmethod
+    def get_geo_shader_data(cls, geo: Any) -> Tuple:
+        _log.output('get_geo_shader_data')
+        mat = xy_to_xz_rotation_matrix_3x3()
+
+        edge_vertices = np.array(pkt_module().utils.get_lines(geo),
+                                 dtype=np.float32) @ mat
+        triangle_vertices = np.array(
+            pkt_module().utils.get_independent_triangles(geo),
+            dtype=np.float32) @ mat
+
+        return edge_vertices, triangle_vertices

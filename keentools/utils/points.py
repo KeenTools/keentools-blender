@@ -25,9 +25,6 @@ from gpu_extras.batch import batch_for_shader
 
 from .kt_logging import KTLogger
 from ..addon_config import Config
-from .shaders import (flat_color_3d_vertex_shader,
-                      circular_dot_fragment_shader,
-                      flat_color_2d_vertex_shader)
 from .gpu_shaders import (circular_dot_2d_shader,
                           circular_dot_3d_shader)
 from ..preferences.user_preferences import UserPreferences

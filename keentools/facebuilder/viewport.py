@@ -139,7 +139,6 @@ class FBViewport(KTViewport):
                                       settings.wireframe_special_color,
                                       settings.wireframe_midline_color),
                                       settings.wireframe_opacity * settings.get_adaptive_opacity())
-        self.wireframer().create_batches()
 
     def update_pin_sensitivity(self) -> None:
         settings = get_fb_settings()
