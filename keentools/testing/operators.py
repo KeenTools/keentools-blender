@@ -240,8 +240,11 @@ def fb_wireframer(context: Any) -> None:
     fb = FBLoader.get_builder()
 
     vp = FBLoader.viewport()
+    geo = fb.applied_args_model()
+
     wireframer = vp.wireframer()
-    wireframer.init_geom_data_from_mesh(obj)
+    wireframer.init_edge_indices(fb)
+    wireframer.init_geom_data_from_core(*FBLoader.get_geo_shader_data(geo))
     wireframer.init_colors((*FBConfig.color_schemes['white'],
                             FBConfig.midline_color), 0.5)
     wireframer.init_wireframe_image(fb, True)
