@@ -154,10 +154,11 @@ class Config:
     mock_product: Optional[str] = None
 
     hide_geotracker: bool = not 'KEENTOOLS_ENABLE_BLENDER_GEOTRACKER' in os.environ
-    supported_gpu_backends: Set = {'OPENGL', 'Undefined'}  # METAL
+    supported_gpu_backends: Set = {'OPENGL', 'Undefined', 'METAL'}
     strict_shader_check: bool = False
     use_gpu_shaders: bool = True
-    allow_use_gpu_instead_of_bgl: bool = False
+    allow_use_gpu_instead_of_bgl: bool = True
+    wireframe_offset_constant: float = 0.005
 
     integration_enabled: bool = True
 

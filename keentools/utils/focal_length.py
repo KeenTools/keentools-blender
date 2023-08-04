@@ -22,7 +22,10 @@ __all__ = [
     'update_camera_focal'
 ]
 
-import logging
+from ..utils.kt_logging import KTLogger
+
+
+_log = KTLogger(__name__)
 
 
 def _unfix_all(fb, head):
@@ -38,9 +41,8 @@ def configure_focal_mode_and_fixes(fb, head):
 
 
 def update_camera_focal(camera, fb):
-    logger = logging.getLogger()
     kid = camera.get_keyframe()
-    logger.debug('update_camera_focal before: {}'.format(camera.focal))
+    before = camera.focal
     focal = fb.focal_length_at(kid) / camera.get_focal_length_in_pixels_coef()
-    logger.debug('update_camera_focal after: {}'.format(focal))
+    _log.output(f'update_camera_focal {before} --> {focal}')
     camera.focal = focal  # so callback will change camobj.data.lens
