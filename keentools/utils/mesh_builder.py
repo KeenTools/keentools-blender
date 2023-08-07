@@ -29,21 +29,23 @@ from .bpy_common import evaluated_object
 
 
 def build_geo(obj: Object, evaluated: bool=True, get_uv=False) -> Any:
-    mesh = obj.data if not evaluated else evaluated_object(obj).data
-    scale = get_scale_matrix_3x3_from_matrix_world(obj.matrix_world)
-    verts = get_mesh_verts(mesh) @ scale
-
     mb = pkt_module().MeshBuilder()
-    mb.add_points(verts @ xz_to_xy_rotation_matrix_3x3())
-
-    for polygon in mesh.polygons:
-        mb.add_face(polygon.vertices[:])
-
-    if get_uv and mesh.uv_layers.active:
-        uvmap = mesh.uv_layers.active.data
-        uvs = [np.array(v.uv) for v in uvmap]
-        mb.set_uvs_attribute('VERTEX_BASED', uvs)
-
     _geo = pkt_module().Geo()
+
+    if obj:
+        mesh = obj.data if not evaluated else evaluated_object(obj).data
+        scale = get_scale_matrix_3x3_from_matrix_world(obj.matrix_world)
+        verts = get_mesh_verts(mesh) @ scale
+
+        mb.add_points(verts @ xz_to_xy_rotation_matrix_3x3())
+
+        for polygon in mesh.polygons:
+            mb.add_face(polygon.vertices[:])
+
+        if get_uv and mesh.uv_layers.active:
+            uvmap = mesh.uv_layers.active.data
+            uvs = [np.array(v.uv) for v in uvmap]
+            mb.set_uvs_attribute('VERTEX_BASED', uvs)
+
     _geo.add_mesh(mb.mesh())
     return _geo

@@ -116,6 +116,9 @@ class FBConfig:
     fb_reset_tone_exposure_idname = operators + '.reset_tone_exposure'
     fb_reset_tone_gamma_idname = operators + '.reset_tone_gamma'
 
+    # Integration
+    fb_export_to_cc_idname = operators + '.export_to_cc'
+
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
     fb_camera_panel_idname = _PT + 'camera_panel'
@@ -126,6 +129,7 @@ class FBConfig:
     fb_model_panel_idname = _PT + 'model_panel'
     fb_appearance_panel_idname = _PT + 'appearance_panel'
     fb_blendshapes_panel_idname = _PT + 'blendshapes_panel'
+    fb_export_panel_idname = _PT + 'export_panel'
 
     # Help ids
     fb_help_camera_idname = operators + '.help_camera'

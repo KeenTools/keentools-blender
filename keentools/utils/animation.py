@@ -20,8 +20,14 @@ from typing import Optional, List, Set, Dict
 
 import bpy
 from bpy.types import Object, Action, FCurve, Keyframe
-from mathutils import Vector
-from .bpy_common import bpy_current_frame, create_empty_object, operator_with_context
+from mathutils import Vector, Matrix
+from .bpy_common import (bpy_current_frame,
+                         bpy_start_frame,
+                         bpy_end_frame,
+                         bpy_set_current_frame,
+                         create_empty_object,
+                         operator_with_context,
+                         update_depsgraph)
 
 from .kt_logging import KTLogger
 
@@ -33,8 +39,8 @@ def _get_action_fcurve(action: Action, data_path: str, index: int=0) -> Optional
     return action.fcurves.find(data_path, index=index)
 
 
-def _get_safe_action_fcurve(action: Action,
-                            data_path: str, index: int=0) -> FCurve:
+def get_safe_action_fcurve(action: Action,
+                           data_path: str, index: int=0) -> FCurve:
     fcurve = _get_action_fcurve(action, data_path, index=index)
     if fcurve:
         return fcurve
@@ -67,6 +73,16 @@ def clear_whole_fcurve(obj: Object, data_path: str, index: int=0,
     _clear_fcurve(fcurve)
     # setattr(obj, data_path, value)
     return value
+
+
+def count_fcurve_points(obj: Object, data_path: str, index: int=0) -> int:
+    action = get_action(obj)
+    if action is None:
+        return -1
+    fcurve = _get_action_fcurve(action, data_path, index=index)
+    if not fcurve:
+        return -1
+    return len(fcurve.keyframe_points)
 
 
 def remove_fcurve_point(obj: Object, frame: int, data_path: str,
@@ -146,9 +162,9 @@ def create_animation_on_object(obj: Object, anim_dict: Dict,
     action = _get_safe_action(obj, action_name)
     locrot_dict = get_locrot_dict()
 
-    fcurves = {name: _get_safe_action_fcurve(action,
-                                             locrot_dict[name]['data_path'],
-                                             index=locrot_dict[name]['index'])
+    fcurves = {name: get_safe_action_fcurve(action,
+                                            locrot_dict[name]['data_path'],
+                                            index=locrot_dict[name]['index'])
                for name in locrot_dict.keys()}
 
     for name in fcurves.keys():
@@ -184,13 +200,22 @@ def mark_selected_points_in_fcurve(fcurve: FCurve, selected_frames: List[int],
         keyframe.type = keyframe_type
 
 
-def get_locrot_dict() -> Dict:
+def get_loc_dict() -> Dict:
     return {'location_x': {'data_path': 'location', 'index': 0},
             'location_y': {'data_path': 'location', 'index': 1},
-            'location_z': {'data_path': 'location', 'index': 2},
-            'rotation_euler_x': {'data_path': 'rotation_euler', 'index': 0},
+            'location_z': {'data_path': 'location', 'index': 2}}
+
+
+def get_rot_dict() -> Dict:
+    return {'rotation_euler_x': {'data_path': 'rotation_euler', 'index': 0},
             'rotation_euler_y': {'data_path': 'rotation_euler', 'index': 1},
             'rotation_euler_z': {'data_path': 'rotation_euler', 'index': 2}}
+
+
+def get_locrot_dict() -> Dict:
+    d = get_loc_dict()
+    d.update(get_rot_dict())
+    return d
 
 
 def mark_all_points_in_locrot(obj: Object,
@@ -261,7 +286,7 @@ def insert_keyframe_in_fcurve(obj: Object, frame: int, value: float,
     action = _get_safe_action(obj, act_name)
     if action is None:
         return
-    fcurve = _get_safe_action_fcurve(action, data_path, index=index)
+    fcurve = get_safe_action_fcurve(action, data_path, index=index)
     insert_point_in_fcurve(fcurve, frame, value, keyframe_type)
 
 
@@ -288,13 +313,15 @@ def create_locrot_keyframe(obj: Object, keyframe_type: str='KEYFRAME') -> None:
         return
     locrot_dict = get_locrot_dict()
     current_frame = bpy_current_frame()
-    loc = obj.matrix_world.to_translation()
-    rot = obj.matrix_world.to_euler()
+
+    mat = obj.matrix_basis
+    loc = mat.to_translation()
+    rot = mat.to_euler()
 
     _log.output(f'{keyframe_type} at {current_frame}')
     for name, value in zip(locrot_dict.keys(), [*loc, *rot]):
-        fcurve = _get_safe_action_fcurve(action, locrot_dict[name]['data_path'],
-                                         index=locrot_dict[name]['index'])
+        fcurve = get_safe_action_fcurve(action, locrot_dict[name]['data_path'],
+                                        index=locrot_dict[name]['index'])
         insert_point_in_fcurve(fcurve, current_frame, value, keyframe_type)
 
 
@@ -330,19 +357,63 @@ def delete_animation_between_frames(obj: Object, from_frame: int, to_frame: int)
             fcurve.keyframe_points.remove(p)
 
 
-def get_object_keyframe_numbers(obj: Object) -> List[int]:
+def get_object_keyframe_numbers(obj: Object, *, loc: bool = True,
+                                rot: bool = True) -> List[int]:
     action: Action = get_action(obj)
     if action is None:
         return []
 
-    locrot_dict: Dict = get_locrot_dict()
-    fcurves: Dict = {name: _get_safe_action_fcurve(action,
-                                             locrot_dict[name]['data_path'],
-                                             index=locrot_dict[name]['index'])
-                     for name in locrot_dict.keys()}
+    if loc and rot:
+        fcurve_dict = get_locrot_dict()
+    elif loc:
+        fcurve_dict = get_loc_dict()
+    elif rot:
+        fcurve_dict = get_rot_dict()
+    else:
+        assert False, 'Improper flag usage'
+
+    fcurves: Dict = {name: get_safe_action_fcurve(action,
+                                                  fcurve_dict[name]['data_path'],
+                                                  index=fcurve_dict[name]['index'])
+                     for name in fcurve_dict.keys()}
 
     keys_set: Set = set()
     for name in fcurves.keys():
         points: Set = {int(p.co[0]) for p in fcurves[name].keyframe_points}
         keys_set = keys_set.union(points)
-    return list(keys_set)
+
+    return sorted(keys_set)
+
+
+def get_world_matrices_in_frames(obj: Object,
+                                 frame_list: List[int]) -> Dict[int, Matrix]:
+    all_matrices = {}
+    current_frame = bpy_current_frame()
+    for frame in frame_list:
+        bpy_set_current_frame(frame)
+        all_matrices[frame] = obj.matrix_world.copy()
+    bpy_set_current_frame(current_frame)
+    return all_matrices
+
+
+def apply_world_matrices_in_frames(obj: Object,
+                                   matrices: Dict[int, Matrix]) -> None:
+    current_frame = bpy_current_frame()
+    for frame in matrices:
+        bpy_set_current_frame(frame)
+        obj.matrix_world = matrices[frame]
+        update_depsgraph()
+        create_animation_locrot_keyframe_force(obj)
+    bpy_set_current_frame(current_frame)
+
+
+def bake_locrot_to_world(obj: Object, bake_frames: List[int]) -> None:
+    obj_matrix_world = obj.matrix_world.copy()
+    all_matrices = get_world_matrices_in_frames(obj, bake_frames)
+    obj.parent = None
+    apply_world_matrices_in_frames(obj, all_matrices)
+    obj.matrix_world = obj_matrix_world
+
+
+def scene_frame_list() -> List[int]:
+    return [x for x in range(bpy_start_frame(), bpy_end_frame() + 1)]

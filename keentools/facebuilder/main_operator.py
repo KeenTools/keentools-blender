@@ -52,6 +52,7 @@ from ..utils.operator_action import (create_blendshapes,
                                      reconstruct_by_mesh)
 from ..utils.localview import exit_area_localview
 from .ui_strings import buttons
+from .integration import FB_OT_ExportToCC
 
 
 _log = KTLogger(__name__)
@@ -852,6 +853,7 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ResetBlendshapeValues,
                        FB_OT_ClearAnimation,
                        FB_OT_ExportHeadToFBX,
+                       FB_OT_ExportToCC,  # Integration
                        FB_OT_UpdateBlendshapes,
                        FB_OT_UnhideHead,
                        FB_OT_ReconstructHead,

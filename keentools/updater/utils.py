@@ -23,6 +23,8 @@ from datetime import datetime
 from typing import Tuple, List, Optional, Any
 
 import bpy
+from bpy.types import Operator
+from bpy.props import BoolProperty
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_operator, get_addon_preferences, ErrorType
@@ -341,7 +343,7 @@ def _download_update():
     return common_progress
 
 
-class KT_OT_DownloadTheUpdate(bpy.types.Operator):
+class KT_OT_DownloadTheUpdate(Operator):
     bl_idname = Config.kt_download_the_update_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -354,7 +356,7 @@ class KT_OT_DownloadTheUpdate(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class KT_OT_RemindLater(bpy.types.Operator):
+class KT_OT_RemindLater(Operator):
     bl_idname = Config.kt_remind_later_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -368,7 +370,7 @@ class KT_OT_RemindLater(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class KT_OT_SkipVersion(bpy.types.Operator):
+class KT_OT_SkipVersion(Operator):
     bl_idname = Config.kt_skip_version_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -425,7 +427,7 @@ class KTDownloadingProblem:
             return render_main(parse_html(_message_text), limit)
         return []
 
-class KT_OT_RetryDownloadUpdate(bpy.types.Operator):
+class KT_OT_RetryDownloadUpdate(Operator):
     bl_idname = Config.kt_retry_download_the_update_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -438,7 +440,7 @@ class KT_OT_RetryDownloadUpdate(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class KT_OT_ComeBackToUpdate(bpy.types.Operator):
+class KT_OT_ComeBackToUpdate(Operator):
     bl_idname = Config.kt_come_back_to_update_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -466,7 +468,8 @@ class KTInstallationReminder:
     @classmethod
     def render_message(cls, limit: int=32) -> List[str]:
         _message_text: str = \
-            'The new version of FaceBuilder is ready to be installed. ' \
+            'The new version of FaceBuilder and GeoTracker ' \
+            'is ready to be installed. ' \
             'Blender will be relaunched automatically. ' \
             'Please save your project before proceeding.'
         return render_main(parse_html(_message_text), limit)
@@ -498,13 +501,13 @@ def _clear_updater_info():
     reset_updater_preferences_to_default()
 
 
-class KT_OT_InstallUpdates(bpy.types.Operator):
+class KT_OT_InstallUpdates(Operator):
     bl_idname = Config.kt_install_updates_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    not_save_changes: bpy.props.BoolProperty(
+    not_save_changes: BoolProperty(
         description="Discard changes, install the update and restart Blender",
         name="Discard changes, install the update and restart Blender", default=False
     )
@@ -547,7 +550,7 @@ class KT_OT_InstallUpdates(bpy.types.Operator):
         return self.execute(context)
 
 
-class KT_OT_RemindInstallLater(bpy.types.Operator):
+class KT_OT_RemindInstallLater(Operator):
     bl_idname = Config.kt_remind_install_later_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
@@ -560,7 +563,7 @@ class KT_OT_RemindInstallLater(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class KT_OT_SkipInstallation(bpy.types.Operator):
+class KT_OT_SkipInstallation(Operator):
     bl_idname = Config.kt_skip_installation_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description

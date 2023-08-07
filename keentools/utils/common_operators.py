@@ -24,7 +24,7 @@ from ..addon_config import (Config,
                             show_user_preferences,
                             show_tool_preferences)
 from .localview import check_context_localview
-from .other import force_show_ui_overlays
+from .viewport_state import force_show_ui_overlays
 from ..utils.ui_redraw import (force_ui_redraw,
                                find_modules_by_name_starting_with,
                                filter_module_list_by_name_starting_with,

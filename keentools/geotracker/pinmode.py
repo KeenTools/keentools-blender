@@ -18,7 +18,6 @@
 
 from typing import Any, Set, Optional, Tuple
 from uuid import uuid4
-from copy import deepcopy
 
 from bpy.types import Area, Operator
 from bpy.props import IntProperty, StringProperty, FloatProperty
@@ -43,8 +42,6 @@ from ..utils.coords import (point_is_in_area,
 from ..utils.manipulate import (force_undo_push,
                                 switch_to_camera,
                                 object_is_on_view_layer)
-from ..utils.other import (hide_viewport_ui_elements_and_store_on_object,
-                           unhide_viewport_ui_elements_from_object)
 from ..utils.images import (set_background_image_by_movieclip,
                             set_background_image_mask)
 from ..utils.bpy_common import (bpy_current_frame,
@@ -55,41 +52,39 @@ from ..utils.bpy_common import (bpy_current_frame,
 from ..utils.video import fit_render_size
 from .utils.prechecks import common_checks
 from .ui_strings import buttons
+from .interface.screen_mesages import (revert_default_screen_message,
+                                       playback_mode_screen_message,
+                                       in_edit_mode_screen_message,
+                                       how_to_show_wireframe_screen_message,
+                                       clipping_changed_screen_message)
 
 
 _log = KTLogger(__name__)
 
 
-def _calc_adaptive_opacity(area):
+def _calc_adaptive_opacity(area: Area) -> None:
     settings = get_gt_settings()
-    rx, ry = bpy_render_frame()
-    x1, y1, x2, y2 = get_camera_border(area)
-    settings.adaptive_opacity = (x2 - x1) / rx
+    if not settings.use_adaptive_opacity:
+        return
+    settings.calc_adaptive_opacity(area)
     vp = GTLoader.viewport()
-    vp.update_wireframe_colors()
+    vp.wireframer().set_adaptive_opacity(settings.get_adaptive_opacity())
 
 
 _playback_mode: bool = False
 
 
-def _playback_message():
+def _playback_message(area: Area) -> None:
     global _playback_mode
     current_playback_mode = bpy_is_animation_playing()
     if current_playback_mode != _playback_mode:
         _playback_mode = current_playback_mode
-        vp = GTLoader.viewport()
+        _log.output(_log.color('green', f'_playback_mode: {_playback_mode}'))
         if _playback_mode:
-            vp.message_to_screen([
-                {'text': 'Playback animation',
-                 'color': (0., 1., 0., 0.85),
-                 'size': 24,
-                 'y': 60},  # line 1
-                {'text': 'ESC: Exit | TAB: Hide/Show',
-                 'color': (1., 1., 1., 0.5),
-                 'size': 20,
-                 'y': 30}])  # line 2
+            playback_mode_screen_message()
         else:
-            vp.revert_default_screen_message()
+            revert_default_screen_message()
+        area.tag_redraw()
 
 
 class GT_OT_PinMode(Operator):
@@ -137,7 +132,8 @@ class GT_OT_PinMode(Operator):
         vp = GTLoader.viewport()
         vp.update_view_relative_pixel_size(area)
 
-        if not point_is_in_area(area, mouse_x, mouse_y):
+        if not point_is_in_area(area, mouse_x, mouse_y,
+                                bottom_limit=Config.area_bottom_limit):
             _log.output('LEFT CLICK OUTSIDE OF VIEWPORT AREA')
             return {'PASS_THROUGH'}
 
@@ -245,19 +241,22 @@ class GT_OT_PinMode(Operator):
             _log.output('NEW KT_GEOTRACKER')
             GTLoader.new_kt_geotracker()
 
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
+        geotracker.check_pins_on_geometry(GTLoader.kt_geotracker())
+
         _log.output('GT START SHADERS')
         GTLoader.load_pins_into_viewport()
 
-        settings = get_gt_settings()
         settings.reload_mask_2d()
         _calc_adaptive_opacity(area)
 
         vp = GTLoader.viewport()
         vp.create_batch_2d(area)
         _log.output('GT REGISTER SHADER HANDLERS')
-        GTLoader.update_viewport_shaders(area, normals=settings.lit_wireframe)
+        GTLoader.update_viewport_shaders(area, wireframe=True,
+                                         normals=settings.lit_wireframe)
 
-        geotracker = get_current_geotracker_item()
         self.camera_clip_start = geotracker.camobj.data.clip_start
         self.camera_clip_end = geotracker.camobj.data.clip_end
         if GTConfig.auto_increase_far_clip_distance and geotracker.camobj and \
@@ -266,12 +265,7 @@ class GT_OT_PinMode(Operator):
                                                 prev_clip_end=self.camera_clip_end):
             near = geotracker.camobj.data.clip_start
             far = geotracker.camobj.data.clip_end
-            default_txt = deepcopy(vp.texter().get_default_text())
-            default_txt[0]['text'] = f'Camera clip planes ' \
-                                     f'have been changed ' \
-                                     f'to {near:.1f} / {far:.1f}'
-            default_txt[0]['color'] = (1.0, 0.0, 1.0, 0.85)
-            GTLoader.viewport().message_to_screen(default_txt)
+            clipping_changed_screen_message(near, far)
 
         if context is not None:
             vp.register_handlers(context)
@@ -302,7 +296,7 @@ class GT_OT_PinMode(Operator):
         switch_to_camera(area, geotracker.camobj,
                          geotracker.animatable_object())
 
-        hide_viewport_ui_elements_and_store_on_object(area, geotracker.geomobj)
+        settings.viewport_state.hide_ui_elements(area)
 
     def _switch_to_new_geotracker(self, num: int) -> None:
         _log.output('_switch_to_new_geotracker')
@@ -310,8 +304,7 @@ class GT_OT_PinMode(Operator):
         settings.pinmode = True
 
         area = GTLoader.get_work_area()
-        old_geotracker = settings.get_current_geotracker_item()
-        unhide_viewport_ui_elements_from_object(area, old_geotracker.geomobj)
+        settings.viewport_state.show_ui_elements(area)
 
         self._set_new_geotracker(area, num)
         self._init_pinmode(area)
@@ -322,12 +315,9 @@ class GT_OT_PinMode(Operator):
         flag = not vp.wireframer().is_visible() if toggle else value
         vp.set_visible(flag)
         if flag:
-            vp.revert_default_screen_message(unregister=False)
+            revert_default_screen_message()
         else:
-            default_txt = deepcopy(vp.texter().get_default_text())
-            default_txt[0]['text'] = 'Wireframe is hidden. Press Tab to reveal'
-            default_txt[0]['color'] = (1., 0., 1., 0.85)
-            GTLoader.viewport().message_to_screen(default_txt)
+            how_to_show_wireframe_screen_message()
 
     def invoke(self, context: Any, event: Any) -> Set:
         _log.output(f'INVOKE PINMODE: {self.geotracker_num}')
@@ -361,7 +351,7 @@ class GT_OT_PinMode(Operator):
             return {'CANCELLED'}
 
         vp = GTLoader.viewport()
-        if not vp.load_all_shaders():
+        if not vp.load_all_shaders() and Config.strict_shader_check:
             return {'CANCELLED'}
 
         vp.pins().on_start()
@@ -431,7 +421,7 @@ class GT_OT_PinMode(Operator):
                 GTLoader.out_pinmode()
                 return {'FINISHED'}
 
-        _playback_message()
+        _playback_message(context.area)
 
         if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
                 and event.value == 'PRESS':
@@ -477,29 +467,25 @@ class GT_OT_PinMode(Operator):
         if GTLoader.geomobj_mode_changed_to_object():
             _log.output(_log.color('green', 'RETURNED TO OBJECT_MODE'))
             self._change_wireframe_visibility(toggle=False, value=True)
+            GTLoader.load_geotracker()
+            GTLoader.load_pins_into_viewport()
             GTLoader.update_viewport_shaders()
 
         if self._check_camera_state_changed(context.space_data.region_3d) \
                 or self._check_area_state_changed(GTLoader.get_work_area()):
-            _log.output('FORCE TAG REDRAW BY VIEWPORT ZOOM/OFFSET')
+            _log.output('VIEWPORT ZOOM/OFFSET')
 
             _calc_adaptive_opacity(context.area)
             vp.create_batch_2d(context.area)
             vp.update_residuals(GTLoader.kt_geotracker(), context.area,
                                 bpy_current_frame())
-            vp.tag_redraw()
+            if vp.needs_to_be_drawn():
+                _log.output('TAG REDRAW')
+                vp.tag_redraw()
 
         if event.type == 'TIMER' and GTLoader.get_stored_geomobj_mode() == 'EDIT':
             _log.output('TIMER IN EDIT_MODE')
-            vp.message_to_screen([
-                {'text': 'Object is in EDIT MODE',
-                 'color': (1., 0., 1., 0.85),
-                 'size': 24,
-                 'y': 60},  # line 1
-                {'text': 'ESC: Exit | TAB: Hide/Show',
-                 'color': (1., 1., 1., 0.5),
-                 'size': 20,
-                 'y': 30}])  # line 2
+            in_edit_mode_screen_message()
             GTLoader.update_geomobj_mesh()
             vp.hide_pins_and_residuals()
             settings = get_gt_settings()
@@ -507,10 +493,12 @@ class GT_OT_PinMode(Operator):
             GTLoader.update_viewport_shaders()
             return {'PASS_THROUGH'}
 
-        if event.value == 'PRESS' and event.type == 'LEFTMOUSE':
+        if event.value == 'PRESS' and event.type == 'LEFTMOUSE' \
+                and not settings.is_calculating():
             return self._on_left_mouse_press(context.area, event)
 
-        if event.value == 'PRESS' and event.type == 'RIGHTMOUSE':
+        if event.value == 'PRESS' and event.type == 'RIGHTMOUSE' \
+                and not settings.is_calculating():
             return self._on_right_mouse_press(context.area, event)
 
         return {'PASS_THROUGH'}

@@ -16,11 +16,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import Any, Optional, Callable, Tuple, Set
 from uuid import uuid4
 import numpy as np
 from copy import deepcopy
 
 import bpy
+from bpy.props import IntProperty, StringProperty
+from bpy.types import Operator, Area
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
@@ -43,7 +46,6 @@ from ..utils.coords import (update_head_mesh_non_neutral,
 from .utils.manipulate import push_head_in_undo_history
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
-from ..utils.other import hide_viewport_ui_elements_and_store_on_object
 from ..utils.html import split_long_string
 from ..utils.localview import exit_area_localview, check_area_active_problem
 from ..utils.manipulate import switch_to_camera, center_viewports_on_object
@@ -53,10 +55,10 @@ from .ui_strings import buttons
 _log = KTLogger(__name__)
 
 
-_undo_handler = None
+_undo_handler: Optional[Callable] = None
 
 
-def undo_handler(scene):
+def undo_handler(scene: Any) -> None:
     _log.output('undo_handler')
     try:
         settings = get_fb_settings()
@@ -70,7 +72,7 @@ def undo_handler(scene):
         unregister_undo_handler()
 
 
-def unregister_undo_handler():
+def unregister_undo_handler() -> None:
     global _undo_handler
     if _undo_handler is not None:
         if _undo_handler in bpy.app.handlers.undo_post:
@@ -78,39 +80,39 @@ def unregister_undo_handler():
     _undo_handler = None
 
 
-def register_undo_handler():
+def register_undo_handler() -> None:
     global _undo_handler
     unregister_undo_handler()
     _undo_handler = undo_handler
     bpy.app.handlers.undo_post.append(_undo_handler)
 
 
-def _calc_adaptive_opacity(area):
+def _calc_adaptive_opacity(area: Area) -> None:
     settings = get_fb_settings()
-    rx, ry = bpy_render_frame()
-    x1, y1, x2, y2 = get_camera_border(area)
-    settings.adaptive_opacity = (x2 - x1) / rx
+    if not settings.use_adaptive_opacity:
+        return
+    settings.calc_adaptive_opacity(area)
     vp = FBLoader.viewport()
     vp.update_wireframe_colors()
 
 
-class FB_OT_PinMode(bpy.types.Operator):
+class FB_OT_PinMode(Operator):
     bl_idname = FBConfig.fb_pinmode_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    headnum: bpy.props.IntProperty(default=0)
-    camnum: bpy.props.IntProperty(default=0)
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
 
-    pinmode_id: bpy.props.StringProperty(default='')
+    pinmode_id: StringProperty(default='')
 
-    _shift_pressed = False
-    _prev_camera_state = ()
-    _prev_area_state = ()
+    _shift_pressed: bool = False
+    _prev_camera_state: Tuple[float, Tuple[float, float]] = ()
+    _prev_area_state: Tuple[int, int, int, int] = ()
 
     @classmethod
-    def _check_camera_state_changed(cls, rv3d):
+    def _check_camera_state_changed(cls, rv3d: Any) -> bool:
         camera_state = (rv3d.view_camera_zoom, rv3d.view_camera_offset)
         if camera_state != cls._prev_camera_state:
             cls._prev_camera_state = camera_state
@@ -118,7 +120,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         return False
 
     @classmethod
-    def _check_area_state_changed(cls, area):
+    def _check_area_state_changed(cls, area: Area) -> bool:
         area_state = (area.x, area.y, area.width, area.height)
         if area_state != cls._prev_area_state:
             cls._prev_area_state = area_state
@@ -126,14 +128,14 @@ class FB_OT_PinMode(bpy.types.Operator):
         return False
 
     @classmethod
-    def _set_shift_pressed(cls, val):
+    def _set_shift_pressed(cls, val: bool) -> None:
         cls._shift_pressed = val
 
     @classmethod
-    def _is_shift_pressed(cls):
+    def _is_shift_pressed(cls) -> bool:
         return cls._shift_pressed
 
-    def _fix_heads_with_warning(self):
+    def _fix_heads_with_warning(self) -> None:
         settings = get_fb_settings()
         heads_deleted, cams_deleted = settings.fix_heads()
         if heads_deleted > 0 or cams_deleted > 0:
@@ -142,15 +144,15 @@ class FB_OT_PinMode(bpy.types.Operator):
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
 
-    def _init_wireframer_colors(self):
+    def _init_wireframer_colors(self) -> None:
         settings = get_fb_settings()
         head = settings.get_head(settings.current_headnum)
 
         wf = FBLoader.viewport().wireframer()
-        wf.init_colors((settings.wireframe_color,
-                       settings.wireframe_special_color,
-                       settings.wireframe_midline_color),
-                       settings.wireframe_opacity * settings.get_adaptive_opacity())
+        wf.init_colors(
+            (settings.wireframe_color, settings.wireframe_special_color,
+             settings.wireframe_midline_color),
+            settings.wireframe_opacity * settings.get_adaptive_opacity())
 
         fb = FBLoader.get_builder()
         if not wf.init_wireframe_image(fb, settings.show_specials):
@@ -161,7 +163,8 @@ class FB_OT_PinMode(bpy.types.Operator):
         wf.init_edge_indices(fb)
         wf.create_batches()
 
-    def _change_wireframe_visibility(self, *, toggle=True, value=True):
+    def _change_wireframe_visibility(self, *, toggle: bool=True,
+                                     value: bool=True) -> None:
         vp = FBLoader.viewport()
         flag = not vp.wireframer().is_visible() if toggle else value
         vp.set_visible(flag)
@@ -169,11 +172,11 @@ class FB_OT_PinMode(bpy.types.Operator):
             vp.revert_default_screen_message(unregister=False)
         else:
             default_txt = deepcopy(vp.texter().get_default_text())
-            default_txt[0]['text'] = 'Wireframe is hidden. Press Tab to reveal'
+            default_txt[0]['text'] = 'Press TAB to show wireframe'
             default_txt[0]['color'] = (1., 0., 1., 0.85)
             vp.message_to_screen(default_txt)
 
-    def _delete_found_pin(self, nearest, area):
+    def _delete_found_pin(self, nearest: int, area: Area) -> Set:
         settings = get_fb_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
@@ -201,9 +204,9 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.load_pins_into_viewport(headnum, camnum)
         FBLoader.update_viewport_shaders(area, headnum, camnum)
 
-        return {"RUNNING_MODAL"}
+        return {'RUNNING_MODAL'}
 
-    def _undo_detected(self, area):
+    def _undo_detected(self, area: Area) -> None:
         _log.output('UNDO DETECTED')
         settings = get_fb_settings()
         headnum = settings.current_headnum
@@ -216,7 +219,8 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.load_pins_into_viewport(headnum, camnum)
         FBLoader.update_viewport_shaders(area, headnum, camnum)
 
-    def _on_right_mouse_press(self, area, mouse_x, mouse_y):
+    def _on_right_mouse_press(self, area: Area,
+                              mouse_x: float, mouse_y: float) -> Set:
         vp = FBLoader.viewport()
         vp.update_view_relative_pixel_size(area)
 
@@ -229,7 +233,8 @@ class FB_OT_PinMode(bpy.types.Operator):
         FBLoader.viewport().create_batch_2d(area)
         return {'RUNNING_MODAL'}
 
-    def _on_left_mouse_press(self, area, mouse_x, mouse_y):
+    def _on_left_mouse_press(self, area: Area,
+                             mouse_x: float, mouse_y: float) -> Set:
         FBLoader.viewport().update_view_relative_pixel_size(area)
 
         if not point_is_in_area(area, mouse_x, mouse_y):
@@ -245,13 +250,13 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         return {'PASS_THROUGH'}
 
-    def _check_keyframes(self, fb, head):
+    def _check_keyframes(self, fb: Any, head: Any) -> bool:
         for cam in head.cameras:
             if not fb.is_key_at(cam.get_keyframe()):
                 return False
         return True
 
-    def invoke(self, context, event):
+    def invoke(self, context: Any, event: Any) -> Set:
         settings = get_fb_settings()
 
         _log.output(f'FB PINMODE ENTER. CURRENT_HEAD: {settings.current_headnum} '
@@ -281,8 +286,9 @@ class FB_OT_PinMode(bpy.types.Operator):
         first_start = True
 
         vp = FBLoader.viewport()
-        if not vp.load_all_shaders():
+        if not vp.load_all_shaders() and Config.strict_shader_check:
             return {'CANCELLED'}
+
         # Stopped shaders means that we need to restart pinmode
         if not vp.wireframer().is_working():
             settings.pinmode = False
@@ -378,10 +384,14 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         update_camera_focal(camera, fb)
 
+        self._check_camera_state_changed(context.space_data.region_3d)
+        self._check_area_state_changed(context.area)
+        _log.output('pinmode invoke _calc_adaptive_opacity')
         _calc_adaptive_opacity(context.area)
+
         self._init_wireframer_colors()
         if first_start:
-            hide_viewport_ui_elements_and_store_on_object(context.area, headobj)
+            settings.viewport_state.hide_ui_elements(context.area)
 
             _log.output('START FB SHADERS')
             self._change_wireframe_visibility(toggle=False, value=True)
@@ -415,7 +425,7 @@ class FB_OT_PinMode(bpy.types.Operator):
         _log.output('FB PINMODE STARTED')
         return {'RUNNING_MODAL'}
 
-    def _modal_should_finish(self, context, event):
+    def _modal_should_finish(self, context: Any, event: Any) -> bool:
         settings = get_fb_settings()
         headnum = settings.current_headnum
 
@@ -466,7 +476,7 @@ class FB_OT_PinMode(bpy.types.Operator):
 
         return False
 
-    def modal(self, context, event):
+    def modal(self, context: Any, event: Any) -> Set:
         settings = get_fb_settings()
 
         if self.pinmode_id != settings.pinmode_id:
@@ -484,10 +494,10 @@ class FB_OT_PinMode(bpy.types.Operator):
             exit_area_localview(context.area)
             return {'FINISHED'}
 
-        if self._check_camera_state_changed(context.space_data.region_3d) or \
-                self._check_area_state_changed(FBLoader.get_work_area()):
+        region_check = self._check_camera_state_changed(context.space_data.region_3d)
+        area_check = self._check_area_state_changed(FBLoader.get_work_area())
+        if region_check or area_check:
             _log.output('CAMERA STATE CHANGED. FORCE TAG REDRAW')
-
             _calc_adaptive_opacity(context.area)
             context.area.tag_redraw()
 

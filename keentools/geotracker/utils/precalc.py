@@ -18,6 +18,7 @@
 
 from typing import Any, Optional, Tuple
 import time
+import os
 
 import bpy
 
@@ -41,6 +42,9 @@ from ..gt_class_loader import GTClassLoader
 from ...utils.timer import RepeatTimer
 from .calc_timer import CalcTimer
 from .prechecks import common_checks, prepare_camera
+from ...blender_independent_packages.pykeentools_loader import module as pkt_module
+from .prechecks import show_warning_dialog, show_unlicensed_warning
+from ..interface.screen_mesages import analysing_screen_message
 
 
 _log = KTLogger(__name__)
@@ -52,24 +56,33 @@ class PrecalcTimer(CalcTimer):
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
         geotracker.precalc_message = err_message
+        _log.output(f'precalc_message: {err_message}')
 
     def runner_state(self) -> Optional[float]:
         settings = get_gt_settings()
 
         _log.output('runner_state call')
         if self._runner.is_finished():
+            _log.output('runner is_finished')
+            err = self._runner.exception()
+            if err is not None:
+                _log.error(f'runner Exception:\n{str(err)}\n{type(err)}')
+                try:
+                    if type(err) == pkt_module().precalc.PrecalcUnlicensedException:
+                        show_unlicensed_warning()
+                    else:
+                        show_warning_dialog(str(err))
+                except Exception as err2:
+                    show_warning_dialog(str(err) + '\n\n' + str(err2))
             self.finish_calc_mode()
             geotracker = settings.get_current_geotracker_item()
             geotracker.reload_precalc()
             return None
 
         progress, message = self._runner.current_progress()
-        _log.output(f'runner_state: {progress} {message}')
-        GTLoader.viewport().message_to_screen(
-            [{'text': 'Precalc calculating... Please wait', 'y': 60,
-              'color': (1.0, 0.0, 0.0, 0.7)},
-             {'text': message, 'y': 30,
-              'color': (1.0, 1.0, 1.0, 0.7)}])
+        _log.output(f'precalc runner_state: {progress} {message}')
+        analysing_screen_message(message)
+
         next_frame = self._runner.is_loading_frame_requested()
         if next_frame is None:
             return self._interval
@@ -90,7 +103,7 @@ class PrecalcTimer(CalcTimer):
             bg_img = get_background_image_object(geotracker.camobj)
             if not bg_img.image:
                 _log.output('no image in background')
-                self.finish_calc_mode_with_error('* Cannot load images')
+                self.finish_calc_mode_with_error('* Cannot load images 1')
                 return None
 
             im_user = bg_img.image_user
@@ -98,32 +111,35 @@ class PrecalcTimer(CalcTimer):
             _log.output(bg_img.image.filepath)
             path = bg_img.image.filepath_from_user(image_user=im_user)
             _log.output(f'user_path: {current_frame} {path}')
-            img = bpy.data.images.load(path)
+
+            try:
+                img = bpy.data.images.load(path)
+            except Exception as err:
+                _log.error(f'runner_state load image Exception:\n{str(err)}')
+                self.finish_calc_mode_with_error('* Cannot load images 2')
+                return None
 
             if not check_bpy_image_size(img):
                 _log.output('cannot load image')
-                self.finish_calc_mode_with_error('* Cannot load images')
+                self.finish_calc_mode_with_error('* Cannot load images 3')
                 return None
 
             np_img = np_array_from_bpy_image(img)
             bpy.data.images.remove(img)
 
-        grayscale = np_image_to_grayscale(np_img)
-        self._runner.fulfill_loading_request(grayscale)
+        self._runner.fulfill_loading_request(np_img[:, :, :3])
         return self._interval
 
     def start(self) -> bool:
+        self._start_time = time.time()
         prepare_camera(self.get_area())
         settings = get_gt_settings()
         settings.calculating_mode = 'PRECALC'
 
         self._state = 'runner'
         self._active_state_func = self.runner_state
-        self._start_time = time.time()
         # self._area_header('Precalc is calculating... Please wait')
-        GTLoader.viewport().message_to_screen(
-            [{'text':'Precalc is calculating... Please wait',
-              'color': (1.0, 0., 0., 0.7)}])
+        analysing_screen_message('Initialization')
 
         _func = self.timer_func
         if not bpy_background_mode():
@@ -154,16 +170,33 @@ def precalc_with_runner_act(context: Any) -> ActionStatus:
         _log.error(msg)
         return ActionStatus(False, msg)
 
+    precalc_path = os.path.abspath(geotracker.precalc_path)
+    _log.output(f'\nprecalc_path: {geotracker.precalc_path}\n'
+                f'abs_path: {precalc_path}')
+
+    dirpath, filename = os.path.split(precalc_path)
+    try:
+        os.makedirs(dirpath, exist_ok=True)
+    except Exception as err:
+        show_warning_dialog(f'An error occurred while trying '
+                            f'to create a folder:\n{str(err)}')
+        return ActionStatus(True, 'Folder access error')
+
+    if not os.path.exists(dirpath) or not os.path.isdir(dirpath):
+        return ActionStatus(False, 'Target folder cannot be created')
+
+    if geotracker.precalc_start >= geotracker.precalc_end:
+        return ActionStatus(False, 'Precalc start should be lower than precalc end')
+
     _log.output('precalc_with_runner_act start')
     vp = GTLoader.viewport()
-    vp.texter().register_handler(context)
-
-    _log.output(f'precalc_path: {geotracker.precalc_path}')
+    if not settings.pinmode:
+        vp.texter().register_handler(context)
 
     rw, rh = bpy_render_frame()
     area = context.area
     runner = GTClassLoader.PrecalcRunner_class()(
-        geotracker.precalc_path, rw, rh,
+        precalc_path, rw, rh,
         geotracker.precalc_start, geotracker.precalc_end,
         GTClassLoader.GeoTracker_class().license_manager(), True)
 

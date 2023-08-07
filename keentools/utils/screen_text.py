@@ -21,7 +21,12 @@ from typing import List, Dict, Any
 import bpy
 import blf
 
+from .kt_logging import KTLogger
+from .version import BVersion
 from .base_shaders import KTShaderBase
+
+
+_log = KTLogger(__name__)
 
 
 class KTScreenText(KTShaderBase):
@@ -38,8 +43,8 @@ class KTScreenText(KTShaderBase):
              'color': (1., 1., 1., 0.5),
              'size': 24,
              'y': 60},  # line 1
-            {'text': 'ESC: Exit | LEFT CLICK: Create Pin | '
-                     'RIGHT CLICK: Delete Pin | TAB: Hide/Show',
+            {'text': 'ESC: Exit | LEFT CLICK: Create Pin '
+                     '| RIGHT CLICK: Delete Pin | TAB: Hide/Show',
              'color': (1., 1., 1., 0.5),
              'size': 20,
              'y': 30}  # line 2
@@ -82,6 +87,7 @@ class KTScreenText(KTShaderBase):
         xc = int(region.width * 0.5)  # horizontal center
         yc = int(region.height * 0.5)  # vertical center
         font_id = 0
+        dpi = 72
 
         for row in self.message:
             blf.color(font_id, *row['color'])
@@ -90,7 +96,10 @@ class KTScreenText(KTShaderBase):
             blf.shadow(font_id, row['shadow_blur'], *row['shadow_color'])
             blf.shadow_offset(font_id, 1, -1)
 
-            blf.size(font_id, row['size'], 72)
+            if BVersion.blf_size_takes_3_arguments:
+                blf.size(font_id, row['size'], dpi)
+            else:
+                blf.size(font_id, row['size'])
 
             xp = row['x'] if row['x'] is not None \
                 else xc - blf.dimensions(font_id, row['text'])[0] * 0.5
@@ -100,4 +109,5 @@ class KTScreenText(KTShaderBase):
 
     def register_handler(self, context: Any,
                          post_type: str='POST_PIXEL') -> None:
+        _log.output(f'{self.__class__.__name__}.register_handler')
         super().register_handler(context, post_type)

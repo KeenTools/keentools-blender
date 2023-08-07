@@ -37,12 +37,13 @@ from ..utils.coords import (image_space_to_frame,
 from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
                                 get_scene_camera_shift,
-                                bpy_is_animation_playing)
+                                bpy_is_animation_playing,
+                                get_depsgraph,
+                                get_traceback)
 from .gt_class_loader import GTClassLoader
 from ..utils.timer import KTStopShaderTimer
 from ..utils.ui_redraw import force_ui_redraw
 from ..utils.localview import exit_area_localview, check_localview
-from ..utils.other import unhide_viewport_ui_elements_from_object
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
@@ -54,19 +55,18 @@ def force_stop_gt_shaders() -> None:
     force_ui_redraw('VIEW_3D')
 
 
-def depsgraph_update_handler(scene, depsgraph):
+def depsgraph_update_handler(scene, depsgraph=None):
     def _check_updated(depsgraph, name):
-        _log.output('COUNT UPDATES: {}'.format(len(depsgraph.updates)))
-        _log.output('ids: {}'.format([update.id.name for update in depsgraph.updates]))
+        _log.output('DEPSGRAPH UPDATES: {}'.format(len(depsgraph.updates)))
         for update in depsgraph.updates:
             if update.id.name != name:
+                _log.output(f'update.id.name: {update.id.name}')
                 continue
             if not update.is_updated_transform:
                 continue
             _log.output(f'update.id: {update.id.name}')
             _log.output(f'update.is_updated_geometry: {update.is_updated_geometry}')
             _log.output(f'update.is_updated_transform: {update.is_updated_transform}')
-            _log.output(f'update.is_updated_shading: {update.is_updated_shading}')
             return True
         return False
 
@@ -83,14 +83,20 @@ def depsgraph_update_handler(scene, depsgraph):
     if not geotracker:
         return
 
+    if not depsgraph:  # For old Blender api version only
+        _log.output(f'old depsgraph_update_handler:\n'
+                    f'scene={scene} depsgraph={depsgraph}')
+        depsgraph = get_depsgraph()
+        _log.output(f'new depsgraph={depsgraph}')
+
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
 
     if geomobj and _check_updated(depsgraph, geomobj.name):
-        GTLoader.update_viewport_shaders()
+        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True)
         return
     if camobj and _check_updated(depsgraph, camobj.name):
-        GTLoader.update_viewport_shaders()
+        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True)
 
 
 def undo_redo_handler(scene):
@@ -131,16 +137,16 @@ def unregister_app_handler(app_handlers, handler) -> None:
 
 
 def frame_change_post_handler(scene) -> None:
-    _log.output(f'KEYFRAME UPDATED: {scene.name}')
+    _log.output(f'CURRENT FRAME UPDATED: {scene.name} {scene.frame_current}')
     settings = get_gt_settings()
+    if settings.calculating_mode == 'ESTIMATE_FL':
+        return
     geotracker = settings.get_current_geotracker_item()
     if geotracker is None:
         _log.output('EARLY EXIT')
         return
-    if settings.calculating_mode == 'ESTIMATE_FL':
-        return
-    geotracker.reset_focal_length_estimation()
-    GTLoader.place_object_or_camera()
+    if geotracker.focal_length_estimation:
+        geotracker.reset_focal_length_estimation()
     GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
                                      timeline=False, mask=True)
 
@@ -364,11 +370,11 @@ class GTLoader:
         keyframe = bpy_current_frame()
         try:
             if geotracker.focal_length_mode == 'STATIC_FOCAL_LENGTH':
-                gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.STATIC_FOCAL_LENGTH)
+                gt.set_focal_length_mode(GTClassLoader.TrackerFocalLengthMode_class().STATIC_FOCAL_LENGTH)
             elif geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH':
-                gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.ZOOM_FOCAL_LENGTH)
+                gt.set_focal_length_mode(GTClassLoader.TrackerFocalLengthMode_class().ZOOM_FOCAL_LENGTH)
             else:
-                gt.set_focal_length_mode(GTClassLoader.GeoTracker_class().FocalLengthMode.CAMERA_FOCAL_LENGTH)
+                gt.set_focal_length_mode(GTClassLoader.TrackerFocalLengthMode_class().CAMERA_FOCAL_LENGTH)
                 geotracker.focal_length_estimation = False
 
             gt.solve_for_current_pins(keyframe, geotracker.focal_length_estimation)
@@ -395,15 +401,20 @@ class GTLoader:
 
         gt = cls.kt_geotracker()
         geotracker.save_serial_str(gt.serialize())
-        geotracker.store_serial_str_on_geomobj()
 
     @classmethod
     def _deserialize_global_options(cls):
         settings = get_gt_settings()
+        geotracker = get_current_geotracker_item()
         gt = cls.kt_geotracker()
         with settings.ui_write_mode_context():
             try:
                 settings.wireframe_backface_culling = gt.back_face_culling()
+                settings.track_focal_length = gt.track_focal_length()
+                geotracker.smoothing_depth_coeff = gt.get_smoothing_depth_coeff()
+                geotracker.smoothing_focal_length_coeff = gt.get_smoothing_focal_length_coeff()
+                geotracker.smoothing_rotations_coeff = gt.get_smoothing_rotations_coeff()
+                geotracker.smoothing_xy_translations_coeff = gt.get_smoothing_xy_translations_coeff()
             except Exception as err:
                 _log.error(f'_deserialize_global_options:\n{str(err)}')
 
@@ -437,16 +448,19 @@ class GTLoader:
     def update_viewport_wireframe(cls, normals: bool=False) -> None:
         settings = get_gt_settings()
         geotracker = get_current_geotracker_item()
-        if not geotracker or not geotracker.geomobj:
-            return
-
         vp = cls.viewport()
         wf = vp.wireframer()
+        if not geotracker or not geotracker.geomobj:
+            wf.clear_all()
+            wf.create_batches()
+            return
+
         wf.init_geom_data_from_mesh(geotracker.geomobj)
         if normals:
             wf.init_vertex_normals(geotracker.geomobj)
         wf.init_color_data((*settings.wireframe_color,
-                            settings.wireframe_opacity * settings.get_adaptive_opacity()))
+                            settings.wireframe_opacity))
+        wf.set_adaptive_opacity(settings.get_adaptive_opacity())
         wf.init_selection_from_mesh(geotracker.geomobj, geotracker.mask_3d,
                                     geotracker.mask_3d_inverted)
         wf.set_backface_culling(settings.wireframe_backface_culling)
@@ -461,7 +475,7 @@ class GTLoader:
         gt = cls.kt_geotracker()
 
         geotracker = get_current_geotracker_item()
-        if not geotracker or not geotracker.geomobj:
+        if not geotracker:
             return
 
         kid = bpy_current_frame()
@@ -470,25 +484,42 @@ class GTLoader:
 
     @classmethod
     def update_viewport_shaders(cls, area: Optional[Area]=None, *,
-                                geomobj_matrix: bool = False,
+                                adaptive_opacity: bool=False,
+                                geomobj_matrix: bool=False,
                                 wireframe: bool=True,
                                 normals: bool=False,
                                 pins_and_residuals: bool=True,
                                 timeline: bool=True,
                                 mask: bool=False) -> None:
+        _log.output(_log.color('blue', f'update_viewport_shaders'
+            f'\ngeomobj_matrix: {geomobj_matrix}'
+            f' -- adaptive_opacity: {adaptive_opacity}'
+            f' -- wireframe: {wireframe}'
+            f' -- normals: {normals}'
+            f'\npins_and_residuals: {pins_and_residuals}'
+            f' -- timeline: {timeline}'
+            f' -- mask: {mask}'))
         if area is None:
             vp = cls.viewport()
             area = vp.get_work_area()
             if not area:
                 return
+        if adaptive_opacity:
+            settings = get_gt_settings()
+            settings.calc_adaptive_opacity(area)
         if geomobj_matrix:
             wf = cls.viewport().wireframer()
             geotracker = get_current_geotracker_item()
-            if geotracker and geotracker.geomobj:
-                wf.set_object_world_matrix(geotracker.geomobj.matrix_world)
+            if geotracker:
+                geom_mat = geotracker.geomobj.matrix_world if \
+                    geotracker.geomobj else Matrix.Identity(4)
+                cam_mat = geotracker.camobj.matrix_world if \
+                    geotracker.camobj else Matrix.Identity(4)
+                wf.set_object_world_matrix(geom_mat)
+                wf.set_lit_light_matrix(geom_mat, cam_mat)
         if mask:
             geotracker = get_current_geotracker_item()
-            if geotracker.mask_source == 'COMP_MASK':
+            if geotracker.get_mask_source() == 'COMP_MASK':
                 geotracker.update_compositing_mask()
         if wireframe:
             cls.update_viewport_wireframe(normals)
@@ -562,6 +593,21 @@ class GTLoader:
         return txt
 
     @classmethod
+    def get_geotracker_state(cls) -> str:
+        gt = cls.kt_geotracker()
+        return f'\n--- geotracker state ---' \
+               f'\nfocal_length_mode: {gt.focal_length_mode()}' \
+               f'\ntrack_focal_length: {gt.track_focal_length()}' \
+               f'\nback_face_culling: {gt.back_face_culling()}' \
+               f'\nsmoothing_depth_coeff: {gt.get_smoothing_depth_coeff()}' \
+               f'\nsmoothing_focal_length_coeff: ' \
+               f'{gt.get_smoothing_focal_length_coeff()}' \
+               f'\nsmoothing_rotations_coeff: {gt.get_smoothing_rotations_coeff()}' \
+               f'\nsmoothing_xy_translations_coeff: ' \
+               f'{gt.get_smoothing_xy_translations_coeff()}' \
+               f'\n---'
+
+    @classmethod
     def out_pinmode(cls) -> None:
         settings = get_gt_settings()
         _log.output(f'out_pinmode call')
@@ -579,6 +625,7 @@ class GTLoader:
                 f'out_pinmode CANNOT OUT FROM LOCALVIEW:\n{str(err)}'))
 
         settings.reset_pinmode_id()
+        settings.viewport_state.show_ui_elements(area)
 
         geotracker = cls.get_geotracker_item()
         if geotracker is None:
@@ -588,8 +635,6 @@ class GTLoader:
             return
 
         geotracker.reset_focal_length_estimation()
-        if geotracker.geomobj:
-            unhide_viewport_ui_elements_from_object(area, geotracker.geomobj)
 
         cls.set_geotracker_item(None)
         _log.output(f'\n--- After out\n{cls.status_info()}')

@@ -16,16 +16,50 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from sys import platform
+from typing import Tuple, Optional
+
 import bpy
+from bpy.app import version_string as ver_string, version as ver
+
+from .kt_logging import KTLogger
 
 
-_bpy_ver = bpy.app.version
+_log = KTLogger(__name__)
+
+
+def _os_name() -> str:
+    if platform == 'win32':
+        return 'windows'
+    if platform == 'linux' or platform == 'linux2':
+        return 'linux'
+    if platform == 'darwin':
+        return 'macos'
+
+
+def _get_gpu_backend(property_exists: bool=False) -> Optional[str]:
+    if property_exists:
+        try:
+            return bpy.context.preferences.system.gpu_backend
+        except Exception as err:
+            _log.error(f'_get_gpu_backend Exception: {str(err)}')
+    return 'Undefined'
 
 
 class BVersion:
-    property_keywords_enabled: bool = _bpy_ver >= (2, 93, 0)
-    blender_srgb_to_framebuffer_space_enabled: bool = _bpy_ver >= (2, 83, 0)
-    LocRotScale_exist: bool = _bpy_ver >= (3, 0, 0)
-    operator_with_context_exists: bool = _bpy_ver >= (3, 2, 0)
-    pixels_foreach_methods_exist: bool = _bpy_ver >= (2, 83, 0)
-    property_gpu_backend_exists: bool = _bpy_ver >= (3, 5, 0)
+    version: Tuple[int, int, int] = ver
+    version_string: str = ver_string
+    property_keywords_enabled: bool = ver >= (2, 93, 0)
+    blender_srgb_to_framebuffer_space_enabled: bool = ver >= (2, 83, 0)
+    LocRotScale_exist: bool = version >= (3, 0, 0)
+    operator_with_context_exists: bool = ver >= (3, 2, 0)
+    pixels_foreach_methods_exist: bool = ver >= (2, 83, 0)
+    property_gpu_backend_exists: bool = ver >= (3, 5, 0)
+    uv_select_overlap_exists: bool = ver >= (2, 81, 0)
+    pack_uv_problem_exists: bool = ver == (3, 6, 0)
+
+    builtin_shaders_are_using_old_names: bool = ver < (4, 0, 0)
+    blf_size_takes_3_arguments: bool = ver < (4, 0, 0)
+
+    os_name: str = _os_name()
+    gpu_backend: str = _get_gpu_backend(property_gpu_backend_exists)

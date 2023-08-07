@@ -26,8 +26,6 @@ from ...addon_config import Config, get_operator, ErrorType, ActionStatus
 from ...geotracker_config import get_gt_settings, get_current_geotracker_item
 from ...utils.html import split_long_string
 from ...utils.manipulate import exit_area_localview, switch_to_camera
-from ...utils.other import (unhide_viewport_ui_elements_from_object,
-                            hide_viewport_ui_elements_and_store_on_object)
 from ...utils.images import set_background_image_by_movieclip
 from ...utils.bpy_common import (bpy_all_scene_objects,
                                  bpy_scene_selected_objects,
@@ -43,8 +41,8 @@ def prepare_camera(area: Area) -> None:
     if not settings.pinmode:
         switch_to_camera(area, geotracker.camobj,
                          geotracker.animatable_object())
-        hide_viewport_ui_elements_and_store_on_object(area,
-                                                      geotracker.camobj)
+        settings.viewport_state.hide_ui_elements(area)
+
     set_background_image_by_movieclip(geotracker.camobj,
                                       geotracker.movie_clip)
     geotracker.reload_background_image()
@@ -52,9 +50,8 @@ def prepare_camera(area: Area) -> None:
 
 def revert_camera(area: Area) -> None:
     settings = get_gt_settings()
-    geotracker = settings.get_current_geotracker_item()
     if not settings.pinmode:
-        unhide_viewport_ui_elements_from_object(area, geotracker.camobj)
+        settings.viewport_state.show_ui_elements(area)
         exit_area_localview(area)
 
 
@@ -104,7 +101,8 @@ def common_checks(*, object_mode: bool=False,
                   geotracker: bool=False,
                   camera: bool=False,
                   geometry: bool=False,
-                  movie_clip: bool=False) -> ActionStatus:
+                  movie_clip: bool=False,
+                  constraints: bool=False) -> ActionStatus:
 
     if object_mode:
         if not hasattr(bpy.context, 'mode'):
@@ -154,6 +152,23 @@ def common_checks(*, object_mode: bool=False,
         msg = 'GeoTracker movie clip is not found'
         _log.error(msg)
         return ActionStatus(False, msg)
+    if constraints:
+        if not geotracker_item.camobj:
+            msg = 'GeoTracker does not contain Camera object!'
+            _log.error(msg)
+            return ActionStatus(False, msg)
+        if len(geotracker_item.camobj.constraints) != 0:
+            msg = 'Camera object has constraints!'
+            _log.error(msg)
+            return ActionStatus(False, msg)
+        if not geotracker_item.geomobj:
+            msg = 'GeoTracker does not contain Geometry object!'
+            _log.error(msg)
+            return ActionStatus(False, msg)
+        if len(geotracker_item.geomobj.constraints) != 0:
+            msg = 'Geometry object has constraints!'
+            _log.error(msg)
+            return ActionStatus(False, msg)
     return ActionStatus(True, 'Checks have been passed')
 
 

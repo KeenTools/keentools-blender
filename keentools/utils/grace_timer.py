@@ -23,48 +23,45 @@ from ..addon_config import Config, get_operator, ErrorType
 from .timer import KTTimer
 from ..preferences.operators import get_product_license_manager
 from ..blender_independent_packages.pykeentools_loader \
-    import module as pkt_module, is_installed as pkt_is_installed
+    import is_installed as pkt_is_installed
 
 
 _log = KTLogger(__name__)
 
 
 class KTGraceTimer(KTTimer):
-    def __init__(self, product: str):
+    def __init__(self, product: str, interval: float = 600.0):
         super().__init__()
-        self._interval: float = 1.0
+        self._interval: float = interval
         self._product: str = product
-        self._is_started: bool = False
 
     def _callback(self) -> Optional[float]:
+        _log.debug(f'CHECK GRACE PERIOD FOR {self._product}')
+        if not pkt_is_installed():
+            _log.error('PYKEENTOOLS WAS DEACTIVATED')
+            self.stop()
+            return None
+
         lm = get_product_license_manager(product=self._product)
-        res_tuple = lm.perform_license_and_trial_check(
-            strategy=pkt_module().LicenseCheckStrategy.LAZY)
-        state = res_tuple[0].state
-        if state == 'unknown state':
-            return self._interval
-        if state == 'running grace period':
+        if lm.is_grace_period_active():
             if self._product == 'facebuilder':
                 warn = get_operator(Config.kt_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.FBGracePeriod)
             elif self._product == 'geotracker':
                 warn = get_operator(Config.kt_warning_idname)
                 warn('INVOKE_DEFAULT', msg=ErrorType.GTGracePeriod)
-            self.stop()
             _log.output(f'{self._product} GRACE PERIOD HAS BEEN DETECTED. '
                         f'TIMER IS SWITCHED OFF')
-            return None
-        if state == 'running':
             self.stop()
-            _log.output(f'{self._product} LICENSING IS RUNNING. '
-                        f'TIMER IS DELAYED')
-            return 3600.0  # 60 min * 60 secs
+            return None
+        else:
+            _log.debug(f'GRACE PERIOD CHECKING FOR {self._product} '
+                       f'IS DELAYED FOR {self._interval:.1f} sec.')
         return self._interval
 
     def start(self) -> None:
-        if not self._is_started and pkt_is_installed():
+        if not self.is_active() and pkt_is_installed():
             self._start(self._callback, persistent=True)
-            self._is_started = True
 
     def stop(self) -> None:
         self._stop(self._callback)

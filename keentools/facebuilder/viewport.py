@@ -56,12 +56,13 @@ class FBViewport(KTViewport):
         self._draw_update_timer_handler: Optional[Callable] = None
 
     def load_all_shaders(self) -> bool:
+        _log.output('FB load_all_shaders')
         if bpy_background_mode():
             return True
-        all_draw_objects = [self._points2d,
+        all_draw_objects = [self._texter,
+                            self._points2d,
                             self._points3d,
                             self._residuals,
-                            self._texter,
                             self._wireframer,
                             self._rectangler]
         tmp_log = '--- FB Shaders ---'
@@ -92,6 +93,7 @@ class FBViewport(KTViewport):
 
     def register_handlers(self, context: Any) -> None:
         self.unregister_handlers()
+        _log.output(f'{self.__class__.__name__}.register_handlers')
         self.set_work_area(context.area)
         self.residuals().register_handler(context)
         self.rectangler().register_handler(context)
@@ -102,6 +104,7 @@ class FBViewport(KTViewport):
         self.register_draw_update_timer(time_step=FBConfig.viewport_redraw_interval)
 
     def unregister_handlers(self) -> None:
+        _log.output(f'{self.__class__.__name__}.unregister_handlers')
         self.unregister_draw_update_timer()
         self.wireframer().unregister_handler()
         self.texter().unregister_handler()
@@ -234,3 +237,11 @@ class FBViewport(KTViewport):
         # For pin dashes drawing template like this: O- - - -o
         wire.edge_lengths = [0.0, 22.0] * len(kt_pins)
         wire.create_batch()
+
+    def unhide_all_shaders(self):
+        self.residuals().unhide_shader()
+        self.points3d().unhide_shader()
+        self.points2d().unhide_shader()
+        self.texter().unhide_shader()
+        self.wireframer().unhide_shader()
+        self.rectangler().unhide_shader()

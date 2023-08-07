@@ -71,12 +71,13 @@ class GTViewport(KTViewport):
         self._draw_update_timer_handler = None
 
     def load_all_shaders(self):
+        _log.output('GT load_all_shaders')
         if bpy_background_mode():
             return True
-        all_draw_objects = [self._points2d,
+        all_draw_objects = [self._texter,
+                            self._points2d,
                             self._points3d,
                             self._residuals,
-                            self._texter,
                             self._wireframer,
                             self._timeliner,
                             self._selector,
@@ -109,6 +110,7 @@ class GTViewport(KTViewport):
 
     def register_handlers(self, context):
         self.unregister_handlers()
+        _log.output(f'{self.__class__.__name__}.register_handlers')
         self.set_work_area(context.area)
         self.mask2d().register_handler(context)
         self.residuals().register_handler(context)
@@ -121,6 +123,7 @@ class GTViewport(KTViewport):
         self.register_draw_update_timer(time_step=GTConfig.viewport_redraw_interval)
 
     def unregister_handlers(self):
+        _log.output(f'{self.__class__.__name__}.unregister_handlers')
         self.unregister_draw_update_timer()
         self.selector().unregister_handler()
         self.timeliner().unregister_handler()
@@ -137,7 +140,11 @@ class GTViewport(KTViewport):
 
     def update_surface_points(self, gt: Any, obj: Object, keyframe: int,
                               color: Tuple=GTConfig.surface_point_color) -> None:
-        verts = self.surface_points_from_mesh(gt, obj, keyframe)
+        if obj:
+            verts = self.surface_points_from_mesh(gt, obj, keyframe)
+        else:
+            verts = []
+
         colors = [color] * len(verts)
 
         pins = self.pins()
@@ -224,10 +231,12 @@ class GTViewport(KTViewport):
 
         mask = self.mask2d()
         if mask.image:
+            _log.output(f'create_batch_2d mask.image:{mask.image}')
             mask.left = image_space_to_region(-0.5, -asp * 0.5, x1, y1, x2, y2)
             w, h = mask.image.size[:]
             mask.right = image_space_to_region(
                 *frame_to_image_space(w, h, rx, ry), x1, y1, x2, y2)
+            mask.create_batch()
 
     def update_residuals(self, gt: Any, area: Area, keyframe: int) -> None:
         rx, ry = bpy_render_frame()
@@ -255,7 +264,12 @@ class GTViewport(KTViewport):
             return
 
         projection = gt.projection_mat(keyframe).T
-        m = camobj.matrix_world.inverted()
+        try:
+            m = camobj.matrix_world.inverted()
+        except Exception as err:
+            _log.error(f'update_residuals Exception:\n{str(err)}'
+                       f'\n{camobj.matrix_world}')
+            return
         # Object transform, inverse camera, projection apply -> numpy
         transform = np.array(m.transposed()) @ projection
 
@@ -289,7 +303,8 @@ class GTViewport(KTViewport):
         settings = get_gt_settings()
         wf = self.wireframer()
         wf.init_color_data((*settings.wireframe_color,
-                            settings.wireframe_opacity * settings.get_adaptive_opacity()))
+                            settings.wireframe_opacity))
+        wf.set_adaptive_opacity(settings.get_adaptive_opacity())
         wf.set_lit_wireframe(settings.lit_wireframe)
         wf.create_batches()
 
@@ -312,3 +327,7 @@ class GTViewport(KTViewport):
         self.wireframer().unhide_shader()
         self.timeliner().unhide_shader()
         self.selector().unhide_shader()
+
+    def needs_to_be_drawn(self):
+        return self.points2d().needs_to_be_drawn() or \
+               self.residuals().needs_to_be_drawn()

@@ -204,7 +204,7 @@ buttons = {
         'all unlinked animation is lost'
     ),
     FBConfig.fb_export_head_to_fbx_idname: Button(
-        'Export as FBX',
+        'FBX for games',
         'Export geometry with all blendshapes '
         'and animation to FBX suitable '
         'for game engines (UE4, Unity, etc.)'
@@ -244,6 +244,11 @@ buttons = {
     FBConfig.fb_reset_tone_gamma_idname: Button(
         'Reset gamma',
         'Reset gamma in tone mapping'
+    ),
+    FBConfig.fb_export_to_cc_idname: Button(
+        'Character Creator',
+        'Export to Character Creator. '
+        'Requirements: Character Creator 4.0, Headshot 2.0'
     ),
     # Help buttons
     FBConfig.fb_help_camera_idname: Button(

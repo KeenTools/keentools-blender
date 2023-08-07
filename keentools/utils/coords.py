@@ -17,17 +17,19 @@
 # ##### END GPL LICENSE BLOCK #####
 import numpy as np
 import math
-from typing import Any, Tuple, List, Optional, Set
+from typing import Any, Tuple, List, Optional, Set, Callable
 
 from bpy.types import Area, Object
-from mathutils import Matrix
+from mathutils import Matrix, Quaternion
 
+from .version import BVersion
 from .kt_logging import KTLogger
 from .fake_context import get_fake_context
 from .bpy_common import (bpy_current_frame,
                          bpy_render_frame,
                          evaluated_mesh,
-                         bpy_background_mode)
+                         bpy_background_mode,
+                         bpy_app_version)
 from .animation import get_safe_evaluated_fcurve
 
 
@@ -252,12 +254,6 @@ def get_area_region(area: Area) -> Optional[Any]:
     return area.regions[-1]
 
 
-def get_area_overlay(area: Area) -> Optional[Any]:
-    if not area or not area.spaces.active:
-        return None
-    return area.spaces.active.overlay
-
-
 def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
     if bpy_background_mode():
         context = get_fake_context()
@@ -341,11 +337,12 @@ def calc_view_camera_parameters(area: Area, x1: int, y1: int,
     return z, offset
 
 
-def point_is_in_area(area: Area, x: float, y: float) -> bool:
+def point_is_in_area(area: Area, x: float, y: float, *,
+                     bottom_limit: float = 0, left_limit: float = 0) -> bool:
     if bpy_background_mode():
         context = get_fake_context()
         area = context.area
-    return (0 <= x <= area.width) and (0 <= y <= area.height)
+    return (left_limit <= x <= area.width) and (bottom_limit <= y <= area.height)
 
 
 def point_is_in_service_region(area: Area, x: float, y: float) -> bool:
@@ -434,6 +431,41 @@ def compensate_view_scale() -> float:
     return image_width / image_height
 
 
+def ScaleMatrix(sc: Tuple) -> Matrix:
+    scm = Matrix.Identity(4)
+    scm[0][0], scm[1][1], scm[2][2] = sc[:]
+    return scm
+
+
+def InvScaleMatrix(sc: Tuple) -> Matrix:
+    scm = Matrix.Identity(4)
+    scm[0][0], scm[1][1], scm[2][2] = 1.0 / sc[0], 1.0 / sc[1], 1.0 / sc[2]
+    return scm
+
+
+def UniformScaleMatrix(sc: float) -> Matrix:
+    return ScaleMatrix((sc, sc, sc))
+
+
+def RotationMatrix(r: Quaternion) -> Matrix:
+    r.normalized().to_matrix().to_4x4()
+
+
+def LocRotScale_old(t: Tuple[float, float, float], r: Quaternion,
+                    sc: Tuple[float, float, float]) -> Matrix:
+    scm = ScaleMatrix(sc)
+    return Matrix.Translation(t) @ r.normalized().to_matrix().to_4x4() @ scm
+
+
+LocRotScale: Callable = Matrix.LocRotScale \
+    if BVersion.LocRotScale_exist else LocRotScale_old
+
+
+def LocRotWithoutScale(mat: Matrix) -> Matrix:
+    t, r, s = mat.decompose()
+    return LocRotScale(t, r, (1, 1, 1))
+
+
 def calc_bpy_camera_mat_relative_to_model(geom_matrix_world: Matrix,
                                           camera_matrix_world: Matrix,
                                           gt_model_mat: Any) -> Matrix:
@@ -445,7 +477,7 @@ def calc_bpy_camera_mat_relative_to_model(geom_matrix_world: Matrix,
         mat = np.array(geom_matrix_world) @ geom_scale_inv \
               @ rot_mat2 @ np.linalg.inv(gt_model_mat)
         t, r, _ = Matrix(mat).decompose()
-        new_mat = Matrix.LocRotScale(t, r, sc)
+        new_mat = LocRotScale(t, r, sc)
     except Exception:
         new_mat = Matrix.Identity(4)
     return new_mat
@@ -456,7 +488,7 @@ def calc_bpy_model_mat_relative_to_camera(geom_matrix_world: Matrix,
                                           gt_model_mat: Any) -> Matrix:
     rot_mat = xy_to_xz_rotation_matrix_4x4()
     t, r, _ = camera_matrix_world.decompose()
-    camera_mat = Matrix.LocRotScale(t, r, (1, 1, 1))
+    camera_mat = LocRotScale(t, r, (1, 1, 1))
     scale_mat = get_scale_matrix_4x4_from_matrix_world(geom_matrix_world)
     np_mw = np.array(camera_mat) @ gt_model_mat @ rot_mat @ scale_mat
     return Matrix(np_mw)
@@ -537,9 +569,10 @@ def distance_between_objects(obj1: Object, obj2: Object) -> float:
 
 
 def change_near_and_far_clip_planes(camobj: Object, geomobj: Object,
-                                    *, step: float=1.01,
+                                    *, step: float = 1.05,
                                     prev_clip_start: float,
-                                    prev_clip_end: float) -> bool:
+                                    prev_clip_end: float,
+                                    minimal_clip_start: float = 1e-5) -> bool:
     if not camobj or not geomobj:
         return False
     dist = distance_between_objects(camobj, geomobj)
@@ -568,7 +601,7 @@ def change_near_and_far_clip_planes(camobj: Object, geomobj: Object,
         changed_flag = True
         clip_start = camobj.data.clip_start
 
-    new_clip_start = dist * 0.5
+    new_clip_start = max(dist * 0.5, minimal_clip_start)
     too_close_limit = dist * 0.75
     if clip_start > too_close_limit:
         _log.output(f'OBJECT IS TOO CLOSE TO THE CAMERA NEAR CLIP PLANE:\n '

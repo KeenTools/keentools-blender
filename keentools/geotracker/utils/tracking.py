@@ -16,41 +16,43 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
 import os
 from typing import Tuple, Optional, Any
 
+from ...utils.kt_logging import KTLogger
 from ...utils.bpy_common import bpy_render_frame
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..ui_strings import PrecalcStatusMessage
+
+
+_log = KTLogger(__name__)
 
 
 def get_precalc_info(precalc_path: str) -> Tuple[Optional[Any], str]:
-    logger = logging.getLogger(__name__)
-    log_error = logger.error
     try:
         loader = pkt_module().precalc.Loader(precalc_path)
         precalc_info = loader.load_info()
         if precalc_info.image_w <= 0 or precalc_info.image_h <= 0:
             msg = 'Wrong precalc image size'
-            log_error(msg)
+            _log.error(msg)
             return None, msg
         left = precalc_info.left_precalculated_frame
         right = precalc_info.right_precalculated_frame
         if not isinstance(left, int) or not isinstance(right, int):
             msg = 'Problem with frame indices'
-            log_error(msg)
+            _log.error(msg)
             return None, msg
-        if left <= 0 or right <= 0 or right < left:
+        if left < 0 or right < 0 or right < left:
             msg = 'Wrong frame indices'
-            log_error(msg)
+            _log.error(msg)
             return None, msg
     except pkt_module().precalc.PrecalcLoadingException as err:
         msg = f'get_precalc_info. Precalc is damaged:\n{str(err)}'
-        log_error(msg)
+        _log.error(msg)
         return None, msg
     except Exception as err:
         msg = f'get_precalc_info: {str(err)}'
-        log_error(msg)
+        _log.error(msg)
         return None, msg
     return precalc_info, 'ok'
 
@@ -64,22 +66,19 @@ def get_precalc_message(precalc_info: Any) -> str:
 def check_precalc(precalc_info: Any,
                   frame_from: Optional[int]=None,
                   frame_to: Optional[int]=None) -> Tuple[bool, str]:
-    logger = logging.getLogger(__name__)
-    log_error = logger.error
-
     left = precalc_info.left_precalculated_frame
     right = precalc_info.right_precalculated_frame
     if frame_from is not None and frame_to is not None:
         if (not left <= frame_from <= right) or \
                 (not left <= frame_to <= right):
             msg = 'Frames are not in precalculated range'
-            log_error(msg)
+            _log.error(msg)
             return False, msg
 
     rw, rh = bpy_render_frame()
     if rw != precalc_info.image_w or rh != precalc_info.image_h:
         msg = 'Render size differs from precalculated'
-        log_error(msg)
+        _log.error(msg)
         return False, msg
 
     return True, 'ok'
@@ -90,15 +89,21 @@ def reload_precalc(geotracker: Any) -> Tuple[bool, str, Any]:
     if os.path.exists(precalc_path):
         precalc_info, msg = get_precalc_info(precalc_path)
         if precalc_info is None:
-            geotracker.precalc_message = '* Precalc file is corrupted'
+            geotracker.precalc_message = PrecalcStatusMessage.broken_file
             return False, 'Warning! Precalc file seems corrupted', None
-        else:
+        try:
             geotracker.precalc_message = get_precalc_message(precalc_info)
-            return True, 'ok', precalc_info
+            geotracker.precalc_start = precalc_info.left_precalculated_frame
+            geotracker.precalc_end = precalc_info.right_precalculated_frame
+            _log.debug(f'precalc: {geotracker.precalc_start} '
+                       f'{geotracker.precalc_end}')
+        except Exception as err:
+            _log.error(f'reload_precalc Exception:\n{str(err)}')
+            return False, 'Precalc file exception', None
+        return True, 'ok', precalc_info
 
-    geotracker.precalc_message = '* Precalc needs to be built'
-    geotracker.precalc_path = precalc_path
-    return True, 'Precalc file has not been created yet', None
+    geotracker.precalc_message = PrecalcStatusMessage.missing_file
+    return False, 'Precalc file has not been created yet', None
 
 
 def get_next_tracking_keyframe(kt_geotracker: Any, current_frame: int) -> int:

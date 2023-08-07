@@ -60,9 +60,19 @@ def object_is_on_view_layer(obj: Object) -> bool:
     return obj in bpy.context.view_layer.objects[:]
 
 
-def select_object_only(obj: Object) -> None:
+def switch_to_mode(mode: str='OBJECT') -> None:
+    bpy.ops.object.mode_set(mode=mode, toggle=False)
+
+
+def select_object_only(obj: Optional[Object]) -> None:
+    _log.output(f'select_object_only: {obj}')
+    if not obj:
+        return
+    if bpy.context.mode != 'OBJECT':
+        switch_to_mode('OBJECT')
     deselect_all()
     if object_is_on_view_layer(obj):
+        _log.output('object_is_on_view_layer')
         obj.select_set(state=True)
         bpy.context.view_layer.objects.active = obj
 
@@ -90,6 +100,9 @@ def create_vertex_groups(obj: Object, vg_dict: Dict) -> None:
 
 def switch_to_camera(area: Area, camobj: Object,
                      select_obj: Optional[Object]=None) -> None:
+    _log.output(f'switch_to_camera: area={area}'
+                f'\ncamobj={camobj}'
+                f'\nselect_obj={select_obj}')
     exit_area_localview(area)
     camobj.hide_set(False)
     select_object_only(camobj)
@@ -105,11 +118,12 @@ def switch_to_camera(area: Area, camobj: Object,
         select_object_only(select_obj)
 
 
-def center_viewport(area):
+def center_viewport(area, window=None):
+    override_context = {'window': bpy.context.window if window is None else window,
+                        'area': area,
+                        'region': get_area_region(area)}
     operator_with_context(bpy.ops.view3d.view_selected,
-                          {'window': bpy.context.window,
-                           'area': area,
-                           'region': get_area_region(area)},
+                          override_context,
                           use_all_regions=True)
 
 
@@ -119,9 +133,10 @@ def center_viewports_on_object(obj: Optional[Object]=None) -> None:
     if bpy_background_mode():
         return
 
-    areas = get_areas_by_type(area_type='VIEW_3D')
-    for area in areas:
-        center_viewport(area)
+    pairs = get_areas_by_type(area_type='VIEW_3D')
+    for area, window in pairs:
+        _log.output(area)
+        center_viewport(area, window=window)
 
 
 def select_objects_only(obj_list: List[Object]) -> None:

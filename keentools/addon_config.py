@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Callable, Optional, Tuple, Set
 import os
 from dataclasses import dataclass
 
@@ -29,14 +29,17 @@ _PT = 'KEENTOOLS_PT_'
 
 
 class Config:
-    addon_version = '2023.1.0'  # (5/5)
+    addon_version = '2023.2.0'  # (5/5)
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),
-                                  (3, 0), (3, 1), (3, 2), (3, 3), (3, 4), (3, 5))
+                                  (3, 0), (3, 1), (3, 2), (3, 3), (3, 4),
+                                  (3, 5), (3, 6))
     minimal_blender_api = (2, 80, 60)
 
     fb_tab_category = 'FaceBuilder'
     gt_tab_category = 'GeoTracker'
+
+    kt_testing_tab_category = 'KeenTools Testing'
 
     fb_global_var_name = 'keentools_fb_settings'
     gt_global_var_name = 'keentools_gt_settings'
@@ -99,6 +102,14 @@ class Config:
     kt_remind_install_later_idname = operators + '.remind_install_later'
     kt_skip_installation_idname = operators + '.skip_installation'
 
+    # Testing panels
+    kt_error_testing = _PT + 'error_testing_panel'
+    kt_gt_shader_testing = _PT + 'gt_shader_testing_panel'
+    kt_fb_shader_testing = _PT + 'fb_shader_testing_panel'
+
+    kt_gt_shader_testing_idname = operators + '.gt_shader_testing'
+    kt_fb_shader_testing_idname = operators + '.fb_shader_testing'
+
     # Object Custom Properties
     core_version_prop_name = _company + '_version'
     viewport_state_prop_name = _company + '_viewport_state'
@@ -107,6 +118,7 @@ class Config:
     surf_pin_size_scale = 0.85
     text_scale_y = 0.75
     btn_scale_y = 1.2
+    area_bottom_limit = 8
 
     default_tone_exposure = 0.0
     default_tone_gamma = 1.0
@@ -137,14 +149,20 @@ class Config:
         'gt_mask_2d_opacity': {'value': 0.35, 'type': 'float'},
     }
 
-    mock_update_for_testing_flag = False
-    mock_update_version = (int(addon_version.partition('.')[0]), 6, 3)
-    mock_update_addon_path = 'http://localhost/addon.zip'
-    mock_update_core_path = 'http://localhost/core.zip'
-    mock_product = None
+    mock_update_for_testing_flag: bool = False
+    mock_update_version: Tuple[int, int, int] = (int(addon_version.partition('.')[0]), 6, 3)
+    mock_update_addon_path: str = 'http://localhost/addon.zip'
+    mock_update_core_path: str = 'http://localhost/core.zip'
+    mock_product: Optional[str] = None
 
-    hide_geotracker = not 'KEENTOOLS_ENABLE_BLENDER_GEOTRACKER' in os.environ
-    allow_use_gpu_instead_of_bgl = False
+    supported_gpu_backends: Set = {'OPENGL', 'Undefined'}  # METAL
+    strict_shader_check: bool = False
+    use_gpu_shaders: bool = True
+    allow_use_gpu_instead_of_bgl: bool = False
+
+    integration_enabled: bool = True
+
+    kt_convert_video_scene_name: str = 'gt_convert_video'
 
     @classmethod
     def mock_update_for_testing(cls, value: bool=True, *,
@@ -173,23 +191,8 @@ def get_addon_preferences() -> Any:
     return bpy.context.preferences.addons[Config.addon_name].preferences
 
 
-_gpu_backend: Optional[str] = None if BVersion.property_gpu_backend_exists \
-    else 'Undefined'
-
-
-def get_gpu_backend() -> Optional[str]:
-    global _gpu_backend
-    if _gpu_backend is not None:
-        return _gpu_backend
-    try:
-        _gpu_backend = bpy.context.preferences.system.gpu_backend
-    except Exception:
-        pass
-    return _gpu_backend
-
-
 def supported_gpu_backend() -> bool:
-    return get_gpu_backend() in ['OPENGL', 'Undefined']
+    return BVersion.gpu_backend in Config.supported_gpu_backends
 
 
 def facebuilder_enabled() -> bool:

@@ -27,6 +27,7 @@ from .fbloader import FBLoader
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..utils.manipulate import center_viewports_on_object
 from .ui_strings import buttons
+from ..utils.bpy_common import bpy_create_object
 
 
 class MESH_OT_FBAddHead(bpy.types.Operator):
@@ -85,5 +86,5 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
     @classmethod
     def new_head(cls):
         mesh = FBLoader.universal_mesh_loader(FBConfig.default_fb_mesh_name)
-        obj = bpy.data.objects.new(FBConfig.default_fb_object_name, mesh)
+        obj = bpy_create_object(FBConfig.default_fb_object_name, mesh)
         return obj

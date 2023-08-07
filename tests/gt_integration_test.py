@@ -150,9 +150,10 @@ def fake_pinmode_on() -> None:
 
 
 def fake_viewport_work_area() -> None:
-    areas = get_areas_by_type(area_type='VIEW_3D')
+    pairs = get_areas_by_type(area_type='VIEW_3D')
+    area, _ = pairs[0]
     vp = GTLoader.viewport()
-    vp.set_work_area(areas[0])
+    vp.set_work_area(area)
 
 
 def wait_for_precalc_end(time_limit: float=GTTestConfig.cube_precalc_time_limit) -> None:

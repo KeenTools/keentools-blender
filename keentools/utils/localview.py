@@ -39,7 +39,9 @@ def check_area_active_problem(area: Optional[Area]) -> bool:
 
 
 def enter_area_localview(area: Optional[Area]):
+    _log.output(f'enter_area_localview: area={area}')
     if check_area_active_problem(area):
+        _log.output('area has problem!')
         return False
     if not area.spaces.active.local_view:
         operator_with_context(bpy.ops.view3d.localview,
@@ -58,10 +60,19 @@ def exit_area_localview(area: Optional[Area], window: Optional[Window]=None,
     if area.spaces.active.local_view:
         win = bpy.context.window if window is None else window
         scr = bpy.context.screen if screen is None else screen
+
+        if win is None:
+            win = bpy.data.window_managers['WinMan'].windows[0]
+        if screen is None and win is not None:
+            scr = win.screen
+
+        _log.output(f'exit_area_localview context:\n{win}\n{area}\n{scr}\n')
+
         operator_with_context(bpy.ops.view3d.localview,
                               {'window': win,
-                               'area':area,
+                               'area': area,
                                'screen': scr})
+
         _log.output('exit_area_localview success')
         return True
     return False

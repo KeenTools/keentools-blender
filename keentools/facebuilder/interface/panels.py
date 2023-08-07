@@ -30,14 +30,13 @@ from ...updater.panels import (KT_PT_UpdatePanel,
 from ...updater.utils import KTUpdater
 from ...addon_config import Config, facebuilder_enabled, addon_pinmode
 from ...facebuilder_config import FBConfig, get_fb_settings
-
+from ...utils.version import BVersion
 from ..fbloader import FBLoader
 from ...utils.manipulate import (has_no_blendshape,
                                 has_blendshapes_action)
 from ..utils.manipulate import (what_is_state, get_current_head, get_obj_from_context)
 from ...utils.materials import find_bpy_image_by_name
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
-from ...utils.other import unhide_viewport_ui_elements_from_object, force_show_ui_overlays
 from ...utils.localview import exit_area_localview, check_context_localview
 from ...utils.bpy_common import bpy_timer_register
 from ...utils.grace_timer import KTGraceTimer
@@ -86,15 +85,9 @@ def _draw_update_blendshapes_panel(layout):
 def _pinmode_escaper(area: Area, window: Optional[Window],
                      screen: Optional[Screen]) -> None:
     settings = get_fb_settings()
-    head = settings.get_head(settings.current_headnum)
     exit_area_localview(area, window, screen)
     settings.pinmode = False
-
-    if head is None or not head.headobj:
-        _log.error('_pinmode_escaper: could not find head object')
-        force_show_ui_overlays(area)
-    else:
-        unhide_viewport_ui_elements_from_object(area, head.headobj)
+    settings.viewport_state.show_ui_elements(area)
     return None
 
 
@@ -769,7 +762,7 @@ class FB_PT_AppearancePanel(AllVisible, Panel):
         col.prop(settings, 'use_adaptive_opacity')
 
 
-class FB_PT_BlendShapesPanel(AllVisible, Panel):
+class FB_PT_BlendShapesPanel(AllVisibleClosed, Panel):
     bl_idname = FBConfig.fb_blendshapes_panel_idname
     bl_label = 'Blendshapes'
 
@@ -834,6 +827,38 @@ class FB_PT_BlendShapesPanel(AllVisible, Panel):
             op = row.operator(FBConfig.fb_clear_animation_idname)
             op.active_button = has_blendshapes_act
 
-        col = layout.column()
+
+class FB_PT_ExportPanel(AllVisibleClosed, Panel):
+    bl_idname = FBConfig.fb_export_panel_idname
+    bl_label = 'Export'
+
+    @classmethod
+    def poll(cls, context):
+        if not facebuilder_enabled():
+            return False
+        if not pkt_is_installed():
+            return False
+        state, _ = what_is_state()
+        return _state_valid_to_show(state) or state == 'FACS_HEAD'
+
+    def draw_header_preset(self, context):
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        row.operator(
+            FBConfig.fb_help_blendshapes_idname,
+            text='', icon='QUESTION')
+
+    def draw(self, context):
+        layout = self.layout
+
+        col = layout.column(align=True)
         col.scale_y = Config.btn_scale_y
         col.operator(FBConfig.fb_export_head_to_fbx_idname)
+
+        if not Config.integration_enabled or BVersion.os_name != 'windows':
+            return
+
+        state, _ = what_is_state()
+        if _state_valid_to_show(state):
+            col.operator(FBConfig.fb_export_to_cc_idname)

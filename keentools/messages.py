@@ -20,7 +20,12 @@ import sys
 import platform
 import bpy
 
-from .addon_config import Config, get_gpu_backend
+from .utils.kt_logging import KTLogger
+from .utils.version import BVersion
+from .addon_config import Config
+
+
+_log = KTLogger(__name__)
 
 
 USER_MESSAGES = {
@@ -137,7 +142,15 @@ def get_system_info():
     txt_arr.append('Machine: {}, {}'.format(platform.machine(),
                                      platform.processor()))
     txt_arr.append('System: {}'.format(platform.platform()))
-    txt_arr.append('GPU backend: {}'.format(get_gpu_backend()))
+    txt_arr.append('GPU backend: {}'.format(BVersion.gpu_backend))
+    np_ver = 'Error!'
+    try:
+        import numpy as np
+        np_ver = np.version.version
+    except Exception as err:
+        _log.error(f'get_system_info Exception:\n{str(err)}')
+    finally:
+        txt_arr.append(f'NumPy version: {np_ver}')
     return txt_arr
 
 

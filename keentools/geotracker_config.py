@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import os
 import bpy
 
 _company = 'keentools'
@@ -30,9 +31,6 @@ class GTConfig:
     gt_tab_category = 'GeoTracker'
     gt_global_var_name = prefix + '_settings'
 
-    # Properties
-    viewport_state_prop_name = 'keentools_viewport_state'
-
     # Operators
     gt_create_geotracker_idname = operators + '.create_geotracker'
     gt_delete_geotracker_idname = operators + '.delete_geotracker'
@@ -40,12 +38,17 @@ class GTConfig:
     gt_actor_idname = operators + '.actor'
     gt_pinmode_idname = operators + '.pinmode'
     gt_movepin_idname = operators + '.movepin'
+    gt_switch_to_camera_mode_idname = operators + '.switch_to_camera_mode'
+    gt_switch_to_geometry_mode_idname = operators + '.switch_to_geometry_mode'
     gt_create_precalc_idname = operators + '.create_precalc'
     gt_sequence_filebrowser_idname = operators + '.sequence_filebrowser'
-    gt_mask_sequence_filebrowser_idname = operators + '.mask_sequence_filebrowser'
+    gt_mask_sequence_filebrowser_idname = \
+        operators + '.mask_sequence_filebrowser'
     gt_choose_precalc_file_idname = operators + '.choose_precalc_file'
     gt_split_video_to_frames_idname = operators + '.split_video_to_frames'
-    gt_split_video_to_frames_exec_idname = operators + '.split_video_to_frames_exec'
+    gt_split_video_to_frames_exec_idname = \
+        operators + '.split_video_to_frames_exec'
+    gt_video_snapshot_idname = operators + '.video_snapshot'
     gt_reproject_tex_sequence_idname = operators + '.reproject_tex_sequence'
     gt_track_to_start_idname = operators + '.track_to_start_btn'
     gt_track_to_end_idname = operators + '.track_to_end_btn'
@@ -56,8 +59,11 @@ class GTConfig:
     gt_add_keyframe_idname = operators + '.add_keyframe_btn'
     gt_remove_keyframe_idname = operators + '.remove_keyframe_btn'
     gt_clear_all_tracking_idname = operators + '.clear_all_tracking_btn'
+    gt_clear_tracking_except_keyframes_idname = \
+        operators + '.clear_tracking_except_keyframes_btn'
     gt_clear_tracking_forward_idname = operators + '.clear_tracking_forward_btn'
-    gt_clear_tracking_backward_idname = operators + '.clear_tracking_backward_btn'
+    gt_clear_tracking_backward_idname = \
+        operators + '.clear_tracking_backward_btn'
     gt_clear_tracking_between_idname = operators + '.clear_tracking_between_btn'
     gt_refine_idname = operators + '.refine_btn'
     gt_refine_all_idname = operators + '.refine_all_btn'
@@ -65,7 +71,7 @@ class GTConfig:
     gt_magic_keyframe_idname = operators + '.magic_keyframe_btn'
     gt_remove_pins_idname = operators + '.remove_pins_btn'
     gt_toggle_pins_idname = operators + '.toggle_pins_btn'
-    gt_create_animated_empty_idname = operators + '.create_animated_empty_btn'
+
     gt_exit_pinmode_idname = operators + '.exit_pinmode_btn'
     gt_interrupt_modal_idname = operators + '.interrupt_modal'
     gt_stop_calculating_idname = operators + '.stop_calculating_btn'
@@ -76,16 +82,18 @@ class GTConfig:
     gt_default_wireframe_settings_idname = \
         operators + '.default_wireframe_settings'
     gt_default_pin_settings_idname = operators + '.default_pin_settings'
-    gt_select_frames_for_bake_idname = operators + '.select_frames_for_bake'
+    gt_check_uv_overlapping_idname = operators + '.check_uv_overlapping'
+    gt_repack_overlapping_uv_idname = operators + '.repack_overlapping_uv'
+    gt_create_non_overlapping_uv_idname = \
+        operators + '.create_non_overlapping_uv'
     gt_reproject_frame_idname = operators + '.reproject_current_frame'
-    gt_select_all_frames_idname = operators + '.select_all_frames'
-    gt_deselect_all_frames_idname = operators + '.deselect_all_frames'
-    gt_relative_to_camera_idname = operators + '.relative_to_camera'
-    gt_relative_to_geometry_idname = operators + '.relative_to_geometry'
-    gt_geometry_repositioning_idname = operators + '.geometry_repositioning'
-    gt_camera_repositioning_idname = operators + '.camera_repositioning'
-    gt_move_tracking_to_camera_idname = operators + '.move_tracking_to_camera'
-    gt_move_tracking_to_geometry_idname = operators + '.move_tracking_to_geometry'
+    gt_select_frames_for_bake_idname = operators + '.select_frames_for_bake'
+    gt_select_all_bake_frames_idname = operators + '.select_all_bake_frames'
+    gt_deselect_all_bake_frames_idname = operators + '.deselect_all_bake_frames'
+
+    gt_export_animated_empty_idname = operators + '.export_animated_empty'
+    gt_transfer_tracking_idname = operators + '.transfer_tracking'
+    gt_bake_animation_to_world_idname = operators + '.bake_animation_to_world'
     gt_remove_focal_keyframe_idname = operators + '.remove_focal_keyframe'
     gt_remove_focal_keyframes_idname = operators + '.remove_focal_keyframes'
     gt_addon_setup_defaults_idname = operators + '.addon_setup_defaults'
@@ -94,6 +102,24 @@ class GTConfig:
 
     gt_render_with_background_idname = operators + '.render_with_background'
     gt_revert_default_render_idname = operators + '.revert_default_render'
+    gt_analyze_call_idname = operators + '.analyze_call'
+    gt_precalc_info_idname = operators + '.precalc_info'
+    gt_confirm_recreate_precalc_idname = operators + '.confirm_recreate_precalc'
+    gt_auto_name_precalc_idname = operators + '.auto_name_precalc'
+    gt_unbreak_rotation_idname = operators + '.unbreak_rotation'
+    gt_share_feedback_idname = operators + '.share_feedback'
+
+    # Window ids
+    gt_rescale_window_idname = operators + '.rescale_window'
+    gt_move_window_idname = operators + '.move_window'
+    gt_rig_window_idname = operators + '.rig_window'
+    gt_switch_camera_to_fixed_warning_idname = \
+        operators + '.switch_camera_to_fixed_warning_idname'
+
+    # Menu ids
+    gt_clip_menu_idname = _MT + 'clip_menu'
+    gt_clear_tracking_menu_idname = _MT + 'clear_tracking_menu'
+    gt_clear_tracking_menu_exec_idname = operators + '.clip_menu_exec'
 
     # Panel ids
     gt_geotrackers_panel_idname = _PT + 'geotrackers_panel'
@@ -105,7 +131,8 @@ class GTConfig:
     gt_appearance_panel_idname = _PT + 'appearance_panel'
     gt_animation_panel_idname = _PT + 'animation_panel'
     gt_texture_panel_idname = _PT + 'texture_panel'
-    gt_rendering_panel_idname = _PT + 'rendering_panel_idname'
+    gt_rendering_panel_idname = _PT + 'rendering_panel'
+    gt_smoothing_panel_idname = _PT + 'smoothing_panel'
 
     # Help ids
     gt_help_inputs_idname = operators + '.help_inputs'
@@ -117,6 +144,7 @@ class GTConfig:
     gt_help_texture_idname = operators + '.help_texture'
     gt_help_animation_idname = operators + '.help_animation'
     gt_help_rendering_idname = operators + '.help_rendering'
+    gt_help_smoothing_idname = operators + '.help_smoothing'
 
     # Updater panels
     gt_update_panel_idname = _PT + 'update_panel'
@@ -150,17 +178,17 @@ class GTConfig:
     mask_2d_color = (0.0, 1.0, 0.0, 0.4)
     mask_3d_color = (0.0, 0.0, 1.0, 0.4)
 
-    serial_prop_name = prefix + '_serial'
-    version_prop_name = prefix + '_version'
-
     prevent_view_rotation = True
     auto_render_size = True
     auto_time_length = True
-    hide_2d_mask = False
     auto_increase_far_clip_distance = True
 
+    gt_empty_name = 'gtEmpty'
     gt_rendered_mask_image_name = 'gt_rendered_mask'
     gt_shadow_compositing_scene_name = 'gt_shadow_compositing_scene'
+    gt_precalc_folder = f'/tmp{os.path.sep}kt_analysis{os.path.sep}'
+
+    hidden_feature = True
 
 
 def get_gt_settings():

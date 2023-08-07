@@ -34,12 +34,10 @@ from ...utils.coords import (frame_to_image_space,
                              xy_to_xz_rotation_matrix_3x3,
                              multiply_verts_on_matrix_4x4,
                              get_triangulation_indices)
-from ...utils.shaders import (solid_line_vertex_shader,
-                              solid_line_fragment_shader,
-                              simple_fill_vertex_shader,
-                              black_fill_fragment_shader,
-                              raster_image_vertex_shader,
-                              raster_image_fragment_shader)
+from ...utils.gpu_shaders import (solid_line_2d_shader,
+                                  black_fill_shader,
+                                  raster_image_shader,
+                                  builtin_3d_uniform_color_shader)
 from ...utils.images import (check_bpy_image_has_same_size,
                              find_bpy_image_by_name,
                              remove_bpy_image,
@@ -108,8 +106,8 @@ class FBRectangleShader2D(KTEdgeShader2D):
         if self.line_shader is not None:
             _log.output(f'{self.__class__.__name__}.line_shader: skip')
             return None
-        self.line_shader = gpu.types.GPUShader(
-            solid_line_vertex_shader(), solid_line_fragment_shader())
+
+        self.line_shader = solid_line_2d_shader()
         res = self.line_shader is not None
         _log.output(f'{self.__class__.__name__}.line_shader: {res}')
         return res
@@ -139,6 +137,7 @@ class FBRectangleShader2D(KTEdgeShader2D):
 
     def create_batch(self) -> None:
         if self.line_shader is None:
+            _log.error(f'{self.__class__.__name__}.line_shader: is empty')
             return
         self.line_batch = batch_for_shader(
             self.line_shader, 'LINES',
@@ -156,6 +155,15 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         self.simple_line_shader: Optional[Any] = None
         super().__init__(target_class)
 
+    def get_statistics(self):
+        return f'\nvertices: {len(self.vertices)}' \
+               f'\ntriangle_indices: {len(self.triangle_indices)}' \
+               f'\nedge_vertices: {len(self.edge_vertices)}' \
+               f'\nedge_colors: {len(self.edge_colors)}' \
+               f'\nedge_indices: {len(self.edge_indices)}' \
+               f'\nedge_uvs: {len(self.edge_uvs)}' \
+               f'\ntexture_colors: {self.texture_colors}' \
+
     def init_colors(self, colors: List, opacity: float) -> None:
         self.texture_colors = [inverse_gamma_color(color[:3]) for color in colors]
         self.opacity = opacity
@@ -167,8 +175,10 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         self.use_simple_shader = False
 
     def init_wireframe_image(self, fb: Any, show_specials: bool) -> bool:
+        _log.output('init_wireframe_image call')
         if not show_specials or not fb.face_texture_available():
             self.switch_to_simple_shader()
+            _log.error('init_wireframe_image cannot initialize image 1')
             return False
 
         fb.set_face_texture_colors(self.texture_colors)
@@ -192,6 +202,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             wireframe_image.pack()
             self.switch_to_complex_shader()
             return True
+        _log.error('init_wireframe_image cannot initialize image 2')
         self.switch_to_simple_shader()
         return False
 
@@ -233,6 +244,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
     def draw_main_bgl(self, context: Any) -> None:
         wireframe_image = find_bpy_image_by_name(FBConfig.coloring_texture_name)
         if not self._check_coloring_image(wireframe_image):
+            _log.error(f'draw_main_bgl _check_coloring_image failed: {wireframe_image}')
             self.unregister_handler()
             return
 
@@ -261,8 +273,10 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         if not self.use_simple_shader:
             # coloring_image.bindcode should not be zero
             # if we don't want to destroy video driver in Blender
-            if not wireframe_image or wireframe_image.bindcode == 0:
+            if not wireframe_image or wireframe_image.bindcode == 0 \
+                    or not self.line_shader:
                 self.switch_to_simple_shader()
+                _log.error('draw_main_bgl switch_to_simple_shader call')
             else:
                 bgl.glActiveTexture(bgl.GL_TEXTURE0)
                 bgl.glBindTexture(bgl.GL_TEXTURE_2D,
@@ -295,9 +309,10 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         if not self._check_coloring_image(wireframe_image):
             self.unregister_handler()
             return
-        if not wireframe_image or wireframe_image.bindcode == 0:
+        if not wireframe_image:
             self.switch_to_simple_shader()
             self.draw_simple_line_gpu()
+            _log.error('draw_textured_line_gpu switched to simple')
         else:
             gpu.state.line_width_set(self.line_width * 2)
             gpu.state.blend_set('ALPHA')
@@ -324,48 +339,52 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
                 {'pos': self.vertices},
                 indices=self.triangle_indices,
             )
+        else:
+            _log.error(f'{self.__class__.__name__}.fill_shader: is empty')
 
         if self.simple_line_shader is not None:
             self.simple_line_batch = batch_for_shader(
                 self.simple_line_shader, 'LINES',
                 {'pos': self.edge_vertices},
             )
+        else:
+            _log.error(f'{self.__class__.__name__}.simple_line_shader: is empty')
 
         if self.line_shader is not None:
             self.line_batch = batch_for_shader(
                 self.line_shader, 'LINES',
                 {'pos': self.edge_vertices, 'texCoord': self.edge_uvs}
             )
+        else:
+            _log.error(f'{self.__class__.__name__}.line_shader: is empty')
 
     def init_shaders(self) -> Optional[bool]:
         changes = False
         res = [True] * 3
 
         if self.fill_shader is None:
-            self.fill_shader = gpu.types.GPUShader(
-                simple_fill_vertex_shader(), black_fill_fragment_shader())
+            self.fill_shader = black_fill_shader()
             res[0] = self.fill_shader is not None
             _log.output(f'{self.__class__.__name__}.fill_shader: {res[0]}')
             changes = True
         else:
             _log.output(f'{self.__class__.__name__}.fill_shader: skip')
 
-        if self.line_shader is None:
-            self.line_shader = gpu.types.GPUShader(
-                raster_image_vertex_shader(), raster_image_fragment_shader())
-            res[1] = self.line_shader is not None
-            _log.output(f'{self.__class__.__name__}.line_shader: {res[1]}')
-            changes = True
-        else:
-            _log.output(f'{self.__class__.__name__}.line_shader: skip')
-
         if self.simple_line_shader is None:
-            self.simple_line_shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+            self.simple_line_shader = builtin_3d_uniform_color_shader()
             res[2] = self.simple_line_shader is not None
             _log.output(f'{self.__class__.__name__}.simple_line_shader: {res[2]}')
             changes = True
         else:
             _log.output(f'{self.__class__.__name__}.simple_line_shader: skip')
+
+        if self.line_shader is None:
+            self.line_shader = raster_image_shader()
+            res[1] = self.line_shader is not None
+            _log.output(f'{self.__class__.__name__}.line_shader: {res[1]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.line_shader: skip')
 
         if changes:
             return res[0] and res[1] and res[2]
@@ -402,10 +421,8 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         if not builder.face_texture_available():
             self._clear_edge_indices()
             return
-        keyframes = builder.keyframes()
-        if len(keyframes) == 0:
-            return
-        geo = builder.applied_args_replaced_uvs_model_at(keyframes[0])
+
+        geo = builder.applied_args_replaced_uvs_model()
         me = geo.mesh(0)
         face_counts = [me.face_size(x) for x in range(me.faces_count())]
         indices = np.empty((sum(face_counts), 2), dtype=np.int32)

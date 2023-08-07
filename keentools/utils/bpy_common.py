@@ -16,10 +16,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 from typing import Any, Dict, Callable, Tuple, List, Optional
+import traceback
 
 import bpy
-from bpy.types import Object, Mesh, Operator, Camera, Scene, Image
+from bpy.types import Object, Mesh, Operator, Camera, Scene, Image, Material
 
+from .version import BVersion
 from .kt_logging import KTLogger
 from ..addon_config import Config
 
@@ -31,7 +33,6 @@ def bpy_app_version() -> Tuple:
     return bpy.app.version
 
 
-operator_with_context_exists: bool = bpy_app_version() >= (3, 2, 0)
 use_gpu_instead_of_bgl: bool = Config.allow_use_gpu_instead_of_bgl and \
                                bpy_app_version() >= (3, 5, 0)
 
@@ -42,6 +43,10 @@ def bpy_background_mode() -> bool:
 
 def bpy_scene() -> Any:
     return bpy.context.scene
+
+
+def bpy_context() -> Any:
+    return bpy.context
 
 
 def bpy_scene_camera() -> Camera:
@@ -61,6 +66,7 @@ def bpy_current_frame() -> int:
 def bpy_start_frame() -> int:
     return bpy.context.scene.frame_start
 
+
 def bpy_end_frame() -> int:
     return bpy.context.scene.frame_end
 
@@ -78,6 +84,10 @@ def bpy_render_frame() -> Tuple[int, int]:
     return w, h
 
 
+def bpy_link_to_scene(obj: Object) -> None:
+    bpy.context.scene.collection.objects.link(obj)
+
+
 def link_object_to_current_scene_collection(obj: Object) -> None:
     act_col = bpy.context.view_layer.active_layer_collection
     index = bpy.data.collections.find(act_col.name)
@@ -88,8 +98,22 @@ def link_object_to_current_scene_collection(obj: Object) -> None:
     col.objects.link(obj)
 
 
+def bpy_create_object(name: str, data: Any) -> Object:
+    obj = bpy.data.objects.new(name, data)
+    return obj
+
+
+def bpy_create_empty(name:str) -> Object:
+    return bpy_create_object(name, None)
+
+
+def bpy_create_camera_data(name: str) -> Any:
+    cam = bpy.data.cameras.new(name)
+    return cam
+
+
 def create_empty_object(name: str) -> Object:
-    control = bpy.data.objects.new(name, None)  # Empty-object
+    control = bpy_create_empty(name)
     link_object_to_current_scene_collection(control)
     control.empty_display_type = 'PLAIN_AXES'
     control.empty_display_size = 2.5
@@ -98,19 +122,31 @@ def create_empty_object(name: str) -> Object:
     return control
 
 
+def bpy_remove_object(obj: Object) -> bool:
+    try:
+        if obj:
+            bpy.data.objects.remove(obj, do_unlink=True)
+            return True
+    except Exception as err:
+        _log.error(f'bpy_remove_object Exception: {str(err)}')
+    return False
+
+
 def _operator_with_context_old(operator: Operator,
                                context_override_dict: Dict, **kwargs) -> None:
+    _log.output(f'_operator_with_context_old: {operator}')
     return operator(context_override_dict, **kwargs)
 
 
 def _operator_with_context_new(operator: Operator,
                                context_override_dict: Dict, **kwargs) -> None:
+    _log.output(f'_operator_with_context_new: {operator}')
     with bpy.context.temp_override(**context_override_dict):
         return operator(**kwargs)
 
 
 operator_with_context: Callable = _operator_with_context_new \
-    if operator_with_context_exists else _operator_with_context_old
+    if BVersion.operator_with_context_exists else _operator_with_context_old
 
 
 def extend_scene_timeline_end(keyframe_num: int, force=False) -> None:
@@ -208,6 +244,20 @@ def bpy_new_image(name: str, **kwargs) -> Image:
     return bpy.data.images.new(name, **kwargs)
 
 
+def bpy_remove_image(img: Optional[Image]) -> None:
+    if img is None:
+        return
+    if img.name in bpy.data.images:
+        bpy.data.images.remove(img)
+
+
+def bpy_remove_material(mat: Optional[Material]) -> None:
+    if mat is None:
+        return
+    if mat.name in bpy.data.materials:
+        bpy.data.materials.remove(mat)
+
+
 def bpy_render_single_frame(scene: Scene, frame: Optional[int]=None) -> None:
     if frame is not None:
         scene.frame_current = frame
@@ -220,3 +270,31 @@ def get_scene_by_name(scene_name: str) -> Optional[Scene]:
     if scene_num >= 0:
         return bpy.data.scenes[scene_num]
     return None
+
+
+def bpy_transform_resize(*args, **kwargs) -> None:
+    bpy.ops.transform.resize(*args, **kwargs)
+
+
+def bpy_call_menu(*args, **kwargs) -> None:
+    bpy.ops.wm.call_menu(*args, **kwargs)
+
+
+def bpy_export_fbx(*args, **kwargs) -> None:
+    bpy.ops.export_scene.fbx(*args, **kwargs)
+
+
+def bpy_progress_begin(start_val: float=0, end_val: float=1) -> None:
+    bpy.context.window_manager.progress_begin(start_val, end_val)
+
+
+def bpy_progress_end() -> None:
+    bpy.context.window_manager.progress_end()
+
+
+def bpy_progress_update(progress: float) -> None:
+    bpy.context.window_manager.progress_update(progress)
+
+
+def get_traceback(skip_last=1) -> str:
+    return ''.join(traceback.format_stack()[:-skip_last])
