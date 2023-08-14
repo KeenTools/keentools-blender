@@ -273,6 +273,11 @@ class FB_OT_PinMode(Operator):
                 return False
         return True
 
+    def execute(self, context: Any) -> Set:  # Testing purpose only
+        _log.output('PinMode execute call')
+        self._init_wireframer_colors_and_batches()
+        return {'FINISHED'}
+
     def invoke(self, context: Any, event: Any) -> Set:
         settings = get_fb_settings()
 
