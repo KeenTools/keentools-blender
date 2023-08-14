@@ -18,6 +18,8 @@
 
 from typing import List
 from math import radians
+import platform
+from urllib.parse import urlencode
 
 from bpy.types import Operator, Object
 from bpy.props import (BoolProperty,
@@ -30,6 +32,7 @@ from bpy.props import (BoolProperty,
 from mathutils import Matrix, Quaternion
 
 from ..utils.kt_logging import KTLogger
+from ..utils.version import BVersion
 from ..addon_config import (get_operator,
                             Config,
                             show_user_preferences,
@@ -43,7 +46,8 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_scene,
                                 create_empty_object,
                                 bpy_remove_object,
-                                operator_with_context)
+                                operator_with_context,
+                                bpy_url_open)
 from .utils.geotracker_acts import (create_geotracker_act,
                                     delete_geotracker_act,
                                     add_keyframe_act,
@@ -83,7 +87,8 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     repack_uv_act,
                                     bake_locrot_act,
                                     get_operator_reposition_matrix,
-                                    move_scene_tracking_act)
+                                    move_scene_tracking_act,
+                                    unbreak_rotation_act)
 from .utils.calc_timer import TrackTimer, RefineTimer
 from .utils.precalc import precalc_with_runner_act, PrecalcTimer
 from .gtloader import GTLoader
@@ -92,6 +97,8 @@ from .utils.prechecks import common_checks
 from ..utils.coords import LocRotScale
 from ..utils.manipulate import select_object_only, force_undo_push
 from ..utils.animation import count_fcurve_points, remove_fcurve_from_object
+from .interface.screen_mesages import (revert_default_screen_message,
+                                       single_line_screen_message)
 
 
 _log = KTLogger(__name__)
@@ -700,8 +707,42 @@ class GT_OT_RepackOverlappingUV(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    done: BoolProperty(default=False)
+
+    def cancel(self, context):
+        _log.output(f'{self.__class__.__name__} cancel')
+        self.done = True
+
+    def draw(self, context):
+        layout = self.layout
+        if self.done:
+            layout.label(text='Operation has been done')
+            return
+
+        warning_message = [
+            f'Warning! There\'s a bug in Blender {BVersion.version_string} ',
+            'that makes this operation unstable.',
+            ' ',
+            'If you continue, there\'s a chance Blender',
+            'will crash and ALL UNSAVED DATA WILL BE LOST!',
+            ' ',
+            'Click outside of this window to cancel repack',
+            'or press OK to continue at your own risk.']
+        col = layout.column(align=True)
+        col.scale_y = Config.text_scale_y
+        for txt in warning_message:
+            col.label(text=txt)
+
+    def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke')
+        self.done = False
+        if BVersion.pack_uv_problem_exists:
+            return context.window_manager.invoke_props_dialog(self, width=400)
+        return self.execute(context)
+
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
+        self.done = True
         check_status = common_checks(pinmode_out=True,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
@@ -771,16 +812,13 @@ class GT_OT_ReprojectFrame(ButtonOperator, Operator):
 
     def start_text_on_screen(self, context):
         settings = get_gt_settings()
-        vp = GTLoader.viewport()
-        vp.message_to_screen(
-            [{'text': 'Projecting and baking... Please wait',
-              'color': (1.0, 0., 0., 0.7)}],
-            register=not settings.pinmode, context=context)
+        single_line_screen_message('Projecting and baking... Please wait',
+                                   register=not settings.pinmode,
+                                   context=context)
 
     def finish_text_on_screen(self):
         settings = get_gt_settings()
-        GTLoader.viewport().revert_default_screen_message(
-            unregister=not settings.pinmode)
+        revert_default_screen_message(unregister=not settings.pinmode)
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
@@ -931,16 +969,13 @@ class GT_OT_BakeFrameSelector(ButtonOperator, Operator):
 
     def start_text_on_screen(self, context):
         settings = get_gt_settings()
-        vp = GTLoader.viewport()
-        vp.message_to_screen(
-            [{'text': 'Projecting and baking… Please wait',
-              'color': (1.0, 0., 0., 0.7)}],
-            register=not settings.pinmode, context=context)
+        single_line_screen_message('Projecting and baking… Please wait',
+                                   register=not settings.pinmode,
+                                   context=context)
 
     def finish_text_on_screen(self):
         settings = get_gt_settings()
-        GTLoader.viewport().revert_default_screen_message(
-            unregister=not settings.pinmode)
+        revert_default_screen_message(unregister=not settings.pinmode)
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
@@ -1177,6 +1212,52 @@ class GT_OT_AutoNamePrecalc(ButtonOperator, Operator):
         if not status:
             _log.error(msg)
             self.report({'INFO'}, msg)
+        return {'FINISHED'}
+
+
+class GT_OT_UnbreakRotation(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_unbreak_rotation_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        check_status = common_checks(object_mode=True, is_calculating=True,
+                                     reload_geotracker=True, geotracker=True,
+                                     camera=True, geometry=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        act_status = unbreak_rotation_act()
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+
+        self.report({'INFO'}, 'Unbreak Rotation has been done')
+        return {'FINISHED'}
+
+
+class GT_OT_ShareFeedback(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_share_feedback_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        params = {
+            'hl': 'en',
+            'usp': 'pp_url',
+            'entry.783336314': f'{platform.platform()}',
+            'entry.1510351504': f'{platform.machine()} {platform.processor()}',
+            'entry.1095779847': f'{BVersion.version_string}',
+            'entry.1252663858': f'{Config.addon_name} {Config.addon_version}'
+        }
+        url = f'https://docs.google.com/forms/d/e/' \
+              f'1FAIpQLSf7Up-IPtqqSVjEy_BicDHE-1p31SynJsUUXHbBiMOpqpJ_2Q/' \
+              f'viewform?{urlencode(params)}'
+        _log.output(f'\n{url}')
+        bpy_url_open(url)
         return {'FINISHED'}
 
 
@@ -1738,6 +1819,8 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_RevertDefaultRender,
                   GT_OT_AddonSetupDefaults,
                   GT_OT_AutoNamePrecalc,
+                  GT_OT_UnbreakRotation,
+                  GT_OT_ShareFeedback,
                   GT_OT_RescaleWindow,
                   GT_OT_MoveWindow,
                   GT_OT_RigWindow,

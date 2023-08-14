@@ -17,12 +17,10 @@
 # ##### END GPL LICENSE BLOCK #####
 
 bl_info = {
-    "name": "KeenTools FaceBuilder 2023.1.0",  # (1/5)
-    "version": (2023, 1, 0),  # 2023.1.0 (2/5)
+    "name": "KeenTools FaceBuilder & GeoTracker 2023.2.0",  # (1/5)
+    "version": (2023, 2, 0),  # 2023.2.0 (2/5)
     "author": "KeenTools",
-    "description": "KeenTools bundle for Blender. "
-                   "FaceBuilder: Creates Head and Face geometry with a few "
-                   "reference photos",
+    "description": "FaceBuilder: Create Heads. GeoTracker: Track Objects in videos using 3D models",
     "blender": (2, 80, 0),
     "location": "View UI (press N to open tab bar)",
     "wiki_url": "https://keentools.io",
@@ -67,7 +65,7 @@ def _is_python_64bit():
 
 
 def _is_config_latest():
-    return Config.addon_version == '2023.1.0'  # (3/5)
+    return Config.addon_version == '2023.2.0'  # (3/5)
 
 
 def _is_blender_too_old():
@@ -184,17 +182,15 @@ else:
         logger.info('KeenTools addon classes have been registered')
         facebuilder_register()
         logger.info('FaceBuilder classes have been registered')
-        if not Config.hide_geotracker:
-            geotracker_register()
-            logger.info('GeoTracker classes have been registered')
+        geotracker_register()
+        logger.info('GeoTracker classes have been registered')
 
 
     def unregister():
         logger = logging.getLogger(__name__)
         logger.debug('START UNREGISTER CLASSES')
-        if not Config.hide_geotracker:
-            geotracker_unregister()
-            logger.info('GeoTracker classes have been unregistered')
+        geotracker_unregister()
+        logger.info('GeoTracker classes have been unregistered')
         facebuilder_unregister()
         logger.info('FaceBuilder classes have been unregistered')
         for cls in reversed(CLASSES_TO_REGISTER):

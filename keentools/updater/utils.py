@@ -468,7 +468,8 @@ class KTInstallationReminder:
     @classmethod
     def render_message(cls, limit: int=32) -> List[str]:
         _message_text: str = \
-            'The new version of FaceBuilder is ready to be installed. ' \
+            'The new version of FaceBuilder and GeoTracker ' \
+            'is ready to be installed. ' \
             'Blender will be relaunched automatically. ' \
             'Please save your project before proceeding.'
         return render_main(parse_html(_message_text), limit)

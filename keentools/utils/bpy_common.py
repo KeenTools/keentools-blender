@@ -19,7 +19,7 @@ from typing import Any, Dict, Callable, Tuple, List, Optional
 import traceback
 
 import bpy
-from bpy.types import Object, Mesh, Operator, Camera, Scene, Image
+from bpy.types import Object, Mesh, Operator, Camera, Scene, Image, Material
 
 from .version import BVersion
 from .kt_logging import KTLogger
@@ -242,6 +242,20 @@ def bpy_new_scene(name: str) -> Scene:
 
 def bpy_new_image(name: str, **kwargs) -> Image:
     return bpy.data.images.new(name, **kwargs)
+
+
+def bpy_remove_image(img: Optional[Image]) -> None:
+    if img is None:
+        return
+    if img.name in bpy.data.images:
+        bpy.data.images.remove(img)
+
+
+def bpy_remove_material(mat: Optional[Material]) -> None:
+    if mat is None:
+        return
+    if mat.name in bpy.data.materials:
+        bpy.data.materials.remove(mat)
 
 
 def bpy_render_single_frame(scene: Scene, frame: Optional[int]=None) -> None:

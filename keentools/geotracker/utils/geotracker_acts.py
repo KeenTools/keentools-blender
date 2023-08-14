@@ -41,7 +41,10 @@ from ...utils.animation import (get_action,
                                 bake_locrot_to_world,
                                 get_world_matrices_in_frames,
                                 apply_world_matrices_in_frames,
-                                scene_frame_list)
+                                scene_frame_list,
+                                get_safe_evaluated_fcurve,
+                                get_safe_action_fcurve,
+                                insert_point_in_fcurve)
 from .tracking import (get_next_tracking_keyframe,
                        get_previous_tracking_keyframe)
 from ...utils.bpy_common import (create_empty_object,
@@ -56,7 +59,6 @@ from ...utils.manipulate import (select_object_only,
                                  select_objects_only,
                                  center_viewport,
                                  switch_to_mode)
-from .textures import bake_texture, preview_material_with_texture
 from .prechecks import (common_checks,
                         track_checks,
                         get_alone_object_in_scene_selection_by_type,
@@ -75,7 +77,10 @@ from ..settings import is_mesh, is_camera
 from ...utils.coords import (LocRotScale,
                              LocRotWithoutScale,
                              ScaleMatrix,
-                             InvScaleMatrix)
+                             InvScaleMatrix,
+                             change_near_and_far_clip_planes)
+from .textures import bake_texture, preview_material_with_texture
+from ..interface.screen_mesages import clipping_changed_screen_message
 
 
 _log = KTLogger(__name__)
@@ -496,10 +501,11 @@ def toggle_pins_act() -> ActionStatus:
 
     gt = GTLoader.kt_geotracker()
     keyframe = bpy_current_frame()
-    if gt.pins_count() > 0:
+    pins_count = gt.pins_count()
+    if pins_count > 0:
         GTLoader.safe_keyframe_add(keyframe, update=True)
         pins = GTLoader.viewport().pins()
-        selected_pins = pins.get_selected_pins()
+        selected_pins = pins.get_selected_pins(pins_count)
         if len(selected_pins) == 0:
             gt.toggle_pins(keyframe)
         else:
@@ -520,6 +526,22 @@ def center_geo_act() -> ActionStatus:
         return check_status
 
     GTLoader.center_geo()
+
+    geotracker = get_current_geotracker_item()
+    camobj = geotracker.camobj
+    camera_clip_start = camobj.data.clip_start
+    camera_clip_end = camobj.data.clip_end
+
+    if GTConfig.auto_increase_far_clip_distance and camobj and \
+            change_near_and_far_clip_planes(geotracker.camobj,
+                                            geotracker.geomobj,
+                                            prev_clip_start=camera_clip_start,
+                                            prev_clip_end=camera_clip_end):
+        near = camobj.data.clip_start
+        far = camobj.data.clip_end
+        if near != camera_clip_start or far != camera_clip_end:
+            clipping_changed_screen_message(near, far)
+
     GTLoader.update_viewport_shaders(wireframe=True, geomobj_matrix=True,
                                      pins_and_residuals=True)
     GTLoader.viewport_area_redraw()
@@ -1226,5 +1248,44 @@ def bake_locrot_act(obj: Object) -> ActionStatus:
 
     bake_locrot_to_world(obj, obj_animated_frames)
     _remove_all_constraints(obj)
+
+    return ActionStatus(True, 'ok')
+
+
+def unbreak_rotation_act() -> ActionStatus:
+    geotracker = get_current_geotracker_item()
+    obj = geotracker.animatable_object()
+
+    action = get_action(obj)
+    if action is None:
+        msg = 'Selected object has no animation action'
+        _log.error(msg)
+        return ActionStatus(False, msg)
+
+    frame_list = get_object_keyframe_numbers(obj, loc=False, rot=True)
+    if len(frame_list) < 2:
+        return ActionStatus(False, 'Not enough keys to apply Unbreak Rotation')
+
+    euler_list = list()
+    for frame in frame_list:
+        x_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 0)
+        y_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 1)
+        z_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 2)
+        euler_list.append((x_rot, y_rot, z_rot))
+
+    x_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 0)
+    y_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 1)
+    z_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 2)
+
+    euler_prev = euler_list[0]
+    for frame, euler_current in zip(frame_list[1:], euler_list[1:]):
+        rot = pkt_module().math.unbreak_rotation(euler_prev,
+                                                 euler_current)
+        insert_point_in_fcurve(x_rot_fcurve, frame, rot[0])
+        insert_point_in_fcurve(y_rot_fcurve, frame, rot[1])
+        insert_point_in_fcurve(z_rot_fcurve, frame, rot[2])
+        euler_prev = rot
+
+    update_depsgraph()
 
     return ActionStatus(True, 'ok')

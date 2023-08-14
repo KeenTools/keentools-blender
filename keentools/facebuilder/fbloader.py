@@ -388,6 +388,14 @@ class FBLoader:
         return False
 
     @classmethod
+    def reload_current_model(cls) -> bool:
+        settings = get_fb_settings()
+        headnum = settings.current_headnum
+        if not settings.is_proper_headnum(headnum):
+            return False
+        return cls.load_model(headnum)
+
+    @classmethod
     def place_camera(cls, headnum: int, camnum: int) -> None:
         settings = get_fb_settings()
         head = settings.get_head(headnum)

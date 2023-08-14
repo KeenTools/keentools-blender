@@ -72,7 +72,10 @@ class KTScreenPins:
         self._current_pin = None
         self._current_pin_num = -1
 
-    def get_selected_pins(self) -> List[int]:
+    def get_selected_pins(self, pins_count: Optional[int]=None) -> List[int]:
+        if pins_count is not None:
+            self._selected_pins = [x for x in self._selected_pins
+                                   if x < pins_count]
         return self._selected_pins
 
     def set_selected_pins(self, selected_pins: List[int]) -> None:

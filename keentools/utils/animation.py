@@ -150,13 +150,22 @@ def mark_selected_points_in_fcurve(fcurve: FCurve, selected_frames: List[int],
         keyframe.type = keyframe_type
 
 
-def get_locrot_dict() -> Dict:
+def get_loc_dict() -> Dict:
     return {'location_x': {'data_path': 'location', 'index': 0},
             'location_y': {'data_path': 'location', 'index': 1},
-            'location_z': {'data_path': 'location', 'index': 2},
-            'rotation_euler_x': {'data_path': 'rotation_euler', 'index': 0},
+            'location_z': {'data_path': 'location', 'index': 2}}
+
+
+def get_rot_dict() -> Dict:
+    return {'rotation_euler_x': {'data_path': 'rotation_euler', 'index': 0},
             'rotation_euler_y': {'data_path': 'rotation_euler', 'index': 1},
             'rotation_euler_z': {'data_path': 'rotation_euler', 'index': 2}}
+
+
+def get_locrot_dict() -> Dict:
+    d = get_loc_dict()
+    d.update(get_rot_dict())
+    return d
 
 
 def mark_all_points_in_locrot(obj: Object,
@@ -298,17 +307,25 @@ def delete_animation_between_frames(obj: Object, from_frame: int, to_frame: int)
             fcurve.keyframe_points.remove(p)
 
 
-def get_object_keyframe_numbers(obj: Object) -> List[int]:
+def get_object_keyframe_numbers(obj: Object, *, loc: bool = True,
+                                rot: bool = True) -> List[int]:
     action: Action = get_action(obj)
     if action is None:
         return []
 
-    locrot_dict: Dict = get_locrot_dict()
-    fcurves: Dict = {name: get_safe_action_fcurve(
-                         action,
-                         locrot_dict[name]['data_path'],
-                         index=locrot_dict[name]['index'])
-                     for name in locrot_dict.keys()}
+    if loc and rot:
+        fcurve_dict = get_locrot_dict()
+    elif loc:
+        fcurve_dict = get_loc_dict()
+    elif rot:
+        fcurve_dict = get_rot_dict()
+    else:
+        assert False, 'Improper flag usage'
+
+    fcurves: Dict = {name: get_safe_action_fcurve(action,
+                                                  fcurve_dict[name]['data_path'],
+                                                  index=fcurve_dict[name]['index'])
+                     for name in fcurve_dict.keys()}
 
     keys_set: Set = set()
     for name in fcurves.keys():

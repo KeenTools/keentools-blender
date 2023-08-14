@@ -22,6 +22,7 @@ import bpy
 import blf
 
 from .kt_logging import KTLogger
+from .version import BVersion
 from .base_shaders import KTShaderBase
 
 
@@ -86,6 +87,7 @@ class KTScreenText(KTShaderBase):
         xc = int(region.width * 0.5)  # horizontal center
         yc = int(region.height * 0.5)  # vertical center
         font_id = 0
+        dpi = 72
 
         for row in self.message:
             blf.color(font_id, *row['color'])
@@ -94,7 +96,10 @@ class KTScreenText(KTShaderBase):
             blf.shadow(font_id, row['shadow_blur'], *row['shadow_color'])
             blf.shadow_offset(font_id, 1, -1)
 
-            blf.size(font_id, row['size'], 72)
+            if BVersion.blf_size_takes_3_arguments:
+                blf.size(font_id, row['size'], dpi)
+            else:
+                blf.size(font_id, row['size'])
 
             xp = row['x'] if row['x'] is not None \
                 else xc - blf.dimensions(font_id, row['text'])[0] * 0.5

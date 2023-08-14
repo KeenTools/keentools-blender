@@ -29,10 +29,11 @@ _PT = 'KEENTOOLS_PT_'
 
 
 class Config:
-    addon_version = '2023.1.0'  # (5/5)
+    addon_version = '2023.2.0'  # (5/5)
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),
-                                  (3, 0), (3, 1), (3, 2), (3, 3), (3, 4), (3, 5))
+                                  (3, 0), (3, 1), (3, 2), (3, 3), (3, 4),
+                                  (3, 5), (3, 6))
     minimal_blender_api = (2, 80, 60)
 
     fb_tab_category = 'FaceBuilder'
@@ -117,6 +118,7 @@ class Config:
     surf_pin_size_scale = 0.85
     text_scale_y = 0.75
     btn_scale_y = 1.2
+    area_bottom_limit = 8
 
     default_tone_exposure = 0.0
     default_tone_gamma = 1.0
@@ -153,7 +155,6 @@ class Config:
     mock_update_core_path: str = 'http://localhost/core.zip'
     mock_product: Optional[str] = None
 
-    hide_geotracker: bool = not 'KEENTOOLS_ENABLE_BLENDER_GEOTRACKER' in os.environ
     supported_gpu_backends: Set = {'OPENGL', 'Undefined', 'METAL'}
     strict_shader_check: bool = False
     use_gpu_shaders: bool = True

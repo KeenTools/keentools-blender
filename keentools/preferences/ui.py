@@ -334,7 +334,7 @@ class KTAddonPreferences(AddonPreferences):
 
     geotracker_enabled: BoolProperty(
         name='Enable KeenTools GeoTracker',
-        default=not Config.hide_geotracker
+        default=True
     )
     geotracker_expanded: BoolProperty(
         name='KeenTools GeoTracker',
@@ -1001,10 +1001,6 @@ class KTAddonPreferences(AddonPreferences):
         if not self._draw_core_info(layout):
             return
         self._draw_updater_info(layout)
-
-        if Config.hide_geotracker:
-            self._draw_facebuilder_preferences(layout)
-            return
 
         box = layout.box()
         row = box.row(align=True)

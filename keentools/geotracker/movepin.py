@@ -43,6 +43,8 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 get_scene_camera_shift,
                                 bpy_render_frame)
 from .ui_strings import buttons
+from .interface.screen_mesages import (revert_default_screen_message,
+                                       clipping_changed_screen_message)
 
 
 _log = KTLogger(__name__)
@@ -240,14 +242,9 @@ class GT_OT_MovePin(bpy.types.Operator):
             near = geotracker.camobj.data.clip_start
             far = geotracker.camobj.data.clip_end
             if near == self.camera_clip_start and far == self.camera_clip_end:
-                GTLoader.viewport().revert_default_screen_message()
+                revert_default_screen_message()
             else:
-                default_txt = deepcopy(vp.texter().get_default_text())
-                default_txt[0]['text'] = f'Camera clipping planes ' \
-                                         f'have been changed: ' \
-                                         f'{near:.1f} / {far:.1f}'
-                default_txt[0]['color'] = (1.0, 0.0, 1.0, 0.85)
-                GTLoader.viewport().message_to_screen(default_txt)
+                clipping_changed_screen_message(near, far)
 
         gt = GTLoader.kt_geotracker()
         vp.update_surface_points(gt, geotracker.geomobj, frame)

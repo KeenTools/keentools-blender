@@ -338,11 +338,12 @@ def calc_view_camera_parameters(area: Area, x1: int, y1: int,
     return z, offset
 
 
-def point_is_in_area(area: Area, x: float, y: float) -> bool:
+def point_is_in_area(area: Area, x: float, y: float, *,
+                     bottom_limit: float = 0, left_limit: float = 0) -> bool:
     if bpy_background_mode():
         context = get_fake_context()
         area = context.area
-    return (0 <= x <= area.width) and (0 <= y <= area.height)
+    return (left_limit <= x <= area.width) and (bottom_limit <= y <= area.height)
 
 
 def point_is_in_service_region(area: Area, x: float, y: float) -> bool:
@@ -572,9 +573,10 @@ def distance_between_objects(obj1: Object, obj2: Object) -> float:
 
 
 def change_near_and_far_clip_planes(camobj: Object, geomobj: Object,
-                                    *, step: float=1.01,
+                                    *, step: float = 1.05,
                                     prev_clip_start: float,
-                                    prev_clip_end: float) -> bool:
+                                    prev_clip_end: float,
+                                    minimal_clip_start: float = 1e-5) -> bool:
     if not camobj or not geomobj:
         return False
     dist = distance_between_objects(camobj, geomobj)
@@ -603,7 +605,7 @@ def change_near_and_far_clip_planes(camobj: Object, geomobj: Object,
         changed_flag = True
         clip_start = camobj.data.clip_start
 
-    new_clip_start = dist * 0.5
+    new_clip_start = max(dist * 0.5, minimal_clip_start)
     too_close_limit = dist * 0.75
     if clip_start > too_close_limit:
         _log.output(f'OBJECT IS TOO CLOSE TO THE CAMERA NEAR CLIP PLANE:\n '
