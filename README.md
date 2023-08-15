@@ -2,6 +2,8 @@
 
 [KeenTools for Blender](https://keentools.io) is a blender addon that allows using some of the [KeenTools](https://keentools.io) functionality in Blender.
 
+[Download latest release](http://downloads.keentools.io/latest-keentools-for-blender)
+
 ## Release History
 
 2023.2.0 - 8 August 2023
