@@ -16,9 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
-import bpy
+from bpy.types import Operator
 
+from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType
 from ..facebuilder_config import FBConfig, get_fb_settings
 from ..utils import attrs
@@ -30,37 +30,39 @@ from .ui_strings import buttons
 from ..utils.bpy_common import bpy_create_object
 
 
-class MESH_OT_FBAddHead(bpy.types.Operator):
+_log = KTLogger(__name__)
+
+
+class MESH_OT_FBAddHead(Operator):
     bl_idname = FBConfig.fb_add_head_operator_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        log_error = logger.error
+        _log.output(f'{self.__class__.__name__}.execute call')
         settings = get_fb_settings()
         heads_deleted, cams_deleted = settings.fix_heads()
         try:
             obj = self.new_head()
             obj.location = settings.get_next_head_position()
-        except ModuleNotFoundError:
-            log_error('ADD_HEAD_ERROR: ModuleNotFoundError')
+        except ModuleNotFoundError as err:
+            _log.error(f'ADD_HEAD_ERROR: ModuleNotFoundError\n{str(err)}')
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
-        except pkt_module().ModelLoadingException:
-            log_error('ADD_HEAD_ERROR: ModelLoadingException')
+        except pkt_module().ModelLoadingException as err:
+            _log.error(f'ADD_HEAD_ERROR: ModelLoadingException\n{str(err)}')
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktModelProblem)
             return {'CANCELLED'}
-        except TypeError:
-            log_error('ADD_HEAD_ERROR: TypeError')
+        except TypeError as err:
+            _log.error(f'ADD_HEAD_ERROR: TypeError\n{str(err)}')
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.CannotCreateObject)
             return {'CANCELLED'}
         except Exception as err:
-            log_error('ADD_HEAD_ERROR: Exception ' + str(err))
+            _log.error(f'ADD_HEAD_ERROR: Exception\n{str(err)}')
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.PktProblem)
             return {'CANCELLED'}
@@ -80,11 +82,13 @@ class MESH_OT_FBAddHead(bpy.types.Operator):
 
         show_ui_panel(context)
 
-        logger.debug('HEAD HAS BEEN SUCCESSFULLY CREATED')
+        _log.output('HEAD HAS BEEN SUCCESSFULLY CREATED')
         return {'FINISHED'}
 
     @classmethod
     def new_head(cls):
+        _log.output('FBLoader.universal_mesh_loader')
         mesh = FBLoader.universal_mesh_loader(FBConfig.default_fb_mesh_name)
+        _log.output('bpy_create_object')
         obj = bpy_create_object(FBConfig.default_fb_object_name, mesh)
         return obj
