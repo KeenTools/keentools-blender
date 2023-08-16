@@ -91,6 +91,7 @@ class CalcTimer(TimerMixin):
         area.header_text_set(txt)
 
     def finish_calc_mode(self) -> None:
+        self._runner.cancel()
         self.remove_timer(self)
         self._state = 'over'
         settings = get_gt_settings()
