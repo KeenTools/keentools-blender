@@ -118,6 +118,7 @@ def load_movieclip(directory: str, file_names: List[str]) -> Optional[MovieClip]
     file_names.sort()
     frame_files = [{'name': name} for name in file_names]
     _log.output(f'load_movieclip DIR: {directory}')
+    _log.output(f'load_movieclip FILES: {file_names}')
 
     old_movieclips = bpy.data.movieclips[:]
     try:
