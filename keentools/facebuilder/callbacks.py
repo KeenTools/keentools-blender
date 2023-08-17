@@ -206,15 +206,6 @@ def _update_mesh_now(headnum):
             mesh.shape_keys.animation_data_create()
             mesh.shape_keys.animation_data.action = old_mesh.shape_keys.animation_data.action
 
-    if settings.pinmode:
-        # Update wireframe structures
-        vp = FBLoader.viewport()
-        wf = vp.wireframer()
-        wf.init_geom_data_from_fb(fb, head.headobj,
-                                  head.get_keyframe(settings.current_camnum))
-        wf.init_edge_indices(fb)
-        vp.update_wireframe_colors()
-
     if recreate_vertex_groups_flag:
         try:
             create_vertex_groups(head.headobj, vg_groups_dict)
@@ -225,6 +216,13 @@ def _update_mesh_now(headnum):
     # Delete old mesh
     bpy.data.meshes.remove(old_mesh, do_unlink=True)
     mesh.name = mesh_name
+
+    if settings.pinmode:
+        FBLoader.update_viewport_shaders(FBLoader.get_work_area(),
+                                         settings.current_headnum,
+                                         settings.current_camnum,
+                                         wireframe=True,
+                                         pins_and_residuals=True)
     return True
 
 

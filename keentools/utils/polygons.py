@@ -19,7 +19,6 @@
 from typing import Any, List, Tuple, Optional
 
 from bpy.types import Object, Area, Region, Image
-import bgl
 from gpu_extras.batch import batch_for_shader
 
 from ..utils.kt_logging import KTLogger
@@ -27,6 +26,7 @@ from ..geotracker_config import GTConfig
 from .images import check_gl_image
 from .base_shaders import KTShaderBase
 from .gpu_shaders import raster_image_mask_shader
+from .gpu_control import (set_blend_alpha, set_shader_sampler)
 
 
 _log = KTLogger(__name__)
@@ -84,20 +84,17 @@ class KTRasterMask(KTShaderBase):
         return True
 
     def draw_main_bgl(self, context: Any) -> None:
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-
-        bgl.glActiveTexture(bgl.GL_TEXTURE0)
-        bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.image.bindcode)
+        set_blend_alpha()
 
         shader = self.mask_shader
         shader.bind()
+
         shader.uniform_float('left', self.left)
         shader.uniform_float('right', self.right)
         shader.uniform_float('color', self.color)
         shader.uniform_int('inverted', 1 if self.inverted else 0)
         shader.uniform_float('maskThreshold', self.mask_threshold)
-        shader.uniform_int('image', 0)
+        set_shader_sampler(shader, self.image)
         self.mask_batch.draw(shader)
 
     def register_handler(self, context: Any,

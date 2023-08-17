@@ -20,8 +20,6 @@ import numpy as np
 from typing import Any, List, Callable, Tuple, Optional
 
 from bpy.types import Object, Area, Region, SpaceView3D
-import gpu
-import bgl
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector, Matrix
 
@@ -41,6 +39,14 @@ from .coords import (get_mesh_verts,
                      get_triangles_in_vertex_group)
 from .bpy_common import evaluated_mesh
 from .base_shaders import KTShaderBase
+from .gpu_control import (bgl_module,
+                          set_blend_alpha,
+                          set_smooth_line,
+                          set_line_width,
+                          set_depth_test,
+                          set_depth_mask,
+                          set_color_mask,
+                          revert_blender_viewport_state)
 
 
 _log = KTLogger(__name__)
@@ -137,18 +143,9 @@ class KTEdgeShader2D(KTEdgeShaderBase):
         return True
 
     def draw_main_bgl(self, context: Any) -> None:
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-        bgl.glLineWidth(self.line_width)
-
-        self.line_shader.bind()
-        self.line_batch.draw(self.line_shader)
-
-    def draw_main_gpu(self, context: Any) -> None:
-        gpu.state.line_width_set(self.line_width)
-        gpu.state.blend_set('ALPHA')
+        set_blend_alpha()
+        set_smooth_line()
+        set_line_width(self.line_width)
         self.line_shader.bind()
         self.line_batch.draw(self.line_shader)
 
@@ -203,9 +200,8 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
         return None
 
     def draw_main_bgl(self, context: Any) -> None:
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-        bgl.glLineWidth(self.line_width)
+        set_blend_alpha()
+        set_line_width(self.line_width)
 
         self.line_shader.bind()
         self.line_batch.draw(self.line_shader)
@@ -352,11 +348,9 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
             self.batch_needs_update = False
             self.create_batch()
 
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-        bgl.glLineWidth(self.line_width)
+        set_blend_alpha()
+        set_smooth_line()
+        set_line_width(self.line_width)
 
         self.line_shader.bind()
         self.line_batch.draw(self.line_shader)
@@ -372,8 +366,8 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
             self.batch_needs_update = False
             self.create_batch()
 
-        gpu.state.line_width_set(self.line_width * 2)
-        gpu.state.blend_set('ALPHA')
+        set_blend_alpha()
+        set_line_width(self.line_width)
 
         self.line_shader.bind()
         self.line_batch.draw(self.line_shader)
@@ -404,51 +398,53 @@ class KTEdgeShader3D(KTEdgeShaderBase):
         return True
 
     def draw_main_bgl(self, context: Any) -> None:
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-        bgl.glLineWidth(self.line_width)
+        set_blend_alpha()
+        set_smooth_line()
+        set_line_width(self.line_width)
 
-        bgl.glEnable(bgl.GL_DEPTH_TEST)
-        bgl.glEnable(bgl.GL_POLYGON_OFFSET_FILL)
-        bgl.glColorMask(bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE)
+        set_depth_test('LESS_EQUAL')
+        set_color_mask(False, False, False, False)
+
+        bgl_module().glEnable(bgl_module().GL_POLYGON_OFFSET_FILL)
 
         if self.backface_culling and not self.backface_culling_in_shader:
             # Sandwich technique for back-face culling if shader does not support it
-            bgl.glPolygonMode(bgl.GL_BACK, bgl.GL_FILL)
-            bgl.glEnable(bgl.GL_CULL_FACE)
-            bgl.glCullFace(bgl.GL_FRONT)
-            bgl.glPolygonOffset(-1.0, -1.0)
+            bgl_module().glPolygonMode(bgl_module().GL_BACK,
+                                       bgl_module().GL_FILL)
+            bgl_module().glEnable(bgl_module().GL_CULL_FACE)
+            bgl_module().glCullFace(bgl_module().GL_FRONT)
+            bgl_module().glPolygonOffset(-1.0, -1.0)
             self.draw_empty_fill()
 
-        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_FILL)
-        bgl.glDisable(bgl.GL_CULL_FACE)
-        bgl.glPolygonOffset(1.0, 1.0)
+        bgl_module().glPolygonMode(bgl_module().GL_FRONT_AND_BACK,
+                                   bgl_module().GL_FILL)
+        bgl_module().glDisable(bgl_module().GL_CULL_FACE)
+        bgl_module().glPolygonOffset(1.0, 1.0)
         self.draw_empty_fill()
 
-        bgl.glColorMask(bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE)
-        bgl.glDisable(bgl.GL_POLYGON_OFFSET_FILL)
+        set_color_mask(True, True, True, True)
+        bgl_module().glDisable(bgl_module().GL_POLYGON_OFFSET_FILL)
 
-        bgl.glDepthMask(bgl.GL_FALSE)
-        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_LINE)
+        set_depth_mask(False)
+        bgl_module().glPolygonMode(bgl_module().GL_FRONT_AND_BACK,
+                                   bgl_module().GL_LINE)
 
         self.draw_edges()
 
-        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_FILL)
+        bgl_module().glPolygonMode(bgl_module().GL_FRONT_AND_BACK,
+                                   bgl_module().GL_FILL)
         self.draw_selection_fill()
 
-        bgl.glDepthMask(bgl.GL_TRUE)
-        bgl.glDisable(bgl.GL_DEPTH_TEST)
+        revert_blender_viewport_state()
 
     def draw_main_gpu(self, context: Any) -> None:
-        gpu.state.depth_test_set('LESS_EQUAL')
-        gpu.state.color_mask_set(False, False, False, False)
+        set_depth_test('LESS_EQUAL')
+        set_color_mask(False, False, False, False)
         self.draw_empty_fill()
-        gpu.state.color_mask_set(True, True, True, True)
+        set_color_mask(True, True, True, True)
 
-        gpu.state.line_width_set(self.line_width * 2)
-        gpu.state.blend_set('ALPHA')
+        set_line_width(self.line_width)
+        set_blend_alpha()
         self.draw_edges()
 
     def draw_selection_fill(self) -> None:
@@ -831,34 +827,20 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_batch.draw(shader)
 
     def draw_main_bgl(self, context: Any) -> None:
-        bgl.glEnable(bgl.GL_DEPTH_TEST)
-        bgl.glColorMask(bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE)
-
+        set_depth_test('LESS_EQUAL')
+        set_color_mask(False, False, False, False)
         self.draw_empty_fill()
-
-        bgl.glColorMask(bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE)
-        bgl.glDepthMask(bgl.GL_FALSE)
-
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-
+        set_color_mask(True, True, True, True)
+        set_depth_mask(False)
+        set_blend_alpha()
         self.set_viewport_size(context.region)
         self.draw_edges()
+        set_depth_test('LESS')
         self.draw_selection_fill()
-
-        bgl.glDepthMask(bgl.GL_TRUE)
-        bgl.glDisable(bgl.GL_DEPTH_TEST)
+        revert_blender_viewport_state()
 
     def draw_main_gpu(self, context: Any) -> None:
-        gpu.state.depth_test_set('LESS_EQUAL')
-        gpu.state.color_mask_set(False, False, False, False)
-        self.draw_empty_fill()
-        gpu.state.color_mask_set(True, True, True, True)
-        gpu.state.blend_set('ALPHA')
-        self.set_viewport_size(context.region)
-        self.draw_edges()
-        gpu.state.depth_test_set('LESS')
-        self.draw_selection_fill()
+        self.draw_main_bgl(context)
 
     def clear_all(self) -> None:
         super().clear_all()
