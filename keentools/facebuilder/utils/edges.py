@@ -33,7 +33,8 @@ from ...utils.coords import (frame_to_image_space,
                              image_space_to_region,
                              xy_to_xz_rotation_matrix_3x3,
                              multiply_verts_on_matrix_4x4,
-                             get_triangulation_indices)
+                             get_triangulation_indices,
+                             make_indices_for_wide_edges)
 from ...utils.gpu_shaders import (solid_line_2d_shader,
                                   black_offset_fill_local_shader,
                                   raster_image_shader,
@@ -444,24 +445,12 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
 
     def init_geom_data_from_core(self, edge_vertices: Any,
                                  triangle_vertices: Any):
-        def _make_index_arrays(numb: int) -> Tuple[Any, Any]:
-            arr1 = np.empty((numb, 3), dtype=np.int32)
-            arr2 = np.empty((numb, 3), dtype=np.int32)
-            for i in range(int(numb / 2)):
-                first = (2 * i, 2 * i + 1, 2 * i)
-                second = (2 * i + 1, 2 * i, 2 * i + 1)
-                arr1[2 * i] = first
-                arr1[2 * i + 1] = second
-                arr2[2 * i] = second
-                arr2[2 * i + 1] = first
-            return arr1.ravel(), arr2.ravel()
-
         _log.output(_log.color('yellow', 'init_geom_data_from_core'))
         len_edge_vertices = len(edge_vertices)
         if len_edge_vertices * 3 != len(self.vertex_pos_indices):
             _log.output('init_geom_data_from_core recalc index arrays')
             self.vertex_pos_indices, self.vertex_opp_indices = \
-                _make_index_arrays(len_edge_vertices)
+                make_indices_for_wide_edges(len_edge_vertices)
 
         self.edge_vertices = multiply_verts_on_matrix_4x4(
             edge_vertices, self.object_world_matrix)
