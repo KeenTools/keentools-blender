@@ -1,6 +1,6 @@
 # ##### BEGIN GPL LICENSE BLOCK #####
 # KeenTools for blender is a blender addon for using KeenTools in Blender.
-# Copyright (C) 2019-2022  KeenTools
+# Copyright (C) 2019-2023  KeenTools
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,8 +21,7 @@ import numpy as np
 
 import bpy
 from bpy.types import Area, Image, Object, SpaceView3D
-import bgl
-import gpu
+
 from gpu_extras.batch import batch_for_shader
 
 from ...utils.kt_logging import KTLogger
@@ -45,77 +44,17 @@ from ...utils.images import (check_bpy_image_has_same_size,
                              remove_bpy_image,
                              assign_pixels_data,
                              inverse_gamma_color)
-from ...utils.bpy_common import use_gpu_instead_of_bgl
+from ...utils.gpu_control import (set_blend_alpha,
+                                  set_smooth_line,
+                                  set_line_width,
+                                  set_shader_sampler,
+                                  set_depth_test,
+                                  set_depth_mask,
+                                  set_color_mask,
+                                  revert_blender_viewport_state)
 
 
 _log = KTLogger(__name__)
-
-
-def set_blend_alpha(use_gpu: bool = use_gpu_instead_of_bgl) -> None:
-    if use_gpu:
-        gpu.state.blend_set('ALPHA')
-    else:
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-
-
-def set_shader_sampler(shader: Any, wireframe_image: Any,
-                       use_gpu: bool = use_gpu_instead_of_bgl) -> None:
-    if use_gpu:
-        shader.uniform_sampler(
-            'image', gpu.texture.from_image(wireframe_image))
-    else:
-        bgl.glActiveTexture(bgl.GL_TEXTURE0)
-        bgl.glBindTexture(bgl.GL_TEXTURE_2D,
-                          wireframe_image.bindcode)
-        shader.uniform_int('image', 0)
-
-
-def set_color_mask(r: bool, g: bool, b: bool, a: bool,
-                   use_gpu: bool = use_gpu_instead_of_bgl) -> None:
-    def _bool_to_gl(v: bool) -> Any:
-        return bgl.GL_FALSE if not v else bgl.GL_TRUE
-
-    if use_gpu:
-        gpu.state.color_mask_set(r, g, b, a)
-    else:
-        bgl.glColorMask(_bool_to_gl(r), _bool_to_gl(g),
-                        _bool_to_gl(b), _bool_to_gl(a))
-
-
-def set_depth_test(mode: str = 'LESS_EQUAL',
-                   use_gpu: bool = use_gpu_instead_of_bgl) -> None:
-    if use_gpu:
-        gpu.state.depth_test_set(mode)
-    else:
-        if mode == 'NONE':
-            bgl.glDisable(bgl.GL_DEPTH_TEST)
-        else:
-            bgl.glEnable(bgl.GL_DEPTH_TEST)
-            if mode == 'LESS_EQUAL':
-                bgl.glDepthFunc(bgl.GL_LEQUAL)
-
-
-def set_line_width(line_width: float = 1.0,
-                   use_gpu: bool = use_gpu_instead_of_bgl) -> None:
-    if use_gpu:
-        gpu.state.line_width_set(line_width)
-    else:
-        bgl.glLineWidth(line_width)
-
-
-def set_smooth_line(use_gpu: bool = use_gpu_instead_of_bgl) -> None:
-    if use_gpu:
-        pass
-    else:
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
-
-
-def revert_blender_viewport_state(use_gpu: bool = use_gpu_instead_of_bgl) -> None:
-    if not use_gpu:
-        bgl.glDepthMask(bgl.GL_TRUE)
-        bgl.glDisable(bgl.GL_DEPTH_TEST)
 
 
 class FBRectangleShader2D(KTEdgeShader2D):
@@ -375,6 +314,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         self.draw_empty_fill()
         set_color_mask(True, True, True, True)
         self.set_viewport_size(context.region)
+        set_depth_mask(False)
         if not self.use_simple_shader:
             self._draw_textured_line()
         else:

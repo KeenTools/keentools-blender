@@ -19,8 +19,6 @@
 from typing import List, Optional, Tuple, Any
 
 from bpy.types import SpaceView3D
-import gpu
-import bgl
 from gpu_extras.batch import batch_for_shader
 
 from .kt_logging import KTLogger
@@ -29,6 +27,7 @@ from .gpu_shaders import (circular_dot_2d_shader,
                           circular_dot_3d_shader)
 from ..preferences.user_preferences import UserPreferences
 from .base_shaders import KTShaderBase
+from .gpu_control import set_blend_alpha, set_point_size
 
 
 _log = KTLogger(__name__)
@@ -188,15 +187,8 @@ class KTShaderPoints(KTShaderBase):
         return True
 
     def draw_main_bgl(self, context: Any) -> None:
-        bgl.glPointSize(self.get_point_size())
-        bgl.glEnable(bgl.GL_BLEND)
-        self.shader.bind()
-        self.batch.draw(self.shader)
-        bgl.glDisable(bgl.GL_BLEND)
-
-    def draw_main_gpu(self, context: Any) -> None:
-        gpu.state.point_size_set(self.get_point_size())
-        gpu.state.blend_set('ALPHA')
+        set_point_size(self.get_point_size())
+        set_blend_alpha()
         self.shader.bind()
         self.batch.draw(self.shader)
 
