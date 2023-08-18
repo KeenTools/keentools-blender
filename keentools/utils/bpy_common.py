@@ -33,8 +33,7 @@ def bpy_app_version() -> Tuple:
     return bpy.app.version
 
 
-use_gpu_instead_of_bgl: bool = Config.allow_use_gpu_instead_of_bgl and \
-                               bpy_app_version() >= (3, 5, 0)
+use_gpu_instead_of_bgl: bool = not BVersion.use_old_bgl_shaders
 
 
 def bpy_background_mode() -> bool:
