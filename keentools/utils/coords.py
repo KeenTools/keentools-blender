@@ -623,3 +623,9 @@ def change_near_and_far_clip_planes(camobj: Object, geomobj: Object,
         changed_flag = True
 
     return changed_flag
+
+
+def make_indices_for_wide_edges(numb: int) -> Tuple[Any, Any]:
+    arr = np.tile(np.arange(0, numb).reshape((-1, 2)), (1, 3))
+    return arr.reshape((-1, 3)).ravel(), \
+           np.flip(arr, 1).reshape((-1, 3)).ravel()

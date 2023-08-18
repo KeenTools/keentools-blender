@@ -40,7 +40,7 @@ from .shaders import (flat_color_2d_vertex_shader,
 _log = KTLogger(__name__)
 
 
-_use_old_shaders: bool = BVersion.version < (3, 5, 0) or not Config.use_gpu_shaders
+_use_old_shaders: bool = BVersion.use_old_bgl_shaders
 _log.output(f'_use_old_shaders: {_use_old_shaders}')
 
 
@@ -777,10 +777,9 @@ def lit_aa_local_shader(use_old: bool=_use_old_shaders) -> Any:
             light3.diffuse = vec3(1.0, 1.0, 1.0);
 
             fragColor = vec4(
-                to_srgb_gamma_vec3(
-                    evaluatePointLight(light1, color.rgb, calcNormal, outPos) +
-                    evaluatePointLight(light2, color.rgb, calcNormal, outPos) +
-                    evaluatePointLight(light3, color.rgb, calcNormal, outPos)),
+                to_srgb_gamma_vec3(evaluatePointLight(light1, color.rgb, calcNormal, outPos)) +
+                to_srgb_gamma_vec3(evaluatePointLight(light2, color.rgb, calcNormal, outPos)) +
+                to_srgb_gamma_vec3(evaluatePointLight(light3, color.rgb, calcNormal, outPos)),
                 color.a * antiAliasing * adaptiveOpacity);
         } else {
             fragColor = vec4(color.rgb, color.a * antiAliasing * adaptiveOpacity);

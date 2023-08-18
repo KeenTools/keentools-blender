@@ -36,7 +36,8 @@ from .gpu_shaders import (line_3d_local_shader,
 from .coords import (get_mesh_verts,
                      multiply_verts_on_matrix_4x4,
                      get_triangulation_indices,
-                     get_triangles_in_vertex_group)
+                     get_triangles_in_vertex_group,
+                     make_indices_for_wide_edges)
 from .bpy_common import evaluated_mesh
 from .base_shaders import KTShaderBase
 from .gpu_control import (bgl_module,
@@ -716,23 +717,11 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
     def init_geom_data_from_core(self, edge_vertices: Any,
                                  edge_vertex_normals: Any,
                                  triangle_vertices: Any):
-        def _make_index_arrays(numb: int) -> Tuple[Any, Any]:
-            arr1 = np.empty((numb, 3), dtype=np.int32)
-            arr2 = np.empty((numb, 3), dtype=np.int32)
-            for i in range(int(numb / 2)):
-                first = (2 * i, 2 * i + 1, 2 * i)
-                second = (2 * i + 1, 2 * i, 2 * i + 1)
-                arr1[2 * i] = first
-                arr1[2 * i + 1] = second
-                arr2[2 * i] = second
-                arr2[2 * i + 1] = first
-            return arr1.ravel(), arr2.ravel()
-
         len_edge_vertices = len(edge_vertices)
         if len_edge_vertices * 3 != len(self.lit_vertex_pos_indices):
             _log.output('init_geom_data_from_core recalc index arrays')
             self.lit_vertex_pos_indices, self.lit_vertex_opp_indices = \
-                _make_index_arrays(len_edge_vertices)
+                make_indices_for_wide_edges(len_edge_vertices)
 
         self.lit_edge_vertices = edge_vertices[self.lit_vertex_pos_indices]
         self.lit_edge_vertex_normals = edge_vertex_normals[self.lit_vertex_pos_indices]
