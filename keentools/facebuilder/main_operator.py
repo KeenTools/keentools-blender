@@ -373,12 +373,13 @@ class FB_OT_DeleteCamera(Operator):
         camera.delete_camobj()
         head.cameras.remove(camnum)
 
+        FBLoader.save_fb_serial_and_image_pathes(headnum)
+
         if settings.current_camnum > camnum:
             settings.current_camnum -= 1
         elif settings.current_camnum == camnum:
             settings.current_camnum = -1
-
-        FBLoader.save_fb_serial_and_image_pathes(headnum)
+            settings.reset_pinmode_id()
 
         _log.output(f'CAMERA H:{headnum} C:{camnum} REMOVED')
         return {'FINISHED'}
