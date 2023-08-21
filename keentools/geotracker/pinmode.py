@@ -257,8 +257,8 @@ class GT_OT_PinMode(Operator):
         vp.create_batch_2d(area)
         _log.output('GT REGISTER SHADER HANDLERS')
         GTLoader.update_viewport_shaders(area, update_geo_data=True,
-                                         wireframe=True, geomobj_matrix=True,
-                                         timeline=True)
+                                         geomobj_matrix=True, wireframe=True,
+                                         pins_and_residuals=True, timeline=True)
 
         self.camera_clip_start = geotracker.camobj.data.clip_start
         self.camera_clip_end = geotracker.camobj.data.clip_end
