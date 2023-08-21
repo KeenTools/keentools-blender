@@ -157,7 +157,7 @@ class Config:
 
     supported_gpu_backends: Set = {'OPENGL', 'Undefined', 'METAL'}
     strict_shader_check: bool = False
-    wireframe_offset_constant: float = 0.005
+    wireframe_offset_constant: float = 0.004
 
     integration_enabled: bool = True
 

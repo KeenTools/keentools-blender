@@ -355,7 +355,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
 
         if self.fill_shader is None:
             self.fill_shader = black_offset_fill_local_shader(
-                offset=Config.wireframe_offset_constant)
+                offset=FBConfig.wireframe_offset_constant)
             res[0] = self.fill_shader is not None
             _log.output(f'{self.__class__.__name__}.fill_shader: {res[0]}')
             changes = True
