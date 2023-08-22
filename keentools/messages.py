@@ -133,16 +133,17 @@ def split_long_string(txt, length=80):
 
 
 def get_system_info():
-    txt_arr = []
-    txt_arr.append('Blender version: {} API: {}'.format(bpy.app.version_string,
-               '.'.join([str(x) for x in bpy.app.version])))
-    txt_arr.append('Python: {}'.format(sys.version))
+    txt_arr = list()
+    txt_arr.append(f'Blender version: {bpy.app.version_string} '
+                   f'{bpy.app.version_cycle} '
+                   f'API: {".".join([str(x) for x in bpy.app.version])} '
+                   f'Hash: {str(bpy.app.build_hash, "utf-8")}')
+    txt_arr.append(f'Python: {sys.version}')
     arch = platform.architecture()
-    txt_arr.append('Platform: {} / {}'.format(arch[1], arch[0]))
-    txt_arr.append('Machine: {}, {}'.format(platform.machine(),
-                                     platform.processor()))
-    txt_arr.append('System: {}'.format(platform.platform()))
-    txt_arr.append('GPU backend: {}'.format(BVersion.gpu_backend))
+    txt_arr.append(f'Platform: {arch[1]} / {arch[0]}')
+    txt_arr.append(f'Machine: {platform.machine()}, {platform.processor()}')
+    txt_arr.append(f'System: {platform.platform()}')
+    txt_arr.append(f'GPU backend: {BVersion.gpu_backend}')
     np_ver = 'Error!'
     try:
         import numpy as np

@@ -67,7 +67,7 @@ def bake_texture(geotracker: Any, selected_frames: List[int],
             total_redraw_ui()
 
             np_img = np_array_from_background_image(geotracker.camobj)
-            geo = build_geo(geotracker.geomobj, evaluated=True, get_uv=True)
+            geo = build_geo(geotracker.geomobj, get_uv=True)
             frame_data = pkt_module().texture_builder.FrameData()
             frame_data.geo = geo
             frame_data.image = np_img

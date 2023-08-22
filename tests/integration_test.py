@@ -74,6 +74,8 @@ class FaceBuilderTest(unittest.TestCase):
         camnum = settings.get_last_camnum(headnum)
         test_utils.select_camera(headnum, camnum)
 
+        test_utils.pinmode_execute(headnum, camnum)
+
         brect = tuple(coords.get_camera_border(bpy.context.area))
         arect = (396.5, -261.9, 1189.5, 1147.9)
         test_utils.move_pin(793, 421, 651, 425, arect, brect, headnum, camnum)

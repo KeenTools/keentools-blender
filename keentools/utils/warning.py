@@ -47,8 +47,7 @@ class KT_OT_AddonWarning(Operator):
     width: int = _default_width
 
     def set_content(self, txt_list: List) -> None:
-        self.content = txt_list
-        self.content.append(' ')  # Additional line at the end
+        self.content = txt_list + [' ']
 
     def draw(self, context: Any) -> None:
         layout = self.layout.column()

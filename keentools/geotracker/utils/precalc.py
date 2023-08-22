@@ -56,7 +56,7 @@ class PrecalcTimer(CalcTimer):
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
         geotracker.precalc_message = err_message
-        _log.output(f'precalc_message: {err_message}')
+        _log.error(f'precalc_message: {err_message}')
 
     def runner_state(self) -> Optional[float]:
         settings = get_gt_settings()
@@ -70,6 +70,10 @@ class PrecalcTimer(CalcTimer):
                 try:
                     if type(err) == pkt_module().precalc.PrecalcUnlicensedException:
                         show_unlicensed_warning()
+                    elif type(err) == pkt_module().precalc.PrecalcOpenFileException:
+                        show_warning_dialog('Precalc file is locked.\n'
+                                            'See the System Console to get\n'
+                                            'a detailed error information.')
                     else:
                         show_warning_dialog(str(err))
                 except Exception as err2:
@@ -86,6 +90,7 @@ class PrecalcTimer(CalcTimer):
         next_frame = self._runner.is_loading_frame_requested()
         if next_frame is None:
             return self._interval
+        _log.output(f'loading_frame: {next_frame}')
         settings.user_percent = progress * 100
         current_frame = bpy_current_frame()
         if current_frame != next_frame:
@@ -98,17 +103,23 @@ class PrecalcTimer(CalcTimer):
 
         np_img = np_array_from_background_image(geotracker.camobj)
         if np_img is None:
+            if not bpy_background_mode():
+                msg = f'Cannot load image at frame: {current_frame}' \
+                      f'\nPlease check your footage!'
+                show_warning_dialog(msg)
+                self.finish_calc_mode_with_error(msg)
+                return None
+
             # For testing purpose only
-            _log.output('no np_img. possible in bpy.app.background mode')
+            _log.output('no np_img in bpy.app.background mode. try direct loading')
             bg_img = get_background_image_object(geotracker.camobj)
-            if not bg_img.image:
-                _log.output('no image in background')
+            if not bg_img or not bg_img.image:
                 self.finish_calc_mode_with_error('* Cannot load images 1')
                 return None
 
             im_user = bg_img.image_user
             update_depsgraph()
-            _log.output(bg_img.image.filepath)
+            _log.output(f'bg_img.image.filepath: {bg_img.image.filepath}')
             path = bg_img.image.filepath_from_user(image_user=im_user)
             _log.output(f'user_path: {current_frame} {path}')
 
@@ -120,7 +131,6 @@ class PrecalcTimer(CalcTimer):
                 return None
 
             if not check_bpy_image_size(img):
-                _log.output('cannot load image')
                 self.finish_calc_mode_with_error('* Cannot load images 3')
                 return None
 

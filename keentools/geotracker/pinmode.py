@@ -167,7 +167,9 @@ class GT_OT_PinMode(Operator):
         else:
             settings = get_gt_settings()
             settings.start_selection(mouse_x, mouse_y)
-        GTLoader.update_viewport_shaders()
+        GTLoader.update_viewport_shaders(wireframe=True, geomobj_matrix=True,
+                                         pins_and_residuals=True,
+                                         timeline=True)
         vp.tag_redraw()
         return {'PASS_THROUGH'}
 
@@ -254,8 +256,9 @@ class GT_OT_PinMode(Operator):
         vp = GTLoader.viewport()
         vp.create_batch_2d(area)
         _log.output('GT REGISTER SHADER HANDLERS')
-        GTLoader.update_viewport_shaders(area, wireframe=True,
-                                         normals=settings.lit_wireframe)
+        GTLoader.update_viewport_shaders(area, update_geo_data=True,
+                                         geomobj_matrix=True, wireframe=True,
+                                         pins_and_residuals=True, timeline=True)
 
         self.camera_clip_start = geotracker.camobj.data.clip_start
         self.camera_clip_end = geotracker.camobj.data.clip_end
@@ -438,7 +441,9 @@ class GT_OT_PinMode(Operator):
         if settings.selection_mode:
             if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
                 settings.end_selection(context.area, event.mouse_region_x, event.mouse_region_y)
-                GTLoader.update_viewport_shaders()
+                GTLoader.update_viewport_shaders(wireframe=False,
+                                                 geomobj_matrix=False,
+                                                 pins_and_residuals=True)
             else:
                 settings.do_selection(event.mouse_region_x, event.mouse_region_y)
             vp.tag_redraw()
@@ -469,7 +474,10 @@ class GT_OT_PinMode(Operator):
             self._change_wireframe_visibility(toggle=False, value=True)
             GTLoader.load_geotracker()
             GTLoader.load_pins_into_viewport()
-            GTLoader.update_viewport_shaders()
+            GTLoader.update_viewport_shaders(update_geo_data=True,
+                                             wireframe=True,
+                                             geomobj_matrix=True,
+                                             pins_and_residuals=True)
 
         if self._check_camera_state_changed(context.space_data.region_3d) \
                 or self._check_area_state_changed(GTLoader.get_work_area()):
@@ -488,9 +496,10 @@ class GT_OT_PinMode(Operator):
             in_edit_mode_screen_message()
             GTLoader.update_geomobj_mesh()
             vp.hide_pins_and_residuals()
-            settings = get_gt_settings()
-            settings.lit_wireframe = False
-            GTLoader.update_viewport_shaders()
+            GTLoader.update_viewport_shaders(update_geo_data=True,
+                                             wireframe=True,
+                                             geomobj_matrix=True,
+                                             pins_and_residuals=False)
             return {'PASS_THROUGH'}
 
         if event.value == 'PRESS' and event.type == 'LEFTMOUSE' \

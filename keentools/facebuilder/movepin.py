@@ -191,10 +191,13 @@ class FB_OT_MovePin(Operator):
 
         FBLoader.place_camera(headnum, camnum)
 
+        geo = fb.applied_args_model_at(kid)
         vp = FBLoader.viewport()
-        vp.wireframer().init_geom_data_from_fb(fb, headobj, kid)
-        vp.wireframer().update_edge_vertices()
-        vp.wireframer().create_batches()
+        wf = vp.wireframer()
+        wf.set_object_world_matrix(headobj.matrix_world)
+        wf.init_geom_data_from_core(*FBLoader.get_geo_shader_data(geo))
+        wf.create_batches()
+
         vp.create_batch_2d(area)
         vp.update_surface_points(fb, headobj, kid)
 

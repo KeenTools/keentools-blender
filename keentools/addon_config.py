@@ -29,7 +29,7 @@ _PT = 'KEENTOOLS_PT_'
 
 
 class Config:
-    addon_version = '2023.2.0'  # (5/5)
+    addon_version = '2023.2.1'  # (5/5)
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),
                                   (3, 0), (3, 1), (3, 2), (3, 3), (3, 4),
@@ -55,7 +55,7 @@ class Config:
     keentools_website_url = 'https://keentools.io'
     core_download_website_url = keentools_website_url + '/download/core'
 
-    manual_install_url = keentools_website_url + '/manual-installation'
+    manual_install_url = keentools_website_url + '/activate'
     pykeentools_license_url = 'https://link.keentools.io/eula'
 
     # Preferences operators
@@ -155,10 +155,9 @@ class Config:
     mock_update_core_path: str = 'http://localhost/core.zip'
     mock_product: Optional[str] = None
 
-    supported_gpu_backends: Set = {'OPENGL', 'Undefined'}  # METAL
+    supported_gpu_backends: Set = {'OPENGL', 'Undefined', 'METAL'}
     strict_shader_check: bool = False
-    use_gpu_shaders: bool = True
-    allow_use_gpu_instead_of_bgl: bool = False
+    wireframe_offset_constant: float = 0.004
 
     integration_enabled: bool = True
 

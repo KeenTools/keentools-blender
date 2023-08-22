@@ -55,21 +55,23 @@ class FBViewport(KTViewport):
         self._rectangler: Any = FBRectangleShader2D(SpaceView3D)
         self._draw_update_timer_handler: Optional[Callable] = None
 
+    def get_all_viewport_shader_objects(self) -> List:
+        return [self._texter,
+                self._points2d,
+                self._points3d,
+                self._residuals,
+                self._wireframer,
+                self._rectangler]
+
     def load_all_shaders(self) -> bool:
         _log.output('FB load_all_shaders')
         if bpy_background_mode():
             return True
-        all_draw_objects = [self._texter,
-                            self._points2d,
-                            self._points3d,
-                            self._residuals,
-                            self._wireframer,
-                            self._rectangler]
         tmp_log = '--- FB Shaders ---'
         show_tmp_log = False
         _log.output(tmp_log)
         try:
-            for item in all_draw_objects:
+            for item in self.get_all_viewport_shader_objects():
                 item_type = f'* {item.__class__.__name__}'
                 tmp_log += '\n' + item_type + ' -- '
 
@@ -90,6 +92,10 @@ class FBViewport(KTViewport):
         if show_tmp_log:
             _log.info(tmp_log)
         return True
+
+    def switch_all_shaders_to(self, mode: str='gpu') -> None:
+        for item in self.get_all_viewport_shader_objects():
+            item.switch_shader_to(mode)
 
     def register_handlers(self, context: Any) -> None:
         self.unregister_handlers()
@@ -133,7 +139,6 @@ class FBViewport(KTViewport):
                                       settings.wireframe_special_color,
                                       settings.wireframe_midline_color),
                                       settings.wireframe_opacity * settings.get_adaptive_opacity())
-        self.wireframer().create_batches()
 
     def update_pin_sensitivity(self) -> None:
         settings = get_fb_settings()

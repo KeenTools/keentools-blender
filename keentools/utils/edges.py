@@ -20,8 +20,6 @@ import numpy as np
 from typing import Any, List, Callable, Tuple, Optional
 
 from bpy.types import Object, Area, Region, SpaceView3D
-import gpu
-import bgl
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector, Matrix
 
@@ -31,17 +29,25 @@ from .gpu_shaders import (line_3d_local_shader,
                           residual_2d_shader,
                           dashed_2d_shader,
                           black_fill_local_shader,
-                          lit_local_shader,
+                          black_offset_fill_local_shader,
+                          lit_aa_local_shader,
                           builtin_2d_uniform_color_shader,
                           builtin_3d_smooth_color_shader)
 from .coords import (get_mesh_verts,
                      multiply_verts_on_matrix_4x4,
-                     get_scale_vec_4_from_matrix_world,
                      get_triangulation_indices,
-                     get_triangles_in_vertex_group)
-from .bpy_common import (evaluated_mesh,
-                         use_gpu_instead_of_bgl)
+                     get_triangles_in_vertex_group,
+                     make_indices_for_wide_edges)
+from .bpy_common import evaluated_mesh
 from .base_shaders import KTShaderBase
+from .gpu_control import (bgl_module,
+                          set_blend_alpha,
+                          set_smooth_line,
+                          set_line_width,
+                          set_depth_test,
+                          set_depth_mask,
+                          set_color_mask,
+                          revert_blender_viewport_state)
 
 
 _log = KTLogger(__name__)
@@ -50,6 +56,8 @@ _log = KTLogger(__name__)
 class KTEdgeShaderBase(KTShaderBase):
     def __init__(self, target_class: Any=SpaceView3D):
         super().__init__(target_class)
+        self.object_world_matrix: Any = np.eye(4, dtype=np.float32)
+
         self.fill_shader: Optional[Any] = None
         self.fill_batch: Optional[Any] = None
         self.line_shader: Optional[Any] = None
@@ -62,10 +70,19 @@ class KTEdgeShaderBase(KTShaderBase):
         self.edge_colors: List = []
         self.vertices_colors: List = []
 
+        # pykeentools data
+        self.triangle_vertices: List = []
+        self.edge_vertex_normals: List = []
+
         self.backface_culling: bool = False
+        self.backface_culling_in_shader: bool = False
         self.adaptive_opacity: float = 1.0
         self.line_color: Tuple[float, float, float, float] = (1., 1., 1., 1.)
         self.line_width: float = 1.0
+
+    def set_object_world_matrix(self, bpy_matrix_world: Any) -> None:
+        self.object_world_matrix = np.array(bpy_matrix_world,
+                                            dtype=np.float32).transpose()
 
     def init_color_data(self, color: Tuple[float, float, float, float]):
         self.edge_colors = [color] * len(self.edge_vertices)
@@ -127,18 +144,9 @@ class KTEdgeShader2D(KTEdgeShaderBase):
         return True
 
     def draw_main_bgl(self, context: Any) -> None:
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-        bgl.glLineWidth(self.line_width)
-
-        self.line_shader.bind()
-        self.line_batch.draw(self.line_shader)
-
-    def draw_main_gpu(self, context: Any) -> None:
-        gpu.state.line_width_set(self.line_width)
-        gpu.state.blend_set('ALPHA')
+        set_blend_alpha()
+        set_smooth_line()
+        set_line_width(self.line_width)
         self.line_shader.bind()
         self.line_batch.draw(self.line_shader)
 
@@ -193,9 +201,8 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
         return None
 
     def draw_main_bgl(self, context: Any) -> None:
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-        bgl.glLineWidth(self.line_width)
+        set_blend_alpha()
+        set_line_width(self.line_width)
 
         self.line_shader.bind()
         self.line_batch.draw(self.line_shader)
@@ -342,11 +349,9 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
             self.batch_needs_update = False
             self.create_batch()
 
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-        bgl.glLineWidth(self.line_width)
+        set_blend_alpha()
+        set_smooth_line()
+        set_line_width(self.line_width)
 
         self.line_shader.bind()
         self.line_batch.draw(self.line_shader)
@@ -362,8 +367,8 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
             self.batch_needs_update = False
             self.create_batch()
 
-        gpu.state.line_width_set(self.line_width * 2)
-        gpu.state.blend_set('ALPHA')
+        set_blend_alpha()
+        set_line_width(self.line_width)
 
         self.line_shader.bind()
         self.line_batch.draw(self.line_shader)
@@ -394,53 +399,56 @@ class KTEdgeShader3D(KTEdgeShaderBase):
         return True
 
     def draw_main_bgl(self, context: Any) -> None:
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-        bgl.glLineWidth(self.line_width)
+        set_blend_alpha()
+        set_smooth_line()
+        set_line_width(self.line_width)
 
-        bgl.glEnable(bgl.GL_DEPTH_TEST)
-        bgl.glEnable(bgl.GL_POLYGON_OFFSET_FILL)
-        bgl.glColorMask(bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE)
+        set_depth_test('LESS_EQUAL')
+        set_color_mask(False, False, False, False)
 
-        if self.backface_culling:
-            bgl.glPolygonMode(bgl.GL_BACK, bgl.GL_FILL)
-            bgl.glEnable(bgl.GL_CULL_FACE)
-            bgl.glCullFace(bgl.GL_FRONT)
-            bgl.glPolygonOffset(-1.0, -1.0)
+        bgl_module().glEnable(bgl_module().GL_POLYGON_OFFSET_FILL)
+
+        if self.backface_culling and not self.backface_culling_in_shader:
+            # Sandwich technique for back-face culling if shader does not support it
+            bgl_module().glPolygonMode(bgl_module().GL_BACK,
+                                       bgl_module().GL_FILL)
+            bgl_module().glEnable(bgl_module().GL_CULL_FACE)
+            bgl_module().glCullFace(bgl_module().GL_FRONT)
+            bgl_module().glPolygonOffset(-1.0, -1.0)
             self.draw_empty_fill()
 
-        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_FILL)
-        bgl.glDisable(bgl.GL_CULL_FACE)
-        bgl.glPolygonOffset(1.0, 1.0)
+        bgl_module().glPolygonMode(bgl_module().GL_FRONT_AND_BACK,
+                                   bgl_module().GL_FILL)
+        bgl_module().glDisable(bgl_module().GL_CULL_FACE)
+        bgl_module().glPolygonOffset(1.0, 1.0)
         self.draw_empty_fill()
 
-        bgl.glColorMask(bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE)
-        bgl.glDisable(bgl.GL_POLYGON_OFFSET_FILL)
+        set_color_mask(True, True, True, True)
+        bgl_module().glDisable(bgl_module().GL_POLYGON_OFFSET_FILL)
 
-        bgl.glDepthMask(bgl.GL_FALSE)
-        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_LINE)
+        set_depth_mask(False)
+        bgl_module().glPolygonMode(bgl_module().GL_FRONT_AND_BACK,
+                                   bgl_module().GL_LINE)
 
         self.draw_edges()
 
-        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_FILL)
+        bgl_module().glPolygonMode(bgl_module().GL_FRONT_AND_BACK,
+                                   bgl_module().GL_FILL)
         self.draw_selection_fill()
 
-        bgl.glDepthMask(bgl.GL_TRUE)
-        bgl.glDisable(bgl.GL_DEPTH_TEST)
+        revert_blender_viewport_state()
 
     def draw_main_gpu(self, context: Any) -> None:
-        gpu.state.depth_test_set('LESS_EQUAL')
-        gpu.state.color_mask_set(False, False, False, False)
+        set_depth_test('LESS_EQUAL')
+        set_color_mask(False, False, False, False)
         self.draw_empty_fill()
-        gpu.state.color_mask_set(True, True, True, True)
+        set_color_mask(True, True, True, True)
 
-        gpu.state.line_width_set(self.line_width * 2)
-        gpu.state.blend_set('ALPHA')
+        set_line_width(self.line_width)
+        set_blend_alpha()
         self.draw_edges()
 
-    def draw_selection_fill(self):
+    def draw_selection_fill(self) -> None:
         pass
 
     def create_batches(self) -> None:
@@ -503,7 +511,6 @@ class KTEdgeShader3D(KTEdgeShaderBase):
 
 class KTEdgeShaderLocal3D(KTEdgeShader3D):
     def __init__(self, target_class: Any, mask_color: Tuple):
-        self.object_world_matrix: Any = np.eye(4, dtype=np.float32)
         self.selection_fill_color: Tuple[float, float, float, float] = mask_color
         self.selection_fill_shader: Optional[Any] = None
         self.selection_fill_batch: Optional[Any] = None
@@ -574,23 +581,11 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
         else:
             _log.error(f'{self.__class__.__name__}.selection_fill_shader: is empty')
 
-    def set_object_world_matrix(self, bpy_matrix_world: Any) -> None:
-        self.object_world_matrix = np.array(bpy_matrix_world,
-                                            dtype=np.float32).transpose()
-
     def init_geom_data_from_mesh(self, obj: Any) -> None:
-        mw = obj.matrix_world
-        scale_vec = get_scale_vec_4_from_matrix_world(mw)
-        scale_vec = np.array([1.0, 1.0, 1.0, 1.0], dtype=np.float32)
-        scm = np.diag(scale_vec)
-        scminv = np.diag(1.0 / scale_vec)
-
-        self.object_world_matrix = scminv @ np.array(mw, dtype=np.float32).transpose()
-
+        _log.output(_log.color('red', 'init_geom_data_from_mesh'))
+        self.set_object_world_matrix(obj.matrix_world)
         mesh = evaluated_mesh(obj)
-        verts = get_mesh_verts(mesh)
-
-        self.vertices = multiply_verts_on_matrix_4x4(verts, scm)
+        self.vertices = get_mesh_verts(mesh)
         self.triangle_indices = get_triangulation_indices(mesh)
 
         edges = np.empty((len(mesh.edges), 2), dtype=np.int32)
@@ -604,8 +599,9 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
         shader.bind()
         shader.uniform_float('adaptiveOpacity', self.adaptive_opacity)
         shader.uniform_float('color', self.line_color)
-        shader.uniform_vector_float(shader.uniform_from_name('modelMatrix'),
-                                    self.object_world_matrix.ravel(), 16)
+        shader.uniform_vector_float(
+            shader.uniform_from_name('modelMatrix'),
+            self.object_world_matrix.ravel(), 16)
         self.line_batch.draw(shader)
 
     def draw_empty_fill(self) -> None:
@@ -630,6 +626,9 @@ class KTEdgeShaderLocal3D(KTEdgeShader3D):
                                  inverted: bool) -> None:
         self.selection_triangle_indices = get_triangles_in_vertex_group(
             obj, mask_3d, inverted)
+        if len(self.selection_triangle_indices) > 0:
+            mesh = evaluated_mesh(obj)
+            self.vertices = get_mesh_verts(mesh)
 
 
 class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
@@ -637,21 +636,25 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         self.lit_color: Tuple[float, float, float, float] = (0., 1., 0., 1.0)
         self.lit_shader: Optional[Any] = None
         self.lit_batch: Optional[Any] = None
-        self.lit_flag: bool = False
-        self.lit_edge_vertices: List = []
-        self.lit_edge_vertex_normals: List = []
+        self.lit_shading: bool = True
+        self.lit_edge_vertices: Any = np.empty(shape=(0, 3), dtype=np.float32)
+        self.lit_edge_vertex_normals: Any = np.empty(shape=(0, 3),
+                                                     dtype=np.float32)
+        self.lit_opposite_edge_vertices: Any = np.empty(shape=(0, 3), dtype=np.float32)
+        self.lit_vertex_pos_indices: Any = np.empty(shape=(0, 3), dtype=np.int32)
+        self.lit_vertex_opp_indices: Any = np.empty(shape=(0, 3), dtype=np.int32)
+        self.viewport_size: Tuple[float, float] = (1920, 1080)
         self.lit_light_dist: float = 1000
-        self.lit_light1_pos: Vector = Vector((0, 0, 0))
-        self.lit_light2_pos: Vector = Vector((-2, 0, 1))
-        self.lit_light3_pos: Vector = Vector((2, 0, 1))
+        self.lit_light1_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
+        self.lit_light2_pos: Vector = Vector((-2, 0, 1)) * self.lit_light_dist
+        self.lit_light3_pos: Vector = Vector((2, 0, 1)) * self.lit_light_dist
+        self.lit_camera_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
         self.lit_light_matrix: Matrix = Matrix.Identity(4)
         super().__init__(target_class, mask_color)
+        self.backface_culling_in_shader = True
 
     def set_lit_wireframe(self, state: bool) -> None:
-        self.lit_flag = state
-
-    def lit_is_working(self) -> bool:
-        return self.lit_flag
+        self.lit_shading = state
 
     def set_lit_light_matrix(self, geomobj_matrix_world: Matrix,
                              camobj_matrix_world: Matrix) -> None:
@@ -659,90 +662,176 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderLocal3D):
         mat = geomobj_matrix_world.inverted() @ camobj_matrix_world
         self.lit_light_matrix = mat
 
+    def set_viewport_size(self, region: Any):
+        if not region or not region.width or not region.height:
+            return
+        w, h = region.width, region.height
+        if w <= 0 or h <=0:
+            return
+        self.viewport_size = (w, h)
+
     def init_shaders(self) -> Optional[bool]:
-        res = [True] * 2
+        changes = False
+        res = [True] * 4
 
-        res[0] = super().init_shaders()
+        if self.fill_shader is None:
+            self.fill_shader = black_offset_fill_local_shader()
+            res[0] = self.fill_shader is not None
+            _log.output(f'fill_shader (offset): {res[0]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.fill_shader: skip')
 
-        if self.lit_shader is not None:
+        if self.line_shader is None:
+            self.line_shader = line_3d_local_shader()
+            res[1] = self.line_shader is not None
+            _log.output(f'line_shader: {res[1]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.line_shader: skip')
+
+        if self.selection_fill_shader is None:
+            self.selection_fill_shader = line_3d_local_shader()
+            res[2] = self.selection_fill_shader is not None
+            _log.output(f'selection_fill_shader: {res[2]}')
+            changes = True
+        else:
+            _log.output(f'{self.__class__.__name__}.selection_fill_shader: skip')
+
+        if self.lit_shader is None:
+            self.lit_shader = lit_aa_local_shader()
+            res[3] = self.lit_shader is not None
+            _log.output(f'{self.__class__.__name__}.lit_shader: {res[3]}')
+            changes = True
+        else:
             _log.output(f'{self.__class__.__name__}.lit_shader: skip')
-            return res[0]
 
-        self.lit_shader = lit_local_shader()
-        res[1] = self.lit_shader is not None
-        _log.output(f'{self.__class__.__name__}.lit_shader: {res[1]}')
-
-        if res[0] is None:
-            return res[1]
-        return res[0] and res[1]
-
-    def init_vertex_normals(self, obj: Object) -> None:
-        mesh = evaluated_mesh(obj)
-
-        loop_count = len(mesh.loops)
-        loops = np.empty((loop_count,), dtype=np.int32)
-        mesh.loops.foreach_get('vertex_index', np.reshape(loops, loop_count))
-
-        loop_normals = np.empty((loop_count, 3), dtype=np.float32)
-        mesh.calc_normals_split()
-        mesh.loops.foreach_get('normal', np.reshape(loop_normals,
-                                                    loop_count * 3))
-        poly_count = len(mesh.polygons)
-        polys = np.empty((poly_count,), dtype=np.int32)
-        mesh.polygons.foreach_get('loop_total', np.reshape(polys, poly_count))
-
-        edge_indices = np.empty((loop_count * 2,), dtype=np.int32)
-        edge_normals = np.empty((loop_count * 2, 3), dtype=np.float32)
-        i = 0
-        k = 0
-        for p_count in polys:
-            indices = loops[i: i + p_count]
-            normals = loop_normals[i: i + p_count]
-            delta = p_count * 2
-            edge_indices[k: k + delta] = \
-                np.roll(np.repeat(indices, 2), -1, axis=0)
-            edge_normals[k: k + delta] = \
-                np.roll(np.repeat(normals, 2, axis=0), -1, axis=0)
-            i += p_count
-            k += delta
-
-        self.lit_edge_vertices = self.vertices[edge_indices.ravel()]
-        self.lit_edge_vertex_normals = edge_normals
+        if changes:
+            return res[0] and res[1] and res[2] and res[3]
+        return None
 
     def init_color_data(self, color: Tuple[float, float, float, float]) -> None:
         self.lit_color = color
         self.line_color = color
 
+    def init_geom_data_from_core(self, edge_vertices: Any,
+                                 edge_vertex_normals: Any,
+                                 triangle_vertices: Any):
+        len_edge_vertices = len(edge_vertices)
+        if len_edge_vertices * 3 != len(self.lit_vertex_pos_indices):
+            _log.output('init_geom_data_from_core recalc index arrays')
+            self.lit_vertex_pos_indices, self.lit_vertex_opp_indices = \
+                make_indices_for_wide_edges(len_edge_vertices)
+
+        self.lit_edge_vertices = edge_vertices[self.lit_vertex_pos_indices]
+        self.lit_edge_vertex_normals = edge_vertex_normals[self.lit_vertex_pos_indices]
+        self.lit_opposite_edge_vertices = edge_vertices[self.lit_vertex_opp_indices]
+        self.triangle_vertices = triangle_vertices
+
     def create_batches(self) -> None:
-        super().create_batches()
-        if not self.lit_shader is None:
+        _log.output(_log.color('yellow', 'create_batches'))
+        if self.lit_shader is not None:
+            _log.output(_log.color('magenta', 'LIT WIREFRAME BATCH:'))
             self.lit_batch = batch_for_shader(
-                self.lit_shader, 'LINES',
-                {'pos': self.lit_edge_vertices,
-                 'vertNormal': self.lit_edge_vertex_normals})
+                self.lit_shader, 'TRIS',
+                {'pos': self.lit_edge_vertices
+                 if len(self.lit_edge_vertices) > 0 else [],
+                 'opp': self.lit_opposite_edge_vertices
+                 if len(self.lit_opposite_edge_vertices) > 0 else [],
+                 'vertNormal': self.lit_edge_vertex_normals
+                 if len(self.lit_edge_vertex_normals) > 0 else []})
+            _log.output(f'\nbatch: {self.lit_batch}'
+                        f'pos: {self.lit_edge_vertices.shape}'
+                        f'opp: {self.lit_opposite_edge_vertices.shape}'
+                        f'vertNormal: {self.lit_edge_vertex_normals.shape}')
         else:
             _log.error(f'{self.__class__.__name__}.lit_shader: is empty')
 
-    def draw_edges(self) -> None:
-        if not self.lit_is_working():
-            return super().draw_edges()
+        if self.fill_shader is not None:
+            _log.output('lit self.fill_shader')
+            self.fill_batch = batch_for_shader(
+                self.fill_shader, 'TRIS',
+                {'pos': self.triangle_vertices
+                 if len(self.triangle_vertices) > 0 else []})
+        else:
+            _log.error(f'{self.__class__.__name__}.fill_shader: is empty')
 
+        if self.selection_fill_shader is not None:
+            verts = []
+            indices = []
+            verts_count = len(self.vertices)
+            if verts_count > 0 and len(self.selection_triangle_indices) > 0:
+                max_index = np.max(self.selection_triangle_indices)
+                if max_index < verts_count:
+                    verts = self.vertices
+                    indices = self.selection_triangle_indices
+
+            self.selection_fill_batch = batch_for_shader(
+                self.selection_fill_shader, 'TRIS', {'pos': verts},
+                indices=indices)
+        else:
+            _log.error(f'{self.__class__.__name__}.selection_fill_shader: is empty')
+
+    def draw_checks(self, context: Any) -> bool:
+        if self.is_handler_list_empty():
+            self.unregister_handler()
+            return False
+
+        if not self.is_visible():
+            return False
+
+        if self.lit_shader is None or self.lit_batch is None \
+                or self.fill_shader is None or self.fill_batch is None:
+            return False
+
+        if self.work_area != context.area:
+            return False
+
+        return True
+
+    def draw_edges(self) -> None:
         shader = self.lit_shader
         shader.bind()
         shader.uniform_float('color', self.lit_color)
         shader.uniform_float('adaptiveOpacity', self.adaptive_opacity)
+        # uniform_int is used instead of uniform_bool for backward compatibility
+        shader.uniform_int('ignoreBackface', 1 if self.backface_culling else 0)
+        shader.uniform_int('litShading', 1 if self.lit_shading else 0)
         shader.uniform_vector_float(
             shader.uniform_from_name('modelMatrix'),
             self.object_world_matrix.ravel(), 16)
+
         shader.uniform_float('pos1', self.lit_light_matrix @
                              (self.lit_light1_pos * self.lit_light_dist))
         shader.uniform_float('pos2', self.lit_light_matrix @
                              (self.lit_light2_pos * self.lit_light_dist))
         shader.uniform_float('pos3', self.lit_light_matrix @
                              (self.lit_light3_pos * self.lit_light_dist))
+        shader.uniform_float('cameraPos',
+                             self.lit_light_matrix @ self.lit_camera_pos)
+
+        shader.uniform_float('viewportSize', self.viewport_size)
+        shader.uniform_float('lineWidth', self.line_width)
+        shader.uniform_float('filterRadius', 0.5)
         self.lit_batch.draw(shader)
+
+    def draw_main_bgl(self, context: Any) -> None:
+        set_depth_test('LESS_EQUAL')
+        set_color_mask(False, False, False, False)
+        self.draw_empty_fill()
+        set_color_mask(True, True, True, True)
+        set_depth_mask(False)
+        set_blend_alpha()
+        self.set_viewport_size(context.region)
+        self.draw_edges()
+        set_depth_test('LESS')
+        self.draw_selection_fill()
+        revert_blender_viewport_state()
+
+    def draw_main_gpu(self, context: Any) -> None:
+        self.draw_main_bgl(context)
 
     def clear_all(self) -> None:
         super().clear_all()
-        self.lit_edge_vertices = []
-        self.lit_edge_vertex_normals = []
+        self.lit_edge_vertices = np.empty(shape=(0, 3), dtype=np.float32)
+        self.lit_edge_vertex_normals = np.empty(shape=(0, 3), dtype=np.float32)

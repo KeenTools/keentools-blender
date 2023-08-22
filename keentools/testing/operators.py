@@ -30,7 +30,9 @@ from ..facebuilder.fbloader import FBLoader
 from ..facebuilder_config import FBConfig
 from ..utils.bpy_common import (bpy_remove_object,
                                 bpy_create_object,
-                                bpy_link_to_scene)
+                                bpy_link_to_scene,
+                                bpy_scene_camera)
+from ..utils.mesh_builder import build_geo
 
 
 _log = KTLogger(__name__)
@@ -62,7 +64,7 @@ def test_points3d(points3d: Any, *,
               (0, 1, 1), (1, 0, 1), (0, 0, 0), (1, 1, 1)]
     for i, col in enumerate(colors):
         for x in range(point_count):
-            verts.append((x_start + x * x_step, y_start + y_step * i))
+            verts.append((x_start + x * x_step, y_start + y_step * i, 0))
             vert_colors.append((*col, (x + 1)/point_count))
     points3d.set_vertices_colors(verts, vert_colors)
     points3d.create_batch()
@@ -116,9 +118,14 @@ def test_wireframe(wireframer: Any, *, obj: Any=None,
                    normals: bool=False, lit_wireframe: bool=False) -> None:
     if not obj:
         return
+    camera = bpy_scene_camera()
     wireframer.init_geom_data_from_mesh(obj)
+    wireframer.set_object_world_matrix(obj.matrix_world)
+    wireframer.set_lit_light_matrix(obj.matrix_world, camera.matrix_world)
     if normals:
-        wireframer.init_vertex_normals(obj)
+        geo = build_geo(obj, get_uv=True)
+        wireframer.init_geom_data_from_core(*GTLoader.get_geo_shader_data(
+                                            geo, obj.matrix_world))
     wireframer.init_color_data((0, 1, 0, 0.5))
     wireframer.set_adaptive_opacity(1.0)
     wireframer.set_backface_culling(True)
@@ -233,8 +240,11 @@ def fb_wireframer(context: Any) -> None:
     fb = FBLoader.get_builder()
 
     vp = FBLoader.viewport()
+    geo = fb.applied_args_model()
+
     wireframer = vp.wireframer()
-    wireframer.init_geom_data_from_mesh(obj)
+    wireframer.init_edge_indices(fb)
+    wireframer.init_geom_data_from_core(*FBLoader.get_geo_shader_data(geo))
     wireframer.init_colors((*FBConfig.color_schemes['white'],
                             FBConfig.midline_color), 0.5)
     wireframer.init_wireframe_image(fb, True)

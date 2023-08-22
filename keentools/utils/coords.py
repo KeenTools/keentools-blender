@@ -28,8 +28,7 @@ from .fake_context import get_fake_context
 from .bpy_common import (bpy_current_frame,
                          bpy_render_frame,
                          evaluated_mesh,
-                         bpy_background_mode,
-                         bpy_app_version)
+                         bpy_background_mode)
 from .animation import get_safe_evaluated_fcurve
 
 
@@ -74,7 +73,7 @@ def xz_to_xy_rotation_matrix_4x4() -> Any:
                      [0., 0., 0., 1.]], dtype=np.float32)
 
 
-def update_head_mesh_geom(obj: Any, geom: Any) -> None:
+def update_head_mesh_geom(obj: Object, geom: Any) -> None:
     mesh = obj.data
     assert(len(geom) == len(mesh.vertices))
     npbuffer = geom @ xy_to_xz_rotation_matrix_3x3()
@@ -246,7 +245,9 @@ def calc_model_mat(model_mat: Any, head_mat: Any) -> Optional[Any]:
         return None
 
 
-def get_area_region_3d(area: Area) -> Optional[Any]:
+def get_area_region_3d(area: Optional[Area]) -> Optional[Any]:
+    if not area or not area.spaces or not area.spaces.active:
+        return None
     return area.spaces.active.region_3d
 
 
@@ -431,20 +432,23 @@ def compensate_view_scale() -> float:
     return image_width / image_height
 
 
-def ScaleMatrix(sc: Tuple) -> Matrix:
-    scm = Matrix.Identity(4)
+def ScaleMatrix(rank: int, sc: Tuple) -> Matrix:
+    scm = Matrix.Identity(rank)
     scm[0][0], scm[1][1], scm[2][2] = sc[:]
     return scm
 
 
-def InvScaleMatrix(sc: Tuple) -> Matrix:
-    scm = Matrix.Identity(4)
-    scm[0][0], scm[1][1], scm[2][2] = 1.0 / sc[0], 1.0 / sc[1], 1.0 / sc[2]
+def InvScaleMatrix(rank: int, sc: Tuple) -> Matrix:
+    scm = Matrix.Identity(rank)
+    try:
+        scm[0][0], scm[1][1], scm[2][2] = 1.0 / sc[0], 1.0 / sc[1], 1.0 / sc[2]
+    except ZeroDivisionError:
+        pass
     return scm
 
 
-def UniformScaleMatrix(sc: float) -> Matrix:
-    return ScaleMatrix((sc, sc, sc))
+def UniformScaleMatrix(rank: int, sc: float) -> Matrix:
+    return ScaleMatrix(rank, (sc, sc, sc))
 
 
 def RotationMatrix(r: Quaternion) -> Matrix:
@@ -453,7 +457,7 @@ def RotationMatrix(r: Quaternion) -> Matrix:
 
 def LocRotScale_old(t: Tuple[float, float, float], r: Quaternion,
                     sc: Tuple[float, float, float]) -> Matrix:
-    scm = ScaleMatrix(sc)
+    scm = ScaleMatrix(4, sc)
     return Matrix.Translation(t) @ r.normalized().to_matrix().to_4x4() @ scm
 
 
@@ -619,3 +623,9 @@ def change_near_and_far_clip_planes(camobj: Object, geomobj: Object,
         changed_flag = True
 
     return changed_flag
+
+
+def make_indices_for_wide_edges(numb: int) -> Tuple[Any, Any]:
+    arr = np.tile(np.arange(0, numb).reshape((-1, 2)), (1, 3))
+    return arr.reshape((-1, 3)).ravel(), \
+           np.flip(arr, 1).reshape((-1, 3)).ravel()

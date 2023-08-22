@@ -78,7 +78,6 @@ from ...utils.coords import (LocRotScale,
                              LocRotWithoutScale,
                              ScaleMatrix,
                              InvScaleMatrix,
-                             UniformScaleMatrix,
                              change_near_and_far_clip_planes)
 from .textures import bake_texture, preview_material_with_texture
 from ..interface.screen_mesages import clipping_changed_screen_message
@@ -357,7 +356,8 @@ def clear_between_keyframes_act() -> ActionStatus:
         show_warning_dialog(err)
 
     GTLoader.save_geotracker()
-    GTLoader.update_viewport_shaders()
+    GTLoader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
+                                     pins_and_residuals=True, timeline=True)
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -379,7 +379,8 @@ def clear_direction_act(forward: bool) -> ActionStatus:
         show_warning_dialog(err)
 
     GTLoader.save_geotracker()
-    GTLoader.update_viewport_shaders()
+    GTLoader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
+                                     pins_and_residuals=True, timeline=True)
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -399,7 +400,8 @@ def clear_all_act() -> ActionStatus:
         show_warning_dialog(err)
 
     GTLoader.save_geotracker()
-    GTLoader.update_viewport_shaders()
+    GTLoader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
+                                     pins_and_residuals=True, timeline=True)
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -429,6 +431,8 @@ def clear_all_except_keyframes_act() -> ActionStatus:
     gt.remove_track_in_direction(keyframes[-1], True)
 
     GTLoader.save_geotracker()
+    GTLoader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
+                                     pins_and_residuals=True, timeline=True)
     return ActionStatus(True, 'ok')
 
 
@@ -483,7 +487,7 @@ def remove_pins_act() -> ActionStatus:
 
     pins.reset_current_pin()
     GTLoader.save_geotracker()
-    GTLoader.update_viewport_shaders()
+    GTLoader.update_viewport_shaders(pins_and_residuals=True)
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -509,7 +513,7 @@ def toggle_pins_act() -> ActionStatus:
         pins.clear_selected_pins()
         GTLoader.save_geotracker()
 
-    GTLoader.update_viewport_shaders()
+    GTLoader.update_viewport_shaders(pins_and_residuals=True)
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -538,7 +542,8 @@ def center_geo_act() -> ActionStatus:
         if near != camera_clip_start or far != camera_clip_end:
             clipping_changed_screen_message(near, far)
 
-    GTLoader.update_viewport_shaders()
+    GTLoader.update_viewport_shaders(wireframe=True, geomobj_matrix=True,
+                                     pins_and_residuals=True)
     GTLoader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
@@ -1094,8 +1099,8 @@ def scale_scene_trajectory_act(operator: Operator) -> ActionStatus:
     rescale_matrix = _scale_relative_to_point_matrix(origin_matrix,
                                                      operator.value)
 
-    cam_scale_matrix = ScaleMatrix(operator.cam_scale)
-    cam_scale_matrix_inv = InvScaleMatrix(operator.cam_scale)
+    cam_scale_matrix = ScaleMatrix(4, operator.cam_scale)
+    cam_scale_matrix_inv = InvScaleMatrix(4, operator.cam_scale)
     _log.output(f'cam_scale_matrix_inv: {cam_scale_matrix_inv}')
 
     operator_scale_matrix = Matrix.Scale(operator.value, 4)

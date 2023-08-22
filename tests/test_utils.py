@@ -205,6 +205,11 @@ def pickmode_select(headnum, camnum, selected):
     op('EXEC_DEFAULT', headnum=headnum, camnum=camnum, selected=selected)
 
 
+def pinmode_execute(headnum, camnum):
+    op = get_operator(FBConfig.fb_pinmode_idname)
+    op('EXEC_DEFAULT', headnum=headnum, camnum=camnum)
+
+
 def create_head_images():
     logger = logging.getLogger(__name__)
     new_scene()

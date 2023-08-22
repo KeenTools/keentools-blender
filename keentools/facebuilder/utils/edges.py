@@ -1,6 +1,6 @@
 # ##### BEGIN GPL LICENSE BLOCK #####
 # KeenTools for blender is a blender addon for using KeenTools in Blender.
-# Copyright (C) 2019-2022  KeenTools
+# Copyright (C) 2019-2023  KeenTools
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,11 +21,11 @@ import numpy as np
 
 import bpy
 from bpy.types import Area, Image, Object, SpaceView3D
-import bgl
-import gpu
+
 from gpu_extras.batch import batch_for_shader
 
 from ...utils.kt_logging import KTLogger
+from ...addon_config import Config
 from ...facebuilder_config import FBConfig
 from ...utils.edges import KTEdgeShaderBase, KTEdgeShader2D
 from ...utils.coords import (frame_to_image_space,
@@ -33,16 +33,26 @@ from ...utils.coords import (frame_to_image_space,
                              image_space_to_region,
                              xy_to_xz_rotation_matrix_3x3,
                              multiply_verts_on_matrix_4x4,
-                             get_triangulation_indices)
+                             get_triangulation_indices,
+                             make_indices_for_wide_edges)
 from ...utils.gpu_shaders import (solid_line_2d_shader,
-                                  black_fill_shader,
+                                  black_offset_fill_local_shader,
                                   raster_image_shader,
                                   builtin_3d_uniform_color_shader)
+
 from ...utils.images import (check_bpy_image_has_same_size,
                              find_bpy_image_by_name,
                              remove_bpy_image,
                              assign_pixels_data,
                              inverse_gamma_color)
+from ...utils.gpu_control import (set_blend_alpha,
+                                  set_smooth_line,
+                                  set_line_width,
+                                  set_shader_sampler,
+                                  set_depth_test,
+                                  set_depth_mask,
+                                  set_color_mask,
+                                  revert_blender_viewport_state)
 
 
 _log = KTLogger(__name__)
@@ -126,12 +136,9 @@ class FBRectangleShader2D(KTEdgeShader2D):
         return True
 
     def draw_main_bgl(self, context: Any) -> None:
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-        bgl.glLineWidth(self.line_width)
-
+        set_blend_alpha()
+        set_smooth_line()
+        set_line_width(self.line_width)
         self.line_shader.bind()
         self.line_batch.draw(self.line_shader)
 
@@ -148,7 +155,15 @@ class FBRectangleShader2D(KTEdgeShader2D):
 class FBRasterEdgeShader3D(KTEdgeShaderBase):
     def __init__(self, target_class: Any=SpaceView3D):
         self.edge_indices: Any = np.array([], dtype=np.int32)
-        self.edge_uvs: List = []
+        self.edge_uvs: Any = np.empty(shape=(0, 3), dtype=np.float32)
+
+        self.wide_edge_vertices: Any = np.empty(shape=(0, 3), dtype=np.float32)
+        self.wide_edge_uvs: Any = np.empty(shape=(0, 2), dtype=np.float32)
+        self.vertex_pos_indices: Any = np.empty(shape=(0, 3), dtype=np.int32)
+        self.vertex_opp_indices: Any = np.empty(shape=(0, 3), dtype=np.int32)
+        self.opposite_edge_vertices: Any = np.empty(shape=(0, 3), dtype=np.float32)
+        self.viewport_size: Tuple[float, float] = (1920, 1080)
+
         self.texture_colors: List = [(1., 0., 0.), (0., 1., 0.), (0., 0., 1.)]
         self.opacity: float = 0.5
         self.use_simple_shader: bool = False
@@ -158,11 +173,21 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
     def get_statistics(self):
         return f'\nvertices: {len(self.vertices)}' \
                f'\ntriangle_indices: {len(self.triangle_indices)}' \
+               f'\ntriangle_vertices: {len(self.triangle_vertices)}' \
                f'\nedge_vertices: {len(self.edge_vertices)}' \
                f'\nedge_colors: {len(self.edge_colors)}' \
                f'\nedge_indices: {len(self.edge_indices)}' \
                f'\nedge_uvs: {len(self.edge_uvs)}' \
-               f'\ntexture_colors: {self.texture_colors}' \
+               f'\nopposite_edge_vertices: {len(self.opposite_edge_vertices)}' \
+               f'\ntexture_colors: {self.texture_colors}'
+
+    def set_viewport_size(self, region: Any):
+        if not region or not region.width or not region.height:
+            return
+        w, h = region.width, region.height
+        if w <= 0 or h <=0:
+            return
+        self.viewport_size = (w, h)
 
     def init_colors(self, colors: List, opacity: float) -> None:
         self.texture_colors = [inverse_gamma_color(color[:3]) for color in colors]
@@ -226,7 +251,12 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         return True
 
     def draw_empty_fill(self) -> None:
-        self.fill_batch.draw(self.fill_shader)
+        shader = self.fill_shader
+        shader.bind()
+        shader.uniform_vector_float(
+            shader.uniform_from_name('modelMatrix'),
+            self.object_world_matrix.ravel(), 16)
+        self.fill_batch.draw(shader)
 
     def draw_checks(self, context: Any) -> bool:
         if self.is_handler_list_empty():
@@ -241,103 +271,61 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
 
         return True
 
-    def draw_main_bgl(self, context: Any) -> None:
-        wireframe_image = find_bpy_image_by_name(FBConfig.coloring_texture_name)
-        if not self._check_coloring_image(wireframe_image):
-            _log.error(f'draw_main_bgl _check_coloring_image failed: {wireframe_image}')
-            self.unregister_handler()
-            return
-
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-        bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-
-        bgl.glEnable(bgl.GL_DEPTH_TEST)
-        bgl.glEnable(bgl.GL_POLYGON_OFFSET_FILL)
-        bgl.glPolygonOffset(1.0, 1.0)
-
-        bgl.glColorMask(bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE, bgl.GL_FALSE)
-        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_FILL)
-
-        self.draw_empty_fill()
-
-        bgl.glColorMask(bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE, bgl.GL_TRUE)
-        bgl.glDisable(bgl.GL_POLYGON_OFFSET_FILL)
-
-        bgl.glDepthMask(bgl.GL_FALSE)
-        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_LINE)
-        bgl.glEnable(bgl.GL_DEPTH_TEST)
-        bgl.glLineWidth(self.line_width)
-
-        if not self.use_simple_shader:
-            # coloring_image.bindcode should not be zero
-            # if we don't want to destroy video driver in Blender
-            if not wireframe_image or wireframe_image.bindcode == 0 \
-                    or not self.line_shader:
-                self.switch_to_simple_shader()
-                _log.error('draw_main_bgl switch_to_simple_shader call')
-            else:
-                bgl.glActiveTexture(bgl.GL_TEXTURE0)
-                bgl.glBindTexture(bgl.GL_TEXTURE_2D,
-                                  wireframe_image.bindcode)
-                self.line_shader.bind()
-                self.line_shader.uniform_int('image', 0)
-                self.line_shader.uniform_float('opacity', self.opacity)
-                self.line_batch.draw(self.line_shader)
-
-        if self.use_simple_shader:
-            self.simple_line_shader.bind()
-            self.simple_line_shader.uniform_float(
-                'color', ((*self.texture_colors[0][:3], self.opacity)))
-            self.simple_line_batch.draw(self.simple_line_shader)
-
-        bgl.glPolygonMode(bgl.GL_FRONT_AND_BACK, bgl.GL_FILL)
-        bgl.glDepthMask(bgl.GL_TRUE)
-        bgl.glDisable(bgl.GL_DEPTH_TEST)
-
-    def draw_simple_line_gpu(self):
-        gpu.state.line_width_set(self.line_width * 2)
-        gpu.state.blend_set('ALPHA')
+    def draw_simple_line(self):
+        set_line_width(self.line_width)
+        set_blend_alpha()
         self.simple_line_shader.bind()
         self.simple_line_shader.uniform_float(
             'color', ((*self.texture_colors[0][:3], self.opacity)))
         self.simple_line_batch.draw(self.simple_line_shader)
 
-    def draw_textured_line_gpu(self):
+    def _draw_textured_line(self):
         wireframe_image = find_bpy_image_by_name(FBConfig.coloring_texture_name)
         if not self._check_coloring_image(wireframe_image):
+            _log.error(f'draw_textured_line_gpu _check_coloring_image failed: {wireframe_image}')
             self.unregister_handler()
             return
         if not wireframe_image:
             self.switch_to_simple_shader()
-            self.draw_simple_line_gpu()
+            self.draw_simple_line()
             _log.error('draw_textured_line_gpu switched to simple')
         else:
-            gpu.state.line_width_set(self.line_width * 2)
-            gpu.state.blend_set('ALPHA')
-            self.line_shader.bind()
-            self.line_shader.uniform_sampler(
-                'image', gpu.texture.from_image(wireframe_image))
-            self.line_shader.uniform_float('opacity', self.opacity)
-            self.line_batch.draw(self.line_shader)
+            set_blend_alpha()
+            shader = self.line_shader
+            shader.bind()
+            set_shader_sampler(shader, wireframe_image)
+            shader.uniform_float('opacity', self.opacity)
+            shader.uniform_float('adaptiveOpacity', self.adaptive_opacity)
+
+            shader.uniform_vector_float(
+                shader.uniform_from_name('modelMatrix'),
+                self.object_world_matrix.ravel(), 16)
+            shader.uniform_float('viewportSize', self.viewport_size)
+            shader.uniform_float('lineWidth', self.line_width)
+            shader.uniform_float('filterRadius', 0.5)
+            self.line_batch.draw(shader)
+
+    def draw_main_bgl(self, context: Any) -> None:
+        self.draw_main_gpu(context)
+        revert_blender_viewport_state()
 
     def draw_main_gpu(self, context: Any) -> None:
-        gpu.state.depth_test_set('LESS_EQUAL')
-        gpu.state.color_mask_set(False, False, False, False)
+        set_depth_test('LESS_EQUAL')
+        set_color_mask(False, False, False, False)
         self.draw_empty_fill()
-        gpu.state.color_mask_set(True, True, True, True)
+        set_color_mask(True, True, True, True)
+        self.set_viewport_size(context.region)
+        set_depth_mask(False)
         if not self.use_simple_shader:
-            self.draw_textured_line_gpu()
+            self._draw_textured_line()
         else:
-            self.draw_simple_line_gpu()
+            self.draw_simple_line()
 
     def create_batches(self) -> None:
         if self.fill_shader is not None:
             self.fill_batch = batch_for_shader(
                 self.fill_shader, 'TRIS',
-                {'pos': self.vertices},
-                indices=self.triangle_indices,
+                {'pos': self.triangle_vertices}
             )
         else:
             _log.error(f'{self.__class__.__name__}.fill_shader: is empty')
@@ -352,8 +340,11 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
 
         if self.line_shader is not None:
             self.line_batch = batch_for_shader(
-                self.line_shader, 'LINES',
-                {'pos': self.edge_vertices, 'texCoord': self.edge_uvs}
+                self.line_shader, 'TRIS',
+                {'pos': self.wide_edge_vertices if len(self.wide_edge_vertices) > 0 else [],
+                 'texCoord': self.wide_edge_uvs if len(self.wide_edge_uvs) > 0 else [],
+                 'opp': self.opposite_edge_vertices if len(self.opposite_edge_vertices) > 0 else [],
+                 }
             )
         else:
             _log.error(f'{self.__class__.__name__}.line_shader: is empty')
@@ -363,7 +354,8 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         res = [True] * 3
 
         if self.fill_shader is None:
-            self.fill_shader = black_fill_shader()
+            self.fill_shader = black_offset_fill_local_shader(
+                offset=FBConfig.wireframe_offset_constant)
             res[0] = self.fill_shader is not None
             _log.output(f'{self.__class__.__name__}.fill_shader: {res[0]}')
             changes = True
@@ -413,13 +405,15 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         self.vertices = multiply_verts_on_matrix_4x4(verts, m)
         self.triangle_indices = get_triangulation_indices(mesh)
 
-    def _clear_edge_indices(self) -> None:
-        self.edge_indices = np.array([], dtype=np.int32)
-        self.edge_uvs = []
+    def _clear_edge_uvs(self) -> None:
+        self.edge_indices = np.empty(shape=(0,), dtype=np.int32)
+        self.edge_uvs = np.empty(shape=(0, 3), dtype=np.float32)
+        self.wide_edge_uvs = np.empty(shape=(0, 3), dtype=np.float32)
 
     def init_edge_indices(self, builder: Any) -> None:
+        _log.output(_log.color('blue', 'init_edge_indices call'))
         if not builder.face_texture_available():
-            self._clear_edge_indices()
+            self._clear_edge_uvs()
             return
 
         geo = builder.applied_args_replaced_uvs_model()
@@ -430,21 +424,37 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
 
         i = 0
         for face, count in enumerate(face_counts):
+            for k in range(0, count - 1):
+                tex_coords[i * 2] = me.uv(face, k)
+                tex_coords[i * 2 + 1] = me.uv(face, k + 1)
+                indices[i] = (me.face_point(face, k),
+                              me.face_point(face, k + 1))
+                i += 1
+
             tex_coords[i * 2] = me.uv(face, count - 1)
             tex_coords[i * 2 + 1] = me.uv(face, 0)
             indices[i] = (me.face_point(face, count - 1),
                           me.face_point(face, 0))
             i += 1
-            for k in range(1, count):
-                tex_coords[i * 2] = me.uv(face, k - 1)
-                tex_coords[i * 2 +1] = me.uv(face, k)
-                indices[i] = (me.face_point(face, k - 1),
-                              me.face_point(face, k))
-                i += 1
 
         self.edge_indices = indices
         self.edge_uvs = tex_coords
-        self.update_edge_vertices()
+        _log.output(f'init_edge_indices'
+                    f'\nedge_indices: {self.edge_indices.shape}'
+                    f'\nedge_uvs: {self.edge_uvs.shape}')
 
-    def update_edge_vertices(self) -> None:
-        self.edge_vertices = self.vertices[self.edge_indices.ravel()]
+    def init_geom_data_from_core(self, edge_vertices: Any,
+                                 triangle_vertices: Any):
+        _log.output(_log.color('yellow', 'init_geom_data_from_core'))
+        len_edge_vertices = len(edge_vertices)
+        if len_edge_vertices * 3 != len(self.vertex_pos_indices):
+            _log.output('init_geom_data_from_core recalc index arrays')
+            self.vertex_pos_indices, self.vertex_opp_indices = \
+                make_indices_for_wide_edges(len_edge_vertices)
+
+        self.edge_vertices = multiply_verts_on_matrix_4x4(
+            edge_vertices, self.object_world_matrix)
+        self.wide_edge_vertices = edge_vertices[self.vertex_pos_indices]
+        self.wide_edge_uvs = self.edge_uvs[self.vertex_pos_indices]
+        self.opposite_edge_vertices = edge_vertices[self.vertex_opp_indices]
+        self.triangle_vertices = triangle_vertices

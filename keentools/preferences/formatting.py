@@ -17,12 +17,17 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import re
+from typing import List
 
 
-def split_by_br_or_newlines(text):
-    res = re.split("<br />|<br>|<br/>|\r\n|\n", text)
-    return res
+def split_by_br_or_newlines_ignore_empty(text: str) -> List[str]:
+    res = re.split('<br />|<br>|<br/>|\r\n|\n', text)
+    return list(filter(None, res))
 
 
-def replace_newlines_with_spaces(text):
-    return ' '.join(filter(len, split_by_br_or_newlines(text)))
+def replace_newlines_with_spaces(text: str) -> str:
+    return ' '.join(split_by_br_or_newlines_ignore_empty(text))
+
+
+if __name__ == '__main__':
+    assert(replace_newlines_with_spaces('test\n\n\ntest1') == 'test test1')

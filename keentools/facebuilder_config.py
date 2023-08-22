@@ -190,6 +190,8 @@ class FBConfig:
     camera_y_step = 5
     camera_z_step = 0.5
 
+    wireframe_offset_constant: float = 0.0005
+
     next_head_step = (2.5, 0., 0.)
     face_selection_frame_width = 3.0
 
