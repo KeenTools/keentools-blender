@@ -36,7 +36,6 @@ class FBIcons:
 
     @classmethod
     def register(cls):
-        cls.icons = previews.new()
         cls.load_icons()
 
     @classmethod
@@ -45,10 +44,12 @@ class FBIcons:
 
     @classmethod
     def load_icon(cls, name, filename):
+        if cls.icons is None:
+            cls.icons = previews.new()
         icons_dir = os.path.join(os.path.dirname(__file__), _ICONS_DIR)
         full_path = os.path.join(icons_dir, filename)
         res = cls.icons.load(name, full_path, 'IMAGE')
-        _log.output(f'ICON: {name} {full_path} {res}')
+        _log.output(f'ICON: {name} -- {full_path} -- {res}')
 
     @classmethod
     def load_icons(cls):
@@ -56,11 +57,11 @@ class FBIcons:
             cls.load_icon(i[0], i[1])
 
     @classmethod
-    def layout_icons(cls, layout):
-        # Testing purpose method
+    def layout_icons(cls, layout, icons=None):
+        icon_list = icons if icons is not None else _ICONS
         col = layout.column()
         col.scale_y = 0.75
-        for i in _ICONS:
+        for i in icon_list:
             col.label(text=i[0], icon_value=FBIcons.get_id(i[0]))
 
     @classmethod
