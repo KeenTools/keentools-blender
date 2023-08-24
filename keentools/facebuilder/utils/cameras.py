@@ -15,13 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
-import logging
 
+from typing import Dict, Optional
+
+from bpy.types import Object
+
+from ...utils.kt_logging import KTLogger
 from ...facebuilder_config import FBConfig, get_fb_settings
 from ...utils import attrs
 
 
-def show_all_cameras(headnum):
+_log = KTLogger(__name__)
+
+
+def show_all_cameras(headnum: int) -> None:
     settings = get_fb_settings()
     head = settings.get_head(headnum)
     if head is None:
@@ -30,7 +37,7 @@ def show_all_cameras(headnum):
         c.camobj.hide_set(False)
 
 
-def hide_other_cameras(headnum, camnum):
+def hide_other_cameras(headnum: int, camnum: int) -> None:
     settings = get_fb_settings()
     head = settings.get_head(headnum)
     if head is None:
@@ -39,7 +46,7 @@ def hide_other_cameras(headnum, camnum):
         c.camobj.hide_set(i != camnum)
 
 
-def default_camera_params():
+def default_camera_params() -> Dict:
     return {'focal': FBConfig.default_focal_length,
             'sensor_width': FBConfig.default_sensor_width,
             'sensor_height': FBConfig.default_sensor_height,
@@ -47,14 +54,13 @@ def default_camera_params():
             'frame_height': FBConfig.default_frame_height}
 
 
-def get_camera_params(obj):
-    def _get_data_value(data, attr_name):
+def get_camera_params(obj: Object) -> Optional[Dict]:
+    def _get_data_value(data, attr_name: str) -> Optional[float]:
         return None if attr_name not in data.keys() else data[attr_name]
 
-    logger = logging.getLogger(__name__)
     data = attrs.get_safe_custom_attribute(obj, FBConfig.fb_camera_prop_name)
     if not data:
-        logger.error('NO CAMERA PARAMETERS')
+        _log.error('NO CAMERA PARAMETERS')
         return None
     try:
         params = {
@@ -67,10 +73,10 @@ def get_camera_params(obj):
                 data, FBConfig.reconstruct_frame_width_param),
             'frame_height': _get_data_value(
                 data, FBConfig.reconstruct_frame_height_param)}
-        logger.info('LOADED CAMERA PARAMS: {}'.format(params))
+        _log.info(f'LOADED CAMERA PARAMS: {params}')
         if None in params.values():
             return None
     except Exception as err:
-        logger.error('get_camera_params: {}'.format(str(err)))
+        _log.error(f'get_camera_params: {str(err)}')
         return None
     return params

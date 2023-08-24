@@ -16,15 +16,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
 import os
 
-import bpy.utils.previews
+from bpy.utils import previews
+
+from .kt_logging import KTLogger
 
 
-_ICONS_DIR = "icons"
-_ICONS = (("cam_icon", "cam_icon.png"),
-          ("expressions_icon", "expressions_icon.png"),)
+_log = KTLogger(__name__)
+
+
+_ICONS_DIR = 'icons'
+_ICONS = (('cam_icon', 'cam_icon.png'),
+          ('expressions_icon', 'expressions_icon.png'),)
 
 
 class FBIcons:
@@ -32,20 +36,19 @@ class FBIcons:
 
     @classmethod
     def register(cls):
-        cls.icons = bpy.utils.previews.new()
+        cls.icons = previews.new()
         cls.load_icons()
 
     @classmethod
     def unregister(cls):
-        bpy.utils.previews.remove(cls.icons)
+        previews.remove(cls.icons)
 
     @classmethod
     def load_icon(cls, name, filename):
-        logger = logging.getLogger(__name__)
         icons_dir = os.path.join(os.path.dirname(__file__), _ICONS_DIR)
         full_path = os.path.join(icons_dir, filename)
         res = cls.icons.load(name, full_path, 'IMAGE')
-        logger.debug("ICON:{} {}".format(name, full_path, res))
+        _log.output(f'ICON: {name} {full_path} {res}')
 
     @classmethod
     def load_icons(cls):

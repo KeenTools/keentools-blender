@@ -1,7 +1,6 @@
 import unittest
 import sys
 import os
-import logging
 import math
 from typing import Any
 import time
@@ -9,6 +8,7 @@ import time
 import bpy
 from mathutils import Vector
 
+from keentools.utils.kt_logging import KTLogger
 from keentools.utils.materials import get_mat_by_name, assign_material_to_object, get_shader_node
 from keentools.addon_config import get_operator
 from keentools.geotracker_config import GTConfig
@@ -22,17 +22,7 @@ from keentools.geotracker.gtloader import GTLoader
 from keentools.utils.ui_redraw import get_areas_by_type
 
 
-_logger: Any = logging.getLogger(__name__)
-
-
-def _log_output(message: str) -> None:
-    global _logger
-    _logger.info(message)
-
-
-def _log_error(message: str) -> None:
-    global _logger
-    _logger.error(message)
+_log = KTLogger(__name__)
 
 
 class GTTestConfig:
@@ -40,7 +30,7 @@ class GTTestConfig:
     cube_render_scene_filename = 'cube_render.blend'
     cube_frames_dir = 'cube_frames'
     cube_start_frame = 1
-    cube_end_frame = 10
+    cube_end_frame = 14
     cube_frames_count = cube_end_frame - cube_start_frame + 1
     cube_max_precalc_time_per_frame = 5.0
     cube_precalc_time_limit = cube_frames_count * cube_max_precalc_time_per_frame
@@ -59,11 +49,11 @@ class GTTestConfig:
 
 def add_test_utils_path() -> None:
     _dirname: str = os.path.dirname(os.path.abspath(__file__))
-    _log_output(f'GT TEST DIRNAME: {_dirname}')
+    _log.output(f'GT TEST DIRNAME: {_dirname}')
 
     if _dirname not in sys.path:
         sys.path.append(_dirname)
-        _log_output(f'sys.path: {sys.path}')
+        _log.output(f'sys.path: {sys.path}')
 
 
 add_test_utils_path()
@@ -130,7 +120,7 @@ def create_moving_cube_scene() -> None:
                             GTTestConfig.cube_render_filename)
     scene.render.filepath = filepath
     bpy.ops.render.render(animation=True, write_still=True)
-    _log_output(f'Rendered by {scene.render.engine}: {filepath}')
+    _log.output(f'Rendered by {scene.render.engine}: {filepath}')
 
 
 def gt_create_geotracker() -> None:
@@ -167,12 +157,12 @@ def wait_for_precalc_end(time_limit: float=GTTestConfig.cube_precalc_time_limit)
         current_time = time.time()
         overall_time = current_time - start_time
         if current_time - prev_time > output_status_delta_time:
-            _log_output(f'precalc calculating... {overall_time:.2f} sec.')
+            _log.output(f'precalc calculating... {overall_time:.2f} sec.')
             prev_time = current_time
         if overall_time > time_limit:
             settings.user_interrupts = True  # Stop background process
             raise Exception('Too long precalc calculation')
-    _log_output(f'precalc time: {overall_time}')
+    _log.output(f'precalc time: {overall_time}')
 
 
 def wait_for_tracking_end(time_limit: float=GTTestConfig.cube_tracking_time_limit) -> None:
@@ -186,18 +176,18 @@ def wait_for_tracking_end(time_limit: float=GTTestConfig.cube_tracking_time_limi
         current_time = time.time()
         overall_time = current_time - start_time
         if current_time - prev_time > output_status_delta_time:
-            _log_output(f'Tracking calculating... {overall_time:.2f} sec.')
+            _log.output(f'Tracking calculating... {overall_time:.2f} sec.')
             prev_time = current_time
         if overall_time > time_limit:
             settings.user_interrupts = True  # Stop background process
             raise Exception('Too long tracking calculation')
-    _log_output(f'tracking time: {overall_time}')
+    _log.output(f'tracking time: {overall_time}')
 
 
 def prepare_gt_test_environment() -> None:
     test_utils.clear_test_dir()
     dir_path = test_utils.create_test_dir()
-    _log_output(f'test_dir: {test_utils.test_dir()}')
+    _log.output(f'test_dir: {test_utils.test_dir()}')
     new_scene()
     create_moving_cube_scene()
     test_utils.save_scene(filename=GTTestConfig.cube_render_scene_filename)
@@ -214,7 +204,7 @@ def prepare_gt_test_environment() -> None:
         op('EXEC_DEFAULT',
            filepath=os.path.join(dir_path, GTTestConfig.cube_precalc_filename))
     except Exception as err:
-        _log_error(f'Choose precalc: {str(err)}')
+        _log.error(f'Choose precalc: {str(err)}')
 
     geotracker = get_current_geotracker_item()
     geotracker.precalc_start = GTTestConfig.cube_start_frame
@@ -223,13 +213,13 @@ def prepare_gt_test_environment() -> None:
 
     test_utils.save_scene(filename=GTTestConfig.cube_moving_scene_filename)
 
-    _log_output('Start precalc')
+    _log.output('Start precalc')
     op = get_operator(GTConfig.gt_create_precalc_idname)
     op('EXEC_DEFAULT')
     wait_for_precalc_end()
     test_utils.save_scene(filename=GTTestConfig.cube_precalc_scene_filename)
 
-    _log_output('Start tracking')
+    _log.output('Start tracking')
     fake_pinmode_on()
     fake_viewport_work_area()
     op = get_operator(GTConfig.gt_add_keyframe_idname)
@@ -253,15 +243,15 @@ class GeoTrackerTest(unittest.TestCase):
         obj = bpy.data.objects['Cube']
 
         bpy_set_current_frame(GTTestConfig.cube_start_frame)
-        _log_output(f'Cube location: {obj.location}')
+        _log.output(f'Cube location: {obj.location}')
         loc_diff = (obj.location - GTTestConfig.cube_start_location).length
-        _log_output(f'Cube location diff: {loc_diff}')
+        _log.output(f'Cube location diff: {loc_diff}')
         assert loc_diff < GTTestConfig.cube_location_tolerance
 
         bpy_set_current_frame(GTTestConfig.cube_end_frame)
-        _log_output(f'Cube location: {obj.location}')
+        _log.output(f'Cube location: {obj.location}')
         loc_diff = (obj.location - GTTestConfig.cube_end_location).length
-        _log_output(f'Cube location diff: {loc_diff}')
+        _log.output(f'Cube location diff: {loc_diff}')
         assert loc_diff < GTTestConfig.cube_location_tolerance
 
 
@@ -270,27 +260,27 @@ if __name__ == '__main__':
         from teamcity import is_running_under_teamcity
         from teamcity.unittestpy import TeamcityTestRunner
         runner = TeamcityTestRunner()
-        _log_output('Teamcity TeamcityTestRunner is active')
+        _log.output('Teamcity TeamcityTestRunner is active')
     except ImportError:
-        _log_error('ImportError: Teamcity is not installed')
+        _log.error('ImportError: Teamcity is not installed')
         runner = unittest.TextTestRunner()
-        _log_error('Unittest TextTestRunner is active')
+        _log.error('Unittest TextTestRunner is active')
     except Exception:
-        _log_error('Unhandled error with Teamcity')
+        _log.error('Unhandled error with Teamcity')
         runner = unittest.TextTestRunner()
-        _log_error('Unittest TextTestRunner is active')
+        _log.error('Unittest TextTestRunner is active')
 
     try:
         prepare_gt_test_environment()
     except Exception as err:
-        _log_error(f'Preparing environment exception: \n{str(err)}')
+        _log.error(f'Preparing environment exception: \n{str(err)}')
         raise Exception('GeoTracker Test failed on scene preparing')
 
     # unittest.main()  # -- Doesn't work with Blender, so we use Suite
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(GeoTrackerTest)
     result = runner.run(suite)
 
-    _log_output('Results: {}'.format(result))
+    _log.output('Results: {}'.format(result))
     if len(result.errors) != 0 or len(result.failures) != 0:
         # For non-zero blender exit code in conjuction with command line option
         # --python-exit-code <code>

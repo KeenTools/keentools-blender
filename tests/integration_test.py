@@ -6,7 +6,6 @@
 import unittest
 import sys
 import os
-import logging
 import numpy as np
 
 import bpy
@@ -15,12 +14,16 @@ import bpy
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import test_utils
 
+from keentools.utils.kt_logging import KTLogger
 from keentools.facebuilder.settings import model_type_callback, uv_items_callback
 from keentools.utils import coords, materials
 from keentools.addon_config import get_operator
 from keentools.facebuilder_config import FBConfig, get_fb_settings
 from keentools.facebuilder.fbloader import FBLoader
 from keentools.facebuilder.pick_operator import reset_detected_faces, get_detected_faces
+
+
+_log = KTLogger(__name__)
 
 
 class TestConfig:
@@ -201,19 +204,18 @@ class FaceBuilderTest(unittest.TestCase):
             for level_of_detail in _get_models():
                 head.model_type = level_of_detail
                 poly_count = len(head.headobj.data.polygons)
-                logger.debug('Model_count mask {}: {}'.format(level_of_detail,
-                                                              poly_count))
+                _log.output(f'Model_count mask {level_of_detail}: {poly_count}')
                 self.assertTrue(previous_polycount > poly_count)
                 previous_polycount = poly_count
 
         def _check_masks(head, fb_masks_count):
             max_poly_count = len(head.headobj.data.polygons)
-            logger.debug('Max_poly_count: {}'.format(max_poly_count))
+            _log.output(f'Max_poly_count: {max_poly_count}')
 
             for i in range(len(head.masks)):
                 head.masks[i] = False
                 poly_count = len(head.headobj.data.polygons)
-                logger.debug('Poly_count mask {}: {}'.format(i, poly_count))
+                _log.output(f'Poly_count mask {i}: {poly_count}')
                 if i < TestConfig.fb_mask_count:
                     self.assertTrue(max_poly_count > poly_count)
                 else:
@@ -222,7 +224,6 @@ class FaceBuilderTest(unittest.TestCase):
                 poly_count = len(head.headobj.data.polygons)
                 self.assertTrue(max_poly_count == poly_count)
 
-        logger = logging.getLogger(__name__)
         test_utils.new_scene()
         self._head_cams_and_pins()
         settings = get_fb_settings()
@@ -325,20 +326,19 @@ def prepare_test_environment():
 
 
 if __name__ == "__main__":
-    logger = logging.getLogger(__name__)
     try:
         from teamcity import is_running_under_teamcity
         from teamcity.unittestpy import TeamcityTestRunner
         runner = TeamcityTestRunner()
-        logger.info('Teamcity TeamcityTestRunner is active')
+        _log.info('Teamcity TeamcityTestRunner is active')
     except ImportError:
-        logger.error('ImportError: Teamcity is not installed')
+        _log.error('ImportError: Teamcity is not installed')
         runner = unittest.TextTestRunner()
-        logger.error('Unittest TextTestRunner is active')
+        _log.error('Unittest TextTestRunner is active')
     except Exception:
-        logger.error('Unhandled error with Teamcity')
+        _log.error('Unhandled error with Teamcity')
         runner = unittest.TextTestRunner()
-        logger.error('Unittest TextTestRunner is active')
+        _log.error('Unittest TextTestRunner is active')
 
     prepare_test_environment()
 
@@ -346,7 +346,7 @@ if __name__ == "__main__":
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(FaceBuilderTest)
     result = runner.run(suite)
 
-    logger.info('Results: {}'.format(result))
+    _log.info('Results: {}'.format(result))
     if len(result.errors) != 0 or len(result.failures) != 0:
         # For non-zero blender exit code in conjuction with command line option
         # --python-exit-code <code>
