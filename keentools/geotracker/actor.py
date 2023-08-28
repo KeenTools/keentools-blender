@@ -16,30 +16,32 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
+from bpy.types import Operator
+from bpy.props import StringProperty, IntProperty
 
-import bpy
-
-from ..geotracker_config import GTConfig, get_current_geotracker_item
-from .utils.geotracker_acts import (center_geo_act,)
+from ..utils.kt_logging import KTLogger
+from ..geotracker_config import GTConfig
+from .utils.geotracker_acts import center_geo_act
 from .ui_strings import buttons
 
 
-class GT_OT_Actor(bpy.types.Operator):
+_log = KTLogger(__name__)
+
+
+class GT_OT_Actor(Operator):
     bl_idname = GTConfig.gt_actor_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER'}
 
-    action: bpy.props.StringProperty(name='Action string', default='none')
-    num: bpy.props.IntProperty(name='Numeric parameter', default=0)
+    action: StringProperty(name='Action string', default='none')
+    num: IntProperty(name='Numeric parameter', default=0)
 
     def draw(self, context):
         pass
 
     def execute(self, context):
-        logger = logging.getLogger(__name__)
-        logger.debug('ACTION call: {}'.format(self.action))
+        _log.output('ACTION call: {}'.format(self.action))
 
         if self.action == 'none':
             act_status = center_geo_act()

@@ -83,6 +83,12 @@ def bpy_render_frame() -> Tuple[int, int]:
     return w, h
 
 
+def bpy_set_render_frame(rx: int, ry: int) -> None:
+    scene = bpy.context.scene
+    scene.render.resolution_x = rx
+    scene.render.resolution_y = ry
+
+
 def bpy_link_to_scene(obj: Object) -> None:
     bpy.context.scene.collection.objects.link(obj)
 

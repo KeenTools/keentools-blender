@@ -16,9 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
 import bpy
 
+from ..utils.kt_logging import KTLogger
 from ..geotracker_config import GTConfig, get_gt_settings
 from .settings import FrameListItem, GeoTrackerItem, GTSceneSettings
 from .actor import GT_OT_Actor
@@ -26,6 +26,9 @@ from .pinmode import GT_OT_PinMode
 from .movepin import GT_OT_MovePin
 from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
 from .operators import BUTTON_CLASSES
+
+
+_log = KTLogger(__name__)
 
 
 CLASSES_TO_REGISTER = (FrameListItem,
@@ -72,27 +75,25 @@ def _remove_buttons_from_timeline():
 
 
 def geotracker_register():
-    logger = logging.getLogger(__name__)
-    logger.debug('START GEOTRACKER REGISTER CLASSES')
+    _log.output('START GEOTRACKER REGISTER CLASSES')
 
     for cls in CLASSES_TO_REGISTER:
-        logger.debug('REGISTER GT CLASS: \n{}'.format(str(cls)))
+        _log.output('REGISTER GT CLASS: \n{}'.format(str(cls)))
         bpy.utils.register_class(cls)
 
     _add_addon_settings_var()
-    logger.debug('MAIN GEOTRACKER VARIABLE REGISTERED')
+    _log.output('MAIN GEOTRACKER VARIABLE REGISTERED')
     _add_buttons_to_timeline()
 
 
 def geotracker_unregister():
-    logger = logging.getLogger(__name__)
-    logger.debug('START GEOTRACKER UNREGISTER CLASSES')
+    _log.output('START GEOTRACKER UNREGISTER CLASSES')
 
     _remove_buttons_from_timeline()
 
     for cls in reversed(CLASSES_TO_REGISTER):
-        logger.debug('UNREGISTER CLASS: \n{}'.format(str(cls)))
+        _log.output('UNREGISTER CLASS: \n{}'.format(str(cls)))
         bpy.utils.unregister_class(cls)
 
     _remove_addon_settings_var()
-    logger.debug('MAIN GEOTRACKER VARIABLE UNREGISTERED')
+    _log.output('MAIN GEOTRACKER VARIABLE UNREGISTERED')

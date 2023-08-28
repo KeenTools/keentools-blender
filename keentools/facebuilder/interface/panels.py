@@ -174,9 +174,6 @@ class FB_PT_HeaderPanel(Common, Panel):
             text='Create a new head', icon=icon)
 
     def _head_creation_offer(self, layout):
-        # Test custom icons
-        # FBIcons.layout_icons(layout)
-
         self._create_head_button(layout)
 
         box = layout.box()

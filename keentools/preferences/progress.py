@@ -16,15 +16,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
 from threading import Lock
 
+from ..utils.kt_logging import KTLogger
 from ..blender_independent_packages.pykeentools_loader import (
     install_from_download_async as pkt_install_from_download_async,
     install_core_from_file as pkt_install_core_from_file,
     MINIMUM_VERSION_REQUIRED as pkt_MINIMUM_VERSION_REQUIRED)
 from ..utils.timer import KTTimer
 from ..utils.ui_redraw import force_ui_redraw
+
+
+_log = KTLogger(__name__)
 
 
 class UpdateProgressTimer(KTTimer):
@@ -37,17 +40,16 @@ class UpdateProgressTimer(KTTimer):
         return not self.is_active()
 
     def _check_progress(self):
-        logger = logging.getLogger(__name__)
         if self._timer_should_not_work():
-            logger.debug("STOP PROGRESS INACTIVE")
+            _log.output('STOP PROGRESS INACTIVE')
             self.stop()
-            force_ui_redraw("PREFERENCES")
+            force_ui_redraw('PREFERENCES')
             if self._redraw_view3d:
                 force_ui_redraw('VIEW_3D')
             return None
 
-        logger.debug("NEXT CALL UPDATE TIMER")
-        force_ui_redraw("PREFERENCES")
+        _log.output('NEXT CALL UPDATE TIMER')
+        force_ui_redraw('PREFERENCES')
         if self._redraw_view3d:
             force_ui_redraw('VIEW_3D')
         return self._UPDATE_INTERVAL
@@ -148,14 +150,12 @@ class InstallationProgress:
 
     @classmethod
     def start_download(cls):
-        logger = logging.getLogger(__name__)
-
         if cls._check_another_download_active():
-            logger.error("OTHER FILE DOWNLOADING")
+            _log.error('OTHER FILE IS DOWNLOADING (1)')
             return
 
         cls._on_start_download()
-        logger.debug("START CORE LIBRARY DOWNLOAD")
+        _log.output('START CORE LIBRARY DOWNLOAD')
         pkt_install_from_download_async(
             version=pkt_MINIMUM_VERSION_REQUIRED,
             progress_callback=cls._progress_callback,
@@ -164,21 +164,19 @@ class InstallationProgress:
 
     @classmethod
     def start_zip_install(cls, filepath):
-        logger = logging.getLogger(__name__)
-
         if cls._check_another_download_active():
-            logger.error("OTHER FILE DOWNLOADING")
+            _log.error('OTHER FILE IS DOWNLOADING (2)')
             return
 
         cls._on_start_download()
-        logger.info("START UNPACK CORE LIBRARY DOWNLOAD")
+        _log.info('START UNPACKING DOWNLOADED CORE LIBRARY')
         try:
             pkt_install_core_from_file(filepath)
-        except Exception as error:
+        except Exception as err:
             cls._on_finish_download(
-                'Failed to install Core library from file. ' + str(error))
-            logger.error("UNPACK CORE ERROR" + str(error))
+                f'Failed to install Core library from file. {str(err)}')
+            _log.error(f'CORE UNPACK ERROR\n{str(err)}')
         else:
             cls._on_finish_download(
                 'The core library has been installed successfully.')
-            logger.info("UNPACK CORE FINISH")
+            _log.info('CORE HAS BEEN UNPACKED')
