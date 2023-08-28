@@ -388,51 +388,6 @@ def dashed_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     return shader
 
 
-def black_fill_shader(use_old: bool=_use_old_shaders) -> Any:
-    shader_name = 'black_fill_shader'
-
-    vertex_vars = '''
-    uniform mat4 ModelViewProjectionMatrix;
-    in vec3 pos;
-    '''
-
-    vertex_glsl = '''
-    void main()
-    {
-        gl_Position = ModelViewProjectionMatrix * vec4(pos, 1.0);
-    }
-    '''
-
-    fragment_vars = '''
-    out vec4 fragColor;
-    '''
-
-    fragment_glsl = '''
-    void main()
-    {
-        fragColor = vec4(0.0, 0.0, 0.0, 1.0);
-    }
-    '''
-
-    if use_old:
-        shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
-                                     fragment_vars + fragment_glsl)
-        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
-        return shader
-
-    shader_info = gpu.types.GPUShaderCreateInfo()
-    shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
-    shader_info.vertex_in(0, 'VEC3', 'pos')
-    shader_info.fragment_out(0, 'VEC4', 'fragColor')
-
-    shader_info.vertex_source(vertex_glsl)
-    shader_info.fragment_source(fragment_glsl)
-
-    shader = gpu.shader.create_from_info(shader_info)
-    _log.output(f'{shader_name}: GPU Shader')
-    return shader
-
-
 def black_fill_local_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_name = 'black_fill_local_shader'
 
