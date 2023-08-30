@@ -43,6 +43,10 @@ class KTShaderBase:
     def is_handler_list_empty(cls) -> bool:
         return len(cls.handler_list) == 0
 
+    @staticmethod
+    def list_for_batch(arr: Any) -> Any:
+        return arr if len(arr) > 0 else []
+
     def __init__(self, target_class: Any=SpaceView3D):
         self.draw_handler: Optional[Any] = None
         self.target_class: Any = target_class
@@ -96,11 +100,11 @@ class KTShaderBase:
     def draw_checks(self, context: Any) -> bool:
         return True
 
-    def draw_main_bgl(self, context: Any) -> None:
+    def draw_main_gpu(self, context: Any) -> None:
         pass
 
-    def draw_main_gpu(self, context: Any) -> None:
-        self.draw_main_bgl(context)  # for undefined
+    def draw_main_bgl(self, context: Any) -> None:
+        self.draw_main_gpu(context)
 
     def register_handler(self, context: Any,
                          post_type: str='POST_VIEW') -> None:
