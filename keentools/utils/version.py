@@ -57,7 +57,7 @@ class BVersion:
     property_gpu_backend_exists: bool = ver >= (3, 5, 0)
     uv_select_overlap_exists: bool = ver >= (2, 81, 0)
     pack_uv_problem_exists: bool = ver == (3, 6, 0)
-    use_old_bgl_shaders: bool = ver < (3, 5, 0)
+    use_old_bgl_shaders: bool = ver < (3, 4, 0)
 
     builtin_shaders_are_using_old_names: bool = ver < (4, 0, 0)
     blf_size_takes_3_arguments: bool = ver < (4, 0, 0)
