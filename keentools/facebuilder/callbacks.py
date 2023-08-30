@@ -310,13 +310,9 @@ def update_expression_view(head: Any, context: Any) -> None:
 def update_wireframe_image(self: Any, context: Any) -> None:
     settings = get_fb_settings()
     vp = FBLoader.viewport()
-    wf = vp.wireframer()
-    wf.init_colors((settings.wireframe_color,
-                    settings.wireframe_special_color,
-                    settings.wireframe_midline_color),
-                    settings.wireframe_opacity * settings.get_adaptive_opacity())
-    wf.init_wireframe_image(FBLoader.get_builder(), settings.show_specials)
     vp.update_wireframe_colors()
+    wf = vp.wireframer()
+    wf.init_wireframe_image(FBLoader.get_builder(), settings.show_specials)
 
 
 def update_wireframe_func(self: Any, context: Any) -> None:

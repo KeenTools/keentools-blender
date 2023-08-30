@@ -271,7 +271,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
 
         return True
 
-    def draw_simple_line(self):
+    def _draw_simple_line(self):
         set_line_width(self.line_width)
         set_blend_alpha()
         self.simple_line_shader.bind()
@@ -287,7 +287,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             return
         if not wireframe_image:
             self.switch_to_simple_shader()
-            self.draw_simple_line()
+            self._draw_simple_line()
             _log.error('draw_textured_line_gpu switched to simple')
         else:
             set_blend_alpha()
@@ -296,17 +296,12 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             set_shader_sampler(shader, wireframe_image)
             shader.uniform_float('opacity', self.opacity)
             shader.uniform_float('adaptiveOpacity', self.adaptive_opacity)
-
             shader.uniform_vector_float(
                 shader.uniform_from_name('modelMatrix'),
                 self.object_world_matrix.ravel(), 16)
             shader.uniform_float('viewportSize', self.viewport_size)
             shader.uniform_float('lineWidth', self.line_width)
             self.line_batch.draw(shader)
-
-    def draw_main_bgl(self, context: Any) -> None:
-        self.draw_main_gpu(context)
-        revert_blender_viewport_state()
 
     def draw_main_gpu(self, context: Any) -> None:
         set_depth_test('LESS_EQUAL')
@@ -318,7 +313,11 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         if not self.use_simple_shader:
             self._draw_textured_line()
         else:
-            self.draw_simple_line()
+            self._draw_simple_line()
+
+    def draw_main_bgl(self, context: Any) -> None:
+        self.draw_main_gpu(context)
+        revert_blender_viewport_state()
 
     def create_batches(self) -> None:
         if self.fill_shader is not None:
