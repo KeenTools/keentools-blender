@@ -60,8 +60,8 @@ _log = KTLogger(__name__)
 
 class FBRectangleShader2D(KTEdgeShader2D):
     def __init__(self, target_class: Any=SpaceView3D):
-        self.rectangles = []
         super().__init__(target_class)
+        self.rectangles = []
         self.line_width = FBConfig.face_selection_frame_width
 
     def clear_rectangles(self) -> None:
@@ -154,21 +154,19 @@ class FBRectangleShader2D(KTEdgeShader2D):
 
 class FBRasterEdgeShader3D(KTEdgeShaderBase):
     def __init__(self, target_class: Any=SpaceView3D):
+        super().__init__(target_class)
         self.edge_indices: Any = np.array([], dtype=np.int32)
         self.edge_uvs: Any = np.empty(shape=(0, 3), dtype=np.float32)
-
-        self.wide_edge_vertices: Any = np.empty(shape=(0, 3), dtype=np.float32)
         self.wide_edge_uvs: Any = np.empty(shape=(0, 2), dtype=np.float32)
-        self.vertex_pos_indices: Any = np.empty(shape=(0, 3), dtype=np.int32)
-        self.vertex_opp_indices: Any = np.empty(shape=(0, 3), dtype=np.int32)
-        self.opposite_edge_vertices: Any = np.empty(shape=(0, 3), dtype=np.float32)
+
         self.viewport_size: Tuple[float, float] = (1920, 1080)
 
         self.texture_colors: List = [(1., 0., 0.), (0., 1., 0.), (0., 0., 1.)]
         self.opacity: float = 0.5
         self.use_simple_shader: bool = False
         self.simple_line_shader: Optional[Any] = None
-        super().__init__(target_class)
+
+        self.wireframe_offset = FBConfig.wireframe_offset_constant
 
     def get_statistics(self):
         return f'\nvertices: {len(self.vertices)}' \
@@ -178,7 +176,8 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
                f'\nedge_colors: {len(self.edge_colors)}' \
                f'\nedge_indices: {len(self.edge_indices)}' \
                f'\nedge_uvs: {len(self.edge_uvs)}' \
-               f'\nopposite_edge_vertices: {len(self.opposite_edge_vertices)}' \
+               f'\nwide_edge_vertices: {len(self.wide_edge_vertices)}' \
+               f'\nwide_opposite_edge_vertices: {len(self.wide_opposite_edge_vertices)}' \
                f'\ntexture_colors: {self.texture_colors}'
 
     def set_viewport_size(self, region: Any):
@@ -256,6 +255,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         shader.uniform_vector_float(
             shader.uniform_from_name('modelMatrix'),
             self.object_world_matrix.ravel(), 16)
+        shader.uniform_float('offset', self.wireframe_offset)
         self.fill_batch.draw(shader)
 
     def draw_checks(self, context: Any) -> bool:
@@ -302,7 +302,6 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
                 self.object_world_matrix.ravel(), 16)
             shader.uniform_float('viewportSize', self.viewport_size)
             shader.uniform_float('lineWidth', self.line_width)
-            shader.uniform_float('filterRadius', 0.5)
             self.line_batch.draw(shader)
 
     def draw_main_bgl(self, context: Any) -> None:
@@ -341,9 +340,9 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         if self.line_shader is not None:
             self.line_batch = batch_for_shader(
                 self.line_shader, 'TRIS',
-                {'pos': self.wide_edge_vertices if len(self.wide_edge_vertices) > 0 else [],
-                 'texCoord': self.wide_edge_uvs if len(self.wide_edge_uvs) > 0 else [],
-                 'opp': self.opposite_edge_vertices if len(self.opposite_edge_vertices) > 0 else [],
+                {'pos': self.list_for_batch(self.wide_edge_vertices),
+                 'texCoord': self.list_for_batch(self.wide_edge_uvs),
+                 'opp': self.list_for_batch(self.wide_opposite_edge_vertices),
                  }
             )
         else:
@@ -354,8 +353,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         res = [True] * 3
 
         if self.fill_shader is None:
-            self.fill_shader = black_offset_fill_local_shader(
-                offset=FBConfig.wireframe_offset_constant)
+            self.fill_shader = black_offset_fill_local_shader()
             res[0] = self.fill_shader is not None
             _log.output(f'{self.__class__.__name__}.fill_shader: {res[0]}')
             changes = True
@@ -444,17 +442,18 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
                     f'\nedge_uvs: {self.edge_uvs.shape}')
 
     def init_geom_data_from_core(self, edge_vertices: Any,
-                                 triangle_vertices: Any):
+                                 triangle_vertices: Any) -> None:
         _log.output(_log.color('yellow', 'init_geom_data_from_core'))
         len_edge_vertices = len(edge_vertices)
-        if len_edge_vertices * 3 != len(self.vertex_pos_indices):
+        if len_edge_vertices * 3 != len(self.wide_vertex_pos_indices):
             _log.output('init_geom_data_from_core recalc index arrays')
-            self.vertex_pos_indices, self.vertex_opp_indices = \
+            self.wide_vertex_pos_indices, self.wide_vertex_opp_indices = \
                 make_indices_for_wide_edges(len_edge_vertices)
 
+        # TODO: Make shaders local
         self.edge_vertices = multiply_verts_on_matrix_4x4(
             edge_vertices, self.object_world_matrix)
-        self.wide_edge_vertices = edge_vertices[self.vertex_pos_indices]
-        self.wide_edge_uvs = self.edge_uvs[self.vertex_pos_indices]
-        self.opposite_edge_vertices = edge_vertices[self.vertex_opp_indices]
+        self.wide_edge_vertices = edge_vertices[self.wide_vertex_pos_indices]
+        self.wide_opposite_edge_vertices = edge_vertices[self.wide_vertex_opp_indices]
+        self.wide_edge_uvs = self.edge_uvs[self.wide_vertex_pos_indices]
         self.triangle_vertices = triangle_vertices

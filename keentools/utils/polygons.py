@@ -34,6 +34,7 @@ _log = KTLogger(__name__)
 
 class KTRasterMask(KTShaderBase):
     def __init__(self, target_class: Any, mask_color=GTConfig.mask_2d_color):
+        super().__init__(target_class)
         self.square: List[Tuple[float, float]] = [(0., 0.), (1., 0.),
                                                   (1., 1), (0., 1)]
         self.vertices: List[Tuple[float, float]] = self.square
@@ -46,7 +47,6 @@ class KTRasterMask(KTShaderBase):
         self.right: Tuple[float, float] = (400., 200.)
         self.image: Optional[Image] = None
         self.mask_threshold: float = 0.0
-        super().__init__(target_class)
 
     def init_shaders(self) -> Optional[bool]:
         if self.mask_shader is not None:
@@ -83,7 +83,7 @@ class KTRasterMask(KTShaderBase):
             return False
         return True
 
-    def draw_main_bgl(self, context: Any) -> None:
+    def draw_main_gpu(self, context: Any) -> None:
         set_blend_alpha()
 
         shader = self.mask_shader

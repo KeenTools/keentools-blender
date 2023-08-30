@@ -375,7 +375,7 @@ def update_camera_focal(camera: Any, context: Any) -> None:
 
     kid = camera.get_keyframe()
     camera.camobj.data.lens = camera.focal
-    _log.output(f'UPDATE_CAMERA_FOCAL: K:{kid} F:{camera.focal}')
+    _log.output(f'UPDATED_CAMERA_FOCAL: K:{kid} F:{camera.focal}')
 
     if FBLoader.in_pin_drag():
         return

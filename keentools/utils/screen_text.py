@@ -31,6 +31,7 @@ _log = KTLogger(__name__)
 
 class KTScreenText(KTShaderBase):
     def __init__(self, target_class: Any=bpy.types.SpaceView3D):
+        super().__init__(target_class)
         self.defaults: Dict = {'color': (1., 1., 1., 0.5),
                                'size': 24,
                                'shadow_color': (0., 0., 0., 0.75),
@@ -50,7 +51,6 @@ class KTScreenText(KTShaderBase):
              'y': 30}  # line 2
         ]
         self.set_message(self.get_default_text())
-        super().__init__(target_class)
 
     def get_default_text(self) -> List[Dict]:
         return self.default_text
