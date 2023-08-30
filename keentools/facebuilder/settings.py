@@ -717,9 +717,11 @@ class FBSceneSettings(PropertyGroup):
     def calc_adaptive_opacity(self, area: Area) -> None:
         if not area:
             return
+        aw = area.width
         rx, ry = bpy_render_frame()
+        denom = aw if 1 <= aw < rx else rx
         x1, y1, x2, y2 = get_camera_border(area)
-        self.adaptive_opacity = (x2 - x1) / rx
+        self.adaptive_opacity = (x2 - x1) / denom
 
     wireframe_opacity: FloatProperty(
         description='From 0.0 to 1.0',
