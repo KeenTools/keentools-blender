@@ -135,7 +135,7 @@ class FBRectangleShader2D(KTEdgeShader2D):
 
         return True
 
-    def draw_main_bgl(self, context: Any) -> None:
+    def draw_main(self, context: Any) -> None:
         set_blend_alpha()
         set_smooth_line()
         set_line_width(self.line_width)
@@ -303,7 +303,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             shader.uniform_float('lineWidth', self.line_width)
             self.line_batch.draw(shader)
 
-    def draw_main_gpu(self, context: Any) -> None:
+    def draw_main(self, context: Any) -> None:
         set_depth_test('LESS_EQUAL')
         set_color_mask(False, False, False, False)
         self.draw_empty_fill()
@@ -314,9 +314,6 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             self._draw_textured_line()
         else:
             self._draw_simple_line()
-
-    def draw_main_bgl(self, context: Any) -> None:
-        self.draw_main_gpu(context)
         revert_blender_viewport_state()
 
     def create_batches(self) -> None:

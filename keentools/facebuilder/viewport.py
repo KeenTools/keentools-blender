@@ -93,10 +93,6 @@ class FBViewport(KTViewport):
             _log.info(tmp_log)
         return True
 
-    def switch_all_shaders_to(self, mode: str='gpu') -> None:
-        for item in self.get_all_viewport_shader_objects():
-            item.switch_shader_to(mode)
-
     def register_handlers(self, context: Any) -> None:
         self.unregister_handlers()
         _log.output(f'{self.__class__.__name__}.register_handlers')

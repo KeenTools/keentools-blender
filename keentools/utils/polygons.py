@@ -83,7 +83,7 @@ class KTRasterMask(KTShaderBase):
             return False
         return True
 
-    def draw_main_gpu(self, context: Any) -> None:
+    def draw_main(self, context: Any) -> None:
         set_blend_alpha()
 
         shader = self.mask_shader

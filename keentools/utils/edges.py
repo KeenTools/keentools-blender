@@ -151,7 +151,7 @@ class KTEdgeShader2D(KTEdgeShaderBase):
 
         return True
 
-    def draw_main_gpu(self, context: Any) -> None:
+    def draw_main(self, context: Any) -> None:
         set_blend_alpha()
         set_smooth_line()
         set_line_width(self.line_width)
@@ -208,10 +208,9 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
             return res[0] and res[1]
         return None
 
-    def draw_main_gpu(self, context: Any) -> None:
+    def draw_main(self, context: Any) -> None:
         set_blend_alpha()
         set_line_width(self.line_width)
-
         self.line_shader.bind()
         self.line_batch.draw(self.line_shader)
         self.fill_shader.bind()
@@ -347,7 +346,7 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
 
         return True
 
-    def draw_main_gpu(self, context: Any) -> None:
+    def draw_main(self, context: Any) -> None:
         area = context.area
         reg = self._get_area_region(area)
         current_state = (reg.view2d.view_to_region(0, 0, clip=False),
@@ -558,7 +557,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
         shader.uniform_float('lineWidth', self.line_width)
         self.lit_batch.draw(shader)
 
-    def draw_main_gpu(self, context: Any) -> None:
+    def draw_main(self, context: Any) -> None:
         set_depth_test('LESS_EQUAL')
         set_color_mask(False, False, False, False)
         self.draw_empty_fill()
@@ -570,9 +569,6 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
         set_depth_test('LESS')
         self.draw_selection_fill()
         revert_blender_viewport_state()
-
-    def draw_main_bgl(self, context: Any) -> None:
-        self.draw_main_gpu(context)
 
     def clear_all(self) -> None:
         super().clear_all()
