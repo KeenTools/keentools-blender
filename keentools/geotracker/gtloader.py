@@ -577,7 +577,7 @@ class GTLoader:
             cls.update_timeline()
 
     @classmethod
-    def _update_all_timelines(cls) -> None:
+    def update_all_timelines(cls) -> None:
         areas = bpy.context.workspace.screens[0].areas
         for area in areas:
             if area.type == 'DOPESHEET_EDITOR':
@@ -590,7 +590,7 @@ class GTLoader:
         gt = cls.kt_geotracker()
         timeliner.set_keyframes(gt.keyframes())
         timeliner.create_batch()
-        cls._update_all_timelines()
+        cls.update_all_timelines()
 
     @classmethod
     def spring_pins_back(cls) -> None:
