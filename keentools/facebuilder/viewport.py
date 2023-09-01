@@ -93,10 +93,6 @@ class FBViewport(KTViewport):
             _log.info(tmp_log)
         return True
 
-    def switch_all_shaders_to(self, mode: str='gpu') -> None:
-        for item in self.get_all_viewport_shader_objects():
-            item.switch_shader_to(mode)
-
     def register_handlers(self, context: Any) -> None:
         self.unregister_handlers()
         _log.output(f'{self.__class__.__name__}.register_handlers')
@@ -135,10 +131,12 @@ class FBViewport(KTViewport):
 
     def update_wireframe_colors(self) -> None:
         settings = get_fb_settings()
-        self.wireframer().init_colors((settings.wireframe_color,
-                                      settings.wireframe_special_color,
-                                      settings.wireframe_midline_color),
-                                      settings.wireframe_opacity * settings.get_adaptive_opacity())
+        wf = self.wireframer()
+        wf.init_colors((settings.wireframe_color,
+                        settings.wireframe_special_color,
+                        settings.wireframe_midline_color),
+                       settings.wireframe_opacity)
+        wf.set_adaptive_opacity(settings.get_adaptive_opacity())
 
     def update_pin_sensitivity(self) -> None:
         settings = get_fb_settings()

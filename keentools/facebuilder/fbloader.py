@@ -20,7 +20,8 @@ from typing import Any, Optional, Tuple, List
 import numpy as np
 
 import bpy
-from bpy.types import Object, Area
+import bmesh
+from bpy.types import Object, Area, Mesh
 
 from ..utils.kt_logging import KTLogger
 from ..facebuilder_config import FBConfig, get_fb_settings
@@ -37,10 +38,26 @@ from .viewport import FBViewport
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..utils.bpy_common import (bpy_create_object,
                                 bpy_create_camera_data,
-                                bpy_link_to_scene)
+                                bpy_link_to_scene,
+                                bpy_render_frame)
 
 
 _log = KTLogger(__name__)
+
+
+def _create_mesh_from_pydata(mesh_name: str,
+                             vertices: List, faces: List) -> Mesh:
+    mesh = bpy.data.meshes.new(mesh_name)
+
+    bm = bmesh.new()
+    verts = [bm.verts.new(v) for v in vertices]
+    bm.verts.index_update()
+    for face in faces:
+        bm.faces.new(verts[i] for i in face)
+
+    bm.to_mesh(mesh)
+    bm.free()
+    return mesh
 
 
 def force_stop_fb_shaders() -> None:
@@ -297,15 +314,10 @@ class FBLoader:
             vertices[i] = me.point(i)
 
         vertices2 = vertices @ xy_to_xz_rotation_matrix_3x3()
+        faces = [[me.face_point(i, j) for j in range(me.face_size(i))]
+                 for i in range(me.faces_count())]
 
-        f_count = me.faces_count()
-        faces = np.empty(f_count, dtype=np.object_)
-
-        for i in range(f_count):
-            faces[i] = [me.face_point(i, j) for j in range(me.face_size(i))]
-
-        mesh = bpy.data.meshes.new(mesh_name)
-        mesh.from_pydata(vertices2, [], faces.tolist())
+        mesh = _create_mesh_from_pydata(mesh_name, vertices2, faces)
 
         # Normals are not in use yet
         # Init Custom Normals (work on Shading Flat only!)
@@ -549,8 +561,7 @@ class FBLoader:
             w, h = img.size
 
         if w == 0 and h == 0:
-            w = bpy.context.scene.render.resolution_x
-            h = bpy.context.scene.render.resolution_y
+            w, h = bpy_render_frame()
 
         camera.set_image_width(w)
         camera.set_image_height(h)

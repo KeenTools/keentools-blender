@@ -22,19 +22,6 @@ import gpu
 
 from .kt_logging import KTLogger
 from .version import BVersion
-from ..addon_config import Config
-from .shaders import (flat_color_2d_vertex_shader,
-                      flat_color_3d_vertex_shader,
-                      circular_dot_fragment_shader,
-                      uniform_3d_vertex_local_shader,
-                      smooth_3d_fragment_shader,
-                      solid_line_vertex_shader,
-                      solid_line_fragment_shader,
-                      residual_vertex_shader,
-                      residual_fragment_shader,
-                      simple_fill_vertex_shader,
-                      simple_fill_vertex_local_shader,
-                      black_fill_fragment_shader)
 
 
 _log = KTLogger(__name__)
@@ -46,9 +33,41 @@ _log.output(f'_use_old_shaders: {_use_old_shaders}')
 
 def circular_dot_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_name = 'circular_dot_3d_shader'
+
+    vertex_vars = '''
+    uniform mat4 ModelViewProjectionMatrix;
+    in vec2 pos;
+    in vec4 color;
+    flat out vec4 finalColor;
+    '''
+
+    vertex_glsl = '''
+    void main()
+    {
+        gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);
+        finalColor = color;
+    }
+    '''
+
+    fragment_vars = '''
+    flat in vec4 finalColor;
+    out vec4 fragColor;
+    '''
+
+    fragment_glsl = '''
+    void main() {
+        vec2 cxy = 2.0 * gl_PointCoord - 1.0;
+        float r = dot(cxy, cxy);
+        float delta = fwidth(r);
+        float alpha = 1.0 - smoothstep(1.0 - delta, 1.0 + delta, r);
+        if (alpha <= 0.0) discard;
+        fragColor = finalColor * alpha;
+    }
+    '''
+
     if use_old:
-        shader = gpu.types.GPUShader(flat_color_2d_vertex_shader(),
-                                     circular_dot_fragment_shader())
+        shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
+                                     fragment_vars + fragment_glsl)
         _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
         return shader
 
@@ -62,27 +81,8 @@ def circular_dot_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_info.vertex_out(vert_out)
     shader_info.fragment_out(0, 'VEC4', 'fragColor')
 
-    shader_info.vertex_source(
-        '''
-        void main()
-        {
-            gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);
-            finalColor = color;
-        }
-        '''
-    )
-
-    shader_info.fragment_source(
-        '''
-        void main() {
-                vec2 cxy = 2.0 * gl_PointCoord - 1.0;
-                float r = dot(cxy, cxy);
-                float delta = fwidth(r);
-                float alpha = 1.0 - smoothstep(1.0 - delta, 1.0 + delta, r);
-                fragColor = finalColor * alpha;
-        }
-        '''
-    )
+    shader_info.vertex_source(vertex_glsl)
+    shader_info.fragment_source(fragment_glsl)
 
     shader = gpu.shader.create_from_info(shader_info)
     _log.output(f'{shader_name}: GPU Shader')
@@ -91,9 +91,42 @@ def circular_dot_2d_shader(use_old: bool=_use_old_shaders) -> Any:
 
 def circular_dot_3d_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_name = 'circular_dot_3d_shader'
+
+    vertex_vars = '''
+    uniform mat4 ModelViewProjectionMatrix;
+    in vec3 pos;
+    in vec4 color;
+    flat out vec4 finalColor;
+    '''
+
+    vertex_glsl = '''
+    void main()
+    {
+        gl_Position = ModelViewProjectionMatrix * vec4(pos, 1.0);
+        finalColor = color;
+    }
+    '''
+
+    fragment_vars = '''
+    flat in vec4 finalColor;
+    out vec4 fragColor;
+    '''
+
+    fragment_glsl = '''
+    void main() 
+    {
+        vec2 cxy = 2.0 * gl_PointCoord - 1.0;
+        float r = dot(cxy, cxy);
+        float delta = fwidth(r);
+        float alpha = 1.0 - smoothstep(1.0 - delta, 1.0 + delta, r);
+        if (alpha <= 0.0) discard;
+        fragColor = finalColor * alpha;
+    }
+    '''
+
     if use_old:
-        shader = gpu.types.GPUShader(flat_color_3d_vertex_shader(),
-                                     circular_dot_fragment_shader())
+        shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
+                                     fragment_vars + fragment_glsl)
         _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
         return shader
 
@@ -107,28 +140,8 @@ def circular_dot_3d_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_info.vertex_out(vert_out)
     shader_info.fragment_out(0, 'VEC4', 'fragColor')
 
-    shader_info.vertex_source(
-        '''
-        void main()
-        {
-            vec4 pos_4d = vec4(pos, 1.0);
-            gl_Position = ModelViewProjectionMatrix * pos_4d;
-            finalColor = color;
-        }
-        '''
-    )
-
-    shader_info.fragment_source(
-        '''
-        void main() {
-                vec2 cxy = 2.0 * gl_PointCoord - 1.0;
-                float r = dot(cxy, cxy);
-                float delta = fwidth(r);
-                float alpha = 1.0 - smoothstep(1.0 - delta, 1.0 + delta, r);
-                fragColor = finalColor * alpha;
-        }
-        '''
-    )
+    shader_info.vertex_source(vertex_glsl)
+    shader_info.fragment_source(fragment_glsl)
 
     shader = gpu.shader.create_from_info(shader_info)
     _log.output(f'{shader_name}: GPU Shader')
@@ -137,9 +150,41 @@ def circular_dot_3d_shader(use_old: bool=_use_old_shaders) -> Any:
 
 def line_3d_local_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_name = 'line_3d_local_shader'
+
+    vertex_vars = '''
+    uniform mat4 ModelViewProjectionMatrix;
+    uniform mat4 modelMatrix;
+    uniform vec4 color;
+    uniform float adaptiveOpacity;
+    in vec3 pos;
+    out vec4 finalColor;
+    '''
+
+    vertex_glsl = '''
+    void main()
+    {
+        gl_Position = ModelViewProjectionMatrix * modelMatrix * vec4(pos, 1.0);
+        finalColor = color;
+        finalColor.a = color.a * adaptiveOpacity;
+    }
+    '''
+
+    fragment_vars = '''
+    in vec4 finalColor;
+    out vec4 fragColor;
+    '''
+
+    # TODO: add sRGB color mapping
+    fragment_glsl = '''
+    void main()
+    {
+        fragColor = finalColor;
+    }
+    '''
+
     if use_old:
-        shader = gpu.types.GPUShader(uniform_3d_vertex_local_shader(),
-                                     smooth_3d_fragment_shader())
+        shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
+                                     fragment_vars + fragment_glsl)
         _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
         return shader
 
@@ -156,25 +201,8 @@ def line_3d_local_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_info.vertex_out(vert_out)
     shader_info.fragment_out(0, 'VEC4', 'fragColor')
 
-    shader_info.vertex_source(
-        '''
-        void main()
-        {
-            gl_Position = ModelViewProjectionMatrix * modelMatrix * vec4(pos, 1.0);
-            finalColor = color;
-            finalColor.a = color.a * adaptiveOpacity;
-        }
-        '''
-    )
-
-    txt = '''
-        void main()
-        {
-            fragColor = finalColor;
-        }
-        '''
-
-    shader_info.fragment_source(txt)
+    shader_info.vertex_source(vertex_glsl)
+    shader_info.fragment_source(fragment_glsl)
 
     shader = gpu.shader.create_from_info(shader_info)
     _log.output(f'{shader_name}: GPU Shader')
@@ -183,9 +211,38 @@ def line_3d_local_shader(use_old: bool=_use_old_shaders) -> Any:
 
 def solid_line_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_name = 'solid_line_3d_shader'
+
+    vertex_vars = '''
+    uniform mat4 ModelViewProjectionMatrix;
+    in vec2 pos;
+    in vec4 color;
+    flat out vec4 finalColor;
+    '''
+
+    vertex_glsl = '''
+    void main()
+    {
+        gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);
+        finalColor = color;
+    }
+    '''
+
+    fragment_vars = '''
+    flat in vec4 finalColor;
+    out vec4 fragColor;
+    '''
+
+    # TODO: add sRGB color mapping
+    fragment_glsl = '''
+    void main()
+    {
+        fragColor = finalColor;
+    }
+    '''
+
     if use_old:
-        shader = gpu.types.GPUShader(solid_line_vertex_shader(),
-                                     solid_line_fragment_shader())
+        shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
+                                     fragment_vars + fragment_glsl)
         _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
         return shader
 
@@ -200,24 +257,8 @@ def solid_line_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_info.vertex_out(vert_out)
     shader_info.fragment_out(0, 'VEC4', 'fragColor')
 
-    shader_info.vertex_source(
-        '''
-        void main()
-        {
-            gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);
-            finalColor = color;
-        }
-        '''
-    )
-
-    txt = '''
-        void main()
-        {
-            fragColor = finalColor;
-        }
-        '''
-
-    shader_info.fragment_source(txt)
+    shader_info.vertex_source(vertex_glsl)
+    shader_info.fragment_source(fragment_glsl)
 
     shader = gpu.shader.create_from_info(shader_info)
     _log.output(f'{shader_name}: GPU Shader')
@@ -226,9 +267,42 @@ def solid_line_2d_shader(use_old: bool=_use_old_shaders) -> Any:
 
 def residual_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_name = 'residual_2d_shader'
+
+    vertex_vars = '''
+    uniform mat4 ModelViewProjectionMatrix;
+    in vec2 pos;
+    in float lineLength;
+    in vec4 color;
+    flat out vec4 finalColor;
+    out float v_LineLength;
+    '''
+
+    vertex_glsl = '''
+    void main()
+    {
+        gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);
+        finalColor = color;
+        v_LineLength = lineLength;
+    }
+    '''
+
+    fragment_vars = '''
+    flat in vec4 finalColor;
+    in float v_LineLength;            
+    out vec4 fragColor;
+    '''
+
+    fragment_glsl = '''
+    void main()
+    {
+        if (step(sin(v_LineLength), -0.3f) == 1) discard;
+        fragColor = finalColor;
+    }
+    '''
+
     if use_old:
-        shader = gpu.types.GPUShader(residual_vertex_shader(),
-                                     residual_fragment_shader())
+        shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
+                                     fragment_vars + fragment_glsl)
         _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
         return shader
 
@@ -244,26 +318,8 @@ def residual_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_info.vertex_out(vert_out)
     shader_info.fragment_out(0, 'VEC4', 'fragColor')
 
-    shader_info.vertex_source(
-        '''
-        void main()
-        {
-            v_LineLength = lineLength;
-            gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);
-            finalColor = color;
-        }
-        '''
-    )
-
-    txt = '''
-        void main()
-        {
-            if (step(sin(v_LineLength), -0.3f) == 1) discard;
-            fragColor = finalColor;
-        }
-        '''
-
-    shader_info.fragment_source(txt)
+    shader_info.vertex_source(vertex_glsl)
+    shader_info.fragment_source(fragment_glsl)
 
     shader = gpu.shader.create_from_info(shader_info)
     _log.output(f'{shader_name}: GPU Shader')
@@ -272,9 +328,42 @@ def residual_2d_shader(use_old: bool=_use_old_shaders) -> Any:
 
 def dashed_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_name = 'dashed_2d_shader'
+
+    vertex_vars = '''
+    uniform mat4 ModelViewProjectionMatrix;
+    in vec2 pos;
+    in float lineLength;
+    in vec4 color;
+    flat out vec4 finalColor;
+    out float v_LineLength;
+    '''
+
+    vertex_glsl = '''
+    void main()
+    {
+        gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);
+        finalColor = color;
+        v_LineLength = lineLength;
+    }
+    '''
+
+    fragment_vars = '''
+    flat in vec4 finalColor;
+    in float v_LineLength;            
+    out vec4 fragColor;
+    '''
+
+    fragment_glsl = '''
+    void main()
+    {
+        if (mod(v_LineLength + 5.0, 10.0) > 5.5) discard;
+        fragColor = finalColor;
+    }
+    '''
+
     if use_old:
-        shader = gpu.types.GPUShader(residual_vertex_shader(),
-                                     residual_fragment_shader())
+        shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
+                                     fragment_vars + fragment_glsl)
         _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
         return shader
 
@@ -290,99 +379,8 @@ def dashed_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_info.vertex_out(vert_out)
     shader_info.fragment_out(0, 'VEC4', 'fragColor')
 
-    shader_info.vertex_source(
-        '''
-        void main()
-        {
-            v_LineLength = lineLength;
-            gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);
-            finalColor = color;
-        }
-        '''
-    )
-
-    txt = '''
-        void main()
-        {
-            if (mod(v_LineLength + 5.0, 10.0) > 5.5) discard;
-            fragColor = finalColor;
-        }
-        '''
-
-    shader_info.fragment_source(txt)
-
-    shader = gpu.shader.create_from_info(shader_info)
-    _log.output(f'{shader_name}: GPU Shader')
-    return shader
-
-
-def black_fill_shader(use_old: bool=_use_old_shaders) -> Any:
-    shader_name = 'black_fill_shader'
-    if use_old:
-        shader = gpu.types.GPUShader(simple_fill_vertex_shader(),
-                                     black_fill_fragment_shader())
-        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
-        return shader
-
-    shader_info = gpu.types.GPUShaderCreateInfo()
-    shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
-    shader_info.vertex_in(0, 'VEC3', 'pos')
-    shader_info.fragment_out(0, 'VEC4', 'fragColor')
-
-    shader_info.vertex_source(
-        '''  
-        void main()
-        {
-            gl_Position = ModelViewProjectionMatrix * vec4(pos, 1.0);
-        }
-        '''
-    )
-
-    shader_info.fragment_source(
-        '''
-        void main()
-        {
-            fragColor = vec4(0.0, 0.0, 0.0, 1.0);
-        }
-        '''
-    )
-
-    shader = gpu.shader.create_from_info(shader_info)
-    _log.output(f'{shader_name}: GPU Shader')
-    return shader
-
-
-def black_fill_local_shader(use_old: bool=_use_old_shaders) -> Any:
-    shader_name = 'black_fill_local_shader'
-    if use_old:
-        shader = gpu.types.GPUShader(simple_fill_vertex_local_shader(),
-                                     black_fill_fragment_shader())
-        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
-        return shader
-
-    shader_info = gpu.types.GPUShaderCreateInfo()
-    shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
-    shader_info.push_constant('MAT4', 'modelMatrix')
-    shader_info.vertex_in(0, 'VEC3', 'pos')
-    shader_info.fragment_out(0, 'VEC4', 'fragColor')
-
-    shader_info.vertex_source(
-        '''  
-        void main()
-        {
-            gl_Position = ModelViewProjectionMatrix * modelMatrix * vec4(pos, 1.0);
-        }
-        '''
-    )
-
-    shader_info.fragment_source(
-        '''
-        void main()
-        {
-            fragColor = vec4(0.0, 0.0, 0.0, 1.0);
-        }
-        '''
-    )
+    shader_info.vertex_source(vertex_glsl)
+    shader_info.fragment_source(fragment_glsl)
 
     shader = gpu.shader.create_from_info(shader_info)
     _log.output(f'{shader_name}: GPU Shader')
@@ -476,7 +474,6 @@ def raster_image_shader(use_old: bool=_use_old_shaders) -> Any:
     uniform mat4 modelMatrix;
     uniform vec2 viewportSize;
     uniform float lineWidth;
-    uniform float filterRadius;
     in vec2 texCoord;
     in vec3 pos;
     in vec3 opp;
@@ -487,6 +484,7 @@ def raster_image_shader(use_old: bool=_use_old_shaders) -> Any:
     vertex_glsl = '''
     void main()
     {
+        float filterRadius = 0.5;
         mat4 resultMatrix = ModelViewProjectionMatrix * modelMatrix;
 
         float bandWidth = lineWidth + 2.0 * filterRadius;
@@ -514,7 +512,6 @@ def raster_image_shader(use_old: bool=_use_old_shaders) -> Any:
     fragment_vars = '''
     uniform vec2 viewportSize;
     uniform float lineWidth;
-    uniform float filterRadius;
     uniform sampler2D image;
     uniform float opacity;
     uniform float adaptiveOpacity;
@@ -530,6 +527,7 @@ def raster_image_shader(use_old: bool=_use_old_shaders) -> Any:
 
     void main()
     {
+        float filterRadius = 0.5;
         float d = length(gl_FragCoord.xy - 0.5 * (vCenterLine.xy / vCenterLine.w + vec2(1, 1)) * viewportSize);
         float antiAliasing = calcAntialiasing(d, lineWidth, filterRadius);
         if (antiAliasing <= 0.0) discard;
@@ -558,7 +556,6 @@ def raster_image_shader(use_old: bool=_use_old_shaders) -> Any:
 
     shader_info.push_constant('VEC2', 'viewportSize')
     shader_info.push_constant('FLOAT', 'lineWidth')
-    shader_info.push_constant('FLOAT', 'filterRadius')
 
     shader_info.vertex_in(0, 'VEC2', 'texCoord')
     shader_info.vertex_in(1, 'VEC3', 'pos')
@@ -574,15 +571,13 @@ def raster_image_shader(use_old: bool=_use_old_shaders) -> Any:
     return shader
 
 
-def black_offset_fill_local_shader(
-        use_old: bool=_use_old_shaders, *,
-        offset: float = Config.wireframe_offset_constant) -> Any:
-
+def black_offset_fill_local_shader(use_old: bool=_use_old_shaders) -> Any:
     shader_name = 'black_offset_fill_local_shader'
 
     vertex_vars = '''
     uniform mat4 ModelViewProjectionMatrix;
     uniform mat4 modelMatrix;
+    uniform float offset;
     in vec3 pos;
     '''
 
@@ -590,7 +585,7 @@ def black_offset_fill_local_shader(
     void main()
     {
         vec4 pp = ModelViewProjectionMatrix * modelMatrix * vec4(pos, 1.0);
-        gl_Position = pp + vec4(0.0, 0.0, ''' + f'{offset}' + ''' * (pp.w - pp.z), 0.0);
+        gl_Position = pp + vec4(0.0, 0.0, offset * (pp.w - pp.z), 0.0);
     }
     '''
 
@@ -614,6 +609,7 @@ def black_offset_fill_local_shader(
     shader_info = gpu.types.GPUShaderCreateInfo()
     shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
     shader_info.push_constant('MAT4', 'modelMatrix')
+    shader_info.push_constant('FLOAT', 'offset')
     shader_info.vertex_in(0, 'VEC3', 'pos')
     shader_info.fragment_out(0, 'VEC4', 'fragColor')
 
@@ -635,7 +631,6 @@ def lit_aa_local_shader(use_old: bool=_use_old_shaders) -> Any:
 
     uniform vec2 viewportSize;
     uniform float lineWidth;
-    uniform float filterRadius;
 
     in vec3 pos;
     in vec3 vertNormal;
@@ -649,6 +644,7 @@ def lit_aa_local_shader(use_old: bool=_use_old_shaders) -> Any:
     vertex_glsl = '''
     void main()
     {
+        float filterRadius = 0.5;
         mat4 resultMatrix = ModelViewProjectionMatrix * modelMatrix;
 
         float bandWidth = lineWidth + 2.0 * filterRadius;
@@ -686,7 +682,6 @@ def lit_aa_local_shader(use_old: bool=_use_old_shaders) -> Any:
 
     uniform vec2 viewportSize;
     uniform float lineWidth;
-    uniform float filterRadius;
 
     in vec4 finalColor;
     in vec3 outPos;
@@ -747,6 +742,7 @@ def lit_aa_local_shader(use_old: bool=_use_old_shaders) -> Any:
     {
         if (ignoreBackface && (dot(calcNormal, camDir) < 0.0)) discard;
 
+        float filterRadius = 0.5;
         float d = length(gl_FragCoord.xy - 0.5 * (vCenterLine.xy / vCenterLine.w + vec2(1, 1)) * viewportSize);
         float antiAliasing = calcAntialiasing(d, lineWidth, filterRadius);
         if (antiAliasing <= 0.0) discard;
@@ -805,7 +801,6 @@ def lit_aa_local_shader(use_old: bool=_use_old_shaders) -> Any:
 
     shader_info.push_constant('VEC2', 'viewportSize')
     shader_info.push_constant('FLOAT', 'lineWidth')
-    shader_info.push_constant('FLOAT', 'filterRadius')
 
     shader_info.push_constant('VEC4', 'color')
     shader_info.push_constant('FLOAT', 'adaptiveOpacity')
@@ -855,17 +850,4 @@ def builtin_3d_uniform_color_shader(use_old: bool=False) -> Any:
 
     shader = gpu.shader.from_builtin('UNIFORM_COLOR')
     _log.output(f'{shader_name}: New built-in Shader UNIFORM_COLOR')
-    return shader
-
-
-def builtin_3d_smooth_color_shader(use_old: bool=False) -> Any:
-    shader_name = 'builtin_3d_smooth_color_shader'
-    if use_old or BVersion.builtin_shaders_are_using_old_names:
-        shader = gpu.shader.from_builtin('3D_SMOOTH_COLOR')
-        _log.output(_log.color('magenta', f'{shader_name}: Old built-in Shader'
-                                          f'3D_SMOOTH_COLOR'))
-        return shader
-
-    shader = gpu.shader.from_builtin('SMOOTH_COLOR')
-    _log.output(f'{shader_name}: New built-in Shader SMOOTH_COLOR')
     return shader

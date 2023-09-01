@@ -151,12 +151,9 @@ class FB_OT_PinMode(Operator):
         settings = get_fb_settings()
         head = settings.get_head(settings.current_headnum)
 
-        wf = FBLoader.viewport().wireframer()
-        wf.init_colors(
-            (settings.wireframe_color, settings.wireframe_special_color,
-             settings.wireframe_midline_color),
-            settings.wireframe_opacity * settings.get_adaptive_opacity())
-
+        vp = FBLoader.viewport()
+        vp.update_wireframe_colors()
+        wf = vp.wireframer()
         fb = FBLoader.get_builder()
         if not wf.init_wireframe_image(fb, settings.show_specials):
             wf.switch_to_simple_shader()
