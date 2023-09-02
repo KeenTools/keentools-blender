@@ -31,7 +31,7 @@ from .gpu_shaders import (line_3d_local_shader,
                           dashed_2d_shader,
                           black_offset_fill_local_shader,
                           lit_aa_local_shader,
-                          builtin_2d_uniform_color_shader)
+                          simple_uniform_color_2d_shader)
 from .coords import (get_mesh_verts,
                      get_triangulation_indices,
                      get_triangles_in_vertex_group,
@@ -197,7 +197,7 @@ class KTScreenRectangleShader2D(KTEdgeShader2D):
             _log.output(f'{self.__class__.__name__}.line_shader: skip')
 
         if self.fill_shader is None:
-            self.fill_shader = builtin_2d_uniform_color_shader()
+            self.fill_shader = simple_uniform_color_2d_shader()
             res[1] = self.fill_shader is not None
             _log.output(f'fill_shader: {res[1]}')
             changes = True
@@ -263,7 +263,7 @@ class KTScreenDashedRectangleShader2D(KTScreenRectangleShader2D):
             _log.output(f'{self.__class__.__name__}.line_shader: skip')
 
         if self.fill_shader is None:
-            self.fill_shader = builtin_2d_uniform_color_shader()
+            self.fill_shader = simple_uniform_color_2d_shader()
             res[1] = self.fill_shader is not None
             _log.output(f'fill_shader: {res[1]}')
             changes = True

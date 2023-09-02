@@ -38,7 +38,7 @@ from ...utils.coords import (frame_to_image_space,
 from ...utils.gpu_shaders import (solid_line_2d_shader,
                                   black_offset_fill_local_shader,
                                   raster_image_shader,
-                                  builtin_3d_uniform_color_shader)
+                                  uniform_color_3d_shader)
 
 from ...utils.images import (check_bpy_image_has_same_size,
                              find_bpy_image_by_name,
@@ -200,7 +200,11 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
 
     def init_wireframe_image(self, fb: Any, show_specials: bool) -> bool:
         _log.output('init_wireframe_image call')
-        if not show_specials or not fb.face_texture_available():
+        if not show_specials:
+            self.switch_to_simple_shader()
+            return False
+
+        if not fb.face_texture_available():
             self.switch_to_simple_shader()
             _log.error('init_wireframe_image cannot initialize image 1')
             return False
@@ -274,10 +278,17 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
     def _draw_simple_line(self):
         set_line_width(self.line_width)
         set_blend_alpha()
-        self.simple_line_shader.bind()
-        self.simple_line_shader.uniform_float(
-            'color', ((*self.texture_colors[0][:3], self.opacity)))
-        self.simple_line_batch.draw(self.simple_line_shader)
+        shader = self.simple_line_shader
+        shader.bind()
+        shader.uniform_float('color',
+                             ((*self.texture_colors[0][:3], self.opacity)))
+        shader.uniform_float('adaptiveOpacity', self.adaptive_opacity)
+        shader.uniform_vector_float(
+            shader.uniform_from_name('modelMatrix'),
+            self.object_world_matrix.ravel(), 16)
+        shader.uniform_float('viewportSize', self.viewport_size)
+        shader.uniform_float('lineWidth', self.line_width)
+        self.simple_line_batch.draw(shader)
 
     def _draw_textured_line(self):
         wireframe_image = find_bpy_image_by_name(FBConfig.coloring_texture_name)
@@ -327,8 +338,10 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
 
         if self.simple_line_shader is not None:
             self.simple_line_batch = batch_for_shader(
-                self.simple_line_shader, 'LINES',
-                {'pos': self.edge_vertices},
+                self.simple_line_shader, 'TRIS',
+                {'pos': self.list_for_batch(self.wide_edge_vertices),
+                 'opp': self.list_for_batch(self.wide_opposite_edge_vertices),
+                 }
             )
         else:
             _log.error(f'{self.__class__.__name__}.simple_line_shader: is empty')
@@ -357,7 +370,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             _log.output(f'{self.__class__.__name__}.fill_shader: skip')
 
         if self.simple_line_shader is None:
-            self.simple_line_shader = builtin_3d_uniform_color_shader()
+            self.simple_line_shader = uniform_color_3d_shader()
             res[2] = self.simple_line_shader is not None
             _log.output(f'{self.__class__.__name__}.simple_line_shader: {res[2]}')
             changes = True
