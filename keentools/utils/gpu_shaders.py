@@ -31,7 +31,7 @@ _use_old_shaders: bool = BVersion.use_old_bgl_shaders
 _log.output(f'_use_old_shaders: {_use_old_shaders}')
 
 
-def circular_dot_2d_shader(use_old: bool=_use_old_shaders) -> Any:
+def circular_dot_2d_shader(use_old: bool = _use_old_shaders) -> Any:
     shader_name = 'circular_dot_3d_shader'
 
     vertex_vars = '''
@@ -89,7 +89,7 @@ def circular_dot_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     return shader
 
 
-def circular_dot_3d_shader(use_old: bool=_use_old_shaders) -> Any:
+def circular_dot_3d_shader(use_old: bool = _use_old_shaders) -> Any:
     shader_name = 'circular_dot_3d_shader'
 
     vertex_vars = '''
@@ -148,7 +148,7 @@ def circular_dot_3d_shader(use_old: bool=_use_old_shaders) -> Any:
     return shader
 
 
-def line_3d_local_shader(use_old: bool=_use_old_shaders) -> Any:
+def line_3d_local_shader(use_old: bool = _use_old_shaders) -> Any:
     shader_name = 'line_3d_local_shader'
 
     vertex_vars = '''
@@ -209,7 +209,7 @@ def line_3d_local_shader(use_old: bool=_use_old_shaders) -> Any:
     return shader
 
 
-def solid_line_2d_shader(use_old: bool=_use_old_shaders) -> Any:
+def solid_line_2d_shader(use_old: bool = _use_old_shaders) -> Any:
     shader_name = 'solid_line_3d_shader'
 
     vertex_vars = '''
@@ -265,7 +265,7 @@ def solid_line_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     return shader
 
 
-def dashed_2d_shader(use_old: bool=_use_old_shaders, *,
+def dashed_2d_shader(use_old: bool = _use_old_shaders, *,
                      start: float = 5.0, step: float = 10.0,
                      threshold: float = 5.5) -> Any:
     shader_name = 'dashed_2d_shader'
@@ -328,7 +328,7 @@ def dashed_2d_shader(use_old: bool=_use_old_shaders, *,
     return shader
 
 
-def raster_image_mask_shader(use_old: bool=_use_old_shaders) -> Any:
+def raster_image_mask_shader(use_old: bool = _use_old_shaders) -> Any:
     shader_name = 'raster_image_mask_shader'
 
     vertex_vars = '''
@@ -407,7 +407,7 @@ def raster_image_mask_shader(use_old: bool=_use_old_shaders) -> Any:
     return shader
 
 
-def raster_image_shader(use_old: bool=_use_old_shaders) -> Any:
+def raster_image_shader(use_old: bool = _use_old_shaders) -> Any:
     shader_name = 'raster_image_shader'
 
     vertex_vars = '''
@@ -513,7 +513,7 @@ def raster_image_shader(use_old: bool=_use_old_shaders) -> Any:
     return shader
 
 
-def uniform_color_3d_shader(use_old: bool=False) -> Any:
+def uniform_color_3d_shader(use_old: bool = _use_old_shaders) -> Any:
     shader_name = 'uniform_color_3d_shader'
 
     vertex_vars = '''
@@ -619,7 +619,7 @@ def uniform_color_3d_shader(use_old: bool=False) -> Any:
     return shader
 
 
-def black_offset_fill_local_shader(use_old: bool=_use_old_shaders) -> Any:
+def black_offset_fill_local_shader(use_old: bool = _use_old_shaders) -> Any:
     shader_name = 'black_offset_fill_local_shader'
 
     vertex_vars = '''
@@ -669,7 +669,7 @@ def black_offset_fill_local_shader(use_old: bool=_use_old_shaders) -> Any:
     return shader
 
 
-def lit_aa_local_shader(use_old: bool=_use_old_shaders) -> Any:
+def lit_aa_local_shader(use_old: bool = _use_old_shaders) -> Any:
     shader_name = 'lit_aa_local_shader'
 
     vertex_vars = '''
@@ -876,7 +876,7 @@ def lit_aa_local_shader(use_old: bool=_use_old_shaders) -> Any:
     return shader
 
 
-def simple_uniform_color_2d_shader(use_old: bool=False) -> Any:
+def simple_uniform_color_2d_shader(use_old: bool = _use_old_shaders) -> Any:
     shader_name = 'simple_uniform_color_2d_shader'
 
     vertex_vars = '''
@@ -893,6 +893,7 @@ def simple_uniform_color_2d_shader(use_old: bool=False) -> Any:
 
     fragment_vars = '''
     uniform vec4 color;
+    out vec4 fragColor;
     '''
 
     fragment_glsl = '''
