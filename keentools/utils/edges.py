@@ -27,7 +27,6 @@ from .kt_logging import KTLogger
 from ..addon_config import Config
 from .gpu_shaders import (line_3d_local_shader,
                           solid_line_2d_shader,
-                          residual_2d_shader,
                           dashed_2d_shader,
                           black_offset_fill_local_shader,
                           lit_aa_local_shader,
@@ -130,7 +129,7 @@ class KTEdgeShader2D(KTEdgeShaderBase):
             _log.output(f'{self.__class__.__name__}.line_shader: skip')
             return None
 
-        self.line_shader = residual_2d_shader()
+        self.line_shader = dashed_2d_shader(**Config.residual_dashed_line)
         res = self.line_shader is not None
         _log.output(f'{self.__class__.__name__}.line_shader: {res}')
         return res
@@ -255,7 +254,7 @@ class KTScreenDashedRectangleShader2D(KTScreenRectangleShader2D):
         res = [True] * 2
 
         if self.line_shader is None:
-            self.line_shader = dashed_2d_shader()
+            self.line_shader = dashed_2d_shader(**Config.selection_dashed_line)
             res[0] = self.line_shader is not None
             _log.output(f'line_shader: {res[0]}')
             changes = True
@@ -311,7 +310,7 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
         self.state: Tuple[float, float] = (-1000.0, -1000.0)
         self.batch_needs_update: bool = True
         self.line_color = line_color
-        self.line_width = 2.0
+        self.line_width = Config.keyframe_line_width
 
     def set_keyframes(self, keyframes: List[int]) -> None:
         self.keyframes = keyframes
@@ -319,7 +318,7 @@ class KTEdgeShaderAll2D(KTEdgeShader2D):
 
     def _update_keyframe_lines(self, area: Area) -> None:
         bottom = 0
-        top = 1000
+        top = Config.keyframe_line_length
         reg = self._get_area_region(area)
         pos = [reg.view2d.view_to_region(x, 0, clip=False)[0]
                for x in self.keyframes]

@@ -265,68 +265,9 @@ def solid_line_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     return shader
 
 
-def residual_2d_shader(use_old: bool=_use_old_shaders) -> Any:
-    shader_name = 'residual_2d_shader'
-
-    vertex_vars = '''
-    uniform mat4 ModelViewProjectionMatrix;
-    in vec2 pos;
-    in float lineLength;
-    in vec4 color;
-    flat out vec4 finalColor;
-    out float v_LineLength;
-    '''
-
-    vertex_glsl = '''
-    void main()
-    {
-        gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);
-        finalColor = color;
-        v_LineLength = lineLength;
-    }
-    '''
-
-    fragment_vars = '''
-    flat in vec4 finalColor;
-    in float v_LineLength;            
-    out vec4 fragColor;
-    '''
-
-    fragment_glsl = '''
-    void main()
-    {
-        if (step(sin(v_LineLength), -0.3f) == 1) discard;
-        fragColor = finalColor;
-    }
-    '''
-
-    if use_old:
-        shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
-                                     fragment_vars + fragment_glsl)
-        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
-        return shader
-
-    vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
-    vert_out.smooth('VEC4', 'finalColor')
-    vert_out.smooth('FLOAT', 'v_LineLength')
-
-    shader_info = gpu.types.GPUShaderCreateInfo()
-    shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
-    shader_info.vertex_in(0, 'VEC2', 'pos')
-    shader_info.vertex_in(1, 'VEC4', 'color')
-    shader_info.vertex_in(2, 'FLOAT', 'lineLength')
-    shader_info.vertex_out(vert_out)
-    shader_info.fragment_out(0, 'VEC4', 'fragColor')
-
-    shader_info.vertex_source(vertex_glsl)
-    shader_info.fragment_source(fragment_glsl)
-
-    shader = gpu.shader.create_from_info(shader_info)
-    _log.output(f'{shader_name}: GPU Shader')
-    return shader
-
-
-def dashed_2d_shader(use_old: bool=_use_old_shaders) -> Any:
+def dashed_2d_shader(use_old: bool=_use_old_shaders, *,
+                     start: float = 5.0, step: float = 10.0,
+                     threshold: float = 5.5) -> Any:
     shader_name = 'dashed_2d_shader'
 
     vertex_vars = '''
@@ -356,7 +297,7 @@ def dashed_2d_shader(use_old: bool=_use_old_shaders) -> Any:
     fragment_glsl = '''
     void main()
     {
-        if (mod(v_LineLength + 5.0, 10.0) > 5.5) discard;
+        if (mod(v_LineLength + ''' + f'{start}, {step}) > {threshold}' + ''') discard;
         fragColor = finalColor;
     }
     '''

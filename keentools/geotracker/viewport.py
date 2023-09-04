@@ -287,8 +287,7 @@ class GTViewport(KTViewport):
             wire.edge_lengths.append(0)
             verts.append((p2d[i][0], p2d[i][1]))
             # length = np.linalg.norm((v[0]-p2d[i][0], v[1]-p2d[i][1]))
-            length = 22.0
-            wire.edge_lengths.append(length)
+            wire.edge_lengths.append(Config.residual_dashed_line_length)
 
         wire.vertices = verts
         wire.vertices_colors = [GTConfig.residual_color] * len(verts)
