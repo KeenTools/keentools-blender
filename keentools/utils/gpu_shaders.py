@@ -462,7 +462,8 @@ def raster_image_shader(use_old: bool=_use_old_shaders) -> Any:
     '''
 
     fragment_glsl = '''
-    float calcAntialiasing(float d, float width, float filterRad){
+    float calcAntialiasing(float d, float width, float filterRad)
+    {
         return min(1.0, 0.5 + (width * 0.5 - d) / (2.0 * filterRad));
     }
 
@@ -562,7 +563,8 @@ def uniform_color_3d_shader(use_old: bool=False) -> Any:
     '''
 
     fragment_glsl = '''
-    float calcAntialiasing(float d, float width, float filterRad){
+    float calcAntialiasing(float d, float width, float filterRad)
+    {
         return min(1.0, 0.5 + (width * 0.5 - d) / (2.0 * filterRad));
     }
 
@@ -780,7 +782,8 @@ def lit_aa_local_shader(use_old: bool=_use_old_shaders) -> Any:
         return col;
     }
 
-    float calcAntialiasing(float d, float width, float filterRad){
+    float calcAntialiasing(float d, float width, float filterRad)
+    {
         return min(1.0, 0.5 + (width * 0.5 - d) / (2.0 * filterRad));
     }
 
