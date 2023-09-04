@@ -162,9 +162,6 @@ class GTConfig:
     pin_sensitivity = 16.0
     surf_pin_size_scale = 0.85
 
-    matrix_rtol = 1e-05
-    matrix_atol = 1e-07
-
     # Colors
     pin_color = (1.0, 0.0, 0.0, 1.0)
     disabled_pin_color = (1.0, 1.0, 0.0, 1.0)
