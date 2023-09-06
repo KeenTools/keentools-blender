@@ -425,7 +425,6 @@ def raster_image_shader(use_old: bool = _use_old_shaders) -> Any:
     out vec4 vCenterLine;
     out vec3 calcNormal;
     out vec3 camDir;
-    out vec3 outPos;
     '''
 
     vertex_glsl = '''
@@ -502,7 +501,6 @@ def raster_image_shader(use_old: bool = _use_old_shaders) -> Any:
     vert_out.smooth('VEC2', 'texCoord_interp')
     vert_out.smooth('VEC4', 'vCenterLine')
     vert_out.smooth('VEC3', 'calcNormal')
-    vert_out.smooth('VEC3', 'outPos')
     vert_out.smooth('VEC3', 'camDir')
 
     shader_info = gpu.types.GPUShaderCreateInfo()
