@@ -307,19 +307,21 @@ def update_expression_view(head: Any, context: Any) -> None:
     _update_expressions(head, context)
 
 
-def update_wireframe_image(self: Any, context: Any) -> None:
-    settings = get_fb_settings()
+def update_wireframe_image(settings: Any, context: Any) -> None:
     vp = FBLoader.viewport()
     vp.update_wireframe_colors()
     wf = vp.wireframer()
     wf.init_wireframe_image(FBLoader.get_builder(), settings.show_specials)
 
 
-def update_wireframe_func(self: Any, context: Any) -> None:
-    settings = get_fb_settings()
+def update_wireframe_func(settings: Any, context: Any) -> None:
     if settings.use_adaptive_opacity:
         settings.calc_adaptive_opacity(FBLoader.get_work_area())
-    FBLoader.viewport().update_wireframe_colors()
+    vp = FBLoader.viewport()
+    vp.update_wireframe_colors()
+    wf = vp.wireframer()
+    wf.set_backface_culling(settings.wireframe_backface_culling)
+    wf.create_batches()
 
 
 def update_pin_sensitivity(settings: Any, context: Any) -> None:

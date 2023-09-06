@@ -163,6 +163,8 @@ class FB_OT_PinMode(Operator):
         wf.init_edge_indices(fb)
 
         wf.set_object_world_matrix(head.headobj.matrix_world)
+        camobj = head.get_camera(settings.current_camnum).camobj
+        wf.set_camera_pos(camobj, head.headobj)
         geo = fb.applied_args_model_at(keyframe)
         wf.init_geom_data_from_core(*FBLoader.get_geo_shader_data(geo))
 

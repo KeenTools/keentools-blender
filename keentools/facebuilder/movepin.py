@@ -195,6 +195,8 @@ class FB_OT_MovePin(Operator):
         vp = FBLoader.viewport()
         wf = vp.wireframer()
         wf.set_object_world_matrix(headobj.matrix_world)
+        camobj = head.get_camera(camnum).camobj
+        wf.set_camera_pos(camobj, headobj)
         wf.init_geom_data_from_core(*FBLoader.get_geo_shader_data(geo))
         wf.create_batches()
 

@@ -81,8 +81,13 @@ class FBLoader:
         return cls._viewport
 
     @classmethod
+    def wireframer(cls) -> Any:
+        vp = cls.viewport()
+        return vp.wireframer()
+
+    @classmethod
     def viewport_is_active(cls) -> bool:
-        return cls.viewport().wireframer().is_working()
+        return cls.wireframer().is_working()
 
     @classmethod
     def new_builder(cls) -> Any:
@@ -652,10 +657,12 @@ class FBLoader:
         _log.output('get_geo_shader_data')
         mat = xy_to_xz_rotation_matrix_3x3()
 
-        edge_vertices = np.array(pkt_module().utils.get_lines(geo),
+        utls = pkt_module().utils
+        edge_vertices = np.array(utls.get_lines(geo),
                                  dtype=np.float32) @ mat
-        triangle_vertices = np.array(
-            pkt_module().utils.get_independent_triangles(geo),
-            dtype=np.float32) @ mat
+        triangle_vertices = np.array(utls.get_independent_triangles(geo),
+                                     dtype=np.float32) @ mat
+        edge_vertex_normals = np.array(utls.get_normals_for_lines(geo),
+                                       dtype=np.float32) @ mat
 
-        return edge_vertices, triangle_vertices
+        return edge_vertices, edge_vertex_normals, triangle_vertices

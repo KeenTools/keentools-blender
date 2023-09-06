@@ -763,8 +763,10 @@ class FBSceneSettings(PropertyGroup):
         description='Use different colors for important head parts '
                     'on the mesh',
         name='Special face parts', default=True, update=update_wireframe_image)
-
-    # Initial pin_size state in FBShaderPoints class
+    wireframe_backface_culling: bpy.props.BoolProperty(
+        name='Backface culling',
+        default=True,
+        update=update_wireframe_func)
     pin_size: FloatProperty(
         description='Set pin size in pixels',
         name='Size',
