@@ -209,10 +209,7 @@ def _update_mesh_now(headnum: int) -> bool:
     mesh.name = mesh_name
 
     if settings.pinmode:
-        FBLoader.update_viewport_shaders(FBLoader.get_work_area(),
-                                         settings.current_headnum,
-                                         settings.current_camnum,
-                                         wireframe=True,
+        FBLoader.update_viewport_shaders(wireframe=True,
                                          pins_and_residuals=True)
     return True
 
@@ -234,10 +231,7 @@ def _update_expressions(head: Any, context: Any) -> None:
 
     if not settings.pinmode:
         return
-    FBLoader.update_viewport_shaders(FBLoader.get_work_area(),
-                                     settings.current_headnum,
-                                     settings.current_camnum,
-                                     wireframe=True, pins_and_residuals=True)
+    FBLoader.update_viewport_shaders(wireframe=True, pins_and_residuals=True)
 
 
 def update_use_emotions(head: Any, context: Any) -> None:
@@ -265,9 +259,7 @@ def _update_head_shape_with_expressions(head: Any, context: Any) -> None:
     if not settings.pinmode:
         return
 
-    FBLoader.update_viewport_shaders(context.area,
-                                     settings.current_headnum,
-                                     settings.current_camnum,
+    FBLoader.update_viewport_shaders(area=context.area,
                                      wireframe=True, pins_and_residuals=True)
 
 
@@ -308,20 +300,14 @@ def update_expression_view(head: Any, context: Any) -> None:
 
 
 def update_wireframe_image(settings: Any, context: Any) -> None:
-    vp = FBLoader.viewport()
-    vp.update_wireframe_colors()
-    wf = vp.wireframer()
-    wf.init_wireframe_image(FBLoader.get_builder(), settings.show_specials)
+    FBLoader.update_viewport_shaders(wireframe_colors=True,
+                                     wireframe_image=True)
 
 
 def update_wireframe_func(settings: Any, context: Any) -> None:
-    if settings.use_adaptive_opacity:
-        settings.calc_adaptive_opacity(FBLoader.get_work_area())
-    vp = FBLoader.viewport()
-    vp.update_wireframe_colors()
-    wf = vp.wireframer()
-    wf.set_backface_culling(settings.wireframe_backface_culling)
-    wf.create_batches()
+    FBLoader.update_viewport_shaders(adaptive_opacity=True,
+                                     wireframe_colors=True,
+                                     batch_wireframe=True)
 
 
 def update_pin_sensitivity(settings: Any, context: Any) -> None:

@@ -63,9 +63,6 @@ class FB_OT_MovePin(Operator):
     pinx: FloatProperty(default=0)
     piny: FloatProperty(default=0)
 
-    # Headnum & camnum unstable because of Blender operator params may changing
-    # Possible we need store initial values, but unsure
-    # So created some getter functions
     def get_headnum(self):
         return self.headnum
 
@@ -117,7 +114,6 @@ class FB_OT_MovePin(Operator):
         FBLoader.load_pins_into_viewport(headnum, camnum)
 
         vp.create_batch_2d(area)
-        vp.register_handlers(context)
 
         x, y = coords.get_image_space_coord(mouse_x, mouse_y, area)
         vp.pins().set_current_pin((x, y))
@@ -200,8 +196,8 @@ class FB_OT_MovePin(Operator):
         wf.init_geom_data_from_core(*FBLoader.get_geo_shader_data(geo))
         wf.create_batches()
 
-        vp.create_batch_2d(area)
         vp.update_surface_points(fb, headobj, kid)
+        vp.create_batch_2d(area)
 
         # Try to force viewport redraw
         if not bpy_background_mode():

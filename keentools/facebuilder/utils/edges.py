@@ -26,7 +26,6 @@ from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config
 from ...facebuilder_config import FBConfig
 from ...utils.edges import KTEdgeShaderBase, KTEdgeShader2D
 from ...utils.coords import (frame_to_image_space,
@@ -472,9 +471,6 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             self.wide_vertex_pos_indices, self.wide_vertex_opp_indices = \
                 make_indices_for_wide_edges(len_edge_vertices)
 
-        # TODO: Make shaders local
-        self.edge_vertices = multiply_verts_on_matrix_4x4(
-            edge_vertices, self.object_world_matrix)
         self.wide_edge_vertices = edge_vertices[self.wide_vertex_pos_indices]
         self.wide_opposite_edge_vertices = edge_vertices[self.wide_vertex_opp_indices]
         self.wide_edge_vertex_normals = edge_vertex_normals[self.wide_vertex_pos_indices]
