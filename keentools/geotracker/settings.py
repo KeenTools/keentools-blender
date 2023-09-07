@@ -61,7 +61,7 @@ from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_getter,
                                             universal_cached_setter)
 from ..utils.animation import count_fcurve_points
-from ..utils.manipulate import select_object_only
+from ..utils.manipulate import select_object_only, switch_to_camera
 from ..utils.viewport_state import ViewportStateItem
 from .ui_strings import PrecalcStatusMessage
 
@@ -81,55 +81,58 @@ def is_camera(self, obj: Optional[Object]) -> bool:
     return obj and obj.type == 'CAMERA' and object_is_in_scene(obj)
 
 
+_constraint_warning_message = \
+    'object has constraints!\n' \
+    'It is highly recommended to remove or bake them.\n' \
+    ' \n' \
+    'If you have used Blender tracking,\n' \
+    'you need to use \'Constraint to F-Curve button\'\n' \
+    'of the solver constraint.'
+
+
 def update_camobj(geotracker, context: Any) -> None:
-    _log.output('update_camera')
-    _log.output(f'self: {geotracker.camobj}')
-    if not geotracker.camobj:
-        settings = get_gt_settings()
-        if settings.pinmode:
-            GTLoader.out_pinmode()
-            return
-    GTLoader.update_viewport_shaders(wireframe=True, pins_and_residuals=True,
-                                     timeline=True)
+    _log.output(f'update_camobj: {geotracker.camobj}')
+    settings = get_gt_settings()
+
+    if not geotracker.camobj and settings.pinmode:
+        GTLoader.out_pinmode()
+        return
+
+    set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
+    switch_to_camera(GTLoader.get_work_area(), geotracker.camobj)
+
+    if settings.pinmode:
+        GTLoader.update_viewport_shaders(update_geo_data=True,
+                                         geomobj_matrix=True, wireframe=True,
+                                         pins_and_residuals=True, timeline=True)
 
     if geotracker.camobj and len(geotracker.camobj.constraints) > 0:
-        msg = 'Camera object has constraints!\n' \
-              'It is highly recommended to remove or bake them.\n' \
-              ' \n' \
-              'If you have used Blender tracking,\n' \
-              'you need to use \'Constraint to F-Curve button\'\n' \
-              'of the solver constraint.'
+        msg = f'Camera {_constraint_warning_message}'
         warn = get_operator(Config.kt_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=msg)
-
-    set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
 
 
 def update_geomobj(geotracker, context: Any) -> None:
     _log.output(f'update_geomobj: {geotracker.geomobj}')
     settings = get_gt_settings()
-    if not geotracker.geomobj:
-        if settings.pinmode:
-            GTLoader.out_pinmode()
+
+    if not geotracker.geomobj and settings.pinmode:
+        GTLoader.out_pinmode()
         return
 
     GTLoader.load_geotracker()
     gt = GTLoader.kt_geotracker()
     geotracker.check_pins_on_geometry(gt)
     GTLoader.save_geotracker()
+
     if settings.pinmode:
         GTLoader.update_viewport_shaders(update_geo_data=True,
                                          geomobj_matrix=True, wireframe=True,
                                          pins_and_residuals=True, timeline=True)
 
     if geotracker.geomobj and len(geotracker.geomobj.constraints) > 0:
-        msg = 'Geometry object has constraints!\n' \
-              'It is highly recommended to remove or bake them.\n' \
-              ' \n' \
-              'If you have used Blender tracking,\n' \
-              'you need to use \'Constraint to F-Curve button\'\n' \
-              'of the solver constraint.'
+        msg = f'Geometry {_constraint_warning_message}'
         warn = get_operator(Config.kt_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=msg)
