@@ -33,7 +33,8 @@ from ..utils.coords import (get_camera_border,
 from ..utils.bpy_common import (bpy_render_frame,
                                 evaluated_object,
                                 bpy_scene_camera,
-                                bpy_background_mode)
+                                bpy_background_mode,
+                                get_scene_camera_shift)
 from ..utils.viewport import KTViewport
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
@@ -206,8 +207,11 @@ class GTViewport(KTViewport):
 
         pins = self.pins()
         points = pins.arr().copy()
+
+        shift_x, shift_y = get_scene_camera_shift()
         for i, p in enumerate(points):
-            points[i] = image_space_to_region(p[0], p[1], x1, y1, x2, y2)
+            points[i] = image_space_to_region(p[0], p[1], x1, y1, x2, y2,
+                                              shift_x, shift_y)
 
         points_count = len(points)
 

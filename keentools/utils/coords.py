@@ -107,13 +107,14 @@ def update_head_mesh_non_neutral(fb: Any, head: Any) -> None:
 
 
 def projection_matrix(w: float, h: float, fl: float, sw: float,
-                      near: float, far: float, scale=1.0) -> Any:
+                      near: float, far: float, scale: float = 1.0,
+                      shift_x: float = 0.0, shift_y: float = 0.0) -> Any:
     z_diff = near - far
     fl_to_sw = fl / sw
     return np.array(
         [[scale * w * fl_to_sw, 0, 0, 0],
          [0, scale * w * fl_to_sw, 0, 0],
-         [-w / 2, -h / 2, (near + far) / z_diff, -1],
+         [w * (2 * shift_x - 0.5), h * (2 * shift_y - 0.5), (near + far) / z_diff, -1],
          [0, 0, 2 * near * far / z_diff, 0]]
     ).transpose()
 
@@ -130,9 +131,10 @@ def _compensate_view_scale(w: float, h: float, inverse=False) -> float:
 
 
 def custom_projection_matrix(w: float, h: float, fl: float, sw: float,
-                             near: float, far: float) -> Any:
+                             near: float, far: float,
+                             shift_x: float = 0, shift_y: float = 0) -> Any:
     return projection_matrix(w, h, fl, sw, near, far,
-                             scale=_compensate_view_scale(w, h))
+                             _compensate_view_scale(w, h), shift_x, shift_y)
 
 
 def focal_by_projection_matrix_mm(pm: Any, sw: float) -> float:
@@ -185,7 +187,8 @@ def get_mouse_coords(event: Any) -> Tuple[float, float]:
 
 
 def image_space_to_region(x: float, y: float, x1: float, y1: float,
-                          x2: float, y2: float) -> Tuple[float, float]:
+                          x2: float, y2: float, shift_x: float = 0.0,
+                          shift_y: float = 0.0) -> Tuple[float, float]:
     """ Relative coords to Region (screen) space """
     w = (x2 - x1)
     h = (y2 - y1)
@@ -193,14 +196,17 @@ def image_space_to_region(x: float, y: float, x1: float, y1: float,
     return x1 + (x + 0.5) * sc, (y1 + y2) * 0.5 + y * sc
 
 
-def get_image_space_coord(px: float, py: float, area: Area) -> Tuple[float, float]:
+def get_image_space_coord(px: float, py: float, area: Area,
+                          shift_x: float = 0.0,
+                          shift_y: float = 0.0) -> Tuple[float, float]:
     x1, y1, x2, y2 = get_camera_border(area)
-    x, y = region_to_image_space(px, py, x1, y1, x2, y2)
+    x, y = region_to_image_space(px, py, x1, y1, x2, y2, shift_x, shift_y)
     return x, y
 
 
 def region_to_image_space(x: float, y: float, x1: float, y1: float,
-                          x2: float, y2: float) -> Tuple[float, float]:
+                          x2: float, y2: float, shift_x: float = 0.0,
+                          shift_y: float = 0.0) -> Tuple[float, float]:
     w = (x2 - x1) if x2 != x1 else 1.0
     sc = w
     return (x - (x1 + x2) * 0.5) / sc, (y - (y1 + y2) * 0.5) / sc
@@ -510,7 +516,8 @@ def camera_projection(camobj: Object, frame: Optional[int]=None,
         frame =bpy_current_frame()
     lens = get_safe_evaluated_fcurve(cam_data, frame, 'lens')
     proj_mat = custom_projection_matrix(image_width, image_height, lens,
-                                        cam_data.sensor_width, near, far)
+                                        cam_data.sensor_width, near, far,
+                                        cam_data.shift_x, cam_data.shift_y)
     return proj_mat
 
 
