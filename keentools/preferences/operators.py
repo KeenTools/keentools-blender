@@ -253,7 +253,10 @@ class KTPREF_OT_InstallLicenseOnline(Operator):
 
     def _clear_license_key(self):
         prefs = get_addon_preferences()
-        prefs.license_key = ''
+        if self.product == 'facebuilder':
+            prefs.fb_license_key = ''
+        elif self.product == 'geotracker':
+            prefs.gt_license_key = ''
 
     def execute(self, context):
         _log.info('Start InstallLicenseOnline')
@@ -261,7 +264,7 @@ class KTPREF_OT_InstallLicenseOnline(Operator):
         res = lm.install_license_online(self.license_key)
 
         if res is not None:
-            _log.error(f'InstallLicenseOnline error: {res}')
+            _log.error(f'InstallLicenseOnline error:\n{res}')
             self.report({'ERROR'}, replace_newlines_with_spaces(res))
             return {'CANCELLED'}
 
@@ -270,7 +273,7 @@ class KTPREF_OT_InstallLicenseOnline(Operator):
         lic_status = res_tuple[0].license_status
         if lic_status.status == 'failed':
             _log.error(f'InstallLicenseOnline license check '
-                       f'error: {lic_status.message}')
+                       f'error:\n{lic_status.message}')
             self.report({'ERROR'},
                         replace_newlines_with_spaces(lic_status.message))
             return {'CANCELLED'}

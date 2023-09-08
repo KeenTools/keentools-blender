@@ -413,13 +413,18 @@ def raster_image_shader(use_old: bool = _use_old_shaders) -> Any:
     vertex_vars = '''
     uniform mat4 ModelViewProjectionMatrix;
     uniform mat4 modelMatrix;
+    uniform vec3 cameraPos;
     uniform vec2 viewportSize;
     uniform float lineWidth;
+
     in vec2 texCoord;
     in vec3 pos;
     in vec3 opp;
+    in vec3 vertNormal;
     out vec2 texCoord_interp;
     out vec4 vCenterLine;
+    out vec3 calcNormal;
+    out vec3 camDir;
     '''
 
     vertex_glsl = '''
@@ -447,6 +452,8 @@ def raster_image_shader(use_old: bool = _use_old_shaders) -> Any:
 
         gl_Position = v1;
         texCoord_interp = texCoord;
+        calcNormal = normalize(vertNormal);
+        camDir = normalize(cameraPos - pos);
     }
     '''
 
@@ -456,8 +463,11 @@ def raster_image_shader(use_old: bool = _use_old_shaders) -> Any:
     uniform sampler2D image;
     uniform float opacity;
     uniform float adaptiveOpacity;
+    uniform bool ignoreBackface;
     in vec2 texCoord_interp;
     in vec4 vCenterLine;
+    in vec3 camDir;
+    in vec3 calcNormal;
     out vec4 fragColor;
     '''
 
@@ -469,6 +479,8 @@ def raster_image_shader(use_old: bool = _use_old_shaders) -> Any:
 
     void main()
     {
+        if (ignoreBackface && (dot(calcNormal, camDir) < 0.0)) discard;
+
         float filterRadius = 0.5;
         float d = length(gl_FragCoord.xy - 0.5 * (vCenterLine.xy / vCenterLine.w + vec2(1, 1)) * viewportSize);
         float antiAliasing = calcAntialiasing(d, lineWidth, filterRadius);
@@ -488,10 +500,13 @@ def raster_image_shader(use_old: bool = _use_old_shaders) -> Any:
     vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
     vert_out.smooth('VEC2', 'texCoord_interp')
     vert_out.smooth('VEC4', 'vCenterLine')
+    vert_out.smooth('VEC3', 'calcNormal')
+    vert_out.smooth('VEC3', 'camDir')
 
     shader_info = gpu.types.GPUShaderCreateInfo()
     shader_info.push_constant('MAT4', 'ModelViewProjectionMatrix')
     shader_info.push_constant('MAT4', 'modelMatrix')
+    shader_info.push_constant('VEC3', 'cameraPos')
     shader_info.push_constant('FLOAT', 'opacity')
     shader_info.push_constant('FLOAT', 'adaptiveOpacity')
     shader_info.sampler(0, 'FLOAT_2D', 'image')
@@ -499,9 +514,12 @@ def raster_image_shader(use_old: bool = _use_old_shaders) -> Any:
     shader_info.push_constant('VEC2', 'viewportSize')
     shader_info.push_constant('FLOAT', 'lineWidth')
 
-    shader_info.vertex_in(0, 'VEC2', 'texCoord')
-    shader_info.vertex_in(1, 'VEC3', 'pos')
-    shader_info.vertex_in(2, 'VEC3', 'opp')
+    shader_info.push_constant('BOOL', 'ignoreBackface')
+
+    shader_info.vertex_in(0, 'VEC3', 'pos')
+    shader_info.vertex_in(1, 'VEC3', 'opp')
+    shader_info.vertex_in(2, 'VEC3', 'vertNormal')
+    shader_info.vertex_in(3, 'VEC2', 'texCoord')
     shader_info.vertex_out(vert_out)
     shader_info.fragment_out(0, 'VEC4', 'fragColor')
 
@@ -681,8 +699,8 @@ def lit_aa_local_shader(use_old: bool = _use_old_shaders) -> Any:
     uniform float lineWidth;
 
     in vec3 pos;
-    in vec3 vertNormal;
     in vec3 opp;
+    in vec3 vertNormal;
     out vec3 calcNormal;
     out vec3 outPos;
     out vec3 camDir;

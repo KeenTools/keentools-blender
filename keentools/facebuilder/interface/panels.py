@@ -756,6 +756,7 @@ class FB_PT_AppearancePanel(AllVisible, Panel):
 
         col = box.column(align=True)
         col.prop(settings, 'show_specials', text='Highlight head parts')
+        col.prop(settings, 'wireframe_backface_culling')
         col.prop(settings, 'use_adaptive_opacity')
 
 

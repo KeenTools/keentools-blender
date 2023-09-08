@@ -81,8 +81,13 @@ class FBLoader:
         return cls._viewport
 
     @classmethod
+    def wireframer(cls) -> Any:
+        vp = cls.viewport()
+        return vp.wireframer()
+
+    @classmethod
     def viewport_is_active(cls) -> bool:
-        return cls.viewport().wireframer().is_working()
+        return cls.wireframer().is_working()
 
     @classmethod
     def new_builder(cls) -> Any:
@@ -616,22 +621,42 @@ class FBLoader:
         vp.create_batch_2d(area)
 
     @classmethod
-    def update_viewport_shaders(cls, area: Area = None,
-                                headnum: int = 0, camnum: int = 0, *,
+    def update_viewport_shaders(cls, *, area: Area = None,
+                                headnum: Optional[int] = None,
+                                camnum: Optional[int] = None,
                                 wireframe: bool = False,
+                                wireframe_colors: bool = False,
+                                wireframe_image: bool = False,
+                                adaptive_opacity: bool = False,
+                                batch_wireframe: bool = False,
                                 pins_and_residuals: bool = False) -> None:
         settings = get_fb_settings()
-        head = settings.get_head(headnum)
+        hnum = headnum if headnum is not None else settings.current_headnum
+        cnum = camnum if camnum is not None else settings.current_camnum
+        head = settings.get_head(hnum)
         if not head or not head.headobj:
             return
-        kid = head.get_keyframe(camnum)
+        kid = head.get_keyframe(cnum)
 
         work_area = area if not area is None else cls.get_work_area()
 
+        if adaptive_opacity:
+            if settings.use_adaptive_opacity:
+                settings.calc_adaptive_opacity(work_area)
+        if wireframe_colors:
+            vp = FBLoader.viewport()
+            vp.update_wireframe_colors()
+        if wireframe_image:
+            wf = FBLoader.wireframer()
+            wf.init_wireframe_image(FBLoader.get_builder(),
+                                    settings.show_specials)
         if wireframe:
             cls._update_wireframe(head.headobj, kid)
         if pins_and_residuals:
             cls._update_points_and_residuals(work_area, head.headobj, kid)
+        if batch_wireframe:
+            wf = FBLoader.wireframer()
+            wf.create_batches()
 
     @classmethod
     def load_pins_into_viewport(cls, headnum: int, camnum: int) -> None:
@@ -652,10 +677,12 @@ class FBLoader:
         _log.output('get_geo_shader_data')
         mat = xy_to_xz_rotation_matrix_3x3()
 
-        edge_vertices = np.array(pkt_module().utils.get_lines(geo),
+        utls = pkt_module().utils
+        edge_vertices = np.array(utls.get_lines(geo),
                                  dtype=np.float32) @ mat
-        triangle_vertices = np.array(
-            pkt_module().utils.get_independent_triangles(geo),
-            dtype=np.float32) @ mat
+        triangle_vertices = np.array(utls.get_independent_triangles(geo),
+                                     dtype=np.float32) @ mat
+        edge_vertex_normals = np.array(utls.get_normals_for_lines(geo),
+                                       dtype=np.float32) @ mat
 
-        return edge_vertices, triangle_vertices
+        return edge_vertices, edge_vertex_normals, triangle_vertices

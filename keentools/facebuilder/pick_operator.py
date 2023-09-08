@@ -137,7 +137,10 @@ def _add_pins_to_face(headnum: int, camnum: int, rectangle_index: int,
     FBLoader.load_pins_into_viewport(headnum, camnum)
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
-    FBLoader.update_viewport_shaders(context.area, headnum, camnum,
+    wf = FBLoader.viewport().wireframer()
+    wf.set_camera_pos(camera.camobj, head.headobj)
+    FBLoader.update_viewport_shaders(area=context.area,
+                                     headnum=headnum, camnum=camnum,
                                      wireframe=True, pins_and_residuals=True)
 
     FBLoader.save_fb_serial_and_image_pathes(headnum)

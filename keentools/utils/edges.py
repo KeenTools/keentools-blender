@@ -70,8 +70,7 @@ class KTEdgeShaderBase(KTShaderBase):
         self.triangle_vertices: List = []
         self.edge_vertex_normals: List = []
 
-        self.backface_culling: bool = False
-        self.backface_culling_in_shader: bool = False
+        self.backface_culling: bool = True
         self.adaptive_opacity: float = 1.0
         self.line_color: Tuple[float, float, float, float] = (1., 1., 1., 1.)
         self.line_width: float = 1.0
@@ -383,7 +382,6 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
         self.lit_light3_pos: Vector = Vector((2, 0, 1)) * self.lit_light_dist
         self.lit_camera_pos: Vector = Vector((0, 0, 0)) * self.lit_light_dist
         self.lit_light_matrix: Matrix = Matrix.Identity(4)
-        self.backface_culling_in_shader = True
         self.wireframe_offset = Config.wireframe_offset_constant
 
     def set_lit_wireframe(self, state: bool) -> None:
