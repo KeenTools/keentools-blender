@@ -106,16 +106,10 @@ ERROR_MESSAGES = {
         'We recommend you to update the addon and the Core library.'],
 
     'UNSUPPORTED_GPU_BACKEND': [
-        'Error (1120): this version of addon does not support Metal shaders.',
-        'You won\'t be able to use its full functionality',
-        'until you change the back-end to OpenGL.',
-        ' ',
-        'You can switch to OpenGL back-end in Blender Preferences -> System.',
-        'Just select \'OpenGL\' instead of \'Metal\' in dropdown menu.',
-        'Then you must restart Blender to apply these changes.',
-        ' ',
-        'We are working hard to support new shaders in our next versions',
-        'of the addon.'],
+        'Error (1120): Looks like a backend problem. ',
+        'This version of add-on supports OpenGL and Metal. ',
+        'If you see this error, please contact our support. ',
+        'We\'ll do our best to figure it out.'],
 
     'UNKNOWN': ['Unknown error (0000)']
 }
