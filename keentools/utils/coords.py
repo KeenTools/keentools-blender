@@ -193,7 +193,8 @@ def image_space_to_region(x: float, y: float, x1: float, y1: float,
     w = (x2 - x1)
     h = (y2 - y1)
     sc = w
-    return x1 + (x + 0.5) * sc, (y1 + y2) * 0.5 + y * sc
+    return x1 + (x + 0.5 + 2 * shift_x) * sc, \
+           (y1 + y2) * 0.5 + y * sc + 2 * shift_y * h
 
 
 def get_image_space_coord(px: float, py: float, area: Area,
@@ -208,8 +209,11 @@ def region_to_image_space(x: float, y: float, x1: float, y1: float,
                           x2: float, y2: float, shift_x: float = 0.0,
                           shift_y: float = 0.0) -> Tuple[float, float]:
     w = (x2 - x1) if x2 != x1 else 1.0
+    h = (y2 - y1) if y2 != y1 else 1.0
     sc = w
-    return (x - (x1 + x2) * 0.5) / sc, (y - (y1 + y2) * 0.5) / sc
+    asp = h / w if w != 0 else 1.0
+    return (x - (x1 + x2) * 0.5) / sc - 2 * shift_x,\
+           (y - (y1 + y2) * 0.5) / sc - 2 * asp * shift_y
 
 
 def pin_to_xyz_from_mesh(

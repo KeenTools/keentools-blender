@@ -51,7 +51,8 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_end_frame,
                                 bpy_current_frame,
                                 bpy_set_current_frame,
-                                bpy_render_single_frame)
+                                bpy_render_single_frame,
+                                get_scene_camera_shift)
 from ..utils.compositing import (get_compositing_shadow_scene,
                                  create_mask_compositing_node_tree,
                                  get_mask_by_name,
@@ -82,11 +83,11 @@ def is_camera(self, obj: Optional[Object]) -> bool:
 
 
 _constraint_warning_message = \
-    'object has constraints!\n' \
-    'It is highly recommended to remove or bake them.\n' \
+    'constraints detected! \n' \
+    'Better delete or bake them.\n' \
     ' \n' \
-    'If you have used Blender tracking,\n' \
-    'you need to use \'Constraint to F-Curve button\'\n' \
+    'If this is the result of Blender tracking, \n' \
+    'you need to click on the \'Constraint to F-Curve button\'\n' \
     'of the solver constraint.'
 
 
@@ -963,8 +964,10 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         self.do_selection()
 
     def end_selection(self, area: Area, mouse_x: int, mouse_y: int) -> None:
-        x1, y1 = get_image_space_coord(self.selection_x, self.selection_y, area)
-        x2, y2 = get_image_space_coord(mouse_x, mouse_y, area)
+        shift_x, shift_y = get_scene_camera_shift()
+        x1, y1 = get_image_space_coord(self.selection_x, self.selection_y, area,
+                                       shift_x, shift_y)
+        x2, y2 = get_image_space_coord(mouse_x, mouse_y, area, shift_x, shift_y)
         vp = GTLoader.viewport()
         pins = vp.pins()
         found_pins = pins.pins_inside_rectangle(x1, y1, x2, y2)

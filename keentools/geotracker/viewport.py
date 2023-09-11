@@ -287,7 +287,7 @@ class GTViewport(KTViewport):
         shift_x, shift_y = camobj.data.shift_x, camobj.data.shift_y
         for i, v in enumerate(vv):
             x, y = frame_to_image_space(v[0], v[1], rx, ry, shift_x, shift_y)
-            verts.append(image_space_to_region(x, y, x1, y1, x2, y2))
+            verts.append(image_space_to_region(x, y, x1, y1, x2, y2, shift_x, shift_y))
             wire.edge_lengths.append(0)
             verts.append((p2d[i][0], p2d[i][1]))
             # length = np.linalg.norm((v[0]-p2d[i][0], v[1]-p2d[i][1]))
