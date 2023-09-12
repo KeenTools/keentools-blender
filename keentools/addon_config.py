@@ -169,6 +169,8 @@ class Config:
 
     kt_convert_video_scene_name: str = 'gt_convert_video'
 
+    test_facetracker: bool = True
+
     @classmethod
     def mock_update_for_testing(cls, value: bool=True, *,
                                 ver: Optional[Tuple]=None,

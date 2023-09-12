@@ -36,7 +36,8 @@ from ..utils.coords import (get_image_space_coord,
                             change_near_and_far_clip_planes,
                             focal_mm_to_px,
                             camera_focal_length,
-                            camera_sensor_width)
+                            camera_sensor_width,
+                            xy_to_xz_rotation_matrix_3x3)
 from ..utils.manipulate import force_undo_push
 from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_set_current_frame,
@@ -45,6 +46,7 @@ from ..utils.bpy_common import (bpy_current_frame,
 from .ui_strings import buttons
 from .interface.screen_mesages import (revert_default_screen_message,
                                        clipping_changed_screen_message)
+from ..addon_config import Config
 
 
 _log = KTLogger(__name__)
@@ -180,6 +182,17 @@ class GT_OT_MovePin(bpy.types.Operator):
 
         GTLoader.viewport().pins().reset_current_pin()
 
+        if Config.test_facetracker:
+            geotracker = get_current_geotracker_item()
+            gt = GTLoader.kt_geotracker()
+            frame = bpy_current_frame()
+
+            mesh = geotracker.geomobj.data
+            geom_verts = gt.applied_args_model_vertices_at(frame) @ \
+                         xy_to_xz_rotation_matrix_3x3()
+            mesh.vertices.foreach_set('co', geom_verts.ravel())
+            mesh.update()
+
         if self.dragged:
             self.update_focal_length_in_all_keyframes()
             GTLoader.spring_pins_back()
@@ -250,6 +263,16 @@ class GT_OT_MovePin(bpy.types.Operator):
                 clipping_changed_screen_message(near, far)
 
         gt = GTLoader.kt_geotracker()
+
+        if Config.test_facetracker:
+            wf = vp.wireframer()
+            GTLoader.increment_geo_hash()
+
+            geo = gt.applied_args_model_at(frame)
+            wf.init_geom_data_from_core(*GTLoader.get_geo_shader_data(
+                geo, geotracker.geomobj.matrix_world))
+            wf.create_batches()
+
         vp.update_surface_points(gt, geotracker.geomobj, frame)
 
         wf = vp.wireframer()

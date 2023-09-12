@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..addon_config import Config
 
 
 class GTClassLoader:
@@ -47,6 +48,8 @@ class GTClassLoader:
 
     @staticmethod
     def GeoTracker_class():
+        if Config.test_facetracker:
+            return pkt_module().FaceTracker
         return pkt_module().GeoTracker
 
     @staticmethod

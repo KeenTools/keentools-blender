@@ -227,7 +227,7 @@ class GTLoader:
 
     @classmethod
     def geo(cls) -> Any:
-        return cls._geo
+        return cls._geo_input.geo()
 
     @classmethod
     def new_kt_geotracker(cls) -> Any:
@@ -500,7 +500,10 @@ class GTLoader:
             _log.output(_log.color('green', 'update_geo_data'))
             GTLoader.increment_geo_hash()
             gt = GTLoader.kt_geotracker()
-            geo = gt.geo()
+            if Config.test_facetracker:
+                geo = GTLoader.geo()
+            else:
+                geo = gt.geo()
             wf.init_geom_data_from_core(*cls.get_geo_shader_data(
                 geo, geotracker.geomobj.matrix_world))
 
