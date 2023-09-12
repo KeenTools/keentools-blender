@@ -33,7 +33,8 @@ from ..utils.coords import (get_camera_border,
 from ..utils.bpy_common import (bpy_render_frame,
                                 evaluated_object,
                                 bpy_scene_camera,
-                                bpy_background_mode)
+                                bpy_background_mode,
+                                get_scene_camera_shift)
 from ..utils.viewport import KTViewport
 from ..utils.screen_text import KTScreenText
 from ..utils.points import KTPoints2D, KTPoints3D
@@ -109,10 +110,6 @@ class GTViewport(KTViewport):
         if show_tmp_log:
             _log.info(tmp_log)
         return True
-
-    def switch_all_shaders_to(self, mode: str='gpu') -> None:
-        for item in self.get_all_viewport_shader_objects():
-            item.switch_shader_to(mode)
 
     def register_handlers(self, context):
         self.unregister_handlers()
@@ -210,8 +207,11 @@ class GTViewport(KTViewport):
 
         pins = self.pins()
         points = pins.arr().copy()
+
+        shift_x, shift_y = get_scene_camera_shift()
         for i, p in enumerate(points):
-            points[i] = image_space_to_region(p[0], p[1], x1, y1, x2, y2)
+            points[i] = image_space_to_region(p[0], p[1], x1, y1, x2, y2,
+                                              shift_x, shift_y)
 
         points_count = len(points)
 
@@ -287,12 +287,11 @@ class GTViewport(KTViewport):
         shift_x, shift_y = camobj.data.shift_x, camobj.data.shift_y
         for i, v in enumerate(vv):
             x, y = frame_to_image_space(v[0], v[1], rx, ry, shift_x, shift_y)
-            verts.append(image_space_to_region(x, y, x1, y1, x2, y2))
+            verts.append(image_space_to_region(x, y, x1, y1, x2, y2, shift_x, shift_y))
             wire.edge_lengths.append(0)
             verts.append((p2d[i][0], p2d[i][1]))
             # length = np.linalg.norm((v[0]-p2d[i][0], v[1]-p2d[i][1]))
-            length = 22.0
-            wire.edge_lengths.append(length)
+            wire.edge_lengths.append(Config.residual_dashed_line_length)
 
         wire.vertices = verts
         wire.vertices_colors = [GTConfig.residual_color] * len(verts)

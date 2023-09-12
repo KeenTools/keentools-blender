@@ -48,7 +48,8 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_background_mode,
                                 bpy_is_animation_playing,
                                 bpy_view_camera,
-                                bpy_render_frame)
+                                bpy_render_frame,
+                                get_scene_camera_shift)
 from ..utils.video import fit_render_size
 from .utils.prechecks import common_checks
 from .ui_strings import buttons
@@ -153,7 +154,8 @@ class GT_OT_PinMode(Operator):
                camera_clip_end=self.camera_clip_end)
             return {'PASS_THROUGH'}
 
-        x, y = get_image_space_coord(mouse_x, mouse_y, area)
+        x, y = get_image_space_coord(mouse_x, mouse_y, area,
+                                     *get_scene_camera_shift())
         nearest, dist2 = nearest_point(x, y, vp.pins().arr())
         if nearest >= 0 and dist2 < vp.tolerance_dist2():
             _log.output(f'CHANGE SELECTION PIN FOUND: {nearest}')
@@ -186,7 +188,8 @@ class GT_OT_PinMode(Operator):
 
         vp = GTLoader.viewport()
         vp.update_view_relative_pixel_size(area)
-        x, y = get_image_space_coord(mouse_x, mouse_y, area)
+        x, y = get_image_space_coord(mouse_x, mouse_y, area,
+                                     *get_scene_camera_shift())
 
         nearest, dist2 = nearest_point(x, y, vp.pins().arr())
         if nearest >= 0 and dist2 < vp.tolerance_dist2():

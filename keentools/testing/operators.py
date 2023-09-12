@@ -177,6 +177,12 @@ def test_mask2d(mask2d: Any, *, width: int=512, height: int=256,
     mask2d.create_batch()
 
 
+def test_timeliner(timeliner: Any) -> None:
+    timeliner.set_keyframes([x * 10 for x in range(26)])
+    timeliner.create_batch()
+    GTLoader.update_all_timelines()
+
+
 def gt_points2d(context: Any) -> None:
     vp = GTLoader.viewport()
     points2d = vp.points2d()
@@ -305,6 +311,13 @@ def gt_mask2d(context: Any) -> None:
     test_mask2d(mask2d)
 
 
+def gt_timeliner(context: Any) -> None:
+    vp = GTLoader.viewport()
+    timeliner = vp.timeliner()
+    timeliner.register_handler(context)
+    test_timeliner(timeliner)
+
+
 def gt_stop_all() -> None:
     vp = GTLoader.viewport()
     vp.points2d().unregister_handler()
@@ -313,6 +326,8 @@ def gt_stop_all() -> None:
     vp.wireframer().unregister_handler()
     vp.selector().unregister_handler()
     vp.mask2d().unregister_handler()
+    vp.timeliner().unregister_handler()
+    GTLoader.update_all_timelines()
     vp.texter().unregister_handler()
 
 
@@ -366,6 +381,8 @@ class GTShaderTestOperator(Operator):
             gt_selector(context)
         elif self.action == 'mask2d':
             gt_mask2d(context)
+        elif self.action == 'timeliner':
+            gt_timeliner(context)
         elif self.action == 'texter':
             gt_texter(context)
         elif self.action == 'all':
@@ -375,6 +392,7 @@ class GTShaderTestOperator(Operator):
             gt_wireframer(context)
             gt_selector(context)
             gt_mask2d(context)
+            gt_timeliner(context)
             gt_texter(context)
         elif self.action == 'stop':
             gt_stop_all()

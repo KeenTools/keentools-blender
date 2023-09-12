@@ -83,10 +83,11 @@ class GT_OT_MovePin(bpy.types.Operator):
 
     def _new_pin(self, area: Area, mouse_x: float, mouse_y: float) -> bool:
         frame = bpy_current_frame()
-        x, y = get_image_space_coord(mouse_x, mouse_y, area)
+        shift_x, shift_y = get_scene_camera_shift()
+        x, y = get_image_space_coord(mouse_x, mouse_y, area, shift_x, shift_y)
 
         pin = GTLoader.add_pin(
-            frame, (image_space_to_frame(x, y, *get_scene_camera_shift())))
+            frame, (image_space_to_frame(x, y, shift_x, shift_y)))
         _log.output(f'_new_pin pin: {pin}')
         pins = GTLoader.viewport().pins()
         if not pin:
@@ -117,7 +118,8 @@ class GT_OT_MovePin(bpy.types.Operator):
 
         GTLoader.load_pins_into_viewport()
 
-        x, y = get_image_space_coord(mouse_x, mouse_y, context.area)
+        x, y = get_image_space_coord(mouse_x, mouse_y, context.area,
+                                     *get_scene_camera_shift())
         pins.set_current_pin((x, y))
 
         nearest, dist2 = nearest_point(x, y, pins.arr())
@@ -204,7 +206,8 @@ class GT_OT_MovePin(bpy.types.Operator):
             GTLoader.delta_move_pin(kid, selected_pins, offset)
             GTLoader.load_pins_into_viewport()
 
-        x, y = get_image_space_coord(mouse_x, mouse_y, area)
+        shift_x, shift_y = get_scene_camera_shift()
+        x, y = get_image_space_coord(mouse_x, mouse_y, area, shift_x, shift_y)
         pins = GTLoader.viewport().pins()
         pins.set_current_pin((x, y))
         pin_index = pins.current_pin_num()
@@ -214,7 +217,7 @@ class GT_OT_MovePin(bpy.types.Operator):
         GTLoader.safe_keyframe_add(kid)
 
         if len(selected_pins) == 1:
-            GTLoader.move_pin(kid, pin_index, (x, y), *get_scene_camera_shift())
+            GTLoader.move_pin(kid, pin_index, (x, y), shift_x, shift_y)
             return GTLoader.solve()
 
         _drag_multiple_pins(kid, pin_index, selected_pins)

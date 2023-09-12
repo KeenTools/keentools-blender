@@ -28,7 +28,6 @@ from ..facebuilder_config import (FBConfig,
                                   check_addon_settings_var_type)
 from .head import MESH_OT_FBAddHead
 from .settings import FBSceneSettings, FBExifItem, FBCameraItem, FBHeadItem
-from ..utils.icons import FBIcons
 from .pinmode import FB_OT_PinMode
 from .pick_operator import FB_OT_PickMode, FB_OT_PickModeStarter
 from .movepin import FB_OT_MovePin
@@ -181,9 +180,6 @@ def facebuilder_register():
     _add_addon_settings_var()
     _log.output('MAIN FACEBUILDER VARIABLE REGISTERED')
 
-    FBIcons.register()
-    _log.output('FACEBUILDER ICONS REGISTERED')
-
     set_fb_settings_func(get_fb_settings_safe)
 
 
@@ -204,6 +200,3 @@ def facebuilder_unregister():
             _log.error('CANNOT UNREGISTER MAIN FB VAR')
     except Exception as err:
         _log.error(f'FACEBUILDER UNREGISTER VARIABLE ERROR:\n{str(err)}')
-
-    FBIcons.unregister()
-    _log.output('FACEBUILDER ICONS UNREGISTERED')

@@ -16,9 +16,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
-import bpy
+from typing import Any, Tuple, Optional
 
+import bpy
+from bpy.types import Object
+
+from ...utils.kt_logging import KTLogger
 from ...addon_config import Config, get_operator, ErrorType
 from ...facebuilder_config import FBConfig, get_fb_settings
 from ...utils.manipulate import force_undo_push
@@ -27,26 +30,31 @@ from ...blender_independent_packages.pykeentools_loader import module as pkt_mod
 from ..fbloader import FBLoader
 from ..utils.cameras import (get_camera_params, default_camera_params)
 from .exif_reader import (read_exif_to_camera, auto_setup_camera_from_exif)
+from ...utils.bpy_common import bpy_render_frame, bpy_set_render_frame
 
 
-def push_head_in_undo_history(head, msg='KeenTools operation'):
+_log = KTLogger(__name__)
+
+
+def push_head_in_undo_history(head: Any,
+                              msg: str = 'KeenTools operation') -> None:
     head.need_update = True
     inc_fb_operation()
     force_undo_push(msg)
     head.need_update = False
 
 
-def inc_fb_operation():
+def inc_fb_operation() -> None:
     settings = get_fb_settings()
     settings.opnum += 1
 
 
-def get_fb_operation():
+def get_fb_operation() -> int:
     settings = get_fb_settings()
     return settings.opnum
 
 
-def check_settings():
+def check_settings() -> bool:
     settings = get_fb_settings()
     if not settings.check_heads_and_cams():
         heads_deleted, cams_deleted = settings.fix_heads()
@@ -57,27 +65,25 @@ def check_settings():
     return True
 
 
-def _is_facebuilder_object(obj):
+def _is_facebuilder_object(obj: Object) -> bool:
     return FBConfig.version_prop_name in obj.keys()
 
 
-def _check_facs_available(count):
+def _check_facs_available(count: int) -> bool:
     try:
         return pkt_module().FacsExecutor.facs_available(count)
     except pkt_module().ModelLoadingException as err:
-        logger = logging.getLogger(__name__)
-        logger.error('_check_facs_available ModelLoadingException: {}'.format(str(err)))
+        _log.error(f'_check_facs_available ModelLoadingException:\n{str(err)}')
     except Exception as err:
-        logger = logging.getLogger(__name__)
-        logger.error('_check_facs_available Unknown Exception: {}'.format(str(err)))
+        _log.error(f'_check_facs_available Unknown Exception:\n{str(err)}')
     return False
 
 
 # Scene States and Head number. All States are:
 # RECONSTRUCT, NO_HEADS, THIS_HEAD, ONE_HEAD, MANY_HEADS, PINMODE
 # ------------
-def what_is_state():
-    def _how_many_heads():
+def what_is_state() -> Tuple[str, int]:
+    def _how_many_heads() -> Tuple[str, int]:
         settings = get_fb_settings()
         unknown_headnum = -1
         heads_count = len(settings.heads)
@@ -125,12 +131,12 @@ def what_is_state():
     return _how_many_heads()
 
 
-def get_current_headnum():
+def get_current_headnum() -> int:
     state, headnum = what_is_state()
     return headnum
 
 
-def get_current_head():
+def get_current_head() -> Optional[Any]:
     headnum = get_current_headnum()
     if headnum >= 0:
         settings = get_fb_settings()
@@ -138,7 +144,9 @@ def get_current_head():
     return None
 
 
-def get_obj_from_context(context, force_fbloader=True):
+def get_obj_from_context(context: Any,
+        force_fbloader: bool = True) -> Tuple[Optional[Object], float]:
+
     state, headnum = what_is_state()
     if state == 'FACS_HEAD':
         return context.object, 1.0
@@ -156,57 +164,54 @@ def get_obj_from_context(context, force_fbloader=True):
         return head.headobj, head.model_scale
 
 
-def _get_serial(obj):
+def _get_serial(obj: Object) -> str:
     return attrs.get_safe_custom_attribute(obj, FBConfig.fb_serial_prop_name)
 
 
-def _get_dir_name(obj):
+def _get_dir_name(obj: Object) -> str:
     return attrs.get_safe_custom_attribute(obj, FBConfig.fb_dir_prop_name)
 
 
-def _get_image_names(obj):
+def _get_image_names(obj: Object) -> str:
     return attrs.get_safe_custom_attribute(obj, FBConfig.fb_images_prop_name)
 
 
-def reconstruct_by_head():
+def reconstruct_by_head() -> bool:
     """ Reconstruct Cameras and Scene structures by serial """
-    logger = logging.getLogger(__name__)
-    scene = bpy.context.scene
-    rx = scene.render.resolution_x
-    ry = scene.render.resolution_y
+    rx, ry = bpy_render_frame()
     settings = get_fb_settings()
 
     obj = bpy.context.object
 
     if obj.type != 'MESH':
-        return
+        return False
 
     if not _is_facebuilder_object(obj):
-        return
+        return False
 
-    logger.debug('START RECONSTRUCT')
+    _log.output('START RECONSTRUCTION')
 
     params = get_camera_params(obj)
     if params is None:
         params = default_camera_params()
-        logger.debug('DEFAULT CAMERA PARAMETERS GENERATED')
-    logger.debug('PARAMS: {}'.format(params))
+        _log.output('DEFAULT CAMERA PARAMETERS GENERATED')
+    _log.output(f'PARAMS: {params}')
 
     serial_str = _get_serial(obj)
     if serial_str is None:
-        serial_str = ""
-    logger.debug("SERIAL")
+        serial_str = ''
+    _log.output('SERIAL')
 
     dir_name = _get_dir_name(obj)
     if dir_name is None:
-        dir_name = ""
-    logger.debug("DIR_NAME: {}".format(dir_name))
+        dir_name = ''
+    _log.output(f'DIR_NAME: {dir_name}')
 
     images = _get_image_names(obj)
     if type(images) is not list:
         images = []
-    logger.debug("IMAGES: {}".format(images))
-    logger.debug("PARAMETERS LOADED. START HEAD CREATION")
+    _log.output(f'IMAGES: {images}')
+    _log.output('PARAMETERS LOADED. START HEAD CREATION')
 
     settings.fix_heads()
     headnum = len(settings.heads)
@@ -219,11 +224,10 @@ def reconstruct_by_head():
         head.sensor_width = params['sensor_width']
         head.sensor_height = params['sensor_height']
         head.focal = params['focal']
-        scene.render.resolution_x = params['frame_width']
-        scene.render.resolution_y = params['frame_height']
+        bpy_set_render_frame(params['frame_width'], params['frame_height'])
 
         fb.deserialize(head.get_serial_str())
-        logger.debug("RECONSTRUCT KEYFRAMES {}".format(str(fb.keyframes())))
+        _log.output(f'RECONSTRUCT KEYFRAMES {str(fb.keyframes())}')
 
         for i, kid in enumerate(fb.keyframes()):
             cam_ob = FBLoader.create_camera_object(headnum, i)
@@ -232,7 +236,7 @@ def reconstruct_by_head():
             camera.set_keyframe(kid)
 
             filename = images[i]
-            logger.debug("IMAGE {} {}".format(i, filename))
+            _log.output(f'IMAGE {i} {filename}')
             img = bpy.data.images.new(filename, 0, 0)
             img.source = 'FILE'
             img.filepath = filename
@@ -244,7 +248,7 @@ def reconstruct_by_head():
 
             auto_setup_camera_from_exif(camera)
 
-            logger.debug("CAMERA CREATED {}".format(kid))
+            _log.output(f'CAMERA CREATED {kid}')
             FBLoader.place_camera(headnum, i)
             FBLoader.update_camera_pins_count(headnum, i)
 
@@ -253,15 +257,16 @@ def reconstruct_by_head():
         FBLoader.update_cameras_from_old_version(headnum)
 
     except Exception:
-        logger.error("WRONG PARAMETERS")
+        _log.error('WRONG PARAMETERS')
         for i, c in enumerate(reversed(head.cameras)):
             if c.camobj is not None:
                 bpy.data.objects.remove(c.camobj, do_unlink=True)
             head.cameras.remove(i)
         settings.heads.remove(headnum)
-        scene.render.resolution_x = rx
-        scene.render.resolution_y = ry
-        logger.info("SCENE PARAMETERS RESTORED")
+        bpy_set_render_frame(rx, ry)
+        _log.info('SCENE PARAMETERS RESTORED')
         warn = get_operator(Config.kt_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CannotReconstruct)
-        return
+        return False
+
+    return True

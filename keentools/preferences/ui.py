@@ -382,8 +382,11 @@ class KTAddonPreferences(AddonPreferences):
         default=False
     )
 
-    license_key: StringProperty(
-        name="License key", default=""
+    fb_license_key: StringProperty(
+        name="License key", description="for FaceBuilder", default=""
+    )
+    gt_license_key: StringProperty(
+        name="License key", description="for GeoTracker", default=""
     )
 
     fb_license_server: StringProperty(
@@ -580,7 +583,8 @@ class KTAddonPreferences(AddonPreferences):
     def _license_was_accepted(self):
         return pkt_is_installed() or self.license_accepted
 
-    def _draw_plugin_license_info(self, layout, plugin_name: str, plugin_key: str, plugin_prop_prefix: str):
+    def _draw_plugin_license_info(self, layout, plugin_name: str,
+                                  plugin_key: str, plugin_prop_prefix: str):
         layout.label(text=f'{plugin_name} license info:')
         box = layout.box()
 
@@ -595,9 +599,9 @@ class KTAddonPreferences(AddonPreferences):
         if lic_type_prop == 'ONLINE':
             box = layout.box()
             row = box.split(factor=0.85)
-            row.prop(self, 'license_key')
+            row.prop(self, f'{plugin_prop_prefix}_license_key')
             install_online_op = row.operator(Config.kt_install_license_online_idname)
-            install_online_op.license_key = self.license_key
+            install_online_op.license_key = getattr(self, f'{plugin_prop_prefix}_license_key')
             install_online_op.product = plugin_key
 
         elif lic_type_prop == 'OFFLINE':

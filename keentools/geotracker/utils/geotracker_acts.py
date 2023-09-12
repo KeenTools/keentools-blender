@@ -1287,5 +1287,6 @@ def unbreak_rotation_act() -> ActionStatus:
         euler_prev = rot
 
     update_depsgraph()
+    _mark_object_keyframes(obj)
 
     return ActionStatus(True, 'ok')

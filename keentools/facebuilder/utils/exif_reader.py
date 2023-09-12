@@ -16,18 +16,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import logging
+from typing import Optional, Any, Tuple, Dict
 import os
 
 from ...blender_independent_packages.exifread import process_file
 from ...blender_independent_packages.exifread import \
     DEFAULT_STOP_TAG, FIELD_TYPES
 
+from ...utils.kt_logging import KTLogger
 from ...facebuilder_config import FBConfig, get_fb_settings
 
 
+_log = KTLogger(__name__)
+
+
 # Convert frac record like '16384/32768' to float 0.5
-def _frac_to_float(s):
+def _frac_to_float(s: str) -> Optional[float]:
     try:
         arr = str(s).split('/')
         if len(arr) == 1:
@@ -41,22 +45,21 @@ def _frac_to_float(s):
     return None
 
 
-def _get_safe_exif_param_num(p, data):
-    logger = logging.getLogger(__name__)
+def _get_safe_exif_param_num(p: str, data: Dict) -> Optional[float]:
     if data is not None and p in data.keys():
         val = _frac_to_float(data[p].printable)
-        logger.debug("{} {}".format(p, val))
+        _log.output(f'exif_param: {p}={val}')
         return val
     return None
 
 
-def _get_safe_exif_param_str(p, data):
+def _get_safe_exif_param_str(p: str, data: Dict) -> Optional[str]:
     if data is not None and p in data.keys():
         return data[p]
     return None
 
 
-def _get_exif_units(tag):
+def _get_exif_units(tag: float) -> str:
     if tag == 4.0:
         return 'mm'
     elif tag == 3.0:
@@ -67,7 +70,7 @@ def _get_exif_units(tag):
         return str(-1.0)
 
 
-def _get_units_scale_in_mm(exif_units):
+def _get_units_scale_in_mm(exif_units: str) -> float:
     if exif_units == 'mm':
         return 1.0
     elif exif_units == 'cm':
@@ -78,7 +81,8 @@ def _get_units_scale_in_mm(exif_units):
         return 25.4
 
 
-def _get_sensor_size(exif_size, exif_focal_res, exif_units):
+def _get_sensor_size(exif_size: float, exif_focal_res: float,
+                     exif_units: str) -> float:
     wrong_result = -1.0
     try:
         if exif_size > 0.0 and exif_focal_res > 0.0:
@@ -90,19 +94,18 @@ def _get_sensor_size(exif_size, exif_focal_res, exif_units):
         return wrong_result
 
 
-def _print_out_exif_data(data):
-    logger = logging.getLogger(__name__)
+def _print_out_exif_data(data: Dict) -> None:
     tag_keys = list(data.keys())
     tag_keys.sort()
     for i in tag_keys:
         try:
-            logger.info('{} ({}): {}'.format(
-                i, FIELD_TYPES[data[i].field_type][2], data[i].printable))
+            _log.info(f'{i} ({FIELD_TYPES[data[i].field_type][2]}): '
+                      f'{data[i].printable}')
         except Exception:
-            logger.error("{} : {}".format(i, str(data[i])))
+            _log.error(f'exif_data_error: {i} : {str(data[i])}')
 
 
-def get_sensor_size_35mm_equivalent(head):
+def get_sensor_size_35mm_equivalent(head: Any) -> Tuple[float, float]:
     w, h = head.exif.calculated_image_size()
     if w > 0.0 and h > 0.0:
         p = h / w
@@ -113,9 +116,7 @@ def get_sensor_size_35mm_equivalent(head):
     return w, h
 
 
-def _read_exif(filepath):
-    logger = logging.getLogger(__name__)
-
+def _read_exif(filepath: str) -> Dict:
     status = False
     try:
         with open(str(filepath), 'rb') as img_file:
@@ -128,7 +129,7 @@ def _read_exif(filepath):
         # _print_out_exif_data(data)
 
     except IOError:
-        logger.error("{}' is unreadable for EXIF".format(filepath))
+        _log.error(f'{filepath} is unreadable for EXIF')
         data = None
 
     return {
@@ -154,14 +155,14 @@ def _read_exif(filepath):
     }
 
 
-def _safe_parameter(data, name):
+def _safe_parameter(data: Dict, name: str) -> float:
     if data[name] is not None:
         return data[name]
     else:
         return -1.0
 
 
-def _orientation_to_index(data, name='image_orientation'):
+def _orientation_to_index(data: Dict, name: str = 'image_orientation') -> int:
     param = str(_safe_parameter(data, name))
     orient_to_index = {
         'Horizontal (normal)': 0,
@@ -178,7 +179,7 @@ def _orientation_to_index(data, name='image_orientation'):
     return orient_to_index[param]
 
 
-def _sensor_size_by_focals(focal, focal35mm):
+def _sensor_size_by_focals(focal: float, focal35mm: float) -> Tuple[float, float]:
     w = -1.0
     h = -1.0
     if focal > 0 and focal35mm > 0:
@@ -187,7 +188,7 @@ def _sensor_size_by_focals(focal, focal35mm):
     return w, h
 
 
-def _init_exif_settings(exif, data):
+def _init_exif_settings(exif: Any, data: Dict) -> None:
     exif.units = _get_exif_units(data['exif_units'])
 
     exif.image_width = _safe_parameter(data, 'image_width')
@@ -225,35 +226,33 @@ def _init_exif_settings(exif, data):
                                               exif.units)
 
 
-def _exif_info_message(exif, data):
-    message = ""
+def _exif_info_message(exif: Any, data: Dict) -> str:
+    message = ''
 
     if exif.focal > 0.0:
-        message += "\nFocal length: {:.2f}mm".format(exif.focal)
+        message += f'\nFocal length: {exif.focal:.2f}mm'
 
     if exif.focal35mm > 0.0:
-        message += \
-            "\n35mm equiv.: {:.2f}mm".format(exif.focal35mm)
+        message += f'\n35mm equiv.: {exif.focal35mm:.2f}mm'
 
     if exif.sensor_width > 0.0 and exif.sensor_length > 0.0:
-        message += "\nSensor: {:.2f} x {:.2f}mm".format(exif.sensor_width,
-                                                      exif.sensor_length)
+        message += f'\nSensor: ' \
+                   f'{exif.sensor_width:.2f} x {exif.sensor_length:.2f}mm'
     elif exif.sensor_width > 0.0:
-        message += "\nSensor Width: {:.2f}mm".format(exif.sensor_width)
-
+        message += f'\nSensor Width: {exif.sensor_width:.2f}mm'
     elif exif.sensor_length > 0.0:
-        message += "\nSensor Height: {:.2f}mm".format(exif.sensor_length)
+        message += f'\nSensor Height: {exif.sensor_length:.2f}mm'
 
     if data['exif_model'] is not None:
         make = ' '
         if data['exif_make'] is not None:
-            make = "{} ".format(data['exif_make'])
-        message += "\nCamera: {}{}".format(make, data['exif_model'])
+            make = f'{data["exif_make"]} '
+        message += f'\nCamera: {make}{data["exif_model"]}'
 
     return message[1:]
 
 
-def _exif_sizes_message(headnum, image):
+def _exif_sizes_message(headnum: int, image: Any) -> str:
     settings = get_fb_settings()
     head = settings.get_head(headnum)
 
@@ -315,7 +314,7 @@ def _exif_sizes_message(headnum, image):
     return message
 
 
-def reload_all_camera_exif(headnum):
+def reload_all_camera_exif(headnum: int) -> None:
     settings = get_fb_settings()
     head = settings.get_head(headnum)
     for i, camera in enumerate(head.cameras):
@@ -324,7 +323,7 @@ def reload_all_camera_exif(headnum):
             read_exif_to_camera(headnum, i, filepath)
 
 
-def read_exif_to_camera(headnum, camnum, filepath):
+def read_exif_to_camera(headnum: int, camnum: int, filepath: str) -> bool:
     settings = get_fb_settings()
     camera = settings.get_camera(headnum, camnum)
     if camera is None:
@@ -335,7 +334,7 @@ def read_exif_to_camera(headnum, camnum, filepath):
     return exif_data['status']
 
 
-def update_exif_sizes_message(headnum, image):
+def update_exif_sizes_message(headnum: int, image: Any) -> bool:
     settings = get_fb_settings()
     head = settings.get_head(headnum)
     if head is None:
@@ -345,7 +344,7 @@ def update_exif_sizes_message(headnum, image):
     return True
 
 
-def auto_setup_camera_from_exif(camera):
+def auto_setup_camera_from_exif(camera: Any) -> None:
     real_w, real_h = camera.get_background_size()
 
     if camera.exif.focal35mm > 0:
@@ -368,11 +367,11 @@ def auto_setup_camera_from_exif(camera):
     camera.auto_focal_estimation = True
 
 
-def _copy_property_from_to(prop_name, from_obj, to_obj):
+def _copy_property_from_to(prop_name: str, from_obj: Any, to_obj: Any) -> None:
     setattr(to_obj, prop_name, getattr(from_obj, prop_name))
 
 
-def _exif_class_fields():
+def _exif_class_fields() -> Tuple:
     return ('focal',
             'focal35mm',
             'focal_x_res',
@@ -391,17 +390,16 @@ def _exif_class_fields():
             'sizes_message')
 
 
-def _all_fields_dump(exif):
-    return "\n".join(["{}:{}".format(p, getattr(exif, p))
-                      for p in _exif_class_fields()])
+def _all_fields_dump(exif: Any) -> str:
+    return '\n'.join([f'{p}:{getattr(exif, p)}' for p in _exif_class_fields()])
 
 
-def copy_exif_parameters_from_camera_to_head(camera, head):
+def copy_exif_parameters_from_camera_to_head(camera: Any, head: Any) -> None:
     for p in _exif_class_fields():
         _copy_property_from_to(p, camera.exif, head.exif)
 
 
-def read_exif_from_camera(headnum, camnum):
+def read_exif_from_camera(headnum: int, camnum: int) -> bool:
     settings = get_fb_settings()
     head = settings.get_head(headnum)
     if head is None:

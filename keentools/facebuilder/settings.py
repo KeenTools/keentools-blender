@@ -717,9 +717,11 @@ class FBSceneSettings(PropertyGroup):
     def calc_adaptive_opacity(self, area: Area) -> None:
         if not area:
             return
+        aw = area.width
         rx, ry = bpy_render_frame()
+        denom = aw if 1 <= aw < rx else rx
         x1, y1, x2, y2 = get_camera_border(area)
-        self.adaptive_opacity = (x2 - x1) / rx
+        self.adaptive_opacity = (x2 - x1) / denom
 
     wireframe_opacity: FloatProperty(
         description='From 0.0 to 1.0',
@@ -761,8 +763,10 @@ class FBSceneSettings(PropertyGroup):
         description='Use different colors for important head parts '
                     'on the mesh',
         name='Special face parts', default=True, update=update_wireframe_image)
-
-    # Initial pin_size state in FBShaderPoints class
+    wireframe_backface_culling: bpy.props.BoolProperty(
+        name='Backface culling',
+        default=True,
+        update=update_wireframe_func)
     pin_size: FloatProperty(
         description='Set pin size in pixels',
         name='Size',

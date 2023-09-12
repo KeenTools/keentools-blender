@@ -174,9 +174,6 @@ class FB_PT_HeaderPanel(Common, Panel):
             text='Create a new head', icon=icon)
 
     def _head_creation_offer(self, layout):
-        # Test custom icons
-        # FBIcons.layout_icons(layout)
-
         self._create_head_button(layout)
 
         box = layout.box()
@@ -759,6 +756,7 @@ class FB_PT_AppearancePanel(AllVisible, Panel):
 
         col = box.column(align=True)
         col.prop(settings, 'show_specials', text='Highlight head parts')
+        col.prop(settings, 'wireframe_backface_culling')
         col.prop(settings, 'use_adaptive_opacity')
 
 

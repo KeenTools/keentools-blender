@@ -19,6 +19,7 @@
 from bpy.types import Panel
 
 from ..addon_config import Config, ErrorType
+from ..utils.icons import FBIcons
 
 
 def _get_all_error_type_values():
@@ -50,6 +51,9 @@ class KTErrorMessagePanel(Panel):
         layout = self.layout
         self._draw_error_buttons(layout)
 
+        layout.label(text='--- Icons ---')
+        FBIcons.layout_icons(layout)
+
 
 class GTShaderTestingPanel(Panel):
     bl_idname = Config.kt_gt_shader_testing
@@ -62,8 +66,9 @@ class GTShaderTestingPanel(Panel):
 
     def draw(self, context):
         layout = self.layout
-        for action in ['all', 'stop', 'points2d', 'points3d', 'residuals',
-                       'wireframer', 'selector', 'mask2d', 'texter']:
+        for action in ['all', 'stop', 'points2d', 'points3d',
+                       'residuals', 'wireframer', 'selector',
+                       'mask2d', 'timeliner', 'texter']:
             op = layout.operator(Config.kt_gt_shader_testing_idname,
                                  text=action)
             op.action = action

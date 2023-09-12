@@ -151,21 +151,18 @@ class FB_OT_PinMode(Operator):
         settings = get_fb_settings()
         head = settings.get_head(settings.current_headnum)
 
-        wf = FBLoader.viewport().wireframer()
-        wf.init_colors(
-            (settings.wireframe_color, settings.wireframe_special_color,
-             settings.wireframe_midline_color),
-            settings.wireframe_opacity * settings.get_adaptive_opacity())
-
+        vp = FBLoader.viewport()
+        vp.update_wireframe_colors()
+        wf = vp.wireframer()
         fb = FBLoader.get_builder()
-        if not wf.init_wireframe_image(fb, settings.show_specials):
-            wf.switch_to_simple_shader()
+        wf.init_wireframe_image(fb, settings.show_specials)
 
         keyframe = head.get_keyframe(settings.current_camnum)
-        wf.init_geom_data_from_fb(fb, head.headobj, keyframe)
         wf.init_edge_indices(fb)
 
         wf.set_object_world_matrix(head.headobj.matrix_world)
+        camobj = head.get_camera(settings.current_camnum).camobj
+        wf.set_camera_pos(camobj, head.headobj)
         geo = fb.applied_args_model_at(keyframe)
         wf.init_geom_data_from_core(*FBLoader.get_geo_shader_data(geo))
 
@@ -214,7 +211,8 @@ class FB_OT_PinMode(Operator):
         vp = FBLoader.viewport()
         _log.output(f'before FBLoader.update_viewport_shaders '
                     f'{vp.wireframer().get_statistics()}')
-        FBLoader.update_viewport_shaders(area, headnum, camnum,
+        FBLoader.update_viewport_shaders(area=area,
+                                         headnum=headnum, camnum=camnum,
                                          wireframe=True,
                                          pins_and_residuals=True)
 
@@ -233,8 +231,9 @@ class FB_OT_PinMode(Operator):
         FBLoader.load_model(headnum)
         FBLoader.place_camera(headnum, camnum)
         FBLoader.load_pins_into_viewport(headnum, camnum)
-        FBLoader.update_viewport_shaders(area, headnum, camnum,
-                                         wireframe=True, pins_and_residuals=True)
+        FBLoader.update_viewport_shaders(area=area,
+                                         wireframe=True,
+                                         pins_and_residuals=True)
 
     def _on_right_mouse_press(self, area: Area,
                               mouse_x: float, mouse_y: float) -> Set:

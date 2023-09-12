@@ -16,8 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Callable, Optional, Tuple, Set
-import os
+from typing import Any, Callable, Optional, Tuple, Set, Dict
 from dataclasses import dataclass
 
 import bpy
@@ -29,7 +28,7 @@ _PT = 'KEENTOOLS_PT_'
 
 
 class Config:
-    addon_version = '2023.2.1'  # (5/5)
+    addon_version = '2023.2.2'  # (5/5)
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),
                                   (3, 0), (3, 1), (3, 2), (3, 3), (3, 4),
@@ -158,6 +157,13 @@ class Config:
     supported_gpu_backends: Set = {'OPENGL', 'Undefined', 'METAL'}
     strict_shader_check: bool = False
     wireframe_offset_constant: float = 0.004
+
+    residual_dashed_line_length: float = 22.0
+    residual_dashed_line: Dict = {'start': 0.0, 'step': 6.0, 'threshold': 4.0}
+    selection_dashed_line: Dict = {'start': 5.0, 'step': 10.0, 'threshold': 5.5}
+
+    keyframe_line_width = 2.0
+    keyframe_line_length: float = 1000.0
 
     integration_enabled: bool = True
 

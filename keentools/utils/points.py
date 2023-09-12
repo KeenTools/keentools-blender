@@ -144,6 +144,7 @@ class KTScreenPins:
 
 class KTShaderPoints(KTShaderBase):
     def __init__(self, target_class: Any=SpaceView3D):
+        super().__init__(target_class)
         self.shader: Any = None
         self.batch: Any = None
 
@@ -152,7 +153,6 @@ class KTShaderPoints(KTShaderBase):
 
         self._point_size: float = UserPreferences.get_value_safe(
             'pin_size', UserPreferences.type_float)
-        super().__init__(target_class)
 
     def get_vertices(self) -> List[Tuple[float, float, float]]:
         return self.vertices
@@ -186,7 +186,7 @@ class KTShaderPoints(KTShaderBase):
             return False
         return True
 
-    def draw_main_bgl(self, context: Any) -> None:
+    def draw_main(self, context: Any) -> None:
         set_point_size(self.get_point_size())
         set_blend_alpha()
         self.shader.bind()
