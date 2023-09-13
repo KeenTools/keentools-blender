@@ -20,6 +20,7 @@ import numpy as np
 from typing import Any, Tuple, List, Dict, Optional
 from math import frexp
 
+from ..addon_config import Config
 from ..utils.kt_logging import KTLogger
 from ..geotracker_config import get_gt_settings, get_current_geotracker_item
 from ..utils.coords import (focal_mm_to_px,
@@ -46,7 +47,7 @@ from ..utils.images import (np_array_from_background_image,
                             np_threshold_image,
                             np_array_from_bpy_image)
 from ..utils.ui_redraw import total_redraw_ui
-from ..utils.mesh_builder import build_geo
+from ..utils.mesh_builder import build_geo, build_geo_from_basis
 from ..utils.materials import find_bpy_image_by_name
 
 
@@ -122,6 +123,8 @@ class GTGeoInput(pkt_module().GeoInputI):
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return None
+        if Config.test_facetracker:
+            return build_geo_from_basis(geotracker.geomobj, get_uv=False)
         return build_geo(geotracker.geomobj, get_uv=False)
 
 

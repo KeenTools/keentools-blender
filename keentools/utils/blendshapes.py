@@ -60,6 +60,21 @@ def _get_all_blendshape_names(obj: Object) -> List[str]:
     return res[1:]
 
 
+def find_blenshape_by_name(obj: Object, name: str) -> Optional[Any]:
+    if not obj or not obj.data or not obj.data.shape_keys:
+        return None
+    for kb in obj.data.shape_keys.key_blocks:
+        if kb.name == name:
+            return kb
+    return None
+
+
+def find_blenshape_index(obj: Object, name: str) -> int:
+    if not obj or not obj.data or not obj.data.shape_keys or not obj.data.shape_keys.key_blocks:
+        return -1
+    return obj.data.shape_keys.key_blocks.find(name)
+
+
 def _get_safe_blendshapes_action(
         obj: Object, action_name: str = FBConfig.default_blendshapes_action_name) -> Optional[Any]:
     if _has_no_blendshapes(obj):
@@ -126,7 +141,7 @@ def _get_facs_executor(obj: Object, scale: float) -> Optional[Any]:
     return fe
 
 
-def _update_blendshape_verts(shape: Any, verts: Any) -> None:
+def update_blendshape_verts(shape: Any, verts: Any) -> None:
     shape.data.foreach_set(
         'co', (verts @ xy_to_xz_rotation_matrix_3x3()).ravel())
 
@@ -142,7 +157,7 @@ def create_facs_blendshapes(obj: Object, scale: float) -> int:
         if obj.data.shape_keys.key_blocks.find(name) < 0:
             shape = obj.shape_key_add(name=name)
             verts = facs_executor.get_facs_blendshape(i)
-            _update_blendshape_verts(shape, verts)
+            update_blendshape_verts(shape, verts)
             counter += 1
     return counter
 
@@ -159,7 +174,7 @@ def update_facs_blendshapes(obj: Object, scale: float) -> int:
         if index >= 0:
             shape = obj.data.shape_keys.key_blocks[index]
             verts = facs_executor.get_facs_blendshape(i)
-            _update_blendshape_verts(shape, verts)
+            update_blendshape_verts(shape, verts)
             counter += 1
     obj.data.update()
     return counter
@@ -178,7 +193,7 @@ def restore_facs_blendshapes(obj: Object, scale: float,
                 and (name in restore_names):
             shape = obj.shape_key_add(name=name)
             verts = facs_executor.get_facs_blendshape(i)
-            _update_blendshape_verts(shape, verts)
+            update_blendshape_verts(shape, verts)
             counter += 1
     obj.data.update()
     return counter

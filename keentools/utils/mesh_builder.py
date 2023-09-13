@@ -27,6 +27,7 @@ from .coords import (get_scale_matrix_3x3_from_matrix_world,
                      get_mesh_verts,
                      xz_to_xy_rotation_matrix_3x3)
 from .bpy_common import evaluated_mesh
+from .blendshapes import find_blenshape_index
 
 
 _log = KTLogger(__name__)
@@ -54,4 +55,46 @@ def build_geo(obj: Object, get_uv=False) -> Any:
 
     _geo.add_mesh(mb.mesh())
     _log.output(_log.color('magenta', 'build_geo end'))
+    return _geo
+
+
+def build_geo_from_basis(obj: Object, get_uv=False) -> Any:
+    _log.output(_log.color('magenta', 'build_geo_from_basis start'))
+    mb = pkt_module().MeshBuilder()
+    _geo = pkt_module().Geo()
+
+    if obj:
+        shape_name = 'Basis'
+        shape_index = find_blenshape_index(obj, shape_name)
+        if shape_index < 0:
+            obj.shape_key_add(name=shape_name)
+        basis_shape = obj.data.shape_keys.key_blocks[shape_index]
+
+        shape_name = 'FTAnimated'
+        shape_index = find_blenshape_index(obj, shape_name)
+        if shape_index < 0:
+            obj.shape_key_add(name=shape_name)
+            shape_index = find_blenshape_index(obj, shape_name)
+
+        shape = obj.data.shape_keys.key_blocks[shape_index]
+        shape.value = 1.0
+        obj.active_shape_key_index = shape_index
+
+        mesh = evaluated_mesh(obj)
+        scale = get_scale_matrix_3x3_from_matrix_world(obj.matrix_world)
+        verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
+        basis_shape.data.foreach_get('co', verts.ravel())
+
+        mb.add_points(verts @ scale @ xz_to_xy_rotation_matrix_3x3())
+
+        for polygon in mesh.polygons:
+            mb.add_face(polygon.vertices[:])
+
+        if get_uv and mesh.uv_layers.active:
+            uvmap = mesh.uv_layers.active.data
+            uvs = [np.array(v.uv) for v in uvmap]
+            mb.set_uvs_attribute('VERTEX_BASED', uvs)
+
+    _geo.add_mesh(mb.mesh())
+    _log.output(_log.color('magenta', 'build_geo_from_basis end'))
     return _geo

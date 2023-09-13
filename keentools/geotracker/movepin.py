@@ -47,6 +47,7 @@ from .ui_strings import buttons
 from .interface.screen_mesages import (revert_default_screen_message,
                                        clipping_changed_screen_message)
 from ..addon_config import Config
+from ..utils.blendshapes import update_blendshape_verts, find_blenshape_index
 
 
 _log = KTLogger(__name__)
@@ -186,11 +187,26 @@ class GT_OT_MovePin(bpy.types.Operator):
             geotracker = get_current_geotracker_item()
             gt = GTLoader.kt_geotracker()
             frame = bpy_current_frame()
+            geomobj = geotracker.geomobj
+            mesh = geomobj.data
 
-            mesh = geotracker.geomobj.data
-            geom_verts = gt.applied_args_model_vertices_at(frame) @ \
-                         xy_to_xz_rotation_matrix_3x3()
-            mesh.vertices.foreach_set('co', geom_verts.ravel())
+            shape_name = 'Basis'
+            shape_index = find_blenshape_index(geomobj, shape_name)
+            if shape_index < 0:
+                geomobj.shape_key_add(name=shape_name)
+
+            shape_name = 'FTAnimated'
+            shape_index = find_blenshape_index(geomobj, shape_name)
+            if shape_index < 0:
+                geomobj.shape_key_add(name=shape_name)
+                shape_index = find_blenshape_index(geomobj, shape_name)
+
+            shape = geomobj.data.shape_keys.key_blocks[shape_index]
+            shape.value = 1.0
+            geomobj.active_shape_key_index = shape_index
+
+            geom_verts = gt.applied_args_model_vertices_at(frame)
+            update_blendshape_verts(shape, geom_verts)
             mesh.update()
 
         if self.dragged:
