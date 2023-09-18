@@ -47,6 +47,7 @@ class KTRasterMask(KTShaderBase):
         self.right: Tuple[float, float] = (400., 200.)
         self.image: Optional[Image] = None
         self.mask_threshold: float = 0.0
+        self.channel: int = 4  # RGB
 
     def init_shaders(self) -> Optional[bool]:
         if self.mask_shader is not None:
@@ -94,6 +95,7 @@ class KTRasterMask(KTShaderBase):
         shader.uniform_float('color', self.color)
         shader.uniform_int('inverted', 1 if self.inverted else 0)
         shader.uniform_float('maskThreshold', self.mask_threshold)
+        shader.uniform_int('channel', self.channel)
         set_shader_sampler(shader, self.image)
         self.mask_batch.draw(shader)
 

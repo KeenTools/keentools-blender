@@ -367,17 +367,24 @@ class GT_PT_MasksPanel(AllVisible):
         row.prop(geotracker, 'mask_3d_inverted',
                  text='', icon='ARROW_LEFTRIGHT')
 
-    def _mask_2d_block(self, layout: Any, geotracker: Any) -> None:
-        box = layout.box()
-        row = box.row(align=True)
+    def _mask_2d_block(self, layout: Any, geotracker: Any,
+                       show_threshold: bool = True) -> None:
+        col = layout.column(align=True)
+        col.label(text='2D sequence mask')
+        row = col.row(align=True)
         row.prop_search(geotracker, 'mask_2d',
-                        bpy.data, 'images')
+                        bpy.data, 'movieclips', text='')
         row.prop(geotracker, 'mask_2d_inverted',
                  text='', icon='ARROW_LEFTRIGHT')
         row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
                      text='', icon='FILEBROWSER')
-        row = box.row(align=True)
-        row.prop(geotracker, 'mask_2d_threshold', slider=True)
+
+        row = col.row(align=True)
+        row.prop(geotracker, 'mask_2d_channel', expand=True)
+
+        if show_threshold:
+            row = col.row(align=True)
+            row.prop(geotracker, 'mask_2d_threshold', slider=True)
 
         if geotracker.mask_2d_info == '':
             return
@@ -388,7 +395,8 @@ class GT_PT_MasksPanel(AllVisible):
             col.scale_y = Config.text_scale_y
             col.label(text=txt)
 
-    def _mask_compositing_block(self, layout: Any, geotracker: Any) -> None:
+    def _mask_compositing_block(self, layout: Any, geotracker: Any,
+                                show_threshold: bool = False) -> None:
         col = layout.column(align=True)
         col.label(text='Compositing mask')
         row = col.row(align=True)
@@ -397,7 +405,7 @@ class GT_PT_MasksPanel(AllVisible):
         row.prop(geotracker, 'compositing_mask_inverted',
                  text='', icon='ARROW_LEFTRIGHT')
 
-        if not GTConfig.hidden_feature:
+        if show_threshold:
             row = col.row(align=True)
             row.prop(geotracker, 'compositing_mask_threshold', slider=True)
 
@@ -405,7 +413,7 @@ class GT_PT_MasksPanel(AllVisible):
         return geotracker and geotracker.geomobj and geotracker.mask_3d != ''
 
     def _mask_2d_enabled(self, geotracker: Any) -> bool:
-        return geotracker and geotracker.get_mask_source() != 'NONE'
+        return geotracker and geotracker.get_2d_mask_source() != 'NONE'
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
@@ -433,9 +441,11 @@ class GT_PT_MasksPanel(AllVisible):
         layout = self.layout
         self._mask_3d_block(layout, geotracker)
 
-        if not GTConfig.hidden_feature:
+        layout.prop(geotracker, 'mask_2d_mode', expand=True)
+        if geotracker.mask_2d_mode == 'MASK_2D':
             self._mask_2d_block(layout, geotracker)
-        self._mask_compositing_block(layout, geotracker)
+        elif geotracker.mask_2d_mode == 'COMP_MASK':
+            self._mask_compositing_block(layout, geotracker)
 
 
 class GT_PT_CameraPanel(AllVisible):

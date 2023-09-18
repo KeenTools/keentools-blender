@@ -73,7 +73,7 @@ from ...utils.images import get_background_image_object
 from .calc_timer import (TrackTimer,
                          RefineTimer,
                          RefineTimerFast)
-from ..settings import is_mesh, is_camera
+from ..settings import bpy_poll_is_mesh, bpy_poll_is_camera
 from ...utils.coords import (LocRotScale,
                              LocRotWithoutScale,
                              ScaleMatrix,
@@ -550,7 +550,7 @@ def center_geo_act() -> ActionStatus:
 
 def create_animated_empty_act(obj: Object, linked: bool=False,
                               force_bake_all_frames: bool=False) -> ActionStatus:
-    if not is_mesh(None, obj) and not is_camera(None, obj):
+    if not bpy_poll_is_mesh(None, obj) and not bpy_poll_is_camera(None, obj):
         msg = 'Selected object is not Geometry or Camera'
         return ActionStatus(False, msg)
 
@@ -1233,7 +1233,7 @@ def bake_locrot_act(obj: Object) -> ActionStatus:
     if not obj:
         return ActionStatus(False, 'Wrong object')
 
-    if not is_mesh(None, obj) and not is_camera(None, obj):
+    if not bpy_poll_is_mesh(None, obj) and not bpy_poll_is_camera(None, obj):
         msg = 'Selected object is not Geometry or Camera'
         return ActionStatus(False, msg)
 

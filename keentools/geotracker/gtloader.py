@@ -567,7 +567,7 @@ class GTLoader:
                 wf.set_lit_light_matrix(geom_mat, cam_mat)
         if mask:
             geotracker = get_current_geotracker_item()
-            if geotracker.get_mask_source() == 'COMP_MASK':
+            if geotracker.get_2d_mask_source() == 'COMP_MASK':
                 geotracker.update_compositing_mask()
         if wireframe:
             cls.update_viewport_wireframe(update_geo_data=update_geo_data)

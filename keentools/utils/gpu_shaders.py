@@ -358,6 +358,7 @@ def raster_image_mask_shader(use_old: bool = _use_old_shaders) -> Any:
     uniform vec4 color;
     uniform bool inverted;
     uniform float maskThreshold;
+    uniform int channel;
 
     in vec2 texCoord_interp;
     out vec4 fragColor;
@@ -367,7 +368,27 @@ def raster_image_mask_shader(use_old: bool = _use_old_shaders) -> Any:
     void main()
     {
         vec4 tex = texture(image, texCoord_interp);
-        if ((tex[0] + tex[1] + tex[2]) / 3.0 <= maskThreshold) {
+
+        float t = 0.0;
+        switch (channel){
+        case 4:  // RGB
+            t = (tex[0] + tex[1] + tex[2]) / 3.0;
+            break;
+        case 0:  // R
+            t = tex[0];
+            break;
+        case 1:  // G
+            t = tex[1];
+            break;
+        case 2:  // B
+            t = tex[2];
+            break;
+        case 3:  // A
+            t = tex[3];
+            break;
+        }
+
+        if (t <= maskThreshold) {
             if (!inverted) discard;
             fragColor = color;
         } else {
@@ -393,6 +414,7 @@ def raster_image_mask_shader(use_old: bool = _use_old_shaders) -> Any:
     shader_info.push_constant('VEC4', 'color')
     shader_info.push_constant('BOOL', 'inverted')
     shader_info.push_constant('FLOAT', 'maskThreshold')
+    shader_info.push_constant('INT', 'channel')
     shader_info.sampler(0, 'FLOAT_2D', 'image')
     shader_info.vertex_in(0, 'VEC2', 'texCoord')
     shader_info.vertex_in(1, 'VEC2', 'pos')

@@ -181,11 +181,13 @@ class GTConfig:
     auto_increase_far_clip_distance = True
 
     gt_empty_name = 'gtEmpty'
+    gt_background_name = 'geotracker_footage'
+    gt_background_mask_name = 'geotracker_mask'
     gt_rendered_mask_image_name = 'gt_rendered_mask'
     gt_shadow_compositing_scene_name = 'gt_shadow_compositing_scene'
     gt_precalc_folder = f'/tmp{os.path.sep}kt_analysis{os.path.sep}'
 
-    hidden_feature = True
+    hidden_feature = False
 
 
 def get_gt_settings():
