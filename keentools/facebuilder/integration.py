@@ -262,9 +262,42 @@ class FB_OT_ExportToCC(Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER'}
 
+    done: BoolProperty(default=False)
     test_mode: BoolProperty(default=False)
 
+    def cancel(self, context):
+        _log.output(f'{self.__class__.__name__} cancel')
+        self.done = True
+
+    def draw(self, context):
+        layout = self.layout
+        if self.done:
+            layout.label(text='Operation has been done')
+            return
+
+        col = layout.column(align=True)
+        col.scale_y = Config.text_scale_y
+        col.label(text='Do you want to continue without head texture?')
+
+    def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} execute')
+        self.done = False
+
+        settings = get_fb_settings()
+        head = settings.get_current_head()
+        if not head or not head.headobj:
+            msg = 'Head not found'
+            self.report({'ERROR'}, msg)
+            _log.error(f'{msg}')
+            return {'CANCELLED'}
+
+        tex_node = _find_base_texture(head.headobj)
+        if tex_node is None:
+            return context.window_manager.invoke_props_dialog(self, width=400)
+        return self.execute(context)
+
     def execute(self, context):
+        self.done = True
         if not FBLoader.reload_current_model():
             msg = 'Cannot reload current model before start'
             self.report({'ERROR'}, msg)
@@ -349,12 +382,6 @@ class FB_OT_ExportToCC(Operator):
             _log.error(f'{msg}')
             return {'CANCELLED'}
 
-        tex_node = _find_base_texture(head.headobj)
-        if tex_node is None:
-            msg = 'Cannot find a texture in material, but continue'
-            self.report({'ERROR'}, msg)
-            _log.error(msg)
-
         head_obj = _create_head()
         if head_obj is None:
             msg = 'Cannot create head-mesh for export'
@@ -366,6 +393,7 @@ class FB_OT_ExportToCC(Operator):
 
         img = None
         duplicate_img = None
+        tex_node = _find_base_texture(head.headobj)
         if tex_node is not None:
             img = tex_node.image
             if img and img.packed_file:
@@ -392,5 +420,5 @@ class FB_OT_ExportToCC(Operator):
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
-        self.report({'INFO'}, 'Launching Character Creator. Please wait…')
+        self.report({'INFO'}, 'Launching Character Creator. Please wait...')
         return {'FINISHED'}
