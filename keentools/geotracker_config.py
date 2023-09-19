@@ -187,7 +187,7 @@ class GTConfig:
     gt_shadow_compositing_scene_name = 'gt_shadow_compositing_scene'
     gt_precalc_folder = f'/tmp{os.path.sep}kt_analysis{os.path.sep}'
 
-    hidden_feature = False
+    hidden_feature = True
 
 
 def get_gt_settings():

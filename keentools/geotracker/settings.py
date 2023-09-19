@@ -202,7 +202,7 @@ class GeoTrackerItem(PropertyGroup):
         name='2D Mask mode',
         items=[
             ('COMP_MASK', 'Compositing', 'Use Blender Compositing mask', 0),
-            ('MASK_2D', '2D Sequence', 'Use 2d image sequence as a mask', 1),
+            ('MASK_2D', 'Sequence', 'Use 2d image sequence as a mask', 1),
         ],
         update=update_mask_2d)
     mask_2d: PointerProperty(
@@ -216,7 +216,7 @@ class GeoTrackerItem(PropertyGroup):
         default=False,
         update=update_mask_2d)
     mask_2d_threshold: FloatProperty(
-        default=0.002, soft_min=0.0, soft_max=1.0, min=-0.1, max=1.1,
+        default=0.003, soft_min=0.0, soft_max=1.0, min=-0.1, max=1.1,
         precision=4,
         name='2d mask threshold',
         description='Cutout threshold',
@@ -228,7 +228,7 @@ class GeoTrackerItem(PropertyGroup):
     mask_2d_channel: EnumProperty(
         name='2D Mask mode',
         items=[
-            ('m4', 'Gray', 'Use mean value of RGB', 0),
+            ('m4', 'RGB', 'Use average value of RGB', 0),
             ('m0', 'R', 'R channel', 1),
             ('m1', 'G', 'G channel', 2),
             ('m2', 'B', 'B channel', 3),

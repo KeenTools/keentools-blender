@@ -360,7 +360,7 @@ class GT_PT_MasksPanel(AllVisible):
             return
 
         col = layout.column(align=True)
-        col.label(text='Surface mask')
+        col.label(text='Surface Mask')
         row = col.row(align=True)
         row.prop_search(geotracker, 'mask_3d',
                         geotracker.geomobj, 'vertex_groups', text='')
@@ -368,9 +368,8 @@ class GT_PT_MasksPanel(AllVisible):
                  text='', icon='ARROW_LEFTRIGHT')
 
     def _mask_2d_block(self, layout: Any, geotracker: Any,
-                       show_threshold: bool = True) -> None:
+                       show_threshold: bool = False) -> None:
         col = layout.column(align=True)
-        col.label(text='2D sequence mask')
         row = col.row(align=True)
         row.prop_search(geotracker, 'mask_2d',
                         bpy.data, 'movieclips', text='')
@@ -379,7 +378,7 @@ class GT_PT_MasksPanel(AllVisible):
         row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
                      text='', icon='FILEBROWSER')
 
-        row = col.row(align=True)
+        row = col.row()
         row.prop(geotracker, 'mask_2d_channel', expand=True)
 
         if show_threshold:
@@ -398,7 +397,6 @@ class GT_PT_MasksPanel(AllVisible):
     def _mask_compositing_block(self, layout: Any, geotracker: Any,
                                 show_threshold: bool = False) -> None:
         col = layout.column(align=True)
-        col.label(text='Compositing mask')
         row = col.row(align=True)
         row.prop_search(geotracker, 'compositing_mask',
                         bpy.data, 'masks', text='')
@@ -441,7 +439,10 @@ class GT_PT_MasksPanel(AllVisible):
         layout = self.layout
         self._mask_3d_block(layout, geotracker)
 
-        layout.prop(geotracker, 'mask_2d_mode', expand=True)
+        col = layout.column(align=True)
+        col.label(text='2D Mask')
+        row = col.row(align=True)
+        row.prop(geotracker, 'mask_2d_mode', expand=True)
         if geotracker.mask_2d_mode == 'MASK_2D':
             self._mask_2d_block(layout, geotracker)
         elif geotracker.mask_2d_mode == 'COMP_MASK':
