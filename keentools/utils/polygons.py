@@ -78,6 +78,9 @@ class KTRasterMask(KTShaderBase):
         if self.work_area != context.area:
             return False
 
+        if not self.image:
+            return False
+
         if not check_gl_image(self.image):
             _log.error(f'{self.__class__.__name__}.draw_checks '
                        f'check_gl_image failed: {self.image}')
@@ -85,8 +88,10 @@ class KTRasterMask(KTShaderBase):
         return True
 
     def draw_main(self, context: Any) -> None:
-        set_blend_alpha()
+        if not self.image:
+            return
 
+        set_blend_alpha()
         shader = self.mask_shader
         shader.bind()
 

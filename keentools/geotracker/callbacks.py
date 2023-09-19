@@ -40,6 +40,7 @@ from ..utils.bpy_common import (bpy_render_frame,
 
 from ..utils.animation import count_fcurve_points
 from ..utils.manipulate import select_object_only, switch_to_camera
+from ..utils.ui_redraw import total_redraw_ui
 
 
 _log = KTLogger(__name__)
@@ -62,7 +63,10 @@ def update_camobj(geotracker, context: Any) -> None:
         GTLoader.out_pinmode()
         return
 
-    set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
+    set_background_image_by_movieclip(geotracker.camobj,
+                                      geotracker.movie_clip,
+                                      name=GTConfig.gt_background_name,
+                                      index=0)
     switch_to_camera(GTLoader.get_work_area(), geotracker.camobj)
 
     if settings.pinmode:
@@ -119,7 +123,10 @@ def update_movieclip(geotracker, context: Any) -> None:
 
     fit_render_size(geotracker.movie_clip)
 
-    set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
+    set_background_image_by_movieclip(geotracker.camobj,
+                                      geotracker.movie_clip,
+                                      name=GTConfig.gt_background_name,
+                                      index=0)
 
     geotracker.precalc_start = bpy_start_frame()
     geotracker.precalc_end = bpy_end_frame()
@@ -248,12 +255,21 @@ def update_mask_3d(geotracker, context: Any) -> None:
 
 
 def update_mask_2d(geotracker, context: Any) -> None:
+    _log.output('update_mask_2d')
     settings = get_gt_settings()
     settings.reload_current_geotracker()
+    if not geotracker.mask_2d:
+        remove_background_image_object(geotracker.camobj, index=1)
+    else:
+        set_background_image_by_movieclip(geotracker.camobj,
+                                          geotracker.mask_2d,
+                                          name=GTConfig.gt_background_mask_name,
+                                          index=1)
+    total_redraw_ui()
     settings.reload_mask_2d()
     vp = GTLoader.viewport()
     if vp.is_working():
-        vp.create_batch_2d(context.area)
+        vp.create_batch_2d(vp.get_work_area())
 
 
 def update_mask_source(geotracker, context: Any) -> None:

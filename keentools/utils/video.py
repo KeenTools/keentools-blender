@@ -111,7 +111,7 @@ def load_movieclip(directory: str, file_names: List[str]) -> Optional[MovieClip]
     try:
         res = bpy.ops.clip.open('EXEC_DEFAULT', files=frame_files,
                                 directory=directory)
-        _log.output(f'Operator result: {res}')
+        _log.output(f'load_movieclip result: {res}')
     except RuntimeError as err:
         _log.error('MOVIECLIP OPEN ERROR: {}'.format(str(err)))
         return None

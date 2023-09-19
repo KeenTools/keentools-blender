@@ -45,12 +45,14 @@ from ...utils.bpy_common import (bpy_start_frame,
 from ..utils.textures import bake_texture_sequence
 from ..utils.prechecks import common_checks
 from ..ui_strings import buttons
+from ..gtloader import GTLoader
 
 
 _log = KTLogger(__name__)
 
 
 def _load_movieclip(dir_path: str, file_names: List[str]) -> Optional[MovieClip]:
+    _log.output('_load_movieclip')
     new_movieclip = load_movieclip(dir_path, file_names)
 
     if new_movieclip and new_movieclip.source == 'SEQUENCE':
@@ -138,11 +140,10 @@ class GT_OT_SequenceFilebrowser(GT_OT_FootageFilebrowser):
         new_movieclip = _load_movieclip(self.directory,
                                         [f.name for f in self.files])
         if not new_movieclip:
+            _log.error('no new movieclip has been found (footage)')
             return {'CANCELLED'}
 
         geotracker.movie_clip = new_movieclip
-        set_background_image_by_movieclip(geotracker.camobj,
-                                          geotracker.movie_clip, index=0)
 
         _log.output(f'LOADED MOVIECLIP: {geotracker.movie_clip.name}')
         return {'FINISHED'}
@@ -161,11 +162,10 @@ class GT_OT_MaskSequenceFilebrowser(GT_OT_FootageFilebrowser):
         new_movieclip = _load_movieclip(self.directory,
                                         [f.name for f in self.files])
         if not new_movieclip:
+            _log.error('no new movieclip has been found (mask)')
             return {'CANCELLED'}
 
         geotracker.mask_2d = new_movieclip
-        set_background_image_by_movieclip(geotracker.camobj,
-                                          geotracker.movie_clip, index=1)
 
         _log.output(f'LOADED MASK: {geotracker.mask_2d.name}')
         return {'FINISHED'}

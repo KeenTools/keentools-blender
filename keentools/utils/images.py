@@ -114,6 +114,8 @@ def get_background_image(camobj: Camera, index: int=0) -> Optional[Image]:
 
 
 def remove_background_image_object(camobj: Camera, index: int) -> bool:
+    if not camobj:
+        return False
     cam_data = camobj.data
     if len(cam_data.background_images) <= index:
         return False
@@ -141,6 +143,7 @@ def get_sequence_file_number(filename: str) -> int:
 def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
                                       name: str='geotracker_bg',
                                       index: int = 0) -> None:
+    _log.output(f'set_background_image_by_movieclip: {name} index={index}')
     if not camobj or not movie_clip:
         return
 

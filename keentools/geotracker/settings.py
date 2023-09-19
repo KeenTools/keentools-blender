@@ -74,6 +74,7 @@ from .callbacks import (update_camobj,
                         update_spring_pins_back,
                         update_solve_for_camera,
                         update_smoothing)
+from ..utils.images import remove_background_image_object
 
 
 _log = KTLogger(__name__)
@@ -648,7 +649,7 @@ class GTSceneSettings(PropertyGroup):
         GTLoader.save_geotracker()
 
     def reload_mask_2d(self) -> None:
-        _log.output('reload_mask_2d start')
+        _log.output(_log.color('yellow', 'reload_mask_2d start'))
         geotracker = self.get_current_geotracker_item()
         if not geotracker:
             return
