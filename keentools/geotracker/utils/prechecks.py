@@ -116,7 +116,7 @@ def common_checks(*, object_mode: bool=False,
 
     settings = get_gt_settings()
     if is_calculating and settings.is_calculating():
-        msg = 'Calculation is performing'
+        msg = 'Calculation in progress'
         _log.error(msg)
         return ActionStatus(False, msg)
     if pinmode and not settings.pinmode:

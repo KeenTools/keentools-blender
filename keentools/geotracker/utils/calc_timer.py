@@ -342,7 +342,7 @@ class TrackTimer(_CommonTimer):
 class RefineTimer(_CommonTimer):
     def __init__(self, computation: Any, from_frame: int = -1):
         super().__init__(computation, from_frame, revert_current_frame=True)
-        self._operation_name = 'Refine'
+        self._operation_name = 'Refining'
         self._calc_mode = 'REFINE'
         self._overall_func = computation.finished_and_total_stage_frames
 

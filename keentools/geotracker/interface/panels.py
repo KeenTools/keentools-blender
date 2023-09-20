@@ -345,7 +345,9 @@ class GT_PT_InputsPanel(AllVisible):
                              text='', icon='FILE_HIDDEN')
 
         if settings.is_calculating('PRECALC'):
-            _draw_calculating_indicator(layout)
+            col2 = col.column()
+            col2.operator(GTConfig.gt_stop_calculating_idname,
+                         text='Cancel', icon='X')
         else:
             self._draw_analyze_btn(col, geotracker)
 
@@ -569,24 +571,43 @@ class GT_PT_TrackingPanel(AllVisible):
         row = layout.row(align=True)
         row.active = settings.pinmode
         row.scale_y = 1.2
-        split = row.split(factor=0.5, align=True)
-        split.operator(GTConfig.gt_track_prev_idname, text='',
-                       icon='TRACKING_BACKWARDS_SINGLE')
-        split.operator(GTConfig.gt_track_to_start_idname, text='',
-                       icon='TRACKING_BACKWARDS')
 
-        split = row.split(factor=0.5, align=True)
-        split.operator(GTConfig.gt_track_to_end_idname, text='',
-                       icon='TRACKING_FORWARDS')
-        split.operator(GTConfig.gt_track_next_idname, text='',
-                       icon='TRACKING_FORWARDS_SINGLE')
+        if settings.is_calculating('TRACKING'):
+            split = row.split(factor=0.24, align=True)
+            split.operator(GTConfig.gt_track_prev_idname, text='',
+                           icon='TRACKING_BACKWARDS_SINGLE')
+
+            split2 = split.split(factor=0.6666, align=True)
+            split2.operator(GTConfig.gt_stop_calculating_idname, text='',
+                            icon='PAUSE')
+
+            split2.operator(GTConfig.gt_track_next_idname, text='',
+                            icon='TRACKING_FORWARDS_SINGLE')
+        else:
+            split = row.split(factor=0.5, align=True)
+            split.operator(GTConfig.gt_track_prev_idname, text='',
+                           icon='TRACKING_BACKWARDS_SINGLE')
+
+            split.operator(GTConfig.gt_track_to_start_idname, text='',
+                           icon='TRACKING_BACKWARDS')
+
+            split = row.split(factor=0.5, align=True)
+            split.operator(GTConfig.gt_track_to_end_idname, text='',
+                           icon='TRACKING_FORWARDS')
+
+            split.operator(GTConfig.gt_track_next_idname, text='',
+                           icon='TRACKING_FORWARDS_SINGLE')
 
     def _tracking_refine_row(self, settings: Any, layout: Any) -> None:
         row = layout.row(align=True)
         row.active = settings.pinmode
         row.scale_y = 1.5
-        row.operator(GTConfig.gt_refine_idname)
-        row.operator(GTConfig.gt_refine_all_idname)
+        if settings.is_calculating('REFINE'):
+            row.operator(GTConfig.gt_stop_calculating_idname,
+                         text='Cancel', icon='X')
+        else:
+            row.operator(GTConfig.gt_refine_idname)
+            row.operator(GTConfig.gt_refine_all_idname)
 
     def _tracking_keyframes_row(self, settings: Any, layout: Any) -> None:
         row = layout.row(align=True)
@@ -658,9 +679,6 @@ class GT_PT_TrackingPanel(AllVisible):
         self._tracking_keyframes_row(settings, col)
         if settings.pinmode:
             self._tracking_remove_keys_row(settings, col)
-
-        if settings.is_calculating('TRACKING') or settings.is_calculating('REFINE'):
-            _draw_calculating_indicator(layout)
 
 
 class GT_PT_AppearanceSettingsPanel(AllVisible):

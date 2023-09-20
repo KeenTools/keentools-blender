@@ -112,9 +112,10 @@ def staged_calculation_screen_message(operation_name: str, *,
     stages = '' if total_stages == 1 else \
         f'Stage {current_stage}/{total_stages}. '
     vp = _get_viewport()
+    percent = 100 * finished_frames / total_frames if total_frames != 0 else 0
     vp.message_to_screen(
-        [{'text': f'{stages}{operation_name} calculating: '
-                  f'{finished_frames}/{total_frames}',
+        [{'text': f'{stages}{operation_name} {percent:.1f}% '
+                  f'({finished_frames}/{total_frames})',
           'y': 60, 'color': (1.0, 0.0, 0.0, 0.7)},
          {'text': 'ESC to abort. '
                   'Changes have NOT yet been applied',
