@@ -373,20 +373,22 @@ class GT_PT_MasksPanel(AllVisible):
 
     def _mask_2d_block(self, layout: Any, geotracker: Any,
                        show_threshold: bool = False) -> None:
-        col = layout.column(align=True)
-        row = col.row(align=True)
+        row = layout.row(align=True)
         row.prop_search(geotracker, 'mask_2d',
                         bpy.data, 'movieclips', text='')
-        row.prop(geotracker, 'mask_2d_inverted',
-                 text='', icon='ARROW_LEFTRIGHT')
         row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
                      text='', icon='FILEBROWSER')
+        row.prop(geotracker, 'mask_2d_inverted',
+                 text='', icon='ARROW_LEFTRIGHT')
 
-        row = col.row()
-        row.prop(geotracker, 'mask_2d_channel', expand=True)
+        row = layout.row(align=True)
+        row.prop(geotracker, 'mask_2d_channel_r', toggle=1)
+        row.prop(geotracker, 'mask_2d_channel_g', toggle=1)
+        row.prop(geotracker, 'mask_2d_channel_b', toggle=1)
+        row.prop(geotracker, 'mask_2d_channel_a', toggle=1)
 
         if show_threshold:
-            row = col.row(align=True)
+            row = layout.row(align=True)
             row.prop(geotracker, 'mask_2d_threshold', slider=True)
 
         if geotracker.mask_2d_info == '':

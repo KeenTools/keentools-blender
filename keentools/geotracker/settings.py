@@ -225,19 +225,35 @@ class GeoTrackerItem(PropertyGroup):
         default='',
         name='2d mask info',
         description='About 2d mask')
-    mask_2d_channel: EnumProperty(
-        name='2D Mask mode',
-        items=[
-            ('m4', 'RGB', 'Use average value of RGB', 0),
-            ('m0', 'R', 'R channel', 1),
-            ('m1', 'G', 'G channel', 2),
-            ('m2', 'B', 'B channel', 3),
-            ('m3', 'A', 'Alpha channel', 4),
-        ],
-        update=update_mask_2d)
 
-    def get_mask_2d_channel_index(self):
-        return int(self.mask_2d_channel[1])
+    mask_2d_channel_r: BoolProperty(
+        name='R',
+        default=True,
+        update=update_mask_2d
+    )
+    mask_2d_channel_g: BoolProperty(
+        name='G',
+        default=True,
+        update=update_mask_2d
+    )
+    mask_2d_channel_b: BoolProperty(
+        name='B',
+        default=True,
+        update=update_mask_2d
+    )
+    mask_2d_channel_a: BoolProperty(
+        name='A',
+        default=False,
+        update=update_mask_2d
+    )
+
+    def get_mask_2d_channels(self):
+        return self.mask_2d_channel_r, self.mask_2d_channel_g, \
+               self.mask_2d_channel_b, self.mask_2d_channel_a
+
+    def get_mask_2d_channel_value(self):
+        return int(self.mask_2d_channel_r) + 2 * int(self.mask_2d_channel_g) + \
+               4 * int(self.mask_2d_channel_b) + 8 * int(self.mask_2d_channel_a)
 
     compositing_mask: StringProperty(
         default='',
@@ -714,14 +730,14 @@ class GTSceneSettings(PropertyGroup):
             mask.image = get_background_image(geotracker.camobj, index=1)
             mask.inverted = geotracker.mask_2d_inverted
             mask.mask_threshold = geotracker.mask_2d_threshold
-            mask.channel = int(geotracker.mask_2d_channel[1])
+            mask.channel = geotracker.get_mask_2d_channel_value()
         elif mask_source == 'COMP_MASK':
             mask_image = geotracker.update_compositing_mask()
             _log.output('RELOAD 2D COMP_MASK')
             mask.image = mask_image
             mask.inverted = geotracker.compositing_mask_inverted
             mask.mask_threshold = geotracker.compositing_mask_threshold
-            mask.channel = 4  # RGB
+            mask.channel = 7  # RGB
         else:
             mask.image = None
 

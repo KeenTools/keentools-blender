@@ -44,11 +44,10 @@ from ..blender_independent_packages.pykeentools_loader import module as pkt_modu
 from ..geotracker.gtloader import GTLoader
 from ..utils.images import (np_array_from_background_image,
                             np_threshold_image,
-                            np_threshold_single_channel_image,
+                            np_threshold_image_with_channels,
                             np_array_from_bpy_image)
 from ..utils.ui_redraw import total_redraw_ui
 from ..utils.mesh_builder import build_geo
-from ..utils.materials import find_bpy_image_by_name
 
 
 _log = KTLogger(__name__)
@@ -197,16 +196,10 @@ class GTMask2DInput(pkt_module().Mask2DInputI):
 
         _log.output(f'MASK INPUT HAS BEEN CALCULATED AT FRAME: {frame}')
 
-        channel_index = geotracker.get_mask_2d_channel_index()
-        if channel_index <= 3:
-            result = np_threshold_single_channel_image(
-                np_img[:, :, channel_index], geotracker.mask_2d_threshold)
-        elif channel_index == 4:
-            result = np_threshold_image(np_img, geotracker.mask_2d_threshold)
-        else:
-            result = None
+        result = np_threshold_image_with_channels(
+            np_img, geotracker.get_mask_2d_channels(),
+            geotracker.mask_2d_threshold)
 
-        _log.output(f'mask_2d_channel: {channel_index}')
         if result is not None:
             _log.output(f'mask shape: {result.shape}')
             return pkt_module().LoadedMask(result, geotracker.mask_2d_inverted)
