@@ -54,8 +54,7 @@ from ..interface.screen_mesages import (revert_default_screen_message,
 _log = KTLogger(__name__)
 
 
-def bake_texture(geotracker: Any, selected_frames: List[int],
-                 tex_width: int=2048, tex_height: int=2048) -> Any:
+def bake_texture(geotracker: Any, selected_frames: List[int]) -> Any:
     def _create_frame_data_loader(geotracker, frame_numbers):
         def frame_data_loader(index):
             frame = frame_numbers[index]
@@ -84,12 +83,21 @@ def bake_texture(geotracker: Any, selected_frames: List[int],
 
     progress_callBack = ProgressCallBack()
 
+    settings = get_gt_settings()
     current_frame = bpy_current_frame()
     bpy_progress_begin(0, 1)
     built_texture = pkt_module().texture_builder.build_texture(
         len(selected_frames),
         _create_frame_data_loader(geotracker, selected_frames),
-        progress_callBack, tex_height, tex_width, face_angles_affection=3.0)
+        progress_callBack,
+        settings.tex_height, settings.tex_width,
+        settings.tex_face_angles_affection,
+        settings.tex_uv_expand_percents,
+        settings.tex_back_face_culling,
+        settings.tex_equalize_brightness,
+        settings.tex_equalize_colour,
+        settings.tex_fill_gaps
+    )
 
     bpy_progress_end()
 
@@ -116,8 +124,7 @@ _bake_generator_var = None
 
 
 def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
-                   *, file_format: str='PNG', frames: List[int],
-                   digits: int=4, width: int=2048, height: int=2048):
+                   *, file_format: str='PNG', frames: List[int], digits: int=4):
     def _finish():
         settings.stop_calculating()
         revert_default_screen_message(unregister=not settings.pinmode)
@@ -180,14 +187,12 @@ def _bake_caller() -> Optional[float]:
 
 def bake_texture_sequence(context: Any, geotracker: Any, filepath_pattern: str,
                           *, file_format: str='PNG', frames: List[int],
-                          digits: int=4,
-                          width: int=2048, height: int=2048) -> None:
+                          digits: int=4) -> None:
     global _bake_generator_var
     _bake_generator_var = bake_generator(context.area, geotracker,
                                          filepath_pattern,
                                          file_format=file_format,
-                                         frames=frames, digits=digits,
-                                         width=width, height=height)
+                                         frames=frames, digits=digits)
     prepare_camera(context.area)
     settings = get_gt_settings()
     if not settings.pinmode:

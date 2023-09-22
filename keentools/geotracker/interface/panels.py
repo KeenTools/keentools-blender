@@ -24,7 +24,8 @@ import bpy
 from bpy.types import Area, Panel
 
 from ...addon_config import Config, geotracker_enabled, addon_pinmode
-from ...geotracker_config import GTConfig, get_gt_settings
+from ...geotracker_config import (GTConfig, get_gt_settings,
+                                  get_current_geotracker_item)
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...updater.panels import (KTUpdater,
                                KT_PT_UpdatePanel,
@@ -35,6 +36,7 @@ from ..gtloader import GTLoader
 from ...utils.localview import exit_area_localview, check_context_localview
 from ...utils.viewport_state import force_show_ui_overlays
 from ...utils.bpy_common import bpy_timer_register
+from ...utils.materials import find_bpy_image_by_name
 from ...utils.grace_timer import KTGraceTimer
 
 
@@ -763,6 +765,14 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         self._appearance_image_adjustment(settings, layout)
 
 
+class GT_UL_selected_frame_list(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data,
+                  active_propname, index):
+        layout.label(text=f'frame {item.num}')
+        layout.operator(GTConfig.gt_go_to_bake_frame_idname, text='',
+                        icon='HIDE_OFF', emboss=False).num = index
+
+
 class GT_PT_TexturePanel(AllVisible):
     bl_idname = GTConfig.gt_texture_panel_idname
     bl_label = 'Texture'
@@ -776,36 +786,59 @@ class GT_PT_TexturePanel(AllVisible):
                      text='', icon='QUESTION', emboss=False)
 
     def _draw_buttons(self, layout, active=True):
-        settings = get_gt_settings()
-        layout.label(text='Project from')
         col = layout.column(align=True)
         col.active = active
         col.scale_y = Config.btn_scale_y
-        col.operator(GTConfig.gt_reproject_frame_idname)
-        col.operator(GTConfig.gt_select_frames_for_bake_idname)
-        col.operator(GTConfig.gt_reproject_tex_sequence_idname)
 
         col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-        col.label(text='UV Map')
-        col.operator(GTConfig.gt_check_uv_overlapping_idname)
+        row = col.row(align=True)
+        row.scale_y = 2.0
+        row.operator(GTConfig.gt_bake_from_selected_frames_idname,
+                     icon='IMAGE')
 
-        col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-        col.active = not settings.pinmode
-        col.operator(GTConfig.gt_repack_overlapping_uv_idname)
-        col.operator(GTConfig.gt_create_non_overlapping_uv_idname)
+        geotracker = get_current_geotracker_item()
+        texture_exists = find_bpy_image_by_name(
+            geotracker.preview_texture_name())
+
+        if texture_exists:
+            row = col.row(align=True)
+            row.operator(GTConfig.gt_texture_file_export_idname,
+                         text='Export', icon='EXPORT')
+            row.operator(GTConfig.gt_delete_texture_idname,
+                         text='Delete', icon='X')
+
+        layout.separator()
+        row = layout.row()
+        row.scale_y = Config.btn_scale_y
+        row.operator(GTConfig.gt_reproject_tex_sequence_idname)
 
     def _draw_no_uv_warning(self, layout):
         box = layout.box()
-        box.alert = True
-        row = box.split(factor=0.15, align=True)
+        col = box.column()
+        col.alert = True
+        row = col.split(factor=0.15, align=True)
         row.label(text='', icon='ERROR')
         col = row.column(align=True)
         col.scale_y = Config.text_scale_y
         for i, txt in enumerate(['Geometry object','has no UV map!']):
             col.label(text=txt)
-        layout.operator(GTConfig.gt_create_non_overlapping_uv_idname)
+        box.operator(GTConfig.gt_create_non_overlapping_uv_idname)
+
+    def _draw_overlapping_detected(self, layout):
+        box = layout.box()
+        col = box.column()
+        col.alert = True
+        row = col.split(factor=0.15, align=True)
+        row.label(text='', icon='ERROR')
+        col = row.column(align=True)
+        col.scale_y = Config.text_scale_y
+        for i, txt in enumerate(['Overlapping UVs','detected!']):
+            col.label(text=txt)
+
+        col = box.column(align=True)
+        col.operator(GTConfig.gt_repack_overlapping_uv_idname)
+        col.operator(GTConfig.gt_create_non_overlapping_uv_idname)
+        col.operator(GTConfig.gt_check_uv_overlapping_idname, text='Re-check')
 
     def draw(self, context: Any) -> None:
         layout = self.layout
@@ -817,7 +850,34 @@ class GT_PT_TexturePanel(AllVisible):
             self._draw_no_uv_warning(layout)
             return
 
-        self._draw_buttons(layout, not not geotracker.movie_clip)
+        if geotracker.overlapping_detected:
+            self._draw_overlapping_detected(layout)
+
+        col = layout.column(align=True)
+        col.label(text='Add frames')
+        row = col.row()
+        row.template_list(
+            'GT_UL_selected_frame_list',
+            'selected_frame_list',
+            geotracker,
+            'selected_frames',
+            geotracker,
+            'selected_frame_index',
+            type='DEFAULT',
+            rows=4
+        )
+
+        col2 = row.column(align=True)
+        col2.operator(GTConfig.gt_add_bake_frame_idname,
+                     text='', icon='ADD')
+        col2.operator(GTConfig.gt_remove_bake_frame_idname,
+                     text='', icon='REMOVE')
+        col2.separator()
+        col2.operator(GTConfig.gt_texture_bake_options_idname,
+                     text='', icon='PREFERENCES')
+
+        col.separator()
+        self._draw_buttons(col, not not geotracker.movie_clip)
 
         if settings.is_calculating('REPROJECT'):
             _draw_calculating_indicator(layout)

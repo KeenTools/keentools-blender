@@ -53,7 +53,9 @@ from ...utils.bpy_common import (create_empty_object,
                                  update_depsgraph,
                                  reset_unsaved_animation_changes_in_frame,
                                  bpy_scene,
-                                 bpy_render_single_frame)
+                                 bpy_render_single_frame,
+                                 bpy_scene_selected_objects,
+                                 bpy_active_object)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.manipulate import (select_object_only,
                                  select_objects_only,
@@ -87,6 +89,7 @@ _log = KTLogger(__name__)
 
 
 def create_geotracker_act() -> ActionStatus:
+    _log.output('create_geotracker_act start')
     check_status = common_checks(object_mode=True, pinmode_out=True,
                                  is_calculating=True)
     if not check_status.success:
@@ -96,6 +99,9 @@ def create_geotracker_act() -> ActionStatus:
     num = settings.add_geotracker_item()
     settings.current_geotracker_num = num
     GTLoader.new_kt_geotracker()
+
+    selected_objects = bpy_scene_selected_objects()
+    active_object = bpy_active_object()
 
     geotracker = settings.get_current_geotracker_item()
     obj = get_alone_object_in_scene_selection_by_type('MESH')
@@ -109,6 +115,10 @@ def create_geotracker_act() -> ActionStatus:
     geotracker.camobj = camobj
 
     settings.reload_current_geotracker()
+
+    select_objects_only(selected_objects)
+    bpy_active_object(active_object)
+    _log.output('create_geotracker_act end')
     return ActionStatus(True, 'GeoTracker has been added')
 
 
@@ -630,6 +640,12 @@ def check_uv_overlapping(obj: Optional[Object]) -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
+def check_uv_overlapping_with_status(geotracker: Any) -> ActionStatus:
+    status = check_uv_overlapping(geotracker.geomobj)
+    geotracker.overlapping_detected = not status.success
+    return status
+
+
 def create_non_overlapping_uv_act() -> ActionStatus:
     geotracker = get_current_geotracker_item()
     geomobj = geotracker.geomobj
@@ -645,6 +661,9 @@ def create_non_overlapping_uv_act() -> ActionStatus:
     switch_to_mode('EDIT')
     bpy.ops.uv.smart_project(island_margin=0.01)
     switch_to_mode(old_mode)
+
+    if geotracker.overlapping_detected:
+        return check_uv_overlapping_with_status(geotracker)
     return ActionStatus(True, 'ok')
 
 
@@ -691,7 +710,7 @@ def bake_texture_from_frames_act(area: Area,
     if not check_status.success:
         return check_status
 
-    check_status = check_uv_overlapping(geotracker.geomobj)
+    check_status = check_uv_overlapping_with_status(geotracker)
 
     prepare_camera(area)
     built_texture = bake_texture(geotracker, selected_frames)
@@ -707,7 +726,9 @@ def bake_texture_from_frames_act(area: Area,
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    preview_material_with_texture(built_texture, geotracker.geomobj)
+    preview_material_with_texture(built_texture, geotracker.geomobj,
+                                  geotracker.preview_texture_name(),
+                                  geotracker.preview_material_name())
 
     if not check_status.success:
         return ActionStatus(False, f'Done but {check_status.error_message}')

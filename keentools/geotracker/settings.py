@@ -74,7 +74,6 @@ from .callbacks import (update_camobj,
                         update_spring_pins_back,
                         update_solve_for_camera,
                         update_smoothing)
-from ..utils.images import remove_background_image_object
 
 
 _log = KTLogger(__name__)
@@ -82,7 +81,6 @@ _log = KTLogger(__name__)
 
 class FrameListItem(PropertyGroup):
     num: IntProperty(name='Frame number', default=-1)
-    selected: BoolProperty(name='Selected', default=False)
 
 
 class GeoTrackerItem(PropertyGroup):
@@ -189,6 +187,8 @@ class GeoTrackerItem(PropertyGroup):
 
     selected_frames: CollectionProperty(type=FrameListItem,
                                         name='Selected frames')
+    selected_frame_index: IntProperty(default=0)
+
     mask_3d: StringProperty(
         name='Surface mask',
         description='Exclude polygons of selected Vertex Group from tracking',
@@ -285,6 +285,8 @@ class GeoTrackerItem(PropertyGroup):
         precision=2,
         name='XY Translations',
         description='XY translation smoothing', update=update_smoothing)
+
+    overlapping_detected: BoolProperty(default=False)
 
     def update_compositing_mask(self, *, frame: Optional[int]=None,
                                 recreate_nodes: bool=False) -> Image:
@@ -423,6 +425,18 @@ class GeoTrackerItem(PropertyGroup):
                 gt.spring_pins_back(keyframes[0])
 
         return True
+
+    def get_geomobj_name(self):
+        if self.geomobj:
+            return self.geomobj.name
+        return 'none'
+
+    def preview_material_name(self):
+        return GTConfig.tex_builder_matname_template.format(self.get_geomobj_name())
+
+    def preview_texture_name(self):
+        return GTConfig.tex_builder_filename_template.format(self.get_geomobj_name())
+
 
 
 class GTSceneSettings(PropertyGroup):
@@ -585,6 +599,44 @@ class GTSceneSettings(PropertyGroup):
         description='Use shared animation Action or duplicate '
                     'animation data to use it independently',
         default=False)
+
+    tex_width: IntProperty(
+        description='Width size of output texture',
+        name='Width', default=2048)
+    tex_height: IntProperty(
+        description='Height size of output texture',
+        name='Height', default=2048)
+
+    tex_face_angles_affection: FloatProperty(
+        description='Choose how much a polygon view angle affects '
+                    'a pixel color: with 0 you will get an average '
+                    'color from all views; with 100 you\'ll get color '
+                    'information only from the polygons at which a camera '
+                    'is looking at 90 degrees',
+        name='Angle strictness', default=10.0, min=0.0, max=100.0)
+    tex_uv_expand_percents: FloatProperty(
+        description='Expand texture edges',
+        name='Expand edges (%)', default=0.1)
+    tex_back_face_culling: BoolProperty(
+        description='Exclude backfacing polygons from the created texture',
+        name='Back face culling', default=True)
+    tex_equalize_brightness: BoolProperty(
+        description='Experimental. Automatically equalize '
+                    'brightness across images',
+        name='Equalize brightness', default=False)
+    tex_equalize_colour: BoolProperty(
+        description='Experimental. Automatically equalize '
+                    'colors across images',
+        name='Equalize color', default=False)
+    tex_fill_gaps: BoolProperty(
+        description='Experimental. Tries automatically fill '
+                    'holes in face texture with appropriate '
+                    'color',
+        name='Autofill', default=False)
+
+    tex_auto_preview: BoolProperty(
+        description='Automatically apply the created texture',
+        name='Automatically apply the created texture', default=True)
 
     @contextmanager
     def ui_write_mode_context(self):

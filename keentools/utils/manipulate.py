@@ -104,8 +104,9 @@ def switch_to_camera(area: Area, camobj: Object,
                 f'\ncamobj={camobj}'
                 f'\nselect_obj={select_obj}')
     exit_area_localview(area)
-    camobj.hide_set(False)
-    select_object_only(camobj)
+    if camobj:
+        camobj.hide_set(False)
+        select_object_only(camobj)
     enter_area_localview(area)
 
     # Low-level code instead bpy.ops.view3d.object_as_camera()

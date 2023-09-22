@@ -220,6 +220,12 @@ def bpy_scene_selected_objects() -> List:
     return bpy.context.selected_objects
 
 
+def bpy_active_object(obj: Optional[Object] = None) -> Optional[Any]:
+    if obj is not None:
+        bpy.context.view_layer.objects.active = obj
+    return bpy.context.view_layer.objects.active
+
+
 def bpy_all_scene_objects() -> List:
     return bpy.data.objects
 

@@ -106,6 +106,7 @@ def mark_old_modules(mods: List[Any], filter_dict: Dict) -> None:
 
 
 def total_redraw_ui() -> None:
+    ''' This call also updates all texture nodes in scene depsgraph '''
     if not bpy_background_mode():
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         _log.output(_log.color('red', 'total_redraw_ui'))
