@@ -24,6 +24,7 @@ from bpy.types import Object, Area
 from ...utils.kt_logging import KTLogger
 from ...utils.bpy_common import (bpy_current_frame,
                                  bpy_set_current_frame,
+                                 bpy_render_frame,
                                  bpy_timer_register,
                                  bpy_progress_begin,
                                  bpy_progress_end,
@@ -55,6 +56,11 @@ _log = KTLogger(__name__)
 
 
 def bake_texture(geotracker: Any, selected_frames: List[int]) -> Any:
+    def _empty_np_image() -> Any:
+        w, h = bpy_render_frame()
+        np_img = np.zeros((h, w, 4), dtype=np.float32)
+        return np_img
+
     def _create_frame_data_loader(geotracker, frame_numbers):
         def frame_data_loader(index):
             frame = frame_numbers[index]
@@ -66,6 +72,9 @@ def bake_texture(geotracker: Any, selected_frames: List[int]) -> Any:
             total_redraw_ui()
 
             np_img = np_array_from_background_image(geotracker.camobj)
+            if np_img is None:
+                np_img = _empty_np_image()
+
             geo = build_geo(geotracker.geomobj, get_uv=True)
             frame_data = pkt_module().texture_builder.FrameData()
             frame_data.geo = geo
