@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 from typing import Any, Dict, Callable, Tuple, List, Optional
+from contextlib import contextmanager
 import traceback
 
 import bpy
@@ -317,6 +318,24 @@ def bpy_progress_end() -> None:
 
 def bpy_progress_update(progress: float) -> None:
     bpy.context.window_manager.progress_update(progress)
+
+
+def bpy_image_settings() -> Any:
+    return bpy.context.scene.render.image_settings
+
+
+def bpy_jpeg_quality(value: Optional[int]= None) -> int:
+    old = bpy.context.scene.render.image_settings.quality
+    if value is not None:
+        bpy.context.scene.render.image_settings.quality = value
+    return old
+
+
+@contextmanager
+def bpy_jpeg_quality_context(value: int):
+    old = bpy_jpeg_quality(value)
+    yield
+    bpy_jpeg_quality(old)
 
 
 def get_traceback(skip_last=1) -> str:

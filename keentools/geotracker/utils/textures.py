@@ -120,7 +120,7 @@ def preview_material_with_texture(
     switch_to_mode('MATERIAL')
 
 
-_bake_generator_var = None
+_bake_generator_var: Optional[Any] = None
 
 
 def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
@@ -157,8 +157,7 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
 
         yield delta
 
-        built_texture = bake_texture(geotracker, [frame],
-                                     tex_width=width, tex_height=height)
+        built_texture = bake_texture(geotracker, [frame])
         if tex is None:
             tex = create_compatible_bpy_image(built_texture)
         tex.filepath_raw = filepath_pattern.format(str(frame).zfill(digits))

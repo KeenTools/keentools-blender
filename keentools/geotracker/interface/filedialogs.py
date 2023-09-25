@@ -41,7 +41,9 @@ from ...utils.video import (convert_movieclip_to_frames,
                             get_movieclip_duration)
 from ...utils.bpy_common import (bpy_start_frame,
                                  bpy_end_frame,
-                                 bpy_current_frame)
+                                 bpy_current_frame,
+                                 bpy_image_settings,
+                                 bpy_jpeg_quality_context)
 from ..utils.textures import bake_texture_sequence
 from ..utils.prechecks import common_checks
 from ..ui_strings import buttons
@@ -75,7 +77,7 @@ def _image_format_items(default: str = 'PNG',
         ('JPEG', 'JPEG', 'Data loss image format without transparency', jpg_num),
     ]
     if show_exr:
-        arr.append(('EXR', 'EXR', 'Extended image format with transparency', exr_num))
+        arr.append(('OPEN_EXR', 'EXR', 'Extended image format with transparency', exr_num))
     return arr
 
 
@@ -91,7 +93,82 @@ def _orientation_items() -> List[Tuple]:
     ]
 
 
-class GT_OT_FootageFilebrowser(Operator, ImportHelper):
+def _filename_ext(file_format: str) -> str:
+    ext = '.jpg'
+    if file_format == 'PNG':
+        ext = '.png'
+    elif file_format == 'JPEG':
+        ext = '.jpg'
+    elif file_format == 'OPEN_EXR':
+        ext = '.exr'
+    return ext
+
+
+def _update_format(self, context):
+    self.filename_ext = _filename_ext(self.file_format)
+
+
+class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
+    bl_idname = GTConfig.gt_sequence_filebrowser_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+
+    # Property fields cannot be inherited in old Blenders (< 2.93)
+    filter_folder: BoolProperty(
+        name='Filter folders',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_image: BoolProperty(
+        name='Filter image',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_movie: BoolProperty(
+        name='Filter movie',
+        default=True,
+        options={'HIDDEN'},
+    )
+
+    files: CollectionProperty(
+        name='File Path',
+        type=OperatorFileListElement,
+    )
+    directory: StringProperty(
+        name='Directory',
+        subtype='DIR_PATH',
+    )
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.scale_y = Config.text_scale_y
+        col.label(text='Load a sequence of frames')
+        col.label(text='or a movie file')
+
+    def execute(self, context):
+        _log.error(self.directory)
+        geotracker = get_current_geotracker_item()
+        if not geotracker:
+            return {'CANCELLED'}
+
+        new_movieclip = _load_movieclip(self.directory,
+                                        [f.name for f in self.files])
+        if not new_movieclip:
+            _log.error('no new movieclip has been found (footage)')
+            return {'CANCELLED'}
+
+        geotracker.movie_clip = new_movieclip
+
+        _log.output(f'LOADED MOVIECLIP: {geotracker.movie_clip.name}')
+        return {'FINISHED'}
+
+
+class GT_OT_MaskSequenceFilebrowser(Operator, ImportHelper):
+    bl_idname = GTConfig.gt_mask_sequence_filebrowser_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     filter_folder: BoolProperty(
@@ -115,7 +192,8 @@ class GT_OT_FootageFilebrowser(Operator, ImportHelper):
         type=OperatorFileListElement,
     )
     directory: StringProperty(
-            subtype='DIR_PATH',
+        name='Directory',
+        subtype='DIR_PATH',
     )
 
     def draw(self, context):
@@ -124,34 +202,6 @@ class GT_OT_FootageFilebrowser(Operator, ImportHelper):
         col.scale_y = Config.text_scale_y
         col.label(text='Load a sequence of frames')
         col.label(text='or a movie file')
-
-
-class GT_OT_SequenceFilebrowser(GT_OT_FootageFilebrowser):
-    bl_idname = GTConfig.gt_sequence_filebrowser_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        geotracker = get_current_geotracker_item()
-        if not geotracker:
-            return {'CANCELLED'}
-
-        new_movieclip = _load_movieclip(self.directory,
-                                        [f.name for f in self.files])
-        if not new_movieclip:
-            _log.error('no new movieclip has been found (footage)')
-            return {'CANCELLED'}
-
-        geotracker.movie_clip = new_movieclip
-
-        _log.output(f'LOADED MOVIECLIP: {geotracker.movie_clip.name}')
-        return {'FINISHED'}
-
-
-class GT_OT_MaskSequenceFilebrowser(GT_OT_FootageFilebrowser):
-    bl_idname = GTConfig.gt_mask_sequence_filebrowser_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
 
     def execute(self, context):
         geotracker = get_current_geotracker_item()
@@ -260,8 +310,9 @@ class GT_OT_SplitVideo(Operator, ExportHelper):
     file_format: EnumProperty(name='Image file format',
                               items=_image_format_items(default='JPEG'),
                               description='Choose image file format')
-    quality: IntProperty(name='Image quality', default=100,
-                         min=0, max=100)
+    quality: IntProperty(name='Image quality', default=100, min=0, max=100)
+    use_half_precision: BoolProperty(name='Use half-precission', default=True)
+
     from_frame: IntProperty(name='from', default=1)
     to_frame: IntProperty(name='to', default=1)
     filename_ext: StringProperty()
@@ -278,14 +329,18 @@ class GT_OT_SplitVideo(Operator, ExportHelper):
         row = layout.row()
         row.prop(self, 'from_frame', expand=True)
         row.prop(self, 'to_frame', expand=True)
+
         if self.file_format == 'JPEG':
             layout.prop(self, 'quality', slider=True)
+        if self.file_format == 'OPEN_EXR':
+            layout.prop(self, 'use_half_precision')
+            layout.prop(bpy_image_settings(), 'exr_codec')
 
         layout.label(text='Rotation:')
         layout.prop(self, 'orientation', text='')
 
     def execute(self, context):
-        self.filename_ext = '.png' if self.file_format == 'PNG' else '.jpg'
+        self.filename_ext = _filename_ext(self.file_format)
         _log.output(f'OUTPUT filepath: {self.filepath}')
 
         geotracker = get_current_geotracker_item()
@@ -338,6 +393,7 @@ class GT_OT_VideoSnapshot(Operator, ExportHelper):
     bl_idname = GTConfig.gt_video_snapshot_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
 
     filter_folder: BoolProperty(
         name='Filter folders',
@@ -358,6 +414,8 @@ class GT_OT_VideoSnapshot(Operator, ExportHelper):
                               items=_image_format_items(default='JPEG'),
                               description='Choose image file format')
     quality: IntProperty(name='Image quality', default=100, min=0, max=100)
+    use_half_precision: BoolProperty(name='Use half-precission', default=True)
+
     from_frame: IntProperty(name='from', default=1)
     to_frame: IntProperty(name='to', default=1)
     filename_ext: StringProperty()
@@ -366,15 +424,19 @@ class GT_OT_VideoSnapshot(Operator, ExportHelper):
         layout = self.layout
         layout.label(text='Output files format:')
         layout.prop(self, 'file_format', expand=True)
+
         if self.file_format == 'JPEG':
             layout.prop(self, 'quality', slider=True)
+        if self.file_format == 'OPEN_EXR':
+            layout.prop(self, 'use_half_precision')
+            layout.prop(bpy_image_settings(), 'exr_codec')
 
     def invoke(self, context, event):
         self.filepath = str(bpy_current_frame()).zfill(self.digits)
         return super().invoke(context, event)
 
     def execute(self, context):
-        self.filename_ext = '.png' if self.file_format == 'PNG' else '.jpg'
+        self.filename_ext = _filename_ext(self.file_format)
         _log.output(f'OUTPUT filepath: {self.filepath}')
 
         geotracker = get_current_geotracker_item()
@@ -398,6 +460,7 @@ class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
     bl_idname = GTConfig.gt_reproject_tex_sequence_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
 
     filter_folder: BoolProperty(
         name='Filter folders',
@@ -419,6 +482,8 @@ class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
                                                         show_exr=True),
                               description='Choose image file format')
     quality: IntProperty(name='Image quality', default=100, min=0, max=100)
+    use_half_precision: BoolProperty(name='Use half-precission', default=True)
+
     from_frame: IntProperty(name='from', default=1)
     to_frame: IntProperty(name='to', default=1)
     filename_ext: StringProperty()
@@ -433,6 +498,12 @@ class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
         row = layout.row(align=True)
         row.prop(settings, 'tex_width', text='Width')
         row.prop(settings, 'tex_height', text='Height')
+
+        if self.file_format == 'JPEG':
+            layout.prop(self, 'quality', slider=True)
+        if self.file_format == 'OPEN_EXR':
+            layout.prop(self, 'use_half_precision')
+            layout.prop(bpy_image_settings(), 'exr_codec')
 
         layout.label(text='Frame range:')
         row = layout.row()
@@ -465,17 +536,7 @@ class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
         return {'RUNNING_MODAL'}
 
     def _file_pattern(self):
-        return f'{self.filepath}' + '{}' + f'{self._filename_ext()}'
-
-    def _filename_ext(self):
-        ext = '.jpg'
-        if self.file_format == 'PNG':
-            ext = '.png'
-        elif self.file_format == 'JPEG':
-            ext = '.jpg'
-        elif self.file_format == 'EXR':
-            ext = '.exr'
-        return ext
+        return f'{self.filepath}' + '{}' + f'{_filename_ext(self.file_format)}'
 
     def execute(self, context):
         check_status = common_checks(object_mode=True, is_calculating=True,
@@ -486,10 +547,9 @@ class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        self.filename_ext = self._filename_ext()
+        self.filename_ext = _filename_ext(self.file_format)
         _log.output(f'OUTPUT reproject filepath: {self.filepath}')
 
-        settings = get_gt_settings()
         geotracker = get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
@@ -612,26 +672,30 @@ class GT_OT_ConfirmRecreatePrecalc(Operator):
         return {'FINISHED'}
 
 
-def _update_format(self, context):
-    ext = '.png' if self.file_format == 'PNG' else '.jpg'
-    self.filename_ext = ext
-
-
 class GT_OT_TextureFileExport(Operator, ExportHelper):
     bl_idname = GTConfig.gt_texture_file_export_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    filter_glob: StringProperty(
-        default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp',
-        options={'HIDDEN'}
+    filter_folder: BoolProperty(
+        name='Filter folders',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_image: BoolProperty(
+        name='Filter image',
+        default=True,
+        options={'HIDDEN'},
     )
 
-    file_format: EnumProperty(name='Image file format', items=[
-        ('PNG', 'PNG', 'Default image file format', 0),
-        ('JPEG', 'JPEG', 'Data loss image format', 1),
-    ], description="Choose image file format", update=_update_format)
+    file_format: EnumProperty(name='Image file format',
+                              items=_image_format_items(default='PNG',
+                                                        show_exr=True),
+                              description='Choose image file format',
+                              update=_update_format)
+    quality: IntProperty(name='Image quality', default=100, min=0, max=100)
+    use_half_precision: BoolProperty(name='Use half-precission', default=True)
 
     check_existing: BoolProperty(
         name='Check Existing',
@@ -640,13 +704,12 @@ class GT_OT_TextureFileExport(Operator, ExportHelper):
         options={'HIDDEN'},
     )
 
-    filename_ext: StringProperty(default=".png")
+    filename_ext: StringProperty(default='.png')
 
     filepath: StringProperty(
         default='baked_tex',
         subtype='FILE_PATH'
     )
-    headnum: IntProperty(default=0)
 
     def check(self, context):
         change_ext = False
@@ -654,7 +717,8 @@ class GT_OT_TextureFileExport(Operator, ExportHelper):
         filepath = self.filepath
         sp = os.path.splitext(filepath)
 
-        if sp[1] in {'.jpg', '.', '.png', '.PNG', '.JPG', '.JPEG'}:
+        if sp[1] in {'.jpg', '.', '.png', '.PNG', '.JPG', '.JPEG',
+                     '.jpeg', '.exr', '.EXR'}:
             filepath = sp[0]
 
         filepath = ensure_ext(filepath, self.filename_ext)
@@ -670,6 +734,12 @@ class GT_OT_TextureFileExport(Operator, ExportHelper):
         layout.label(text='Image file format')
         layout.prop(self, 'file_format', expand=True)
 
+        if self.file_format == 'JPEG':
+            layout.prop(self, 'quality', slider=True)
+        if self.file_format == 'OPEN_EXR':
+            layout.prop(self, 'use_half_precision')
+            layout.prop(bpy_image_settings(), 'exr_codec')
+
     def execute(self, context):
         _log.output(f'START SAVE TEXTURE: {self.filepath}')
         geotracker = get_current_geotracker_item()
@@ -683,7 +753,13 @@ class GT_OT_TextureFileExport(Operator, ExportHelper):
         # Blender doesn't change file_format after filepath assigning, so
         fix_for_blender_bug = tex.file_format  # Do not remove!
         tex.file_format = self.file_format
-        tex.save()
+        if self.file_format == 'OPEN_EXR':
+            tex.use_half_precission = self.use_half_precision
+        if self.file_format == 'JPEG':
+            with bpy_jpeg_quality_context(self.quality):
+                tex.save()
+        else:
+            tex.save()
         _log.output(f'SAVED TEXTURE: {tex.file_format} {self.filepath}')
         return {'FINISHED'}
 
@@ -700,21 +776,3 @@ class GT_OT_TextureFileExport(Operator, ExportHelper):
         self.filepath = geotracker.preview_texture_name()
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
-
-
-class GT_OT_DeleteTexture(Operator):
-    bl_idname = GTConfig.gt_delete_texture_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def draw(self, context):
-        pass
-
-    def execute(self, context):
-        geotracker = get_current_geotracker_item()
-        if not geotracker:
-            return {'CANCELLED'}
-        remove_bpy_image_by_name(geotracker.preview_texture_name())
-        remove_mat_by_name(geotracker.preview_material_name())
-        return {'FINISHED'}
