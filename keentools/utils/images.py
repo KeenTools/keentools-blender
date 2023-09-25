@@ -253,6 +253,7 @@ def np_threshold_image(np_img: Any, threshold: float=0.0) -> Any:
                     np_img[:, :, 1] +
                     np_img[:, :, 2]) / 3.0 > threshold)).astype(np.uint8)
 
+
 def np_threshold_image_with_channels(np_img: Any, channels: List[bool],
                                      threshold: float=0.0) -> Optional[Any]:
     denom = sum(channels)
@@ -263,8 +264,10 @@ def np_threshold_image_with_channels(np_img: Any, channels: List[bool],
                     channels[2] * np_img[:, :, 2] +
                     channels[3] * np_img[:, :, 3]) / denom > threshold)).astype(np.uint8)
 
+
 def np_threshold_single_channel_image(np_img: Any, threshold: float=0.0) -> Any:
     return (255 * (np_img > threshold)).astype(np.uint8)
+
 
 def np_array_from_background_image(camobj: Camera, index: int=0) -> Optional[Any]:
     bg_img = get_background_image_object(camobj, index)

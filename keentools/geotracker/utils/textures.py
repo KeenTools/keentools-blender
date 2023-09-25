@@ -71,7 +71,7 @@ def bake_texture(geotracker: Any, selected_frames: List[int]) -> Any:
                 bpy_set_current_frame(frame)
             total_redraw_ui()
 
-            np_img = np_array_from_background_image(geotracker.camobj)
+            np_img = np_array_from_background_image(geotracker.camobj, index=0)
             if np_img is None:
                 np_img = _empty_np_image()
 

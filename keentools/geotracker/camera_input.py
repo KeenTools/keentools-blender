@@ -148,7 +148,7 @@ class GTImageInput(pkt_module().ImageInputI):
             _log.output('load_linear_rgb_image_at2')
 
         total_redraw_ui()
-        np_img = np_array_from_background_image(geotracker.camobj)
+        np_img = np_array_from_background_image(geotracker.camobj, index=0)
 
         if (current_frame != frame) and not settings.is_calculating():
             _log.output('load_linear_rgb_image_at3')
