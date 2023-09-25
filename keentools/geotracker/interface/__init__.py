@@ -49,7 +49,6 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
                        GT_OT_PrecalcInfo,
                        GT_OT_TextureBakeOptions,
                        GT_OT_TextureFileExport,
-                       GT_OT_DeleteTexture,
                        GT_OT_ConfirmRecreatePrecalc,
                        GTHELP_OT_InputsHelp,  # helps
                        GTHELP_OT_MasksHelp,

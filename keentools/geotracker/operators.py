@@ -47,7 +47,6 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_scene,
                                 create_empty_object,
                                 bpy_remove_object,
-                                operator_with_context,
                                 bpy_url_open)
 from .utils.geotracker_acts import (create_geotracker_act,
                                     delete_geotracker_act,
@@ -100,6 +99,8 @@ from ..utils.manipulate import select_object_only, force_undo_push
 from ..utils.animation import count_fcurve_points, remove_fcurve_from_object
 from .interface.screen_mesages import (revert_default_screen_message,
                                        single_line_screen_message)
+from ..utils.images import remove_bpy_image_by_name
+from ..utils.materials import remove_mat_by_name
 
 
 _log = KTLogger(__name__)
@@ -880,6 +881,10 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
                                                   selected_keyframes)
         self.finish_text_on_screen()
 
+        settings = get_gt_settings()
+        if settings.pinmode:
+            GTLoader.out_pinmode()
+
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'FINISHED'}
@@ -1181,6 +1186,24 @@ class GT_OT_ShareFeedback(ButtonOperator, Operator):
               f'viewform?{urlencode(params)}'
         _log.output(f'\n{url}')
         bpy_url_open(url)
+        return {'FINISHED'}
+
+
+class GT_OT_DeleteTexture(Operator):
+    bl_idname = GTConfig.gt_delete_texture_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        geotracker = get_current_geotracker_item()
+        if not geotracker:
+            return {'CANCELLED'}
+        remove_bpy_image_by_name(geotracker.preview_texture_name())
+        remove_mat_by_name(geotracker.preview_material_name())
         return {'FINISHED'}
 
 
@@ -1745,6 +1768,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_AutoNamePrecalc,
                   GT_OT_UnbreakRotation,
                   GT_OT_ShareFeedback,
+                  GT_OT_DeleteTexture,
                   GT_OT_RescaleWindow,
                   GT_OT_MoveWindow,
                   GT_OT_RigWindow,
