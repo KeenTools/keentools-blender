@@ -124,6 +124,8 @@ class FB_OT_PinMode(Operator):
 
     @classmethod
     def _check_area_state_changed(cls, area: Area) -> bool:
+        if not area:
+            return False
         area_state = (area.x, area.y, area.width, area.height)
         if area_state != cls._prev_area_state:
             cls._prev_area_state = area_state
