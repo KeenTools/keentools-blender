@@ -137,6 +137,18 @@ def bpy_remove_object(obj: Object) -> bool:
     return False
 
 
+def bpy_object_is_in_scene(obj: Object) -> bool:
+    return obj in bpy.context.scene.objects[:]
+
+
+def bpy_poll_is_mesh(self: Any, obj: Optional[Object]) -> bool:
+    return obj and obj.type == 'MESH' and bpy_object_is_in_scene(obj)
+
+
+def bpy_poll_is_camera(self: Any, obj: Optional[Object]) -> bool:
+    return obj and obj.type == 'CAMERA' and bpy_object_is_in_scene(obj)
+
+
 def _operator_with_context_old(operator: Operator,
                                context_override_dict: Dict, **kwargs) -> None:
     _log.output(f'_operator_with_context_old: {operator}')

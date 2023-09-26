@@ -38,7 +38,6 @@ from ...utils.images import (set_background_image_by_movieclip,
                              get_sequence_file_number)
 from ...utils.video import (convert_movieclip_to_frames,
                             load_movieclip,
-                            load_image_sequence,
                             get_movieclip_duration)
 from ...utils.bpy_common import (bpy_start_frame,
                                  bpy_end_frame,
@@ -46,16 +45,14 @@ from ...utils.bpy_common import (bpy_start_frame,
 from ..utils.textures import bake_texture_sequence
 from ..utils.prechecks import common_checks
 from ..ui_strings import buttons
+from ..gtloader import GTLoader
 
 
 _log = KTLogger(__name__)
 
 
 def _load_movieclip(dir_path: str, file_names: List[str]) -> Optional[MovieClip]:
-    geotracker = get_current_geotracker_item()
-    if not geotracker:
-        return None
-
+    _log.output('_load_movieclip')
     new_movieclip = load_movieclip(dir_path, file_names)
 
     if new_movieclip and new_movieclip.source == 'SEQUENCE':
@@ -64,21 +61,23 @@ def _load_movieclip(dir_path: str, file_names: List[str]) -> Optional[MovieClip]
         if file_number >= 0:
             new_movieclip.frame_start = file_number
 
-    geotracker.movie_clip = new_movieclip
-    set_background_image_by_movieclip(geotracker.camobj,
-                                      geotracker.movie_clip)
     return new_movieclip
 
 
-def _image_format_items(default: str='PNG') -> List[Tuple]:
+def _image_format_items(default: str = 'PNG',
+                        show_exr: bool = False) -> List[Tuple]:
     if default == 'PNG':
         png_num, jpg_num = 0, 1
     else:
         png_num, jpg_num = 1, 0
-    return [
+    exr_num = 2
+    arr = [
         ('PNG', 'PNG', 'Default image file format with transparency', png_num),
         ('JPEG', 'JPEG', 'Data loss image format without transparency', jpg_num),
     ]
+    if show_exr:
+        arr.append(('EXR', 'EXR', 'Extended image format with transparency', exr_num))
+    return arr
 
 
 def _orientation_items() -> List[Tuple]:
@@ -93,10 +92,7 @@ def _orientation_items() -> List[Tuple]:
     ]
 
 
-class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
-    bl_idname = GTConfig.gt_sequence_filebrowser_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
+class GT_OT_FootageFilebrowser(Operator, ImportHelper):
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     filter_folder: BoolProperty(
@@ -130,6 +126,12 @@ class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
         col.label(text='Load a sequence of frames')
         col.label(text='or a movie file')
 
+
+class GT_OT_SequenceFilebrowser(GT_OT_FootageFilebrowser):
+    bl_idname = GTConfig.gt_sequence_filebrowser_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
     def execute(self, context):
         geotracker = get_current_geotracker_item()
         if not geotracker:
@@ -138,62 +140,34 @@ class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
         new_movieclip = _load_movieclip(self.directory,
                                         [f.name for f in self.files])
         if not new_movieclip:
+            _log.error('no new movieclip has been found (footage)')
             return {'CANCELLED'}
+
+        geotracker.movie_clip = new_movieclip
 
         _log.output(f'LOADED MOVIECLIP: {geotracker.movie_clip.name}')
         return {'FINISHED'}
 
 
-class GT_OT_MaskSequenceFilebrowser(Operator, ImportHelper):
+class GT_OT_MaskSequenceFilebrowser(GT_OT_FootageFilebrowser):
     bl_idname = GTConfig.gt_mask_sequence_filebrowser_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
-
-    filter_folder: BoolProperty(
-        name='Filter folders',
-        default=True,
-        options={'HIDDEN'},
-    )
-    filter_image: BoolProperty(
-        name='Filter image',
-        default=True,
-        options={'HIDDEN'},
-    )
-    filter_movie: BoolProperty(
-        name='Filter movie',
-        default=True,
-        options={'HIDDEN'},
-    )
-
-    files: CollectionProperty(
-        name='File Path',
-        type=OperatorFileListElement,
-    )
-
-    directory: StringProperty(
-            subtype='DIR_PATH',
-    )
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-        col.label(text='Load mask image sequence or movie. ')
-        col.label(text='Just select first image in sequence')
 
     def execute(self, context):
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
 
-        new_sequence = load_image_sequence(self.directory,
-                                           [f.name for f in self.files])
-        if not new_sequence:
+        new_movieclip = _load_movieclip(self.directory,
+                                        [f.name for f in self.files])
+        if not new_movieclip:
+            _log.error('no new movieclip has been found (mask)')
             return {'CANCELLED'}
 
-        geotracker.mask_2d = new_sequence.name
-        _log.output(f'LOADED MASK: {new_sequence.name}')
+        geotracker.mask_2d = new_movieclip
+
+        _log.output(f'LOADED MASK: {geotracker.mask_2d.name}')
         return {'FINISHED'}
 
 

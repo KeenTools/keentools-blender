@@ -1311,7 +1311,8 @@ class GT_OT_RescaleWindow(Operator):
                          update=_rescale_preview_func)
     geom_scale: FloatVectorProperty(default=(1, 1, 1))
     cam_scale:  FloatVectorProperty(default=(1, 1, 1))
-    keep_cam_scale: BoolProperty(default=True, name='Lock Camera scale',
+    keep_cam_scale: BoolProperty(default=True,
+                                 name='Lock Camera (visualization) scale',
                                  update=_rescale_preview_func)
     keep_geom_scale: BoolProperty(default=False, name='Lock Geometry scale',
                                   update=_rescale_preview_func)
@@ -1408,7 +1409,7 @@ class GT_OT_RescaleWindow(Operator):
         self.keep_cam_scale = True
         self.keep_geom_scale = False
         self.done = False
-        return context.window_manager.invoke_props_dialog(self, width=350)
+        return context.window_manager.invoke_props_dialog(self, width=400)
 
 
 def _move_preview_func(operator, context):

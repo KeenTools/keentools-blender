@@ -104,7 +104,18 @@ def get_background_image_object(camobj: Camera, index: int=0) -> Any:
     return cam_data.background_images[index]
 
 
+def get_background_image(camobj: Camera, index: int=0) -> Optional[Image]:
+    if not camobj or not camobj.data:
+        return None
+    cam_data = camobj.data
+    if len(cam_data.background_images) > index:
+        return cam_data.background_images[index].image
+    return None
+
+
 def remove_background_image_object(camobj: Camera, index: int) -> bool:
+    if not camobj:
+        return False
     cam_data = camobj.data
     if len(cam_data.background_images) <= index:
         return False
@@ -130,7 +141,9 @@ def get_sequence_file_number(filename: str) -> int:
 
 
 def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
-                                      name: str='geotracker_bg') -> None:
+                                      name: str='geotracker_bg',
+                                      index: int = 0) -> None:
+    _log.output(f'set_background_image_by_movieclip: {name} index={index}')
     if not camobj or not movie_clip:
         return
 
@@ -138,8 +151,9 @@ def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
         _log.error('UNKNOWN MOVIECLIP TYPE')
         return
 
-    bg_img = get_background_image_object(camobj)
-    bg_img.alpha = 1.0
+    bg_img = get_background_image_object(camobj, index)
+    bg_img.alpha = 1.0 if index == 0 else 0.0
+
     cam_data = camobj.data
     cam_data.show_background_images = True
 
@@ -167,8 +181,7 @@ def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
         bg_img.image_user.frame_offset = file_number - 1
 
 
-def set_background_image_mask(camobj: Camera, mask_2d: str) -> bool:
-    mask = find_bpy_image_by_name(mask_2d)
+def set_background_image_mask(camobj: Camera, mask: Image) -> bool:
     if mask is not None:
         bg_img = get_background_image_object(camobj, index=1)
         bg_img.alpha = 0.0
@@ -240,6 +253,8 @@ def np_threshold_image(np_img: Any, threshold: float=0.0) -> Any:
                     np_img[:, :, 1] +
                     np_img[:, :, 2]) / 3.0 > threshold)).astype(np.uint8)
 
+def np_threshold_single_channel_image(np_img: Any, threshold: float=0.0) -> Any:
+    return (255 * (np_img > threshold)).astype(np.uint8)
 
 def np_array_from_background_image(camobj: Camera, index: int=0) -> Optional[Any]:
     bg_img = get_background_image_object(camobj, index)

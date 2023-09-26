@@ -262,9 +262,42 @@ class FB_OT_ExportToCC(Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER'}
 
+    done: BoolProperty(default=False)
     test_mode: BoolProperty(default=False)
 
+    def cancel(self, context):
+        _log.output(f'{self.__class__.__name__} cancel')
+        self.done = True
+
+    def draw(self, context):
+        layout = self.layout
+        if self.done:
+            layout.label(text='Operation has been done')
+            return
+
+        col = layout.column(align=True)
+        col.scale_y = Config.text_scale_y
+        col.label(text='Do you want to continue without head texture?')
+
+    def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} execute')
+        self.done = False
+
+        settings = get_fb_settings()
+        head = settings.get_current_head()
+        if not head or not head.headobj:
+            msg = 'Head not found'
+            self.report({'ERROR'}, msg)
+            _log.error(f'{msg}')
+            return {'CANCELLED'}
+
+        tex_node = _find_base_texture(head.headobj)
+        if tex_node is None:
+            return context.window_manager.invoke_props_dialog(self, width=400)
+        return self.execute(context)
+
     def execute(self, context):
+        self.done = True
         if not FBLoader.reload_current_model():
             msg = 'Cannot reload current model before start'
             self.report({'ERROR'}, msg)
@@ -272,7 +305,7 @@ class FB_OT_ExportToCC(Operator):
             return {'CANCELLED'}
 
         if not _check_hklm_registry_key(_cc_registry_path):
-            msg = 'Cannot find Character Creator 4 on this computer'
+            msg = 'Character Creator 4 not found'
             self.report({'ERROR'}, msg)
             _log.error(f'{msg}')
             _log.output(f'key: {_cc_registry_path}\n')
@@ -284,7 +317,7 @@ class FB_OT_ExportToCC(Operator):
             cc_path = _get_hklm_registry_value_unsafe(
                 _cc_versioned_registry_path, _cc_registry_subkey)
         except Exception as err:
-            msg = 'Installed incompatible version of Character Creator'
+            msg = 'Need Character Creator 4 or higher'
             self.report({'ERROR'}, msg)
             _log.error(f'{msg}\n{str(err)}')
             _log.output(f'key: {_cc_versioned_registry_path}\n'
@@ -299,7 +332,7 @@ class FB_OT_ExportToCC(Operator):
         _log.output(f'Character Creator path: {cc_path}')
 
         if not _check_hklm_registry_key(_headshot_registry_path):
-            msg = 'Cannot find Headshot add-on on this computer'
+            msg = 'Headshot add-on not found'
             self.report({'ERROR'}, msg)
             _log.error(f'{msg}')
             _log.output(f'key: {_headshot_registry_path}\n')
@@ -311,7 +344,7 @@ class FB_OT_ExportToCC(Operator):
             headshot_version = _get_hklm_registry_value_unsafe(
                 _headshot_versioned_registry_path, _headshot_subkey)
         except Exception as err:
-            msg = 'Headshot plugin has incompatible version'
+            msg = 'Failed to identify Headshot version'
             self.report({'ERROR'}, msg)
             _log.error(f'{msg}\n{str(err)}')
             _log.output(f'key: {_headshot_versioned_registry_path}\n'
@@ -326,7 +359,8 @@ class FB_OT_ExportToCC(Operator):
                     f'[{type(headshot_version)}]')
 
         if not _proper_headshot_version(headshot_version):
-            msg = f'Incompatible Headshot version [{headshot_version}]'
+            msg = f'You have Headshot [{headshot_version}]. ' \
+                  f'Need Headshot 2 or higher'
             self.report({'ERROR'}, msg)
             _log.error(f'{msg}')
             if not self.test_mode:
@@ -343,20 +377,14 @@ class FB_OT_ExportToCC(Operator):
         settings = get_fb_settings()
         head = settings.get_current_head()
         if not head or not head.headobj:
-            msg = 'Cannot get current head'
+            msg = 'Head not found'
             self.report({'ERROR'}, msg)
             _log.error(f'{msg}')
             return {'CANCELLED'}
 
-        tex_node = _find_base_texture(head.headobj)
-        if tex_node is None:
-            msg = 'Cannot find a texture in material, but continue'
-            self.report({'ERROR'}, msg)
-            _log.error(msg)
-
         head_obj = _create_head()
         if head_obj is None:
-            msg = 'FB cannot find head and head-mesh'
+            msg = 'Cannot create head-mesh for export'
             self.report({'ERROR'}, msg)
             _log.error(msg)
             return {'CANCELLED'}
@@ -365,6 +393,7 @@ class FB_OT_ExportToCC(Operator):
 
         img = None
         duplicate_img = None
+        tex_node = _find_base_texture(head.headobj)
         if tex_node is not None:
             img = tex_node.image
             if img and img.packed_file:
@@ -391,5 +420,5 @@ class FB_OT_ExportToCC(Operator):
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
-        self.report({'INFO'}, 'Success! Character Creator is loading...')
+        self.report({'INFO'}, 'Launching Character Creator. Please wait...')
         return {'FINISHED'}
