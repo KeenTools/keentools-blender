@@ -93,16 +93,17 @@ def show_unlicensed_warning() -> None:
     warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
 
 
-def common_checks(*, object_mode: bool=False,
-                  pinmode: bool=False,
-                  pinmode_out: bool=False,
-                  is_calculating: bool=False,
+def common_checks(*, object_mode: bool = False,
+                  pinmode: bool = False,
+                  pinmode_out: bool = False,
+                  is_calculating: bool = False,
                   reload_geotracker: bool = False,
-                  geotracker: bool=False,
-                  camera: bool=False,
-                  geometry: bool=False,
-                  movie_clip: bool=False,
-                  constraints: bool=False) -> ActionStatus:
+                  geotracker: bool = False,
+                  camera: bool = False,
+                  geometry: bool = False,
+                  geometry_visible: bool = False,
+                  movie_clip: bool = False,
+                  constraints: bool = False) -> ActionStatus:
 
     if object_mode:
         if not hasattr(bpy.context, 'mode'):
@@ -146,6 +147,10 @@ def common_checks(*, object_mode: bool=False,
         return ActionStatus(False, msg)
     if geometry and not geotracker_item.geomobj:
         msg = 'GeoTracker geometry is not found'
+        _log.error(msg)
+        return ActionStatus(False, msg)
+    if geometry_visible and not geotracker_item.geomobj.visible_get():
+        msg = 'Geometry object is invisible in viewport. Toggle it to visible mode'
         _log.error(msg)
         return ActionStatus(False, msg)
     if movie_clip and not geotracker_item.movie_clip:
