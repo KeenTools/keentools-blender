@@ -49,6 +49,7 @@ from ..utils.timer import KTStopShaderTimer
 from ..utils.ui_redraw import force_ui_redraw
 from ..utils.localview import exit_area_localview, check_localview
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..utils.images import get_background_image_strict
 
 
 _log = KTLogger(__name__)
@@ -567,8 +568,14 @@ class GTLoader:
                 wf.set_lit_light_matrix(geom_mat, cam_mat)
         if mask:
             geotracker = get_current_geotracker_item()
-            if geotracker.get_2d_mask_source() == 'COMP_MASK':
+            mask_source = geotracker.get_2d_mask_source()
+            if mask_source == 'COMP_MASK':
                 geotracker.update_compositing_mask()
+            elif mask_source == 'MASK_2D':
+                vp = cls.viewport()
+                mask2d = vp.mask2d()
+                mask2d.image = get_background_image_strict(geotracker.camobj,
+                                                           index=1)
         if wireframe:
             cls.update_viewport_wireframe(update_geo_data=update_geo_data)
         if pins_and_residuals:

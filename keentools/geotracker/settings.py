@@ -31,7 +31,7 @@ from ..addon_config import Config, get_addon_preferences
 from ..geotracker_config import GTConfig
 from .gtloader import GTLoader
 from ..utils.images import (get_background_image_object,
-                            get_background_image)
+                            get_background_image_strict)
 from .utils.tracking import reload_precalc
 from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_scale_vec_4_from_matrix_world,
@@ -727,7 +727,7 @@ class GTSceneSettings(PropertyGroup):
         _log.output(f'mask mode: {mask_source}')
         if mask_source == 'MASK_2D':
             _log.output(f'RELOAD 2D MASK: {geotracker.mask_2d}')
-            mask.image = get_background_image(geotracker.camobj, index=1)
+            mask.image = get_background_image_strict(geotracker.camobj, index=1)
             mask.inverted = geotracker.mask_2d_inverted
             mask.mask_threshold = geotracker.mask_2d_threshold
             mask.channel = geotracker.get_mask_2d_channel_value()
