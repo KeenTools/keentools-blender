@@ -107,10 +107,10 @@ def operation_calculation_screen_message(
 
 def staged_calculation_screen_message(operation_name: str,
                                       operation_help: str, *,
-                                      finished_frames: int=0,
-                                      total_frames: int=1,
-                                      current_stage: int=0,
-                                      total_stages: int=1) -> None:
+                                      finished_frames: int = 0,
+                                      total_frames: int = 1,
+                                      current_stage: int = 0,
+                                      total_stages: int = 1) -> None:
     stages = '' if total_stages == 1 else \
         f'Stage {current_stage}/{total_stages}. '
     vp = _get_viewport()

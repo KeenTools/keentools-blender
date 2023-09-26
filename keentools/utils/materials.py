@@ -33,7 +33,7 @@ from .bpy_common import bpy_progress_begin, bpy_progress_end, bpy_progress_updat
 _log = KTLogger(__name__)
 
 
-def switch_to_mode(mode: str='MATERIAL') -> None:
+def switch_to_mode(mode: str = 'MATERIAL') -> None:
     areas = bpy.context.workspace.screens[0].areas
     for area in areas:
         for space in area.spaces:
@@ -235,7 +235,7 @@ def get_nodes_by_type(nodes: List, find_type: str) -> List:
     return [node for node in nodes if node.type == find_type]
 
 
-def get_node_from_input(node: Any, num: int=0) -> Any:
+def get_node_from_input(node: Any, num: int = 0) -> Any:
     if len(node.inputs) < num + 1:
         return None
     input = node.inputs[num]

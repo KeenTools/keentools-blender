@@ -86,7 +86,7 @@ class CalcTimer(TimerMixin):
     def get_area(self) -> Area:
         return self._area
 
-    def _area_header(self, txt: str=None) -> None:
+    def _area_header(self, txt: Optional[str] = None) -> None:
         area = self.get_area()
         area.header_text_set(txt)
 

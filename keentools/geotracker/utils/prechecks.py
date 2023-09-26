@@ -56,7 +56,7 @@ def revert_camera(area: Area) -> None:
 
 
 def get_alone_object_in_selection_by_type(selection: List,
-                                          obj_type: str='MESH'):
+                                          obj_type: str = 'MESH'):
     found_obj = None
     for obj in selection:
         if obj.type == obj_type:
@@ -66,12 +66,12 @@ def get_alone_object_in_selection_by_type(selection: List,
     return found_obj
 
 
-def get_alone_object_in_scene_by_type(obj_type: str='MESH'):
+def get_alone_object_in_scene_by_type(obj_type: str = 'MESH'):
     return get_alone_object_in_selection_by_type(bpy_all_scene_objects(),
                                                  obj_type)
 
 
-def get_alone_object_in_scene_selection_by_type(obj_type: str='MESH'):
+def get_alone_object_in_scene_selection_by_type(obj_type: str = 'MESH'):
     return get_alone_object_in_selection_by_type(bpy_scene_selected_objects(),
                                                  obj_type)
 

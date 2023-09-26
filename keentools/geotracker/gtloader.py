@@ -203,7 +203,7 @@ class GTLoader:
         return geotracker.geomobj.mode
 
     @classmethod
-    def store_geomobj_mode(cls, mode: str='OBJECT') -> None:
+    def store_geomobj_mode(cls, mode: str = 'OBJECT') -> None:
         cls._geomobj_edit_mode = mode
 
     @classmethod

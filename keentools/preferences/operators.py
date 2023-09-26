@@ -52,7 +52,7 @@ def get_product_license_manager(product: str) -> Any:
     assert False, 'Wrong product ID'
 
 
-def _get_hardware_id(product: str='facebuilder') -> str:
+def _get_hardware_id(product: str = 'facebuilder') -> str:
     lm = get_product_license_manager(product)
     return lm.hardware_id()
 

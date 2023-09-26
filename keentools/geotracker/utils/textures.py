@@ -116,8 +116,8 @@ def bake_texture(geotracker: Any, selected_frames: List[int]) -> Any:
 
 def preview_material_with_texture(
         built_texture: Any, geomobj: Object,
-        tex_name: str='kt_reprojected_tex',
-        mat_name: str='kt_reproject_preview_mat') -> None:
+        tex_name: str = 'kt_reprojected_tex',
+        mat_name: str = 'kt_reproject_preview_mat') -> None:
     if built_texture is None:
         return
     remove_bpy_texture_if_exists(tex_name)
@@ -133,7 +133,8 @@ _bake_generator_var: Optional[Any] = None
 
 
 def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
-                   *, file_format: str='PNG', frames: List[int], digits: int=4):
+                   *, file_format: str = 'PNG', frames: List[int],
+                   digits: int = 4) -> Any:
     def _finish():
         settings.stop_calculating()
         revert_default_screen_message(unregister=not settings.pinmode)
@@ -194,8 +195,8 @@ def _bake_caller() -> Optional[float]:
 
 
 def bake_texture_sequence(context: Any, geotracker: Any, filepath_pattern: str,
-                          *, file_format: str='PNG', frames: List[int],
-                          digits: int=4) -> None:
+                          *, file_format: str = 'PNG', frames: List[int],
+                          digits: int = 4) -> None:
     global _bake_generator_var
     _bake_generator_var = bake_generator(context.area, geotracker,
                                          filepath_pattern,

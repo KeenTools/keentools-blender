@@ -97,7 +97,7 @@ def gamma_np_image(np_img: Any, gamma: float=1.0) -> Any:
     return res_img
 
 
-def get_background_image_object(camobj: Camera, index: int=0) -> Any:
+def get_background_image_object(camobj: Camera, index: int = 0) -> Any:
     cam_data = camobj.data
     while len(cam_data.background_images) <= index:
         cam_data.background_images.new()
@@ -105,7 +105,7 @@ def get_background_image_object(camobj: Camera, index: int=0) -> Any:
 
 
 def get_background_image_object_strict(camobj: Camera,
-                                       index: int=0) -> Optional[Any]:
+                                       index: int = 0) -> Optional[Any]:
     if not camobj or not camobj.data:
         return None
     cam_data = camobj.data
@@ -114,7 +114,7 @@ def get_background_image_object_strict(camobj: Camera,
     return cam_data.background_images[index]
 
 
-def get_background_image_strict(camobj: Camera, index: int=0) -> Optional[Image]:
+def get_background_image_strict(camobj: Camera, index: int = 0) -> Optional[Image]:
     if not camobj or not camobj.data:
         return None
 
@@ -162,7 +162,7 @@ def get_sequence_file_number(filename: str) -> int:
 
 
 def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
-                                      name: str='geotracker_bg',
+                                      name: str = 'geotracker_bg',
                                       index: int = 0) -> None:
     _log.output(f'set_background_image_by_movieclip: {name} index={index}')
     if not camobj or not movie_clip:
@@ -290,12 +290,12 @@ def np_threshold_single_channel_image(np_img: Any, threshold: float=0.0) -> Any:
     return (255 * (np_img > threshold)).astype(np.uint8)
 
 
-def np_array_from_background_image(camobj: Camera, index: int=0) -> Optional[Any]:
+def np_array_from_background_image(camobj: Camera, index: int = 0) -> Optional[Any]:
     bg_img = get_background_image_object(camobj, index)
     return np_array_from_bpy_image(bg_img.image)
 
 
-def np_array_from_background_image_strict(camobj: Camera, index: int=0) -> Optional[Any]:
+def np_array_from_background_image_strict(camobj: Camera, index: int = 0) -> Optional[Any]:
     bg_img = get_background_image_strict(camobj, index)
     return np_array_from_bpy_image(bg_img.image)
 
@@ -330,14 +330,14 @@ def tone_mapping(cam_image, exposure, gamma):
                 '(gain: {}) gamma: {}'.format(exposure, gain, gamma))
 
 
-def create_compatible_bpy_image(np_img: Any, name: str= 'tmp_name') -> Any:
+def create_compatible_bpy_image(np_img: Any, name: str = 'tmp_name') -> Any:
     img = bpy.data.images.new(name,
                               width=np_img.shape[1], height=np_img.shape[0],
                               alpha=True, float_buffer=False)
     return img
 
 
-def create_bpy_image_from_np_array(np_img: Any, name: str='tmp_name') -> Any:
+def create_bpy_image_from_np_array(np_img: Any, name: str = 'tmp_name') -> Any:
     img = create_compatible_bpy_image(np_img, name)
     assign_pixels_data(img.pixels, np_img.ravel())
     return img

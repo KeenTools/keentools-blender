@@ -105,6 +105,6 @@ class KTRasterMask(KTShaderBase):
         self.mask_batch.draw(shader)
 
     def register_handler(self, context: Any,
-                         post_type: str='POST_PIXEL') -> None:
+                         post_type: str = 'POST_PIXEL') -> None:
         _log.output(f'{self.__class__.__name__}.register_handler')
         super().register_handler(context, post_type)
