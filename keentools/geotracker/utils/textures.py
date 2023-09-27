@@ -55,6 +55,18 @@ from ..interface.screen_mesages import (revert_default_screen_message,
 _log = KTLogger(__name__)
 
 
+_bad_frame: int = -1
+
+
+def _set_bad_frame(frame: int = -1):
+    global _bad_frame
+    _bad_frame = frame
+
+
+def get_bad_frame():
+    return _bad_frame
+
+
 def bake_texture(geotracker: Any, selected_frames: List[int]) -> Any:
     def _empty_np_image() -> Any:
         w, h = bpy_render_frame()
@@ -73,7 +85,8 @@ def bake_texture(geotracker: Any, selected_frames: List[int]) -> Any:
 
             np_img = np_array_from_background_image(geotracker.camobj, index=0)
             if np_img is None:
-                np_img = _empty_np_image()
+                _set_bad_frame(frame)
+                return None
 
             geo = build_geo(geotracker.geomobj, get_uv=True)
             frame_data = pkt_module().texture_builder.FrameData()
@@ -95,6 +108,7 @@ def bake_texture(geotracker: Any, selected_frames: List[int]) -> Any:
     settings = get_gt_settings()
     current_frame = bpy_current_frame()
     bpy_progress_begin(0, 1)
+    _set_bad_frame()
     built_texture = pkt_module().texture_builder.build_texture(
         len(selected_frames),
         _create_frame_data_loader(geotracker, selected_frames),

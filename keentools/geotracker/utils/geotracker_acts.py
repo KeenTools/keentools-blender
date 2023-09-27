@@ -82,7 +82,7 @@ from ...utils.coords import (LocRotScale,
                              ScaleMatrix,
                              InvScaleMatrix,
                              change_near_and_far_clip_planes)
-from .textures import bake_texture, preview_material_with_texture
+from .textures import bake_texture, preview_material_with_texture, get_bad_frame
 from ..interface.screen_mesages import clipping_changed_screen_message
 
 
@@ -728,7 +728,11 @@ def bake_texture_from_frames_act(area: Area,
                                          pins_and_residuals=True)
 
     if built_texture is None:
-        msg = 'Texture has not been created'
+        bad_frame = get_bad_frame()
+        if bad_frame < 0:
+            msg = 'Texture has not been created'
+        else:
+            msg = f'Frame {bad_frame} cannot be loaded'
         _log.error(msg)
         return ActionStatus(False, msg)
 

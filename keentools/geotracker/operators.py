@@ -883,13 +883,13 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
                                                   selected_keyframes)
         self.finish_text_on_screen()
 
-        settings = get_gt_settings()
-        if settings.pinmode:
-            GTLoader.out_pinmode()
-
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'FINISHED'}
+
+        settings = get_gt_settings()
+        if settings.pinmode:
+            GTLoader.out_pinmode()
 
         return {'FINISHED'}
 
