@@ -61,6 +61,7 @@ class BVersion:
     use_old_bgl_shaders: bool = ver < (3, 4, 0)
 
     blf_size_takes_3_arguments: bool = ver < (4, 0, 0)
+    principled_shader_has_specular: bool = ver < (4, 0, 0)
 
     os_name: str = _os_name()
     gpu_backend: str = _get_gpu_backend(property_gpu_backend_exists)
