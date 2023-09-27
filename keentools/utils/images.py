@@ -211,6 +211,11 @@ def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
             os.path.basename(movie_clip.filepath))
         bg_img.image_user.frame_offset = file_number - 1
 
+    try:
+        img.colorspace_settings.name = movie_clip.colorspace_settings.name
+    except Exception as err:
+        _log.error(f'set_background_image_by_movieclip Exception:\n{str(err)}')
+
 
 def set_background_image_mask(camobj: Camera, mask: Image) -> bool:
     if mask is not None:
