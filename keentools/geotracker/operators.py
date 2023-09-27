@@ -99,7 +99,8 @@ from ..utils.manipulate import select_object_only, force_undo_push
 from ..utils.animation import count_fcurve_points, remove_fcurve_from_object
 from .interface.screen_mesages import (revert_default_screen_message,
                                        single_line_screen_message)
-from ..utils.images import remove_bpy_image_by_name
+from ..utils.images import (remove_bpy_image_by_name,
+                            check_background_image_absent_frames)
 from ..utils.materials import remove_mat_by_name
 
 
@@ -905,6 +906,13 @@ class GT_OT_AddBakeFrame(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         frame = bpy_current_frame()
+        res = check_background_image_absent_frames(geotracker.camobj, index=0,
+                                                   frames=[frame])
+        if len(res) > 0:
+            msg = f'This frame [{frame}] is out of movieclip range'
+            self.report({'ERROR'}, msg)
+            return {'CANCELLED'}
+
         frames = [item.num for item in geotracker.selected_frames]
         if frame in frames:
             geotracker.selected_frame_index = frames.index(frame)

@@ -31,7 +31,8 @@ from ..addon_config import Config, get_addon_preferences
 from ..geotracker_config import GTConfig
 from .gtloader import GTLoader
 from ..utils.images import (get_background_image_object,
-                            get_background_image_strict)
+                            get_background_image_strict,
+                            set_background_image_by_movieclip)
 from .utils.tracking import reload_precalc
 from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_scale_vec_4_from_matrix_world,
@@ -366,6 +367,18 @@ class GeoTrackerItem(PropertyGroup):
         bg_img = self.get_background_image_object()
         if bg_img is not None and bg_img.image:
             bg_img.image.reload()
+
+    def setup_background_image(self) -> None:
+        set_background_image_by_movieclip(self.camobj,
+                                          self.movie_clip,
+                                          name=GTConfig.gt_background_name,
+                                          index=0)
+
+    def setup_background_mask(self) -> None:
+        set_background_image_by_movieclip(self.camobj,
+                                          self.mask_2d,
+                                          name=GTConfig.gt_background_mask_name,
+                                          index=1)
 
     def reset_focal_length_estimation(self) -> None:
         self.focal_length_estimation = False
