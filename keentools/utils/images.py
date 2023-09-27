@@ -104,16 +104,6 @@ def get_background_image_object(camobj: Camera, index: int = 0) -> Any:
     return cam_data.background_images[index]
 
 
-def get_background_image_object_strict(camobj: Camera,
-                                       index: int = 0) -> Optional[Any]:
-    if not camobj or not camobj.data:
-        return None
-    cam_data = camobj.data
-    if len(cam_data.background_images) <= index:
-        return None
-    return cam_data.background_images[index]
-
-
 def get_background_image_strict(camobj: Camera, index: int = 0) -> Optional[Image]:
     if not camobj or not camobj.data:
         return None
@@ -132,6 +122,26 @@ def get_background_image_strict(camobj: Camera, index: int = 0) -> Optional[Imag
         return bg_img.image
 
     return None
+
+
+def check_background_image_absent_frames(camobj: Camera, index: int,
+                                         frames: List) -> List:
+    if not camobj or not camobj.data:
+        return frames[:]
+
+    cam_data = camobj.data
+    if len(cam_data.background_images) <= index:
+        return frames[:]
+
+    bg_img = cam_data.background_images[index]
+    if not bg_img:
+        return frames[:]
+
+    frame_start = bg_img.image_user.frame_start
+    frame_duration = bg_img.image_user.frame_duration
+
+    return [x for x in frames if not
+            frame_start <= x < frame_start + frame_duration]
 
 
 def remove_background_image_object(camobj: Camera, index: int) -> bool:
@@ -291,13 +301,8 @@ def np_threshold_single_channel_image(np_img: Any, threshold: float=0.0) -> Any:
 
 
 def np_array_from_background_image(camobj: Camera, index: int = 0) -> Optional[Any]:
-    bg_img = get_background_image_object(camobj, index)
-    return np_array_from_bpy_image(bg_img.image)
-
-
-def np_array_from_background_image_strict(camobj: Camera, index: int = 0) -> Optional[Any]:
-    bg_img = get_background_image_strict(camobj, index)
-    return np_array_from_bpy_image(bg_img.image)
+    img = get_background_image_strict(camobj, index)
+    return np_array_from_bpy_image(img)
 
 
 def reset_tone_mapping(cam_image: Optional[Image]) -> None:

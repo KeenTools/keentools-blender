@@ -71,7 +71,8 @@ from .prechecks import (common_checks,
                         show_unlicensed_warning)
 from ...utils.compositing import (create_nodes_for_rendering_with_background,
                                   revert_default_compositing)
-from ...utils.images import get_background_image_object
+from ...utils.images import (get_background_image_object,
+                             check_background_image_absent_frames)
 from .calc_timer import (TrackTimer,
                          RefineTimer,
                          RefineTimerFast)
@@ -709,6 +710,11 @@ def bake_texture_from_frames_act(area: Area,
     check_status = check_uv_exists(geotracker.geomobj)
     if not check_status.success:
         return check_status
+
+    absent_frames = check_background_image_absent_frames(
+        geotracker.camobj, index=0, frames=selected_frames)
+    if len(absent_frames) > 0:
+        return ActionStatus(False, f'Frames are not in the range: {absent_frames}')
 
     check_status = check_uv_overlapping_with_status(geotracker)
 
