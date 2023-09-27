@@ -247,11 +247,17 @@ class GeoTrackerItem(PropertyGroup):
         update=update_mask_2d
     )
 
-    def get_mask_2d_channels(self):
+    def get_mask_2d_channels(self) -> Tuple[bool, bool, bool, bool]:
         return self.mask_2d_channel_r, self.mask_2d_channel_g, \
                self.mask_2d_channel_b, self.mask_2d_channel_a
 
-    def get_mask_2d_channel_value(self):
+    def get_mask_2d_channel_bitmask(self) -> int:
+        ''' Bitmask value in ABGR format
+            0 - R (1)
+            1 - G (2)
+            2 - B (4)
+            3 - Alpha (8)
+        '''
         return int(self.mask_2d_channel_r) + 2 * int(self.mask_2d_channel_g) + \
                4 * int(self.mask_2d_channel_b) + 8 * int(self.mask_2d_channel_a)
 
@@ -730,14 +736,14 @@ class GTSceneSettings(PropertyGroup):
             mask.image = get_background_image_strict(geotracker.camobj, index=1)
             mask.inverted = geotracker.mask_2d_inverted
             mask.mask_threshold = geotracker.mask_2d_threshold
-            mask.channel = geotracker.get_mask_2d_channel_value()
+            mask.channel = geotracker.get_mask_2d_channel_bitmask()
         elif mask_source == 'COMP_MASK':
             mask_image = geotracker.update_compositing_mask()
             _log.output('RELOAD 2D COMP_MASK')
             mask.image = mask_image
             mask.inverted = geotracker.compositing_mask_inverted
             mask.mask_threshold = geotracker.compositing_mask_threshold
-            mask.channel = 7  # RGB
+            mask.channel = 7  # RGB bitmask (without Alpha)
         else:
             mask.image = None
 
