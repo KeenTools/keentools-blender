@@ -101,7 +101,6 @@ def common_checks(*, object_mode: bool = False,
                   geotracker: bool = False,
                   camera: bool = False,
                   geometry: bool = False,
-                  geometry_visible: bool = False,
                   movie_clip: bool = False,
                   constraints: bool = False) -> ActionStatus:
 
@@ -147,10 +146,6 @@ def common_checks(*, object_mode: bool = False,
         return ActionStatus(False, msg)
     if geometry and not geotracker_item.geomobj:
         msg = 'GeoTracker geometry is not found'
-        _log.error(msg)
-        return ActionStatus(False, msg)
-    if geometry_visible and not geotracker_item.geomobj.visible_get():
-        msg = 'Geometry object is invisible in viewport. Toggle it to visible mode'
         _log.error(msg)
         return ActionStatus(False, msg)
     if movie_clip and not geotracker_item.movie_clip:

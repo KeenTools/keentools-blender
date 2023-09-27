@@ -826,17 +826,13 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
         check_status = common_checks(object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True,
-                                     geometry_visible=True, movie_clip=True)
+                                     movie_clip=True)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
         geotracker = get_current_geotracker_item()
-
-        if not geotracker.geomobj.visible_get():
-            msg = 'Geometry object is invisible. Toggle it to visible mode'
-            self.report({'ERROR'}, msg)
-            return {'CANCELLED'}
+        geotracker.geomobj.hide_set(False)
 
         check_status = check_uv_exists(geotracker.geomobj)
         if not check_status.success:
