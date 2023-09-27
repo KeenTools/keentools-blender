@@ -118,7 +118,7 @@ def create_empty_camera(headnum: int) -> None:
     FBLoader.add_new_camera(headnum, None)
 
 
-def create_camera_from_image(headnum: int, camnum: int, filename: str) -> Set:
+def create_camera_from_image(headnum: int, camnum: int, filename: str) -> bool:
     return load_single_image_file(headnum, camnum, filename)
 
 
