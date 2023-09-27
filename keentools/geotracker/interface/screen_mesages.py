@@ -95,20 +95,22 @@ def clipping_changed_screen_message(near: float, far: float) -> None:
     vp.message_to_screen(default_txt)
 
 
-def operation_calculation_screen_message(operation_name: str) -> None:
+def operation_calculation_screen_message(
+        operation_name: str, operation_help: str) -> None:
     vp = _get_viewport()
     vp.message_to_screen(
         [{'text': f'{operation_name} calculating... Please wait',
           'y': 60, 'color': (1.0, 0.0, 0.0, 0.7)},
-         {'text': 'ESC to cancel',
+         {'text': operation_help,
           'y': 30, 'color': (1.0, 1.0, 1.0, 0.7)}])
 
 
-def staged_calculation_screen_message(operation_name: str, *,
-                                      finished_frames: int=0,
-                                      total_frames: int=1,
-                                      current_stage: int=0,
-                                      total_stages: int=1) -> None:
+def staged_calculation_screen_message(operation_name: str,
+                                      operation_help: str, *,
+                                      finished_frames: int = 0,
+                                      total_frames: int = 1,
+                                      current_stage: int = 0,
+                                      total_stages: int = 1) -> None:
     stages = '' if total_stages == 1 else \
         f'Stage {current_stage}/{total_stages}. '
     vp = _get_viewport()
@@ -117,8 +119,7 @@ def staged_calculation_screen_message(operation_name: str, *,
         [{'text': f'{stages}{operation_name} {percent:.1f}% '
                   f'({finished_frames}/{total_frames})',
           'y': 60, 'color': (1.0, 0.0, 0.0, 0.7)},
-         {'text': 'ESC to abort. '
-                  'Changes have NOT yet been applied',
+         {'text': operation_help,
           'y': 30, 'color': (1.0, 1.0, 1.0, 0.7)}])
 
 

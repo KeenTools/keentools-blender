@@ -47,7 +47,7 @@ def has_blendshapes_action(obj: Optional[Object]) -> bool:
     return False
 
 
-def force_undo_push(msg: str='KeenTools operation') -> None:
+def force_undo_push(msg: str = 'KeenTools operation') -> None:
     _log.output(f'UNDO PUSH: {msg}')
     bpy.ops.ed.undo_push(message=msg)
 
@@ -60,7 +60,7 @@ def object_is_on_view_layer(obj: Object) -> bool:
     return obj in bpy.context.view_layer.objects[:]
 
 
-def switch_to_mode(mode: str='OBJECT') -> None:
+def switch_to_mode(mode: str = 'OBJECT') -> None:
     bpy.ops.object.mode_set(mode=mode, toggle=False)
 
 
@@ -104,8 +104,9 @@ def switch_to_camera(area: Area, camobj: Object,
                 f'\ncamobj={camobj}'
                 f'\nselect_obj={select_obj}')
     exit_area_localview(area)
-    camobj.hide_set(False)
-    select_object_only(camobj)
+    if camobj:
+        camobj.hide_set(False)
+        select_object_only(camobj)
     enter_area_localview(area)
 
     # Low-level code instead bpy.ops.view3d.object_as_camera()

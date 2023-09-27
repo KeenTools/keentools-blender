@@ -135,14 +135,14 @@ def load_movieclip(directory: str, file_names: List[str]) -> Optional[MovieClip]
 def convert_movieclip_to_frames(
         movie_clip: Optional[MovieClip],
         filepath: str, *,
-        file_format: str='PNG',
-        quality: int=100,
-        start_frame: int=1,
-        end_frame: int=-1,
-        orientation: int=0,
-        single_frame: bool=False,
-        opengl_render: bool=True,
-        video_scene_name: str='video_scene') -> Optional[str]:
+        file_format: str = 'PNG',
+        quality: int = 100,
+        start_frame: int = 1,
+        end_frame: int = -1,
+        orientation: int = 0,
+        single_frame: bool = False,
+        opengl_render: bool = True,
+        video_scene_name: str = 'video_scene') -> Optional[str]:
     w, h = get_movieclip_size(movie_clip)
     if w <= 0 or h <= 0:
         return None

@@ -23,10 +23,9 @@ from bpy.types import Object, Area
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import Config, get_operator, ErrorType, ActionStatus
-from ...geotracker_config import GTConfig, get_gt_settings, get_current_geotracker_item
+from ...geotracker_config import get_gt_settings, get_current_geotracker_item
 from ...utils.html import split_long_string
 from ...utils.manipulate import exit_area_localview, switch_to_camera
-from ...utils.images import set_background_image_by_movieclip
 from ...utils.bpy_common import (bpy_all_scene_objects,
                                  bpy_scene_selected_objects,
                                  bpy_background_mode)
@@ -43,8 +42,7 @@ def prepare_camera(area: Area) -> None:
                          geotracker.animatable_object())
         settings.viewport_state.hide_ui_elements(area)
 
-    set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip,
-                                      name=GTConfig.gt_background_name, index=0)
+    geotracker.setup_background_image()
     geotracker.reload_background_image()
 
 
@@ -56,7 +54,7 @@ def revert_camera(area: Area) -> None:
 
 
 def get_alone_object_in_selection_by_type(selection: List,
-                                          obj_type: str='MESH'):
+                                          obj_type: str = 'MESH'):
     found_obj = None
     for obj in selection:
         if obj.type == obj_type:
@@ -66,12 +64,12 @@ def get_alone_object_in_selection_by_type(selection: List,
     return found_obj
 
 
-def get_alone_object_in_scene_by_type(obj_type: str='MESH'):
+def get_alone_object_in_scene_by_type(obj_type: str = 'MESH'):
     return get_alone_object_in_selection_by_type(bpy_all_scene_objects(),
                                                  obj_type)
 
 
-def get_alone_object_in_scene_selection_by_type(obj_type: str='MESH'):
+def get_alone_object_in_scene_selection_by_type(obj_type: str = 'MESH'):
     return get_alone_object_in_selection_by_type(bpy_scene_selected_objects(),
                                                  obj_type)
 
@@ -93,16 +91,16 @@ def show_unlicensed_warning() -> None:
     warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
 
 
-def common_checks(*, object_mode: bool=False,
-                  pinmode: bool=False,
-                  pinmode_out: bool=False,
-                  is_calculating: bool=False,
+def common_checks(*, object_mode: bool = False,
+                  pinmode: bool = False,
+                  pinmode_out: bool = False,
+                  is_calculating: bool = False,
                   reload_geotracker: bool = False,
-                  geotracker: bool=False,
-                  camera: bool=False,
-                  geometry: bool=False,
-                  movie_clip: bool=False,
-                  constraints: bool=False) -> ActionStatus:
+                  geotracker: bool = False,
+                  camera: bool = False,
+                  geometry: bool = False,
+                  movie_clip: bool = False,
+                  constraints: bool = False) -> ActionStatus:
 
     if object_mode:
         if not hasattr(bpy.context, 'mode'):

@@ -25,7 +25,6 @@ from ..addon_config import (Config,
 from ..geotracker_config import GTConfig, get_gt_settings
 from .gtloader import GTLoader
 from ..utils.images import (get_background_image_object,
-                            set_background_image_by_movieclip,
                             tone_mapping,
                             remove_background_image_object)
 from ..utils.coords import (focal_mm_to_px,
@@ -63,10 +62,7 @@ def update_camobj(geotracker, context: Any) -> None:
         GTLoader.out_pinmode()
         return
 
-    set_background_image_by_movieclip(geotracker.camobj,
-                                      geotracker.movie_clip,
-                                      name=GTConfig.gt_background_name,
-                                      index=0)
+    geotracker.setup_background_image()
     switch_to_camera(GTLoader.get_work_area(), geotracker.camobj)
 
     if settings.pinmode:
@@ -123,10 +119,7 @@ def update_movieclip(geotracker, context: Any) -> None:
 
     fit_render_size(geotracker.movie_clip)
 
-    set_background_image_by_movieclip(geotracker.camobj,
-                                      geotracker.movie_clip,
-                                      name=GTConfig.gt_background_name,
-                                      index=0)
+    geotracker.setup_background_image()
 
     geotracker.precalc_start = bpy_start_frame()
     geotracker.precalc_end = bpy_end_frame()
@@ -261,10 +254,8 @@ def update_mask_2d(geotracker, context: Any) -> None:
     if not geotracker.mask_2d:
         remove_background_image_object(geotracker.camobj, index=1)
     else:
-        set_background_image_by_movieclip(geotracker.camobj,
-                                          geotracker.mask_2d,
-                                          name=GTConfig.gt_background_mask_name,
-                                          index=1)
+        geotracker.setup_background_mask()
+
     total_redraw_ui()
     settings.reload_mask_2d()
     vp = GTLoader.viewport()

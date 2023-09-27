@@ -41,7 +41,8 @@ from ..utils.bpy_common import (bpy_create_object,
 from ..utils.materials import (new_material,
                                new_shader_node,
                                get_nodes_by_type,
-                               get_node_from_input)
+                               get_node_from_input,
+                               make_node_shader_matte)
 
 
 _log = KTLogger(__name__)
@@ -81,7 +82,8 @@ def _create_material(img: Image=None) -> Material:
     principled_node = new_shader_node(mat, 'ShaderNodeBsdfPrincipled')
     image_node = new_shader_node(mat, 'ShaderNodeTexImage')
 
-    principled_node.inputs['Specular'].default_value = 0.0
+    make_node_shader_matte(principled_node)
+
     step = 300
     principled_node.location.x += step
     output_node.location.x += 2 * step

@@ -31,7 +31,8 @@ from ..addon_config import Config, get_addon_preferences
 from ..geotracker_config import GTConfig
 from .gtloader import GTLoader
 from ..utils.images import (get_background_image_object,
-                            get_background_image)
+                            get_background_image_strict,
+                            set_background_image_by_movieclip)
 from .utils.tracking import reload_precalc
 from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_scale_vec_4_from_matrix_world,
@@ -74,7 +75,6 @@ from .callbacks import (update_camobj,
                         update_spring_pins_back,
                         update_solve_for_camera,
                         update_smoothing)
-from ..utils.images import remove_background_image_object
 
 
 _log = KTLogger(__name__)
@@ -82,7 +82,6 @@ _log = KTLogger(__name__)
 
 class FrameListItem(PropertyGroup):
     num: IntProperty(name='Frame number', default=-1)
-    selected: BoolProperty(name='Selected', default=False)
 
 
 class GeoTrackerItem(PropertyGroup):
@@ -189,6 +188,8 @@ class GeoTrackerItem(PropertyGroup):
 
     selected_frames: CollectionProperty(type=FrameListItem,
                                         name='Selected frames')
+    selected_frame_index: IntProperty(default=0)
+
     mask_3d: StringProperty(
         name='Surface mask',
         description='Exclude polygons of selected Vertex Group from tracking',
@@ -225,19 +226,41 @@ class GeoTrackerItem(PropertyGroup):
         default='',
         name='2d mask info',
         description='About 2d mask')
-    mask_2d_channel: EnumProperty(
-        name='2D Mask mode',
-        items=[
-            ('m4', 'RGB', 'Use average value of RGB', 0),
-            ('m0', 'R', 'R channel', 1),
-            ('m1', 'G', 'G channel', 2),
-            ('m2', 'B', 'B channel', 3),
-            ('m3', 'A', 'Alpha channel', 4),
-        ],
-        update=update_mask_2d)
 
-    def get_mask_2d_channel_index(self):
-        return int(self.mask_2d_channel[1])
+    mask_2d_channel_r: BoolProperty(
+        name='R',
+        default=True,
+        update=update_mask_2d
+    )
+    mask_2d_channel_g: BoolProperty(
+        name='G',
+        default=True,
+        update=update_mask_2d
+    )
+    mask_2d_channel_b: BoolProperty(
+        name='B',
+        default=True,
+        update=update_mask_2d
+    )
+    mask_2d_channel_a: BoolProperty(
+        name='A',
+        default=False,
+        update=update_mask_2d
+    )
+
+    def get_mask_2d_channels(self) -> Tuple[bool, bool, bool, bool]:
+        return self.mask_2d_channel_r, self.mask_2d_channel_g, \
+               self.mask_2d_channel_b, self.mask_2d_channel_a
+
+    def get_mask_2d_channel_bitmask(self) -> int:
+        ''' Bitmask value in ABGR format
+            0 - R (1)
+            1 - G (2)
+            2 - B (4)
+            3 - Alpha (8)
+        '''
+        return int(self.mask_2d_channel_r) + 2 * int(self.mask_2d_channel_g) + \
+               4 * int(self.mask_2d_channel_b) + 8 * int(self.mask_2d_channel_a)
 
     compositing_mask: StringProperty(
         default='',
@@ -285,6 +308,8 @@ class GeoTrackerItem(PropertyGroup):
         precision=2,
         name='XY Translations',
         description='XY translation smoothing', update=update_smoothing)
+
+    overlapping_detected: BoolProperty(default=False)
 
     def update_compositing_mask(self, *, frame: Optional[int]=None,
                                 recreate_nodes: bool=False) -> Image:
@@ -342,6 +367,18 @@ class GeoTrackerItem(PropertyGroup):
         bg_img = self.get_background_image_object()
         if bg_img is not None and bg_img.image:
             bg_img.image.reload()
+
+    def setup_background_image(self) -> None:
+        set_background_image_by_movieclip(self.camobj,
+                                          self.movie_clip,
+                                          name=GTConfig.gt_background_name,
+                                          index=0)
+
+    def setup_background_mask(self) -> None:
+        set_background_image_by_movieclip(self.camobj,
+                                          self.mask_2d,
+                                          name=GTConfig.gt_background_mask_name,
+                                          index=1)
 
     def reset_focal_length_estimation(self) -> None:
         self.focal_length_estimation = False
@@ -423,6 +460,18 @@ class GeoTrackerItem(PropertyGroup):
                 gt.spring_pins_back(keyframes[0])
 
         return True
+
+    def get_geomobj_name(self):
+        if self.geomobj:
+            return self.geomobj.name
+        return 'none'
+
+    def preview_material_name(self):
+        return GTConfig.tex_builder_matname_template.format(self.get_geomobj_name())
+
+    def preview_texture_name(self):
+        return GTConfig.tex_builder_filename_template.format(self.get_geomobj_name())
+
 
 
 class GTSceneSettings(PropertyGroup):
@@ -586,6 +635,44 @@ class GTSceneSettings(PropertyGroup):
                     'animation data to use it independently',
         default=False)
 
+    tex_width: IntProperty(
+        description='Width size of output texture',
+        name='Width', default=2048)
+    tex_height: IntProperty(
+        description='Height size of output texture',
+        name='Height', default=2048)
+
+    tex_face_angles_affection: FloatProperty(
+        description='Choose how much a polygon view angle affects '
+                    'a pixel color: with 0 you will get an average '
+                    'color from all views; with 100 you\'ll get color '
+                    'information only from the polygons at which a camera '
+                    'is looking at 90 degrees',
+        name='Angle strictness', default=10.0, min=0.0, max=100.0)
+    tex_uv_expand_percents: FloatProperty(
+        description='Expand texture edges',
+        name='Expand edges (%)', default=0.1)
+    tex_back_face_culling: BoolProperty(
+        description='Exclude backfacing polygons from the created texture',
+        name='Back face culling', default=True)
+    tex_equalize_brightness: BoolProperty(
+        description='Experimental. Automatically equalize '
+                    'brightness across images',
+        name='Equalize brightness', default=False)
+    tex_equalize_colour: BoolProperty(
+        description='Experimental. Automatically equalize '
+                    'colors across images',
+        name='Equalize color', default=False)
+    tex_fill_gaps: BoolProperty(
+        description='Experimental. Tries automatically fill '
+                    'holes in face texture with appropriate '
+                    'color',
+        name='Autofill', default=False)
+
+    tex_auto_preview: BoolProperty(
+        description='Automatically apply the created texture',
+        name='Automatically apply the created texture', default=True)
+
     @contextmanager
     def ui_write_mode_context(self):
         self.ui_write_mode = True
@@ -659,17 +746,17 @@ class GTSceneSettings(PropertyGroup):
         _log.output(f'mask mode: {mask_source}')
         if mask_source == 'MASK_2D':
             _log.output(f'RELOAD 2D MASK: {geotracker.mask_2d}')
-            mask.image = get_background_image(geotracker.camobj, index=1)
+            mask.image = get_background_image_strict(geotracker.camobj, index=1)
             mask.inverted = geotracker.mask_2d_inverted
             mask.mask_threshold = geotracker.mask_2d_threshold
-            mask.channel = int(geotracker.mask_2d_channel[1])
+            mask.channel = geotracker.get_mask_2d_channel_bitmask()
         elif mask_source == 'COMP_MASK':
             mask_image = geotracker.update_compositing_mask()
             _log.output('RELOAD 2D COMP_MASK')
             mask.image = mask_image
             mask.inverted = geotracker.compositing_mask_inverted
             mask.mask_threshold = geotracker.compositing_mask_threshold
-            mask.channel = 4  # RGB
+            mask.channel = 7  # RGB bitmask (without Alpha)
         else:
             mask.image = None
 

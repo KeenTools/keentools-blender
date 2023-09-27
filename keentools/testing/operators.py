@@ -157,9 +157,9 @@ def create_np_mask_image(*, width: int=512, height: int=256,
     return np_buf
 
 
-def create_bpy_mask_image(*, name: str='test_image',
-                          width: int=512, height: int=256,
-                          channels: int=4) -> Any:
+def create_bpy_mask_image(*, name: str = 'test_image',
+                          width: int = 512, height: int = 256,
+                          channels: int = 4) -> Any:
     np_buf = create_np_mask_image(width=width, height=height,
                                   channels=channels)
     img = bpy.data.images.new(name, width=width, height=height,

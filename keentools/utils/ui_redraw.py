@@ -28,7 +28,7 @@ from .bpy_common import bpy_background_mode
 _log = KTLogger(__name__)
 
 
-def get_areas_by_type(area_type: str='VIEW_3D') -> List[Tuple]:
+def get_areas_by_type(area_type: str = 'VIEW_3D') -> List[Tuple]:
     pairs = []
     for window in bpy.data.window_managers['WinMan'].windows:
         for area in window.screen.areas:
@@ -42,7 +42,7 @@ def get_all_areas() -> List[Area]:
                  for area in window.screen.areas]
 
 
-def force_ui_redraw(area_type: str='PREFERENCES') -> None:
+def force_ui_redraw(area_type: str = 'PREFERENCES') -> None:
     pairs = get_areas_by_type(area_type)
     for area, _ in pairs:
         area.tag_redraw()
@@ -74,7 +74,7 @@ def filter_module_list_by_name_starting_with(module_list: List[Any],
     return mods
 
 
-def find_modules_by_name_starting_with(name_start: str='KeenTools') -> List[Any]:
+def find_modules_by_name_starting_with(name_start: str = 'KeenTools') -> List[Any]:
     try:
         mods = filter_module_list_by_name_starting_with(addon_utils.modules(),
                                                         name_start)
@@ -106,6 +106,7 @@ def mark_old_modules(mods: List[Any], filter_dict: Dict) -> None:
 
 
 def total_redraw_ui() -> None:
+    ''' This call also updates all texture nodes in scene depsgraph '''
     if not bpy_background_mode():
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         _log.output(_log.color('red', 'total_redraw_ui'))

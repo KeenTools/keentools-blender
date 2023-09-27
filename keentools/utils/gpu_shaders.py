@@ -370,23 +370,13 @@ def raster_image_mask_shader(use_old: bool = _use_old_shaders) -> Any:
         vec4 tex = texture(image, texCoord_interp);
 
         float t = 0.0;
-        switch (channel){
-        case 4:  // RGB
-            t = (tex[0] + tex[1] + tex[2]) / 3.0;
-            break;
-        case 0:  // R
-            t = tex[0];
-            break;
-        case 1:  // G
-            t = tex[1];
-            break;
-        case 2:  // B
-            t = tex[2];
-            break;
-        case 3:  // A
-            t = tex[3];
-            break;
-        }
+        int denom = 0;
+        if ((channel & 1) != 0) { denom++; t += tex[0]; }
+        if ((channel & 2) != 0) { denom++; t += tex[1]; }
+        if ((channel & 4) != 0) { denom++; t += tex[2]; }
+        if ((channel & 8) != 0) { denom++; t += tex[3]; }
+
+        if (denom != 0) { t = t / denom; }
 
         if (t <= maskThreshold) {
             if (!inverted) discard;

@@ -294,14 +294,10 @@ class GT_OT_PinMode(Operator):
             settings.change_current_geotracker(num)
         geotracker = settings.get_current_geotracker_item()
 
-        set_background_image_by_movieclip(geotracker.camobj,
-                                          geotracker.movie_clip,
-                                          name=GTConfig.gt_background_name,
-                                          index=0)
+        geotracker.setup_background_image()
+
         if geotracker.mask_2d:
-            set_background_image_by_movieclip(
-                geotracker.camobj, geotracker.mask_2d,
-                name=GTConfig.gt_background_mask_name, index=1)
+            geotracker.setup_background_mask()
 
         GTLoader.place_object_or_camera()
         switch_to_camera(area, geotracker.camobj,
