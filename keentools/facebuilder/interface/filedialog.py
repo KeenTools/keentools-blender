@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import List, Tuple
 import os
 
 from bpy_extras.io_utils import ImportHelper, ExportHelper
@@ -36,6 +37,37 @@ from ...utils.bpy_common import bpy_objects, bpy_images
 
 
 _log = KTLogger(__name__)
+
+
+def _image_format_items(default: str = 'PNG',
+                        show_exr: bool = False) -> List[Tuple]:
+    if default == 'PNG':
+        png_num, jpg_num = 0, 1
+    else:
+        png_num, jpg_num = 1, 0
+    exr_num = 2
+    arr = [
+        ('PNG', 'PNG', 'Default image file format with transparency', png_num),
+        ('JPEG', 'JPEG', 'Data loss image format without transparency', jpg_num),
+    ]
+    if show_exr:
+        arr.append(('OPEN_EXR', 'EXR', 'Extended image format with transparency', exr_num))
+    return arr
+
+
+def _filename_ext(file_format: str) -> str:
+    ext = '.jpg'
+    if file_format == 'PNG':
+        ext = '.png'
+    elif file_format == 'JPEG':
+        ext = '.jpg'
+    elif file_format == 'OPEN_EXR':
+        ext = '.exr'
+    return ext
+
+
+def _update_format(self, context):
+    self.filename_ext = _filename_ext(self.file_format)
 
 
 class FB_OT_SingleFilebrowserExec(Operator):
@@ -120,11 +152,6 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
         return {'CANCELLED'}
 
 
-def update_format(self, context):
-    ext = '.png' if self.file_format == 'PNG' else '.jpg'
-    self.filename_ext = ext
-
-
 class FB_OT_TextureFileExport(Operator, ExportHelper):
     bl_idname = FBConfig.fb_texture_file_export_idname
     bl_label = buttons[bl_idname].label
@@ -142,10 +169,10 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
         options={'HIDDEN'},
     )
 
-    file_format: EnumProperty(name='Image file format', items=[
-        ('PNG', 'PNG', 'Default image file format', 0),
-        ('JPEG', 'JPEG', 'Data loss image format', 1),
-    ], description="Choose image file format", update=update_format)
+    file_format: EnumProperty(name='Image file format',
+                              description='Choose image file format',
+                              items=_image_format_items(default='PNG'),
+                              update=_update_format)
 
     check_existing: BoolProperty(
         name='Check Existing',
@@ -168,7 +195,8 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
         filepath = self.filepath
         sp = os.path.splitext(filepath)
 
-        if sp[1] in {'.jpg', '.', '.png', '.PNG', '.JPG', '.JPEG'}:
+        if sp[1] in {'.jpg', '.', '.png', '.PNG', '.JPG', '.JPEG',
+                     '.jpeg', '.exr', '.EXR'}:
             filepath = sp[0]
 
         filepath = ensure_ext(filepath, self.filename_ext)
