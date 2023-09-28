@@ -820,10 +820,7 @@ class GT_PT_TexturePanel(AllVisible):
         col.alert = True
         row = col.split(factor=0.15, align=True)
         row.label(text='', icon='ERROR')
-        col = row.column(align=True)
-        col.scale_y = Config.text_scale_y
-        for i, txt in enumerate(['Geometry object','has no UV map!']):
-            col.label(text=txt)
+        row.label(text='Missing UVs')
         box.operator(GTConfig.gt_create_non_overlapping_uv_idname)
 
     def _draw_overlapping_detected(self, layout):

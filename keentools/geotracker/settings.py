@@ -188,7 +188,7 @@ class GeoTrackerItem(PropertyGroup):
 
     selected_frames: CollectionProperty(type=FrameListItem,
                                         name='Selected frames')
-    selected_frame_index: IntProperty(default=0)
+    selected_frame_index: IntProperty(name='', default=0)
 
     mask_3d: StringProperty(
         name='Surface mask',

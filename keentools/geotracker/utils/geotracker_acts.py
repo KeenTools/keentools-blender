@@ -714,7 +714,7 @@ def bake_texture_from_frames_act(area: Area,
     absent_frames = check_background_image_absent_frames(
         geotracker.camobj, index=0, frames=selected_frames)
     if len(absent_frames) > 0:
-        return ActionStatus(False, f'Frames are not in the range: {absent_frames}')
+        return ActionStatus(False, f'Frames {absent_frames} are outside of Clip range')
 
     check_status = check_uv_overlapping_with_status(geotracker)
 
@@ -730,9 +730,9 @@ def bake_texture_from_frames_act(area: Area,
     if built_texture is None:
         bad_frame = get_bad_frame()
         if bad_frame < 0:
-            msg = 'Texture has not been created'
+            msg = 'Operation failed'
         else:
-            msg = f'Frame {bad_frame} cannot be loaded'
+            msg = f'Frame {bad_frame} read error'
         _log.error(msg)
         return ActionStatus(False, msg)
 
