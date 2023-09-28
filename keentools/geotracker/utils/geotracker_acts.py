@@ -736,9 +736,15 @@ def bake_texture_from_frames_act(area: Area,
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    preview_material_with_texture(built_texture, geotracker.geomobj,
-                                  geotracker.preview_texture_name(),
-                                  geotracker.preview_material_name())
+    mat, tex = preview_material_with_texture(built_texture, geotracker.geomobj,
+                                             geotracker.preview_texture_name(),
+                                             geotracker.preview_material_name())
+    if tex is not None:
+        try:
+            tex.colorspace_settings.name = \
+                geotracker.movie_clip.colorspace_settings.name
+        except Exception as err:
+            _log.error(f'bake_texture_from_frames_act Exception:\n{str(err)}')
 
     if not check_status.success:
         return ActionStatus(False, f'Done but {check_status.error_message}')

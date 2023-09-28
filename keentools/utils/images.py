@@ -196,6 +196,8 @@ def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
                                   float_buffer=False)
         bg_img.image = img
 
+    img.use_view_as_render = True
+
     if movie_clip.source == 'MOVIE':
         img.source = 'MOVIE'
     else:
