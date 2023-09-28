@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import numpy as np
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 from bpy.types import Object, Area
 
@@ -131,9 +131,9 @@ def bake_texture(geotracker: Any, selected_frames: List[int]) -> Any:
 def preview_material_with_texture(
         built_texture: Any, geomobj: Object,
         tex_name: str = 'kt_reprojected_tex',
-        mat_name: str = 'kt_reproject_preview_mat') -> None:
+        mat_name: str = 'kt_reproject_preview_mat') -> Tuple:
     if built_texture is None:
-        return
+        return None, None
     remove_bpy_texture_if_exists(tex_name)
     img = create_bpy_image_from_np_array(built_texture, tex_name)
     img.pack()
@@ -141,6 +141,7 @@ def preview_material_with_texture(
     mat = show_texture_in_mat(img.name, mat_name)
     assign_material_to_object(geomobj, mat)
     switch_to_mode('MATERIAL')
+    return mat, img
 
 
 _bake_generator_var: Optional[Any] = None

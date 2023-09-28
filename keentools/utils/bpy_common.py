@@ -49,6 +49,14 @@ def bpy_context() -> Any:
     return bpy.context
 
 
+def bpy_objects() -> Any:
+    return bpy.data.objects
+
+
+def bpy_images() -> Any:
+    return bpy.data.images
+
+
 def bpy_scene_camera() -> Camera:
     return bpy.context.scene.camera
 

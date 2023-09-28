@@ -16,11 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy
+from typing import List, Tuple
 import os
 
 from bpy_extras.io_utils import ImportHelper, ExportHelper
-from bpy.types import Operator
+from bpy.types import Operator, OperatorFileListElement
+from bpy.props import BoolProperty, IntProperty, StringProperty, EnumProperty, CollectionProperty
+from bpy.path import ensure_ext
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import get_operator
@@ -31,9 +33,41 @@ from ..utils.exif_reader import (read_exif_to_camera,
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.blendshapes import load_csv_animation_to_blendshapes
 from ..ui_strings import buttons
+from ...utils.bpy_common import bpy_objects, bpy_images
 
 
 _log = KTLogger(__name__)
+
+
+def _image_format_items(default: str = 'PNG',
+                        show_exr: bool = False) -> List[Tuple]:
+    if default == 'PNG':
+        png_num, jpg_num = 0, 1
+    else:
+        png_num, jpg_num = 1, 0
+    exr_num = 2
+    arr = [
+        ('PNG', 'PNG', 'Default image file format with transparency', png_num),
+        ('JPEG', 'JPEG', 'Data loss image format without transparency', jpg_num),
+    ]
+    if show_exr:
+        arr.append(('OPEN_EXR', 'EXR', 'Extended image format with transparency', exr_num))
+    return arr
+
+
+def _filename_ext(file_format: str) -> str:
+    ext = '.jpg'
+    if file_format == 'PNG':
+        ext = '.png'
+    elif file_format == 'JPEG':
+        ext = '.jpg'
+    elif file_format == 'OPEN_EXR':
+        ext = '.exr'
+    return ext
+
+
+def _update_format(self, context):
+    self.filename_ext = _filename_ext(self.file_format)
 
 
 class FB_OT_SingleFilebrowserExec(Operator):
@@ -55,23 +89,23 @@ class FB_OT_SingleFilebrowserExec(Operator):
         return {'FINISHED'}
 
 
-def load_single_image_file(headnum, camnum, filepath):
+def load_single_image_file(headnum: int, camnum: int, filepath: str) -> bool:
         settings = get_fb_settings()
         _log.info('Load image file: {}'.format(filepath))
 
         if not settings.check_heads_and_cams():
             settings.fix_heads()
-            return {'CANCELLED'}
+            return False
 
         FBLoader.load_model(headnum)
 
         try:
-            img = bpy.data.images.load(filepath)
+            img = bpy_images().load(filepath)
             head = settings.get_head(headnum)
             head.get_camera(camnum).cam_image = img
         except RuntimeError:
             _log.error(f'FILE READ ERROR: {filepath}')
-            return {'CANCELLED'}
+            return False
 
         try:
             read_exif_to_camera(headnum, camnum, filepath)
@@ -80,10 +114,12 @@ def load_single_image_file(headnum, camnum, filepath):
 
         camera = head.get_camera(camnum)
         camera.show_background_image()
-        auto_setup_camera_from_exif(camera)
+
+        if not camera.auto_focal_estimation:
+            auto_setup_camera_from_exif(camera)
 
         FBLoader.save_fb_serial_and_image_pathes(headnum)
-        return {'FINISHED'}
+        return True
 
 
 class FB_OT_SingleFilebrowser(Operator, ImportHelper):
@@ -92,24 +128,28 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO'}
 
-    filter_glob: bpy.props.StringProperty(
-        default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp',
-        options={'HIDDEN'}
+    filter_folder: BoolProperty(
+        name='Filter folders',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_image: BoolProperty(
+        name='Filter image',
+        default=True,
+        options={'HIDDEN'},
     )
 
-    headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
-    camnum: bpy.props.IntProperty(name='Camera index', default=0)
+    headnum: IntProperty(name='Head index in scene', default=0)
+    camnum: IntProperty(name='Camera index', default=0)
 
     def draw(self, context):
         pass
 
     def execute(self, context):
-        return load_single_image_file(self.headnum, self.camnum, self.filepath)
+        if load_single_image_file(self.headnum, self.camnum, self.filepath):
+            return {'FINISHED'}
 
-
-def update_format(self, context):
-    ext = '.png' if self.file_format == 'PNG' else '.jpg'
-    self.filename_ext = ext
+        return {'CANCELLED'}
 
 
 class FB_OT_TextureFileExport(Operator, ExportHelper):
@@ -118,30 +158,36 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    filter_glob: bpy.props.StringProperty(
-        default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp',
-        options={'HIDDEN'}
+    filter_folder: BoolProperty(
+        name='Filter folders',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_image: BoolProperty(
+        name='Filter image',
+        default=True,
+        options={'HIDDEN'},
     )
 
-    file_format: bpy.props.EnumProperty(name="Image file format", items=[
-        ('PNG', 'PNG', 'Default image file format', 0),
-        ('JPEG', 'JPEG', 'Data loss image format', 1),
-    ], description="Choose image file format", update=update_format)
+    file_format: EnumProperty(name='Image file format',
+                              description='Choose image file format',
+                              items=_image_format_items(default='PNG'),
+                              update=_update_format)
 
-    check_existing: bpy.props.BoolProperty(
+    check_existing: BoolProperty(
         name='Check Existing',
         description='Check and warn on overwriting existing files',
         default=True,
         options={'HIDDEN'},
     )
 
-    filename_ext: bpy.props.StringProperty(default=".png")
+    filename_ext: StringProperty(default=".png")
 
-    filepath: bpy.props.StringProperty(
+    filepath: StringProperty(
         default='baked_tex',
         subtype='FILE_PATH'
     )
-    headnum: bpy.props.IntProperty(default=0)
+    headnum: IntProperty(default=0)
 
     def check(self, context):
         change_ext = False
@@ -149,10 +195,11 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
         filepath = self.filepath
         sp = os.path.splitext(filepath)
 
-        if sp[1] in {'.jpg', '.', '.png', '.PNG', '.JPG', '.JPEG'}:
+        if sp[1] in {'.jpg', '.', '.png', '.PNG', '.JPG', '.JPEG',
+                     '.jpeg', '.exr', '.EXR'}:
             filepath = sp[0]
 
-        filepath = bpy.path.ensure_ext(filepath, self.filename_ext)
+        filepath = ensure_ext(filepath, self.filename_ext)
 
         if filepath != self.filepath:
             self.filepath = filepath
@@ -199,7 +246,7 @@ class FB_OT_MultipleFilebrowserExec(Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO'}
 
-    headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
+    headnum: IntProperty(name='Head index in scene', default=0)
 
     def draw(self, context):
         pass
@@ -216,21 +263,27 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
-    filter_glob: bpy.props.StringProperty(
-        default='*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp',
-        options={'HIDDEN'}
+    filter_folder: BoolProperty(
+        name='Filter folders',
+        default=True,
+        options={'HIDDEN'},
+    )
+    filter_image: BoolProperty(
+        name='Filter image',
+        default=True,
+        options={'HIDDEN'},
     )
 
-    files: bpy.props.CollectionProperty(
-        name="File Path",
-        type=bpy.types.OperatorFileListElement,
+    files: CollectionProperty(
+        name='File Path',
+        type=OperatorFileListElement,
     )
 
-    directory: bpy.props.StringProperty(
+    directory: StringProperty(
             subtype='DIR_PATH',
     )
 
-    headnum: bpy.props.IntProperty(name='Head index in scene', default=0)
+    headnum: IntProperty(name='Head index in scene', default=0)
 
     def draw(self, context):
         layout = self.layout
@@ -283,18 +336,18 @@ class FB_OT_AnimationFilebrowser(Operator, ImportHelper):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO'}
 
-    filter_glob: bpy.props.StringProperty(
+    filter_glob: StringProperty(
         default='*.csv',
         options={'HIDDEN'}
     )
 
-    obj_name: bpy.props.StringProperty(name='Object Name in scene')
+    obj_name: StringProperty(name='Object Name in scene')
 
     def draw(self, context):
         pass
 
     def execute(self, context):
-        obj = bpy.data.objects[self.obj_name]
+        obj = bpy_objects()[self.obj_name]
         assert obj.type == 'MESH'
 
         res = load_csv_animation_to_blendshapes(obj, self.filepath)

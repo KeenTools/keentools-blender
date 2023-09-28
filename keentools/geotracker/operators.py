@@ -909,7 +909,7 @@ class GT_OT_AddBakeFrame(ButtonOperator, Operator):
         res = check_background_image_absent_frames(geotracker.camobj, index=0,
                                                    frames=[frame])
         if len(res) > 0:
-            msg = f'This frame [{frame}] is out of movieclip range'
+            msg = f'Frame [{frame}] is outside of Clip range'
             self.report({'ERROR'}, msg)
             return {'CANCELLED'}
 

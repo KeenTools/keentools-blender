@@ -69,7 +69,7 @@ buttons = {
         'Take snapshot of current frame'
     ),
     GTConfig.gt_bake_from_selected_frames_idname: Button(
-        'Create texture',
+        'Create Texture',
         'Project and bake texture from selected frames onto Geometry'
     ),
     GTConfig.gt_reproject_tex_sequence_idname: Button(
@@ -89,16 +89,16 @@ buttons = {
         'Are you sure to recreate analysis file?'
     ),
     GTConfig.gt_texture_bake_options_idname: Button(
-        'Texture options',
+        'Texture settings',
         'Setup texture options for baking'
     ),
     GTConfig.gt_texture_file_export_idname: Button(
         'Export texture',
-        'Export the created texture to a file'
+        'Export texture to file'
     ),
     GTConfig.gt_delete_texture_idname: Button(
         'Delete texture',
-        'Delete the created texture from the scene'
+        'Delete texture from scene'
     ),
 
     # Main UI
@@ -275,8 +275,8 @@ buttons = {
         'Remove selected frame from bake list'
     ),
     GTConfig.gt_go_to_bake_frame_idname: Button(
-        'Go to frame',
-        'Rewind to this frame'
+        'Go to',
+        'Jump to this frame'
     ),
     GTConfig.gt_transfer_tracking_idname: Button(
         'Convert',

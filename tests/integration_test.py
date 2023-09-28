@@ -180,7 +180,7 @@ class FaceBuilderTest(unittest.TestCase):
         camnum = 1
         res = test_utils.create_camera_from_image(
             headnum=headnum, camnum=camnum, filename=filename)
-        self.assertEqual(res, {'FINISHED'})
+        self.assertEqual(res, True)
         head = settings.get_head(headnum)
         camera = head.get_camera(camnum)
         # Test EXIF read
@@ -191,7 +191,7 @@ class FaceBuilderTest(unittest.TestCase):
         filename = os.path.join(dir, 'images/ana_blue_24x16.tif')
         res = test_utils.create_camera_from_image(
             headnum=headnum, camnum=camnum, filename=filename)
-        self.assertEqual(res, {'FINISHED'})
+        self.assertEqual(res, True)
 
         tex_name = materials.bake_tex(headnum=0, tex_name='bake_texture_name')
         self.assertTrue(tex_name is not None)

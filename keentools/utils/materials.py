@@ -108,7 +108,8 @@ def remove_mat_by_name(name: str) -> None:
 def make_node_shader_matte(node: Any) -> None:
     if BVersion.principled_shader_has_specular:
         node.inputs['Specular'].default_value = 0.0
-
+    else:
+        node.inputs['IOR'].default_value = 1.0
 
 def show_texture_in_mat(tex_name: str, mat_name: str) -> Material:
     tex = find_bpy_image_by_name(tex_name)

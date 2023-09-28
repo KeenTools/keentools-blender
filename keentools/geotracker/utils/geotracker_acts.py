@@ -714,7 +714,7 @@ def bake_texture_from_frames_act(area: Area,
     absent_frames = check_background_image_absent_frames(
         geotracker.camobj, index=0, frames=selected_frames)
     if len(absent_frames) > 0:
-        return ActionStatus(False, f'Frames are not in the range: {absent_frames}')
+        return ActionStatus(False, f'Frames {absent_frames} are outside of Clip range')
 
     check_status = check_uv_overlapping_with_status(geotracker)
 
@@ -730,15 +730,21 @@ def bake_texture_from_frames_act(area: Area,
     if built_texture is None:
         bad_frame = get_bad_frame()
         if bad_frame < 0:
-            msg = 'Texture has not been created'
+            msg = 'Operation failed'
         else:
-            msg = f'Frame {bad_frame} cannot be loaded'
+            msg = f'Frame {bad_frame} read error'
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    preview_material_with_texture(built_texture, geotracker.geomobj,
-                                  geotracker.preview_texture_name(),
-                                  geotracker.preview_material_name())
+    mat, tex = preview_material_with_texture(built_texture, geotracker.geomobj,
+                                             geotracker.preview_texture_name(),
+                                             geotracker.preview_material_name())
+    if tex is not None:
+        try:
+            tex.colorspace_settings.name = \
+                geotracker.movie_clip.colorspace_settings.name
+        except Exception as err:
+            _log.error(f'bake_texture_from_frames_act Exception:\n{str(err)}')
 
     if not check_status.success:
         return ActionStatus(False, f'Done but {check_status.error_message}')
