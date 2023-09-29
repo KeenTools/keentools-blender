@@ -626,7 +626,9 @@ class GTSceneSettings(PropertyGroup):
             ('GEOMETRY', 'Geometry',
             'Use Geometry as animation source', 0),
             ('CAMERA', 'Camera',
-             'Use Camera as animation source', 1),],
+             'Use Camera as animation source', 1),
+            ('SELECTED_PINS', 'Selected pins',
+             'Use selected pins as animation source', 2),],
         description='Create an animated Empty from')
 
     export_linked_locator: BoolProperty(

@@ -507,8 +507,8 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
-    def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+    def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke')
         check_status = common_checks(object_mode=True, is_calculating=True,
                                      geotracker=True)
         if not check_status.success:
@@ -516,18 +516,42 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         settings = get_gt_settings()
+        if settings.export_locator_selector == 'SELECTED_PINS':
+            check_status = common_checks(pinmode=True, geotracker=True,
+                                         geometry=True, camera=True,
+                                         reload_geotracker=True)
+            if not check_status.success:
+                self.report({'ERROR'}, check_status.error_message)
+                return {'CANCELLED'}
+        return self.execute(context)
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+
+        settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
 
-        obj = geotracker.geomobj \
-            if settings.export_locator_selector == 'GEOMETRY' \
-            else geotracker.camobj
+        if settings.export_locator_selector == 'GEOMETRY':
+            act_status = create_animated_empty_act(
+                geotracker.geomobj, settings.export_linked_locator)
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+                return {'CANCELLED'}
+            return {'FINISHED'}
+        elif settings.export_locator_selector == 'GEOMETRY':
+            act_status = create_animated_empty_act(
+                geotracker.camobj, settings.export_linked_locator)
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+                return {'CANCELLED'}
+            return {'FINISHED'}
+        elif settings.export_locator_selector == 'SELECTED_PINS':
+            return {'FINISHED'}
 
-        act_status = create_animated_empty_act(obj,
-                                               settings.export_linked_locator)
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
-            return {'CANCELLED'}
-        return {'FINISHED'}
+        msg = 'Unknown selector state'
+        _log.error(msg)
+        self.report({'ERROR'}, msg)
+        return {'CANCELLED'}
 
 
 class GT_OT_ExitPinMode(ButtonOperator, Operator):
