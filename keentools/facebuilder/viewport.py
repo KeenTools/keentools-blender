@@ -27,7 +27,7 @@ from ..facebuilder_config import FBConfig, get_fb_settings
 from ..utils.bpy_common import bpy_render_frame, bpy_background_mode
 from ..utils.coords import (multiply_verts_on_matrix_4x4,
                             pin_to_xyz_from_mesh,
-                            pin_to_xyz_from_fb_geo_mesh,
+                            pin_to_xyz_from_geo_mesh,
                             xy_to_xz_rotation_matrix_3x3,
                             frame_to_image_space,
                             image_space_to_region,
@@ -165,7 +165,7 @@ class FBViewport(KTViewport):
         verts = np.empty((pins_count, 3), dtype=np.float32)
         for i in range(fb.pins_count(keyframe)):
             pin = fb.pin(keyframe, i)
-            p = pin_to_xyz_from_fb_geo_mesh(pin, geo_mesh)
+            p = pin_to_xyz_from_geo_mesh(pin, geo_mesh)
             verts[i] = p
         # tolist() is needed by shader batch on Mac
         return (verts @ xy_to_xz_rotation_matrix_3x3()).tolist()

@@ -42,6 +42,8 @@ from ..geotracker_config import (GTConfig,
                                  get_current_geotracker_item)
 from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_set_current_frame,
+                                bpy_start_frame,
+                                bpy_end_frame,
                                 bpy_background_mode,
                                 bpy_show_addon_preferences,
                                 bpy_scene,
@@ -66,6 +68,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     toggle_pins_act,
                                     center_geo_act,
                                     create_animated_empty_act,
+                                    create_empty_from_selected_pins_act,
                                     bake_texture_from_frames_act,
                                     transfer_tracking_to_camera_act,
                                     transfer_tracking_to_geometry_act,
@@ -507,8 +510,28 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    from_frame: IntProperty(name='from', default=1)
+    to_frame: IntProperty(name='to', default=1)
+
+    done: BoolProperty(default=False)
+
+    def draw(self, context):
+        layout = self.layout
+        if self.done:
+            layout.label(text='Operation has been done')
+            return
+
+        layout.label(text='Frame range:')
+        row = layout.row()
+        row.prop(self, 'from_frame', expand=True)
+        row.prop(self, 'to_frame', expand=True)
+
     def invoke(self, context, event):
         _log.output(f'{self.__class__.__name__} invoke')
+        self.done = False
+        self.from_frame = bpy_start_frame()
+        self.to_frame = bpy_end_frame()
+
         check_status = common_checks(object_mode=True, is_calculating=True,
                                      geotracker=True)
         if not check_status.success:
@@ -523,10 +546,14 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
             if not check_status.success:
                 self.report({'ERROR'}, check_status.error_message)
                 return {'CANCELLED'}
+
+            if not settings.export_linked_locator:
+                return context.window_manager.invoke_props_dialog(self, width=400)
         return self.execute(context)
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
+        self.done = True
 
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
@@ -538,6 +565,7 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
                 self.report({'ERROR'}, act_status.error_message)
                 return {'CANCELLED'}
             return {'FINISHED'}
+
         elif settings.export_locator_selector == 'GEOMETRY':
             act_status = create_animated_empty_act(
                 geotracker.camobj, settings.export_linked_locator)
@@ -545,7 +573,21 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
                 self.report({'ERROR'}, act_status.error_message)
                 return {'CANCELLED'}
             return {'FINISHED'}
+
         elif settings.export_locator_selector == 'SELECTED_PINS':
+            if len(GTLoader.viewport().pins().get_selected_pins()) == 0:
+                msg = 'No pins selected'
+                _log.error(msg)
+                self.report({'ERROR'}, msg)
+                return {'CANCELLED'}
+
+            act_status = create_empty_from_selected_pins_act(
+                self.from_frame, self.to_frame,
+                settings.export_linked_locator)
+            if not act_status.success:
+                _log.error(act_status.error_message)
+                self.report({'ERROR'}, act_status.error_message)
+                return {'CANCELLED'}
             return {'FINISHED'}
 
         msg = 'Unknown selector state'

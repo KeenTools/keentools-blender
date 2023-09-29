@@ -81,7 +81,10 @@ from ...utils.coords import (LocRotScale,
                              LocRotWithoutScale,
                              ScaleMatrix,
                              InvScaleMatrix,
-                             change_near_and_far_clip_planes)
+                             change_near_and_far_clip_planes,
+                             pin_to_xyz_from_geo_mesh,
+                             xy_to_xz_rotation_matrix_3x3,
+                             multiply_verts_on_matrix_4x4)
 from .textures import bake_texture, preview_material_with_texture, get_bad_frame
 from ..interface.screen_mesages import clipping_changed_screen_message
 
@@ -607,6 +610,74 @@ def create_animated_empty_act(obj: Object, linked: bool=False,
         obj.matrix_world = obj_matrix_world
         empty.matrix_world = obj_matrix_world
         select_object_only(empty)
+
+    return ActionStatus(True, 'ok')
+
+
+def create_empty_from_selected_pins_act(from_frame: int, to_frame: int,
+                                        linked: bool = False) -> ActionStatus:
+    check_status = common_checks(object_mode=True, pinmode=True,
+                                 is_calculating=True, reload_geotracker=True,
+                                 geotracker=True, camera=True, geometry=True)
+    if not check_status.success:
+        return check_status
+
+    if from_frame < 0 or to_frame < from_frame:
+        return ActionStatus(False, 'Wrong frame range')
+
+    geotracker = get_current_geotracker_item()
+    gt = GTLoader.kt_geotracker()
+
+    pins = GTLoader.viewport().pins()
+    pins_count = gt.pins_count()
+    selected_pins = pins.get_selected_pins(pins_count)
+    selected_pins_count = len(selected_pins)
+    if selected_pins_count == 0:
+        return ActionStatus(False, 'No pins selected')
+
+    current_frame = bpy_current_frame()
+    geo = gt.geo()
+    geo_mesh = geo.mesh(0)
+
+    points = np.empty((selected_pins_count, 3), dtype=np.float32)
+    for i, pin_index in enumerate(selected_pins):
+        pin = gt.pin(current_frame, pin_index)
+        points[i] = pin_to_xyz_from_geo_mesh(pin, geo_mesh)
+
+    pin_positions = points @ xy_to_xz_rotation_matrix_3x3()
+
+    empties = []
+    for pos in pin_positions:
+        empty = create_empty_object('gtPin')
+        empty.empty_display_type = 'ARROWS'
+        empty.location = pos
+        empty.parent = geotracker.geomobj
+        empties.append(empty)
+
+    if linked:
+        return ActionStatus(True, 'ok')
+
+    source_matrices = {}
+    for frame in range(from_frame, to_frame + 1):
+        bpy_set_current_frame(frame)
+        matrices = []
+        for empty in empties:
+            matrices.append(empty.matrix_world.copy())
+        source_matrices[frame] = matrices
+
+    bpy_set_current_frame(current_frame)
+
+    for empty in empties:
+        empty.parent = None
+
+    for frame in range(from_frame, to_frame + 1):
+        bpy_set_current_frame(frame)
+        for i, empty in enumerate(empties):
+            empty.matrix_world = source_matrices[frame][i]
+            update_depsgraph()
+            create_animation_locrot_keyframe_force(empty)
+
+    bpy_set_current_frame(current_frame)
 
     return ActionStatus(True, 'ok')
 

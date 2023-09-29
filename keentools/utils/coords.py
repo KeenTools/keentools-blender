@@ -231,8 +231,8 @@ def pin_to_xyz_from_mesh(
     return p
 
 
-def pin_to_xyz_from_fb_geo_mesh(pin: Any, geo_mesh: Any) -> Tuple[float, float, float]:
-    """ Surface point from barycentric to XYZ using fb geo_mesh"""
+def pin_to_xyz_from_geo_mesh(pin: Any, geo_mesh: Any) -> Tuple[float, float, float]:
+    """ Surface point from barycentric to XYZ using geo_mesh"""
     sp = pin.surface_point
     gp = sp.geo_point_idxs
     bar = sp.barycentric_coordinates
