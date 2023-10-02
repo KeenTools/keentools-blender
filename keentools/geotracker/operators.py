@@ -514,8 +514,9 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
     to_frame: IntProperty(name='to', default=1)
 
     orientation: EnumProperty(name='Orientation', items=[
-        ('NORMAL', 'Normal aligned', 'Use normal direction of polygons', 0),
-        ('WORLD', 'World aligned', 'World aligned at start position', 1),
+        ('NORMAL', 'Normal', 'Use normal direction of polygons', 0),
+        ('OBJECT', 'Object', 'Use orientation aligned with Object Pivot', 1),
+        ('WORLD', 'World', 'World aligned at start position', 2),
     ])
 
     size: FloatProperty(name='Empty size', default=1.0)

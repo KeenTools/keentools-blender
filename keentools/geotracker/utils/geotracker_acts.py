@@ -649,6 +649,7 @@ def create_empty_from_selected_pins_act(
         normals.append(pin_to_normal_from_geo_mesh(pin, geo_mesh))
 
     pin_positions = points @ xy_to_xz_rotation_matrix_3x3()
+    scale_inv = InvScaleMatrix(3, geotracker.geomobj.matrix_world.to_scale())
 
     empties = []
     zv = Vector((0, 0, 1))
@@ -663,10 +664,9 @@ def create_empty_from_selected_pins_act(
                 xy_to_xz_rotation_matrix_3x3()).to_matrix().to_4x4()
             empty.matrix_world = quaternion_matrix
 
-        empty.location = pos
+        empty.location = pos @ scale_inv
         empty.parent = geotracker.geomobj
         empties.append(empty)
-
 
     if linked:
         return ActionStatus(True, 'ok')
