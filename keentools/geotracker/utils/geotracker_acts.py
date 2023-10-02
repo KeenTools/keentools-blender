@@ -21,7 +21,7 @@ import numpy as np
 
 import bpy
 from bpy.types import Object, Operator, Area
-from mathutils import Matrix, Euler
+from mathutils import Matrix, Euler, Vector
 
 from ...utils.kt_logging import KTLogger
 from ...utils.version import BVersion
@@ -83,6 +83,7 @@ from ...utils.coords import (LocRotScale,
                              InvScaleMatrix,
                              change_near_and_far_clip_planes,
                              pin_to_xyz_from_geo_mesh,
+                             pin_to_normal_from_geo_mesh,
                              xy_to_xz_rotation_matrix_3x3,
                              multiply_verts_on_matrix_4x4)
 from .textures import bake_texture, preview_material_with_texture, get_bad_frame
@@ -614,8 +615,9 @@ def create_animated_empty_act(obj: Object, linked: bool=False,
     return ActionStatus(True, 'ok')
 
 
-def create_empty_from_selected_pins_act(from_frame: int, to_frame: int,
-                                        linked: bool = False) -> ActionStatus:
+def create_empty_from_selected_pins_act(
+        from_frame: int, to_frame: int, linked: bool = False,
+        orientation: str = 'NORMAL', size: float = 1.0) -> ActionStatus:
     check_status = common_checks(object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
                                  geotracker=True, camera=True, geometry=True)
@@ -640,19 +642,31 @@ def create_empty_from_selected_pins_act(from_frame: int, to_frame: int,
     geo_mesh = geo.mesh(0)
 
     points = np.empty((selected_pins_count, 3), dtype=np.float32)
+    normals = []
     for i, pin_index in enumerate(selected_pins):
         pin = gt.pin(current_frame, pin_index)
         points[i] = pin_to_xyz_from_geo_mesh(pin, geo_mesh)
+        normals.append(pin_to_normal_from_geo_mesh(pin, geo_mesh))
 
     pin_positions = points @ xy_to_xz_rotation_matrix_3x3()
 
     empties = []
-    for pos in pin_positions:
+    zv = Vector((0, 0, 1))
+    for i, pos in enumerate(pin_positions):
         empty = create_empty_object('gtPin')
         empty.empty_display_type = 'ARROWS'
+        empty.empty_display_size = size
+
+        if orientation == 'NORMAL':
+            quaternion_matrix = zv.rotation_difference(
+                np.array(normals[i], dtype=np.float32) @
+                xy_to_xz_rotation_matrix_3x3()).to_matrix().to_4x4()
+            empty.matrix_world = quaternion_matrix
+
         empty.location = pos
         empty.parent = geotracker.geomobj
         empties.append(empty)
+
 
     if linked:
         return ActionStatus(True, 'ok')

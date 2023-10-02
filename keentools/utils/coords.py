@@ -20,7 +20,7 @@ import math
 from typing import Any, Tuple, List, Optional, Set, Callable
 
 from bpy.types import Area, Object
-from mathutils import Matrix, Quaternion
+from mathutils import Matrix, Quaternion, Vector
 
 from .version import BVersion
 from .kt_logging import KTLogger
@@ -241,6 +241,15 @@ def pin_to_xyz_from_geo_mesh(pin: Any, geo_mesh: Any) -> Tuple[float, float, flo
     v3 = geo_mesh.point(gp[2])
     p = v1 * bar[0] + v2 * bar[1] + v3 * bar[2]
     return p
+
+
+def pin_to_normal_from_geo_mesh(pin: Any, geo_mesh: Any) -> Vector:
+    sp = pin.surface_point
+    gp = sp.geo_point_idxs
+    v1 = geo_mesh.point(gp[0])
+    v2 = geo_mesh.point(gp[1])
+    v3 = geo_mesh.point(gp[2])
+    return Vector(np.cross(v2 - v1, v3 - v2)).normalized()
 
 
 def calc_model_mat(model_mat: Any, head_mat: Any) -> Optional[Any]:

@@ -513,6 +513,13 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
     from_frame: IntProperty(name='from', default=1)
     to_frame: IntProperty(name='to', default=1)
 
+    orientation: EnumProperty(name='Orientation', items=[
+        ('NORMAL', 'Normal aligned', 'Use normal direction of polygons', 0),
+        ('WORLD', 'World aligned', 'World aligned at start position', 1),
+    ])
+
+    size: FloatProperty(name='Empty size', default=1.0)
+
     done: BoolProperty(default=False)
 
     def draw(self, context):
@@ -523,8 +530,10 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
 
         layout.label(text='Frame range:')
         row = layout.row()
-        row.prop(self, 'from_frame', expand=True)
-        row.prop(self, 'to_frame', expand=True)
+        row.prop(self, 'from_frame')
+        row.prop(self, 'to_frame')
+        layout.prop(self, 'orientation')
+        layout.prop(self, 'size')
 
     def invoke(self, context, event):
         _log.output(f'{self.__class__.__name__} invoke')
@@ -548,7 +557,7 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
                 return {'CANCELLED'}
 
             if not settings.export_linked_locator:
-                return context.window_manager.invoke_props_dialog(self, width=400)
+                return context.window_manager.invoke_props_dialog(self, width=350)
         return self.execute(context)
 
     def execute(self, context):
@@ -583,7 +592,8 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
 
             act_status = create_empty_from_selected_pins_act(
                 self.from_frame, self.to_frame,
-                settings.export_linked_locator)
+                linked=settings.export_linked_locator,
+                orientation=self.orientation, size=self.size)
             if not act_status.success:
                 _log.error(act_status.error_message)
                 self.report({'ERROR'}, act_status.error_message)
