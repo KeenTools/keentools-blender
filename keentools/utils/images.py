@@ -21,13 +21,16 @@ from typing import Any, Callable, Optional, Tuple, List
 import re
 import os
 
-import bpy
 from bpy.types import Image, Camera, Object, MovieClip
 
 from .version import BVersion
 from .kt_logging import KTLogger
 from ..addon_config import Config
-from .bpy_common import bpy_start_frame, bpy_end_frame, bpy_current_frame
+from .bpy_common import (bpy_start_frame,
+                         bpy_end_frame,
+                         bpy_current_frame,
+                         bpy_images,
+                         bpy_abspath)
 
 
 _log = KTLogger(__name__)
@@ -161,7 +164,8 @@ def show_background_images(camobj: Camera, reload: bool=False) -> None:
     cam_data.show_background_images = True
 
 
-def get_sequence_file_number(filename: str) -> int:
+def get_sequence_file_number(filepath: str) -> int:
+    filename = os.path.basename(bpy_abspath(filepath))
     name, _ = os.path.splitext(filename)
     regex = re.compile(r'\d+$')
     regex.findall(name)
@@ -192,7 +196,7 @@ def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
     img = bg_img.image
     if not img:
         w, h = movie_clip.size[:]
-        img = bpy.data.images.new(name, width=w, height=h, alpha=True,
+        img = bpy_images().new(name, width=w, height=h, alpha=True,
                                   float_buffer=False)
         bg_img.image = img
 
@@ -209,9 +213,11 @@ def set_background_image_by_movieclip(camobj: Camera, movie_clip: MovieClip,
     bg_img.image_user.use_auto_refresh = True
 
     if movie_clip.source == 'SEQUENCE':
-        file_number = get_sequence_file_number(
-            os.path.basename(movie_clip.filepath))
+        file_number = get_sequence_file_number(movie_clip.filepath)
+        if file_number < 0:
+            file_number = 1
         bg_img.image_user.frame_offset = file_number - 1
+        _log.output(f'path: [{file_number}]\n{movie_clip.filepath}')
 
     try:
         img.colorspace_settings.name = movie_clip.colorspace_settings.name
@@ -237,21 +243,21 @@ def set_background_image_mask(camobj: Camera, mask: Image) -> bool:
 
 
 def find_bpy_image_by_name(image_name: str) -> Optional[Image]:
-    image_num = bpy.data.images.find(image_name)
+    image_num = bpy_images().find(image_name)
     if image_num >= 0:
-        return bpy.data.images[image_num]
+        return bpy_images()[image_num]
     return None
 
 
 def remove_bpy_image(image: Optional[Image]) -> None:
-    if image and image.name in bpy.data.images.keys():
-        bpy.data.images.remove(image)
+    if image and image.name in bpy_images().keys():
+        bpy_images().remove(image)
 
 
 def remove_bpy_image_by_name(image_name: str) -> None:
     image = find_bpy_image_by_name(image_name)
     if image is not None:
-        bpy.data.images.remove(image)
+        bpy_images().remove(image)
 
 
 def store_bpy_image_in_scene(image: Image) -> None:
@@ -343,9 +349,8 @@ def tone_mapping(cam_image, exposure, gamma):
 
 
 def create_compatible_bpy_image(np_img: Any, name: str = 'tmp_name') -> Any:
-    img = bpy.data.images.new(name,
-                              width=np_img.shape[1], height=np_img.shape[0],
-                              alpha=True, float_buffer=False)
+    img = bpy_images().new(name, width=np_img.shape[1], height=np_img.shape[0],
+                           alpha=True, float_buffer=False)
     return img
 
 
