@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Optional, Callable
 import numpy as np
 
 from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
@@ -69,7 +69,10 @@ class GTViewport(KTViewport):
                                             UserPreferences.type_color),
             UserPreferences.get_value_safe('gt_mask_2d_opacity',
                                            UserPreferences.type_float)))
-        self._draw_update_timer_handler = None
+        self._draw_update_timer_handler: Optional[Callable] = None
+
+        self.stabilize_image_point: Tuple[float, float] = (0.0, 0.0)
+        self.stabilize_area_point: Tuple[float, float] = (0.0, 0.0)
 
     def get_all_viewport_shader_objects(self) -> List:
         return [self._texter,

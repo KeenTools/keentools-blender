@@ -323,38 +323,46 @@ def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
     return x1, y1, x2, y2
 
 
-def calc_view_camera_parameters(area: Area, x1: int, y1: int,
+def calc_camera_view_parameters(area: Area, x1: int, y1: int,
                                 width: int) -> Tuple[float, Tuple[float, float]]:
     region = get_area_region(area)
-    w = region.width
-    h = region.height
+    reg_w, reg_h = region.width, region.height
     rx, ry = bpy_render_frame()
-    a1 = w / h
-    a2 = rx / ry
-    x2 = x1 + width
-    y2 = width / a2
-    kx = (x2 - x1) / w
-    ky = (y2 - y1) / h
-    if a1 >= 1.0:
-        if a2 >= 1.0:
+    reg_a1 = reg_w / reg_h
+    render_a2 = rx / ry
+    kx = width / reg_w
+    if reg_a1 >= 1.0:
+        if render_a2 >= 1.0:
             f = kx
-            ky = f * a1 / a2
+            ky = f * reg_a1 / render_a2
         else:
-            f = kx / a2
-            ky = f * a1
+            f = kx / render_a2
+            ky = f * reg_a1
     else:
-        if a2 < 1.0:
-            f = kx * a1 / a2
+        if render_a2 < 1.0:
+            f = kx * reg_a1 / render_a2
             ky = f
         else:
-            f = kx * a1
-            ky = f / a2
+            f = kx * reg_a1
+            ky = f / render_a2
     z = (math.sqrt(f) - math.sqrt(0.5)) * 100.0
-    offset_x = w * 0.5 - kx * w * 0.5 - x1
-    offset_y = h * 0.5 - ky * h * 0.5 - y1
-    offset = (offset_x / (w * 2 * f),
-              offset_y / (h * 2 * f))
+    offset_x = reg_w * 0.5 * (1.0 - kx) - x1
+    offset_y = reg_h * 0.5 * (1.0 - ky) - y1
+    offset = (offset_x / (reg_w * 2 * f),
+              offset_y / (reg_h * 2 * f))
     return z, offset
+
+
+def calc_camera_to_place_point(
+        area: Area, width: int, area_x: float = 0, area_y: float = 0,
+        image_x: float = 0,
+        image_y: float = 0) -> Tuple[float, Tuple[float, float]]:
+    rx, ry = bpy_render_frame()
+    k = width / rx
+    x1 = area_x - image_x * k
+    y1 = area_y - image_y * k
+    return calc_camera_view_parameters(area, width=width,
+                                       x1=int(round(x1)), y1=int(round(y1)))
 
 
 def point_is_in_area(area: Area, x: float, y: float, *,

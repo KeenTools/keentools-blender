@@ -681,6 +681,8 @@ class GTSceneSettings(PropertyGroup):
         description='Automatically apply the created texture',
         name='Automatically apply the created texture', default=True)
 
+    stabilize_viewport: BoolProperty(default=False)
+
     @contextmanager
     def ui_write_mode_context(self):
         self.ui_write_mode = True
