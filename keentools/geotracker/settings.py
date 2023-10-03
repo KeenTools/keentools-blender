@@ -637,6 +637,12 @@ class GTSceneSettings(PropertyGroup):
                     'animation data to use it independently',
         default=False)
 
+    export_locator_orientation: EnumProperty(name='Empty Orientation', items=[
+        ('NORMAL', 'Normal', 'Use normal direction of polygons', 0),
+        ('OBJECT', 'Object', 'Use orientation aligned with Object Pivot', 1),
+        ('WORLD', 'World', 'World aligned at start position', 2),
+    ])
+
     tex_width: IntProperty(
         description='Width size of output texture',
         name='Width', default=2048)

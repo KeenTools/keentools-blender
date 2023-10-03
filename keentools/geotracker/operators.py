@@ -510,37 +510,11 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
-    from_frame: IntProperty(name='from', default=1)
-    to_frame: IntProperty(name='to', default=1)
-
-    orientation: EnumProperty(name='Orientation', items=[
-        ('NORMAL', 'Normal', 'Use normal direction of polygons', 0),
-        ('OBJECT', 'Object', 'Use orientation aligned with Object Pivot', 1),
-        ('WORLD', 'World', 'World aligned at start position', 2),
-    ])
-
-    size: FloatProperty(name='Empty size', default=1.0)
-
-    done: BoolProperty(default=False)
-
     def draw(self, context):
-        layout = self.layout
-        if self.done:
-            layout.label(text='Operation has been done')
-            return
-
-        layout.label(text='Frame range:')
-        row = layout.row()
-        row.prop(self, 'from_frame')
-        row.prop(self, 'to_frame')
-        layout.prop(self, 'orientation')
-        layout.prop(self, 'size')
+        return
 
     def invoke(self, context, event):
         _log.output(f'{self.__class__.__name__} invoke')
-        self.done = False
-        self.from_frame = bpy_start_frame()
-        self.to_frame = bpy_end_frame()
 
         check_status = common_checks(object_mode=True, is_calculating=True,
                                      geotracker=True)
@@ -557,13 +531,10 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
                 self.report({'ERROR'}, check_status.error_message)
                 return {'CANCELLED'}
 
-            if not settings.export_linked_locator:
-                return context.window_manager.invoke_props_dialog(self, width=350)
         return self.execute(context)
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        self.done = True
 
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
@@ -592,9 +563,9 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
                 return {'CANCELLED'}
 
             act_status = create_empty_from_selected_pins_act(
-                self.from_frame, self.to_frame,
+                bpy_start_frame(), bpy_end_frame(),
                 linked=settings.export_linked_locator,
-                orientation=self.orientation, size=self.size)
+                orientation=settings.export_locator_orientation)
             if not act_status.success:
                 _log.error(act_status.error_message)
                 self.report({'ERROR'}, act_status.error_message)

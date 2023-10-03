@@ -628,6 +628,7 @@ def create_empty_from_selected_pins_act(
         return ActionStatus(False, 'Wrong frame range')
 
     geotracker = get_current_geotracker_item()
+    geomobj = geotracker.geomobj
     gt = GTLoader.kt_geotracker()
 
     pins = GTLoader.viewport().pins()
@@ -649,10 +650,12 @@ def create_empty_from_selected_pins_act(
         normals.append(pin_to_normal_from_geo_mesh(pin, geo_mesh))
 
     pin_positions = points @ xy_to_xz_rotation_matrix_3x3()
-    scale_inv = InvScaleMatrix(3, geotracker.geomobj.matrix_world.to_scale())
+    scale_inv = InvScaleMatrix(3, geomobj.matrix_world.to_scale())
+    inv_mat = geomobj.matrix_world.inverted_safe()
 
     empties = []
     zv = Vector((0, 0, 1))
+
     for i, pos in enumerate(pin_positions):
         empty = create_empty_object('gtPin')
         empty.empty_display_type = 'ARROWS'
@@ -663,6 +666,8 @@ def create_empty_from_selected_pins_act(
                 np.array(normals[i], dtype=np.float32) @
                 xy_to_xz_rotation_matrix_3x3()).to_matrix().to_4x4()
             empty.matrix_world = quaternion_matrix
+        elif orientation == 'WORLD':
+            empty.matrix_world = inv_mat
 
         empty.location = pos @ scale_inv
         empty.parent = geotracker.geomobj
