@@ -32,11 +32,11 @@ _log_colors = {
 
 
 class KTLogger():
-    def __init__(self, name, *, output: str='debug',
-                 info_color: Optional[str]=None,
-                 debug_color: Optional[str]=None,
-                 warning_color: Optional[str]='yellow',
-                 error_color: Optional[str]='red'):
+    def __init__(self, name, *, output: str = 'debug',
+                 info_color: Optional[str] = None,
+                 debug_color: Optional[str] = None,
+                 warning_color: Optional[str] = 'yellow',
+                 error_color: Optional[str] = 'red'):
         self._logger = logging.getLogger(name)
         self._info_color = info_color
         self._debug_color = debug_color

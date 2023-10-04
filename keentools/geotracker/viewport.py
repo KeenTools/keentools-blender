@@ -237,7 +237,7 @@ class GTViewport(KTViewport):
 
         mask = self.mask2d()
         if mask.image:
-            _log.output(f'create_batch_2d mask.image:{mask.image}')
+            _log.output(f'create_batch_2d mask.image: {mask.image}')
             mask.left = image_space_to_region(-0.5, -asp * 0.5, x1, y1, x2, y2)
             w, h = mask.image.size[:]
             mask.right = image_space_to_region(

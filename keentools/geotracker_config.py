@@ -50,6 +50,8 @@ class GTConfig:
         operators + '.split_video_to_frames_exec'
     gt_video_snapshot_idname = operators + '.video_snapshot'
     gt_reproject_tex_sequence_idname = operators + '.reproject_tex_sequence'
+    gt_texture_file_export_idname = operators + '.texture_file_export'
+    gt_delete_texture_idname = operators + '.delete_texture'
     gt_track_to_start_idname = operators + '.track_to_start_btn'
     gt_track_to_end_idname = operators + '.track_to_end_btn'
     gt_track_next_idname = operators + '.track_next_btn'
@@ -86,10 +88,11 @@ class GTConfig:
     gt_repack_overlapping_uv_idname = operators + '.repack_overlapping_uv'
     gt_create_non_overlapping_uv_idname = \
         operators + '.create_non_overlapping_uv'
-    gt_reproject_frame_idname = operators + '.reproject_current_frame'
-    gt_select_frames_for_bake_idname = operators + '.select_frames_for_bake'
-    gt_select_all_bake_frames_idname = operators + '.select_all_bake_frames'
-    gt_deselect_all_bake_frames_idname = operators + '.deselect_all_bake_frames'
+    gt_bake_from_selected_frames_idname = operators + '.bake_from_selected_frames'
+    gt_add_bake_frame_idname = operators + '.add_bake_frame'
+    gt_remove_bake_frame_idname = operators + '.remove_bake_frame'
+    gt_go_to_bake_frame_idname = operators + '.go_to_bake_frame'
+    gt_texture_bake_options_idname = operators + '.texture_bake_options'
 
     gt_export_animated_empty_idname = operators + '.export_animated_empty'
     gt_transfer_tracking_idname = operators + '.transfer_tracking'
@@ -181,9 +184,14 @@ class GTConfig:
     auto_increase_far_clip_distance = True
 
     gt_empty_name = 'gtEmpty'
+    gt_background_name = 'geotracker_footage'
+    gt_background_mask_name = 'geotracker_mask'
     gt_rendered_mask_image_name = 'gt_rendered_mask'
     gt_shadow_compositing_scene_name = 'gt_shadow_compositing_scene'
     gt_precalc_folder = f'/tmp{os.path.sep}kt_analysis{os.path.sep}'
+
+    tex_builder_filename_template = '{}_baked_tex'
+    tex_builder_matname_template = '{}_preview_mat'
 
     hidden_feature = True
 

@@ -44,10 +44,10 @@ from ..blender_independent_packages.pykeentools_loader import module as pkt_modu
 from ..geotracker.gtloader import GTLoader
 from ..utils.images import (np_array_from_background_image,
                             np_threshold_image,
+                            np_threshold_image_with_channels,
                             np_array_from_bpy_image)
 from ..utils.ui_redraw import total_redraw_ui
 from ..utils.mesh_builder import build_geo
-from ..utils.materials import find_bpy_image_by_name
 
 
 _log = KTLogger(__name__)
@@ -148,11 +148,12 @@ class GTImageInput(pkt_module().ImageInputI):
             _log.output('load_linear_rgb_image_at2')
 
         total_redraw_ui()
-        np_img = np_array_from_background_image(geotracker.camobj)
+        np_img = np_array_from_background_image(geotracker.camobj, index=0)
 
         if (current_frame != frame) and not settings.is_calculating():
             _log.output('load_linear_rgb_image_at3')
             bpy_set_current_frame(current_frame)
+
         if np_img is not None:
             return np_img[:, :, :3]
         else:
@@ -170,13 +171,11 @@ class GTMask2DInput(pkt_module().Mask2DInputI):
     def load_image_2d_mask_at(self, frame: int) -> Any:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
-        if not geotracker or geotracker.mask_2d == '':
-            return None
-        bpy_img = find_bpy_image_by_name(geotracker.mask_2d)
-        if bpy_img is None:
+        if not geotracker or not geotracker.mask_2d:
             return None
 
         current_frame = bpy_current_frame()
+        _log.output(f'load_image_2d_mask_at: {frame} [{current_frame}]')
         if current_frame != frame:
             _log.output(f'FORCE CHANGE FRAME TO: {frame}')
             bpy_set_current_frame(frame)
@@ -197,9 +196,15 @@ class GTMask2DInput(pkt_module().Mask2DInputI):
             _log.error(f'MASK HAS DIFFERENT SIZE: {np_img.shape} RW: {rw} RH: {rh}')
 
         _log.output(f'MASK INPUT HAS BEEN CALCULATED AT FRAME: {frame}')
-        grayscale = np_threshold_image(np_img, geotracker.mask_2d_threshold)
-        _log.output(f'MASK SIZE: {grayscale.shape}')
-        return pkt_module().LoadedMask(grayscale, geotracker.mask_2d_inverted)
+
+        result = np_threshold_image_with_channels(
+            np_img, geotracker.get_mask_2d_channels(),
+            geotracker.mask_2d_threshold)
+
+        if result is not None:
+            _log.output(f'mask shape: {result.shape}')
+            return pkt_module().LoadedMask(result, geotracker.mask_2d_inverted)
+        return None
 
     def load_compositing_2d_mask_at(self, frame: int) -> Any:
         geotracker = get_current_geotracker_item()
@@ -218,7 +223,7 @@ class GTMask2DInput(pkt_module().Mask2DInputI):
 
     def load_2d_mask_at(self, frame: int) -> Any:
         geotracker = get_current_geotracker_item()
-        mask_source = geotracker.get_mask_source()
+        mask_source = geotracker.get_2d_mask_source()
         if mask_source == 'COMP_MASK':
             return self.load_compositing_2d_mask_at(frame)
         elif mask_source == 'MASK_2D':

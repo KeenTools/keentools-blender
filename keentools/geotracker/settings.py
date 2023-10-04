@@ -20,360 +20,100 @@ import numpy as np
 from typing import Optional, Tuple, Any, List
 from contextlib import contextmanager
 
-import bpy
-from bpy.types import Object, CameraBackgroundImage, Area, Image, Mask
+from bpy.types import (Object, CameraBackgroundImage, Area, Image, Mask,
+                       PropertyGroup, MovieClip)
+from bpy.props import (IntProperty, BoolProperty, FloatProperty,
+                       StringProperty, EnumProperty, FloatVectorProperty,
+                       PointerProperty, CollectionProperty)
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import (Config,
-                            get_addon_preferences,
-                            get_operator,
-                            ErrorType)
-from ..geotracker_config import GTConfig, get_gt_settings
+from ..addon_config import Config, get_addon_preferences
+from ..geotracker_config import GTConfig
 from .gtloader import GTLoader
 from ..utils.images import (get_background_image_object,
-                            set_background_image_by_movieclip,
-                            tone_mapping,
-                            find_bpy_image_by_name,
-                            remove_background_image_object)
+                            get_background_image_strict,
+                            set_background_image_by_movieclip)
 from .utils.tracking import reload_precalc
 from ..utils.coords import (xz_to_xy_rotation_matrix_4x4,
                             get_scale_vec_4_from_matrix_world,
                             get_image_space_coord,
                             get_camera_border,
-                            focal_mm_to_px,
-                            camera_focal_length,
-                            camera_sensor_width,
                             get_polygons_in_vertex_group,
                             LocRotScale)
-from ..utils.video import fit_render_size, fit_time_length
 from ..utils.bpy_common import (bpy_render_frame,
-                                bpy_start_frame,
-                                bpy_end_frame,
                                 bpy_current_frame,
-                                bpy_set_current_frame,
                                 bpy_render_single_frame,
+                                bpy_poll_is_mesh,
+                                bpy_poll_is_camera,
                                 get_scene_camera_shift)
 from ..utils.compositing import (get_compositing_shadow_scene,
                                  create_mask_compositing_node_tree,
-                                 get_mask_by_name,
                                  viewer_node_to_image,
                                  get_rendered_mask_bpy_image)
 from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_getter,
                                             universal_cached_setter)
-from ..utils.animation import count_fcurve_points
-from ..utils.manipulate import select_object_only, switch_to_camera
 from ..utils.viewport_state import ViewportStateItem
 from .ui_strings import PrecalcStatusMessage
+from .callbacks import (update_camobj,
+                        update_geomobj,
+                        update_movieclip,
+                        update_precalc_path,
+                        update_wireframe,
+                        update_mask_2d_color,
+                        update_mask_3d_color,
+                        update_wireframe_backface_culling,
+                        update_background_tone_mapping,
+                        update_pin_sensitivity,
+                        update_pin_size,
+                        update_focal_length_mode,
+                        update_lens_mode,
+                        update_track_focal_length,
+                        update_mask_3d,
+                        update_mask_2d,
+                        update_mask_source,
+                        update_spring_pins_back,
+                        update_solve_for_camera,
+                        update_smoothing)
 
 
 _log = KTLogger(__name__)
 
 
-def object_is_in_scene(obj: Object) -> bool:
-    return obj in bpy.context.scene.objects[:]
+class FrameListItem(PropertyGroup):
+    num: IntProperty(name='Frame number', default=-1)
 
 
-def is_mesh(self, obj: Optional[Object]) -> bool:
-    return obj and obj.type == 'MESH' and object_is_in_scene(obj)
-
-
-def is_camera(self, obj: Optional[Object]) -> bool:
-    return obj and obj.type == 'CAMERA' and object_is_in_scene(obj)
-
-
-_constraint_warning_message = \
-    'constraints detected! \n' \
-    'Better delete or bake them.\n' \
-    ' \n' \
-    'If this is the result of Blender tracking, \n' \
-    'you need to click on the \'Constraint to F-Curve button\'\n' \
-    'of the solver constraint.'
-
-
-def update_camobj(geotracker, context: Any) -> None:
-    _log.output(f'update_camobj: {geotracker.camobj}')
-    settings = get_gt_settings()
-
-    if not geotracker.camobj and settings.pinmode:
-        GTLoader.out_pinmode()
-        return
-
-    set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
-    switch_to_camera(GTLoader.get_work_area(), geotracker.camobj)
-
-    if settings.pinmode:
-        GTLoader.update_viewport_shaders(update_geo_data=True,
-                                         geomobj_matrix=True, wireframe=True,
-                                         pins_and_residuals=True, timeline=True)
-
-    if geotracker.camobj and len(geotracker.camobj.constraints) > 0:
-        msg = f'Camera {_constraint_warning_message}'
-        warn = get_operator(Config.kt_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
-             msg_content=msg)
-
-
-def update_geomobj(geotracker, context: Any) -> None:
-    _log.output(f'update_geomobj: {geotracker.geomobj}')
-    settings = get_gt_settings()
-
-    if not geotracker.geomobj and settings.pinmode:
-        GTLoader.out_pinmode()
-        return
-
-    GTLoader.load_geotracker()
-    gt = GTLoader.kt_geotracker()
-    geotracker.check_pins_on_geometry(gt)
-    GTLoader.save_geotracker()
-
-    if settings.pinmode:
-        GTLoader.update_viewport_shaders(update_geo_data=True,
-                                         geomobj_matrix=True, wireframe=True,
-                                         pins_and_residuals=True, timeline=True)
-
-    if geotracker.geomobj and len(geotracker.geomobj.constraints) > 0:
-        msg = f'Geometry {_constraint_warning_message}'
-        warn = get_operator(Config.kt_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
-             msg_content=msg)
-
-
-def update_movieclip(geotracker, context: Any) -> None:
-    _log.output('update_movieclip')
-
-    if not geotracker.movie_clip:
-        geotracker.precalc_path = ''
-        if geotracker.camobj:
-            remove_background_image_object(geotracker.camobj, index=0)
-        return
-
-    current_frame = bpy_current_frame()
-    scene = context.scene
-    fit_time_length(geotracker.movie_clip)
-    if not (scene.frame_start <= current_frame <= scene.frame_end):
-        bpy_set_current_frame(scene.frame_start)
-
-    fit_render_size(geotracker.movie_clip)
-
-    set_background_image_by_movieclip(geotracker.camobj, geotracker.movie_clip)
-
-    geotracker.precalc_start = bpy_start_frame()
-    geotracker.precalc_end = bpy_end_frame()
-
-    geotracker.precalc_path = f'{GTConfig.gt_precalc_folder}' \
-                              f'{geotracker.movie_clip.name}'
-
-
-def update_precalc_path(geotracker, context: Any) -> None:
-    _log.output('update_precalc_path')
-    settings = get_gt_settings()
-    if settings.ui_write_mode:
-        return
-    ending = '.precalc'
-    if geotracker.precalc_path != '' and \
-            geotracker.precalc_path[-len(ending):] != ending:
-        with settings.ui_write_mode_context():
-            geotracker.precalc_path += ending
-    geotracker.reload_precalc()
-
-
-def update_wireframe(settings, context: Any) -> None:
-    if not settings.pinmode:
-        return
-    GTLoader.update_viewport_shaders(adaptive_opacity=True,
-                                     geomobj_matrix=True,
-                                     wireframe=True)
-
-
-def update_mask_2d_color(settings, context: Any) -> None:
-    vp = GTLoader.viewport()
-    mask = vp.mask2d()
-    mask.color = (*settings.mask_2d_color, settings.mask_2d_opacity)
-
-
-def update_mask_3d_color(settings, context: Any) -> None:
-    vp = GTLoader.viewport()
-    wf = vp.wireframer()
-    wf.selection_fill_color = (*settings.mask_3d_color, settings.mask_3d_opacity)
-    if settings.pinmode:
-        GTLoader.update_viewport_wireframe()
-
-
-def update_wireframe_backface_culling(settings, context: Any) -> None:
-    if settings.ui_write_mode:
-        return
-    gt = GTLoader.kt_geotracker()
-    gt.set_back_face_culling(settings.wireframe_backface_culling)
-    GTLoader.save_geotracker()
-    if settings.pinmode:
-        GTLoader.update_viewport_wireframe()
-
-
-def update_background_tone_mapping(geotracker, context: Any) -> None:
-    bg_img = get_background_image_object(geotracker.camobj)
-    if not bg_img or not bg_img.image:
-        return
-    tone_mapping(bg_img.image,
-                 exposure=geotracker.tone_exposure, gamma=geotracker.tone_gamma)
-
-
-def update_pin_sensitivity(settings, context: Any) -> None:
-    if settings.pin_size > settings.pin_sensitivity:
-        settings.pin_size = settings.pin_sensitivity
-
-    GTLoader.viewport().update_pin_sensitivity()
-
-
-def update_pin_size(settings, context: Any) -> None:
-    if settings.pin_sensitivity < settings.pin_size:
-        settings.pin_sensitivity = settings.pin_size
-    GTLoader.viewport().update_pin_size()
-
-
-def update_focal_length_mode(geotracker, context: Any) -> None:
-    _log.output(f'update_focal_length_mode: {geotracker.focal_length_mode}')
-    if geotracker.focal_length_mode == 'STATIC_FOCAL_LENGTH':
-        geotracker.static_focal_length = focal_mm_to_px(
-            camera_focal_length(geotracker.camobj),
-            *bpy_render_frame(), camera_sensor_width(geotracker.camobj))
-
-
-def update_lens_mode(geotracker, context: Any=None) -> None:
-    _log.output(f'update_lens_mode: {geotracker.lens_mode}')
-    settings = get_gt_settings()
-    if settings.ui_write_mode:
-        return
-
-    if geotracker.lens_mode == 'ZOOM':
-        geotracker.focal_length_mode = 'ZOOM_FOCAL_LENGTH'
-    else:
-        if geotracker.focal_length_mode == 'ZOOM_FOCAL_LENGTH' and geotracker.camobj:
-            count = count_fcurve_points(geotracker.camobj.data, 'lens')
-            if count > 0:
-                warn = get_operator(GTConfig.gt_switch_camera_to_fixed_warning_idname)
-                warn('INVOKE_DEFAULT')
-                return
-
-        if geotracker.focal_length_estimation:
-            geotracker.focal_length_mode = 'STATIC_FOCAL_LENGTH'
-        else:
-            count = count_fcurve_points(geotracker.camobj.data, 'lens')
-            if count > 0:
-                geotracker.focal_length_mode = 'STATIC_FOCAL_LENGTH'
-            else:
-                geotracker.focal_length_mode = 'CAMERA_FOCAL_LENGTH'
-
-
-def update_track_focal_length(geotracker, context: Any) -> None:
-    _log.output('update_track_focal_length')
-    settings = get_gt_settings()
-    if settings.ui_write_mode:
-        return
-    gt = GTLoader.kt_geotracker()
-    gt.set_track_focal_length(geotracker.track_focal_length)
-    GTLoader.save_geotracker()
-    if settings.pinmode:
-        GTLoader.update_viewport_wireframe()
-
-
-def update_mask_3d(geotracker, context: Any) -> None:
-    GTLoader.update_viewport_wireframe()
-    settings = get_gt_settings()
-    settings.reload_current_geotracker()
-    settings.reload_mask_3d()
-
-
-def update_mask_2d(geotracker, context: Any) -> None:
-    GTLoader.update_viewport_wireframe()
-    settings = get_gt_settings()
-    settings.reload_current_geotracker()
-    settings.reload_mask_2d()
-    vp = GTLoader.viewport()
-    if vp.is_working():
-        vp.create_batch_2d(context.area)
-
-
-def update_mask_source(geotracker, context: Any) -> None:
-    _log.output('update_mask_source')
-    if geotracker.get_mask_source() == 'COMP_MASK':
-        _log.output('switch to COMP_MASK')
-        geotracker.update_compositing_mask(recreate_nodes=True)
-    update_mask_2d(geotracker, context)
-
-
-def update_spring_pins_back(geotracker, context: Any) -> None:
-    if geotracker.spring_pins_back:
-        GTLoader.load_geotracker()
-        GTLoader.spring_pins_back()
-        GTLoader.save_geotracker()
-        settings = get_gt_settings()
-        if settings.pinmode:
-            GTLoader.update_viewport_shaders(pins_and_residuals=True)
-            GTLoader.viewport_area_redraw()
-
-
-def update_solve_for_camera(geotracker, context: Any) -> None:
-    settings = get_gt_settings()
-    if not settings.pinmode:
-        return
-    obj = geotracker.animatable_object()
-    if not obj:
-        return
-    select_object_only(obj)
-    second_obj = geotracker.non_animatable_object()
-    if not second_obj:
-        return
-    second_obj.select_set(state=False)
-
-
-def update_smoothing(geotracker, context: Any) -> None:
-    settings = get_gt_settings()
-    if settings.ui_write_mode:
-        return
-    gt = GTLoader.kt_geotracker()
-    gt.set_smoothing_depth_coeff(geotracker.smoothing_depth_coeff)
-    gt.set_smoothing_focal_length_coeff(geotracker.smoothing_focal_length_coeff)
-    gt.set_smoothing_rotations_coeff(geotracker.smoothing_rotations_coeff)
-    gt.set_smoothing_xy_translations_coeff(geotracker.smoothing_xy_translations_coeff)
-    GTLoader.save_geotracker()
-
-
-class FrameListItem(bpy.types.PropertyGroup):
-    num: bpy.props.IntProperty(name='Frame number', default=-1)
-    selected: bpy.props.BoolProperty(name='Selected', default=False)
-
-
-class GeoTrackerItem(bpy.types.PropertyGroup):
-    serial_str: bpy.props.StringProperty(name='GeoTracker Serialization string')
-    geomobj: bpy.props.PointerProperty(
+class GeoTrackerItem(PropertyGroup):
+    serial_str: StringProperty(name='GeoTracker Serialization string')
+    geomobj: PointerProperty(
         name='Geometry',
         description='Select target geometry from the list '
                     'of objects in your Scene',
-        type=bpy.types.Object,
-        poll=is_mesh,
+        type=Object,
+        poll=bpy_poll_is_mesh,
         update=update_geomobj)
-    camobj: bpy.props.PointerProperty(
+    camobj: PointerProperty(
         name='Camera',
         description='Choose which camera will be your viewpoint',
-        type=bpy.types.Object,
-        poll=is_camera,
+        type=Object,
+        poll=bpy_poll_is_camera,
         update=update_camobj)
-    movie_clip: bpy.props.PointerProperty(name='Movie Clip',
-                                          description='Select Footage from list',
-                                          type=bpy.types.MovieClip,
-                                          update=update_movieclip)
+    movie_clip: PointerProperty(name='Movie Clip',
+                                description='Select Footage from list',
+                                type=MovieClip,
+                                update=update_movieclip)
 
-    dir_name: bpy.props.StringProperty(name='Dir name')
+    dir_name: StringProperty(name='Dir name')
 
-    precalc_path: bpy.props.StringProperty(
+    precalc_path: StringProperty(
         name='Analysis cache file path',
         description='The path for the analysis file. '
                     'The .precalc extension will be added automatically',
         update=update_precalc_path)
-    precalc_start: bpy.props.IntProperty(name='from', default=1, min=0)
-    precalc_end: bpy.props.IntProperty(name='to', default=250, min=0)
-    precalc_message: bpy.props.StringProperty(name='Precalc info')
+    precalc_start: IntProperty(name='from', default=1, min=0)
+    precalc_end: IntProperty(name='to', default=250, min=0)
+    precalc_message: StringProperty(name='Precalc info')
 
     def precalc_message_error(self):
         return self.precalc_message in [
@@ -381,46 +121,46 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
             PrecalcStatusMessage.broken_file,
             PrecalcStatusMessage.missing_file]
 
-    solve_for_camera: bpy.props.BoolProperty(
+    solve_for_camera: BoolProperty(
         name='Track for Camera or Geometry',
         description='Which object will be tracked Geometry or Camera',
         default=False, update=update_solve_for_camera)
-    reduce_pins: bpy.props.BoolProperty(name='Reduce pins', default=False)
-    spring_pins_back: bpy.props.BoolProperty(
+    reduce_pins: BoolProperty(name='Reduce pins', default=False)
+    spring_pins_back: BoolProperty(
         name='Spring pins back', default=True,
         update=update_spring_pins_back)
 
-    focal_length_estimation: bpy.props.BoolProperty(
+    focal_length_estimation: BoolProperty(
         name='Estimate focal length',
         description='This will automatically calculate focal length '
                     'value while pinning. Estimation will be disabled '
                     'when you move on to another frame',
         default=False,
         update=update_lens_mode)
-    track_focal_length: bpy.props.BoolProperty(
+    track_focal_length: BoolProperty(
         name='Track focal length',
         description='Track focal length change',
         default=False,
         update=update_track_focal_length)
 
-    tone_exposure: bpy.props.FloatProperty(
+    tone_exposure: FloatProperty(
         name='Exposure', description='Adjust exposure in current frame',
         default=Config.default_tone_exposure,
         min=-10.0, max=10.0, soft_min=-4.0, soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
-    tone_gamma: bpy.props.FloatProperty(
+    tone_gamma: FloatProperty(
         name='Gamma', description='Adjust gamma in current frame',
         default=Config.default_tone_gamma, min=0.01, max=10.0,
         soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
-    default_zoom_focal_length: bpy.props.FloatProperty(
+    default_zoom_focal_length: FloatProperty(
         name='Default Zoom FL',
         default=50.0 / 36.0 * 1920,
         min=0.01, max=15000.0 / 36.0 * 1920)
-    static_focal_length: bpy.props.FloatProperty(name='Static FL',
-                                                 default=50.0 / 36.0 * 1920,
-                                                 min=0.01, max=15000.0 / 36.0 * 1920)
-    focal_length_mode: bpy.props.EnumProperty(name='Focal length mode',
+    static_focal_length: FloatProperty(name='Static FL',
+                                       default=50.0 / 36.0 * 1920,
+                                       min=0.01, max=15000.0 / 36.0 * 1920)
+    focal_length_mode: EnumProperty(name='Focal length mode',
         items=[
             ('CAMERA_FOCAL_LENGTH', 'CAMERA FOCAL LENGTH',
             'Use camera object focal length', 0),
@@ -431,7 +171,7 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         description='Focal length calculation mode',
         update=update_focal_length_mode)
 
-    lens_mode: bpy.props.EnumProperty(name='Lens',
+    lens_mode: EnumProperty(name='Lens',
         items=[
             ('FIXED', 'Fixed',
             'Fixed focal length', 0),
@@ -440,89 +180,136 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         description='Selected lens type',
         update=update_lens_mode)
 
-    precalcless: bpy.props.BoolProperty(
+    precalcless: BoolProperty(
         name='Precalcless tracking',
         description='This will analyze the clip and create a .precalc '
                     'cache file to make tracking faster',
         default=False)
 
-    selected_frames: bpy.props.CollectionProperty(type=FrameListItem,
-                                                  name='Selected frames')
-    mask_3d: bpy.props.StringProperty(
+    selected_frames: CollectionProperty(type=FrameListItem,
+                                        name='Selected frames')
+    selected_frame_index: IntProperty(name='', default=0)
+
+    mask_3d: StringProperty(
         name='Surface mask',
         description='Exclude polygons of selected Vertex Group from tracking',
         update=update_mask_3d)
-    mask_3d_inverted: bpy.props.BoolProperty(
+    mask_3d_inverted: BoolProperty(
         name='Invert',
         description='Invert Surface mask',
         default=False,
         update=update_mask_3d)
-    mask_2d: bpy.props.StringProperty(
-        name='2d mask',
-        description='The masked areas will be excluded from tracking '
-                    '(It does not work yet)',
+    mask_2d_mode: EnumProperty(
+        name='2D Mask mode',
+        items=[
+            ('COMP_MASK', 'Compositing', 'Use Blender Compositing mask', 0),
+            ('MASK_2D', 'Sequence', 'Use 2d image sequence as a mask', 1),
+        ],
         update=update_mask_2d)
-    mask_2d_inverted: bpy.props.BoolProperty(
+    mask_2d: PointerProperty(
+        type=MovieClip,
+        name='2d mask',
+        description='The masked areas will be excluded from tracking',
+        update=update_mask_2d)
+    mask_2d_inverted: BoolProperty(
         name='Invert Mask 2D',
         description='Invert Mask 2D area',
         default=False,
         update=update_mask_2d)
-    mask_2d_threshold: bpy.props.FloatProperty(
-        default=0.002, soft_min=0.0, soft_max=1.0, min=-0.1, max=1.1,
+    mask_2d_threshold: FloatProperty(
+        default=0.003, soft_min=0.0, soft_max=1.0, min=-0.1, max=1.1,
         precision=4,
         name='2d mask threshold',
         description='Cutout threshold',
         update=update_mask_2d)
-    mask_2d_info: bpy.props.StringProperty(
+    mask_2d_info: StringProperty(
         default='',
         name='2d mask info',
         description='About 2d mask')
-    compositing_mask: bpy.props.StringProperty(
+
+    mask_2d_channel_r: BoolProperty(
+        name='R',
+        default=True,
+        update=update_mask_2d
+    )
+    mask_2d_channel_g: BoolProperty(
+        name='G',
+        default=True,
+        update=update_mask_2d
+    )
+    mask_2d_channel_b: BoolProperty(
+        name='B',
+        default=True,
+        update=update_mask_2d
+    )
+    mask_2d_channel_a: BoolProperty(
+        name='A',
+        default=False,
+        update=update_mask_2d
+    )
+
+    def get_mask_2d_channels(self) -> Tuple[bool, bool, bool, bool]:
+        return self.mask_2d_channel_r, self.mask_2d_channel_g, \
+               self.mask_2d_channel_b, self.mask_2d_channel_a
+
+    def get_mask_2d_channel_bitmask(self) -> int:
+        ''' Bitmask value in ABGR format
+            0 - R (1)
+            1 - G (2)
+            2 - B (4)
+            3 - Alpha (8)
+        '''
+        return int(self.mask_2d_channel_r) + 2 * int(self.mask_2d_channel_g) + \
+               4 * int(self.mask_2d_channel_b) + 8 * int(self.mask_2d_channel_a)
+
+    compositing_mask: StringProperty(
         default='',
         name='Compositing mask',
         description='Exclude area within selected Compositing mask from tracking',
         update=update_mask_source)
-    compositing_mask_inverted: bpy.props.BoolProperty(
+    compositing_mask_inverted: BoolProperty(
         name='Invert',
         description='Invert Compositing mask',
         default=False,
         update=update_mask_source)
-    compositing_mask_threshold: bpy.props.FloatProperty(
+    compositing_mask_threshold: FloatProperty(
         default=0.5, soft_min=0.0, soft_max=1.0, min=-0.1, max=1.1,
         precision=4,
         name='Compositing mask threshold',
         description='Compositing mask cutout threshold',
         update=update_mask_source)
 
-    def get_mask_source(self):
-        if self.compositing_mask != '':
-            return 'COMP_MASK'
-        if self.mask_2d != '':
-            return 'MASK_2D'
+    def get_2d_mask_source(self) -> str:
+        if self.mask_2d_mode == 'COMP_MASK':
+            return 'COMP_MASK' if self.compositing_mask != '' else 'NONE'
+        elif self.mask_2d_mode == 'MASK_2D':
+            return 'MASK_2D' if self.mask_2d else 'NONE'
         return 'NONE'
 
-    smoothing_depth_coeff: bpy.props.FloatProperty(
+    smoothing_depth_coeff: FloatProperty(
         default=0.0, min=0.0, max=1.0,
         precision=2,
         name='Z Translation',
         description='Z-axis (camera view) translation smoothing',
         update=update_smoothing)
-    smoothing_focal_length_coeff: bpy.props.FloatProperty(
+    smoothing_focal_length_coeff: FloatProperty(
         default=0.0, min=0.0, max=1.0,
         precision=2,
         name='Focal Length',
         description='Smoothing of focal length estimation',
         update=update_smoothing)
-    smoothing_rotations_coeff: bpy.props.FloatProperty(
+    smoothing_rotations_coeff: FloatProperty(
         default=0.0, min=0.0, max=1.0,
         precision=2,
         name='Rotations',
         description='Rotation smoothing', update=update_smoothing)
-    smoothing_xy_translations_coeff: bpy.props.FloatProperty(
+    smoothing_xy_translations_coeff: FloatProperty(
         default=0.0, min=0.0, max=1.0,
         precision=2,
         name='XY Translations',
         description='XY translation smoothing', update=update_smoothing)
+
+    overlapping_detected: BoolProperty(default=False)
 
     def update_compositing_mask(self, *, frame: Optional[int]=None,
                                 recreate_nodes: bool=False) -> Image:
@@ -580,6 +367,18 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
         bg_img = self.get_background_image_object()
         if bg_img is not None and bg_img.image:
             bg_img.image.reload()
+
+    def setup_background_image(self) -> None:
+        set_background_image_by_movieclip(self.camobj,
+                                          self.movie_clip,
+                                          name=GTConfig.gt_background_name,
+                                          index=0)
+
+    def setup_background_mask(self) -> None:
+        set_background_image_by_movieclip(self.camobj,
+                                          self.mask_2d,
+                                          name=GTConfig.gt_background_mask_name,
+                                          index=1)
 
     def reset_focal_length_estimation(self) -> None:
         self.focal_length_estimation = False
@@ -662,24 +461,36 @@ class GeoTrackerItem(bpy.types.PropertyGroup):
 
         return True
 
+    def get_geomobj_name(self):
+        if self.geomobj:
+            return self.geomobj.name
+        return 'none'
 
-class GTSceneSettings(bpy.types.PropertyGroup):
-    ui_write_mode: bpy.props.BoolProperty(name='UI Write mode', default=False)
-    viewport_state: bpy.props.PointerProperty(type=ViewportStateItem)
+    def preview_material_name(self):
+        return GTConfig.tex_builder_matname_template.format(self.get_geomobj_name())
 
-    pinmode: bpy.props.BoolProperty(name='Pinmode status', default=False)
-    pinmode_id: bpy.props.StringProperty(name='Unique pinmode ID')
+    def preview_texture_name(self):
+        return GTConfig.tex_builder_filename_template.format(self.get_geomobj_name())
 
-    geotrackers: bpy.props.CollectionProperty(type=GeoTrackerItem, name='GeoTrackers')
-    current_geotracker_num: bpy.props.IntProperty(name='Current Geotracker Number', default=-1)
 
-    adaptive_opacity: bpy.props.FloatProperty(
+
+class GTSceneSettings(PropertyGroup):
+    ui_write_mode: BoolProperty(name='UI Write mode', default=False)
+    viewport_state: PointerProperty(type=ViewportStateItem)
+
+    pinmode: BoolProperty(name='Pinmode status', default=False)
+    pinmode_id: StringProperty(name='Unique pinmode ID')
+
+    geotrackers: CollectionProperty(type=GeoTrackerItem, name='GeoTrackers')
+    current_geotracker_num: IntProperty(name='Current Geotracker Number', default=-1)
+
+    adaptive_opacity: FloatProperty(
         description='From 0.0 to 1.0',
         name='GeoTracker adaptive Opacity',
         default=1.0,
         min=0.0, max=1.0)
 
-    use_adaptive_opacity: bpy.props.BoolProperty(
+    use_adaptive_opacity: BoolProperty(
         name='Use adaptive opacity',
         default=True,
         update=update_wireframe)
@@ -696,14 +507,14 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         x1, y1, x2, y2 = get_camera_border(area)
         self.adaptive_opacity = (x2 - x1) / denom
 
-    wireframe_opacity: bpy.props.FloatProperty(
+    wireframe_opacity: FloatProperty(
         name='GeoTracker wireframe Opacity',
         default=UserPreferences.get_value_safe('gt_wireframe_opacity',
                                                UserPreferences.type_float),
         min=0.0, max=1.0,
         update=update_wireframe)
 
-    wireframe_color: bpy.props.FloatVectorProperty(
+    wireframe_color: FloatVectorProperty(
         description='Mesh wireframe color in Pinmode',
         name='GeoTracker wireframe Color', subtype='COLOR',
         default=UserPreferences.get_value_safe('gt_wireframe_color',
@@ -711,17 +522,17 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         min=0.0, max=1.0,
         update=update_wireframe)
 
-    wireframe_backface_culling: bpy.props.BoolProperty(
+    wireframe_backface_culling: BoolProperty(
         name='Backface culling',
         default=True,
         update=update_wireframe_backface_culling)
 
-    lit_wireframe: bpy.props.BoolProperty(
+    lit_wireframe: BoolProperty(
         name='Lit wireframe',
         default=True,
         update=update_wireframe)
 
-    pin_size: bpy.props.FloatProperty(
+    pin_size: FloatProperty(
         name='Size', description='Pin size in pixels',
         default=UserPreferences.get_value_safe('pin_size',
                                                UserPreferences.type_float),
@@ -731,7 +542,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         get=universal_cached_getter('pin_size', 'float'),
         set=universal_cached_setter('pin_size')
     )
-    pin_sensitivity: bpy.props.FloatProperty(
+    pin_sensitivity: FloatProperty(
         name='Sensitivity', description='Active area in pixels',
         default=UserPreferences.get_value_safe('pin_sensitivity',
                                                UserPreferences.type_float),
@@ -742,17 +553,17 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         set=universal_cached_setter('pin_sensitivity')
     )
 
-    anim_start: bpy.props.IntProperty(name='from', default=1)
-    anim_end: bpy.props.IntProperty(name='to', default=250)
+    anim_start: IntProperty(name='from', default=1)
+    anim_end: IntProperty(name='to', default=250)
 
-    user_interrupts: bpy.props.BoolProperty(name='Interrupted by user',
+    user_interrupts: BoolProperty(name='Interrupted by user',
                                             default = False)
-    user_percent: bpy.props.FloatProperty(name='Percentage',
+    user_percent: FloatProperty(name='Percentage',
                                           subtype='PERCENTAGE',
                                           default=0.0, min=0.0, max=100.0,
                                           precision=1)
 
-    calculating_mode: bpy.props.EnumProperty(name='Calculating mode', items=[
+    calculating_mode: EnumProperty(name='Calculating mode', items=[
         ('NONE', 'NONE', 'No calculation mode', 0),
         ('PRECALC', 'PRECALC', 'Precalc is calculating', 1),
         ('TRACKING', 'TRACKING', 'Tracking is calculating', 2),
@@ -761,51 +572,46 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         ('ESTIMATE_FL', 'ESTIMATE_FL', 'Focal length estimation is calculating', 5)
     ])
 
-    selection_mode: bpy.props.BoolProperty(name='Selection mode',
-                                           default=False)
-    selection_x: bpy.props.FloatProperty(name='Selection X',
-                                         default=0.0)
-    selection_y: bpy.props.FloatProperty(name='Selection Y',
-                                         default=0.0)
+    selection_mode: BoolProperty(name='Selection mode', default=False)
+    selection_x: FloatProperty(name='Selection X', default=0.0)
+    selection_y: FloatProperty(name='Selection Y', default=0.0)
 
-    mask_3d_color: bpy.props.FloatVectorProperty(
+    mask_3d_color: FloatVectorProperty(
         description='Color of masked polygons',
         name='Mask 3D Color', subtype='COLOR',
         default=Config.default_user_preferences['gt_mask_3d_color']['value'],
         min=0.0, max=1.0,
         update=update_mask_3d_color)
 
-    mask_3d_opacity: bpy.props.FloatProperty(
+    mask_3d_opacity: FloatProperty(
         description='From 0.0 to 1.0',
         name='Mask 3D opacity',
         default=Config.default_user_preferences['gt_mask_3d_opacity']['value'],
         min=0.0, max=1.0,
         update=update_mask_3d_color)
 
-    mask_2d_color: bpy.props.FloatVectorProperty(
+    mask_2d_color: FloatVectorProperty(
         description='Color of masked areas',
         name='Mask 2D Color', subtype='COLOR',
         default=Config.default_user_preferences['gt_mask_2d_color']['value'],
         min=0.0, max=1.0,
         update=update_mask_2d_color)
 
-    mask_2d_opacity: bpy.props.FloatProperty(
+    mask_2d_opacity: FloatProperty(
         description='From 0.0 to 1.0',
         name='Mask 3D opacity',
         default=Config.default_user_preferences['gt_mask_3d_opacity']['value'],
         min=0.0, max=1.0,
         update=update_mask_2d_color)
 
-    transfer_animation_selector: bpy.props.EnumProperty(
+    transfer_animation_selector: EnumProperty(
         name='Select direction',
         items=[
-            ('GEOMETRY_TO_CAMERA', 'Geometry to Camera',
-             '', 0),
-            ('CAMERA_TO_GEOMETRY', 'Camera to Geometry',
-            '', 1),],
+            ('GEOMETRY_TO_CAMERA', 'Geometry to Camera', '', 0),
+            ('CAMERA_TO_GEOMETRY', 'Camera to Geometry', '', 1),],
         description='All animation will be converted from')
 
-    bake_animation_selector: bpy.props.EnumProperty(name='Bake selector',
+    bake_animation_selector: EnumProperty(name='Bake selector',
         items=[
             ('GEOMETRY_AND_CAMERA', 'Geometry & Camera',
              'Both objects will be baked to World space', 0),
@@ -815,7 +621,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
              'Camera animation will be baked to World space', 2),],
         description='Convert animation to World space')
 
-    export_locator_selector: bpy.props.EnumProperty(name='Select source',
+    export_locator_selector: EnumProperty(name='Select source',
         items=[
             ('GEOMETRY', 'Geometry',
             'Use Geometry as animation source', 0),
@@ -823,11 +629,49 @@ class GTSceneSettings(bpy.types.PropertyGroup):
              'Use Camera as animation source', 1),],
         description='Create an animated Empty from')
 
-    export_linked_locator: bpy.props.BoolProperty(
+    export_linked_locator: BoolProperty(
         name='Linked',
         description='Use shared animation Action or duplicate '
                     'animation data to use it independently',
         default=False)
+
+    tex_width: IntProperty(
+        description='Width size of output texture',
+        name='Width', default=2048)
+    tex_height: IntProperty(
+        description='Height size of output texture',
+        name='Height', default=2048)
+
+    tex_face_angles_affection: FloatProperty(
+        description='Choose how much a polygon view angle affects '
+                    'a pixel color: with 0 you will get an average '
+                    'color from all views; with 100 you\'ll get color '
+                    'information only from the polygons at which a camera '
+                    'is looking at 90 degrees',
+        name='Angle strictness', default=10.0, min=0.0, max=100.0)
+    tex_uv_expand_percents: FloatProperty(
+        description='Expand texture edges',
+        name='Expand edges (%)', default=0.1)
+    tex_back_face_culling: BoolProperty(
+        description='Exclude backfacing polygons from the created texture',
+        name='Back face culling', default=True)
+    tex_equalize_brightness: BoolProperty(
+        description='Experimental. Automatically equalize '
+                    'brightness across images',
+        name='Equalize brightness', default=False)
+    tex_equalize_colour: BoolProperty(
+        description='Experimental. Automatically equalize '
+                    'colors across images',
+        name='Equalize color', default=False)
+    tex_fill_gaps: BoolProperty(
+        description='Experimental. Tries automatically fill '
+                    'holes in face texture with appropriate '
+                    'color',
+        name='Autofill', default=False)
+
+    tex_auto_preview: BoolProperty(
+        description='Automatically apply the created texture',
+        name='Automatically apply the created texture', default=True)
 
     @contextmanager
     def ui_write_mode_context(self):
@@ -892,23 +736,27 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         GTLoader.save_geotracker()
 
     def reload_mask_2d(self) -> None:
+        _log.output(_log.color('yellow', 'reload_mask_2d start'))
         geotracker = self.get_current_geotracker_item()
         if not geotracker:
             return
         vp = GTLoader.viewport()
         mask = vp.mask2d()
-        mask_source = geotracker.get_mask_source()
+        mask_source = geotracker.get_2d_mask_source()
+        _log.output(f'mask mode: {mask_source}')
         if mask_source == 'MASK_2D':
             _log.output(f'RELOAD 2D MASK: {geotracker.mask_2d}')
-            mask.image = find_bpy_image_by_name(geotracker.mask_2d)
+            mask.image = get_background_image_strict(geotracker.camobj, index=1)
             mask.inverted = geotracker.mask_2d_inverted
             mask.mask_threshold = geotracker.mask_2d_threshold
+            mask.channel = geotracker.get_mask_2d_channel_bitmask()
         elif mask_source == 'COMP_MASK':
             mask_image = geotracker.update_compositing_mask()
             _log.output('RELOAD 2D COMP_MASK')
             mask.image = mask_image
             mask.inverted = geotracker.compositing_mask_inverted
             mask.mask_threshold = geotracker.compositing_mask_threshold
+            mask.channel = 7  # RGB bitmask (without Alpha)
         else:
             mask.image = None
 
@@ -919,8 +767,10 @@ class GTSceneSettings(bpy.types.PropertyGroup):
                 geotracker.mask_2d_info = ''
             else:
                 geotracker.mask_2d_info = f'Wrong size: {size[0]} x {size[1]} px'
+                _log.output(f'size differs:\n{geotracker.mask_2d_info}')
         else:
             geotracker.mask_2d_info = ''
+        _log.output('reload_mask_2d end')
 
     def add_geotracker_item(self) -> int:
         self.fix_geotrackers()
@@ -947,7 +797,7 @@ class GTSceneSettings(bpy.types.PropertyGroup):
         self.selection_mode = True
         self.do_selection(mouse_x, mouse_y)
 
-    def do_selection(self, mouse_x: int=0, mouse_y: int=0):
+    def do_selection(self, mouse_x: int=0, mouse_y: int=0) -> None:
         _log.output('DO SELECTION: {}'.format(self.selection_mode))
         vp = GTLoader.viewport()
         selector = vp.selector()
@@ -1001,5 +851,5 @@ class GTSceneSettings(bpy.types.PropertyGroup):
                 flag = True
         return flag
 
-    def preferences(self):
+    def preferences(self) -> Any:
         return get_addon_preferences()

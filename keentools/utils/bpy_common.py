@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 from typing import Any, Dict, Callable, Tuple, List, Optional
+from contextlib import contextmanager
 import traceback
 
 import bpy
@@ -46,6 +47,14 @@ def bpy_scene() -> Any:
 
 def bpy_context() -> Any:
     return bpy.context
+
+
+def bpy_objects() -> Any:
+    return bpy.data.objects
+
+
+def bpy_images() -> Any:
+    return bpy.data.images
 
 
 def bpy_scene_camera() -> Camera:
@@ -81,6 +90,10 @@ def bpy_render_frame() -> Tuple[int, int]:
     w = rx if rx != 0 else 1
     h = ry if ry != 0 else 1
     return w, h
+
+
+def bpy_abspath(file_path: str) -> str:
+    return bpy.path.abspath(file_path)
 
 
 def bpy_set_render_frame(rx: int, ry: int) -> None:
@@ -135,6 +148,18 @@ def bpy_remove_object(obj: Object) -> bool:
     except Exception as err:
         _log.error(f'bpy_remove_object Exception: {str(err)}')
     return False
+
+
+def bpy_object_is_in_scene(obj: Object) -> bool:
+    return obj in bpy.context.scene.objects[:]
+
+
+def bpy_poll_is_mesh(self: Any, obj: Optional[Object]) -> bool:
+    return obj and obj.type == 'MESH' and bpy_object_is_in_scene(obj)
+
+
+def bpy_poll_is_camera(self: Any, obj: Optional[Object]) -> bool:
+    return obj and obj.type == 'CAMERA' and bpy_object_is_in_scene(obj)
 
 
 def _operator_with_context_old(operator: Operator,
@@ -206,6 +231,12 @@ def bpy_scene_selected_objects() -> List:
     if not hasattr(bpy.context, 'selected_objects'):
         return []
     return bpy.context.selected_objects
+
+
+def bpy_active_object(obj: Optional[Object] = None) -> Optional[Any]:
+    if obj is not None:
+        bpy.context.view_layer.objects.active = obj
+    return bpy.context.view_layer.objects.active
 
 
 def bpy_all_scene_objects() -> List:
@@ -299,6 +330,24 @@ def bpy_progress_end() -> None:
 
 def bpy_progress_update(progress: float) -> None:
     bpy.context.window_manager.progress_update(progress)
+
+
+def bpy_image_settings() -> Any:
+    return bpy.context.scene.render.image_settings
+
+
+def bpy_jpeg_quality(value: Optional[int]= None) -> int:
+    old = bpy.context.scene.render.image_settings.quality
+    if value is not None:
+        bpy.context.scene.render.image_settings.quality = value
+    return old
+
+
+@contextmanager
+def bpy_jpeg_quality_context(value: int):
+    old = bpy_jpeg_quality(value)
+    yield
+    bpy_jpeg_quality(old)
 
 
 def get_traceback(skip_last=1) -> str:

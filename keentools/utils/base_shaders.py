@@ -98,7 +98,7 @@ class KTShaderBase:
         pass
 
     def register_handler(self, context: Any,
-                         post_type: str='POST_VIEW') -> None:
+                         post_type: str = 'POST_VIEW') -> None:
         _log.output(f'{self.__class__.__name__}.register_handler')
         if self.draw_handler is not None:
             _log.output('draw_handler is not empty, call unregister')

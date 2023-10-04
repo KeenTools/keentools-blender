@@ -86,7 +86,7 @@ class CalcTimer(TimerMixin):
     def get_area(self) -> Area:
         return self._area
 
-    def _area_header(self, txt: str=None) -> None:
+    def _area_header(self, txt: Optional[str] = None) -> None:
         area = self.get_area()
         area.header_text_set(txt)
 
@@ -167,6 +167,7 @@ class _CommonTimer(TimerMixin):
         self._active_state_func: Callable = self.timeline_state
         self.tracking_computation: Any = computation
         self._operation_name: str = 'common operation'
+        self._operation_help: str = 'ESC to cancel'
         self._calc_mode: str = 'NONE'
         self._overall_func: Callable = lambda: None
         self._start_frame: int = from_frame
@@ -275,7 +276,7 @@ class _CommonTimer(TimerMixin):
                 finished_frames, total_frames = overall
                 current_stage, total_stages = self.get_stage_info()
                 staged_calculation_screen_message(
-                    self._operation_name,
+                    self._operation_name, self._operation_help,
                     finished_frames=finished_frames,
                     total_frames=total_frames,
                     current_stage=current_stage + 1,
@@ -316,7 +317,8 @@ class _CommonTimer(TimerMixin):
         self._start_time = time.time()
         if not bpy_background_mode():
             self._start_user_interrupt_operator()
-        operation_calculation_screen_message(self._operation_name)
+        operation_calculation_screen_message(self._operation_name,
+                                             self._operation_help)
         settings = get_gt_settings()
         settings.calculating_mode = self._calc_mode
 
@@ -335,6 +337,7 @@ class TrackTimer(_CommonTimer):
     def __init__(self, computation: Any, from_frame: int = -1):
         super().__init__(computation, from_frame)
         self._operation_name = 'Tracking'
+        self._operation_help = 'ESC to stop'
         self._calc_mode = 'TRACKING'
         self._overall_func = computation.finished_and_total_frames
 
@@ -342,7 +345,8 @@ class TrackTimer(_CommonTimer):
 class RefineTimer(_CommonTimer):
     def __init__(self, computation: Any, from_frame: int = -1):
         super().__init__(computation, from_frame, revert_current_frame=True)
-        self._operation_name = 'Refine'
+        self._operation_name = 'Refining'
+        self._operation_help = 'ESC to abort. Changes have NOT yet been applied'
         self._calc_mode = 'REFINE'
         self._overall_func = computation.finished_and_total_stage_frames
 

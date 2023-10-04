@@ -53,7 +53,9 @@ from ...utils.bpy_common import (create_empty_object,
                                  update_depsgraph,
                                  reset_unsaved_animation_changes_in_frame,
                                  bpy_scene,
-                                 bpy_render_single_frame)
+                                 bpy_render_single_frame,
+                                 bpy_scene_selected_objects,
+                                 bpy_active_object)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.manipulate import (select_object_only,
                                  select_objects_only,
@@ -69,17 +71,18 @@ from .prechecks import (common_checks,
                         show_unlicensed_warning)
 from ...utils.compositing import (create_nodes_for_rendering_with_background,
                                   revert_default_compositing)
-from ...utils.images import get_background_image_object
+from ...utils.images import (get_background_image_object,
+                             check_background_image_absent_frames)
 from .calc_timer import (TrackTimer,
                          RefineTimer,
                          RefineTimerFast)
-from ..settings import is_mesh, is_camera
+from ..settings import bpy_poll_is_mesh, bpy_poll_is_camera
 from ...utils.coords import (LocRotScale,
                              LocRotWithoutScale,
                              ScaleMatrix,
                              InvScaleMatrix,
                              change_near_and_far_clip_planes)
-from .textures import bake_texture, preview_material_with_texture
+from .textures import bake_texture, preview_material_with_texture, get_bad_frame
 from ..interface.screen_mesages import clipping_changed_screen_message
 
 
@@ -87,6 +90,7 @@ _log = KTLogger(__name__)
 
 
 def create_geotracker_act() -> ActionStatus:
+    _log.output('create_geotracker_act start')
     check_status = common_checks(object_mode=True, pinmode_out=True,
                                  is_calculating=True)
     if not check_status.success:
@@ -96,6 +100,9 @@ def create_geotracker_act() -> ActionStatus:
     num = settings.add_geotracker_item()
     settings.current_geotracker_num = num
     GTLoader.new_kt_geotracker()
+
+    selected_objects = bpy_scene_selected_objects()
+    active_object = bpy_active_object()
 
     geotracker = settings.get_current_geotracker_item()
     obj = get_alone_object_in_scene_selection_by_type('MESH')
@@ -109,6 +116,10 @@ def create_geotracker_act() -> ActionStatus:
     geotracker.camobj = camobj
 
     settings.reload_current_geotracker()
+
+    select_objects_only(selected_objects)
+    bpy_active_object(active_object)
+    _log.output('create_geotracker_act end')
     return ActionStatus(True, 'GeoTracker has been added')
 
 
@@ -550,7 +561,7 @@ def center_geo_act() -> ActionStatus:
 
 def create_animated_empty_act(obj: Object, linked: bool=False,
                               force_bake_all_frames: bool=False) -> ActionStatus:
-    if not is_mesh(None, obj) and not is_camera(None, obj):
+    if not bpy_poll_is_mesh(None, obj) and not bpy_poll_is_camera(None, obj):
         msg = 'Selected object is not Geometry or Camera'
         return ActionStatus(False, msg)
 
@@ -630,6 +641,12 @@ def check_uv_overlapping(obj: Optional[Object]) -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
+def check_uv_overlapping_with_status(geotracker: Any) -> ActionStatus:
+    status = check_uv_overlapping(geotracker.geomobj)
+    geotracker.overlapping_detected = not status.success
+    return status
+
+
 def create_non_overlapping_uv_act() -> ActionStatus:
     geotracker = get_current_geotracker_item()
     geomobj = geotracker.geomobj
@@ -645,6 +662,9 @@ def create_non_overlapping_uv_act() -> ActionStatus:
     switch_to_mode('EDIT')
     bpy.ops.uv.smart_project(island_margin=0.01)
     switch_to_mode(old_mode)
+
+    if geotracker.overlapping_detected:
+        return check_uv_overlapping_with_status(geotracker)
     return ActionStatus(True, 'ok')
 
 
@@ -691,7 +711,12 @@ def bake_texture_from_frames_act(area: Area,
     if not check_status.success:
         return check_status
 
-    check_status = check_uv_overlapping(geotracker.geomobj)
+    absent_frames = check_background_image_absent_frames(
+        geotracker.camobj, index=0, frames=selected_frames)
+    if len(absent_frames) > 0:
+        return ActionStatus(False, f'Frames {absent_frames} are outside of Clip range')
+
+    check_status = check_uv_overlapping_with_status(geotracker)
 
     prepare_camera(area)
     built_texture = bake_texture(geotracker, selected_frames)
@@ -703,11 +728,23 @@ def bake_texture_from_frames_act(area: Area,
                                          pins_and_residuals=True)
 
     if built_texture is None:
-        msg = 'Texture has not been created'
+        bad_frame = get_bad_frame()
+        if bad_frame < 0:
+            msg = 'Operation failed'
+        else:
+            msg = f'Frame {bad_frame} read error'
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    preview_material_with_texture(built_texture, geotracker.geomobj)
+    mat, tex = preview_material_with_texture(built_texture, geotracker.geomobj,
+                                             geotracker.preview_texture_name(),
+                                             geotracker.preview_material_name())
+    if tex is not None:
+        try:
+            tex.colorspace_settings.name = \
+                geotracker.movie_clip.colorspace_settings.name
+        except Exception as err:
+            _log.error(f'bake_texture_from_frames_act Exception:\n{str(err)}')
 
     if not check_status.success:
         return ActionStatus(False, f'Done but {check_status.error_message}')
@@ -1233,7 +1270,7 @@ def bake_locrot_act(obj: Object) -> ActionStatus:
     if not obj:
         return ActionStatus(False, 'Wrong object')
 
-    if not is_mesh(None, obj) and not is_camera(None, obj):
+    if not bpy_poll_is_mesh(None, obj) and not bpy_poll_is_camera(None, obj):
         msg = 'Selected object is not Geometry or Camera'
         return ActionStatus(False, msg)
 

@@ -9,7 +9,10 @@ import bpy
 from mathutils import Vector
 
 from keentools.utils.kt_logging import KTLogger
-from keentools.utils.materials import get_mat_by_name, assign_material_to_object, get_shader_node
+from keentools.utils.materials import (get_mat_by_name,
+                                       assign_material_to_object,
+                                       get_shader_node,
+                                       make_node_shader_matte)
 from keentools.addon_config import get_operator
 from keentools.geotracker_config import GTConfig
 from keentools.utils.animation import create_locrot_keyframe
@@ -75,7 +78,7 @@ def create_checker_material() -> Any:
         mat, 'TEX_IMAGE', 'ShaderNodeTexImage')
     image_node.image = tex
     image_node.location = (-350, 0)
-    principled_node.inputs['Specular'].default_value = 0.0
+    make_node_shader_matte(principled_node)
     mat.node_tree.links.new(
         image_node.outputs['Color'],
         principled_node.inputs['Base Color'])

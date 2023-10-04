@@ -49,6 +49,7 @@ def _get_gpu_backend(property_exists: bool=False) -> Optional[str]:
 class BVersion:
     version: Tuple[int, int, int] = ver
     version_string: str = ver_string
+    dynamic_tooltip_exists: bool = ver >= (2, 81, 0)
     property_keywords_enabled: bool = ver >= (2, 93, 0)
     blender_srgb_to_framebuffer_space_enabled: bool = ver >= (2, 83, 0)
     LocRotScale_exist: bool = version >= (3, 0, 0)
@@ -60,6 +61,7 @@ class BVersion:
     use_old_bgl_shaders: bool = ver < (3, 4, 0)
 
     blf_size_takes_3_arguments: bool = ver < (4, 0, 0)
+    principled_shader_has_specular: bool = ver < (4, 0, 0)
 
     os_name: str = _os_name()
     gpu_backend: str = _get_gpu_backend(property_gpu_backend_exists)

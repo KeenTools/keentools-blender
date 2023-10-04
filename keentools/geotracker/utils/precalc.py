@@ -101,7 +101,7 @@ class PrecalcTimer(CalcTimer):
             return self._interval
         geotracker = settings.get_current_geotracker_item()
 
-        np_img = np_array_from_background_image(geotracker.camobj)
+        np_img = np_array_from_background_image(geotracker.camobj, index=0)
         if np_img is None:
             if not bpy_background_mode():
                 msg = f'Cannot load image at frame: {current_frame}' \
