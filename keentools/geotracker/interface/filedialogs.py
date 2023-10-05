@@ -57,8 +57,7 @@ def _load_movieclip(dir_path: str, file_names: List[str]) -> Optional[MovieClip]
     new_movieclip = load_movieclip(dir_path, file_names)
 
     if new_movieclip and new_movieclip.source == 'SEQUENCE':
-        file_number = get_sequence_file_number(
-            os.path.basename(new_movieclip.filepath))
+        file_number = get_sequence_file_number(new_movieclip.filepath)
         if file_number >= 0:
             new_movieclip.frame_start = file_number
 

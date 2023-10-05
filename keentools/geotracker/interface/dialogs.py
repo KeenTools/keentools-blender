@@ -104,9 +104,6 @@ class GT_OT_TextureBakeOptions(Operator):
         col.prop(settings, 'tex_face_angles_affection')
         col.prop(settings, 'tex_uv_expand_percents')
         col.separator(factor=0.8)
-        col.prop(settings, 'tex_equalize_brightness')
-        col.prop(settings, 'tex_equalize_colour')
-        col.prop(settings, 'tex_fill_gaps')
 
     def execute(self, context):
         return {'FINISHED'}
