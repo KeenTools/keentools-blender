@@ -27,6 +27,7 @@ from .kt_logging import KTLogger
 from .fake_context import get_fake_context
 from .bpy_common import (bpy_current_frame,
                          bpy_render_frame,
+                         bpy_render_aspect,
                          evaluated_mesh,
                          bpy_background_mode)
 from .animation import get_safe_evaluated_fcurve
@@ -176,14 +177,12 @@ def image_space_to_frame(x: float, y: float, shift_x: float=0.0,
     return (x + shift_x + 0.5) * w, (y + shift_y) * w + 0.5 * h
 
 
-def frame_to_image_space(x: float, y: float, w: float, h: float,
+def frame_to_image_space(frame_x: float, frame_y: float,
+                         frame_w: float, frame_h: float,
                          shift_x: float=0.0,
                          shift_y: float=0.0) -> Tuple[float, float]:
-    return x / w - 0.5 - shift_x, (y - 0.5 * h) / w - shift_y
-
-
-def get_mouse_coords(event: Any) -> Tuple[float, float]:
-    return event.mouse_region_x, event.mouse_region_y
+    return (frame_x / frame_w - 0.5 - shift_x,
+            (frame_y - 0.5 * frame_h) / frame_w - shift_y)
 
 
 def image_space_to_region(x: float, y: float, x1: float, y1: float,
@@ -274,6 +273,16 @@ def get_area_region(area: Area) -> Optional[Any]:
     return area.regions[-1]
 
 
+def blender_zoom_formula(factor: float) -> float:
+    if factor < 0:
+        factor = 0
+    return (math.sqrt(factor) - math.sqrt(0.5)) * 100.0
+
+
+def blender_zoom_scale_factor(z: float) -> float:
+    return (z * 0.01 + math.sqrt(0.5)) ** 2
+
+
 def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
     if bpy_background_mode():
         context = get_fake_context()
@@ -281,88 +290,72 @@ def get_camera_border(area: Area) -> Tuple[float, float, float, float]:
 
     region = get_area_region(area)
     assert region.type == 'WINDOW'
-    w = region.width
-    h = region.height
+    reg_w, reg_h = region.width, region.height
 
     rv3d = get_area_region_3d(area)
     z = rv3d.view_camera_zoom
-    # Blender Zoom formula
-    f = (z * 0.01 + math.sqrt(0.5)) ** 2  # f - scale factor
+    f = blender_zoom_scale_factor(z)
 
-    rx, ry = bpy_render_frame()
+    region_aspect = reg_w / reg_h
+    render_aspect = bpy_render_aspect()
 
-    a1 = w / h
-    a2 = rx / ry
-
-    offset = (rv3d.view_camera_offset[0] * w * 2 * f,
-              rv3d.view_camera_offset[1] * h * 2 * f)
+    offset = (rv3d.view_camera_offset[0] * reg_w * 2 * f,
+              rv3d.view_camera_offset[1] * reg_h * 2 * f)
 
     # This works when Camera Sensor Mode is Auto
-    if a1 >= 1.0:
-        if a2 >= 1.0:
+    if region_aspect >= 1.0:
+        if render_aspect >= 1.0:
             # Horizontal image in horizontal View
             kx = f
-            ky = f * a1 / a2  # (ry / rx) * (w / h)
+            ky = f * region_aspect / render_aspect  # (ry / rx) * (w / h)
         else:
-            kx = f * a2  # (rx / ry)
-            ky = f * a1  # (w / h)
+            kx = f * render_aspect  # (rx / ry)
+            ky = f * region_aspect  # (w / h)
 
     else:
-        if a2 < 1.0:
+        if render_aspect < 1.0:
             # Vertical image in vertical View
-            kx = f * a2 / a1  # (rx / ry) * (h / w)
+            kx = f * render_aspect / region_aspect  # (rx / ry) * (h / w)
             ky = f
         else:
-            kx = f / a1  # (h / w)
-            ky = f / a2  # (ry / rx)
+            kx = f / region_aspect  # (h / w)
+            ky = f / render_aspect  # (ry / rx)
 
-    x1 = w * 0.5 - kx * w * 0.5 - offset[0]
-    x2 = w * 0.5 + kx * w * 0.5 - offset[0]
-    y1 = h * 0.5 - ky * h * 0.5 - offset[1]
-    y2 = h * 0.5 + ky * h * 0.5 - offset[1]
+    x1 = reg_w * 0.5 - kx * reg_w * 0.5 - offset[0]
+    x2 = reg_w * 0.5 + kx * reg_w * 0.5 - offset[0]
+    y1 = reg_h * 0.5 - ky * reg_h * 0.5 - offset[1]
+    y2 = reg_h * 0.5 + ky * reg_h * 0.5 - offset[1]
     return x1, y1, x2, y2
 
 
-def calc_camera_view_parameters(area: Area, x1: int, y1: int,
-                                width: int) -> Tuple[float, Tuple[float, float]]:
+def calc_camera_zoom_and_offset(
+        area: Area, region_x1: float, region_y1: float,
+        width: float) -> Tuple[float, Tuple[float, float]]:
     region = get_area_region(area)
     reg_w, reg_h = region.width, region.height
-    rx, ry = bpy_render_frame()
-    reg_a1 = reg_w / reg_h
-    render_a2 = rx / ry
+    reg_asp = reg_w / reg_h
+    render_asp = bpy_render_aspect()
     kx = width / reg_w
-    if reg_a1 >= 1.0:
-        if render_a2 >= 1.0:
+    if reg_asp >= 1.0:
+        if render_asp >= 1.0:
             f = kx
-            ky = f * reg_a1 / render_a2
+            ky = f * reg_asp / render_asp
         else:
-            f = kx / render_a2
-            ky = f * reg_a1
+            f = kx / render_asp
+            ky = f * reg_asp
     else:
-        if render_a2 < 1.0:
-            f = kx * reg_a1 / render_a2
+        if render_asp < 1.0:
+            f = kx * reg_asp / render_asp
             ky = f
         else:
-            f = kx * reg_a1
-            ky = f / render_a2
-    z = (math.sqrt(f) - math.sqrt(0.5)) * 100.0
-    offset_x = reg_w * 0.5 * (1.0 - kx) - x1
-    offset_y = reg_h * 0.5 * (1.0 - ky) - y1
+            f = kx * reg_asp
+            ky = f / render_asp
+    z = blender_zoom_formula(f)
+    offset_x = reg_w * 0.5 * (1.0 - kx) - region_x1
+    offset_y = reg_h * 0.5 * (1.0 - ky) - region_y1
     offset = (offset_x / (reg_w * 2 * f),
               offset_y / (reg_h * 2 * f))
     return z, offset
-
-
-def calc_camera_to_place_point(
-        area: Area, width: int, area_x: float = 0, area_y: float = 0,
-        image_x: float = 0,
-        image_y: float = 0) -> Tuple[float, Tuple[float, float]]:
-    rx, ry = bpy_render_frame()
-    k = width / rx
-    x1 = area_x - image_x * k
-    y1 = area_y - image_y * k
-    return calc_camera_view_parameters(area, width=width,
-                                       x1=int(round(x1)), y1=int(round(y1)))
 
 
 def point_is_in_area(area: Area, x: float, y: float, *,
@@ -399,9 +392,7 @@ def get_pixel_relative_size(area: Area) -> float:
     w = area.width if area.width > 0 else 1.0
     space = area.spaces.active
     rv3d = space.region_3d
-    z = rv3d.view_camera_zoom
-    # Blender Zoom formula
-    f = (z * 0.01 + math.sqrt(0.5)) ** 2  # f - scale factor
+    f = blender_zoom_scale_factor(rv3d.view_camera_zoom)
     ps = 1.0 / (w * f)
     return ps
 
@@ -657,3 +648,9 @@ def make_indices_for_wide_edges(numb: int) -> Tuple[Any, Any]:
     arr = np.tile(np.arange(0, numb).reshape((-1, 2)), (1, 3))
     return arr.reshape((-1, 3)).ravel(), \
            np.flip(arr, 1).reshape((-1, 3)).ravel()
+
+
+def bound_box_center(obj: Object) -> Vector:
+    verts = np.empty((8, 3), dtype=np.float32)
+    obj.bound_box.foreach_get(verts)
+    return Vector(np.mean(verts, axis=0))
