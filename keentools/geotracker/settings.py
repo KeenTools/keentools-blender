@@ -74,7 +74,8 @@ from .callbacks import (update_camobj,
                         update_mask_source,
                         update_spring_pins_back,
                         update_solve_for_camera,
-                        update_smoothing)
+                        update_smoothing,
+                        update_stabilize_viewport)
 
 
 _log = KTLogger(__name__)
@@ -681,7 +682,10 @@ class GTSceneSettings(PropertyGroup):
         description='Automatically apply the created texture',
         name='Automatically apply the created texture', default=True)
 
-    stabilize_viewport: BoolProperty(default=False)
+    stabilize_viewport: BoolProperty(description='Viewport stabilization',
+                                     name='Lock Viewport',
+                                     default=False,
+                                     update=update_stabilize_viewport)
 
     @contextmanager
     def ui_write_mode_context(self):
@@ -836,6 +840,18 @@ class GTSceneSettings(PropertyGroup):
         else:
             pins.set_selected_pins(found_pins)
         self.cancel_selection()
+        self.stabilize(reset=True)
+
+    def stabilize(self, reset: bool = False) -> None:
+        vp = GTLoader.viewport()
+        if reset:
+            vp.clear_stabilization_point()
+        if not self.stabilize_viewport:
+            return
+        geotracker = self.get_current_geotracker_item()
+        if not geotracker:
+            return
+        vp.stabilize(geotracker.geomobj)
 
     def stop_calculating(self) -> None:
         self.calculating_mode = 'NONE'

@@ -570,6 +570,8 @@ class GT_PT_TrackingPanel(AllVisible):
         row.active = settings.pinmode
         row.operator(GTConfig.gt_toggle_pins_idname, icon='UNPINNED')
         row.operator(GTConfig.gt_remove_pins_idname, icon='X')
+        col.prop(settings, 'stabilize_viewport',
+                 icon='LOCKED' if settings.stabilize_viewport else 'UNLOCKED')
 
     def _tracking_track_row(self, settings: Any, layout: Any) -> None:
         row = layout.row(align=True)

@@ -156,6 +156,11 @@ def frame_change_post_handler(scene) -> None:
         return
     if geotracker.focal_length_estimation:
         geotracker.reset_focal_length_estimation()
+
+    if settings.stabilize_viewport:
+        GTLoader.load_pins_into_viewport()
+        GTLoader.viewport().stabilize(geotracker.geomobj)
+
     GTLoader.update_viewport_shaders(geomobj_matrix=True,
                                      pins_and_residuals=True,
                                      mask=True)
