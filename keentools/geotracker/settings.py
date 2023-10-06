@@ -74,7 +74,8 @@ from .callbacks import (update_camobj,
                         update_mask_source,
                         update_spring_pins_back,
                         update_solve_for_camera,
-                        update_smoothing)
+                        update_smoothing,
+                        update_stabilize_viewport)
 
 
 _log = KTLogger(__name__)
@@ -626,7 +627,9 @@ class GTSceneSettings(PropertyGroup):
             ('GEOMETRY', 'Geometry',
             'Use Geometry as animation source', 0),
             ('CAMERA', 'Camera',
-             'Use Camera as animation source', 1),],
+             'Use Camera as animation source', 1),
+            ('SELECTED_PINS', 'Selected pins',
+             'Use selected pins as animation source', 2),],
         description='Create an animated Empty from')
 
     export_linked_locator: BoolProperty(
@@ -634,6 +637,12 @@ class GTSceneSettings(PropertyGroup):
         description='Use shared animation Action or duplicate '
                     'animation data to use it independently',
         default=False)
+
+    export_locator_orientation: EnumProperty(name='Empty Orientation', items=[
+        ('NORMAL', 'Normal', 'Use normal direction of polygons', 0),
+        ('OBJECT', 'Object', 'Use orientation aligned with Object Pivot', 1),
+        ('WORLD', 'World', 'World aligned at start position', 2),
+    ])
 
     tex_width: IntProperty(
         description='Width size of output texture',
@@ -672,6 +681,11 @@ class GTSceneSettings(PropertyGroup):
     tex_auto_preview: BoolProperty(
         description='Automatically apply the created texture',
         name='Automatically apply the created texture', default=True)
+
+    stabilize_viewport: BoolProperty(description='Viewport stabilization',
+                                     name='Lock Viewport',
+                                     default=False,
+                                     update=update_stabilize_viewport)
 
     @contextmanager
     def ui_write_mode_context(self):
@@ -826,6 +840,18 @@ class GTSceneSettings(PropertyGroup):
         else:
             pins.set_selected_pins(found_pins)
         self.cancel_selection()
+        self.stabilize(reset=True)
+
+    def stabilize(self, reset: bool = False) -> None:
+        vp = GTLoader.viewport()
+        if reset:
+            vp.clear_stabilization_point()
+        if not self.stabilize_viewport:
+            return
+        geotracker = self.get_current_geotracker_item()
+        if not geotracker:
+            return
+        vp.stabilize(geotracker.geomobj)
 
     def stop_calculating(self) -> None:
         self.calculating_mode = 'NONE'

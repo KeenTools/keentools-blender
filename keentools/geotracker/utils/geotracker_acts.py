@@ -21,7 +21,7 @@ import numpy as np
 
 import bpy
 from bpy.types import Object, Operator, Area
-from mathutils import Matrix, Euler
+from mathutils import Matrix, Euler, Vector
 
 from ...utils.kt_logging import KTLogger
 from ...utils.version import BVersion
@@ -81,7 +81,11 @@ from ...utils.coords import (LocRotScale,
                              LocRotWithoutScale,
                              ScaleMatrix,
                              InvScaleMatrix,
-                             change_near_and_far_clip_planes)
+                             change_near_and_far_clip_planes,
+                             pin_to_xyz_from_geo_mesh,
+                             pin_to_normal_from_geo_mesh,
+                             xy_to_xz_rotation_matrix_3x3,
+                             multiply_verts_on_matrix_4x4)
 from .textures import bake_texture, preview_material_with_texture, get_bad_frame
 from ..interface.screen_mesages import clipping_changed_screen_message
 
@@ -607,6 +611,92 @@ def create_animated_empty_act(obj: Object, linked: bool=False,
         obj.matrix_world = obj_matrix_world
         empty.matrix_world = obj_matrix_world
         select_object_only(empty)
+
+    return ActionStatus(True, 'ok')
+
+
+def create_empty_from_selected_pins_act(
+        from_frame: int, to_frame: int, linked: bool = False,
+        orientation: str = 'NORMAL', size: float = 1.0) -> ActionStatus:
+    check_status = common_checks(object_mode=True, pinmode=True,
+                                 is_calculating=True, reload_geotracker=True,
+                                 geotracker=True, camera=True, geometry=True)
+    if not check_status.success:
+        return check_status
+
+    if from_frame < 0 or to_frame < from_frame:
+        return ActionStatus(False, 'Wrong frame range')
+
+    geotracker = get_current_geotracker_item()
+    geomobj = geotracker.geomobj
+    gt = GTLoader.kt_geotracker()
+
+    pins = GTLoader.viewport().pins()
+    pins_count = gt.pins_count()
+    selected_pins = pins.get_selected_pins(pins_count)
+    selected_pins_count = len(selected_pins)
+    if selected_pins_count == 0:
+        return ActionStatus(False, 'No pins selected')
+
+    current_frame = bpy_current_frame()
+    geo = gt.geo()
+    geo_mesh = geo.mesh(0)
+
+    points = np.empty((selected_pins_count, 3), dtype=np.float32)
+    normals = []
+    for i, pin_index in enumerate(selected_pins):
+        pin = gt.pin(current_frame, pin_index)
+        points[i] = pin_to_xyz_from_geo_mesh(pin, geo_mesh)
+        normals.append(pin_to_normal_from_geo_mesh(pin, geo_mesh))
+
+    pin_positions = points @ xy_to_xz_rotation_matrix_3x3()
+    scale_inv = InvScaleMatrix(3, geomobj.matrix_world.to_scale())
+    inv_mat = geomobj.matrix_world.inverted_safe()
+
+    empties = []
+    zv = Vector((0, 0, 1))
+
+    for i, pos in enumerate(pin_positions):
+        empty = create_empty_object('gtPin')
+        empty.empty_display_type = 'ARROWS'
+        empty.empty_display_size = size
+
+        if orientation == 'NORMAL':
+            quaternion_matrix = zv.rotation_difference(
+                np.array(normals[i], dtype=np.float32) @
+                xy_to_xz_rotation_matrix_3x3()).to_matrix().to_4x4()
+            empty.matrix_world = quaternion_matrix
+        elif orientation == 'WORLD':
+            empty.matrix_world = inv_mat
+
+        empty.location = pos @ scale_inv
+        empty.parent = geotracker.geomobj
+        empties.append(empty)
+
+    if linked:
+        return ActionStatus(True, 'ok')
+
+    source_matrices = {}
+    for frame in range(from_frame, to_frame + 1):
+        bpy_set_current_frame(frame)
+        matrices = []
+        for empty in empties:
+            matrices.append(empty.matrix_world.copy())
+        source_matrices[frame] = matrices
+
+    bpy_set_current_frame(current_frame)
+
+    for empty in empties:
+        empty.parent = None
+
+    for frame in range(from_frame, to_frame + 1):
+        bpy_set_current_frame(frame)
+        for i, empty in enumerate(empties):
+            empty.matrix_world = source_matrices[frame][i]
+            update_depsgraph()
+            create_animation_locrot_keyframe_force(empty)
+
+    bpy_set_current_frame(current_frame)
 
     return ActionStatus(True, 'ok')
 

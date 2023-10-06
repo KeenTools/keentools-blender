@@ -92,6 +92,11 @@ def bpy_render_frame() -> Tuple[int, int]:
     return w, h
 
 
+def bpy_render_aspect() -> float:
+    w, h = bpy_render_frame()
+    return w / h
+
+
 def bpy_abspath(file_path: str) -> str:
     return bpy.path.abspath(file_path)
 

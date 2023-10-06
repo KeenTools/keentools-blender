@@ -18,6 +18,7 @@
 
 from typing import List, Optional, Tuple, Any
 
+import numpy as np
 from bpy.types import SpaceView3D
 from gpu_extras.batch import batch_for_shader
 
@@ -34,6 +35,7 @@ _log = KTLogger(__name__)
 
 
 class KTScreenPins:
+    ''' Pins are stored in image space coordinates '''
     def __init__(self):
         self._pins: List[Tuple[float, float]] = []
         self._current_pin: Optional[Tuple[float, float]] = None
@@ -76,6 +78,15 @@ class KTScreenPins:
             self._selected_pins = [x for x in self._selected_pins
                                    if x < pins_count]
         return self._selected_pins
+
+    def average_point_of_selected_pins(self) -> Optional[Tuple[float, float]]:
+        ''' Return average point in image space '''
+        arr = self.arr()
+        selected_pins = self.get_selected_pins(len(arr))
+        pins = [arr[x] for x in selected_pins]
+        if len(pins) > 0:
+            return np.average(pins, axis=0).tolist()
+        return None
 
     def set_selected_pins(self, selected_pins: List[int]) -> None:
         self._selected_pins = selected_pins

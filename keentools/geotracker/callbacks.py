@@ -22,7 +22,9 @@ from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
                             get_operator,
                             ErrorType)
-from ..geotracker_config import GTConfig, get_gt_settings
+from ..geotracker_config import (GTConfig,
+                                 get_gt_settings,
+                                 get_current_geotracker_item)
 from .gtloader import GTLoader
 from ..utils.images import (get_background_image_object,
                             tone_mapping,
@@ -306,3 +308,7 @@ def update_smoothing(geotracker, context: Any) -> None:
     gt.set_smoothing_rotations_coeff(geotracker.smoothing_rotations_coeff)
     gt.set_smoothing_xy_translations_coeff(geotracker.smoothing_xy_translations_coeff)
     GTLoader.save_geotracker()
+
+
+def update_stabilize_viewport(settings, context: Any) -> None:
+    settings.stabilize(reset=True)

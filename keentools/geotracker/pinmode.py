@@ -491,6 +491,10 @@ class GT_OT_PinMode(Operator):
             vp.create_batch_2d(context.area)
             vp.update_residuals(GTLoader.kt_geotracker(), context.area,
                                 bpy_current_frame())
+
+            if not bpy_is_animation_playing() and not settings.is_calculating():
+                settings.stabilize(reset=True)
+
             if vp.needs_to_be_drawn():
                 _log.output('TAG REDRAW')
                 vp.tag_redraw()

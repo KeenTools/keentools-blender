@@ -58,12 +58,18 @@ def tracking_panel(self, context):
                  icon='NEXT_KEYFRAME')
 
     settings = get_gt_settings()
+    if not settings.pinmode:
+        return
+
     row2 = row.row(align=True)
     row2.active = settings.pinmode
     row2.operator(GTConfig.gt_add_keyframe_idname, text='',
                   icon='KEY_HLT')
     row2.operator(GTConfig.gt_remove_keyframe_idname, text='',
                   icon='KEY_DEHLT')
+    row2.separator()
+    row2.prop(settings, 'stabilize_viewport',
+              icon='LOCKED' if settings.stabilize_viewport else 'UNLOCKED')
 
 
 def _add_buttons_to_timeline():
