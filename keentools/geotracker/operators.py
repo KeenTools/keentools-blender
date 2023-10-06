@@ -547,7 +547,7 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
                 return {'CANCELLED'}
             return {'FINISHED'}
 
-        elif settings.export_locator_selector == 'GEOMETRY':
+        elif settings.export_locator_selector == 'CAMERA':
             act_status = create_animated_empty_act(
                 geotracker.camobj, settings.export_linked_locator)
             if not act_status.success:
