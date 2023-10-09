@@ -156,6 +156,7 @@ def get_fb_settings_safe():
 
 
 def facebuilder_register():
+    _log.output('--- START FACEBUILDER REGISTER ---')
     global CLASSES_TO_REGISTER
 
     _unregister_old_facebuilder()
@@ -170,28 +171,31 @@ def facebuilder_register():
         if FB_PT_OldFaceBuilderWarning not in CLASSES_TO_REGISTER:
             CLASSES_TO_REGISTER = (FB_PT_OldFaceBuilderWarning,) + CLASSES_TO_REGISTER
 
-    _log.output('START FACEBUILDER REGISTER CLASSES')
+    _log.output('FACEBUILDER REGISTER CLASSES')
     for cls in CLASSES_TO_REGISTER:
         _log.output(f'REGISTER FB CLASS:\n{str(cls)}')
         bpy.utils.register_class(cls)
 
+    _log.output('FACEBUILDER ADD MESH MENU REGISTER')
     bpy.types.VIEW3D_MT_mesh_add.append(menu_func)
-    _log.output('FACEBUILDER ADD MESH MENU REGISTERED')
+    _log.output('MAIN FACEBUILDER VARIABLE REGISTER')
     _add_addon_settings_var()
     _log.output('MAIN FACEBUILDER VARIABLE REGISTERED')
-
     set_fb_settings_func(get_fb_settings_safe)
+    _log.output('=== FACEBUILDER REGISTERED ===')
 
 
 def facebuilder_unregister():
-    _log.output('START UNREGISTER CLASSES')
+    _log.output('--- START FACEBUILDER UNREGISTER ---')
 
+    _log.output('FACEBUILDER UNREGISTER CLASSES')
     for cls in reversed(CLASSES_TO_REGISTER):
         _log.output(f'UNREGISTER FB CLASS:\n{str(cls)}')
         bpy.utils.unregister_class(cls)
 
+    _log.output('FACEBUILDER ADD MESH MENU UNREGISTER')
     bpy.types.VIEW3D_MT_mesh_add.remove(menu_func)
-    _log.output('FACEBUILDER ADD MESH MENU UNREGISTERED')
+
     try:
         if check_addon_settings_var_type() == FBSceneSettings:
             remove_addon_settings_var()
@@ -200,3 +204,5 @@ def facebuilder_unregister():
             _log.error('CANNOT UNREGISTER MAIN FB VAR')
     except Exception as err:
         _log.error(f'FACEBUILDER UNREGISTER VARIABLE ERROR:\n{str(err)}')
+
+    _log.output('=== FACEBUILDER UNREGISTERED ===')

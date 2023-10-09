@@ -35,7 +35,9 @@ import os
 import sys
 import logging.config
 
-import bpy
+from bpy import app as _bpy_app
+from bpy.types import AddonPreferences
+from bpy.utils import register_class, unregister_class
 
 # Only minimal imports are performed to check the start
 from .addon_config import Config
@@ -49,10 +51,10 @@ logging.config.fileConfig(os.path.join(base_dir,
     'logging_debug_console.conf' if 'KEENTOOLS_ENABLE_DEBUG_LOGGING'
     in os.environ else 'logging.conf'),
     disable_existing_loggers=False)
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 txt = get_system_info()
 txt.append('Addon: {}'.format(bl_info['name']))
-logger.info('\n---\nSystem Info:\n' + '\n'.join(txt) + '\n---\n')
+_log.info('\n---\nSystem Info:\n' + '\n'.join(txt) + '\n---\n')
 
 
 def _is_platform_64bit():
@@ -69,7 +71,7 @@ def _is_config_latest():
 
 
 def _is_blender_too_old():
-    return bpy.app.version < Config.minimal_blender_api
+    return _bpy_app.version < Config.minimal_blender_api
 
 
 def _check_libraries():
@@ -87,7 +89,7 @@ def _can_load():
 
 
 if not _can_load():
-    class KTCannotLoadPreferences(bpy.types.AddonPreferences):
+    class KTCannotLoadPreferences(AddonPreferences):
         bl_idname = Config.addon_name
 
         def draw(self, context):
@@ -148,15 +150,13 @@ if not _can_load():
 
 
     def register():
-        logger = logging.getLogger(__name__)
-        bpy.utils.register_class(KTCannotLoadPreferences)
-        logger.error("CANNOT LOAD PREFERENCES REGISTERED")
+        register_class(KTCannotLoadPreferences)
+        _log.error('CANNOT LOAD PREFERENCES REGISTERED')
 
 
     def unregister():
-        logger = logging.getLogger(__name__)
-        bpy.utils.unregister_class(KTCannotLoadPreferences)
-        logger.error("CANNOT LOAD PREFERENCES UNREGISTERED")
+        unregister_class(KTCannotLoadPreferences)
+        _log.error('CANNOT LOAD PREFERENCES UNREGISTERED')
 
 else:
     from .preferences import CLASSES_TO_REGISTER as PREFERENCES_CLASSES
@@ -174,31 +174,36 @@ else:
 
 
     def register():
-        logger = logging.getLogger(__name__)
-        logger.debug('START REGISTER CLASSES')
+        _log.debug(f'--- START KEENTOOLS ADDON {bl_info["version"]} '
+                   f'REGISTER ---')
+        _log.debug('START REGISTER CLASSES')
         for cls in CLASSES_TO_REGISTER:
-            logger.debug('REGISTER CLASS: \n{}'.format(str(cls)))
-            bpy.utils.register_class(cls)
-        logger.info('KeenTools addon classes have been registered')
+            _log.debug('REGISTER CLASS: \n{}'.format(str(cls)))
+            register_class(cls)
+        _log.info('KeenTools addon classes have been registered')
         facebuilder_register()
-        logger.info('FaceBuilder classes have been registered')
+        _log.info('FaceBuilder classes have been registered')
         geotracker_register()
-        logger.info('GeoTracker classes have been registered')
+        _log.info('GeoTracker classes have been registered')
+        _log.debug(f'=== KEENTOOLS ADDON {bl_info["version"]} REGISTERED ===')
 
 
     def unregister():
-        logger = logging.getLogger(__name__)
-        logger.debug('START UNREGISTER CLASSES')
+        _log.debug(f'--- START KEENTOOLS ADDON {bl_info["version"]} '
+                   f'UNREGISTER ---')
+        _log.debug('START UNREGISTER CLASSES')
         geotracker_unregister()
-        logger.info('GeoTracker classes have been unregistered')
+        _log.info('GeoTracker classes have been unregistered')
         facebuilder_unregister()
-        logger.info('FaceBuilder classes have been unregistered')
+        _log.info('FaceBuilder classes have been unregistered')
         for cls in reversed(CLASSES_TO_REGISTER):
-            logger.debug('UNREGISTER CLASS: \n{}'.format(str(cls)))
-            bpy.utils.unregister_class(cls)
-        logger.info('KeenTools addon classes have been unregistered')
+            _log.debug('UNREGISTER CLASS: \n{}'.format(str(cls)))
+            unregister_class(cls)
+        _log.info('KeenTools addon classes have been unregistered')
+        _log.debug(f'=== KEENTOOLS ADDON {bl_info["version"]} '
+                   f'UNREGISTERED ===')
 
 
 if __name__ == '__main__':
-    logger.info('KeenTools addon direct initialization')
+    _log.info('KeenTools addon direct initialization')
     register()
