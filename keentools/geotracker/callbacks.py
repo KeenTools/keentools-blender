@@ -310,5 +310,5 @@ def update_smoothing(geotracker, context: Any) -> None:
     GTLoader.save_geotracker()
 
 
-def update_stabilize_viewport(settings, context: Any) -> None:
-    settings.stabilize(reset=True)
+def update_stabilize_viewport_enabled(settings, context: Any) -> None:
+    settings.stabilize_viewport(reset=True)

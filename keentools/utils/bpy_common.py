@@ -49,6 +49,10 @@ def bpy_context() -> Any:
     return bpy.context
 
 
+def bpy_window_manager() -> Any:
+    return bpy.context.window_manager
+
+
 def bpy_objects() -> Any:
     return bpy.data.objects
 

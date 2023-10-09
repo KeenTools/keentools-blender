@@ -75,7 +75,7 @@ from .callbacks import (update_camobj,
                         update_spring_pins_back,
                         update_solve_for_camera,
                         update_smoothing,
-                        update_stabilize_viewport)
+                        update_stabilize_viewport_enabled)
 
 
 _log = KTLogger(__name__)
@@ -474,7 +474,6 @@ class GeoTrackerItem(PropertyGroup):
         return GTConfig.tex_builder_filename_template.format(self.get_geomobj_name())
 
 
-
 class GTSceneSettings(PropertyGroup):
     ui_write_mode: BoolProperty(name='UI Write mode', default=False)
     viewport_state: PointerProperty(type=ViewportStateItem)
@@ -570,7 +569,8 @@ class GTSceneSettings(PropertyGroup):
         ('TRACKING', 'TRACKING', 'Tracking is calculating', 2),
         ('REFINE', 'REFINE', 'Refine is calculating', 3),
         ('REPROJECT', 'REPROJECT', 'Project and bake texture is calculating', 4),
-        ('ESTIMATE_FL', 'ESTIMATE_FL', 'Focal length estimation is calculating', 5)
+        ('ESTIMATE_FL', 'ESTIMATE_FL', 'Focal length estimation is calculating', 5),
+        ('JUMP', 'JUMP', 'Jump to frame', 6)
     ])
 
     selection_mode: BoolProperty(name='Selection mode', default=False)
@@ -682,10 +682,10 @@ class GTSceneSettings(PropertyGroup):
         description='Automatically apply the created texture',
         name='Automatically apply the created texture', default=True)
 
-    stabilize_viewport: BoolProperty(description='Viewport stabilization',
-                                     name='Lock Viewport',
-                                     default=False,
-                                     update=update_stabilize_viewport)
+    stabilize_viewport_enabled: BoolProperty(
+        description='Viewport stabilization',
+        name='Lock Viewport', default=False,
+        update=update_stabilize_viewport_enabled)
 
     @contextmanager
     def ui_write_mode_context(self):
@@ -840,13 +840,13 @@ class GTSceneSettings(PropertyGroup):
         else:
             pins.set_selected_pins(found_pins)
         self.cancel_selection()
-        self.stabilize(reset=True)
+        self.stabilize_viewport(reset=True)
 
-    def stabilize(self, reset: bool = False) -> None:
+    def stabilize_viewport(self, reset: bool = False) -> None:
         vp = GTLoader.viewport()
         if reset:
             vp.clear_stabilization_point()
-        if not self.stabilize_viewport:
+        if not self.stabilize_viewport_enabled:
             return
         geotracker = self.get_current_geotracker_item()
         if not geotracker:

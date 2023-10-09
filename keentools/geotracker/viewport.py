@@ -21,7 +21,6 @@ import numpy as np
 
 from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
 from bpy_extras.view3d_utils import location_3d_to_region_2d
-from mathutils import Vector
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType
@@ -80,6 +79,7 @@ class GTViewport(KTViewport):
         self.stabilization_region_point: Optional[Tuple[float, float]] = None
 
     def clear_stabilization_point(self):
+        _log.output(_log.color('yellow', 'clear_stabilization_point'))
         self.stabilization_region_point = None
 
     def stabilize(self, geomobj: Optional[Object]) -> bool:
@@ -100,16 +100,25 @@ class GTViewport(KTViewport):
             point = location_3d_to_region_2d(
                 region, region_3d,
                 geomobj.matrix_world @ bound_box_center(geomobj),
-                default=Vector((region.width / 2, region.height / 2)))
+                default=None)
+            if point is None:
+                _log.error('Cannot calculate average point')
+                return False
         else:
             point = image_space_to_region(*pins_average_point,
                                           x1, y1, x2, y2, shift_x, shift_y)
 
+        _log.output(_log.color('red', f'point: {point}'))
+        _log.output(_log.color('red', f'stabilization_point: '
+                                      f'{self.stabilization_region_point}'))
         if self.stabilization_region_point is None:
             self.stabilization_region_point = point
             return True
 
         sx, sy = self.stabilization_region_point
+        _log.output(_log.color('magenta',
+                               f'stabilization_region_point: '
+                               f'{self.stabilization_region_point}'))
         px, py = point
         _, offset = calc_camera_zoom_and_offset(
             area, x1 + sx - px, y1 + sy - py, width=x2 - x1)

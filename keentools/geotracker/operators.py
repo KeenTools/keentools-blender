@@ -56,6 +56,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     remove_keyframe_act,
                                     prev_keyframe_act,
                                     next_keyframe_act,
+                                    toggle_lock_viewport_act,
                                     track_to,
                                     track_next_frame_act,
                                     refine_async_act,
@@ -222,7 +223,9 @@ class GT_OT_PrevKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, check_status.error_message)
             return {'CANCELLED'}
 
+        settings.calculating_mode = 'JUMP'
         act_status = prev_keyframe_act()
+        settings.stop_calculating()
         if not act_status.success:
             self.report({'INFO'}, act_status.error_message)
             return {'CANCELLED'}
@@ -247,11 +250,27 @@ class GT_OT_NextKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, check_status.error_message)
             return {'CANCELLED'}
 
+        settings.calculating_mode = 'JUMP'
         act_status = next_keyframe_act()
+        settings.stop_calculating()
         if not act_status.success:
             self.report({'INFO'}, act_status.error_message)
             return {'CANCELLED'}
 
+        return {'FINISHED'}
+
+
+class GT_OT_LockViewport(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_toggle_lock_viewport_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        act_status = toggle_lock_viewport_act()
+        if not act_status.success:
+            self.report({'INFO'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -1783,6 +1802,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_RemoveKeyframe,
                   GT_OT_NextKeyframe,
                   GT_OT_PrevKeyframe,
+                  GT_OT_LockViewport,
                   GT_OT_TrackToStart,
                   GT_OT_TrackPrev,
                   GT_OT_TrackNext,
