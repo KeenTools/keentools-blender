@@ -173,6 +173,16 @@ else:
                                                      KT_OT_AddonWarning,)
 
 
+    def stop_timers():
+        _log.debug('STOP TIMERS')
+        try:
+            from .utils.timer import stop_all_working_timers
+            stop_all_working_timers()
+        except Exception as err:
+            _log.error(f'stop_timers Exception:\n{str(err)}')
+        _log.debug('STOPPED TIMERS')
+
+
     def register():
         _log.debug(f'--- START KEENTOOLS ADDON {bl_info["version"]} '
                    f'REGISTER ---')
@@ -191,6 +201,7 @@ else:
     def unregister():
         _log.debug(f'--- START KEENTOOLS ADDON {bl_info["version"]} '
                    f'UNREGISTER ---')
+        stop_timers()
         _log.debug('START UNREGISTER CLASSES')
         geotracker_unregister()
         _log.info('GeoTracker classes have been unregistered')

@@ -210,7 +210,7 @@ class GT_OT_PrevKeyframe(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_prev_keyframe_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER'}
+    bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
@@ -237,7 +237,7 @@ class GT_OT_NextKeyframe(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_next_keyframe_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER'}
+    bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')

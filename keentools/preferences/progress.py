@@ -40,6 +40,9 @@ class UpdateProgressTimer(KTTimer):
         return not self.is_active()
 
     def _check_progress(self):
+        if self.check_stop_all_timers():
+            return None
+
         if self._timer_should_not_work():
             _log.output('STOP PROGRESS INACTIVE')
             self.stop()

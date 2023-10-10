@@ -36,6 +36,9 @@ class KTGraceTimer(KTTimer):
         self._product: str = product
 
     def _callback(self) -> Optional[float]:
+        if self.check_stop_all_timers():
+            return None
+
         _log.debug(f'CHECK GRACE PERIOD FOR {self._product}')
         if not pkt_is_installed():
             _log.error('PYKEENTOOLS WAS DEACTIVATED')
