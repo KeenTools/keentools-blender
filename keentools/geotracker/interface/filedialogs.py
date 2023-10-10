@@ -561,9 +561,14 @@ class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
             self.report({'ERROR'}, msg)
             return {'CANCELLED'}
         frames = [x for x in range(self.from_frame, self.to_frame + 1)]
+
+        op = get_operator(GTConfig.gt_interrupt_modal_idname)
+        op('INVOKE_DEFAULT')
+
         bake_texture_sequence(context, geotracker, filepath_pattern,
                               frames=frames,
                               file_format=self.file_format)
+
         return {'FINISHED'}
 
 

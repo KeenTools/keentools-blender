@@ -50,6 +50,7 @@ class BVersion:
     version: Tuple[int, int, int] = ver
     version_string: str = ver_string
 
+    open_dialog_overrides_area: bool = ver < (2, 81, 0)
     dynamic_tooltip_exists: bool = ver >= (2, 81, 0)
     uv_select_overlap_exists: bool = ver >= (2, 81, 0)
     blender_srgb_to_framebuffer_space_enabled: bool = ver >= (2, 83, 0)
