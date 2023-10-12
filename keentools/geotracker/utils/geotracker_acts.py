@@ -88,6 +88,7 @@ from ...utils.coords import (LocRotScale,
                              multiply_verts_on_matrix_4x4)
 from .textures import bake_texture, preview_material_with_texture, get_bad_frame
 from ..interface.screen_mesages import clipping_changed_screen_message
+from ...utils.ui_redraw import total_redraw_ui
 
 
 _log = KTLogger(__name__)
@@ -193,6 +194,7 @@ def next_keyframe_act() -> ActionStatus:
 
     if current_frame != target_frame:
         bpy_set_current_frame(target_frame)
+        total_redraw_ui()  # For proper stabilization
         return ActionStatus(True, 'ok')
 
     return ActionStatus(False, 'No next GeoTracker keyframe')
@@ -212,9 +214,19 @@ def prev_keyframe_act() -> ActionStatus:
 
     if current_frame != target_frame:
         bpy_set_current_frame(target_frame)
+        total_redraw_ui()  # For proper stabilization
         return ActionStatus(True, 'ok')
 
     return ActionStatus(False, 'No previous GeoTracker keyframe')
+
+
+def toggle_lock_viewport_act() -> ActionStatus:
+    settings = get_gt_settings()
+    if not settings.pinmode:
+        return ActionStatus(False, 'Lock viewport works in GeoTracker pinmode only')
+
+    settings.stabilize_viewport_enabled = not settings.stabilize_viewport_enabled
+    return ActionStatus(True, 'Ok')
 
 
 def track_to(forward: bool) -> ActionStatus:

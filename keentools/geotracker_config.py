@@ -74,6 +74,7 @@ class GTConfig:
     gt_remove_pins_idname = operators + '.remove_pins_btn'
     gt_toggle_pins_idname = operators + '.toggle_pins_btn'
 
+    gt_toggle_lock_viewport_idname = operators + '.toggle_lock_viewport'
     gt_exit_pinmode_idname = operators + '.exit_pinmode_btn'
     gt_interrupt_modal_idname = operators + '.interrupt_modal'
     gt_stop_calculating_idname = operators + '.stop_calculating_btn'

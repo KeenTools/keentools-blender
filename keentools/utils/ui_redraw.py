@@ -110,3 +110,15 @@ def total_redraw_ui() -> None:
     if not bpy_background_mode():
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         _log.output(_log.color('red', 'total_redraw_ui'))
+
+
+def total_redraw_ui_overriding_window() -> None:
+    ''' This function is actual for Blender 2.80 only '''
+    if not bpy_background_mode():
+        wm = bpy.context.window_manager
+        override = {
+            'window': wm.windows[0],
+            'screen': wm.windows[0].screen,
+        }
+        bpy.ops.wm.redraw_timer(override, type='DRAW_WIN_SWAP', iterations=1)
+        _log.output(_log.color('red', 'total_redraw_ui_overriding_window'))
