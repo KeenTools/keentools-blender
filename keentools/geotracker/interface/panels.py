@@ -23,6 +23,7 @@ from functools import partial
 import bpy
 from bpy.types import Area, Panel
 
+from ...utils.kt_logging import KTLogger
 from ...addon_config import Config, geotracker_enabled, addon_pinmode
 from ...geotracker_config import (GTConfig, get_gt_settings,
                                   get_current_geotracker_item)
@@ -40,10 +41,12 @@ from ...utils.materials import find_bpy_image_by_name
 from ...utils.grace_timer import KTGraceTimer
 
 
+_log = KTLogger(__name__)
 _gt_grace_timer = KTGraceTimer('geotracker')
 
 
 def _pinmode_escaper(area: Area) -> None:
+    _log.error('_pinmode_escaper call')
     GTLoader.out_pinmode()
     exit_area_localview(area)
     force_show_ui_overlays(area)
@@ -54,6 +57,20 @@ def _start_pinmode_escaper(context: Any) -> None:
     if context.area:
         bpy_timer_register(partial(_pinmode_escaper, context.area),
                            first_interval=0.01)
+
+
+def _calculating_escaper() -> None:
+    _log.error('_calculating_escaper call')
+    settings = get_gt_settings()
+    settings.stop_calculating()
+    settings.user_interrupts = True
+
+
+def _start_calculating_escaper() -> None:
+    settings = get_gt_settings()
+    mode = settings.calculating_mode
+    if mode == 'TRACKING' or mode == 'REFINE':
+        bpy_timer_register(_calculating_escaper, first_interval=0.01)
 
 
 def _geomobj_delete_handler() -> None:
@@ -131,10 +148,14 @@ class GT_PT_GeotrackersPanel(View3DPanel):
     def _geotracker_creation_offer(self, layout: Any) -> None:
         settings = get_gt_settings()
         row = layout.row()
-        row.active = not settings.pinmode
-        row.enabled = not settings.pinmode
-        row.scale_y = 2.0 if len(settings.geotrackers) == 0 else Config.btn_scale_y
-        row.operator(GTConfig.gt_create_geotracker_idname, icon='ADD')
+        if settings.is_calculating():
+            row.scale_y = Config.btn_scale_y
+            row.operator(GTConfig.gt_stop_calculating_idname, icon='X')
+        else:
+            row.active = not settings.pinmode
+            row.enabled = not settings.pinmode
+            row.scale_y = 2.0 if len(settings.geotrackers) == 0 else Config.btn_scale_y
+            row.operator(GTConfig.gt_create_geotracker_idname, icon='ADD')
 
     def _output_geotrackers_list(self, layout: Any) -> None:
         settings = get_gt_settings()
@@ -680,6 +701,9 @@ class GT_PT_TrackingPanel(AllVisible):
             col = layout.column(align=True)
             self._tracking_track_row(settings, col)
             self._tracking_refine_row(settings, col)
+        else:
+            if settings.is_calculating():
+                _start_calculating_escaper()
 
         col = layout.column(align=True)
         self._tracking_keyframes_row(settings, col)

@@ -612,6 +612,8 @@ class GT_OT_StopCalculating(Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    attempts: IntProperty(default=0)
+
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         settings = get_gt_settings()
@@ -619,6 +621,14 @@ class GT_OT_StopCalculating(Operator):
 
         if not settings.user_interrupts:
             settings.user_interrupts = True
+            self.attempts = 0
+            return {'FINISHED'}
+
+        self.attempts += 1
+        if self.attempts > 1:
+            _log.error(f'Extreme calculation stop')
+            settings.stop_calculating()
+            self.attempts = 0
             return {'FINISHED'}
 
         if settings.calculating_mode == 'PRECALC':
