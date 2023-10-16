@@ -1445,4 +1445,4 @@ def unbreak_after(frame_list: List) -> None:
 
 
 def unbreak_after_reversed(frame_list: List) -> None:
-    return unbreak_after([x for x in reversed(frame_list)])
+    return unbreak_after(list(reversed(frame_list)))
