@@ -42,6 +42,7 @@ from ..utils.bpy_common import (bpy_render_frame,
 from ..utils.animation import count_fcurve_points
 from ..utils.manipulate import select_object_only, switch_to_camera
 from ..utils.ui_redraw import total_redraw_ui
+from .utils.tracking import check_unbreak_rotaion_is_needed
 
 
 _log = KTLogger(__name__)
@@ -54,6 +55,11 @@ _constraint_warning_message = \
     'If this is the result of Blender tracking, \n' \
     'you need to click on the \'Constraint to F-Curve button\'\n' \
     'of the solver constraint.'
+
+
+_unbreak_rotation_is_needed_warning = \
+    'object has gaps in its rotation data. \n' \
+    'We recommend applying \'Unbreak rotation\' operation to it'
 
 
 def update_camobj(geotracker, context: Any) -> None:
@@ -74,6 +80,12 @@ def update_camobj(geotracker, context: Any) -> None:
 
     if geotracker.camobj and len(geotracker.camobj.constraints) > 0:
         msg = f'Camera {_constraint_warning_message}'
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+             msg_content=msg)
+
+    if check_unbreak_rotaion_is_needed(geotracker.camobj):
+        msg = f'Camera {_unbreak_rotation_is_needed_warning}'
         warn = get_operator(Config.kt_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=msg)
@@ -99,6 +111,12 @@ def update_geomobj(geotracker, context: Any) -> None:
 
     if geotracker.geomobj and len(geotracker.geomobj.constraints) > 0:
         msg = f'Geometry {_constraint_warning_message}'
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+             msg_content=msg)
+
+    if check_unbreak_rotaion_is_needed(geotracker.geomobj):
+        msg = f'Geometry {_unbreak_rotation_is_needed_warning}'
         warn = get_operator(Config.kt_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=msg)

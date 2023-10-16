@@ -37,16 +37,12 @@ from ...utils.animation import (get_action,
                                 mark_selected_points_in_locrot,
                                 get_object_keyframe_numbers,
                                 create_animation_locrot_keyframe_force,
-                                create_locrot_keyframe,
                                 bake_locrot_to_world,
-                                get_world_matrices_in_frames,
-                                apply_world_matrices_in_frames,
-                                scene_frame_list,
-                                get_safe_evaluated_fcurve,
-                                get_safe_action_fcurve,
-                                insert_point_in_fcurve)
+                                scene_frame_list)
 from .tracking import (get_next_tracking_keyframe,
-                       get_previous_tracking_keyframe)
+                       get_previous_tracking_keyframe,
+                       unbreak_rotation,
+                       check_unbreak_rotaion_is_needed)
 from ...utils.bpy_common import (create_empty_object,
                                  bpy_current_frame,
                                  bpy_set_current_frame,
@@ -84,8 +80,7 @@ from ...utils.coords import (LocRotScale,
                              change_near_and_far_clip_planes,
                              pin_to_xyz_from_geo_mesh,
                              pin_to_normal_from_geo_mesh,
-                             xy_to_xz_rotation_matrix_3x3,
-                             multiply_verts_on_matrix_4x4)
+                             xy_to_xz_rotation_matrix_3x3)
 from .textures import bake_texture, preview_material_with_texture, get_bad_frame
 from ..interface.screen_mesages import clipping_changed_screen_message
 from ...utils.ui_redraw import total_redraw_ui
@@ -248,7 +243,10 @@ def track_to(forward: bool) -> ActionStatus:
         precalc_path = None if precalcless else geotracker.precalc_path
         _log.output(f'gt.track_async({current_frame}, {forward}, {precalc_path})')
         tracking_computation = gt.track_async(current_frame, forward, precalc_path)
-        tracking_timer = TrackTimer(tracking_computation, current_frame)
+        tracking_timer = TrackTimer(
+            tracking_computation, current_frame,
+            success_callback=unbreak_after if forward else unbreak_after_reversed,
+            error_callback=unbreak_after if forward else unbreak_after_reversed)
         tracking_timer.start()
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException track_to: {str(err)}')
@@ -270,13 +268,26 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
 
     settings = get_gt_settings()
     geotracker = get_current_geotracker_item()
+
+    obj = geotracker.animatable_object()
+    if not obj:
+        msg = 'No animated object'
+        _log.error(msg)
+        return ActionStatus(False, msg)
+
     gt = GTLoader.kt_geotracker()
     current_frame = bpy_current_frame()
+    next_frame = current_frame + 1 if forward else current_frame - 1
     settings.calculating_mode = 'TRACKING'
     try:
         _log.output(GTLoader.get_geotracker_state())
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
-        gt.track_frame(current_frame, forward, precalc_path)
+
+        if gt.track_frame(current_frame, forward, precalc_path):
+            status = unbreak_rotation_with_status(obj, [current_frame, next_frame])
+            if not status.success:
+                _log.error(f'track_next_frame_act {status.error_message}')
+
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException track_next_frame_act: {str(err)}')
         show_unlicensed_warning()
@@ -291,9 +302,8 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
         settings.stop_calculating()
 
     GTLoader.save_geotracker()
-    current_frame += 1 if forward else -1
-    if bpy_current_frame() != current_frame:
-        bpy_set_current_frame(current_frame)
+    if bpy_current_frame() != next_frame:
+        bpy_set_current_frame(next_frame)
 
     return ActionStatus(True, 'Ok')
 
@@ -319,9 +329,11 @@ def refine_async_act() -> ActionStatus:
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
         refine_computation = gt.refine_async(current_frame, precalc_path)
         if geotracker.precalcless:
-            refine_timer = RefineTimer(refine_computation, current_frame)
+            refine_timer = RefineTimer(refine_computation, current_frame,
+                                       success_callback=unbreak_after)
         else:
-            refine_timer = RefineTimerFast(refine_computation, current_frame)
+            refine_timer = RefineTimerFast(refine_computation, current_frame,
+                                           success_callback=unbreak_after)
         refine_timer.start()
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException refine_async_act: {str(err)}')
@@ -350,9 +362,11 @@ def refine_all_async_act() -> ActionStatus:
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
         refine_computation = gt.refine_all_async(precalc_path)
         if geotracker.precalcless:
-            refine_timer = RefineTimer(refine_computation, current_frame)
+            refine_timer = RefineTimer(refine_computation, current_frame,
+                                       success_callback=unbreak_after)
         else:
-            refine_timer = RefineTimerFast(refine_computation, current_frame)
+            refine_timer = RefineTimerFast(refine_computation, current_frame,
+                                           success_callback=unbreak_after)
         refine_timer.start()
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException refine_all_async_act: {str(err)}')
@@ -1391,9 +1405,12 @@ def bake_locrot_act(obj: Object) -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def unbreak_rotation_act() -> ActionStatus:
-    geotracker = get_current_geotracker_item()
-    obj = geotracker.animatable_object()
+def unbreak_rotation_with_status(obj: Object, frame_list: List) -> ActionStatus:
+    if check_unbreak_rotaion_is_needed(obj):
+        _log.error(f'{obj} NEED FOR UNBREAK!!!')
+
+    if not GTConfig.auto_unbreak_rotation:
+        return ActionStatus(True, 'ok')
 
     action = get_action(obj)
     if action is None:
@@ -1401,31 +1418,31 @@ def unbreak_rotation_act() -> ActionStatus:
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    frame_list = get_object_keyframe_numbers(obj, loc=False, rot=True)
     if len(frame_list) < 2:
-        return ActionStatus(False, 'Not enough keys to apply Unbreak Rotation')
+        msg = 'Not enough keys to apply Unbreak Rotation'
+        _log.error(msg)
+        return ActionStatus(False, msg)
 
-    euler_list = list()
-    for frame in frame_list:
-        x_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 0)
-        y_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 1)
-        z_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 2)
-        euler_list.append((x_rot, y_rot, z_rot))
-
-    x_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 0)
-    y_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 1)
-    z_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 2)
-
-    euler_prev = euler_list[0]
-    for frame, euler_current in zip(frame_list[1:], euler_list[1:]):
-        rot = pkt_module().math.unbreak_rotation(euler_prev,
-                                                 euler_current)
-        insert_point_in_fcurve(x_rot_fcurve, frame, rot[0])
-        insert_point_in_fcurve(y_rot_fcurve, frame, rot[1])
-        insert_point_in_fcurve(z_rot_fcurve, frame, rot[2])
-        euler_prev = rot
-
-    update_depsgraph()
-    _mark_object_keyframes(obj)
-
+    if unbreak_rotation(obj, frame_list):
+        _mark_object_keyframes(obj)
     return ActionStatus(True, 'ok')
+
+
+def unbreak_rotation_act() -> ActionStatus:
+    geotracker = get_current_geotracker_item()
+    obj = geotracker.animatable_object()
+    frame_list = get_object_keyframe_numbers(obj, loc=False, rot=True)
+    return unbreak_rotation_with_status(obj, frame_list)
+
+
+def unbreak_after(frame_list: List) -> None:
+    _log.output('unbreak_after call')
+    geotracker = get_current_geotracker_item()
+    obj = geotracker.animatable_object()
+    status = unbreak_rotation_with_status(obj, frame_list)
+    if not status.success:
+        _log.error(status.error_message)
+
+
+def unbreak_after_reversed(frame_list: List) -> None:
+    return unbreak_after([x for x in reversed(frame_list)])

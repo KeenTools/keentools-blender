@@ -183,6 +183,7 @@ class GTConfig:
     auto_render_size = True
     auto_time_length = True
     auto_increase_far_clip_distance = True
+    auto_unbreak_rotation = True
 
     gt_empty_name = 'gtEmpty'
     gt_background_name = 'geotracker_footage'
