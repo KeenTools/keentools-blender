@@ -157,10 +157,6 @@ def frame_change_post_handler(scene) -> None:
     if geotracker.focal_length_estimation:
         geotracker.reset_focal_length_estimation()
 
-    if settings.stabilize_viewport_enabled:
-        GTLoader.load_pins_into_viewport()
-        GTLoader.viewport().stabilize(geotracker.geomobj)
-
     if Config.test_facetracker:
         GTLoader.increment_geo_hash()
         gt = GTLoader.kt_geotracker()
@@ -171,6 +167,10 @@ def frame_change_post_handler(scene) -> None:
         wf.init_geom_data_from_core(*GTLoader.get_geo_shader_data(
             geo, geotracker.geomobj.matrix_world))
         wf.create_batches()
+
+    if settings.stabilize_viewport_enabled:
+        GTLoader.load_pins_into_viewport()
+        GTLoader.viewport().stabilize(geotracker.geomobj)
 
     GTLoader.update_viewport_shaders(geomobj_matrix=True,
                                      pins_and_residuals=True,
