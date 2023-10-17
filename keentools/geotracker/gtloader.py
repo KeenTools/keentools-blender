@@ -165,6 +165,17 @@ def frame_change_post_handler(scene) -> None:
                                      pins_and_residuals=True,
                                      mask=True)
 
+    if Config.test_facetracker:
+        GTLoader.increment_geo_hash()
+        gt = GTLoader.kt_geotracker()
+        geo = gt.applied_args_model_at(bpy_current_frame())
+
+        vp = GTLoader.viewport()
+        wf = vp.wireframer()
+        wf.init_geom_data_from_core(*GTLoader.get_geo_shader_data(
+            geo, geotracker.geomobj.matrix_world))
+        wf.create_batches()
+
 
 class GTLoader:
     _viewport: Any = GTViewport()
