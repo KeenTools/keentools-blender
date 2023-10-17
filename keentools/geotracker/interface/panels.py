@@ -24,7 +24,8 @@ import bpy
 from bpy.types import Area, Panel
 
 from ...addon_config import Config, geotracker_enabled, addon_pinmode
-from ...geotracker_config import GTConfig, get_gt_settings
+from ...geotracker_config import (GTConfig, get_gt_settings,
+                                  get_current_geotracker_item)
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...updater.panels import (KTUpdater,
                                KT_PT_UpdatePanel,
@@ -35,6 +36,7 @@ from ..gtloader import GTLoader
 from ...utils.localview import exit_area_localview, check_context_localview
 from ...utils.viewport_state import force_show_ui_overlays
 from ...utils.bpy_common import bpy_timer_register
+from ...utils.materials import find_bpy_image_by_name
 from ...utils.grace_timer import KTGraceTimer
 
 
@@ -345,7 +347,9 @@ class GT_PT_InputsPanel(AllVisible):
                              text='', icon='FILE_HIDDEN')
 
         if settings.is_calculating('PRECALC'):
-            _draw_calculating_indicator(layout)
+            col2 = col.column()
+            col2.operator(GTConfig.gt_stop_calculating_idname,
+                         text='Cancel', icon='X')
         else:
             self._draw_analyze_btn(col, geotracker)
 
@@ -360,24 +364,32 @@ class GT_PT_MasksPanel(AllVisible):
             return
 
         col = layout.column(align=True)
-        col.label(text='Surface mask')
+        col.label(text='Surface Mask')
         row = col.row(align=True)
         row.prop_search(geotracker, 'mask_3d',
                         geotracker.geomobj, 'vertex_groups', text='')
         row.prop(geotracker, 'mask_3d_inverted',
                  text='', icon='ARROW_LEFTRIGHT')
 
-    def _mask_2d_block(self, layout: Any, geotracker: Any) -> None:
-        box = layout.box()
-        row = box.row(align=True)
+    def _mask_2d_block(self, layout: Any, geotracker: Any,
+                       show_threshold: bool = False) -> None:
+        row = layout.row(align=True)
         row.prop_search(geotracker, 'mask_2d',
-                        bpy.data, 'images')
-        row.prop(geotracker, 'mask_2d_inverted',
-                 text='', icon='ARROW_LEFTRIGHT')
+                        bpy.data, 'movieclips', text='')
         row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
                      text='', icon='FILEBROWSER')
-        row = box.row(align=True)
-        row.prop(geotracker, 'mask_2d_threshold', slider=True)
+        row.prop(geotracker, 'mask_2d_inverted',
+                 text='', icon='ARROW_LEFTRIGHT')
+
+        row = layout.row(align=True)
+        row.prop(geotracker, 'mask_2d_channel_r', toggle=1)
+        row.prop(geotracker, 'mask_2d_channel_g', toggle=1)
+        row.prop(geotracker, 'mask_2d_channel_b', toggle=1)
+        row.prop(geotracker, 'mask_2d_channel_a', toggle=1)
+
+        if show_threshold:
+            row = layout.row(align=True)
+            row.prop(geotracker, 'mask_2d_threshold', slider=True)
 
         if geotracker.mask_2d_info == '':
             return
@@ -388,16 +400,16 @@ class GT_PT_MasksPanel(AllVisible):
             col.scale_y = Config.text_scale_y
             col.label(text=txt)
 
-    def _mask_compositing_block(self, layout: Any, geotracker: Any) -> None:
+    def _mask_compositing_block(self, layout: Any, geotracker: Any,
+                                show_threshold: bool = False) -> None:
         col = layout.column(align=True)
-        col.label(text='Compositing mask')
         row = col.row(align=True)
         row.prop_search(geotracker, 'compositing_mask',
                         bpy.data, 'masks', text='')
         row.prop(geotracker, 'compositing_mask_inverted',
                  text='', icon='ARROW_LEFTRIGHT')
 
-        if not GTConfig.hidden_feature:
+        if show_threshold:
             row = col.row(align=True)
             row.prop(geotracker, 'compositing_mask_threshold', slider=True)
 
@@ -405,7 +417,7 @@ class GT_PT_MasksPanel(AllVisible):
         return geotracker and geotracker.geomobj and geotracker.mask_3d != ''
 
     def _mask_2d_enabled(self, geotracker: Any) -> bool:
-        return geotracker and geotracker.get_mask_source() != 'NONE'
+        return geotracker and geotracker.get_2d_mask_source() != 'NONE'
 
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
@@ -433,9 +445,14 @@ class GT_PT_MasksPanel(AllVisible):
         layout = self.layout
         self._mask_3d_block(layout, geotracker)
 
-        if not GTConfig.hidden_feature:
+        col = layout.column(align=True)
+        col.label(text='2D Mask')
+        row = col.row(align=True)
+        row.prop(geotracker, 'mask_2d_mode', expand=True)
+        if geotracker.mask_2d_mode == 'MASK_2D':
             self._mask_2d_block(layout, geotracker)
-        self._mask_compositing_block(layout, geotracker)
+        elif geotracker.mask_2d_mode == 'COMP_MASK':
+            self._mask_compositing_block(layout, geotracker)
 
 
 class GT_PT_CameraPanel(AllVisible):
@@ -553,29 +570,50 @@ class GT_PT_TrackingPanel(AllVisible):
         row.active = settings.pinmode
         row.operator(GTConfig.gt_toggle_pins_idname, icon='UNPINNED')
         row.operator(GTConfig.gt_remove_pins_idname, icon='X')
+        col.prop(settings, 'stabilize_viewport_enabled',
+                 icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
 
     def _tracking_track_row(self, settings: Any, layout: Any) -> None:
         row = layout.row(align=True)
         row.active = settings.pinmode
         row.scale_y = 1.2
-        split = row.split(factor=0.5, align=True)
-        split.operator(GTConfig.gt_track_prev_idname, text='',
-                       icon='TRACKING_BACKWARDS_SINGLE')
-        split.operator(GTConfig.gt_track_to_start_idname, text='',
-                       icon='TRACKING_BACKWARDS')
 
-        split = row.split(factor=0.5, align=True)
-        split.operator(GTConfig.gt_track_to_end_idname, text='',
-                       icon='TRACKING_FORWARDS')
-        split.operator(GTConfig.gt_track_next_idname, text='',
-                       icon='TRACKING_FORWARDS_SINGLE')
+        if settings.is_calculating('TRACKING'):
+            split = row.split(factor=0.24, align=True)
+            split.operator(GTConfig.gt_track_prev_idname, text='',
+                           icon='TRACKING_BACKWARDS_SINGLE')
+
+            split2 = split.split(factor=0.6666, align=True)
+            split2.operator(GTConfig.gt_stop_calculating_idname, text='',
+                            icon='PAUSE')
+
+            split2.operator(GTConfig.gt_track_next_idname, text='',
+                            icon='TRACKING_FORWARDS_SINGLE')
+        else:
+            split = row.split(factor=0.5, align=True)
+            split.operator(GTConfig.gt_track_prev_idname, text='',
+                           icon='TRACKING_BACKWARDS_SINGLE')
+
+            split.operator(GTConfig.gt_track_to_start_idname, text='',
+                           icon='TRACKING_BACKWARDS')
+
+            split = row.split(factor=0.5, align=True)
+            split.operator(GTConfig.gt_track_to_end_idname, text='',
+                           icon='TRACKING_FORWARDS')
+
+            split.operator(GTConfig.gt_track_next_idname, text='',
+                           icon='TRACKING_FORWARDS_SINGLE')
 
     def _tracking_refine_row(self, settings: Any, layout: Any) -> None:
         row = layout.row(align=True)
         row.active = settings.pinmode
         row.scale_y = 1.5
-        row.operator(GTConfig.gt_refine_idname)
-        row.operator(GTConfig.gt_refine_all_idname)
+        if settings.is_calculating('REFINE'):
+            row.operator(GTConfig.gt_stop_calculating_idname,
+                         text='Cancel', icon='X')
+        else:
+            row.operator(GTConfig.gt_refine_idname)
+            row.operator(GTConfig.gt_refine_all_idname)
 
     def _tracking_keyframes_row(self, settings: Any, layout: Any) -> None:
         row = layout.row(align=True)
@@ -647,9 +685,6 @@ class GT_PT_TrackingPanel(AllVisible):
         self._tracking_keyframes_row(settings, col)
         if settings.pinmode:
             self._tracking_remove_keys_row(settings, col)
-
-        if settings.is_calculating('TRACKING') or settings.is_calculating('REFINE'):
-            _draw_calculating_indicator(layout)
 
 
 class GT_PT_AppearanceSettingsPanel(AllVisible):
@@ -734,6 +769,14 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         self._appearance_image_adjustment(settings, layout)
 
 
+class GT_UL_selected_frame_list(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data,
+                  active_propname, index):
+        layout.label(text=f'frame {item.num}')
+        layout.operator(GTConfig.gt_go_to_bake_frame_idname, text='',
+                        icon='HIDE_OFF', emboss=False).num = index
+
+
 class GT_PT_TexturePanel(AllVisible):
     bl_idname = GTConfig.gt_texture_panel_idname
     bl_label = 'Texture'
@@ -747,36 +790,56 @@ class GT_PT_TexturePanel(AllVisible):
                      text='', icon='QUESTION', emboss=False)
 
     def _draw_buttons(self, layout, active=True):
-        settings = get_gt_settings()
-        layout.label(text='Project from')
         col = layout.column(align=True)
         col.active = active
         col.scale_y = Config.btn_scale_y
-        col.operator(GTConfig.gt_reproject_frame_idname)
-        col.operator(GTConfig.gt_select_frames_for_bake_idname)
-        col.operator(GTConfig.gt_reproject_tex_sequence_idname)
 
         col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-        col.label(text='UV Map')
-        col.operator(GTConfig.gt_check_uv_overlapping_idname)
+        row = col.row(align=True)
+        row.scale_y = 2.0
+        row.operator(GTConfig.gt_bake_from_selected_frames_idname,
+                     icon='IMAGE')
 
-        col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-        col.active = not settings.pinmode
-        col.operator(GTConfig.gt_repack_overlapping_uv_idname)
-        col.operator(GTConfig.gt_create_non_overlapping_uv_idname)
+        geotracker = get_current_geotracker_item()
+        texture_exists = find_bpy_image_by_name(
+            geotracker.preview_texture_name())
+
+        if texture_exists:
+            row = col.row(align=True)
+            row.operator(GTConfig.gt_texture_file_export_idname,
+                         text='Export', icon='EXPORT')
+            row.operator(GTConfig.gt_delete_texture_idname,
+                         text='Delete', icon='X')
+
+        layout.separator()
+        row = layout.row()
+        row.scale_y = Config.btn_scale_y
+        row.operator(GTConfig.gt_reproject_tex_sequence_idname)
 
     def _draw_no_uv_warning(self, layout):
         box = layout.box()
-        box.alert = True
-        row = box.split(factor=0.15, align=True)
+        col = box.column()
+        col.alert = True
+        row = col.split(factor=0.15, align=True)
+        row.label(text='', icon='ERROR')
+        row.label(text='Missing UVs')
+        box.operator(GTConfig.gt_create_non_overlapping_uv_idname)
+
+    def _draw_overlapping_detected(self, layout):
+        box = layout.box()
+        col = box.column()
+        col.alert = True
+        row = col.split(factor=0.15, align=True)
         row.label(text='', icon='ERROR')
         col = row.column(align=True)
         col.scale_y = Config.text_scale_y
-        for i, txt in enumerate(['Geometry object','has no UV map!']):
+        for i, txt in enumerate(['Overlapping UVs','detected!']):
             col.label(text=txt)
-        layout.operator(GTConfig.gt_create_non_overlapping_uv_idname)
+
+        col = box.column(align=True)
+        col.operator(GTConfig.gt_repack_overlapping_uv_idname)
+        col.operator(GTConfig.gt_create_non_overlapping_uv_idname)
+        col.operator(GTConfig.gt_check_uv_overlapping_idname, text='Re-check')
 
     def draw(self, context: Any) -> None:
         layout = self.layout
@@ -788,7 +851,34 @@ class GT_PT_TexturePanel(AllVisible):
             self._draw_no_uv_warning(layout)
             return
 
-        self._draw_buttons(layout, not not geotracker.movie_clip)
+        if geotracker.overlapping_detected:
+            self._draw_overlapping_detected(layout)
+
+        col = layout.column(align=True)
+        col.label(text='Add frames')
+        row = col.row()
+        row.template_list(
+            'GT_UL_selected_frame_list',
+            'selected_frame_list',
+            geotracker,
+            'selected_frames',
+            geotracker,
+            'selected_frame_index',
+            type='DEFAULT',
+            rows=4
+        )
+
+        col2 = row.column(align=True)
+        col2.operator(GTConfig.gt_add_bake_frame_idname,
+                     text='', icon='ADD')
+        col2.operator(GTConfig.gt_remove_bake_frame_idname,
+                     text='', icon='REMOVE')
+        col2.separator()
+        col2.operator(GTConfig.gt_texture_bake_options_idname,
+                     text='', icon='PREFERENCES')
+
+        col.separator()
+        self._draw_buttons(col, not not geotracker.movie_clip)
 
         if settings.is_calculating('REPROJECT'):
             _draw_calculating_indicator(layout)
@@ -863,6 +953,10 @@ class GT_PT_AnimationPanel(AllVisible):
 
         col = layout.column(align=True)
         col.prop(settings, 'export_locator_selector', text='')
+        if settings.export_locator_selector == 'SELECTED_PINS':
+            row = col.split(factor=0.4, align=True)
+            row.label(text='Orientation')
+            row.prop(settings, 'export_locator_orientation', text='')
         row = col.split(factor=0.4, align=True)
         row.prop(settings, 'export_linked_locator')
         row.operator(GTConfig.gt_export_animated_empty_idname)

@@ -17,13 +17,14 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import numpy as np
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 from bpy.types import Object, Area
 
 from ...utils.kt_logging import KTLogger
 from ...utils.bpy_common import (bpy_current_frame,
                                  bpy_set_current_frame,
+                                 bpy_render_frame,
                                  bpy_timer_register,
                                  bpy_progress_begin,
                                  bpy_progress_end,
@@ -32,7 +33,8 @@ from ...blender_independent_packages.pykeentools_loader import module as pkt_mod
 from ...utils.mesh_builder import build_geo
 from ...utils.images import np_array_from_background_image
 from ...utils.coords import camera_projection
-from ...utils.ui_redraw import total_redraw_ui
+from ...utils.ui_redraw import (total_redraw_ui,
+                                total_redraw_ui_overriding_window)
 from ...utils.images import create_bpy_image_from_np_array
 from ...utils.materials import (remove_bpy_texture_if_exists,
                                 show_texture_in_mat,
@@ -41,7 +43,6 @@ from ...utils.materials import (remove_bpy_texture_if_exists,
 from ...utils.images import (create_compatible_bpy_image,
                              assign_pixels_data,
                              remove_bpy_image)
-from ...addon_config import get_operator
 from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
 from .prechecks import prepare_camera
@@ -49,13 +50,30 @@ from ...utils.localview import exit_area_localview
 from ..interface.screen_mesages import (revert_default_screen_message,
                                         single_line_screen_message,
                                         texture_projection_screen_message)
+from ...utils.version import BVersion
 
 
 _log = KTLogger(__name__)
 
 
-def bake_texture(geotracker: Any, selected_frames: List[int],
-                 tex_width: int=2048, tex_height: int=2048) -> Any:
+_bad_frame: int = -1
+
+
+def _set_bad_frame(frame: int = -1):
+    global _bad_frame
+    _bad_frame = frame
+
+
+def get_bad_frame():
+    return _bad_frame
+
+
+def bake_texture(geotracker: Any, selected_frames: List[int]) -> Any:
+    def _empty_np_image() -> Any:
+        w, h = bpy_render_frame()
+        np_img = np.zeros((h, w, 4), dtype=np.float32)
+        return np_img
+
     def _create_frame_data_loader(geotracker, frame_numbers):
         def frame_data_loader(index):
             frame = frame_numbers[index]
@@ -64,9 +82,17 @@ def bake_texture(geotracker: Any, selected_frames: List[int],
 
             if frame != current_frame:
                 bpy_set_current_frame(frame)
-            total_redraw_ui()
 
-            np_img = np_array_from_background_image(geotracker.camobj)
+            if not BVersion.open_dialog_overrides_area:
+                total_redraw_ui()
+            else:
+                total_redraw_ui_overriding_window()
+
+            np_img = np_array_from_background_image(geotracker.camobj, index=0)
+            if np_img is None:
+                _set_bad_frame(frame)
+                return None
+
             geo = build_geo(geotracker.geomobj, get_uv=True)
             frame_data = pkt_module().texture_builder.FrameData()
             frame_data.geo = geo
@@ -84,12 +110,22 @@ def bake_texture(geotracker: Any, selected_frames: List[int],
 
     progress_callBack = ProgressCallBack()
 
+    settings = get_gt_settings()
     current_frame = bpy_current_frame()
     bpy_progress_begin(0, 1)
+    _set_bad_frame()
     built_texture = pkt_module().texture_builder.build_texture(
         len(selected_frames),
         _create_frame_data_loader(geotracker, selected_frames),
-        progress_callBack, tex_height, tex_width, face_angles_affection=3.0)
+        progress_callBack,
+        settings.tex_height, settings.tex_width,
+        settings.tex_face_angles_affection,
+        settings.tex_uv_expand_percents,
+        settings.tex_back_face_culling,
+        settings.tex_equalize_brightness,
+        settings.tex_equalize_colour,
+        settings.tex_fill_gaps
+    )
 
     bpy_progress_end()
 
@@ -99,10 +135,10 @@ def bake_texture(geotracker: Any, selected_frames: List[int],
 
 def preview_material_with_texture(
         built_texture: Any, geomobj: Object,
-        tex_name: str='kt_reprojected_tex',
-        mat_name: str='kt_reproject_preview_mat') -> None:
+        tex_name: str = 'kt_reprojected_tex',
+        mat_name: str = 'kt_reproject_preview_mat') -> Tuple:
     if built_texture is None:
-        return
+        return None, None
     remove_bpy_texture_if_exists(tex_name)
     img = create_bpy_image_from_np_array(built_texture, tex_name)
     img.pack()
@@ -110,14 +146,15 @@ def preview_material_with_texture(
     mat = show_texture_in_mat(img.name, mat_name)
     assign_material_to_object(geomobj, mat)
     switch_to_mode('MATERIAL')
+    return mat, img
 
 
-_bake_generator_var = None
+_bake_generator_var: Optional[Any] = None
 
 
 def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
-                   *, file_format: str='PNG', frames: List[int],
-                   digits: int=4, width: int=2048, height: int=2048):
+                   *, file_format: str = 'PNG', frames: List[int],
+                   digits: int = 4) -> Any:
     def _finish():
         settings.stop_calculating()
         revert_default_screen_message(unregister=not settings.pinmode)
@@ -131,8 +168,6 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
     delta = 0.001
     settings = get_gt_settings()
     settings.calculating_mode = 'REPROJECT'
-    op = get_operator(GTConfig.gt_interrupt_modal_idname)
-    op('INVOKE_DEFAULT')
 
     single_line_screen_message('Projecting and baking… Please wait')
 
@@ -150,8 +185,7 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
 
         yield delta
 
-        built_texture = bake_texture(geotracker, [frame],
-                                     tex_width=width, tex_height=height)
+        built_texture = bake_texture(geotracker, [frame])
         if tex is None:
             tex = create_compatible_bpy_image(built_texture)
         tex.filepath_raw = filepath_pattern.format(str(frame).zfill(digits))
@@ -179,15 +213,13 @@ def _bake_caller() -> Optional[float]:
 
 
 def bake_texture_sequence(context: Any, geotracker: Any, filepath_pattern: str,
-                          *, file_format: str='PNG', frames: List[int],
-                          digits: int=4,
-                          width: int=2048, height: int=2048) -> None:
+                          *, file_format: str = 'PNG', frames: List[int],
+                          digits: int = 4) -> None:
     global _bake_generator_var
     _bake_generator_var = bake_generator(context.area, geotracker,
                                          filepath_pattern,
                                          file_format=file_format,
-                                         frames=frames, digits=digits,
-                                         width=width, height=height)
+                                         frames=frames, digits=digits)
     prepare_camera(context.area)
     settings = get_gt_settings()
     if not settings.pinmode:

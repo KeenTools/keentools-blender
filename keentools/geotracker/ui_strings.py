@@ -68,12 +68,12 @@ buttons = {
         'Take snapshot',
         'Take snapshot of current frame'
     ),
-    GTConfig.gt_select_frames_for_bake_idname: Button(
-        'GeoTracker Keyframes',
-        'Project and bake texture in selected frames'
+    GTConfig.gt_bake_from_selected_frames_idname: Button(
+        'Create Texture',
+        'Project and bake texture from selected frames onto Geometry'
     ),
     GTConfig.gt_reproject_tex_sequence_idname: Button(
-        'All Frames to Sequence',
+        'Save to sequence',
         'Project and bake texture in all frames and save as animated sequence'
     ),
     GTConfig.gt_precalc_info_idname: Button(
@@ -88,6 +88,19 @@ buttons = {
         'Recreate analysis file',
         'Are you sure to recreate analysis file?'
     ),
+    GTConfig.gt_texture_bake_options_idname: Button(
+        'Texture settings',
+        'Setup texture options for baking'
+    ),
+    GTConfig.gt_texture_file_export_idname: Button(
+        'Export texture',
+        'Export texture to file'
+    ),
+    GTConfig.gt_delete_texture_idname: Button(
+        'Delete texture',
+        'Delete texture from scene'
+    ),
+
     # Main UI
     GTConfig.gt_addon_setup_defaults_idname: Button(
         'GeoTracker settings',
@@ -120,6 +133,10 @@ buttons = {
     GTConfig.gt_next_keyframe_idname: Button(
         'Next keyframe',
         'Move to the next GeoTracker keyframe on the timeline'
+    ),
+    GTConfig.gt_toggle_lock_viewport_idname: Button(
+        'Toggle Lock Viewport',
+        'Press to toggle Lock for current viewport'
     ),
     GTConfig.gt_track_to_start_idname: Button(
         'Track to start',
@@ -253,17 +270,17 @@ buttons = {
         'Create Smart UV',
         'Create new non-overlapping UVs'
     ),
-    GTConfig.gt_reproject_frame_idname: Button(
-        'Current Frame',
-        'Project and bake texture in current frame'
+    GTConfig.gt_add_bake_frame_idname: Button(
+        'Add frame',
+        'Add current frame to bake list'
     ),
-    GTConfig.gt_select_all_bake_frames_idname: Button(
-        'All',
-        'Select all'
+    GTConfig.gt_remove_bake_frame_idname: Button(
+        'Remove frame',
+        'Remove selected frame from bake list'
     ),
-    GTConfig.gt_deselect_all_bake_frames_idname: Button(
-        'None',
-        'Deselect all'
+    GTConfig.gt_go_to_bake_frame_idname: Button(
+        'Go to',
+        'Jump to this frame'
     ),
     GTConfig.gt_transfer_tracking_idname: Button(
         'Convert',
@@ -409,7 +426,11 @@ help_texts = {
         'visible in pin mode.'
     ]),
     GTConfig.gt_help_texture_idname: HelpText(_help_default_width, [
-        'Texture panel description will be here...',
+        'Use \'Create Texture\' to project and bake texture '
+        'from selected frames onto Geometry.',
+        'Use \'Save to Sequence\' to project Clip onto Geometry '
+        'frame by frame and save it ',
+        'as image sequence.',
     ]),
     GTConfig.gt_help_animation_idname: HelpText(_help_default_width, [
         'Transform: Scale and position your scene in 3D space right from GeoTracker.',

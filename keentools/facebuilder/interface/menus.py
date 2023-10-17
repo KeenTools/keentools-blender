@@ -36,7 +36,7 @@ class FB_MT_ProperViewMenu(Menu):
         op.camnum = settings.tmp_camnum
 
         layout.operator(FBConfig.fb_single_filebrowser_exec_idname,
-                        text="Open file", icon='FILEBROWSER')
+                        text='Open file', icon='FILEBROWSER')
 
         layout.separator()
 

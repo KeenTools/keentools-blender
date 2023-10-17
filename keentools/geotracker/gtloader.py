@@ -49,6 +49,7 @@ from ..utils.timer import KTStopShaderTimer
 from ..utils.ui_redraw import force_ui_redraw
 from ..utils.localview import exit_area_localview, check_localview
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..utils.images import get_background_image_strict
 
 
 _log = KTLogger(__name__)
@@ -155,6 +156,11 @@ def frame_change_post_handler(scene) -> None:
         return
     if geotracker.focal_length_estimation:
         geotracker.reset_focal_length_estimation()
+
+    if settings.stabilize_viewport_enabled:
+        GTLoader.load_pins_into_viewport()
+        GTLoader.viewport().stabilize(geotracker.geomobj)
+
     GTLoader.update_viewport_shaders(geomobj_matrix=True,
                                      pins_and_residuals=True,
                                      mask=True)
@@ -202,7 +208,7 @@ class GTLoader:
         return geotracker.geomobj.mode
 
     @classmethod
-    def store_geomobj_mode(cls, mode: str='OBJECT') -> None:
+    def store_geomobj_mode(cls, mode: str = 'OBJECT') -> None:
         cls._geomobj_edit_mode = mode
 
     @classmethod
@@ -570,8 +576,14 @@ class GTLoader:
                 wf.set_lit_light_matrix(geom_mat, cam_mat)
         if mask:
             geotracker = get_current_geotracker_item()
-            if geotracker.get_mask_source() == 'COMP_MASK':
+            mask_source = geotracker.get_2d_mask_source()
+            if mask_source == 'COMP_MASK':
                 geotracker.update_compositing_mask()
+            elif mask_source == 'MASK_2D':
+                vp = cls.viewport()
+                mask2d = vp.mask2d()
+                mask2d.image = get_background_image_strict(geotracker.camobj,
+                                                           index=1)
         if wireframe:
             cls.update_viewport_wireframe(update_geo_data=update_geo_data)
         if pins_and_residuals:

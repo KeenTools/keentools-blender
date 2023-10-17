@@ -47,6 +47,7 @@ class KTRasterMask(KTShaderBase):
         self.right: Tuple[float, float] = (400., 200.)
         self.image: Optional[Image] = None
         self.mask_threshold: float = 0.0
+        self.channel: int = 4  # RGB
 
     def init_shaders(self) -> Optional[bool]:
         if self.mask_shader is not None:
@@ -77,6 +78,9 @@ class KTRasterMask(KTShaderBase):
         if self.work_area != context.area:
             return False
 
+        if not self.image:
+            return False
+
         if not check_gl_image(self.image):
             _log.error(f'{self.__class__.__name__}.draw_checks '
                        f'check_gl_image failed: {self.image}')
@@ -84,8 +88,10 @@ class KTRasterMask(KTShaderBase):
         return True
 
     def draw_main(self, context: Any) -> None:
-        set_blend_alpha()
+        if not self.image:
+            return
 
+        set_blend_alpha()
         shader = self.mask_shader
         shader.bind()
 
@@ -94,10 +100,11 @@ class KTRasterMask(KTShaderBase):
         shader.uniform_float('color', self.color)
         shader.uniform_int('inverted', 1 if self.inverted else 0)
         shader.uniform_float('maskThreshold', self.mask_threshold)
+        shader.uniform_int('channel', self.channel)
         set_shader_sampler(shader, self.image)
         self.mask_batch.draw(shader)
 
     def register_handler(self, context: Any,
-                         post_type: str='POST_PIXEL') -> None:
+                         post_type: str = 'POST_PIXEL') -> None:
         _log.output(f'{self.__class__.__name__}.register_handler')
         super().register_handler(context, post_type)

@@ -323,7 +323,7 @@ def create_facs_test_animation_on_blendshapes(obj: Object,
 
 
 def _create_driver(target: Any, control_obj: Object, driver_name: str,
-                   control_prop: str='location.x') -> Any:
+                   control_prop: str = 'location.x') -> Any:
     res = target.driver_add('value')
     res.driver.type = 'AVERAGE'
     drv_var = res.driver.variables.new()

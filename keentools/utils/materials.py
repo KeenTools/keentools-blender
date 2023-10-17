@@ -23,6 +23,7 @@ import bpy
 from bpy.types import Object, Material
 
 from .kt_logging import KTLogger
+from .version import BVersion
 from ..facebuilder_config import FBConfig, get_fb_settings
 from ..facebuilder.fbloader import FBLoader
 from ..utils.images import load_rgba, find_bpy_image_by_name, assign_pixels_data
@@ -33,7 +34,7 @@ from .bpy_common import bpy_progress_begin, bpy_progress_end, bpy_progress_updat
 _log = KTLogger(__name__)
 
 
-def switch_to_mode(mode: str='MATERIAL') -> None:
+def switch_to_mode(mode: str = 'MATERIAL') -> None:
     areas = bpy.context.workspace.screens[0].areas
     for area in areas:
         for space in area.spaces:
@@ -104,6 +105,12 @@ def remove_mat_by_name(name: str) -> None:
         bpy.data.materials.remove(bpy.data.materials[mat_num])
 
 
+def make_node_shader_matte(node: Any) -> None:
+    if BVersion.principled_shader_has_specular:
+        node.inputs['Specular'].default_value = 0.0
+    else:
+        node.inputs['IOR'].default_value = 1.0
+
 def show_texture_in_mat(tex_name: str, mat_name: str) -> Material:
     tex = find_bpy_image_by_name(tex_name)
     mat = get_mat_by_name(mat_name)
@@ -113,7 +120,7 @@ def show_texture_in_mat(tex_name: str, mat_name: str) -> Material:
         mat, 'TEX_IMAGE', 'ShaderNodeTexImage')
     image_node.image = tex
     image_node.location = FBConfig.image_node_layout_coord
-    principled_node.inputs['Specular'].default_value = 0.0
+    make_node_shader_matte(principled_node)
     mat.node_tree.links.new(
         image_node.outputs['Color'],
         principled_node.inputs['Base Color'])
@@ -235,7 +242,7 @@ def get_nodes_by_type(nodes: List, find_type: str) -> List:
     return [node for node in nodes if node.type == find_type]
 
 
-def get_node_from_input(node: Any, num: int=0) -> Any:
+def get_node_from_input(node: Any, num: int = 0) -> Any:
     if len(node.inputs) < num + 1:
         return None
     input = node.inputs[num]

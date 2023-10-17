@@ -19,6 +19,7 @@
 from .menus import *
 from .panels import *
 from .filedialogs import *
+from .dialogs import *
 from .helps import *
 
 
@@ -34,6 +35,7 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
                        GT_PT_SmoothingPanel,
                        GT_PT_AnimationPanel,
                        GT_PT_AppearanceSettingsPanel,
+                       GT_UL_selected_frame_list,
                        GT_PT_TexturePanel,
                        GT_PT_RenderingPanel,
                        GT_OT_SequenceFilebrowser,  # file dialogs
@@ -45,6 +47,8 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
                        GT_OT_ReprojectTextureSequence,
                        GT_OT_AnalyzeCall,
                        GT_OT_PrecalcInfo,
+                       GT_OT_TextureBakeOptions,
+                       GT_OT_TextureFileExport,
                        GT_OT_ConfirmRecreatePrecalc,
                        GTHELP_OT_InputsHelp,  # helps
                        GTHELP_OT_MasksHelp,

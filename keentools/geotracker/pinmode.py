@@ -294,9 +294,10 @@ class GT_OT_PinMode(Operator):
             settings.change_current_geotracker(num)
         geotracker = settings.get_current_geotracker_item()
 
-        set_background_image_by_movieclip(geotracker.camobj,
-                                          geotracker.movie_clip)
-        set_background_image_mask(geotracker.camobj, geotracker.mask_2d)
+        geotracker.setup_background_image()
+
+        if geotracker.mask_2d:
+            geotracker.setup_background_mask()
 
         GTLoader.place_object_or_camera()
         switch_to_camera(area, geotracker.camobj,
@@ -490,6 +491,11 @@ class GT_OT_PinMode(Operator):
             vp.create_batch_2d(context.area)
             vp.update_residuals(GTLoader.kt_geotracker(), context.area,
                                 bpy_current_frame())
+
+            if not bpy_is_animation_playing() \
+                    and not settings.is_calculating():
+                settings.stabilize_viewport(reset=True)
+
             if vp.needs_to_be_drawn():
                 _log.output('TAG REDRAW')
                 vp.tag_redraw()

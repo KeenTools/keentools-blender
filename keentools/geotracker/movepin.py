@@ -17,7 +17,6 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from typing import Any, Set, Tuple, List
-from copy import deepcopy
 
 import bpy
 from bpy.types import Area
@@ -42,7 +41,8 @@ from ..utils.manipulate import force_undo_push
 from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_set_current_frame,
                                 get_scene_camera_shift,
-                                bpy_render_frame)
+                                bpy_render_frame,
+                                bpy_is_animation_playing)
 from .ui_strings import buttons
 from .interface.screen_mesages import (revert_default_screen_message,
                                        clipping_changed_screen_message)
@@ -215,6 +215,12 @@ class GT_OT_MovePin(bpy.types.Operator):
         GTLoader.save_geotracker()
 
         self._before_operator_finish()
+
+        settings = get_gt_settings()
+        if not bpy_is_animation_playing() \
+                and not settings.is_calculating():
+            settings.stabilize_viewport(reset=True)
+
         GTLoader.update_viewport_shaders(area, wireframe=True,
                                          geomobj_matrix=True,
                                          pins_and_residuals=True,

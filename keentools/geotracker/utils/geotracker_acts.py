@@ -21,7 +21,7 @@ import numpy as np
 
 import bpy
 from bpy.types import Object, Operator, Area
-from mathutils import Matrix, Euler
+from mathutils import Matrix, Euler, Vector
 
 from ...utils.kt_logging import KTLogger
 from ...utils.version import BVersion
@@ -53,7 +53,9 @@ from ...utils.bpy_common import (create_empty_object,
                                  update_depsgraph,
                                  reset_unsaved_animation_changes_in_frame,
                                  bpy_scene,
-                                 bpy_render_single_frame)
+                                 bpy_render_single_frame,
+                                 bpy_scene_selected_objects,
+                                 bpy_active_object)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.manipulate import (select_object_only,
                                  select_objects_only,
@@ -69,24 +71,31 @@ from .prechecks import (common_checks,
                         show_unlicensed_warning)
 from ...utils.compositing import (create_nodes_for_rendering_with_background,
                                   revert_default_compositing)
-from ...utils.images import get_background_image_object
+from ...utils.images import (get_background_image_object,
+                             check_background_image_absent_frames)
 from .calc_timer import (TrackTimer,
                          RefineTimer,
                          RefineTimerFast)
-from ..settings import is_mesh, is_camera
+from ..settings import bpy_poll_is_mesh, bpy_poll_is_camera
 from ...utils.coords import (LocRotScale,
                              LocRotWithoutScale,
                              ScaleMatrix,
                              InvScaleMatrix,
-                             change_near_and_far_clip_planes)
-from .textures import bake_texture, preview_material_with_texture
+                             change_near_and_far_clip_planes,
+                             pin_to_xyz_from_geo_mesh,
+                             pin_to_normal_from_geo_mesh,
+                             xy_to_xz_rotation_matrix_3x3,
+                             multiply_verts_on_matrix_4x4)
+from .textures import bake_texture, preview_material_with_texture, get_bad_frame
 from ..interface.screen_mesages import clipping_changed_screen_message
+from ...utils.ui_redraw import total_redraw_ui
 
 
 _log = KTLogger(__name__)
 
 
 def create_geotracker_act() -> ActionStatus:
+    _log.output('create_geotracker_act start')
     check_status = common_checks(object_mode=True, pinmode_out=True,
                                  is_calculating=True)
     if not check_status.success:
@@ -96,6 +105,9 @@ def create_geotracker_act() -> ActionStatus:
     num = settings.add_geotracker_item()
     settings.current_geotracker_num = num
     GTLoader.new_kt_geotracker()
+
+    selected_objects = bpy_scene_selected_objects()
+    active_object = bpy_active_object()
 
     geotracker = settings.get_current_geotracker_item()
     obj = get_alone_object_in_scene_selection_by_type('MESH')
@@ -109,6 +121,10 @@ def create_geotracker_act() -> ActionStatus:
     geotracker.camobj = camobj
 
     settings.reload_current_geotracker()
+
+    select_objects_only(selected_objects)
+    bpy_active_object(active_object)
+    _log.output('create_geotracker_act end')
     return ActionStatus(True, 'GeoTracker has been added')
 
 
@@ -178,6 +194,7 @@ def next_keyframe_act() -> ActionStatus:
 
     if current_frame != target_frame:
         bpy_set_current_frame(target_frame)
+        total_redraw_ui()  # For proper stabilization
         return ActionStatus(True, 'ok')
 
     return ActionStatus(False, 'No next GeoTracker keyframe')
@@ -197,9 +214,19 @@ def prev_keyframe_act() -> ActionStatus:
 
     if current_frame != target_frame:
         bpy_set_current_frame(target_frame)
+        total_redraw_ui()  # For proper stabilization
         return ActionStatus(True, 'ok')
 
     return ActionStatus(False, 'No previous GeoTracker keyframe')
+
+
+def toggle_lock_viewport_act() -> ActionStatus:
+    settings = get_gt_settings()
+    if not settings.pinmode:
+        return ActionStatus(False, 'Lock viewport works in GeoTracker pinmode only')
+
+    settings.stabilize_viewport_enabled = not settings.stabilize_viewport_enabled
+    return ActionStatus(True, 'Ok')
 
 
 def track_to(forward: bool) -> ActionStatus:
@@ -550,7 +577,7 @@ def center_geo_act() -> ActionStatus:
 
 def create_animated_empty_act(obj: Object, linked: bool=False,
                               force_bake_all_frames: bool=False) -> ActionStatus:
-    if not is_mesh(None, obj) and not is_camera(None, obj):
+    if not bpy_poll_is_mesh(None, obj) and not bpy_poll_is_camera(None, obj):
         msg = 'Selected object is not Geometry or Camera'
         return ActionStatus(False, msg)
 
@@ -600,6 +627,92 @@ def create_animated_empty_act(obj: Object, linked: bool=False,
     return ActionStatus(True, 'ok')
 
 
+def create_empty_from_selected_pins_act(
+        from_frame: int, to_frame: int, linked: bool = False,
+        orientation: str = 'NORMAL', size: float = 1.0) -> ActionStatus:
+    check_status = common_checks(object_mode=True, pinmode=True,
+                                 is_calculating=True, reload_geotracker=True,
+                                 geotracker=True, camera=True, geometry=True)
+    if not check_status.success:
+        return check_status
+
+    if from_frame < 0 or to_frame < from_frame:
+        return ActionStatus(False, 'Wrong frame range')
+
+    geotracker = get_current_geotracker_item()
+    geomobj = geotracker.geomobj
+    gt = GTLoader.kt_geotracker()
+
+    pins = GTLoader.viewport().pins()
+    pins_count = gt.pins_count()
+    selected_pins = pins.get_selected_pins(pins_count)
+    selected_pins_count = len(selected_pins)
+    if selected_pins_count == 0:
+        return ActionStatus(False, 'No pins selected')
+
+    current_frame = bpy_current_frame()
+    geo = gt.geo()
+    geo_mesh = geo.mesh(0)
+
+    points = np.empty((selected_pins_count, 3), dtype=np.float32)
+    normals = []
+    for i, pin_index in enumerate(selected_pins):
+        pin = gt.pin(current_frame, pin_index)
+        points[i] = pin_to_xyz_from_geo_mesh(pin, geo_mesh)
+        normals.append(pin_to_normal_from_geo_mesh(pin, geo_mesh))
+
+    pin_positions = points @ xy_to_xz_rotation_matrix_3x3()
+    scale_inv = InvScaleMatrix(3, geomobj.matrix_world.to_scale())
+    inv_mat = geomobj.matrix_world.inverted_safe()
+
+    empties = []
+    zv = Vector((0, 0, 1))
+
+    for i, pos in enumerate(pin_positions):
+        empty = create_empty_object('gtPin')
+        empty.empty_display_type = 'ARROWS'
+        empty.empty_display_size = size
+
+        if orientation == 'NORMAL':
+            quaternion_matrix = zv.rotation_difference(
+                np.array(normals[i], dtype=np.float32) @
+                xy_to_xz_rotation_matrix_3x3()).to_matrix().to_4x4()
+            empty.matrix_world = quaternion_matrix
+        elif orientation == 'WORLD':
+            empty.matrix_world = inv_mat
+
+        empty.location = pos @ scale_inv
+        empty.parent = geotracker.geomobj
+        empties.append(empty)
+
+    if linked:
+        return ActionStatus(True, 'ok')
+
+    source_matrices = {}
+    for frame in range(from_frame, to_frame + 1):
+        bpy_set_current_frame(frame)
+        matrices = []
+        for empty in empties:
+            matrices.append(empty.matrix_world.copy())
+        source_matrices[frame] = matrices
+
+    bpy_set_current_frame(current_frame)
+
+    for empty in empties:
+        empty.parent = None
+
+    for frame in range(from_frame, to_frame + 1):
+        bpy_set_current_frame(frame)
+        for i, empty in enumerate(empties):
+            empty.matrix_world = source_matrices[frame][i]
+            update_depsgraph()
+            create_animation_locrot_keyframe_force(empty)
+
+    bpy_set_current_frame(current_frame)
+
+    return ActionStatus(True, 'ok')
+
+
 def check_uv_exists(obj: Optional[Object]) -> ActionStatus:
     if not obj or not obj.data.uv_layers.active:
         return ActionStatus(False, 'No UV map on object')
@@ -630,6 +743,12 @@ def check_uv_overlapping(obj: Optional[Object]) -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
+def check_uv_overlapping_with_status(geotracker: Any) -> ActionStatus:
+    status = check_uv_overlapping(geotracker.geomobj)
+    geotracker.overlapping_detected = not status.success
+    return status
+
+
 def create_non_overlapping_uv_act() -> ActionStatus:
     geotracker = get_current_geotracker_item()
     geomobj = geotracker.geomobj
@@ -645,6 +764,9 @@ def create_non_overlapping_uv_act() -> ActionStatus:
     switch_to_mode('EDIT')
     bpy.ops.uv.smart_project(island_margin=0.01)
     switch_to_mode(old_mode)
+
+    if geotracker.overlapping_detected:
+        return check_uv_overlapping_with_status(geotracker)
     return ActionStatus(True, 'ok')
 
 
@@ -691,7 +813,12 @@ def bake_texture_from_frames_act(area: Area,
     if not check_status.success:
         return check_status
 
-    check_status = check_uv_overlapping(geotracker.geomobj)
+    absent_frames = check_background_image_absent_frames(
+        geotracker.camobj, index=0, frames=selected_frames)
+    if len(absent_frames) > 0:
+        return ActionStatus(False, f'Frames {absent_frames} are outside of Clip range')
+
+    check_status = check_uv_overlapping_with_status(geotracker)
 
     prepare_camera(area)
     built_texture = bake_texture(geotracker, selected_frames)
@@ -703,11 +830,23 @@ def bake_texture_from_frames_act(area: Area,
                                          pins_and_residuals=True)
 
     if built_texture is None:
-        msg = 'Texture has not been created'
+        bad_frame = get_bad_frame()
+        if bad_frame < 0:
+            msg = 'Operation failed'
+        else:
+            msg = f'Frame {bad_frame} read error'
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    preview_material_with_texture(built_texture, geotracker.geomobj)
+    mat, tex = preview_material_with_texture(built_texture, geotracker.geomobj,
+                                             geotracker.preview_texture_name(),
+                                             geotracker.preview_material_name())
+    if tex is not None:
+        try:
+            tex.colorspace_settings.name = \
+                geotracker.movie_clip.colorspace_settings.name
+        except Exception as err:
+            _log.error(f'bake_texture_from_frames_act Exception:\n{str(err)}')
 
     if not check_status.success:
         return ActionStatus(False, f'Done but {check_status.error_message}')
@@ -1233,7 +1372,7 @@ def bake_locrot_act(obj: Object) -> ActionStatus:
     if not obj:
         return ActionStatus(False, 'Wrong object')
 
-    if not is_mesh(None, obj) and not is_camera(None, obj):
+    if not bpy_poll_is_mesh(None, obj) and not bpy_poll_is_camera(None, obj):
         msg = 'Selected object is not Geometry or Camera'
         return ActionStatus(False, msg)
 

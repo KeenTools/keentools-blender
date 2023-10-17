@@ -299,9 +299,9 @@ class FBLoader:
             raise Exception('Unknown error in UV selector')
 
     @classmethod
-    def get_builder_mesh(cls, builder: Any, mesh_name: str='keentools_mesh',
-                         masks: List=(), uv_set: str='uv0',
-                         keyframe: Optional[int]=None) -> Any:
+    def get_builder_mesh(cls, builder: Any, mesh_name: str = 'keentools_mesh',
+                         masks: List = (), uv_set: str = 'uv0',
+                         keyframe: Optional[int] = None) -> Any:
         for i, m in enumerate(masks):
             builder.set_mask(i, m)
 
@@ -350,8 +350,8 @@ class FBLoader:
         return mesh
 
     @classmethod
-    def universal_mesh_loader(cls, mesh_name: str='keentools_mesh',
-                              masks: List=(), uv_set: str='uv0',
+    def universal_mesh_loader(cls, mesh_name: str = 'keentools_mesh',
+                              masks: List = (), uv_set: str = 'uv0',
                               keyframe: Optional[int]=None) -> None:
         builder = cls.new_builder()
         mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set, keyframe)

@@ -84,7 +84,8 @@ def find_movieclip(filepath: str) -> Optional[MovieClip]:
     for movieclip in bpy.data.movieclips:
         _log.output(f'find_movieclip: {movieclip}')
         try:
-            _log.output(f'\n{movieclip.filepath}\n{filepath}')
+            _log.output(f'\nmovieclip.filepath: {movieclip.filepath}\n'
+                        f'filepath: {filepath}')
             if os.path.samefile(bpy.path.abspath(movieclip.filepath),
                                 bpy.path.abspath(filepath)):
                 return movieclip
@@ -93,21 +94,6 @@ def find_movieclip(filepath: str) -> Optional[MovieClip]:
         except Exception as err:
             _log.error(f'find_movieclip error:\n{str(err)}')
     return None
-
-
-def load_image_sequence(directory: str, file_names: List[str]) -> Optional[Image]:
-    if len(file_names) == 0:
-        _log.error('NO FILES HAVE BEEN SELECTED')
-        return None
-
-    file_names.sort()
-    frame_files = [{'name': name} for name in file_names]
-
-    image = bpy.data.images.load(os.path.join(directory, file_names[0]))
-    if image and image.source == 'FILE' and len(frame_files) > 1:
-        image.source = 'SEQUENCE'
-    _log.output(f'loaded image: {image}')
-    return image
 
 
 def load_movieclip(directory: str, file_names: List[str]) -> Optional[MovieClip]:
@@ -121,16 +107,18 @@ def load_movieclip(directory: str, file_names: List[str]) -> Optional[MovieClip]
     _log.output(f'load_movieclip FILES: {file_names}')
 
     old_movieclips = bpy.data.movieclips[:]
+    _log.output(f'old_movieclips: {[mc.name for mc in old_movieclips]}')
     try:
         res = bpy.ops.clip.open('EXEC_DEFAULT', files=frame_files,
                                 directory=directory)
-        _log.output(f'Operator result: {res}')
+        _log.output(f'load_movieclip result: {res}')
     except RuntimeError as err:
         _log.error('MOVIECLIP OPEN ERROR: {}'.format(str(err)))
         return None
 
     new_movieclip = get_new_movieclip(old_movieclips)
     if new_movieclip is not None:
+        _log.output(f'new movieclip created: {new_movieclip.name}')
         return new_movieclip
 
     _log.error('NO NEW MOVIECLIP HAS BEEN CREATED')
@@ -140,21 +128,21 @@ def load_movieclip(directory: str, file_names: List[str]) -> Optional[MovieClip]
         _log.error('NO NEW MOVIECLIP IN EXISTING')
         return None
 
-    _log.output(f'EXISTING MOVICLIP HAS BEEN FOUND: {new_movieclip}')
+    _log.output(f'EXISTING MOVICLIP HAS BEEN FOUND: {new_movieclip.name}')
     return new_movieclip
 
 
 def convert_movieclip_to_frames(
         movie_clip: Optional[MovieClip],
         filepath: str, *,
-        file_format: str='PNG',
-        quality: int=100,
-        start_frame: int=1,
-        end_frame: int=-1,
-        orientation: int=0,
-        single_frame: bool=False,
-        opengl_render: bool=True,
-        video_scene_name: str='video_scene') -> Optional[str]:
+        file_format: str = 'PNG',
+        quality: int = 100,
+        start_frame: int = 1,
+        end_frame: int = -1,
+        orientation: int = 0,
+        single_frame: bool = False,
+        opengl_render: bool = True,
+        video_scene_name: str = 'video_scene') -> Optional[str]:
     w, h = get_movieclip_size(movie_clip)
     if w <= 0 or h <= 0:
         return None

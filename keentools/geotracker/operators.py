@@ -41,12 +41,14 @@ from ..geotracker_config import (GTConfig,
                                  get_gt_settings,
                                  get_current_geotracker_item)
 from ..utils.bpy_common import (bpy_current_frame,
+                                bpy_set_current_frame,
+                                bpy_start_frame,
+                                bpy_end_frame,
                                 bpy_background_mode,
                                 bpy_show_addon_preferences,
                                 bpy_scene,
                                 create_empty_object,
                                 bpy_remove_object,
-                                operator_with_context,
                                 bpy_url_open)
 from .utils.geotracker_acts import (create_geotracker_act,
                                     delete_geotracker_act,
@@ -54,6 +56,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     remove_keyframe_act,
                                     prev_keyframe_act,
                                     next_keyframe_act,
+                                    toggle_lock_viewport_act,
                                     track_to,
                                     track_next_frame_act,
                                     refine_async_act,
@@ -66,6 +69,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     toggle_pins_act,
                                     center_geo_act,
                                     create_animated_empty_act,
+                                    create_empty_from_selected_pins_act,
                                     bake_texture_from_frames_act,
                                     transfer_tracking_to_camera_act,
                                     transfer_tracking_to_geometry_act,
@@ -82,7 +86,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     scale_scene_tracking_act,
                                     scale_scene_trajectory_act,
                                     check_uv_exists,
-                                    check_uv_overlapping,
+                                    check_uv_overlapping_with_status,
                                     create_non_overlapping_uv_act,
                                     repack_uv_act,
                                     bake_locrot_act,
@@ -99,6 +103,9 @@ from ..utils.manipulate import select_object_only, force_undo_push
 from ..utils.animation import count_fcurve_points, remove_fcurve_from_object
 from .interface.screen_mesages import (revert_default_screen_message,
                                        single_line_screen_message)
+from ..utils.images import (remove_bpy_image_by_name,
+                            check_background_image_absent_frames)
+from ..utils.materials import remove_mat_by_name
 
 
 _log = KTLogger(__name__)
@@ -203,7 +210,7 @@ class GT_OT_PrevKeyframe(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_prev_keyframe_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER'}
+    bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
@@ -216,7 +223,9 @@ class GT_OT_PrevKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, check_status.error_message)
             return {'CANCELLED'}
 
+        settings.calculating_mode = 'JUMP'
         act_status = prev_keyframe_act()
+        settings.stop_calculating()
         if not act_status.success:
             self.report({'INFO'}, act_status.error_message)
             return {'CANCELLED'}
@@ -228,7 +237,7 @@ class GT_OT_NextKeyframe(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_next_keyframe_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER'}
+    bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
@@ -241,11 +250,27 @@ class GT_OT_NextKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, check_status.error_message)
             return {'CANCELLED'}
 
+        settings.calculating_mode = 'JUMP'
         act_status = next_keyframe_act()
+        settings.stop_calculating()
         if not act_status.success:
             self.report({'INFO'}, act_status.error_message)
             return {'CANCELLED'}
 
+        return {'FINISHED'}
+
+
+class GT_OT_LockViewport(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_toggle_lock_viewport_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        act_status = toggle_lock_viewport_act()
+        if not act_status.success:
+            self.report({'INFO'}, act_status.error_message)
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -504,8 +529,12 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
-    def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+    def draw(self, context):
+        return
+
+    def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke')
+
         check_status = common_checks(object_mode=True, is_calculating=True,
                                      geotracker=True)
         if not check_status.success:
@@ -513,18 +542,59 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         settings = get_gt_settings()
+        if settings.export_locator_selector == 'SELECTED_PINS':
+            check_status = common_checks(pinmode=True, geotracker=True,
+                                         geometry=True, camera=True,
+                                         reload_geotracker=True)
+            if not check_status.success:
+                self.report({'ERROR'}, check_status.error_message)
+                return {'CANCELLED'}
+
+        return self.execute(context)
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+
+        settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
 
-        obj = geotracker.geomobj \
-            if settings.export_locator_selector == 'GEOMETRY' \
-            else geotracker.camobj
+        if settings.export_locator_selector == 'GEOMETRY':
+            act_status = create_animated_empty_act(
+                geotracker.geomobj, settings.export_linked_locator)
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+                return {'CANCELLED'}
+            return {'FINISHED'}
 
-        act_status = create_animated_empty_act(obj,
-                                               settings.export_linked_locator)
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
-            return {'CANCELLED'}
-        return {'FINISHED'}
+        elif settings.export_locator_selector == 'CAMERA':
+            act_status = create_animated_empty_act(
+                geotracker.camobj, settings.export_linked_locator)
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+                return {'CANCELLED'}
+            return {'FINISHED'}
+
+        elif settings.export_locator_selector == 'SELECTED_PINS':
+            if len(GTLoader.viewport().pins().get_selected_pins()) == 0:
+                msg = 'No pins selected'
+                _log.error(msg)
+                self.report({'ERROR'}, msg)
+                return {'CANCELLED'}
+
+            act_status = create_empty_from_selected_pins_act(
+                bpy_start_frame(), bpy_end_frame(),
+                linked=settings.export_linked_locator,
+                orientation=settings.export_locator_orientation)
+            if not act_status.success:
+                _log.error(act_status.error_message)
+                self.report({'ERROR'}, act_status.error_message)
+                return {'CANCELLED'}
+            return {'FINISHED'}
+
+        msg = 'Unknown selector state'
+        _log.error(msg)
+        self.report({'ERROR'}, msg)
+        return {'CANCELLED'}
 
 
 class GT_OT_ExitPinMode(ButtonOperator, Operator):
@@ -693,7 +763,7 @@ class GT_OT_CheckUVOverlapping(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        check_status = check_uv_overlapping(geotracker.geomobj)
+        check_status = check_uv_overlapping_with_status(geotracker)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
@@ -757,7 +827,7 @@ class GT_OT_RepackOverlappingUV(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         geotracker = get_current_geotracker_item()
-        check_status = check_uv_overlapping(geotracker.geomobj)
+        check_status = check_uv_overlapping_with_status(geotracker)
         if not check_status.success:
             self.report({'ERROR'}, f'Done but {check_status.error_message}')
             return {'FINISHED'}
@@ -790,130 +860,18 @@ class GT_OT_CreateNonOverlappingUV(ButtonOperator, Operator):
 
 
 _overlapping_warning_message: List[str] = [
-    'Geometry object has overlapping UV!',
-    'It means that a resulting texture could have artifacts.',
-    'If you don\'t know how to fix UV layout manually, ',
-    'you could try to fix it by \'Repack UV\' or ',
-    '\'Create non-overlapping UV\' operations.',
+    'Warning: Overlapping UVs detected!',
+    'This may result in artifacts in texture.',
     ' ',
-    'Do you still want to create a reprojected texture',
-    'without fixing UVs?',
-    ' ',
-    'Click outside of this window to stop the texture creation',
-    'or press Ok to start calculation.']
+    'Do you want to project texture without fixing UVs?']
 
 
-class GT_OT_ReprojectFrame(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_reproject_frame_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    done: BoolProperty(default=False)
-
-    def start_text_on_screen(self, context):
-        settings = get_gt_settings()
-        single_line_screen_message('Projecting and baking... Please wait',
-                                   register=not settings.pinmode,
-                                   context=context)
-
-    def finish_text_on_screen(self):
-        settings = get_gt_settings()
-        revert_default_screen_message(unregister=not settings.pinmode)
-
-    def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
-        self.done = True
-        self.start_text_on_screen(context)
-        act_status = bake_texture_from_frames_act(context.area,
-                                                  [bpy_current_frame()])
-        self.finish_text_on_screen()
-
-        if not act_status.success:
-            self.report({'ERROR'}, act_status.error_message)
-            return {'FINISHED'}
-        return {'FINISHED'}
-
-    def cancel(self, context):
-        _log.output(f'{self.__class__.__name__} cancel')
-        self.done = True
-
-    def draw(self, context):
-        global _overlapping_warning_message
-        layout = self.layout
-        if self.done:
-            layout.label(text='Operation has been done')
-            return
-
-        col = layout.column(align=True)
-        col.scale_y = Config.text_scale_y
-        for txt in _overlapping_warning_message:
-            col.label(text=txt)
-
-    def invoke(self, context, event):
-        _log.output(f'{self.__class__.__name__} invoke')
-        self.done = False
-        check_status = common_checks(object_mode=True, is_calculating=True,
-                                     reload_geotracker=True, geotracker=True,
-                                     camera=True, geometry=True,
-                                     movie_clip=True)
-        if not check_status.success:
-            self.report({'ERROR'}, check_status.error_message)
-            return {'CANCELLED'}
-
-        settings = get_gt_settings()
-        geotracker = settings.get_current_geotracker_item()
-
-        check_status = check_uv_exists(geotracker.geomobj)
-        if not check_status.success:
-            self.report({'ERROR'}, check_status.error_message)
-            return {'CANCELLED'}
-
-        check_status = check_uv_overlapping(geotracker.geomobj)
-        if not check_status.success:
-            return context.window_manager.invoke_props_dialog(self, width=400)
-
-        return self.execute(context)
-
-
-class GT_OT_BakeFrameSelector(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_select_frames_for_bake_idname
+class GT_OT_BakeFromSelected(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_bake_from_selected_frames_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
     warning: BoolProperty(default=False)
-
-    def _draw_selection_dialog(self, context):
-        geotracker = get_current_geotracker_item()
-        if not geotracker or not geotracker.movie_clip:
-            return
-
-        layout = self.layout
-        checked_views = False
-
-        box = layout.box()
-        col = box.column(align=True)
-        col.scale_y = Config.text_scale_y
-        for item in geotracker.selected_frames:
-            row = col.row(align=True)
-            row.prop(item, 'selected', text='')
-            row.label(text=f'{item.num}', icon='FILE_IMAGE')
-            if item.selected:
-                checked_views = True
-
-        row = box.row(align=True)
-        row.operator(GTConfig.gt_select_all_bake_frames_idname)
-        row.operator(GTConfig.gt_deselect_all_bake_frames_idname)
-
-        col = layout.column()
-        col.scale_y = Config.text_scale_y
-
-        if checked_views:
-            col.label(text='Please note: texture creation is very '
-                           'time consuming.')
-        else:
-            col.alert = True
-            col.label(text='You need to select at least one image '
-                           'to create texture.')
 
     def _draw_overlapping_warning(self, context):
         global _overlapping_warning_message
@@ -924,10 +882,11 @@ class GT_OT_BakeFrameSelector(ButtonOperator, Operator):
             col.label(text=txt)
 
     def draw(self, context):
+        layout = self.layout
         if self.warning:
             self._draw_overlapping_warning(context)
         else:
-            self._draw_selection_dialog(context)
+            layout.label(text='Operation has been done')
 
     def invoke(self, context, event):
         _log.output(f'{self.__class__.__name__} invoke')
@@ -941,31 +900,22 @@ class GT_OT_BakeFrameSelector(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         geotracker = get_current_geotracker_item()
+        geotracker.geomobj.hide_set(False)
 
         check_status = check_uv_exists(geotracker.geomobj)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        gt = GTLoader.kt_geotracker()
-        if len(gt.keyframes()) == 0:
-            self.report({'ERROR'}, 'No GeoTracker keyframes found')
+        if len(geotracker.selected_frames) == 0:
+            self.report({'ERROR'}, 'No selected frames found')
             return {'CANCELLED'}
 
-        selected_frames = geotracker.selected_frames
-        old_selected_frame_numbers = set([x.num for x in selected_frames
-                                          if x.selected])
-        selected_frames.clear()
-        for frame in gt.keyframes():
-            item = selected_frames.add()
-            item.num = frame
-            item.selected = frame in old_selected_frame_numbers
-
-        check_status = check_uv_overlapping(geotracker.geomobj)
+        check_status = check_uv_overlapping_with_status(geotracker)
         if not check_status.success:
             self.warning = True
-
-        return context.window_manager.invoke_props_dialog(self, width=400)
+            return context.window_manager.invoke_props_dialog(self, width=400)
+        return self.execute(context)
 
     def start_text_on_screen(self, context):
         settings = get_gt_settings()
@@ -979,9 +929,7 @@ class GT_OT_BakeFrameSelector(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        if self.warning:
-            self.warning = False
-            return context.window_manager.invoke_props_dialog(self, width=400)
+        self.warning = False
 
         check_status = common_checks(object_mode=True, is_calculating=True,
                                      geotracker=True, camera=True,
@@ -991,10 +939,9 @@ class GT_OT_BakeFrameSelector(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         geotracker = get_current_geotracker_item()
-        selected_keyframes = [x.num for x in geotracker.selected_frames
-                              if x.selected]
+        selected_keyframes = [x.num for x in geotracker.selected_frames]
         if len(selected_keyframes) == 0:
-            self.report({'ERROR'}, 'No keyframes have been selected')
+            self.report({'ERROR'}, 'No frames have been selected')
             return {'CANCELLED'}
 
         _log.output('GT START TEXTURE CREATION')
@@ -1007,11 +954,15 @@ class GT_OT_BakeFrameSelector(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'FINISHED'}
 
+        settings = get_gt_settings()
+        if settings.pinmode:
+            GTLoader.out_pinmode()
+
         return {'FINISHED'}
 
 
-class GT_OT_SelectAllBakeFrames(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_select_all_bake_frames_idname
+class GT_OT_AddBakeFrame(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_add_bake_frame_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
@@ -1020,13 +971,35 @@ class GT_OT_SelectAllBakeFrames(ButtonOperator, Operator):
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
-        for item in geotracker.selected_frames:
-            item.selected = True
+
+        frame = bpy_current_frame()
+        res = check_background_image_absent_frames(geotracker.camobj, index=0,
+                                                   frames=[frame])
+        if len(res) > 0:
+            msg = f'Frame [{frame}] is outside of Clip range'
+            self.report({'ERROR'}, msg)
+            return {'CANCELLED'}
+
+        frames = [item.num for item in geotracker.selected_frames]
+        if frame in frames:
+            geotracker.selected_frame_index = frames.index(frame)
+            return {'CANCELLED'}
+
+        frames.append(frame)
+        frames.sort()
+
+        geotracker.selected_frames.clear()
+        for i in frames:
+            item = geotracker.selected_frames.add()
+            item.num = i
+
+        geotracker.selected_frame_index = frames.index(frame)
+
         return {'FINISHED'}
 
 
-class GT_OT_DeselectAllBakeFrames(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_deselect_all_bake_frames_idname
+class GT_OT_RemoveBakeFrame(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_remove_bake_frame_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
@@ -1035,8 +1008,39 @@ class GT_OT_DeselectAllBakeFrames(ButtonOperator, Operator):
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
-        for item in geotracker.selected_frames:
-            item.selected = False
+
+        index = geotracker.selected_frame_index
+        if index >= len(geotracker.selected_frames):
+            return {'CANCELLED'}
+
+        if index == len(geotracker.selected_frames) - 1:
+            geotracker.selected_frame_index -= 1
+        geotracker.selected_frames.remove(index)
+
+        return {'FINISHED'}
+
+
+class GT_OT_GoToBakeFrame(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_go_to_bake_frame_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    num: IntProperty(default=0)
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        geotracker = get_current_geotracker_item()
+        if not geotracker:
+            return {'CANCELLED'}
+
+        index = self.num
+        if index >= len(geotracker.selected_frames):
+            return {'CANCELLED'}
+
+        frame = geotracker.selected_frames[index].num
+        bpy_set_current_frame(frame)
+        geotracker.selected_frame_index = index
+
         return {'FINISHED'}
 
 
@@ -1261,6 +1265,24 @@ class GT_OT_ShareFeedback(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class GT_OT_DeleteTexture(Operator):
+    bl_idname = GTConfig.gt_delete_texture_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        geotracker = get_current_geotracker_item()
+        if not geotracker:
+            return {'CANCELLED'}
+        remove_bpy_image_by_name(geotracker.preview_texture_name())
+        remove_mat_by_name(geotracker.preview_material_name())
+        return {'FINISHED'}
+
+
 def _rescale_preview_func(operator, context):
     scale_scene_tracking_preview_func(operator, context)
 
@@ -1311,7 +1333,8 @@ class GT_OT_RescaleWindow(Operator):
                          update=_rescale_preview_func)
     geom_scale: FloatVectorProperty(default=(1, 1, 1))
     cam_scale:  FloatVectorProperty(default=(1, 1, 1))
-    keep_cam_scale: BoolProperty(default=True, name='Lock Camera scale',
+    keep_cam_scale: BoolProperty(default=True,
+                                 name='Lock Camera (visualization) scale',
                                  update=_rescale_preview_func)
     keep_geom_scale: BoolProperty(default=False, name='Lock Geometry scale',
                                   update=_rescale_preview_func)
@@ -1408,7 +1431,7 @@ class GT_OT_RescaleWindow(Operator):
         self.keep_cam_scale = True
         self.keep_geom_scale = False
         self.done = False
-        return context.window_manager.invoke_props_dialog(self, width=350)
+        return context.window_manager.invoke_props_dialog(self, width=400)
 
 
 def _move_preview_func(operator, context):
@@ -1779,6 +1802,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_RemoveKeyframe,
                   GT_OT_NextKeyframe,
                   GT_OT_PrevKeyframe,
+                  GT_OT_LockViewport,
                   GT_OT_TrackToStart,
                   GT_OT_TrackPrev,
                   GT_OT_TrackNext,
@@ -1806,10 +1830,10 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_CheckUVOverlapping,
                   GT_OT_RepackOverlappingUV,
                   GT_OT_CreateNonOverlappingUV,
-                  GT_OT_ReprojectFrame,
-                  GT_OT_BakeFrameSelector,
-                  GT_OT_SelectAllBakeFrames,
-                  GT_OT_DeselectAllBakeFrames,
+                  GT_OT_BakeFromSelected,
+                  GT_OT_AddBakeFrame,
+                  GT_OT_RemoveBakeFrame,
+                  GT_OT_GoToBakeFrame,
                   GT_OT_TransferTracking,
                   GT_OT_BakeAnimationToWorld,
                   GT_OT_RemoveFocalKeyframe,
@@ -1821,6 +1845,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_AutoNamePrecalc,
                   GT_OT_UnbreakRotation,
                   GT_OT_ShareFeedback,
+                  GT_OT_DeleteTexture,
                   GT_OT_RescaleWindow,
                   GT_OT_MoveWindow,
                   GT_OT_RigWindow,
