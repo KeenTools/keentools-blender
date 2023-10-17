@@ -161,10 +161,6 @@ def frame_change_post_handler(scene) -> None:
         GTLoader.load_pins_into_viewport()
         GTLoader.viewport().stabilize(geotracker.geomobj)
 
-    GTLoader.update_viewport_shaders(geomobj_matrix=True,
-                                     pins_and_residuals=True,
-                                     mask=True)
-
     if Config.test_facetracker:
         GTLoader.increment_geo_hash()
         gt = GTLoader.kt_geotracker()
@@ -175,6 +171,10 @@ def frame_change_post_handler(scene) -> None:
         wf.init_geom_data_from_core(*GTLoader.get_geo_shader_data(
             geo, geotracker.geomobj.matrix_world))
         wf.create_batches()
+
+    GTLoader.update_viewport_shaders(geomobj_matrix=True,
+                                     pins_and_residuals=True,
+                                     mask=True)
 
 
 class GTLoader:
