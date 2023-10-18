@@ -72,6 +72,10 @@ buttons = {
         'Select images:',
         'Create texture using pinned views'
     ),
+    FBConfig.fb_align_all_idname: Button(
+        'FaceBuilder align all',
+        'Detect a face on all photos and pin the model on all frames'
+    ),
     FBConfig.fb_pickmode_idname: Button(
         'FaceBuilder Pick Face mode',
         'Modal Operator for Pick Face mode'

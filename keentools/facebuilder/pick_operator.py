@@ -150,6 +150,53 @@ def _add_pins_to_face(headnum: int, camnum: int, rectangle_index: int,
     return result_flag
 
 
+def _align_face_on_frames(
+        headnum: int, cur_viewport_camnum, camnums: List[int], detected_faces: List[Any],
+        context: Any) -> Optional[bool]:
+    fb = FBLoader.get_builder()
+    head = get_fb_settings().get_head(headnum)
+    fb.set_use_emotions(head.should_use_emotions())
+    configure_focal_mode_and_fixes(fb, head)
+
+    kf_ids = [head.get_camera(camnum).get_keyframe() for camnum in camnums]
+    try:
+        result_flag = fb.align_all_face_poses(kf_ids, detected_faces)
+    except pkt_module().UnlicensedException as err:
+        _log.error(f'UnlicensedException _align_face_on_frames\n{str(err)}')
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
+        return None
+    except Exception as err:
+        _log.error(f'UNKNOWN EXCEPTION align_all_face_poses '
+                   f'in _align_face_on_frames\n{str(err)}')
+        return None
+    if result_flag:
+        for kid in kf_ids:
+            fb.remove_pins(kid)
+            fb.add_preset_pins(kid)
+            coords.update_head_mesh_non_neutral(fb, head)
+            _log.output(f'auto_pins_added kid: {kid}')
+    else:
+        _log.output(f'align_all_face_poses failed')
+
+    for camnum in camnums:
+        FBLoader.update_camera_pins_count(headnum, camnum)
+    FBLoader.load_pins_into_viewport(headnum, cur_viewport_camnum)
+    FBLoader.update_all_camera_positions(headnum)
+    FBLoader.update_all_camera_focals(headnum)
+    wf = FBLoader.viewport().wireframer()
+    camera = head.get_camera(cur_viewport_camnum)
+    wf.set_camera_pos(camera.camobj, head.headobj)
+    FBLoader.update_viewport_shaders(area=context.area,
+                                     headnum=headnum, camnum=cur_viewport_camnum,
+                                     wireframe=True, pins_and_residuals=True)
+
+    FBLoader.save_fb_serial_and_image_pathes(headnum)
+    history_name = 'Align face on frames' if result_flag else 'No Align face on frames'
+    push_head_in_undo_history(head, history_name)
+    return result_flag
+
+
 def _not_enough_face_features_warning() -> None:
     error_message = 'Sorry, could not find enough facial features \n' \
                     'to pin the model! Please try pinning the model manually.'
@@ -157,6 +204,24 @@ def _not_enough_face_features_warning() -> None:
     warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
          msg_content=error_message)
     _log.error('could not find enough facial features')
+
+
+def _more_than_one_faces_detected_warning(cam_num) -> None:
+    error_message = f'More than one faces detected on frame {cam_num}! \n' \
+                    f'The first one was used.'
+    warn = get_operator(Config.kt_warning_idname)
+    warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+         msg_content=error_message)
+    _log.error(f'More than one faces detected on frame {cam_num}! The first one was used.')
+
+
+def _cant_detect_face_warning(cam_num) -> None:
+    error_message = f'Face did not detect on frame {cam_num}! \n' \
+                    f'The frame was skipped.'
+    warn = get_operator(Config.kt_warning_idname)
+    warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+         msg_content=error_message)
+    _log.error(f'More than one faces detected on frame {cam_num}! The frame was skipped.')
 
 
 class FB_OT_PickMode(Operator):
@@ -392,4 +457,89 @@ class FB_OT_PickModeStarter(Operator):
 
     def execute(self, context: Any) -> Set:  # Used only for integration testing
         _log.output('PickModeStarter execute call')
+        return self._action(context, event=None, invoked=False)
+
+class FB_OT_AlignAll(Operator):
+    bl_idname = FBConfig.fb_align_all_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    headnum: IntProperty(default=0)
+    camnum: IntProperty(default=0)
+
+    def _action(self, context: Any, event: Any, invoked: bool=True) -> Set:
+        _log.output('AlignAll action call')
+
+        FBLoader.load_model(self.headnum)
+        fb = FBLoader.get_builder()
+
+        if not fb.is_face_detector_available():
+            message = 'Align face is unavailable on your system ' \
+                      'because Windows 7 doesn\'t support ' \
+                      'ONNX neural network runtime'
+            self.report({'ERROR'}, message)
+            _log.error(message)
+            return {'CANCELLED'}
+
+        head = get_fb_settings().get_head(self.headnum)
+
+        detected_camnums = []
+        detected_faces = []
+        for cur_camnum, _ in enumerate(head.cameras):
+            img = init_detected_faces(fb, self.headnum, cur_camnum)
+            if img is None:
+                message = 'Face detection failed because of a corrupted image'
+                self.report({'ERROR'}, message)
+                _log.error(message)
+                return {'CANCELLED'}
+
+            h, w, _ = img.shape
+            rects = sort_detected_faces()
+
+            vp = FBLoader.viewport()
+            rectangler = vp.rectangler()
+            rectangler.clear_rectangles()
+
+            if len(rects) == 0:
+                message = f'Face did not detect on frame {cur_camnum}'
+                _log.output(message)
+                _cant_detect_face_warning(cur_camnum)
+                continue
+            if len(rects) > 1:
+                message = f'More than one faces was detected at frame {cur_camnum}! The first one was used.'
+                _log.output(message)
+                _more_than_one_faces_detected_warning(cur_camnum)
+            detected_camnums.append(cur_camnum)
+            detected_faces.append(get_detected_faces()[0])
+
+        result = _align_face_on_frames(
+            self.headnum, self.camnum, detected_camnums,
+            detected_faces, context=context)
+        if result is None:
+            return {'CANCELLED'}
+        if not result:
+            message = 'A face was detected but not pinned'
+            _log.output(message)
+            _not_enough_face_features_warning()
+        else:
+            head.mark_model_changed_by_pinmode()
+            message = 'A face was detected and pinned'
+            self.report({'INFO'}, message)
+            _log.output(message)
+
+        return {'FINISHED'}
+
+    def invoke(self, context: Any, event: Any) -> Set:
+        _log.output('AlignAll invoke call')
+        settings = get_fb_settings()
+        if not settings.pinmode:
+            message = 'Not in pinmode call'
+            self.report({'ERROR'}, message)
+            _log.error(message)
+            return {'CANCELLED'}
+        return self._action(context, event, invoked=True)
+
+    def execute(self, context: Any) -> Set:  # Used only for integration testing
+        _log.output('AlignAll execute call')
         return self._action(context, event=None, invoked=False)

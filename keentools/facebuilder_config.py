@@ -81,6 +81,7 @@ class FBConfig:
 
     fb_pinmode_idname = operators + '.pinmode'
     fb_movepin_idname = operators + '.movepin'
+    fb_align_all_idname = operators + '.align_all'
     fb_pickmode_idname = operators + '.pickmode'
     fb_pickmode_starter_idname = operators + '.pickmode_starter'
     fb_history_actor_idname = operators + '.history_actor'

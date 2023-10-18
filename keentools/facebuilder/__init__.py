@@ -29,7 +29,7 @@ from ..facebuilder_config import (FBConfig,
 from .head import MESH_OT_FBAddHead
 from .settings import FBSceneSettings, FBExifItem, FBCameraItem, FBHeadItem
 from .pinmode import FB_OT_PinMode
-from .pick_operator import FB_OT_PickMode, FB_OT_PickModeStarter
+from .pick_operator import FB_OT_PickMode, FB_OT_PickModeStarter, FB_OT_AlignAll
 from .movepin import FB_OT_MovePin
 from .actor import FB_OT_HistoryActor, FB_OT_CameraActor
 from .main_operator import CLASSES_TO_REGISTER as OPERATOR_CLASSES
@@ -86,6 +86,7 @@ CLASSES_TO_REGISTER = (MESH_OT_FBAddHead,
                        FBHeadItem,
                        FBSceneSettings,
                        FB_OT_PinMode,
+                       FB_OT_AlignAll,
                        FB_OT_PickMode,
                        FB_OT_PickModeStarter,
                        FB_OT_MovePin,

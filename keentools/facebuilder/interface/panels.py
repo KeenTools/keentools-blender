@@ -439,6 +439,14 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             row = layout.row()
             row.scale_y = 2.0
             op = row.operator(
+                FBConfig.fb_align_all_idname,
+                text='Align face on all frames', icon='SHADERFX')
+            op.headnum = settings.current_headnum
+            op.camnum = settings.current_camnum
+
+            row = layout.row()
+            row.scale_y = 2.0
+            op = row.operator(
                 FBConfig.fb_pickmode_starter_idname,
                 text='Align face', icon='SHADERFX')
             op.headnum = settings.current_headnum
