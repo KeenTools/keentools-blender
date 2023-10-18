@@ -18,6 +18,8 @@
 
 from typing import Optional, Tuple, Any, List
 
+from bpy.types import Object
+
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
                             get_operator,
@@ -37,7 +39,9 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_start_frame,
                                 bpy_end_frame,
                                 bpy_current_frame,
-                                bpy_set_current_frame)
+                                bpy_set_current_frame,
+                                bpy_msgbus_subscribe_rna,
+                                bpy_msgbus_clear_by_owner)
 
 from ..utils.animation import count_fcurve_points
 from ..utils.manipulate import select_object_only, switch_to_camera
@@ -62,9 +66,76 @@ _unbreak_rotation_is_needed_warning = \
     'We recommend applying \'Unbreak rotation\' operation to it'
 
 
+_camobj_watcher_owner = object()
+
+
+def unsubscribe_camera_lens_watcher() -> None:
+    _log.output('unsubscribe_camera_lens_watcher call')
+    bpy_msgbus_clear_by_owner(_camobj_watcher_owner)
+
+
+def subscribe_camera_lens_watcher(camobj: Optional[Object]) -> None:
+    _log.output('subscribe_camera_lens_watcher call')
+    unsubscribe_camera_lens_watcher()
+    if not camobj or not camobj.data:
+        return
+    subscribe_to = camobj.data.path_resolve('lens', False)
+    bpy_msgbus_subscribe_rna(key=subscribe_to,
+                             owner=_camobj_watcher_owner,
+                             args=(camobj.data.lens,),
+                             notify=lens_change_callback)
+
+
+def lens_change_callback(old_focal_length_mm: float) -> None:
+    _log.output('lens_change_callback call')
+    settings = get_gt_settings()
+    if not settings.pinmode and not settings.is_calculating():
+        return
+
+    geotracker = settings.get_current_geotracker_item()
+    if geotracker.focal_length_mode != 'STATIC_FOCAL_LENGTH':
+        _log.output(f'early exit: {geotracker.focal_length_mode}')
+        return
+
+    _log.output(_log.color('magenta', f'start lens calculation'))
+
+    rw, rh = bpy_render_frame()
+
+    old_focal_length_px = focal_mm_to_px(
+        old_focal_length_mm,
+        rw, rh, camera_sensor_width(geotracker.camobj))
+    new_focal_length_px = focal_mm_to_px(
+        camera_focal_length(geotracker.camobj),
+        rw, rh, camera_sensor_width(geotracker.camobj))
+
+    _log.output(_log.color('red', f'\nold: {old_focal_length_px} '
+                                  f'new: {new_focal_length_px}'))
+
+    if old_focal_length_px != new_focal_length_px:
+        current_frame = bpy_current_frame()
+        settings.calculating_mode = 'ESTIMATE_FL'
+        gt = GTLoader.kt_geotracker()
+        gt.recalculate_model_for_new_focal_length(old_focal_length_px,
+                                                  new_focal_length_px, True,
+                                                  current_frame)
+        bpy_set_current_frame(current_frame)
+        subscribe_camera_lens_watcher(geotracker.camobj)
+        settings.stop_calculating()
+        _log.output('FOCAL LENGTH CHANGED')
+
+        if settings.pinmode:
+            GTLoader.update_viewport_shaders(update_geo_data=True,
+                                             geomobj_matrix=True,
+                                             wireframe=True,
+                                             pins_and_residuals=True,
+                                             timeline=True)
+
+
 def update_camobj(geotracker, context: Any) -> None:
     _log.output(f'update_camobj: {geotracker.camobj}')
     settings = get_gt_settings()
+
+    subscribe_camera_lens_watcher(geotracker.camobj)
 
     if not geotracker.camobj and settings.pinmode:
         GTLoader.out_pinmode()
