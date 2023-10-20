@@ -51,17 +51,18 @@ _log = KTLogger(__name__)
 
 
 class PrecalcTimer(CalcTimer):
-    def finish_calc_mode_with_error(self, err_message: str) -> None:
-        super().finish_calc_mode()
+    def finish_error_state(self) -> None:
+        self.finish_calc_mode()
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
-        geotracker.precalc_message = err_message
-        _log.error(f'precalc_message: {err_message}')
+        geotracker.precalc_message = self._error_message
+        _log.error(f'precalc error message: {self._error_message}')
+        return None
 
     def runner_state(self) -> Optional[float]:
-        settings = get_gt_settings()
-
         _log.output('runner_state call')
+
+        settings = get_gt_settings()
         if self._runner.is_finished():
             _log.output('runner is_finished')
             err = self._runner.exception()
@@ -93,12 +94,13 @@ class PrecalcTimer(CalcTimer):
         _log.output(f'loading_frame: {next_frame}')
         settings.user_percent = progress * 100
         current_frame = bpy_current_frame()
+
         if current_frame != next_frame:
             _log.output(f'NEXT FRAME IS NOT REACHED: {next_frame} current={current_frame}')
             self._target_frame = next_frame
-            self._state = 'timeline'
-            self._active_state_func = self.timeline_state
+            self.set_current_state(self.timeline_state)
             return self._interval
+
         geotracker = settings.get_current_geotracker_item()
 
         np_img = np_array_from_background_image(geotracker.camobj, index=0)
@@ -107,15 +109,17 @@ class PrecalcTimer(CalcTimer):
                 msg = f'Cannot load image at frame: {current_frame}' \
                       f'\nPlease check your footage!'
                 show_warning_dialog(msg)
-                self.finish_calc_mode_with_error(msg)
-                return None
+                self.set_error_message(msg)
+                self.set_current_state(self.finish_error_state)
+                return self.current_state()
 
             # For testing purpose only
             _log.output('no np_img in bpy.app.background mode. try direct loading')
             bg_img = get_background_image_object(geotracker.camobj)
             if not bg_img or not bg_img.image:
-                self.finish_calc_mode_with_error('* Cannot load images 1')
-                return None
+                self.set_error_message('* Cannot load images 1')
+                self.set_current_state(self.finish_error_state)
+                return self.current_state()
 
             im_user = bg_img.image_user
             update_depsgraph()
@@ -127,12 +131,14 @@ class PrecalcTimer(CalcTimer):
                 img = bpy.data.images.load(path)
             except Exception as err:
                 _log.error(f'runner_state load image Exception:\n{str(err)}')
-                self.finish_calc_mode_with_error('* Cannot load images 2')
-                return None
+                self.set_error_message('* Cannot load images 2')
+                self.set_current_state(self.finish_error_state)
+                return self.current_state()
 
             if not check_bpy_image_size(img):
-                self.finish_calc_mode_with_error('* Cannot load images 3')
-                return None
+                self.set_error_message('* Cannot load images 3')
+                self.set_current_state(self.finish_error_state)
+                return self.current_state()
 
             np_img = np_array_from_bpy_image(img)
             bpy.data.images.remove(img)
@@ -146,8 +152,7 @@ class PrecalcTimer(CalcTimer):
         settings = get_gt_settings()
         settings.calculating_mode = 'PRECALC'
 
-        self._state = 'runner'
-        self._active_state_func = self.runner_state
+        self.set_current_state(self.runner_state)
         # self._area_header('Precalc is calculating... Please wait')
         analysing_screen_message('Initialization')
 

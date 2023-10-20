@@ -81,6 +81,7 @@ def exit_area_localview(area: Optional[Area], window: Optional[Window]=None,
 def check_localview(area: Optional[Area]) -> bool:
     if check_area_active_problem(area):
         return False
-    if not area.spaces.active.local_view:
+    if not hasattr(area.spaces.active, 'local_view') or \
+            not area.spaces.active.local_view:
         return False
     return True

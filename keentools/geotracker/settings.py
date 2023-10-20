@@ -557,11 +557,11 @@ class GTSceneSettings(PropertyGroup):
     anim_end: IntProperty(name='to', default=250)
 
     user_interrupts: BoolProperty(name='Interrupted by user',
-                                            default = False)
+                                  default = False)
     user_percent: FloatProperty(name='Percentage',
-                                          subtype='PERCENTAGE',
-                                          default=0.0, min=0.0, max=100.0,
-                                          precision=1)
+                                subtype='PERCENTAGE',
+                                default=0.0, min=0.0, max=100.0,
+                                precision=1)
 
     calculating_mode: EnumProperty(name='Calculating mode', items=[
         ('NONE', 'NONE', 'No calculation mode', 0),
