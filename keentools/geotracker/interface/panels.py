@@ -38,6 +38,7 @@ from ...utils.viewport_state import force_show_ui_overlays
 from ...utils.bpy_common import bpy_timer_register
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.grace_timer import KTGraceTimer
+from ...utils.icons import KTIcons
 
 
 _gt_grace_timer = KTGraceTimer('geotracker')
@@ -581,27 +582,27 @@ class GT_PT_TrackingPanel(AllVisible):
         if settings.is_calculating('TRACKING'):
             split = row.split(factor=0.24, align=True)
             split.operator(GTConfig.gt_track_prev_idname, text='',
-                           icon='TRACKING_BACKWARDS_SINGLE')
+                           **KTIcons.key_value('track_backward_single'))
 
             split2 = split.split(factor=0.6666, align=True)
             split2.operator(GTConfig.gt_stop_calculating_idname, text='',
                             icon='PAUSE')
 
             split2.operator(GTConfig.gt_track_next_idname, text='',
-                            icon='TRACKING_FORWARDS_SINGLE')
+                            **KTIcons.key_value('track_forward_single'))
         else:
             split = row.split(factor=0.5, align=True)
             split.operator(GTConfig.gt_track_prev_idname, text='',
-                           icon='TRACKING_BACKWARDS_SINGLE')
+                           **KTIcons.key_value('track_backward_single'))
 
             split.operator(GTConfig.gt_track_to_start_idname, text='',
-                           icon='TRACKING_BACKWARDS')
+                           **KTIcons.key_value('track_backward'))
 
             split = row.split(factor=0.5, align=True)
-            split.operator(GTConfig.gt_track_to_end_idname, text='',
-                           icon='TRACKING_FORWARDS')
+            split.operator(GTConfig.gt_track_to_end_idname,
+                           **KTIcons.key_value('track_forward'), text='')
             split.operator(GTConfig.gt_track_next_idname, text='',
-                           icon='TRACKING_FORWARDS_SINGLE')
+                           **KTIcons.key_value('track_forward_single'))
 
     def _tracking_refine_row(self, settings: Any, layout: Any) -> None:
         row = layout.row(align=True)
