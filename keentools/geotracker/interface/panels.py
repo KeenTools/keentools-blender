@@ -600,7 +600,6 @@ class GT_PT_TrackingPanel(AllVisible):
             split = row.split(factor=0.5, align=True)
             split.operator(GTConfig.gt_track_to_end_idname, text='',
                            icon='TRACKING_FORWARDS')
-
             split.operator(GTConfig.gt_track_next_idname, text='',
                            icon='TRACKING_FORWARDS_SINGLE')
 
@@ -652,6 +651,24 @@ class GT_PT_TrackingPanel(AllVisible):
         btn.operator(GTConfig.gt_clear_tracking_menu_exec_idname,
                      text='', icon='X')
 
+    def _tracking_locks(self, settings: Any, layout: Any, geotracker: Any) -> None:
+        box = layout.box()
+        col = box.column(align=True)
+        col.label(text='Locks')
+        split = col.split(factor=0.4)
+        split.label(text='Translation')
+        row = split.row(align=True)
+        row.prop(geotracker, 'locks', index=0, text='X')
+        row.prop(geotracker, 'locks', index=1, text='Y')
+        row.prop(geotracker, 'locks', index=2, text='Z')
+
+        split = col.split(factor=0.4)
+        split.label(text='Rotation')
+        row = split.row(align=True)
+        row.prop(geotracker, 'locks', index=3, text='X')
+        row.prop(geotracker, 'locks', index=4, text='Y')
+        row.prop(geotracker, 'locks', index=5, text='Z')
+
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
         row = layout.row()
@@ -685,6 +702,8 @@ class GT_PT_TrackingPanel(AllVisible):
         self._tracking_keyframes_row(settings, col)
         if settings.pinmode:
             self._tracking_remove_keys_row(settings, col)
+
+        self._tracking_locks(settings, layout, geotracker)
 
 
 class GT_PT_AppearanceSettingsPanel(AllVisible):

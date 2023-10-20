@@ -24,7 +24,7 @@ from bpy.types import (Object, CameraBackgroundImage, Area, Image, Mask,
                        PropertyGroup, MovieClip)
 from bpy.props import (IntProperty, BoolProperty, FloatProperty,
                        StringProperty, EnumProperty, FloatVectorProperty,
-                       PointerProperty, CollectionProperty)
+                       PointerProperty, CollectionProperty, BoolVectorProperty)
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_addon_preferences
@@ -75,7 +75,8 @@ from .callbacks import (update_camobj,
                         update_spring_pins_back,
                         update_solve_for_camera,
                         update_smoothing,
-                        update_stabilize_viewport_enabled)
+                        update_stabilize_viewport_enabled,
+                        update_locks)
 
 
 _log = KTLogger(__name__)
@@ -311,6 +312,11 @@ class GeoTrackerItem(PropertyGroup):
         description='XY translation smoothing', update=update_smoothing)
 
     overlapping_detected: BoolProperty(default=False)
+
+    locks: BoolVectorProperty(name='Locks', description='Fixes',
+                              size=6, subtype='NONE',
+                              default=(False,) * 6,
+                              update=update_locks)
 
     def update_compositing_mask(self, *, frame: Optional[int]=None,
                                 recreate_nodes: bool=False) -> Image:
