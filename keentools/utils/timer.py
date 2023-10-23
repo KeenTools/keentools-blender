@@ -27,9 +27,9 @@ _log: Any = KTLogger(__name__)
 _stop_all_timers: bool = False
 
 
-def stop_all_working_timers() -> None:
+def stop_all_working_timers(value: bool = True) -> None:
     global _stop_all_timers
-    _stop_all_timers = True
+    _stop_all_timers = value
 
 
 class KTTimer:
