@@ -152,6 +152,7 @@ def _add_pins_to_face(headnum: int, camnum: int, rectangle_index: int,
 
 def _align_face_on_frames(
         headnum: int, cur_viewport_camnum, camnums: List[int], detected_faces: List[Any],
+        detected_images: List[Any],
         context: Any) -> Optional[bool]:
     fb = FBLoader.get_builder()
     head = get_fb_settings().get_head(headnum)
@@ -160,7 +161,7 @@ def _align_face_on_frames(
 
     kf_ids = [head.get_camera(camnum).get_keyframe() for camnum in camnums]
     try:
-        result_flag = fb.align_face_with_mbba(kf_ids, detected_faces, True)
+        result_flag = fb.align_face_with_mbba(kf_ids, detected_images, True)
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException _align_face_on_frames\n{str(err)}')
         warn = get_operator(Config.kt_warning_idname)
@@ -486,6 +487,7 @@ class FB_OT_AlignAllMbba(Operator):
 
         detected_camnums = []
         detected_faces = []
+        detected_imgs = []
         for cur_camnum, _ in enumerate(head.cameras):
             img = init_detected_faces(fb, self.headnum, cur_camnum)
             if img is None:
@@ -512,10 +514,11 @@ class FB_OT_AlignAllMbba(Operator):
                 _more_than_one_faces_detected_warning(cur_camnum)
             detected_camnums.append(cur_camnum)
             detected_faces.append(get_detected_faces()[0])
+            detected_imgs.append(img)
 
         result = _align_face_on_frames(
             self.headnum, self.camnum, detected_camnums,
-            detected_faces, context=context)
+            detected_faces, detected_imgs, context=context)
         if result is None:
             return {'CANCELLED'}
         if not result:
