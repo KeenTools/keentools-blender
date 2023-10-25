@@ -823,10 +823,10 @@ class FBSceneSettings(PropertyGroup):
     # -------------------------
     tex_width: IntProperty(
         description="Width size of output texture",
-        name="Width", default=2048)
+        name="Width", default=Config.default_tex_width)
     tex_height: IntProperty(
         description="Height size of output texture",
-        name="Height", default=2048)
+        name="Height", default=Config.default_tex_height)
 
     tex_face_angles_affection: FloatProperty(
         description="Choose how much a polygon view angle affects "
@@ -834,10 +834,11 @@ class FBSceneSettings(PropertyGroup):
                     "color from all views; with 100 you'll get color "
                     "information only from the polygons at which a camera "
                     "is looking at 90 degrees",
-        name="Angle strictness", default=10.0, min=0.0, max=100.0)
+        name="Angle strictness",
+        default=Config.default_tex_face_angles_affection, min=0.0, max=100.0)
     tex_uv_expand_percents: FloatProperty(
         description="Expand texture edges",
-        name="Expand edges (%)", default=0.1)
+        name="Expand edges (%)", default=Config.default_tex_uv_expand_percents)
     tex_back_face_culling: BoolProperty(
         description="Exclude backfacing polygons from the created texture",
         name="Back face culling", default=True)

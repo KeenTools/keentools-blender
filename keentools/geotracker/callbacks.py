@@ -401,3 +401,14 @@ def update_smoothing(geotracker, context: Any) -> None:
 
 def update_stabilize_viewport_enabled(settings, context: Any) -> None:
     settings.stabilize_viewport(reset=True)
+
+
+def update_locks(geotracker, context: Any) -> None:
+    _log.output('update_locks')
+    settings = get_gt_settings()
+    if settings.ui_write_mode:
+        return
+    gt = GTLoader.kt_geotracker()
+    gt.set_fixed_dofs(list(geotracker.locks))
+    GTLoader.save_geotracker()
+    _log.output(_log.color('magenta', f'{gt.fixed_dofs()}'))

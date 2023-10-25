@@ -724,6 +724,36 @@ class GT_OT_ResetToneMapping(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class GT_OT_ResetTextureResolution(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_reset_texture_resolution_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        settings = get_gt_settings()
+        if not settings:
+            return {'CANCELLED'}
+        settings.tex_width = Config.default_tex_width
+        settings.tex_height = Config.default_tex_height
+        return {'FINISHED'}
+
+
+class GT_OT_ResetTextureSettings(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_reset_advanced_settings_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        settings = get_gt_settings()
+        if not settings:
+            return {'CANCELLED'}
+        settings.tex_face_angles_affection = Config.default_tex_face_angles_affection
+        settings.tex_uv_expand_percents = Config.default_tex_uv_expand_percents
+        return {'FINISHED'}
+
+
 class GT_OT_DefaultWireframeSettings(ButtonOperator, Operator):
     bl_idname = GTConfig.gt_default_wireframe_settings_idname
     bl_label = buttons[bl_idname].label
@@ -1835,6 +1865,8 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_ResetToneGain,
                   GT_OT_ResetToneGamma,
                   GT_OT_ResetToneMapping,
+                  GT_OT_ResetTextureResolution,
+                  GT_OT_ResetTextureSettings,
                   GT_OT_DefaultWireframeSettings,
                   GT_OT_DefaultPinSettings,
                   GT_OT_CheckUVOverlapping,

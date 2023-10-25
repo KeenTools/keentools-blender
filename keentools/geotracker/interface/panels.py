@@ -39,6 +39,7 @@ from ...utils.viewport_state import force_show_ui_overlays
 from ...utils.bpy_common import bpy_timer_register
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.grace_timer import KTGraceTimer
+from ...utils.icons import KTIcons
 
 
 _log = KTLogger(__name__)
@@ -284,12 +285,17 @@ class GT_PT_InputsPanel(AllVisible):
         split = layout.split(factor=factor, align=True)
         split.label(text='Clip')
 
-        row = split.row(align=True)
+        col = split.column(align=True)
+        row = col.row(align=True)
         row.alert = not geotracker.movie_clip
         row.prop(geotracker, 'movie_clip', text='')
 
         if geotracker.movie_clip:
             row.menu(GTConfig.gt_clip_menu_idname, text='', icon='COLLAPSEMENU')
+            col2 = col.column(align=True)
+            col2.active = False
+            col2.prop(geotracker.movie_clip.colorspace_settings, 'name',
+                      text='')
         else:
             row.operator(GTConfig.gt_sequence_filebrowser_idname,
                          text='', icon='FILEBROWSER')
@@ -584,15 +590,13 @@ class GT_PT_TrackingPanel(AllVisible):
 
     def _tracking_center_block(self, settings: Any, layout: Any) -> None:
         col = layout.column(align=True)
-        row = col.row(align=True)
-        row.active = settings.pinmode
-        row.operator(GTConfig.gt_center_geo_idname, icon='PIVOT_BOUNDBOX')
-        row = col.row(align=True)
-        row.active = settings.pinmode
-        row.operator(GTConfig.gt_toggle_pins_idname, icon='UNPINNED')
-        row.operator(GTConfig.gt_remove_pins_idname, icon='X')
         col.prop(settings, 'stabilize_viewport_enabled',
                  icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
+
+        row = col.row(align=True)
+        row.operator(GTConfig.gt_toggle_pins_idname, icon='UNPINNED')
+        row.operator(GTConfig.gt_remove_pins_idname)
+        col.operator(GTConfig.gt_center_geo_idname, icon='PIVOT_BOUNDBOX')
 
     def _tracking_track_row(self, settings: Any, layout: Any) -> None:
         row = layout.row(align=True)
@@ -621,7 +625,6 @@ class GT_PT_TrackingPanel(AllVisible):
             split = row.split(factor=0.5, align=True)
             split.operator(GTConfig.gt_track_to_end_idname, text='',
                            icon='TRACKING_FORWARDS')
-
             split.operator(GTConfig.gt_track_next_idname, text='',
                            icon='TRACKING_FORWARDS_SINGLE')
 
@@ -697,7 +700,6 @@ class GT_PT_TrackingPanel(AllVisible):
         self._tracking_pinmode_button(settings, layout, context)
 
         if settings.pinmode:
-            self._tracking_center_block(settings, layout)
             col = layout.column(align=True)
             self._tracking_track_row(settings, col)
             self._tracking_refine_row(settings, col)
@@ -707,8 +709,10 @@ class GT_PT_TrackingPanel(AllVisible):
 
         col = layout.column(align=True)
         self._tracking_keyframes_row(settings, col)
+
         if settings.pinmode:
             self._tracking_remove_keys_row(settings, col)
+            self._tracking_center_block(settings, layout)
 
 
 class GT_PT_AppearanceSettingsPanel(AllVisible):
@@ -717,8 +721,7 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
     bl_options = {'DEFAULT_CLOSED'}
 
     def _appearance_wireframe_settings(self, settings: Any, layout: Any) -> None:
-        box = layout.box()
-        col = box.column(align=True)
+        col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Wireframe')
         col.separator(factor=0.4)
@@ -737,8 +740,7 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         col.prop(settings, 'use_adaptive_opacity')
 
     def _appearance_pin_settings(self, settings: Any, layout: Any) -> None:
-        box = layout.box()
-        col = box.column(align=True)
+        col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Pins')
         col.separator(factor=0.4)
@@ -756,8 +758,7 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         if not geotracker:
             return
 
-        box = layout.box()
-        col = box.column(align=True)
+        col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Background')
         col.separator(factor=0.4)
@@ -1022,7 +1023,7 @@ class GT_PT_RenderingPanel(AllVisible):
 
 class GT_PT_SmoothingPanel(AllVisible):
     bl_idname = GTConfig.gt_smoothing_panel_idname
-    bl_label = 'Smoothing'
+    bl_label = 'Smoothing & Locks'
     bl_options = {'DEFAULT_CLOSED'}
 
     def draw_header_preset(self, context: Any) -> None:
@@ -1043,6 +1044,23 @@ class GT_PT_SmoothingPanel(AllVisible):
             GTConfig.gt_help_smoothing_idname,
             text='', icon='QUESTION', emboss=False)
 
+    def _tracking_locks(self, layout: Any, geotracker: Any) -> None:
+        col = layout.column(align=True)
+        col.label(text='Locks')
+        split = col.split(factor=0.4)
+        split.label(text='Translation')
+        row = split.row(align=True)
+        row.prop(geotracker, 'locks', index=3, text='X')
+        row.prop(geotracker, 'locks', index=4, text='Y')
+        row.prop(geotracker, 'locks', index=5, text='Z')
+
+        split = col.split(factor=0.4)
+        split.label(text='Rotation')
+        row = split.row(align=True)
+        row.prop(geotracker, 'locks', index=0, text='X')
+        row.prop(geotracker, 'locks', index=1, text='Y')
+        row.prop(geotracker, 'locks', index=2, text='Z')
+
     def draw(self, context: Any) -> None:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
@@ -1051,7 +1069,10 @@ class GT_PT_SmoothingPanel(AllVisible):
 
         layout = self.layout
         col = layout.column(align=True)
+        col.label(text='Smoothing')
         col.prop(geotracker, 'smoothing_depth_coeff')
         col.prop(geotracker, 'smoothing_xy_translations_coeff')
         col.prop(geotracker, 'smoothing_rotations_coeff')
         col.prop(geotracker, 'smoothing_focal_length_coeff')
+
+        self._tracking_locks(layout, geotracker)

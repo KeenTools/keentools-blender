@@ -89,17 +89,27 @@ class GT_OT_TextureBakeOptions(Operator):
         if settings is None:
             return
 
-        box = layout.box()
-        col = box.column(align=True)
-        col.label(text='Resolution (in pixels)')
+        col = layout.column(align=True)
+        row = col.row()
+        row.label(text='Resolution (in pixels)')
+        btn = row.column(align=True)
+        btn.active = False
+        btn.operator(GTConfig.gt_reset_texture_resolution_idname,
+                     text='', icon='LOOP_BACK', emboss=False, depress=False)
+
         col.separator(factor=0.4)
         row = col.row(align=True)
         row.prop(settings, 'tex_width', text='W')
         row.prop(settings, 'tex_height', text='H')
 
-        box = layout.box()
-        col = box.column(align=True)
-        col.label(text='Advanced')
+        col = layout.column(align=True)
+        row = col.row()
+        row.label(text='Advanced')
+        btn = row.column(align=True)
+        btn.active = False
+        btn.operator(GTConfig.gt_reset_advanced_settings_idname,
+                     text='', icon='LOOP_BACK', emboss=False, depress=False)
+
         col.separator(factor=0.4)
         col.prop(settings, 'tex_face_angles_affection')
         col.prop(settings, 'tex_uv_expand_percents')
