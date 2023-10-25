@@ -66,24 +66,46 @@ _unbreak_rotation_is_needed_warning = \
     'We recommend applying \'Unbreak rotation\' operation to it'
 
 
-_camobj_watcher_owner = object()
+_camobj_lens_watcher_owner = object()
+_movie_clip_color_space_watcher_owner = object()
 
 
-def unsubscribe_camera_lens_watcher() -> None:
-    _log.output('unsubscribe_camera_lens_watcher call')
-    bpy_msgbus_clear_by_owner(_camobj_watcher_owner)
+def unsubscribe_watcher(owner: object) -> None:
+    _log.output(f'unsubscribe_watcher call: {owner}')
+    bpy_msgbus_clear_by_owner(owner)
 
 
 def subscribe_camera_lens_watcher(camobj: Optional[Object]) -> None:
     _log.output('subscribe_camera_lens_watcher call')
-    unsubscribe_camera_lens_watcher()
+    unsubscribe_watcher(_camobj_lens_watcher_owner)
     if not camobj or not camobj.data:
         return
     subscribe_to = camobj.data.path_resolve('lens', False)
     bpy_msgbus_subscribe_rna(key=subscribe_to,
-                             owner=_camobj_watcher_owner,
+                             owner=_camobj_lens_watcher_owner,
                              args=(camobj.data.lens,),
                              notify=lens_change_callback)
+
+
+def subscribe_movie_clip_color_space_watcher(geotracker: Any) -> None:
+    _log.output('subscribe_camera_color_space_watcher call')
+    unsubscribe_watcher(_movie_clip_color_space_watcher_owner)
+    if not geotracker or not geotracker.movie_clip \
+            or not geotracker.movie_clip.colorspace_settings:
+        return
+
+    subscribe_to = geotracker.movie_clip.colorspace_settings.path_resolve('name', False)
+    bpy_msgbus_subscribe_rna(key=subscribe_to,
+                             owner=_movie_clip_color_space_watcher_owner,
+                             args=(geotracker.movie_clip.colorspace_settings.name,),
+                             notify=color_space_change_callback)
+
+
+def color_space_change_callback(old_name: str) -> None:
+    _log.output('color_space_change_callback call')
+    _log.output(f'old color space: {old_name}')
+    geotracker = get_current_geotracker_item()
+    update_movieclip(geotracker, None)
 
 
 def lens_change_callback(old_focal_length_mm: float) -> None:
@@ -195,6 +217,8 @@ def update_geomobj(geotracker, context: Any) -> None:
 
 def update_movieclip(geotracker, context: Any) -> None:
     _log.output('update_movieclip')
+    if not geotracker:
+        return
 
     if not geotracker.movie_clip:
         geotracker.precalc_path = ''
@@ -203,10 +227,9 @@ def update_movieclip(geotracker, context: Any) -> None:
         return
 
     current_frame = bpy_current_frame()
-    scene = context.scene
     fit_time_length(geotracker.movie_clip)
-    if not (scene.frame_start <= current_frame <= scene.frame_end):
-        bpy_set_current_frame(scene.frame_start)
+    if not (bpy_start_frame() <= current_frame <= bpy_end_frame()):
+        bpy_set_current_frame(bpy_start_frame())
 
     fit_render_size(geotracker.movie_clip)
 
@@ -217,6 +240,8 @@ def update_movieclip(geotracker, context: Any) -> None:
 
     geotracker.precalc_path = f'{GTConfig.gt_precalc_folder}' \
                               f'{geotracker.movie_clip.name}'
+
+    subscribe_movie_clip_color_space_watcher(geotracker)
 
 
 def update_precalc_path(geotracker, context: Any) -> None:
