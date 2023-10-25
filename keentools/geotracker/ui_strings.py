@@ -258,6 +258,14 @@ buttons = {
         'Reset',
         'Reset all to default values'
     ),
+    GTConfig.gt_reset_texture_resolution_idname: Button(
+        'Reset',
+        'Reset texture resolution to default values'
+    ),
+    GTConfig.gt_reset_advanced_settings_idname: Button(
+        'Reset',
+        'Reset advanced texture baking settings'
+    ),
     GTConfig.gt_check_uv_overlapping_idname: Button(
         'Check',
         'Check for overlapping UVs'
