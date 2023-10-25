@@ -1026,16 +1026,16 @@ class GT_PT_SmoothingPanel(AllVisible):
         split = col.split(factor=0.4)
         split.label(text='Translation')
         row = split.row(align=True)
-        row.prop(geotracker, 'locks', index=0, text='X')
-        row.prop(geotracker, 'locks', index=1, text='Y')
-        row.prop(geotracker, 'locks', index=2, text='Z')
+        row.prop(geotracker, 'locks', index=3, text='X')
+        row.prop(geotracker, 'locks', index=4, text='Y')
+        row.prop(geotracker, 'locks', index=5, text='Z')
 
         split = col.split(factor=0.4)
         split.label(text='Rotation')
         row = split.row(align=True)
-        row.prop(geotracker, 'locks', index=3, text='X')
-        row.prop(geotracker, 'locks', index=4, text='Y')
-        row.prop(geotracker, 'locks', index=5, text='Z')
+        row.prop(geotracker, 'locks', index=0, text='X')
+        row.prop(geotracker, 'locks', index=1, text='Y')
+        row.prop(geotracker, 'locks', index=2, text='Z')
 
     def draw(self, context: Any) -> None:
         settings = get_gt_settings()
