@@ -50,6 +50,7 @@ from ..utils.ui_redraw import force_ui_redraw
 from ..utils.localview import exit_area_localview, check_localview
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..utils.images import get_background_image_strict
+from ..utils.blendshapes import find_blenshape_index, update_blendshape_verts
 
 
 _log = KTLogger(__name__)
@@ -158,9 +159,25 @@ def frame_change_post_handler(scene) -> None:
         geotracker.reset_focal_length_estimation()
 
     if Config.test_facetracker:
+        frame = bpy_current_frame()
         GTLoader.increment_geo_hash()
         gt = GTLoader.kt_geotracker()
-        geo = gt.applied_args_model_at(bpy_current_frame())
+        geo = gt.applied_args_model_at(frame)
+
+        geomobj = geotracker.geomobj
+        shape_name = 'FTAnimated'
+        shape_index = find_blenshape_index(geomobj, shape_name)
+        if shape_index < 0:
+            geomobj.shape_key_add(name=shape_name)
+            shape_index = find_blenshape_index(geomobj, shape_name)
+
+        shape = geomobj.data.shape_keys.key_blocks[shape_index]
+        shape.value = 1.0
+        geomobj.active_shape_key_index = shape_index
+
+        geom_verts = gt.applied_args_model_vertices_at(frame)
+        update_blendshape_verts(shape, geom_verts)
+        geomobj.data.update()
 
         vp = GTLoader.viewport()
         wf = vp.wireframer()
