@@ -82,6 +82,8 @@ class GTConfig:
     gt_reset_tone_exposure_idname = operators + '.reset_tone_exposure'
     gt_reset_tone_gamma_idname = operators + '.reset_tone_gamma'
     gt_reset_tone_mapping_idname = operators + '.reset_tone_mapping'
+    gt_reset_texture_resolution_idname = operators + '.reset_texture_resolution'
+    gt_reset_advanced_settings_idname = operators + '.reset_advanced_settings'
     gt_default_wireframe_settings_idname = \
         operators + '.default_wireframe_settings'
     gt_default_pin_settings_idname = operators + '.default_pin_settings'
@@ -183,6 +185,7 @@ class GTConfig:
     auto_render_size = True
     auto_time_length = True
     auto_increase_far_clip_distance = True
+    auto_unbreak_rotation = True
 
     gt_empty_name = 'gtEmpty'
     gt_background_name = 'geotracker_footage'

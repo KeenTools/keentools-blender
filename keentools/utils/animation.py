@@ -309,6 +309,8 @@ def delete_animation_between_frames(obj: Object, from_frame: int, to_frame: int)
 
 def get_object_keyframe_numbers(obj: Object, *, loc: bool = True,
                                 rot: bool = True) -> List[int]:
+    if not obj:
+        return []
     action: Action = get_action(obj)
     if action is None:
         return []

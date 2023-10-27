@@ -359,5 +359,13 @@ def bpy_jpeg_quality_context(value: int):
     bpy_jpeg_quality(old)
 
 
+def bpy_msgbus_subscribe_rna(*args, **kwargs) -> None:
+    bpy.msgbus.subscribe_rna(*args, **kwargs)
+
+
+def bpy_msgbus_clear_by_owner(owner: object) -> None:
+    bpy.msgbus.clear_by_owner(owner)
+
+
 def get_traceback(skip_last=1) -> str:
     return ''.join(traceback.format_stack()[:-skip_last])

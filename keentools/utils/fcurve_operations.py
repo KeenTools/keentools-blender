@@ -40,8 +40,7 @@ def get_fcurve_data(fcurve: Optional[FCurve]) -> List[Vector]:
 
 
 def clear_fcurve(fcurve: FCurve) -> None:
-    for p in reversed(fcurve.keyframe_points):
-        fcurve.keyframe_points.remove(p)
+    fcurve.keyframe_points.clear()
 
 
 def put_anim_data_in_fcurve(fcurve: Optional[FCurve],

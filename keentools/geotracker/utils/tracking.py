@@ -17,12 +17,23 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import os
-from typing import Tuple, Optional, Any
+from typing import Tuple, Optional, Any, List
+from math import pi
+
+from bpy.types import Object
 
 from ...utils.kt_logging import KTLogger
-from ...utils.bpy_common import bpy_render_frame
+from ...utils.bpy_common import bpy_render_frame, update_depsgraph
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..ui_strings import PrecalcStatusMessage
+from ...utils.animation import (get_action,
+                                get_safe_evaluated_fcurve,
+                                get_safe_action_fcurve,
+                                insert_point_in_fcurve,
+                                get_object_keyframe_numbers,
+                                get_rot_dict,
+                                get_action_fcurve,
+                                get_fcurve_data)
 
 
 _log = KTLogger(__name__)
@@ -122,3 +133,69 @@ def get_previous_tracking_keyframe(kt_geotracker: Any, current_frame: int) -> in
         return prev_keyframes[-1]
     else:
         return current_frame
+
+
+def unbreak_rotation(obj: Object, frame_list: List[int]) -> bool:
+    if len(frame_list) < 2:
+        return False
+
+    action = get_action(obj)
+    if action is None:
+        return False
+
+    euler_list = list()
+    for frame in frame_list:
+        x_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 0)
+        y_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 1)
+        z_rot = get_safe_evaluated_fcurve(obj, frame, 'rotation_euler', 2)
+        euler_list.append((x_rot, y_rot, z_rot))
+
+    x_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 0)
+    y_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 1)
+    z_rot_fcurve = get_safe_action_fcurve(action, 'rotation_euler', 2)
+
+    euler_prev = euler_list[0]
+    for frame, euler_current in zip(frame_list[1:], euler_list[1:]):
+        rot = pkt_module().math.unbreak_rotation(euler_prev,
+                                                 euler_current)
+        insert_point_in_fcurve(x_rot_fcurve, frame, rot[0])
+        insert_point_in_fcurve(y_rot_fcurve, frame, rot[1])
+        insert_point_in_fcurve(z_rot_fcurve, frame, rot[2])
+        euler_prev = rot
+
+    update_depsgraph()
+    return True
+
+
+def check_unbreak_rotaion_is_needed(obj: Object) -> bool:
+    if not obj:
+        return False
+
+    frame_list = get_object_keyframe_numbers(obj, loc=False, rot=True)
+    if len(frame_list) < 2:
+        return False
+
+    action = get_action(obj)
+    if action is None:
+        return False
+
+    rot_dict = get_rot_dict()
+
+    for name in rot_dict:
+        fcurve = get_action_fcurve(action, rot_dict[name]['data_path'],
+                                   index=rot_dict[name]['index'])
+        if not fcurve:
+            continue
+
+        points = get_fcurve_data(fcurve)
+        if len(points) < 2:
+            continue
+
+        points.sort(key = lambda x: x[0])
+        prev = points[0][1]
+        for point in points[1:]:
+            if abs(prev - point[1]) > pi:
+                return True
+            prev = point[1]
+
+    return False

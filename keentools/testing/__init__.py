@@ -23,7 +23,7 @@ from .operators import GTShaderTestOperator, FBShaderTestOperator
 from .panels import (KTErrorMessagePanel,
                      GTShaderTestingPanel,
                      FBShaderTestingPanel)
-from ..utils.icons import FBIcons
+from ..utils.icons import KTIcons
 
 
 _log = KTLogger(__name__)
@@ -44,7 +44,7 @@ def testing_register():
         register_class(cls)
 
     _log.output('REGISTER ICONS')
-    FBIcons.register()
+    KTIcons.register()
 
     _log.output('TESTING CLASSES WERE REGISTERED')
 
@@ -57,6 +57,6 @@ def testing_unregister():
         unregister_class(cls)
 
     _log.output('UNREGISTER ICONS')
-    FBIcons.unregister()
+    KTIcons.unregister()
 
     _log.output('TESTING CLASSES WERE UNREGISTERED')

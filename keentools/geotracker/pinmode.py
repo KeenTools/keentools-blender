@@ -58,6 +58,8 @@ from .interface.screen_mesages import (revert_default_screen_message,
                                        in_edit_mode_screen_message,
                                        how_to_show_wireframe_screen_message,
                                        clipping_changed_screen_message)
+from .callbacks import (subscribe_camera_lens_watcher,
+                        subscribe_movie_clip_color_space_watcher)
 
 
 _log = KTLogger(__name__)
@@ -388,6 +390,9 @@ class GT_OT_PinMode(Operator):
             return {'CANCELLED'}
 
         _log.output('GEOTRACKER PINMODE CHECKS PASSED')
+
+        subscribe_camera_lens_watcher(new_geotracker.camobj)
+        subscribe_movie_clip_color_space_watcher(new_geotracker)
 
         fit_render_size(new_geotracker.movie_clip)
         if settings.pinmode:

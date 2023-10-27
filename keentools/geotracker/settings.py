@@ -24,7 +24,7 @@ from bpy.types import (Object, CameraBackgroundImage, Area, Image, Mask,
                        PropertyGroup, MovieClip)
 from bpy.props import (IntProperty, BoolProperty, FloatProperty,
                        StringProperty, EnumProperty, FloatVectorProperty,
-                       PointerProperty, CollectionProperty)
+                       PointerProperty, CollectionProperty, BoolVectorProperty)
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_addon_preferences
@@ -75,7 +75,8 @@ from .callbacks import (update_camobj,
                         update_spring_pins_back,
                         update_solve_for_camera,
                         update_smoothing,
-                        update_stabilize_viewport_enabled)
+                        update_stabilize_viewport_enabled,
+                        update_locks)
 
 
 _log = KTLogger(__name__)
@@ -311,6 +312,11 @@ class GeoTrackerItem(PropertyGroup):
         description='XY translation smoothing', update=update_smoothing)
 
     overlapping_detected: BoolProperty(default=False)
+
+    locks: BoolVectorProperty(name='Locks', description='Fixes',
+                              size=6, subtype='NONE',
+                              default=(False,) * 6,
+                              update=update_locks)
 
     def update_compositing_mask(self, *, frame: Optional[int]=None,
                                 recreate_nodes: bool=False) -> Image:
@@ -557,11 +563,11 @@ class GTSceneSettings(PropertyGroup):
     anim_end: IntProperty(name='to', default=250)
 
     user_interrupts: BoolProperty(name='Interrupted by user',
-                                            default = False)
+                                  default = False)
     user_percent: FloatProperty(name='Percentage',
-                                          subtype='PERCENTAGE',
-                                          default=0.0, min=0.0, max=100.0,
-                                          precision=1)
+                                subtype='PERCENTAGE',
+                                default=0.0, min=0.0, max=100.0,
+                                precision=1)
 
     calculating_mode: EnumProperty(name='Calculating mode', items=[
         ('NONE', 'NONE', 'No calculation mode', 0),
@@ -646,10 +652,10 @@ class GTSceneSettings(PropertyGroup):
 
     tex_width: IntProperty(
         description='Width size of output texture',
-        name='Width', default=2048)
+        name='Width', default=Config.default_tex_width)
     tex_height: IntProperty(
         description='Height size of output texture',
-        name='Height', default=2048)
+        name='Height', default=Config.default_tex_height)
 
     tex_face_angles_affection: FloatProperty(
         description='Choose how much a polygon view angle affects '
@@ -657,10 +663,11 @@ class GTSceneSettings(PropertyGroup):
                     'color from all views; with 100 you\'ll get color '
                     'information only from the polygons at which a camera '
                     'is looking at 90 degrees',
-        name='Angle strictness', default=10.0, min=0.0, max=100.0)
+        name='Angle strictness',
+        default=Config.default_tex_face_angles_affection, min=0.0, max=100.0)
     tex_uv_expand_percents: FloatProperty(
         description='Expand texture edges',
-        name='Expand edges (%)', default=0.1)
+        name='Expand edges (%)', default=Config.default_tex_uv_expand_percents)
     tex_back_face_culling: BoolProperty(
         description='Exclude backfacing polygons from the created texture',
         name='Back face culling', default=True)

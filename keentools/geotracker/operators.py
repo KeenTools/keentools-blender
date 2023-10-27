@@ -612,6 +612,8 @@ class GT_OT_StopCalculating(Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    attempts: IntProperty(default=0)
+
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         settings = get_gt_settings()
@@ -619,6 +621,14 @@ class GT_OT_StopCalculating(Operator):
 
         if not settings.user_interrupts:
             settings.user_interrupts = True
+            self.attempts = 0
+            return {'FINISHED'}
+
+        self.attempts += 1
+        if self.attempts > 1:
+            _log.error(f'Extreme calculation stop')
+            settings.stop_calculating()
+            self.attempts = 0
             return {'FINISHED'}
 
         if settings.calculating_mode == 'PRECALC':
@@ -711,6 +721,36 @@ class GT_OT_ResetToneMapping(ButtonOperator, Operator):
             return {'CANCELLED'}
         geotracker.tone_exposure = Config.default_tone_exposure
         geotracker.tone_gamma = Config.default_tone_gamma
+        return {'FINISHED'}
+
+
+class GT_OT_ResetTextureResolution(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_reset_texture_resolution_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        settings = get_gt_settings()
+        if not settings:
+            return {'CANCELLED'}
+        settings.tex_width = Config.default_tex_width
+        settings.tex_height = Config.default_tex_height
+        return {'FINISHED'}
+
+
+class GT_OT_ResetTextureSettings(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_reset_advanced_settings_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        settings = get_gt_settings()
+        if not settings:
+            return {'CANCELLED'}
+        settings.tex_face_angles_affection = Config.default_tex_face_angles_affection
+        settings.tex_uv_expand_percents = Config.default_tex_uv_expand_percents
         return {'FINISHED'}
 
 
@@ -1825,6 +1865,8 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_ResetToneGain,
                   GT_OT_ResetToneGamma,
                   GT_OT_ResetToneMapping,
+                  GT_OT_ResetTextureResolution,
+                  GT_OT_ResetTextureSettings,
                   GT_OT_DefaultWireframeSettings,
                   GT_OT_DefaultPinSettings,
                   GT_OT_CheckUVOverlapping,
