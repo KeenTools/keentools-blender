@@ -114,6 +114,9 @@ def lens_change_callback(old_focal_length_mm: float) -> None:
     if not settings.pinmode and not settings.is_calculating():
         return
 
+    if GTLoader.viewport().pins().move_pin_mode():
+        return
+
     geotracker = settings.get_current_geotracker_item()
     if geotracker.focal_length_mode != 'STATIC_FOCAL_LENGTH':
         _log.output(f'early exit: {geotracker.focal_length_mode}')
