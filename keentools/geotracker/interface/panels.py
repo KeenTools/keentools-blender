@@ -590,8 +590,10 @@ class GT_PT_TrackingPanel(AllVisible):
 
     def _tracking_center_block(self, settings: Any, layout: Any) -> None:
         col = layout.column(align=True)
-        col.prop(settings, 'stabilize_viewport_enabled',
-                 icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
+
+        if not GTConfig.hidden_feature:
+            col.prop(settings, 'stabilize_viewport_enabled',
+                     icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
 
         row = col.row(align=True)
         row.operator(GTConfig.gt_toggle_pins_idname, icon='UNPINNED')
