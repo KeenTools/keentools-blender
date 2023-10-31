@@ -200,9 +200,11 @@ class GT_OT_PinMode(Operator):
         vp.pins().clear_selected_pins()
         vp.create_batch_2d(area)
         vp.tag_redraw()
+        _log.output('_on_right_mouse_press finish')
         return {'RUNNING_MODAL'}
 
     def _delete_found_pin(self, nearest: int, area: Area) -> Set:
+        _log.output('_delete_found_pin call')
         gt = GTLoader.kt_geotracker()
         gt.remove_pin(nearest)
         GTLoader.viewport().pins().remove_pin(nearest)
@@ -215,9 +217,11 @@ class GT_OT_PinMode(Operator):
         kid = bpy_current_frame()
         GTLoader.safe_keyframe_add(kid)
 
+        _log.output(_log.color('red', '_delete_found_pin before solve'))
         if not GTLoader.solve():
             _log.error('DELETE PIN PROBLEM')
             return {'FINISHED'}
+        _log.output(_log.color('red', '_delete_found_pin after solve'))
 
         GTLoader.load_pins_into_viewport()
         GTLoader.place_object_or_camera()

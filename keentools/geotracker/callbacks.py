@@ -109,15 +109,19 @@ def color_space_change_callback(old_name: str) -> None:
 
 
 def lens_change_callback(old_focal_length_mm: float) -> None:
-    _log.output('lens_change_callback call')
+    _log.output(_log.color('magenta', 'lens_change_callback call'))
     settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     if not settings.pinmode and not settings.is_calculating():
+        _log.output('lens_change_callback stop 1')
+        subscribe_camera_lens_watcher(geotracker.camobj)
         return
 
     if GTLoader.viewport().pins().move_pin_mode():
+        _log.output('lens_change_callback stop 2')
+        subscribe_camera_lens_watcher(geotracker.camobj)
         return
 
-    geotracker = settings.get_current_geotracker_item()
     if geotracker.focal_length_mode != 'STATIC_FOCAL_LENGTH':
         _log.output(f'early exit: {geotracker.focal_length_mode}')
         return
