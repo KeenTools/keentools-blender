@@ -1025,7 +1025,7 @@ class GT_PT_RenderingPanel(AllVisible):
 
 class GT_PT_SmoothingPanel(AllVisible):
     bl_idname = GTConfig.gt_smoothing_panel_idname
-    bl_label = 'Smoothing & Locks'
+    bl_label = 'Smoothing'
     bl_options = {'DEFAULT_CLOSED'}
 
     def draw_header_preset(self, context: Any) -> None:
@@ -1077,4 +1077,5 @@ class GT_PT_SmoothingPanel(AllVisible):
         col.prop(geotracker, 'smoothing_rotations_coeff')
         col.prop(geotracker, 'smoothing_focal_length_coeff')
 
-        self._tracking_locks(layout, geotracker)
+        if not GTConfig.hidden_feature:
+            self._tracking_locks(layout, geotracker)
