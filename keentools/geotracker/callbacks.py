@@ -71,12 +71,13 @@ _movie_clip_color_space_watcher_owner = object()
 
 
 def unsubscribe_watcher(owner: object) -> None:
-    _log.output(f'unsubscribe_watcher call: {owner}')
+    _log.output(f'unsubscribe_watcher start: {owner}')
     bpy_msgbus_clear_by_owner(owner)
+    _log.output(f'unsubscribe_watcher end')
 
 
 def subscribe_camera_lens_watcher(camobj: Optional[Object]) -> None:
-    _log.output('subscribe_camera_lens_watcher call')
+    _log.output('subscribe_camera_lens_watcher start')
     unsubscribe_watcher(_camobj_lens_watcher_owner)
     if not camobj or not camobj.data:
         return
@@ -85,10 +86,11 @@ def subscribe_camera_lens_watcher(camobj: Optional[Object]) -> None:
                              owner=_camobj_lens_watcher_owner,
                              args=(camobj.data.lens,),
                              notify=lens_change_callback)
+    _log.output('subscribe_camera_lens_watcher end')
 
 
 def subscribe_movie_clip_color_space_watcher(geotracker: Any) -> None:
-    _log.output('subscribe_camera_color_space_watcher call')
+    _log.output('subscribe_movie_clip_color_space_watcher start')
     unsubscribe_watcher(_movie_clip_color_space_watcher_owner)
     if not geotracker or not geotracker.movie_clip \
             or not geotracker.movie_clip.colorspace_settings:
@@ -99,6 +101,7 @@ def subscribe_movie_clip_color_space_watcher(geotracker: Any) -> None:
                              owner=_movie_clip_color_space_watcher_owner,
                              args=(geotracker.movie_clip.colorspace_settings.name,),
                              notify=color_space_change_callback)
+    _log.output('subscribe_movie_clip_color_space_watcher end')
 
 
 def color_space_change_callback(old_name: str) -> None:
