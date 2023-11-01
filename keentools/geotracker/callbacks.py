@@ -262,7 +262,8 @@ def update_movieclip(geotracker, context: Any) -> None:
     geotracker.precalc_path = f'{GTConfig.gt_precalc_folder}' \
                               f'{geotracker.movie_clip.name}'
 
-    subscribe_movie_clip_color_space_watcher(geotracker)
+    if context is not None:
+        subscribe_movie_clip_color_space_watcher(geotracker)
 
 
 def update_precalc_path(geotracker, context: Any) -> None:
