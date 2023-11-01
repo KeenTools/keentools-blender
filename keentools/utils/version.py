@@ -49,19 +49,22 @@ def _get_gpu_backend(property_exists: bool=False) -> Optional[str]:
 class BVersion:
     version: Tuple[int, int, int] = ver
     version_string: str = ver_string
+
+    open_dialog_overrides_area: bool = ver < (2, 81, 0)
     dynamic_tooltip_exists: bool = ver >= (2, 81, 0)
-    property_keywords_enabled: bool = ver >= (2, 93, 0)
+    uv_select_overlap_exists: bool = ver >= (2, 81, 0)
     blender_srgb_to_framebuffer_space_enabled: bool = ver >= (2, 83, 0)
+    pixels_foreach_methods_exist: bool = ver >= (2, 83, 0)
+    bound_box_has_foreach_get: bool = ver >= (2, 83, 0)
+    property_keywords_enabled: bool = ver >= (2, 93, 0)
     LocRotScale_exist: bool = version >= (3, 0, 0)
     operator_with_context_exists: bool = ver >= (3, 2, 0)
-    pixels_foreach_methods_exist: bool = ver >= (2, 83, 0)
     property_gpu_backend_exists: bool = ver >= (3, 5, 0)
-    uv_select_overlap_exists: bool = ver >= (2, 81, 0)
-    pack_uv_problem_exists: bool = ver == (3, 6, 0)
     use_old_bgl_shaders: bool = ver < (3, 4, 0)
-
     blf_size_takes_3_arguments: bool = ver < (4, 0, 0)
     principled_shader_has_specular: bool = ver < (4, 0, 0)
+
+    pack_uv_problem_exists: bool = ver == (3, 6, 0)
 
     os_name: str = _os_name()
     gpu_backend: str = _get_gpu_backend(property_gpu_backend_exists)

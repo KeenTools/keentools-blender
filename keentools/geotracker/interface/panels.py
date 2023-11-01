@@ -23,6 +23,7 @@ from functools import partial
 import bpy
 from bpy.types import Area, Panel
 
+from ...utils.kt_logging import KTLogger
 from ...addon_config import Config, geotracker_enabled, addon_pinmode
 from ...geotracker_config import (GTConfig, get_gt_settings,
                                   get_current_geotracker_item)
@@ -38,12 +39,15 @@ from ...utils.viewport_state import force_show_ui_overlays
 from ...utils.bpy_common import bpy_timer_register
 from ...utils.materials import find_bpy_image_by_name
 from ...utils.grace_timer import KTGraceTimer
+from ...utils.icons import KTIcons
 
 
+_log = KTLogger(__name__)
 _gt_grace_timer = KTGraceTimer('geotracker')
 
 
 def _pinmode_escaper(area: Area) -> None:
+    _log.error('_pinmode_escaper call')
     GTLoader.out_pinmode()
     exit_area_localview(area)
     force_show_ui_overlays(area)
@@ -54,6 +58,20 @@ def _start_pinmode_escaper(context: Any) -> None:
     if context.area:
         bpy_timer_register(partial(_pinmode_escaper, context.area),
                            first_interval=0.01)
+
+
+def _calculating_escaper() -> None:
+    _log.error('_calculating_escaper call')
+    settings = get_gt_settings()
+    settings.stop_calculating()
+    settings.user_interrupts = True
+
+
+def _start_calculating_escaper() -> None:
+    settings = get_gt_settings()
+    mode = settings.calculating_mode
+    if mode == 'TRACKING' or mode == 'REFINE':
+        bpy_timer_register(_calculating_escaper, first_interval=0.01)
 
 
 def _geomobj_delete_handler() -> None:
@@ -131,10 +149,14 @@ class GT_PT_GeotrackersPanel(View3DPanel):
     def _geotracker_creation_offer(self, layout: Any) -> None:
         settings = get_gt_settings()
         row = layout.row()
-        row.active = not settings.pinmode
-        row.enabled = not settings.pinmode
-        row.scale_y = 2.0 if len(settings.geotrackers) == 0 else Config.btn_scale_y
-        row.operator(GTConfig.gt_create_geotracker_idname, icon='ADD')
+        if settings.is_calculating():
+            row.scale_y = Config.btn_scale_y
+            row.operator(GTConfig.gt_stop_calculating_idname, icon='X')
+        else:
+            row.active = not settings.pinmode
+            row.enabled = not settings.pinmode
+            row.scale_y = 2.0 if len(settings.geotrackers) == 0 else Config.btn_scale_y
+            row.operator(GTConfig.gt_create_geotracker_idname, icon='ADD')
 
     def _output_geotrackers_list(self, layout: Any) -> None:
         settings = get_gt_settings()
@@ -263,12 +285,17 @@ class GT_PT_InputsPanel(AllVisible):
         split = layout.split(factor=factor, align=True)
         split.label(text='Clip')
 
-        row = split.row(align=True)
+        col = split.column(align=True)
+        row = col.row(align=True)
         row.alert = not geotracker.movie_clip
         row.prop(geotracker, 'movie_clip', text='')
 
         if geotracker.movie_clip:
             row.menu(GTConfig.gt_clip_menu_idname, text='', icon='COLLAPSEMENU')
+            col2 = col.column(align=True)
+            col2.active = False
+            col2.prop(geotracker.movie_clip.colorspace_settings, 'name',
+                      text='')
         else:
             row.operator(GTConfig.gt_sequence_filebrowser_idname,
                          text='', icon='FILEBROWSER')
@@ -563,13 +590,15 @@ class GT_PT_TrackingPanel(AllVisible):
 
     def _tracking_center_block(self, settings: Any, layout: Any) -> None:
         col = layout.column(align=True)
+
+        if not GTConfig.hidden_feature:
+            col.prop(settings, 'stabilize_viewport_enabled',
+                     icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
+
         row = col.row(align=True)
-        row.active = settings.pinmode
-        row.operator(GTConfig.gt_center_geo_idname, icon='PIVOT_BOUNDBOX')
-        row = col.row(align=True)
-        row.active = settings.pinmode
         row.operator(GTConfig.gt_toggle_pins_idname, icon='UNPINNED')
-        row.operator(GTConfig.gt_remove_pins_idname, icon='X')
+        row.operator(GTConfig.gt_remove_pins_idname)
+        col.operator(GTConfig.gt_center_geo_idname, icon='PIVOT_BOUNDBOX')
 
     def _tracking_track_row(self, settings: Any, layout: Any) -> None:
         row = layout.row(align=True)
@@ -598,7 +627,6 @@ class GT_PT_TrackingPanel(AllVisible):
             split = row.split(factor=0.5, align=True)
             split.operator(GTConfig.gt_track_to_end_idname, text='',
                            icon='TRACKING_FORWARDS')
-
             split.operator(GTConfig.gt_track_next_idname, text='',
                            icon='TRACKING_FORWARDS_SINGLE')
 
@@ -674,15 +702,19 @@ class GT_PT_TrackingPanel(AllVisible):
         self._tracking_pinmode_button(settings, layout, context)
 
         if settings.pinmode:
-            self._tracking_center_block(settings, layout)
             col = layout.column(align=True)
             self._tracking_track_row(settings, col)
             self._tracking_refine_row(settings, col)
+        else:
+            if settings.is_calculating():
+                _start_calculating_escaper()
 
         col = layout.column(align=True)
         self._tracking_keyframes_row(settings, col)
+
         if settings.pinmode:
             self._tracking_remove_keys_row(settings, col)
+            self._tracking_center_block(settings, layout)
 
 
 class GT_PT_AppearanceSettingsPanel(AllVisible):
@@ -691,8 +723,7 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
     bl_options = {'DEFAULT_CLOSED'}
 
     def _appearance_wireframe_settings(self, settings: Any, layout: Any) -> None:
-        box = layout.box()
-        col = box.column(align=True)
+        col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Wireframe')
         col.separator(factor=0.4)
@@ -711,8 +742,7 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         col.prop(settings, 'use_adaptive_opacity')
 
     def _appearance_pin_settings(self, settings: Any, layout: Any) -> None:
-        box = layout.box()
-        col = box.column(align=True)
+        col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Pins')
         col.separator(factor=0.4)
@@ -730,8 +760,7 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
         if not geotracker:
             return
 
-        box = layout.box()
-        col = box.column(align=True)
+        col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Background')
         col.separator(factor=0.4)
@@ -951,6 +980,10 @@ class GT_PT_AnimationPanel(AllVisible):
 
         col = layout.column(align=True)
         col.prop(settings, 'export_locator_selector', text='')
+        if settings.export_locator_selector == 'SELECTED_PINS':
+            row = col.split(factor=0.4, align=True)
+            row.label(text='Orientation')
+            row.prop(settings, 'export_locator_orientation', text='')
         row = col.split(factor=0.4, align=True)
         row.prop(settings, 'export_linked_locator')
         row.operator(GTConfig.gt_export_animated_empty_idname)
@@ -1013,6 +1046,23 @@ class GT_PT_SmoothingPanel(AllVisible):
             GTConfig.gt_help_smoothing_idname,
             text='', icon='QUESTION', emboss=False)
 
+    def _tracking_locks(self, layout: Any, geotracker: Any) -> None:
+        col = layout.column(align=True)
+        col.label(text='Locks')
+        split = col.split(factor=0.4)
+        split.label(text='Translation')
+        row = split.row(align=True)
+        row.prop(geotracker, 'locks', index=3, text='X')
+        row.prop(geotracker, 'locks', index=4, text='Y')
+        row.prop(geotracker, 'locks', index=5, text='Z')
+
+        split = col.split(factor=0.4)
+        split.label(text='Rotation')
+        row = split.row(align=True)
+        row.prop(geotracker, 'locks', index=0, text='X')
+        row.prop(geotracker, 'locks', index=1, text='Y')
+        row.prop(geotracker, 'locks', index=2, text='Z')
+
     def draw(self, context: Any) -> None:
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
@@ -1021,7 +1071,11 @@ class GT_PT_SmoothingPanel(AllVisible):
 
         layout = self.layout
         col = layout.column(align=True)
+        col.label(text='Smoothing')
         col.prop(geotracker, 'smoothing_depth_coeff')
         col.prop(geotracker, 'smoothing_xy_translations_coeff')
         col.prop(geotracker, 'smoothing_rotations_coeff')
         col.prop(geotracker, 'smoothing_focal_length_coeff')
+
+        if not GTConfig.hidden_feature:
+            self._tracking_locks(layout, geotracker)

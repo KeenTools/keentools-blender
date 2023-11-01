@@ -16,10 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Optional, Callable
 import numpy as np
 
 from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
+from bpy_extras.view3d_utils import location_3d_to_region_2d
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_operator, ErrorType
@@ -29,7 +30,11 @@ from ..utils.coords import (get_camera_border,
                             frame_to_image_space,
                             multiply_verts_on_matrix_4x4,
                             to_homogeneous,
-                            pin_to_xyz_from_mesh)
+                            pin_to_xyz_from_mesh,
+                            get_area_region,
+                            get_area_region_3d,
+                            calc_camera_zoom_and_offset,
+                            bound_box_center)
 from ..utils.bpy_common import (bpy_render_frame,
                                 evaluated_object,
                                 bpy_scene_camera,
@@ -69,7 +74,57 @@ class GTViewport(KTViewport):
                                             UserPreferences.type_color),
             UserPreferences.get_value_safe('gt_mask_2d_opacity',
                                            UserPreferences.type_float)))
-        self._draw_update_timer_handler = None
+        self._draw_update_timer_handler: Optional[Callable] = None
+
+        self.stabilization_region_point: Optional[Tuple[float, float]] = None
+
+    def clear_stabilization_point(self):
+        _log.output(_log.color('yellow', 'clear_stabilization_point'))
+        self.stabilization_region_point = None
+
+    def stabilize(self, geomobj: Optional[Object]) -> bool:
+        if not geomobj:
+            return False
+
+        area = self.get_work_area()
+        if not area:
+            return False
+        region = get_area_region(area)
+        region_3d = get_area_region_3d(area)
+
+        shift_x, shift_y = get_scene_camera_shift()
+        x1, y1, x2, y2 = get_camera_border(area)
+
+        pins_average_point = self.pins().average_point_of_selected_pins()
+        if pins_average_point is None:
+            point = location_3d_to_region_2d(
+                region, region_3d,
+                geomobj.matrix_world @ bound_box_center(geomobj),
+                default=None)
+            if point is None:
+                _log.error('Cannot calculate average point')
+                return False
+        else:
+            point = image_space_to_region(*pins_average_point,
+                                          x1, y1, x2, y2, shift_x, shift_y)
+
+        _log.output(_log.color('red', f'point: {point}'))
+        _log.output(_log.color('red', f'stabilization_point: '
+                                      f'{self.stabilization_region_point}'))
+        if self.stabilization_region_point is None:
+            self.stabilization_region_point = point
+            return True
+
+        sx, sy = self.stabilization_region_point
+        _log.output(_log.color('magenta',
+                               f'stabilization_region_point: '
+                               f'{self.stabilization_region_point}'))
+        px, py = point
+        _, offset = calc_camera_zoom_and_offset(
+            area, x1 + sx - px, y1 + sy - py, width=x2 - x1)
+
+        region_3d.view_camera_offset = offset
+        return True
 
     def get_all_viewport_shader_objects(self) -> List:
         return [self._texter,
@@ -206,13 +261,10 @@ class GTViewport(KTViewport):
         x1, y1, x2, y2 = get_camera_border(area)
 
         pins = self.pins()
-        points = pins.arr().copy()
 
         shift_x, shift_y = get_scene_camera_shift()
-        for i, p in enumerate(points):
-            points[i] = image_space_to_region(p[0], p[1], x1, y1, x2, y2,
-                                              shift_x, shift_y)
-
+        points = [image_space_to_region(p[0], p[1], x1, y1, x2, y2,
+                                        shift_x, shift_y) for p in pins.arr()]
         points_count = len(points)
 
         vertex_colors = [GTConfig.pin_color] * points_count

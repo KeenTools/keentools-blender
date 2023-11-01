@@ -58,6 +58,8 @@ from .interface.screen_mesages import (revert_default_screen_message,
                                        in_edit_mode_screen_message,
                                        how_to_show_wireframe_screen_message,
                                        clipping_changed_screen_message)
+from .callbacks import (subscribe_camera_lens_watcher,
+                        subscribe_movie_clip_color_space_watcher)
 
 
 _log = KTLogger(__name__)
@@ -198,9 +200,11 @@ class GT_OT_PinMode(Operator):
         vp.pins().clear_selected_pins()
         vp.create_batch_2d(area)
         vp.tag_redraw()
+        _log.output('_on_right_mouse_press finish')
         return {'RUNNING_MODAL'}
 
     def _delete_found_pin(self, nearest: int, area: Area) -> Set:
+        _log.output('_delete_found_pin call')
         gt = GTLoader.kt_geotracker()
         gt.remove_pin(nearest)
         GTLoader.viewport().pins().remove_pin(nearest)
@@ -213,9 +217,11 @@ class GT_OT_PinMode(Operator):
         kid = bpy_current_frame()
         GTLoader.safe_keyframe_add(kid)
 
+        _log.output(_log.color('red', '_delete_found_pin before solve'))
         if not GTLoader.solve():
             _log.error('DELETE PIN PROBLEM')
             return {'FINISHED'}
+        _log.output(_log.color('red', '_delete_found_pin after solve'))
 
         GTLoader.load_pins_into_viewport()
         GTLoader.place_object_or_camera()
@@ -389,6 +395,9 @@ class GT_OT_PinMode(Operator):
 
         _log.output('GEOTRACKER PINMODE CHECKS PASSED')
 
+        subscribe_camera_lens_watcher(new_geotracker.camobj)
+        subscribe_movie_clip_color_space_watcher(new_geotracker)
+
         fit_render_size(new_geotracker.movie_clip)
         if settings.pinmode:
             self._switch_to_new_geotracker(new_geotracker_num)
@@ -491,6 +500,11 @@ class GT_OT_PinMode(Operator):
             vp.create_batch_2d(context.area)
             vp.update_residuals(GTLoader.kt_geotracker(), context.area,
                                 bpy_current_frame())
+
+            if not bpy_is_animation_playing() \
+                    and not settings.is_calculating():
+                settings.stabilize_viewport(reset=True)
+
             if vp.needs_to_be_drawn():
                 _log.output('TAG REDRAW')
                 vp.tag_redraw()

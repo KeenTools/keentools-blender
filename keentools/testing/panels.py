@@ -19,7 +19,7 @@
 from bpy.types import Panel
 
 from ..addon_config import Config, ErrorType
-from ..utils.icons import FBIcons
+from ..utils.icons import KTIcons
 
 
 def _get_all_error_type_values():
@@ -52,7 +52,7 @@ class KTErrorMessagePanel(Panel):
         self._draw_error_buttons(layout)
 
         layout.label(text='--- Icons ---')
-        FBIcons.layout_icons(layout)
+        KTIcons.layout_icons(layout)
 
 
 class GTShaderTestingPanel(Panel):

@@ -33,7 +33,8 @@ from ...blender_independent_packages.pykeentools_loader import module as pkt_mod
 from ...utils.mesh_builder import build_geo
 from ...utils.images import np_array_from_background_image
 from ...utils.coords import camera_projection
-from ...utils.ui_redraw import total_redraw_ui
+from ...utils.ui_redraw import (total_redraw_ui,
+                                total_redraw_ui_overriding_window)
 from ...utils.images import create_bpy_image_from_np_array
 from ...utils.materials import (remove_bpy_texture_if_exists,
                                 show_texture_in_mat,
@@ -42,7 +43,6 @@ from ...utils.materials import (remove_bpy_texture_if_exists,
 from ...utils.images import (create_compatible_bpy_image,
                              assign_pixels_data,
                              remove_bpy_image)
-from ...addon_config import get_operator
 from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
 from .prechecks import prepare_camera
@@ -50,6 +50,7 @@ from ...utils.localview import exit_area_localview
 from ..interface.screen_mesages import (revert_default_screen_message,
                                         single_line_screen_message,
                                         texture_projection_screen_message)
+from ...utils.version import BVersion
 
 
 _log = KTLogger(__name__)
@@ -81,7 +82,11 @@ def bake_texture(geotracker: Any, selected_frames: List[int]) -> Any:
 
             if frame != current_frame:
                 bpy_set_current_frame(frame)
-            total_redraw_ui()
+
+            if not BVersion.open_dialog_overrides_area:
+                total_redraw_ui()
+            else:
+                total_redraw_ui_overriding_window()
 
             np_img = np_array_from_background_image(geotracker.camobj, index=0)
             if np_img is None:
@@ -163,8 +168,6 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
     delta = 0.001
     settings = get_gt_settings()
     settings.calculating_mode = 'REPROJECT'
-    op = get_operator(GTConfig.gt_interrupt_modal_idname)
-    op('INVOKE_DEFAULT')
 
     single_line_screen_message('Projecting and baking… Please wait')
 

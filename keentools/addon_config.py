@@ -28,7 +28,7 @@ _PT = 'KEENTOOLS_PT_'
 
 
 class Config:
-    addon_version = '2023.2.3'  # (5/5)
+    addon_version = '2023.2.4'  # (5/5)
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),
                                   (3, 0), (3, 1), (3, 2), (3, 3), (3, 4),
@@ -114,13 +114,18 @@ class Config:
     viewport_state_prop_name = _company + '_viewport_state'
 
     # Constants
-    surf_pin_size_scale = 0.85
-    text_scale_y = 0.75
-    btn_scale_y = 1.2
-    area_bottom_limit = 8
+    surf_pin_size_scale: float = 0.85
+    text_scale_y: float = 0.75
+    btn_scale_y: float = 1.2
+    area_bottom_limit: int = 8
 
-    default_tone_exposure = 0.0
-    default_tone_gamma = 1.0
+    default_tone_exposure: float = 0.0
+    default_tone_gamma: float = 1.0
+
+    default_tex_width: int = 2048
+    default_tex_height: int = 2048
+    default_tex_face_angles_affection: float = 10.0
+    default_tex_uv_expand_percents: float = 0.1
 
     default_updater_preferences = {
         'latest_show_datetime_update_reminder': {'value': '', 'type': 'string'},

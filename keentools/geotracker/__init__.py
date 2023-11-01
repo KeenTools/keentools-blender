@@ -16,7 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy
+from typing import List, Tuple, Any
+
+from bpy.types import Scene, TIME_MT_editor_menus
+from bpy.props import PointerProperty
+from bpy.utils import register_class, unregister_class
 
 from ..utils.kt_logging import KTLogger
 from ..geotracker_config import GTConfig, get_gt_settings
@@ -26,6 +30,7 @@ from .pinmode import GT_OT_PinMode
 from .movepin import GT_OT_MovePin
 from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
 from .operators import BUTTON_CLASSES
+from ..utils.bpy_common import bpy_window_manager
 
 
 _log = KTLogger(__name__)
@@ -39,16 +44,16 @@ CLASSES_TO_REGISTER = (FrameListItem,
                        GTSceneSettings) + BUTTON_CLASSES + INTERFACE_CLASSES
 
 
-def _add_addon_settings_var():
-    setattr(bpy.types.Scene, GTConfig.gt_global_var_name,
-            bpy.props.PointerProperty(type=GTSceneSettings))
+def _add_addon_settings_var() -> None:
+    setattr(Scene, GTConfig.gt_global_var_name,
+            PointerProperty(type=GTSceneSettings))
 
 
-def _remove_addon_settings_var():
-    delattr(bpy.types.Scene, GTConfig.gt_global_var_name)
+def _remove_addon_settings_var() -> None:
+    delattr(Scene, GTConfig.gt_global_var_name)
 
 
-def tracking_panel(self, context):
+def tracking_panel(self, context: Any) -> None:
     layout = self.layout
     row = layout.row(align=True)
     row.separator()
@@ -58,6 +63,9 @@ def tracking_panel(self, context):
                  icon='NEXT_KEYFRAME')
 
     settings = get_gt_settings()
+    if not settings.pinmode:
+        return
+
     row2 = row.row(align=True)
     row2.active = settings.pinmode
     row2.operator(GTConfig.gt_add_keyframe_idname, text='',
@@ -65,35 +73,88 @@ def tracking_panel(self, context):
     row2.operator(GTConfig.gt_remove_keyframe_idname, text='',
                   icon='KEY_DEHLT')
 
-
-def _add_buttons_to_timeline():
-    bpy.types.TIME_MT_editor_menus.append(tracking_panel)
-
-
-def _remove_buttons_from_timeline():
-    bpy.types.TIME_MT_editor_menus.remove(tracking_panel)
+    if not GTConfig.hidden_feature:
+        row2.separator()
+        row2.prop(settings, 'stabilize_viewport_enabled',
+                  icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
 
 
-def geotracker_register():
+def _add_buttons_to_timeline() -> None:
+    TIME_MT_editor_menus.append(tracking_panel)
+
+
+def _remove_buttons_from_timeline() -> None:
+    TIME_MT_editor_menus.remove(tracking_panel)
+
+
+_geotracker_keymaps: List[Tuple] = []
+
+
+def _geotracker_keymaps_register() -> None:
+    global _geotracker_keymaps
+    kc = bpy_window_manager().keyconfigs.addon
+    km = kc.keymaps.new(name='Window', space_type='EMPTY')
+    kmi1 = km.keymap_items.new(idname=GTConfig.gt_prev_keyframe_idname,
+                               type='LEFT_ARROW',
+                               value='PRESS', alt=True)
+    kmi2 = km.keymap_items.new(idname=GTConfig.gt_next_keyframe_idname,
+                               type='RIGHT_ARROW',
+                               value='PRESS', alt=True)
+    _geotracker_keymaps.append((km, kmi1))
+    _geotracker_keymaps.append((km, kmi2))
+    km = kc.keymaps.new(name='3D View Generic', space_type='VIEW_3D')
+    kmi3 = km.keymap_items.new(idname=GTConfig.gt_toggle_lock_viewport_idname,
+                               type='L',
+                               value='PRESS')
+    _geotracker_keymaps.append((km, kmi3))
+
+
+def _geotracker_keymaps_unregister() -> None:
+    global _geotracker_keymaps
+    try:
+        for km, kmi in _geotracker_keymaps:
+            km.keymap_items.remove(kmi)
+    except Exception as err:
+        _log.error(f'_geotracker_keymaps_unregister Exception:\n{str(err)}')
+    _geotracker_keymaps = []
+
+
+def geotracker_register() -> None:
+    _log.output('--- START GEOTRACKER REGISTER ---')
+
     _log.output('START GEOTRACKER REGISTER CLASSES')
-
     for cls in CLASSES_TO_REGISTER:
         _log.output('REGISTER GT CLASS: \n{}'.format(str(cls)))
-        bpy.utils.register_class(cls)
+        register_class(cls)
 
+    _log.output('MAIN GEOTRACKER VARIABLE REGISTER')
     _add_addon_settings_var()
-    _log.output('MAIN GEOTRACKER VARIABLE REGISTERED')
+    _log.output('BUTTONS ON TIMELINE REGISTER')
     _add_buttons_to_timeline()
 
+    if not GTConfig.hidden_feature:
+        _log.output('GEOTRACKER KEYMAPS REGISTER')
+        _geotracker_keymaps_register()
 
-def geotracker_unregister():
-    _log.output('START GEOTRACKER UNREGISTER CLASSES')
+    _log.output('=== GEOTRACKER REGISTERED ===')
 
+
+def geotracker_unregister() -> None:
+    _log.output('--- START GEOTRACKER UNREGISTER ---')
+
+    _log.output('BUTTONS ON TIMELINE UNREGISTER')
     _remove_buttons_from_timeline()
 
+    _log.output('START GEOTRACKER UNREGISTER CLASSES')
     for cls in reversed(CLASSES_TO_REGISTER):
         _log.output('UNREGISTER CLASS: \n{}'.format(str(cls)))
-        bpy.utils.unregister_class(cls)
+        unregister_class(cls)
 
+    _log.output('MAIN GEOTRACKER VARIABLE UNREGISTER')
     _remove_addon_settings_var()
-    _log.output('MAIN GEOTRACKER VARIABLE UNREGISTERED')
+
+    if not GTConfig.hidden_feature:
+        _log.output('GEOTRACKER KEYMAPS UNREGISTER')
+        _geotracker_keymaps_unregister()
+
+    _log.output('=== GEOTRACKER UNREGISTERED ===')

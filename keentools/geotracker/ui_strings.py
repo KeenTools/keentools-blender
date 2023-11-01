@@ -134,6 +134,10 @@ buttons = {
         'Next keyframe',
         'Move to the next GeoTracker keyframe on the timeline'
     ),
+    GTConfig.gt_toggle_lock_viewport_idname: Button(
+        'Toggle Lock Viewport',
+        'Press to toggle Lock for current viewport'
+    ),
     GTConfig.gt_track_to_start_idname: Button(
         'Track to start',
         'Track backwards'
@@ -253,6 +257,14 @@ buttons = {
     GTConfig.gt_default_pin_settings_idname: Button(
         'Reset',
         'Reset all to default values'
+    ),
+    GTConfig.gt_reset_texture_resolution_idname: Button(
+        'Reset',
+        'Reset texture resolution to default values'
+    ),
+    GTConfig.gt_reset_advanced_settings_idname: Button(
+        'Reset',
+        'Reset advanced texture baking settings'
     ),
     GTConfig.gt_check_uv_overlapping_idname: Button(
         'Check',

@@ -74,6 +74,7 @@ class GTConfig:
     gt_remove_pins_idname = operators + '.remove_pins_btn'
     gt_toggle_pins_idname = operators + '.toggle_pins_btn'
 
+    gt_toggle_lock_viewport_idname = operators + '.toggle_lock_viewport'
     gt_exit_pinmode_idname = operators + '.exit_pinmode_btn'
     gt_interrupt_modal_idname = operators + '.interrupt_modal'
     gt_stop_calculating_idname = operators + '.stop_calculating_btn'
@@ -81,6 +82,8 @@ class GTConfig:
     gt_reset_tone_exposure_idname = operators + '.reset_tone_exposure'
     gt_reset_tone_gamma_idname = operators + '.reset_tone_gamma'
     gt_reset_tone_mapping_idname = operators + '.reset_tone_mapping'
+    gt_reset_texture_resolution_idname = operators + '.reset_texture_resolution'
+    gt_reset_advanced_settings_idname = operators + '.reset_advanced_settings'
     gt_default_wireframe_settings_idname = \
         operators + '.default_wireframe_settings'
     gt_default_pin_settings_idname = operators + '.default_pin_settings'
@@ -182,6 +185,7 @@ class GTConfig:
     auto_render_size = True
     auto_time_length = True
     auto_increase_far_clip_distance = True
+    auto_unbreak_rotation = True
 
     gt_empty_name = 'gtEmpty'
     gt_background_name = 'geotracker_footage'
@@ -193,7 +197,7 @@ class GTConfig:
     tex_builder_filename_template = '{}_baked_tex'
     tex_builder_matname_template = '{}_preview_mat'
 
-    hidden_feature = True
+    hidden_feature: bool = True
 
 
 def get_gt_settings():

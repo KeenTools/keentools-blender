@@ -49,6 +49,10 @@ def bpy_context() -> Any:
     return bpy.context
 
 
+def bpy_window_manager() -> Any:
+    return bpy.context.window_manager
+
+
 def bpy_objects() -> Any:
     return bpy.data.objects
 
@@ -90,6 +94,11 @@ def bpy_render_frame() -> Tuple[int, int]:
     w = rx if rx != 0 else 1
     h = ry if ry != 0 else 1
     return w, h
+
+
+def bpy_render_aspect() -> float:
+    w, h = bpy_render_frame()
+    return w / h
 
 
 def bpy_abspath(file_path: str) -> str:
@@ -348,6 +357,14 @@ def bpy_jpeg_quality_context(value: int):
     old = bpy_jpeg_quality(value)
     yield
     bpy_jpeg_quality(old)
+
+
+def bpy_msgbus_subscribe_rna(*args, **kwargs) -> None:
+    bpy.msgbus.subscribe_rna(*args, **kwargs)
+
+
+def bpy_msgbus_clear_by_owner(owner: object) -> None:
+    bpy.msgbus.clear_by_owner(owner)
 
 
 def get_traceback(skip_last=1) -> str:

@@ -24,7 +24,7 @@ from bpy.types import (Object, CameraBackgroundImage, Area, Image, Mask,
                        PropertyGroup, MovieClip)
 from bpy.props import (IntProperty, BoolProperty, FloatProperty,
                        StringProperty, EnumProperty, FloatVectorProperty,
-                       PointerProperty, CollectionProperty)
+                       PointerProperty, CollectionProperty, BoolVectorProperty)
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, get_addon_preferences
@@ -74,7 +74,9 @@ from .callbacks import (update_camobj,
                         update_mask_source,
                         update_spring_pins_back,
                         update_solve_for_camera,
-                        update_smoothing)
+                        update_smoothing,
+                        update_stabilize_viewport_enabled,
+                        update_locks)
 
 
 _log = KTLogger(__name__)
@@ -311,6 +313,11 @@ class GeoTrackerItem(PropertyGroup):
 
     overlapping_detected: BoolProperty(default=False)
 
+    locks: BoolVectorProperty(name='Locks', description='Fixes',
+                              size=6, subtype='NONE',
+                              default=(False,) * 6,
+                              update=update_locks)
+
     def update_compositing_mask(self, *, frame: Optional[int]=None,
                                 recreate_nodes: bool=False) -> Image:
         _log.output(f'update_compositing_mask enter. '
@@ -473,7 +480,6 @@ class GeoTrackerItem(PropertyGroup):
         return GTConfig.tex_builder_filename_template.format(self.get_geomobj_name())
 
 
-
 class GTSceneSettings(PropertyGroup):
     ui_write_mode: BoolProperty(name='UI Write mode', default=False)
     viewport_state: PointerProperty(type=ViewportStateItem)
@@ -557,11 +563,11 @@ class GTSceneSettings(PropertyGroup):
     anim_end: IntProperty(name='to', default=250)
 
     user_interrupts: BoolProperty(name='Interrupted by user',
-                                            default = False)
+                                  default = False)
     user_percent: FloatProperty(name='Percentage',
-                                          subtype='PERCENTAGE',
-                                          default=0.0, min=0.0, max=100.0,
-                                          precision=1)
+                                subtype='PERCENTAGE',
+                                default=0.0, min=0.0, max=100.0,
+                                precision=1)
 
     calculating_mode: EnumProperty(name='Calculating mode', items=[
         ('NONE', 'NONE', 'No calculation mode', 0),
@@ -569,7 +575,8 @@ class GTSceneSettings(PropertyGroup):
         ('TRACKING', 'TRACKING', 'Tracking is calculating', 2),
         ('REFINE', 'REFINE', 'Refine is calculating', 3),
         ('REPROJECT', 'REPROJECT', 'Project and bake texture is calculating', 4),
-        ('ESTIMATE_FL', 'ESTIMATE_FL', 'Focal length estimation is calculating', 5)
+        ('ESTIMATE_FL', 'ESTIMATE_FL', 'Focal length estimation is calculating', 5),
+        ('JUMP', 'JUMP', 'Jump to frame', 6)
     ])
 
     selection_mode: BoolProperty(name='Selection mode', default=False)
@@ -621,13 +628,24 @@ class GTSceneSettings(PropertyGroup):
              'Camera animation will be baked to World space', 2),],
         description='Convert animation to World space')
 
-    export_locator_selector: EnumProperty(name='Select source',
-        items=[
-            ('GEOMETRY', 'Geometry',
-            'Use Geometry as animation source', 0),
-            ('CAMERA', 'Camera',
-             'Use Camera as animation source', 1),],
-        description='Create an animated Empty from')
+    if not GTConfig.hidden_feature:
+        export_locator_selector: EnumProperty(name='Select source',
+            items=[
+                ('GEOMETRY', 'Geometry',
+                'Use Geometry as animation source', 0),
+                ('CAMERA', 'Camera',
+                 'Use Camera as animation source', 1),
+                ('SELECTED_PINS', 'Selected pins',
+                 'Use selected pins as animation source', 2),],
+            description='Create an animated Empty from')
+    else:
+        export_locator_selector: EnumProperty(name='Select source',
+            items=[
+                ('GEOMETRY', 'Geometry',
+                'Use Geometry as animation source', 0),
+                ('CAMERA', 'Camera',
+                 'Use Camera as animation source', 1),],
+            description='Create an animated Empty from')
 
     export_linked_locator: BoolProperty(
         name='Linked',
@@ -635,12 +653,18 @@ class GTSceneSettings(PropertyGroup):
                     'animation data to use it independently',
         default=False)
 
+    export_locator_orientation: EnumProperty(name='Empty Orientation', items=[
+        ('NORMAL', 'Normal', 'Use normal direction of polygons', 0),
+        ('OBJECT', 'Object', 'Use orientation aligned with Object Pivot', 1),
+        ('WORLD', 'World', 'World aligned at start position', 2),
+    ])
+
     tex_width: IntProperty(
         description='Width size of output texture',
-        name='Width', default=2048)
+        name='Width', default=Config.default_tex_width)
     tex_height: IntProperty(
         description='Height size of output texture',
-        name='Height', default=2048)
+        name='Height', default=Config.default_tex_height)
 
     tex_face_angles_affection: FloatProperty(
         description='Choose how much a polygon view angle affects '
@@ -648,10 +672,11 @@ class GTSceneSettings(PropertyGroup):
                     'color from all views; with 100 you\'ll get color '
                     'information only from the polygons at which a camera '
                     'is looking at 90 degrees',
-        name='Angle strictness', default=10.0, min=0.0, max=100.0)
+        name='Angle strictness',
+        default=Config.default_tex_face_angles_affection, min=0.0, max=100.0)
     tex_uv_expand_percents: FloatProperty(
         description='Expand texture edges',
-        name='Expand edges (%)', default=0.1)
+        name='Expand edges (%)', default=Config.default_tex_uv_expand_percents)
     tex_back_face_culling: BoolProperty(
         description='Exclude backfacing polygons from the created texture',
         name='Back face culling', default=True)
@@ -672,6 +697,11 @@ class GTSceneSettings(PropertyGroup):
     tex_auto_preview: BoolProperty(
         description='Automatically apply the created texture',
         name='Automatically apply the created texture', default=True)
+
+    stabilize_viewport_enabled: BoolProperty(
+        description='Viewport stabilization',
+        name='Lock Viewport', default=False,
+        update=update_stabilize_viewport_enabled)
 
     @contextmanager
     def ui_write_mode_context(self):
@@ -826,6 +856,18 @@ class GTSceneSettings(PropertyGroup):
         else:
             pins.set_selected_pins(found_pins)
         self.cancel_selection()
+        self.stabilize_viewport(reset=True)
+
+    def stabilize_viewport(self, reset: bool = False) -> None:
+        vp = GTLoader.viewport()
+        if reset:
+            vp.clear_stabilization_point()
+        if not self.stabilize_viewport_enabled:
+            return
+        geotracker = self.get_current_geotracker_item()
+        if not geotracker:
+            return
+        vp.stabilize(geotracker.geomobj)
 
     def stop_calculating(self) -> None:
         self.calculating_mode = 'NONE'

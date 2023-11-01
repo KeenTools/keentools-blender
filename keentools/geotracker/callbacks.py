@@ -18,11 +18,15 @@
 
 from typing import Optional, Tuple, Any, List
 
+from bpy.types import Object
+
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
                             get_operator,
                             ErrorType)
-from ..geotracker_config import GTConfig, get_gt_settings
+from ..geotracker_config import (GTConfig,
+                                 get_gt_settings,
+                                 get_current_geotracker_item)
 from .gtloader import GTLoader
 from ..utils.images import (get_background_image_object,
                             tone_mapping,
@@ -35,11 +39,14 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_start_frame,
                                 bpy_end_frame,
                                 bpy_current_frame,
-                                bpy_set_current_frame)
+                                bpy_set_current_frame,
+                                bpy_msgbus_subscribe_rna,
+                                bpy_msgbus_clear_by_owner)
 
 from ..utils.animation import count_fcurve_points
 from ..utils.manipulate import select_object_only, switch_to_camera
 from ..utils.ui_redraw import total_redraw_ui
+from .utils.tracking import check_unbreak_rotaion_is_needed
 
 
 _log = KTLogger(__name__)
@@ -54,9 +61,124 @@ _constraint_warning_message = \
     'of the solver constraint.'
 
 
+_unbreak_rotation_is_needed_warning = \
+    'object has gaps in its rotation data. \n' \
+    'We recommend applying \'Unbreak rotation\' operation to it'
+
+
+class Owner:
+    def __del__(self):
+        _log.error('!!!!!!! OWNER OBJECT DESTROYED !!!!!!!')
+
+_old_focal_lens_mm: float = 50.0
+_camobj_lens_watcher_owner = Owner()
+_movie_clip_color_space_watcher_owner = Owner()
+
+
+def _set_old_focal_lens_mm(value: float):
+    global _old_focal_lens_mm
+    _old_focal_lens_mm = value
+
+
+def unsubscribe_watcher(owner: object) -> None:
+    _log.output(f'unsubscribe_watcher start: {owner}')
+    bpy_msgbus_clear_by_owner(owner)
+    _log.output(f'unsubscribe_watcher end')
+
+
+def subscribe_camera_lens_watcher(camobj: Optional[Object]) -> None:
+    _log.output('subscribe_camera_lens_watcher start')
+    unsubscribe_watcher(_camobj_lens_watcher_owner)
+    if not camobj or not camobj.data:
+        return
+    subscribe_to = camobj.data.path_resolve('lens', False)
+    _set_old_focal_lens_mm(camobj.data.lens)
+    bpy_msgbus_subscribe_rna(key=subscribe_to,
+                             owner=_camobj_lens_watcher_owner,
+                             args=(),
+                             notify=lens_change_callback)
+    _log.output('subscribe_camera_lens_watcher end')
+
+
+def subscribe_movie_clip_color_space_watcher(geotracker: Any) -> None:
+    _log.output('subscribe_movie_clip_color_space_watcher start')
+    unsubscribe_watcher(_movie_clip_color_space_watcher_owner)
+    if not geotracker or not geotracker.movie_clip \
+            or not geotracker.movie_clip.colorspace_settings:
+        return
+
+    subscribe_to = geotracker.movie_clip.colorspace_settings.path_resolve('name', False)
+    bpy_msgbus_subscribe_rna(key=subscribe_to,
+                             owner=_movie_clip_color_space_watcher_owner,
+                             args=(geotracker.movie_clip.colorspace_settings.name,),
+                             notify=color_space_change_callback)
+    _log.output('subscribe_movie_clip_color_space_watcher end')
+
+
+def color_space_change_callback(old_name: str) -> None:
+    _log.output('color_space_change_callback call')
+    _log.output(f'old color space: {old_name}')
+    geotracker = get_current_geotracker_item()
+    update_movieclip(geotracker, None)
+
+
+def lens_change_callback() -> None:
+    _log.output(_log.color('magenta', 'lens_change_callback call'))
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not settings.pinmode and not settings.is_calculating():
+        _log.output('lens_change_callback stop 1')
+        _set_old_focal_lens_mm(geotracker.camobj.data.lens)
+        return
+
+    if GTLoader.viewport().pins().move_pin_mode():
+        _log.output('lens_change_callback stop 2')
+        _set_old_focal_lens_mm(geotracker.camobj.data.lens)
+        return
+
+    if geotracker.focal_length_mode != 'STATIC_FOCAL_LENGTH':
+        _log.output(f'early exit: {geotracker.focal_length_mode}')
+        return
+
+    _log.output(_log.color('magenta', f'start lens calculation'))
+
+    rw, rh = bpy_render_frame()
+
+    old_focal_length_px = focal_mm_to_px(
+        _old_focal_lens_mm,
+        rw, rh, camera_sensor_width(geotracker.camobj))
+    new_focal_length_px = focal_mm_to_px(
+        camera_focal_length(geotracker.camobj),
+        rw, rh, camera_sensor_width(geotracker.camobj))
+
+    _log.output(_log.color('red', f'\nold: {old_focal_length_px} '
+                                  f'new: {new_focal_length_px}'))
+
+    if old_focal_length_px != new_focal_length_px:
+        current_frame = bpy_current_frame()
+        settings.calculating_mode = 'ESTIMATE_FL'
+        gt = GTLoader.kt_geotracker()
+        gt.recalculate_model_for_new_focal_length(old_focal_length_px,
+                                                  new_focal_length_px, True,
+                                                  current_frame)
+        bpy_set_current_frame(current_frame)
+        _set_old_focal_lens_mm(geotracker.camobj.data.lens)
+        settings.stop_calculating()
+        _log.output('FOCAL LENGTH CHANGED')
+
+        if settings.pinmode:
+            GTLoader.update_viewport_shaders(update_geo_data=True,
+                                             geomobj_matrix=True,
+                                             wireframe=True,
+                                             pins_and_residuals=True,
+                                             timeline=True)
+
+
 def update_camobj(geotracker, context: Any) -> None:
     _log.output(f'update_camobj: {geotracker.camobj}')
     settings = get_gt_settings()
+
+    subscribe_camera_lens_watcher(geotracker.camobj)
 
     if not geotracker.camobj and settings.pinmode:
         GTLoader.out_pinmode()
@@ -72,6 +194,12 @@ def update_camobj(geotracker, context: Any) -> None:
 
     if geotracker.camobj and len(geotracker.camobj.constraints) > 0:
         msg = f'Camera {_constraint_warning_message}'
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+             msg_content=msg)
+
+    if check_unbreak_rotaion_is_needed(geotracker.camobj):
+        msg = f'Camera {_unbreak_rotation_is_needed_warning}'
         warn = get_operator(Config.kt_warning_idname)
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=msg)
@@ -101,9 +229,17 @@ def update_geomobj(geotracker, context: Any) -> None:
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=msg)
 
+    if check_unbreak_rotaion_is_needed(geotracker.geomobj):
+        msg = f'Geometry {_unbreak_rotation_is_needed_warning}'
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+             msg_content=msg)
+
 
 def update_movieclip(geotracker, context: Any) -> None:
     _log.output('update_movieclip')
+    if not geotracker:
+        return
 
     if not geotracker.movie_clip:
         geotracker.precalc_path = ''
@@ -112,10 +248,9 @@ def update_movieclip(geotracker, context: Any) -> None:
         return
 
     current_frame = bpy_current_frame()
-    scene = context.scene
     fit_time_length(geotracker.movie_clip)
-    if not (scene.frame_start <= current_frame <= scene.frame_end):
-        bpy_set_current_frame(scene.frame_start)
+    if not (bpy_start_frame() <= current_frame <= bpy_end_frame()):
+        bpy_set_current_frame(bpy_start_frame())
 
     fit_render_size(geotracker.movie_clip)
 
@@ -126,6 +261,9 @@ def update_movieclip(geotracker, context: Any) -> None:
 
     geotracker.precalc_path = f'{GTConfig.gt_precalc_folder}' \
                               f'{geotracker.movie_clip.name}'
+
+    if context is not None:
+        subscribe_movie_clip_color_space_watcher(geotracker)
 
 
 def update_precalc_path(geotracker, context: Any) -> None:
@@ -306,3 +444,18 @@ def update_smoothing(geotracker, context: Any) -> None:
     gt.set_smoothing_rotations_coeff(geotracker.smoothing_rotations_coeff)
     gt.set_smoothing_xy_translations_coeff(geotracker.smoothing_xy_translations_coeff)
     GTLoader.save_geotracker()
+
+
+def update_stabilize_viewport_enabled(settings, context: Any) -> None:
+    settings.stabilize_viewport(reset=True)
+
+
+def update_locks(geotracker, context: Any) -> None:
+    _log.output('update_locks')
+    settings = get_gt_settings()
+    if settings.ui_write_mode:
+        return
+    gt = GTLoader.kt_geotracker()
+    gt.set_fixed_dofs(list(geotracker.locks))
+    GTLoader.save_geotracker()
+    _log.output(_log.color('magenta', f'{gt.fixed_dofs()}'))

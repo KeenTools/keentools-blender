@@ -24,11 +24,22 @@ from .bpy_common import bpy_timer_register, bpy_timer_unregister
 
 
 _log: Any = KTLogger(__name__)
+_stop_all_timers: bool = False
+
+
+def stop_all_working_timers(value: bool = True) -> None:
+    global _stop_all_timers
+    _stop_all_timers = value
 
 
 class KTTimer:
     def __init__(self):
         self._active: bool = False
+
+    def check_stop_all_timers(self) -> bool:
+        if _stop_all_timers:
+            _log.output(f'{self.__class__.__name__} stopped by stop_all_timers')
+        return _stop_all_timers
 
     def set_active(self, value: bool=True):
         self._active = value
@@ -59,6 +70,11 @@ class KTStopShaderTimer(KTTimer):
         self._get_settings_func: Callable = get_settings_func
 
     def check_pinmode(self) -> Optional[float]:
+        if self.check_stop_all_timers():
+            self._stop_func()
+            self.stop()
+            return None
+
         settings = self._get_settings_func()
         if not self.is_active():
             # Timer works when shouldn't

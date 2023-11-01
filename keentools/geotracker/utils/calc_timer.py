@@ -17,7 +17,8 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import time
-from typing import Any, Callable, Optional, List, Tuple
+from typing import Any, Callable, Optional, List, Tuple, Set
+from enum import Enum
 
 import bpy
 from bpy.types import Area
@@ -41,6 +42,12 @@ from ..interface.screen_mesages import (revert_default_screen_message,
 
 
 _log = KTLogger(__name__)
+
+
+class _ComputationState(Enum):
+    RUNNING = 0
+    SUCCESS = 1
+    ERROR = 2
 
 
 class TimerMixin:
@@ -67,20 +74,39 @@ class TimerMixin:
 
 
 class CalcTimer(TimerMixin):
-    def __init__(self, area: Optional[Area]=None, runner: Optional[Any]=None):
+    def __init__(self, area: Optional[Area] = None,
+                 runner: Optional[Any] = None):
+        self.current_state: Callable = self.timeline_state
+
         self._interval: float = 0.001
         self._target_frame: int = -1
+        self._operation_name: str = 'CalcTimer operation'
         self._runner: Any = runner
-        self._state: str = 'none'
         self._start_time: float = 0.0
         self._area: Area = area
-        self._active_state_func: Callable = self.dummy_state
         settings = get_gt_settings()
-        self._started_in_pinmode = settings.pinmode
-        self._start_frame = bpy_current_frame()
+        self._started_in_pinmode: bool = settings.pinmode
+        self._start_frame: int = bpy_current_frame()
+        self._error_message: str = ''
         self.add_timer(self)
 
-    def dummy_state(self) -> None:
+    def set_current_state(self, func: Callable) -> None:
+        self.current_state = func
+
+    def set_error_message(self, message: str) -> None:
+        self._error_message = message
+
+    def current_state_name(self) -> str:
+        states = [('timeline', self.timeline_state),
+                  ('runner', self.runner_state),
+                  ('finish_success', self.finish_success_state),
+                  ('finish_error', self.finish_error_state)]
+        names, funcs = zip(*states)
+        if self.current_state in funcs:
+            return names[funcs.index(self.current_state)]
+        return 'unknown'
+
+    def inactive_state(self) -> None:
         pass
 
     def get_area(self) -> Area:
@@ -93,7 +119,6 @@ class CalcTimer(TimerMixin):
     def finish_calc_mode(self) -> None:
         self._runner.cancel()
         self.remove_timer(self)
-        self._state = 'over'
         settings = get_gt_settings()
         settings.stop_calculating()
         revert_default_screen_message(unregister=not settings.pinmode)
@@ -109,13 +134,9 @@ class CalcTimer(TimerMixin):
         _log.info('Calculation is over: {:.2f} sec.'.format(
                   time.time() - self._start_time))
 
-    def finish_calc_mode_with_error(self, err_message: str) -> None:
-        self.finish_calc_mode()
-        _log.error(err_message)
-
     def common_checks(self) -> bool:
         settings = get_gt_settings()
-        _log.output(f'common_checks: state={self._state} '
+        _log.output(f'common_checks: state={self.current_state_name()} '
                     f'target={self._target_frame} '
                     f'current={bpy_current_frame()}')
         if settings.user_interrupts:
@@ -128,6 +149,17 @@ class CalcTimer(TimerMixin):
             return False
         return True
 
+    def finish_success_state(self) -> None:
+        _log.output(f'{self._operation_name} finish_success_state call')
+        self.finish_calc_mode()
+        return None
+
+    def finish_error_state(self) -> None:
+        _log.output(f'{self._operation_name} finish_error_state call')
+        _log.error(self._error_message)
+        self.finish_calc_mode()
+        return None
+
     def timeline_state(self) -> Optional[float]:
         if self._target_frame >= 0:
             if bpy_current_frame() == self._target_frame:
@@ -137,10 +169,11 @@ class CalcTimer(TimerMixin):
                 return self._interval
         else:
             _log.output(f'FRAME PROBLEM {self._target_frame}')
-            self.finish_calc_mode_with_error('Impossible frame number')
-            return None
-        self._state = 'runner'
-        self._active_state_func = self.runner_state
+            self.set_error_message('Impossible frame number')
+            self.set_current_state(self.finish_error_state)
+            return self.current_state()
+
+        self.set_current_state(self.runner_state)
         return self._interval
 
     def runner_state(self) -> Optional[float]:
@@ -152,7 +185,7 @@ class CalcTimer(TimerMixin):
         if not self.common_checks():
             _log.output('timer_func common_checks problem')
             return None
-        return self._active_state_func()
+        return self.current_state()
 
     def start(self) -> bool:
         return True
@@ -160,12 +193,15 @@ class CalcTimer(TimerMixin):
 
 class _CommonTimer(TimerMixin):
     def __init__(self, computation: Any, from_frame: int = -1,
-                 revert_current_frame: bool=False):
+                 revert_current_frame: bool=False,
+                 *, success_callback: Optional[Callable] = None,
+                 error_callback: Optional[Callable] = None):
+
+        self.current_state: Callable = self.timeline_state
+        self.tracking_computation: Any = computation
+
         self._interval: float = 0.001
         self._target_frame: int = from_frame
-        self._state: str = 'timeline'
-        self._active_state_func: Callable = self.timeline_state
-        self.tracking_computation: Any = computation
         self._operation_name: str = 'common operation'
         self._operation_help: str = 'ESC to cancel'
         self._calc_mode: str = 'NONE'
@@ -174,7 +210,29 @@ class _CommonTimer(TimerMixin):
         self._revert_current_frame: bool = revert_current_frame
         self._prevent_playback: bool = False
         self._start_time: float = 0
+        self._performed_frames: Set = set()
+        self._success_callback: Optional[Callable] = success_callback
+        self._error_callback: Optional[Callable] = error_callback
         self.add_timer(self)
+
+    def set_current_state(self, func: Callable) -> None:
+        self.current_state = func
+
+    def current_state_name(self) -> str:
+        states = [('timeline', self.timeline_state),
+                  ('computation', self.computation_state),
+                  ('finish_success', self.finish_success_state),
+                  ('finish_error', self.finish_error_state)]
+        names, funcs = zip(*states)
+        if self.current_state in funcs:
+            return names[funcs.index(self.current_state)]
+        return 'unknown'
+
+    def add_performed_frame(self, frame: int) -> None:
+        self._performed_frames.add(frame)
+
+    def performed_frames(self) -> List:
+        return sorted(self._performed_frames)
 
     def get_stage_info(self) -> Tuple[int, int]:
         return 0, 1
@@ -185,9 +243,8 @@ class _CommonTimer(TimerMixin):
             self._cancel()
 
         if bpy_current_frame() == self._target_frame:
-            self._state = 'computation'
-            self._active_state_func = self.computation_state
-            return self.computation_state()
+            self.set_current_state(self.computation_state)
+            return self.current_state()
         bpy_set_current_frame(self._target_frame)
         _log.output(f'{self._operation_name} timeline_state: '
                     f'set_current_frame({self._target_frame})')
@@ -209,12 +266,18 @@ class _CommonTimer(TimerMixin):
                     f'CURRENT FRAME: scene={current_frame} '
                     f'track={tracking_current_frame} result={result}')
 
+        if result in [_ComputationState.RUNNING, _ComputationState.SUCCESS]:
+            self.add_performed_frame(tracking_current_frame)
+
+        if result == _ComputationState.SUCCESS:
+            self.set_current_state(self.finish_success_state)
+            return self.current_state()
+
         overall = self._overall_func()
-        if not result or overall is None:
-            self._output_statistics()
-            self._state = 'finish'
-            self._active_state_func = self.finish_computation
-            return self.finish_computation()
+        if result != _ComputationState.RUNNING or overall is None:
+            _log.output(f'\nresult: {result}\noverall: {overall}')
+            self.set_current_state(self.finish_error_state)
+            return self.current_state()
 
         if self._prevent_playback:
             GTLoader.viewport().tag_redraw()
@@ -222,15 +285,31 @@ class _CommonTimer(TimerMixin):
 
         if result and tracking_current_frame != current_frame:
             self._target_frame = tracking_current_frame
-            self._state = 'timeline'
-            self._active_state_func = self.timeline_state
+            self.set_current_state(self.timeline_state)
             bpy_set_current_frame(self._target_frame)
             return self._interval
 
         return self._interval
 
-    def finish_computation(self) -> None:
-        _log.output(f'{self._operation_name} finish_computation call')
+    def finish_success_state(self) -> None:
+        _log.output(_log.color('red', f'{self._operation_name} '
+                                     f'finish_success_state call'))
+        self._finish_computation()
+        if self._success_callback is not None:
+            self._success_callback(self.performed_frames())
+        return None
+
+    def finish_error_state(self) -> None:
+        _log.output(_log.color('red', f'{self._operation_name} '
+                                     f'finish_error_state call'))
+        self._finish_computation()
+        if self._error_callback is not None:
+            self._error_callback(self.performed_frames())
+        return None
+
+    def _finish_computation(self) -> None:
+        _log.output(f'{self._operation_name} _finish_computation call')
+        self._output_statistics()
         attempts = 0
         max_attempts = 3
         while attempts < max_attempts and \
@@ -262,7 +341,7 @@ class _CommonTimer(TimerMixin):
         settings = get_gt_settings()
         settings.user_interrupts = True
 
-    def _safe_resume(self) -> bool:
+    def _safe_resume(self) -> _ComputationState:
         try:
             state = self.tracking_computation.state()
             _log.output(f'_safe_resume: {state}')
@@ -272,7 +351,7 @@ class _CommonTimer(TimerMixin):
                 overall = self._overall_func()
                 _log.output(f'_safe_resume overall: {overall}')
                 if overall is None:
-                    return False
+                    return _ComputationState.ERROR
                 finished_frames, total_frames = overall
                 current_stage, total_stages = self.get_stage_info()
                 staged_calculation_screen_message(
@@ -284,7 +363,9 @@ class _CommonTimer(TimerMixin):
                 settings = get_gt_settings()
                 total = total_frames if total_frames != 0 else 1
                 settings.user_percent = 100 * finished_frames / total
-                return True
+                return _ComputationState.RUNNING
+            if state == pkt_module().ComputationState.SUCCESS:
+                return _ComputationState.SUCCESS
         except RuntimeError as err:
             msg = f'{self._operation_name} _safe_resume ' \
                   f'Computation Exception.\n{str(err)}'
@@ -294,7 +375,7 @@ class _CommonTimer(TimerMixin):
             msg = f'{self._operation_name} _safe_resume Exception. {str(err)}'
             _log.error(msg)
             show_warning_dialog(err)
-        return False
+        return _ComputationState.ERROR
 
     def _output_statistics(self) -> None:
         overall = self._overall_func()
@@ -303,15 +384,16 @@ class _CommonTimer(TimerMixin):
         gt = GTLoader.kt_geotracker()
         _log.output(f'KEYFRAMES: {gt.keyframes()}')
         _log.output(f'TRACKED FRAMES: {gt.track_frames()}\n')
+        _log.output(f'PERFORMED FRAMES: {self.performed_frames()}')
         overall_time = time.time() - self._start_time
         _log.output(f'{self._operation_name} calculation time: {overall_time:.2f} sec')
 
     def _cancel(self) -> None:
-        _log.output(f'{self._operation_name} Cancel call. State={self._state}')
+        _log.output(f'{self._operation_name} Cancel call. State={self.current_state_name()}')
         self.tracking_computation.cancel()
 
     def timer_func(self) -> Optional[float]:
-        return self._active_state_func()
+        return self.current_state()
 
     def start(self) -> None:
         self._start_time = time.time()
@@ -334,8 +416,12 @@ class _CommonTimer(TimerMixin):
 
 
 class TrackTimer(_CommonTimer):
-    def __init__(self, computation: Any, from_frame: int = -1):
-        super().__init__(computation, from_frame)
+    def __init__(self, computation: Any, from_frame: int = -1,
+                 *, success_callback: Optional[Callable] = None,
+                 error_callback: Optional[Callable] = None):
+        super().__init__(computation, from_frame,
+                         success_callback=success_callback,
+                         error_callback=error_callback)
         self._operation_name = 'Tracking'
         self._operation_help = 'ESC to stop'
         self._calc_mode = 'TRACKING'
@@ -343,8 +429,12 @@ class TrackTimer(_CommonTimer):
 
 
 class RefineTimer(_CommonTimer):
-    def __init__(self, computation: Any, from_frame: int = -1):
-        super().__init__(computation, from_frame, revert_current_frame=True)
+    def __init__(self, computation: Any, from_frame: int = -1,
+                 *, success_callback: Optional[Callable] = None,
+                 error_callback: Optional[Callable] = None):
+        super().__init__(computation, from_frame, revert_current_frame=True,
+                         success_callback=success_callback,
+                         error_callback=error_callback)
         self._operation_name = 'Refining'
         self._operation_help = 'ESC to abort. Changes have NOT yet been applied'
         self._calc_mode = 'REFINE'
@@ -356,6 +446,10 @@ class RefineTimer(_CommonTimer):
 
 
 class RefineTimerFast(RefineTimer):
-    def __init__(self, computation: Any, from_frame: int = -1):
-        super().__init__(computation, from_frame)
+    def __init__(self, computation: Any, from_frame: int = -1,
+                 *, success_callback: Optional[Callable] = None,
+                 error_callback: Optional[Callable] = None):
+        super().__init__(computation, from_frame,
+                         success_callback=success_callback,
+                         error_callback=error_callback)
         self._prevent_playback = True
