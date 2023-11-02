@@ -73,10 +73,9 @@ def tracking_panel(self, context: Any) -> None:
     row2.operator(GTConfig.gt_remove_keyframe_idname, text='',
                   icon='KEY_DEHLT')
 
-    if not GTConfig.hidden_feature:
-        row2.separator()
-        row2.prop(settings, 'stabilize_viewport_enabled',
-                  icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
+    row2.separator()
+    row2.prop(settings, 'stabilize_viewport_enabled',
+              icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
 
 
 def _add_buttons_to_timeline() -> None:
@@ -132,9 +131,8 @@ def geotracker_register() -> None:
     _log.output('BUTTONS ON TIMELINE REGISTER')
     _add_buttons_to_timeline()
 
-    if not GTConfig.hidden_feature:
-        _log.output('GEOTRACKER KEYMAPS REGISTER')
-        _geotracker_keymaps_register()
+    _log.output('GEOTRACKER KEYMAPS REGISTER')
+    _geotracker_keymaps_register()
 
     _log.output('=== GEOTRACKER REGISTERED ===')
 
@@ -153,8 +151,7 @@ def geotracker_unregister() -> None:
     _log.output('MAIN GEOTRACKER VARIABLE UNREGISTER')
     _remove_addon_settings_var()
 
-    if not GTConfig.hidden_feature:
-        _log.output('GEOTRACKER KEYMAPS UNREGISTER')
-        _geotracker_keymaps_unregister()
+    _log.output('GEOTRACKER KEYMAPS UNREGISTER')
+    _geotracker_keymaps_unregister()
 
     _log.output('=== GEOTRACKER UNREGISTERED ===')
