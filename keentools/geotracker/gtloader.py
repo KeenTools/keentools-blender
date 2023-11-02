@@ -99,10 +99,12 @@ def depsgraph_update_handler(scene, depsgraph=None):
     camobj = geotracker.camobj
 
     if geomobj and _check_updated(depsgraph, geomobj.name):
+        _log.output('geomobj update_viewport_shaders')
         GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
                                          pins_and_residuals=True)
         return
     if camobj and _check_updated(depsgraph, camobj.name):
+        _log.output('camobj update_viewport_shaders')
         GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
                                          pins_and_residuals=True)
 
@@ -158,26 +160,11 @@ def frame_change_post_handler(scene) -> None:
     if geotracker.focal_length_estimation:
         geotracker.reset_focal_length_estimation()
 
-    if Config.test_facetracker:
+    if Config.test_facetracker:  # frame_change_post_handler
         frame = bpy_current_frame()
         GTLoader.increment_geo_hash()
         gt = GTLoader.kt_geotracker()
         geo = gt.applied_args_model_at(frame)
-
-        geomobj = geotracker.geomobj
-        shape_name = 'FTAnimated'
-        shape_index = find_blenshape_index(geomobj, shape_name)
-        if shape_index < 0:
-            geomobj.shape_key_add(name=shape_name)
-            shape_index = find_blenshape_index(geomobj, shape_name)
-
-        shape = geomobj.data.shape_keys.key_blocks[shape_index]
-        shape.value = 1.0
-        geomobj.active_shape_key_index = shape_index
-
-        geom_verts = gt.applied_args_model_vertices_at(frame)
-        update_blendshape_verts(shape, geom_verts)
-        geomobj.data.update()
 
         vp = GTLoader.viewport()
         wf = vp.wireframer()
@@ -536,7 +523,7 @@ class GTLoader:
             _log.output(_log.color('green', 'update_geo_data'))
             GTLoader.increment_geo_hash()
             gt = GTLoader.kt_geotracker()
-            if Config.test_facetracker:
+            if Config.test_facetracker:  # get geo from
                 geo = GTLoader.geo()
             else:
                 geo = gt.geo()

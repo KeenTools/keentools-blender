@@ -48,6 +48,7 @@ from .interface.screen_mesages import (revert_default_screen_message,
                                        clipping_changed_screen_message)
 from ..addon_config import Config
 from ..utils.blendshapes import update_blendshape_verts, find_blenshape_index
+from .camera_input import create_shape_keyframe
 
 
 _log = KTLogger(__name__)
@@ -183,31 +184,8 @@ class GT_OT_MovePin(bpy.types.Operator):
 
         GTLoader.viewport().pins().reset_current_pin()
 
-        if Config.test_facetracker:
-            geotracker = get_current_geotracker_item()
-            gt = GTLoader.kt_geotracker()
-            frame = bpy_current_frame()
-            geomobj = geotracker.geomobj
-            mesh = geomobj.data
-
-            shape_name = 'Basis'
-            shape_index = find_blenshape_index(geomobj, shape_name)
-            if shape_index < 0:
-                geomobj.shape_key_add(name=shape_name)
-
-            shape_name = 'FTAnimated'
-            shape_index = find_blenshape_index(geomobj, shape_name)
-            if shape_index < 0:
-                geomobj.shape_key_add(name=shape_name)
-                shape_index = find_blenshape_index(geomobj, shape_name)
-
-            shape = geomobj.data.shape_keys.key_blocks[shape_index]
-            shape.value = 1.0
-            geomobj.active_shape_key_index = shape_index
-
-            geom_verts = gt.applied_args_model_vertices_at(frame)
-            update_blendshape_verts(shape, geom_verts)
-            mesh.update()
+        if Config.test_facetracker:  # create_shape_keyframe
+            create_shape_keyframe(bpy_current_frame())
 
         if self.dragged:
             self.update_focal_length_in_all_keyframes()

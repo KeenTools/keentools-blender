@@ -28,7 +28,8 @@ from ..utils.coords import (focal_mm_to_px,
                             camera_sensor_width,
                             calc_bpy_camera_mat_relative_to_model,
                             calc_bpy_model_mat_relative_to_camera,
-                            camera_projection)
+                            camera_projection,
+                            xy_to_xz_rotation_matrix_3x3)
 from ..utils.animation import (get_safe_evaluated_fcurve,
                                create_locrot_keyframe,
                                get_object_keyframe_numbers,
@@ -95,9 +96,10 @@ class GTGeoInput(pkt_module().GeoInputI):
         _log.output(_log.color('magenta', 'get geo_hash'))
         settings = get_gt_settings()
 
-        if settings.is_calculating() and self._previous_val != 0:
+        if self._previous_val != 0 and settings.is_calculating():
             return pkt_module().Hash(self._previous_val)
 
+        _log.output('geo_hash calculating')
         geotracker = settings.get_current_geotracker_item()
         if geotracker and geotracker.geomobj:
             vert_count = len(geotracker.geomobj.data.vertices)
@@ -123,7 +125,7 @@ class GTGeoInput(pkt_module().GeoInputI):
         geotracker = get_current_geotracker_item()
         if not geotracker:
             return None
-        if Config.test_facetracker:
+        if Config.test_facetracker:  # build_geo_from_basis
             return build_geo_from_basis(geotracker.geomobj, get_uv=False)
         return build_geo(geotracker.geomobj, get_uv=False)
 
@@ -234,6 +236,52 @@ class GTMask2DInput(pkt_module().Mask2DInputI):
         return None
 
 
+def create_shape_keyframe(frame: int) -> None:
+    _log.output(_log.color('yellow', f'create_shape_keyframe: {frame}'))
+    geotracker = get_current_geotracker_item()
+    gt = GTLoader.kt_geotracker()
+    geomobj = geotracker.geomobj
+    mesh = geomobj.data
+    shape_name = f'frame_{frame}'
+
+    if not mesh.shape_keys:
+        geomobj.shape_key_add(name='Basis')
+
+    mesh.shape_keys.use_relative = False
+
+    anim_data = mesh.shape_keys.animation_data
+    if not anim_data:
+        anim_data = mesh.shape_keys.animation_data_create()
+
+    action = anim_data.action
+    if not action:
+        import bpy
+        action = bpy.data.actions.new('ftAction')
+        anim_data.action = action
+
+    fcurve = action.fcurves.find('eval_time')
+    if not fcurve:
+        fcurve = action.fcurves.new('eval_time', index=0)
+
+    kb_names = [kb.name for kb in mesh.shape_keys.key_blocks]
+    if shape_name not in kb_names:
+        shape = geomobj.shape_key_add(name=shape_name)
+        shape.interpolation = 'KEY_LINEAR'
+    else:
+        shape = mesh.shape_keys.key_blocks[shape_name]
+
+    res = [(int(kb.name[6:]) if kb.name[:6] == 'frame_' else -1, kb.frame) for
+           kb in mesh.shape_keys.key_blocks[1:]]
+    anim_points = np.array(res, dtype=np.float32)
+
+    fcurve.keyframe_points.clear()
+    fcurve.keyframe_points.add(len(res))
+    fcurve.keyframe_points.foreach_set('co', anim_points.ravel())
+
+    verts = gt.applied_args_model_vertices_at(frame)
+    shape.data.foreach_set('co', (verts @ xy_to_xz_rotation_matrix_3x3()).ravel())
+
+
 class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
     def __init__(self):
         super().__init__()
@@ -295,7 +343,7 @@ class GTGeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
             return geotracker.calc_model_matrix()
 
     def set_model_mat_at(self, frame: int, model_mat: Any) -> None:
-        _log.output(f'set_model_mat_at1: {frame}')
+        _log.output(_log.color('yellow', f'set_model_mat_at1: {frame}'))
         settings = get_gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:

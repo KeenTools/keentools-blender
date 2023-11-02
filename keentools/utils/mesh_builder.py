@@ -70,16 +70,6 @@ def build_geo_from_basis(obj: Object, get_uv=False) -> Any:
             obj.shape_key_add(name=shape_name)
         basis_shape = obj.data.shape_keys.key_blocks[shape_index]
 
-        shape_name = 'FTAnimated'
-        shape_index = find_blenshape_index(obj, shape_name)
-        if shape_index < 0:
-            obj.shape_key_add(name=shape_name)
-            shape_index = find_blenshape_index(obj, shape_name)
-
-        shape = obj.data.shape_keys.key_blocks[shape_index]
-        shape.value = 1.0
-        obj.active_shape_key_index = shape_index
-
         mesh = evaluated_mesh(obj)
         scale = get_scale_matrix_3x3_from_matrix_world(obj.matrix_world)
         verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
