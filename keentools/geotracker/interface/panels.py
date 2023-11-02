@@ -590,8 +590,10 @@ class GT_PT_TrackingPanel(AllVisible):
 
     def _tracking_center_block(self, settings: Any, layout: Any) -> None:
         col = layout.column(align=True)
-        col.prop(settings, 'stabilize_viewport_enabled',
-                 icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
+
+        if not GTConfig.hidden_feature:
+            col.prop(settings, 'stabilize_viewport_enabled',
+                     icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
 
         row = col.row(align=True)
         row.operator(GTConfig.gt_toggle_pins_idname, icon='UNPINNED')
@@ -1023,7 +1025,7 @@ class GT_PT_RenderingPanel(AllVisible):
 
 class GT_PT_SmoothingPanel(AllVisible):
     bl_idname = GTConfig.gt_smoothing_panel_idname
-    bl_label = 'Smoothing & Locks'
+    bl_label = 'Smoothing'
     bl_options = {'DEFAULT_CLOSED'}
 
     def draw_header_preset(self, context: Any) -> None:
@@ -1075,4 +1077,5 @@ class GT_PT_SmoothingPanel(AllVisible):
         col.prop(geotracker, 'smoothing_rotations_coeff')
         col.prop(geotracker, 'smoothing_focal_length_coeff')
 
-        self._tracking_locks(layout, geotracker)
+        if not GTConfig.hidden_feature:
+            self._tracking_locks(layout, geotracker)

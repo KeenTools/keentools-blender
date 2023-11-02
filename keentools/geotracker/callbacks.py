@@ -66,29 +66,42 @@ _unbreak_rotation_is_needed_warning = \
     'We recommend applying \'Unbreak rotation\' operation to it'
 
 
-_camobj_lens_watcher_owner = object()
-_movie_clip_color_space_watcher_owner = object()
+class Owner:
+    def __del__(self):
+        _log.error('!!!!!!! OWNER OBJECT DESTROYED !!!!!!!')
+
+_old_focal_lens_mm: float = 50.0
+_camobj_lens_watcher_owner = Owner()
+_movie_clip_color_space_watcher_owner = Owner()
+
+
+def _set_old_focal_lens_mm(value: float):
+    global _old_focal_lens_mm
+    _old_focal_lens_mm = value
 
 
 def unsubscribe_watcher(owner: object) -> None:
-    _log.output(f'unsubscribe_watcher call: {owner}')
+    _log.output(f'unsubscribe_watcher start: {owner}')
     bpy_msgbus_clear_by_owner(owner)
+    _log.output(f'unsubscribe_watcher end')
 
 
 def subscribe_camera_lens_watcher(camobj: Optional[Object]) -> None:
-    _log.output('subscribe_camera_lens_watcher call')
+    _log.output('subscribe_camera_lens_watcher start')
     unsubscribe_watcher(_camobj_lens_watcher_owner)
     if not camobj or not camobj.data:
         return
     subscribe_to = camobj.data.path_resolve('lens', False)
+    _set_old_focal_lens_mm(camobj.data.lens)
     bpy_msgbus_subscribe_rna(key=subscribe_to,
                              owner=_camobj_lens_watcher_owner,
-                             args=(camobj.data.lens,),
+                             args=(),
                              notify=lens_change_callback)
+    _log.output('subscribe_camera_lens_watcher end')
 
 
 def subscribe_movie_clip_color_space_watcher(geotracker: Any) -> None:
-    _log.output('subscribe_camera_color_space_watcher call')
+    _log.output('subscribe_movie_clip_color_space_watcher start')
     unsubscribe_watcher(_movie_clip_color_space_watcher_owner)
     if not geotracker or not geotracker.movie_clip \
             or not geotracker.movie_clip.colorspace_settings:
@@ -99,6 +112,7 @@ def subscribe_movie_clip_color_space_watcher(geotracker: Any) -> None:
                              owner=_movie_clip_color_space_watcher_owner,
                              args=(geotracker.movie_clip.colorspace_settings.name,),
                              notify=color_space_change_callback)
+    _log.output('subscribe_movie_clip_color_space_watcher end')
 
 
 def color_space_change_callback(old_name: str) -> None:
@@ -108,13 +122,20 @@ def color_space_change_callback(old_name: str) -> None:
     update_movieclip(geotracker, None)
 
 
-def lens_change_callback(old_focal_length_mm: float) -> None:
-    _log.output('lens_change_callback call')
+def lens_change_callback() -> None:
+    _log.output(_log.color('magenta', 'lens_change_callback call'))
     settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     if not settings.pinmode and not settings.is_calculating():
+        _log.output('lens_change_callback stop 1')
+        _set_old_focal_lens_mm(geotracker.camobj.data.lens)
         return
 
-    geotracker = settings.get_current_geotracker_item()
+    if GTLoader.viewport().pins().move_pin_mode():
+        _log.output('lens_change_callback stop 2')
+        _set_old_focal_lens_mm(geotracker.camobj.data.lens)
+        return
+
     if geotracker.focal_length_mode != 'STATIC_FOCAL_LENGTH':
         _log.output(f'early exit: {geotracker.focal_length_mode}')
         return
@@ -124,7 +145,7 @@ def lens_change_callback(old_focal_length_mm: float) -> None:
     rw, rh = bpy_render_frame()
 
     old_focal_length_px = focal_mm_to_px(
-        old_focal_length_mm,
+        _old_focal_lens_mm,
         rw, rh, camera_sensor_width(geotracker.camobj))
     new_focal_length_px = focal_mm_to_px(
         camera_focal_length(geotracker.camobj),
@@ -141,7 +162,7 @@ def lens_change_callback(old_focal_length_mm: float) -> None:
                                                   new_focal_length_px, True,
                                                   current_frame)
         bpy_set_current_frame(current_frame)
-        subscribe_camera_lens_watcher(geotracker.camobj)
+        _set_old_focal_lens_mm(geotracker.camobj.data.lens)
         settings.stop_calculating()
         _log.output('FOCAL LENGTH CHANGED')
 
@@ -241,7 +262,8 @@ def update_movieclip(geotracker, context: Any) -> None:
     geotracker.precalc_path = f'{GTConfig.gt_precalc_folder}' \
                               f'{geotracker.movie_clip.name}'
 
-    subscribe_movie_clip_color_space_watcher(geotracker)
+    if context is not None:
+        subscribe_movie_clip_color_space_watcher(geotracker)
 
 
 def update_precalc_path(geotracker, context: Any) -> None:
