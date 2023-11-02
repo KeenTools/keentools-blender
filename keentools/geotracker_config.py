@@ -197,7 +197,7 @@ class GTConfig:
     tex_builder_filename_template = '{}_baked_tex'
     tex_builder_matname_template = '{}_preview_mat'
 
-    hidden_feature: bool = True
+    hidden_feature: bool = False
 
 
 def get_gt_settings():
