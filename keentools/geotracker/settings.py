@@ -628,24 +628,15 @@ class GTSceneSettings(PropertyGroup):
              'Camera animation will be baked to World space', 2),],
         description='Convert animation to World space')
 
-    if not GTConfig.hidden_feature:
-        export_locator_selector: EnumProperty(name='Select source',
-            items=[
-                ('GEOMETRY', 'Geometry',
-                'Use Geometry as animation source', 0),
-                ('CAMERA', 'Camera',
-                 'Use Camera as animation source', 1),
-                ('SELECTED_PINS', 'Selected pins',
-                 'Use selected pins as animation source', 2),],
-            description='Create an animated Empty from')
-    else:
-        export_locator_selector: EnumProperty(name='Select source',
-            items=[
-                ('GEOMETRY', 'Geometry',
-                'Use Geometry as animation source', 0),
-                ('CAMERA', 'Camera',
-                 'Use Camera as animation source', 1),],
-            description='Create an animated Empty from')
+    export_locator_selector: EnumProperty(name='Select source',
+        items=[
+            ('GEOMETRY', 'Geometry',
+            'Use Geometry as animation source', 0),
+            ('CAMERA', 'Camera',
+             'Use Camera as animation source', 1),
+            ('SELECTED_PINS', 'Selected pins',
+             'Use selected pins as animation source', 2),],
+        description='Create an animated Empty from')
 
     export_linked_locator: BoolProperty(
         name='Linked',
