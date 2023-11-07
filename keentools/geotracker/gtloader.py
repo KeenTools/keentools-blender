@@ -51,6 +51,7 @@ from ..utils.localview import exit_area_localview, check_localview
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..utils.images import get_background_image_strict
 from ..utils.blendshapes import find_blenshape_index, update_blendshape_verts
+import time
 
 
 _log = KTLogger(__name__)
@@ -149,7 +150,9 @@ def unregister_app_handler(app_handlers, handler) -> None:
 
 
 def frame_change_post_handler(scene) -> None:
-    _log.output(f'CURRENT FRAME UPDATED: {scene.name} {scene.frame_current}')
+    _log.output(_log.color('green', f'CURRENT FRAME UPDATED: {scene.name} '
+                                    f'{scene.frame_current}'))
+
     settings = get_gt_settings()
     if settings.calculating_mode == 'ESTIMATE_FL':
         return
@@ -168,8 +171,16 @@ def frame_change_post_handler(scene) -> None:
 
         vp = GTLoader.viewport()
         wf = vp.wireframer()
-        wf.init_geom_data_from_core(*GTLoader.get_geo_shader_data(
-            geo, geotracker.geomobj.matrix_world))
+
+        start_time = time.time()
+        # wf.init_geom_data_from_core(*GTLoader.get_geo_shader_data(
+        #     geo, geotracker.geomobj.matrix_world))
+        edge_vertices, edge_vertex_normals, triangle_vertices = GTLoader.get_geo_shader_data(
+            geo, geotracker.geomobj.matrix_world)
+        end_time = time.time()
+        wf.init_geom_data_from_core(edge_vertices, edge_vertex_normals, triangle_vertices)
+        _log.error(f'exec: {end_time - start_time}')
+
         wf.create_batches()
 
     if settings.stabilize_viewport_enabled:

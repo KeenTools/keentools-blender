@@ -41,6 +41,8 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_render_frame,
                                 bpy_start_frame,
                                 bpy_end_frame,
+                                bpy_shape_key_bubble,
+                                bpy_shape_key_retime,
                                 get_traceback)
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..geotracker.gtloader import GTLoader
@@ -73,6 +75,11 @@ class GTCameraInput(pkt_module().TrackerCameraInputI):
 class GTGeoInput(pkt_module().GeoInputI):
     _previous_val: int = 0
     _hash_counter: int = 0
+    _geo_changed: bool = True
+
+    @classmethod
+    def set_geo_changed(cls, value: bool = True):
+        cls._geo_changed = value
 
     @classmethod
     def increment_hash(cls) -> None:
@@ -94,12 +101,18 @@ class GTGeoInput(pkt_module().GeoInputI):
 
     def geo_hash(self) -> Any:
         _log.output(_log.color('magenta', 'get geo_hash'))
+
+        if not self._geo_changed:
+            return pkt_module().Hash(self._previous_val)
+
         settings = get_gt_settings()
 
         if self._previous_val != 0 and settings.is_calculating():
             return pkt_module().Hash(self._previous_val)
 
         _log.output('geo_hash calculating')
+        self.set_geo_changed(False)
+
         geotracker = settings.get_current_geotracker_item()
         if geotracker and geotracker.geomobj:
             vert_count = len(geotracker.geomobj.data.vertices)
@@ -242,7 +255,7 @@ def create_shape_keyframe(frame: int) -> None:
     gt = GTLoader.kt_geotracker()
     geomobj = geotracker.geomobj
     mesh = geomobj.data
-    shape_name = f'frame_{frame}'
+    shape_name = f'frame_{str(frame).zfill(5)}'
 
     if not mesh.shape_keys:
         geomobj.shape_key_add(name='Basis')
@@ -274,9 +287,15 @@ def create_shape_keyframe(frame: int) -> None:
            kb in mesh.shape_keys.key_blocks[1:]]
     anim_points = np.array(res, dtype=np.float32)
 
+    # bpy_shape_key_bubble(geomobj, mesh.shape_keys.key_blocks.find(shape_name))
+    bpy_shape_key_retime(geomobj)
+
     fcurve.keyframe_points.clear()
     fcurve.keyframe_points.add(len(res))
     fcurve.keyframe_points.foreach_set('co', anim_points.ravel())
+
+    for p in fcurve.keyframe_points:
+        p.interpolation = 'LINEAR'
 
     verts = gt.applied_args_model_vertices_at(frame)
     shape.data.foreach_set('co', (verts @ xy_to_xz_rotation_matrix_3x3()).ravel())
