@@ -41,7 +41,6 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_render_frame,
                                 bpy_start_frame,
                                 bpy_end_frame,
-                                bpy_shape_key_bubble,
                                 bpy_shape_key_retime,
                                 get_traceback)
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
@@ -255,7 +254,7 @@ def create_shape_keyframe(frame: int) -> None:
     gt = GTLoader.kt_geotracker()
     geomobj = geotracker.geomobj
     mesh = geomobj.data
-    shape_name = f'frame_{str(frame).zfill(5)}'
+    shape_name = f'frame_{str(frame).zfill(4)}'
 
     if not mesh.shape_keys:
         geomobj.shape_key_add(name='Basis')
@@ -280,20 +279,18 @@ def create_shape_keyframe(frame: int) -> None:
     if shape_name not in kb_names:
         shape = geomobj.shape_key_add(name=shape_name)
         shape.interpolation = 'KEY_LINEAR'
+        bpy_shape_key_retime(geomobj)
     else:
         shape = mesh.shape_keys.key_blocks[shape_name]
 
     res = [(int(kb.name[6:]) if kb.name[:6] == 'frame_' else -1, kb.frame) for
            kb in mesh.shape_keys.key_blocks[1:]]
     anim_points = np.array(res, dtype=np.float32)
-
-    # bpy_shape_key_bubble(geomobj, mesh.shape_keys.key_blocks.find(shape_name))
-    bpy_shape_key_retime(geomobj)
+    _log.output(f'anim_points:\n{anim_points}')
 
     fcurve.keyframe_points.clear()
     fcurve.keyframe_points.add(len(res))
     fcurve.keyframe_points.foreach_set('co', anim_points.ravel())
-
     for p in fcurve.keyframe_points:
         p.interpolation = 'LINEAR'
 

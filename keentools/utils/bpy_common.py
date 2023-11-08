@@ -376,25 +376,5 @@ def bpy_shape_key_move(obj: Object, type_direction: str = 'UP') -> None:
                           {'object': obj}, type=type_direction)
 
 
-def bpy_shape_key_bubble(obj: Object, shape_key_index: int) -> None:
-    if shape_key_index < 0:
-        return
-    obj.active_shape_key_index = shape_key_index
-    index = shape_key_index
-    _log.error(f'index: {index}')
-    name = obj.data.shape_keys.key_blocks[index].name
-    _log.error(f'name: {name}')
-    while index >= 1:
-        prev_name = obj.data.shape_keys.key_blocks[index - 1].name
-        _log.error(f'prev_name: {prev_name}')
-        if prev_name == 'Basis':
-            return
-        if prev_name < name:
-            return
-        bpy_shape_key_move(obj, 'UP')
-        index -= 1
-        _log.error(f'index: {index}')
-
-
 def get_traceback(skip_last=1) -> str:
     return ''.join(traceback.format_stack()[:-skip_last])
