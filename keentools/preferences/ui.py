@@ -53,6 +53,8 @@ from ..updater.utils import (preferences_current_active_updater_operators_info,
                              KTUpdater,
                              CurrentStateExecutor)
 from .operators import get_product_license_manager
+from .hotkeys import (geotracker_keymaps_register,
+                      geotracker_keymaps_unregister)
 
 
 _log = KTLogger(__name__)
@@ -301,6 +303,13 @@ def _update_gt_wireframe(addon_prefs, _):
     settings = get_gt_settings()
     settings.wireframe_color = addon_prefs.gt_wireframe_color
     settings.wireframe_opacity = addon_prefs.gt_wireframe_opacity
+
+
+def _update_gt_hotkeys(addon_prefs, _):
+    if addon_prefs.gt_hotkeys_enabled:
+        geotracker_keymaps_register()
+    else:
+        geotracker_keymaps_unregister()
 
 
 def _universal_updater_getter(name, type_):
@@ -578,6 +587,13 @@ class KTAddonPreferences(AddonPreferences):
         get=universal_direct_getter('gt_mask_2d_opacity', 'float'),
         set=universal_direct_setter('gt_mask_2d_opacity'),
         update=_update_mask_2d
+    )
+    gt_hotkeys_enabled: BoolProperty(
+        name='Use Hotkeys',
+        description='Enable GeoTracker Hotkeys: (L) Lock Viewport. '
+                    '(Alt + Left/Right Arrow) jump to nearest GT Keyframe',
+        default=True,
+        update=_update_gt_hotkeys
     )
 
     def _license_was_accepted(self):
@@ -886,6 +902,7 @@ class KTAddonPreferences(AddonPreferences):
 
         box = main_box.box()
         box.prop(self, 'prevent_gt_view_rotation')
+        box.prop(self, 'gt_hotkeys_enabled')
 
         box = main_box.box()
         self._draw_pin_user_preferences(box)
