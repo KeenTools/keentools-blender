@@ -690,8 +690,8 @@ class GTSceneSettings(PropertyGroup):
         name='Automatically apply the created texture', default=True)
 
     stabilize_viewport_enabled: BoolProperty(
-        description='Viewport stabilization',
-        name='Lock Viewport', default=False,
+        description='View stabilization',
+        name='Lock View', default=False,
         update=update_stabilize_viewport_enabled)
 
     @contextmanager

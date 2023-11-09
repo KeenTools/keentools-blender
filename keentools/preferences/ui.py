@@ -590,8 +590,9 @@ class KTAddonPreferences(AddonPreferences):
     )
     gt_hotkeys_enabled: BoolProperty(
         name='Use Hotkeys',
-        description='Enable GeoTracker Hotkeys: (L) Lock Viewport. '
-                    '(Alt + Left/Right Arrow) jump to nearest GT Keyframe',
+        description='Enable GeoTracker Hotkeys: (L) Lock View. '
+                    '(Alt + Left Arrow) Previous GT Keyframe. '
+                    '(Alt + Right Arrow) Next GT Keyframe',
         default=True,
         update=_update_gt_hotkeys
     )

@@ -47,7 +47,7 @@ def geotracker_keymaps_register() -> None:
     _geotracker_keymaps.append((km, kmi1))
     _geotracker_keymaps.append((km, kmi2))
     km = keyconfig.keymaps.new(name='3D View Generic', space_type='VIEW_3D')
-    kmi3 = km.keymap_items.new(idname=GTConfig.gt_toggle_lock_viewport_idname,
+    kmi3 = km.keymap_items.new(idname=GTConfig.gt_toggle_lock_view_idname,
                                type='L',
                                value='PRESS')
     _geotracker_keymaps.append((km, kmi3))
