@@ -690,7 +690,7 @@ class GTSceneSettings(PropertyGroup):
         name='Automatically apply the created texture', default=True)
 
     stabilize_viewport_enabled: BoolProperty(
-        description='View stabilization',
+        description='Snap view to geometry or selected pin(s)',
         name='Lock View', default=False,
         update=update_stabilize_viewport_enabled)
 
