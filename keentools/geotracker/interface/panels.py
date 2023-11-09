@@ -987,6 +987,10 @@ class GT_PT_AnimationPanel(AllVisible):
         row.prop(settings, 'export_linked_locator')
         row.operator(GTConfig.gt_export_animated_empty_idname)
 
+        col = layout.column()
+        op = col.operator(GTConfig.gt_actor_idname, text='Convert to relative')
+        op.action = 'convert_to_relative_blendshapes'
+
 
 class GT_PT_RenderingPanel(AllVisible):
     bl_idname = GTConfig.gt_rendering_panel_idname

@@ -20,12 +20,70 @@ from bpy.types import Operator
 from bpy.props import StringProperty, IntProperty
 
 from ..utils.kt_logging import KTLogger
-from ..geotracker_config import GTConfig
+from ..addon_config import ActionStatus
+from ..geotracker_config import GTConfig, get_current_geotracker_item
 from .utils.geotracker_acts import center_geo_act
 from .ui_strings import buttons
 
 
 _log = KTLogger(__name__)
+
+
+def convert_to_relative_blendshapes() -> ActionStatus:
+    _log.output(
+        _log.color('yellow', f'convert_to_relative_blendshapes'))
+    geotracker = get_current_geotracker_item()
+    geomobj = geotracker.geomobj
+    mesh = geomobj.data
+
+    if not mesh.shape_keys:
+        return ActionStatus(False, 'No mesh shape keys')
+
+    anim_data = mesh.shape_keys.animation_data
+    if not anim_data:
+        return ActionStatus(False, 'No mesh animation')
+
+    old_action = anim_data.action
+    if not old_action:
+        return ActionStatus(False, 'No mesh action')
+
+    keyframes = [(int(kb.name[6:]) if kb.name[:6] == 'frame_' else -1, kb.name)
+                 for kb in geomobj.data.shape_keys.key_blocks[1:]]
+    keyframe_count = len(keyframes)
+
+    if keyframe_count <= 1:
+        return ActionStatus(False, 'Not enough animated keyframes')
+
+    import bpy
+    action = bpy.data.actions.new('ftRelativeAction')
+    anim_data.action = action
+
+    mesh.shape_keys.use_relative = True
+
+    prev_frame = 0
+
+    for i, pair in enumerate(keyframes):
+        frame, name = pair
+        fcurve = action.fcurves.new(f'key_blocks["{name}"].value', index=0)
+
+        if i == 0:
+            fcurve.keyframe_points.add(2)
+            fcurve.keyframe_points[0].co = (frame, 1.0)
+            fcurve.keyframe_points[1].co = (keyframes[i + 1][0], 0.0)
+        elif i == keyframe_count - 1:
+            fcurve.keyframe_points.add(2)
+            fcurve.keyframe_points[0].co = (prev_frame, 0.0)
+            fcurve.keyframe_points[1].co = (frame, 1.0)
+        else:
+            fcurve.keyframe_points.add(3)
+            fcurve.keyframe_points[0].co = (prev_frame, 0.0)
+            fcurve.keyframe_points[1].co = (frame, 1.0)
+            fcurve.keyframe_points[2].co = (keyframes[i + 1][0], 0.0)
+
+        fcurve.update()
+        prev_frame = frame
+
+    return ActionStatus(True, 'ok')
 
 
 class GT_OT_Actor(Operator):
@@ -45,6 +103,13 @@ class GT_OT_Actor(Operator):
 
         if self.action == 'none':
             act_status = center_geo_act()
+            if not act_status.success:
+                self.report({'ERROR'}, act_status.error_message)
+            else:
+                self.report({'INFO'}, act_status.error_message)
+            return {'FINISHED'}
+        elif self.action == 'convert_to_relative_blendshapes':
+            act_status = convert_to_relative_blendshapes()
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
             else:
