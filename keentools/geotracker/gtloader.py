@@ -534,8 +534,8 @@ class GTLoader:
             _log.output(_log.color('green', 'update_geo_data'))
             GTLoader.increment_geo_hash()
             gt = GTLoader.kt_geotracker()
-            if Config.test_facetracker:  # get geo from
-                geo = GTLoader.geo()
+            if Config.test_facetracker:
+                geo = gt.applied_args_model_at(bpy_current_frame())
             else:
                 geo = gt.geo()
             wf.init_geom_data_from_core(*cls.get_geo_shader_data(
