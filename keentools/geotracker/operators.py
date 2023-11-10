@@ -56,7 +56,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     remove_keyframe_act,
                                     prev_keyframe_act,
                                     next_keyframe_act,
-                                    toggle_lock_viewport_act,
+                                    toggle_lock_view_act,
                                     track_to,
                                     track_next_frame_act,
                                     refine_async_act,
@@ -260,14 +260,14 @@ class GT_OT_NextKeyframe(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
-class GT_OT_LockViewport(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_toggle_lock_viewport_idname
+class GT_OT_LockView(ButtonOperator, Operator):
+    bl_idname = GTConfig.gt_toggle_lock_view_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = toggle_lock_viewport_act()
+        act_status = toggle_lock_view_act()
         if not act_status.success:
             self.report({'INFO'}, act_status.error_message)
             return {'CANCELLED'}
@@ -1842,7 +1842,7 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_RemoveKeyframe,
                   GT_OT_NextKeyframe,
                   GT_OT_PrevKeyframe,
-                  GT_OT_LockViewport,
+                  GT_OT_LockView,
                   GT_OT_TrackToStart,
                   GT_OT_TrackPrev,
                   GT_OT_TrackNext,

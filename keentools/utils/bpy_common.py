@@ -307,7 +307,8 @@ def bpy_render_single_frame(scene: Scene, frame: Optional[int]=None) -> None:
     if frame is not None:
         scene.frame_current = frame
     _log.output(_log.color('yellow', f'bpy_render_single_frame: {frame}'))
-    bpy.ops.render.render({'scene': scene}, animation=False)
+    operator_with_context(bpy.ops.render.render,
+                          {'scene': scene}, animation=False)
 
 
 def get_scene_by_name(scene_name: str) -> Optional[Scene]:

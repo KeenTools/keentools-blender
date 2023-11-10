@@ -215,10 +215,10 @@ def prev_keyframe_act() -> ActionStatus:
     return ActionStatus(False, 'No previous GeoTracker keyframe')
 
 
-def toggle_lock_viewport_act() -> ActionStatus:
+def toggle_lock_view_act() -> ActionStatus:
     settings = get_gt_settings()
     if not settings.pinmode:
-        return ActionStatus(False, 'Lock viewport works in GeoTracker pinmode only')
+        return ActionStatus(False, 'Lock View works in GeoTracker pinmode only')
 
     settings.stabilize_viewport_enabled = not settings.stabilize_viewport_enabled
     return ActionStatus(True, 'Ok')
