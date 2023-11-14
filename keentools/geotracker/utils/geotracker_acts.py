@@ -638,6 +638,11 @@ def create_animated_empty_act(obj: Object, linked: bool=False,
         empty.matrix_world = obj_matrix_world
         select_object_only(empty)
 
+        if GTConfig.auto_unbreak_rotation:
+            unbreak_status = unbreak_object_rotation_act(empty)
+            if not unbreak_status.success:
+                return unbreak_status
+
     return ActionStatus(True, 'ok')
 
 
@@ -721,6 +726,12 @@ def create_empty_from_selected_pins_act(
             empty.matrix_world = source_matrices[frame][i]
             update_depsgraph()
             create_animation_locrot_keyframe_force(empty)
+
+    if GTConfig.auto_unbreak_rotation:
+        for empty in empties:
+            unbreak_status = unbreak_object_rotation_act(empty)
+            if not unbreak_status.success:
+                _log.error(unbreak_status.error_message)
 
     bpy_set_current_frame(current_frame)
 
@@ -907,8 +918,13 @@ def transfer_tracking_to_camera_act() -> ActionStatus:
 
     bpy_set_current_frame(current_frame)
     geotracker.solve_for_camera = True
-
     _mark_object_keyframes(camobj)
+
+    if GTConfig.auto_unbreak_rotation:
+        unbreak_status = unbreak_rotation_act()
+        if not unbreak_status.success:
+            return unbreak_status
+
     return ActionStatus(True, 'ok')
 
 
@@ -952,8 +968,13 @@ def transfer_tracking_to_geometry_act() -> ActionStatus:
 
     bpy_set_current_frame(current_frame)
     geotracker.solve_for_camera = False
-
     _mark_object_keyframes(geomobj)
+
+    if GTConfig.auto_unbreak_rotation:
+        unbreak_status = unbreak_rotation_act()
+        if not unbreak_status.success:
+            return unbreak_status
+
     return ActionStatus(True, 'ok')
 
 
@@ -1221,6 +1242,12 @@ def scale_scene_tracking_act(operator: Operator) -> ActionStatus:
     _apply_geomobj_scale(geomobj, operator)
 
     GTLoader.save_geotracker()
+
+    if GTConfig.auto_unbreak_rotation:
+        unbreak_status = unbreak_rotation_act()
+        if not unbreak_status.success:
+            return unbreak_status
+
     if not settings.reload_current_geotracker():
         msg = 'Cannot reload GeoTracker data'
         _log.error(msg)
@@ -1360,6 +1387,12 @@ def move_scene_tracking_act(operator: Operator) -> ActionStatus:
     bpy_set_current_frame(current_frame)
 
     GTLoader.save_geotracker()
+
+    if GTConfig.auto_unbreak_rotation:
+        unbreak_status = unbreak_rotation_act()
+        if not unbreak_status.success:
+            return unbreak_status
+
     if not settings.reload_current_geotracker():
         msg = 'Cannot reload GeoTracker data'
         _log.error(msg)
@@ -1402,6 +1435,11 @@ def bake_locrot_act(obj: Object) -> ActionStatus:
     bake_locrot_to_world(obj, obj_animated_frames)
     _remove_all_constraints(obj)
 
+    if GTConfig.auto_unbreak_rotation:
+        unbreak_status = unbreak_rotation_act()
+        if not unbreak_status.success:
+            return unbreak_status
+
     return ActionStatus(True, 'ok')
 
 
@@ -1431,6 +1469,12 @@ def unbreak_rotation_with_status(obj: Object, frame_list: List) -> ActionStatus:
 def unbreak_rotation_act() -> ActionStatus:
     geotracker = get_current_geotracker_item()
     obj = geotracker.animatable_object()
+    return unbreak_object_rotation_act(obj)
+
+
+def unbreak_object_rotation_act(obj: Object) -> ActionStatus:
+    if not obj:
+        return ActionStatus(False, 'No object to unbreak rotation')
     frame_list = get_object_keyframe_numbers(obj, loc=False, rot=True)
     return unbreak_rotation_with_status(obj, frame_list)
 
