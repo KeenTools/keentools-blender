@@ -34,7 +34,8 @@ from ..utils.coords import (get_camera_border,
                             get_area_region,
                             get_area_region_3d,
                             calc_camera_zoom_and_offset,
-                            bound_box_center)
+                            bound_box_center,
+                            camera_projection)
 from ..utils.bpy_common import (bpy_render_frame,
                                 evaluated_object,
                                 bpy_scene_camera,
@@ -89,30 +90,39 @@ class GTViewport(KTViewport):
         area = self.get_work_area()
         if not area:
             return False
-        region = get_area_region(area)
-        region_3d = get_area_region_3d(area)
 
         shift_x, shift_y = get_scene_camera_shift()
         x1, y1, x2, y2 = get_camera_border(area)
 
         pins_average_point = self.pins().average_point_of_selected_pins()
         if pins_average_point is None:
-            point = location_3d_to_region_2d(
-                region, region_3d,
-                geomobj.matrix_world @ bound_box_center(geomobj),
-                default=None)
-            if point is None:
-                _log.error('Cannot calculate average point')
+            rx, ry = bpy_render_frame()
+            camobj = bpy_scene_camera()
+            projection = camera_projection(camobj)
+            p3d = geomobj.matrix_world @ bound_box_center(geomobj)
+            try:
+                transform = projection @ camobj.matrix_world.inverted()
+            except Exception as err:
+                _log.error(f'stabilize exception:\n{str(err)}')
                 return False
+
+            vv = transform @ p3d.to_4d()
+            denom = vv[2]
+            if denom == 0:
+                return False
+
+            x, y = frame_to_image_space(vv[0] / denom, vv[1] / denom,
+                                        rx, ry, shift_x, shift_y)
+            point = image_space_to_region(x, y, x1, y1, x2, y2,
+                                          shift_x, shift_y)
         else:
             point = image_space_to_region(*pins_average_point,
                                           x1, y1, x2, y2, shift_x, shift_y)
 
         _log.output(_log.color('red', f'point: {point}'))
-        _log.output(_log.color('red', f'stabilization_point: '
-                                      f'{self.stabilization_region_point}'))
         if self.stabilization_region_point is None:
             self.stabilization_region_point = point
+            _log.output('stabilization_region_point init')
             return True
 
         sx, sy = self.stabilization_region_point
@@ -123,6 +133,7 @@ class GTViewport(KTViewport):
         _, offset = calc_camera_zoom_and_offset(
             area, x1 + sx - px, y1 + sy - py, width=x2 - x1)
 
+        region_3d = get_area_region_3d(area)
         region_3d.view_camera_offset = offset
         return True
 
