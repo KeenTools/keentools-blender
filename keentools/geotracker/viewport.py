@@ -102,19 +102,18 @@ class GTViewport(KTViewport):
             p3d = geomobj.matrix_world @ bound_box_center(geomobj)
             try:
                 transform = projection @ camobj.matrix_world.inverted()
+                vv = transform @ p3d.to_4d()
+                denom = vv[3]
+                if denom == 0:
+                    return False
+
+                x, y = frame_to_image_space(vv[0] / denom, vv[1] / denom,
+                                            rx, ry, shift_x, shift_y)
+                point = image_space_to_region(x, y, x1, y1, x2, y2,
+                                              shift_x, shift_y)
             except Exception as err:
                 _log.error(f'stabilize exception:\n{str(err)}')
                 return False
-
-            vv = transform @ p3d.to_4d()
-            denom = vv[2]
-            if denom == 0:
-                return False
-
-            x, y = frame_to_image_space(vv[0] / denom, vv[1] / denom,
-                                        rx, ry, shift_x, shift_y)
-            point = image_space_to_region(x, y, x1, y1, x2, y2,
-                                          shift_x, shift_y)
         else:
             point = image_space_to_region(*pins_average_point,
                                           x1, y1, x2, y2, shift_x, shift_y)
