@@ -80,7 +80,11 @@ def depsgraph_update_handler(scene, depsgraph=None):
 
     settings = get_gt_settings()
     if not settings.pinmode:
-        GTLoader.unregister_undo_redo_handlers()
+        _log.output('depsgraph_update_handler: no pinmode found')
+        geotracker = settings.get_current_geotracker_item()
+        if geotracker:
+            GTLoader.unregister_undo_redo_handlers()
+            _log.output('depsgraph_update_handler: unregister')
         return
     if GTLoader.viewport().pins().move_pin_mode():
         return
@@ -146,13 +150,14 @@ def unregister_app_handler(app_handlers, handler) -> None:
 
 
 def frame_change_post_handler(scene) -> None:
-    _log.output(f'CURRENT FRAME UPDATED: {scene.name} {scene.frame_current}')
+    _log.output(_log.color('green', f'frame_change_post_handler: '
+                                    f'{scene.name} {scene.frame_current}'))
     settings = get_gt_settings()
     if settings.calculating_mode == 'ESTIMATE_FL':
         return
     geotracker = settings.get_current_geotracker_item()
     if geotracker is None:
-        _log.output('EARLY EXIT')
+        _log.output('frame_change_post_handler EARLY EXIT')
         return
     if geotracker.focal_length_estimation:
         geotracker.reset_focal_length_estimation()
@@ -164,6 +169,7 @@ def frame_change_post_handler(scene) -> None:
     GTLoader.update_viewport_shaders(geomobj_matrix=True,
                                      pins_and_residuals=True,
                                      mask=True)
+    _log.output('frame_change_post_handler end')
 
 
 class GTLoader:
@@ -703,6 +709,7 @@ class GTLoader:
 
     @classmethod
     def register_undo_redo_handlers(cls):
+        _log.output('register_undo_redo_handlers start')
         cls.unregister_undo_redo_handlers()
         register_app_handler(bpy.app.handlers.undo_post, undo_redo_handler)
         register_app_handler(bpy.app.handlers.redo_post, undo_redo_handler)
@@ -710,12 +717,15 @@ class GTLoader:
                              depsgraph_update_handler)
         register_app_handler(bpy.app.handlers.frame_change_post,
                              frame_change_post_handler)
+        _log.output('register_undo_redo_handlers end')
 
     @staticmethod
     def unregister_undo_redo_handlers():
+        _log.output('unregister_undo_redo_handlers start')
         unregister_app_handler(bpy.app.handlers.frame_change_post,
                                frame_change_post_handler)
         unregister_app_handler(bpy.app.handlers.depsgraph_update_post,
                                depsgraph_update_handler)
         unregister_app_handler(bpy.app.handlers.undo_post, undo_redo_handler)
         unregister_app_handler(bpy.app.handlers.redo_post, undo_redo_handler)
+        _log.output('unregister_undo_redo_handlers end')

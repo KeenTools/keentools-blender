@@ -84,6 +84,7 @@ def bpy_end_frame() -> int:
 
 
 def bpy_set_current_frame(frame: int) -> None:
+    _log.output(_log.color('green', f'bpy_set_current_frame: {frame}'))
     bpy.context.scene.frame_set(frame)
 
 

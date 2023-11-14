@@ -850,6 +850,7 @@ class GTSceneSettings(PropertyGroup):
         self.stabilize_viewport(reset=True)
 
     def stabilize_viewport(self, reset: bool = False) -> None:
+        _log.output('settings.stabilize_viewport')
         vp = GTLoader.viewport()
         if reset:
             vp.clear_stabilization_point()

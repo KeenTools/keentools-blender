@@ -66,6 +66,7 @@ def create_compositing_shadow_scene(src_scene: Scene, scene_name: str,
 def get_compositing_shadow_scene(scene_name: str) -> Scene:
     shadow_scene = get_scene_by_name(scene_name)
     if shadow_scene is None:
+        _log.output(_log.color('cyan', 'get_compositing_shadow_scene create!'))
         shadow_scene = create_compositing_shadow_scene(
             bpy_scene(), scene_name, mask_name='')  # Scene with empty mask
     return shadow_scene
@@ -103,6 +104,7 @@ def viewer_node_to_image(img: Image) -> bool:
 
 
 def get_rendered_mask_bpy_image(img_name: str) -> Image:
+    _log.output(f'get_rendered_mask_bpy_image: {img_name}')
     rw, rh = bpy_render_frame()
     img = find_bpy_image_by_name(img_name)
     if not img or img.size[0] != rw or img.size[1] != rh:
