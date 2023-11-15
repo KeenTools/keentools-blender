@@ -286,10 +286,10 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
         if gt.track_frame(current_frame, forward, precalc_path):
             prefs = get_addon_preferences()
             if prefs.gt_auto_unbreak_rotation:
-                status = unbreak_rotation_with_status(
+                unbreak_status = unbreak_rotation_with_status(
                     obj, [current_frame, next_frame])
-                if not status.success:
-                    _log.error(f'track_next_frame_act {status.error_message}')
+                if not unbreak_status.success:
+                    _log.error(f'track_next_frame_act {unbreak_status.error_message}')
 
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException track_next_frame_act: {str(err)}')
@@ -1498,9 +1498,9 @@ def unbreak_after(frame_list: List) -> None:
 
     geotracker = get_current_geotracker_item()
     obj = geotracker.animatable_object()
-    status = unbreak_rotation_with_status(obj, frame_list)
-    if not status.success:
-        _log.error(status.error_message)
+    unbreak_status = unbreak_rotation_with_status(obj, frame_list)
+    if not unbreak_status.success:
+        _log.error(unbreak_status.error_message)
 
 
 def unbreak_after_reversed(frame_list: List) -> None:
