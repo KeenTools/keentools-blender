@@ -47,6 +47,7 @@ from ..utils.animation import count_fcurve_points
 from ..utils.manipulate import select_object_only, switch_to_camera
 from ..utils.ui_redraw import total_redraw_ui
 from .utils.tracking import check_unbreak_rotaion_is_needed
+from .utils.geotracker_acts import unbreak_object_rotation_act
 
 
 _log = KTLogger(__name__)
@@ -61,14 +62,9 @@ _constraint_warning_message = \
     'of the solver constraint.'
 
 
-_unbreak_rotation_is_needed_warning = \
-    'object has gaps in its rotation data. \n' \
-    'We recommend applying \'Unbreak rotation\' operation to it'
-
-
 class Owner:
     def __del__(self):
-        _log.error('!!!!!!! OWNER OBJECT DESTROYED !!!!!!!')
+        _log.error('!!! OWNER OBJECT DESTROYED !!!')
 
 _old_focal_lens_mm: float = 50.0
 _camobj_lens_watcher_owner = Owner()
@@ -198,11 +194,14 @@ def update_camobj(geotracker, context: Any) -> None:
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=msg)
 
-    if check_unbreak_rotaion_is_needed(geotracker.camobj):
-        msg = f'Camera {_unbreak_rotation_is_needed_warning}'
-        warn = get_operator(Config.kt_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
-             msg_content=msg)
+    prefs = settings.preferences()
+    if prefs.gt_auto_unbreak_rotation and \
+            check_unbreak_rotaion_is_needed(geotracker.camobj):
+        _log.info(f'Applying Unbreak Rotation to '
+                  f'{geotracker.camobj.name if geotracker.camobj else geotracker.camobj}')
+        unbreak_status = unbreak_object_rotation_act(geotracker.camobj)
+        if not unbreak_status.success:
+            _log.error(unbreak_status.error_message)
 
 
 def update_geomobj(geotracker, context: Any) -> None:
@@ -229,11 +228,14 @@ def update_geomobj(geotracker, context: Any) -> None:
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=msg)
 
-    if check_unbreak_rotaion_is_needed(geotracker.geomobj):
-        msg = f'Geometry {_unbreak_rotation_is_needed_warning}'
-        warn = get_operator(Config.kt_warning_idname)
-        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
-             msg_content=msg)
+    prefs = settings.preferences()
+    if prefs.gt_auto_unbreak_rotation and \
+            check_unbreak_rotaion_is_needed(geotracker.geomobj):
+        _log.info(f'Applying Unbreak Rotation to '
+                  f'{geotracker.geomobj.name if geotracker.geomobj else geotracker.geomobj}')
+        unbreak_status = unbreak_object_rotation_act(geotracker.geomobj)
+        if not unbreak_status.success:
+            _log.error(unbreak_status.error_message)
 
 
 def update_movieclip(geotracker, context: Any) -> None:

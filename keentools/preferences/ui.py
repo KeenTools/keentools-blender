@@ -34,6 +34,7 @@ from ..blender_independent_packages.pykeentools_loader import (
     installation_status as pkt_installation_status,
     loaded as pkt_loaded)
 from ..addon_config import (Config,
+                            get_addon_preferences,
                             get_operator,
                             is_blender_supported,
                             supported_gpu_backend)
@@ -78,6 +79,12 @@ def _reset_user_preferences_parameter_to_default(name):
 
 def _set_all_user_preferences_to_default():
     UserPreferences.reset_all_to_defaults()
+
+
+def _reset_other_gt_preferences() -> None:
+    prefs = get_addon_preferences()
+    prefs.gt_auto_unbreak_rotation = True
+    prefs.gt_use_hotkeys = True
 
 
 def reset_updater_preferences_to_default():
@@ -260,6 +267,7 @@ class KTPREF_OT_UserPreferencesResetAllWarning(Operator):
             _reset_user_preferences_parameter_to_default('gt_mask_2d_opacity')
             _reset_user_preferences_parameter_to_default('gt_mask_3d_color')
             _reset_user_preferences_parameter_to_default('gt_mask_3d_opacity')
+            _reset_other_gt_preferences()
         return {'FINISHED'}
 
     def cancel(self, context):
@@ -306,7 +314,7 @@ def _update_gt_wireframe(addon_prefs, _):
 
 
 def _update_gt_hotkeys(addon_prefs, _):
-    if addon_prefs.gt_hotkeys_enabled:
+    if addon_prefs.gt_use_hotkeys:
         geotracker_keymaps_register()
     else:
         geotracker_keymaps_unregister()
@@ -588,13 +596,19 @@ class KTAddonPreferences(AddonPreferences):
         set=universal_direct_setter('gt_mask_2d_opacity'),
         update=_update_mask_2d
     )
-    gt_hotkeys_enabled: BoolProperty(
+    gt_use_hotkeys: BoolProperty(
         name='Use Hotkeys',
         description='Enable GeoTracker Hotkeys: (L) Lock View. '
-                    '(Alt + Left Arrow) Previous GT Keyframe. '
-                    '(Alt + Right Arrow) Next GT Keyframe',
+                    '(Alt + Left Arrow) Previous GT keyframe. '
+                    '(Alt + Right Arrow) Next GT keyframe',
         default=True,
         update=_update_gt_hotkeys
+    )
+    gt_auto_unbreak_rotation: BoolProperty(
+        name='Auto-apply Unbreak Rotation',
+        description='Automatically apply Unbreak Rotation to objects '
+                    'with gaps in animation curves',
+        default=True
     )
 
     def _license_was_accepted(self):
@@ -901,9 +915,10 @@ class KTAddonPreferences(AddonPreferences):
         if not _expandable_button(main_box, self, 'show_gt_user_preferences'):
             return
 
-        box = main_box.box()
-        box.prop(self, 'prevent_gt_view_rotation')
-        box.prop(self, 'gt_hotkeys_enabled')
+        col = main_box.column(align=True)
+        col.prop(self, 'prevent_gt_view_rotation')
+        col.prop(self, 'gt_auto_unbreak_rotation')
+        col.prop(self, 'gt_use_hotkeys')
 
         box = main_box.box()
         self._draw_pin_user_preferences(box)
