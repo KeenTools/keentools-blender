@@ -371,3 +371,28 @@ def bpy_msgbus_clear_by_owner(owner: object) -> None:
 
 def get_traceback(skip_last=1) -> str:
     return ''.join(traceback.format_stack()[:-skip_last])
+
+
+def bpy_object_is_valid(obj: Object) -> bool:
+    if obj is None:
+        return False
+    try:
+        if not hasattr(obj, 'users_scene'):
+            _log.output(f'invalid object: {obj}')
+            return False
+
+        return True
+
+    except Exception as err:
+        _log.output(f'bpy_object_is_valid Exception:\n{str(err)}')
+
+    return False
+
+
+def bpy_object_name(obj: Object, default_name: str = 'Undefined') -> str:
+    try:
+        name = obj.name
+        return name
+    except Exception as err:
+        _log.output(f'bpy_object_name Exception:\n{str(err)}')
+    return default_name

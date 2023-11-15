@@ -41,7 +41,8 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_current_frame,
                                 bpy_set_current_frame,
                                 bpy_msgbus_subscribe_rna,
-                                bpy_msgbus_clear_by_owner)
+                                bpy_msgbus_clear_by_owner,
+                                bpy_object_name)
 
 from ..utils.animation import count_fcurve_points
 from ..utils.manipulate import select_object_only, switch_to_camera
@@ -197,8 +198,8 @@ def update_camobj(geotracker, context: Any) -> None:
     prefs = settings.preferences()
     if prefs.gt_auto_unbreak_rotation and \
             check_unbreak_rotaion_is_needed(geotracker.camobj):
-        _log.info(f'Applying Unbreak Rotation to '
-                  f'{geotracker.camobj.name if geotracker.camobj else geotracker.camobj}')
+        _log.info(f'Applying Unbreak Rotation to object: '
+                  f'{bpy_object_name(geotracker.camobj)}')
         unbreak_status = unbreak_object_rotation_act(geotracker.camobj)
         if not unbreak_status.success:
             _log.error(unbreak_status.error_message)
@@ -231,8 +232,8 @@ def update_geomobj(geotracker, context: Any) -> None:
     prefs = settings.preferences()
     if prefs.gt_auto_unbreak_rotation and \
             check_unbreak_rotaion_is_needed(geotracker.geomobj):
-        _log.info(f'Applying Unbreak Rotation to '
-                  f'{geotracker.geomobj.name if geotracker.geomobj else geotracker.geomobj}')
+        _log.info(f'Applying Unbreak Rotation to object: '
+                  f'{bpy_object_name(geotracker.geomobj)}')
         unbreak_status = unbreak_object_rotation_act(geotracker.geomobj)
         if not unbreak_status.success:
             _log.error(unbreak_status.error_message)
