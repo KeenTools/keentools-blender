@@ -134,9 +134,9 @@ buttons = {
         'Next keyframe',
         'Move to the next GeoTracker keyframe on the timeline'
     ),
-    GTConfig.gt_toggle_lock_viewport_idname: Button(
-        'Toggle Lock Viewport',
-        'Press to toggle Lock for current viewport'
+    GTConfig.gt_toggle_lock_view_idname: Button(
+        'Toggle Lock View',
+        'Press to toggle Lock for current view'
     ),
     GTConfig.gt_track_to_start_idname: Button(
         'Track to start',

@@ -162,9 +162,6 @@ class GT_PT_GeotrackersPanel(View3DPanel):
         settings = get_gt_settings()
         geotracker_num = settings.current_geotracker_num
 
-        if len(settings.geotrackers) > 0:
-            layout.operator(GTConfig.gt_share_feedback_idname, icon='WORLD')
-
         for i, geotracker in enumerate(settings.geotrackers):
 
             row = layout.row(align=True)
@@ -591,9 +588,8 @@ class GT_PT_TrackingPanel(AllVisible):
     def _tracking_center_block(self, settings: Any, layout: Any) -> None:
         col = layout.column(align=True)
 
-        if not GTConfig.hidden_feature:
-            col.prop(settings, 'stabilize_viewport_enabled',
-                     icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
+        col.prop(settings, 'stabilize_viewport_enabled',
+                 icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
 
         row = col.row(align=True)
         row.operator(GTConfig.gt_toggle_pins_idname, icon='UNPINNED')

@@ -25,7 +25,7 @@ from mathutils import Matrix, Euler, Vector
 
 from ...utils.kt_logging import KTLogger
 from ...utils.version import BVersion
-from ...addon_config import ActionStatus
+from ...addon_config import ActionStatus, get_addon_preferences
 from ...geotracker_config import (get_gt_settings,
                                   GTConfig,
                                   get_current_geotracker_item)
@@ -215,10 +215,10 @@ def prev_keyframe_act() -> ActionStatus:
     return ActionStatus(False, 'No previous GeoTracker keyframe')
 
 
-def toggle_lock_viewport_act() -> ActionStatus:
+def toggle_lock_view_act() -> ActionStatus:
     settings = get_gt_settings()
     if not settings.pinmode:
-        return ActionStatus(False, 'Lock viewport works in GeoTracker pinmode only')
+        return ActionStatus(False, 'Lock View works in GeoTracker pinmode only')
 
     settings.stabilize_viewport_enabled = not settings.stabilize_viewport_enabled
     return ActionStatus(True, 'Ok')
@@ -284,9 +284,12 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
 
         if gt.track_frame(current_frame, forward, precalc_path):
-            status = unbreak_rotation_with_status(obj, [current_frame, next_frame])
-            if not status.success:
-                _log.error(f'track_next_frame_act {status.error_message}')
+            prefs = get_addon_preferences()
+            if prefs.gt_auto_unbreak_rotation:
+                unbreak_status = unbreak_rotation_with_status(
+                    obj, [current_frame, next_frame])
+                if not unbreak_status.success:
+                    _log.error(f'track_next_frame_act {unbreak_status.error_message}')
 
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException track_next_frame_act: {str(err)}')
@@ -638,6 +641,12 @@ def create_animated_empty_act(obj: Object, linked: bool=False,
         empty.matrix_world = obj_matrix_world
         select_object_only(empty)
 
+        prefs = get_addon_preferences()
+        if prefs.gt_auto_unbreak_rotation:
+            unbreak_status = unbreak_object_rotation_act(empty)
+            if not unbreak_status.success:
+                return unbreak_status
+
     return ActionStatus(True, 'ok')
 
 
@@ -721,6 +730,13 @@ def create_empty_from_selected_pins_act(
             empty.matrix_world = source_matrices[frame][i]
             update_depsgraph()
             create_animation_locrot_keyframe_force(empty)
+
+    prefs = get_addon_preferences()
+    if prefs.gt_auto_unbreak_rotation:
+        for empty in empties:
+            unbreak_status = unbreak_object_rotation_act(empty)
+            if not unbreak_status.success:
+                _log.error(unbreak_status.error_message)
 
     bpy_set_current_frame(current_frame)
 
@@ -907,8 +923,14 @@ def transfer_tracking_to_camera_act() -> ActionStatus:
 
     bpy_set_current_frame(current_frame)
     geotracker.solve_for_camera = True
-
     _mark_object_keyframes(camobj)
+
+    prefs = get_addon_preferences()
+    if prefs.gt_auto_unbreak_rotation:
+        unbreak_status = unbreak_rotation_act()
+        if not unbreak_status.success:
+            return unbreak_status
+
     return ActionStatus(True, 'ok')
 
 
@@ -952,8 +974,14 @@ def transfer_tracking_to_geometry_act() -> ActionStatus:
 
     bpy_set_current_frame(current_frame)
     geotracker.solve_for_camera = False
-
     _mark_object_keyframes(geomobj)
+
+    prefs = get_addon_preferences()
+    if prefs.gt_auto_unbreak_rotation:
+        unbreak_status = unbreak_rotation_act()
+        if not unbreak_status.success:
+            return unbreak_status
+
     return ActionStatus(True, 'ok')
 
 
@@ -1221,6 +1249,13 @@ def scale_scene_tracking_act(operator: Operator) -> ActionStatus:
     _apply_geomobj_scale(geomobj, operator)
 
     GTLoader.save_geotracker()
+
+    prefs = get_addon_preferences()
+    if prefs.gt_auto_unbreak_rotation:
+        unbreak_status = unbreak_rotation_act()
+        if not unbreak_status.success:
+            return unbreak_status
+
     if not settings.reload_current_geotracker():
         msg = 'Cannot reload GeoTracker data'
         _log.error(msg)
@@ -1360,6 +1395,13 @@ def move_scene_tracking_act(operator: Operator) -> ActionStatus:
     bpy_set_current_frame(current_frame)
 
     GTLoader.save_geotracker()
+
+    prefs = get_addon_preferences()
+    if prefs.gt_auto_unbreak_rotation:
+        unbreak_status = unbreak_rotation_act()
+        if not unbreak_status.success:
+            return unbreak_status
+
     if not settings.reload_current_geotracker():
         msg = 'Cannot reload GeoTracker data'
         _log.error(msg)
@@ -1402,15 +1444,21 @@ def bake_locrot_act(obj: Object) -> ActionStatus:
     bake_locrot_to_world(obj, obj_animated_frames)
     _remove_all_constraints(obj)
 
+    prefs = get_addon_preferences()
+    if prefs.gt_auto_unbreak_rotation:
+        unbreak_status = unbreak_rotation_act()
+        if not unbreak_status.success:
+            return unbreak_status
+
     return ActionStatus(True, 'ok')
 
 
 def unbreak_rotation_with_status(obj: Object, frame_list: List) -> ActionStatus:
-    if check_unbreak_rotaion_is_needed(obj):
-        _log.error(f'{obj} NEED FOR UNBREAK!!!')
+    if not obj:
+        return ActionStatus(False, 'No object to unbreak rotation')
 
-    if not GTConfig.auto_unbreak_rotation:
-        return ActionStatus(True, 'ok')
+    if check_unbreak_rotaion_is_needed(obj):
+        _log.output(f'{obj} needs for Unbreak Rotation!')
 
     action = get_action(obj)
     if action is None:
@@ -1431,18 +1479,30 @@ def unbreak_rotation_with_status(obj: Object, frame_list: List) -> ActionStatus:
 def unbreak_rotation_act() -> ActionStatus:
     geotracker = get_current_geotracker_item()
     obj = geotracker.animatable_object()
+    return unbreak_object_rotation_act(obj)
+
+
+def unbreak_object_rotation_act(obj: Object) -> ActionStatus:
+    if not obj:
+        return ActionStatus(False, 'No object to unbreak rotation')
     frame_list = get_object_keyframe_numbers(obj, loc=False, rot=True)
     return unbreak_rotation_with_status(obj, frame_list)
 
 
 def unbreak_after(frame_list: List) -> None:
     _log.output('unbreak_after call')
+    prefs = get_addon_preferences()
+    if not prefs.gt_auto_unbreak_rotation:
+        _log.output('unbreak rotation is switched off')
+        return
+
     geotracker = get_current_geotracker_item()
     obj = geotracker.animatable_object()
-    status = unbreak_rotation_with_status(obj, frame_list)
-    if not status.success:
-        _log.error(status.error_message)
+    unbreak_status = unbreak_rotation_with_status(obj, frame_list)
+    if not unbreak_status.success:
+        _log.error(unbreak_status.error_message)
 
 
 def unbreak_after_reversed(frame_list: List) -> None:
+    _log.output('unbreak_after_reversed call')
     return unbreak_after(list(reversed(frame_list)))
