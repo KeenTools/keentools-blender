@@ -74,7 +74,7 @@ class GTConfig:
     gt_remove_pins_idname = operators + '.remove_pins_btn'
     gt_toggle_pins_idname = operators + '.toggle_pins_btn'
 
-    gt_toggle_lock_viewport_idname = operators + '.toggle_lock_viewport'
+    gt_toggle_lock_view_idname = operators + '.toggle_lock_view'
     gt_exit_pinmode_idname = operators + '.exit_pinmode_btn'
     gt_interrupt_modal_idname = operators + '.interrupt_modal'
     gt_stop_calculating_idname = operators + '.stop_calculating_btn'
@@ -185,7 +185,6 @@ class GTConfig:
     auto_render_size = True
     auto_time_length = True
     auto_increase_far_clip_distance = True
-    auto_unbreak_rotation = True
 
     gt_empty_name = 'gtEmpty'
     gt_background_name = 'geotracker_footage'

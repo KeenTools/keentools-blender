@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import List, Tuple, Any
+from typing import Any
 
 from bpy.types import Scene, TIME_MT_editor_menus
 from bpy.props import PointerProperty
@@ -30,7 +30,8 @@ from .pinmode import GT_OT_PinMode
 from .movepin import GT_OT_MovePin
 from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
 from .operators import BUTTON_CLASSES
-from ..utils.bpy_common import bpy_window_manager
+from ..preferences.hotkeys import (geotracker_keymaps_register,
+                                   geotracker_keymaps_unregister)
 
 
 _log = KTLogger(__name__)
@@ -86,38 +87,6 @@ def _remove_buttons_from_timeline() -> None:
     TIME_MT_editor_menus.remove(tracking_panel)
 
 
-_geotracker_keymaps: List[Tuple] = []
-
-
-def _geotracker_keymaps_register() -> None:
-    global _geotracker_keymaps
-    kc = bpy_window_manager().keyconfigs.addon
-    km = kc.keymaps.new(name='Window', space_type='EMPTY')
-    kmi1 = km.keymap_items.new(idname=GTConfig.gt_prev_keyframe_idname,
-                               type='LEFT_ARROW',
-                               value='PRESS', alt=True)
-    kmi2 = km.keymap_items.new(idname=GTConfig.gt_next_keyframe_idname,
-                               type='RIGHT_ARROW',
-                               value='PRESS', alt=True)
-    _geotracker_keymaps.append((km, kmi1))
-    _geotracker_keymaps.append((km, kmi2))
-    km = kc.keymaps.new(name='3D View Generic', space_type='VIEW_3D')
-    kmi3 = km.keymap_items.new(idname=GTConfig.gt_toggle_lock_viewport_idname,
-                               type='L',
-                               value='PRESS')
-    _geotracker_keymaps.append((km, kmi3))
-
-
-def _geotracker_keymaps_unregister() -> None:
-    global _geotracker_keymaps
-    try:
-        for km, kmi in _geotracker_keymaps:
-            km.keymap_items.remove(kmi)
-    except Exception as err:
-        _log.error(f'_geotracker_keymaps_unregister Exception:\n{str(err)}')
-    _geotracker_keymaps = []
-
-
 def geotracker_register() -> None:
     _log.output('--- START GEOTRACKER REGISTER ---')
 
@@ -132,7 +101,7 @@ def geotracker_register() -> None:
     _add_buttons_to_timeline()
 
     _log.output('GEOTRACKER KEYMAPS REGISTER')
-    _geotracker_keymaps_register()
+    geotracker_keymaps_register()
 
     _log.output('=== GEOTRACKER REGISTERED ===')
 
@@ -152,6 +121,6 @@ def geotracker_unregister() -> None:
     _remove_addon_settings_var()
 
     _log.output('GEOTRACKER KEYMAPS UNREGISTER')
-    _geotracker_keymaps_unregister()
+    geotracker_keymaps_unregister()
 
     _log.output('=== GEOTRACKER UNREGISTERED ===')

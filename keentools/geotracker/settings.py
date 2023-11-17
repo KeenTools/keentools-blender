@@ -690,8 +690,8 @@ class GTSceneSettings(PropertyGroup):
         name='Automatically apply the created texture', default=True)
 
     stabilize_viewport_enabled: BoolProperty(
-        description='Viewport stabilization',
-        name='Lock Viewport', default=False,
+        description='Snap view to geometry or selected pin(s). Hotkey: L',
+        name='Lock View', default=False,
         update=update_stabilize_viewport_enabled)
 
     @contextmanager
@@ -850,6 +850,7 @@ class GTSceneSettings(PropertyGroup):
         self.stabilize_viewport(reset=True)
 
     def stabilize_viewport(self, reset: bool = False) -> None:
+        _log.output('settings.stabilize_viewport')
         vp = GTLoader.viewport()
         if reset:
             vp.clear_stabilization_point()

@@ -84,6 +84,7 @@ def bpy_end_frame() -> int:
 
 
 def bpy_set_current_frame(frame: int) -> None:
+    _log.output(_log.color('green', f'bpy_set_current_frame: {frame}'))
     bpy.context.scene.frame_set(frame)
 
 
@@ -307,7 +308,8 @@ def bpy_render_single_frame(scene: Scene, frame: Optional[int]=None) -> None:
     if frame is not None:
         scene.frame_current = frame
     _log.output(_log.color('yellow', f'bpy_render_single_frame: {frame}'))
-    bpy.ops.render.render({'scene': scene}, animation=False)
+    operator_with_context(bpy.ops.render.render,
+                          {'scene': scene}, animation=False)
 
 
 def get_scene_by_name(scene_name: str) -> Optional[Scene]:
@@ -378,3 +380,28 @@ def bpy_shape_key_move(obj: Object, type_direction: str = 'UP') -> None:
 
 def get_traceback(skip_last=1) -> str:
     return ''.join(traceback.format_stack()[:-skip_last])
+
+
+def bpy_object_is_valid(obj: Object) -> bool:
+    if obj is None:
+        return False
+    try:
+        if not hasattr(obj, 'users_scene'):
+            _log.output(f'invalid object: {obj}')
+            return False
+
+        return True
+
+    except Exception as err:
+        _log.output(f'bpy_object_is_valid Exception:\n{str(err)}')
+
+    return False
+
+
+def bpy_object_name(obj: Object, default_name: str = 'Undefined') -> str:
+    try:
+        name = obj.name
+        return name
+    except Exception as err:
+        _log.output(f'bpy_object_name Exception:\n{str(err)}')
+    return default_name
