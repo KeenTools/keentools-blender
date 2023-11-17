@@ -20,6 +20,8 @@ import numpy as np
 from typing import Any, Tuple, List, Dict, Optional
 from math import frexp
 
+from bpy.types import Object
+
 from ..addon_config import Config
 from ..utils.kt_logging import KTLogger
 from ..geotracker_config import get_gt_settings, get_current_geotracker_item
@@ -246,6 +248,29 @@ class GTMask2DInput(pkt_module().Mask2DInputI):
         elif mask_source == 'MASK_2D':
             return self.load_image_2d_mask_at(frame)
         return None
+
+
+def get_blendshape(obj: Object, name: str = '', *,
+                   create_basis: bool = False,
+                   create: bool = False) -> Tuple[int, Optional[Any]]:
+    if not obj.data.shape_keys:
+        if create_basis:
+            basis = obj.shape_key_add('Basis')
+            if name == 'Basis':
+                return 0, basis
+        else:
+            return -1, None
+
+    index = obj.data.shape_keys.key_blocks.find(name)
+    if index < 0:
+        if not create:
+            return -1, None
+        shape = obj.shape_key_add(name)
+        index = obj.data.shape_keys.key_blocks.find(name)
+    else:
+        shape = obj.data.shape_keys.key_blocks[index]
+
+    return index, shape
 
 
 def create_shape_keyframe(frame: int) -> None:
