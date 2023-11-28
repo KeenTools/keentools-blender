@@ -273,7 +273,7 @@ def get_blendshape(obj: Object, name: str = '', *,
     return index, shape
 
 
-def create_shape_keyframe(frame: int) -> None:
+def create_shape_keyframe(frame: int, keyframe_type: str = 'JITTER') -> None:
     _log.output(_log.color('yellow', f'create_shape_keyframe: {frame}'))
     geotracker = get_current_geotracker_item()
     gt = GTLoader.kt_geotracker()
@@ -318,6 +318,7 @@ def create_shape_keyframe(frame: int) -> None:
     fcurve.keyframe_points.foreach_set('co', anim_points.ravel())
     for p in fcurve.keyframe_points:
         p.interpolation = 'LINEAR'
+        p.type = keyframe_type
 
     verts = gt.applied_args_model_vertices_at(frame)
     shape.data.foreach_set('co', (verts @ xy_to_xz_rotation_matrix_3x3()).ravel())

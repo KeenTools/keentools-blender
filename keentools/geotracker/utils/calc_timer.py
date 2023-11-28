@@ -24,7 +24,7 @@ import bpy
 from bpy.types import Area
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import get_operator
+from ...addon_config import get_operator, Config
 from ...geotracker_config import get_gt_settings, GTConfig
 from ..gtloader import GTLoader
 from ...utils.manipulate import exit_area_localview
@@ -39,6 +39,7 @@ from .prechecks import show_warning_dialog
 from ..interface.screen_mesages import (revert_default_screen_message,
                                         operation_calculation_screen_message,
                                         staged_calculation_screen_message)
+from ..camera_input import create_shape_keyframe
 
 
 _log = KTLogger(__name__)
@@ -268,6 +269,9 @@ class _CommonTimer(TimerMixin):
 
         if result in [_ComputationState.RUNNING, _ComputationState.SUCCESS]:
             self.add_performed_frame(tracking_current_frame)
+
+            if Config.test_facetracker:
+                create_shape_keyframe(bpy_current_frame())
 
         if result == _ComputationState.SUCCESS:
             self.set_current_state(self.finish_success_state)
