@@ -273,7 +273,7 @@ def get_blendshape(obj: Object, name: str = '', *,
     return index, shape
 
 
-def create_shape_keyframe(frame: int, keyframe_type: str = 'JITTER') -> None:
+def create_absolute_shape_keyframe(frame: int, keyframe_type: str = 'JITTER') -> None:
     _log.output(_log.color('yellow', f'create_shape_keyframe: {frame}'))
     geotracker = get_current_geotracker_item()
     gt = GTLoader.kt_geotracker()

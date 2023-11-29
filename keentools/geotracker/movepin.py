@@ -48,7 +48,7 @@ from .interface.screen_mesages import (revert_default_screen_message,
                                        clipping_changed_screen_message)
 from ..addon_config import Config
 from ..utils.blendshapes import update_blendshape_verts, find_blenshape_index
-from .camera_input import create_shape_keyframe
+from .camera_input import create_absolute_shape_keyframe
 
 
 _log = KTLogger(__name__)
@@ -185,7 +185,7 @@ class GT_OT_MovePin(bpy.types.Operator):
         GTLoader.viewport().pins().reset_current_pin()
 
         if Config.test_facetracker:  # create_shape_keyframe
-            create_shape_keyframe(bpy_current_frame())
+            create_absolute_shape_keyframe(bpy_current_frame())
 
         if self.dragged:
             self.update_focal_length_in_all_keyframes()

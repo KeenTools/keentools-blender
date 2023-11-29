@@ -39,7 +39,7 @@ from .prechecks import show_warning_dialog
 from ..interface.screen_mesages import (revert_default_screen_message,
                                         operation_calculation_screen_message,
                                         staged_calculation_screen_message)
-from ..camera_input import create_shape_keyframe
+from ..camera_input import create_absolute_shape_keyframe
 
 
 _log = KTLogger(__name__)
@@ -271,7 +271,7 @@ class _CommonTimer(TimerMixin):
             self.add_performed_frame(tracking_current_frame)
 
             if Config.test_facetracker:
-                create_shape_keyframe(bpy_current_frame())
+                create_absolute_shape_keyframe(bpy_current_frame())
 
         if result == _ComputationState.SUCCESS:
             self.set_current_state(self.finish_success_state)
