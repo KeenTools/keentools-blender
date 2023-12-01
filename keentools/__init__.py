@@ -162,6 +162,7 @@ else:
     from .preferences import CLASSES_TO_REGISTER as PREFERENCES_CLASSES
     from .facebuilder import facebuilder_register, facebuilder_unregister
     from .geotracker import geotracker_register, geotracker_unregister
+    from .facetracker import facetracker_register, facetracker_unregister
     from .utils.viewport_state import ViewportStateItem
     from .utils.warning import KT_OT_AddonWarning
     from .utils.common_operators import CLASSES_TO_REGISTER as COMMON_OPERATOR_CLASSES
@@ -196,6 +197,9 @@ else:
         _log.info('FaceBuilder classes have been registered')
         geotracker_register()
         _log.info('GeoTracker classes have been registered')
+        if Config.show_facetracker:
+            facetracker_register()
+            _log.info('FaceTracker classes have been registered')
         _log.debug(f'=== KEENTOOLS ADDON {bl_info["version"]} REGISTERED ===')
 
 
@@ -204,6 +208,9 @@ else:
                    f'UNREGISTER ---')
         stop_timers(True)
         _log.debug('START UNREGISTER CLASSES')
+        if Config.show_facetracker:
+            facetracker_unregister()
+            _log.info('FaceTracker classes have been unregistered')
         geotracker_unregister()
         _log.info('GeoTracker classes have been unregistered')
         facebuilder_unregister()

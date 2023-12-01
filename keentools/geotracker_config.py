@@ -19,17 +19,16 @@
 import os
 import bpy
 
-_company = 'keentools'
 _PT = 'GEOTRACKER_PT_'
 _MT = 'GEOTRACKER_MT_'
-prefix = _company + '_gt'
+_prefix = 'keentools_gt'
 
 
 class GTConfig:
     operators = 'keentools_gt'
     gt_tool_name = 'GeoTracker'
     gt_tab_category = 'GeoTracker'
-    gt_global_var_name = prefix + '_settings'
+    gt_global_var_name = _prefix + '_settings'
 
     # Operators
     gt_create_geotracker_idname = operators + '.create_geotracker'

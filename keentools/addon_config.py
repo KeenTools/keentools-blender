@@ -18,6 +18,7 @@
 
 from typing import Any, Callable, Optional, Tuple, Set, Dict
 from dataclasses import dataclass
+import os
 
 import bpy
 from .utils.version import BVersion
@@ -171,6 +172,7 @@ class Config:
     keyframe_line_length: float = 1000.0
 
     integration_enabled: bool = True
+    show_facetracker: bool = 'KEENTOOLS_ENABLE_BLENDER_FACETRACKER' in os.environ
 
     kt_convert_video_scene_name: str = 'gt_convert_video'
 
@@ -213,6 +215,13 @@ def facebuilder_enabled() -> bool:
 def geotracker_enabled() -> bool:
     prefs = get_addon_preferences()
     return prefs.geotracker_enabled
+
+
+def facetracker_enabled() -> bool:
+    if not Config.show_facetracker:
+        return False
+    prefs = get_addon_preferences()
+    return prefs.facetracker_enabled
 
 
 def _get_fb_settings() -> Optional[Any]:

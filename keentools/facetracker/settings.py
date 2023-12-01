@@ -16,7 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import numpy as np
 from typing import Optional, Tuple, Any, List
+from contextlib import contextmanager
 
 from bpy.types import (Object, CameraBackgroundImage, Area, Image, Mask,
                        PropertyGroup, MovieClip)
@@ -26,7 +28,8 @@ from bpy.props import (IntProperty, BoolProperty, FloatProperty,
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config
-from .gtloader import GTLoader
+
+from ..geotracker.gtloader import GTLoader
 
 from ..utils.bpy_common import (bpy_poll_is_mesh,
                                 bpy_poll_is_camera)
@@ -35,7 +38,7 @@ from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_getter,
                                             universal_cached_setter)
 from ..utils.viewport_state import ViewportStateItem
-from .callbacks import (update_camobj,
+from ..geotracker.callbacks import (update_camobj,
                         update_geomobj,
                         update_movieclip,
                         update_precalc_path,
@@ -63,7 +66,7 @@ from ..tracker.settings import FrameListItem, TrackerItem, TRSceneSetting
 _log = KTLogger(__name__)
 
 
-class GeoTrackerItem(TrackerItem):
+class FaceTrackerItem(TrackerItem):
     serial_str: StringProperty(name='GeoTracker Serialization string')
     geomobj: PointerProperty(
         name='Geometry',
@@ -269,7 +272,7 @@ class GeoTrackerItem(TrackerItem):
                               update=update_locks)
 
 
-class GTSceneSettings(TRSceneSetting):
+class FTSceneSettings(TRSceneSetting):
     def loader(self) -> Any:
         return GTLoader
 
@@ -279,7 +282,7 @@ class GTSceneSettings(TRSceneSetting):
     pinmode: BoolProperty(name='Pinmode status', default=False)
     pinmode_id: StringProperty(name='Unique pinmode ID')
 
-    geotrackers: CollectionProperty(type=GeoTrackerItem, name='GeoTrackers')
+    geotrackers: CollectionProperty(type=FaceTrackerItem, name='GeoTrackers')
     current_geotracker_num: IntProperty(name='Current Geotracker Number', default=-1)
 
     adaptive_opacity: FloatProperty(

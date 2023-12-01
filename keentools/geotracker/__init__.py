@@ -24,7 +24,8 @@ from bpy.utils import register_class, unregister_class
 
 from ..utils.kt_logging import KTLogger
 from ..geotracker_config import GTConfig, get_gt_settings
-from .settings import FrameListItem, GeoTrackerItem, GTSceneSettings
+from ..tracker.settings import FrameListItem
+from .settings import GeoTrackerItem, GTSceneSettings
 from .actor import GT_OT_Actor
 from .pinmode import GT_OT_PinMode
 from .movepin import GT_OT_MovePin
@@ -45,16 +46,16 @@ CLASSES_TO_REGISTER = (FrameListItem,
                        GTSceneSettings) + BUTTON_CLASSES + INTERFACE_CLASSES
 
 
-def _add_addon_settings_var() -> None:
+def _add_addon_gt_settings_var() -> None:
     setattr(Scene, GTConfig.gt_global_var_name,
             PointerProperty(type=GTSceneSettings))
 
 
-def _remove_addon_settings_var() -> None:
+def _remove_addon_gt_settings_var() -> None:
     delattr(Scene, GTConfig.gt_global_var_name)
 
 
-def tracking_panel(self, context: Any) -> None:
+def _gt_tracking_panel(self, context: Any) -> None:
     layout = self.layout
     row = layout.row(align=True)
     row.separator()
@@ -79,12 +80,12 @@ def tracking_panel(self, context: Any) -> None:
               icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
 
 
-def _add_buttons_to_timeline() -> None:
-    TIME_MT_editor_menus.append(tracking_panel)
+def _add_gt_buttons_to_timeline() -> None:
+    TIME_MT_editor_menus.append(_gt_tracking_panel)
 
 
-def _remove_buttons_from_timeline() -> None:
-    TIME_MT_editor_menus.remove(tracking_panel)
+def _remove_gt_buttons_from_timeline() -> None:
+    TIME_MT_editor_menus.remove(_gt_tracking_panel)
 
 
 def geotracker_register() -> None:
@@ -96,9 +97,9 @@ def geotracker_register() -> None:
         register_class(cls)
 
     _log.output('MAIN GEOTRACKER VARIABLE REGISTER')
-    _add_addon_settings_var()
+    _add_addon_gt_settings_var()
     _log.output('BUTTONS ON TIMELINE REGISTER')
-    _add_buttons_to_timeline()
+    _add_gt_buttons_to_timeline()
 
     _log.output('GEOTRACKER KEYMAPS REGISTER')
     geotracker_keymaps_register()
@@ -110,7 +111,7 @@ def geotracker_unregister() -> None:
     _log.output('--- START GEOTRACKER UNREGISTER ---')
 
     _log.output('BUTTONS ON TIMELINE UNREGISTER')
-    _remove_buttons_from_timeline()
+    _remove_gt_buttons_from_timeline()
 
     _log.output('START GEOTRACKER UNREGISTER CLASSES')
     for cls in reversed(CLASSES_TO_REGISTER):
@@ -118,7 +119,7 @@ def geotracker_unregister() -> None:
         unregister_class(cls)
 
     _log.output('MAIN GEOTRACKER VARIABLE UNREGISTER')
-    _remove_addon_settings_var()
+    _remove_addon_gt_settings_var()
 
     _log.output('GEOTRACKER KEYMAPS UNREGISTER')
     geotracker_keymaps_unregister()
