@@ -29,7 +29,8 @@ from ..utils.kt_logging import KTLogger
 from ..facetracker_config import FTConfig, get_ft_settings
 from .ui_strings import buttons
 from ..tracker.actions import (create_tracker_action,
-                               delete_tracker_action)
+                               delete_tracker_action,
+                               select_tracker_objects_action)
 
 
 _log = KTLogger(__name__)
@@ -70,5 +71,23 @@ class FT_OT_DeleteFaceTracker(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class FT_OT_SelectGeotrackerObjects(ButtonOperator, Operator):
+    bl_idname = FTConfig.ft_select_facetracker_objects_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    geotracker_num: IntProperty(default=0)
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        settings = get_ft_settings()
+        act_status = select_tracker_objects_action(settings, self.geotracker_num)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
 BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
-                  FT_OT_DeleteFaceTracker,)
+                  FT_OT_DeleteFaceTracker,
+                  FT_OT_SelectGeotrackerObjects)

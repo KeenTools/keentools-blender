@@ -18,6 +18,8 @@
 
 from typing import Any
 
+import bpy
+
 from ..utils.kt_logging import KTLogger
 from ..addon_config import ActionStatus, get_addon_preferences
 from ..geotracker_config import (get_gt_settings,
@@ -101,3 +103,29 @@ def delete_tracker_action(settings: Any, geotracker_num: int) -> ActionStatus:
         return ActionStatus(False, msg)
     settings.reload_current_geotracker()
     return ActionStatus(True, 'Tracker has been removed')
+
+
+def select_tracker_objects_action(settings: Any, geotracker_num: int) -> ActionStatus:
+    check_status = common_checks_with_settings(settings, object_mode=True,
+                                               is_calculating=True,
+                                               pinmode_out=True)
+    if not check_status.success:
+        return check_status
+
+    settings.fix_geotrackers()
+    if not settings.change_current_geotracker_safe(geotracker_num):
+        return ActionStatus(False, f'Cannot switch to Geotracker '
+                                   f'{geotracker_num}')
+
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker.geomobj and not geotracker.camobj:
+        return ActionStatus(False, f'Geotracker {geotracker_num} '
+                                   f'does not contain any objects')
+    if geotracker.camera_mode():
+        select_objects_only([geotracker.camobj, geotracker.geomobj])
+    else:
+        select_objects_only([geotracker.geomobj, geotracker.camobj])
+
+    center_viewport(bpy.context.area)
+
+    return ActionStatus(True, 'ok')

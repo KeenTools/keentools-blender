@@ -21,9 +21,9 @@ from typing import Any
 from bpy.props import IntProperty, StringProperty, FloatProperty
 
 from ..utils.kt_logging import KTLogger
-from ..geotracker_config import (GTConfig,
-                                 get_gt_settings)
-from .gtloader import GTLoader
+from ..facetracker_config import (FTConfig,
+                                  get_ft_settings)
+from ..geotracker.gtloader import GTLoader
 from ..tracker.pinmode import PinMode
 from .ui_strings import buttons
 
@@ -31,8 +31,8 @@ from .ui_strings import buttons
 _log = KTLogger(__name__)
 
 
-class GT_OT_PinMode(PinMode):
-    bl_idname = GTConfig.gt_pinmode_idname
+class FT_OT_PinMode(PinMode):
+    bl_idname = FTConfig.ft_pinmode_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
@@ -47,4 +47,4 @@ class GT_OT_PinMode(PinMode):
         return GTLoader
 
     def get_settings(self) -> Any:
-        return get_gt_settings()
+        return get_ft_settings()
