@@ -25,6 +25,7 @@ from ..tracker.cam_input import (CameraInput,
                                  ImageInput,
                                  Mask2DInput,
                                  GeoTrackerResultsStorage)
+from ..utils.mesh_builder import build_geo_from_basis
 
 
 _log = KTLogger(__name__)
@@ -40,6 +41,13 @@ class FTGeoInput(GeoInput):
     @classmethod
     def get_settings(cls) -> Any:
         return get_ft_settings()
+
+    def geo(self) -> Any:
+        settings = self.get_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if not geotracker:
+            return None
+        return build_geo_from_basis(geotracker.geomobj, get_uv=False)
 
 
 class FTImageInput(ImageInput):

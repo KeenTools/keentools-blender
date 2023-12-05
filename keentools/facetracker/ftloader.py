@@ -20,6 +20,7 @@ from typing import Any
 
 from ..utils.kt_logging import KTLogger
 from ..facetracker_config import get_ft_settings
+from ..utils.bpy_common import bpy_current_frame
 from ..tracker.loader import Loader
 from ..tracker.class_loader import KTClassLoader
 
@@ -31,6 +32,12 @@ class FTLoader(Loader):
     @classmethod
     def get_settings(cls) -> Any:
         return get_ft_settings()
+
+    @classmethod
+    def get_geo(cls) -> Any:
+        gt = cls.kt_geotracker()
+        geo = gt.applied_args_model_at(bpy_current_frame())
+        return geo
 
     @classmethod
     def new_kt_geotracker(cls) -> Any:

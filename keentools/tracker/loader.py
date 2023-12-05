@@ -199,6 +199,12 @@ class Loader:
         assert False, 'Settings are not accessible'
 
     @classmethod
+    def get_geo(cls) -> Any:
+        gt = cls.kt_geotracker()
+        geo = gt.geo()
+        return geo
+
+    @classmethod
     def init_handlers(cls):
         cls.frame_change_post_handler = frame_change_post_handler_wrapper(
             cls.get_settings, cls)
@@ -550,8 +556,8 @@ class Loader:
         if update_geo_data:
             _log.output(_log.color('green', 'update_geo_data'))
             cls.increment_geo_hash()
-            gt = cls.kt_geotracker()
-            geo = gt.geo()
+            geo = cls.get_geo()
+
             wf.init_geom_data_from_core(*cls.get_geo_shader_data(
                 geo, geotracker.geomobj.matrix_world))
 
