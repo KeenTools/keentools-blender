@@ -28,6 +28,7 @@ from bpy.props import (BoolProperty,
 from ..utils.kt_logging import KTLogger
 from ..facetracker_config import FTConfig, get_ft_settings
 from .ui_strings import buttons
+from .ftloader import FTLoader
 from ..tracker.actions import (create_tracker_action,
                                delete_tracker_action,
                                select_tracker_objects_action)
@@ -88,6 +89,17 @@ class FT_OT_SelectGeotrackerObjects(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class FT_OT_ExitPinMode(ButtonOperator, Operator):
+    bl_idname = FTConfig.ft_exit_pinmode_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        FTLoader.out_pinmode()
+        return {'FINISHED'}
+
+
 BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_DeleteFaceTracker,
-                  FT_OT_SelectGeotrackerObjects)
+                  FT_OT_SelectGeotrackerObjects,
+                  FT_OT_ExitPinMode)

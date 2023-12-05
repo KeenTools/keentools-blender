@@ -28,9 +28,7 @@ from ..addon_config import (Config,
                             get_operator,
                             fb_pinmode,
                             supported_gpu_backend)
-from ..geotracker_config import (GTConfig,
-                                 get_gt_settings,
-                                 get_current_geotracker_item)
+from ..geotracker_config import GTConfig
 from ..utils.coords import (point_is_in_area,
                             point_is_in_service_region,
                             get_image_space_coord,
@@ -81,18 +79,21 @@ class PinMode(Operator):
     _prev_camera_state: Tuple = ()
     _prev_area_state: Tuple = ()
 
-    def get_loader(self) -> Any:
-        assert False, 'Loader is undefined'
+    @classmethod
+    def get_loader(cls) -> Any:
+        assert False, 'PinMode: Loader is undefined'
 
-    def get_settings(self) -> Any:
-        assert False, 'Settings are not accessible'
+    @classmethod
+    def get_settings(cls) -> Any:
+        assert False, 'PinMode: Settings are not accessible'
 
-    def _calc_adaptive_opacity(self, area: Area) -> None:
-        settings = self.get_settings()
+    @classmethod
+    def _calc_adaptive_opacity(cls, area: Area) -> None:
+        settings = cls.get_settings()
         if not settings.use_adaptive_opacity:
             return
         settings.calc_adaptive_opacity(area)
-        vp = self.get_loader().viewport()
+        vp = cls.get_loader().viewport()
         vp.wireframer().set_adaptive_opacity(settings.get_adaptive_opacity())
 
     @classmethod
@@ -201,7 +202,8 @@ class PinMode(Operator):
         loader.viewport().pins().remove_pin(nearest)
         _log.output('PIN REMOVED {}'.format(nearest))
 
-        geotracker = get_current_geotracker_item()
+        settings = self.get_settings()
+        geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'FINISHED'}
 

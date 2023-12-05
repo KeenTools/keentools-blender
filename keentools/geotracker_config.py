@@ -19,6 +19,12 @@
 import os
 import bpy
 
+from .utils.kt_logging import KTLogger
+
+
+_log = KTLogger(__name__)
+
+
 _PT = 'GEOTRACKER_PT_'
 _MT = 'GEOTRACKER_MT_'
 _prefix = 'keentools_gt'
@@ -200,8 +206,3 @@ class GTConfig:
 
 def get_gt_settings():
     return getattr(bpy.context.scene, GTConfig.gt_global_var_name)
-
-
-def get_current_geotracker_item():
-    settings = get_gt_settings()
-    return settings.get_current_geotracker_item()

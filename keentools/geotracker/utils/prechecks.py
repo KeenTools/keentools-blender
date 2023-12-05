@@ -23,7 +23,7 @@ from bpy.types import Object, Area
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import Config, get_operator, ErrorType, ActionStatus
-from ...geotracker_config import get_gt_settings, get_current_geotracker_item
+from ...geotracker_config import get_gt_settings
 from ...utils.html import split_long_string
 from ...utils.manipulate import exit_area_localview, switch_to_camera
 from ...utils.bpy_common import (bpy_all_scene_objects,
@@ -133,7 +133,7 @@ def common_checks(*, object_mode: bool = False,
             return ActionStatus(False, msg)
         settings.reload_mask_3d()
 
-    geotracker_item = get_current_geotracker_item()
+    geotracker_item = settings.get_current_geotracker_item()
     if geotracker and not geotracker_item:
         msg = 'GeoTracker item is not found'
         _log.error(msg)

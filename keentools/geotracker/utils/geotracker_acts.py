@@ -27,8 +27,7 @@ from ...utils.kt_logging import KTLogger
 from ...utils.version import BVersion
 from ...addon_config import ActionStatus, get_addon_preferences
 from ...geotracker_config import (get_gt_settings,
-                                  GTConfig,
-                                  get_current_geotracker_item)
+                                  GTConfig)
 from ..gtloader import GTLoader
 from ...utils.animation import (get_action,
                                 remove_fcurve_point,
@@ -169,7 +168,8 @@ def remove_keyframe_act() -> ActionStatus:
         GTLoader.save_geotracker()
         return ActionStatus(True, 'ok')
 
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     obj = geotracker.animatable_object()
     delete_locrot_keyframe(obj)
     return ActionStatus(True, 'No GeoTracker keyframe at this frame')
@@ -230,7 +230,8 @@ def track_to(forward: bool) -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     gt = GTLoader.kt_geotracker()
     current_frame = bpy_current_frame()
     _log.output(GTLoader.get_geotracker_state())
@@ -267,7 +268,7 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
         return check_status
 
     settings = get_gt_settings()
-    geotracker = get_current_geotracker_item()
+    geotracker = settings.get_current_geotracker_item()
 
     obj = geotracker.animatable_object()
     if not obj:
@@ -317,7 +318,8 @@ def refine_async_act() -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     gt = GTLoader.kt_geotracker()
     current_frame = bpy_current_frame()
 
@@ -357,7 +359,8 @@ def refine_all_async_act() -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
 
     gt = GTLoader.kt_geotracker()
     current_frame = bpy_current_frame()
@@ -487,7 +490,8 @@ def remove_focal_keyframe_act() -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     remove_fcurve_point(geotracker.camobj.data, bpy_current_frame(), 'lens')
     return ActionStatus(True, 'ok')
 
@@ -499,7 +503,8 @@ def remove_focal_keyframes_act() -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     remove_fcurve_from_object(geotracker.camobj.data, 'lens')
     return ActionStatus(True, 'ok')
 
@@ -571,7 +576,8 @@ def center_geo_act() -> ActionStatus:
 
     GTLoader.center_geo()
 
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     camobj = geotracker.camobj
     camera_clip_start = camobj.data.clip_start
     camera_clip_end = camobj.data.clip_end
@@ -662,7 +668,8 @@ def create_empty_from_selected_pins_act(
     if from_frame < 0 or to_frame < from_frame:
         return ActionStatus(False, 'Wrong frame range')
 
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     gt = GTLoader.kt_geotracker()
 
@@ -780,7 +787,8 @@ def check_uv_overlapping_with_status(geotracker: Any) -> ActionStatus:
 
 
 def create_non_overlapping_uv_act() -> ActionStatus:
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     old_mode = geomobj.mode
     if not geomobj.data.uv_layers.active:
@@ -802,7 +810,8 @@ def create_non_overlapping_uv_act() -> ActionStatus:
 
 def repack_uv_act() -> ActionStatus:
     _log.output('repack_uv_act call')
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     old_mode = geomobj.mode
 
@@ -890,7 +899,8 @@ def transfer_tracking_to_camera_act() -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
 
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
@@ -941,7 +951,8 @@ def transfer_tracking_to_geometry_act() -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
 
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
@@ -1007,7 +1018,7 @@ def select_geotracker_objects_act(geotracker_num: int) -> ActionStatus:
         return ActionStatus(False, f'Cannot switch to Geotracker '
                                    f'{geotracker_num}')
 
-    geotracker = get_current_geotracker_item()
+    geotracker = settings.get_current_geotracker_item()
     if not geotracker.geomobj and not geotracker.camobj:
         return ActionStatus(False, f'Geotracker {geotracker_num} '
                                    f'does not contain any objects')
@@ -1028,7 +1039,8 @@ def render_with_background_act() -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     scene = bpy_scene()
     scene.use_nodes = True
     scene.render.film_transparent = True
@@ -1055,7 +1067,8 @@ def revert_default_render_act() -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     scene = bpy_scene()
     scene.render.film_transparent = False
 
@@ -1105,7 +1118,8 @@ def store_geomobj_state(operator: Operator, geomobj: Object) -> None:
 
 def revert_object_states() -> bool:
     _log.output('revert_object_states')
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     if not geotracker or not geotracker.geomobj or not geotracker.camobj:
         return False
 
@@ -1140,7 +1154,8 @@ def _apply_camobj_scale(camobj: Object, operator: Operator) -> None:
 
 
 def _get_operator_origin_matrix(origin_point: str) -> Matrix:
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     origin_matrix = Matrix.Identity(4)
     if origin_point == 'GEOMETRY':
         origin_matrix = LocRotWithoutScale(geotracker.geomobj.matrix_world)
@@ -1155,7 +1170,8 @@ def scale_scene_tracking_preview_func(operator: Operator, context: Any) -> None:
     if not revert_object_states():
         return
 
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
     origin_matrix = _get_operator_origin_matrix(operator.origin_point)
@@ -1477,7 +1493,8 @@ def unbreak_rotation_with_status(obj: Object, frame_list: List) -> ActionStatus:
 
 
 def unbreak_rotation_act() -> ActionStatus:
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     obj = geotracker.animatable_object()
     return unbreak_object_rotation_act(obj)
 
@@ -1496,7 +1513,8 @@ def unbreak_after(frame_list: List) -> None:
         _log.output('unbreak rotation is switched off')
         return
 
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     obj = geotracker.animatable_object()
     unbreak_status = unbreak_rotation_with_status(obj, frame_list)
     if not unbreak_status.success:

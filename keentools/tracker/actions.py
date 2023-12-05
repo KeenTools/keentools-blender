@@ -21,10 +21,8 @@ from typing import Any
 import bpy
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import ActionStatus, get_addon_preferences
-from ..geotracker_config import (get_gt_settings,
-                                  GTConfig,
-                                  get_current_geotracker_item)
+from ..addon_config import ActionStatus
+
 from ..geotracker.gtloader import GTLoader
 
 from ..utils.bpy_common import (create_empty_object,

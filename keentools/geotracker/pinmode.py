@@ -43,8 +43,10 @@ class GT_OT_PinMode(PinMode):
     camera_clip_start: FloatProperty(default=0.1)
     camera_clip_end: FloatProperty(default=1000.0)
 
-    def get_loader(self) -> Any:
+    @classmethod
+    def get_loader(cls) -> Any:
         return GTLoader
 
-    def get_settings(self) -> Any:
+    @classmethod
+    def get_settings(cls) -> Any:
         return get_gt_settings()

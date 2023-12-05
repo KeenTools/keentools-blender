@@ -25,8 +25,7 @@ from ..addon_config import (Config,
                             get_operator,
                             ErrorType)
 from ..geotracker_config import (GTConfig,
-                                 get_gt_settings,
-                                 get_current_geotracker_item)
+                                 get_gt_settings)
 from .gtloader import GTLoader
 from ..utils.images import (get_background_image_object,
                             tone_mapping,
@@ -115,7 +114,8 @@ def subscribe_movie_clip_color_space_watcher(geotracker: Any) -> None:
 def color_space_change_callback(old_name: str) -> None:
     _log.output('color_space_change_callback call')
     _log.output(f'old color space: {old_name}')
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     update_movieclip(geotracker, None)
 
 

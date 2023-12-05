@@ -23,7 +23,7 @@ from bpy.props import IntProperty, StringProperty, FloatProperty
 from ..utils.kt_logging import KTLogger
 from ..facetracker_config import (FTConfig,
                                   get_ft_settings)
-from ..geotracker.gtloader import GTLoader
+from .ftloader import FTLoader
 from ..tracker.pinmode import PinMode
 from .ui_strings import buttons
 
@@ -43,8 +43,10 @@ class FT_OT_PinMode(PinMode):
     camera_clip_start: FloatProperty(default=0.1)
     camera_clip_end: FloatProperty(default=1000.0)
 
-    def get_loader(self) -> Any:
-        return GTLoader
+    @classmethod
+    def get_loader(cls) -> Any:
+        return FTLoader
 
-    def get_settings(self) -> Any:
+    @classmethod
+    def get_settings(cls) -> Any:
         return get_ft_settings()

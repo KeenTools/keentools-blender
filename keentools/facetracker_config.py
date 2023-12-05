@@ -19,6 +19,12 @@
 import bpy
 
 
+from .utils.kt_logging import KTLogger
+
+
+_log = KTLogger(__name__)
+
+
 _PT = 'FACETRACKER_PT_'
 _MT = 'FACETRACKER_MT_'
 _prefix = 'keentools_ft'
@@ -154,8 +160,3 @@ class FTConfig:
 
 def get_ft_settings():
     return getattr(bpy.context.scene, FTConfig.ft_global_var_name)
-
-
-def get_current_facetracker_item():
-    settings = get_ft_settings()
-    return settings.get_current_geotracker_item()

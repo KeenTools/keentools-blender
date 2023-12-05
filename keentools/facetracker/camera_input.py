@@ -1,6 +1,6 @@
 # ##### BEGIN GPL LICENSE BLOCK #####
 # KeenTools for blender is a blender addon for using KeenTools in Blender.
-# Copyright (C) 2019-2023  KeenTools
+# Copyright (C) 2022-2023 KeenTools
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,17 +19,42 @@
 from typing import Any
 
 from ..utils.kt_logging import KTLogger
-from ..geotracker_config import get_gt_settings
-from ..tracker.loader import Loader
+from ..facetracker_config import get_ft_settings
+from ..tracker.cam_input import (CameraInput,
+                                 GeoInput,
+                                 ImageInput,
+                                 Mask2DInput,
+                                 GeoTrackerResultsStorage)
 
 
 _log = KTLogger(__name__)
 
 
-class GTLoader(Loader):
+class FTCameraInput(CameraInput):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return get_ft_settings()
 
 
-GTLoader.init_handlers()
+class FTGeoInput(GeoInput):
+    @classmethod
+    def get_settings(cls) -> Any:
+        return get_ft_settings()
+
+
+class FTImageInput(ImageInput):
+    @classmethod
+    def get_settings(cls) -> Any:
+        return get_ft_settings()
+
+
+class FTMask2DInput(Mask2DInput):
+    @classmethod
+    def get_settings(cls) -> Any:
+        return get_ft_settings()
+
+
+class FTGeoTrackerResultsStorage(GeoTrackerResultsStorage):
+    @classmethod
+    def get_settings(cls) -> Any:
+        return get_ft_settings()

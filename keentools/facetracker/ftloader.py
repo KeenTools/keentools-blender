@@ -19,17 +19,36 @@
 from typing import Any
 
 from ..utils.kt_logging import KTLogger
-from ..geotracker_config import get_gt_settings
+from ..facetracker_config import get_ft_settings
 from ..tracker.loader import Loader
+from ..tracker.class_loader import KTClassLoader
 
 
 _log = KTLogger(__name__)
 
 
-class GTLoader(Loader):
+class FTLoader(Loader):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return get_ft_settings()
+
+    @classmethod
+    def new_kt_geotracker(cls) -> Any:
+        _log.output(_log.color('magenta', '*** new_kt_facetracker ***'))
+        cls._geo_input = KTClassLoader.FTGeoInput_class()()
+        cls._image_input = KTClassLoader.FTImageInput_class()()
+        cls._camera_input = KTClassLoader.FTCameraInput_class()()
+        cls._mask2d = KTClassLoader.FTMask2DInput_class()()
+        cls._storage = KTClassLoader.FTGeoTrackerResultsStorage_class()()
+
+        cls._kt_geotracker = KTClassLoader.FaceTracker_class()(
+            cls._geo_input,
+            cls._camera_input,
+            cls._image_input,
+            cls._mask2d,
+            cls._storage
+        )
+        return cls._kt_geotracker
 
 
-GTLoader.init_handlers()
+FTLoader.init_handlers()

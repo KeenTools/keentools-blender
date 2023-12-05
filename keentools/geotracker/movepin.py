@@ -24,8 +24,7 @@ from bpy.props import StringProperty, FloatProperty, BoolProperty
 
 from ..utils.kt_logging import KTLogger
 from ..geotracker_config import (GTConfig,
-                                 get_gt_settings,
-                                 get_current_geotracker_item)
+                                 get_gt_settings)
 from .gtloader import GTLoader
 from ..utils.coords import (get_image_space_coord,
                             image_space_to_frame,
@@ -106,7 +105,8 @@ class GT_OT_MovePin(bpy.types.Operator):
             if pin and not pin.enabled:
                 gt.pin_enable(keyframe, pin_index, True)
 
-        geotracker = get_current_geotracker_item()
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.geomobj or not geotracker.camobj:
             return False
 
@@ -230,7 +230,8 @@ class GT_OT_MovePin(bpy.types.Operator):
         return GTLoader.solve()
 
     def on_mouse_move(self, area: Area, mouse_x: float, mouse_y: float) -> Set:
-        geotracker = get_current_geotracker_item()
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return self.on_default_modal()
 
@@ -295,7 +296,8 @@ class GT_OT_MovePin(bpy.types.Operator):
             return {'CANCELLED'}
 
         self._move_pin_mode_on()
-        geotracker = get_current_geotracker_item()
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
         self.old_focal_length = focal_mm_to_px(
             camera_focal_length(geotracker.camobj),
             *bpy_render_frame(), camera_sensor_width(geotracker.camobj))
