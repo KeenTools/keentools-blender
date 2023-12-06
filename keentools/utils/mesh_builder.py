@@ -27,6 +27,7 @@ from .coords import (get_scale_matrix_3x3_from_matrix_world,
                      get_mesh_verts,
                      xz_to_xy_rotation_matrix_3x3)
 from .bpy_common import evaluated_mesh
+from .blendshapes import get_blendshape
 
 
 _log = KTLogger(__name__)
@@ -57,29 +58,6 @@ def build_geo(obj: Object, get_uv=False) -> Any:
     return _geo
 
 
-def get_blendshape(obj: Object, name: str = '', *,
-                   create_basis: bool = False,
-                   create: bool = False) -> Tuple[int, Optional[Any]]:
-    if not obj.data.shape_keys:
-        if create_basis:
-            basis = obj.shape_key_add(name='Basis')
-            if name == 'Basis':
-                return 0, basis
-        else:
-            return -1, None
-
-    index = obj.data.shape_keys.key_blocks.find(name)
-    if index < 0:
-        if not create:
-            return -1, None
-        shape = obj.shape_key_add(name=name)
-        index = obj.data.shape_keys.key_blocks.find(name)
-    else:
-        shape = obj.data.shape_keys.key_blocks[index]
-
-    return index, shape
-
-
 def build_geo_from_basis(obj: Object, get_uv=False) -> Any:
     _log.output(_log.color('magenta', 'build_geo_from_basis start'))
     mb = pkt_module().MeshBuilder()
@@ -87,7 +65,8 @@ def build_geo_from_basis(obj: Object, get_uv=False) -> Any:
 
     if obj:
         shape_name = 'Basis'
-        shape_index, basis_shape = get_blendshape(obj, shape_name, create_basis=True)
+        shape_index, basis_shape = get_blendshape(obj, shape_name,
+                                                  create_basis=True)
 
         mesh = evaluated_mesh(obj)
         scale = get_scale_matrix_3x3_from_matrix_world(obj.matrix_world)
