@@ -43,6 +43,8 @@ class FT_OT_PinMode(PinMode):
     camera_clip_start: FloatProperty(default=0.1)
     camera_clip_end: FloatProperty(default=1000.0)
 
+    movepin_operator_idname: str = FTConfig.ft_movepin_idname
+
     @classmethod
     def get_loader(cls) -> Any:
         return FTLoader

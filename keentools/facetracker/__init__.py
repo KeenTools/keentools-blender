@@ -26,7 +26,7 @@ from ..utils.kt_logging import KTLogger
 from ..facetracker_config import FTConfig, get_ft_settings
 from .settings import FaceTrackerItem, FTSceneSettings
 from .pinmode import FT_OT_PinMode
-# from .movepin import FT_OT_MovePin
+from .movepin import FT_OT_MovePin
 from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
 from .operators import BUTTON_CLASSES
 
@@ -36,7 +36,7 @@ _log = KTLogger(__name__)
 
 CLASSES_TO_REGISTER = (FaceTrackerItem,
                        FT_OT_PinMode,
-                       # FT_OT_MovePin,
+                       FT_OT_MovePin,
                        FTSceneSettings) + BUTTON_CLASSES + INTERFACE_CLASSES
 
 

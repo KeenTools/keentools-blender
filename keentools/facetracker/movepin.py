@@ -18,37 +18,44 @@
 
 from typing import Any
 
-from bpy.props import IntProperty, StringProperty, FloatProperty
+from bpy.props import StringProperty, FloatProperty, BoolProperty
 
 from ..utils.kt_logging import KTLogger
-from ..geotracker_config import (GTConfig,
-                                 get_gt_settings)
-from .gtloader import GTLoader
-from ..tracker.pinmode import PinMode
+from ..facetracker_config import FTConfig, get_ft_settings
+from .ftloader import FTLoader
 from .ui_strings import buttons
+from ..tracker.movepin import MovePin
 
 
 _log = KTLogger(__name__)
 
 
-class GT_OT_PinMode(PinMode):
-    bl_idname = GTConfig.gt_pinmode_idname
+class FT_OT_MovePin(MovePin):
+    bl_idname = FTConfig.ft_movepin_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_options = {'REGISTER'}
 
-    geotracker_num: IntProperty(default=-1)
-    pinmode_id: StringProperty(default='')
+    test_action: StringProperty(default="")
+
+    pinx: FloatProperty(default=0)
+    piny: FloatProperty(default=0)
+
+    new_pin_flag: BoolProperty(default=False)
+    dragged: BoolProperty(default=False)
+
+    shift_x: FloatProperty(default=0.0)
+    shift_y: FloatProperty(default=0.0)
 
     camera_clip_start: FloatProperty(default=0.1)
     camera_clip_end: FloatProperty(default=1000.0)
 
-    movepin_operator_idname: str = GTConfig.gt_movepin_idname
-
-    @classmethod
-    def get_loader(cls) -> Any:
-        return GTLoader
+    old_focal_length: FloatProperty(default=50.0)
 
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return get_ft_settings()
+
+    @classmethod
+    def get_loader(cls) -> Any:
+        return FTLoader

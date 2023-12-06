@@ -55,7 +55,7 @@ _log = KTLogger(__name__)
 class CameraInput(pkt_module().TrackerCameraInputI):
     @classmethod
     def get_settings(cls) -> Any:
-        assert False, 'CameraInput: Settings are not accessible'
+        assert False, 'CameraInput: get_settings'
 
     def projection(self, frame: int) -> Any:
         settings = self.get_settings()
@@ -78,7 +78,7 @@ class GeoInput(pkt_module().GeoInputI):
 
     @classmethod
     def get_settings(cls) -> Any:
-        assert False, 'GeoInput: Settings are not accessible'
+        assert False, 'GeoInput: get_settings'
 
     @classmethod
     def increment_hash(cls) -> None:
@@ -137,7 +137,7 @@ class GeoInput(pkt_module().GeoInputI):
 class ImageInput(pkt_module().ImageInputI):
     @classmethod
     def get_settings(cls) -> Any:
-        assert False, 'ImageInput: Settings are not accessible'
+        assert False, 'ImageInput: get_settings'
 
     def image_hash(self, frame: int) -> Any:
         return pkt_module().Hash(frame)
@@ -183,7 +183,7 @@ class ImageInput(pkt_module().ImageInputI):
 class Mask2DInput(pkt_module().Mask2DInputI):
     @classmethod
     def get_settings(cls) -> Any:
-        assert False, 'Mask2DInput: Settings are not accessible'
+        assert False, 'Mask2DInput: get_settings'
 
     def load_image_2d_mask_at(self, frame: int) -> Any:
         settings = self.get_settings()
@@ -263,7 +263,7 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
 
     @classmethod
     def get_settings(cls) -> Any:
-        assert False, 'GeoTrackerResultsStorage: Settings are not accessible'
+        assert False, 'GeoTrackerResultsStorage: get_settings'
 
     def _mode_by_value(self, value: str) -> Any:
         if value in self._modes.keys():

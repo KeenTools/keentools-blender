@@ -196,7 +196,7 @@ class Loader:
 
     @classmethod
     def get_settings(cls) -> Any:
-        assert False, 'Settings are not accessible'
+        assert False, 'Loader: get_settings'
 
     @classmethod
     def get_geo(cls) -> Any:

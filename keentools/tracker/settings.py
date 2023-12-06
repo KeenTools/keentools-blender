@@ -248,7 +248,7 @@ class TrackerItem(PropertyGroup):
 
 class TRSceneSetting(PropertyGroup):
     def loader(self) -> Any:
-        assert False, 'Undefined Loader'
+        assert False, 'TRSceneSetting: loader'
 
     def get_adaptive_opacity(self):
         return self.adaptive_opacity if self.use_adaptive_opacity else 1.0

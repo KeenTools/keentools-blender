@@ -79,13 +79,15 @@ class PinMode(Operator):
     _prev_camera_state: Tuple = ()
     _prev_area_state: Tuple = ()
 
+    movepin_operator_idname: str = 'impossible_movepin_operator_name'
+
     @classmethod
     def get_loader(cls) -> Any:
-        assert False, 'PinMode: Loader is undefined'
+        assert False, 'PinMode: get_loader'
 
     @classmethod
     def get_settings(cls) -> Any:
-        assert False, 'PinMode: Settings are not accessible'
+        assert False, 'PinMode: get_settings'
 
     @classmethod
     def _calc_adaptive_opacity(cls, area: Area) -> None:
@@ -140,7 +142,7 @@ class PinMode(Operator):
 
         pins = vp.pins()
         if not pins.get_add_selection_mode():
-            op = get_operator(GTConfig.gt_movepin_idname)
+            op = get_operator(self.movepin_operator_idname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
                camera_clip_start=self.camera_clip_start,
                camera_clip_end=self.camera_clip_end)
