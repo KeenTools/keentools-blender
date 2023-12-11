@@ -64,17 +64,9 @@ class FT_OT_MovePin(MovePin):
         return FTLoader
 
     def update_wireframe(self):
-        settings = self.get_settings()
-        geotracker = settings.get_current_geotracker_item()
-        frame = bpy_current_frame()
         loader = self.get_loader()
-        vp = loader.viewport()
-        wf = vp.wireframer()
-        gt = loader.kt_geotracker()
-        geo = gt.applied_args_model_at(frame)
-        wf.init_geom_data_from_core(*loader.get_geo_shader_data(
-            geo, geotracker.geomobj.matrix_world))
-        wf.create_batches()
+        loader.update_viewport_shaders(wireframe_data=True,
+                                       wireframe=True)
 
     def update_on_left_mouse_release(self) -> None:
         create_relative_shape_keyframe(self.get_loader().kt_geotracker(),

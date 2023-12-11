@@ -263,7 +263,7 @@ class PinMode(Operator):
         vp = loader.viewport()
         vp.create_batch_2d(area)
         _log.output('GT REGISTER SHADER HANDLERS')
-        loader.update_viewport_shaders(area, update_geo_data=True,
+        loader.update_viewport_shaders(area, wireframe_data=True,
                                        geomobj_matrix=True, wireframe=True,
                                        pins_and_residuals=True, timeline=True)
 
@@ -490,7 +490,7 @@ class PinMode(Operator):
             self._change_wireframe_visibility(toggle=False, value=True)
             loader.load_geotracker()
             loader.load_pins_into_viewport()
-            loader.update_viewport_shaders(update_geo_data=True,
+            loader.update_viewport_shaders(wireframe_data=True,
                                            wireframe=True,
                                            geomobj_matrix=True,
                                            pins_and_residuals=True)
@@ -517,7 +517,7 @@ class PinMode(Operator):
             in_edit_mode_screen_message()
             loader.update_geomobj_mesh()
             vp.hide_pins_and_residuals()
-            loader.update_viewport_shaders(update_geo_data=True,
+            loader.update_viewport_shaders(hash=True, wireframe_data=True,
                                            wireframe=True,
                                            geomobj_matrix=True,
                                            pins_and_residuals=False)

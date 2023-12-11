@@ -165,6 +165,10 @@ def frame_change_post_handler_wrapper(settings_func: Callable,
         if geotracker.focal_length_estimation:
             geotracker.reset_focal_length_estimation()
 
+        if loader.product_name() == 'facetracker':
+            loader.update_viewport_shaders(wireframe_data=True,
+                                           wireframe=True)
+
         if settings.stabilize_viewport_enabled:
             loader.load_pins_into_viewport()
             loader.viewport().stabilize(geotracker.geomobj)
@@ -193,6 +197,10 @@ class Loader:
     depsgraph_update_handler: Optional[Callable] = None
     undo_redo_handler: Optional[Callable] = None
     check_shader_timer: Optional[Any] = None
+
+    @classmethod
+    def product_name(cls):
+        return 'tracker'
 
     @classmethod
     def get_settings(cls) -> Any:
@@ -540,7 +548,7 @@ class Loader:
         return edge_vertices, edge_vertex_normals, triangle_vertices
 
     @classmethod
-    def update_viewport_wireframe(cls, *, update_geo_data: bool=False) -> None:
+    def update_viewport_wireframe(cls, *, wireframe_data: bool = False) -> None:
         _log.output(_log.color('blue', 'update_viewport_wireframe'))
         settings = cls.get_settings()
         geotracker = settings.get_current_geotracker_item()
@@ -553,11 +561,9 @@ class Loader:
             wf.create_batches()
             return
 
-        if update_geo_data:
-            _log.output(_log.color('green', 'update_geo_data'))
-            cls.increment_geo_hash()
+        if wireframe_data:
+            _log.output(_log.color('green', 'wireframe_data'))
             geo = cls.get_geo()
-
             wf.init_geom_data_from_core(*cls.get_geo_shader_data(
                 geo, geotracker.geomobj.matrix_world))
 
@@ -590,21 +596,26 @@ class Loader:
         vp.update_residuals(gt, area, kid)
 
     @classmethod
-    def update_viewport_shaders(cls, area: Optional[Area]=None, *,
-                                update_geo_data: bool=False,
-                                adaptive_opacity: bool=False,
-                                geomobj_matrix: bool=False,
-                                wireframe: bool=False,
-                                pins_and_residuals: bool=False,
-                                timeline: bool=False,
-                                mask: bool=False) -> None:
+    def update_viewport_shaders(cls, area: Optional[Area] = None, *,
+                                hash: bool = False,
+                                adaptive_opacity: bool = False,
+                                geomobj_matrix: bool = False,
+                                wireframe: bool = False,
+                                wireframe_data: bool = False,
+                                pins_and_residuals: bool = False,
+                                timeline: bool = False,
+                                mask: bool = False) -> None:
         _log.output(_log.color('blue', f'update_viewport_shaders'
-            f'\ngeomobj_matrix: {geomobj_matrix}'
+            f'\nhash: {hash}'
             f' -- adaptive_opacity: {adaptive_opacity}'
-            f' -- wireframe: {wireframe}'
+            f' -- geomobj_matrix: {geomobj_matrix}'
+            f' \nwireframe: {wireframe}'
+            f' -- wireframe_data: {wireframe_data}'
             f'\npins_and_residuals: {pins_and_residuals}'
             f' -- timeline: {timeline}'
             f' -- mask: {mask}'))
+        if hash:
+            cls.increment_geo_hash()
         if area is None:
             vp = cls.viewport()
             area = vp.get_work_area()
@@ -636,7 +647,7 @@ class Loader:
                 mask2d.image = get_background_image_strict(geotracker.camobj,
                                                            index=1)
         if wireframe:
-            cls.update_viewport_wireframe(update_geo_data=update_geo_data)
+            cls.update_viewport_wireframe(wireframe_data=wireframe_data)
         if pins_and_residuals:
             cls.update_viewport_pins_and_residuals(area)
         if timeline:

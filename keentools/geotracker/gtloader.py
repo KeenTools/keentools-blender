@@ -28,6 +28,10 @@ _log = KTLogger(__name__)
 
 class GTLoader(Loader):
     @classmethod
+    def product_name(cls):
+        return 'geotracker'
+
+    @classmethod
     def get_settings(cls) -> Any:
         return get_gt_settings()
 

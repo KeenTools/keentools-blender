@@ -30,6 +30,10 @@ _log = KTLogger(__name__)
 
 class FTLoader(Loader):
     @classmethod
+    def product_name(cls):
+        return 'facetracker'
+
+    @classmethod
     def get_settings(cls) -> Any:
         return get_ft_settings()
 

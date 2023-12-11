@@ -164,7 +164,7 @@ def lens_change_callback() -> None:
         _log.output('FOCAL LENGTH CHANGED')
 
         if settings.pinmode:
-            GTLoader.update_viewport_shaders(update_geo_data=True,
+            GTLoader.update_viewport_shaders(wireframe_data=True,
                                              geomobj_matrix=True,
                                              wireframe=True,
                                              pins_and_residuals=True,
@@ -185,7 +185,7 @@ def update_camobj(geotracker, context: Any) -> None:
     switch_to_camera(GTLoader.get_work_area(), geotracker.camobj)
 
     if settings.pinmode:
-        GTLoader.update_viewport_shaders(update_geo_data=True,
+        GTLoader.update_viewport_shaders(wireframe_data=True,
                                          geomobj_matrix=True, wireframe=True,
                                          pins_and_residuals=True, timeline=True)
 
@@ -219,7 +219,7 @@ def update_geomobj(geotracker, context: Any) -> None:
     GTLoader.save_geotracker()
 
     if settings.pinmode:
-        GTLoader.update_viewport_shaders(update_geo_data=True,
+        GTLoader.update_viewport_shaders(wireframe_data=True,
                                          geomobj_matrix=True, wireframe=True,
                                          pins_and_residuals=True, timeline=True)
 
