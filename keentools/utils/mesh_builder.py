@@ -64,9 +64,8 @@ def build_geo_from_basis(obj: Object, get_uv=False) -> Any:
     _geo = pkt_module().Geo()
 
     if obj:
-        shape_name = 'Basis'
-        shape_index, basis_shape = get_blendshape(obj, shape_name,
-                                                  create_basis=True)
+        shape_index, basis_shape, _ = get_blendshape(obj, 'Basis',
+                                                     create_basis=True)
 
         mesh = evaluated_mesh(obj)
         scale = get_scale_matrix_3x3_from_matrix_world(obj.matrix_world)

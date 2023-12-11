@@ -155,6 +155,9 @@ class MovePin(bpy.types.Operator):
             settings.stop_calculating()
             _log.output('FOCAL LENGTH CHANGED')
 
+    def update_wireframe(self):
+        pass
+
     def on_left_mouse_release(self, area: Area) -> Set:
         def _push_action_in_undo_history() -> None:
             if self.new_pin_flag:
@@ -165,6 +168,8 @@ class MovePin(bpy.types.Operator):
 
         loader = self.get_loader()
         loader.viewport().pins().reset_current_pin()
+
+        self.update_on_left_mouse_release()
 
         if self.dragged:
             self.update_focal_length_in_all_keyframes()
@@ -186,6 +191,9 @@ class MovePin(bpy.types.Operator):
 
         _push_action_in_undo_history()
         return {'FINISHED'}
+
+    def update_on_left_mouse_release(self) -> None:
+        pass
 
     def _pin_drag(self, kid: int, area: Area, mouse_x: float, mouse_y: float) -> bool:
         def _drag_multiple_pins(kid: int, pin_index: int,
@@ -243,6 +251,8 @@ class MovePin(bpy.types.Operator):
                 revert_default_screen_message()
             else:
                 clipping_changed_screen_message(near, far)
+
+        self.update_wireframe()
 
         gt = loader.kt_geotracker()
         vp.update_surface_points(gt, geotracker.geomobj, frame)

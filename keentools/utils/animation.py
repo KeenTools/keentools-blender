@@ -27,7 +27,9 @@ from .bpy_common import (bpy_current_frame,
                          bpy_set_current_frame,
                          create_empty_object,
                          operator_with_context,
-                         update_depsgraph)
+                         update_depsgraph,
+                         bpy_new_action,
+                         bpy_remove_action)
 
 from .fcurve_operations import *
 from .kt_logging import KTLogger
@@ -61,7 +63,7 @@ def remove_fcurve_point(obj: Object, frame: int, data_path: str,
     if remove_empty_curve and fcurve.is_empty:
         action.fcurves.remove(fcurve)
     if remove_empty_action and len(action.fcurves) == 0:
-        bpy.data.actions.remove(action)
+        bpy_remove_action(action)
 
 
 def get_evaluated_fcurve(obj: Object, frame: int, data_path: str,
@@ -103,7 +105,7 @@ def _get_safe_action(obj: Object,
         if not animation_data:
             return None
     if not animation_data.action:
-        animation_data.action = bpy.data.actions.new(action_name)
+        animation_data.action = bpy_new_action(action_name)
     return animation_data.action
 
 
@@ -246,7 +248,7 @@ def remove_fcurve_from_action(action: Action, data_path: str, index: int = 0,
     if fcurve:
         action.fcurves.remove(fcurve)
     if remove_empty_action and len(action.fcurves) == 0:
-        bpy.data.actions.remove(action)
+        bpy_remove_action(action)
 
 
 def remove_fcurve_from_object(obj: Object, data_path: str, index: int = 0,

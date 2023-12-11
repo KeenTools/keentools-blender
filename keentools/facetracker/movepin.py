@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any
+from typing import Any, Set, Tuple, List
 
 from bpy.props import StringProperty, FloatProperty, BoolProperty
 
@@ -25,6 +25,9 @@ from ..facetracker_config import FTConfig, get_ft_settings
 from .ftloader import FTLoader
 from .ui_strings import buttons
 from ..tracker.movepin import MovePin
+from ..utils.bpy_common import bpy_current_frame
+
+from ..tracker.tracking_blendshapes import create_relative_shape_keyframe
 
 
 _log = KTLogger(__name__)
@@ -59,3 +62,21 @@ class FT_OT_MovePin(MovePin):
     @classmethod
     def get_loader(cls) -> Any:
         return FTLoader
+
+    def update_wireframe(self):
+        settings = self.get_settings()
+        geotracker = settings.get_current_geotracker_item()
+        frame = bpy_current_frame()
+        loader = self.get_loader()
+        vp = loader.viewport()
+        wf = vp.wireframer()
+        gt = loader.kt_geotracker()
+        geo = gt.applied_args_model_at(frame)
+        wf.init_geom_data_from_core(*loader.get_geo_shader_data(
+            geo, geotracker.geomobj.matrix_world))
+        wf.create_batches()
+
+    def update_on_left_mouse_release(self) -> None:
+        create_relative_shape_keyframe(self.get_loader().kt_geotracker(),
+                                       bpy_current_frame(),
+                                       keyframe_type='KEYFRAME')
