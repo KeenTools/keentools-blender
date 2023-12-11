@@ -548,7 +548,7 @@ class Loader:
         return edge_vertices, edge_vertex_normals, triangle_vertices
 
     @classmethod
-    def update_viewport_wireframe(cls, *, wireframe_data: bool = False) -> None:
+    def _update_viewport_wireframe(cls, wireframe_data: bool = False) -> None:
         _log.output(_log.color('blue', 'update_viewport_wireframe'))
         settings = cls.get_settings()
         geotracker = settings.get_current_geotracker_item()
@@ -647,7 +647,7 @@ class Loader:
                 mask2d.image = get_background_image_strict(geotracker.camobj,
                                                            index=1)
         if wireframe:
-            cls.update_viewport_wireframe(wireframe_data=wireframe_data)
+            cls._update_viewport_wireframe(wireframe_data=wireframe_data)
         if pins_and_residuals:
             cls.update_viewport_pins_and_residuals(area)
         if timeline:

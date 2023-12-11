@@ -301,7 +301,7 @@ def update_mask_3d_color(settings, context: Any) -> None:
     wf = vp.wireframer()
     wf.selection_fill_color = (*settings.mask_3d_color, settings.mask_3d_opacity)
     if settings.pinmode:
-        GTLoader.update_viewport_wireframe()
+        GTLoader.update_viewport_shaders(wireframe=True)
 
 
 def update_wireframe_backface_culling(settings, context: Any) -> None:
@@ -311,7 +311,7 @@ def update_wireframe_backface_culling(settings, context: Any) -> None:
     gt.set_back_face_culling(settings.wireframe_backface_culling)
     GTLoader.save_geotracker()
     if settings.pinmode:
-        GTLoader.update_viewport_wireframe()
+        GTLoader.update_viewport_shaders(wireframe=True)
 
 
 def update_background_tone_mapping(geotracker, context: Any) -> None:
@@ -378,11 +378,11 @@ def update_track_focal_length(geotracker, context: Any) -> None:
     gt.set_track_focal_length(geotracker.track_focal_length)
     GTLoader.save_geotracker()
     if settings.pinmode:
-        GTLoader.update_viewport_wireframe()
+        GTLoader.update_viewport_shaders(wireframe=True)
 
 
 def update_mask_3d(geotracker, context: Any) -> None:
-    GTLoader.update_viewport_wireframe()
+    GTLoader.update_viewport_shaders(wireframe=True)
     settings = get_gt_settings()
     settings.reload_current_geotracker()
     settings.reload_mask_3d()
