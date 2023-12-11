@@ -250,6 +250,8 @@ class PinMode(Operator):
 
         settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
+
+        self.perform_checks_before_pinmode()
         geotracker.check_pins_on_geometry(loader.kt_geotracker())
 
         _log.output('GT START SHADERS')
@@ -327,6 +329,9 @@ class PinMode(Operator):
             revert_default_screen_message()
         else:
             how_to_show_wireframe_screen_message()
+
+    def perform_checks_before_pinmode(self) -> None:
+        pass
 
     def invoke(self, context: Any, event: Any) -> Set:
         _log.output(f'INVOKE PINMODE: {self.geotracker_num}')

@@ -93,7 +93,6 @@ def check_tracking_frames(key_blocks) -> Tuple[bool, Any]:
     if frame >= 0 and arr[-1][1] == -1:
         check_status = False
         _log.output('check_tracking_frames: last shape is not tracking')
-    _log.error(f'check_tracking_frames: {check_status}\n{arr}')
     return check_status, arr
 
 
@@ -101,20 +100,15 @@ def reorder_tracking_frames(obj) -> None:
     key_blocks = obj.data.shape_keys.key_blocks
     check_status, arr = check_tracking_frames(key_blocks)
     if check_status:
-        _log.error(f'reorder_tracking_frames [no need]:\n{arr}')
+        _log.output(f'reorder_tracking_frames [no need]:\n{arr}')
         return
     pairs = arr[arr[:, 1] >= 0]
     res = pairs[pairs[:, 1].argsort()]
     indices = res[:, 0]
-    _log.error(f'pairs:\n{pairs}')
-    _log.error(f'indices:\n{indices}')
     for i, index in enumerate(indices):
         m = indices[:i]
-        _log.error(f'm: {m}')
         offset = (m < index).sum()
-        _log.error(f'index: {index} offset: {offset}')
         obj.active_shape_key_index = index - offset
-        _log.error(f'active: {obj.active_shape_key_index} {key_blocks[obj.active_shape_key_index].name}')
         bpy_shape_key_move_bottom(obj)
 
 
@@ -158,6 +152,7 @@ def bubble_frame_shape(obj: Object, shape_index: int, frame: int) -> int:
 
 
 def create_relative_shape_keyframe(gt: Any, frame: int, *,
+                                   action_name: str = FTConfig.ft_action_name,
                                    keyframe_type: str = 'JITTER') -> None:
     _log.output(_log.color('yellow', f'create_shape_keyframe: {frame}'))
     settings = get_ft_settings()
@@ -214,7 +209,7 @@ def create_relative_shape_keyframe(gt: Any, frame: int, *,
 
     action = anim_data.action
     if not action:
-        action = bpy_new_action('ftAction')
+        action = bpy_new_action(action_name)
         anim_data.action = action
 
     main_fcurve = get_safe_action_fcurve(action,

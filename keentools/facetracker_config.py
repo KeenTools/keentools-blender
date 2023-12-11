@@ -157,6 +157,7 @@ class FTConfig:
     ft_help_rendering_idname = operators + '.help_rendering'
     ft_help_smoothing_idname = operators + '.help_smoothing'
 
+    ft_action_name = 'ftAction'
 
 def get_ft_settings():
     return getattr(bpy.context.scene, FTConfig.ft_global_var_name)

@@ -26,6 +26,7 @@ from ..facetracker_config import (FTConfig,
 from .ftloader import FTLoader
 from ..tracker.pinmode import PinMode
 from .ui_strings import buttons
+from ..tracker.tracking_blendshapes import reorder_tracking_frames
 
 
 _log = KTLogger(__name__)
@@ -52,3 +53,13 @@ class FT_OT_PinMode(PinMode):
     @classmethod
     def get_settings(cls) -> Any:
         return get_ft_settings()
+
+    def perform_checks_before_pinmode(self) -> None:
+        settings = self.get_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if not geotracker:
+            return
+        geomobj = geotracker.geomobj
+        if not geomobj or not geomobj.data.shape_keys:
+            return
+        reorder_tracking_frames(geomobj)
