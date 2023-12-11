@@ -74,25 +74,38 @@ class CameraInput(pkt_module().TrackerCameraInputI):
 
 class GeoInput(pkt_module().GeoInputI):
     _previous_val: int = 0
+    _previous_hash: Any = pkt_module().Hash(_previous_val)
     _hash_counter: int = 0
+
+    hash_is_cached: bool = False
 
     @classmethod
     def get_settings(cls) -> Any:
         assert False, 'GeoInput: get_settings'
 
     @classmethod
+    def clear_cache(cls) -> None:
+        cls.hash_is_cached = False
+
+    @classmethod
     def increment_hash(cls) -> None:
         cls._hash_counter += 1
         if cls._hash_counter > 1000:
             cls._hash_counter = 0
+        cls.clear_cache()
 
     @classmethod
     def get_hash_counter(cls) -> int:
         return cls._hash_counter
 
     @classmethod
-    def _set_previous_val(cls, val) -> None:
-        cls._previous_val = val
+    def _set_previous_val(cls, val: int) -> Any:
+        if cls._previous_val != val:
+            cls._previous_val = val
+            cls._previous_hash = pkt_module().Hash(cls._previous_val)
+        cls.hash_is_cached = True
+        return cls._previous_hash
+
 
     def _rounded(self, val: float) -> int:
         p = frexp(val)
@@ -102,9 +115,11 @@ class GeoInput(pkt_module().GeoInputI):
         _log.output(_log.color('magenta', 'get geo_hash'))
         settings = self.get_settings()
 
-        if settings.is_calculating() and self._previous_val != 0:
-            return pkt_module().Hash(self._previous_val)
+        if self.hash_is_cached or settings.is_calculating():
+            _log.output('previous geo_hash')
+            return self._previous_hash
 
+        _log.output('new geo_hash')
         geotracker = settings.get_current_geotracker_item()
         if geotracker and geotracker.geomobj:
             vert_count = len(geotracker.geomobj.data.vertices)
@@ -121,10 +136,7 @@ class GeoInput(pkt_module().GeoInputI):
 
         val = abs(hash(settings.pinmode_id) + vert_count + poly_count +
                   scale_val + self.get_hash_counter())
-        if val != self._previous_val:
-            _log.output(_log.color('magenta', 'geo_hash changed'))
-            self._set_previous_val(val)
-        return pkt_module().Hash(val)
+        return self._set_previous_val(val)
 
     def geo(self) -> Any:
         settings = self.get_settings()
