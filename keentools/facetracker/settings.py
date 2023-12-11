@@ -16,9 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import numpy as np
 from typing import Optional, Tuple, Any, List
-from contextlib import contextmanager
 
 from bpy.types import (Object, CameraBackgroundImage, Area, Image, Mask,
                        PropertyGroup, MovieClip)
@@ -29,7 +27,7 @@ from bpy.props import (IntProperty, BoolProperty, FloatProperty,
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config
 
-from ..geotracker.gtloader import GTLoader
+from .ftloader import FTLoader
 
 from ..utils.bpy_common import (bpy_poll_is_mesh,
                                 bpy_poll_is_camera)
@@ -274,7 +272,7 @@ class FaceTrackerItem(TrackerItem):
 
 class FTSceneSettings(TRSceneSetting):
     def loader(self) -> Any:
-        return GTLoader
+        return FTLoader
 
     ui_write_mode: BoolProperty(name='UI Write mode', default=False)
     viewport_state: PointerProperty(type=ViewportStateItem)

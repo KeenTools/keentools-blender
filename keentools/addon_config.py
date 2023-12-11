@@ -19,6 +19,7 @@
 from typing import Any, Callable, Optional, Tuple, Set, Dict
 from dataclasses import dataclass
 import os
+from enum import Enum
 
 import bpy
 from .utils.version import BVersion
@@ -318,3 +319,10 @@ class ErrorType:
 class ActionStatus:
     success: bool = False
     error_message: str = None
+
+
+class ProductType(Enum):
+    UNDEFINED: int = -1
+    FACEBUILDER: int = 0
+    GEOTRACKER: int = 1
+    FACETRACKER: int = 2

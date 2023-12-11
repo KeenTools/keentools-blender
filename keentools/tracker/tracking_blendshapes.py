@@ -151,11 +151,12 @@ def bubble_frame_shape(obj: Object, shape_index: int, frame: int) -> int:
     return current_index
 
 
-def create_relative_shape_keyframe(gt: Any, frame: int, *,
+def create_relative_shape_keyframe(frame: int, *,
                                    action_name: str = FTConfig.ft_action_name,
                                    keyframe_type: str = 'JITTER') -> None:
     _log.output(_log.color('yellow', f'create_shape_keyframe: {frame}'))
     settings = get_ft_settings()
+    loader = settings.loader()
     geotracker = settings.get_current_geotracker_item()
     if not geotracker:
         return
@@ -177,6 +178,7 @@ def create_relative_shape_keyframe(gt: Any, frame: int, *,
     shape_index, shape, new_shape_created = get_blendshape(geomobj,
                                                            name=shape_name,
                                                            create=True)
+    gt = loader.kt_geotracker()
     verts = gt.applied_args_model_vertices_at(frame)
     shape.data.foreach_set('co', (verts @ xy_to_xz_rotation_matrix_3x3()).ravel())
 

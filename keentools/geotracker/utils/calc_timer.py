@@ -39,6 +39,7 @@ from .prechecks import show_warning_dialog
 from ..interface.screen_mesages import (revert_default_screen_message,
                                         operation_calculation_screen_message,
                                         staged_calculation_screen_message)
+from ...tracker.tracking_blendshapes import create_relative_shape_keyframe
 
 
 _log = KTLogger(__name__)
@@ -215,6 +216,9 @@ class _CommonTimer(TimerMixin):
         self._error_callback: Optional[Callable] = error_callback
         self.add_timer(self)
 
+    def create_shape_keyframe(self):
+        pass
+
     def set_current_state(self, func: Callable) -> None:
         self.current_state = func
 
@@ -228,8 +232,13 @@ class _CommonTimer(TimerMixin):
             return names[funcs.index(self.current_state)]
         return 'unknown'
 
-    def add_performed_frame(self, frame: int) -> None:
+    def add_performed_frame(self, frame: int) -> bool:
+        if frame in self._performed_frames:
+            _log.output(_log.color('red', f'add_performed_frame: * {frame} *'))
+            return False
+        _log.output(f'add_performed_frame: {frame}')
         self._performed_frames.add(frame)
+        return True
 
     def performed_frames(self) -> List:
         return sorted(self._performed_frames)
@@ -268,6 +277,7 @@ class _CommonTimer(TimerMixin):
 
         if result in [_ComputationState.RUNNING, _ComputationState.SUCCESS]:
             self.add_performed_frame(tracking_current_frame)
+            self.create_shape_keyframe()
 
         if result == _ComputationState.SUCCESS:
             self.set_current_state(self.finish_success_state)
@@ -293,7 +303,7 @@ class _CommonTimer(TimerMixin):
 
     def finish_success_state(self) -> None:
         _log.output(_log.color('red', f'{self._operation_name} '
-                                     f'finish_success_state call'))
+                                      f'finish_success_state call'))
         self._finish_computation()
         if self._success_callback is not None:
             self._success_callback(self.performed_frames())
@@ -301,7 +311,7 @@ class _CommonTimer(TimerMixin):
 
     def finish_error_state(self) -> None:
         _log.output(_log.color('red', f'{self._operation_name} '
-                                     f'finish_error_state call'))
+                                      f'finish_error_state call'))
         self._finish_computation()
         if self._error_callback is not None:
             self._error_callback(self.performed_frames())
@@ -426,6 +436,11 @@ class TrackTimer(_CommonTimer):
         self._operation_help = 'ESC to stop'
         self._calc_mode = 'TRACKING'
         self._overall_func = computation.finished_and_total_frames
+
+
+class FTTrackTimer(_CommonTimer):
+    def create_shape_keyframe(self):
+        create_relative_shape_keyframe(bpy_current_frame())
 
 
 class RefineTimer(_CommonTimer):

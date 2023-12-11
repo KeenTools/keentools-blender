@@ -224,17 +224,18 @@ def toggle_lock_view_act() -> ActionStatus:
     return ActionStatus(True, 'Ok')
 
 
-def track_to(forward: bool) -> ActionStatus:
+def track_to(forward: bool, timer_class: Any = TrackTimer) -> ActionStatus:
     _log.output(f'track_to: {forward}')
     check_status = track_checks()
     if not check_status.success:
         return check_status
 
     settings = get_gt_settings()
+    loader = settings.loader()
     geotracker = settings.get_current_geotracker_item()
-    gt = GTLoader.kt_geotracker()
+    gt = loader.kt_geotracker()
     current_frame = bpy_current_frame()
-    _log.output(GTLoader.get_geotracker_state())
+    _log.output(loader.get_geotracker_state())
     precalcless = geotracker.precalcless
     if not precalcless and not \
             geotracker.precalc_start <= current_frame <= geotracker.precalc_end:
@@ -244,7 +245,7 @@ def track_to(forward: bool) -> ActionStatus:
         precalc_path = None if precalcless else geotracker.precalc_path
         _log.output(f'gt.track_async({current_frame}, {forward}, {precalc_path})')
         tracking_computation = gt.track_async(current_frame, forward, precalc_path)
-        tracking_timer = TrackTimer(
+        tracking_timer = timer_class(
             tracking_computation, current_frame,
             success_callback=unbreak_after if forward else unbreak_after_reversed,
             error_callback=unbreak_after if forward else unbreak_after_reversed)

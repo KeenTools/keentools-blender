@@ -69,6 +69,5 @@ class FT_OT_MovePin(MovePin):
                                        wireframe=True)
 
     def update_on_left_mouse_release(self) -> None:
-        create_relative_shape_keyframe(self.get_loader().kt_geotracker(),
-                                       bpy_current_frame(),
+        create_relative_shape_keyframe(bpy_current_frame(),
                                        keyframe_type='KEYFRAME')

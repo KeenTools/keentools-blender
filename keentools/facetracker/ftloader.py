@@ -19,6 +19,7 @@
 from typing import Any
 
 from ..utils.kt_logging import KTLogger
+from ..addon_config import ProductType
 from ..facetracker_config import get_ft_settings
 from ..utils.bpy_common import bpy_current_frame
 from ..tracker.loader import Loader
@@ -30,8 +31,8 @@ _log = KTLogger(__name__)
 
 class FTLoader(Loader):
     @classmethod
-    def product_name(cls):
-        return 'facetracker'
+    def product_type(cls):
+        return ProductType.FACETRACKER
 
     @classmethod
     def get_settings(cls) -> Any:

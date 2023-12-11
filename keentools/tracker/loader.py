@@ -24,8 +24,11 @@ from bpy.types import Area
 from mathutils import Matrix
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, get_operator, ErrorType, show_user_preferences
-from ..geotracker_config import get_gt_settings
+from ..addon_config import (Config,
+                            get_operator,
+                            ErrorType,
+                            show_user_preferences,
+                            ProductType)
 from ..geotracker.viewport import GTViewport
 from ..utils.coords import (image_space_to_frame,
                             calc_bpy_camera_mat_relative_to_model,
@@ -165,7 +168,7 @@ def frame_change_post_handler_wrapper(settings_func: Callable,
         if geotracker.focal_length_estimation:
             geotracker.reset_focal_length_estimation()
 
-        if loader.product_name() == 'facetracker':
+        if loader.product_type() == ProductType.FACETRACKER:
             loader.update_viewport_shaders(wireframe_data=True,
                                            wireframe=True)
 
@@ -199,8 +202,8 @@ class Loader:
     check_shader_timer: Optional[Any] = None
 
     @classmethod
-    def product_name(cls):
-        return 'tracker'
+    def product_type(cls):
+        return ProductType.UNDEFINED
 
     @classmethod
     def get_settings(cls) -> Any:
