@@ -112,14 +112,12 @@ class GeoInput(pkt_module().GeoInputI):
         return int(round(p[0] * 10000, 0) + 3 * p[1])
 
     def geo_hash(self) -> Any:
-        _log.output(_log.color('magenta', 'get geo_hash'))
         settings = self.get_settings()
 
         if self.hash_is_cached or settings.is_calculating():
-            _log.output('previous geo_hash')
             return self._previous_hash
 
-        _log.output('new geo_hash')
+        _log.output(_log.color('magenta', 'new geo_hash'))
         geotracker = settings.get_current_geotracker_item()
         if geotracker and geotracker.geomobj:
             vert_count = len(geotracker.geomobj.data.vertices)
