@@ -19,7 +19,6 @@
 from typing import Any, Callable, Optional, Tuple, Set, Dict
 from dataclasses import dataclass
 import os
-from enum import Enum
 
 import bpy
 from .utils.version import BVersion
@@ -299,20 +298,20 @@ def get_operator(operator_id_name: str) -> Any:
 
 
 class ErrorType:
-    Unknown = -1
-    CustomMessage = 0
-    NoLicense = 1
-    SceneDamaged = 2
-    CannotReconstruct = 3
-    CannotCreateObject = 4
-    MeshCorrupted = 5
-    PktProblem = 6
-    PktModelProblem = 7
-    DownloadingProblem = 8
-    FBGracePeriod = 9
-    GTGracePeriod = 10
-    ShaderProblem = 11
-    UnsupportedGPUBackend = 12
+    Unknown: int = -1
+    CustomMessage: int = 0
+    NoLicense: int = 1
+    SceneDamaged: int = 2
+    CannotReconstruct: int = 3
+    CannotCreateObject: int = 4
+    MeshCorrupted: int = 5
+    PktProblem: int = 6
+    PktModelProblem: int = 7
+    DownloadingProblem: int = 8
+    FBGracePeriod: int = 9
+    GTGracePeriod: int = 10
+    ShaderProblem: int = 11
+    UnsupportedGPUBackend: int = 12
 
 
 @dataclass(frozen=True)
@@ -321,7 +320,7 @@ class ActionStatus:
     error_message: str = None
 
 
-class ProductType(Enum):
+class ProductType:
     UNDEFINED: int = -1
     FACEBUILDER: int = 0
     GEOTRACKER: int = 1

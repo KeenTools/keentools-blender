@@ -25,13 +25,10 @@ from bpy.props import (IntProperty, BoolProperty, FloatProperty,
                        PointerProperty, CollectionProperty, BoolVectorProperty)
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config
-
+from ..addon_config import Config, ProductType
 from .ftloader import FTLoader
-
 from ..utils.bpy_common import (bpy_poll_is_mesh,
                                 bpy_poll_is_camera)
-
 from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_getter,
                                             universal_cached_setter)
@@ -271,6 +268,9 @@ class FaceTrackerItem(TrackerItem):
 
 
 class FTSceneSettings(TRSceneSetting):
+    def product_type(self) -> int:
+        return ProductType.FACETRACKER
+
     def loader(self) -> Any:
         return FTLoader
 

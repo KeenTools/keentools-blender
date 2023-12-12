@@ -25,7 +25,7 @@ from bpy.types import (Object, CameraBackgroundImage, Area, Image, Mask,
 from bpy.props import IntProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, get_addon_preferences
+from ..addon_config import Config, get_addon_preferences, ProductType
 from ..geotracker_config import GTConfig
 from ..utils.images import (get_background_image_object,
                             get_background_image_strict,
@@ -247,6 +247,9 @@ class TrackerItem(PropertyGroup):
 
 
 class TRSceneSetting(PropertyGroup):
+    def product_type(self) -> int:
+        return ProductType.UNDEFINED
+
     def loader(self) -> Any:
         assert False, 'TRSceneSetting: loader'
 

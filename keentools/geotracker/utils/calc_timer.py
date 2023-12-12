@@ -40,6 +40,8 @@ from ..interface.screen_mesages import (revert_default_screen_message,
                                         operation_calculation_screen_message,
                                         staged_calculation_screen_message)
 from ...tracker.tracking_blendshapes import create_relative_shape_keyframe
+from ...facetracker_config import get_ft_settings
+from ...facetracker.ftloader import FTLoader
 
 
 _log = KTLogger(__name__)
@@ -75,6 +77,10 @@ class TimerMixin:
 
 
 class CalcTimer(TimerMixin):
+    @classmethod
+    def get_settings(cls) -> Any:
+        return get_gt_settings()
+
     def __init__(self, area: Optional[Area] = None,
                  runner: Optional[Any] = None):
         self.current_state: Callable = self.timeline_state
@@ -85,7 +91,7 @@ class CalcTimer(TimerMixin):
         self._runner: Any = runner
         self._start_time: float = 0.0
         self._area: Area = area
-        settings = get_gt_settings()
+        settings = self.get_settings()
         self._started_in_pinmode: bool = settings.pinmode
         self._start_frame: int = bpy_current_frame()
         self._error_message: str = ''
@@ -120,7 +126,7 @@ class CalcTimer(TimerMixin):
     def finish_calc_mode(self) -> None:
         self._runner.cancel()
         self.remove_timer(self)
-        settings = get_gt_settings()
+        settings = self.get_settings()
         settings.stop_calculating()
         revert_default_screen_message(unregister=not settings.pinmode)
 
@@ -136,7 +142,7 @@ class CalcTimer(TimerMixin):
                   time.time() - self._start_time))
 
     def common_checks(self) -> bool:
-        settings = get_gt_settings()
+        settings = self.get_settings()
         _log.output(f'common_checks: state={self.current_state_name()} '
                     f'target={self._target_frame} '
                     f'current={bpy_current_frame()}')
@@ -193,6 +199,14 @@ class CalcTimer(TimerMixin):
 
 
 class _CommonTimer(TimerMixin):
+    @classmethod
+    def get_settings(cls) -> Any:
+        return get_gt_settings()
+
+    @classmethod
+    def get_loader(cls) -> Any:
+        return GTLoader
+
     def __init__(self, computation: Any, from_frame: int = -1,
                  revert_current_frame: bool=False,
                  *, success_callback: Optional[Callable] = None,
@@ -247,7 +261,7 @@ class _CommonTimer(TimerMixin):
         return 0, 1
 
     def timeline_state(self) -> Optional[float]:
-        settings = get_gt_settings()
+        settings = self.get_settings()
         if settings.user_interrupts or not settings.pinmode:
             self._cancel()
 
@@ -260,7 +274,7 @@ class _CommonTimer(TimerMixin):
         return self._interval
 
     def computation_state(self) -> Optional[float]:
-        settings = get_gt_settings()
+        settings = self.get_settings()
         if settings.user_interrupts or not settings.pinmode:
             self._cancel()
 
@@ -290,7 +304,7 @@ class _CommonTimer(TimerMixin):
             return self.current_state()
 
         if self._prevent_playback:
-            GTLoader.viewport().tag_redraw()
+            self.get_loader().viewport().tag_redraw()
             return self._interval
 
         if result and tracking_current_frame != current_frame:
@@ -333,14 +347,15 @@ class _CommonTimer(TimerMixin):
             _log.error(f'PROBLEM WITH COMPUTATION STOP')
         revert_default_screen_message()
         self._stop_user_interrupt_operator()
-        GTLoader.save_geotracker()
-        settings = get_gt_settings()
+        settings = self.get_settings()
+        loader = self.get_loader()
+        loader.save_geotracker()
         settings.stop_calculating()
         self.remove_timer(self)
         if self._revert_current_frame:
             bpy_set_current_frame(self._start_frame)
 
-        GTLoader.viewport().tag_redraw()
+        loader.viewport().tag_redraw()
         return None
 
     def _start_user_interrupt_operator(self) -> None:
@@ -348,7 +363,7 @@ class _CommonTimer(TimerMixin):
         op('INVOKE_DEFAULT')
 
     def _stop_user_interrupt_operator(self) -> None:
-        settings = get_gt_settings()
+        settings = self.get_settings()
         settings.user_interrupts = True
 
     def _safe_resume(self) -> _ComputationState:
@@ -370,7 +385,7 @@ class _CommonTimer(TimerMixin):
                     total_frames=total_frames,
                     current_stage=current_stage + 1,
                     total_stages=total_stages)
-                settings = get_gt_settings()
+                settings = self.get_settings()
                 total = total_frames if total_frames != 0 else 1
                 settings.user_percent = 100 * finished_frames / total
                 return _ComputationState.RUNNING
@@ -391,7 +406,7 @@ class _CommonTimer(TimerMixin):
         overall = self._overall_func()
         _log.output(f'--- {self._operation_name} statistics ---')
         _log.output(f'Total calc frames: {overall}')
-        gt = GTLoader.kt_geotracker()
+        gt = self.get_loader().kt_geotracker()
         _log.output(f'KEYFRAMES: {gt.keyframes()}')
         _log.output(f'TRACKED FRAMES: {gt.track_frames()}\n')
         _log.output(f'PERFORMED FRAMES: {self.performed_frames()}')
@@ -411,7 +426,7 @@ class _CommonTimer(TimerMixin):
             self._start_user_interrupt_operator()
         operation_calculation_screen_message(self._operation_name,
                                              self._operation_help)
-        settings = get_gt_settings()
+        settings = self.get_settings()
         settings.calculating_mode = self._calc_mode
 
         _func = self.timer_func
@@ -438,7 +453,15 @@ class TrackTimer(_CommonTimer):
         self._overall_func = computation.finished_and_total_frames
 
 
-class FTTrackTimer(_CommonTimer):
+class FTTrackTimer(TrackTimer):
+    @classmethod
+    def get_settings(cls) -> Any:
+        return get_ft_settings()
+
+    @classmethod
+    def get_loader(cls) -> Any:
+        return FTLoader
+
     def create_shape_keyframe(self):
         create_relative_shape_keyframe(bpy_current_frame())
 
@@ -460,6 +483,16 @@ class RefineTimer(_CommonTimer):
                self.tracking_computation.total_stages()
 
 
+class FTRefineTimer(RefineTimer):
+    @classmethod
+    def get_settings(cls) -> Any:
+        return get_ft_settings()
+
+    @classmethod
+    def get_loader(cls) -> Any:
+        return FTLoader
+
+
 class RefineTimerFast(RefineTimer):
     def __init__(self, computation: Any, from_frame: int = -1,
                  *, success_callback: Optional[Callable] = None,
@@ -468,3 +501,13 @@ class RefineTimerFast(RefineTimer):
                          success_callback=success_callback,
                          error_callback=error_callback)
         self._prevent_playback = True
+
+
+class FTRefineTimerFast(RefineTimerFast):
+    @classmethod
+    def get_settings(cls) -> Any:
+        return get_ft_settings()
+
+    @classmethod
+    def get_loader(cls) -> Any:
+        return FTLoader
