@@ -129,7 +129,7 @@ def _start_autoloader_handler(headnum: int) -> None:
 class Common:
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = FBConfig.fb_tab_category
+    bl_category = Config.fb_tab_category
     bl_context = 'objectmode'
 
     @classmethod

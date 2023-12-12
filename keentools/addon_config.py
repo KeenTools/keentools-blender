@@ -38,11 +38,13 @@ class Config:
 
     fb_tab_category = 'FaceBuilder'
     gt_tab_category = 'GeoTracker'
+    ft_tab_category = 'GeoTracker'
 
     kt_testing_tab_category = 'KeenTools Testing'
 
     fb_global_var_name = 'keentools_fb_settings'
     gt_global_var_name = 'keentools_gt_settings'
+    ft_global_var_name = 'keentools_ft_settings'
 
     operators = 'keentools'
     prefs_operators = 'keentools_preferences'
@@ -238,8 +240,17 @@ def _get_gt_settings() -> Optional[Any]:
     return getattr(bpy.context.scene, name)
 
 
+def _get_ft_settings() -> Optional[Any]:
+    name = Config.ft_global_var_name
+    if not hasattr(bpy.context.scene, name):
+        return None
+    return getattr(bpy.context.scene, name)
+
+
+# TODO: Replace get_xx_settings functions with this
 fb_settings: Callable = _get_fb_settings
 gt_settings: Callable = _get_gt_settings
+ft_settings: Callable = _get_gt_settings
 
 
 def set_fb_settings_func(func: Callable) -> None:
@@ -250,6 +261,11 @@ def set_fb_settings_func(func: Callable) -> None:
 def set_gt_settings_func(func: Callable) -> None:
     global gt_settings
     gt_settings = func
+
+
+def set_ft_settings_func(func: Callable) -> None:
+    global ft_settings
+    ft_settings = func
 
 
 def gt_pinmode() -> bool:
@@ -266,8 +282,15 @@ def fb_pinmode() -> bool:
     return settings.pinmode
 
 
+def ft_pinmode() -> bool:
+    if not facetracker_enabled():
+        return False
+    settings = _get_ft_settings()
+    return settings.pinmode
+
+
 def addon_pinmode() -> bool:
-    return fb_pinmode() or gt_pinmode()
+    return fb_pinmode() or gt_pinmode() or ft_pinmode()
 
 
 def show_user_preferences(*, facebuilder: Optional[bool]=None,

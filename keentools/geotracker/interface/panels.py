@@ -101,7 +101,7 @@ class View3DPanel(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     # bl_options = {'DEFAULT_CLOSED'}
-    bl_category = GTConfig.gt_tab_category
+    bl_category = Config.gt_tab_category
 
     @classmethod
     def poll(cls, context: Any) -> bool:

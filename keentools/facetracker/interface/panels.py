@@ -102,19 +102,19 @@ class FT_PT_FacetrackersPanel(View3DPanel):
                     FTConfig.ft_select_facetracker_objects_idname, text=name,
                     depress=facetracker_num == i,
                     icon='CAMERA_DATA' if facetracker.camera_mode()
-                    else 'MESH_ICOSPHERE')
+                    else 'USER')
                 op.geotracker_num = i
             else:
                 if facetracker_num == i:
                     row.operator(FTConfig.ft_exit_pinmode_idname,
                                  text=name, depress=True,
                                  icon='CAMERA_DATA' if facetracker.camera_mode()
-                                 else 'MESH_ICOSPHERE')
+                                 else 'USER')
                 else:
                     op = row.operator(FTConfig.ft_pinmode_idname,
                                       text=name, depress=False,
                                       icon='CAMERA_DATA' if facetracker.camera_mode()
-                                      else 'MESH_ICOSPHERE')
+                                      else 'USER')
                     op.geotracker_num = i
 
             if not settings.pinmode:

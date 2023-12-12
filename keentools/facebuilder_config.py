@@ -21,7 +21,6 @@ import bpy
 from .utils.version import BVersion
 
 
-_company = 'keentools'
 _PT = 'FBUILDER_PT_'
 _MT = 'FBUILDER_MT_'
 prefix = 'keentools_fb'
@@ -34,12 +33,10 @@ class FBConfig:
     default_fb_camera_data_name = 'fbCamData'
     default_fb_camera_name = 'fbCamera'
 
-    fb_global_var_name = prefix + '_settings'
+    fb_global_var_name = 'keentools_fb_settings'
     fb_tool_name = 'FaceBuilder'
 
     operators = 'keentools_fb'
-
-    fb_tab_category = 'FaceBuilder'
 
     fb_license_purchase_url = 'https://link.keentools.io/fb-lc-fbbmld?utm_source=fbb-missing-license-dialog'
     coloring_texture_name = '.ktWireframeTexture'
@@ -160,7 +157,7 @@ class FBConfig:
     empty_expression_view_name = ''
 
     # Object Custom Properties
-    version_prop_name = _company + '_version'
+    version_prop_name = 'keentools_version'
     fb_serial_prop_name = prefix + '_serial'
     fb_images_prop_name = prefix + '_images'
     fb_dir_prop_name = prefix + '_dir'
@@ -232,7 +229,7 @@ def get_fb_settings_func():
 _get_fb_settings = get_fb_settings_func
 
 
-def get_fb_settings():
+def get_fb_settings():  # TODO: Move to addon_config.py
     global _get_fb_settings
     return _get_fb_settings()
 

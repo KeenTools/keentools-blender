@@ -46,7 +46,7 @@ _log = KTLogger(__name__)
 class FB_PT_OldFaceBuilderWarning(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = FBConfig.fb_tab_category
+    bl_category = Config.fb_tab_category
     bl_context = 'objectmode'
     bl_label = 'Remove old FaceBuilder'
 
@@ -132,7 +132,7 @@ def old_facebuilder_unregister_replacement():
 
 
 def _add_addon_settings_var():
-    setattr(bpy.types.Scene, FBConfig.fb_global_var_name,
+    setattr(bpy.types.Scene, Config.fb_global_var_name,
             bpy.props.PointerProperty(type=FBSceneSettings))
 
 
@@ -148,7 +148,7 @@ def menu_func(self, context):
 
 
 def get_fb_settings_safe():
-    name = FBConfig.fb_global_var_name
+    name = Config.fb_global_var_name
     if not hasattr(bpy.context.scene, name):
         bpy_timer_register(_add_addon_settings_var, first_interval=0.1)
         return None
