@@ -45,7 +45,7 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_render_frame,
                                 get_scene_camera_shift)
 from ..utils.video import fit_render_size
-from ..tracker.prechecks import common_checks_with_settings
+from ..geotracker.utils.prechecks import common_checks
 from ..geotracker.interface.screen_mesages import (revert_default_screen_message,
                                        playback_mode_screen_message,
                                        in_edit_mode_screen_message,
@@ -337,8 +337,9 @@ class PinMode(Operator):
         _log.output(f'INVOKE PINMODE: {self.geotracker_num}')
 
         settings = self.get_settings()
-        check_status = common_checks_with_settings(
-            settings, object_mode=True, is_calculating=True,
+        check_status = common_checks(
+            product = settings.product_type(),
+            object_mode=True, is_calculating=True,
             reload_geotracker=True, geotracker=True,
             camera=True, geometry=True, movie_clip=False)
         if not check_status.success:
