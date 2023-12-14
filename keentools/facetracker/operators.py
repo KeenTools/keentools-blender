@@ -26,12 +26,13 @@ from bpy.props import (BoolProperty,
                        PointerProperty)
 
 from ..utils.kt_logging import KTLogger
-from ..facetracker_config import FTConfig, get_ft_settings
+from ..addon_config import ProductType
+from ..facetracker_config import FTConfig
 from .ui_strings import buttons
 from .ftloader import FTLoader
-from ..tracker.actions import (create_tracker_action,
-                               delete_tracker_action,
-                               select_tracker_objects_action)
+from ..geotracker.utils.geotracker_acts import (create_tracker_action,
+                                                delete_tracker_action,
+                                                select_tracker_objects_action)
 
 
 _log = KTLogger(__name__)
@@ -49,8 +50,7 @@ class FT_OT_CreateFaceTracker(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        settings = get_ft_settings()
-        act_status = create_tracker_action(settings)
+        act_status = create_tracker_action(product=ProductType.FACETRACKER)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
         return {'FINISHED'}
@@ -65,8 +65,8 @@ class FT_OT_DeleteFaceTracker(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_ft_settings()
-        act_status = delete_tracker_action(settings, self.geotracker_num)
+        act_status = delete_tracker_action(self.geotracker_num,
+                                           product=ProductType.FACETRACKER)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
         return {'FINISHED'}
@@ -81,8 +81,8 @@ class FT_OT_SelectGeotrackerObjects(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_ft_settings()
-        act_status = select_tracker_objects_action(settings, self.geotracker_num)
+        act_status = select_tracker_objects_action(
+            self.geotracker_num, product=ProductType.FACETRACKER)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}

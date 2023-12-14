@@ -35,6 +35,7 @@ from ..utils.kt_logging import KTLogger
 from ..utils.version import BVersion
 from ..addon_config import (get_operator,
                             Config,
+                            ProductType,
                             show_user_preferences,
                             show_tool_preferences)
 from ..geotracker_config import (GTConfig,
@@ -49,8 +50,8 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 create_empty_object,
                                 bpy_remove_object,
                                 bpy_url_open)
-from .utils.geotracker_acts import (create_geotracker_act,
-                                    delete_geotracker_act,
+from .utils.geotracker_acts import (create_tracker_action,
+                                    delete_tracker_action,
                                     add_keyframe_act,
                                     remove_keyframe_act,
                                     prev_keyframe_act,
@@ -74,7 +75,7 @@ from .utils.geotracker_acts import (create_geotracker_act,
                                     transfer_tracking_to_geometry_act,
                                     remove_focal_keyframe_act,
                                     remove_focal_keyframes_act,
-                                    select_geotracker_objects_act,
+                                    select_tracker_objects_action,
                                     render_with_background_act,
                                     revert_default_render_act,
                                     store_camobj_state,
@@ -123,7 +124,7 @@ class GT_OT_CreateGeoTracker(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        act_status = create_geotracker_act()
+        act_status = create_tracker_action(product=ProductType.GEOTRACKER)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
         return {'FINISHED'}
@@ -138,7 +139,8 @@ class GT_OT_DeleteGeoTracker(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = delete_geotracker_act(self.geotracker_num)
+        act_status = delete_tracker_action(self.geotracker_num,
+                                           product=ProductType.GEOTRACKER)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
         return {'FINISHED'}
@@ -1198,7 +1200,8 @@ class GT_OT_SelectGeotrackerObjects(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = select_geotracker_objects_act(self.geotracker_num)
+        act_status = select_tracker_objects_action(
+            self.geotracker_num, product=ProductType.GEOTRACKER)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}

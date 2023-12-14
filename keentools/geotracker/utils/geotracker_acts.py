@@ -25,7 +25,7 @@ from mathutils import Matrix, Euler, Vector
 
 from ...utils.kt_logging import KTLogger
 from ...utils.version import BVersion
-from ...addon_config import ActionStatus, get_addon_preferences
+from ...addon_config import ActionStatus, get_addon_preferences, ProductType
 from ...geotracker_config import (get_gt_settings,
                                   GTConfig)
 from ..gtloader import GTLoader
@@ -83,22 +83,52 @@ from ...utils.coords import (LocRotScale,
 from .textures import bake_texture, preview_material_with_texture, get_bad_frame
 from ..interface.screen_mesages import clipping_changed_screen_message
 from ...utils.ui_redraw import total_redraw_ui
+from ...facetracker_config import get_ft_settings
+from ...facetracker.ftloader import FTLoader
 
 
 _log = KTLogger(__name__)
 
 
-def create_geotracker_act() -> ActionStatus:
-    _log.output('create_geotracker_act start')
-    check_status = common_checks(object_mode=True, pinmode_out=True,
+def get_settings(product: int) -> Any:
+    if product == ProductType.GEOTRACKER:
+        return get_gt_settings()
+    if product == ProductType.FACETRACKER:
+        return get_ft_settings()
+    else:
+        assert False, f'get_settings: Improper product {product}'
+
+
+def get_loader(product: int) -> Any:
+    if product == ProductType.GEOTRACKER:
+        return GTLoader
+    if product == ProductType.FACETRACKER:
+        return FTLoader
+    else:
+        assert False, f'get_loader: Improper product {product}'
+
+
+def product_name(product: int) -> str:
+    if product == ProductType.GEOTRACKER:
+        return 'GeoTracker'
+    if product == ProductType.FACETRACKER:
+        return 'FaceTracker'
+    else:
+        assert False, f'get_loader: Improper product {product}'
+
+
+def create_tracker_action(*, product: int) -> ActionStatus:
+    _log.output(f'create_tracker_action start [{product_name(product)}]')
+    check_status = common_checks(product=product,
+                                 object_mode=True, pinmode_out=True,
                                  is_calculating=True)
     if not check_status.success:
         return check_status
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     num = settings.add_geotracker_item()
     settings.current_geotracker_num = num
-    GTLoader.new_kt_geotracker()
+    get_loader(product).new_kt_geotracker()
 
     selected_objects = bpy_scene_selected_objects()
     active_object = bpy_active_object()
@@ -118,66 +148,103 @@ def create_geotracker_act() -> ActionStatus:
 
     select_objects_only(selected_objects)
     bpy_active_object(active_object)
-    _log.output('create_geotracker_act end')
-    return ActionStatus(True, 'GeoTracker has been added')
+    _log.output('create_tracker_action end')
+    return ActionStatus(True, f'{product_name(product)} has been added')
 
 
-def delete_geotracker_act(geotracker_num: int) -> ActionStatus:
-    check_status = common_checks(object_mode=True, pinmode_out=True,
+def delete_tracker_action(geotracker_num: int, *, product: int) -> ActionStatus:
+    _log.output(f'delete_tracker_action start [{product_name(product)}]')
+    check_status = common_checks(product=product,
+                                 object_mode=True, pinmode_out=True,
                                  is_calculating=True)
     if not check_status.success:
         return check_status
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     res = settings.remove_geotracker_item(geotracker_num)
     if not res:
-        msg = 'Could not delete a GeoTracker'
+        msg = f'Could not delete a {product_name(product)}'
         _log.error(msg)
         return ActionStatus(False, msg)
     settings.reload_current_geotracker()
-    return ActionStatus(True, 'GeoTracker has been removed')
+    _log.output('delete_tracker_action end')
+    return ActionStatus(True, f'{product_name(product)} has been removed')
 
 
-def add_keyframe_act() -> ActionStatus:
-    check_status = common_checks(object_mode=True, pinmode=True,
-                                 is_calculating=True, reload_geotracker=True,
-                                 geotracker=True, camera=True, geometry=True)
+def select_tracker_objects_action(geotracker_num: int, *,
+                                  product: int) -> ActionStatus:
+    _log.output(f'select_tracker_objects_action start [{product_name(product)}]')
+    check_status = common_checks(product=product,
+                                 object_mode=True, is_calculating=True,
+                                 pinmode_out=True)
     if not check_status.success:
         return check_status
 
-    area = GTLoader.get_work_area()
-    if not area:
-        return ActionStatus(False, 'Working area does not exist')
+    settings = get_settings(product)
+    settings.fix_geotrackers()
+    if not settings.change_current_geotracker_safe(geotracker_num):
+        return ActionStatus(False, f'Cannot switch to Geotracker '
+                                   f'{geotracker_num}')
 
-    GTLoader.safe_keyframe_add(bpy_current_frame(), update=True)
-    GTLoader.save_geotracker()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker.geomobj and not geotracker.camobj:
+        return ActionStatus(False, f'Geotracker {geotracker_num} '
+                                   f'does not contain any objects')
+    if geotracker.camera_mode():
+        select_objects_only([geotracker.camobj, geotracker.geomobj])
+    else:
+        select_objects_only([geotracker.geomobj, geotracker.camobj])
+
+    center_viewport(bpy.context.area)
+    _log.output('select_tracker_objects_action end')
     return ActionStatus(True, 'ok')
 
 
-def remove_keyframe_act() -> ActionStatus:
-    check_status = common_checks(object_mode=True, pinmode=True,
+def add_keyframe_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
                                  geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
-    gt = GTLoader.kt_geotracker()
+    loader = get_loader(product)
+    area = loader.get_work_area()
+    if not area:
+        return ActionStatus(False, 'Working area does not exist')
+
+    loader.safe_keyframe_add(bpy_current_frame(), update=True)
+    loader.save_geotracker()
+    return ActionStatus(True, 'ok')
+
+
+def remove_keyframe_act(
+        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=True, pinmode=True,
+                                 is_calculating=True, reload_geotracker=True,
+                                 geotracker=True, camera=True, geometry=True)
+    if not check_status.success:
+        return check_status
+
+    loader = get_loader(product)
+    gt = loader.kt_geotracker()
     current_frame = bpy_current_frame()
     if gt.is_key_at(current_frame):
         gt.remove_keyframe(current_frame)
-        GTLoader.save_geotracker()
+        loader.save_geotracker()
         return ActionStatus(True, 'ok')
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     obj = geotracker.animatable_object()
     delete_locrot_keyframe(obj)
     return ActionStatus(True, 'No GeoTracker keyframe at this frame')
 
 
-def next_keyframe_act() -> ActionStatus:
+def next_keyframe_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
     current_frame = bpy_current_frame()
-    gt = GTLoader.kt_geotracker()
+    gt = get_loader(product).kt_geotracker()
     target_frame = get_next_tracking_keyframe(gt, current_frame)
 
     if current_frame == target_frame:
@@ -195,9 +262,9 @@ def next_keyframe_act() -> ActionStatus:
     return ActionStatus(False, 'No next GeoTracker keyframe')
 
 
-def prev_keyframe_act() -> ActionStatus:
+def prev_keyframe_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
     current_frame = bpy_current_frame()
-    gt = GTLoader.kt_geotracker()
+    gt = get_loader(product).kt_geotracker()
     target_frame = get_previous_tracking_keyframe(gt, current_frame)
 
     if current_frame == target_frame:
@@ -215,8 +282,9 @@ def prev_keyframe_act() -> ActionStatus:
     return ActionStatus(False, 'No previous GeoTracker keyframe')
 
 
-def toggle_lock_view_act() -> ActionStatus:
-    settings = get_gt_settings()
+def toggle_lock_view_act(*,
+                         product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    settings = get_settings(product)
     if not settings.pinmode:
         return ActionStatus(False, 'Lock View works in GeoTracker pinmode only')
 
@@ -224,13 +292,14 @@ def toggle_lock_view_act() -> ActionStatus:
     return ActionStatus(True, 'Ok')
 
 
-def track_to(forward: bool, timer_class: Any = TrackTimer) -> ActionStatus:
+def track_to(forward: bool, timer_class: Any = TrackTimer, *,
+             product: int = ProductType.GEOTRACKER) -> ActionStatus:
     _log.output(f'track_to: {forward}')
     check_status = track_checks()
     if not check_status.success:
         return check_status
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     loader = settings.loader()
     geotracker = settings.get_current_geotracker_item()
     gt = loader.kt_geotracker()
@@ -263,12 +332,13 @@ def track_to(forward: bool, timer_class: Any = TrackTimer) -> ActionStatus:
     return ActionStatus(True, 'Ok')
 
 
-def track_next_frame_act(forward: bool=True) -> ActionStatus:
+def track_next_frame_act(forward: bool=True, *,
+                         product: int = ProductType.GEOTRACKER) -> ActionStatus:
     check_status = track_checks()
     if not check_status.success:
         return check_status
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
 
     obj = geotracker.animatable_object()
@@ -277,12 +347,13 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    gt = GTLoader.kt_geotracker()
+    loader = get_loader(product)
+    gt = loader.kt_geotracker()
     current_frame = bpy_current_frame()
     next_frame = current_frame + 1 if forward else current_frame - 1
     settings.calculating_mode = 'TRACKING'
     try:
-        _log.output(GTLoader.get_geotracker_state())
+        _log.output(loader.get_geotracker_state())
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
 
         if gt.track_frame(current_frame, forward, precalc_path):
@@ -306,22 +377,22 @@ def track_next_frame_act(forward: bool=True) -> ActionStatus:
     finally:
         settings.stop_calculating()
 
-    GTLoader.save_geotracker()
+    loader.save_geotracker()
     if bpy_current_frame() != next_frame:
         bpy_set_current_frame(next_frame)
 
     return ActionStatus(True, 'Ok')
 
 
-def refine_async_act() -> ActionStatus:
+def refine_async_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
     _log.output('refine_async_act call')
     check_status = track_checks()
     if not check_status.success:
         return check_status
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
-    gt = GTLoader.kt_geotracker()
+    gt = get_loader(product).kt_geotracker()
     current_frame = bpy_current_frame()
 
     if not geotracker.precalcless:
@@ -354,16 +425,17 @@ def refine_async_act() -> ActionStatus:
     return ActionStatus(True, 'Ok')
 
 
-def refine_all_async_act() -> ActionStatus:
+def refine_all_async_act(*,
+                         product: int = ProductType.GEOTRACKER) -> ActionStatus:
     _log.output('refine_all_async_act call')
     check_status = track_checks()
     if not check_status.success:
         return check_status
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
 
-    gt = GTLoader.kt_geotracker()
+    gt = get_loader(product).kt_geotracker()
     current_frame = bpy_current_frame()
     try:
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
@@ -388,37 +460,43 @@ def refine_all_async_act() -> ActionStatus:
     return ActionStatus(True, 'Ok')
 
 
-def clear_between_keyframes_act() -> ActionStatus:
-    check_status = common_checks(object_mode=False, pinmode=True,
+def clear_between_keyframes_act(
+        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=False, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
                                  geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
     current_frame = bpy_current_frame()
-    gt = GTLoader.kt_geotracker()
+    loader = get_loader(product)
+    gt = loader.kt_geotracker()
     try:
         gt.remove_track_between_keyframes(current_frame)
     except Exception as err:
         _log.error(f'Unknown Exception clear_between_keyframes_act: {str(err)}')
         show_warning_dialog(err)
 
-    GTLoader.save_geotracker()
-    GTLoader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
-                                     pins_and_residuals=True, timeline=True)
-    GTLoader.viewport_area_redraw()
+    loader.save_geotracker()
+    loader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
+                                   pins_and_residuals=True, timeline=True)
+    loader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
 
-def clear_direction_act(forward: bool) -> ActionStatus:
-    check_status = common_checks(object_mode=False, pinmode=True,
+def clear_direction_act(forward: bool, *,
+                        product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=False, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
                                  geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
     current_frame = bpy_current_frame()
-    gt = GTLoader.kt_geotracker()
+    loader = get_loader(product)
+    gt = loader.kt_geotracker()
     try:
         _log.output(f'clear_direction_act: {current_frame} {forward}')
         gt.remove_track_in_direction(current_frame, forward=forward)
@@ -426,42 +504,47 @@ def clear_direction_act(forward: bool) -> ActionStatus:
         _log.error(f'Unknown Exception clear_direction_act: {str(err)}')
         show_warning_dialog(err)
 
-    GTLoader.save_geotracker()
-    GTLoader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
+    loader.save_geotracker()
+    loader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
                                      pins_and_residuals=True, timeline=True)
-    GTLoader.viewport_area_redraw()
+    loader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
 
-def clear_all_act() -> ActionStatus:
-    check_status = common_checks(object_mode=False, pinmode=True,
+def clear_all_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=False, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
                                  geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
-    gt = GTLoader.kt_geotracker()
+    loader = get_loader(product)
+    gt = loader.kt_geotracker()
     try:
         gt.remove_all_track_data_and_keyframes()
     except Exception as err:
         _log.error(f'Unknown Exception clear_all_act: {str(err)}')
         show_warning_dialog(err)
 
-    GTLoader.save_geotracker()
-    GTLoader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
+    loader.save_geotracker()
+    loader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
                                      pins_and_residuals=True, timeline=True)
-    GTLoader.viewport_area_redraw()
+    loader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
 
-def clear_all_except_keyframes_act() -> ActionStatus:
-    check_status = common_checks(object_mode=True, pinmode=True,
+def clear_all_except_keyframes_act(
+        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
                                  geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
-    gt = GTLoader.kt_geotracker()
+    loader = get_loader(product)
+    gt = loader.kt_geotracker()
 
     keyframes = gt.keyframes()
     if len(keyframes) < 1:
@@ -478,48 +561,54 @@ def clear_all_except_keyframes_act() -> ActionStatus:
     gt.remove_track_in_direction(keyframes[0], False)
     gt.remove_track_in_direction(keyframes[-1], True)
 
-    GTLoader.save_geotracker()
-    GTLoader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
+    loader.save_geotracker()
+    loader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
                                      pins_and_residuals=True, timeline=True)
     return ActionStatus(True, 'ok')
 
 
-def remove_focal_keyframe_act() -> ActionStatus:
-    check_status = common_checks(object_mode=False, is_calculating=True,
+def remove_focal_keyframe_act(
+        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=False, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True)
     if not check_status.success:
         return check_status
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     remove_fcurve_point(geotracker.camobj.data, bpy_current_frame(), 'lens')
     return ActionStatus(True, 'ok')
 
 
-def remove_focal_keyframes_act() -> ActionStatus:
-    check_status = common_checks(object_mode=False, is_calculating=True,
+def remove_focal_keyframes_act(
+        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=False, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True)
     if not check_status.success:
         return check_status
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     remove_fcurve_from_object(geotracker.camobj.data, 'lens')
     return ActionStatus(True, 'ok')
 
 
-def remove_pins_act() -> ActionStatus:
-    check_status = common_checks(object_mode=True, pinmode=True,
+def remove_pins_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
                                  geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
-    gt = GTLoader.kt_geotracker()
+    loader = get_loader(product)
+    gt = loader.kt_geotracker()
 
-    vp = GTLoader.viewport()
+    vp = loader.viewport()
     pins = vp.pins()
     selected_pins = pins.get_selected_pins()
     if len(selected_pins) == 0:
@@ -531,53 +620,57 @@ def remove_pins_act() -> ActionStatus:
         for i in reversed(selected_pins):
             gt.remove_pin(i)
             selected_pins.remove(i)
-        if gt.is_key_at(bpy_current_frame()) and not GTLoader.solve():
+        if gt.is_key_at(bpy_current_frame()) and not loader.solve():
             return ActionStatus(False, 'Could not remove selected pins')
-        GTLoader.load_pins_into_viewport()
+        loader.load_pins_into_viewport()
 
     pins.reset_current_pin()
-    GTLoader.save_geotracker()
-    GTLoader.update_viewport_shaders(pins_and_residuals=True)
-    GTLoader.viewport_area_redraw()
+    loader.save_geotracker()
+    loader.update_viewport_shaders(pins_and_residuals=True)
+    loader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
 
-def toggle_pins_act() -> ActionStatus:
-    check_status = common_checks(object_mode=True, pinmode=True,
+def toggle_pins_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
                                  geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
-    gt = GTLoader.kt_geotracker()
+    loader = get_loader(product)
+    gt = loader.kt_geotracker()
     keyframe = bpy_current_frame()
     pins_count = gt.pins_count()
     if pins_count > 0:
-        GTLoader.safe_keyframe_add(keyframe, update=True)
-        pins = GTLoader.viewport().pins()
+        loader.safe_keyframe_add(keyframe, update=True)
+        pins = loader.viewport().pins()
         selected_pins = pins.get_selected_pins(pins_count)
         if len(selected_pins) == 0:
             gt.toggle_pins(keyframe)
         else:
             gt.toggle_pins(keyframe, selected_pins)
         pins.clear_selected_pins()
-        GTLoader.save_geotracker()
+        loader.save_geotracker()
 
-    GTLoader.update_viewport_shaders(pins_and_residuals=True)
-    GTLoader.viewport_area_redraw()
+    loader.update_viewport_shaders(pins_and_residuals=True)
+    loader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
 
-def center_geo_act() -> ActionStatus:
-    check_status = common_checks(object_mode=True, pinmode=True,
+def center_geo_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
                                  geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
-    GTLoader.center_geo()
+    loader = get_loader(product)
+    loader.center_geo()
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     camobj = geotracker.camobj
     camera_clip_start = camobj.data.clip_start
@@ -593,14 +686,16 @@ def center_geo_act() -> ActionStatus:
         if near != camera_clip_start or far != camera_clip_end:
             clipping_changed_screen_message(near, far)
 
-    GTLoader.update_viewport_shaders(wireframe=True, geomobj_matrix=True,
+    loader.update_viewport_shaders(wireframe=True, geomobj_matrix=True,
                                      pins_and_residuals=True)
-    GTLoader.viewport_area_redraw()
+    loader.viewport_area_redraw()
     return ActionStatus(True, 'ok')
 
 
-def create_animated_empty_act(obj: Object, linked: bool=False,
-                              force_bake_all_frames: bool=False) -> ActionStatus:
+def create_animated_empty_act(
+        obj: Object, linked: bool=False,
+        force_bake_all_frames: bool=False, *,
+        product: int = ProductType.GEOTRACKER) -> ActionStatus:
     if not bpy_poll_is_mesh(None, obj) and not bpy_poll_is_camera(None, obj):
         msg = 'Selected object is not Geometry or Camera'
         return ActionStatus(False, msg)
@@ -659,8 +754,10 @@ def create_animated_empty_act(obj: Object, linked: bool=False,
 
 def create_empty_from_selected_pins_act(
         from_frame: int, to_frame: int, linked: bool = False,
-        orientation: str = 'NORMAL', size: float = 1.0) -> ActionStatus:
-    check_status = common_checks(object_mode=True, pinmode=True,
+        orientation: str = 'NORMAL', size: float = 1.0, *,
+        product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
                                  geotracker=True, camera=True, geometry=True)
     if not check_status.success:
@@ -669,12 +766,14 @@ def create_empty_from_selected_pins_act(
     if from_frame < 0 or to_frame < from_frame:
         return ActionStatus(False, 'Wrong frame range')
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
-    gt = GTLoader.kt_geotracker()
+    loader = get_loader(product)
 
-    pins = GTLoader.viewport().pins()
+    gt = loader.kt_geotracker()
+
+    pins = loader.viewport().pins()
     pins_count = gt.pins_count()
     selected_pins = pins.get_selected_pins(pins_count)
     selected_pins_count = len(selected_pins)
@@ -751,13 +850,15 @@ def create_empty_from_selected_pins_act(
     return ActionStatus(True, 'ok')
 
 
-def check_uv_exists(obj: Optional[Object]) -> ActionStatus:
+def check_uv_exists(obj: Optional[Object], *,
+                    product: int = ProductType.GEOTRACKER) -> ActionStatus:
     if not obj or not obj.data.uv_layers.active:
         return ActionStatus(False, 'No UV map on object')
     return ActionStatus(True, 'ok')
 
 
-def check_uv_overlapping(obj: Optional[Object]) -> ActionStatus:
+def check_uv_overlapping(obj: Optional[Object], *,
+                         product: int = ProductType.GEOTRACKER) -> ActionStatus:
     if not BVersion.uv_select_overlap_exists:
         return ActionStatus(False, 'Too old Blender version for overlapping check')
 
@@ -781,14 +882,17 @@ def check_uv_overlapping(obj: Optional[Object]) -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def check_uv_overlapping_with_status(geotracker: Any) -> ActionStatus:
+def check_uv_overlapping_with_status(
+        geotracker: Any, *,
+        product: int = ProductType.GEOTRACKER) -> ActionStatus:
     status = check_uv_overlapping(geotracker.geomobj)
     geotracker.overlapping_detected = not status.success
     return status
 
 
-def create_non_overlapping_uv_act() -> ActionStatus:
-    settings = get_gt_settings()
+def create_non_overlapping_uv_act(
+        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     old_mode = geomobj.mode
@@ -809,9 +913,9 @@ def create_non_overlapping_uv_act() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def repack_uv_act() -> ActionStatus:
+def repack_uv_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
     _log.output('repack_uv_act call')
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     old_mode = geomobj.mode
@@ -840,13 +944,14 @@ def repack_uv_act() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def bake_texture_from_frames_act(area: Area,
-                                 selected_frames: List) -> ActionStatus:
-    _log.output(f'bake_texture_from_frames_act: {selected_frames}')
+def bake_texture_from_frames_act(
+        area: Area, selected_frames: List, *,
+        product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    _log.output(f'bake_texture_from_frames_act [{product}]: {selected_frames}')
     if not area:
         return ActionStatus(False, 'Improper context area')
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
 
     check_status = check_uv_exists(geotracker.geomobj)
@@ -866,9 +971,9 @@ def bake_texture_from_frames_act(area: Area,
 
     if settings.pinmode:
         settings.reload_current_geotracker()
-        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
-                                         pins_and_residuals=True)
-
+        get_loader(product).update_viewport_shaders(wireframe=False,
+                                                    geomobj_matrix=True,
+                                                    pins_and_residuals=True)
     if built_texture is None:
         bad_frame = get_bad_frame()
         if bad_frame < 0:
@@ -893,14 +998,16 @@ def bake_texture_from_frames_act(area: Area,
     return ActionStatus(True, 'ok')
 
 
-def transfer_tracking_to_camera_act() -> ActionStatus:
-    check_status = common_checks(object_mode=True, is_calculating=True,
+def transfer_tracking_to_camera_act(
+        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
 
     geomobj = geotracker.geomobj
@@ -916,7 +1023,8 @@ def transfer_tracking_to_camera_act() -> ActionStatus:
 
     current_frame = reset_unsaved_animation_changes_in_frame()
 
-    gt = GTLoader.kt_geotracker()
+    loader = get_loader(product)
+    gt = loader.kt_geotracker()
 
     all_animated_frames = list(set(geom_animated_frames).union(set(cam_animated_frames)))
     all_animated_frames.sort()
@@ -928,7 +1036,7 @@ def transfer_tracking_to_camera_act() -> ActionStatus:
         bpy_set_current_frame(frame)
         delete_locrot_keyframe(geomobj)
         geomobj.matrix_world = geom_matrix
-        GTLoader.place_camera_relative_to_object(all_matrices[frame])
+        loader.place_camera_relative_to_object(all_matrices[frame])
         update_depsgraph()
         create_animation_locrot_keyframe_force(camobj)
 
@@ -945,14 +1053,16 @@ def transfer_tracking_to_camera_act() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def transfer_tracking_to_geometry_act() -> ActionStatus:
-    check_status = common_checks(object_mode=True, is_calculating=True,
+def transfer_tracking_to_geometry_act(
+        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
 
     geomobj = geotracker.geomobj
@@ -968,7 +1078,8 @@ def transfer_tracking_to_geometry_act() -> ActionStatus:
 
     current_frame = reset_unsaved_animation_changes_in_frame()
 
-    gt = GTLoader.kt_geotracker()
+    loader = get_loader(product)
+    gt = loader.kt_geotracker()
 
     all_animated_frames = list(set(geom_animated_frames).union(set(cam_animated_frames)))
     all_animated_frames.sort()
@@ -980,7 +1091,7 @@ def transfer_tracking_to_geometry_act() -> ActionStatus:
         bpy_set_current_frame(frame)
         delete_locrot_keyframe(camobj)
         camobj.matrix_world = cam_matrix
-        GTLoader.place_object_relative_to_camera(all_matrices[frame])
+        loader.place_object_relative_to_camera(all_matrices[frame])
         update_depsgraph()
         create_animation_locrot_keyframe_force(geomobj)
 
@@ -997,8 +1108,9 @@ def transfer_tracking_to_geometry_act() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def _mark_object_keyframes(obj: Object) -> None:
-    gt = GTLoader.kt_geotracker()
+def _mark_object_keyframes(obj: Object, *,
+                           product: int = ProductType.GEOTRACKER) -> None:
+    gt = get_loader(product).kt_geotracker()
     tracked_keyframes = [x for x in gt.track_frames()]
     _log.output(f'KEYFRAMES TO MARK AS TRACKED: {tracked_keyframes}')
     mark_selected_points_in_locrot(obj, tracked_keyframes, 'JITTER')
@@ -1007,40 +1119,16 @@ def _mark_object_keyframes(obj: Object) -> None:
     mark_selected_points_in_locrot(obj, keyframes, 'KEYFRAME')
 
 
-def select_geotracker_objects_act(geotracker_num: int) -> ActionStatus:
-    check_status = common_checks(object_mode=True, is_calculating=True,
-                                 pinmode_out=True)
-    if not check_status.success:
-        return check_status
-
-    settings = get_gt_settings()
-    settings.fix_geotrackers()
-    if not settings.change_current_geotracker_safe(geotracker_num):
-        return ActionStatus(False, f'Cannot switch to Geotracker '
-                                   f'{geotracker_num}')
-
-    geotracker = settings.get_current_geotracker_item()
-    if not geotracker.geomobj and not geotracker.camobj:
-        return ActionStatus(False, f'Geotracker {geotracker_num} '
-                                   f'does not contain any objects')
-    if geotracker.camera_mode():
-        select_objects_only([geotracker.camobj, geotracker.geomobj])
-    else:
-        select_objects_only([geotracker.geomobj, geotracker.camobj])
-
-    center_viewport(bpy.context.area)
-
-    return ActionStatus(True, 'ok')
-
-
-def render_with_background_act() -> ActionStatus:
-    check_status = common_checks(object_mode=True, is_calculating=True,
+def render_with_background_act(
+        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     scene = bpy_scene()
     scene.use_nodes = True
@@ -1061,14 +1149,16 @@ def render_with_background_act() -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def revert_default_render_act() -> ActionStatus:
-    check_status = common_checks(object_mode=True, is_calculating=True,
+def revert_default_render_act(
+        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     scene = bpy_scene()
     scene.render.film_transparent = False
@@ -1117,9 +1207,9 @@ def store_geomobj_state(operator: Operator, geomobj: Object) -> None:
     operator.geom_scale = geomobj.scale
 
 
-def revert_object_states() -> bool:
+def revert_object_states(*, product: int = ProductType.GEOTRACKER) -> bool:
     _log.output('revert_object_states')
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     if not geotracker or not geotracker.geomobj or not geotracker.camobj:
         return False
@@ -1154,8 +1244,9 @@ def _apply_camobj_scale(camobj: Object, operator: Operator) -> None:
                         operator.cam_scale[2] * operator.value)
 
 
-def _get_operator_origin_matrix(origin_point: str) -> Matrix:
-    settings = get_gt_settings()
+def _get_operator_origin_matrix(
+        origin_point: str, *, product: int = ProductType.GEOTRACKER) -> Matrix:
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     origin_matrix = Matrix.Identity(4)
     if origin_point == 'GEOMETRY':
@@ -1167,11 +1258,13 @@ def _get_operator_origin_matrix(origin_point: str) -> Matrix:
     return origin_matrix
 
 
-def scale_scene_tracking_preview_func(operator: Operator, context: Any) -> None:
+def scale_scene_tracking_preview_func(
+        operator: Operator, context: Any, *,
+        product: int = ProductType.GEOTRACKER) -> None:
     if not revert_object_states():
         return
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
@@ -1184,8 +1277,10 @@ def scale_scene_tracking_preview_func(operator: Operator, context: Any) -> None:
     _apply_geomobj_scale(geomobj, operator)
 
 
-def scale_scene_tracking_act(operator: Operator) -> ActionStatus:
-    settings = get_gt_settings()
+def scale_scene_tracking_act(
+        operator: Operator, *,
+        product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
@@ -1265,7 +1360,8 @@ def scale_scene_tracking_act(operator: Operator) -> ActionStatus:
     _apply_camobj_scale(camobj, operator)
     _apply_geomobj_scale(geomobj, operator)
 
-    GTLoader.save_geotracker()
+    loader = get_loader(product)
+    loader.save_geotracker()
 
     prefs = get_addon_preferences()
     if prefs.gt_auto_unbreak_rotation:
@@ -1279,19 +1375,22 @@ def scale_scene_tracking_act(operator: Operator) -> ActionStatus:
         return ActionStatus(False, msg)
 
     if settings.pinmode:
-        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
-                                         pins_and_residuals=True)
+        loader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
+                                       pins_and_residuals=True)
     return ActionStatus(True, 'ok')
 
 
-def scale_scene_trajectory_act(operator: Operator) -> ActionStatus:
-    check_status = common_checks(object_mode=True, is_calculating=True,
+def scale_scene_trajectory_act(
+        operator: Operator, *,
+        product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
                                  camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
@@ -1351,20 +1450,22 @@ def scale_scene_trajectory_act(operator: Operator) -> ActionStatus:
 
     bpy_set_current_frame(current_frame)
 
-    GTLoader.save_geotracker()
+    loader = get_loader(product)
+    loader.save_geotracker()
     if not settings.reload_current_geotracker():
         msg = 'Cannot reload GeoTracker data'
         _log.error(msg)
         return ActionStatus(False, msg)
 
     if settings.pinmode:
-        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
-                                         pins_and_residuals=True)
+        loader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
+                                       pins_and_residuals=True)
     return ActionStatus(True, 'ok')
 
 
-def get_operator_reposition_matrix(operator: Operator):
-    settings = get_gt_settings()
+def get_operator_reposition_matrix(
+        operator: Operator, *, product: int = ProductType.GEOTRACKER) -> Matrix:
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     from_matrix = geotracker.geomobj.matrix_world \
         if operator.mode == 'GEOMETRY' else geotracker.camobj.matrix_world
@@ -1376,9 +1477,11 @@ def get_operator_reposition_matrix(operator: Operator):
     return target_matrix @ source_matrix.inverted()
 
 
-def move_scene_tracking_act(operator: Operator) -> ActionStatus:
+def move_scene_tracking_act(
+        operator: Operator, *,
+        product: int = ProductType.GEOTRACKER) -> ActionStatus:
     _log.output('move_scene_tracking_act call')
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
@@ -1411,7 +1514,8 @@ def move_scene_tracking_act(operator: Operator) -> ActionStatus:
 
     bpy_set_current_frame(current_frame)
 
-    GTLoader.save_geotracker()
+    loader = get_loader(product)
+    loader.save_geotracker()
 
     prefs = get_addon_preferences()
     if prefs.gt_auto_unbreak_rotation:
@@ -1425,12 +1529,13 @@ def move_scene_tracking_act(operator: Operator) -> ActionStatus:
         return ActionStatus(False, msg)
 
     if settings.pinmode:
-        GTLoader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
+        loader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
                                          pins_and_residuals=True)
     return ActionStatus(True, 'ok')
 
 
-def bake_locrot_act(obj: Object) -> ActionStatus:
+def bake_locrot_act(obj: Object, *,
+                    product: int = ProductType.GEOTRACKER) -> ActionStatus:
     def _remove_all_constraints(obj: Object):
         if len(obj.constraints) != 0:
             all_constraints = [x for x in obj.constraints]
@@ -1438,7 +1543,8 @@ def bake_locrot_act(obj: Object) -> ActionStatus:
                 obj.constraints.remove(x)
 
     _log.output('bake_locrot_act call')
-    check_status = common_checks(object_mode=True, is_calculating=True)
+    check_status = common_checks(product=product,
+                                 object_mode=True, is_calculating=True)
     if not check_status.success:
         return check_status
 
@@ -1493,8 +1599,9 @@ def unbreak_rotation_with_status(obj: Object, frame_list: List) -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def unbreak_rotation_act() -> ActionStatus:
-    settings = get_gt_settings()
+def unbreak_rotation_act(
+        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     obj = geotracker.animatable_object()
     return unbreak_object_rotation_act(obj)
@@ -1507,14 +1614,15 @@ def unbreak_object_rotation_act(obj: Object) -> ActionStatus:
     return unbreak_rotation_with_status(obj, frame_list)
 
 
-def unbreak_after(frame_list: List) -> None:
+def unbreak_after(frame_list: List, *,
+                  product: int = ProductType.GEOTRACKER) -> None:
     _log.output('unbreak_after call')
     prefs = get_addon_preferences()
     if not prefs.gt_auto_unbreak_rotation:
         _log.output('unbreak rotation is switched off')
         return
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     obj = geotracker.animatable_object()
     unbreak_status = unbreak_rotation_with_status(obj, frame_list)

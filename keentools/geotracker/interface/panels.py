@@ -24,7 +24,10 @@ import bpy
 from bpy.types import Area, Panel
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config, geotracker_enabled, addon_pinmode
+from ...addon_config import (Config,
+                             geotracker_enabled,
+                             addon_pinmode,
+                             ProductType)
 from ...geotracker_config import GTConfig, get_gt_settings
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...updater.panels import (KTUpdater,
