@@ -1,6 +1,6 @@
 # ##### BEGIN GPL LICENSE BLOCK #####
 # KeenTools for blender is a blender addon for using KeenTools in Blender.
-# Copyright (C) 2019-2022 KeenTools
+# Copyright (C) 2019-2023 KeenTools
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,21 +21,20 @@ from typing import Optional, Any, List
 import bpy
 from bpy.types import Object, Area
 
-from ...utils.kt_logging import KTLogger
-from ...addon_config import Config, get_operator, ErrorType, ActionStatus
-from ...geotracker_config import get_gt_settings
-from ...utils.html import split_long_string
-from ...utils.manipulate import exit_area_localview, switch_to_camera
-from ...utils.bpy_common import (bpy_all_scene_objects,
-                                 bpy_scene_selected_objects,
-                                 bpy_background_mode)
+from ..utils.kt_logging import KTLogger
+from ..addon_config import Config, get_operator, ErrorType, ActionStatus
+# from ..geotracker_config import get_gt_settings, get_current_geotracker_item
+from ..utils.html import split_long_string
+from ..utils.manipulate import exit_area_localview, switch_to_camera
+from ..utils.bpy_common import (bpy_all_scene_objects,
+                                bpy_scene_selected_objects,
+                                bpy_background_mode)
 
 
 _log = KTLogger(__name__)
 
 
-def prepare_camera(area: Area) -> None:
-    settings = get_gt_settings()
+def prepare_camera_with_settings(settings: Any, area: Area) -> None:
     geotracker = settings.get_current_geotracker_item()
     if not settings.pinmode:
         switch_to_camera(area, geotracker.camobj,
@@ -46,8 +45,7 @@ def prepare_camera(area: Area) -> None:
     geotracker.reload_background_image()
 
 
-def revert_camera(area: Area) -> None:
-    settings = get_gt_settings()
+def revert_camera_with_settings(settings: Any, area: Area) -> None:
     if not settings.pinmode:
         settings.viewport_state.show_ui_elements(area)
         exit_area_localview(area)
@@ -91,16 +89,17 @@ def show_unlicensed_warning() -> None:
     warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
 
 
-def common_checks(*, object_mode: bool = False,
-                  pinmode: bool = False,
-                  pinmode_out: bool = False,
-                  is_calculating: bool = False,
-                  reload_geotracker: bool = False,
-                  geotracker: bool = False,
-                  camera: bool = False,
-                  geometry: bool = False,
-                  movie_clip: bool = False,
-                  constraints: bool = False) -> ActionStatus:
+def common_checks_with_settings(settings: Any, *,
+                                object_mode: bool = False,
+                                pinmode: bool = False,
+                                pinmode_out: bool = False,
+                                is_calculating: bool = False,
+                                reload_geotracker: bool = False,
+                                geotracker: bool = False,
+                                camera: bool = False,
+                                geometry: bool = False,
+                                movie_clip: bool = False,
+                                constraints: bool = False) -> ActionStatus:
 
     if object_mode:
         if not hasattr(bpy.context, 'mode'):
@@ -112,7 +111,6 @@ def common_checks(*, object_mode: bool = False,
             _log.error(msg)
             return ActionStatus(False, msg)
 
-    settings = get_gt_settings()
     if is_calculating and settings.is_calculating():
         msg = 'Calculation in progress'
         _log.error(msg)
@@ -135,24 +133,24 @@ def common_checks(*, object_mode: bool = False,
 
     geotracker_item = settings.get_current_geotracker_item()
     if geotracker and not geotracker_item:
-        msg = 'GeoTracker item is not found'
+        msg = 'Tracker item is not found'
         _log.error(msg)
         return ActionStatus(False, msg)
     if camera and not geotracker_item.camobj:
-        msg = 'GeoTracker camera is not found'
+        msg = 'Tracker camera is not found'
         _log.error(msg)
         return ActionStatus(False, msg)
     if geometry and not geotracker_item.geomobj:
-        msg = 'GeoTracker geometry is not found'
+        msg = 'Tracker geometry is not found'
         _log.error(msg)
         return ActionStatus(False, msg)
     if movie_clip and not geotracker_item.movie_clip:
-        msg = 'GeoTracker movie clip is not found'
+        msg = 'Tracker movie clip is not found'
         _log.error(msg)
         return ActionStatus(False, msg)
     if constraints:
         if not geotracker_item.camobj:
-            msg = 'GeoTracker does not contain Camera object!'
+            msg = 'Tracker does not contain Camera object!'
             _log.error(msg)
             return ActionStatus(False, msg)
         if len(geotracker_item.camobj.constraints) != 0:
@@ -160,7 +158,7 @@ def common_checks(*, object_mode: bool = False,
             _log.error(msg)
             return ActionStatus(False, msg)
         if not geotracker_item.geomobj:
-            msg = 'GeoTracker does not contain Geometry object!'
+            msg = 'Tracker does not contain Geometry object!'
             _log.error(msg)
             return ActionStatus(False, msg)
         if len(geotracker_item.geomobj.constraints) != 0:
@@ -170,14 +168,16 @@ def common_checks(*, object_mode: bool = False,
     return ActionStatus(True, 'Checks have been passed')
 
 
-def track_checks() -> ActionStatus:
-    check_status = common_checks(object_mode=True, pinmode=True,
-                                 is_calculating=True, reload_geotracker=True,
-                                 geotracker=True, camera=True, geometry=True)
+def track_checks_with_settings(settings: Any) -> ActionStatus:
+    check_status = common_checks_with_settings(settings, object_mode=True,
+                                               pinmode=True,
+                                               is_calculating=True,
+                                               reload_geotracker=True,
+                                               geotracker=True,
+                                               camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
-    settings = get_gt_settings()
     geotracker = settings.get_current_geotracker_item()
 
     if not geotracker.precalcless:
@@ -187,7 +187,7 @@ def track_checks() -> ActionStatus:
             _log.error(msg)
             return ActionStatus(False, msg)
     else:
-        check_status = common_checks(movie_clip=True)
+        check_status = common_checks_with_settings(settings, movie_clip=True)
         if not check_status.success:
             return check_status
 

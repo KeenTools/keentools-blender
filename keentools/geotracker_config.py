@@ -19,17 +19,21 @@
 import os
 import bpy
 
-_company = 'keentools'
+from .utils.kt_logging import KTLogger
+
+
+_log = KTLogger(__name__)
+
+
 _PT = 'GEOTRACKER_PT_'
 _MT = 'GEOTRACKER_MT_'
-prefix = _company + '_gt'
 
 
 class GTConfig:
     operators = 'keentools_gt'
     gt_tool_name = 'GeoTracker'
     gt_tab_category = 'GeoTracker'
-    gt_global_var_name = prefix + '_settings'
+    gt_global_var_name = 'keentools_gt_settings'
 
     # Operators
     gt_create_geotracker_idname = operators + '.create_geotracker'
@@ -199,10 +203,5 @@ class GTConfig:
     hidden_feature: bool = True
 
 
-def get_gt_settings():
+def get_gt_settings():  # TODO: Move to addon_config.py
     return getattr(bpy.context.scene, GTConfig.gt_global_var_name)
-
-
-def get_current_geotracker_item():
-    settings = get_gt_settings()
-    return settings.get_current_geotracker_item()

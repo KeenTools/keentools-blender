@@ -1,6 +1,6 @@
 # ##### BEGIN GPL LICENSE BLOCK #####
 # KeenTools for blender is a blender addon for using KeenTools in Blender.
-# Copyright (C) 2022 KeenTools
+# Copyright (C) 2022-2023 KeenTools
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,31 +19,56 @@
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
-class GTClassLoader:
+class KTClassLoader:
     @staticmethod
     def GTCameraInput_class():
-        from .camera_input import GTCameraInput
+        from ..geotracker.camera_input import GTCameraInput
         return GTCameraInput
 
     @staticmethod
     def GTGeoInput_class():
-        from .camera_input import GTGeoInput
+        from ..geotracker.camera_input import GTGeoInput
         return GTGeoInput
 
     @staticmethod
     def GTImageInput_class():
-        from .camera_input import GTImageInput
+        from ..geotracker.camera_input import GTImageInput
         return GTImageInput
 
     @staticmethod
     def GTMask2DInput_class():
-        from .camera_input import GTMask2DInput
+        from ..geotracker.camera_input import GTMask2DInput
         return GTMask2DInput
 
     @staticmethod
     def GTGeoTrackerResultsStorage_class():
-        from .camera_input import GTGeoTrackerResultsStorage
+        from ..geotracker.camera_input import GTGeoTrackerResultsStorage
         return GTGeoTrackerResultsStorage
+
+    @staticmethod
+    def FTCameraInput_class():
+        from ..facetracker.camera_input import FTCameraInput
+        return FTCameraInput
+
+    @staticmethod
+    def FTGeoInput_class():
+        from ..facetracker.camera_input import FTGeoInput
+        return FTGeoInput
+
+    @staticmethod
+    def FTImageInput_class():
+        from ..facetracker.camera_input import FTImageInput
+        return FTImageInput
+
+    @staticmethod
+    def FTMask2DInput_class():
+        from ..facetracker.camera_input import FTMask2DInput
+        return FTMask2DInput
+
+    @staticmethod
+    def FTGeoTrackerResultsStorage_class():
+        from ..facetracker.camera_input import FTGeoTrackerResultsStorage
+        return FTGeoTrackerResultsStorage
 
     @staticmethod
     def GeoTracker_class():
@@ -59,7 +84,7 @@ class GTClassLoader:
 
     @staticmethod
     def PrecalcRunner_class():
-        from .utils.precalc_runner import PrecalcRunner
+        from ..geotracker.utils.precalc_runner import PrecalcRunner
         return PrecalcRunner
 
     @staticmethod
@@ -68,10 +93,10 @@ class GTClassLoader:
 
     @staticmethod
     def TRProgressCallBack_class():
-        from .utils.progress_callbacks import TRProgressCallBack
+        from ..geotracker.utils.progress_callbacks import TRProgressCallBack
         return TRProgressCallBack
 
     @staticmethod
     def RFProgressCallBack_class():
-        from .utils.progress_callbacks import RFProgressCallBack
+        from ..geotracker.utils.progress_callbacks import RFProgressCallBack
         return RFProgressCallBack

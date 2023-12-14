@@ -20,7 +20,7 @@ from keentools.utils.bpy_common import (bpy_current_frame,
                                         bpy_set_current_frame,
                                         bpy_scene,
                                         update_depsgraph)
-from keentools.geotracker_config import get_gt_settings, get_current_geotracker_item
+from keentools.geotracker_config import get_gt_settings
 from keentools.geotracker.gtloader import GTLoader
 from keentools.utils.ui_redraw import get_areas_by_type
 
@@ -209,7 +209,8 @@ def prepare_gt_test_environment() -> None:
     except Exception as err:
         _log.error(f'Choose precalc: {str(err)}')
 
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     geotracker.precalc_start = GTTestConfig.cube_start_frame
     geotracker.precalc_end = GTTestConfig.cube_end_frame
     geotracker.precalcless = False

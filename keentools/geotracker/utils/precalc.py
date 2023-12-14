@@ -38,7 +38,7 @@ from ...utils.bpy_common import (bpy_render_frame,
                                  update_depsgraph,
                                  bpy_background_mode,
                                  bpy_timer_register)
-from ..gt_class_loader import GTClassLoader
+from ...tracker.class_loader import KTClassLoader
 from ...utils.timer import RepeatTimer
 from .calc_timer import CalcTimer
 from .prechecks import common_checks, prepare_camera
@@ -210,10 +210,10 @@ def precalc_with_runner_act(context: Any) -> ActionStatus:
 
     rw, rh = bpy_render_frame()
     area = context.area
-    runner = GTClassLoader.PrecalcRunner_class()(
+    runner = KTClassLoader.PrecalcRunner_class()(
         precalc_path, rw, rh,
         geotracker.precalc_start, geotracker.precalc_end,
-        GTClassLoader.GeoTracker_class().license_manager(), True)
+        KTClassLoader.GeoTracker_class().license_manager(), True)
 
     pt = PrecalcTimer(area, runner)
     if pt.start():

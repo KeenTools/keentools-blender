@@ -18,6 +18,7 @@
 
 from typing import Any, Callable, Optional, Tuple, Set, Dict
 from dataclasses import dataclass
+import os
 
 import bpy
 from .utils.version import BVersion
@@ -37,11 +38,13 @@ class Config:
 
     fb_tab_category = 'FaceBuilder'
     gt_tab_category = 'GeoTracker'
+    ft_tab_category = 'GeoTracker'
 
     kt_testing_tab_category = 'KeenTools Testing'
 
     fb_global_var_name = 'keentools_fb_settings'
     gt_global_var_name = 'keentools_gt_settings'
+    ft_global_var_name = 'keentools_ft_settings'
 
     operators = 'keentools'
     prefs_operators = 'keentools_preferences'
@@ -171,6 +174,7 @@ class Config:
     keyframe_line_length: float = 1000.0
 
     integration_enabled: bool = True
+    show_facetracker: bool = 'KEENTOOLS_ENABLE_BLENDER_FACETRACKER' in os.environ
 
     kt_convert_video_scene_name: str = 'gt_convert_video'
 
@@ -215,6 +219,13 @@ def geotracker_enabled() -> bool:
     return prefs.geotracker_enabled
 
 
+def facetracker_enabled() -> bool:
+    if not Config.show_facetracker:
+        return False
+    prefs = get_addon_preferences()
+    return prefs.facetracker_enabled
+
+
 def _get_fb_settings() -> Optional[Any]:
     name = Config.fb_global_var_name
     if not hasattr(bpy.context.scene, name):
@@ -229,8 +240,17 @@ def _get_gt_settings() -> Optional[Any]:
     return getattr(bpy.context.scene, name)
 
 
+def _get_ft_settings() -> Optional[Any]:
+    name = Config.ft_global_var_name
+    if not hasattr(bpy.context.scene, name):
+        return None
+    return getattr(bpy.context.scene, name)
+
+
+# TODO: Replace get_xx_settings functions with this
 fb_settings: Callable = _get_fb_settings
 gt_settings: Callable = _get_gt_settings
+ft_settings: Callable = _get_gt_settings
 
 
 def set_fb_settings_func(func: Callable) -> None:
@@ -241,6 +261,11 @@ def set_fb_settings_func(func: Callable) -> None:
 def set_gt_settings_func(func: Callable) -> None:
     global gt_settings
     gt_settings = func
+
+
+def set_ft_settings_func(func: Callable) -> None:
+    global ft_settings
+    ft_settings = func
 
 
 def gt_pinmode() -> bool:
@@ -257,8 +282,15 @@ def fb_pinmode() -> bool:
     return settings.pinmode
 
 
+def ft_pinmode() -> bool:
+    if not facetracker_enabled():
+        return False
+    settings = _get_ft_settings()
+    return settings.pinmode
+
+
 def addon_pinmode() -> bool:
-    return fb_pinmode() or gt_pinmode()
+    return fb_pinmode() or gt_pinmode() or ft_pinmode()
 
 
 def show_user_preferences(*, facebuilder: Optional[bool]=None,
@@ -289,23 +321,30 @@ def get_operator(operator_id_name: str) -> Any:
 
 
 class ErrorType:
-    Unknown = -1
-    CustomMessage = 0
-    NoLicense = 1
-    SceneDamaged = 2
-    CannotReconstruct = 3
-    CannotCreateObject = 4
-    MeshCorrupted = 5
-    PktProblem = 6
-    PktModelProblem = 7
-    DownloadingProblem = 8
-    FBGracePeriod = 9
-    GTGracePeriod = 10
-    ShaderProblem = 11
-    UnsupportedGPUBackend = 12
+    Unknown: int = -1
+    CustomMessage: int = 0
+    NoLicense: int = 1
+    SceneDamaged: int = 2
+    CannotReconstruct: int = 3
+    CannotCreateObject: int = 4
+    MeshCorrupted: int = 5
+    PktProblem: int = 6
+    PktModelProblem: int = 7
+    DownloadingProblem: int = 8
+    FBGracePeriod: int = 9
+    GTGracePeriod: int = 10
+    ShaderProblem: int = 11
+    UnsupportedGPUBackend: int = 12
 
 
 @dataclass(frozen=True)
 class ActionStatus:
     success: bool = False
     error_message: str = None
+
+
+class ProductType:
+    UNDEFINED: int = -1
+    FACEBUILDER: int = 0
+    GEOTRACKER: int = 1
+    FACETRACKER: int = 2

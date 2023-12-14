@@ -21,18 +21,19 @@ from typing import Any
 from bpy.props import IntProperty, StringProperty, FloatProperty
 
 from ..utils.kt_logging import KTLogger
-from ..geotracker_config import (GTConfig,
-                                 get_gt_settings)
-from .gtloader import GTLoader
+from ..facetracker_config import (FTConfig,
+                                  get_ft_settings)
+from .ftloader import FTLoader
 from ..tracker.pinmode import PinMode
 from .ui_strings import buttons
+from ..tracker.tracking_blendshapes import reorder_tracking_frames
 
 
 _log = KTLogger(__name__)
 
 
-class GT_OT_PinMode(PinMode):
-    bl_idname = GTConfig.gt_pinmode_idname
+class FT_OT_PinMode(PinMode):
+    bl_idname = FTConfig.ft_pinmode_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
@@ -43,12 +44,22 @@ class GT_OT_PinMode(PinMode):
     camera_clip_start: FloatProperty(default=0.1)
     camera_clip_end: FloatProperty(default=1000.0)
 
-    movepin_operator_idname: str = GTConfig.gt_movepin_idname
+    movepin_operator_idname: str = FTConfig.ft_movepin_idname
 
     @classmethod
     def get_loader(cls) -> Any:
-        return GTLoader
+        return FTLoader
 
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return get_ft_settings()
+
+    def perform_checks_before_pinmode(self) -> None:
+        settings = self.get_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if not geotracker:
+            return
+        geomobj = geotracker.geomobj
+        if not geomobj or not geomobj.data.shape_keys:
+            return
+        reorder_tracking_frames(geomobj)

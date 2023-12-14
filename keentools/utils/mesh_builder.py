@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import numpy as np
-from typing import Any
+from typing import Any, Tuple, Optional
 
 from bpy.types import Object
 
@@ -27,6 +27,7 @@ from .coords import (get_scale_matrix_3x3_from_matrix_world,
                      get_mesh_verts,
                      xz_to_xy_rotation_matrix_3x3)
 from .bpy_common import evaluated_mesh
+from .blendshapes import get_blendshape
 
 
 _log = KTLogger(__name__)
@@ -54,4 +55,33 @@ def build_geo(obj: Object, get_uv=False) -> Any:
 
     _geo.add_mesh(mb.mesh())
     _log.output(_log.color('magenta', 'build_geo end'))
+    return _geo
+
+
+def build_geo_from_basis(obj: Object, get_uv=False) -> Any:
+    _log.output(_log.color('magenta', 'build_geo_from_basis start'))
+    mb = pkt_module().MeshBuilder()
+    _geo = pkt_module().Geo()
+
+    if obj:
+        shape_index, basis_shape, _ = get_blendshape(obj, 'Basis',
+                                                     create_basis=True)
+
+        mesh = evaluated_mesh(obj)
+        scale = get_scale_matrix_3x3_from_matrix_world(obj.matrix_world)
+        verts = np.empty((len(mesh.vertices), 3), dtype=np.float32)
+        basis_shape.data.foreach_get('co', verts.ravel())
+
+        mb.add_points(verts @ scale @ xz_to_xy_rotation_matrix_3x3())
+
+        for polygon in mesh.polygons:
+            mb.add_face(polygon.vertices[:])
+
+        if get_uv and mesh.uv_layers.active:
+            uvmap = mesh.uv_layers.active.data
+            uvs = [np.array(v.uv) for v in uvmap]
+            mb.set_uvs_attribute('VERTEX_BASED', uvs)
+
+    _geo.add_mesh(mb.mesh())
+    _log.output(_log.color('magenta', 'build_geo_from_basis end'))
     return _geo

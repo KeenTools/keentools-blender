@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
-from typing import Optional
+from typing import Optional, List
 
 
 _log_colors = {
@@ -29,6 +29,18 @@ _log_colors = {
     'magenta': '\x1b[0;35m',
     'cyan': '\x1b[1;36m',
     'reset': '\x1b[0m'}
+
+
+_module_names: List[str] = []
+
+
+def _add_module_name(name: str) -> None:
+    global _module_names
+    _module_names.append(name)
+
+
+def module_names() -> str:
+    return '\n'.join(_module_names)
 
 
 class KTLogger():
@@ -50,6 +62,8 @@ class KTLogger():
             self.output = self.error
         else:
             self.output = self.debug
+
+        self.output(self.color('green', f'import: {name}'))
 
     def info(self, message: str) -> None:
         if self._info_color is None:

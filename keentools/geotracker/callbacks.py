@@ -25,8 +25,7 @@ from ..addon_config import (Config,
                             get_operator,
                             ErrorType)
 from ..geotracker_config import (GTConfig,
-                                 get_gt_settings,
-                                 get_current_geotracker_item)
+                                 get_gt_settings)
 from .gtloader import GTLoader
 from ..utils.images import (get_background_image_object,
                             tone_mapping,
@@ -115,7 +114,8 @@ def subscribe_movie_clip_color_space_watcher(geotracker: Any) -> None:
 def color_space_change_callback(old_name: str) -> None:
     _log.output('color_space_change_callback call')
     _log.output(f'old color space: {old_name}')
-    geotracker = get_current_geotracker_item()
+    settings = get_gt_settings()
+    geotracker = settings.get_current_geotracker_item()
     update_movieclip(geotracker, None)
 
 
@@ -164,7 +164,7 @@ def lens_change_callback() -> None:
         _log.output('FOCAL LENGTH CHANGED')
 
         if settings.pinmode:
-            GTLoader.update_viewport_shaders(update_geo_data=True,
+            GTLoader.update_viewport_shaders(wireframe_data=True,
                                              geomobj_matrix=True,
                                              wireframe=True,
                                              pins_and_residuals=True,
@@ -185,7 +185,7 @@ def update_camobj(geotracker, context: Any) -> None:
     switch_to_camera(GTLoader.get_work_area(), geotracker.camobj)
 
     if settings.pinmode:
-        GTLoader.update_viewport_shaders(update_geo_data=True,
+        GTLoader.update_viewport_shaders(wireframe_data=True,
                                          geomobj_matrix=True, wireframe=True,
                                          pins_and_residuals=True, timeline=True)
 
@@ -219,7 +219,7 @@ def update_geomobj(geotracker, context: Any) -> None:
     GTLoader.save_geotracker()
 
     if settings.pinmode:
-        GTLoader.update_viewport_shaders(update_geo_data=True,
+        GTLoader.update_viewport_shaders(wireframe_data=True,
                                          geomobj_matrix=True, wireframe=True,
                                          pins_and_residuals=True, timeline=True)
 
@@ -301,7 +301,7 @@ def update_mask_3d_color(settings, context: Any) -> None:
     wf = vp.wireframer()
     wf.selection_fill_color = (*settings.mask_3d_color, settings.mask_3d_opacity)
     if settings.pinmode:
-        GTLoader.update_viewport_wireframe()
+        GTLoader.update_viewport_shaders(wireframe=True)
 
 
 def update_wireframe_backface_culling(settings, context: Any) -> None:
@@ -311,7 +311,7 @@ def update_wireframe_backface_culling(settings, context: Any) -> None:
     gt.set_back_face_culling(settings.wireframe_backface_culling)
     GTLoader.save_geotracker()
     if settings.pinmode:
-        GTLoader.update_viewport_wireframe()
+        GTLoader.update_viewport_shaders(wireframe=True)
 
 
 def update_background_tone_mapping(geotracker, context: Any) -> None:
@@ -378,11 +378,11 @@ def update_track_focal_length(geotracker, context: Any) -> None:
     gt.set_track_focal_length(geotracker.track_focal_length)
     GTLoader.save_geotracker()
     if settings.pinmode:
-        GTLoader.update_viewport_wireframe()
+        GTLoader.update_viewport_shaders(wireframe=True)
 
 
 def update_mask_3d(geotracker, context: Any) -> None:
-    GTLoader.update_viewport_wireframe()
+    GTLoader.update_viewport_shaders(wireframe=True)
     settings = get_gt_settings()
     settings.reload_current_geotracker()
     settings.reload_mask_3d()

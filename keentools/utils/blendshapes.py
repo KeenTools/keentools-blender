@@ -39,6 +39,33 @@ from ..blender_independent_packages.pykeentools_loader import module as pkt_modu
 _log = KTLogger(__name__)
 
 
+def get_blendshape(obj: Object, name: str = '', *,
+                   create_basis: bool = False,
+                   create: bool = False) -> Tuple[int, Optional[Any], bool]:
+    '''
+    :return: shape_index, shape, created_flag
+    '''
+    if not obj.data.shape_keys:
+        if create_basis:
+            basis = obj.shape_key_add(name='Basis')
+            if name == 'Basis':
+                return 0, basis, True
+        else:
+            return -1, None, False
+
+    index = obj.data.shape_keys.key_blocks.find(name)
+    if index < 0:
+        if not create:
+            return -1, None, False
+        shape = obj.shape_key_add(name=name)
+        index = obj.data.shape_keys.key_blocks.find(name)
+        return index, shape, True
+    else:
+        shape = obj.data.shape_keys.key_blocks[index]
+
+    return index, shape, False
+
+
 def _has_no_blendshapes(obj: Object) -> bool:
     return not obj.data.shape_keys
 

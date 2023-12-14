@@ -45,7 +45,7 @@ class TestsPanel(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_label = "Integration Tests"
-    bl_category = FBConfig.fb_tab_category
+    bl_category = Config.fb_tab_category
     bl_context = "objectmode"
 
 

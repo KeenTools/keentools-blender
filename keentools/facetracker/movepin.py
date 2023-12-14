@@ -16,22 +16,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any
+from typing import Any, Set, Tuple, List
 
 from bpy.props import StringProperty, FloatProperty, BoolProperty
 
 from ..utils.kt_logging import KTLogger
-from ..geotracker_config import GTConfig, get_gt_settings
-from .gtloader import GTLoader
+from ..facetracker_config import FTConfig, get_ft_settings
+from .ftloader import FTLoader
 from .ui_strings import buttons
 from ..tracker.movepin import MovePin
+from ..utils.bpy_common import bpy_current_frame
+
+from ..tracker.tracking_blendshapes import create_relative_shape_keyframe
 
 
 _log = KTLogger(__name__)
 
 
-class GT_OT_MovePin(MovePin):
-    bl_idname = GTConfig.gt_movepin_idname
+class FT_OT_MovePin(MovePin):
+    bl_idname = FTConfig.ft_movepin_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER'}
@@ -54,8 +57,17 @@ class GT_OT_MovePin(MovePin):
 
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return get_ft_settings()
 
     @classmethod
     def get_loader(cls) -> Any:
-        return GTLoader
+        return FTLoader
+
+    def update_wireframe(self):
+        loader = self.get_loader()
+        loader.update_viewport_shaders(wireframe_data=True,
+                                       wireframe=True)
+
+    def update_on_left_mouse_release(self) -> None:
+        create_relative_shape_keyframe(bpy_current_frame(),
+                                       keyframe_type='KEYFRAME')

@@ -358,6 +358,15 @@ class KTAddonPreferences(AddonPreferences):
         default=False
     )
 
+    facetracker_enabled: BoolProperty(
+        name='Enable KeenTools FaceTracker',
+        default=True
+    )
+    facetracker_expanded: BoolProperty(
+        name='KeenTools FaceTracker',
+        default=False
+    )
+
     latest_show_datetime_update_reminder: StringProperty(
         name='Latest show update reminder', default='',
         get=_universal_updater_getter('latest_show_datetime_update_reminder', 'string'),

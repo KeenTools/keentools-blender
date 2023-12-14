@@ -19,42 +19,50 @@
 from typing import Any
 
 from ..utils.kt_logging import KTLogger
-from ..geotracker_config import get_gt_settings
+from ..facetracker_config import get_ft_settings
 from ..tracker.cam_input import (CameraInput,
                                  GeoInput,
                                  ImageInput,
                                  Mask2DInput,
                                  GeoTrackerResultsStorage)
+from ..utils.mesh_builder import build_geo_from_basis
 
 
 _log = KTLogger(__name__)
 
 
-class GTCameraInput(CameraInput):
+class FTCameraInput(CameraInput):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return get_ft_settings()
 
 
-class GTGeoInput(GeoInput):
+class FTGeoInput(GeoInput):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return get_ft_settings()
+
+    def geo(self) -> Any:
+        settings = self.get_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if not geotracker:
+            return None
+        return build_geo_from_basis(geotracker.geomobj, get_uv=False)
 
 
-class GTImageInput(ImageInput):
+class FTImageInput(ImageInput):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return get_ft_settings()
 
 
-class GTMask2DInput(Mask2DInput):
+class FTMask2DInput(Mask2DInput):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return get_ft_settings()
 
 
-class GTGeoTrackerResultsStorage(GeoTrackerResultsStorage):
+class FTGeoTrackerResultsStorage(GeoTrackerResultsStorage):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return get_ft_settings()

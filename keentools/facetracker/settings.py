@@ -26,14 +26,14 @@ from bpy.props import (IntProperty, BoolProperty, FloatProperty,
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, ProductType
-from .gtloader import GTLoader
+from .ftloader import FTLoader
 from ..utils.bpy_common import (bpy_poll_is_mesh,
                                 bpy_poll_is_camera)
 from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_getter,
                                             universal_cached_setter)
 from ..utils.viewport_state import ViewportStateItem
-from .callbacks import (update_camobj,
+from ..geotracker.callbacks import (update_camobj,
                         update_geomobj,
                         update_movieclip,
                         update_precalc_path,
@@ -61,7 +61,7 @@ from ..tracker.settings import FrameListItem, TrackerItem, TRSceneSetting
 _log = KTLogger(__name__)
 
 
-class GeoTrackerItem(TrackerItem):
+class FaceTrackerItem(TrackerItem):
     serial_str: StringProperty(name='GeoTracker Serialization string')
     geomobj: PointerProperty(
         name='Geometry',
@@ -267,12 +267,12 @@ class GeoTrackerItem(TrackerItem):
                               update=update_locks)
 
 
-class GTSceneSettings(TRSceneSetting):
+class FTSceneSettings(TRSceneSetting):
     def product_type(self) -> int:
-        return ProductType.GEOTRACKER
+        return ProductType.FACETRACKER
 
     def loader(self) -> Any:
-        return GTLoader
+        return FTLoader
 
     ui_write_mode: BoolProperty(name='UI Write mode', default=False)
     viewport_state: PointerProperty(type=ViewportStateItem)
@@ -280,7 +280,7 @@ class GTSceneSettings(TRSceneSetting):
     pinmode: BoolProperty(name='Pinmode status', default=False)
     pinmode_id: StringProperty(name='Unique pinmode ID')
 
-    geotrackers: CollectionProperty(type=GeoTrackerItem, name='GeoTrackers')
+    geotrackers: CollectionProperty(type=FaceTrackerItem, name='GeoTrackers')
     current_geotracker_num: IntProperty(name='Current Geotracker Number', default=-1)
 
     adaptive_opacity: FloatProperty(

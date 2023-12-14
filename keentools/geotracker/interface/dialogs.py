@@ -22,8 +22,7 @@ from bpy.types import Operator
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import Config
-from ...geotracker_config import (GTConfig, get_gt_settings,
-                                  get_current_geotracker_item)
+from ...geotracker_config import GTConfig, get_gt_settings
 from ..ui_strings import buttons
 
 
@@ -56,7 +55,8 @@ class GT_OT_PrecalcInfo(Operator):
 
     def draw(self, context):
         layout = self.layout
-        geotracker = get_current_geotracker_item()
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return
         layout.label(text='Precalc file info:')
@@ -70,7 +70,8 @@ class GT_OT_PrecalcInfo(Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        geotracker = get_current_geotracker_item()
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
         geotracker.reload_precalc()

@@ -25,8 +25,7 @@ from bpy.types import Area, Panel
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import Config, geotracker_enabled, addon_pinmode
-from ...geotracker_config import (GTConfig, get_gt_settings,
-                                  get_current_geotracker_item)
+from ...geotracker_config import GTConfig, get_gt_settings
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...updater.panels import (KTUpdater,
                                KT_PT_UpdatePanel,
@@ -102,7 +101,7 @@ class View3DPanel(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     # bl_options = {'DEFAULT_CLOSED'}
-    bl_category = GTConfig.gt_tab_category
+    bl_category = Config.gt_tab_category
 
     @classmethod
     def poll(cls, context: Any) -> bool:
@@ -823,7 +822,8 @@ class GT_PT_TexturePanel(AllVisible):
         row.operator(GTConfig.gt_bake_from_selected_frames_idname,
                      icon='IMAGE')
 
-        geotracker = get_current_geotracker_item()
+        settings = get_gt_settings()
+        geotracker = settings.get_current_geotracker_item()
         texture_exists = find_bpy_image_by_name(
             geotracker.preview_texture_name())
 
