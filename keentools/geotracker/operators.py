@@ -153,7 +153,8 @@ class GT_OT_SwitchToCameraMode(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        check_status = common_checks(object_mode=False, is_calculating=True,
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     object_mode=False, is_calculating=True,
                                      reload_geotracker=False, geotracker=True,
                                      camera=False, geometry=False,
                                      movie_clip=False)
@@ -174,7 +175,8 @@ class GT_OT_SwitchToGeometryMode(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        check_status = common_checks(object_mode=False, is_calculating=True,
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     object_mode=False, is_calculating=True,
                                      reload_geotracker=False, geotracker=True,
                                      camera=False, geometry=False,
                                      movie_clip=False)
@@ -195,7 +197,8 @@ class GT_OT_CreatePrecalc(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        check_status = common_checks(object_mode=False, is_calculating=True,
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     object_mode=False, is_calculating=True,
                                      reload_geotracker=False, geotracker=True,
                                      camera=True, geometry=False,
                                      movie_clip=True)
@@ -218,7 +221,8 @@ class GT_OT_PrevKeyframe(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         settings = get_gt_settings()
-        check_status = common_checks(object_mode=False, is_calculating=True,
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     object_mode=False, is_calculating=True,
                                      reload_geotracker=not settings.pinmode,
                                      geotracker=True, camera=True,
                                      geometry=True)
@@ -245,7 +249,8 @@ class GT_OT_NextKeyframe(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         settings = get_gt_settings()
-        check_status = common_checks(object_mode=False, is_calculating=True,
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     object_mode=False, is_calculating=True,
                                      reload_geotracker=not settings.pinmode,
                                      geotracker=True, camera=True,
                                      geometry=True)
@@ -538,7 +543,8 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
     def invoke(self, context, event):
         _log.output(f'{self.__class__.__name__} invoke')
 
-        check_status = common_checks(object_mode=True, is_calculating=True,
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     object_mode=True, is_calculating=True,
                                      geotracker=True)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
@@ -546,7 +552,8 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
 
         settings = get_gt_settings()
         if settings.export_locator_selector == 'SELECTED_PINS':
-            check_status = common_checks(pinmode=True, geotracker=True,
+            check_status = common_checks(product=ProductType.GEOTRACKER,
+                                         pinmode=True, geotracker=True,
                                          geometry=True, camera=True,
                                          reload_geotracker=True)
             if not check_status.success:
@@ -795,7 +802,8 @@ class GT_OT_CheckUVOverlapping(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        check_status = common_checks(object_mode=True, is_calculating=True,
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True)
         if not check_status.success:
@@ -860,7 +868,8 @@ class GT_OT_RepackOverlappingUV(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         self.done = True
-        check_status = common_checks(pinmode_out=True,
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     pinmode_out=True,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True)
@@ -891,7 +900,8 @@ class GT_OT_CreateNonOverlappingUV(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        check_status = common_checks(pinmode_out=True,
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     pinmode_out=True,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True)
@@ -939,7 +949,8 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
     def invoke(self, context, event):
         _log.output(f'{self.__class__.__name__} invoke')
         self.warning = False
-        check_status = common_checks(object_mode=True, is_calculating=True,
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True,
                                      movie_clip=True)
@@ -980,7 +991,8 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
         _log.output(f'{self.__class__.__name__} execute')
         self.warning = False
 
-        check_status = common_checks(object_mode=True, is_calculating=True,
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     object_mode=True, is_calculating=True,
                                      geotracker=True, camera=True,
                                      geometry=True, movie_clip=True)
         if not check_status.success:
@@ -1125,7 +1137,8 @@ class GT_OT_BakeAnimationToWorld(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        check_status = common_checks(object_mode=True, is_calculating=True,
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True,
                                      movie_clip=False)
@@ -1281,7 +1294,8 @@ class GT_OT_UnbreakRotation(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        check_status = common_checks(object_mode=True, is_calculating=True,
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True)
         if not check_status.success:
@@ -1468,7 +1482,8 @@ class GT_OT_RescaleWindow(Operator):
 
     def invoke(self, context, event):
         _log.output(f'{self.__class__.__name__} invoke')
-        check_status = common_checks(object_mode=True, is_calculating=True,
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True,
                                      movie_clip=False)
@@ -1476,7 +1491,8 @@ class GT_OT_RescaleWindow(Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        check_status = common_checks(constraints=True)
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     constraints=True)
         self.warning_message = '' if check_status.success else \
             check_status.error_message
 
@@ -1609,7 +1625,8 @@ class GT_OT_MoveWindow(Operator):
 
     def invoke(self, context, event):
         _log.output(f'{self.__class__.__name__} invoke')
-        check_status = common_checks(object_mode=True, is_calculating=True,
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True,
                                      movie_clip=False)
@@ -1617,7 +1634,8 @@ class GT_OT_MoveWindow(Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        check_status = common_checks(constraints=True)
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     constraints=True)
         self.warning_message = '' if check_status.success else \
             check_status.error_message
 
@@ -1775,7 +1793,8 @@ class GT_OT_RigWindow(Operator):
 
     def invoke(self, context, event):
         _log.output(f'{self.__class__.__name__} invoke')
-        check_status = common_checks(object_mode=True, is_calculating=True,
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
@@ -1820,7 +1839,8 @@ class GT_OT_SwitchCameraToFixedWarning(Operator):
             col.label(text=txt)
 
     def invoke(self, context, event):
-        check_status = common_checks(is_calculating=True)
+        check_status = common_checks(product=ProductType.GEOTRACKER,
+                                     is_calculating=True)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
             self.cancel(context)
