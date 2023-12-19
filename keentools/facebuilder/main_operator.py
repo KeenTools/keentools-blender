@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import re
+
 import bpy
 from bpy.props import (
     StringProperty,
@@ -813,12 +815,12 @@ class FB_OT_ResetToneGain(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
-    headnum: IntProperty(default=0)
-    camnum: IntProperty(default=0)
-
     def execute(self, context):
         settings = get_fb_settings()
-        cam = settings.get_camera(self.headnum, self.camnum)
+        cam = settings.get_camera(settings.current_headnum,
+                                  settings.current_camnum)
+        if not cam:
+            return {'CANCELLED'}
         cam.tone_exposure = Config.default_tone_exposure
         return {'FINISHED'}
 
@@ -828,13 +830,166 @@ class FB_OT_ResetToneGamma(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
-    headnum: IntProperty(default=0)
-    camnum: IntProperty(default=0)
-
     def execute(self, context):
         settings = get_fb_settings()
-        cam = settings.get_camera(self.headnum, self.camnum)
+        cam = settings.get_camera(settings.current_headnum,
+                                  settings.current_camnum)
+        if not cam:
+            return {'CANCELLED'}
         cam.tone_gamma = Config.default_tone_gamma
+        return {'FINISHED'}
+
+
+class FB_OT_ResetToneMapping(ButtonOperator, Operator):
+    bl_idname = FBConfig.fb_reset_tone_mapping_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        settings = get_fb_settings()
+        cam = settings.get_camera(settings.current_headnum,
+                                  settings.current_camnum)
+        if not cam:
+            return {'CANCELLED'}
+        cam.tone_exposure = Config.default_tone_exposure
+        cam.tone_gamma = Config.default_tone_gamma
+        return {'FINISHED'}
+
+
+def _draw_exif(layout, head):
+    # Show EXIF info message
+    if len(head.exif.info_message) > 0:
+        box = layout.box()
+        arr = re.split("\r\n|\n", head.exif.info_message)
+        col = box.column()
+        col.scale_y = Config.text_scale_y
+        for a in arr:
+            col.label(text=a)
+
+    # Show EXIF sizes message
+    if len(head.exif.sizes_message) > 0:
+        box = layout.box()
+        arr = re.split("\r\n|\n", head.exif.sizes_message)
+        col = box.column()
+        col.scale_y = Config.text_scale_y
+        for a in arr:
+            col.label(text=a)
+
+
+class FB_OT_ImageInfo(Operator):
+    bl_idname = FBConfig.fb_image_info_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL', 'UNDO'}
+
+    def draw(self, context):
+        layout = self.layout
+        settings = get_fb_settings()
+        head = settings.get_head(settings.current_headnum)
+        if not head:
+            return
+        camera = head.get_camera(settings.current_camnum)
+        if camera is None:
+            return
+        col = layout.column()
+        col.label(text=f'File: {camera.get_image_name()}')
+        _draw_exif(layout, head)
+
+    def cancel(self, context):
+        _log.output('CANCEL PRECALC INFO')
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke')
+        settings = get_fb_settings()
+        head = settings.get_head(settings.current_headnum)
+        if not head:
+            return {'CANCELLED'}
+        return context.window_manager.invoke_popup(self, width=350)
+
+
+class FB_OT_TextureBakeOptions(Operator):
+    bl_idname = FBConfig.fb_texture_bake_options_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL', 'UNDO'}
+
+    def draw(self, context):
+        layout = self.layout
+        settings = get_fb_settings()
+        if settings is None:
+            return
+
+        col = layout.column(align=True)
+        row = col.row()
+        row.label(text='Resolution (in pixels)')
+        btn = row.column(align=True)
+        btn.active = False
+        btn.operator(FBConfig.fb_reset_texture_resolution_idname,
+                     text='', icon='LOOP_BACK', emboss=False, depress=False)
+
+        col.separator(factor=0.4)
+        row = col.row(align=True)
+        row.prop(settings, 'tex_width', text='W')
+        row.prop(settings, 'tex_height', text='H')
+
+        col = layout.column(align=True)
+        row = col.row()
+        row.label(text='Advanced')
+        btn = row.column(align=True)
+        btn.active = False
+        btn.operator(FBConfig.fb_reset_advanced_settings_idname,
+                     text='', icon='LOOP_BACK', emboss=False, depress=False)
+
+        col.separator(factor=0.4)
+        col.prop(settings, 'tex_face_angles_affection')
+        col.prop(settings, 'tex_uv_expand_percents')
+        col.separator(factor=0.8)
+        col.prop(settings, 'tex_equalize_brightness')
+        col.prop(settings, 'tex_equalize_colour')
+        col.prop(settings, 'tex_fill_gaps')
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def cancel(self, context):
+        pass
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=350)
+
+
+class FB_OT_ResetTextureResolution(ButtonOperator, Operator):
+    bl_idname = FBConfig.fb_reset_texture_resolution_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        settings = get_fb_settings()
+        if not settings:
+            return {'CANCELLED'}
+        settings.tex_width = Config.default_tex_width
+        settings.tex_height = Config.default_tex_height
+        return {'FINISHED'}
+
+
+class FB_OT_ResetTextureSettings(ButtonOperator, Operator):
+    bl_idname = FBConfig.fb_reset_advanced_settings_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        settings = get_fb_settings()
+        if not settings:
+            return {'CANCELLED'}
+        settings.tex_face_angles_affection = Config.default_tex_face_angles_affection
+        settings.tex_uv_expand_percents = Config.default_tex_uv_expand_percents
         return {'FINISHED'}
 
 
@@ -874,4 +1029,9 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_DefaultPinSettings,
                        FB_OT_DefaultWireframeSettings,
                        FB_OT_ResetToneGain,
-                       FB_OT_ResetToneGamma)
+                       FB_OT_ResetToneGamma,
+                       FB_OT_ResetToneMapping,
+                       FB_OT_ImageInfo,
+                       FB_OT_TextureBakeOptions,
+                       FB_OT_ResetTextureResolution,
+                       FB_OT_ResetTextureSettings)

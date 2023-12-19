@@ -68,9 +68,25 @@ buttons = {
         'Blendshapes can\'t be created',
         ''
     ),
+    FBConfig.fb_image_info_idname: Button(
+        'Image info',
+        'Show EXIF info'
+    ),
     FBConfig.fb_tex_selector_idname: Button(
         'Select images:',
         'Create texture using pinned views'
+    ),
+    FBConfig.fb_texture_bake_options_idname: Button(
+        'Texture settings',
+        'Setup texture options for baking'
+    ),
+    FBConfig.fb_reset_texture_resolution_idname: Button(
+        'Reset',
+        'Reset texture resolution to default values'
+    ),
+    FBConfig.fb_reset_advanced_settings_idname: Button(
+        'Reset',
+        'Reset advanced texture baking settings'
     ),
     FBConfig.fb_pickmode_idname: Button(
         'FaceBuilder Pick Face mode',
@@ -168,7 +184,7 @@ buttons = {
         'Hide texture and go back to Solid mode'
     ),
     FBConfig.fb_exit_pinmode_idname: Button(
-        'Exit Pin mode',
+        'Back to 3D',
         'Exit Pin mode'
     ),
     FBConfig.fb_create_blendshapes_idname: Button(
@@ -244,6 +260,10 @@ buttons = {
     FBConfig.fb_reset_tone_gamma_idname: Button(
         'Reset gamma',
         'Reset gamma in tone mapping'
+    ),
+    FBConfig.fb_reset_tone_mapping_idname: Button(
+        'Reset tone mapping',
+        'Reset exposure and gamma in tone mapping'
     ),
     FBConfig.fb_export_to_cc_idname: Button(
         'Character Creator',

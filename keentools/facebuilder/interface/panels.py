@@ -126,6 +126,96 @@ def _start_autoloader_handler(headnum: int) -> None:
     bpy_timer_register(partial(_autoloader_handler, headnum), first_interval=0.01)
 
 
+def _draw_align_button(layout):
+    settings = get_fb_settings()
+    row = layout.row()
+    row.scale_y = 2.0
+    op = row.operator(
+        FBConfig.fb_pickmode_starter_idname,
+        text='Align face', icon='SHADERFX')
+    op.headnum = settings.current_headnum
+    op.camnum = settings.current_camnum
+
+
+def _draw_exit_pinmode(layout):
+    settings = get_fb_settings()
+    if settings is None:
+        return
+    if settings.pinmode:
+        col = layout.column()
+        col.scale_y = 2.0
+        col.operator(FBConfig.fb_exit_pinmode_idname,
+                     icon='LOOP_BACK', depress=True)
+
+
+def _draw_pins_panel(layout):
+    settings = get_fb_settings()
+    if settings is None:
+        return
+    headnum, camnum = settings.current_headnum, settings.current_camnum
+    col = layout.column(align=True)
+    col.scale_y = Config.btn_scale_y
+
+    if settings.get_head(headnum).should_use_emotions():
+        op = col.operator(FBConfig.fb_reset_expression_idname)
+        op.headnum = headnum
+        op.camnum = camnum
+
+    op = col.operator(FBConfig.fb_center_geo_idname, text='Reset camera')
+    op.headnum = headnum
+    op.camnum = camnum
+
+    op = col.operator(FBConfig.fb_remove_pins_idname, text='Remove all pins')
+    op.headnum = headnum
+    op.camnum = camnum
+
+
+def _draw_camera_info(layout):
+    settings = get_fb_settings()
+    camera = settings.get_camera(settings.current_headnum,
+                                 settings.current_camnum)
+    if camera is None:
+        return
+    col = layout.column()
+
+    row = col.row(align=True)
+    row.prop(camera, 'auto_focal_estimation')
+    row.operator(FBConfig.fb_image_info_idname, text='', icon='INFO')
+
+    row = col.row()
+    row.active = not camera.auto_focal_estimation
+    row.prop(camera, 'focal')
+
+
+def _draw_camera_hint(layout, headnum):
+    settings = get_fb_settings()
+    if settings is None:
+        return
+    head = settings.get_head(headnum)
+
+    if not head.has_pins() \
+            and head.get_last_camnum() >= 0 \
+            and not settings.pinmode:
+        box = layout.box()
+        row = box.split(factor=0.1)
+        row.label(text='', icon='INFO')
+        col = row.column(align=True)
+        col.scale_y = Config.text_scale_y
+        col.label(text='Align mesh to image')
+        col.label(text='in each view below')
+
+
+def _draw_expression_settings(layout, head):
+    if not head.should_use_emotions():
+        return
+    box = layout.box()
+    col = box.column(align=True)
+    col.prop(head, 'lock_blinking')
+    col.prop(head, 'lock_neck_movement')
+    col.label(text='Apply expression in 3D:')
+    col.prop(head, 'expression_view', text='')
+
+
 class Common:
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -163,25 +253,21 @@ class FB_PT_HeaderPanel(Common, Panel):
         row = layout.row()
         op = row.operator(
             Config.kt_addon_settings_idname,
-            text='', icon='PREFERENCES')
+            text='', icon='PREFERENCES', emboss=False)
         op.show = 'facebuilder'
 
-    def _create_head_button(self, layout, icon='USER'):
+    def _create_head_button(self, layout, active=True):
+        settings = get_fb_settings()
+        first_head = len(settings.heads) == 0
         row = layout.row()
-        row.scale_y = 2.0
+        row.enabled = active
+        row.scale_y = 2.0 if first_head else Config.btn_scale_y
         row.operator(
             FBConfig.fb_add_head_operator_idname,
-            text='Create a new head', icon=icon)
+            text='Create New Head', icon='USER' if first_head else 'ADD')
 
     def _head_creation_offer(self, layout):
         self._create_head_button(layout)
-
-        box = layout.box()
-        col = box.column()
-        col.scale_y = Config.text_scale_y
-        col.label(text='You can also create')
-        col.label(text='a new head using:')
-        col.label(text='Add > Mesh > FaceBuilder')
 
     def _pkt_install_offer(self, layout):
         col = layout.column(align=True)
@@ -208,7 +294,7 @@ class FB_PT_HeaderPanel(Common, Panel):
         row.scale_y = 3.0
         row.operator(FBConfig.fb_reconstruct_head_idname)
 
-    def _draw_many_heads(self, layout):
+    def _draw_many_heads(self, layout, active=True):
         # Output List of all heads in Scene
         settings = get_fb_settings()
         if settings is None:
@@ -218,6 +304,7 @@ class FB_PT_HeaderPanel(Common, Panel):
         for i, h in enumerate(settings.heads):
             row = layout.row(align=True)
             row.scale_y = Config.btn_scale_y
+            row.enabled = active
 
             if headnum == i:
                 op = row.operator(FBConfig.fb_select_current_head_idname,
@@ -235,7 +322,7 @@ class FB_PT_HeaderPanel(Common, Panel):
                     text='', icon='CANCEL')
                 op.headnum = i
 
-        self._create_head_button(layout, icon='ADD')
+        self._create_head_button(layout, active)
 
     def draw(self, context):
         layout = self.layout
@@ -257,7 +344,8 @@ class FB_PT_HeaderPanel(Common, Panel):
                 row.alert = True
                 row.operator(FBConfig.fb_unhide_head_idname, icon='HIDE_OFF')
                 _start_pinmode_escaper(context)
-            return
+
+            self._draw_many_heads(layout, active=False)
 
         elif state == 'RECONSTRUCT':
             self._draw_reconstruct(layout)
@@ -304,72 +392,44 @@ class FB_PT_UpdatesInstallationPanel(KT_PT_UpdatesInstallationPanel):
     bl_category = Config.fb_tab_category
 
 
-class FB_PT_CameraPanel(AllVisibleClosed, Panel):
+class FB_PT_CameraPanel(AllVisible, Panel):
     bl_idname = FBConfig.fb_camera_panel_idname
-    bl_label = 'Camera'
+    bl_label = 'View'
+
+    @classmethod
+    def poll(cls, context):
+        if not facebuilder_enabled():
+            return False
+        settings = get_fb_settings()
+        if not settings.pinmode:
+            return False
+        return _show_all_panels()
 
     def draw_header_preset(self, context):
         layout = self.layout
         row = layout.row()
         row.active = False
-
         row.operator(
             FBConfig.fb_help_camera_idname,
-            text='', icon='QUESTION')
+            text='', icon='QUESTION', emboss=False)
 
     def draw(self, context):
-        def _draw_default_mode(layout, settings, head):
-            camera = head.get_camera(settings.current_camnum)
-            if camera is None:
-                return
-            col = layout.column(align=True)
-
-            col.label(text='File: {}'.format(camera.get_image_name()))
-            col.separator(factor=0.4)
-
-            box = col.box()
-            box.prop(camera, 'auto_focal_estimation')
-            if camera.auto_focal_estimation:
-                box.label(text='Focal length: {:.2f} mm'.format(camera.focal))
-            else:
-                box.prop(camera, 'focal')
-
-        def _draw_exif(layout, head):
-            # Show EXIF info message
-            if len(head.exif.info_message) > 0:
-                box = layout.box()
-                arr = re.split("\r\n|\n", head.exif.info_message)
-                col = box.column()
-                col.scale_y = Config.text_scale_y
-                for a in arr:
-                    col.label(text=a)
-
-            # Show EXIF sizes message
-            if len(head.exif.sizes_message) > 0:
-                box = layout.box()
-                arr = re.split("\r\n|\n", head.exif.sizes_message)
-                col = box.column()
-                col.scale_y = Config.text_scale_y
-                for a in arr:
-                    col.label(text=a)
-
-        layout = self.layout
         settings = get_fb_settings()
         if settings is None:
             return
-        head = get_current_head()
 
-        if not head:
-            return
-
-        if settings.current_camnum >= 0:
-            _draw_default_mode(layout, settings, head)
-            _draw_exif(layout, head)
+        layout = self.layout
+        _draw_align_button(layout)
+        _draw_camera_info(layout)
+        _draw_exit_pinmode(layout)
+        if settings.pinmode and \
+                context.space_data.region_3d.view_perspective == 'CAMERA':
+            _draw_pins_panel(layout)
 
 
 class FB_PT_ViewsPanel(AllVisible, Panel):
     bl_idname = FBConfig.fb_views_panel_idname
-    bl_label = 'Views'
+    bl_label = 'Images'
 
     def draw_header_preset(self, context):
         layout = self.layout
@@ -377,28 +437,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         row.active = False
         row.operator(
             FBConfig.fb_help_views_idname,
-            text='', icon='QUESTION')
-
-    def _draw_pins_panel(self, headnum, camnum):
-        settings = get_fb_settings()
-        if settings is None:
-            return
-        layout = self.layout
-        col = layout.column(align=True)
-        col.scale_y = Config.btn_scale_y
-
-        if settings.get_head(headnum).should_use_emotions():
-            op = col.operator(FBConfig.fb_reset_expression_idname)
-            op.headnum = headnum
-            op.camnum = camnum
-
-        op = col.operator(FBConfig.fb_center_geo_idname, text='Reset camera')
-        op.headnum = headnum
-        op.camnum = camnum
-
-        op = col.operator(FBConfig.fb_remove_pins_idname, text='Remove all pins')
-        op.headnum = headnum
-        op.camnum = camnum
+            text='', icon='QUESTION', emboss=False)
 
     def _draw_camera_list(self, headnum, layout):
         settings = get_fb_settings()
@@ -407,45 +446,16 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         head = settings.get_head(headnum)
 
         if head is not None and not head.has_cameras():
+            self._draw_add_images_button(headnum, layout, scale=2.0)
             return
 
         layout.prop(head, 'use_emotions')
-        if head.should_use_emotions():
-            box = layout.box()
-            col = box.column(align=True)
-            col.prop(head, 'lock_blinking')
-            col.prop(head, 'lock_neck_movement')
-            col.label(text='Apply expression in 3D:')
-            col.prop(head, 'expression_view', text='')
+        # _draw_expression_settings(layout, head)
 
-        if settings.pinmode:
-            camera = head.get_camera(settings.current_camnum)
-            if camera:
-                col = layout.column(align=True)
-                row = col.row(align=True)
-                row.prop(camera, 'tone_exposure', slider=True)
-                op = row.operator(FBConfig.fb_reset_tone_exposure_idname,
-                                  text='', icon='LOOP_BACK')
-                op.headnum = headnum
-                op.camnum = settings.current_camnum
-
-                row = col.row(align=True)
-                row.prop(camera, 'tone_gamma', slider=True)
-                op = row.operator(FBConfig.fb_reset_tone_gamma_idname,
-                                  text='', icon='LOOP_BACK')
-                op.headnum = headnum
-                op.camnum = settings.current_camnum
-
-            row = layout.row()
-            row.scale_y = 2.0
-            op = row.operator(
-                FBConfig.fb_pickmode_starter_idname,
-                text='Align face', icon='SHADERFX')
-            op.headnum = settings.current_headnum
-            op.camnum = settings.current_camnum
-
+        common_col = layout.column(align=True)
         for i, camera in enumerate(head.cameras):
-            row = layout.row(align=True)
+            row = common_col.row(align=True)
+            row.scale_y = Config.btn_scale_y
             view_icon = 'PINNED' if camera.has_pins() else 'HIDE_OFF'
 
             if settings.current_camnum == i and settings.pinmode:
@@ -460,39 +470,22 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
                 op.camnum = i
 
             col = row.column(align=True)
-            col.active = not camera.cam_image
             op = col.operator(
                 FBConfig.fb_proper_view_menu_exec_idname,
                 text='', icon='COLLAPSEMENU')
             op.headnum = headnum
             op.camnum = i
 
+        self._draw_add_images_button(headnum, common_col,
+                                     scale=Config.btn_scale_y, icon='ADD')
 
-    def _draw_camera_hint(self, layout, headnum):
-        settings = get_fb_settings()
-        if settings is None:
-            return
-        head = settings.get_head(headnum)
-
-        if not head.has_pins() \
-                and head.get_last_camnum() >= 0 \
-                and not settings.pinmode:
-            col = layout.column()
-            col.alert = True
-            col.scale_y = Config.text_scale_y
-            col.label(text='Press a view button with',icon='INFO')
-            col.label(text='a picture file name below', icon='BLANK1')
-            col.label(text='to switch to Pin mode', icon='BLANK1')
-
-    def _draw_exit_pinmode(self, layout):
-        settings = get_fb_settings()
-        if settings is None:
-            return
-        if settings.pinmode:
-            col = layout.column()
-            col.scale_y = 2.0
-            col.operator(FBConfig.fb_exit_pinmode_idname,
-                         text='Exit Pin mode', icon='LOOP_BACK', depress=True)
+    def _draw_add_images_button(self, headnum, layout, scale=2.0,
+                                icon='OUTLINER_OB_IMAGE'):
+        col = layout.column(align=True)
+        col.scale_y = scale
+        op = col.operator(FBConfig.fb_multiple_filebrowser_exec_idname,
+                          text='Add Images', icon=icon)
+        op.headnum = headnum
 
     def draw(self, context):
         settings = get_fb_settings()
@@ -504,28 +497,23 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         if headnum < 0:
             return
 
-        self._draw_exit_pinmode(layout)
-        self._draw_camera_hint(layout, headnum)
+        # _draw_camera_hint(layout, headnum)
 
         head = settings.get_head(headnum)
         if not head.blenshapes_are_relevant() and head.model_changed_by_pinmode:
             _draw_update_blendshapes_panel(layout)
+
         self._draw_camera_list(headnum, layout)
+
+        # _draw_exit_pinmode(layout)
+
+        # Camera buttons Reset camera, Remove pins
+        # if settings.pinmode and \
+        #         context.space_data.region_3d.view_perspective == 'CAMERA':
+        #     _draw_pins_panel(layout)
 
         if head.headobj and head.headobj.users == 1:
             _start_geomobj_delete_handler()
-
-        # Open sequence Button (large x2)
-        col = layout.column()
-        col.scale_y = 2.0
-        op = col.operator(FBConfig.fb_multiple_filebrowser_exec_idname,
-                          text='Add Images', icon='OUTLINER_OB_IMAGE')
-        op.headnum = headnum
-
-        # Camera buttons Reset camera, Remove pins
-        if settings.pinmode and \
-                context.space_data.region_3d.view_perspective == 'CAMERA':
-            self._draw_pins_panel(headnum, settings.current_camnum)
 
 
 class FB_PT_Model(AllVisibleClosed, Panel):
@@ -538,7 +526,7 @@ class FB_PT_Model(AllVisibleClosed, Panel):
         row.active = False
         row.operator(
             FBConfig.fb_help_model_idname,
-            text='', icon='QUESTION')
+            text='', icon='QUESTION', emboss=False)
 
     def draw(self, context):
         layout = self.layout
@@ -557,6 +545,9 @@ class FB_PT_Model(AllVisibleClosed, Panel):
         op = col.operator(FBConfig.fb_unmorph_idname, text='Reset')
         op.headnum = headnum
         op.camnum = settings.current_camnum
+
+        layout.prop(head, 'use_emotions')
+        _draw_expression_settings(layout, head)
 
         col = layout.column(align=True)
         col.enabled = settings.pinmode
@@ -579,6 +570,7 @@ class FB_PT_Model(AllVisibleClosed, Panel):
         row = layout.split(factor=0.35)
         row.label(text='Topology')
         row.prop(head, 'model_type', text='')
+        layout.prop(head, 'tex_uv_shape')
 
         if not head.blenshapes_are_relevant() and head.model_changed_by_scale:
             _draw_update_blendshapes_panel(layout)
@@ -607,11 +599,10 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
         row.active = False
         row.operator(
             FBConfig.fb_help_texture_idname,
-            text='', icon='QUESTION')
+            text='', icon='QUESTION', emboss=False)
 
     @classmethod
     def get_area_mode(cls, context):
-        # Get Mode
         area = context.area
         for space in area.spaces:
             if space.type == 'VIEW_3D':
@@ -629,60 +620,34 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
             headnum = settings.current_headnum
         head = settings.get_head(headnum)
 
-        box = layout.box()
-        col = box.column(align=True)
-        col.label(text='Resolution (in pixels)')
-        col.separator(factor=0.4)
-        row = col.row(align=True)
-        row.prop(settings, 'tex_width', text='W')
-        row.prop(settings, 'tex_height', text='H')
-
         layout.prop(head, 'tex_uv_shape')
 
-        row = layout.row()
+        col = layout.column(align=True)
+        row = col.row(align=True)
         row.scale_y = 2.0
         op = row.operator(FBConfig.fb_tex_selector_idname,
                           text='Create texture', icon='IMAGE')
         op.headnum = headnum
 
+        row.operator(FBConfig.fb_texture_bake_options_idname,
+                     text='', icon='PREFERENCES')
+
         texture_exists = find_bpy_image_by_name(head.preview_texture_name())
-        row = layout.row()
-        row.scale_y = Config.btn_scale_y
-        if not texture_exists:
-            row.active = False
 
-        mode = self.get_area_mode(context)
-        if mode == 'MATERIAL':
-            row.operator(FBConfig.fb_show_solid_idname,
-                         text='Hide texture', icon='SHADING_SOLID')
-        else:
-            row.operator(FBConfig.fb_show_tex_idname,
-                         text='Apply texture', icon='MATERIAL')
-
-        row = layout.row()
-        row.scale_y = Config.btn_scale_y
-        if not texture_exists:
-            row.active = False
-        op = row.operator(FBConfig.fb_texture_file_export_idname,
-                          text='Export', icon='EXPORT')
-        op.headnum = headnum
-        op = row.operator(FBConfig.fb_delete_texture_idname,
-                          text='Delete', icon='X')
-        op.headnum = headnum
-
-        box = layout.box()
-        col = box.column(align=True)
-        col.label(text='Advanced')
-        col.separator(factor=0.4)
-        col.prop(settings, 'tex_face_angles_affection')
-        col.prop(settings, 'tex_uv_expand_percents')
-        col.separator(factor=0.8)
-        col.prop(settings, 'tex_equalize_brightness')
-        col.prop(settings, 'tex_equalize_colour')
-        col.prop(settings, 'tex_fill_gaps')
+        if texture_exists:
+            row = col.row(align=True)
+            row.scale_y = Config.btn_scale_y
+            if not texture_exists:
+                row.active = False
+            op = row.operator(FBConfig.fb_texture_file_export_idname,
+                              text='Export', icon='EXPORT')
+            op.headnum = headnum
+            op = row.operator(FBConfig.fb_delete_texture_idname,
+                              text='Delete', icon='X')
+            op.headnum = headnum
 
 
-class FB_PT_AppearancePanel(AllVisible, Panel):
+class FB_PT_AppearancePanel(AllVisibleClosed, Panel):
     bl_idname = FBConfig.fb_appearance_panel_idname
     bl_label = 'Appearance'
 
@@ -692,33 +657,26 @@ class FB_PT_AppearancePanel(AllVisible, Panel):
         row.active = False
         row.operator(
             FBConfig.fb_addon_setup_defaults_idname,
-            text='', icon='PREFERENCES')
+            text='', icon='PREFERENCES', emboss=False)
         row.operator(
             FBConfig.fb_help_appearance_idname,
-            text='', icon='QUESTION')
+            text='', icon='QUESTION', emboss=False)
 
-    def draw(self, context):
-        layout = self.layout
-        settings = get_fb_settings()
-        if settings is None:
-            return
-
-        box = layout.box()
-        col = box.column(align=True)
+    def _appearance_pin_settings(self, settings, layout) -> None:
+        col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Pins')
         col.separator(factor=0.4)
         btn = row.column(align=True)
         btn.active = False
         btn.scale_y = 0.75
-        btn.operator(
-            FBConfig.fb_default_pin_settings_idname,
-            text='', icon='LOOP_BACK', emboss=False, depress=False)
+        btn.operator(FBConfig.fb_default_pin_settings_idname, text='',
+                     icon='LOOP_BACK', emboss=False, depress=False)
         col.prop(settings, 'pin_size', slider=True)
         col.prop(settings, 'pin_sensitivity', slider=True)
 
-        box = layout.box()
-        col = box.column(align=True)
+    def _appearance_wireframe_settings(self, settings, layout) -> None:
+        col = layout.column(align=True)
         row = col.row(align=True)
         row.label(text='Wireframe')
         col.separator(factor=0.4)
@@ -729,14 +687,15 @@ class FB_PT_AppearancePanel(AllVisible, Panel):
             FBConfig.fb_default_wireframe_settings_idname,
             text='', icon='LOOP_BACK', emboss=False, depress=False)
 
-        split = col.split(factor=0.625)
-        row = split.row(align=True)
-        row.prop(settings, 'wireframe_color', text='')
-        row.prop(settings, 'wireframe_special_color', text='')
-        row.prop(settings, 'wireframe_midline_color', text='')
+        split = col.split(factor=0.4, align=True)
+        split2 = split.split(factor=0.34, align=True)
+        split2.prop(settings, 'wireframe_color', text='')
+        split3 = split2.split(factor=0.5, align=True)
+        split3.prop(settings, 'wireframe_special_color', text='')
+        split3.prop(settings, 'wireframe_midline_color', text='')
         split.prop(settings, 'wireframe_opacity', text='', slider=True)
 
-        row = box.row(align=True)
+        row = layout.row(align=True)
         op = row.operator(FBConfig.fb_wireframe_color_idname, text='R')
         op.action = 'wireframe_red'
         op = row.operator(FBConfig.fb_wireframe_color_idname, text='G')
@@ -754,10 +713,46 @@ class FB_PT_AppearancePanel(AllVisible, Panel):
         op = row.operator(FBConfig.fb_wireframe_color_idname, text='W')
         op.action = 'wireframe_white'
 
-        col = box.column(align=True)
+        col = layout.column(align=True)
         col.prop(settings, 'show_specials', text='Highlight head parts')
         col.prop(settings, 'wireframe_backface_culling')
         col.prop(settings, 'use_adaptive_opacity')
+
+    def _appearance_image_adjustment(self, settings, layout) -> None:
+        camera = settings.get_camera(settings.current_headnum,
+                                     settings.current_camnum)
+        if not camera:
+            return
+
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.label(text='Background')
+        col.separator(factor=0.4)
+        btn = row.column(align=True)
+        btn.active = False
+        btn.scale_y = 0.75
+        btn.operator(FBConfig.fb_reset_tone_mapping_idname,
+                     text='', icon='LOOP_BACK', emboss=False, depress=False)
+        col2 = col.column(align=True)
+        row = col2.row(align=True)
+        row.prop(camera, 'tone_exposure', slider=True)
+        row.operator(FBConfig.fb_reset_tone_exposure_idname,
+                     text='', icon='LOOP_BACK')
+        row = col.row(align=True)
+        row.prop(camera, 'tone_gamma', slider=True)
+        row.operator(FBConfig.fb_reset_tone_gamma_idname,
+                     text='', icon='LOOP_BACK')
+
+    def draw(self, context):
+        layout = self.layout
+        settings = get_fb_settings()
+        if settings is None:
+            return
+
+        self._appearance_wireframe_settings(settings, layout)
+        self._appearance_pin_settings(settings, layout)
+        if settings.pinmode:
+            self._appearance_image_adjustment(settings, layout)
 
 
 class FB_PT_BlendShapesPanel(AllVisibleClosed, Panel):
@@ -779,7 +774,7 @@ class FB_PT_BlendShapesPanel(AllVisibleClosed, Panel):
         row.active = False
         row.operator(
             FBConfig.fb_help_blendshapes_idname,
-            text='', icon='QUESTION')
+            text='', icon='QUESTION', emboss=False)
 
     def draw(self, context):
         layout = self.layout
@@ -845,7 +840,7 @@ class FB_PT_ExportPanel(AllVisibleClosed, Panel):
         row.active = False
         row.operator(
             FBConfig.fb_help_blendshapes_idname,
-            text='', icon='QUESTION')
+            text='', icon='QUESTION', emboss=False)
 
     def draw(self, context):
         layout = self.layout

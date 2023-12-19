@@ -86,8 +86,12 @@ class FBConfig:
     fb_blendshapes_warning_idname = operators + '.blendshapes_warning'
     fb_noblenshapes_until_expression_warning_idname = operators + \
         '.no_blenshapes_until_expression_warning'
+    fb_image_info_idname = operators + '.image_info'
 
     fb_tex_selector_idname = operators + '.tex_selector'
+    fb_texture_bake_options_idname = operators + '.texture_bake_options'
+    fb_reset_texture_resolution_idname = operators + '.reset_texture_resolution'
+    fb_reset_advanced_settings_idname = operators + '.reset_advanced_settings'
     fb_exit_pinmode_idname = operators + '.exit_pinmode'
 
     fb_create_blendshapes_idname = operators + '.create_blendshapes'
@@ -112,6 +116,7 @@ class FBConfig:
         operators + '.default_wireframe_settings'
     fb_reset_tone_exposure_idname = operators + '.reset_tone_exposure'
     fb_reset_tone_gamma_idname = operators + '.reset_tone_gamma'
+    fb_reset_tone_mapping_idname = operators + '.reset_tone_mapping'
 
     # Integration
     fb_export_to_cc_idname = operators + '.export_to_cc'

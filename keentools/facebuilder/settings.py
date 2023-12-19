@@ -143,7 +143,8 @@ class FBCameraItem(PropertyGroup):
 
     focal: FloatProperty(
         description="35mm equivalent focal length (mm)",
-        name="Focal Length (mm)", default=50,
+        name="Focal Length", default=50,
+        unit="CAMERA",
         min=0.1, update=update_camera_focal)
 
     background_scale: FloatProperty(
@@ -152,7 +153,7 @@ class FBCameraItem(PropertyGroup):
         min=0.0001)
 
     auto_focal_estimation: BoolProperty(
-        name="Focal Length Estimation",
+        name="Estimate focal length",
         description="When turned on, FaceBuilder will try to estimate "
                     "focal length based on the position of the model "
                     "in the frame",
@@ -456,7 +457,7 @@ class FBHeadItem(PropertyGroup):
         min=0.01, update=update_head_focal)
 
     auto_focal_estimation: BoolProperty(
-        name="Focal Length Estimation",
+        name="Estimate focal length",
         description="When turned on, FaceBuilder will try to estimate "
                     "focal length based on the position of the model "
                     "in the frame",
