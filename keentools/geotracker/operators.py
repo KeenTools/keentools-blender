@@ -52,22 +52,22 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_url_open)
 from .utils.geotracker_acts import (create_tracker_action,
                                     delete_tracker_action,
-                                    add_keyframe_act,
-                                    remove_keyframe_act,
-                                    prev_keyframe_act,
-                                    next_keyframe_act,
-                                    toggle_lock_view_act,
+                                    add_keyframe_action,
+                                    remove_keyframe_action,
+                                    prev_keyframe_action,
+                                    next_keyframe_action,
+                                    toggle_lock_view_action,
                                     track_to,
-                                    track_next_frame_act,
-                                    refine_async_act,
-                                    refine_all_async_act,
-                                    clear_between_keyframes_act,
-                                    clear_direction_act,
-                                    clear_all_act,
-                                    clear_all_except_keyframes_act,
-                                    remove_pins_act,
-                                    toggle_pins_act,
-                                    center_geo_act,
+                                    track_next_frame_action,
+                                    refine_async_action,
+                                    refine_all_async_action,
+                                    clear_between_keyframes_action,
+                                    clear_direction_action,
+                                    clear_all_action,
+                                    clear_all_except_keyframes_action,
+                                    remove_pins_action,
+                                    toggle_pins_action,
+                                    center_geo_action,
                                     create_animated_empty_act,
                                     create_empty_from_selected_pins_act,
                                     bake_texture_from_frames_act,
@@ -124,7 +124,9 @@ class GT_OT_CreateGeoTracker(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        act_status = create_tracker_action(product=ProductType.GEOTRACKER)
+        _log.output(f'{self.__class__.__name__} execute')
+        product = ProductType.GEOTRACKER
+        act_status = create_tracker_action(product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
         return {'FINISHED'}
@@ -139,8 +141,9 @@ class GT_OT_DeleteGeoTracker(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
+        product = ProductType.GEOTRACKER
         act_status = delete_tracker_action(self.geotracker_num,
-                                           product=ProductType.GEOTRACKER)
+                                           product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
         return {'FINISHED'}
@@ -153,7 +156,8 @@ class GT_OT_SwitchToCameraMode(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        product = ProductType.GEOTRACKER
+        check_status = common_checks(product=product,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=False, geotracker=True,
                                      camera=False, geometry=False,
@@ -175,7 +179,8 @@ class GT_OT_SwitchToGeometryMode(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        product = ProductType.GEOTRACKER
+        check_status = common_checks(product=product,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=False, geotracker=True,
                                      camera=False, geometry=False,
@@ -197,7 +202,8 @@ class GT_OT_CreatePrecalc(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        product = ProductType.GEOTRACKER
+        check_status = common_checks(product=product,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=False, geotracker=True,
                                      camera=True, geometry=False,
@@ -220,8 +226,9 @@ class GT_OT_PrevKeyframe(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
+        product = ProductType.GEOTRACKER
         settings = get_gt_settings()
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        check_status = common_checks(product=product,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=not settings.pinmode,
                                      geotracker=True, camera=True,
@@ -231,7 +238,7 @@ class GT_OT_PrevKeyframe(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         settings.calculating_mode = 'JUMP'
-        act_status = prev_keyframe_act()
+        act_status = prev_keyframe_action(product=product)
         settings.stop_calculating()
         if not act_status.success:
             self.report({'INFO'}, act_status.error_message)
@@ -248,8 +255,9 @@ class GT_OT_NextKeyframe(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
+        product = ProductType.GEOTRACKER
         settings = get_gt_settings()
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        check_status = common_checks(product=product,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=not settings.pinmode,
                                      geotracker=True, camera=True,
@@ -259,7 +267,7 @@ class GT_OT_NextKeyframe(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         settings.calculating_mode = 'JUMP'
-        act_status = next_keyframe_act()
+        act_status = next_keyframe_action(product=product)
         settings.stop_calculating()
         if not act_status.success:
             self.report({'INFO'}, act_status.error_message)
@@ -275,7 +283,8 @@ class GT_OT_LockView(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = toggle_lock_view_act()
+        product = ProductType.GEOTRACKER
+        act_status = toggle_lock_view_action(product=product)
         if not act_status.success:
             self.report({'INFO'}, act_status.error_message)
             return {'CANCELLED'}
@@ -289,7 +298,8 @@ class GT_OT_TrackToStart(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = track_to(forward=False)
+        product = ProductType.GEOTRACKER
+        act_status = track_to(forward=False, product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -303,7 +313,8 @@ class GT_OT_TrackToEnd(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = track_to(forward=True)
+        product = ProductType.GEOTRACKER
+        act_status = track_to(forward=True, product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -317,7 +328,8 @@ class GT_OT_TrackNext(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = track_next_frame_act(forward=True)
+        product = ProductType.GEOTRACKER
+        act_status = track_next_frame_action(forward=True, product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -331,7 +343,8 @@ class GT_OT_TrackPrev(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = track_next_frame_act(forward=False)
+        product = ProductType.GEOTRACKER
+        act_status = track_next_frame_action(forward=False, product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -346,7 +359,8 @@ class GT_OT_AddKeyframe(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = add_keyframe_act()
+        product = ProductType.GEOTRACKER
+        act_status = add_keyframe_action(product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -363,7 +377,8 @@ class GT_OT_RemoveKeyframe(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = remove_keyframe_act()
+        product = ProductType.GEOTRACKER
+        act_status = remove_keyframe_action(product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -379,7 +394,8 @@ class GT_OT_ClearAllTracking(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = clear_all_act()
+        product = ProductType.GEOTRACKER
+        act_status = clear_all_action(product=product)
         GTLoader.update_viewport_shaders(timeline=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
@@ -394,7 +410,8 @@ class GT_OT_ClearTrackingExceptKeyframes(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = clear_all_except_keyframes_act()
+        product = ProductType.GEOTRACKER
+        act_status = clear_all_except_keyframes_action(product=product)
         GTLoader.update_viewport_shaders(timeline=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
@@ -409,7 +426,8 @@ class GT_OT_ClearTrackingForward(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = clear_direction_act(forward=True)
+        product = ProductType.GEOTRACKER
+        act_status = clear_direction_action(forward=True, product=product)
         GTLoader.update_viewport_shaders(timeline=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
@@ -424,7 +442,8 @@ class GT_OT_ClearTrackingBackward(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = clear_direction_act(forward=False)
+        product = ProductType.GEOTRACKER
+        act_status = clear_direction_action(forward=False, product=product)
         GTLoader.update_viewport_shaders(timeline=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
@@ -439,7 +458,8 @@ class GT_OT_ClearTrackingBetween(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = clear_between_keyframes_act()
+        product = ProductType.GEOTRACKER
+        act_status = clear_between_keyframes_action(product=product)
         GTLoader.update_viewport_shaders(timeline=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
@@ -454,7 +474,8 @@ class GT_OT_Refine(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = refine_async_act()
+        product = ProductType.GEOTRACKER
+        act_status = refine_async_action(product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -468,7 +489,8 @@ class GT_OT_RefineAll(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = refine_all_async_act()
+        product = ProductType.GEOTRACKER
+        act_status = refine_all_async_action(product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -482,7 +504,8 @@ class GT_OT_CenterGeo(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = center_geo_act()
+        product = ProductType.GEOTRACKER
+        act_status = center_geo_action(product=product)
         GTLoader.update_viewport_shaders(timeline=True, pins_and_residuals=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
@@ -509,7 +532,8 @@ class GT_OT_RemovePins(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = remove_pins_act()
+        product = ProductType.GEOTRACKER
+        act_status = remove_pins_action(product=product)
         GTLoader.update_viewport_shaders(pins_and_residuals=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
@@ -524,7 +548,8 @@ class GT_OT_TogglePins(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = toggle_pins_act()
+        product = ProductType.GEOTRACKER
+        act_status = toggle_pins_action(product=product)
         GTLoader.update_viewport_shaders(pins_and_residuals=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
@@ -1213,8 +1238,9 @@ class GT_OT_SelectGeotrackerObjects(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = select_tracker_objects_action(
-            self.geotracker_num, product=ProductType.GEOTRACKER)
+        product = ProductType.GEOTRACKER
+        act_status = select_tracker_objects_action(self.geotracker_num,
+                                                   product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}

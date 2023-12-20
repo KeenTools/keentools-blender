@@ -70,7 +70,10 @@ from ...utils.images import (get_background_image_object,
                              check_background_image_absent_frames)
 from .calc_timer import (TrackTimer,
                          RefineTimer,
-                         RefineTimerFast)
+                         RefineTimerFast,
+                         FTTrackTimer,
+                         FTRefineTimer,
+                         FTRefineTimerFast)
 from ..settings import bpy_poll_is_mesh, bpy_poll_is_camera
 from ...utils.coords import (LocRotScale,
                              LocRotWithoutScale,
@@ -183,12 +186,12 @@ def select_tracker_objects_action(geotracker_num: int, *,
     settings = get_settings(product)
     settings.fix_geotrackers()
     if not settings.change_current_geotracker_safe(geotracker_num):
-        return ActionStatus(False, f'Cannot switch to Geotracker '
+        return ActionStatus(False, f'Cannot switch to {product_name(product)} '
                                    f'{geotracker_num}')
 
     geotracker = settings.get_current_geotracker_item()
     if not geotracker.geomobj and not geotracker.camobj:
-        return ActionStatus(False, f'Geotracker {geotracker_num} '
+        return ActionStatus(False, f'{product_name(product)} {geotracker_num} '
                                    f'does not contain any objects')
     if geotracker.camera_mode():
         select_objects_only([geotracker.camobj, geotracker.geomobj])
@@ -200,7 +203,8 @@ def select_tracker_objects_action(geotracker_num: int, *,
     return ActionStatus(True, 'ok')
 
 
-def add_keyframe_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def add_keyframe_action(*, product: int) -> ActionStatus:
+    _log.output(f'add_keyframe_action start [{product_name(product)}]')
     check_status = common_checks(product=product,
                                  object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
@@ -215,11 +219,12 @@ def add_keyframe_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
 
     loader.safe_keyframe_add(bpy_current_frame(), update=True)
     loader.save_geotracker()
+    _log.output('add_keyframe_action end')
     return ActionStatus(True, 'ok')
 
 
-def remove_keyframe_act(
-        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def remove_keyframe_action(*, product: int) -> ActionStatus:
+    _log.output(f'remove_keyframe_action start [{product_name(product)}]')
     check_status = common_checks(product=product,
                                  object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
@@ -239,10 +244,13 @@ def remove_keyframe_act(
     geotracker = settings.get_current_geotracker_item()
     obj = geotracker.animatable_object()
     delete_locrot_keyframe(obj)
-    return ActionStatus(True, 'No GeoTracker keyframe at this frame')
+    _log.output('remove_keyframe_action end')
+    return ActionStatus(True, f'No {product_name(product)} '
+                              f'keyframe at this frame')
 
 
-def next_keyframe_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def next_keyframe_action(*, product) -> ActionStatus:
+    _log.output(f'next_keyframe_action start [{product_name(product)}]')
     current_frame = bpy_current_frame()
     gt = get_loader(product).kt_geotracker()
     target_frame = get_next_tracking_keyframe(gt, current_frame)
@@ -259,10 +267,12 @@ def next_keyframe_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
         total_redraw_ui()  # For proper stabilization
         return ActionStatus(True, 'ok')
 
-    return ActionStatus(False, 'No next GeoTracker keyframe')
+    _log.output('next_keyframe_action end')
+    return ActionStatus(False, f'No next {product_name(product)} keyframe')
 
 
-def prev_keyframe_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def prev_keyframe_action(*, product) -> ActionStatus:
+    _log.output(f'prev_keyframe_action start [{product_name(product)}]')
     current_frame = bpy_current_frame()
     gt = get_loader(product).kt_geotracker()
     target_frame = get_previous_tracking_keyframe(gt, current_frame)
@@ -279,23 +289,25 @@ def prev_keyframe_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
         total_redraw_ui()  # For proper stabilization
         return ActionStatus(True, 'ok')
 
-    return ActionStatus(False, 'No previous GeoTracker keyframe')
+    _log.output('prev_keyframe_action end')
+    return ActionStatus(False, f'No previous {product_name(product)} keyframe')
 
 
-def toggle_lock_view_act(*,
-                         product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def toggle_lock_view_action(*, product: int) -> ActionStatus:
+    _log.output(f'toggle_lock_view_action start [{product_name(product)}]')
     settings = get_settings(product)
     if not settings.pinmode:
-        return ActionStatus(False, 'Lock View works in GeoTracker pinmode only')
+        return ActionStatus(False, f'Lock View works in '
+                                   f'{product_name(product)} pinmode only')
 
     settings.stabilize_viewport_enabled = not settings.stabilize_viewport_enabled
+    _log.output('toggle_lock_view_action end')
     return ActionStatus(True, 'Ok')
 
 
-def track_to(forward: bool, timer_class: Any = TrackTimer, *,
-             product: int = ProductType.GEOTRACKER) -> ActionStatus:
-    _log.output(f'track_to: {forward}')
-    check_status = track_checks()
+def track_to(forward: bool, *, product: int) -> ActionStatus:
+    _log.output(f'track_to: forward={forward} [{product_name(product)}]')
+    check_status = track_checks(product=product)
     if not check_status.success:
         return check_status
 
@@ -314,27 +326,39 @@ def track_to(forward: bool, timer_class: Any = TrackTimer, *,
         precalc_path = None if precalcless else geotracker.precalc_path
         _log.output(f'gt.track_async({current_frame}, {forward}, {precalc_path})')
         tracking_computation = gt.track_async(current_frame, forward, precalc_path)
-        tracking_timer = timer_class(
-            tracking_computation, current_frame,
-            success_callback=unbreak_after if forward else unbreak_after_reversed,
-            error_callback=unbreak_after if forward else unbreak_after_reversed)
+
+        if product == ProductType.GEOTRACKER:
+            tracking_timer = TrackTimer(
+                tracking_computation, current_frame,
+                success_callback=unbreak_after if forward else unbreak_after_reversed,
+                error_callback=unbreak_after if forward else unbreak_after_reversed)
+        elif product == ProductType.FACETRACKER:
+            tracking_timer = FTTrackTimer(
+                tracking_computation, current_frame,
+                success_callback=unbreak_after_facetracker if forward else unbreak_after_reversed_facetracker,
+                error_callback=unbreak_after_facetracker if forward else unbreak_after_reversed_facetracker)
+        else:
+            assert False, f'Wrong product type [{product}]'
+
         tracking_timer.start()
     except pkt_module().UnlicensedException as err:
-        _log.error(f'UnlicensedException track_to: {str(err)}')
+        _log.error(f'UnlicensedException track_to:\n{str(err)}')
         show_unlicensed_warning()
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
-        _log.error(f'Unknown Exception track_to: {str(err)}')
+        _log.error(f'Unknown Exception track_to:\n{str(err)}')
         show_warning_dialog(err)
         return ActionStatus(False, 'Some problem (see console)')
 
+    _log.output('track_to end')
     return ActionStatus(True, 'Ok')
 
 
-def track_next_frame_act(forward: bool=True, *,
-                         product: int = ProductType.GEOTRACKER) -> ActionStatus:
-    check_status = track_checks()
+def track_next_frame_action(forward: bool=True, *,
+                            product: int) -> ActionStatus:
+    _log.output(f'track_next_frame_act: forward={forward} [{product_name(product)}]')
+    check_status = track_checks(product=product)
     if not check_status.success:
         return check_status
 
@@ -362,10 +386,11 @@ def track_next_frame_act(forward: bool=True, *,
                 unbreak_status = unbreak_rotation_with_status(
                     obj, [current_frame, next_frame])
                 if not unbreak_status.success:
-                    _log.error(f'track_next_frame_act {unbreak_status.error_message}')
+                    _log.error(f'track_next_frame_action '
+                               f'{unbreak_status.error_message}')
 
     except pkt_module().UnlicensedException as err:
-        _log.error(f'UnlicensedException track_next_frame_act: {str(err)}')
+        _log.error(f'UnlicensedException track_next_frame_action: {str(err)}')
         show_unlicensed_warning()
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
@@ -381,12 +406,13 @@ def track_next_frame_act(forward: bool=True, *,
     if bpy_current_frame() != next_frame:
         bpy_set_current_frame(next_frame)
 
+    _log.output('track_next_frame_action end')
     return ActionStatus(True, 'Ok')
 
 
-def refine_async_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
-    _log.output('refine_async_act call')
-    check_status = track_checks()
+def refine_async_action(*, product: int) -> ActionStatus:
+    _log.output(f'refine_async_action start [{product_name(product)}]')
+    check_status = track_checks(product=product)
     if not check_status.success:
         return check_status
 
@@ -406,29 +432,43 @@ def refine_async_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
         refine_computation = gt.refine_async(current_frame, precalc_path)
         if geotracker.precalcless:
-            refine_timer = RefineTimer(refine_computation, current_frame,
-                                       success_callback=unbreak_after)
-        else:
-            refine_timer = RefineTimerFast(refine_computation, current_frame,
+            if product == ProductType.GEOTRACKER:
+                refine_timer = RefineTimer(refine_computation, current_frame,
                                            success_callback=unbreak_after)
+            elif product == ProductType.FACETRACKER:
+                refine_timer = FTRefineTimer(refine_computation, current_frame,
+                                             success_callback=unbreak_after_facetracker)
+            else:
+                assert False, f'Wrong product (1) {product}'
+        else:
+            if product == ProductType.GEOTRACKER:
+                refine_timer = RefineTimerFast(refine_computation, current_frame,
+                                               success_callback=unbreak_after)
+            elif product == ProductType.FACETRACKER:
+                refine_timer = FTRefineTimerFast(refine_computation,
+                                                 current_frame,
+                                                 success_callback=unbreak_after_facetracker)
+            else:
+                assert False, f'Wrong product (2) {product}'
+
         refine_timer.start()
     except pkt_module().UnlicensedException as err:
-        _log.error(f'UnlicensedException refine_async_act: {str(err)}')
+        _log.error(f'UnlicensedException refine_async_action:\n{str(err)}')
         show_unlicensed_warning()
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
-        _log.error(f'Unknown Exception refine_async_act: {str(err)}')
+        _log.error(f'Unknown Exception refine_async_action:\n{str(err)}')
         show_warning_dialog(err)
         return ActionStatus(False, 'Some problem (see console)')
 
+    _log.output('refine_async_action end')
     return ActionStatus(True, 'Ok')
 
 
-def refine_all_async_act(*,
-                         product: int = ProductType.GEOTRACKER) -> ActionStatus:
-    _log.output('refine_all_async_act call')
-    check_status = track_checks()
+def refine_all_async_action(*, product: int) -> ActionStatus:
+    _log.output(f'refine_all_async_action start [{product_name(product)}]')
+    check_status = track_checks(product=product)
     if not check_status.success:
         return check_status
 
@@ -441,27 +481,42 @@ def refine_all_async_act(*,
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
         refine_computation = gt.refine_all_async(precalc_path)
         if geotracker.precalcless:
-            refine_timer = RefineTimer(refine_computation, current_frame,
-                                       success_callback=unbreak_after)
-        else:
-            refine_timer = RefineTimerFast(refine_computation, current_frame,
+            if product == ProductType.GEOTRACKER:
+                refine_timer = RefineTimer(refine_computation, current_frame,
                                            success_callback=unbreak_after)
+            elif product == ProductType.FACETRACKER:
+                refine_timer = FTRefineTimer(refine_computation, current_frame,
+                                             success_callback=unbreak_after_facetracker)
+            else:
+                assert False, f'Wrong product (1) {product}'
+        else:
+            if product == ProductType.GEOTRACKER:
+                refine_timer = RefineTimerFast(refine_computation, current_frame,
+                                               success_callback=unbreak_after)
+            elif product == ProductType.FACETRACKER:
+                refine_timer = FTRefineTimerFast(refine_computation,
+                                                 current_frame,
+                                                 success_callback=unbreak_after_facetracker)
+            else:
+                assert False, f'Wrong product (2) {product}'
+
         refine_timer.start()
     except pkt_module().UnlicensedException as err:
-        _log.error(f'UnlicensedException refine_all_async_act: {str(err)}')
+        _log.error(f'UnlicensedException refine_all_async_action: {str(err)}')
         show_unlicensed_warning()
         # Return True to prevent doubling dialogs
         return ActionStatus(True, 'Unlicensed error')
     except Exception as err:
-        _log.error(f'Unknown Exception refine_all_async_act: {str(err)}')
+        _log.error(f'Unknown Exception refine_all_async_action: {str(err)}')
         show_warning_dialog(err)
         return ActionStatus(False, 'Some problem (see console)')
 
+    _log.output('refine_all_async_action end')
     return ActionStatus(True, 'Ok')
 
 
-def clear_between_keyframes_act(
-        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def clear_between_keyframes_action(*, product: int) -> ActionStatus:
+    _log.output(f'clear_between_keyframes_action start [{product_name(product)}]')
     check_status = common_checks(product=product,
                                  object_mode=False, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
@@ -482,11 +537,12 @@ def clear_between_keyframes_act(
     loader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
                                    pins_and_residuals=True, timeline=True)
     loader.viewport_area_redraw()
+    _log.output('clear_between_keyframes_action end')
     return ActionStatus(True, 'ok')
 
 
-def clear_direction_act(forward: bool, *,
-                        product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def clear_direction_action(forward: bool, *, product: int) -> ActionStatus:
+    _log.output(f'clear_direction_action start [{product_name(product)}]')
     check_status = common_checks(product=product,
                                  object_mode=False, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
@@ -501,17 +557,19 @@ def clear_direction_act(forward: bool, *,
         _log.output(f'clear_direction_act: {current_frame} {forward}')
         gt.remove_track_in_direction(current_frame, forward=forward)
     except Exception as err:
-        _log.error(f'Unknown Exception clear_direction_act: {str(err)}')
+        _log.error(f'Unknown Exception clear_direction_action:\n{str(err)}')
         show_warning_dialog(err)
 
     loader.save_geotracker()
     loader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
-                                     pins_and_residuals=True, timeline=True)
+                                   pins_and_residuals=True, timeline=True)
     loader.viewport_area_redraw()
+    _log.output('clear_direction_action end')
     return ActionStatus(True, 'ok')
 
 
-def clear_all_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def clear_all_action(*, product: int) -> ActionStatus:
+    _log.output(f'clear_all_act start [{product_name(product)}]')
     check_status = common_checks(product=product,
                                  object_mode=False, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
@@ -524,18 +582,19 @@ def clear_all_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
     try:
         gt.remove_all_track_data_and_keyframes()
     except Exception as err:
-        _log.error(f'Unknown Exception clear_all_act: {str(err)}')
+        _log.error(f'Unknown Exception clear_all_action:\n{str(err)}')
         show_warning_dialog(err)
 
     loader.save_geotracker()
     loader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
-                                     pins_and_residuals=True, timeline=True)
+                                   pins_and_residuals=True, timeline=True)
     loader.viewport_area_redraw()
+    _log.output('clear_all_action end')
     return ActionStatus(True, 'ok')
 
 
-def clear_all_except_keyframes_act(
-        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def clear_all_except_keyframes_action(*, product: int) -> ActionStatus:
+    _log.output(f'clear_all_except_keyframes_action start [{product_name(product)}]')
     check_status = common_checks(product=product,
                                  object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
@@ -548,7 +607,7 @@ def clear_all_except_keyframes_act(
 
     keyframes = gt.keyframes()
     if len(keyframes) < 1:
-        return clear_all_act()
+        return clear_all_action(product=product)
 
     for i in range(len(keyframes) - 1):
         start = keyframes[i]
@@ -563,7 +622,8 @@ def clear_all_except_keyframes_act(
 
     loader.save_geotracker()
     loader.update_viewport_shaders(geomobj_matrix=True, wireframe=True,
-                                     pins_and_residuals=True, timeline=True)
+                                   pins_and_residuals=True, timeline=True)
+    _log.output('clear_all_except_keyframes_action end')
     return ActionStatus(True, 'ok')
 
 
@@ -597,7 +657,8 @@ def remove_focal_keyframes_act(
     return ActionStatus(True, 'ok')
 
 
-def remove_pins_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def remove_pins_action(*, product: int) -> ActionStatus:
+    _log.output(f'remove_pins_action start [{product_name(product)}]')
     check_status = common_checks(product=product,
                                  object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
@@ -628,10 +689,12 @@ def remove_pins_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
     loader.save_geotracker()
     loader.update_viewport_shaders(pins_and_residuals=True)
     loader.viewport_area_redraw()
+    _log.output(f'remove_pins_action end')
     return ActionStatus(True, 'ok')
 
 
-def toggle_pins_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def toggle_pins_action(*, product: int) -> ActionStatus:
+    _log.output(f'toggle_pins_action start [{product_name(product)}]')
     check_status = common_checks(product=product,
                                  object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
@@ -656,10 +719,12 @@ def toggle_pins_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
 
     loader.update_viewport_shaders(pins_and_residuals=True)
     loader.viewport_area_redraw()
+    _log.output(f'toggle_pins_action end')
     return ActionStatus(True, 'ok')
 
 
-def center_geo_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def center_geo_action(*, product: int) -> ActionStatus:
+    _log.output(f'center_geo_act start [{product_name(product)}]')
     check_status = common_checks(product=product,
                                  object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
@@ -689,6 +754,7 @@ def center_geo_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
     loader.update_viewport_shaders(wireframe=True, geomobj_matrix=True,
                                      pins_and_residuals=True)
     loader.viewport_area_redraw()
+    _log.output('center_geo_act end')
     return ActionStatus(True, 'ok')
 
 
@@ -1616,7 +1682,7 @@ def unbreak_object_rotation_act(obj: Object) -> ActionStatus:
 
 def unbreak_after(frame_list: List, *,
                   product: int = ProductType.GEOTRACKER) -> None:
-    _log.output('unbreak_after call')
+    _log.output(f'unbreak_after call {product_name(product)}')
     prefs = get_addon_preferences()
     if not prefs.gt_auto_unbreak_rotation:
         _log.output('unbreak rotation is switched off')
@@ -1630,6 +1696,17 @@ def unbreak_after(frame_list: List, *,
         _log.error(unbreak_status.error_message)
 
 
-def unbreak_after_reversed(frame_list: List) -> None:
+def unbreak_after_facetracker(frame_list: List) -> None:
+    _log.output('unbreak_after_facetracker call')
+    return unbreak_after(frame_list, product=ProductType.FACETRACKER)
+
+
+def unbreak_after_reversed(frame_list: List, *,
+                           product: int = ProductType.GEOTRACKER) -> None:
     _log.output('unbreak_after_reversed call')
-    return unbreak_after(list(reversed(frame_list)))
+    return unbreak_after(list(reversed(frame_list)), product=product)
+
+
+def unbreak_after_reversed_facetracker(frame_list: List) -> None:
+    _log.output('unbreak_after_reversed_facetracker call')
+    return unbreak_after_reversed(frame_list, product=ProductType.FACETRACKER)

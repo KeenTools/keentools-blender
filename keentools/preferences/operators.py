@@ -49,6 +49,8 @@ def get_product_license_manager(product: str) -> Any:
         return pkt_module().FaceBuilder.license_manager()
     elif product == 'geotracker':
         return pkt_module().GeoTracker.license_manager()
+    elif product == 'facetracker':
+        return pkt_module().FaceTracker.license_manager()
     assert False, 'Wrong product ID'
 
 

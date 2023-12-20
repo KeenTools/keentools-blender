@@ -17,16 +17,64 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from typing import Any
+from functools import partial
 
 from bpy.types import Area, Panel
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config, facetracker_enabled
+from ...addon_config import Config, facetracker_enabled, addon_pinmode
 from ...facetracker_config import FTConfig, get_ft_settings
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
+from ...updater.panels import KTUpdater
+from ...utils.localview import check_context_localview, exit_area_localview
+from ...utils.viewport_state import force_show_ui_overlays
+from ...utils.grace_timer import KTGraceTimer
+from ..ftloader import FTLoader
+from ...utils.bpy_common import bpy_timer_register
 
 
 _log = KTLogger(__name__)
+_ft_grace_timer = KTGraceTimer('facetracker')
+
+
+def _pinmode_escaper(area: Area) -> None:
+    _log.error('_pinmode_escaper call')
+    FTLoader.out_pinmode()
+    exit_area_localview(area)
+    force_show_ui_overlays(area)
+    return None
+
+
+def _exit_from_localview_button(layout, context):
+    if addon_pinmode() or not check_context_localview(context):
+        return
+    settings = get_ft_settings()
+    if settings.is_calculating():
+        return
+    col = layout.column()
+    col.alert = True
+    col.scale_y = 2.0
+    col.operator(Config.kt_exit_localview_idname)
+
+
+def _start_calculating_escaper() -> None:
+    settings = get_ft_settings()
+    mode = settings.calculating_mode
+    if mode == 'TRACKING' or mode == 'REFINE':
+        bpy_timer_register(_calculating_escaper, first_interval=0.01)
+
+
+def _start_pinmode_escaper(context: Any) -> None:
+    if context.area:
+        bpy_timer_register(partial(_pinmode_escaper, context.area),
+                           first_interval=0.01)
+
+
+def _calculating_escaper() -> None:
+    _log.error('_calculating_escaper call')
+    settings = get_ft_settings()
+    settings.stop_calculating()
+    settings.user_interrupts = True
 
 
 class View3DPanel(Panel):
@@ -144,6 +192,165 @@ class FT_PT_FacetrackersPanel(View3DPanel):
 
         self._output_geotrackers_list(layout)
         self._facetracker_creation_offer(layout)
-        # _exit_from_localview_button(layout, context)
-        # KTUpdater.call_updater('GeoTracker')
-        # _gt_grace_timer.start()
+        _exit_from_localview_button(layout, context)
+        KTUpdater.call_updater('FaceTracker')
+        _ft_grace_timer.start()
+
+
+class FT_PT_TrackingPanel(AllVisible):
+    bl_idname = FTConfig.ft_tracking_panel_idname
+    bl_label = 'Tracking'
+
+    def draw_header_preset(self, context: Any) -> None:
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        settings = get_ft_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if geotracker:
+            row.label(text='Camera' if geotracker.camera_mode() else 'Geometry')
+        row.operator(
+            FTConfig.ft_help_tracking_idname,
+            text='', icon='QUESTION', emboss=False)
+
+    def _tracking_mode_selector(self, settings: Any, layout: Any,
+                                geotracker: Any) -> None:
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.operator(FTConfig.ft_switch_to_geometry_mode_idname,
+                     icon='MESH_ICOSPHERE',
+                     depress=not geotracker.solve_for_camera)
+        row.operator(FTConfig.ft_switch_to_camera_mode_idname,
+                     icon='CAMERA_DATA',
+                     depress=geotracker.solve_for_camera)
+
+    def _tracking_pinmode_button(self, settings: Any, layout: Any,
+                                 context: Any) -> None:
+        row = layout.row()
+        row.scale_y = 2.0
+        if settings.pinmode:
+            row.operator(FTConfig.ft_exit_pinmode_idname,
+                         icon='LOOP_BACK',
+                         depress=settings.pinmode)
+            if not FTLoader.viewport().is_working():
+                _start_pinmode_escaper(context)
+        else:
+            op = row.operator(FTConfig.ft_pinmode_idname,
+                              text='Start Pinmode', icon='HIDE_OFF',
+                              depress=settings.pinmode)
+            op.geotracker_num = -1
+
+    def _tracking_center_block(self, settings: Any, layout: Any) -> None:
+        col = layout.column(align=True)
+
+        col.prop(settings, 'stabilize_viewport_enabled',
+                 icon='LOCKED' if settings.stabilize_viewport_enabled else 'UNLOCKED')
+
+        row = col.row(align=True)
+        row.operator(FTConfig.ft_toggle_pins_idname, icon='UNPINNED')
+        row.operator(FTConfig.ft_remove_pins_idname)
+        col.operator(FTConfig.ft_center_geo_idname, icon='PIVOT_BOUNDBOX')
+
+    def _tracking_track_row(self, settings: Any, layout: Any) -> None:
+        row = layout.row(align=True)
+        row.active = settings.pinmode
+        row.scale_y = 1.2
+
+        if settings.is_calculating('TRACKING'):
+            split = row.split(factor=0.24, align=True)
+            split.operator(FTConfig.ft_track_prev_idname, text='',
+                           icon='TRACKING_BACKWARDS_SINGLE')
+
+            split2 = split.split(factor=0.6666, align=True)
+            split2.operator(FTConfig.ft_stop_calculating_idname, text='',
+                            icon='PAUSE')
+
+            split2.operator(FTConfig.ft_track_next_idname, text='',
+                            icon='TRACKING_FORWARDS_SINGLE')
+        else:
+            split = row.split(factor=0.5, align=True)
+            split.operator(FTConfig.ft_track_prev_idname, text='',
+                           icon='TRACKING_BACKWARDS_SINGLE')
+
+            split.operator(FTConfig.ft_track_to_start_idname, text='',
+                           icon='TRACKING_BACKWARDS')
+
+            split = row.split(factor=0.5, align=True)
+            split.operator(FTConfig.ft_track_to_end_idname, text='',
+                           icon='TRACKING_FORWARDS')
+            split.operator(FTConfig.ft_track_next_idname, text='',
+                           icon='TRACKING_FORWARDS_SINGLE')
+
+    def _tracking_refine_row(self, settings: Any, layout: Any) -> None:
+        row = layout.row(align=True)
+        row.active = settings.pinmode
+        row.scale_y = 1.5
+        if settings.is_calculating('REFINE'):
+            row.operator(FTConfig.ft_stop_calculating_idname,
+                         text='Cancel', icon='X')
+        else:
+            row.operator(FTConfig.ft_refine_idname)
+            row.operator(FTConfig.ft_refine_all_idname)
+
+    def _tracking_keyframes_row(self, settings: Any, layout: Any) -> None:
+        row = layout.row(align=True)
+        split = row.split(factor=0.5, align=True)
+        split.operator(FTConfig.ft_prev_keyframe_idname, text='',
+                       icon='PREV_KEYFRAME')
+        split.operator(FTConfig.ft_next_keyframe_idname, text='',
+                       icon='NEXT_KEYFRAME')
+
+        split = row.split(factor=0.5, align=True)
+        split.active = settings.pinmode
+        split.operator(FTConfig.ft_add_keyframe_idname, text='',
+                       icon='KEY_HLT')
+        split.operator(FTConfig.ft_remove_keyframe_idname, text='',
+                       icon='KEY_DEHLT')
+
+    def _tracking_remove_keys_row(self, settings: Any, layout: Any) -> None:
+        active = settings.pinmode
+        row = layout.row(align=True)
+        part = row.split(factor=0.5, align=True)
+        row = part.split(factor=0.5, align=True)
+        row.active = active
+        row.operator(FTConfig.ft_clear_tracking_backward_idname,
+                     icon='TRACKING_CLEAR_BACKWARDS', text='')
+        row.operator(FTConfig.ft_clear_tracking_between_idname, text='| Xk |')
+
+        part = part.row(align=True)
+        row = part.split(factor=0.5, align=True)
+        btn = row.column(align=True)
+        btn.active = active
+        btn.operator(FTConfig.ft_clear_tracking_forward_idname,
+                     icon='TRACKING_CLEAR_FORWARDS', text='')
+
+        btn = row.column(align=True)
+        btn.active = active
+        btn.operator(FTConfig.ft_clear_tracking_menu_exec_idname,
+                     text='', icon='X')
+
+    def draw(self, context: Any) -> None:
+        settings = get_ft_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if not geotracker:
+            return
+
+        layout = self.layout
+
+        self._tracking_mode_selector(settings, layout, geotracker)
+        self._tracking_pinmode_button(settings, layout, context)
+
+        if settings.pinmode:
+            col = layout.column(align=True)
+            self._tracking_track_row(settings, col)
+            self._tracking_refine_row(settings, col)
+        else:
+            if settings.is_calculating():
+                _start_calculating_escaper()
+
+        col = layout.column(align=True)
+        self._tracking_keyframes_row(settings, col)
+
+        if settings.pinmode:
+            self._tracking_remove_keys_row(settings, col)
+            self._tracking_center_block(settings, layout)

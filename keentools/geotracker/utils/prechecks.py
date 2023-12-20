@@ -187,7 +187,7 @@ def common_checks(*, object_mode: bool = False,
     return ActionStatus(True, 'Checks have been passed')
 
 
-def track_checks(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def track_checks(*, product: int) -> ActionStatus:
     check_status = common_checks(product=product,
                                  object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
