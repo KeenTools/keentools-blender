@@ -26,6 +26,7 @@ from bpy.types import Area
 from ...utils.kt_logging import KTLogger
 from ...addon_config import get_operator
 from ...geotracker_config import get_gt_settings, GTConfig
+from ...facetracker_config import FTConfig
 from ..gtloader import GTLoader
 from ...utils.manipulate import exit_area_localview
 from ...utils.ui_redraw import force_ui_redraw
@@ -207,6 +208,10 @@ class _CommonTimer(TimerMixin):
     def get_loader(cls) -> Any:
         return GTLoader
 
+    @classmethod
+    def user_interrupt_operator_name(cls):
+        return GTConfig.gt_interrupt_modal_idname
+
     def __init__(self, computation: Any, from_frame: int = -1,
                  revert_current_frame: bool=False,
                  *, success_callback: Optional[Callable] = None,
@@ -359,7 +364,7 @@ class _CommonTimer(TimerMixin):
         return None
 
     def _start_user_interrupt_operator(self) -> None:
-        op = get_operator(GTConfig.gt_interrupt_modal_idname)
+        op = get_operator(self.user_interrupt_operator_name())
         op('INVOKE_DEFAULT')
 
     def _stop_user_interrupt_operator(self) -> None:
@@ -461,6 +466,10 @@ class FTTrackTimer(TrackTimer):
     @classmethod
     def get_loader(cls) -> Any:
         return FTLoader
+
+    @classmethod
+    def user_interrupt_operator_name(cls):
+        return FTConfig.ft_interrupt_modal_idname
 
     def create_shape_keyframe(self):
         create_relative_shape_keyframe(bpy_current_frame())

@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import os
+
 from bpy.types import Operator, Object
 from bpy.props import (BoolProperty,
                        IntProperty,
@@ -26,13 +28,15 @@ from bpy.props import (BoolProperty,
                        PointerProperty)
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import ProductType
+from ..addon_config import get_operator, ProductType
 from ..facetracker_config import FTConfig, get_ft_settings
+from ..geotracker_config import GTConfig
 from .ui_strings import buttons
 from .ftloader import FTLoader
 from ..geotracker.utils.prechecks import common_checks
-from ..utils.bpy_common import bpy_call_menu
+from ..utils.bpy_common import bpy_call_menu, bpy_background_mode
 from ..utils.manipulate import force_undo_push
+from ..utils.video import get_movieclip_duration
 from ..geotracker.utils.calc_timer import (FTTrackTimer,
                                            FTRefineTimer)
 from ..geotracker.utils.precalc import PrecalcTimer
@@ -562,6 +566,84 @@ class FT_OT_StopCalculating(Operator):
         return {'FINISHED'}
 
 
+class FT_OT_AutoNamePrecalc(ButtonOperator, Operator):
+    bl_idname = FTConfig.ft_auto_name_precalc_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        settings = get_ft_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if not geotracker or not geotracker.movie_clip:
+            self.report({'ERROR'}, 'No movie clip')
+            return {'CANCELLED'}
+        geotracker.precalc_path = f'{GTConfig.gt_precalc_folder}' \
+                                  f'{geotracker.movie_clip.name}'
+        status, msg, _ = geotracker.reload_precalc()
+        if not status:
+            _log.error(msg)
+            self.report({'INFO'}, msg)
+        return {'FINISHED'}
+
+
+class FT_OT_SplitVideoExec(Operator):
+    bl_idname = FTConfig.ft_split_video_to_frames_exec_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        settings = get_ft_settings()
+        geotracker = settings.get_current_geotracker_item()
+        if not geotracker or not geotracker.movie_clip:
+            return {'CANCELLED'}
+
+        op = get_operator(GTConfig.gt_split_video_to_frames_idname)
+        op('INVOKE_DEFAULT', from_frame=1,
+           to_frame=get_movieclip_duration(geotracker.movie_clip),
+           filepath=os.path.join(os.path.dirname(geotracker.movie_clip.filepath),''))
+        return {'FINISHED'}
+
+
+class FT_OT_InterruptModal(Operator):
+    bl_idname = FTConfig.ft_interrupt_modal_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke')
+        settings = get_ft_settings()
+        settings.user_interrupts = False
+
+        if not bpy_background_mode():
+            context.window_manager.modal_handler_add(self)
+            _log.output('INTERRUPTOR START')
+        else:
+            _log.info('GeoTracker Interruptor skipped by background mode')
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        settings = get_ft_settings()
+
+        if settings.user_interrupts:
+            _log.output('Interruptor has been stopped by value')
+            settings.user_interrupts = True
+            return {'FINISHED'}
+
+        if event.type == 'ESC' and event.value == 'PRESS':
+            _log.output('Exit Interruptor by ESC')
+            settings.user_interrupts = True
+            return {'FINISHED'}
+
+        return {'PASS_THROUGH'}
+
+
 BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_DeleteFaceTracker,
                   FT_OT_SelectGeotrackerObjects,
@@ -588,4 +670,7 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_TogglePins,
                   FT_OT_LockView,
                   FT_OT_StopCalculating,
+                  FT_OT_AutoNamePrecalc,
+                  FT_OT_SplitVideoExec,
+                  FT_OT_InterruptModal,
                   FT_OT_ExitPinMode)

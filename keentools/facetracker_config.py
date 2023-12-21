@@ -46,14 +46,20 @@ class FTConfig:
     ft_switch_to_camera_mode_idname = operators + '.switch_to_camera_mode'
     ft_switch_to_geometry_mode_idname = operators + '.switch_to_geometry_mode'
     ft_create_precalc_idname = operators + '.create_precalc'
-    ft_sequence_filebrowser_idname = operators + '.sequence_filebrowser'
+
+    ft_sequence_filebrowser_idname = 'keentools_gt' + '.sequence_filebrowser'  # TODO: Check operator!
+
     ft_mask_sequence_filebrowser_idname = \
         operators + '.mask_sequence_filebrowser'
-    ft_choose_precalc_file_idname = operators + '.choose_precalc_file'
+
+    ft_choose_precalc_file_idname = 'keentools_gt' + '.choose_precalc_file'  # TODO: Check operator!
+
     ft_split_video_to_frames_idname = operators + '.split_video_to_frames'
     ft_split_video_to_frames_exec_idname = \
         operators + '.split_video_to_frames_exec'
-    ft_video_snapshot_idname = operators + '.video_snapshot'
+
+    ft_video_snapshot_idname = 'keentools_gt' + '.video_snapshot'  # TODO: Check operator!
+
     ft_reproject_tex_sequence_idname = operators + '.reproject_tex_sequence'
     ft_texture_file_export_idname = operators + '.texture_file_export'
     ft_delete_texture_idname = operators + '.delete_texture'
@@ -113,8 +119,11 @@ class FTConfig:
 
     ft_render_with_background_idname = operators + '.render_with_background'
     ft_revert_default_render_idname = operators + '.revert_default_render'
-    ft_analyze_call_idname = operators + '.analyze_call'
-    ft_precalc_info_idname = operators + '.precalc_info'
+
+    ft_analyze_call_idname = 'keentools_gt' + '.analyze_call'  # TODO: Check operator!
+
+    ft_precalc_info_idname = 'keentools_gt' + '.precalc_info'  # TODO: Check operator!
+
     ft_confirm_recreate_precalc_idname = operators + '.confirm_recreate_precalc'
     ft_auto_name_precalc_idname = operators + '.auto_name_precalc'
     ft_unbreak_rotation_idname = operators + '.unbreak_rotation'
@@ -128,7 +137,8 @@ class FTConfig:
         operators + '.switch_camera_to_fixed_warning_idname'
 
     # Menu ids
-    ft_clip_menu_idname = _MT + 'clip_menu'
+    ft_clip_menu_idname = 'GEOTRACKER_MT_' + 'clip_menu'  # TODO: Check menu!
+
     ft_clear_tracking_menu_idname = _MT + 'clear_tracking_menu'
     ft_clear_tracking_menu_exec_idname = operators + '.clip_menu_exec'
 

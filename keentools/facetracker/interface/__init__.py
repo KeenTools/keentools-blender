@@ -17,7 +17,9 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from ...utils.kt_logging import KTLogger
-from .panels import FT_PT_FacetrackersPanel, FT_PT_TrackingPanel
+from .panels import (FT_PT_FacetrackersPanel,
+                     FT_PT_InputsPanel,
+                     FT_PT_TrackingPanel)
 from .helps import (FTHELP_OT_InputsHelp,
                     FTHELP_OT_MasksHelp,
                     FTHELP_OT_AnalyzeHelp,
@@ -28,6 +30,9 @@ from .helps import (FTHELP_OT_InputsHelp,
                     FTHELP_OT_AnimationHelp,
                     FTHELP_OT_RenderingHelp,
                     FTHELP_OT_SmoothingHelp,)
+from .menus import (FT_MT_ClipMenu,
+                    FT_MT_ClearAllTrackingMenu,
+                    FT_OT_ClearAllTrackingMenuExec)
 
 _log = KTLogger(__name__)
 
@@ -43,4 +48,8 @@ CLASSES_TO_REGISTER = (FTHELP_OT_InputsHelp,
                        FTHELP_OT_RenderingHelp,
                        FTHELP_OT_SmoothingHelp,
                        FT_PT_FacetrackersPanel,
-                       FT_PT_TrackingPanel)
+                       FT_PT_InputsPanel,
+                       FT_PT_TrackingPanel,
+                       FT_MT_ClipMenu,
+                       FT_MT_ClearAllTrackingMenu,
+                       FT_OT_ClearAllTrackingMenuExec)

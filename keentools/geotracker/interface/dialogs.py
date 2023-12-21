@@ -16,17 +16,29 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import Any
 import re
 
 from bpy.types import Operator
+from bpy.props import IntProperty
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config
+from ...addon_config import Config, ProductType
 from ...geotracker_config import GTConfig, get_gt_settings
+from ...facetracker_config import get_ft_settings
 from ..ui_strings import buttons
 
 
 _log = KTLogger(__name__)
+
+
+def _get_settings(product: int) -> Any:
+    if product == ProductType.GEOTRACKER:
+        return get_gt_settings()
+    if product == ProductType.FACETRACKER:
+        return get_ft_settings()
+    else:
+        assert False, f'get_settings: Improper product {product}'
 
 
 def _precalc_file_info(layout, geotracker):
@@ -53,9 +65,11 @@ class GT_OT_PrecalcInfo(Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL', 'UNDO'}
 
+    product: IntProperty(default=ProductType.GEOTRACKER)
+
     def draw(self, context):
         layout = self.layout
-        settings = get_gt_settings()
+        settings = _get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return
@@ -70,7 +84,7 @@ class GT_OT_PrecalcInfo(Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        settings = get_gt_settings()
+        settings = _get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}

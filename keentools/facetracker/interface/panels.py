@@ -22,7 +22,7 @@ from functools import partial
 from bpy.types import Area, Panel
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config, facetracker_enabled, addon_pinmode
+from ...addon_config import Config, facetracker_enabled, addon_pinmode, ProductType
 from ...facetracker_config import FTConfig, get_ft_settings
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...updater.panels import KTUpdater
@@ -75,6 +75,18 @@ def _calculating_escaper() -> None:
     settings = get_ft_settings()
     settings.stop_calculating()
     settings.user_interrupts = True
+
+
+def _geomobj_delete_handler() -> None:
+    settings = get_ft_settings()
+    if settings.pinmode:
+        FTLoader.out_pinmode()
+    settings.fix_geotrackers()
+    return None
+
+
+def _start_geomobj_delete_handler() -> None:
+    bpy_timer_register(_geomobj_delete_handler, first_interval=0.01)
 
 
 class View3DPanel(Panel):
@@ -195,6 +207,133 @@ class FT_PT_FacetrackersPanel(View3DPanel):
         _exit_from_localview_button(layout, context)
         KTUpdater.call_updater('FaceTracker')
         _ft_grace_timer.start()
+
+
+class FT_PT_InputsPanel(AllVisible):
+    bl_idname = FTConfig.ft_input_panel_idname
+    bl_label = 'Inputs'
+
+    @classmethod
+    def poll(cls, context: Any) -> bool:
+        if not facetracker_enabled():
+            return False
+        if not pkt_is_installed():
+            return False
+        settings = get_ft_settings()
+        if not settings.current_geotracker_num >= 0:
+            return False
+        return True
+
+    def draw_header_preset(self, context: Any) -> None:
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        row.operator(FTConfig.ft_help_inputs_idname,
+                     text='', icon='QUESTION', emboss=False)
+
+    def _draw_main_inputs(self, layout, geotracker):
+        factor = 0.35
+        split = layout.split(factor=factor, align=True)
+        split.label(text='Clip')
+
+        col = split.column(align=True)
+        row = col.row(align=True)
+        row.alert = not geotracker.movie_clip
+        row.prop(geotracker, 'movie_clip', text='')
+
+        if geotracker.movie_clip:
+            row.menu(FTConfig.ft_clip_menu_idname, text='', icon='COLLAPSEMENU')
+            col2 = col.column(align=True)
+            col2.active = False
+            col2.prop(geotracker.movie_clip.colorspace_settings, 'name',
+                      text='')
+        else:
+            op = row.operator(FTConfig.ft_sequence_filebrowser_idname,
+                              text='', icon='FILEBROWSER')
+            op.product = ProductType.FACETRACKER
+
+        split = layout.split(factor=factor, align=True)
+        split.label(text='Geometry')
+
+        row = split.row()
+        row.alert = not geotracker.geomobj
+        row.prop(geotracker, 'geomobj', text='')
+
+        split = layout.split(factor=factor, align=True)
+        split.label(text='Camera')
+
+        row = split.row()
+        row.alert = not geotracker.camobj
+        row.prop(geotracker, 'camobj', text='')
+
+    def _draw_precalc_switcher(self, layout, geotracker):
+        row = layout.row(align=True)
+        row.prop(geotracker, 'precalcless',
+                 text='Use analysis cache file', invert_checkbox=True)
+
+    def _draw_analyze_btn(self, layout, geotracker):
+        no_movie_clip = not geotracker.movie_clip
+        precalc_path_is_empty = geotracker.precalc_path == ''
+
+        col = layout.column()
+        txt = 'Analyse'
+        if no_movie_clip or precalc_path_is_empty or not geotracker.camobj:
+            col.enabled = False
+        else:
+            error = geotracker.precalc_message_error()
+            col.alert = error
+            if not error:
+                txt = 'Re-analyse'
+        op = col.operator(FTConfig.ft_analyze_call_idname, text=txt)
+        op.product = ProductType.FACETRACKER
+
+    def draw(self, context: Any) -> None:
+        settings = get_ft_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if not geotracker:
+            return
+
+        if geotracker.geomobj and geotracker.geomobj.users == 1:
+            _start_geomobj_delete_handler()
+
+        layout = self.layout
+        self._draw_main_inputs(layout, geotracker)
+
+        col = layout.column(align=True)
+        self._draw_precalc_switcher(col, geotracker)
+
+        if geotracker.precalcless:
+            return
+
+        row = col.row(align=True)
+        no_movie_clip = not geotracker.movie_clip
+        precalc_path_is_empty = geotracker.precalc_path == ''
+
+        if no_movie_clip or not geotracker.camobj:
+            row.enabled = False
+        else:
+            if precalc_path_is_empty:
+                row.alert = True
+        row.prop(geotracker, 'precalc_path', text='')
+        op = row.operator(FTConfig.ft_choose_precalc_file_idname,
+                          text='', icon='FILEBROWSER')
+        op.product = ProductType.FACETRACKER
+
+        if not precalc_path_is_empty:
+            op = row.operator(FTConfig.ft_precalc_info_idname,
+                              text='', icon='INFO')
+            op.product = ProductType.FACETRACKER
+        else:
+            if not no_movie_clip:
+                row.operator(FTConfig.ft_auto_name_precalc_idname,
+                             text='', icon='FILE_HIDDEN')
+
+        if settings.is_calculating('PRECALC'):
+            col2 = col.column()
+            col2.operator(FTConfig.ft_stop_calculating_idname,
+                          text='Cancel', icon='X')
+        else:
+            self._draw_analyze_btn(col, geotracker)
 
 
 class FT_PT_TrackingPanel(AllVisible):

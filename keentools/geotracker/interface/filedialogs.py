@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import os
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Any
 
 from bpy.types import MovieClip, Operator, OperatorFileListElement
 from bpy.props import (StringProperty,
@@ -29,8 +29,9 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bpy.path import ensure_ext
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config, get_operator
+from ...addon_config import Config, get_operator, ProductType
 from ...geotracker_config import GTConfig, get_gt_settings
+from ...facetracker_config import get_ft_settings
 from ...utils.images import (get_sequence_file_number,
                              find_bpy_image_by_name,
                              remove_bpy_image_by_name)
@@ -106,6 +107,15 @@ def _update_format(self, context):
     self.filename_ext = _filename_ext(self.file_format)
 
 
+def _get_settings(product: int) -> Any:
+    if product == ProductType.GEOTRACKER:
+        return get_gt_settings()
+    if product == ProductType.FACETRACKER:
+        return get_ft_settings()
+    else:
+        assert False, f'get_settings: Improper product {product}'
+
+
 class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
     bl_idname = GTConfig.gt_sequence_filebrowser_idname
     bl_label = buttons[bl_idname].label
@@ -138,6 +148,8 @@ class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
         subtype='DIR_PATH',
     )
 
+    product: IntProperty(default=ProductType.GEOTRACKER)
+
     def draw(self, context):
         layout = self.layout
         col = layout.column()
@@ -147,7 +159,7 @@ class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
 
     def execute(self, context):
         _log.error(self.directory)
-        settings = get_gt_settings()
+        settings = _get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -245,6 +257,8 @@ class GT_OT_ChoosePrecalcFile(Operator, ExportHelper):
         subtype='FILE_PATH'
     )
 
+    product: IntProperty(default=ProductType.GEOTRACKER)
+
     def check(self, context):
         change_ext = False
 
@@ -271,7 +285,7 @@ class GT_OT_ChoosePrecalcFile(Operator, ExportHelper):
 
     def execute(self, context):
         _log.output('PRECALC PATH: {}'.format(self.filepath))
-        settings = get_gt_settings()
+        settings = _get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             _log.error('Current GeoTracker is wrong')
@@ -423,6 +437,8 @@ class GT_OT_VideoSnapshot(Operator, ExportHelper):
     to_frame: IntProperty(name='to', default=1)
     filename_ext: StringProperty()
 
+    product: IntProperty(default=ProductType.GEOTRACKER)
+
     def draw(self, context):
         layout = self.layout
         layout.label(text='Output files format:')
@@ -442,7 +458,7 @@ class GT_OT_VideoSnapshot(Operator, ExportHelper):
         self.filename_ext = _filename_ext(self.file_format)
         _log.output(f'OUTPUT filepath: {self.filepath}')
 
-        settings = get_gt_settings()
+        settings = _get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
@@ -589,6 +605,8 @@ class GT_OT_AnalyzeCall(Operator):
     precalc_end: IntProperty(default=250, name='to',
                              description='End frame', min=0)
 
+    product: IntProperty(default=ProductType.GEOTRACKER)
+
     def check_precalc_range(self) -> bool:
         scene_start = bpy_start_frame()
         scene_end = bpy_end_frame()
@@ -604,20 +622,20 @@ class GT_OT_AnalyzeCall(Operator):
 
     def draw(self, context):
         layout = self.layout
-        settings = get_gt_settings()
+        settings = _get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return
         self._precalc_range_row(layout, geotracker)
 
     def invoke(self, context, event):
-        settings = get_gt_settings()
+        settings = _get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
         if geotracker.precalc_path == '':
             op = get_operator(GTConfig.gt_choose_precalc_file_idname)
-            op('INVOKE_DEFAULT')
+            op('INVOKE_DEFAULT', product=self.product)
             return {'FINISHED'}
         self.precalc_start = bpy_start_frame()
         self.precalc_end = bpy_end_frame()
@@ -628,7 +646,7 @@ class GT_OT_AnalyzeCall(Operator):
 
     def execute(self, context):
         _log.output('START ANALYZE')
-        settings = get_gt_settings()
+        settings = _get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or geotracker.precalc_path == '':
             return {'FINISHED'}
@@ -643,10 +661,10 @@ class GT_OT_AnalyzeCall(Operator):
             geotracker.precalc_end = self.precalc_end
             if not os.path.exists(geotracker.precalc_path):
                 op = get_operator(GTConfig.gt_create_precalc_idname)
-                op('EXEC_DEFAULT')
+                op('EXEC_DEFAULT', product=self.product)
             else:
                 op = get_operator(GTConfig.gt_confirm_recreate_precalc_idname)
-                op('INVOKE_DEFAULT')
+                op('INVOKE_DEFAULT', product=self.product)
             return {'FINISHED'}
         except RuntimeError as err:
             _log.error(f'ANALYZE Exception:\n{str(err)}')

@@ -296,8 +296,9 @@ class GT_PT_InputsPanel(AllVisible):
             col2.prop(geotracker.movie_clip.colorspace_settings, 'name',
                       text='')
         else:
-            row.operator(GTConfig.gt_sequence_filebrowser_idname,
-                         text='', icon='FILEBROWSER')
+            op = row.operator(GTConfig.gt_sequence_filebrowser_idname,
+                              text='', icon='FILEBROWSER')
+            op.product = ProductType.GEOTRACKER
 
         split = layout.split(factor=factor, align=True)
         split.label(text='Geometry')
@@ -331,7 +332,8 @@ class GT_PT_InputsPanel(AllVisible):
             col.alert = error
             if not error:
                 txt = 'Re-analyse'
-        col.operator(GTConfig.gt_analyze_call_idname, text=txt)
+        op = col.operator(GTConfig.gt_analyze_call_idname, text=txt)
+        op.product = ProductType.GEOTRACKER
 
     def draw(self, context: Any) -> None:
         settings = get_gt_settings()
@@ -361,12 +363,14 @@ class GT_PT_InputsPanel(AllVisible):
             if precalc_path_is_empty:
                 row.alert = True
         row.prop(geotracker, 'precalc_path', text='')
-        row.operator(GTConfig.gt_choose_precalc_file_idname,
-                     text='', icon='FILEBROWSER')
+        op = row.operator(GTConfig.gt_choose_precalc_file_idname,
+                          text='', icon='FILEBROWSER')
+        op.product = ProductType.GEOTRACKER
 
         if not precalc_path_is_empty:
-            row.operator(GTConfig.gt_precalc_info_idname,
-                         text='', icon='INFO')
+            op = row.operator(GTConfig.gt_precalc_info_idname,
+                              text='', icon='INFO')
+            op.product = ProductType.GEOTRACKER
         else:
             if not no_movie_clip:
                 row.operator(GTConfig.gt_auto_name_precalc_idname,
