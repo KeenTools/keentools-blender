@@ -126,26 +126,26 @@ def _start_autoloader_handler(headnum: int) -> None:
     bpy_timer_register(partial(_autoloader_handler, headnum), first_interval=0.01)
 
 
-def _draw_align_button(layout):
+def _draw_align_button(layout, scale=2.0, depress=False):
     settings = get_fb_settings()
     row = layout.row()
-    row.scale_y = 2.0
+    row.scale_y = scale
     op = row.operator(
         FBConfig.fb_pickmode_starter_idname,
-        text='Align face', icon='SHADERFX')
+        text='Align face', icon='SHADERFX', depress=depress)
     op.headnum = settings.current_headnum
     op.camnum = settings.current_camnum
 
 
-def _draw_exit_pinmode(layout):
+def _draw_exit_pinmode(layout, scale=2.0, depress=True):
     settings = get_fb_settings()
     if settings is None:
         return
     if settings.pinmode:
         col = layout.column()
-        col.scale_y = 2.0
+        col.scale_y = scale
         col.operator(FBConfig.fb_exit_pinmode_idname,
-                     icon='LOOP_BACK', depress=True)
+                     icon='LOOP_BACK', depress=depress)
 
 
 def _draw_pins_panel(layout):
@@ -180,11 +180,12 @@ def _draw_camera_info(layout):
 
     row = col.row(align=True)
     row.prop(camera, 'auto_focal_estimation')
-    row.operator(FBConfig.fb_image_info_idname, text='', icon='INFO')
+    # row.operator(FBConfig.fb_image_info_idname, text='', icon='INFO')
 
-    row = col.row()
+    row = col.row(align=True)
     row.active = not camera.auto_focal_estimation
     row.prop(camera, 'focal')
+    row.operator(FBConfig.fb_image_info_idname, text='', icon='INFO')
 
 
 def _draw_camera_hint(layout, headnum):
@@ -322,8 +323,6 @@ class FB_PT_HeaderPanel(Common, Panel):
                     text='', icon='CANCEL')
                 op.headnum = i
 
-        self._create_head_button(layout, active)
-
     def draw(self, context):
         layout = self.layout
 
@@ -346,6 +345,8 @@ class FB_PT_HeaderPanel(Common, Panel):
                 _start_pinmode_escaper(context)
 
             self._draw_many_heads(layout, active=False)
+            # self._create_head_button(layout, active=False)
+            _draw_exit_pinmode(layout, scale=Config.btn_scale_y, depress=False)
 
         elif state == 'RECONSTRUCT':
             self._draw_reconstruct(layout)
@@ -361,6 +362,7 @@ class FB_PT_HeaderPanel(Common, Panel):
 
         else:
             self._draw_many_heads(layout)
+            self._create_head_button(layout)
             _exit_from_localview_button(layout, context)
             KTUpdater.call_updater('FaceBuilder')
             _fb_grace_timer.start()
@@ -419,9 +421,9 @@ class FB_PT_CameraPanel(AllVisible, Panel):
             return
 
         layout = self.layout
-        _draw_align_button(layout)
+        _draw_align_button(layout, scale=2.0, depress=True)
         _draw_camera_info(layout)
-        _draw_exit_pinmode(layout)
+        # _draw_exit_pinmode(layout)
         if settings.pinmode and \
                 context.space_data.region_3d.view_perspective == 'CAMERA':
             _draw_pins_panel(layout)
