@@ -50,7 +50,8 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 create_empty_object,
                                 bpy_remove_object,
                                 bpy_url_open)
-from .utils.calc_timer import TrackTimer, RefineTimer  # TODO: use tracker.calc_timer
+from ..tracker.calc_timer import TrackTimer, RefineTimer
+
 from .utils.precalc import precalc_with_runner_act, PrecalcTimer
 from .gtloader import GTLoader
 from .ui_strings import buttons

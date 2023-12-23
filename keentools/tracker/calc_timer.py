@@ -27,7 +27,6 @@ from ..utils.kt_logging import KTLogger
 from ..addon_config import get_operator
 from ..geotracker_config import get_gt_settings, GTConfig
 from ..facetracker_config import FTConfig
-from ..geotracker.gtloader import GTLoader
 from ..utils.manipulate import exit_area_localview
 from ..utils.ui_redraw import force_ui_redraw
 from ..utils.bpy_common import (bpy_current_frame,
@@ -42,7 +41,6 @@ from ..geotracker.interface.screen_mesages import (revert_default_screen_message
                                         staged_calculation_screen_message)
 from ..tracker.tracking_blendshapes import create_relative_shape_keyframe
 from ..facetracker_config import get_ft_settings
-from ..facetracker.ftloader import FTLoader
 
 
 _log = KTLogger(__name__)
@@ -206,7 +204,8 @@ class _CommonTimer(TimerMixin):
 
     @classmethod
     def get_loader(cls) -> Any:
-        return GTLoader
+        settings = cls.get_settings()
+        return settings.loader()
 
     @classmethod
     def user_interrupt_operator_name(cls):
@@ -309,7 +308,7 @@ class _CommonTimer(TimerMixin):
             return self.current_state()
 
         if self._prevent_playback:
-            self.get_loader().viewport().tag_redraw()
+            settings.loader().viewport().tag_redraw()
             return self._interval
 
         if result and tracking_current_frame != current_frame:
@@ -353,7 +352,7 @@ class _CommonTimer(TimerMixin):
         revert_default_screen_message()
         self._stop_user_interrupt_operator()
         settings = self.get_settings()
-        loader = self.get_loader()
+        loader = settings.loader()
         loader.save_geotracker()
         settings.stop_calculating()
         self.remove_timer(self)
@@ -411,7 +410,8 @@ class _CommonTimer(TimerMixin):
         overall = self._overall_func()
         _log.output(f'--- {self._operation_name} statistics ---')
         _log.output(f'Total calc frames: {overall}')
-        gt = self.get_loader().kt_geotracker()
+        settings = self.get_settings()
+        gt = settings.loader().kt_geotracker()
         _log.output(f'KEYFRAMES: {gt.keyframes()}')
         _log.output(f'TRACKED FRAMES: {gt.track_frames()}\n')
         _log.output(f'PERFORMED FRAMES: {self.performed_frames()}')
@@ -465,7 +465,8 @@ class FTTrackTimer(TrackTimer):
 
     @classmethod
     def get_loader(cls) -> Any:
-        return FTLoader
+        settings = cls.get_settings()
+        return settings.loader()
 
     @classmethod
     def user_interrupt_operator_name(cls):
@@ -499,7 +500,8 @@ class FTRefineTimer(RefineTimer):
 
     @classmethod
     def get_loader(cls) -> Any:
-        return FTLoader
+        settings = cls.get_settings()
+        return settings.loader()
 
 
 class RefineTimerFast(RefineTimer):
@@ -519,4 +521,5 @@ class FTRefineTimerFast(RefineTimerFast):
 
     @classmethod
     def get_loader(cls) -> Any:
-        return FTLoader
+        settings = cls.get_settings()
+        return settings.loader()

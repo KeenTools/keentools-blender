@@ -57,7 +57,7 @@ from ..geotracker.utils.geotracker_acts import (create_tracker_action,
                                                 track_next_frame_action,
                                                 refine_async_action,
                                                 refine_all_async_action)
-from ..tracker.calc_timer import (FTTrackTimer, FTRefineTimer)
+from ..tracker.calc_timer import FTTrackTimer, FTRefineTimer
 
 
 _log = KTLogger(__name__)

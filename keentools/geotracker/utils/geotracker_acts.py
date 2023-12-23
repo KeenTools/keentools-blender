@@ -28,7 +28,6 @@ from ...utils.version import BVersion
 from ...addon_config import ActionStatus, get_addon_preferences, ProductType
 from ...geotracker_config import (get_gt_settings,
                                   GTConfig)
-from ..gtloader import GTLoader
 from ...utils.animation import (get_action,
                                 remove_fcurve_point,
                                 remove_fcurve_from_object,
@@ -81,7 +80,6 @@ from .textures import bake_texture, preview_material_with_texture, get_bad_frame
 from ..interface.screen_mesages import clipping_changed_screen_message
 from ...utils.ui_redraw import total_redraw_ui
 from ...facetracker_config import get_ft_settings
-from ...facetracker.ftloader import FTLoader
 from ...tracker.calc_timer import (TrackTimer,
                                    RefineTimer,
                                    RefineTimerFast,
@@ -103,12 +101,8 @@ def get_settings(product: int) -> Any:
 
 
 def get_loader(product: int) -> Any:
-    if product == ProductType.GEOTRACKER:
-        return GTLoader
-    if product == ProductType.FACETRACKER:
-        return FTLoader
-    else:
-        assert False, f'get_loader: Improper product {product}'
+    settings = get_settings(product)
+    return settings.loader()
 
 
 def product_name(product: int) -> str:
