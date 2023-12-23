@@ -44,9 +44,9 @@ from ...utils.bpy_common import (bpy_start_frame,
                                  bpy_current_frame,
                                  bpy_image_settings,
                                  bpy_jpeg_quality_context)
-from ..utils.textures import bake_texture_sequence
 from ..utils.prechecks import common_checks
 from ..ui_strings import buttons
+from ..utils.textures import bake_texture_sequence
 
 
 _log = KTLogger(__name__)

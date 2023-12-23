@@ -68,12 +68,6 @@ from ...utils.compositing import (create_nodes_for_rendering_with_background,
                                   revert_default_compositing)
 from ...utils.images import (get_background_image_object,
                              check_background_image_absent_frames)
-from .calc_timer import (TrackTimer,
-                         RefineTimer,
-                         RefineTimerFast,
-                         FTTrackTimer,
-                         FTRefineTimer,
-                         FTRefineTimerFast)
 from ..settings import bpy_poll_is_mesh, bpy_poll_is_camera
 from ...utils.coords import (LocRotScale,
                              LocRotWithoutScale,
@@ -88,6 +82,12 @@ from ..interface.screen_mesages import clipping_changed_screen_message
 from ...utils.ui_redraw import total_redraw_ui
 from ...facetracker_config import get_ft_settings
 from ...facetracker.ftloader import FTLoader
+from ...tracker.calc_timer import (TrackTimer,
+                                   RefineTimer,
+                                   RefineTimerFast,
+                                   FTTrackTimer,
+                                   FTRefineTimer,
+                                   FTRefineTimerFast)
 
 
 _log = KTLogger(__name__)

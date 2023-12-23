@@ -50,6 +50,19 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 create_empty_object,
                                 bpy_remove_object,
                                 bpy_url_open)
+from .utils.calc_timer import TrackTimer, RefineTimer  # TODO: use tracker.calc_timer
+from .utils.precalc import precalc_with_runner_act, PrecalcTimer
+from .gtloader import GTLoader
+from .ui_strings import buttons
+from .utils.prechecks import common_checks
+from ..utils.coords import LocRotScale
+from ..utils.manipulate import select_object_only, force_undo_push
+from ..utils.animation import count_fcurve_points, remove_fcurve_from_object
+from .interface.screen_mesages import (revert_default_screen_message,
+                                       single_line_screen_message)
+from ..utils.images import (remove_bpy_image_by_name,
+                            check_background_image_absent_frames)
+from ..utils.materials import remove_mat_by_name
 from .utils.geotracker_acts import (create_tracker_action,
                                     delete_tracker_action,
                                     add_keyframe_action,
@@ -93,19 +106,6 @@ from .utils.geotracker_acts import (create_tracker_action,
                                     get_operator_reposition_matrix,
                                     move_scene_tracking_act,
                                     unbreak_rotation_act)
-from .utils.calc_timer import TrackTimer, RefineTimer
-from .utils.precalc import precalc_with_runner_act, PrecalcTimer
-from .gtloader import GTLoader
-from .ui_strings import buttons
-from .utils.prechecks import common_checks
-from ..utils.coords import LocRotScale
-from ..utils.manipulate import select_object_only, force_undo_push
-from ..utils.animation import count_fcurve_points, remove_fcurve_from_object
-from .interface.screen_mesages import (revert_default_screen_message,
-                                       single_line_screen_message)
-from ..utils.images import (remove_bpy_image_by_name,
-                            check_background_image_absent_frames)
-from ..utils.materials import remove_mat_by_name
 
 
 _log = KTLogger(__name__)

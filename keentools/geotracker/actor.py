@@ -22,8 +22,8 @@ from bpy.props import StringProperty, IntProperty
 from ..utils.kt_logging import KTLogger
 from ..addon_config import ProductType
 from ..geotracker_config import GTConfig
-from .utils.geotracker_acts import center_geo_action
 from .ui_strings import buttons
+from .utils.geotracker_acts import center_geo_action
 
 
 _log = KTLogger(__name__)

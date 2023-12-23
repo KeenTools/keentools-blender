@@ -26,13 +26,13 @@ from ..utils.kt_logging import KTLogger
 from ..geotracker_config import GTConfig, get_gt_settings
 from ..tracker.settings import FrameListItem
 from .settings import GeoTrackerItem, GTSceneSettings
-from .actor import GT_OT_Actor
 from .pinmode import GT_OT_PinMode
 from .movepin import GT_OT_MovePin
 from .interface import CLASSES_TO_REGISTER as INTERFACE_CLASSES
 from .operators import BUTTON_CLASSES
 from ..preferences.hotkeys import (geotracker_keymaps_register,
                                    geotracker_keymaps_unregister)
+from .actor import GT_OT_Actor
 
 
 _log = KTLogger(__name__)

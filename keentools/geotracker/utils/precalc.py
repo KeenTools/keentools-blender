@@ -40,11 +40,11 @@ from ...utils.bpy_common import (bpy_render_frame,
                                  bpy_timer_register)
 from ...tracker.class_loader import KTClassLoader
 from ...utils.timer import RepeatTimer
-from .calc_timer import CalcTimer
 from .prechecks import common_checks, prepare_camera
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from .prechecks import show_warning_dialog, show_unlicensed_warning
 from ..interface.screen_mesages import analysing_screen_message
+from ...tracker.calc_timer import CalcTimer
 
 
 _log = KTLogger(__name__)

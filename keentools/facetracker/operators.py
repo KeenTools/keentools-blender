@@ -37,8 +37,6 @@ from ..geotracker.utils.prechecks import common_checks
 from ..utils.bpy_common import bpy_call_menu, bpy_background_mode
 from ..utils.manipulate import force_undo_push
 from ..utils.video import get_movieclip_duration
-from ..geotracker.utils.calc_timer import (FTTrackTimer,
-                                           FTRefineTimer)
 from ..geotracker.utils.precalc import PrecalcTimer
 from ..geotracker.utils.geotracker_acts import (create_tracker_action,
                                                 delete_tracker_action,
@@ -59,6 +57,7 @@ from ..geotracker.utils.geotracker_acts import (create_tracker_action,
                                                 track_next_frame_action,
                                                 refine_async_action,
                                                 refine_all_async_action)
+from ..tracker.calc_timer import (FTTrackTimer, FTRefineTimer)
 
 
 _log = KTLogger(__name__)
