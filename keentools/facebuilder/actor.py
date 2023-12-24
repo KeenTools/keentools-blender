@@ -24,6 +24,7 @@ from bpy.props import StringProperty, IntProperty
 from ..utils.kt_logging import KTLogger
 from .utils.manipulate import get_current_head
 from ..utils.coords import xy_to_xz_rotation_matrix_4x4
+from ..addon_config import get_operator
 from ..facebuilder_config import FBConfig, get_fb_settings
 from ..facebuilder.utils.exif_reader import auto_setup_camera_from_exif
 from ..utils.blendshapes import (create_blendshape_controls,
@@ -144,5 +145,15 @@ class FB_OT_CameraActor(bpy.types.Operator):
         elif self.action == 'reset_all_camera_settings':
             for camera in head.cameras:
                 auto_setup_camera_from_exif(camera)
+
+        elif self.action == 'reset_view':
+            op = get_operator(FBConfig.fb_reset_expression_idname)
+            op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
+
+            op = get_operator(FBConfig.fb_center_geo_idname)
+            op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
+
+            op = get_operator(FBConfig.fb_remove_pins_idname)
+            op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
 
         return {'FINISHED'}

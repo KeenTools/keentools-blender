@@ -29,6 +29,7 @@ _log = KTLogger(__name__)
 
 _ICONS_DIR: str = 'icons'
 _ICONS: Dict = {
+    'magic': ('magic_01.png', 'SHADERFX'),
     'track_backward': ('track_backward.png', 'TRACKING_BACKWARDS'),
     'track_forward': ('track_forward.png', 'TRACKING_FORWARDS'),
     'track_backward_single': ('track_backward_single.png',

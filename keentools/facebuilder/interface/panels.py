@@ -40,6 +40,7 @@ from ...blender_independent_packages.pykeentools_loader import is_installed as p
 from ...utils.localview import exit_area_localview, check_context_localview
 from ...utils.bpy_common import bpy_timer_register
 from ...utils.grace_timer import KTGraceTimer
+from ...utils.icons import KTIcons
 
 
 _log = KTLogger(__name__)
@@ -130,9 +131,12 @@ def _draw_align_button(layout, scale=2.0, depress=False):
     settings = get_fb_settings()
     row = layout.row()
     row.scale_y = scale
+    # op = row.operator(
+    #     FBConfig.fb_pickmode_starter_idname,
+    #     text='Align face', icon='SHADERFX', depress=depress)
     op = row.operator(
-        FBConfig.fb_pickmode_starter_idname,
-        text='Align face', icon='SHADERFX', depress=depress)
+        FBConfig.fb_pickmode_starter_idname, **KTIcons.key_value('magic'),
+        text='Align face', depress=depress)
     op.headnum = settings.current_headnum
     op.camnum = settings.current_camnum
 
@@ -216,8 +220,8 @@ def _draw_expression_settings(layout, head, box_layout=True):
     col = box.column(align=True)
     col.prop(head, 'lock_blinking')
     col.prop(head, 'lock_neck_movement')
-    col.label(text='Apply expression in 3D:')
-    col.prop(head, 'expression_view', text='')
+    # col.label(text='Apply expression in 3D:')
+    # col.prop(head, 'expression_view', text='')
 
 
 class Common:
@@ -402,7 +406,7 @@ class FB_PT_UpdatesInstallationPanel(KT_PT_UpdatesInstallationPanel):
 class FB_PT_CameraPanel(AllVisibleClosed, Panel):
     bl_idname = FBConfig.fb_camera_panel_idname
     bl_label = 'Options'
-    bl_parent_id = FBConfig.fb_views_panel_idname
+    # bl_parent_id = FBConfig.fb_views_panel_idname
 
     @classmethod
     def poll(cls, context):
@@ -441,6 +445,9 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
         col.prop(head, 'use_emotions')
         _draw_expression_settings(col, head, box_layout=False)
 
+        if not settings.pinmode:
+            return
+
         col = layout.column(align=True)
         col.label(text='Rigidity')
 
@@ -448,17 +455,20 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
         row.enabled = settings.pinmode
         row.prop(settings, 'shape_rigidity', text='Shape')
 
-        row = col.row(align=True)
-        row.prop(settings, 'expression_rigidity', text='Expression')
-        row.enabled = head.should_use_emotions()
+        if head.should_use_emotions():
+            row = col.row(align=True)
+            row.prop(settings, 'expression_rigidity', text='Expression')
+            row.enabled = head.should_use_emotions()
 
-        row = col.row(align=True)
-        row.prop(settings, 'blinking_rigidity', text='Eyelids')
-        row.enabled = not head.lock_blinking and head.should_use_emotions()
+        if not head.lock_blinking and head.should_use_emotions():
+            row = col.row(align=True)
+            row.prop(settings, 'blinking_rigidity', text='Eyelids')
+            row.enabled = not head.lock_blinking and head.should_use_emotions()
 
-        row =  col.row(align=True)
-        row.prop(settings, 'neck_movement_rigidity', text='Neck')
-        row.enabled = not head.lock_neck_movement and head.should_use_emotions()
+        if not head.lock_neck_movement and head.should_use_emotions():
+            row =  col.row(align=True)
+            row.prop(settings, 'neck_movement_rigidity', text='Neck')
+            row.enabled = not head.lock_neck_movement and head.should_use_emotions()
 
         # _draw_exit_pinmode(layout)
         # if settings.pinmode and \
@@ -546,11 +556,16 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         self._draw_camera_list(headnum, layout)
 
         if settings.pinmode:
-            _draw_align_button(layout, scale=2.0, depress=True)
+            _draw_align_button(layout, scale=2.0, depress=False)
 
-            op = layout.operator(FBConfig.fb_unmorph_idname, text='Reset View')
+            # op = layout.operator(FBConfig.fb_unmorph_idname, text='Reset View')
+            # op.headnum = headnum
+            # op.camnum = settings.current_camnum
+
+            op = layout.operator(FBConfig.fb_camera_actor_idname, text='Reset View')
             op.headnum = headnum
             op.camnum = settings.current_camnum
+            op.action = 'reset_view'
 
         # _draw_exit_pinmode(layout)
 
@@ -622,11 +637,15 @@ class FB_PT_Model(AllVisibleClosed, Panel):
         if not head.blenshapes_are_relevant() and head.model_changed_by_scale:
             _draw_update_blendshapes_panel(layout)
 
+        col = layout.column(align=True)
+        col.label(text='Apply expression in 3D:')
+        col.prop(head, 'expression_view', text='')
+
         if FBLoader.is_not_loaded():
             return
         fb = FBLoader.get_builder()
-        box = layout.box()
-        col = box.column(align=True)
+        # box = layout.box()
+        col = layout.column(align=True)
         col.label(text='Model parts')
         col.separator(factor=0.4)
         names = fb.mask_names()
