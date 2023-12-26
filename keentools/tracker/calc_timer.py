@@ -24,7 +24,7 @@ import bpy
 from bpy.types import Area
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import get_operator
+from ..addon_config import get_operator, ProductType, get_settings
 from ..geotracker_config import get_gt_settings, GTConfig
 from ..facetracker_config import FTConfig
 from ..utils.manipulate import exit_area_localview
@@ -76,12 +76,12 @@ class TimerMixin:
 
 
 class CalcTimer(TimerMixin):
-    @classmethod
-    def get_settings(cls) -> Any:
-        return get_gt_settings()
+    def get_settings(self) -> Any:
+        return get_settings(self.product_type)
 
     def __init__(self, area: Optional[Area] = None,
-                 runner: Optional[Any] = None):
+                 runner: Optional[Any] = None, *,
+                 product: int = ProductType.GEOTRACKER):
         self.current_state: Callable = self.timeline_state
 
         self._interval: float = 0.001
@@ -90,6 +90,12 @@ class CalcTimer(TimerMixin):
         self._runner: Any = runner
         self._start_time: float = 0.0
         self._area: Area = area
+
+        self.product_type = product
+        self.interrupt_operator_name = GTConfig.gt_interrupt_modal_idname \
+            if product == ProductType.GEOTRACKER \
+            else FTConfig.ft_interrupt_modal_idname
+
         settings = self.get_settings()
         self._started_in_pinmode: bool = settings.pinmode
         self._start_frame: int = bpy_current_frame()
@@ -123,6 +129,7 @@ class CalcTimer(TimerMixin):
         area.header_text_set(txt)
 
     def finish_calc_mode(self) -> None:
+        _log.debug('finish_calc_mode start')
         self._runner.cancel()
         self.remove_timer(self)
         settings = self.get_settings()
@@ -146,6 +153,7 @@ class CalcTimer(TimerMixin):
                     f'target={self._target_frame} '
                     f'current={bpy_current_frame()}')
         if settings.user_interrupts:
+            _log.error('common_checks settings.user_interrupts detected')
             settings.stop_calculating()
         if not settings.is_calculating():
             self._runner.cancel()

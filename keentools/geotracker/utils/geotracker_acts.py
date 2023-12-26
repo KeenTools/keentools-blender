@@ -25,9 +25,12 @@ from mathutils import Matrix, Euler, Vector
 
 from ...utils.kt_logging import KTLogger
 from ...utils.version import BVersion
-from ...addon_config import ActionStatus, get_addon_preferences, ProductType
-from ...geotracker_config import (get_gt_settings,
-                                  GTConfig)
+from ...addon_config import (ActionStatus,
+                             get_addon_preferences,
+                             ProductType,
+                             get_settings,
+                             product_name)
+from ...geotracker_config import GTConfig
 from ...utils.animation import (get_action,
                                 remove_fcurve_point,
                                 remove_fcurve_from_object,
@@ -79,7 +82,6 @@ from ...utils.coords import (LocRotScale,
 from .textures import bake_texture, preview_material_with_texture, get_bad_frame
 from ..interface.screen_mesages import clipping_changed_screen_message
 from ...utils.ui_redraw import total_redraw_ui
-from ...facetracker_config import get_ft_settings
 from ...tracker.calc_timer import (TrackTimer,
                                    RefineTimer,
                                    RefineTimerFast,
@@ -89,29 +91,6 @@ from ...tracker.calc_timer import (TrackTimer,
 
 
 _log = KTLogger(__name__)
-
-
-def get_settings(product: int) -> Any:
-    if product == ProductType.GEOTRACKER:
-        return get_gt_settings()
-    if product == ProductType.FACETRACKER:
-        return get_ft_settings()
-    else:
-        assert False, f'get_settings: Improper product {product}'
-
-
-def get_loader(product: int) -> Any:
-    settings = get_settings(product)
-    return settings.loader()
-
-
-def product_name(product: int) -> str:
-    if product == ProductType.GEOTRACKER:
-        return 'GeoTracker'
-    if product == ProductType.FACETRACKER:
-        return 'FaceTracker'
-    else:
-        assert False, f'get_loader: Improper product {product}'
 
 
 def create_tracker_action(*, product: int) -> ActionStatus:
@@ -125,7 +104,7 @@ def create_tracker_action(*, product: int) -> ActionStatus:
     settings = get_settings(product)
     num = settings.add_geotracker_item()
     settings.current_geotracker_num = num
-    get_loader(product).new_kt_geotracker()
+    settings.loader().new_kt_geotracker()
 
     selected_objects = bpy_scene_selected_objects()
     active_object = bpy_active_object()
@@ -206,7 +185,8 @@ def add_keyframe_action(*, product: int) -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    loader = get_loader(product)
+    settings = get_settings(product)
+    loader = settings.loader()
     area = loader.get_work_area()
     if not area:
         return ActionStatus(False, 'Working area does not exist')
@@ -226,7 +206,8 @@ def remove_keyframe_action(*, product: int) -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    loader = get_loader(product)
+    settings = get_settings(product)
+    loader = settings.loader()
     gt = loader.kt_geotracker()
     current_frame = bpy_current_frame()
     if gt.is_key_at(current_frame):
@@ -246,7 +227,8 @@ def remove_keyframe_action(*, product: int) -> ActionStatus:
 def next_keyframe_action(*, product) -> ActionStatus:
     _log.output(f'next_keyframe_action start [{product_name(product)}]')
     current_frame = bpy_current_frame()
-    gt = get_loader(product).kt_geotracker()
+    settings = get_settings(product)
+    gt = settings.loader().kt_geotracker()
     target_frame = get_next_tracking_keyframe(gt, current_frame)
 
     if current_frame == target_frame:
@@ -268,7 +250,8 @@ def next_keyframe_action(*, product) -> ActionStatus:
 def prev_keyframe_action(*, product) -> ActionStatus:
     _log.output(f'prev_keyframe_action start [{product_name(product)}]')
     current_frame = bpy_current_frame()
-    gt = get_loader(product).kt_geotracker()
+    settings = get_settings(product)
+    gt = settings.loader().kt_geotracker()
     target_frame = get_previous_tracking_keyframe(gt, current_frame)
 
     if current_frame == target_frame:
@@ -365,7 +348,7 @@ def track_next_frame_action(forward: bool=True, *,
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    loader = get_loader(product)
+    loader = settings.loader()
     gt = loader.kt_geotracker()
     current_frame = bpy_current_frame()
     next_frame = current_frame + 1 if forward else current_frame - 1
@@ -412,7 +395,7 @@ def refine_async_action(*, product: int) -> ActionStatus:
 
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
-    gt = get_loader(product).kt_geotracker()
+    gt = settings.loader().kt_geotracker()
     current_frame = bpy_current_frame()
 
     if not geotracker.precalcless:
@@ -469,7 +452,7 @@ def refine_all_async_action(*, product: int) -> ActionStatus:
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
 
-    gt = get_loader(product).kt_geotracker()
+    gt = settings.loader().kt_geotracker()
     current_frame = bpy_current_frame()
     try:
         precalc_path = None if geotracker.precalcless else geotracker.precalc_path
@@ -519,7 +502,8 @@ def clear_between_keyframes_action(*, product: int) -> ActionStatus:
         return check_status
 
     current_frame = bpy_current_frame()
-    loader = get_loader(product)
+    settings = get_settings(product)
+    loader = settings.loader()
     gt = loader.kt_geotracker()
     try:
         gt.remove_track_between_keyframes(current_frame)
@@ -545,7 +529,8 @@ def clear_direction_action(forward: bool, *, product: int) -> ActionStatus:
         return check_status
 
     current_frame = bpy_current_frame()
-    loader = get_loader(product)
+    settings = get_settings(product)
+    loader = settings.loader()
     gt = loader.kt_geotracker()
     try:
         _log.output(f'clear_direction_act: {current_frame} {forward}')
@@ -571,7 +556,8 @@ def clear_all_action(*, product: int) -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    loader = get_loader(product)
+    settings = get_settings(product)
+    loader = settings.loader()
     gt = loader.kt_geotracker()
     try:
         gt.remove_all_track_data_and_keyframes()
@@ -596,7 +582,8 @@ def clear_all_except_keyframes_action(*, product: int) -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    loader = get_loader(product)
+    settings = get_settings(product)
+    loader = settings.loader()
     gt = loader.kt_geotracker()
 
     keyframes = gt.keyframes()
@@ -660,7 +647,8 @@ def remove_pins_action(*, product: int) -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    loader = get_loader(product)
+    settings = get_settings(product)
+    loader = settings.loader()
     gt = loader.kt_geotracker()
 
     vp = loader.viewport()
@@ -696,7 +684,8 @@ def toggle_pins_action(*, product: int) -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    loader = get_loader(product)
+    settings = get_settings(product)
+    loader = settings.loader()
     gt = loader.kt_geotracker()
     keyframe = bpy_current_frame()
     pins_count = gt.pins_count()
@@ -726,7 +715,8 @@ def center_geo_action(*, product: int) -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    loader = get_loader(product)
+    settings = get_settings(product)
+    loader = settings.loader()
     loader.center_geo()
 
     settings = get_settings(product)
@@ -829,7 +819,7 @@ def create_empty_from_selected_pins_act(
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
-    loader = get_loader(product)
+    loader = settings.loader()
 
     gt = loader.kt_geotracker()
 
@@ -1025,15 +1015,15 @@ def bake_texture_from_frames_act(
 
     check_status = check_uv_overlapping_with_status(geotracker)
 
-    prepare_camera(area)
+    prepare_camera(area, product=product)
     built_texture = bake_texture(geotracker, selected_frames)
     revert_camera(area)
 
     if settings.pinmode:
         settings.reload_current_geotracker()
-        get_loader(product).update_viewport_shaders(wireframe=False,
-                                                    geomobj_matrix=True,
-                                                    pins_and_residuals=True)
+        settings.loader().update_viewport_shaders(wireframe=False,
+                                                  geomobj_matrix=True,
+                                                  pins_and_residuals=True)
     if built_texture is None:
         bad_frame = get_bad_frame()
         if bad_frame < 0:
@@ -1083,7 +1073,7 @@ def transfer_tracking_to_camera_act(
 
     current_frame = reset_unsaved_animation_changes_in_frame()
 
-    loader = get_loader(product)
+    loader = settings.loader()
     gt = loader.kt_geotracker()
 
     all_animated_frames = list(set(geom_animated_frames).union(set(cam_animated_frames)))
@@ -1138,7 +1128,7 @@ def transfer_tracking_to_geometry_act(
 
     current_frame = reset_unsaved_animation_changes_in_frame()
 
-    loader = get_loader(product)
+    loader = settings.loader()
     gt = loader.kt_geotracker()
 
     all_animated_frames = list(set(geom_animated_frames).union(set(cam_animated_frames)))
@@ -1170,7 +1160,8 @@ def transfer_tracking_to_geometry_act(
 
 def _mark_object_keyframes(obj: Object, *,
                            product: int = ProductType.GEOTRACKER) -> None:
-    gt = get_loader(product).kt_geotracker()
+    settings = get_settings(product)
+    gt = settings.loader().kt_geotracker()
     tracked_keyframes = [x for x in gt.track_frames()]
     _log.output(f'KEYFRAMES TO MARK AS TRACKED: {tracked_keyframes}')
     mark_selected_points_in_locrot(obj, tracked_keyframes, 'JITTER')
@@ -1420,7 +1411,7 @@ def scale_scene_tracking_act(
     _apply_camobj_scale(camobj, operator)
     _apply_geomobj_scale(geomobj, operator)
 
-    loader = get_loader(product)
+    loader = settings.loader()
     loader.save_geotracker()
 
     prefs = get_addon_preferences()
@@ -1510,7 +1501,7 @@ def scale_scene_trajectory_act(
 
     bpy_set_current_frame(current_frame)
 
-    loader = get_loader(product)
+    loader = settings.loader()
     loader.save_geotracker()
     if not settings.reload_current_geotracker():
         msg = 'Cannot reload GeoTracker data'
@@ -1574,7 +1565,7 @@ def move_scene_tracking_act(
 
     bpy_set_current_frame(current_frame)
 
-    loader = get_loader(product)
+    loader = settings.loader()
     loader.save_geotracker()
 
     prefs = get_addon_preferences()

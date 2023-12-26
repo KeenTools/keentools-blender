@@ -29,7 +29,7 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bpy.path import ensure_ext
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config, get_operator, ProductType
+from ...addon_config import Config, get_operator, ProductType, get_settings
 from ...geotracker_config import GTConfig, get_gt_settings
 from ...facetracker_config import get_ft_settings
 from ...utils.images import (get_sequence_file_number,
@@ -107,15 +107,6 @@ def _update_format(self, context):
     self.filename_ext = _filename_ext(self.file_format)
 
 
-def _get_settings(product: int) -> Any:
-    if product == ProductType.GEOTRACKER:
-        return get_gt_settings()
-    if product == ProductType.FACETRACKER:
-        return get_ft_settings()
-    else:
-        assert False, f'get_settings: Improper product {product}'
-
-
 class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
     bl_idname = GTConfig.gt_sequence_filebrowser_idname
     bl_label = buttons[bl_idname].label
@@ -159,7 +150,7 @@ class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
 
     def execute(self, context):
         _log.error(self.directory)
-        settings = _get_settings(self.product)
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -285,7 +276,7 @@ class GT_OT_ChoosePrecalcFile(Operator, ExportHelper):
 
     def execute(self, context):
         _log.output('PRECALC PATH: {}'.format(self.filepath))
-        settings = _get_settings(self.product)
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             _log.error('Current GeoTracker is wrong')
@@ -458,7 +449,7 @@ class GT_OT_VideoSnapshot(Operator, ExportHelper):
         self.filename_ext = _filename_ext(self.file_format)
         _log.output(f'OUTPUT filepath: {self.filepath}')
 
-        settings = _get_settings(self.product)
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
@@ -622,14 +613,15 @@ class GT_OT_AnalyzeCall(Operator):
 
     def draw(self, context):
         layout = self.layout
-        settings = _get_settings(self.product)
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return
         self._precalc_range_row(layout, geotracker)
 
     def invoke(self, context, event):
-        settings = _get_settings(self.product)
+        _log.output(f'{self.__class__.__name__} invoke')
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -642,11 +634,12 @@ class GT_OT_AnalyzeCall(Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def cancel(self, context):
-        _log.output('CANCEL ANALYZE')
+        _log.output(f'{self.__class__.__name__} cancel')
 
     def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
         _log.output('START ANALYZE')
-        settings = _get_settings(self.product)
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or geotracker.precalc_path == '':
             return {'FINISHED'}
@@ -678,6 +671,8 @@ class GT_OT_ConfirmRecreatePrecalc(Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
+    product: IntProperty(default=ProductType.GEOTRACKER)
+
     def draw(self, context):
         layout = self.layout
         info = ['All your previous analysis data will be lost!',
@@ -696,7 +691,7 @@ class GT_OT_ConfirmRecreatePrecalc(Operator):
     def execute(self, context):
         try:
             op = get_operator(GTConfig.gt_create_precalc_idname)
-            op('EXEC_DEFAULT')
+            op('EXEC_DEFAULT', product=self.product)
         except RuntimeError as err:
             _log.error(f'PRECACLC Exception:\n{str(err)}')
             self.report({'ERROR'}, str(err))

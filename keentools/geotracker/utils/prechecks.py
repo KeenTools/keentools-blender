@@ -23,12 +23,11 @@ from bpy.types import Object, Area
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
+                             get_settings,
                              get_operator,
                              ErrorType,
                              ActionStatus,
                              ProductType)
-from ...geotracker_config import get_gt_settings
-from ...facetracker_config import get_ft_settings
 from ...utils.html import split_long_string
 from ...utils.manipulate import exit_area_localview, switch_to_camera
 from ...utils.bpy_common import (bpy_all_scene_objects,
@@ -39,18 +38,9 @@ from ...utils.bpy_common import (bpy_all_scene_objects,
 _log = KTLogger(__name__)
 
 
-def _get_settings(product: int) -> Any:
-    if product == ProductType.GEOTRACKER:
-        return get_gt_settings()
-    if product == ProductType.FACETRACKER:
-        return get_ft_settings()
-    else:
-        assert False, f'get_settings: Improper product {product}'
-
-
 def prepare_camera(area: Area, *,
                    product: int = ProductType.GEOTRACKER) -> None:
-    settings = _get_settings(product)
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     if not settings.pinmode:
         switch_to_camera(area, geotracker.camobj,
@@ -63,7 +53,7 @@ def prepare_camera(area: Area, *,
 
 def revert_camera(area: Area, *,
                   product: int = ProductType.GEOTRACKER) -> None:
-    settings = _get_settings(product)
+    settings = get_settings(product)
     if not settings.pinmode:
         settings.viewport_state.show_ui_elements(area)
         exit_area_localview(area)
@@ -129,7 +119,7 @@ def common_checks(*, object_mode: bool = False,
             _log.error(msg)
             return ActionStatus(False, msg)
 
-    settings = _get_settings(product)
+    settings = get_settings(product)
     if is_calculating and settings.is_calculating():
         msg = 'Calculation in progress'
         _log.error(msg)
@@ -195,7 +185,7 @@ def track_checks(*, product: int) -> ActionStatus:
     if not check_status.success:
         return check_status
 
-    settings = _get_settings(product)
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
 
     if not geotracker.precalcless:

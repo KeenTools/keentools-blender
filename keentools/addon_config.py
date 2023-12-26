@@ -226,31 +226,49 @@ def facetracker_enabled() -> bool:
     return prefs.facetracker_enabled
 
 
-def _get_fb_settings() -> Optional[Any]:
+def _get_fb_settings_safe() -> Optional[Any]:
     name = Config.fb_global_var_name
     if not hasattr(bpy.context.scene, name):
         return None
+    global fb_settings
+    fb_settings = _get_fb_settings_unsafe
     return getattr(bpy.context.scene, name)
 
 
-def _get_gt_settings() -> Optional[Any]:
+def _get_fb_settings_unsafe() -> Any:
+    return getattr(bpy.context.scene, Config.fb_global_var_name)
+
+
+def _get_gt_settings_safe() -> Optional[Any]:
     name = Config.gt_global_var_name
     if not hasattr(bpy.context.scene, name):
         return None
+    global gt_settings
+    gt_settings = _get_gt_settings_unsafe
     return getattr(bpy.context.scene, name)
 
 
-def _get_ft_settings() -> Optional[Any]:
+def _get_gt_settings_unsafe() -> Any:
+    return getattr(bpy.context.scene, Config.gt_global_var_name)
+
+
+def _get_ft_settings_safe() -> Optional[Any]:
     name = Config.ft_global_var_name
     if not hasattr(bpy.context.scene, name):
         return None
+    global ft_settings
+    ft_settings = _get_ft_settings_unsafe
     return getattr(bpy.context.scene, name)
 
 
+def _get_ft_settings_unsafe() -> Any:
+    return getattr(bpy.context.scene, Config.ft_global_var_name)
+
+
 # TODO: Replace get_xx_settings functions with this
-fb_settings: Callable = _get_fb_settings
-gt_settings: Callable = _get_gt_settings
-ft_settings: Callable = _get_gt_settings
+fb_settings: Callable = _get_fb_settings_safe
+gt_settings: Callable = _get_gt_settings_safe
+ft_settings: Callable = _get_ft_settings_safe
 
 
 def set_fb_settings_func(func: Callable) -> None:
@@ -271,21 +289,27 @@ def set_ft_settings_func(func: Callable) -> None:
 def gt_pinmode() -> bool:
     if not geotracker_enabled():
         return False
-    settings = _get_gt_settings()
+    settings = gt_settings()
+    if not settings:
+        return False
     return settings.pinmode
 
 
 def fb_pinmode() -> bool:
     if not facebuilder_enabled():
         return False
-    settings = _get_fb_settings()
+    settings = fb_settings()
+    if not settings:
+        return False
     return settings.pinmode
 
 
 def ft_pinmode() -> bool:
     if not facetracker_enabled():
         return False
-    settings = _get_ft_settings()
+    settings = ft_settings()
+    if not settings:
+        return False
     return settings.pinmode
 
 
@@ -348,3 +372,23 @@ class ProductType:
     FACEBUILDER: int = 0
     GEOTRACKER: int = 1
     FACETRACKER: int = 2
+
+
+def get_settings(product: int) -> Any:
+    if product == ProductType.GEOTRACKER:
+        return gt_settings()
+    if product == ProductType.FACETRACKER:
+        return ft_settings()
+    if product == ProductType.FACEBUILDER:
+        return fb_settings()
+    assert False, f'get_settings: Improper product {product}'
+
+
+def product_name(product: int) -> str:
+    if product == ProductType.GEOTRACKER:
+        return 'GeoTracker'
+    if product == ProductType.FACETRACKER:
+        return 'FaceTracker'
+    if product == ProductType.FACEBUILDER:
+        return 'FaceBuilder'
+    assert False, f'product_name: Improper product {product}'

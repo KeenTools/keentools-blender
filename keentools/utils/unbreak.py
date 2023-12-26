@@ -3,9 +3,7 @@ from typing import Any, List
 from bpy.types import Object
 
 from .kt_logging import KTLogger
-from ..addon_config import ActionStatus, ProductType
-from ..geotracker_config import get_gt_settings
-from ..facetracker_config import get_ft_settings
+from ..addon_config import ActionStatus, ProductType, get_settings
 from .animation import (get_action,
                         get_object_keyframe_numbers,
                         mark_selected_points_in_locrot)
@@ -16,23 +14,9 @@ from ..geotracker.utils.tracking import (unbreak_rotation,
 _log = KTLogger(__name__)
 
 
-def _get_settings(product: int) -> Any:
-    if product == ProductType.GEOTRACKER:
-        return get_gt_settings()
-    if product == ProductType.FACETRACKER:
-        return get_ft_settings()
-    else:
-        assert False, f'get_settings: Improper product {product}'
-
-
-def _get_loader(product: int) -> Any:
-    settings = _get_settings(product)
-    return settings.loader()
-
-
 def unbreak_rotation_act(
         *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
-    settings = _get_settings(product)
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     obj = geotracker.animatable_object()
     return unbreak_object_rotation_act(obj)
@@ -70,7 +54,8 @@ def unbreak_rotation_with_status(obj: Object, frame_list: List) -> ActionStatus:
 
 def _mark_object_keyframes(obj: Object, *,
                            product: int = ProductType.GEOTRACKER) -> None:
-    gt = _get_loader(product).kt_geotracker()
+    settings = get_settings(product)
+    gt = settings.loader().kt_geotracker()
     tracked_keyframes = [x for x in gt.track_frames()]
     _log.output(f'KEYFRAMES TO MARK AS TRACKED: {tracked_keyframes}')
     mark_selected_points_in_locrot(obj, tracked_keyframes, 'JITTER')

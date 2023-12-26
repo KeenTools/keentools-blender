@@ -622,21 +622,21 @@ class FT_OT_InterruptModal(Operator):
 
         if not bpy_background_mode():
             context.window_manager.modal_handler_add(self)
-            _log.output('INTERRUPTOR START')
+            _log.output('FT INTERRUPTOR START')
         else:
-            _log.info('GeoTracker Interruptor skipped by background mode')
+            _log.info('FaceTracker Interruptor skipped by background mode')
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
         settings = get_ft_settings()
 
         if settings.user_interrupts:
-            _log.output('Interruptor has been stopped by value')
+            _log.output('FT Interruptor has been stopped by value')
             settings.user_interrupts = True
             return {'FINISHED'}
 
         if event.type == 'ESC' and event.value == 'PRESS':
-            _log.output('Exit Interruptor by ESC')
+            _log.output('Exit FT Interruptor by ESC')
             settings.user_interrupts = True
             return {'FINISHED'}
 

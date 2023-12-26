@@ -201,10 +201,11 @@ class GT_OT_CreatePrecalc(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    product: IntProperty(default=ProductType.GEOTRACKER)
+
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
-        product = ProductType.GEOTRACKER
-        check_status = common_checks(product=product,
+        _log.output(f'{self.__class__.__name__} execute [{self.product}]')
+        check_status = common_checks(product=self.product,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=False, geotracker=True,
                                      camera=True, geometry=False,
@@ -213,7 +214,7 @@ class GT_OT_CreatePrecalc(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        act_status = precalc_with_runner_act(context)
+        act_status = precalc_with_runner_act(context, product=self.product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
         return {'FINISHED'}
@@ -696,7 +697,7 @@ class GT_OT_InterruptModal(Operator):
 
         if not bpy_background_mode():
             context.window_manager.modal_handler_add(self)
-            _log.output('INTERRUPTOR START')
+            _log.output('GT INTERRUPTOR START')
         else:
             _log.info('GeoTracker Interruptor skipped by background mode')
         return {'RUNNING_MODAL'}
@@ -705,12 +706,12 @@ class GT_OT_InterruptModal(Operator):
         settings = get_gt_settings()
 
         if settings.user_interrupts:
-            _log.output('Interruptor has been stopped by value')
+            _log.output('GT Interruptor has been stopped by value')
             settings.user_interrupts = True
             return {'FINISHED'}
 
         if event.type == 'ESC' and event.value == 'PRESS':
-            _log.output('Exit Interruptor by ESC')
+            _log.output('Exit GT Interruptor by ESC')
             settings.user_interrupts = True
             return {'FINISHED'}
 

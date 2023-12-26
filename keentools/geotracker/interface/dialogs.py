@@ -23,22 +23,12 @@ from bpy.types import Operator
 from bpy.props import IntProperty
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config, ProductType
-from ...geotracker_config import GTConfig, get_gt_settings
-from ...facetracker_config import get_ft_settings
+from ...addon_config import Config, ProductType, get_settings
+from ...geotracker_config import GTConfig
 from ..ui_strings import buttons
 
 
 _log = KTLogger(__name__)
-
-
-def _get_settings(product: int) -> Any:
-    if product == ProductType.GEOTRACKER:
-        return get_gt_settings()
-    if product == ProductType.FACETRACKER:
-        return get_ft_settings()
-    else:
-        assert False, f'get_settings: Improper product {product}'
 
 
 def _precalc_file_info(layout, geotracker):
@@ -69,7 +59,7 @@ class GT_OT_PrecalcInfo(Operator):
 
     def draw(self, context):
         layout = self.layout
-        settings = _get_settings(self.product)
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return
@@ -84,7 +74,7 @@ class GT_OT_PrecalcInfo(Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        settings = _get_settings(self.product)
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -100,7 +90,7 @@ class GT_OT_TextureBakeOptions(Operator):
 
     def draw(self, context):
         layout = self.layout
-        settings = get_gt_settings()
+        settings = get_settings(ProductType.GEOTRACKER)
         if settings is None:
             return
 

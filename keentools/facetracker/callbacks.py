@@ -26,6 +26,7 @@ from ..addon_config import (Config,
                             ErrorType)
 from ..facetracker_config import (FTConfig,
                                   get_ft_settings)
+from ..geotracker_config import GTConfig
 from .ftloader import FTLoader
 from ..utils.images import (get_background_image_object,
                             tone_mapping,
@@ -262,7 +263,7 @@ def update_movieclip(geotracker, context: Any) -> None:
     geotracker.precalc_start = bpy_start_frame()
     geotracker.precalc_end = bpy_end_frame()
 
-    geotracker.precalc_path = f'{FTConfig.ft_precalc_folder}' \
+    geotracker.precalc_path = f'{GTConfig.gt_precalc_folder}' \
                               f'{geotracker.movie_clip.name}'
 
     if context is not None:
