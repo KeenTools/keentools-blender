@@ -173,6 +173,7 @@ def lens_change_callback() -> None:
 def update_camobj(geotracker, context: Any) -> None:
     _log.output(f'update_camobj: {geotracker.camobj}')
     settings = get_gt_settings()
+    product = settings.product_type()
 
     subscribe_camera_lens_watcher(geotracker.camobj)
 
@@ -199,7 +200,8 @@ def update_camobj(geotracker, context: Any) -> None:
             check_unbreak_rotaion_is_needed(geotracker.camobj):
         _log.info(f'Applying Unbreak Rotation to object: '
                   f'{bpy_object_name(geotracker.camobj)}')
-        unbreak_status = unbreak_object_rotation_act(geotracker.camobj)
+        unbreak_status = unbreak_object_rotation_act(geotracker.camobj,
+                                                     product=product)
         if not unbreak_status.success:
             _log.error(unbreak_status.error_message)
 
@@ -228,12 +230,14 @@ def update_geomobj(geotracker, context: Any) -> None:
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=msg)
 
+    product = settings.product_type()
     prefs = settings.preferences()
     if prefs.gt_auto_unbreak_rotation and \
             check_unbreak_rotaion_is_needed(geotracker.geomobj):
         _log.info(f'Applying Unbreak Rotation to object: '
                   f'{bpy_object_name(geotracker.geomobj)}')
-        unbreak_status = unbreak_object_rotation_act(geotracker.geomobj)
+        unbreak_status = unbreak_object_rotation_act(geotracker.geomobj,
+                                                     product=product)
         if not unbreak_status.success:
             _log.error(unbreak_status.error_message)
 

@@ -69,5 +69,4 @@ class FT_OT_MovePin(MovePin):
                                        wireframe=True)
 
     def update_on_left_mouse_release(self) -> None:
-        create_relative_shape_keyframe(bpy_current_frame(),
-                                       keyframe_type='KEYFRAME')
+        create_relative_shape_keyframe(bpy_current_frame())

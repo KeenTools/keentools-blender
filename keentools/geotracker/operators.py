@@ -1322,7 +1322,8 @@ class GT_OT_UnbreakRotation(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        product = ProductType.GEOTRACKER
+        check_status = common_checks(product=product,
                                      object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True)
@@ -1330,7 +1331,7 @@ class GT_OT_UnbreakRotation(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        act_status = unbreak_rotation_act()
+        act_status = unbreak_rotation_act(product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}

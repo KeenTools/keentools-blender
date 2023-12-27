@@ -362,8 +362,12 @@ class FT_OT_RemoveKeyframe(ButtonOperator, Operator):
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
-        FTLoader.update_viewport_shaders(timeline=True)
         force_undo_push(f'Remove {product_name(product)} keyframe')
+        FTLoader.update_viewport_shaders(wireframe_data=True,
+                                         geomobj_matrix=True,
+                                         wireframe=True,
+                                         pins_and_residuals=True,
+                                         timeline=True)
         return {'FINISHED'}
 
 

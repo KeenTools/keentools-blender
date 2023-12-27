@@ -131,9 +131,10 @@ def create_animated_empty(anim_dict: Dict) -> Object:
 
 
 def insert_point_in_fcurve(fcurve: FCurve, frame: int, value: float,
-                           keyframe_type: str = 'KEYFRAME') -> Keyframe:
+                           keyframe_type: Optional[str] = None) -> Keyframe:
     k = fcurve.keyframe_points.insert(frame, value, options={'NEEDED'})
-    k.type = keyframe_type
+    if keyframe_type is not None:
+        k.type = keyframe_type
     return k
 
 
@@ -178,7 +179,7 @@ def mark_all_points_in_locrot(obj: Object,
     locrot_dict = get_locrot_dict()
     for name in locrot_dict.keys():
         fcurve = get_action_fcurve(action, locrot_dict[name]['data_path'],
-                                    index=locrot_dict[name]['index'])
+                                   index=locrot_dict[name]['index'])
         if fcurve is not None:
             mark_all_points_in_fcurve(fcurve, keyframe_type)
 
@@ -191,7 +192,7 @@ def mark_selected_points_in_locrot(obj: Object, selected_frames: List[int],
     locrot_dict = get_locrot_dict()
     for name in locrot_dict.keys():
         fcurve = get_action_fcurve(action, locrot_dict[name]['data_path'],
-                                    index=locrot_dict[name]['index'])
+                                   index=locrot_dict[name]['index'])
         if fcurve is not None:
             mark_selected_points_in_fcurve(fcurve, selected_frames, keyframe_type)
 
@@ -204,7 +205,7 @@ def get_locrot_keys_in_frame(obj: Object, frame: int) -> Dict:
     locrot_dict = get_locrot_dict()
     for name in locrot_dict.keys():
         fcurve = get_action_fcurve(action, locrot_dict[name]['data_path'],
-                                    index=locrot_dict[name]['index'])
+                                   index=locrot_dict[name]['index'])
         if fcurve is None:
             continue
         points = [p.co[1] for p in fcurve.keyframe_points if p.co[0] == frame]
