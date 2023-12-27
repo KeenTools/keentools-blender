@@ -18,8 +18,7 @@ from ..geotracker.utils.tracking import (unbreak_rotation,
 _log = KTLogger(__name__)
 
 
-def unbreak_rotation_with_status(obj: Object, frame_list: List, *,
-                                 product: int) -> ActionStatus:
+def unbreak_rotation_with_status(obj: Object, frame_list: List) -> ActionStatus:
     if not obj:
         return ActionStatus(False, 'No object to unbreak rotation')
 
@@ -37,23 +36,21 @@ def unbreak_rotation_with_status(obj: Object, frame_list: List, *,
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    if unbreak_rotation(obj, frame_list):
-        mark_object_keyframes(obj, product=product)
     return ActionStatus(True, 'ok')
 
 
-def unbreak_object_rotation_act(obj: Object, *, product: int) -> ActionStatus:
+def unbreak_object_rotation_act(obj: Object) -> ActionStatus:
     if not obj:
         return ActionStatus(False, 'No object to unbreak rotation')
     frame_list = get_object_keyframe_numbers(obj, loc=False, rot=True)
-    return unbreak_rotation_with_status(obj, frame_list, product=product)
+    return unbreak_rotation_with_status(obj, frame_list)
 
 
 def unbreak_rotation_act(*, product: int) -> ActionStatus:
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     obj = geotracker.animatable_object()
-    return unbreak_object_rotation_act(obj, product=product)
+    return unbreak_object_rotation_act(obj)
 
 
 def mark_object_keyframes(obj: Object, *, product: int) -> None:
@@ -78,10 +75,11 @@ def unbreak_after(frame_list: List, *,
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     obj = geotracker.animatable_object()
-    unbreak_status = unbreak_rotation_with_status(obj, frame_list,
-                                                  product=product)
+    unbreak_status = unbreak_rotation_with_status(obj, frame_list)
     if not unbreak_status.success:
         _log.error(unbreak_status.error_message)
+    else:
+        mark_object_keyframes(obj, product=product)
 
 
 def unbreak_after_facetracker(frame_list: List) -> None:

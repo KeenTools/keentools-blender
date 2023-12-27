@@ -371,10 +371,12 @@ def track_next_frame_action(forward: bool=True, *,
             prefs = get_addon_preferences()
             if prefs.gt_auto_unbreak_rotation:
                 unbreak_status = unbreak_rotation_with_status(
-                    obj, [current_frame, next_frame], product=product)
+                    obj, [current_frame, next_frame])
                 if not unbreak_status.success:
                     _log.error(f'track_next_frame_action '
                                f'{unbreak_status.error_message}')
+                else:
+                    mark_object_keyframes(obj, product=product)
 
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException track_next_frame_action: {str(err)}')
@@ -805,7 +807,7 @@ def create_animated_empty_act(
 
         prefs = get_addon_preferences()
         if prefs.gt_auto_unbreak_rotation:
-            unbreak_status = unbreak_object_rotation_act(empty, product=product)
+            unbreak_status = unbreak_object_rotation_act(empty)
             if not unbreak_status.success:
                 return unbreak_status
 
@@ -901,7 +903,7 @@ def create_empty_from_selected_pins_act(
     prefs = get_addon_preferences()
     if prefs.gt_auto_unbreak_rotation:
         for empty in empties:
-            unbreak_status = unbreak_object_rotation_act(empty, product=product)
+            unbreak_status = unbreak_object_rotation_act(empty)
             if not unbreak_status.success:
                 _log.error(unbreak_status.error_message)
 
