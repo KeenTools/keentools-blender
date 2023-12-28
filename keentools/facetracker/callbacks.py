@@ -48,6 +48,7 @@ from ..utils.manipulate import select_object_only, switch_to_camera
 from ..utils.ui_redraw import total_redraw_ui
 from ..geotracker.utils.tracking import check_unbreak_rotaion_is_needed
 from ..utils.unbreak import unbreak_object_rotation_act, mark_object_keyframes
+from ..facebuilder.utils.manipulate import is_facebuilder_head_topology
 
 
 _log = KTLogger(__name__)
@@ -216,8 +217,17 @@ def update_geomobj(geotracker, context: Any) -> None:
     loader = settings.loader()
     product = settings.product_type()
 
-    if not geotracker.geomobj and settings.pinmode:
-        loader.out_pinmode()
+    if not geotracker.geomobj:
+        if settings.pinmode:
+            loader.out_pinmode()
+        return
+
+    if not is_facebuilder_head_topology(geotracker.geomobj):
+        msg = 'Geometry for FaceTracker should have KeenTools Head Topology'
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+             msg_content=msg)
+        geotracker.geomobj = None
         return
 
     loader.load_geotracker()

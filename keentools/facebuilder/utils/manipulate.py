@@ -69,6 +69,12 @@ def _is_facebuilder_object(obj: Object) -> bool:
     return FBConfig.version_prop_name in obj.keys()
 
 
+def is_facebuilder_head_topology(obj: Object) -> bool:
+    if not obj or obj.type != 'MESH':
+        return False
+    return _check_facs_available(len(obj.data.vertices))
+
+
 def _check_facs_available(count: int) -> bool:
     try:
         return pkt_module().FacsExecutor.facs_available(count)
