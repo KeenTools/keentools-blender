@@ -36,6 +36,11 @@ def unbreak_rotation_with_status(obj: Object, frame_list: List) -> ActionStatus:
         _log.error(msg)
         return ActionStatus(False, msg)
 
+    if not unbreak_rotation(obj, frame_list):
+        msg = 'Unbreak Rotation was not applied'
+        _log.error(msg)
+        return ActionStatus(False, msg)
+
     return ActionStatus(True, 'ok')
 
 
