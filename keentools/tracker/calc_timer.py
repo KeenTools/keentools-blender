@@ -211,11 +211,6 @@ class _CommonTimer(TimerMixin):
         return get_gt_settings()
 
     @classmethod
-    def get_loader(cls) -> Any:
-        settings = cls.get_settings()
-        return settings.loader()
-
-    @classmethod
     def user_interrupt_operator_name(cls):
         return GTConfig.gt_interrupt_modal_idname
 
@@ -472,11 +467,6 @@ class FTTrackTimer(TrackTimer):
         return get_ft_settings()
 
     @classmethod
-    def get_loader(cls) -> Any:
-        settings = cls.get_settings()
-        return settings.loader()
-
-    @classmethod
     def user_interrupt_operator_name(cls):
         return FTConfig.ft_interrupt_modal_idname
 
@@ -507,9 +497,8 @@ class FTRefineTimer(RefineTimer):
         return get_ft_settings()
 
     @classmethod
-    def get_loader(cls) -> Any:
-        settings = cls.get_settings()
-        return settings.loader()
+    def user_interrupt_operator_name(cls):
+        return FTConfig.ft_interrupt_modal_idname
 
 
 class RefineTimerFast(RefineTimer):
@@ -528,6 +517,5 @@ class FTRefineTimerFast(RefineTimerFast):
         return get_ft_settings()
 
     @classmethod
-    def get_loader(cls) -> Any:
-        settings = cls.get_settings()
-        return settings.loader()
+    def user_interrupt_operator_name(cls):
+        return FTConfig.ft_interrupt_modal_idname
