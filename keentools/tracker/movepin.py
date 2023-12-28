@@ -50,15 +50,13 @@ class MovePin(bpy.types.Operator):
     def get_settings(cls) -> Any:
         assert False, 'MovePin: get_settings'
 
-    @classmethod
-    def get_loader(cls) -> Any:
-        assert False, 'MovePin: get_loader'
-
     def _move_pin_mode_on(self) -> None:
-        self.get_loader().viewport().pins().set_move_pin_mode(True)
+        settings = self.get_settings()
+        settings.loader().viewport().pins().set_move_pin_mode(True)
 
     def _move_pin_mode_off(self) -> None:
-        self.get_loader().viewport().pins().set_move_pin_mode(False)
+        settings = self.get_settings()
+        settings.loader().viewport().pins().set_move_pin_mode(False)
 
     def _before_operator_finish(self) -> None:
         self._move_pin_mode_off()
@@ -68,7 +66,8 @@ class MovePin(bpy.types.Operator):
         shift_x, shift_y = get_scene_camera_shift()
         x, y = get_image_space_coord(mouse_x, mouse_y, area, shift_x, shift_y)
 
-        loader = self.get_loader()
+        settings = self.get_settings()
+        loader = settings.loader()
         pin = loader.add_pin(
             frame, (image_space_to_frame(x, y, shift_x, shift_y)))
         _log.output(f'_new_pin pin: {pin}')
@@ -96,7 +95,7 @@ class MovePin(bpy.types.Operator):
 
         self.new_pin_flag = False
 
-        loader = self.get_loader()
+        loader = settings.loader()
         vp = loader.viewport()
         vp.update_view_relative_pixel_size(context.area)
         pins = vp.pins()
@@ -147,7 +146,7 @@ class MovePin(bpy.types.Operator):
         if self.old_focal_length != new_focal_length:
             current_frame = bpy_current_frame()
             settings.calculating_mode = 'ESTIMATE_FL'
-            gt = self.get_loader().kt_geotracker()
+            gt = settings.loader().kt_geotracker()
             gt.recalculate_model_for_new_focal_length(self.old_focal_length,
                                                       new_focal_length, False,
                                                       current_frame)
@@ -166,7 +165,8 @@ class MovePin(bpy.types.Operator):
             else:
                 force_undo_push('Drag GeoTracker pin')
 
-        loader = self.get_loader()
+        settings = self.get_settings()
+        loader = settings.loader()
         loader.viewport().pins().reset_current_pin()
 
         self.update_on_left_mouse_release()
@@ -178,7 +178,6 @@ class MovePin(bpy.types.Operator):
 
         self._before_operator_finish()
 
-        settings = self.get_settings()
         if not bpy_is_animation_playing() \
                 and not settings.is_calculating():
             settings.stabilize_viewport(reset=True)
@@ -198,7 +197,8 @@ class MovePin(bpy.types.Operator):
     def _pin_drag(self, kid: int, area: Area, mouse_x: float, mouse_y: float) -> bool:
         def _drag_multiple_pins(kid: int, pin_index: int,
                                 selected_pins: List[int]) -> None:
-            loader = self.get_loader()
+            settings = self.get_settings()
+            loader = settings.loader()
             gt = loader.kt_geotracker()
             old_x, old_y = gt.pin(kid, pin_index).img_pos
             new_x, new_y = image_space_to_frame(x, y, *get_scene_camera_shift())
@@ -206,7 +206,8 @@ class MovePin(bpy.types.Operator):
             loader.delta_move_pin(kid, selected_pins, offset)
             loader.load_pins_into_viewport()
 
-        loader = self.get_loader()
+        settings = self.get_settings()
+        loader = settings.loader()
         shift_x, shift_y = get_scene_camera_shift()
         x, y = get_image_space_coord(mouse_x, mouse_y, area, shift_x, shift_y)
         pins = loader.viewport().pins()
@@ -237,7 +238,7 @@ class MovePin(bpy.types.Operator):
             return {'FINISHED'}
 
         self.dragged = True
-        loader = self.get_loader()
+        loader = settings.loader()
         vp = loader.viewport()
 
         loader.place_object_or_camera()
@@ -268,7 +269,8 @@ class MovePin(bpy.types.Operator):
         return self.on_default_modal()
 
     def on_default_modal(self) -> Set:
-        if self.get_loader().viewport().pins().current_pin() is not None:
+        settings = self.get_settings()
+        if settings.loader().viewport().pins().current_pin() is not None:
             return {'RUNNING_MODAL'}
         else:
             _log.output('MOVE PIN FINISH')
@@ -278,7 +280,8 @@ class MovePin(bpy.types.Operator):
     def invoke(self, context: Any, event: Any) -> Set:
         _log.output('GT MOVEPIN invoke')
         self.dragged = False
-        loader = self.get_loader()
+        settings = self.get_settings()
+        loader = settings.loader()
         area = loader.get_work_area()
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
         if not point_is_in_area(context.area, mouse_x, mouse_y):
@@ -289,13 +292,11 @@ class MovePin(bpy.types.Operator):
             return {'CANCELLED'}
 
         if not self.init_action(context, mouse_x, mouse_y):
-            settings = self.get_settings()
             settings.start_selection(mouse_x, mouse_y)
             _log.output(f'START SELECTION: {mouse_x}, {mouse_y}')
             return {'CANCELLED'}
 
         self._move_pin_mode_on()
-        settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
         self.old_focal_length = focal_mm_to_px(
             camera_focal_length(geotracker.camobj),
@@ -318,8 +319,9 @@ class MovePin(bpy.types.Operator):
             _log.output('MOVEPIN LEFT MOUSE RELEASE')
             return self.on_left_mouse_release(context.area)
 
+        settings = self.get_settings()
         if event.type == 'MOUSEMOVE' \
-                and self.get_loader().viewport().pins().current_pin() is not None:
+                and settings.loader().viewport().pins().current_pin() is not None:
             _log.output(f'MOVEPIN MOUSEMOVE: {mouse_x} {mouse_y}')
             return self.on_mouse_move(context.area, mouse_x, mouse_y)
 
