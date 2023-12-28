@@ -23,11 +23,8 @@ import os
 import bpy
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import get_operator
-from ...geotracker_config import GTConfig, get_gt_settings
-from ..gtloader import GTLoader
+from ...addon_config import get_operator, ActionStatus, get_settings
 
-from ...addon_config import ActionStatus
 from ...utils.images import (np_image_to_grayscale,
                              np_array_from_background_image,
                              get_background_image_object,
@@ -40,11 +37,11 @@ from ...utils.bpy_common import (bpy_render_frame,
                                  bpy_timer_register)
 from ...tracker.class_loader import KTClassLoader
 from ...utils.timer import RepeatTimer
-from .calc_timer import CalcTimer
 from .prechecks import common_checks, prepare_camera
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from .prechecks import show_warning_dialog, show_unlicensed_warning
 from ..interface.screen_mesages import analysing_screen_message
+from ...tracker.calc_timer import CalcTimer
 
 
 _log = KTLogger(__name__)
@@ -53,7 +50,7 @@ _log = KTLogger(__name__)
 class PrecalcTimer(CalcTimer):
     def finish_error_state(self) -> None:
         self.finish_calc_mode()
-        settings = get_gt_settings()
+        settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
         geotracker.precalc_message = self._error_message
         _log.error(f'precalc error message: {self._error_message}')
@@ -62,7 +59,7 @@ class PrecalcTimer(CalcTimer):
     def runner_state(self) -> Optional[float]:
         _log.output('runner_state call')
 
-        settings = get_gt_settings()
+        settings = self.get_settings()
         if self._runner.is_finished():
             _log.output('runner is_finished')
             err = self._runner.exception()
@@ -148,8 +145,8 @@ class PrecalcTimer(CalcTimer):
 
     def start(self) -> bool:
         self._start_time = time.time()
-        prepare_camera(self.get_area())
-        settings = get_gt_settings()
+        prepare_camera(self.get_area(), product=self.product_type)
+        settings = self.get_settings()
         settings.calculating_mode = 'PRECALC'
 
         self.set_current_state(self.runner_state)
@@ -158,7 +155,7 @@ class PrecalcTimer(CalcTimer):
 
         _func = self.timer_func
         if not bpy_background_mode():
-            op = get_operator(GTConfig.gt_interrupt_modal_idname)
+            op = get_operator(self.interrupt_operator_name)
             op('INVOKE_DEFAULT')
             bpy_timer_register(_func, first_interval=self._interval)
             res = bpy.app.timers.is_registered(_func)
@@ -170,14 +167,14 @@ class PrecalcTimer(CalcTimer):
         return res
 
 
-def precalc_with_runner_act(context: Any) -> ActionStatus:
-    check_status = common_checks(object_mode=True, is_calculating=True,
-                                 reload_geotracker=True,
+def precalc_with_runner_act(context: Any, *, product: int) -> ActionStatus:
+    check_status = common_checks(product=product, object_mode=True,
+                                 is_calculating=True, reload_geotracker=True,
                                  geotracker=True, camera=True, movie_clip=True)
     if not check_status.success:
         return check_status
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
 
     if geotracker.precalc_path == '':
@@ -204,7 +201,7 @@ def precalc_with_runner_act(context: Any) -> ActionStatus:
         return ActionStatus(False, 'Precalc start should be lower than precalc end')
 
     _log.output('precalc_with_runner_act start')
-    vp = GTLoader.viewport()
+    vp = settings.loader().viewport()
     if not settings.pinmode:
         vp.texter().register_handler(context)
 
@@ -215,7 +212,7 @@ def precalc_with_runner_act(context: Any) -> ActionStatus:
         geotracker.precalc_start, geotracker.precalc_end,
         KTClassLoader.GeoTracker_class().license_manager(), True)
 
-    pt = PrecalcTimer(area, runner)
+    pt = PrecalcTimer(area, runner, product=product)
     if pt.start():
         _log.output('Precalc started')
     else:

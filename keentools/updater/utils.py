@@ -177,8 +177,9 @@ class CurrentStateExecutor:
 
 
 class KTUpdater:
-    _response = {'FaceBuilder': None, 'GeoTracker': None}
-    _parsed_response_content = {'FaceBuilder': None, 'GeoTracker': None}
+    _response = {'FaceBuilder': None, 'GeoTracker': None, 'FaceTracker': None}
+    _parsed_response_content = {'FaceBuilder': None, 'GeoTracker': None,
+                                'FaceTracker': None}
 
     @classmethod
     def is_available(cls) -> bool:

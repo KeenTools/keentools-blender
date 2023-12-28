@@ -33,7 +33,7 @@ from ..preferences.user_preferences import (UserPreferences,
                                             universal_cached_getter,
                                             universal_cached_setter)
 from ..utils.viewport_state import ViewportStateItem
-from ..geotracker.callbacks import (update_camobj,
+from .callbacks import (update_camobj,
                         update_geomobj,
                         update_movieclip,
                         update_precalc_path,
