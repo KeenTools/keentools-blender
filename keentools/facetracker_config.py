@@ -137,8 +137,7 @@ class FTConfig:
         operators + '.switch_camera_to_fixed_warning_idname'
 
     # Menu ids
-    ft_clip_menu_idname = 'GEOTRACKER_MT_' + 'clip_menu'  # TODO: Check menu!
-
+    ft_clip_menu_idname = _MT + 'clip_menu'
     ft_clear_tracking_menu_idname = _MT + 'clear_tracking_menu'
     ft_clear_tracking_menu_exec_idname = operators + '.clip_menu_exec'
 

@@ -20,7 +20,6 @@ from bpy.types import Menu, Operator
 
 from ...addon_config import ProductType
 from ...facetracker_config import FTConfig, get_ft_settings
-from ...utils.bpy_common import bpy_call_menu
 from ..ui_strings import buttons
 
 
@@ -65,18 +64,3 @@ class FT_MT_ClearAllTrackingMenu(Menu):
         col.separator()
         col.operator(FTConfig.ft_clear_all_tracking_idname,
                      icon='CANCEL')
-
-
-class FT_OT_ClearAllTrackingMenuExec(Operator):
-    bl_idname = FTConfig.ft_clear_tracking_menu_exec_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def draw(self, context):
-        pass
-
-    def execute(self, context):
-        bpy_call_menu('INVOKE_DEFAULT',
-                      name=FTConfig.ft_clear_tracking_menu_idname)
-        return {'FINISHED'}
