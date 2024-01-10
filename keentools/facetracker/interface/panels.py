@@ -22,7 +22,10 @@ from functools import partial
 from bpy.types import Area, Panel
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config, facetracker_enabled, addon_pinmode, ProductType
+from ...addon_config import (Config,
+                             facetracker_enabled,
+                             addon_pinmode,
+                             ProductType)
 from ...facetracker_config import FTConfig, get_ft_settings
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...updater.panels import KTUpdater
@@ -34,7 +37,7 @@ from ...utils.bpy_common import bpy_timer_register
 
 
 _log = KTLogger(__name__)
-_ft_grace_timer = KTGraceTimer('facetracker')
+_ft_grace_timer = KTGraceTimer(ProductType.FACETRACKER)
 
 
 def _pinmode_escaper(area: Area) -> None:

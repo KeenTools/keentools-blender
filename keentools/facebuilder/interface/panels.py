@@ -28,7 +28,7 @@ from ...updater.panels import (KT_PT_UpdatePanel,
                                KT_PT_DownloadingProblemPanel,
                                KT_PT_UpdatesInstallationPanel)
 from ...updater.utils import KTUpdater
-from ...addon_config import Config, facebuilder_enabled, addon_pinmode
+from ...addon_config import Config, facebuilder_enabled, addon_pinmode, ProductType
 from ...facebuilder_config import FBConfig, get_fb_settings
 from ...utils.version import BVersion
 from ..fbloader import FBLoader
@@ -45,7 +45,7 @@ from ...utils.grace_timer import KTGraceTimer
 _log = KTLogger(__name__)
 
 
-_fb_grace_timer = KTGraceTimer('facebuilder')
+_fb_grace_timer = KTGraceTimer(ProductType.FACEBUILDER)
 
 
 def _state_valid_to_show(state):

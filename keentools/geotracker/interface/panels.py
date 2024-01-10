@@ -45,7 +45,7 @@ from ...utils.icons import KTIcons
 
 
 _log = KTLogger(__name__)
-_gt_grace_timer = KTGraceTimer('geotracker')
+_gt_grace_timer = KTGraceTimer(ProductType.GEOTRACKER)
 
 
 def _pinmode_escaper(area: Area) -> None:

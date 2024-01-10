@@ -285,22 +285,28 @@ def addon_pinmode() -> bool:
     return fb_pinmode() or gt_pinmode() or ft_pinmode()
 
 
-def show_user_preferences(*, facebuilder: Optional[bool]=None,
-                          geotracker: Optional[bool]=None) -> None:
+def show_user_preferences(*, facebuilder: Optional[bool] = None,
+                          geotracker: Optional[bool] = None,
+                          facetracker: Optional[bool] = None) -> None:
     prefs = get_addon_preferences()
     if facebuilder is not None:
         prefs.show_fb_user_preferences = facebuilder
     if geotracker is not None:
         prefs.show_gt_user_preferences = geotracker
+    if facetracker is not None:
+        prefs.show_ft_user_preferences = facetracker
 
 
-def show_tool_preferences(*, facebuilder: Optional[bool]=None,
-                          geotracker: Optional[bool]=None) -> None:
+def show_tool_preferences(*, facebuilder: Optional[bool] = None,
+                          geotracker: Optional[bool] = None,
+                          facetracker: Optional[bool] = None) -> None:
     prefs = get_addon_preferences()
     if facebuilder is not None:
         prefs.facebuilder_expanded = facebuilder
     if geotracker is not None:
         prefs.geotracker_expanded = geotracker
+    if facetracker is not None:
+        prefs.facetracker_expanded = facetracker
 
 
 def get_operator(operator_id_name: str) -> Any:
