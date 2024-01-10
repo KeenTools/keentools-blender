@@ -27,12 +27,13 @@ from bpy.types import Operator, Area
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
+                            fb_settings,
                             get_operator,
                             ErrorType,
                             show_user_preferences,
                             gt_pinmode,
                             supported_gpu_backend)
-from ..facebuilder_config import FBConfig, get_fb_settings
+from ..facebuilder_config import FBConfig
 from ..utils.bpy_common import (operator_with_context,
                                 bpy_view_camera,
                                 bpy_render_frame)
@@ -62,7 +63,7 @@ _undo_handler: Optional[Callable] = None
 def undo_handler(scene: Any) -> None:
     _log.output('undo_handler')
     try:
-        settings = get_fb_settings()
+        settings = fb_settings()
         if not settings.pinmode or settings.current_headnum < 0:
             unregister_undo_handler()
             return
@@ -89,7 +90,7 @@ def register_undo_handler() -> None:
 
 
 def _calc_adaptive_opacity(area: Area) -> None:
-    settings = get_fb_settings()
+    settings = fb_settings()
     if not settings.use_adaptive_opacity:
         return
     settings.calc_adaptive_opacity(area)
@@ -141,7 +142,7 @@ class FB_OT_PinMode(Operator):
         return cls._shift_pressed
 
     def _fix_heads_with_warning(self) -> None:
-        settings = get_fb_settings()
+        settings = fb_settings()
         heads_deleted, cams_deleted = settings.fix_heads()
         if heads_deleted > 0 or cams_deleted > 0:
             _log.warning('HEADS AND CAMERAS FIXED')
@@ -150,7 +151,7 @@ class FB_OT_PinMode(Operator):
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
 
     def _init_wireframer_colors_and_batches(self) -> None:
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_head(settings.current_headnum)
 
         vp = FBLoader.viewport()
@@ -185,7 +186,7 @@ class FB_OT_PinMode(Operator):
 
     def _delete_found_pin(self, nearest: int, area: Area) -> Set:
         _log.output('_delete_found_pin call')
-        settings = get_fb_settings()
+        settings = fb_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
         head = settings.get_head(headnum)
@@ -224,7 +225,7 @@ class FB_OT_PinMode(Operator):
 
     def _undo_detected(self, area: Area) -> None:
         _log.output('UNDO DETECTED')
-        settings = get_fb_settings()
+        settings = fb_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
         head = settings.get_head(headnum)
@@ -259,7 +260,7 @@ class FB_OT_PinMode(Operator):
             return {'PASS_THROUGH'}
 
         if not point_is_in_service_region(area, mouse_x, mouse_y):
-            settings = get_fb_settings()
+            settings = fb_settings()
             op = get_operator(FBConfig.fb_movepin_idname)
             op('INVOKE_DEFAULT', pinx=mouse_x, piny=mouse_y,
                headnum=settings.current_headnum,
@@ -280,7 +281,7 @@ class FB_OT_PinMode(Operator):
         return {'FINISHED'}
 
     def invoke(self, context: Any, event: Any) -> Set:
-        settings = get_fb_settings()
+        settings = fb_settings()
 
         _log.output(f'FB PINMODE ENTER. CURRENT_HEAD: {settings.current_headnum} '
                     f'FB CURRENT_CAM: {settings.current_camnum}')
@@ -453,7 +454,7 @@ class FB_OT_PinMode(Operator):
         return {'RUNNING_MODAL'}
 
     def _modal_should_finish(self, context: Any, event: Any) -> bool:
-        settings = get_fb_settings()
+        settings = fb_settings()
         headnum = settings.current_headnum
 
         # Quit if Screen changed
@@ -504,7 +505,7 @@ class FB_OT_PinMode(Operator):
         return False
 
     def modal(self, context: Any, event: Any) -> Set:
-        settings = get_fb_settings()
+        settings = fb_settings()
 
         if self.pinmode_id != settings.pinmode_id:
             _log.error('Extreme pinmode operator stop')

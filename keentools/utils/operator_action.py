@@ -17,8 +17,8 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from .kt_logging import KTLogger
-from ..addon_config import Config, get_operator, ErrorType
-from ..facebuilder_config import FBConfig, get_fb_settings
+from ..addon_config import Config, fb_settings, get_operator, ErrorType
+from ..facebuilder_config import FBConfig
 from .manipulate import (has_no_blendshape, select_object_only)
 from ..facebuilder.utils.manipulate import (get_current_headnum,
                                             get_current_head,
@@ -48,7 +48,7 @@ def create_blendshapes(operator):
         _log.output('no object')
         return {'CANCELLED'}
 
-    settings = get_fb_settings()
+    settings = fb_settings()
     headnum = settings.head_by_obj(obj)
     if headnum >= 0:
         head = settings.get_head(headnum)
@@ -222,7 +222,7 @@ def unhide_head(operator, context):
     _log.output('unhide_head call')
     headnum = get_current_headnum()
     if headnum >= 0:
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_head(headnum)
         FBLoader.load_model(headnum)
         update_head_mesh_non_neutral(FBLoader.get_builder(), head)

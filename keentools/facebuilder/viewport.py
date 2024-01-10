@@ -22,8 +22,8 @@ import numpy as np
 from bpy.types import Object, Area, SpaceView3D
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, get_operator, ErrorType
-from ..facebuilder_config import FBConfig, get_fb_settings
+from ..addon_config import Config, fb_settings, get_operator, ErrorType
+from ..facebuilder_config import FBConfig
 from ..utils.bpy_common import bpy_render_frame, bpy_background_mode
 from ..utils.coords import (multiply_verts_on_matrix_4x4,
                             pin_to_xyz_from_mesh,
@@ -130,7 +130,7 @@ class FBViewport(KTViewport):
         self.points3d().create_batch()
 
     def update_wireframe_colors(self) -> None:
-        settings = get_fb_settings()
+        settings = fb_settings()
         wf = self.wireframer()
         wf.init_colors((settings.wireframe_color,
                         settings.wireframe_special_color,
@@ -140,11 +140,11 @@ class FBViewport(KTViewport):
         wf.set_backface_culling(settings.wireframe_backface_culling)
 
     def update_pin_sensitivity(self) -> None:
-        settings = get_fb_settings()
+        settings = fb_settings()
         self._point_sensitivity = settings.pin_sensitivity
 
     def update_pin_size(self) -> None:
-        settings = get_fb_settings()
+        settings = fb_settings()
         self.points2d().set_point_size(settings.pin_size)
         self.points3d().set_point_size(
             settings.pin_size * FBConfig.surf_pin_size_scale)

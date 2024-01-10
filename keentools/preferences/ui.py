@@ -34,13 +34,14 @@ from ..blender_independent_packages.pykeentools_loader import (
     installation_status as pkt_installation_status,
     loaded as pkt_loaded)
 from ..addon_config import (Config,
+                            fb_settings,
                             get_addon_preferences,
                             get_operator,
                             is_blender_supported,
                             supported_gpu_backend,
                             ProductType,
                             product_name)
-from ..facebuilder_config import FBConfig, get_fb_settings
+from ..facebuilder_config import FBConfig
 from ..geotracker_config import GTConfig, get_gt_settings
 from .formatting import split_by_br_or_newlines_ignore_empty
 from ..preferences.progress import InstallationProgress
@@ -149,7 +150,7 @@ class FBPREF_OT_UserPreferencesGetColors(Operator):
 
     def execute(self, _):
         _log.output('user_preferences_get_colors')
-        settings = get_fb_settings()
+        settings = fb_settings()
         prefs = settings.preferences()
         prefs.fb_wireframe_color = settings.wireframe_color
         prefs.fb_wireframe_special_color = settings.wireframe_special_color
@@ -274,7 +275,7 @@ class KTPREF_OT_UserPreferencesResetAllWarning(Operator):
 
 
 def _update_user_preferences_pin_size(addon_prefs, _):
-    settings = get_fb_settings()
+    settings = fb_settings()
     prefs = settings.preferences()
     settings.pin_size = addon_prefs.pin_size
 
@@ -283,7 +284,7 @@ def _update_user_preferences_pin_size(addon_prefs, _):
 
 
 def _update_user_preferences_pin_sensitivity(addon_prefs, _):
-    settings = get_fb_settings()
+    settings = fb_settings()
     prefs = settings.preferences()
     settings.pin_sensitivity = addon_prefs.pin_sensitivity
 
@@ -840,7 +841,7 @@ class KTAddonPreferences(AddonPreferences):
     def _draw_updater_info(self, layout):
         KTUpdater.call_updater('FaceBuilder')
         CurrentStateExecutor.compute_current_panel_updater_state()
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
         if settings.preferences().updater_state == UpdateState.INITIAL:

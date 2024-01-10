@@ -16,10 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Callable, Optional, Any
 import math
 
-from .addon_config import fb_settings
 from .utils.kt_logging import KTLogger
 
 
@@ -224,6 +222,3 @@ class FBConfig:
 
     selected_rectangle_color = (0.871, 0.107, 0.001, 1.0)
     regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
-
-
-get_fb_settings: Callable = fb_settings

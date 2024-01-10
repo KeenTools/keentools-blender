@@ -25,7 +25,8 @@ from ..utils.kt_logging import KTLogger
 from ..utils.bpy_common import bpy_background_mode
 from ..utils import coords
 from .fbloader import FBLoader
-from ..facebuilder_config import FBConfig, get_fb_settings
+from ..addon_config import fb_settings
+from ..facebuilder_config import FBConfig
 from .utils.manipulate import push_head_in_undo_history
 from .ui_strings import buttons
 
@@ -70,7 +71,7 @@ class FB_OT_MovePin(Operator):
         return self.camnum
 
     def _new_pin(self, area, mouse_x, mouse_y):
-        settings = get_fb_settings()
+        settings = fb_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
         kid = settings.get_keyframe(headnum, camnum)
@@ -93,7 +94,7 @@ class FB_OT_MovePin(Operator):
         return None
 
     def init_action(self, context, mouse_x, mouse_y):
-        settings = get_fb_settings()
+        settings = fb_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
 
@@ -126,7 +127,7 @@ class FB_OT_MovePin(Operator):
             return self._new_pin(area, mouse_x, mouse_y)
 
     def on_left_mouse_release(self, area, mouse_x, mouse_y):
-        settings = get_fb_settings()
+        settings = fb_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
         head = settings.get_head(headnum)
@@ -170,7 +171,7 @@ class FB_OT_MovePin(Operator):
         fb.move_pin(kid, pin_idx, coords.image_space_to_frame(x, y))
 
     def on_mouse_move(self, area, mouse_x, mouse_y):
-        settings = get_fb_settings()
+        settings = fb_settings()
         headnum = self.get_headnum()
         camnum = self.get_camnum()
         head = settings.get_head(headnum)
