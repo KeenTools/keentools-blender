@@ -16,10 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import Callable
 import os
-import bpy
 
 from .utils.kt_logging import KTLogger
+from .addon_config import gt_settings
 
 
 _log = KTLogger(__name__)
@@ -33,7 +34,6 @@ class GTConfig:
     operators = 'keentools_gt'
     gt_tool_name = 'GeoTracker'
     gt_tab_category = 'GeoTracker'
-    gt_global_var_name = 'keentools_gt_settings'
 
     # Operators
     gt_create_geotracker_idname = operators + '.create_geotracker'
@@ -203,5 +203,4 @@ class GTConfig:
     hidden_feature: bool = True
 
 
-def get_gt_settings():  # TODO: Move to addon_config.py
-    return getattr(bpy.context.scene, GTConfig.gt_global_var_name)
+get_gt_settings: Callable = gt_settings

@@ -21,10 +21,16 @@ from dataclasses import dataclass
 import os
 
 import bpy
+from bpy.types import Scene
+from bpy.props import PointerProperty
+
+from .utils.kt_logging import KTLogger
 from .utils.version import BVersion
 
 
-_company = 'keentools'
+_log = KTLogger(__name__)
+
+
 _PT = 'KEENTOOLS_PT_'
 
 
@@ -33,7 +39,7 @@ class Config:
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),
                                   (3, 0), (3, 1), (3, 2), (3, 3), (3, 4),
-                                  (3, 5), (3, 6))
+                                  (3, 5), (3, 6), (4, 0))
     minimal_blender_api = (2, 80, 60)
 
     fb_tab_category = 'FaceBuilder'
@@ -113,8 +119,8 @@ class Config:
     kt_fb_shader_testing_idname = operators + '.fb_shader_testing'
 
     # Object Custom Properties
-    core_version_prop_name = _company + '_version'
-    viewport_state_prop_name = _company + '_viewport_state'
+    core_version_prop_name = 'keentools_version'
+    viewport_state_prop_name = 'keentools_viewport_state'
 
     # Constants
     surf_pin_size_scale: float = 0.85
@@ -226,7 +232,6 @@ def facetracker_enabled() -> bool:
     return prefs.facetracker_enabled
 
 
-# TODO: Replace get_xx_settings functions with this
 def fb_settings() -> Optional[Any]:
     return getattr(bpy.context.scene, Config.fb_global_var_name, None)
 
@@ -237,21 +242,6 @@ def gt_settings() -> Optional[Any]:
 
 def ft_settings() -> Optional[Any]:
     return getattr(bpy.context.scene, Config.ft_global_var_name, None)
-
-
-def set_fb_settings_func(func: Callable) -> None:
-    global fb_settings
-    fb_settings = func
-
-
-def set_gt_settings_func(func: Callable) -> None:
-    global gt_settings
-    gt_settings = func
-
-
-def set_ft_settings_func(func: Callable) -> None:
-    global ft_settings
-    ft_settings = func
 
 
 def gt_pinmode() -> bool:
@@ -283,6 +273,28 @@ def ft_pinmode() -> bool:
 
 def addon_pinmode() -> bool:
     return fb_pinmode() or gt_pinmode() or ft_pinmode()
+
+
+def add_addon_settings_var(name: str, settings_type: Any) -> None:
+    setattr(Scene, name, PointerProperty(type=settings_type))
+
+
+def remove_addon_settings_var(name: str) -> None:
+    delattr(Scene, name)
+
+
+def check_addon_settings_var_exists(name: str) -> bool:
+    return hasattr(Scene, name)
+
+
+def check_addon_settings_var_type(name: str) -> Any:
+    if not hasattr(Scene, name):
+        return None
+    attr = getattr(Scene, name)
+    if BVersion.property_keywords_enabled:
+        return attr.keywords['type']
+    else:
+        return attr[1]['type']
 
 
 def show_user_preferences(*, facebuilder: Optional[bool] = None,
@@ -366,3 +378,8 @@ def product_name(product: int) -> str:
     if product == ProductType.FACEBUILDER:
         return 'FaceBuilder'
     assert False, f'product_name: Improper product {product}'
+
+
+def output_import_statistics() -> None:
+    names = "\n".join(_log.module_names())
+    _log.output('import sequence:\n' + _log.color('green', f'{names}'))

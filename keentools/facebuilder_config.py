@@ -19,9 +19,11 @@
 from typing import Callable, Optional, Any
 import math
 
-import bpy
+from .addon_config import fb_settings
+from .utils.kt_logging import KTLogger
 
-from .utils.version import BVersion
+
+_log = KTLogger(__name__)
 
 
 _PT: str = 'FBUILDER_PT_'
@@ -36,7 +38,6 @@ class FBConfig:
     default_fb_camera_data_name = 'fbCamData'
     default_fb_camera_name = 'fbCamera'
 
-    fb_global_var_name = 'keentools_fb_settings'
     fb_tool_name = 'FaceBuilder'
 
     operators = 'keentools_fb'
@@ -225,31 +226,4 @@ class FBConfig:
     regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
 
 
-def _get_fb_settings_func() -> Optional[Any]:
-    return getattr(bpy.context.scene, FBConfig.fb_global_var_name, None)
-
-
-get_fb_settings: Callable = _get_fb_settings_func
-
-
-def set_fb_settings_func(func: Callable) -> None:
-    global get_fb_settings
-    get_fb_settings = func
-
-
-def check_addon_settings_var_exists() -> bool:
-    return hasattr(bpy.types.Scene, FBConfig.fb_global_var_name)
-
-
-def remove_addon_settings_var() -> None:
-    delattr(bpy.types.Scene, FBConfig.fb_global_var_name)
-
-
-def check_addon_settings_var_type() -> Any:
-    if not hasattr(bpy.types.Scene, FBConfig.fb_global_var_name):
-        return None
-    attr = getattr(bpy.types.Scene, FBConfig.fb_global_var_name)
-    if BVersion.property_keywords_enabled:
-        return attr.keywords['type']
-    else:
-        return attr[1]['type']
+get_fb_settings: Callable = fb_settings

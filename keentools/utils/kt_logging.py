@@ -39,10 +39,6 @@ def _add_module_name(name: str) -> None:
     _module_names.append(name)
 
 
-def module_names() -> str:
-    return '\n'.join(_module_names)
-
-
 class KTLogger():
     def __init__(self, name, *, output: str = 'debug',
                  info_color: Optional[str] = None,
@@ -63,6 +59,7 @@ class KTLogger():
         else:
             self.output = self.debug
 
+        _add_module_name(name)
         self.output(self.color('green', f'import: {name}'))
 
     def info(self, message: str) -> None:
@@ -97,3 +94,9 @@ class KTLogger():
         if color not in _log_colors:
             return txt
         return f"{_log_colors[color]}{txt}{_log_colors['reset']}"
+
+    def module_names(self) -> List[str]:
+        return (_module_names)
+
+
+_log = KTLogger(__name__)

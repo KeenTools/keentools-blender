@@ -19,11 +19,14 @@
 from typing import Any
 
 from bpy.types import Scene, TIME_MT_editor_menus
-from bpy.props import PointerProperty
 from bpy.utils import register_class, unregister_class
 
 from ..utils.kt_logging import KTLogger
-from ..facetracker_config import FTConfig, get_ft_settings
+from ..addon_config import (Config,
+                            ft_settings,
+                            add_addon_settings_var,
+                            remove_addon_settings_var)
+from ..facetracker_config import FTConfig
 from .settings import FaceTrackerItem, FTSceneSettings
 from .pinmode import FT_OT_PinMode
 from .movepin import FT_OT_MovePin
@@ -40,15 +43,6 @@ CLASSES_TO_REGISTER = (FaceTrackerItem,
                        FTSceneSettings) + BUTTON_CLASSES + INTERFACE_CLASSES
 
 
-def _add_addon_ft_settings_var() -> None:
-    setattr(Scene, FTConfig.ft_global_var_name,
-            PointerProperty(type=FTSceneSettings))
-
-
-def _remove_addon_ft_settings_var() -> None:
-    delattr(Scene, FTConfig.ft_global_var_name)
-
-
 def tracking_panel(self, context: Any) -> None:
     layout = self.layout
     row = layout.row(align=True)
@@ -58,7 +52,7 @@ def tracking_panel(self, context: Any) -> None:
     row.operator(FTConfig.ft_next_keyframe_idname, text='',
                  icon='NEXT_KEYFRAME')
 
-    settings = get_ft_settings()
+    settings = ft_settings()
     if not settings.pinmode:
         return
 
@@ -87,11 +81,11 @@ def facetracker_register() -> None:
 
     _log.output('START FACETRACKER REGISTER CLASSES')
     for cls in CLASSES_TO_REGISTER:
-        _log.output('REGISTER FT CLASS: \n{}'.format(str(cls)))
+        _log.output(f'REGISTER FT CLASS: \n{str(cls)}')
         register_class(cls)
 
     _log.output('MAIN FACETRACKER VARIABLE REGISTER')
-    _add_addon_ft_settings_var()
+    add_addon_settings_var(Config.ft_global_var_name, FTSceneSettings)
 
     # _log.output('BUTTONS ON TIMELINE REGISTER')
     # _add_buttons_to_timeline()
@@ -107,10 +101,10 @@ def facetracker_unregister() -> None:
 
     _log.output('START FACETRACKER UNREGISTER CLASSES')
     for cls in reversed(CLASSES_TO_REGISTER):
-        _log.output('UNREGISTER FT CLASS: \n{}'.format(str(cls)))
+        _log.output(f'UNREGISTER FT CLASS: \n{str(cls)}')
         unregister_class(cls)
 
     _log.output('MAIN FACETRACKER VARIABLE UNREGISTER')
-    _remove_addon_ft_settings_var()
+    remove_addon_settings_var(Config.ft_global_var_name)
 
     _log.output('=== FACETRACKER UNREGISTERED ===')
