@@ -31,8 +31,7 @@ from .helps import (FTHELP_OT_InputsHelp,
                     FTHELP_OT_RenderingHelp,
                     FTHELP_OT_SmoothingHelp,)
 from .menus import (FT_MT_ClipMenu,
-                    FT_MT_ClearAllTrackingMenu,
-                    FT_OT_ClearAllTrackingMenuExec)
+                    FT_MT_ClearAllTrackingMenu)
 
 _log = KTLogger(__name__)
 
@@ -51,5 +50,4 @@ CLASSES_TO_REGISTER = (FTHELP_OT_InputsHelp,
                        FT_PT_InputsPanel,
                        FT_PT_TrackingPanel,
                        FT_MT_ClipMenu,
-                       FT_MT_ClearAllTrackingMenu,
-                       FT_OT_ClearAllTrackingMenuExec)
+                       FT_MT_ClearAllTrackingMenu)

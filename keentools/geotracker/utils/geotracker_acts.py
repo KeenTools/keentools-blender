@@ -88,6 +88,14 @@ from ...tracker.calc_timer import (TrackTimer,
                                    FTTrackTimer,
                                    FTRefineTimer,
                                    FTRefineTimerFast)
+from ...utils.unbreak import (mark_object_keyframes,
+                              unbreak_after,
+                              unbreak_after_facetracker,
+                              unbreak_after_reversed,
+                              unbreak_after_reversed_facetracker,
+                              unbreak_object_rotation_act,
+                              unbreak_rotation_act,
+                              unbreak_rotation_with_status)
 
 
 _log = KTLogger(__name__)
@@ -210,6 +218,7 @@ def remove_keyframe_action(*, product: int) -> ActionStatus:
     loader = settings.loader()
     gt = loader.kt_geotracker()
     current_frame = bpy_current_frame()
+
     if gt.is_key_at(current_frame):
         gt.remove_keyframe(current_frame)
         loader.save_geotracker()
@@ -219,6 +228,7 @@ def remove_keyframe_action(*, product: int) -> ActionStatus:
     geotracker = settings.get_current_geotracker_item()
     obj = geotracker.animatable_object()
     delete_locrot_keyframe(obj)
+
     _log.output('remove_keyframe_action end')
     return ActionStatus(True, f'No {product_name(product)} '
                               f'keyframe at this frame')
@@ -365,6 +375,8 @@ def track_next_frame_action(forward: bool=True, *,
                 if not unbreak_status.success:
                     _log.error(f'track_next_frame_action '
                                f'{unbreak_status.error_message}')
+                else:
+                    mark_object_keyframes(obj, product=product)
 
     except pkt_module().UnlicensedException as err:
         _log.error(f'UnlicensedException track_next_frame_action: {str(err)}')
@@ -1092,11 +1104,11 @@ def transfer_tracking_to_camera_act(
 
     bpy_set_current_frame(current_frame)
     geotracker.solve_for_camera = True
-    _mark_object_keyframes(camobj)
+    mark_object_keyframes(camobj, product=product)
 
     prefs = get_addon_preferences()
     if prefs.gt_auto_unbreak_rotation:
-        unbreak_status = unbreak_rotation_act()
+        unbreak_status = unbreak_rotation_act(product=product)
         if not unbreak_status.success:
             return unbreak_status
 
@@ -1147,27 +1159,15 @@ def transfer_tracking_to_geometry_act(
 
     bpy_set_current_frame(current_frame)
     geotracker.solve_for_camera = False
-    _mark_object_keyframes(geomobj)
+    mark_object_keyframes(geomobj, product=product)
 
     prefs = get_addon_preferences()
     if prefs.gt_auto_unbreak_rotation:
-        unbreak_status = unbreak_rotation_act()
+        unbreak_status = unbreak_rotation_act(product=product)
         if not unbreak_status.success:
             return unbreak_status
 
     return ActionStatus(True, 'ok')
-
-
-def _mark_object_keyframes(obj: Object, *,
-                           product: int = ProductType.GEOTRACKER) -> None:
-    settings = get_settings(product)
-    gt = settings.loader().kt_geotracker()
-    tracked_keyframes = [x for x in gt.track_frames()]
-    _log.output(f'KEYFRAMES TO MARK AS TRACKED: {tracked_keyframes}')
-    mark_selected_points_in_locrot(obj, tracked_keyframes, 'JITTER')
-    keyframes = [x for x in gt.keyframes()]
-    _log.output(f'KEYFRAMES TO MARK AS KEYFRAMES: {keyframes}')
-    mark_selected_points_in_locrot(obj, keyframes, 'KEYFRAME')
 
 
 def render_with_background_act(
@@ -1416,7 +1416,7 @@ def scale_scene_tracking_act(
 
     prefs = get_addon_preferences()
     if prefs.gt_auto_unbreak_rotation:
-        unbreak_status = unbreak_rotation_act()
+        unbreak_status = unbreak_rotation_act(product=product)
         if not unbreak_status.success:
             return unbreak_status
 
@@ -1570,7 +1570,7 @@ def move_scene_tracking_act(
 
     prefs = get_addon_preferences()
     if prefs.gt_auto_unbreak_rotation:
-        unbreak_status = unbreak_rotation_act()
+        unbreak_status = unbreak_rotation_act(product=product)
         if not unbreak_status.success:
             return unbreak_status
 
@@ -1620,78 +1620,8 @@ def bake_locrot_act(obj: Object, *,
 
     prefs = get_addon_preferences()
     if prefs.gt_auto_unbreak_rotation:
-        unbreak_status = unbreak_rotation_act()
+        unbreak_status = unbreak_rotation_act(product=product)
         if not unbreak_status.success:
             return unbreak_status
 
     return ActionStatus(True, 'ok')
-
-
-def unbreak_rotation_with_status(obj: Object, frame_list: List) -> ActionStatus:
-    if not obj:
-        return ActionStatus(False, 'No object to unbreak rotation')
-
-    if check_unbreak_rotaion_is_needed(obj):
-        _log.output(f'{obj} needs for Unbreak Rotation!')
-
-    action = get_action(obj)
-    if action is None:
-        msg = 'Selected object has no animation action'
-        _log.error(msg)
-        return ActionStatus(False, msg)
-
-    if len(frame_list) < 2:
-        msg = 'Not enough keys to apply Unbreak Rotation'
-        _log.error(msg)
-        return ActionStatus(False, msg)
-
-    if unbreak_rotation(obj, frame_list):
-        _mark_object_keyframes(obj)
-    return ActionStatus(True, 'ok')
-
-
-def unbreak_rotation_act(
-        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
-    settings = get_settings(product)
-    geotracker = settings.get_current_geotracker_item()
-    obj = geotracker.animatable_object()
-    return unbreak_object_rotation_act(obj)
-
-
-def unbreak_object_rotation_act(obj: Object) -> ActionStatus:
-    if not obj:
-        return ActionStatus(False, 'No object to unbreak rotation')
-    frame_list = get_object_keyframe_numbers(obj, loc=False, rot=True)
-    return unbreak_rotation_with_status(obj, frame_list)
-
-
-def unbreak_after(frame_list: List, *,
-                  product: int = ProductType.GEOTRACKER) -> None:
-    _log.output(f'unbreak_after call {product_name(product)}')
-    prefs = get_addon_preferences()
-    if not prefs.gt_auto_unbreak_rotation:
-        _log.output('unbreak rotation is switched off')
-        return
-
-    settings = get_settings(product)
-    geotracker = settings.get_current_geotracker_item()
-    obj = geotracker.animatable_object()
-    unbreak_status = unbreak_rotation_with_status(obj, frame_list)
-    if not unbreak_status.success:
-        _log.error(unbreak_status.error_message)
-
-
-def unbreak_after_facetracker(frame_list: List) -> None:
-    _log.output('unbreak_after_facetracker call')
-    return unbreak_after(frame_list, product=ProductType.FACETRACKER)
-
-
-def unbreak_after_reversed(frame_list: List, *,
-                           product: int = ProductType.GEOTRACKER) -> None:
-    _log.output('unbreak_after_reversed call')
-    return unbreak_after(list(reversed(frame_list)), product=product)
-
-
-def unbreak_after_reversed_facetracker(frame_list: List) -> None:
-    _log.output('unbreak_after_reversed_facetracker call')
-    return unbreak_after_reversed(frame_list, product=ProductType.FACETRACKER)

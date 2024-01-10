@@ -21,6 +21,7 @@ from typing import Any, Tuple, List, Dict, Optional
 from math import frexp
 
 from ..utils.kt_logging import KTLogger
+from ..addon_config import ProductType
 from ..utils.coords import (focal_mm_to_px,
                             focal_px_to_mm,
                             camera_sensor_width,
@@ -47,6 +48,7 @@ from ..utils.images import (np_array_from_background_image,
                             np_array_from_bpy_image)
 from ..utils.ui_redraw import total_redraw_ui
 from ..utils.mesh_builder import build_geo
+from ..tracker.tracking_blendshapes import remove_relative_shape_keyframe
 
 
 _log = KTLogger(__name__)
@@ -352,7 +354,7 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
             _log.output(f'set_model_mat_at3')
             geotracker.geomobj.matrix_world = mat
 
-        gt = GTLoader.kt_geotracker()
+        gt = settings.loader().kt_geotracker()
         keyframe_type = 'KEYFRAME' if gt.is_key_at(frame) else 'JITTER'
         create_locrot_keyframe(geotracker.animatable_object(), keyframe_type)
         if (current_frame != frame) and not settings.is_calculating():
@@ -372,6 +374,12 @@ class GeoTrackerResultsStorage(pkt_module().GeoTrackerResultsStorageI):
         to_frame = from_frame if len(args) == 1 else args[1]
         delete_animation_between_frames(geotracker.animatable_object(),
                                         from_frame, to_frame)
+        if settings.product_type() == ProductType.FACETRACKER:
+            from_frame = max(1, from_frame)
+            to_frame = min(bpy_end_frame(), to_frame)
+            _log.output(f'remove_track_data: from: {from_frame} to: {to_frame} ')
+            for frame in range(from_frame, to_frame + 1):
+                remove_relative_shape_keyframe(frame)
 
     def trackframes(self) -> List[int]:
         _log.output('trackframes call')

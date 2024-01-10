@@ -28,7 +28,7 @@ from bpy.props import (BoolProperty,
                        PointerProperty)
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import get_operator, ProductType
+from ..addon_config import get_operator, ProductType, product_name
 from ..facetracker_config import FTConfig, get_ft_settings
 from ..geotracker_config import GTConfig
 from .ui_strings import buttons
@@ -61,15 +61,6 @@ from ..tracker.calc_timer import FTTrackTimer, FTRefineTimer
 
 
 _log = KTLogger(__name__)
-
-
-def product_name(product: int) -> str:
-    if product == ProductType.GEOTRACKER:
-        return 'GeoTracker'
-    if product == ProductType.FACETRACKER:
-        return 'FaceTracker'
-    else:
-        assert False, f'get_loader: Improper product {product}'
 
 
 class ButtonOperator:
@@ -362,8 +353,12 @@ class FT_OT_RemoveKeyframe(ButtonOperator, Operator):
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
-        FTLoader.update_viewport_shaders(timeline=True)
         force_undo_push(f'Remove {product_name(product)} keyframe')
+        FTLoader.update_viewport_shaders(wireframe_data=True,
+                                         geomobj_matrix=True,
+                                         wireframe=True,
+                                         pins_and_residuals=True,
+                                         timeline=True)
         return {'FINISHED'}
 
 

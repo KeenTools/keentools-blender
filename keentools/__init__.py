@@ -197,9 +197,8 @@ else:
         _log.info('FaceBuilder classes have been registered')
         geotracker_register()
         _log.info('GeoTracker classes have been registered')
-        if Config.show_facetracker:
-            facetracker_register()
-            _log.info('FaceTracker classes have been registered')
+        facetracker_register()
+        _log.info('FaceTracker classes have been registered')
         _log.debug(f'=== KEENTOOLS ADDON {bl_info["version"]} REGISTERED ===')
 
 
@@ -208,9 +207,8 @@ else:
                    f'UNREGISTER ---')
         stop_timers(True)
         _log.debug('START UNREGISTER CLASSES')
-        if Config.show_facetracker:
-            facetracker_unregister()
-            _log.info('FaceTracker classes have been unregistered')
+        facetracker_unregister()
+        _log.info('FaceTracker classes have been unregistered')
         geotracker_unregister()
         _log.info('GeoTracker classes have been unregistered')
         facebuilder_unregister()

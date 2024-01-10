@@ -27,7 +27,6 @@ from ..addon_config import (Config,
 from ..facetracker_config import (FTConfig,
                                   get_ft_settings)
 from ..geotracker_config import GTConfig
-from .ftloader import FTLoader
 from ..utils.images import (get_background_image_object,
                             tone_mapping,
                             remove_background_image_object)
@@ -48,7 +47,8 @@ from ..utils.animation import count_fcurve_points
 from ..utils.manipulate import select_object_only, switch_to_camera
 from ..utils.ui_redraw import total_redraw_ui
 from ..geotracker.utils.tracking import check_unbreak_rotaion_is_needed
-from ..utils.unbreak import unbreak_object_rotation_act
+from ..utils.unbreak import unbreak_object_rotation_act, mark_object_keyframes
+from ..facebuilder.utils.manipulate import is_facebuilder_head_topology
 
 
 _log = KTLogger(__name__)
@@ -123,13 +123,14 @@ def color_space_change_callback(old_name: str) -> None:
 def lens_change_callback() -> None:
     _log.output(_log.color('magenta', 'lens_change_callback call'))
     settings = get_ft_settings()
+    loader = settings.loader()
     geotracker = settings.get_current_geotracker_item()
     if not settings.pinmode and not settings.is_calculating():
         _log.output('lens_change_callback stop 1')
         _set_old_focal_lens_mm(geotracker.camobj.data.lens)
         return
 
-    if FTLoader.viewport().pins().move_pin_mode():
+    if loader.viewport().pins().move_pin_mode():
         _log.output('lens_change_callback stop 2')
         _set_old_focal_lens_mm(geotracker.camobj.data.lens)
         return
@@ -155,7 +156,7 @@ def lens_change_callback() -> None:
     if old_focal_length_px != new_focal_length_px:
         current_frame = bpy_current_frame()
         settings.calculating_mode = 'ESTIMATE_FL'
-        gt = FTLoader.kt_geotracker()
+        gt = loader.kt_geotracker()
         gt.recalculate_model_for_new_focal_length(old_focal_length_px,
                                                   new_focal_length_px, True,
                                                   current_frame)
@@ -165,30 +166,31 @@ def lens_change_callback() -> None:
         _log.output('FOCAL LENGTH CHANGED')
 
         if settings.pinmode:
-            FTLoader.update_viewport_shaders(wireframe_data=True,
-                                             geomobj_matrix=True,
-                                             wireframe=True,
-                                             pins_and_residuals=True,
-                                             timeline=True)
+            loader.update_viewport_shaders(wireframe_data=True,
+                                           geomobj_matrix=True,
+                                           wireframe=True,
+                                           pins_and_residuals=True,
+                                           timeline=True)
 
 
 def update_camobj(geotracker, context: Any) -> None:
     _log.output(f'update_camobj: {geotracker.camobj}')
     settings = get_ft_settings()
+    loader = settings.loader()
 
     subscribe_camera_lens_watcher(geotracker.camobj)
 
     if not geotracker.camobj and settings.pinmode:
-        FTLoader.out_pinmode()
+        loader.out_pinmode()
         return
 
     geotracker.setup_background_image()
-    switch_to_camera(FTLoader.get_work_area(), geotracker.camobj)
+    switch_to_camera(loader.get_work_area(), geotracker.camobj)
 
     if settings.pinmode:
-        FTLoader.update_viewport_shaders(wireframe_data=True,
-                                         geomobj_matrix=True, wireframe=True,
-                                         pins_and_residuals=True, timeline=True)
+        loader.update_viewport_shaders(wireframe_data=True,
+                                       geomobj_matrix=True, wireframe=True,
+                                       pins_and_residuals=True, timeline=True)
 
     if geotracker.camobj and len(geotracker.camobj.constraints) > 0:
         msg = f'Camera {_constraint_warning_message}'
@@ -196,6 +198,7 @@ def update_camobj(geotracker, context: Any) -> None:
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=msg)
 
+    product = settings.product_type()
     prefs = settings.preferences()
     if prefs.gt_auto_unbreak_rotation and \
             check_unbreak_rotaion_is_needed(geotracker.camobj):
@@ -204,25 +207,38 @@ def update_camobj(geotracker, context: Any) -> None:
         unbreak_status = unbreak_object_rotation_act(geotracker.camobj)
         if not unbreak_status.success:
             _log.error(unbreak_status.error_message)
+        else:
+            mark_object_keyframes(geotracker.camobj, product=product)
 
 
 def update_geomobj(geotracker, context: Any) -> None:
     _log.output(f'update_geomobj: {geotracker.geomobj}')
     settings = get_ft_settings()
+    loader = settings.loader()
+    product = settings.product_type()
 
-    if not geotracker.geomobj and settings.pinmode:
-        FTLoader.out_pinmode()
+    if not geotracker.geomobj:
+        if settings.pinmode:
+            loader.out_pinmode()
         return
 
-    FTLoader.load_geotracker()
-    gt = FTLoader.kt_geotracker()
+    if not is_facebuilder_head_topology(geotracker.geomobj):
+        msg = 'Geometry for FaceTracker should have KeenTools Head Topology'
+        warn = get_operator(Config.kt_warning_idname)
+        warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
+             msg_content=msg)
+        geotracker.geomobj = None
+        return
+
+    loader.load_geotracker()
+    gt = loader.kt_geotracker()
     geotracker.check_pins_on_geometry(gt)
-    FTLoader.save_geotracker()
+    loader.save_geotracker()
 
     if settings.pinmode:
-        FTLoader.update_viewport_shaders(wireframe_data=True,
-                                         geomobj_matrix=True, wireframe=True,
-                                         pins_and_residuals=True, timeline=True)
+        loader.update_viewport_shaders(wireframe_data=True,
+                                       geomobj_matrix=True, wireframe=True,
+                                       pins_and_residuals=True, timeline=True)
 
     if geotracker.geomobj and len(geotracker.geomobj.constraints) > 0:
         msg = f'Geometry {_constraint_warning_message}'
@@ -238,6 +254,8 @@ def update_geomobj(geotracker, context: Any) -> None:
         unbreak_status = unbreak_object_rotation_act(geotracker.geomobj)
         if not unbreak_status.success:
             _log.error(unbreak_status.error_message)
+        else:
+            mark_object_keyframes(geotracker.geomobj, product=product)
 
 
 def update_movieclip(geotracker, context: Any) -> None:
@@ -286,33 +304,35 @@ def update_precalc_path(geotracker, context: Any) -> None:
 def update_wireframe(settings, context: Any) -> None:
     if not settings.pinmode:
         return
-    FTLoader.update_viewport_shaders(adaptive_opacity=True,
-                                     geomobj_matrix=True,
-                                     wireframe=True)
+    settings.loader().update_viewport_shaders(adaptive_opacity=True,
+                                              geomobj_matrix=True,
+                                              wireframe=True)
 
 
 def update_mask_2d_color(settings, context: Any) -> None:
-    vp = FTLoader.viewport()
+    vp = settings.loader().viewport()
     mask = vp.mask2d()
     mask.color = (*settings.mask_2d_color, settings.mask_2d_opacity)
 
 
 def update_mask_3d_color(settings, context: Any) -> None:
-    vp = FTLoader.viewport()
+    loader = settings.loader()
+    vp = loader.viewport()
     wf = vp.wireframer()
     wf.selection_fill_color = (*settings.mask_3d_color, settings.mask_3d_opacity)
     if settings.pinmode:
-        FTLoader.update_viewport_shaders(wireframe=True)
+        loader.update_viewport_shaders(wireframe=True)
 
 
 def update_wireframe_backface_culling(settings, context: Any) -> None:
     if settings.ui_write_mode:
         return
-    gt = FTLoader.kt_geotracker()
+    loader = settings.loader()
+    gt = loader.kt_geotracker()
     gt.set_back_face_culling(settings.wireframe_backface_culling)
-    FTLoader.save_geotracker()
+    loader.save_geotracker()
     if settings.pinmode:
-        FTLoader.update_viewport_shaders(wireframe=True)
+        loader.update_viewport_shaders(wireframe=True)
 
 
 def update_background_tone_mapping(geotracker, context: Any) -> None:
@@ -327,13 +347,13 @@ def update_pin_sensitivity(settings, context: Any) -> None:
     if settings.pin_size > settings.pin_sensitivity:
         settings.pin_size = settings.pin_sensitivity
 
-    FTLoader.viewport().update_pin_sensitivity()
+    settings.loader().viewport().update_pin_sensitivity()
 
 
 def update_pin_size(settings, context: Any) -> None:
     if settings.pin_sensitivity < settings.pin_size:
         settings.pin_sensitivity = settings.pin_size
-    FTLoader.viewport().update_pin_size()
+    settings.loader().viewport().update_pin_size()
 
 
 def update_focal_length_mode(geotracker, context: Any) -> None:
@@ -375,16 +395,17 @@ def update_track_focal_length(geotracker, context: Any) -> None:
     settings = get_ft_settings()
     if settings.ui_write_mode:
         return
-    gt = FTLoader.kt_geotracker()
+    loader = settings.loader()
+    gt = loader.kt_geotracker()
     gt.set_track_focal_length(geotracker.track_focal_length)
-    FTLoader.save_geotracker()
+    loader.save_geotracker()
     if settings.pinmode:
-        FTLoader.update_viewport_shaders(wireframe=True)
+        loader.update_viewport_shaders(wireframe=True)
 
 
 def update_mask_3d(geotracker, context: Any) -> None:
-    FTLoader.update_viewport_shaders(wireframe=True)
     settings = get_ft_settings()
+    settings.loader().update_viewport_shaders(wireframe=True)
     settings.reload_current_geotracker()
     settings.reload_mask_3d()
 
@@ -400,7 +421,7 @@ def update_mask_2d(geotracker, context: Any) -> None:
 
     total_redraw_ui()
     settings.reload_mask_2d()
-    vp = FTLoader.viewport()
+    vp = settings.loader().viewport()
     if vp.is_working():
         vp.create_batch_2d(vp.get_work_area())
 
@@ -415,13 +436,14 @@ def update_mask_source(geotracker, context: Any) -> None:
 
 def update_spring_pins_back(geotracker, context: Any) -> None:
     if geotracker.spring_pins_back:
-        FTLoader.load_geotracker()
-        FTLoader.spring_pins_back()
-        FTLoader.save_geotracker()
         settings = get_ft_settings()
+        loader = settings.loader()
+        loader.load_geotracker()
+        loader.spring_pins_back()
+        loader.save_geotracker()
         if settings.pinmode:
-            FTLoader.update_viewport_shaders(pins_and_residuals=True)
-            FTLoader.viewport_area_redraw()
+            loader.update_viewport_shaders(pins_and_residuals=True)
+            loader.viewport_area_redraw()
 
 
 def update_solve_for_camera(geotracker, context: Any) -> None:
@@ -442,12 +464,13 @@ def update_smoothing(geotracker, context: Any) -> None:
     settings = get_ft_settings()
     if settings.ui_write_mode:
         return
-    gt = FTLoader.kt_geotracker()
+    loader = settings.loader()
+    gt = loader.kt_geotracker()
     gt.set_smoothing_depth_coeff(geotracker.smoothing_depth_coeff)
     gt.set_smoothing_focal_length_coeff(geotracker.smoothing_focal_length_coeff)
     gt.set_smoothing_rotations_coeff(geotracker.smoothing_rotations_coeff)
     gt.set_smoothing_xy_translations_coeff(geotracker.smoothing_xy_translations_coeff)
-    FTLoader.save_geotracker()
+    loader.save_geotracker()
 
 
 def update_stabilize_viewport_enabled(settings, context: Any) -> None:
@@ -459,7 +482,8 @@ def update_locks(geotracker, context: Any) -> None:
     settings = get_ft_settings()
     if settings.ui_write_mode:
         return
-    gt = FTLoader.kt_geotracker()
+    loader = settings.loader()
+    gt = loader.kt_geotracker()
     gt.set_fixed_dofs(list(geotracker.locks))
-    FTLoader.save_geotracker()
+    loader.save_geotracker()
     _log.output(_log.color('magenta', f'{gt.fixed_dofs()}'))

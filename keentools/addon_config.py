@@ -226,49 +226,17 @@ def facetracker_enabled() -> bool:
     return prefs.facetracker_enabled
 
 
-def _get_fb_settings_safe() -> Optional[Any]:
-    name = Config.fb_global_var_name
-    if not hasattr(bpy.context.scene, name):
-        return None
-    global fb_settings
-    fb_settings = _get_fb_settings_unsafe
-    return getattr(bpy.context.scene, name)
-
-
-def _get_fb_settings_unsafe() -> Any:
-    return getattr(bpy.context.scene, Config.fb_global_var_name)
-
-
-def _get_gt_settings_safe() -> Optional[Any]:
-    name = Config.gt_global_var_name
-    if not hasattr(bpy.context.scene, name):
-        return None
-    global gt_settings
-    gt_settings = _get_gt_settings_unsafe
-    return getattr(bpy.context.scene, name)
-
-
-def _get_gt_settings_unsafe() -> Any:
-    return getattr(bpy.context.scene, Config.gt_global_var_name)
-
-
-def _get_ft_settings_safe() -> Optional[Any]:
-    name = Config.ft_global_var_name
-    if not hasattr(bpy.context.scene, name):
-        return None
-    global ft_settings
-    ft_settings = _get_ft_settings_unsafe
-    return getattr(bpy.context.scene, name)
-
-
-def _get_ft_settings_unsafe() -> Any:
-    return getattr(bpy.context.scene, Config.ft_global_var_name)
-
-
 # TODO: Replace get_xx_settings functions with this
-fb_settings: Callable = _get_fb_settings_safe
-gt_settings: Callable = _get_gt_settings_safe
-ft_settings: Callable = _get_ft_settings_safe
+def fb_settings() -> Optional[Any]:
+    return getattr(bpy.context.scene, Config.fb_global_var_name, None)
+
+
+def gt_settings() -> Optional[Any]:
+    return getattr(bpy.context.scene, Config.gt_global_var_name, None)
+
+
+def ft_settings() -> Optional[Any]:
+    return getattr(bpy.context.scene, Config.ft_global_var_name, None)
 
 
 def set_fb_settings_func(func: Callable) -> None:
@@ -317,22 +285,28 @@ def addon_pinmode() -> bool:
     return fb_pinmode() or gt_pinmode() or ft_pinmode()
 
 
-def show_user_preferences(*, facebuilder: Optional[bool]=None,
-                          geotracker: Optional[bool]=None) -> None:
+def show_user_preferences(*, facebuilder: Optional[bool] = None,
+                          geotracker: Optional[bool] = None,
+                          facetracker: Optional[bool] = None) -> None:
     prefs = get_addon_preferences()
     if facebuilder is not None:
         prefs.show_fb_user_preferences = facebuilder
     if geotracker is not None:
         prefs.show_gt_user_preferences = geotracker
+    if facetracker is not None:
+        prefs.show_ft_user_preferences = facetracker
 
 
-def show_tool_preferences(*, facebuilder: Optional[bool]=None,
-                          geotracker: Optional[bool]=None) -> None:
+def show_tool_preferences(*, facebuilder: Optional[bool] = None,
+                          geotracker: Optional[bool] = None,
+                          facetracker: Optional[bool] = None) -> None:
     prefs = get_addon_preferences()
     if facebuilder is not None:
         prefs.facebuilder_expanded = facebuilder
     if geotracker is not None:
         prefs.geotracker_expanded = geotracker
+    if facetracker is not None:
+        prefs.facetracker_expanded = facetracker
 
 
 def get_operator(operator_id_name: str) -> Any:

@@ -15,15 +15,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+
+from typing import Callable, Optional, Any
 import math
+
 import bpy
 
 from .utils.version import BVersion
 
 
-_PT = 'FBUILDER_PT_'
-_MT = 'FBUILDER_MT_'
-prefix = 'keentools_fb'
+_PT: str = 'FBUILDER_PT_'
+_MT: str = 'FBUILDER_MT_'
+prefix: str = 'keentools_fb'
 
 
 class FBConfig:
@@ -222,32 +225,27 @@ class FBConfig:
     regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
 
 
-def get_fb_settings_func():
-    return getattr(bpy.context.scene, FBConfig.fb_global_var_name)
+def _get_fb_settings_func() -> Optional[Any]:
+    return getattr(bpy.context.scene, FBConfig.fb_global_var_name, None)
 
 
-_get_fb_settings = get_fb_settings_func
+get_fb_settings: Callable = _get_fb_settings_func
 
 
-def get_fb_settings():  # TODO: Move to addon_config.py
-    global _get_fb_settings
-    return _get_fb_settings()
+def set_fb_settings_func(func: Callable) -> None:
+    global get_fb_settings
+    get_fb_settings = func
 
 
-def set_fb_settings_func(func):
-    global _get_fb_settings
-    _get_fb_settings = func
-
-
-def check_addon_settings_var_exists():
+def check_addon_settings_var_exists() -> bool:
     return hasattr(bpy.types.Scene, FBConfig.fb_global_var_name)
 
 
-def remove_addon_settings_var():
+def remove_addon_settings_var() -> None:
     delattr(bpy.types.Scene, FBConfig.fb_global_var_name)
 
 
-def check_addon_settings_var_type():
+def check_addon_settings_var_type() -> Any:
     if not hasattr(bpy.types.Scene, FBConfig.fb_global_var_name):
         return None
     attr = getattr(bpy.types.Scene, FBConfig.fb_global_var_name)

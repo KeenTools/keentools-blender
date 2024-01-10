@@ -131,12 +131,12 @@ def old_facebuilder_unregister_replacement():
     _log.error('OLD FACEBUILDER UNREGISTER CALL')
 
 
-def _add_addon_settings_var():
+def _add_addon_fb_settings_var():
     setattr(bpy.types.Scene, Config.fb_global_var_name,
             bpy.props.PointerProperty(type=FBSceneSettings))
 
 
-def menu_func(self, context):
+def menu_fb_func(self, context):
     settings = get_fb_settings()
     if settings is None:
         return
@@ -150,7 +150,7 @@ def menu_func(self, context):
 def get_fb_settings_safe():
     name = Config.fb_global_var_name
     if not hasattr(bpy.context.scene, name):
-        bpy_timer_register(_add_addon_settings_var, first_interval=0.1)
+        bpy_timer_register(_add_addon_fb_settings_var, first_interval=0.1)
         return None
     return getattr(bpy.context.scene, name)
 
@@ -177,9 +177,9 @@ def facebuilder_register():
         bpy.utils.register_class(cls)
 
     _log.output('FACEBUILDER ADD MESH MENU REGISTER')
-    bpy.types.VIEW3D_MT_mesh_add.append(menu_func)
+    bpy.types.VIEW3D_MT_mesh_add.append(menu_fb_func)
     _log.output('MAIN FACEBUILDER VARIABLE REGISTER')
-    _add_addon_settings_var()
+    _add_addon_fb_settings_var()
     _log.output('MAIN FACEBUILDER VARIABLE REGISTERED')
     set_fb_settings_func(get_fb_settings_safe)
     _log.output('=== FACEBUILDER REGISTERED ===')
@@ -194,7 +194,7 @@ def facebuilder_unregister():
         bpy.utils.unregister_class(cls)
 
     _log.output('FACEBUILDER ADD MESH MENU UNREGISTER')
-    bpy.types.VIEW3D_MT_mesh_add.remove(menu_func)
+    bpy.types.VIEW3D_MT_mesh_add.remove(menu_fb_func)
 
     try:
         if check_addon_settings_var_type() == FBSceneSettings:

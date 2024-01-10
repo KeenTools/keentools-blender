@@ -23,7 +23,6 @@ from bpy.props import IntProperty, StringProperty, FloatProperty
 from ..utils.kt_logging import KTLogger
 from ..facetracker_config import (FTConfig,
                                   get_ft_settings)
-from .ftloader import FTLoader
 from ..tracker.pinmode import PinMode
 from .ui_strings import buttons
 from ..tracker.tracking_blendshapes import reorder_tracking_frames
@@ -45,10 +44,6 @@ class FT_OT_PinMode(PinMode):
     camera_clip_end: FloatProperty(default=1000.0)
 
     movepin_operator_idname: str = FTConfig.ft_movepin_idname
-
-    @classmethod
-    def get_loader(cls) -> Any:
-        return FTLoader
 
     @classmethod
     def get_settings(cls) -> Any:

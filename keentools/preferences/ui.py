@@ -37,7 +37,9 @@ from ..addon_config import (Config,
                             get_addon_preferences,
                             get_operator,
                             is_blender_supported,
-                            supported_gpu_backend)
+                            supported_gpu_backend,
+                            ProductType,
+                            product_name)
 from ..facebuilder_config import FBConfig, get_fb_settings
 from ..geotracker_config import GTConfig, get_gt_settings
 from .formatting import split_by_br_or_newlines_ignore_empty
@@ -116,7 +118,7 @@ class FBPREF_OT_UserPreferencesResetAll(Operator):
     def execute(self, _):
         _log.output('user_preferences_reset_all call')
         warn = get_operator(Config.kt_user_preferences_reset_all_warning_idname)
-        warn('INVOKE_DEFAULT', tool='facebuilder')
+        warn('INVOKE_DEFAULT', product=ProductType.FACEBUILDER)
         return {'FINISHED'}
 
 
@@ -132,7 +134,7 @@ class GTPREF_OT_UserPreferencesResetAll(Operator):
     def execute(self, _):
         _log.output('gt user_preferences_reset_all call')
         warn = get_operator(Config.kt_user_preferences_reset_all_warning_idname)
-        warn('INVOKE_DEFAULT', tool='geotracker')
+        warn('INVOKE_DEFAULT', product=ProductType.GEOTRACKER)
         return {'FINISHED'}
 
 
@@ -227,29 +229,21 @@ class KTPREF_OT_UserPreferencesResetAllWarning(Operator):
 
     accept: BoolProperty(name='Yes, I really want to reset all settings',
                          default=False)
-    tool: StringProperty(name='all')
+    product: IntProperty(name='all', default=ProductType.UNDEFINED)
 
     def draw(self, _):
         layout = self.layout.column()
         col = layout.column()
         col.scale_y = Config.text_scale_y
-        name = ''
-        if self.tool == 'facebuilder':
-            name = 'FaceBuilder'
-        elif self.tool == 'geotracker':
-            name = 'GeoTracker'
-
         layout.prop(self, 'accept',
-                    text='Yes, I really want '
-                         'to reset all {} settings'.format(name))
+                    text=f'Yes, I really want '
+                         f'to reset all {product_name(self.product)} settings')
 
     def execute(self, _):
-        _log.output(f'user_preferences_reset_all {self.tool}')
+        _log.output(f'user_preferences_reset_all {self.product}')
         if not self.accept:
             return {'CANCELLED'}
-        if self.tool == 'all':
-            _set_all_user_preferences_to_default()
-        elif self.tool == 'facebuilder':
+        if self.product == ProductType.FACEBUILDER:
             _reset_user_preferences_parameter_to_default('pin_size')
             _reset_user_preferences_parameter_to_default('pin_sensitivity')
             _reset_user_preferences_parameter_to_default('prevent_fb_view_rotation')
@@ -257,7 +251,7 @@ class KTPREF_OT_UserPreferencesResetAllWarning(Operator):
             _reset_user_preferences_parameter_to_default('fb_wireframe_special_color')
             _reset_user_preferences_parameter_to_default('fb_wireframe_midline_color')
             _reset_user_preferences_parameter_to_default('fb_wireframe_opacity')
-        elif self.tool == 'geotracker':
+        elif self.product == ProductType.GEOTRACKER:
             _reset_user_preferences_parameter_to_default('pin_size')
             _reset_user_preferences_parameter_to_default('pin_sensitivity')
             _reset_user_preferences_parameter_to_default('prevent_gt_view_rotation')
@@ -268,6 +262,8 @@ class KTPREF_OT_UserPreferencesResetAllWarning(Operator):
             _reset_user_preferences_parameter_to_default('gt_mask_3d_color')
             _reset_user_preferences_parameter_to_default('gt_mask_3d_opacity')
             _reset_other_gt_preferences()
+        else:
+            _set_all_user_preferences_to_default()
         return {'FINISHED'}
 
     def cancel(self, context):
@@ -335,6 +331,16 @@ def _universal_updater_setter(name):
 _lic_type_items = (('ONLINE', 'Online', 'Online license management', 0),
                    ('OFFLINE', 'Offline', 'Offline license management', 1),
                    ('FLOATING', 'Floating', 'Floating license management', 2))
+
+
+def _product_prop_prefix(product: int) -> str:
+    if product == ProductType.FACEBUILDER:
+        return 'fb'
+    elif product == ProductType.GEOTRACKER:
+        return 'gt'
+    elif product == ProductType.FACETRACKER:
+        return 'ft'
+    assert False, f'Wrong product has been requested [{product}]'
 
 
 class KTAddonPreferences(AddonPreferences):
@@ -414,11 +420,17 @@ class KTAddonPreferences(AddonPreferences):
     gt_license_key: StringProperty(
         name="License key", description="for GeoTracker", default=""
     )
+    ft_license_key: StringProperty(
+        name="License key", description="for FaceTracker", default=""
+    )
 
     fb_license_server: StringProperty(
         name="License Server host/IP", default="localhost"
     )
     gt_license_server: StringProperty(
+        name="License Server host/IP", default="localhost"
+    )
+    ft_license_server: StringProperty(
         name="License Server host/IP", default="localhost"
     )
 
@@ -428,6 +440,9 @@ class KTAddonPreferences(AddonPreferences):
     gt_license_server_port: IntProperty(
         name="License Server port", default=7096, min=0, max=65535
     )
+    ft_license_server_port: IntProperty(
+        name="License Server port", default=7096, min=0, max=65535
+    )
 
     fb_license_server_lock: BoolProperty(
         name="Variables from ENV", default=False
@@ -435,11 +450,17 @@ class KTAddonPreferences(AddonPreferences):
     gt_license_server_lock: BoolProperty(
         name="Variables from ENV", default=False
     )
+    ft_license_server_lock: BoolProperty(
+        name="Variables from ENV", default=False
+    )
 
     fb_license_server_auto: BoolProperty(
         name="Auto settings from Environment", default=True
     )
     gt_license_server_auto: BoolProperty(
+        name="Auto settings from Environment", default=True
+    )
+    ft_license_server_auto: BoolProperty(
         name="Auto settings from Environment", default=True
     )
 
@@ -451,8 +472,11 @@ class KTAddonPreferences(AddonPreferences):
         name="Type",
         items=_lic_type_items,
         default='ONLINE')
-
     gt_lic_type: EnumProperty(
+        name="Type",
+        items=_lic_type_items,
+        default='ONLINE')
+    ft_lic_type: EnumProperty(
         name="Type",
         items=_lic_type_items,
         default='ONLINE')
@@ -463,8 +487,13 @@ class KTAddonPreferences(AddonPreferences):
             default="",
             subtype="FILE_PATH"
     )
-
     gt_lic_path: StringProperty(
+            name="License file",
+            description="absolute path to license file",
+            default="",
+            subtype="FILE_PATH"
+    )
+    ft_lic_path: StringProperty(
             name="License file",
             description="absolute path to license file",
             default="",
@@ -620,15 +649,23 @@ class KTAddonPreferences(AddonPreferences):
         default=True
     )
 
+    # FaceTracker User Preferences
+    show_ft_user_preferences: BoolProperty(
+        name='FaceTracker Settings',
+        default=False
+    )
+
     def _license_was_accepted(self):
         return pkt_is_installed() or self.license_accepted
 
-    def _draw_plugin_license_info(self, layout, plugin_name: str,
-                                  plugin_key: str, plugin_prop_prefix: str):
+    def _draw_plugin_license_info(self, layout, product: int):
+        plugin_name = product_name(product)
+        plugin_prop_prefix = _product_prop_prefix(product)
+
         layout.label(text=f'{plugin_name} license info:')
         box = layout.box()
 
-        lm = get_product_license_manager(plugin_key)
+        lm = get_product_license_manager(product)
         _multi_line_text_to_output_labels(box, lm.license_status_text(
             strategy=pkt_module().LicenseCheckStrategy.LAZY))
 
@@ -642,7 +679,7 @@ class KTAddonPreferences(AddonPreferences):
             row.prop(self, f'{plugin_prop_prefix}_license_key')
             install_online_op = row.operator(Config.kt_install_license_online_idname)
             install_online_op.license_key = getattr(self, f'{plugin_prop_prefix}_license_key')
-            install_online_op.product = plugin_key
+            install_online_op.product = product
 
         elif lic_type_prop == 'OFFLINE':
             self.hardware_id = lm.hardware_id()
@@ -650,7 +687,7 @@ class KTAddonPreferences(AddonPreferences):
             row = layout.split(factor=0.65)
             row.label(text='Get an activated license file at our site:')
             op = row.operator(Config.kt_open_manual_install_page_idname, icon='URL')
-            op.product = plugin_key
+            op.product = product
 
             box = layout.box()
             row = box.split(factor=0.85)
@@ -661,7 +698,7 @@ class KTAddonPreferences(AddonPreferences):
             row.prop(self, f'{plugin_prop_prefix}_lic_path')
             install_offline_op = row.operator(Config.kt_install_license_offline_idname)
             install_offline_op.lic_path = getattr(self, f'{plugin_prop_prefix}_lic_path')
-            install_offline_op.product = plugin_key
+            install_offline_op.product = product
 
         elif lic_type_prop == 'FLOATING':
             env = pkt_module().LicenseManager.env_server_info()
@@ -696,7 +733,7 @@ class KTAddonPreferences(AddonPreferences):
             floating_install_op = row.operator(Config.kt_floating_connect_idname)
             floating_install_op.license_server = getattr(self, f'{plugin_prop_prefix}_license_server')
             floating_install_op.license_server_port = getattr(self, f'{plugin_prop_prefix}_license_server_port')
-            floating_install_op.product = plugin_key
+            floating_install_op.product = product
 
     def _draw_warning_labels(self, layout, content, alert=True, icon='INFO'):
         col = layout.column()
@@ -967,6 +1004,14 @@ class KTAddonPreferences(AddonPreferences):
 
         main_box.operator(GTConfig.gt_user_preferences_reset_all)
 
+    def _draw_ft_user_preferences(self, layout):
+        main_box = layout
+        if not _expandable_button(main_box, self, 'show_ft_user_preferences'):
+            return
+
+        box = main_box.box()
+        self._draw_pin_user_preferences(box)
+
     def _draw_core_python_problem(self, layout):
         if not pkt_is_python_supported():
             self._draw_unsupported_python(layout)
@@ -1019,12 +1064,16 @@ class KTAddonPreferences(AddonPreferences):
         return False
 
     def _draw_facebuilder_preferences(self, layout):
-        self._draw_plugin_license_info(layout, 'FaceBuilder', 'facebuilder', 'fb')
+        self._draw_plugin_license_info(layout, ProductType.FACEBUILDER)
         self._draw_fb_user_preferences(layout)
 
     def _draw_geotracker_preferences(self, layout):
-        self._draw_plugin_license_info(layout, 'GeoTracker', 'geotracker', 'gt')
+        self._draw_plugin_license_info(layout, ProductType.GEOTRACKER)
         self._draw_gt_user_preferences(layout)
+
+    def _draw_facetracker_preferences(self, layout):
+        self._draw_plugin_license_info(layout, ProductType.FACETRACKER)
+        self._draw_ft_user_preferences(layout)
 
     def _draw_unsupported_gpu_detected(self, layout):
         box = layout.box()
@@ -1059,3 +1108,11 @@ class KTAddonPreferences(AddonPreferences):
         row.prop(self, 'geotracker_enabled', text='')
         if _expandable_button(row, self, 'geotracker_expanded'):
             self._draw_geotracker_preferences(box)
+
+        if not Config.show_facetracker:
+            return
+        box = layout.box()
+        row = box.row(align=True)
+        row.prop(self, 'facetracker_enabled', text='')
+        if _expandable_button(row, self, 'facetracker_expanded'):
+            self._draw_facetracker_preferences(box)

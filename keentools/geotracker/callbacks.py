@@ -46,7 +46,7 @@ from ..utils.animation import count_fcurve_points
 from ..utils.manipulate import select_object_only, switch_to_camera
 from ..utils.ui_redraw import total_redraw_ui
 from .utils.tracking import check_unbreak_rotaion_is_needed
-from ..utils.unbreak import unbreak_object_rotation_act
+from ..utils.unbreak import unbreak_object_rotation_act, mark_object_keyframes
 
 
 _log = KTLogger(__name__)
@@ -173,6 +173,7 @@ def lens_change_callback() -> None:
 def update_camobj(geotracker, context: Any) -> None:
     _log.output(f'update_camobj: {geotracker.camobj}')
     settings = get_gt_settings()
+    product = settings.product_type()
 
     subscribe_camera_lens_watcher(geotracker.camobj)
 
@@ -202,6 +203,8 @@ def update_camobj(geotracker, context: Any) -> None:
         unbreak_status = unbreak_object_rotation_act(geotracker.camobj)
         if not unbreak_status.success:
             _log.error(unbreak_status.error_message)
+        else:
+            mark_object_keyframes(geotracker.camobj, product=product)
 
 
 def update_geomobj(geotracker, context: Any) -> None:
@@ -228,6 +231,7 @@ def update_geomobj(geotracker, context: Any) -> None:
         warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
              msg_content=msg)
 
+    product = settings.product_type()
     prefs = settings.preferences()
     if prefs.gt_auto_unbreak_rotation and \
             check_unbreak_rotaion_is_needed(geotracker.geomobj):
@@ -236,6 +240,8 @@ def update_geomobj(geotracker, context: Any) -> None:
         unbreak_status = unbreak_object_rotation_act(geotracker.geomobj)
         if not unbreak_status.success:
             _log.error(unbreak_status.error_message)
+        else:
+            mark_object_keyframes(geotracker.geomobj, product=product)
 
 
 def update_movieclip(geotracker, context: Any) -> None:
