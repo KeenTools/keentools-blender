@@ -23,10 +23,11 @@ from bpy.types import Area, Panel
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
+                             ft_settings,
                              facetracker_enabled,
                              addon_pinmode,
                              ProductType)
-from ...facetracker_config import FTConfig, get_ft_settings
+from ...facetracker_config import FTConfig
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...updater.panels import KTUpdater
 from ...utils.localview import check_context_localview, exit_area_localview
@@ -51,7 +52,7 @@ def _pinmode_escaper(area: Area) -> None:
 def _exit_from_localview_button(layout, context):
     if addon_pinmode() or not check_context_localview(context):
         return
-    settings = get_ft_settings()
+    settings = ft_settings()
     if settings.is_calculating():
         return
     col = layout.column()
@@ -61,7 +62,7 @@ def _exit_from_localview_button(layout, context):
 
 
 def _start_calculating_escaper() -> None:
-    settings = get_ft_settings()
+    settings = ft_settings()
     mode = settings.calculating_mode
     if mode == 'TRACKING' or mode == 'REFINE':
         bpy_timer_register(_calculating_escaper, first_interval=0.01)
@@ -75,13 +76,13 @@ def _start_pinmode_escaper(context: Any) -> None:
 
 def _calculating_escaper() -> None:
     _log.error('_calculating_escaper call')
-    settings = get_ft_settings()
+    settings = ft_settings()
     settings.stop_calculating()
     settings.user_interrupts = True
 
 
 def _geomobj_delete_handler() -> None:
-    settings = get_ft_settings()
+    settings = ft_settings()
     if settings.pinmode:
         FTLoader.out_pinmode()
     settings.fix_geotrackers()
@@ -110,7 +111,7 @@ class AllVisible(View3DPanel):
             return False
         if not pkt_is_installed():
             return False
-        settings = get_ft_settings()
+        settings = ft_settings()
         if not settings.current_geotracker_num >= 0:
             return False
         facetracker = settings.get_current_geotracker_item()
@@ -130,7 +131,7 @@ class FT_PT_FacetrackersPanel(View3DPanel):
         op.show = 'facetracker'
 
     def _facetracker_creation_offer(self, layout: Any) -> None:
-        settings = get_ft_settings()
+        settings = ft_settings()
         row = layout.row()
         if settings.is_calculating():
             row.scale_y = Config.btn_scale_y
@@ -142,7 +143,7 @@ class FT_PT_FacetrackersPanel(View3DPanel):
             row.operator(FTConfig.ft_create_facetracker_idname, icon='ADD')
 
     def _output_geotrackers_list(self, layout: Any) -> None:
-        settings = get_ft_settings()
+        settings = ft_settings()
         facetracker_num = settings.current_geotracker_num
 
         for i, facetracker in enumerate(settings.geotrackers):
@@ -222,7 +223,7 @@ class FT_PT_InputsPanel(AllVisible):
             return False
         if not pkt_is_installed():
             return False
-        settings = get_ft_settings()
+        settings = ft_settings()
         if not settings.current_geotracker_num >= 0:
             return False
         return True
@@ -291,7 +292,7 @@ class FT_PT_InputsPanel(AllVisible):
         op.product = ProductType.FACETRACKER
 
     def draw(self, context: Any) -> None:
-        settings = get_ft_settings()
+        settings = ft_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
             return
@@ -347,7 +348,7 @@ class FT_PT_TrackingPanel(AllVisible):
         layout = self.layout
         row = layout.row()
         row.active = False
-        settings = get_ft_settings()
+        settings = ft_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if geotracker:
             row.label(text='Camera' if geotracker.camera_mode() else 'Geometry')
@@ -472,7 +473,7 @@ class FT_PT_TrackingPanel(AllVisible):
                      text='', icon='X')
 
     def draw(self, context: Any) -> None:
-        settings = get_ft_settings()
+        settings = ft_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
             return

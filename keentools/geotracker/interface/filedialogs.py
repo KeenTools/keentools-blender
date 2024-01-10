@@ -35,11 +35,8 @@ from ...addon_config import (Config,
                              ProductType,
                              get_settings)
 from ...geotracker_config import GTConfig
-from ...facetracker_config import get_ft_settings
 from ...utils.images import (get_sequence_file_number,
-                             find_bpy_image_by_name,
-                             remove_bpy_image_by_name)
-from ...utils.materials import remove_mat_by_name
+                             find_bpy_image_by_name)
 from ...utils.video import (convert_movieclip_to_frames,
                             load_movieclip,
                             get_movieclip_duration)

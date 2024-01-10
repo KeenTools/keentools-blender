@@ -21,8 +21,8 @@ from typing import Any
 from bpy.props import IntProperty, StringProperty, FloatProperty
 
 from ..utils.kt_logging import KTLogger
-from ..facetracker_config import (FTConfig,
-                                  get_ft_settings)
+from ..addon_config import ft_settings
+from ..facetracker_config import FTConfig
 from ..tracker.pinmode import PinMode
 from .ui_strings import buttons
 from ..tracker.tracking_blendshapes import reorder_tracking_frames
@@ -47,7 +47,7 @@ class FT_OT_PinMode(PinMode):
 
     @classmethod
     def get_settings(cls) -> Any:
-        return get_ft_settings()
+        return ft_settings()
 
     def perform_checks_before_pinmode(self) -> None:
         settings = self.get_settings()

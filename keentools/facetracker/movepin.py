@@ -21,7 +21,8 @@ from typing import Any, Set, Tuple, List
 from bpy.props import StringProperty, FloatProperty, BoolProperty
 
 from ..utils.kt_logging import KTLogger
-from ..facetracker_config import FTConfig, get_ft_settings
+from ..addon_config import ft_settings
+from ..facetracker_config import FTConfig
 from .ui_strings import buttons
 from ..tracker.movepin import MovePin
 from ..utils.bpy_common import bpy_current_frame
@@ -56,7 +57,7 @@ class FT_OT_MovePin(MovePin):
 
     @classmethod
     def get_settings(cls) -> Any:
-        return get_ft_settings()
+        return ft_settings()
 
     def update_wireframe(self):
         settings = self.get_settings()
