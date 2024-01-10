@@ -22,10 +22,10 @@ from bpy.types import Object
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
+                            gt_settings,
                             get_operator,
                             ErrorType)
-from ..geotracker_config import (GTConfig,
-                                 get_gt_settings)
+from ..geotracker_config import GTConfig
 from .gtloader import GTLoader
 from ..utils.images import (get_background_image_object,
                             tone_mapping,
@@ -113,14 +113,14 @@ def subscribe_movie_clip_color_space_watcher(geotracker: Any) -> None:
 def color_space_change_callback(old_name: str) -> None:
     _log.output('color_space_change_callback call')
     _log.output(f'old color space: {old_name}')
-    settings = get_gt_settings()
+    settings = gt_settings()
     geotracker = settings.get_current_geotracker_item()
     update_movieclip(geotracker, None)
 
 
 def lens_change_callback() -> None:
     _log.output(_log.color('magenta', 'lens_change_callback call'))
-    settings = get_gt_settings()
+    settings = gt_settings()
     geotracker = settings.get_current_geotracker_item()
     if not settings.pinmode and not settings.is_calculating():
         _log.output('lens_change_callback stop 1')
@@ -172,7 +172,7 @@ def lens_change_callback() -> None:
 
 def update_camobj(geotracker, context: Any) -> None:
     _log.output(f'update_camobj: {geotracker.camobj}')
-    settings = get_gt_settings()
+    settings = gt_settings()
     product = settings.product_type()
 
     subscribe_camera_lens_watcher(geotracker.camobj)
@@ -209,7 +209,7 @@ def update_camobj(geotracker, context: Any) -> None:
 
 def update_geomobj(geotracker, context: Any) -> None:
     _log.output(f'update_geomobj: {geotracker.geomobj}')
-    settings = get_gt_settings()
+    settings = gt_settings()
 
     if not geotracker.geomobj and settings.pinmode:
         GTLoader.out_pinmode()
@@ -276,7 +276,7 @@ def update_movieclip(geotracker, context: Any) -> None:
 
 def update_precalc_path(geotracker, context: Any) -> None:
     _log.output('update_precalc_path')
-    settings = get_gt_settings()
+    settings = gt_settings()
     if settings.ui_write_mode:
         return
     ending = '.precalc'
@@ -350,7 +350,7 @@ def update_focal_length_mode(geotracker, context: Any) -> None:
 
 def update_lens_mode(geotracker, context: Any=None) -> None:
     _log.output(f'update_lens_mode: {geotracker.lens_mode}')
-    settings = get_gt_settings()
+    settings = gt_settings()
     if settings.ui_write_mode:
         return
 
@@ -376,7 +376,7 @@ def update_lens_mode(geotracker, context: Any=None) -> None:
 
 def update_track_focal_length(geotracker, context: Any) -> None:
     _log.output('update_track_focal_length')
-    settings = get_gt_settings()
+    settings = gt_settings()
     if settings.ui_write_mode:
         return
     gt = GTLoader.kt_geotracker()
@@ -388,14 +388,14 @@ def update_track_focal_length(geotracker, context: Any) -> None:
 
 def update_mask_3d(geotracker, context: Any) -> None:
     GTLoader.update_viewport_shaders(wireframe=True)
-    settings = get_gt_settings()
+    settings = gt_settings()
     settings.reload_current_geotracker()
     settings.reload_mask_3d()
 
 
 def update_mask_2d(geotracker, context: Any) -> None:
     _log.output('update_mask_2d')
-    settings = get_gt_settings()
+    settings = gt_settings()
     settings.reload_current_geotracker()
     if not geotracker.mask_2d:
         remove_background_image_object(geotracker.camobj, index=1)
@@ -422,14 +422,14 @@ def update_spring_pins_back(geotracker, context: Any) -> None:
         GTLoader.load_geotracker()
         GTLoader.spring_pins_back()
         GTLoader.save_geotracker()
-        settings = get_gt_settings()
+        settings = gt_settings()
         if settings.pinmode:
             GTLoader.update_viewport_shaders(pins_and_residuals=True)
             GTLoader.viewport_area_redraw()
 
 
 def update_solve_for_camera(geotracker, context: Any) -> None:
-    settings = get_gt_settings()
+    settings = gt_settings()
     if not settings.pinmode:
         return
     obj = geotracker.animatable_object()
@@ -443,7 +443,7 @@ def update_solve_for_camera(geotracker, context: Any) -> None:
 
 
 def update_smoothing(geotracker, context: Any) -> None:
-    settings = get_gt_settings()
+    settings = gt_settings()
     if settings.ui_write_mode:
         return
     gt = GTLoader.kt_geotracker()
@@ -460,7 +460,7 @@ def update_stabilize_viewport_enabled(settings, context: Any) -> None:
 
 def update_locks(geotracker, context: Any) -> None:
     _log.output('update_locks')
-    settings = get_gt_settings()
+    settings = gt_settings()
     if settings.ui_write_mode:
         return
     gt = GTLoader.kt_geotracker()

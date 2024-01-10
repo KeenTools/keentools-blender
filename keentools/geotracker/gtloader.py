@@ -19,8 +19,7 @@
 from typing import Any
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import ProductType
-from ..geotracker_config import get_gt_settings
+from ..addon_config import gt_settings, ProductType
 from ..tracker.loader import Loader
 
 
@@ -34,7 +33,7 @@ class GTLoader(Loader):
 
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return gt_settings()
 
 
 GTLoader.init_handlers()

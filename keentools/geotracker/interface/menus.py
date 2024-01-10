@@ -18,8 +18,8 @@
 
 from bpy.types import Menu, Operator
 
-from ...addon_config import ProductType
-from ...geotracker_config import GTConfig, get_gt_settings
+from ...addon_config import gt_settings, ProductType
+from ...geotracker_config import GTConfig
 from ...utils.bpy_common import bpy_call_menu
 from ..ui_strings import buttons
 
@@ -31,7 +31,7 @@ class GT_MT_ClipMenu(Menu):
 
     def draw(self, context):
         layout = self.layout
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
 
         layout.separator()

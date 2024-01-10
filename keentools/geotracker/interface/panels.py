@@ -25,10 +25,11 @@ from bpy.types import Area, Panel
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
+                             gt_settings,
                              geotracker_enabled,
                              addon_pinmode,
                              ProductType)
-from ...geotracker_config import GTConfig, get_gt_settings
+from ...geotracker_config import GTConfig
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...updater.panels import (KTUpdater,
                                KT_PT_UpdatePanel,
@@ -64,20 +65,20 @@ def _start_pinmode_escaper(context: Any) -> None:
 
 def _calculating_escaper() -> None:
     _log.error('_calculating_escaper call')
-    settings = get_gt_settings()
+    settings = gt_settings()
     settings.stop_calculating()
     settings.user_interrupts = True
 
 
 def _start_calculating_escaper() -> None:
-    settings = get_gt_settings()
+    settings = gt_settings()
     mode = settings.calculating_mode
     if mode == 'TRACKING' or mode == 'REFINE':
         bpy_timer_register(_calculating_escaper, first_interval=0.01)
 
 
 def _geomobj_delete_handler() -> None:
-    settings = get_gt_settings()
+    settings = gt_settings()
     if settings.pinmode:
         GTLoader.out_pinmode()
     settings.fix_geotrackers()
@@ -91,7 +92,7 @@ def _start_geomobj_delete_handler() -> None:
 def _exit_from_localview_button(layout, context):
     if addon_pinmode() or not check_context_localview(context):
         return
-    settings = get_gt_settings()
+    settings = gt_settings()
     if settings.is_calculating():
         return
     col = layout.column()
@@ -118,7 +119,7 @@ class AllVisible(View3DPanel):
             return False
         if not pkt_is_installed():
             return False
-        settings = get_gt_settings()
+        settings = gt_settings()
         if not settings.current_geotracker_num >= 0:
             return False
         geotracker = settings.get_current_geotracker_item()
@@ -126,7 +127,7 @@ class AllVisible(View3DPanel):
 
 
 def _draw_calculating_indicator(layout: Any) -> None:
-    settings = get_gt_settings()
+    settings = gt_settings()
     row = layout.row(align=True)
     row.prop(settings, 'user_percent', text='Calculating...')
     col = row.column(align=True)
@@ -149,7 +150,7 @@ class GT_PT_GeotrackersPanel(View3DPanel):
         op.show = 'geotracker'
 
     def _geotracker_creation_offer(self, layout: Any) -> None:
-        settings = get_gt_settings()
+        settings = gt_settings()
         row = layout.row()
         if settings.is_calculating():
             row.scale_y = Config.btn_scale_y
@@ -161,7 +162,7 @@ class GT_PT_GeotrackersPanel(View3DPanel):
             row.operator(GTConfig.gt_create_geotracker_idname, icon='ADD')
 
     def _output_geotrackers_list(self, layout: Any) -> None:
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker_num = settings.current_geotracker_num
 
         for i, geotracker in enumerate(settings.geotrackers):
@@ -267,7 +268,7 @@ class GT_PT_InputsPanel(AllVisible):
             return False
         if not pkt_is_installed():
             return False
-        settings = get_gt_settings()
+        settings = gt_settings()
         if not settings.current_geotracker_num >= 0:
             return False
         return True
@@ -336,7 +337,7 @@ class GT_PT_InputsPanel(AllVisible):
         op.product = ProductType.GEOTRACKER
 
     def draw(self, context: Any) -> None:
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
             return
@@ -453,7 +454,7 @@ class GT_PT_MasksPanel(AllVisible):
         layout = self.layout
         row = layout.row()
         row.active = False
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if self._mask_3d_enabled(geotracker):
             if self._mask_2d_enabled(geotracker):
@@ -467,7 +468,7 @@ class GT_PT_MasksPanel(AllVisible):
                      text='', icon='QUESTION', emboss=False)
 
     def draw(self, context: Any) -> None:
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
             return
@@ -496,7 +497,7 @@ class GT_PT_CameraPanel(AllVisible):
             return False
         if not pkt_is_installed():
             return False
-        settings = get_gt_settings()
+        settings = gt_settings()
         if not settings.current_geotracker_num >= 0:
             return False
         geotracker = settings.get_current_geotracker_item()
@@ -533,14 +534,14 @@ class GT_PT_CameraPanel(AllVisible):
     def draw_header_preset(self, context: Any) -> None:
         layout = self.layout
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
 
         self._camera_header_lens_info(layout, geotracker)
         self._camera_header_help_button(layout)
 
     def draw(self, context: Any) -> None:
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker or not geotracker.camobj:
             return
@@ -684,7 +685,7 @@ class GT_PT_TrackingPanel(AllVisible):
         layout = self.layout
         row = layout.row()
         row.active = False
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if geotracker:
             row.label(text='Camera' if geotracker.camera_mode() else 'Geometry')
@@ -693,7 +694,7 @@ class GT_PT_TrackingPanel(AllVisible):
             text='', icon='QUESTION', emboss=False)
 
     def draw(self, context: Any) -> None:
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
             return
@@ -792,7 +793,7 @@ class GT_PT_AppearanceSettingsPanel(AllVisible):
 
     def draw(self, context: Any) -> None:
         layout = self.layout
-        settings = get_gt_settings()
+        settings = gt_settings()
         self._appearance_wireframe_settings(settings, layout)
         self._appearance_pin_settings(settings, layout)
         self._appearance_image_adjustment(settings, layout)
@@ -829,7 +830,7 @@ class GT_PT_TexturePanel(AllVisible):
         row.operator(GTConfig.gt_bake_from_selected_frames_idname,
                      icon='IMAGE')
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         texture_exists = find_bpy_image_by_name(
             geotracker.preview_texture_name())
@@ -873,7 +874,7 @@ class GT_PT_TexturePanel(AllVisible):
 
     def draw(self, context: Any) -> None:
         layout = self.layout
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
 
         if not geotracker or not geotracker.geomobj or \
@@ -920,7 +921,7 @@ class GT_PT_AnimationPanel(AllVisible):
     bl_options = {'DEFAULT_CLOSED'}
 
     def _draw_dist_between_camera_and_object(self, layout):
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if geotracker and geotracker.geomobj and geotracker.camobj:
             geom_loc = geotracker.geomobj.matrix_world.to_translation()
@@ -938,7 +939,7 @@ class GT_PT_AnimationPanel(AllVisible):
 
     def draw(self, context: Any) -> None:
         layout = self.layout
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
 
         layout.label(text='Transform')
@@ -1036,7 +1037,7 @@ class GT_PT_SmoothingPanel(AllVisible):
         row = layout.row()
         row.active = False
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if geotracker and \
                 (geotracker.smoothing_depth_coeff != 0 or
@@ -1067,7 +1068,7 @@ class GT_PT_SmoothingPanel(AllVisible):
         row.prop(geotracker, 'locks', index=2, text='Z')
 
     def draw(self, context: Any) -> None:
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item(safe=True)
         if not geotracker:
             return

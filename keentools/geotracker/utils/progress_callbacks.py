@@ -17,9 +17,9 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from ...utils.kt_logging import KTLogger
-from ...blender_independent_packages.pykeentools_loader import module as pkt_module
-from ...geotracker_config import get_gt_settings
+from ...addon_config import gt_settings
 from ...utils.bpy_common import bpy_progress_update
+from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 _log = KTLogger(__name__)
@@ -59,7 +59,7 @@ class RFProgressCallBack(pkt_module().RefineProgressCallback):
             'magenta',
             f'refined_frames: {self.refined_frames}/{self.total_frames}'))
         if type(self.total_frames) == int and self.total_frames > 0:
-            settings = get_gt_settings()
+            settings = gt_settings()
             settings.user_percent = 100 * self.refined_frames / self.total_frames
             _log.output(f'REFINE PERCENT: {settings.user_percent}')
         return False

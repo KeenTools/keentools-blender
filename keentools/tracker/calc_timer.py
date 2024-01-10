@@ -24,8 +24,8 @@ import bpy
 from bpy.types import Area
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import get_operator, ProductType, get_settings
-from ..geotracker_config import get_gt_settings, GTConfig
+from ..addon_config import gt_settings, get_operator, ProductType, get_settings
+from ..geotracker_config import GTConfig
 from ..facetracker_config import FTConfig
 from ..utils.manipulate import exit_area_localview
 from ..utils.ui_redraw import force_ui_redraw
@@ -208,7 +208,7 @@ class CalcTimer(TimerMixin):
 class _CommonTimer(TimerMixin):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return gt_settings()
 
     @classmethod
     def user_interrupt_operator_name(cls):

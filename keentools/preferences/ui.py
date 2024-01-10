@@ -35,6 +35,7 @@ from ..blender_independent_packages.pykeentools_loader import (
     loaded as pkt_loaded)
 from ..addon_config import (Config,
                             fb_settings,
+                            gt_settings,
                             get_addon_preferences,
                             get_operator,
                             is_blender_supported,
@@ -42,7 +43,7 @@ from ..addon_config import (Config,
                             ProductType,
                             product_name)
 from ..facebuilder_config import FBConfig
-from ..geotracker_config import GTConfig, get_gt_settings
+from ..geotracker_config import GTConfig
 from .formatting import split_by_br_or_newlines_ignore_empty
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
@@ -170,7 +171,7 @@ class GTPREF_OT_UserPreferencesGetColors(Operator):
 
     def execute(self, _):
         _log.output('gt user_preferences_get_colors')
-        settings = get_gt_settings()
+        settings = gt_settings()
         prefs = settings.preferences()
         color = settings.wireframe_color
         opacity = settings.wireframe_opacity
@@ -210,7 +211,7 @@ class KTPREF_OT_UserPreferencesChanger(Operator):
         elif self.action == 'revert_gt_default_mask_2d_colors':
             _reset_user_preferences_parameter_to_default('gt_mask_2d_color')
             _reset_user_preferences_parameter_to_default('gt_mask_2d_opacity')
-            settings = get_gt_settings()
+            settings = gt_settings()
             prefs = settings.preferences()
             settings.mask_2d_color = prefs.gt_mask_2d_color
             settings.mask_2d_opacity = prefs.gt_mask_2d_opacity
@@ -293,19 +294,19 @@ def _update_user_preferences_pin_sensitivity(addon_prefs, _):
 
 
 def _update_mask_3d(addon_prefs, _):
-    settings = get_gt_settings()
+    settings = gt_settings()
     settings.mask_3d_color = addon_prefs.gt_mask_3d_color
     settings.mask_3d_opacity = addon_prefs.gt_mask_3d_opacity
 
 
 def _update_mask_2d(addon_prefs, _):
-    settings = get_gt_settings()
+    settings = gt_settings()
     settings.mask_2d_color = addon_prefs.gt_mask_2d_color
     settings.mask_2d_opacity = addon_prefs.gt_mask_2d_opacity
 
 
 def _update_gt_wireframe(addon_prefs, _):
-    settings = get_gt_settings()
+    settings = gt_settings()
     settings.wireframe_color = addon_prefs.gt_wireframe_color
     settings.wireframe_opacity = addon_prefs.gt_wireframe_opacity
 

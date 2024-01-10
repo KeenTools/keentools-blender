@@ -201,6 +201,3 @@ class GTConfig:
     tex_builder_matname_template = '{}_preview_mat'
 
     hidden_feature: bool = True
-
-
-get_gt_settings: Callable = gt_settings

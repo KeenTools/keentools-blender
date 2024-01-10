@@ -23,8 +23,8 @@ from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, get_operator, ErrorType
-from ..geotracker_config import GTConfig, get_gt_settings
+from ..addon_config import Config, gt_settings, get_operator, ErrorType
+from ..geotracker_config import GTConfig
 from ..utils.coords import (get_camera_border,
                             image_space_to_region,
                             frame_to_image_space,
@@ -230,11 +230,11 @@ class GTViewport(KTViewport):
         self.points3d().create_batch()
 
     def update_pin_sensitivity(self) -> None:
-        settings = get_gt_settings()
+        settings = gt_settings()
         self._point_sensitivity = settings.pin_sensitivity
 
     def update_pin_size(self) -> None:
-        settings = get_gt_settings()
+        settings = gt_settings()
         self.points2d().set_point_size(settings.pin_size)
         self.points3d().set_point_size(
             settings.pin_size * GTConfig.surf_pin_size_scale)
@@ -367,7 +367,7 @@ class GTViewport(KTViewport):
         wire.create_batch()
 
     def update_wireframe_colors(self) -> None:
-        settings = get_gt_settings()
+        settings = gt_settings()
         wf = self.wireframer()
         wf.init_color_data((*settings.wireframe_color,
                             settings.wireframe_opacity))
