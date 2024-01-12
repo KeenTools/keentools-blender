@@ -16,9 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy
-
-
 from .utils.kt_logging import KTLogger
 
 
@@ -27,14 +24,12 @@ _log = KTLogger(__name__)
 
 _PT = 'FACETRACKER_PT_'
 _MT = 'FACETRACKER_MT_'
-_prefix = 'keentools_ft'
 
 
 class FTConfig:
     operators = 'keentools_ft'
     ft_tool_name = 'FaceTracker'
     ft_tab_category = 'FaceTracker'
-    ft_global_var_name = _prefix + '_settings'
 
     # Operators
     ft_create_facetracker_idname = operators + '.create_facetracker'
@@ -46,14 +41,20 @@ class FTConfig:
     ft_switch_to_camera_mode_idname = operators + '.switch_to_camera_mode'
     ft_switch_to_geometry_mode_idname = operators + '.switch_to_geometry_mode'
     ft_create_precalc_idname = operators + '.create_precalc'
-    ft_sequence_filebrowser_idname = operators + '.sequence_filebrowser'
+
+    ft_sequence_filebrowser_idname = 'keentools_gt' + '.sequence_filebrowser'  # TODO: Check operator!
+
     ft_mask_sequence_filebrowser_idname = \
         operators + '.mask_sequence_filebrowser'
-    ft_choose_precalc_file_idname = operators + '.choose_precalc_file'
+
+    ft_choose_precalc_file_idname = 'keentools_gt' + '.choose_precalc_file'  # TODO: Check operator!
+
     ft_split_video_to_frames_idname = operators + '.split_video_to_frames'
     ft_split_video_to_frames_exec_idname = \
         operators + '.split_video_to_frames_exec'
-    ft_video_snapshot_idname = operators + '.video_snapshot'
+
+    ft_video_snapshot_idname = 'keentools_gt' + '.video_snapshot'  # TODO: Check operator!
+
     ft_reproject_tex_sequence_idname = operators + '.reproject_tex_sequence'
     ft_texture_file_export_idname = operators + '.texture_file_export'
     ft_delete_texture_idname = operators + '.delete_texture'
@@ -113,8 +114,11 @@ class FTConfig:
 
     ft_render_with_background_idname = operators + '.render_with_background'
     ft_revert_default_render_idname = operators + '.revert_default_render'
-    ft_analyze_call_idname = operators + '.analyze_call'
-    ft_precalc_info_idname = operators + '.precalc_info'
+
+    ft_analyze_call_idname = 'keentools_gt' + '.analyze_call'  # TODO: Check operator!
+
+    ft_precalc_info_idname = 'keentools_gt' + '.precalc_info'  # TODO: Check operator!
+
     ft_confirm_recreate_precalc_idname = operators + '.confirm_recreate_precalc'
     ft_auto_name_precalc_idname = operators + '.auto_name_precalc'
     ft_unbreak_rotation_idname = operators + '.unbreak_rotation'
@@ -158,6 +162,3 @@ class FTConfig:
     ft_help_smoothing_idname = operators + '.help_smoothing'
 
     ft_action_name = 'ftAction'
-
-def get_ft_settings():
-    return getattr(bpy.context.scene, FTConfig.ft_global_var_name)

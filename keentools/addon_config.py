@@ -21,10 +21,16 @@ from dataclasses import dataclass
 import os
 
 import bpy
+from bpy.types import Scene
+from bpy.props import PointerProperty
+
+from .utils.kt_logging import KTLogger
 from .utils.version import BVersion
 
 
-_company = 'keentools'
+_log = KTLogger(__name__)
+
+
 _PT = 'KEENTOOLS_PT_'
 
 
@@ -33,7 +39,7 @@ class Config:
     supported_blender_versions = ((2, 80), (2, 81), (2, 82), (2, 83),
                                   (2, 90), (2, 91), (2, 92), (2, 93),
                                   (3, 0), (3, 1), (3, 2), (3, 3), (3, 4),
-                                  (3, 5), (3, 6))
+                                  (3, 5), (3, 6), (4, 0))
     minimal_blender_api = (2, 80, 60)
 
     fb_tab_category = 'FaceBuilder'
@@ -113,8 +119,8 @@ class Config:
     kt_fb_shader_testing_idname = operators + '.fb_shader_testing'
 
     # Object Custom Properties
-    core_version_prop_name = _company + '_version'
-    viewport_state_prop_name = _company + '_viewport_state'
+    core_version_prop_name = 'keentools_version'
+    viewport_state_prop_name = 'keentools_viewport_state'
 
     # Constants
     surf_pin_size_scale: float = 0.85
@@ -226,66 +232,42 @@ def facetracker_enabled() -> bool:
     return prefs.facetracker_enabled
 
 
-def _get_fb_settings() -> Optional[Any]:
-    name = Config.fb_global_var_name
-    if not hasattr(bpy.context.scene, name):
-        return None
-    return getattr(bpy.context.scene, name)
+def fb_settings() -> Optional[Any]:
+    return getattr(bpy.context.scene, Config.fb_global_var_name, None)
 
 
-def _get_gt_settings() -> Optional[Any]:
-    name = Config.gt_global_var_name
-    if not hasattr(bpy.context.scene, name):
-        return None
-    return getattr(bpy.context.scene, name)
+def gt_settings() -> Optional[Any]:
+    return getattr(bpy.context.scene, Config.gt_global_var_name, None)
 
 
-def _get_ft_settings() -> Optional[Any]:
-    name = Config.ft_global_var_name
-    if not hasattr(bpy.context.scene, name):
-        return None
-    return getattr(bpy.context.scene, name)
-
-
-# TODO: Replace get_xx_settings functions with this
-fb_settings: Callable = _get_fb_settings
-gt_settings: Callable = _get_gt_settings
-ft_settings: Callable = _get_gt_settings
-
-
-def set_fb_settings_func(func: Callable) -> None:
-    global fb_settings
-    fb_settings = func
-
-
-def set_gt_settings_func(func: Callable) -> None:
-    global gt_settings
-    gt_settings = func
-
-
-def set_ft_settings_func(func: Callable) -> None:
-    global ft_settings
-    ft_settings = func
+def ft_settings() -> Optional[Any]:
+    return getattr(bpy.context.scene, Config.ft_global_var_name, None)
 
 
 def gt_pinmode() -> bool:
     if not geotracker_enabled():
         return False
-    settings = _get_gt_settings()
+    settings = gt_settings()
+    if not settings:
+        return False
     return settings.pinmode
 
 
 def fb_pinmode() -> bool:
     if not facebuilder_enabled():
         return False
-    settings = _get_fb_settings()
+    settings = fb_settings()
+    if not settings:
+        return False
     return settings.pinmode
 
 
 def ft_pinmode() -> bool:
     if not facetracker_enabled():
         return False
-    settings = _get_ft_settings()
+    settings = ft_settings()
+    if not settings:
+        return False
     return settings.pinmode
 
 
@@ -293,22 +275,50 @@ def addon_pinmode() -> bool:
     return fb_pinmode() or gt_pinmode() or ft_pinmode()
 
 
-def show_user_preferences(*, facebuilder: Optional[bool]=None,
-                          geotracker: Optional[bool]=None) -> None:
+def add_addon_settings_var(name: str, settings_type: Any) -> None:
+    setattr(Scene, name, PointerProperty(type=settings_type))
+
+
+def remove_addon_settings_var(name: str) -> None:
+    delattr(Scene, name)
+
+
+def check_addon_settings_var_exists(name: str) -> bool:
+    return hasattr(Scene, name)
+
+
+def check_addon_settings_var_type(name: str) -> Any:
+    if not hasattr(Scene, name):
+        return None
+    attr = getattr(Scene, name)
+    if BVersion.property_keywords_enabled:
+        return attr.keywords['type']
+    else:
+        return attr[1]['type']
+
+
+def show_user_preferences(*, facebuilder: Optional[bool] = None,
+                          geotracker: Optional[bool] = None,
+                          facetracker: Optional[bool] = None) -> None:
     prefs = get_addon_preferences()
     if facebuilder is not None:
         prefs.show_fb_user_preferences = facebuilder
     if geotracker is not None:
         prefs.show_gt_user_preferences = geotracker
+    if facetracker is not None:
+        prefs.show_ft_user_preferences = facetracker
 
 
-def show_tool_preferences(*, facebuilder: Optional[bool]=None,
-                          geotracker: Optional[bool]=None) -> None:
+def show_tool_preferences(*, facebuilder: Optional[bool] = None,
+                          geotracker: Optional[bool] = None,
+                          facetracker: Optional[bool] = None) -> None:
     prefs = get_addon_preferences()
     if facebuilder is not None:
         prefs.facebuilder_expanded = facebuilder
     if geotracker is not None:
         prefs.geotracker_expanded = geotracker
+    if facetracker is not None:
+        prefs.facetracker_expanded = facetracker
 
 
 def get_operator(operator_id_name: str) -> Any:
@@ -348,3 +358,28 @@ class ProductType:
     FACEBUILDER: int = 0
     GEOTRACKER: int = 1
     FACETRACKER: int = 2
+
+
+def get_settings(product: int) -> Any:
+    if product == ProductType.GEOTRACKER:
+        return gt_settings()
+    if product == ProductType.FACETRACKER:
+        return ft_settings()
+    if product == ProductType.FACEBUILDER:
+        return fb_settings()
+    assert False, f'get_settings: Improper product {product}'
+
+
+def product_name(product: int) -> str:
+    if product == ProductType.GEOTRACKER:
+        return 'GeoTracker'
+    if product == ProductType.FACETRACKER:
+        return 'FaceTracker'
+    if product == ProductType.FACEBUILDER:
+        return 'FaceBuilder'
+    assert False, f'product_name: Improper product {product}'
+
+
+def output_import_statistics() -> None:
+    names = "\n".join(_log.module_names())
+    _log.output('import sequence:\n' + _log.color('green', f'{names}'))

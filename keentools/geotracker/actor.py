@@ -20,9 +20,10 @@ from bpy.types import Operator
 from bpy.props import StringProperty, IntProperty
 
 from ..utils.kt_logging import KTLogger
+from ..addon_config import ProductType
 from ..geotracker_config import GTConfig
-from .utils.geotracker_acts import center_geo_act
 from .ui_strings import buttons
+from .utils.geotracker_acts import center_geo_action
 
 
 _log = KTLogger(__name__)
@@ -44,7 +45,8 @@ class GT_OT_Actor(Operator):
         _log.output('ACTION call: {}'.format(self.action))
 
         if self.action == 'none':
-            act_status = center_geo_act()
+            product = ProductType.GEOTRACKER
+            act_status = center_geo_action(product=product)
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
             else:

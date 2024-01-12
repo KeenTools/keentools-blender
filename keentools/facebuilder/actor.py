@@ -24,8 +24,8 @@ from bpy.props import StringProperty, IntProperty
 from ..utils.kt_logging import KTLogger
 from .utils.manipulate import get_current_head
 from ..utils.coords import xy_to_xz_rotation_matrix_4x4
-from ..addon_config import get_operator
-from ..facebuilder_config import FBConfig, get_fb_settings
+from ..addon_config import fb_settings, get_operator
+from ..facebuilder_config import FBConfig
 from ..facebuilder.utils.exif_reader import auto_setup_camera_from_exif
 from ..utils.blendshapes import (create_blendshape_controls,
                                  make_control_panel,
@@ -135,7 +135,7 @@ class FB_OT_CameraActor(bpy.types.Operator):
         _log.output(f'headnum: {self.headnum} camnum: {self.camnum} '
                     f'num: {self.num}')
 
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_head(self.headnum)
         camera = head.get_camera(settings.current_camnum)
 

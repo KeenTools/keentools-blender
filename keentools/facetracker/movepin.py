@@ -21,8 +21,8 @@ from typing import Any, Set, Tuple, List
 from bpy.props import StringProperty, FloatProperty, BoolProperty
 
 from ..utils.kt_logging import KTLogger
-from ..facetracker_config import FTConfig, get_ft_settings
-from .ftloader import FTLoader
+from ..addon_config import ft_settings
+from ..facetracker_config import FTConfig
 from .ui_strings import buttons
 from ..tracker.movepin import MovePin
 from ..utils.bpy_common import bpy_current_frame
@@ -57,17 +57,12 @@ class FT_OT_MovePin(MovePin):
 
     @classmethod
     def get_settings(cls) -> Any:
-        return get_ft_settings()
-
-    @classmethod
-    def get_loader(cls) -> Any:
-        return FTLoader
+        return ft_settings()
 
     def update_wireframe(self):
-        loader = self.get_loader()
-        loader.update_viewport_shaders(wireframe_data=True,
-                                       wireframe=True)
+        settings = self.get_settings()
+        settings.loader().update_viewport_shaders(wireframe_data=True,
+                                                  wireframe=True)
 
     def update_on_left_mouse_release(self) -> None:
-        create_relative_shape_keyframe(bpy_current_frame(),
-                                       keyframe_type='KEYFRAME')
+        create_relative_shape_keyframe(bpy_current_frame())

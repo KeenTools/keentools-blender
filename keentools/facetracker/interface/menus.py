@@ -18,41 +18,40 @@
 
 from bpy.types import Menu, Operator
 
-from ...addon_config import gt_settings, ProductType
-from ...geotracker_config import GTConfig
-from ...utils.bpy_common import bpy_call_menu
+from ...addon_config import ft_settings, ProductType
+from ...facetracker_config import FTConfig
 from ..ui_strings import buttons
 
 
-class GT_MT_ClipMenu(Menu):
-    bl_idname = GTConfig.gt_clip_menu_idname
+class FT_MT_ClipMenu(Menu):
+    bl_idname = FTConfig.ft_clip_menu_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
     def draw(self, context):
         layout = self.layout
-        settings = gt_settings()
+        settings = ft_settings()
         geotracker = settings.get_current_geotracker_item()
 
         layout.separator()
         col = layout.column()
-        op = col.operator(GTConfig.gt_sequence_filebrowser_idname,
+        op = col.operator(FTConfig.ft_sequence_filebrowser_idname,
                           icon='FILEBROWSER')
-        op.product = ProductType.GEOTRACKER
+        op.product = ProductType.FACETRACKER
 
         if not geotracker or not geotracker.movie_clip:
             return
         col.separator()
-        op = col.operator(GTConfig.gt_video_snapshot_idname, icon='IMAGE')
-        op.product = ProductType.GEOTRACKER
+        op = col.operator(FTConfig.ft_video_snapshot_idname, icon='IMAGE')
+        op.product = ProductType.FACETRACKER
 
         col.separator()
-        col.operator(GTConfig.gt_split_video_to_frames_exec_idname,
+        col.operator(FTConfig.ft_split_video_to_frames_exec_idname,
                      icon='RENDER_RESULT')
 
 
-class GT_MT_ClearAllTrackingMenu(Menu):
-    bl_idname = GTConfig.gt_clear_tracking_menu_idname
+class FT_MT_ClearAllTrackingMenu(Menu):
+    bl_idname = FTConfig.ft_clear_tracking_menu_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
@@ -60,23 +59,8 @@ class GT_MT_ClearAllTrackingMenu(Menu):
         layout = self.layout
 
         col = layout.column()
-        col.operator(GTConfig.gt_clear_tracking_except_keyframes_idname,
+        col.operator(FTConfig.ft_clear_tracking_except_keyframes_idname,
                      icon='PANEL_CLOSE')
         col.separator()
-        col.operator(GTConfig.gt_clear_all_tracking_idname,
+        col.operator(FTConfig.ft_clear_all_tracking_idname,
                      icon='CANCEL')
-
-
-class GT_OT_ClearAllTrackingMenuExec(Operator):
-    bl_idname = GTConfig.gt_clear_tracking_menu_exec_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def draw(self, context):
-        pass
-
-    def execute(self, context):
-        bpy_call_menu('INVOKE_DEFAULT',
-                      name=GTConfig.gt_clear_tracking_menu_idname)
-        return {'FINISHED'}

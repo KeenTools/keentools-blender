@@ -28,8 +28,12 @@ from ...updater.panels import (KT_PT_UpdatePanel,
                                KT_PT_DownloadingProblemPanel,
                                KT_PT_UpdatesInstallationPanel)
 from ...updater.utils import KTUpdater
-from ...addon_config import Config, facebuilder_enabled, addon_pinmode
-from ...facebuilder_config import FBConfig, get_fb_settings
+from ...addon_config import (Config,
+                             fb_settings,
+                             facebuilder_enabled,
+                             addon_pinmode,
+                             ProductType)
+from ...facebuilder_config import FBConfig
 from ...utils.version import BVersion
 from ..fbloader import FBLoader
 from ...utils.manipulate import (has_no_blendshape,
@@ -46,7 +50,7 @@ from ...utils.icons import KTIcons
 _log = KTLogger(__name__)
 
 
-_fb_grace_timer = KTGraceTimer('facebuilder')
+_fb_grace_timer = KTGraceTimer(ProductType.FACEBUILDER)
 
 
 def _state_valid_to_show(state):
@@ -67,7 +71,7 @@ def _show_all_panels_no_blendshapes():
     state, headnum = what_is_state()
     if not _state_valid_to_show(state):
         return False
-    settings = get_fb_settings()
+    settings = fb_settings()
     if settings is None:
         return False
     return settings.get_head(headnum).has_no_blendshapes()
@@ -85,7 +89,7 @@ def _draw_update_blendshapes_panel(layout):
 
 def _pinmode_escaper(area: Area, window: Optional[Window],
                      screen: Optional[Screen]) -> None:
-    settings = get_fb_settings()
+    settings = fb_settings()
     exit_area_localview(area, window, screen)
     settings.pinmode = False
     settings.viewport_state.show_ui_elements(area)
@@ -107,7 +111,7 @@ def _exit_from_localview_button(layout, context):
 
 
 def _geomobj_delete_handler() -> None:
-    settings = get_fb_settings()
+    settings = fb_settings()
     settings.force_out_pinmode = True
     return None
 
@@ -128,7 +132,7 @@ def _start_autoloader_handler(headnum: int) -> None:
 
 
 def _draw_align_button(layout, scale=2.0, depress=False):
-    settings = get_fb_settings()
+    settings = fb_settings()
     row = layout.row()
     row.scale_y = scale
     # op = row.operator(
@@ -142,7 +146,7 @@ def _draw_align_button(layout, scale=2.0, depress=False):
 
 
 def _draw_exit_pinmode(layout, scale=2.0, depress=True):
-    settings = get_fb_settings()
+    settings = fb_settings()
     if settings is None:
         return
     if settings.pinmode:
@@ -153,7 +157,7 @@ def _draw_exit_pinmode(layout, scale=2.0, depress=True):
 
 
 def _draw_pins_panel(layout):
-    settings = get_fb_settings()
+    settings = fb_settings()
     if settings is None:
         return
     headnum, camnum = settings.current_headnum, settings.current_camnum
@@ -175,7 +179,7 @@ def _draw_pins_panel(layout):
 
 
 def _draw_camera_info(layout):
-    settings = get_fb_settings()
+    settings = fb_settings()
     camera = settings.get_camera(settings.current_headnum,
                                  settings.current_camnum)
     if camera is None:
@@ -193,7 +197,7 @@ def _draw_camera_info(layout):
 
 
 def _draw_camera_hint(layout, headnum):
-    settings = get_fb_settings()
+    settings = fb_settings()
     if settings is None:
         return
     head = settings.get_head(headnum)
@@ -265,7 +269,7 @@ class FB_PT_HeaderPanel(Common, Panel):
         op.show = 'facebuilder'
 
     def _create_head_button(self, layout, active=True):
-        settings = get_fb_settings()
+        settings = fb_settings()
         first_head = len(settings.heads) == 0
         row = layout.row(align=True)
         row.enabled = active
@@ -304,7 +308,7 @@ class FB_PT_HeaderPanel(Common, Panel):
 
     def _draw_many_heads(self, layout, active=True):
         # Output List of all heads in Scene
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
         state, headnum = what_is_state()
@@ -412,7 +416,7 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
     def poll(cls, context):
         if not facebuilder_enabled():
             return False
-        # settings = get_fb_settings()
+        # settings = fb_settings()
         # if not settings.pinmode:
         #     return False
         return _show_all_panels()
@@ -426,7 +430,7 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
             text='', icon='QUESTION', emboss=False)
 
     def draw(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
 
@@ -489,7 +493,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             text='', icon='QUESTION', emboss=False)
 
     def _draw_camera_list(self, headnum, layout):
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
         head = settings.get_head(headnum)
@@ -538,7 +542,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         op.headnum = headnum
 
     def draw(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
         layout = self.layout
@@ -592,7 +596,7 @@ class FB_PT_Model(AllVisibleClosed, Panel):
 
     def draw(self, context):
         layout = self.layout
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
 
@@ -687,7 +691,7 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
     def draw(self, context):
         layout = self.layout
         obj = context.object
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
         headnum = settings.head_by_obj(obj)
@@ -736,6 +740,7 @@ class FB_PT_AppearancePanel(AllVisibleClosed, Panel):
         row.operator(
             FBConfig.fb_help_appearance_idname,
             text='', icon='QUESTION', emboss=False)
+
 
     def _appearance_pin_settings(self, settings, layout) -> None:
         col = layout.column(align=True)
@@ -820,7 +825,7 @@ class FB_PT_AppearancePanel(AllVisibleClosed, Panel):
 
     def draw(self, context):
         layout = self.layout
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
 

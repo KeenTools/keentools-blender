@@ -18,12 +18,13 @@
 
 import numpy as np
 import re
-from typing import Any, Set, Tuple, List
+from typing import Any, Set, Tuple, List, Optional
 
 from bpy.types import Area, Object
 
 from ..utils.kt_logging import KTLogger
-from ..facetracker_config import FTConfig, get_ft_settings
+from ..addon_config import ft_settings
+from ..facetracker_config import FTConfig
 from ..utils.bpy_common import (bpy_new_action,
                                 bpy_shape_key_move_top,
                                 bpy_shape_key_move_up,
@@ -31,6 +32,7 @@ from ..utils.bpy_common import (bpy_new_action,
 from ..utils.coords import xy_to_xz_rotation_matrix_3x3
 from ..utils.blendshapes import get_blendshape
 from ..utils.fcurve_operations import (get_safe_action_fcurve,
+                                       get_action_fcurve,
                                        clear_fcurve)
 
 
@@ -122,8 +124,8 @@ def check_nearest_frame_sequence(frames: List, key_blocks_count: int) -> bool:
     return True
 
 
-def make_fcurve_pile_animation(fcurve: Any, frames: List, *,
-                               keyframe_type: str = 'KEYFRAME') -> None:
+def make_fcurve_pile_animation(fcurve: Any, frames: List,
+                               keyframe_set: Optional[Set] = None) -> None:
     if not fcurve:
         return
     clear_fcurve(fcurve)
@@ -134,8 +136,14 @@ def make_fcurve_pile_animation(fcurve: Any, frames: List, *,
         kp = fcurve.keyframe_points[i]
         kp.co = point
         kp.interpolation = 'LINEAR'
-        kp.type = keyframe_type
+        if keyframe_set is None:
+            continue
+        kp.type = 'KEYFRAME' if point[0] in keyframe_set else 'JITTER'
     fcurve.update()
+
+
+def get_frame_shape_name(frame: int) -> str:
+    return f'frame_{str(frame).zfill(4)}'
 
 
 def bubble_frame_shape(obj: Object, shape_index: int, frame: int) -> int:
@@ -152,10 +160,9 @@ def bubble_frame_shape(obj: Object, shape_index: int, frame: int) -> int:
 
 
 def create_relative_shape_keyframe(frame: int, *,
-                                   action_name: str = FTConfig.ft_action_name,
-                                   keyframe_type: str = 'JITTER') -> None:
+                                   action_name: str = FTConfig.ft_action_name) -> None:
     _log.output(_log.color('yellow', f'create_shape_keyframe: {frame}'))
-    settings = get_ft_settings()
+    settings = ft_settings()
     loader = settings.loader()
     geotracker = settings.get_current_geotracker_item()
     if not geotracker:
@@ -174,7 +181,7 @@ def create_relative_shape_keyframe(frame: int, *,
         geomobj.active_shape_key_index = basis_index
         bpy_shape_key_move_top(geomobj)
 
-    shape_name = f'frame_{str(frame).zfill(4)}'
+    shape_name = get_frame_shape_name(frame)
     shape_index, shape, new_shape_created = get_blendshape(geomobj,
                                                            name=shape_name,
                                                            create=True)
@@ -214,19 +221,100 @@ def create_relative_shape_keyframe(frame: int, *,
         action = bpy_new_action(action_name)
         anim_data.action = action
 
+    keyframe_set = set(gt.keyframes())
     main_fcurve = get_safe_action_fcurve(action,
                                          f'key_blocks["{shape_name}"].value')
     make_fcurve_pile_animation(main_fcurve, [prev_frame1, frame, next_frame1],
-                               keyframe_type=keyframe_type)
+                               keyframe_set)
     if prev_index1 != -1:
         prev_fcurve = get_safe_action_fcurve(
             action, f'key_blocks["{key_blocks[prev_index1].name}"].value')
         make_fcurve_pile_animation(prev_fcurve,
                                    [prev_frame2, prev_frame1, frame],
-                                   keyframe_type=keyframe_type)
+                                   keyframe_set)
     if next_frame1 != -1:
         next_fcurve = get_safe_action_fcurve(
             action, f'key_blocks["{key_blocks[next_index1].name}"].value')
         make_fcurve_pile_animation(next_fcurve,
                                    [frame, next_frame1, next_frame2],
-                                   keyframe_type=keyframe_type)
+                                   keyframe_set)
+
+
+def remove_relative_shape_keyframe(frame: int) -> None:
+    _log.output(_log.color('yellow', f'remove_relative_shape_keyframe: {frame}'))
+    settings = ft_settings()
+    geotracker = settings.get_current_geotracker_item()
+    if not geotracker:
+        return
+
+    geomobj = geotracker.geomobj
+    if not geomobj:
+        return
+
+    mesh = geomobj.data
+    mesh.shape_keys.use_relative = True
+
+    basis_index, basis_shape, _ = get_blendshape(geomobj, name='Basis')
+    if basis_index < 0:
+        _log.output('remove_relative_shape_keyframe: no Basis')
+        return
+
+    if basis_index != 0:
+        geomobj.active_shape_key_index = basis_index
+        bpy_shape_key_move_top(geomobj)
+
+    shape_name = get_frame_shape_name(frame)
+    shape_index, shape, new_shape_created = get_blendshape(geomobj,
+                                                           name=shape_name)
+    if not shape:
+        _log.output(f'remove_relative_shape_keyframe: no shape {shape_name}')
+        return
+
+    key_blocks = mesh.shape_keys.key_blocks
+
+    prev_index1, prev_frame1 = get_prev_frame_shape(key_blocks, shape_index)
+    next_index1, next_frame1 = get_next_frame_shape(key_blocks, shape_index)
+    prev_index2, prev_frame2 = get_prev_frame_shape(key_blocks, prev_index1)
+    next_index2, next_frame2 = get_next_frame_shape(key_blocks, next_index1)
+
+    if not check_nearest_frame_sequence([prev_frame2, prev_frame1, frame,
+                                         next_frame1, next_frame2],
+                                        len(key_blocks)):
+        _log.error('check_nearest_frame_sequence is not passed!')
+        reorder_tracking_frames(geomobj)
+        shape_index, _, _ = get_blendshape(geomobj, name=shape_name)
+        prev_index1, prev_frame1 = get_prev_frame_shape(key_blocks, shape_index)
+        next_index1, next_frame1 = get_next_frame_shape(key_blocks, shape_index)
+        prev_index2, prev_frame2 = get_prev_frame_shape(key_blocks, prev_index1)
+        next_index2, next_frame2 = get_next_frame_shape(key_blocks, next_index1)
+
+    anim_data = mesh.shape_keys.animation_data
+    if not anim_data:
+        return
+    action = anim_data.action
+    if not action:
+        return
+
+    main_fcurve = get_action_fcurve(action, f'key_blocks["{shape_name}"].value')
+    if not main_fcurve:
+        return
+
+    gt = settings.loader().kt_geotracker()
+    keyframe_set = set(gt.keyframes())
+    if prev_index1 != -1:
+        prev_fcurve = get_action_fcurve(
+            action, f'key_blocks["{key_blocks[prev_index1].name}"].value')
+        if prev_fcurve:
+            make_fcurve_pile_animation(prev_fcurve,
+                                       [prev_frame2, prev_frame1, next_frame1],
+                                       keyframe_set)
+    if next_frame1 != -1:
+        next_fcurve = get_action_fcurve(
+            action, f'key_blocks["{key_blocks[next_index1].name}"].value')
+        if next_fcurve:
+            make_fcurve_pile_animation(next_fcurve,
+                                       [prev_frame1, next_frame1, next_frame2],
+                                       keyframe_set)
+
+    action.fcurves.remove(main_fcurve)
+    geomobj.shape_key_remove(shape)

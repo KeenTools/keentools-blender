@@ -21,8 +21,8 @@ from typing import Any
 from bpy.props import StringProperty, FloatProperty, BoolProperty
 
 from ..utils.kt_logging import KTLogger
-from ..geotracker_config import GTConfig, get_gt_settings
-from .gtloader import GTLoader
+from ..addon_config import gt_settings
+from ..geotracker_config import GTConfig
 from .ui_strings import buttons
 from ..tracker.movepin import MovePin
 
@@ -54,8 +54,4 @@ class GT_OT_MovePin(MovePin):
 
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
-
-    @classmethod
-    def get_loader(cls) -> Any:
-        return GTLoader
+        return gt_settings()

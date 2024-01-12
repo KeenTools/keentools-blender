@@ -21,7 +21,8 @@ from typing import Dict, Optional
 from bpy.types import Object
 
 from ...utils.kt_logging import KTLogger
-from ...facebuilder_config import FBConfig, get_fb_settings
+from ...addon_config import fb_settings
+from ...facebuilder_config import FBConfig
 from ...utils import attrs
 
 
@@ -29,7 +30,7 @@ _log = KTLogger(__name__)
 
 
 def show_all_cameras(headnum: int) -> None:
-    settings = get_fb_settings()
+    settings = fb_settings()
     head = settings.get_head(headnum)
     if head is None:
         return
@@ -38,7 +39,7 @@ def show_all_cameras(headnum: int) -> None:
 
 
 def hide_other_cameras(headnum: int, camnum: int) -> None:
-    settings = get_fb_settings()
+    settings = fb_settings()
     head = settings.get_head(headnum)
     if head is None:
         return

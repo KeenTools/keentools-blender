@@ -22,8 +22,12 @@ import bpy
 from bpy.types import Object, Area
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config, get_operator, ErrorType, ActionStatus
-from ...geotracker_config import get_gt_settings
+from ...addon_config import (Config,
+                             get_settings,
+                             get_operator,
+                             ErrorType,
+                             ActionStatus,
+                             ProductType)
 from ...utils.html import split_long_string
 from ...utils.manipulate import exit_area_localview, switch_to_camera
 from ...utils.bpy_common import (bpy_all_scene_objects,
@@ -34,8 +38,9 @@ from ...utils.bpy_common import (bpy_all_scene_objects,
 _log = KTLogger(__name__)
 
 
-def prepare_camera(area: Area) -> None:
-    settings = get_gt_settings()
+def prepare_camera(area: Area, *,
+                   product: int = ProductType.GEOTRACKER) -> None:
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     if not settings.pinmode:
         switch_to_camera(area, geotracker.camobj,
@@ -46,8 +51,9 @@ def prepare_camera(area: Area) -> None:
     geotracker.reload_background_image()
 
 
-def revert_camera(area: Area) -> None:
-    settings = get_gt_settings()
+def revert_camera(area: Area, *,
+                  product: int = ProductType.GEOTRACKER) -> None:
+    settings = get_settings(product)
     if not settings.pinmode:
         settings.viewport_state.show_ui_elements(area)
         exit_area_localview(area)
@@ -100,7 +106,8 @@ def common_checks(*, object_mode: bool = False,
                   camera: bool = False,
                   geometry: bool = False,
                   movie_clip: bool = False,
-                  constraints: bool = False) -> ActionStatus:
+                  constraints: bool = False,
+                  product: int = ProductType.GEOTRACKER) -> ActionStatus:
 
     if object_mode:
         if not hasattr(bpy.context, 'mode'):
@@ -112,7 +119,7 @@ def common_checks(*, object_mode: bool = False,
             _log.error(msg)
             return ActionStatus(False, msg)
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     if is_calculating and settings.is_calculating():
         msg = 'Calculation in progress'
         _log.error(msg)
@@ -170,14 +177,15 @@ def common_checks(*, object_mode: bool = False,
     return ActionStatus(True, 'Checks have been passed')
 
 
-def track_checks() -> ActionStatus:
-    check_status = common_checks(object_mode=True, pinmode=True,
+def track_checks(*, product: int) -> ActionStatus:
+    check_status = common_checks(product=product,
+                                 object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
                                  geotracker=True, camera=True, geometry=True)
     if not check_status.success:
         return check_status
 
-    settings = get_gt_settings()
+    settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
 
     if not geotracker.precalcless:
@@ -187,7 +195,7 @@ def track_checks() -> ActionStatus:
             _log.error(msg)
             return ActionStatus(False, msg)
     else:
-        check_status = common_checks(movie_clip=True)
+        check_status = common_checks(product=product, movie_clip=True)
         if not check_status.success:
             return check_status
 

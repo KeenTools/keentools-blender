@@ -19,7 +19,7 @@
 from typing import Any
 
 from ..utils.kt_logging import KTLogger
-from ..geotracker_config import get_gt_settings
+from ..addon_config import gt_settings
 from ..tracker.cam_input import (CameraInput,
                                  GeoInput,
                                  ImageInput,
@@ -33,28 +33,28 @@ _log = KTLogger(__name__)
 class GTCameraInput(CameraInput):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return gt_settings()
 
 
 class GTGeoInput(GeoInput):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return gt_settings()
 
 
 class GTImageInput(ImageInput):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return gt_settings()
 
 
 class GTMask2DInput(Mask2DInput):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return gt_settings()
 
 
 class GTGeoTrackerResultsStorage(GeoTrackerResultsStorage):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return gt_settings()

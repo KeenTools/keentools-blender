@@ -19,24 +19,26 @@
 from typing import Any
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import ProductType
-from ..facetracker_config import get_ft_settings
+from ..addon_config import ft_settings, ProductType
 from ..utils.bpy_common import bpy_current_frame
 from ..tracker.loader import Loader
 from ..tracker.class_loader import KTClassLoader
+from ..facetracker.viewport import FTViewport
 
 
 _log = KTLogger(__name__)
 
 
 class FTLoader(Loader):
+    _viewport: Any = FTViewport()
+
     @classmethod
     def product_type(cls):
         return ProductType.FACETRACKER
 
     @classmethod
     def get_settings(cls) -> Any:
-        return get_ft_settings()
+        return ft_settings()
 
     @classmethod
     def get_geo(cls) -> Any:

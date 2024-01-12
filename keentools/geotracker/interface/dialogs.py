@@ -16,13 +16,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import Any
 import re
 
 from bpy.types import Operator
+from bpy.props import IntProperty
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config
-from ...geotracker_config import GTConfig, get_gt_settings
+from ...addon_config import Config, ProductType, get_settings
+from ...geotracker_config import GTConfig
 from ..ui_strings import buttons
 
 
@@ -53,9 +55,11 @@ class GT_OT_PrecalcInfo(Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL', 'UNDO'}
 
+    product: IntProperty(default=ProductType.GEOTRACKER)
+
     def draw(self, context):
         layout = self.layout
-        settings = get_gt_settings()
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return
@@ -70,7 +74,7 @@ class GT_OT_PrecalcInfo(Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        settings = get_gt_settings()
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -86,7 +90,7 @@ class GT_OT_TextureBakeOptions(Operator):
 
     def draw(self, context):
         layout = self.layout
-        settings = get_gt_settings()
+        settings = get_settings(ProductType.GEOTRACKER)
         if settings is None:
             return
 

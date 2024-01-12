@@ -40,7 +40,7 @@ from bpy.types import AddonPreferences
 from bpy.utils import register_class, unregister_class
 
 # Only minimal imports are performed to check the start
-from .addon_config import Config
+from .addon_config import Config, output_import_statistics
 from .messages import (ERROR_MESSAGES, draw_warning_labels, get_system_info,
                        draw_system_info, draw_long_label, draw_long_labels)
 
@@ -197,10 +197,10 @@ else:
         _log.info('FaceBuilder classes have been registered')
         geotracker_register()
         _log.info('GeoTracker classes have been registered')
-        if Config.show_facetracker:
-            facetracker_register()
-            _log.info('FaceTracker classes have been registered')
+        facetracker_register()
+        _log.info('FaceTracker classes have been registered')
         _log.debug(f'=== KEENTOOLS ADDON {bl_info["version"]} REGISTERED ===')
+        output_import_statistics()
 
 
     def unregister():
@@ -208,9 +208,8 @@ else:
                    f'UNREGISTER ---')
         stop_timers(True)
         _log.debug('START UNREGISTER CLASSES')
-        if Config.show_facetracker:
-            facetracker_unregister()
-            _log.info('FaceTracker classes have been unregistered')
+        facetracker_unregister()
+        _log.info('FaceTracker classes have been unregistered')
         geotracker_unregister()
         _log.info('GeoTracker classes have been unregistered')
         facebuilder_unregister()

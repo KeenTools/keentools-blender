@@ -46,15 +46,20 @@ class KT_OT_AddonSettings(Operator):
         pass
 
     def execute(self, context):
-        show_user_preferences(facebuilder=False, geotracker=False)
+        show_user_preferences(facebuilder=False, geotracker=False,
+                              facetracker=False)
         if self.show == 'facebuilder':
-            show_tool_preferences(facebuilder=True, geotracker=False)
+            show_tool_preferences(facebuilder=True)
         elif self.show == 'geotracker':
-            show_tool_preferences(facebuilder=False, geotracker=True)
+            show_tool_preferences(geotracker=True)
+        elif self.show == 'facetracker':
+            show_tool_preferences(facetracker=True)
         elif self.show == 'all':
-            show_tool_preferences(facebuilder=True, geotracker=True)
+            show_tool_preferences(facebuilder=True, geotracker=True,
+                                  facetracker=True)
         elif self.show == 'none':
-            show_tool_preferences(facebuilder=False, geotracker=False)
+            show_tool_preferences(facebuilder=False, geotracker=False,
+                                  facetracker=False)
         bpy_show_addon_preferences()
         return {'FINISHED'}
 

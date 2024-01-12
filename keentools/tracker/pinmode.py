@@ -20,7 +20,6 @@ from typing import Any, Set, Optional, Tuple
 from uuid import uuid4
 
 from bpy.types import Area, Operator
-from bpy.props import IntProperty, StringProperty, FloatProperty
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
@@ -45,7 +44,7 @@ from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_render_frame,
                                 get_scene_camera_shift)
 from ..utils.video import fit_render_size
-from ..tracker.prechecks import common_checks_with_settings
+from ..geotracker.utils.prechecks import common_checks
 from ..geotracker.interface.screen_mesages import (revert_default_screen_message,
                                        playback_mode_screen_message,
                                        in_edit_mode_screen_message,
@@ -82,10 +81,6 @@ class PinMode(Operator):
     movepin_operator_idname: str = 'impossible_movepin_operator_name'
 
     @classmethod
-    def get_loader(cls) -> Any:
-        assert False, 'PinMode: get_loader'
-
-    @classmethod
     def get_settings(cls) -> Any:
         assert False, 'PinMode: get_settings'
 
@@ -95,7 +90,7 @@ class PinMode(Operator):
         if not settings.use_adaptive_opacity:
             return
         settings.calc_adaptive_opacity(area)
-        vp = cls.get_loader().viewport()
+        vp = settings.loader().viewport()
         vp.wireframer().set_adaptive_opacity(settings.get_adaptive_opacity())
 
     @classmethod
@@ -124,7 +119,9 @@ class PinMode(Operator):
 
     def _on_left_mouse_press(self, area: Area, event: Any) -> Set:
         mouse_x, mouse_y = event.mouse_region_x, event.mouse_region_y
-        vp = self.get_loader().viewport()
+        settings = self.get_settings()
+        loader = settings.loader()
+        vp = loader.viewport()
         vp.update_view_relative_pixel_size(area)
 
         if not point_is_in_area(area, mouse_x, mouse_y,
@@ -161,12 +158,11 @@ class PinMode(Operator):
             else:
                 pins.add_selected_pins([nearest])
         else:
-            settings = self.get_settings()
             settings.start_selection(mouse_x, mouse_y)
-        self.get_loader().update_viewport_shaders(wireframe=True,
-                                                  geomobj_matrix=True,
-                                                  pins_and_residuals=True,
-                                                  timeline=True)
+        loader.update_viewport_shaders(wireframe=True,
+                                       geomobj_matrix=True,
+                                       pins_and_residuals=True,
+                                       timeline=True)
         vp.tag_redraw()
         return {'PASS_THROUGH'}
 
@@ -181,7 +177,8 @@ class PinMode(Operator):
             _log.output('RIGHT CLICK IN SERVICE REGION OF AREA')
             return {'PASS_THROUGH'}
 
-        vp = self.get_loader().viewport()
+        settings = self.get_settings()
+        vp = settings.loader().viewport()
         vp.update_view_relative_pixel_size(area)
         x, y = get_image_space_coord(mouse_x, mouse_y, area,
                                      *get_scene_camera_shift())
@@ -198,13 +195,13 @@ class PinMode(Operator):
 
     def _delete_found_pin(self, nearest: int, area: Area) -> Set:
         _log.output('_delete_found_pin call')
-        loader = self.get_loader()
+        settings = self.get_settings()
+        loader = settings.loader()
         gt = loader.kt_geotracker()
         gt.remove_pin(nearest)
         loader.viewport().pins().remove_pin(nearest)
         _log.output('PIN REMOVED {}'.format(nearest))
 
-        settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'FINISHED'}
@@ -243,12 +240,12 @@ class PinMode(Operator):
         settings.pinmode_id = self.pinmode_id
 
     def _init_pinmode(self, area: Area, context: Optional[Any]=None) -> None:
-        loader = self.get_loader()
+        settings = self.get_settings()
+        loader = settings.loader()
         if not loader.load_geotracker():
             _log.output('NEW KT_GEOTRACKER')
             loader.new_kt_geotracker()
 
-        settings = self.get_settings()
         geotracker = settings.get_current_geotracker_item()
 
         self.perform_checks_before_pinmode()
@@ -303,7 +300,7 @@ class PinMode(Operator):
         if geotracker.mask_2d:
             geotracker.setup_background_mask()
 
-        self.get_loader().place_object_or_camera()
+        settings.loader().place_object_or_camera()
         switch_to_camera(area, geotracker.camobj,
                          geotracker.animatable_object())
 
@@ -314,7 +311,7 @@ class PinMode(Operator):
         settings = self.get_settings()
         settings.pinmode = True
 
-        area = self.get_loader().get_work_area()
+        area = settings.loader().get_work_area()
         settings.viewport_state.show_ui_elements(area)
 
         self._set_new_geotracker(area, num)
@@ -322,7 +319,8 @@ class PinMode(Operator):
 
     def _change_wireframe_visibility(self, *, toggle: bool=True,
                                      value: bool=True) -> None:
-        vp = self.get_loader().viewport()
+        settings = self.get_settings()
+        vp = settings.loader().viewport()
         flag = not vp.wireframer().is_visible() if toggle else value
         vp.set_visible(flag)
         if flag:
@@ -337,8 +335,9 @@ class PinMode(Operator):
         _log.output(f'INVOKE PINMODE: {self.geotracker_num}')
 
         settings = self.get_settings()
-        check_status = common_checks_with_settings(
-            settings, object_mode=True, is_calculating=True,
+        check_status = common_checks(
+            product = settings.product_type(),
+            object_mode=True, is_calculating=True,
             reload_geotracker=True, geotracker=True,
             camera=True, geometry=True, movie_clip=False)
         if not check_status.success:
@@ -364,7 +363,7 @@ class PinMode(Operator):
             warn('INVOKE_DEFAULT', msg=ErrorType.UnsupportedGPUBackend)
             return {'CANCELLED'}
 
-        loader = self.get_loader()
+        loader = settings.loader()
         vp = loader.viewport()
         if not vp.load_all_shaders() and Config.strict_shader_check:
             return {'CANCELLED'}
@@ -418,7 +417,7 @@ class PinMode(Operator):
 
     def modal(self, context: Any, event: Any) -> Set:
         settings = self.get_settings()
-        loader = self.get_loader()
+        loader = settings.loader()
         vp = loader.viewport()
 
         if self.pinmode_id != settings.pinmode_id:
