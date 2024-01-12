@@ -133,14 +133,24 @@ def _start_autoloader_handler(headnum: int) -> None:
 
 def _draw_align_button(layout, scale=2.0, depress=False):
     settings = fb_settings()
-    row = layout.row()
+    row = layout.row(align=True)
     row.scale_y = scale
     # op = row.operator(
     #     FBConfig.fb_pickmode_starter_idname,
     #     text='Align face', icon='SHADERFX', depress=depress)
+    op = row.operator(FBConfig.fb_camera_actor_idname, icon='LOOP_BACK', text='')
+    op.action = 'rotate_backward'
+    op.headnum = settings.current_headnum
+    op.camnum = settings.current_camnum
+
     op = row.operator(
         FBConfig.fb_pickmode_starter_idname, **KTIcons.key_value('magic'),
-        text='Align face', depress=depress)
+        text='Auto Align', depress=depress)
+    op.headnum = settings.current_headnum
+    op.camnum = settings.current_camnum
+
+    op = row.operator(FBConfig.fb_camera_actor_idname, icon='LOOP_FORWARDS', text='')
+    op.action = 'rotate_forward'
     op.headnum = settings.current_headnum
     op.camnum = settings.current_camnum
 
@@ -221,7 +231,8 @@ def _draw_expression_settings(layout, head, box_layout=True):
         box = layout.box()
     else:
         box = layout
-    col = box.column(align=True)
+    # col = box.column(align=True)
+    col = layout
     col.prop(head, 'lock_blinking')
     col.prop(head, 'lock_neck_movement')
     # col.label(text='Apply expression in 3D:')
@@ -276,7 +287,7 @@ class FB_PT_HeaderPanel(Common, Panel):
         row.scale_y = 2.0 if first_head else Config.btn_scale_y
         row.operator(
             FBConfig.fb_add_head_operator_idname,
-            text='Create New Head', icon='USER' if first_head else 'ADD')
+            text='Create new Head', icon='USER' if first_head else 'ADD')
 
     def _head_creation_offer(self, layout):
         self._create_head_button(layout)
@@ -445,9 +456,9 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
             return
 
         col = layout.column(align=True)
-        col.label(text='Solver')
-        col.prop(head, 'use_emotions')
-        _draw_expression_settings(col, head, box_layout=False)
+        # col.label(text='Solver')
+        # col.prop(head, 'use_emotions')
+        # _draw_expression_settings(col, head, box_layout=False)
 
         if not settings.pinmode:
             return
@@ -480,6 +491,58 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
         #     _draw_pins_panel(layout)
 
 
+class FB_PT_RigidityPanel(AllVisible, Panel):
+    bl_idname = 'FBUILDER_PT_rigidity'
+    bl_label = 'Rigidity'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_parent_id = FBConfig.fb_views_panel_idname
+
+    @classmethod
+    def poll(cls, context):
+        settings = fb_settings()
+        if settings is None:
+            return False
+        if not settings.pinmode:
+            return False
+        return True
+
+    def draw(self, context):
+        settings = fb_settings()
+        if settings is None:
+            return
+        layout = self.layout
+
+        if not settings.pinmode:
+            return
+
+        head = settings.get_head(settings.current_headnum)
+        if not head:
+            return
+
+        col = layout.column(align=True)
+        # col.label(text='Rigidity')
+
+        row = col.row(align=True)
+        row.enabled = settings.pinmode
+        row.prop(settings, 'shape_rigidity', text='Shape')
+
+        if head.should_use_emotions():
+            row = col.row(align=True)
+            row.prop(settings, 'expression_rigidity', text='Expression')
+            row.enabled = head.should_use_emotions()
+
+        if not head.lock_blinking and head.should_use_emotions():
+            row = col.row(align=True)
+            row.prop(settings, 'blinking_rigidity', text='Eyelids')
+            row.enabled = not head.lock_blinking and head.should_use_emotions()
+
+        if not head.lock_neck_movement and head.should_use_emotions():
+            row =  col.row(align=True)
+            row.prop(settings, 'neck_movement_rigidity', text='Neck')
+            row.enabled = not head.lock_neck_movement and head.should_use_emotions()
+
+
+
 class FB_PT_ViewsPanel(AllVisible, Panel):
     bl_idname = FBConfig.fb_views_panel_idname
     bl_label = 'Views'
@@ -503,7 +566,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             return
 
         layout.prop(head, 'use_emotions')
-        # _draw_expression_settings(layout, head)
+        _draw_expression_settings(layout, head, box_layout=False)
 
         common_col = layout.column(align=True)
         for i, camera in enumerate(head.cameras):
@@ -577,6 +640,9 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         # if settings.pinmode and \
         #         context.space_data.region_3d.view_perspective == 'CAMERA':
         #     _draw_pins_panel(layout)
+
+        if settings.pinmode:
+            _draw_camera_info(layout)
 
         if head.headobj and head.headobj.users == 1:
             _start_geomobj_delete_handler()

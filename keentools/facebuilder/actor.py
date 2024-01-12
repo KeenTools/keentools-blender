@@ -20,6 +20,8 @@ import numpy as np
 
 import bpy
 from bpy.props import StringProperty, IntProperty
+from mathutils import Vector, Matrix
+from math import radians
 
 from ..utils.kt_logging import KTLogger
 from .utils.manipulate import get_current_head
@@ -36,6 +38,8 @@ from ..utils.blendshapes import (create_blendshape_controls,
                                  has_blendshapes_action,
                                  convert_blendshapes_animation_to_controls)
 from .ui_strings import buttons
+from .fbloader import FBLoader
+from ..utils.coords import xz_to_xy_rotation_matrix_4x4
 
 
 _log = KTLogger(__name__)
@@ -156,4 +160,76 @@ class FB_OT_CameraActor(bpy.types.Operator):
             op = get_operator(FBConfig.fb_remove_pins_idname)
             op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
 
+        elif self.action == 'rotate_forward':
+            op = get_operator(FBConfig.fb_remove_pins_idname)
+            op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
+            head_mat = head.headobj.matrix_world
+            camera_mat = camera.camobj.matrix_world
+            rot_mat = Matrix.Rotation(radians(-90.0), 4, 'Z')
+            camera.camobj.matrix_world = head_mat @ rot_mat @ head_mat.inverted() @ camera_mat
+
+            fb = FBLoader.get_builder()
+            mat = np.array(camera.camobj.matrix_world.inverted() @ head_mat, dtype=np.float32) @ xz_to_xy_rotation_matrix_4x4()
+            fb.update_model_mat(camera.get_keyframe(), mat)
+            FBLoader.save_fb_serial_and_image_pathes(self.headnum)
+
+            vp = FBLoader.viewport()
+            vp.update_wireframe_colors()
+            wf = vp.wireframer()
+            fb = FBLoader.get_builder()
+            wf.init_wireframe_image(fb, settings.show_specials)
+
+            keyframe = head.get_keyframe(settings.current_camnum)
+            wf.init_edge_indices(fb)
+
+            wf.set_object_world_matrix(head.headobj.matrix_world)
+            camobj = head.get_camera(settings.current_camnum).camobj
+            wf.set_camera_pos(camobj, head.headobj)
+            geo = fb.applied_args_model_at(keyframe)
+            wf.init_geom_data_from_core(*FBLoader.get_geo_shader_data(geo))
+
+            wf.create_batches()
+
+            # FBLoader.place_camera(self.headnum, self.camnum)
+            # FBLoader.update_viewport_shaders(area=context.area,
+            #                                  headnum=self.headnum, camnum=self.camnum,
+            #                                  wireframe=True,
+            #                                  pins_and_residuals=True)
+
+        elif self.action == 'rotate_backward':
+            op = get_operator(FBConfig.fb_remove_pins_idname)
+            op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
+            head_mat = head.headobj.matrix_world
+            camera_mat = camera.camobj.matrix_world
+            rot_mat = Matrix.Rotation(radians(90.0), 4, 'Z')
+            camera.camobj.matrix_world = head_mat @ rot_mat @ head_mat.inverted() @ camera_mat
+
+            fb = FBLoader.get_builder()
+            mat = np.array(camera.camobj.matrix_world.inverted() @ head_mat, dtype=np.float32) @ xz_to_xy_rotation_matrix_4x4()
+            fb.update_model_mat(camera.get_keyframe(), mat)
+            FBLoader.save_fb_serial_and_image_pathes(self.headnum)
+
+            vp = FBLoader.viewport()
+            vp.update_wireframe_colors()
+            wf = vp.wireframer()
+            fb = FBLoader.get_builder()
+            wf.init_wireframe_image(fb, settings.show_specials)
+
+            keyframe = head.get_keyframe(settings.current_camnum)
+            wf.init_edge_indices(fb)
+
+            wf.set_object_world_matrix(head.headobj.matrix_world)
+            camobj = head.get_camera(settings.current_camnum).camobj
+            wf.set_camera_pos(camobj, head.headobj)
+            geo = fb.applied_args_model_at(keyframe)
+            wf.init_geom_data_from_core(*FBLoader.get_geo_shader_data(geo))
+
+            wf.create_batches()
+
+            # FBLoader.place_camera(self.headnum, self.camnum)
+            # FBLoader.update_viewport_shaders(area=context.area,
+            #                                  headnum=self.headnum,
+            #                                  camnum=self.camnum,
+            #                                  wireframe=True,
+            #                                  pins_and_residuals=True)
         return {'FINISHED'}

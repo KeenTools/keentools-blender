@@ -30,7 +30,8 @@ CLASSES_TO_REGISTER = (FB_MT_ProperViewMenu,  # menus
                        FB_PT_DownloadingProblemPanel,
                        FB_PT_UpdatesInstallationPanel,
                        FB_PT_ViewsPanel,
-                       FB_PT_CameraPanel,
+                       FB_PT_RigidityPanel,  # TEMPORARY
+                       # FB_PT_CameraPanel,
                        FB_PT_Model,
                        FB_PT_AppearancePanel,
                        FB_PT_TexturePanel,
