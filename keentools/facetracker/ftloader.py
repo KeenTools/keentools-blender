@@ -23,12 +23,15 @@ from ..addon_config import ft_settings, ProductType
 from ..utils.bpy_common import bpy_current_frame
 from ..tracker.loader import Loader
 from ..tracker.class_loader import KTClassLoader
+from ..facetracker.viewport import FTViewport
 
 
 _log = KTLogger(__name__)
 
 
 class FTLoader(Loader):
+    _viewport: Any = FTViewport()
+
     @classmethod
     def product_type(cls):
         return ProductType.FACETRACKER
