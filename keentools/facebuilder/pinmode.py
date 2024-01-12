@@ -443,6 +443,13 @@ class FB_OT_PinMode(Operator):
         vp.update_surface_points(FBLoader.get_builder(), headobj, kid)
 
         if first_start:
+            # ================= Auto-detect on Empty
+            if len(head.cameras) == 1 and not camera.has_pins():
+                op = get_operator(FBConfig.fb_pickmode_starter_idname)
+                op('INVOKE_DEFAULT',
+                   headnum=settings.current_headnum,
+                   camnum=settings.current_camnum)
+            # =================
             push_head_in_undo_history(head, 'Pin Mode Start')
         else:
             push_head_in_undo_history(head, 'Pin Mode Switch')
