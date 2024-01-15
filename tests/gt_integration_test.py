@@ -238,7 +238,7 @@ class GeoTrackerTest(unittest.TestCase):
     def test_addon_on(self) -> None:
         new_scene()
         settings = gt_settings()
-        self.assertEqual(0, len(settings.geotrackers))
+        self.assertEqual(0, len(settings.trackers()))
 
     def test_tracked_cube(self) -> None:
         new_scene()

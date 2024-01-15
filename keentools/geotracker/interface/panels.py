@@ -120,7 +120,7 @@ class AllVisible(View3DPanel):
         if not pkt_is_installed():
             return False
         settings = gt_settings()
-        if not settings.current_geotracker_num >= 0:
+        if not settings.current_tracker_num() >= 0:
             return False
         geotracker = settings.get_current_geotracker_item()
         return geotracker.geomobj and geotracker.camobj
@@ -158,14 +158,14 @@ class GT_PT_GeotrackersPanel(View3DPanel):
         else:
             row.active = not settings.pinmode
             row.enabled = not settings.pinmode
-            row.scale_y = 2.0 if len(settings.geotrackers) == 0 else Config.btn_scale_y
+            row.scale_y = 2.0 if len(settings.trackers()) == 0 else Config.btn_scale_y
             row.operator(GTConfig.gt_create_geotracker_idname, icon='ADD')
 
     def _output_geotrackers_list(self, layout: Any) -> None:
         settings = gt_settings()
-        geotracker_num = settings.current_geotracker_num
+        geotracker_num = settings.current_tracker_num()
 
-        for i, geotracker in enumerate(settings.geotrackers):
+        for i, geotracker in enumerate(settings.trackers()):
 
             row = layout.row(align=True)
             row.scale_y = Config.btn_scale_y
@@ -269,7 +269,7 @@ class GT_PT_InputsPanel(AllVisible):
         if not pkt_is_installed():
             return False
         settings = gt_settings()
-        if not settings.current_geotracker_num >= 0:
+        if not settings.current_tracker_num() >= 0:
             return False
         return True
 
@@ -498,7 +498,7 @@ class GT_PT_CameraPanel(AllVisible):
         if not pkt_is_installed():
             return False
         settings = gt_settings()
-        if not settings.current_geotracker_num >= 0:
+        if not settings.current_tracker_num() >= 0:
             return False
         geotracker = settings.get_current_geotracker_item()
         return not not geotracker.camobj

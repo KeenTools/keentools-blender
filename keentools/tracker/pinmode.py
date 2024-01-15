@@ -350,7 +350,7 @@ class PinMode(Operator):
             self.report({'ERROR'}, msg)
             return {'CANCELLED'}
 
-        old_geotracker_num = settings.current_geotracker_num
+        old_geotracker_num = settings.current_tracker_num()
         new_geotracker_num = old_geotracker_num if \
             self.geotracker_num == -1 else self.geotracker_num
 
