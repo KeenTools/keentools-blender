@@ -52,6 +52,8 @@ from ..utils.html import split_long_string
 from ..utils.localview import exit_area_localview, check_area_active_problem
 from ..utils.manipulate import switch_to_camera, center_viewports_on_object
 from .ui_strings import buttons
+from ..preferences.hotkeys import (facebuilder_keymaps_register,
+                                   facebuilder_keymaps_unregister)
 
 
 _log = KTLogger(__name__)
@@ -451,6 +453,7 @@ class FB_OT_PinMode(Operator):
                    camnum=settings.current_camnum)
             # =================
             push_head_in_undo_history(head, 'Pin Mode Start')
+            facebuilder_keymaps_register()
         else:
             push_head_in_undo_history(head, 'Pin Mode Switch')
             _log.output('FB PINMODE SWITCH ONLY')
@@ -519,6 +522,7 @@ class FB_OT_PinMode(Operator):
             _log.error(f'{self.pinmode_id} != {settings.pinmode_id}')
             unregister_undo_handler()
             exit_area_localview(context.area)
+            facebuilder_keymaps_unregister()
             return {'FINISHED'}
 
         headnum = settings.current_headnum
@@ -527,6 +531,7 @@ class FB_OT_PinMode(Operator):
         if self._modal_should_finish(context, event):
             unregister_undo_handler()
             exit_area_localview(context.area)
+            facebuilder_keymaps_unregister()
             return {'FINISHED'}
 
         region_check = self._check_camera_state_changed(context.space_data.region_3d)
@@ -569,6 +574,7 @@ class FB_OT_PinMode(Operator):
             _log.output('WIREFRAME IS OFF')
             unregister_undo_handler()
             FBLoader.out_pinmode(headnum)
+            facebuilder_keymaps_unregister()
             return {'FINISHED'}
 
         vp.create_batch_2d(context.area)

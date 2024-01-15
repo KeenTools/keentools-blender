@@ -27,6 +27,8 @@ _log = KTLogger(__name__)
 
 
 _geotracker_keymaps: List[Tuple] = []
+_facebuilder_keymaps: List[Tuple] = []
+
 
 
 def get_keyconfig() -> Any:
@@ -66,3 +68,43 @@ def geotracker_keymaps_unregister() -> None:
         _log.error(f'geotracker_keymaps_unregister Exception:\n{str(err)}')
     _geotracker_keymaps.clear()
     _log.output('geotracker_keymaps_unregister end')
+
+
+def _find_pan_in_keymap(km) -> Any:
+    kmi = km.keymap_items.find_from_operator('view3d.move')
+    if (kmi and kmi.type == 'MIDDLEMOUSE' and kmi.value == 'PRESS' and
+            not kmi.ctrl and not kmi.shift and not kmi.alt):
+        return kmi
+    return None
+
+
+def facebuilder_keymaps_register() -> None:
+    _log.output('facebuilder_keymaps_register start')
+    global _facebuilder_keymaps
+    keyconfig = get_keyconfig()
+    category_name = '3D View Generic'
+    space_type = 'VIEW_3D'
+    # keymap = keyconfig.keymaps.find(category_name, space_type=space_type)
+    km = keyconfig.keymaps.new(name=category_name, space_type=space_type)
+    kmi = _find_pan_in_keymap(km)
+    if not kmi:
+        kmi = km.keymap_items.new(idname='view3d.move',
+                                  type='MIDDLEMOUSE',
+                                  value='PRESS', head=True)
+        _facebuilder_keymaps.append((km, kmi))
+    kmi.active = True
+    _log.output('facebuilder_keymaps_register end')
+
+
+def facebuilder_keymaps_unregister() -> None:
+    _log.output('facebuilder_keymaps_unregister start')
+    global _facebuilder_keymaps
+    try:
+        for km, kmi in _facebuilder_keymaps:
+            _log.output(f'unregister keymap item: {kmi}')
+            km.keymap_items.remove(kmi)
+
+    except Exception as err:
+        _log.error(f'facebuilder_keymaps_unregister Exception:\n{str(err)}')
+    _facebuilder_keymaps.clear()
+    _log.output('facebuilder_keymaps_unregister end')
