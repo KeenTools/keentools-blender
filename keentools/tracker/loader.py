@@ -511,7 +511,7 @@ class Loader:
 
         _log.output(_log.color('cyan', f'SERIAL:\n{serial}'))
         if serial == '':
-            _log.warning(f'EMPTY SERIAL ERROR: {settings.current_geotracker_num}')
+            _log.warning(f'EMPTY SERIAL ERROR: {settings.current_tracker_num()}')
             return False
 
         gt = cls.kt_geotracker()
@@ -702,7 +702,7 @@ class Loader:
         settings = cls.get_settings()
         txt = f'settings.pinmode: {settings.pinmode}\n'
         txt += f'settings.pinmode_id: {settings.pinmode_id}\n'
-        txt += f'settings.current_geotracker_num: {settings.current_geotracker_num}\n'
+        txt += f'settings.current_tracker_num(): {settings.current_tracker_num()}\n'
         area = cls.get_work_area()
         txt += f'area: {area}\n'
         txt += f'check_localview(area): {check_localview(area)}\n'

@@ -278,20 +278,20 @@ class TRSceneSetting(PropertyGroup):
         return self.pinmode_id in {'', 'stop'}
 
     def get_last_geotracker_num(self) -> int:
-        return len(self.geotrackers) - 1
+        return len(self.trackers()) - 1
 
     def is_proper_geotracker_number(self, num: int) -> bool:
-        return 0 <= num < len(self.geotrackers)
+        return 0 <= num < len(self.trackers())
 
     def get_current_geotracker_item(self, safe=False) -> Optional[Any]:  # TrackerItem
-        if self.is_proper_geotracker_number(self.current_geotracker_num):
-            return self.geotrackers[self.current_geotracker_num]
+        if self.is_proper_geotracker_number(self.current_tracker_num()):
+            return self.trackers()[self.current_tracker_num()]
         elif not safe:
-            self.current_geotracker_num = -1
+            self.set_current_tracker_num(-1)
         return None
 
     def get_geotracker_item(self, num:int) -> Any:  # TrackerItem
-        return self.geotrackers[num]
+        return self.trackers()[num]
 
     def get_geotracker_item_safe(self, num: int) -> Optional[Any]:  # TrackerItem
         if self.is_proper_geotracker_number(num):
@@ -300,7 +300,7 @@ class TRSceneSetting(PropertyGroup):
 
     def change_current_geotracker(self, num: int) -> None:
         self.fix_geotrackers()
-        self.current_geotracker_num = num
+        self.set_current_tracker_num(num)
         if not self.loader().load_geotracker():
             self.loader().new_kt_geotracker()
 
@@ -312,7 +312,7 @@ class TRSceneSetting(PropertyGroup):
 
     def reload_current_geotracker(self) -> bool:
         self.fix_geotrackers()
-        return self.change_current_geotracker_safe(self.current_geotracker_num)
+        return self.change_current_geotracker_safe(self.current_tracker_num())
 
     def reload_mask_3d(self) -> None:
         geotracker = self.get_current_geotracker_item()
@@ -366,20 +366,20 @@ class TRSceneSetting(PropertyGroup):
 
     def add_geotracker_item(self) -> int:
         self.fix_geotrackers()
-        self.geotrackers.add()
+        self.trackers().add()
         return self.get_last_geotracker_num()
 
     def remove_geotracker_item(self, num: int) -> bool:
         self.fix_geotrackers()
         if self.is_proper_geotracker_number(num):
-            self.geotrackers.remove(num)
-            if self.current_geotracker_num >= num:
-                self.current_geotracker_num -= 1
-                if self.current_geotracker_num < 0:
+            self.trackers().remove(num)
+            if self.current_tracker_num() >= num:
+                self.set_current_tracker_num(self.current_tracker_num() - 1)
+                if self.current_tracker_num() < 0:
                     if self.is_proper_geotracker_number(0):
-                        self.current_geotracker_num = 0
+                        self.set_current_tracker_num(0)
                     else:
-                        self.current_geotracker_num = -1
+                        self.set_current_tracker_num(-1)
             return True
         return False
 
@@ -447,7 +447,7 @@ class TRSceneSetting(PropertyGroup):
             return obj.users <= 1
 
         flag = False
-        for geotracker in self.geotrackers:
+        for geotracker in self.trackers():
             if _object_is_not_in_use(geotracker.geomobj):
                 geotracker.geomobj = None
                 flag = True
