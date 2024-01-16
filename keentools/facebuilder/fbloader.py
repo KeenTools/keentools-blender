@@ -629,6 +629,7 @@ class FBLoader:
                                 wireframe_colors: bool = False,
                                 wireframe_image: bool = False,
                                 adaptive_opacity: bool = False,
+                                camera_pos: bool = False,
                                 batch_wireframe: bool = False,
                                 pins_and_residuals: bool = False) -> None:
         settings = fb_settings()
@@ -651,6 +652,11 @@ class FBLoader:
             wf = FBLoader.wireframer()
             wf.init_wireframe_image(FBLoader.get_builder(),
                                     settings.show_specials)
+        if camera_pos:
+            cam = head.get_camera(cnum)
+            if cam:
+                wf = FBLoader.wireframer()
+                wf.set_camera_pos(cam.camobj, head.headobj)
         if wireframe:
             cls._update_wireframe(head.headobj, kid)
         if pins_and_residuals:
