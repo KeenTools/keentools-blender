@@ -19,8 +19,8 @@
 from bpy.types import Operator
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, get_operator, ErrorType
-from ..facebuilder_config import FBConfig, get_fb_settings
+from ..addon_config import Config, fb_settings, get_operator, ErrorType
+from ..facebuilder_config import FBConfig
 from ..utils import attrs
 from ..utils.ui_redraw import show_ui_panel
 from .fbloader import FBLoader
@@ -41,7 +41,7 @@ class MESH_OT_FBAddHead(Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__}.execute call')
-        settings = get_fb_settings()
+        settings = fb_settings()
         heads_deleted, cams_deleted = settings.fix_heads()
         try:
             obj = self.new_head()
@@ -73,7 +73,7 @@ class MESH_OT_FBAddHead(Operator):
         center_viewports_on_object(obj)
 
         # bpy.ops.object.shade_smooth()
-        h = get_fb_settings().heads.add()
+        h = fb_settings().heads.add()
         h.headobj = obj
         h.reset_sensor_size()
 

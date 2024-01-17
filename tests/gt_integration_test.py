@@ -13,14 +13,13 @@ from keentools.utils.materials import (get_mat_by_name,
                                        assign_material_to_object,
                                        get_shader_node,
                                        make_node_shader_matte)
-from keentools.addon_config import get_operator
+from keentools.addon_config import gt_settings, get_operator
 from keentools.geotracker_config import GTConfig
 from keentools.utils.animation import create_locrot_keyframe
 from keentools.utils.bpy_common import (bpy_current_frame,
                                         bpy_set_current_frame,
                                         bpy_scene,
                                         update_depsgraph)
-from keentools.geotracker_config import get_gt_settings
 from keentools.geotracker.gtloader import GTLoader
 from keentools.utils.ui_redraw import get_areas_by_type
 
@@ -137,7 +136,7 @@ def gt_load_movieclip(dir_path: str, filename: str) -> None:
 
 
 def fake_pinmode_on() -> None:
-    settings = get_gt_settings()
+    settings = gt_settings()
     settings.pinmode = True
     settings.user_interrupts = False
 
@@ -150,7 +149,7 @@ def fake_viewport_work_area() -> None:
 
 
 def wait_for_precalc_end(time_limit: float=GTTestConfig.cube_precalc_time_limit) -> None:
-    settings = get_gt_settings()
+    settings = gt_settings()
     start_time = time.time()
     prev_time = start_time
     overall_time = 0.0
@@ -169,7 +168,7 @@ def wait_for_precalc_end(time_limit: float=GTTestConfig.cube_precalc_time_limit)
 
 
 def wait_for_tracking_end(time_limit: float=GTTestConfig.cube_tracking_time_limit) -> None:
-    settings = get_gt_settings()
+    settings = gt_settings()
     start_time = time.time()
     prev_time = start_time
     overall_time = 0.0
@@ -209,7 +208,7 @@ def prepare_gt_test_environment() -> None:
     except Exception as err:
         _log.error(f'Choose precalc: {str(err)}')
 
-    settings = get_gt_settings()
+    settings = gt_settings()
     geotracker = settings.get_current_geotracker_item()
     geotracker.precalc_start = GTTestConfig.cube_start_frame
     geotracker.precalc_end = GTTestConfig.cube_end_frame
@@ -238,8 +237,8 @@ def prepare_gt_test_environment() -> None:
 class GeoTrackerTest(unittest.TestCase):
     def test_addon_on(self) -> None:
         new_scene()
-        settings = get_gt_settings()
-        self.assertEqual(0, len(settings.geotrackers))
+        settings = gt_settings()
+        self.assertEqual(0, len(settings.trackers()))
 
     def test_tracked_cube(self) -> None:
         new_scene()

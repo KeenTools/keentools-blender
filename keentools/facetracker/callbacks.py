@@ -22,10 +22,10 @@ from bpy.types import Object
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
+                            ft_settings,
                             get_operator,
                             ErrorType)
-from ..facetracker_config import (FTConfig,
-                                  get_ft_settings)
+from ..facetracker_config import FTConfig
 from ..geotracker_config import GTConfig
 from ..utils.images import (get_background_image_object,
                             tone_mapping,
@@ -115,14 +115,14 @@ def subscribe_movie_clip_color_space_watcher(geotracker: Any) -> None:
 def color_space_change_callback(old_name: str) -> None:
     _log.output('color_space_change_callback call')
     _log.output(f'old color space: {old_name}')
-    settings = get_ft_settings()
+    settings = ft_settings()
     geotracker = settings.get_current_geotracker_item()
     update_movieclip(geotracker, None)
 
 
 def lens_change_callback() -> None:
     _log.output(_log.color('magenta', 'lens_change_callback call'))
-    settings = get_ft_settings()
+    settings = ft_settings()
     loader = settings.loader()
     geotracker = settings.get_current_geotracker_item()
     if not settings.pinmode and not settings.is_calculating():
@@ -175,7 +175,7 @@ def lens_change_callback() -> None:
 
 def update_camobj(geotracker, context: Any) -> None:
     _log.output(f'update_camobj: {geotracker.camobj}')
-    settings = get_ft_settings()
+    settings = ft_settings()
     loader = settings.loader()
 
     subscribe_camera_lens_watcher(geotracker.camobj)
@@ -213,7 +213,7 @@ def update_camobj(geotracker, context: Any) -> None:
 
 def update_geomobj(geotracker, context: Any) -> None:
     _log.output(f'update_geomobj: {geotracker.geomobj}')
-    settings = get_ft_settings()
+    settings = ft_settings()
     loader = settings.loader()
     product = settings.product_type()
 
@@ -290,7 +290,7 @@ def update_movieclip(geotracker, context: Any) -> None:
 
 def update_precalc_path(geotracker, context: Any) -> None:
     _log.output('update_precalc_path')
-    settings = get_ft_settings()
+    settings = ft_settings()
     if settings.ui_write_mode:
         return
     ending = '.precalc'
@@ -366,7 +366,7 @@ def update_focal_length_mode(geotracker, context: Any) -> None:
 
 def update_lens_mode(geotracker, context: Any=None) -> None:
     _log.output(f'update_lens_mode: {geotracker.lens_mode}')
-    settings = get_ft_settings()
+    settings = ft_settings()
     if settings.ui_write_mode:
         return
 
@@ -392,7 +392,7 @@ def update_lens_mode(geotracker, context: Any=None) -> None:
 
 def update_track_focal_length(geotracker, context: Any) -> None:
     _log.output('update_track_focal_length')
-    settings = get_ft_settings()
+    settings = ft_settings()
     if settings.ui_write_mode:
         return
     loader = settings.loader()
@@ -404,7 +404,7 @@ def update_track_focal_length(geotracker, context: Any) -> None:
 
 
 def update_mask_3d(geotracker, context: Any) -> None:
-    settings = get_ft_settings()
+    settings = ft_settings()
     settings.loader().update_viewport_shaders(wireframe=True)
     settings.reload_current_geotracker()
     settings.reload_mask_3d()
@@ -412,7 +412,7 @@ def update_mask_3d(geotracker, context: Any) -> None:
 
 def update_mask_2d(geotracker, context: Any) -> None:
     _log.output('update_mask_2d')
-    settings = get_ft_settings()
+    settings = ft_settings()
     settings.reload_current_geotracker()
     if not geotracker.mask_2d:
         remove_background_image_object(geotracker.camobj, index=1)
@@ -436,7 +436,7 @@ def update_mask_source(geotracker, context: Any) -> None:
 
 def update_spring_pins_back(geotracker, context: Any) -> None:
     if geotracker.spring_pins_back:
-        settings = get_ft_settings()
+        settings = ft_settings()
         loader = settings.loader()
         loader.load_geotracker()
         loader.spring_pins_back()
@@ -447,7 +447,7 @@ def update_spring_pins_back(geotracker, context: Any) -> None:
 
 
 def update_solve_for_camera(geotracker, context: Any) -> None:
-    settings = get_ft_settings()
+    settings = ft_settings()
     if not settings.pinmode:
         return
     obj = geotracker.animatable_object()
@@ -461,7 +461,7 @@ def update_solve_for_camera(geotracker, context: Any) -> None:
 
 
 def update_smoothing(geotracker, context: Any) -> None:
-    settings = get_ft_settings()
+    settings = ft_settings()
     if settings.ui_write_mode:
         return
     loader = settings.loader()
@@ -479,7 +479,7 @@ def update_stabilize_viewport_enabled(settings, context: Any) -> None:
 
 def update_locks(geotracker, context: Any) -> None:
     _log.output('update_locks')
-    settings = get_ft_settings()
+    settings = ft_settings()
     if settings.ui_write_mode:
         return
     loader = settings.loader()

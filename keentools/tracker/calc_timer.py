@@ -24,8 +24,12 @@ import bpy
 from bpy.types import Area
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import get_operator, ProductType, get_settings
-from ..geotracker_config import get_gt_settings, GTConfig
+from ..addon_config import (gt_settings,
+                            ft_settings,
+                            get_operator,
+                            ProductType,
+                            get_settings)
+from ..geotracker_config import GTConfig
 from ..facetracker_config import FTConfig
 from ..utils.manipulate import exit_area_localview
 from ..utils.ui_redraw import force_ui_redraw
@@ -40,7 +44,6 @@ from ..geotracker.interface.screen_mesages import (revert_default_screen_message
                                         operation_calculation_screen_message,
                                         staged_calculation_screen_message)
 from ..tracker.tracking_blendshapes import create_relative_shape_keyframe
-from ..facetracker_config import get_ft_settings
 
 
 _log = KTLogger(__name__)
@@ -208,7 +211,7 @@ class CalcTimer(TimerMixin):
 class _CommonTimer(TimerMixin):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_gt_settings()
+        return gt_settings()
 
     @classmethod
     def user_interrupt_operator_name(cls):
@@ -464,7 +467,7 @@ class TrackTimer(_CommonTimer):
 class FTTrackTimer(TrackTimer):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_ft_settings()
+        return ft_settings()
 
     @classmethod
     def user_interrupt_operator_name(cls):
@@ -494,7 +497,7 @@ class RefineTimer(_CommonTimer):
 class FTRefineTimer(RefineTimer):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_ft_settings()
+        return ft_settings()
 
     @classmethod
     def user_interrupt_operator_name(cls):
@@ -514,7 +517,7 @@ class RefineTimerFast(RefineTimer):
 class FTRefineTimerFast(RefineTimerFast):
     @classmethod
     def get_settings(cls) -> Any:
-        return get_ft_settings()
+        return ft_settings()
 
     @classmethod
     def user_interrupt_operator_name(cls):

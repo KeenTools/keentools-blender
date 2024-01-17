@@ -9,8 +9,8 @@ import math
 import bpy
 
 from keentools.utils.kt_logging import KTLogger
-from keentools.addon_config import get_operator
-from keentools.facebuilder_config import FBConfig, get_fb_settings
+from keentools.addon_config import fb_settings, get_operator
+from keentools.facebuilder_config import FBConfig
 import keentools.utils.coords as coords
 from keentools.facebuilder.fbloader import FBLoader
 from keentools.facebuilder.interface.filedialog import load_single_image_file
@@ -90,7 +90,7 @@ def create_random_size_test_images(
 
 
 def select_by_headnum(headnum: int) -> Any:
-    settings = get_fb_settings()
+    settings = fb_settings()
     headobj = settings.get_head(headnum).headobj
     headobj.select_set(state=True)
     bpy.context.view_layer.objects.active = headobj
@@ -98,7 +98,7 @@ def select_by_headnum(headnum: int) -> Any:
 
 
 def out_pinmode() -> None:
-    settings = get_fb_settings()
+    settings = fb_settings()
     FBLoader.out_pinmode(settings.current_headnum)
 
 
@@ -162,7 +162,7 @@ def select_camera(headnum: int = 0, camnum: int = 0) -> None:
 
 
 def change_scene_camera(headnum: int, camnum: int) -> None:
-    settings = get_fb_settings()
+    settings = fb_settings()
     camera = settings.get_camera(headnum, camnum)
     bpy.context.scene.camera = camera.camobj
 
@@ -219,7 +219,7 @@ def pinmode_execute(headnum: int, camnum: int) -> None:
 def create_head_images() -> List:
     new_scene()
     create_head()
-    settings = get_fb_settings()
+    settings = fb_settings()
     headnum = settings.get_last_headnum()
     head = settings.get_head(headnum)
     headobj = head.headobj

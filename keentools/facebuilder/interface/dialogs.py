@@ -20,8 +20,8 @@ import bpy
 from bpy.types import Operator
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config, get_operator
-from ...facebuilder_config import FBConfig, get_fb_settings
+from ...addon_config import Config, fb_settings, get_operator
+from ...facebuilder_config import FBConfig
 from ..callbacks import mesh_update_accepted, mesh_update_canceled
 from ..ui_strings import buttons, warnings
 
@@ -101,7 +101,7 @@ class FB_OT_NoBlendshapesUntilExpressionWarning(Operator):
 
     def execute(self, context):
         if (self.accept):
-            settings = get_fb_settings()
+            settings = fb_settings()
             head = settings.get_head(self.headnum)
             if head is None:
                 return {'CANCELLED'}
@@ -130,7 +130,7 @@ class FB_OT_TexSelector(Operator):
     headnum: bpy.props.IntProperty(default=0)
 
     def draw(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_head(self.headnum)
         layout = self.layout
 
@@ -186,7 +186,7 @@ class FB_OT_TexSelector(Operator):
     def execute(self, context):
         _log.output('START TEXTURE CREATION')
 
-        head = get_fb_settings().get_head(self.headnum)
+        head = fb_settings().get_head(self.headnum)
         if head is None:
             _log.error('WRONG HEADNUM')
             return {'CANCELLED'}

@@ -40,7 +40,7 @@ from bpy.types import AddonPreferences
 from bpy.utils import register_class, unregister_class
 
 # Only minimal imports are performed to check the start
-from .addon_config import Config
+from .addon_config import Config, output_import_statistics
 from .messages import (ERROR_MESSAGES, draw_warning_labels, get_system_info,
                        draw_system_info, draw_long_label, draw_long_labels)
 
@@ -200,6 +200,7 @@ else:
         facetracker_register()
         _log.info('FaceTracker classes have been registered')
         _log.debug(f'=== KEENTOOLS ADDON {bl_info["version"]} REGISTERED ===')
+        output_import_statistics()
 
 
     def unregister():

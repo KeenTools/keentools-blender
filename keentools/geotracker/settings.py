@@ -281,7 +281,15 @@ class GTSceneSettings(TRSceneSetting):
     pinmode_id: StringProperty(name='Unique pinmode ID')
 
     geotrackers: CollectionProperty(type=GeoTrackerItem, name='GeoTrackers')
-    current_geotracker_num: IntProperty(name='Current Geotracker Number', default=-1)
+    def trackers(self) -> Any:
+        return self.geotrackers
+
+    current_geotracker_num: IntProperty(name='Current Geotracker Number',
+                                        default=-1)
+    def current_tracker_num(self) -> int:
+        return self.current_geotracker_num
+    def set_current_tracker_num(self, value: int) -> None:
+        self.current_geotracker_num = value
 
     adaptive_opacity: FloatProperty(
         description='From 0.0 to 1.0',

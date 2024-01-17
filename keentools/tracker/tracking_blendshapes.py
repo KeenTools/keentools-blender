@@ -23,7 +23,8 @@ from typing import Any, Set, Tuple, List, Optional
 from bpy.types import Area, Object
 
 from ..utils.kt_logging import KTLogger
-from ..facetracker_config import FTConfig, get_ft_settings
+from ..addon_config import ft_settings
+from ..facetracker_config import FTConfig
 from ..utils.bpy_common import (bpy_new_action,
                                 bpy_shape_key_move_top,
                                 bpy_shape_key_move_up,
@@ -161,7 +162,7 @@ def bubble_frame_shape(obj: Object, shape_index: int, frame: int) -> int:
 def create_relative_shape_keyframe(frame: int, *,
                                    action_name: str = FTConfig.ft_action_name) -> None:
     _log.output(_log.color('yellow', f'create_shape_keyframe: {frame}'))
-    settings = get_ft_settings()
+    settings = ft_settings()
     loader = settings.loader()
     geotracker = settings.get_current_geotracker_item()
     if not geotracker:
@@ -241,7 +242,7 @@ def create_relative_shape_keyframe(frame: int, *,
 
 def remove_relative_shape_keyframe(frame: int) -> None:
     _log.output(_log.color('yellow', f'remove_relative_shape_keyframe: {frame}'))
-    settings = get_ft_settings()
+    settings = ft_settings()
     geotracker = settings.get_current_geotracker_item()
     if not geotracker:
         return

@@ -16,9 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy
-
-
 from .utils.kt_logging import KTLogger
 
 
@@ -27,14 +24,12 @@ _log = KTLogger(__name__)
 
 _PT = 'FACETRACKER_PT_'
 _MT = 'FACETRACKER_MT_'
-_prefix = 'keentools_ft'
 
 
 class FTConfig:
     operators = 'keentools_ft'
     ft_tool_name = 'FaceTracker'
     ft_tab_category = 'FaceTracker'
-    ft_global_var_name = _prefix + '_settings'
 
     # Operators
     ft_create_facetracker_idname = operators + '.create_facetracker'
@@ -167,6 +162,3 @@ class FTConfig:
     ft_help_smoothing_idname = operators + '.help_smoothing'
 
     ft_action_name = 'ftAction'
-
-def get_ft_settings():
-    return getattr(bpy.context.scene, FTConfig.ft_global_var_name)

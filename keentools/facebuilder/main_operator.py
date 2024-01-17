@@ -26,13 +26,14 @@ from bpy.types import Operator
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
+                            fb_settings,
                             get_operator,
                             show_user_preferences,
                             show_tool_preferences)
 from ..utils.bpy_common import (bpy_background_mode,
                                 bpy_show_addon_preferences,
                                 bpy_view_camera)
-from ..facebuilder_config import FBConfig, get_fb_settings
+from ..facebuilder_config import FBConfig
 from .fbloader import FBLoader
 from ..utils import manipulate, materials, coords, images
 from ..utils.attrs import get_obj_collection, safe_delete_collection
@@ -84,7 +85,7 @@ class FB_OT_SelectHead(Operator):
         if not check_settings():
             return {'CANCELLED'}
 
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_head(self.headnum)
 
         manipulate.center_viewports_on_object(head.headobj)
@@ -106,7 +107,7 @@ class FB_OT_DeleteHead(Operator):
         if not check_settings():
             return {'CANCELLED'}
 
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_head(self.headnum)
 
         for c in head.cameras:
@@ -143,7 +144,7 @@ class FB_OT_SelectCamera(Operator):
         if not check_settings():
             return {'CANCELLED'}
 
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_head(self.headnum)
         camera = head.get_camera(self.camnum)
 
@@ -177,7 +178,7 @@ class FB_OT_CenterGeo(Operator):
         if not check_settings():
             return {'CANCELLED'}
 
-        settings = get_fb_settings()
+        settings = fb_settings()
         headnum = self.headnum
         camnum = self.camnum
 
@@ -209,7 +210,7 @@ class FB_OT_Unmorph(Operator):
     def execute(self, context):
         if not check_settings():
             return {'CANCELLED'}
-        settings = get_fb_settings()
+        settings = fb_settings()
         headnum = self.headnum
         camnum = self.camnum
         head = settings.get_head(headnum)
@@ -249,7 +250,7 @@ class FB_OT_RemovePins(Operator):
         pass
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
 
         if not settings.pinmode:
             return {'CANCELLED'}
@@ -289,7 +290,7 @@ class FB_OT_WireframeColor(Operator):
 
     def execute(self, context):
         def _setup_colors_from_scheme(name):
-            settings = get_fb_settings()
+            settings = fb_settings()
             settings.wireframe_color = FBConfig.color_schemes[name][0]
             settings.wireframe_special_color = FBConfig.color_schemes[name][1]
 
@@ -326,7 +327,7 @@ class FB_OT_FilterCameras(Operator):
         pass
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
 
         if self.action == 'select_all_cameras':
             for c in settings.get_head(self.headnum).cameras:
@@ -355,7 +356,7 @@ class FB_OT_DeleteCamera(Operator):
         if not check_settings():
             return {'CANCELLED'}
 
-        settings = get_fb_settings()
+        settings = fb_settings()
         headnum = self.headnum
         camnum = self.camnum
 
@@ -402,7 +403,7 @@ class FB_OT_ProperViewMenuExec(Operator):
         pass
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         settings.tmp_headnum = self.headnum
         settings.tmp_camnum = self.camnum
         bpy.ops.wm.call_menu(
@@ -438,7 +439,7 @@ class FB_OT_BakeTexture(Operator):
         pass
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_head(self.headnum)
         texture_baked = materials.bake_tex(
             self.headnum, head.preview_texture_name())
@@ -473,7 +474,7 @@ class FB_OT_DeleteTexture(Operator):
         pass
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_head(self.headnum)
         if head is None:
             return {'CANCELLED'}
@@ -495,7 +496,7 @@ class FB_OT_RotateImageCW(Operator):
         pass
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         camera = settings.get_camera(self.headnum, self.camnum)
         camera.rotate_background_image(1)
         camera.update_scene_frame_size()
@@ -517,7 +518,7 @@ class FB_OT_RotateImageCCW(Operator):
         pass
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         camera = settings.get_camera(self.headnum, self.camnum)
         camera.rotate_background_image(-1)
         camera.update_scene_frame_size()
@@ -539,7 +540,7 @@ class FB_OT_ResetImageRotation(Operator):
         pass
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         camera = settings.get_camera(self.headnum, self.camnum)
         camera.reset_background_image_rotation()
         camera.update_scene_frame_size()
@@ -561,7 +562,7 @@ class FB_OT_ResetExpression(Operator):
         pass
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_head(self.headnum)
 
         if not settings.pinmode:
@@ -598,7 +599,7 @@ class FB_OT_ShowTexture(Operator):
         pass
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_head(settings.current_headnum)
         if head is None:
             return {'CANCELLED'}
@@ -631,7 +632,7 @@ class FB_OT_ShowSolid(Operator):
 
     def execute(self, context):
         _log.output('SWITCH TO SOLID MODE')
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
             exit_area_localview(context.area)
@@ -649,7 +650,7 @@ class FB_OT_ExitPinmode(Operator):
         pass
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings.pinmode:
             settings.force_out_pinmode = True
         return {'FINISHED'}
@@ -721,7 +722,7 @@ class FB_OT_ExportHeadToFBX(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
             exit_area_localview(context.area)
@@ -762,7 +763,7 @@ class FB_OT_DefaultPinSettings(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         prefs = settings.preferences()
         settings.pin_size = prefs.pin_size
         settings.pin_sensitivity = prefs.pin_sensitivity
@@ -775,7 +776,7 @@ class FB_OT_DefaultWireframeSettings(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         prefs = settings.preferences()
         settings.wireframe_color = prefs.fb_wireframe_color
         settings.wireframe_special_color = prefs.fb_wireframe_special_color
@@ -817,7 +818,7 @@ class FB_OT_ResetToneGain(ButtonOperator, Operator):
     camnum: IntProperty(default=0)
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         cam = settings.get_camera(self.headnum, self.camnum)
         cam.tone_exposure = Config.default_tone_exposure
         return {'FINISHED'}
@@ -832,7 +833,7 @@ class FB_OT_ResetToneGamma(ButtonOperator, Operator):
     camnum: IntProperty(default=0)
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         cam = settings.get_camera(self.headnum, self.camnum)
         cam.tone_gamma = Config.default_tone_gamma
         return {'FINISHED'}

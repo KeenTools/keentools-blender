@@ -111,7 +111,7 @@ def create_tracker_action(*, product: int) -> ActionStatus:
 
     settings = get_settings(product)
     num = settings.add_geotracker_item()
-    settings.current_geotracker_num = num
+    settings.set_current_tracker_num(num)
     settings.loader().new_kt_geotracker()
 
     selected_objects = bpy_scene_selected_objects()

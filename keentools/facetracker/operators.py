@@ -28,8 +28,8 @@ from bpy.props import (BoolProperty,
                        PointerProperty)
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import get_operator, ProductType, product_name
-from ..facetracker_config import FTConfig, get_ft_settings
+from ..addon_config import ft_settings, get_operator, ProductType, product_name
+from ..facetracker_config import FTConfig
 from ..geotracker_config import GTConfig
 from .ui_strings import buttons
 from .ftloader import FTLoader
@@ -145,7 +145,7 @@ class FT_OT_SwitchToCameraMode(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = get_ft_settings()
+        settings = ft_settings()
         geotracker = settings.get_current_geotracker_item()
         geotracker.solve_for_camera = True
         return {'FINISHED'}
@@ -168,7 +168,7 @@ class FT_OT_SwitchToGeometryMode(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = get_ft_settings()
+        settings = ft_settings()
         geotracker = settings.get_current_geotracker_item()
         geotracker.solve_for_camera = False
         return {'FINISHED'}
@@ -273,7 +273,7 @@ class FT_OT_PrevKeyframe(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
-        settings = get_ft_settings()
+        settings = ft_settings()
         check_status = common_checks(product=product,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=not settings.pinmode,
@@ -302,7 +302,7 @@ class FT_OT_NextKeyframe(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
-        settings = get_ft_settings()
+        settings = ft_settings()
         check_status = common_checks(product=product,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=not settings.pinmode,
@@ -529,7 +529,7 @@ class FT_OT_StopCalculating(Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_ft_settings()
+        settings = ft_settings()
         _log.output(f'StopCalculating btn: {settings.user_interrupts}')
 
         if not settings.user_interrupts:
@@ -567,7 +567,7 @@ class FT_OT_AutoNamePrecalc(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_ft_settings()
+        settings = ft_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
             self.report({'ERROR'}, 'No movie clip')
@@ -592,7 +592,7 @@ class FT_OT_SplitVideoExec(Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_ft_settings()
+        settings = ft_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
@@ -612,7 +612,7 @@ class FT_OT_InterruptModal(Operator):
 
     def invoke(self, context, event):
         _log.output(f'{self.__class__.__name__} invoke')
-        settings = get_ft_settings()
+        settings = ft_settings()
         settings.user_interrupts = False
 
         if not bpy_background_mode():
@@ -623,7 +623,7 @@ class FT_OT_InterruptModal(Operator):
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
-        settings = get_ft_settings()
+        settings = ft_settings()
 
         if settings.user_interrupts:
             _log.output('FT Interruptor has been stopped by value')

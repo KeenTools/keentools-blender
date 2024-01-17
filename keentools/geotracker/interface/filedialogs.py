@@ -29,13 +29,14 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bpy.path import ensure_ext
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config, get_operator, ProductType, get_settings
-from ...geotracker_config import GTConfig, get_gt_settings
-from ...facetracker_config import get_ft_settings
+from ...addon_config import (Config,
+                             gt_settings,
+                             get_operator,
+                             ProductType,
+                             get_settings)
+from ...geotracker_config import GTConfig
 from ...utils.images import (get_sequence_file_number,
-                             find_bpy_image_by_name,
-                             remove_bpy_image_by_name)
-from ...utils.materials import remove_mat_by_name
+                             find_bpy_image_by_name)
 from ...utils.video import (convert_movieclip_to_frames,
                             load_movieclip,
                             get_movieclip_duration)
@@ -206,7 +207,7 @@ class GT_OT_MaskSequenceFilebrowser(Operator, ImportHelper):
         col.label(text='or a movie file')
 
     def execute(self, context):
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -349,7 +350,7 @@ class GT_OT_SplitVideo(Operator, ExportHelper):
         self.filename_ext = _filename_ext(self.file_format)
         _log.output(f'OUTPUT filepath: {self.filepath}')
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
@@ -385,7 +386,7 @@ class GT_OT_SplitVideoExec(Operator):
 
     def execute(self, context):
         _log.output('GT_OT_SplitVideoExec')
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
@@ -504,7 +505,7 @@ class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
         layout.label(text='Output files format:')
         layout.prop(self, 'file_format', expand=True)
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         layout.label(text='Texture size:')
         row = layout.row(align=True)
         row.prop(settings, 'tex_width', text='Width')
@@ -561,7 +562,7 @@ class GT_OT_ReprojectTextureSequence(Operator, ExportHelper):
         self.filename_ext = _filename_ext(self.file_format)
         _log.output(f'OUTPUT reproject filepath: {self.filepath}')
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
             return {'CANCELLED'}
@@ -768,7 +769,7 @@ class GT_OT_TextureFileExport(Operator, ExportHelper):
 
     def execute(self, context):
         _log.output(f'START SAVE TEXTURE: {self.filepath}')
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -791,7 +792,7 @@ class GT_OT_TextureFileExport(Operator, ExportHelper):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}

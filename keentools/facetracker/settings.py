@@ -280,8 +280,15 @@ class FTSceneSettings(TRSceneSetting):
     pinmode: BoolProperty(name='Pinmode status', default=False)
     pinmode_id: StringProperty(name='Unique pinmode ID')
 
-    geotrackers: CollectionProperty(type=FaceTrackerItem, name='GeoTrackers')
-    current_geotracker_num: IntProperty(name='Current Geotracker Number', default=-1)
+    facetrackers: CollectionProperty(type=FaceTrackerItem, name='FaceTrackers')
+    def trackers(self) -> Any:
+        return self.facetrackers
+
+    current_facetracker_num: IntProperty(name='Current FaceTracker Number', default=-1)
+    def current_tracker_num(self) -> int:
+        return self.current_facetracker_num
+    def set_current_tracker_num(self, value: int) -> None:
+        self.current_facetracker_num = value
 
     adaptive_opacity: FloatProperty(
         description='From 0.0 to 1.0',

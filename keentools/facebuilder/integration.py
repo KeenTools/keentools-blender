@@ -27,8 +27,8 @@ from bpy.types import Operator, Object, Material, Image, ShaderNode
 from bpy.props import BoolProperty
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, ActionStatus
-from ..facebuilder_config import FBConfig, get_fb_settings
+from ..addon_config import Config, fb_settings, ActionStatus
+from ..facebuilder_config import FBConfig
 from .ui_strings import buttons
 from .fbloader import FBLoader
 from ..utils.manipulate import select_object_only
@@ -106,7 +106,7 @@ def _create_head() -> Optional[Object]:
         for i, m in enumerate(masks):
             fb.set_mask(i, m)
 
-    settings = get_fb_settings()
+    settings = fb_settings()
     settings.check_heads_and_cams()
     _log.output(f'_create_head current_headnum: {settings.current_headnum}')
     head = settings.get_current_head()
@@ -285,7 +285,7 @@ class FB_OT_ExportToCC(Operator):
         _log.output(f'{self.__class__.__name__} execute')
         self.done = False
 
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_current_head()
         if not head or not head.headobj:
             msg = 'Head not found'
@@ -376,7 +376,7 @@ class FB_OT_ExportToCC(Operator):
             _log.error(f'{msg}')
             return {'CANCELLED'}
 
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_current_head()
         if not head or not head.headobj:
             msg = 'Head not found'

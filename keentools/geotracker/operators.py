@@ -33,13 +33,13 @@ from mathutils import Matrix, Quaternion
 
 from ..utils.kt_logging import KTLogger
 from ..utils.version import BVersion
-from ..addon_config import (get_operator,
-                            Config,
+from ..addon_config import (Config,
+                            gt_settings,
+                            get_operator,
                             ProductType,
                             show_user_preferences,
                             show_tool_preferences)
-from ..geotracker_config import (GTConfig,
-                                 get_gt_settings)
+from ..geotracker_config import GTConfig
 from ..utils.bpy_common import (bpy_current_frame,
                                 bpy_set_current_frame,
                                 bpy_start_frame,
@@ -167,7 +167,7 @@ class GT_OT_SwitchToCameraMode(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         geotracker.solve_for_camera = True
         return {'FINISHED'}
@@ -190,7 +190,7 @@ class GT_OT_SwitchToGeometryMode(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         geotracker.solve_for_camera = False
         return {'FINISHED'}
@@ -229,7 +229,7 @@ class GT_OT_PrevKeyframe(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         product = ProductType.GEOTRACKER
-        settings = get_gt_settings()
+        settings = gt_settings()
         check_status = common_checks(product=product,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=not settings.pinmode,
@@ -258,7 +258,7 @@ class GT_OT_NextKeyframe(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         product = ProductType.GEOTRACKER
-        settings = get_gt_settings()
+        settings = gt_settings()
         check_status = common_checks(product=product,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=not settings.pinmode,
@@ -577,7 +577,7 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         if settings.export_locator_selector == 'SELECTED_PINS':
             check_status = common_checks(product=ProductType.GEOTRACKER,
                                          pinmode=True, geotracker=True,
@@ -592,7 +592,7 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
 
         if settings.export_locator_selector == 'GEOMETRY':
@@ -653,7 +653,7 @@ class GT_OT_StopCalculating(Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_gt_settings()
+        settings = gt_settings()
         _log.output(f'StopCalculating btn: {settings.user_interrupts}')
 
         if not settings.user_interrupts:
@@ -692,7 +692,7 @@ class GT_OT_InterruptModal(Operator):
 
     def invoke(self, context, event):
         _log.output(f'{self.__class__.__name__} invoke')
-        settings = get_gt_settings()
+        settings = gt_settings()
         settings.user_interrupts = False
 
         if not bpy_background_mode():
@@ -703,7 +703,7 @@ class GT_OT_InterruptModal(Operator):
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
-        settings = get_gt_settings()
+        settings = gt_settings()
 
         if settings.user_interrupts:
             _log.output('GT Interruptor has been stopped by value')
@@ -725,7 +725,7 @@ class GT_OT_ResetToneGain(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -740,7 +740,7 @@ class GT_OT_ResetToneGamma(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -755,7 +755,7 @@ class GT_OT_ResetToneMapping(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -771,7 +771,7 @@ class GT_OT_ResetTextureResolution(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_gt_settings()
+        settings = gt_settings()
         if not settings:
             return {'CANCELLED'}
         settings.tex_width = Config.default_tex_width
@@ -786,7 +786,7 @@ class GT_OT_ResetTextureSettings(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_gt_settings()
+        settings = gt_settings()
         if not settings:
             return {'CANCELLED'}
         settings.tex_face_angles_affection = Config.default_tex_face_angles_affection
@@ -801,7 +801,7 @@ class GT_OT_DefaultWireframeSettings(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_gt_settings()
+        settings = gt_settings()
         prefs = settings.preferences()
         settings.wireframe_color = prefs.gt_wireframe_color
         settings.wireframe_opacity = prefs.gt_wireframe_opacity
@@ -815,7 +815,7 @@ class GT_OT_DefaultPinSettings(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_gt_settings()
+        settings = gt_settings()
         prefs = settings.preferences()
         settings.pin_size = prefs.pin_size
         settings.pin_sensitivity = prefs.pin_sensitivity
@@ -837,7 +837,7 @@ class GT_OT_CheckUVOverlapping(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
 
         check_status = check_uv_exists(geotracker.geomobj)
@@ -909,7 +909,7 @@ class GT_OT_RepackOverlappingUV(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         check_status = check_uv_overlapping_with_status(geotracker)
         if not check_status.success:
@@ -985,7 +985,7 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         geotracker.geomobj.hide_set(False)
 
@@ -1005,13 +1005,13 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
         return self.execute(context)
 
     def start_text_on_screen(self, context):
-        settings = get_gt_settings()
+        settings = gt_settings()
         single_line_screen_message('Projecting and baking… Please wait',
                                    register=not settings.pinmode,
                                    context=context)
 
     def finish_text_on_screen(self):
-        settings = get_gt_settings()
+        settings = gt_settings()
         revert_default_screen_message(unregister=not settings.pinmode)
 
     def execute(self, context):
@@ -1026,7 +1026,7 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         selected_keyframes = [x.num for x in geotracker.selected_frames]
         if len(selected_keyframes) == 0:
@@ -1043,7 +1043,7 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'FINISHED'}
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         if settings.pinmode:
             GTLoader.out_pinmode()
 
@@ -1057,7 +1057,7 @@ class GT_OT_AddBakeFrame(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -1095,7 +1095,7 @@ class GT_OT_RemoveBakeFrame(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -1120,7 +1120,7 @@ class GT_OT_GoToBakeFrame(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -1143,7 +1143,7 @@ class GT_OT_TransferTracking(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_gt_settings()
+        settings = gt_settings()
         if settings.transfer_animation_selector == 'CAMERA_TO_GEOMETRY':
             act_status = transfer_tracking_to_geometry_act()
         elif settings.transfer_animation_selector == 'GEOMETRY_TO_CAMERA':
@@ -1174,7 +1174,7 @@ class GT_OT_BakeAnimationToWorld(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
 
         if settings.bake_animation_selector == 'GEOMETRY':
@@ -1301,7 +1301,7 @@ class GT_OT_AutoNamePrecalc(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
             self.report({'ERROR'}, 'No movie clip')
@@ -1373,7 +1373,7 @@ class GT_OT_DeleteTexture(Operator):
         pass
 
     def execute(self, context):
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -1525,7 +1525,7 @@ class GT_OT_RescaleWindow(Operator):
         self.warning_message = '' if check_status.success else \
             check_status.error_message
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         store_camobj_state(self, geotracker.camobj)
         store_geomobj_state(self, geotracker.geomobj)
@@ -1541,7 +1541,7 @@ def _move_preview_func(operator, context):
     revert_object_states()
     transform_matrix = get_operator_reposition_matrix(operator)
 
-    settings = get_gt_settings()
+    settings = gt_settings()
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
@@ -1668,7 +1668,7 @@ class GT_OT_MoveWindow(Operator):
         self.warning_message = '' if check_status.success else \
             check_status.error_message
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         store_camobj_state(self, geotracker.camobj)
         store_geomobj_state(self, geotracker.geomobj)
@@ -1682,7 +1682,7 @@ _rig_empty = None
 
 
 def _rig_preview_func(operator, context):
-    settings = get_gt_settings()
+    settings = gt_settings()
     geotracker = settings.get_current_geotracker_item()
 
     mat = Matrix.Identity(4)
@@ -1783,7 +1783,7 @@ class GT_OT_RigWindow(Operator):
             _rig_empty.show_in_front = False
             _rig_empty.show_name = False
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
 
         objects = []
@@ -1829,7 +1829,7 @@ class GT_OT_RigWindow(Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
 
         global _rig_empty
@@ -1878,13 +1878,13 @@ class GT_OT_SwitchCameraToFixedWarning(Operator):
         return context.window_manager.invoke_props_dialog(self, width=400)
 
     def cancel(self, context):
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         with settings.ui_write_mode_context():
             geotracker.lens_mode = 'ZOOM'
 
     def execute(self, context):
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         if geotracker.camobj:
             remove_fcurve_from_object(geotracker.camobj.data, 'lens')

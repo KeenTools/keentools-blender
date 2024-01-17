@@ -34,14 +34,16 @@ from ..blender_independent_packages.pykeentools_loader import (
     installation_status as pkt_installation_status,
     loaded as pkt_loaded)
 from ..addon_config import (Config,
+                            fb_settings,
+                            gt_settings,
                             get_addon_preferences,
                             get_operator,
                             is_blender_supported,
                             supported_gpu_backend,
                             ProductType,
                             product_name)
-from ..facebuilder_config import FBConfig, get_fb_settings
-from ..geotracker_config import GTConfig, get_gt_settings
+from ..facebuilder_config import FBConfig
+from ..geotracker_config import GTConfig
 from .formatting import split_by_br_or_newlines_ignore_empty
 from ..preferences.progress import InstallationProgress
 from ..messages import (ERROR_MESSAGES, USER_MESSAGES, draw_system_info,
@@ -149,7 +151,7 @@ class FBPREF_OT_UserPreferencesGetColors(Operator):
 
     def execute(self, _):
         _log.output('user_preferences_get_colors')
-        settings = get_fb_settings()
+        settings = fb_settings()
         prefs = settings.preferences()
         prefs.fb_wireframe_color = settings.wireframe_color
         prefs.fb_wireframe_special_color = settings.wireframe_special_color
@@ -169,7 +171,7 @@ class GTPREF_OT_UserPreferencesGetColors(Operator):
 
     def execute(self, _):
         _log.output('gt user_preferences_get_colors')
-        settings = get_gt_settings()
+        settings = gt_settings()
         prefs = settings.preferences()
         color = settings.wireframe_color
         opacity = settings.wireframe_opacity
@@ -209,7 +211,7 @@ class KTPREF_OT_UserPreferencesChanger(Operator):
         elif self.action == 'revert_gt_default_mask_2d_colors':
             _reset_user_preferences_parameter_to_default('gt_mask_2d_color')
             _reset_user_preferences_parameter_to_default('gt_mask_2d_opacity')
-            settings = get_gt_settings()
+            settings = gt_settings()
             prefs = settings.preferences()
             settings.mask_2d_color = prefs.gt_mask_2d_color
             settings.mask_2d_opacity = prefs.gt_mask_2d_opacity
@@ -274,7 +276,7 @@ class KTPREF_OT_UserPreferencesResetAllWarning(Operator):
 
 
 def _update_user_preferences_pin_size(addon_prefs, _):
-    settings = get_fb_settings()
+    settings = fb_settings()
     prefs = settings.preferences()
     settings.pin_size = addon_prefs.pin_size
 
@@ -283,7 +285,7 @@ def _update_user_preferences_pin_size(addon_prefs, _):
 
 
 def _update_user_preferences_pin_sensitivity(addon_prefs, _):
-    settings = get_fb_settings()
+    settings = fb_settings()
     prefs = settings.preferences()
     settings.pin_sensitivity = addon_prefs.pin_sensitivity
 
@@ -292,19 +294,19 @@ def _update_user_preferences_pin_sensitivity(addon_prefs, _):
 
 
 def _update_mask_3d(addon_prefs, _):
-    settings = get_gt_settings()
+    settings = gt_settings()
     settings.mask_3d_color = addon_prefs.gt_mask_3d_color
     settings.mask_3d_opacity = addon_prefs.gt_mask_3d_opacity
 
 
 def _update_mask_2d(addon_prefs, _):
-    settings = get_gt_settings()
+    settings = gt_settings()
     settings.mask_2d_color = addon_prefs.gt_mask_2d_color
     settings.mask_2d_opacity = addon_prefs.gt_mask_2d_opacity
 
 
 def _update_gt_wireframe(addon_prefs, _):
-    settings = get_gt_settings()
+    settings = gt_settings()
     settings.wireframe_color = addon_prefs.gt_wireframe_color
     settings.wireframe_opacity = addon_prefs.gt_wireframe_opacity
 
@@ -840,7 +842,7 @@ class KTAddonPreferences(AddonPreferences):
     def _draw_updater_info(self, layout):
         KTUpdater.call_updater('FaceBuilder')
         CurrentStateExecutor.compute_current_panel_updater_state()
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
         if settings.preferences().updater_state == UpdateState.INITIAL:

@@ -22,8 +22,8 @@ import bpy
 from bpy.types import Object
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config, get_operator, ErrorType
-from ...facebuilder_config import FBConfig, get_fb_settings
+from ...addon_config import Config, fb_settings, get_operator, ErrorType
+from ...facebuilder_config import FBConfig
 from ...utils.manipulate import force_undo_push
 from ...utils import attrs
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
@@ -45,17 +45,17 @@ def push_head_in_undo_history(head: Any,
 
 
 def inc_fb_operation() -> None:
-    settings = get_fb_settings()
+    settings = fb_settings()
     settings.opnum += 1
 
 
 def get_fb_operation() -> int:
-    settings = get_fb_settings()
+    settings = fb_settings()
     return settings.opnum
 
 
 def check_settings() -> bool:
-    settings = get_fb_settings()
+    settings = fb_settings()
     if not settings.check_heads_and_cams():
         heads_deleted, cams_deleted = settings.fix_heads()
         if heads_deleted == 0:
@@ -90,7 +90,7 @@ def _check_facs_available(count: int) -> bool:
 # ------------
 def what_is_state() -> Tuple[str, int]:
     def _how_many_heads() -> Tuple[str, int]:
-        settings = get_fb_settings()
+        settings = fb_settings()
         unknown_headnum = -1
         heads_count = len(settings.heads)
         if heads_count == 0:
@@ -101,7 +101,7 @@ def what_is_state() -> Tuple[str, int]:
             return 'MANY_HEADS', unknown_headnum
 
     context = bpy.context
-    settings = get_fb_settings()
+    settings = fb_settings()
     unknown_headnum = -1
     if settings is None:
         return 'NO_HEADS', unknown_headnum
@@ -145,7 +145,7 @@ def get_current_headnum() -> int:
 def get_current_head() -> Optional[Any]:
     headnum = get_current_headnum()
     if headnum >= 0:
-        settings = get_fb_settings()
+        settings = fb_settings()
         return settings.get_head(headnum)
     return None
 
@@ -160,7 +160,7 @@ def get_obj_from_context(context: Any,
         if headnum < 0:
             return None, 1.0
 
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_head(headnum)
         if not head:
             return None, 1.0
@@ -185,7 +185,7 @@ def _get_image_names(obj: Object) -> str:
 def reconstruct_by_head() -> bool:
     """ Reconstruct Cameras and Scene structures by serial """
     rx, ry = bpy_render_frame()
-    settings = get_fb_settings()
+    settings = fb_settings()
 
     obj = bpy.context.object
 

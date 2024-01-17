@@ -25,8 +25,8 @@ from bpy.props import BoolProperty, IntProperty, StringProperty, EnumProperty, C
 from bpy.path import ensure_ext
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import get_operator
-from ...facebuilder_config import FBConfig, get_fb_settings
+from ...addon_config import fb_settings, get_operator
+from ...facebuilder_config import FBConfig
 from ..fbloader import FBLoader
 from ..utils.exif_reader import (read_exif_to_camera,
                                  auto_setup_camera_from_exif)
@@ -80,7 +80,7 @@ class FB_OT_SingleFilebrowserExec(Operator):
         pass
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
 
         op = get_operator(FBConfig.fb_single_filebrowser_idname)
         op('INVOKE_DEFAULT', headnum=settings.tmp_headnum,
@@ -90,7 +90,7 @@ class FB_OT_SingleFilebrowserExec(Operator):
 
 
 def load_single_image_file(headnum: int, camnum: int, filepath: str) -> bool:
-        settings = get_fb_settings()
+        settings = fb_settings()
         _log.info('Load image file: {}'.format(filepath))
 
         if not settings.check_heads_and_cams():
@@ -214,7 +214,7 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
 
     def execute(self, context):
         _log.output(f'START SAVE TEXTURE: {self.filepath}')
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_head(self.headnum)
         if head is None:
             return {'CANCELLED'}
@@ -231,7 +231,7 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_head(self.headnum)
         if head is None:
             return {'CANCELLED'}
@@ -292,7 +292,7 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
 
     def execute(self, context):
         """ Selected files processing"""
-        settings = get_fb_settings()
+        settings = fb_settings()
         if not settings.is_proper_headnum(self.headnum):
             _log.error(f'WRONG HEADNUM: {self.headnum}/'
                        f'{settings.get_last_headnum()}')

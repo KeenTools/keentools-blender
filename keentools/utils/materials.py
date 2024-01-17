@@ -24,7 +24,8 @@ from bpy.types import Object, Material
 
 from .kt_logging import KTLogger
 from .version import BVersion
-from ..facebuilder_config import FBConfig, get_fb_settings
+from ..addon_config import fb_settings
+from ..facebuilder_config import FBConfig
 from ..facebuilder.fbloader import FBLoader
 from ..utils.images import load_rgba, find_bpy_image_by_name, assign_pixels_data
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
@@ -199,7 +200,7 @@ def _create_frame_data_loader(head: Any, camnums: List, fb: Any) -> Any:
 
 
 def bake_tex(headnum: int, tex_name: str) -> bool:
-    settings = get_fb_settings()
+    settings = fb_settings()
     head = settings.get_head(headnum)
 
     if not head.has_cameras():

@@ -18,8 +18,8 @@
 
 from bpy.types import Menu, Operator
 
-from ...addon_config import ProductType
-from ...facetracker_config import FTConfig, get_ft_settings
+from ...addon_config import ft_settings, ProductType
+from ...facetracker_config import FTConfig
 from ..ui_strings import buttons
 
 
@@ -30,7 +30,7 @@ class FT_MT_ClipMenu(Menu):
 
     def draw(self, context):
         layout = self.layout
-        settings = get_ft_settings()
+        settings = ft_settings()
         geotracker = settings.get_current_geotracker_item()
 
         layout.separator()
