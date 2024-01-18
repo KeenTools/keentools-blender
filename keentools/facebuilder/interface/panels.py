@@ -194,7 +194,8 @@ def _draw_camera_info(layout):
                                  settings.current_camnum)
     if camera is None:
         return
-    col = layout.column()
+    # col = layout.column(align=True)
+    col = layout
 
     row = col.row(align=True)
     row.prop(camera, 'auto_focal_estimation')
@@ -368,8 +369,8 @@ class FB_PT_HeaderPanel(Common, Panel):
 
             col = layout.column(align=True)
             self._draw_many_heads(col, active=False)
-            self._create_head_button(col, active=False)
-            # _draw_exit_pinmode(layout, scale=Config.btn_scale_y, depress=False)
+            # self._create_head_button(col, active=False)
+            _draw_exit_pinmode(col, scale=Config.btn_scale_y, depress=False)
 
         elif state == 'RECONSTRUCT':
             self._draw_reconstruct(layout)
@@ -455,7 +456,7 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
         if not head:
             return
 
-        col = layout.column(align=True)
+        # col = layout.column(align=True)
         # col.label(text='Solver')
         # col.prop(head, 'use_emotions')
         # _draw_expression_settings(col, head, box_layout=False)
@@ -493,7 +494,7 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
 
 class FB_PT_RigidityPanel(AllVisible, Panel):
     bl_idname = 'FBUILDER_PT_rigidity'
-    bl_label = 'Rigidity'
+    bl_label = 'Options'
     bl_options = {'DEFAULT_CLOSED'}
     bl_parent_id = FBConfig.fb_views_panel_idname
 
@@ -519,8 +520,14 @@ class FB_PT_RigidityPanel(AllVisible, Panel):
         if not head:
             return
 
+        if settings.pinmode:
+            col = layout
+            # col = layout.column(align=True)
+            # col.label(text='Camera')
+            _draw_camera_info(col)
+
         col = layout.column(align=True)
-        # col.label(text='Rigidity')
+        col.label(text='Mesh Rigidity')
 
         row = col.row(align=True)
         row.enabled = settings.pinmode
@@ -565,8 +572,9 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             self._draw_add_images_button(headnum, layout, scale=2.0)
             return
 
-        layout.prop(head, 'use_emotions')
-        _draw_expression_settings(layout, head, box_layout=False)
+        col = layout.column(align=True)
+        col.prop(head, 'use_emotions')
+        _draw_expression_settings(col, head, box_layout=False)
 
         common_col = layout.column(align=True)
         for i, camera in enumerate(head.cameras):
@@ -623,13 +631,14 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         self._draw_camera_list(headnum, layout)
 
         if settings.pinmode:
-            _draw_align_button(layout, scale=2.0, depress=False)
+            col = layout.column(align=True)
+            _draw_align_button(col, scale=2.0, depress=False)
 
             # op = layout.operator(FBConfig.fb_unmorph_idname, text='Reset View')
             # op.headnum = headnum
             # op.camnum = settings.current_camnum
 
-            op = layout.operator(FBConfig.fb_camera_actor_idname, text='Reset View')
+            op = col.operator(FBConfig.fb_camera_actor_idname, text='Reset View')
             op.headnum = headnum
             op.camnum = settings.current_camnum
             op.action = 'reset_view'
@@ -641,8 +650,8 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         #         context.space_data.region_3d.view_perspective == 'CAMERA':
         #     _draw_pins_panel(layout)
 
-        if settings.pinmode:
-            _draw_camera_info(layout)
+        # if settings.pinmode:
+        #     _draw_camera_info(layout)
 
         if head.headobj and head.headobj.users == 1:
             _start_geomobj_delete_handler()

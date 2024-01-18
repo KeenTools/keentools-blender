@@ -51,7 +51,7 @@ def addon_installation_dir():
 
 
 MINIMUM_VERSION_REQUIRED = (2023, 3, 0)  # 2023.3.0 (4/5)
-_SUPPORTED_PYTHON_VERSIONS = ((3, 7), (3, 9), (3, 10))
+_SUPPORTED_PYTHON_VERSIONS = ((3, 7), (3, 9), (3, 10), (3, 11))
 
 
 def is_python_supported():
