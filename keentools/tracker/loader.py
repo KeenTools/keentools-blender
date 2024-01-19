@@ -583,7 +583,7 @@ class Loader:
         wf.create_batches()
 
     @classmethod
-    def update_viewport_pins_and_residuals(cls, area: Area) -> None:
+    def _update_viewport_pins_and_residuals(cls, area: Area) -> None:
         vp = cls.viewport()
         cls.load_pins_into_viewport()
         vp.create_batch_2d(area)
@@ -652,7 +652,7 @@ class Loader:
         if wireframe:
             cls._update_viewport_wireframe(wireframe_data=wireframe_data)
         if pins_and_residuals:
-            cls.update_viewport_pins_and_residuals(area)
+            cls._update_viewport_pins_and_residuals(area)
         if timeline:
             cls.update_timeline()
 
