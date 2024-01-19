@@ -71,7 +71,7 @@ def geotracker_keymaps_unregister() -> None:
 
 
 def _find_pan_in_keymap(km) -> Any:
-    kmi = km.keymap_items.find_from_operator('view3d.move')
+    kmi = km.keymap_items.find_from_operator('keentools_fb.move_wrapper')  # view3d.move
     if (kmi and kmi.type == 'MIDDLEMOUSE' and kmi.value == 'PRESS' and
             not kmi.ctrl and not kmi.shift and not kmi.alt):
         return kmi
