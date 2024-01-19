@@ -432,9 +432,9 @@ def expression_views_callback(self, context):
 class FBHeadItem(PropertyGroup):
     use_emotions: BoolProperty(name='Allow facial expressions',
                                default=False, update=update_use_emotions)
-    lock_blinking: BoolProperty(name='Lock eye blinking',
+    lock_blinking: BoolProperty(name='Lock eyelids',
                                 default=False, update=update_lock_blinking)
-    lock_neck_movement: BoolProperty(name='Lock neck movement',
+    lock_neck_movement: BoolProperty(name='Lock neck',
                                      default=False,
                                      update=update_lock_neck_movement)
     headobj: PointerProperty(name='Head', type=Object)

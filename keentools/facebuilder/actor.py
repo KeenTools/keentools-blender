@@ -160,6 +160,9 @@ class FB_OT_CameraActor(bpy.types.Operator):
             op = get_operator(FBConfig.fb_remove_pins_idname)
             op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
 
+            FBLoader.solve(self.headnum, self.camnum)
+            FBLoader.save_fb_serial_and_image_pathes(self.headnum)
+
             FBLoader.update_viewport_shaders(camera_pos=True,
                                              wireframe=True,
                                              pins_and_residuals=True)

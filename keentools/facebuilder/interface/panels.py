@@ -138,18 +138,18 @@ def _draw_align_button(layout, scale=2.0, depress=False):
     # op = row.operator(
     #     FBConfig.fb_pickmode_starter_idname,
     #     text='Align face', icon='SHADERFX', depress=depress)
-    op = row.operator(FBConfig.fb_camera_actor_idname, icon='LOOP_BACK', text='')
+    op = row.operator(FBConfig.fb_camera_actor_idname, icon='TRIA_LEFT', text='') # LOOP_BACK
     op.action = 'rotate_backward'
     op.headnum = settings.current_headnum
     op.camnum = settings.current_camnum
 
     op = row.operator(
         FBConfig.fb_pickmode_starter_idname, **KTIcons.key_value('magic'),
-        text='Auto Align', depress=depress)
+        text='Auto Align      ', depress=depress)  # Extra spaces!!!
     op.headnum = settings.current_headnum
     op.camnum = settings.current_camnum
 
-    op = row.operator(FBConfig.fb_camera_actor_idname, icon='LOOP_FORWARDS', text='')
+    op = row.operator(FBConfig.fb_camera_actor_idname, icon='TRIA_RIGHT', text='') # LOOP_FORWARDS
     op.action = 'rotate_forward'
     op.headnum = settings.current_headnum
     op.camnum = settings.current_camnum
@@ -233,7 +233,10 @@ def _draw_expression_settings(layout, head, box_layout=True):
     else:
         box = layout
     # col = box.column(align=True)
-    col = layout
+    # col = layout
+    row = layout.row(align=True)
+    row.label(text='', icon='BLANK1')
+    col = row.column(align=True)
     col.prop(head, 'lock_blinking')
     col.prop(head, 'lock_neck_movement')
     # col.label(text='Apply expression in 3D:')
@@ -369,8 +372,8 @@ class FB_PT_HeaderPanel(Common, Panel):
 
             col = layout.column(align=True)
             self._draw_many_heads(col, active=False)
-            # self._create_head_button(col, active=False)
-            _draw_exit_pinmode(col, scale=Config.btn_scale_y, depress=False)
+            self._create_head_button(col, active=False)
+            # _draw_exit_pinmode(col, scale=Config.btn_scale_y, depress=False)
 
         elif state == 'RECONSTRUCT':
             self._draw_reconstruct(layout)
@@ -585,7 +588,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             if settings.current_camnum == i and settings.pinmode:
                 view_icon = 'LOOP_BACK'
                 row.operator(FBConfig.fb_select_current_camera_idname,
-                             text=camera.get_image_name(), icon=view_icon,
+                             text='Back to 3D', icon=view_icon,  # camera.get_image_name()
                              depress=True)
             else:
                 op = row.operator(

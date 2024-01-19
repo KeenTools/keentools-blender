@@ -311,6 +311,11 @@ class FB_OT_PinMode(Operator):
         headobj = head.headobj
         first_start = True
 
+        # camera = head.get_camera(settings.current_camnum)
+        # switch_to_camera(context.area, camera.camobj)
+        # from ..utils.ui_redraw import total_redraw_ui
+        # total_redraw_ui()
+
         vp = FBLoader.viewport()
         if not vp.load_all_shaders() and Config.strict_shader_check:
             return {'CANCELLED'}
@@ -453,7 +458,9 @@ class FB_OT_PinMode(Operator):
                    camnum=settings.current_camnum)
             # =================
             push_head_in_undo_history(head, 'Pin Mode Start')
-            facebuilder_keymaps_register()
+
+            if settings.preferences().prevent_fb_view_rotation:
+                facebuilder_keymaps_register()
         else:
             push_head_in_undo_history(head, 'Pin Mode Switch')
             _log.output('FB PINMODE SWITCH ONLY')

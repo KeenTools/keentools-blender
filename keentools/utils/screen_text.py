@@ -41,12 +41,12 @@ class KTScreenText(KTShaderBase):
         self.message: List[Dict] = []
         self.default_text: List[Dict] = [
             {'text': 'Pin Mode ',
-             'color': (1., 1., 1., 0.5),
+             'color': (1., 1., 1., 1.0),
              'size': 24,
              'y': 60},  # line 1
             {'text': 'ESC: Exit | LEFT CLICK: Create Pin '
                      '| RIGHT CLICK: Delete Pin | TAB: Hide/Show',
-             'color': (1., 1., 1., 0.5),
+             'color': (1., 1., 1., 1.),
              'size': 20,
              'y': 30}  # line 2
         ]
