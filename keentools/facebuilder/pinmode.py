@@ -54,6 +54,7 @@ from ..utils.manipulate import switch_to_camera, center_viewports_on_object
 from .ui_strings import buttons
 from ..preferences.hotkeys import (facebuilder_keymaps_register,
                                    facebuilder_keymaps_unregister)
+from ..utils.localview import check_context_localview
 
 
 _log = KTLogger(__name__)
@@ -474,8 +475,8 @@ class FB_OT_PinMode(Operator):
         settings = fb_settings()
         headnum = settings.current_headnum
 
-        # Quit if Screen changed
-        if context.area is None:  # Different operation Space
+        # Quit if Screen changed or out from localview
+        if context.area is None or not check_context_localview(context):
             _log.output('CONTEXT LOST')
             FBLoader.out_pinmode(headnum)
             return True
