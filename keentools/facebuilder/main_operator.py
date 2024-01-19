@@ -996,6 +996,34 @@ class FB_OT_ResetTextureSettings(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
+class FB_OT_MoveWrapper(ButtonOperator, Operator):
+    bl_idname = 'keentools_fb.move_wrapper'
+    bl_label = 'move wrapper'
+    bl_description = 'test operator'
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        settings = fb_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        op = get_operator('view3d.move')
+        return op('EXEC_DEFAULT')
+
+    def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke')
+        settings = fb_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        work_area = FBLoader.get_work_area()
+        if work_area != context.area:
+            return {'PASS_THROUGH'}
+
+        op = get_operator('view3d.move')
+        return op('INVOKE_DEFAULT')
+
+
 CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_SelectCurrentHead,
                        FB_OT_DeleteHead,
@@ -1037,4 +1065,5 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ImageInfo,
                        FB_OT_TextureBakeOptions,
                        FB_OT_ResetTextureResolution,
-                       FB_OT_ResetTextureSettings)
+                       FB_OT_ResetTextureSettings,
+                       FB_OT_MoveWrapper)

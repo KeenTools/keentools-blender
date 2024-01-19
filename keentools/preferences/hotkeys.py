@@ -88,7 +88,7 @@ def facebuilder_keymaps_register() -> None:
     km = keyconfig.keymaps.new(name=category_name, space_type=space_type)
     kmi = _find_pan_in_keymap(km)
     if not kmi:
-        kmi = km.keymap_items.new(idname='view3d.move',
+        kmi = km.keymap_items.new(idname='keentools_fb.move_wrapper', # 'view3d.move',
                                   type='MIDDLEMOUSE',
                                   value='PRESS', head=True)
         _facebuilder_keymaps.append((km, kmi))
