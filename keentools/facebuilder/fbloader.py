@@ -360,6 +360,7 @@ class FBLoader:
 
     @classmethod
     def _load_model_from_head(cls, head: Any) -> bool:
+        _log.output('_load_model_from_head')
         fb = cls.get_builder()
         if not fb.deserialize(head.get_serial_str()):
             _log.warning(f'DESERIALIZE ERROR: {head.get_serial_str()}')
@@ -368,6 +369,7 @@ class FBLoader:
 
     @classmethod
     def load_model_throw_exception(cls, headnum: int) -> bool:
+        _log.output('load_model_throw_exception')
         settings = fb_settings()
         head = settings.get_head(headnum)
         if head is None:
