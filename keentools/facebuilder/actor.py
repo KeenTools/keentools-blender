@@ -39,7 +39,7 @@ from ..utils.blendshapes import (create_blendshape_controls,
                                  convert_blendshapes_animation_to_controls)
 from .ui_strings import buttons
 from .fbloader import FBLoader
-from ..utils.coords import xz_to_xy_rotation_matrix_4x4
+from ..utils.coords import xz_to_xy_rotation_matrix_4x4, update_head_mesh_non_neutral
 
 
 _log = KTLogger(__name__)
@@ -120,6 +120,33 @@ class FB_OT_HistoryActor(bpy.types.Operator):
         return {'CANCELLED'}
 
 
+def _solve(headnum):
+    def find_keyframe_with_more_than_three_pins(fb) -> int:
+        for keyframe in fb.keyframes():
+            pins_count = fb.pins_count(keyframe)
+            if pins_count > 3:
+                return keyframe
+        return -1
+
+    def get_camnum_by_keyframe(head, keyframe) -> int:
+        for i, camera in enumerate(head.cameras):
+            if camera.get_keyframe() == keyframe:
+                return i
+        return -1
+
+    fb = FBLoader.get_builder()
+    keyframe = find_keyframe_with_more_than_three_pins(fb)
+    if keyframe < 0:
+        fb.unmorph()
+        return
+    settings = fb_settings()
+    head = settings.get_current_head()
+    camnum = get_camnum_by_keyframe(head, keyframe)
+    if camnum < 0:
+        return
+    FBLoader.solve(headnum, camnum)
+
+
 class FB_OT_CameraActor(bpy.types.Operator):
     bl_idname = FBConfig.fb_camera_actor_idname
     bl_label = buttons[bl_idname].label
@@ -160,7 +187,8 @@ class FB_OT_CameraActor(bpy.types.Operator):
             op = get_operator(FBConfig.fb_remove_pins_idname)
             op('INVOKE_DEFAULT', headnum=self.headnum, camnum=self.camnum)
 
-            FBLoader.solve(self.headnum, self.camnum)
+            _solve(self.headnum)
+            update_head_mesh_non_neutral(FBLoader.get_builder(), head)
             FBLoader.save_fb_serial_and_image_pathes(self.headnum)
 
             FBLoader.update_viewport_shaders(camera_pos=True,
