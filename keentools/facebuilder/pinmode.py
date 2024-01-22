@@ -281,6 +281,7 @@ class FB_OT_PinMode(Operator):
         return {'FINISHED'}
 
     def invoke(self, context: Any, event: Any) -> Set:
+        _log.output(f'{self.__class__.__name__} invoke')
         settings = fb_settings()
 
         _log.output(f'FB PINMODE ENTER. CURRENT_HEAD: {settings.current_headnum} '
@@ -373,6 +374,8 @@ class FB_OT_PinMode(Operator):
                  msg_content=error_message)
             return {'CANCELLED'}
 
+        _log.output('model loaded')
+
         if not FBLoader.check_mesh(headobj):
             fb = FBLoader.get_builder()
             _log.error('FB MESH IS CORRUPTED {} != {}'.format(
@@ -404,7 +407,9 @@ class FB_OT_PinMode(Operator):
             return {'CANCELLED'}
 
         update_head_mesh_non_neutral(FBLoader.get_builder(), head)
+        _log.output('before update_camera_focal')
         update_camera_focal(camera, fb)
+        _log.output('after update_camera_focal')
 
         self._check_camera_state_changed(get_area_region_3d(area))
         self._check_area_state_changed(area)
