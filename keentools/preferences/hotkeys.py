@@ -70,7 +70,7 @@ def geotracker_keymaps_unregister() -> None:
     _log.output('geotracker_keymaps_unregister end')
 
 
-def _find_pan_in_keymap(km) -> Any:
+def _find_mouse_pan_in_keymap(km) -> Any:
     kmi = km.keymap_items.find_from_operator('keentools_fb.move_wrapper')  # view3d.move
     if (kmi and kmi.type == 'MIDDLEMOUSE' and kmi.value == 'PRESS' and
             not kmi.ctrl and not kmi.shift and not kmi.alt):
@@ -86,25 +86,42 @@ def facebuilder_keymaps_register() -> None:
     space_type = 'VIEW_3D'
     # keymap = keyconfig.keymaps.find(category_name, space_type=space_type)
     km = keyconfig.keymaps.new(name=category_name, space_type=space_type)
-    kmi = _find_pan_in_keymap(km)
-    if not kmi:
-        kmi = km.keymap_items.new(idname='keentools_fb.move_wrapper', # 'view3d.move',
-                                  type='MIDDLEMOUSE',
-                                  value='PRESS', head=True)
-        _facebuilder_keymaps.append((km, kmi))
-    kmi.active = True
+
+    kmi1 = None  # _find_mouse_pan_in_keymap(km)
+    if not kmi1:
+        kmi1 = km.keymap_items.new(idname='keentools_fb.move_wrapper', # 'view3d.move',
+                                   type='MIDDLEMOUSE',
+                                   value='PRESS', head=True)
+        _facebuilder_keymaps.append((km, kmi1))
+    kmi1.active = True
+
+    kmi2 = None  # _find_mouse_pan_in_keymap(km)
+    if not kmi2:
+        kmi2 = km.keymap_items.new(idname='keentools_fb.move_wrapper', # 'view3d.move',
+                                   type='TRACKPADPAN',
+                                   value='ANY', head=True)
+        _facebuilder_keymaps.append((km, kmi2))
+    kmi2.active = True
+
+    kmi3 = None  # _find_mouse_pan_in_keymap(km)
+    if not kmi3:
+        kmi3 = km.keymap_items.new(idname='keentools_fb.move_wrapper', # 'view3d.move',
+                                   type='MOUSEROTATE',
+                                   value='ANY', head=True)
+        _facebuilder_keymaps.append((km, kmi3))
+    kmi3.active = True
+
     _log.output('facebuilder_keymaps_register end')
 
 
 def facebuilder_keymaps_unregister() -> None:
     _log.output('facebuilder_keymaps_unregister start')
     global _facebuilder_keymaps
-    try:
-        for km, kmi in _facebuilder_keymaps:
+    for km, kmi in _facebuilder_keymaps:
+        try:
             _log.output(f'unregister keymap item: {kmi}')
             km.keymap_items.remove(kmi)
-
-    except Exception as err:
-        _log.error(f'facebuilder_keymaps_unregister Exception:\n{str(err)}')
+        except Exception as err:
+            _log.error(f'facebuilder_keymaps_unregister Exception:\n{str(err)}')
     _facebuilder_keymaps.clear()
     _log.output('facebuilder_keymaps_unregister end')
