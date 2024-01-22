@@ -49,7 +49,9 @@ from .utils.manipulate import push_head_in_undo_history
 from .fbloader import FBLoader
 from ..utils.focal_length import update_camera_focal
 from ..utils.html import split_long_string
-from ..utils.localview import exit_area_localview, check_area_active_problem
+from ..utils.localview import (exit_area_localview,
+                               check_area_active_problem,
+                               check_context_localview)
 from ..utils.manipulate import switch_to_camera, center_viewports_on_object
 from .ui_strings import buttons
 
@@ -462,8 +464,8 @@ class FB_OT_PinMode(Operator):
         settings = fb_settings()
         headnum = settings.current_headnum
 
-        # Quit if Screen changed
-        if context.area is None:  # Different operation Space
+        # Quit if Screen changed or out from localview
+        if context.area is None or not check_context_localview(context):
             _log.output('CONTEXT LOST')
             FBLoader.out_pinmode(headnum)
             return True
