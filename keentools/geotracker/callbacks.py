@@ -122,6 +122,9 @@ def lens_change_callback() -> None:
     _log.output(_log.color('magenta', 'lens_change_callback call'))
     settings = gt_settings()
     geotracker = settings.get_current_geotracker_item()
+    if not geotracker or not geotracker.camobj:
+        _log.output(_log.color('red', 'lens_change_callback geotracker/camobj'))
+        return
     if not settings.pinmode and not settings.is_calculating():
         _log.output('lens_change_callback stop 1')
         _set_old_focal_lens_mm(geotracker.camobj.data.lens)
