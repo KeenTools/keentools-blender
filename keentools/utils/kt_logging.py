@@ -60,7 +60,7 @@ class KTLogger():
             self.output = self.debug
 
         _add_module_name(name)
-        self.output(self.color('green', f'import: {name}'))
+        self.green(f'import: {name}')
 
     def info(self, message: str) -> None:
         if self._info_color is None:
@@ -94,6 +94,27 @@ class KTLogger():
         if color not in _log_colors:
             return txt
         return f"{_log_colors[color]}{txt}{_log_colors['reset']}"
+
+    def gray(self, txt: str) -> None:
+        self.output(self.color('gray', txt))
+
+    def red(self, txt: str) -> None:
+        self.output(self.color('red', txt))
+
+    def green(self, txt: str) -> None:
+        self.output(self.color('green', txt))
+
+    def yellow(self, txt: str) -> None:
+        self.output(self.color('yellow', txt))
+
+    def blue(self, txt: str) -> None:
+        self.output(self.color('blue', txt))
+
+    def magenta(self, txt: str) -> None:
+        self.output(self.color('magenta', txt))
+
+    def cyan(self, txt: str) -> None:
+        self.output(self.color('cyan', txt))
 
     def module_names(self) -> List[str]:
         return (_module_names)
