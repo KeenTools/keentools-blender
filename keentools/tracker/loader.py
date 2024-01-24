@@ -603,6 +603,7 @@ class Loader:
                                 hash: bool = False,
                                 adaptive_opacity: bool = False,
                                 geomobj_matrix: bool = False,
+                                edge_indices: bool = False,
                                 wireframe: bool = False,
                                 wireframe_data: bool = False,
                                 pins_and_residuals: bool = False,
@@ -649,6 +650,10 @@ class Loader:
                 mask2d = vp.mask2d()
                 mask2d.image = get_background_image_strict(geotracker.camobj,
                                                            index=1)
+        if edge_indices:
+            wf = cls.viewport().wireframer()
+            gt = cls.kt_geotracker()
+            wf.init_edge_indices(gt)
         if wireframe:
             cls._update_viewport_wireframe(wireframe_data=wireframe_data)
         if pins_and_residuals:
