@@ -1001,17 +1001,19 @@ class FB_OT_MoveWrapper(ButtonOperator, Operator):
     bl_label = 'move wrapper'
     bl_description = 'test operator'
 
+    use_cursor_init: BoolProperty(default=True)
+
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.output(f'{self.__class__.__name__} execute use_cursor_init={self.use_cursor_init}')
         settings = fb_settings()
         if not settings:
             return {'CANCELLED'}
 
         op = get_operator('view3d.move')
-        return op('EXEC_DEFAULT')
+        return op('EXEC_DEFAULT', use_cursor_init=self.use_cursor_init)
 
     def invoke(self, context, event):
-        _log.output(f'{self.__class__.__name__} invoke')
+        _log.output(f'{self.__class__.__name__} invoke use_cursor_init={self.use_cursor_init}')
         settings = fb_settings()
         if not settings:
             return {'CANCELLED'}
@@ -1021,7 +1023,7 @@ class FB_OT_MoveWrapper(ButtonOperator, Operator):
             return {'PASS_THROUGH'}
 
         op = get_operator('view3d.move')
-        return op('INVOKE_DEFAULT')
+        return op('INVOKE_DEFAULT', use_cursor_init=self.use_cursor_init)
 
 
 CLASSES_TO_REGISTER = (FB_OT_SelectHead,
