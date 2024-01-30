@@ -624,16 +624,16 @@ class FBLoader:
         vp.create_batch_2d(area)
 
     @classmethod
-    def update_viewport_shaders(cls, *, area: Area = None,
-                                headnum: Optional[int] = None,
-                                camnum: Optional[int] = None,
-                                wireframe: bool = False,
-                                wireframe_colors: bool = False,
-                                wireframe_image: bool = False,
-                                adaptive_opacity: bool = False,
-                                camera_pos: bool = False,
-                                batch_wireframe: bool = False,
-                                pins_and_residuals: bool = False) -> None:
+    def update_fb_viewport_shaders(cls, *, area: Area = None,
+                                   headnum: Optional[int] = None,
+                                   camnum: Optional[int] = None,
+                                   wireframe: bool = False,
+                                   wireframe_colors: bool = False,
+                                   wireframe_image: bool = False,
+                                   adaptive_opacity: bool = False,
+                                   camera_pos: bool = False,
+                                   batch_wireframe: bool = False,
+                                   pins_and_residuals: bool = False) -> None:
         settings = fb_settings()
         hnum = headnum if headnum is not None else settings.current_headnum
         cnum = camnum if camnum is not None else settings.current_camnum

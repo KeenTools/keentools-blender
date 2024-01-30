@@ -214,12 +214,12 @@ class FB_OT_PinMode(Operator):
 
         FBLoader.load_pins_into_viewport(headnum, camnum)
         vp = FBLoader.viewport()
-        _log.output(f'before FBLoader.update_viewport_shaders '
+        _log.output(f'before FBLoader.update_fb_viewport_shaders '
                     f'{vp.wireframer().get_statistics()}')
-        FBLoader.update_viewport_shaders(area=area,
-                                         headnum=headnum, camnum=camnum,
-                                         wireframe=True,
-                                         pins_and_residuals=True)
+        FBLoader.update_fb_viewport_shaders(area=area,
+                                            headnum=headnum, camnum=camnum,
+                                            wireframe=True,
+                                            pins_and_residuals=True)
 
         _log.output('_delete_found_pin end')
 
@@ -236,9 +236,9 @@ class FB_OT_PinMode(Operator):
         FBLoader.load_model(headnum)
         FBLoader.place_camera(headnum, camnum)
         FBLoader.load_pins_into_viewport(headnum, camnum)
-        FBLoader.update_viewport_shaders(area=area,
-                                         wireframe=True,
-                                         pins_and_residuals=True)
+        FBLoader.update_fb_viewport_shaders(area=area,
+                                            wireframe=True,
+                                            pins_and_residuals=True)
 
     def _on_right_mouse_press(self, area: Area,
                               mouse_x: float, mouse_y: float) -> Set:
