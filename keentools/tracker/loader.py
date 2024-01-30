@@ -552,27 +552,34 @@ class Loader:
 
     @classmethod
     def _update_viewport_wireframe(cls, wireframe_data: bool = False) -> None:
-        _log.output(_log.color('blue', 'update_viewport_wireframe'))
+        _log.blue('update_viewport_wireframe')
         settings = cls.get_settings()
         geotracker = settings.get_current_geotracker_item()
         vp = cls.viewport()
         wf = vp.wireframer()
         if not geotracker or not geotracker.geomobj:
-            _log.output(_log.color('red',
-                                   'update_viewport_wireframe wf.clear_all'))
+            _log.red('update_viewport_wireframe wf.clear_all')
             wf.clear_all()
             wf.create_batches()
             return
 
         if wireframe_data:
-            _log.output(_log.color('green', 'wireframe_data'))
+            _log.green('wireframe_data')
             geo = cls.get_geo()
             wf.init_geom_data_from_core(*cls.get_geo_shader_data(
                 geo, geotracker.geomobj.matrix_world))
 
-        _log.output('wf.init_color_data')
-        wf.init_color_data((*settings.wireframe_color,
-                            settings.wireframe_opacity))
+        if settings.product_type() == ProductType.FACETRACKER:
+            _log.output('wf.init_colors')
+            wf.init_colors((settings.wireframe_color,
+                            settings.wireframe_special_color,
+                            settings.wireframe_midline_color),
+                           settings.wireframe_opacity)
+        else:
+            _log.output('wf.init_color_data')
+            wf.init_color_data((*settings.wireframe_color,
+                                settings.wireframe_opacity))
+
         wf.set_adaptive_opacity(settings.get_adaptive_opacity())
         _log.output('wf.init_selection_from_mesh')
         wf.init_selection_from_mesh(geotracker.geomobj, geotracker.mask_3d,
@@ -655,8 +662,11 @@ class Loader:
                 mask2d.image = get_background_image_strict(geotracker.camobj,
                                                            index=1)
         if edge_indices:
-            gt = cls.kt_geotracker()
-            wf.init_edge_indices(gt)
+            if settings.product_type() == ProductType.FACETRACKER:
+                gt = cls.kt_geotracker()
+                wf.init_edge_indices(gt)
+            else:
+                _log.red('update_viewport_shaders edge_indices inaccessible')
         if wireframe:
             cls._update_viewport_wireframe(wireframe_data=wireframe_data)
         if pins_and_residuals:
