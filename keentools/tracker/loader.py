@@ -603,6 +603,7 @@ class Loader:
                                 hash: bool = False,
                                 adaptive_opacity: bool = False,
                                 geomobj_matrix: bool = False,
+                                camera_pos: bool = False,
                                 edge_indices: bool = False,
                                 wireframe: bool = False,
                                 wireframe_data: bool = False,
@@ -625,12 +626,13 @@ class Loader:
             area = vp.get_work_area()
             if not area:
                 return
+
+        settings = cls.get_settings()
+        wf = cls.viewport().wireframer()
+
         if adaptive_opacity:
-            settings = cls.get_settings()
             settings.calc_adaptive_opacity(area)
         if geomobj_matrix:
-            wf = cls.viewport().wireframer()
-            settings = cls.get_settings()
             geotracker = settings.get_current_geotracker_item()
             if geotracker:
                 geom_mat = geotracker.geomobj.matrix_world if \
@@ -639,8 +641,10 @@ class Loader:
                     geotracker.camobj else Matrix.Identity(4)
                 wf.set_object_world_matrix(geom_mat)
                 wf.set_lit_light_matrix(geom_mat, cam_mat)
+        if camera_pos:
+            geotracker = settings.get_current_geotracker_item()
+            wf.set_camera_pos(geotracker.camobj, geotracker.geomobj)
         if mask:
-            settings = cls.get_settings()
             geotracker = settings.get_current_geotracker_item()
             mask_source = geotracker.get_2d_mask_source()
             if mask_source == 'COMP_MASK':
@@ -651,7 +655,6 @@ class Loader:
                 mask2d.image = get_background_image_strict(geotracker.camobj,
                                                            index=1)
         if edge_indices:
-            wf = cls.viewport().wireframer()
             gt = cls.kt_geotracker()
             wf.init_edge_indices(gt)
         if wireframe:
