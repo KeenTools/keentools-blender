@@ -652,8 +652,7 @@ class FBLoader:
             vp.update_wireframe_colors()
         if wireframe_image:
             wf = FBLoader.wireframer()
-            wf.init_wireframe_image(FBLoader.get_builder(),
-                                    settings.show_specials)
+            wf.init_wireframe_image(settings.show_specials)
         if camera_pos:
             cam = head.get_camera(cnum)
             if cam:

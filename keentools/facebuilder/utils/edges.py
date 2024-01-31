@@ -53,6 +53,7 @@ from ...utils.gpu_control import (set_blend_alpha,
                                   set_depth_mask,
                                   set_color_mask,
                                   revert_blender_viewport_state)
+from ...utils.fb_wireframe_image import create_wireframe_image
 
 
 _log = KTLogger(__name__)
@@ -206,41 +207,17 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
     def switch_to_complex_shader(self) -> None:
         self.use_simple_shader = False
 
-    def init_wireframe_image(self, fb: Any, show_specials: bool) -> bool:
+    def init_wireframe_image(self, show_specials: bool) -> bool:
         _log.output('init_wireframe_image call')
         if not show_specials:
             self.switch_to_simple_shader()
             return False
 
-        if not fb.face_texture_available():
+        if not create_wireframe_image(self.texture_colors):
             self.switch_to_simple_shader()
-            _log.error('init_wireframe_image cannot initialize image 1')
-            return False
 
-        fb.set_face_texture_colors(self.texture_colors)
-        image_data = fb.face_texture()
-        size = image_data.shape[:2]
-        assert size[0] > 0 and size[1] > 0
-        image_name = FBConfig.coloring_texture_name
-        wireframe_image = find_bpy_image_by_name(image_name)
-        if wireframe_image is None or \
-                not check_bpy_image_has_same_size(wireframe_image, size):
-            remove_bpy_image(wireframe_image)
-            wireframe_image = bpy.data.images.new(image_name,
-                                                  width=size[1],
-                                                  height=size[0],
-                                                  alpha=True,
-                                                  float_buffer=False)
-        if wireframe_image:
-            rgba = np.ones((size[1], size[0], 4), dtype=np.float32)
-            rgba[:, :, :3] = image_data
-            assign_pixels_data(wireframe_image.pixels, rgba.ravel())
-            wireframe_image.pack()
-            self.switch_to_complex_shader()
-            return True
-        _log.error('init_wireframe_image cannot initialize image 2')
-        self.switch_to_simple_shader()
-        return False
+        self.switch_to_complex_shader()
+        return True
 
     def _activate_coloring_image(self, image: Image) -> None:
         if image.gl_load():

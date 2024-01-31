@@ -465,7 +465,7 @@ class Loader:
             warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
             return False
         except Exception as err:
-            _log.error(f'solve UNKNOWN EXCEPTION: \n{str(err)}')
+            _log.error(f'solve UNKNOWN EXCEPTION: \n{type(err)}\n{str(err)}')
             return False
         _log.output('Loader.solve finished')
         return True

@@ -160,7 +160,7 @@ class FB_OT_PinMode(Operator):
         vp.update_wireframe_colors()
         wf = vp.wireframer()
         fb = FBLoader.get_builder()
-        wf.init_wireframe_image(fb, settings.show_specials)
+        wf.init_wireframe_image(settings.show_specials)
 
         keyframe = head.get_keyframe(settings.current_camnum)
         wf.init_edge_indices(fb)

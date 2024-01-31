@@ -268,11 +268,9 @@ class PinMode(Operator):
 
         # TODO: Make this part more common for FaceTracker and GeoTracker
         if settings.product_type() == ProductType.FACETRACKER:
-            from ..facebuilder.fbloader import FBLoader
             wf = loader.viewport().wireframer()
-            fb = FBLoader.get_builder()
             wf.set_camera_pos(geotracker.camobj, geotracker.geomobj)
-            wf.init_wireframe_image(fb, True)  # TODO: use settings.show_specials
+            wf.init_wireframe_image(True)  # TODO: use settings.show_specials
 
         self.camera_clip_start = geotracker.camobj.data.clip_start
         self.camera_clip_end = geotracker.camobj.data.clip_end
