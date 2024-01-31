@@ -45,8 +45,8 @@ from ..utils.compositing import (get_compositing_shadow_scene,
                                  create_mask_compositing_node_tree,
                                  viewer_node_to_image,
                                  get_rendered_mask_bpy_image)
-
 from ..geotracker.ui_strings import PrecalcStatusMessage
+from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 
 
 _log = KTLogger(__name__)
@@ -207,20 +207,25 @@ class TrackerItem(PropertyGroup):
                 poly_set_list.append(set(p.vertices[:]))
 
         wrong_pins = []
-        for i in range(gt.pins_count()):
-            pin = gt.pin(keyframes[0], i)
-            if not pin:
-                wrong_pins.append(i)
-                continue
-            sp = pin.surface_point
-            gp = sp.geo_point_idxs
-            if len(gp) < 3 or gp[0] >= verts_count or \
-                    gp[1] >= verts_count or gp[2] >= verts_count:
-                wrong_pins.append(i)
-                continue
-            if deep_analyze and not _polygon_exists(sp.geo_point_idxs[:],
-                                                    poly_set_list):
-                wrong_pins.append(i)
+        try:
+            for i in range(gt.pins_count()):
+                pin = gt.pin(keyframes[0], i)
+                if not pin:
+                    wrong_pins.append(i)
+                    continue
+                sp = pin.surface_point
+                gp = sp.geo_point_idxs
+                if len(gp) < 3 or gp[0] >= verts_count or \
+                        gp[1] >= verts_count or gp[2] >= verts_count:
+                    wrong_pins.append(i)
+                    continue
+                if deep_analyze and not _polygon_exists(sp.geo_point_idxs[:],
+                                                        poly_set_list):
+                    wrong_pins.append(i)
+        except pkt_module().FaceGeoInputException as err:
+            _log.red(f'check_pins_on_geometry FaceGeoInputException:\n{str(err)}')
+            gt.remove_pins()
+            return False
 
         if len(wrong_pins) > 0:
             _log.output(f'WRONG PINS: {wrong_pins}')
