@@ -93,7 +93,7 @@ class FTRasterEdgeShader3D(FBRasterEdgeShader3D):
                     f'\nedge_uvs: {self.edge_uvs.shape}')
 
     def init_selection_from_mesh(self, obj: Object, mask_3d: str,
-                                     inverted: bool) -> None:
+                                 inverted: bool) -> None:
         pass
 
     def set_lit_wireframe(self, state: bool) -> None:
