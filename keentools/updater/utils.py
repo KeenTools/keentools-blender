@@ -179,7 +179,7 @@ class CurrentStateExecutor:
 class KTUpdater:
     _response = {'FaceBuilder': None, 'GeoTracker': None, 'FaceTracker': None}
     _parsed_response_content = {'FaceBuilder': None, 'GeoTracker': None,
-                                'FaceTracker': None}
+                                'FaceTracker': None, 'KeenTools': None}
 
     @classmethod
     def is_available(cls) -> bool:
@@ -269,6 +269,7 @@ class KTUpdater:
 
     @classmethod
     def call_updater(cls, product: str) -> None:
+        _log.cyan(f'call_updater [{product}]')
         if cls.has_response_message(product) or not pkt_is_installed():
             return
         uc = cls.get_update_checker()
