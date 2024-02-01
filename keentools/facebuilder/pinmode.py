@@ -163,7 +163,7 @@ class FB_OT_PinMode(Operator):
         wf.init_wireframe_image(settings.show_specials)
 
         keyframe = head.get_keyframe(settings.current_camnum)
-        wf.init_edge_indices(fb)
+        wf.init_edge_indices()
 
         wf.set_object_world_matrix(head.headobj.matrix_world)
         camobj = head.get_camera(settings.current_camnum).camobj

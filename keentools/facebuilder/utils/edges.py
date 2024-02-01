@@ -26,6 +26,7 @@ from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
 
 from ...utils.kt_logging import KTLogger
+from ...addon_config import fb_settings
 from ...facebuilder_config import FBConfig
 from ...utils.edges import KTEdgeShaderBase, KTEdgeShader2D
 from ...utils.coords import (frame_to_image_space,
@@ -53,7 +54,8 @@ from ...utils.gpu_control import (set_blend_alpha,
                                   set_depth_mask,
                                   set_color_mask,
                                   revert_blender_viewport_state)
-from ...utils.fb_wireframe_image import create_wireframe_image
+from ...utils.fb_wireframe_image import (create_wireframe_image,
+                                         create_edge_indices)
 
 
 _log = KTLogger(__name__)
@@ -401,42 +403,14 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
         self.triangle_indices = get_triangulation_indices(mesh)
 
     def _clear_edge_uvs(self) -> None:
-        self.edge_indices = np.empty(shape=(0,), dtype=np.int32)
+        self.edge_indices = np.empty(shape=(0, 2), dtype=np.int32)
         self.edge_uvs = np.empty(shape=(0, 3), dtype=np.float32)
         self.wide_edge_uvs = np.empty(shape=(0, 3), dtype=np.float32)
 
-    def init_edge_indices(self, builder: Any) -> None:
-        _log.output(_log.color('blue', 'init_edge_indices call'))
-        if not builder.face_texture_available():
-            self._clear_edge_uvs()
-            return
-
-        geo = builder.applied_args_replaced_uvs_model()
-        me = geo.mesh(0)
-        face_counts = [me.face_size(x) for x in range(me.faces_count())]
-        indices = np.empty((sum(face_counts), 2), dtype=np.int32)
-        tex_coords = np.empty((sum(face_counts) * 2, 2), dtype=np.float32)
-
-        i = 0
-        for face, count in enumerate(face_counts):
-            for k in range(0, count - 1):
-                tex_coords[i * 2] = me.uv(face, k)
-                tex_coords[i * 2 + 1] = me.uv(face, k + 1)
-                indices[i] = (me.face_point(face, k),
-                              me.face_point(face, k + 1))
-                i += 1
-
-            tex_coords[i * 2] = me.uv(face, count - 1)
-            tex_coords[i * 2 + 1] = me.uv(face, 0)
-            indices[i] = (me.face_point(face, count - 1),
-                          me.face_point(face, 0))
-            i += 1
-
-        self.edge_indices = indices
-        self.edge_uvs = tex_coords
-        _log.output(f'init_edge_indices'
-                    f'\nedge_indices: {self.edge_indices.shape}'
-                    f'\nedge_uvs: {self.edge_uvs.shape}')
+    def init_edge_indices(self) -> None:
+        _log.blue('fb init_edge_indices')
+        fb = fb_settings().loader().get_builder()
+        self.edge_indices, self.edge_uvs = create_edge_indices(fb=fb)
 
     def init_geom_data_from_core(self, edge_vertices: Any,
                                  edge_vertex_normals: Any,

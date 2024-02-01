@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from typing import Any, Tuple, List, Optional
+from typing import Any, Tuple, List, Dict, Optional
 import numpy as np
 
 from .kt_logging import KTLogger
@@ -27,31 +27,36 @@ from .images import (check_bpy_image_has_same_size,
                      remove_bpy_image,
                      assign_pixels_data)
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..facebuilder.utils.manipulate import check_facs_available
 
 
 _log = KTLogger(__name__)
 _fb: Optional[Any] = None
 
 
+def _FBCameraInput_class() -> Any:
+    class _FBCameraInput(pkt_module().FaceBuilderCameraInputI):
+        def projection(self, frame):
+            assert frame == 0
+            return pkt_module().math.proj_mat(
+                fl_to_haperture=50.0 / 36, w=1920.0, h=1080.0,
+                pixel_aspect_ratio=1.0, near=0.1, far=1000.0)
+
+        def view(self, frame):
+            assert frame == 0
+            return np.eye(4)
+
+        def image_size(self, frame):
+            assert frame == 0
+            return 1920, 1080
+
+    return _FBCameraInput
+
+
 def _get_fb() -> Any:
     global _fb
     if _fb is None:
-        class _FBCameraInput(pkt_module().FaceBuilderCameraInputI):
-            def projection(self, frame):
-                assert frame == 0
-                return pkt_module().math.proj_mat(
-                    fl_to_haperture=50.0 / 36, w=1920.0, h=1080.0,
-                    pixel_aspect_ratio=1.0, near=0.1, far=1000.0)
-
-            def view(self, frame):
-                assert frame == 0
-                return np.eye(4)
-
-            def image_size(self, frame):
-                assert frame == 0
-                return 1920, 1080
-
-        _fb = pkt_module().FaceBuilder(_FBCameraInput())
+        _fb = pkt_module().FaceBuilder(_FBCameraInput_class()())
     return _fb
 
 
@@ -88,3 +93,65 @@ def create_wireframe_image(texture_colors: List) -> bool:
 
     _log.error('create_wireframe_image: cannot initialize image 3')
     return False
+
+
+_cached_edge_indices_dict: Dict = dict()
+
+
+def create_edge_indices(*, fb: Optional[Any] = None,
+                        geo: Optional[Any] = None) -> Tuple[Any, Any]:
+    def _empty_result() -> Tuple[Any, Any]:
+        _log.red('create_edge_indices _empty_result')
+        return (np.empty(shape=(0, 2), dtype=np.int32),
+                np.empty(shape=(0, 3), dtype=np.float32))
+
+    global _cached_edge_indices_dict
+    _log.blue('create_edge_indices')
+    work_fb = _get_fb() if fb is None else fb
+
+    if not work_fb.face_texture_available():
+        _log.error('create_edge_indices: fb.face_texture_available is False')
+        return _empty_result()
+
+    working_geo = geo if geo is not None else work_fb.applied_args_replaced_uvs_model()
+    me = working_geo.mesh(0)
+    vert_count = me.points_count()
+    poly_count = me.faces_count()
+
+    cache_key = poly_count * 1000000 + vert_count
+
+    if cache_key in _cached_edge_indices_dict:
+        _log.green(f'create_edge_indices: cached data is used [{cache_key}]')
+        return _cached_edge_indices_dict[cache_key]
+
+    if not check_facs_available(vert_count):
+        _log.error(f'create_edge_indices: '
+                   f'check_facs_available({vert_count}) is False')
+        return _empty_result()
+
+    _log.output('create_edge_indices: calculate new indices')
+    face_counts = [me.face_size(x) for x in range(me.faces_count())]
+    sum_face_counts = sum(face_counts)
+    indices = np.empty((sum_face_counts, 2), dtype=np.int32)
+    tex_uvs = np.empty((sum_face_counts * 2, 2), dtype=np.float32)
+
+    i = 0
+    for face, count in enumerate(face_counts):
+        for k in range(0, count - 1):
+            tex_uvs[i * 2] = me.uv(face, k)
+            tex_uvs[i * 2 + 1] = me.uv(face, k + 1)
+            indices[i] = (me.face_point(face, k),
+                          me.face_point(face, k + 1))
+            i += 1
+
+        tex_uvs[i * 2] = me.uv(face, count - 1)
+        tex_uvs[i * 2 + 1] = me.uv(face, 0)
+        indices[i] = (me.face_point(face, count - 1),
+                      me.face_point(face, 0))
+        i += 1
+
+    _log.output(f'create_edge_indices: put in cache [{cache_key}]'
+                f'\nedge_indices: {indices.shape}'
+                f'\nedge_uvs: {tex_uvs.shape}')
+    _cached_edge_indices_dict[cache_key] = (indices, tex_uvs)
+    return indices, tex_uvs

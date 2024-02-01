@@ -663,8 +663,7 @@ class Loader:
                                                            index=1)
         if edge_indices:
             if settings.product_type() == ProductType.FACETRACKER:
-                gt = cls.kt_geotracker()
-                wf.init_edge_indices(gt)
+                wf.init_edge_indices()
             else:
                 _log.red('update_viewport_shaders edge_indices inaccessible')
         if wireframe:

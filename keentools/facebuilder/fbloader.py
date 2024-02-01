@@ -608,8 +608,8 @@ class FBLoader:
         fb = cls.get_builder()
         vp = cls.viewport()
         wf = vp.wireframer()
-        wf.init_geom_data_from_fb(fb, obj, keyframe)
-        wf.init_edge_indices(fb)
+        wf.init_geom_data_from_fb(fb, obj, keyframe)  # TODO: Optimize it!
+        wf.init_edge_indices()
         geo = fb.applied_args_model_at(keyframe)
         wf.init_geom_data_from_core(*FBLoader.get_geo_shader_data(geo))
         wf.create_batches()
