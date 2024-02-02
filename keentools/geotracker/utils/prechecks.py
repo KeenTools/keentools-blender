@@ -33,6 +33,7 @@ from ...utils.manipulate import exit_area_localview, switch_to_camera
 from ...utils.bpy_common import (bpy_all_scene_objects,
                                  bpy_scene_selected_objects,
                                  bpy_background_mode)
+from ...facebuilder.utils.manipulate import check_facs_available
 
 
 _log = KTLogger(__name__)
@@ -59,8 +60,8 @@ def revert_camera(area: Area, *,
         exit_area_localview(area)
 
 
-def get_alone_object_in_selection_by_type(selection: List,
-                                          obj_type: str = 'MESH'):
+def get_alone_object_in_selection_by_type(
+        selection: List, obj_type: str = 'MESH') -> Optional[Object]:
     found_obj = None
     for obj in selection:
         if obj.type == obj_type:
@@ -70,14 +71,35 @@ def get_alone_object_in_selection_by_type(selection: List,
     return found_obj
 
 
-def get_alone_object_in_scene_by_type(obj_type: str = 'MESH'):
+def get_alone_object_in_scene_by_type(
+        obj_type: str = 'MESH') -> Optional[Object]:
     return get_alone_object_in_selection_by_type(bpy_all_scene_objects(),
                                                  obj_type)
 
 
-def get_alone_object_in_scene_selection_by_type(obj_type: str = 'MESH'):
+def get_alone_object_in_scene_selection_by_type(
+        obj_type: str = 'MESH') -> Optional[Object]:
     return get_alone_object_in_selection_by_type(bpy_scene_selected_objects(),
                                                  obj_type)
+
+
+def get_alone_ft_object_in_selection(selection: List) -> Optional[Object]:
+    obj_type = 'MESH'
+    found_obj = None
+    for obj in selection:
+        if obj.type == obj_type and check_facs_available(len(obj.data.vertices)):
+            if found_obj is not None:
+                return None
+            found_obj = obj
+    return found_obj
+
+
+def get_alone_ft_object_in_scene():
+    return get_alone_ft_object_in_selection(bpy_all_scene_objects())
+
+
+def get_alone_ft_object_in_scene_selection():
+    return get_alone_ft_object_in_selection(bpy_scene_selected_objects())
 
 
 def show_warning_dialog(err: Any, limit=70) -> None:

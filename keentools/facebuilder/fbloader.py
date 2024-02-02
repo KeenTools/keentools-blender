@@ -608,8 +608,8 @@ class FBLoader:
         fb = cls.get_builder()
         vp = cls.viewport()
         wf = vp.wireframer()
-        wf.init_geom_data_from_fb(fb, obj, keyframe)
-        wf.init_edge_indices(fb)
+        wf.init_geom_data_from_fb(fb, obj, keyframe)  # TODO: Optimize it!
+        wf.init_edge_indices()
         geo = fb.applied_args_model_at(keyframe)
         wf.init_geom_data_from_core(*FBLoader.get_geo_shader_data(geo))
         wf.create_batches()
@@ -624,16 +624,16 @@ class FBLoader:
         vp.create_batch_2d(area)
 
     @classmethod
-    def update_viewport_shaders(cls, *, area: Area = None,
-                                headnum: Optional[int] = None,
-                                camnum: Optional[int] = None,
-                                wireframe: bool = False,
-                                wireframe_colors: bool = False,
-                                wireframe_image: bool = False,
-                                adaptive_opacity: bool = False,
-                                camera_pos: bool = False,
-                                batch_wireframe: bool = False,
-                                pins_and_residuals: bool = False) -> None:
+    def update_fb_viewport_shaders(cls, *, area: Area = None,
+                                   headnum: Optional[int] = None,
+                                   camnum: Optional[int] = None,
+                                   wireframe: bool = False,
+                                   wireframe_colors: bool = False,
+                                   wireframe_image: bool = False,
+                                   adaptive_opacity: bool = False,
+                                   camera_pos: bool = False,
+                                   batch_wireframe: bool = False,
+                                   pins_and_residuals: bool = False) -> None:
         settings = fb_settings()
         hnum = headnum if headnum is not None else settings.current_headnum
         cnum = camnum if camnum is not None else settings.current_camnum
@@ -652,8 +652,7 @@ class FBLoader:
             vp.update_wireframe_colors()
         if wireframe_image:
             wf = FBLoader.wireframer()
-            wf.init_wireframe_image(FBLoader.get_builder(),
-                                    settings.show_specials)
+            wf.init_wireframe_image(settings.show_specials)
         if camera_pos:
             cam = head.get_camera(cnum)
             if cam:

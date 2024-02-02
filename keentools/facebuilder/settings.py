@@ -16,10 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+from typing import Any
 import math
 from contextlib import contextmanager
 
-import bpy
 import numpy as np
 from bpy.props import (
     BoolProperty,
@@ -34,7 +34,10 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup, Object, Area, Image
 
-from ..addon_config import Config, fb_settings, get_addon_preferences
+from ..addon_config import (Config,
+                            fb_settings,
+                            get_addon_preferences,
+                            ProductType)
 from ..facebuilder_config import FBConfig
 from .fbloader import FBLoader
 from ..utils.coords import get_camera_border, projection_matrix
@@ -64,7 +67,10 @@ from .utils.manipulate import get_current_head
 from ..utils.images import tone_mapping, reset_tone_mapping
 from ..utils.viewport_state import ViewportStateItem
 from ..blender_independent_packages.pykeentools_loader.config import set_mock_update_paths
-from ..utils.bpy_common import bpy_render_frame
+from ..utils.bpy_common import (bpy_render_frame,
+                                bpy_scene,
+                                bpy_remove_object,
+                                bpy_abspath)
 
 
 class FBExifItem(PropertyGroup):
@@ -171,12 +177,11 @@ class FBCameraItem(PropertyGroup):
 
     def update_scene_frame_size(self):
         if self.image_width > 0 and self.image_height > 0:
+            render = bpy_scene().render
             if (self.orientation % 2) == 0:
-                render = bpy.context.scene.render
                 render.resolution_x = self.image_width
                 render.resolution_y = self.image_height
             else:
-                render = bpy.context.scene.render
                 render.resolution_x = self.image_height
                 render.resolution_y = self.image_width
 
@@ -315,7 +320,7 @@ class FBCameraItem(PropertyGroup):
         self.delete_cam_background_images()
 
     def delete_camobj(self):
-        bpy.data.objects.remove(self.camobj, do_unlink=True)
+        bpy_remove_object(self.camobj)
 
     def get_keyframe(self):
         return self.keyframe_id
@@ -328,7 +333,7 @@ class FBCameraItem(PropertyGroup):
 
     def get_abspath(self):
         if self.cam_image is not None:
-            return bpy.path.abspath(self.cam_image.filepath)
+            return bpy_abspath(self.cam_image.filepath)
         else:
             return None
 
@@ -632,7 +637,7 @@ class FBHeadItem(PropertyGroup):
             return
         self.headobj[FBConfig.fb_images_prop_name] = res
         # Dir name of current scene
-        self.headobj[FBConfig.fb_dir_prop_name] = bpy.path.abspath("//")
+        self.headobj[FBConfig.fb_dir_prop_name] = bpy_abspath("//")
 
     def should_use_emotions(self):
         return self.use_emotions
@@ -677,6 +682,12 @@ class FBHeadItem(PropertyGroup):
 
 
 class FBSceneSettings(PropertyGroup):
+    def product_type(self) -> int:
+        return ProductType.FACEBUILDER
+
+    def loader(self) -> Any:
+        return FBLoader
+
     # ---------------------
     # Main settings
     # ---------------------
@@ -760,7 +771,7 @@ class FBSceneSettings(PropertyGroup):
         description='Use different colors for important head parts '
                     'on the mesh',
         name='Special face parts', default=True, update=update_wireframe_image)
-    wireframe_backface_culling: bpy.props.BoolProperty(
+    wireframe_backface_culling: BoolProperty(
         name='Backface culling',
         default=True,
         update=update_wireframe_func)
@@ -984,7 +995,7 @@ class FBSceneSettings(PropertyGroup):
                 for c in h.cameras:
                     try:
                         # Remove camera object
-                        bpy.data.objects.remove(c.camobj)  # , do_unlink=True
+                        bpy_remove_object(c.camobj)
                         cams_deleted += 1
                     except Exception:
                         pass

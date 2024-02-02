@@ -249,12 +249,11 @@ def fb_wireframer(context: Any) -> None:
     geo = fb.applied_args_model()
 
     wireframer = vp.wireframer()
-    wireframer.init_edge_indices(fb)
+    wireframer.init_edge_indices()
     wireframer.init_geom_data_from_core(*FBLoader.get_geo_shader_data(geo))
     wireframer.init_colors((*FBConfig.color_schemes['white'],
                             FBConfig.midline_color), 0.5)
-    wireframer.init_wireframe_image(fb, True)
-    wireframer.init_edge_indices(fb)
+    wireframer.init_wireframe_image(True)
     bpy_remove_object(obj)
     wireframer.create_batches()
     wireframer.register_handler(context)

@@ -27,7 +27,6 @@ from ...facebuilder_config import FBConfig
 from ...utils.manipulate import force_undo_push
 from ...utils import attrs
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
-from ..fbloader import FBLoader
 from ..utils.cameras import (get_camera_params, default_camera_params)
 from .exif_reader import (read_exif_to_camera, auto_setup_camera_from_exif)
 from ...utils.bpy_common import bpy_render_frame, bpy_set_render_frame
@@ -72,16 +71,16 @@ def _is_facebuilder_object(obj: Object) -> bool:
 def is_facebuilder_head_topology(obj: Object) -> bool:
     if not obj or obj.type != 'MESH':
         return False
-    return _check_facs_available(len(obj.data.vertices))
+    return check_facs_available(len(obj.data.vertices))
 
 
-def _check_facs_available(count: int) -> bool:
+def check_facs_available(count: int) -> bool:
     try:
         return pkt_module().FacsExecutor.facs_available(count)
     except pkt_module().ModelLoadingException as err:
-        _log.error(f'_check_facs_available ModelLoadingException:\n{str(err)}')
+        _log.error(f'check_facs_available ModelLoadingException:\n{str(err)}')
     except Exception as err:
-        _log.error(f'_check_facs_available Unknown Exception:\n{str(err)}')
+        _log.error(f'check_facs_available Unknown Exception:\n{str(err)}')
     return False
 
 
@@ -116,7 +115,7 @@ def what_is_state() -> Tuple[str, int]:
 
     if not _is_facebuilder_object(obj):
         if obj.type == 'MESH':
-            if _check_facs_available(len(obj.data.vertices)):
+            if check_facs_available(len(obj.data.vertices)):
                 return 'FACS_HEAD', unknown_headnum
         return _how_many_heads()
 
@@ -166,7 +165,7 @@ def get_obj_from_context(context: Any,
             return None, 1.0
 
         if force_fbloader:
-            FBLoader.load_model(headnum)
+            settings.loader().load_model(headnum)
         return head.headobj, head.model_scale
 
 
@@ -186,6 +185,7 @@ def reconstruct_by_head() -> bool:
     """ Reconstruct Cameras and Scene structures by serial """
     rx, ry = bpy_render_frame()
     settings = fb_settings()
+    loader = settings.loader()
 
     obj = bpy.context.object
 
@@ -226,7 +226,7 @@ def reconstruct_by_head() -> bool:
 
     try:
         head.store_serial_str_in_head_and_on_headobj(serial_str)
-        fb = FBLoader.new_builder()
+        fb = loader.new_builder()
         head.sensor_width = params['sensor_width']
         head.sensor_height = params['sensor_height']
         head.focal = params['focal']
@@ -236,7 +236,7 @@ def reconstruct_by_head() -> bool:
         _log.output(f'RECONSTRUCT KEYFRAMES {str(fb.keyframes())}')
 
         for i, kid in enumerate(fb.keyframes()):
-            cam_ob = FBLoader.create_camera_object(headnum, i)
+            cam_ob = loader.create_camera_object(headnum, i)
             camera = head.cameras.add()
             camera.camobj = cam_ob
             camera.set_keyframe(kid)
@@ -247,7 +247,7 @@ def reconstruct_by_head() -> bool:
             img.source = 'FILE'
             img.filepath = filename
 
-            FBLoader.add_background_to_camera(headnum, i, img)
+            loader.add_background_to_camera(headnum, i, img)
 
             read_exif_to_camera(headnum, i, filename)
             camera.orientation = camera.exif.orientation
@@ -255,12 +255,12 @@ def reconstruct_by_head() -> bool:
             auto_setup_camera_from_exif(camera)
 
             _log.output(f'CAMERA CREATED {kid}')
-            FBLoader.place_camera(headnum, i)
-            FBLoader.update_camera_pins_count(headnum, i)
+            loader.place_camera(headnum, i)
+            loader.update_camera_pins_count(headnum, i)
 
             attrs.mark_keentools_object(camera.camobj)
 
-        FBLoader.update_cameras_from_old_version(headnum)
+        loader.update_cameras_from_old_version(headnum)
 
     except Exception:
         _log.error('WRONG PARAMETERS')

@@ -24,6 +24,7 @@ from bpy.types import Area, Operator
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (Config,
                             ErrorType,
+                            ProductType,
                             get_operator,
                             fb_pinmode,
                             supported_gpu_backend)
@@ -261,8 +262,15 @@ class PinMode(Operator):
         vp.create_batch_2d(area)
         _log.output('GT REGISTER SHADER HANDLERS')
         loader.update_viewport_shaders(area, wireframe_data=True,
+                                       edge_indices=True,
                                        geomobj_matrix=True, wireframe=True,
                                        pins_and_residuals=True, timeline=True)
+
+        # TODO: Make this part more common for FaceTracker and GeoTracker
+        if settings.product_type() == ProductType.FACETRACKER:
+            wf = loader.viewport().wireframer()
+            wf.set_camera_pos(geotracker.camobj, geotracker.geomobj)
+            wf.init_wireframe_image(True)  # TODO: use settings.show_specials
 
         self.camera_clip_start = geotracker.camobj.data.clip_start
         self.camera_clip_end = geotracker.camobj.data.clip_end

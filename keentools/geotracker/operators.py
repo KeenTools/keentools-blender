@@ -64,7 +64,7 @@ from .interface.screen_mesages import (revert_default_screen_message,
 from ..utils.images import (remove_bpy_image_by_name,
                             check_background_image_absent_frames)
 from ..utils.materials import remove_mat_by_name
-from .utils.geotracker_acts import (create_tracker_action,
+from .utils.geotracker_acts import (create_geotracker_action,
                                     delete_tracker_action,
                                     add_keyframe_action,
                                     remove_keyframe_action,
@@ -126,8 +126,7 @@ class GT_OT_CreateGeoTracker(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        product = ProductType.GEOTRACKER
-        act_status = create_tracker_action(product=product)
+        act_status = create_geotracker_action()
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
         return {'FINISHED'}

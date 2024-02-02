@@ -62,6 +62,7 @@ class FT_OT_MovePin(MovePin):
     def update_wireframe(self):
         settings = self.get_settings()
         settings.loader().update_viewport_shaders(wireframe_data=True,
+                                                  camera_pos=True,
                                                   wireframe=True)
 
     def update_on_left_mouse_release(self) -> None:
