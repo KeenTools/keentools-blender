@@ -20,6 +20,8 @@ from typing import Tuple, Optional, Callable
 
 from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
 
+from ..utils.kt_logging import KTLogger
+from ..addon_config import gt_settings
 from ..geotracker_config import GTConfig
 from ..geotracker.viewport import GTViewport
 from ..utils.screen_text import KTScreenText
@@ -30,6 +32,10 @@ from ..utils.edges import (KTEdgeShader2D,
                            KTScreenDashedRectangleShader2D)
 from ..utils.polygons import KTRasterMask
 from ..preferences.user_preferences import UserPreferences
+from .edges import FTRasterEdgeShader3D
+
+
+_log = KTLogger(__name__)
 
 
 class FTViewport(GTViewport):
@@ -39,11 +45,7 @@ class FTViewport(GTViewport):
         self._points3d = KTPoints3D(SpaceView3D)
         self._residuals = KTEdgeShader2D(SpaceView3D)
         self._texter = KTScreenText(SpaceView3D)
-        self._wireframer = KTLitEdgeShaderLocal3D(SpaceView3D, mask_color=(
-            *UserPreferences.get_value_safe('gt_mask_3d_color',
-                                            UserPreferences.type_color),
-            UserPreferences.get_value_safe('gt_mask_3d_opacity',
-                                           UserPreferences.type_float)))
+        self._wireframer = FTRasterEdgeShader3D(SpaceView3D)
         self._timeliner = KTEdgeShaderAll2D(SpaceDopeSheetEditor,
                                             GTConfig.timeline_keyframe_color)
         self._selector = KTScreenDashedRectangleShader2D(SpaceView3D)

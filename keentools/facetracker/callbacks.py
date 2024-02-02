@@ -309,6 +309,11 @@ def update_wireframe(settings, context: Any) -> None:
                                               wireframe=True)
 
 
+def update_wireframe_image(settings: Any, context: Any) -> None:
+    settings.loader().update_viewport_shaders(wireframe_colors=True,
+                                              wireframe_image=True)
+
+
 def update_mask_2d_color(settings, context: Any) -> None:
     vp = settings.loader().viewport()
     mask = vp.mask2d()

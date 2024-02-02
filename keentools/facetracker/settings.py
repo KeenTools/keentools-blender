@@ -38,6 +38,7 @@ from .callbacks import (update_camobj,
                         update_movieclip,
                         update_precalc_path,
                         update_wireframe,
+                        update_wireframe_image,
                         update_mask_2d_color,
                         update_mask_3d_color,
                         update_wireframe_backface_culling,
@@ -311,10 +312,35 @@ class FTSceneSettings(TRSceneSetting):
     wireframe_color: FloatVectorProperty(
         description='Mesh wireframe color in Pinmode',
         name='GeoTracker wireframe Color', subtype='COLOR',
-        default=UserPreferences.get_value_safe('gt_wireframe_color',
+        default=UserPreferences.get_value_safe('fb_wireframe_color',
                                                UserPreferences.type_color),
         min=0.0, max=1.0,
-        update=update_wireframe)
+        update=update_wireframe_image)
+
+    wireframe_special_color: FloatVectorProperty(
+        description='Color of special parts in pin-mode',
+        name='Wireframe Special Color', subtype='COLOR',
+        default=UserPreferences.get_value_safe('fb_wireframe_special_color',
+                                               UserPreferences.type_color),
+        min=0.0, max=1.0,
+        update=update_wireframe_image,
+        get=universal_cached_getter('fb_wireframe_special_color', 'color'),
+        set=universal_cached_setter('fb_wireframe_special_color'))
+
+    wireframe_midline_color: FloatVectorProperty(
+        description='Color of midline in pin-mode',
+        name='Wireframe Midline Color', subtype='COLOR',
+        default=UserPreferences.get_value_safe('fb_wireframe_midline_color',
+                                               UserPreferences.type_color),
+        min=0.0, max=1.0,
+        update=update_wireframe_image,
+        get=universal_cached_getter('fb_wireframe_midline_color', 'color'),
+        set=universal_cached_setter('fb_wireframe_midline_color'))
+
+    show_specials: BoolProperty(
+        description='Use different colors for important head parts '
+                    'on the mesh',
+        name='Special face parts', default=True, update=update_wireframe_image)
 
     wireframe_backface_culling: BoolProperty(
         name='Backface culling',

@@ -20,7 +20,6 @@ from typing import Any, List, Tuple, Optional, Callable
 import numpy as np
 
 from bpy.types import Object, Area, SpaceView3D, SpaceDopeSheetEditor
-from bpy_extras.view3d_utils import location_3d_to_region_2d
 
 from ..utils.kt_logging import KTLogger
 from ..addon_config import Config, gt_settings, get_operator, ErrorType
@@ -365,15 +364,6 @@ class GTViewport(KTViewport):
                 wire.vertices_colors[i * 2] = color
                 wire.vertices_colors[i * 2 + 1] = color
         wire.create_batch()
-
-    def update_wireframe_colors(self) -> None:
-        settings = gt_settings()
-        wf = self.wireframer()
-        wf.init_color_data((*settings.wireframe_color,
-                            settings.wireframe_opacity))
-        wf.set_adaptive_opacity(settings.get_adaptive_opacity())
-        wf.set_lit_wireframe(settings.lit_wireframe)
-        wf.create_batches()
 
     def hide_pins_and_residuals(self):
         self.points2d().hide_shader()

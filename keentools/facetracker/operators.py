@@ -38,7 +38,7 @@ from ..utils.bpy_common import bpy_call_menu, bpy_background_mode
 from ..utils.manipulate import force_undo_push
 from ..utils.video import get_movieclip_duration
 from ..geotracker.utils.precalc import PrecalcTimer
-from ..geotracker.utils.geotracker_acts import (create_tracker_action,
+from ..geotracker.utils.geotracker_acts import (create_facetracker_action,
                                                 delete_tracker_action,
                                                 select_tracker_objects_action,
                                                 prev_keyframe_action,
@@ -77,7 +77,7 @@ class FT_OT_CreateFaceTracker(ButtonOperator, Operator):
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
-        act_status = create_tracker_action(product=product)
+        act_status = create_facetracker_action()
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
         return {'FINISHED'}

@@ -465,7 +465,7 @@ class Loader:
             warn('INVOKE_DEFAULT', msg=ErrorType.NoLicense)
             return False
         except Exception as err:
-            _log.error(f'solve UNKNOWN EXCEPTION: \n{str(err)}')
+            _log.error(f'solve UNKNOWN EXCEPTION: \n{type(err)}\n{str(err)}')
             return False
         _log.output('Loader.solve finished')
         return True
@@ -552,27 +552,34 @@ class Loader:
 
     @classmethod
     def _update_viewport_wireframe(cls, wireframe_data: bool = False) -> None:
-        _log.output(_log.color('blue', 'update_viewport_wireframe'))
+        _log.blue('update_viewport_wireframe')
         settings = cls.get_settings()
         geotracker = settings.get_current_geotracker_item()
         vp = cls.viewport()
         wf = vp.wireframer()
         if not geotracker or not geotracker.geomobj:
-            _log.output(_log.color('red',
-                                   'update_viewport_wireframe wf.clear_all'))
+            _log.red('update_viewport_wireframe wf.clear_all')
             wf.clear_all()
             wf.create_batches()
             return
 
         if wireframe_data:
-            _log.output(_log.color('green', 'wireframe_data'))
+            _log.green('wireframe_data')
             geo = cls.get_geo()
             wf.init_geom_data_from_core(*cls.get_geo_shader_data(
                 geo, geotracker.geomobj.matrix_world))
 
-        _log.output('wf.init_color_data')
-        wf.init_color_data((*settings.wireframe_color,
-                            settings.wireframe_opacity))
+        if settings.product_type() == ProductType.FACETRACKER:
+            _log.output('wf.init_colors')
+            wf.init_colors((settings.wireframe_color,
+                            settings.wireframe_special_color,
+                            settings.wireframe_midline_color),
+                           settings.wireframe_opacity)
+        else:
+            _log.output('wf.init_color_data')
+            wf.init_color_data((*settings.wireframe_color,
+                                settings.wireframe_opacity))
+
         wf.set_adaptive_opacity(settings.get_adaptive_opacity())
         _log.output('wf.init_selection_from_mesh')
         wf.init_selection_from_mesh(geotracker.geomobj, geotracker.mask_3d,
@@ -583,7 +590,7 @@ class Loader:
         wf.create_batches()
 
     @classmethod
-    def update_viewport_pins_and_residuals(cls, area: Area) -> None:
+    def _update_viewport_pins_and_residuals(cls, area: Area) -> None:
         vp = cls.viewport()
         cls.load_pins_into_viewport()
         vp.create_batch_2d(area)
@@ -603,6 +610,8 @@ class Loader:
                                 hash: bool = False,
                                 adaptive_opacity: bool = False,
                                 geomobj_matrix: bool = False,
+                                camera_pos: bool = False,
+                                edge_indices: bool = False,
                                 wireframe: bool = False,
                                 wireframe_data: bool = False,
                                 pins_and_residuals: bool = False,
@@ -624,12 +633,13 @@ class Loader:
             area = vp.get_work_area()
             if not area:
                 return
+
+        settings = cls.get_settings()
+        wf = cls.viewport().wireframer()
+
         if adaptive_opacity:
-            settings = cls.get_settings()
             settings.calc_adaptive_opacity(area)
         if geomobj_matrix:
-            wf = cls.viewport().wireframer()
-            settings = cls.get_settings()
             geotracker = settings.get_current_geotracker_item()
             if geotracker:
                 geom_mat = geotracker.geomobj.matrix_world if \
@@ -638,8 +648,10 @@ class Loader:
                     geotracker.camobj else Matrix.Identity(4)
                 wf.set_object_world_matrix(geom_mat)
                 wf.set_lit_light_matrix(geom_mat, cam_mat)
+        if camera_pos:
+            geotracker = settings.get_current_geotracker_item()
+            wf.set_camera_pos(geotracker.camobj, geotracker.geomobj)
         if mask:
-            settings = cls.get_settings()
             geotracker = settings.get_current_geotracker_item()
             mask_source = geotracker.get_2d_mask_source()
             if mask_source == 'COMP_MASK':
@@ -649,10 +661,15 @@ class Loader:
                 mask2d = vp.mask2d()
                 mask2d.image = get_background_image_strict(geotracker.camobj,
                                                            index=1)
+        if edge_indices:
+            if settings.product_type() == ProductType.FACETRACKER:
+                wf.init_edge_indices()
+            else:
+                _log.red('update_viewport_shaders edge_indices inaccessible')
         if wireframe:
             cls._update_viewport_wireframe(wireframe_data=wireframe_data)
         if pins_and_residuals:
-            cls.update_viewport_pins_and_residuals(area)
+            cls._update_viewport_pins_and_residuals(area)
         if timeline:
             cls.update_timeline()
 

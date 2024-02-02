@@ -840,7 +840,7 @@ class KTAddonPreferences(AddonPreferences):
             return None
 
     def _draw_updater_info(self, layout):
-        KTUpdater.call_updater('FaceBuilder')
+        KTUpdater.call_updater('KeenTools')
         CurrentStateExecutor.compute_current_panel_updater_state()
         settings = fb_settings()
         if settings is None:
