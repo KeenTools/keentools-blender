@@ -62,6 +62,8 @@ from .prechecks import (common_checks,
                         track_checks,
                         get_alone_object_in_scene_selection_by_type,
                         get_alone_object_in_scene_by_type,
+                        get_alone_ft_object_in_scene_selection,
+                        get_alone_ft_object_in_scene,
                         prepare_camera,
                         revert_camera,
                         show_warning_dialog,
@@ -101,8 +103,9 @@ from ...utils.unbreak import (mark_object_keyframes,
 _log = KTLogger(__name__)
 
 
-def create_tracker_action(*, product: int) -> ActionStatus:
-    _log.output(f'create_tracker_action start [{product_name(product)}]')
+def create_geotracker_action() -> ActionStatus:
+    _log.output(f'create_geotracker_action start')
+    product = ProductType.GEOTRACKER
     check_status = common_checks(product=product,
                                  object_mode=True, pinmode_out=True,
                                  is_calculating=True)
@@ -132,8 +135,44 @@ def create_tracker_action(*, product: int) -> ActionStatus:
 
     select_objects_only(selected_objects)
     bpy_active_object(active_object)
-    _log.output('create_tracker_action end')
-    return ActionStatus(True, f'{product_name(product)} has been added')
+    _log.output('create_geotracker_action end')
+    return ActionStatus(True, f'GeoTracker has been added')
+
+
+def create_facetracker_action() -> ActionStatus:
+    _log.output(f'create_facetracker_action start')
+    product = ProductType.FACETRACKER
+    check_status = common_checks(product=product,
+                                 object_mode=True, pinmode_out=True,
+                                 is_calculating=True)
+    if not check_status.success:
+        return check_status
+
+    settings = get_settings(product)
+    num = settings.add_geotracker_item()
+    settings.set_current_tracker_num(num)
+    settings.loader().new_kt_geotracker()
+
+    selected_objects = bpy_scene_selected_objects()
+    active_object = bpy_active_object()
+
+    geotracker = settings.get_current_geotracker_item()
+    obj = get_alone_ft_object_in_scene_selection()
+    if obj is None:
+        obj = get_alone_ft_object_in_scene()
+    geotracker.geomobj = obj
+
+    camobj = get_alone_object_in_scene_selection_by_type('CAMERA')
+    if camobj is None:
+        camobj = get_alone_object_in_scene_by_type('CAMERA')
+    geotracker.camobj = camobj
+
+    settings.reload_current_geotracker()
+
+    select_objects_only(selected_objects)
+    bpy_active_object(active_object)
+    _log.output('create_facetracker_action end')
+    return ActionStatus(True, f'FaceTracker has been added')
 
 
 def delete_tracker_action(geotracker_num: int, *, product: int) -> ActionStatus:

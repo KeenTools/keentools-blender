@@ -217,6 +217,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
 
         if not create_wireframe_image(self.texture_colors):
             self.switch_to_simple_shader()
+            return False
 
         self.switch_to_complex_shader()
         return True
@@ -388,8 +389,8 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
             geom_verts = fb.applied_args_vertices() @ \
                          xy_to_xz_rotation_matrix_3x3()
 
-        m = np.array(obj.matrix_world, dtype=np.float32).transpose()
-        self.vertices = multiply_verts_on_matrix_4x4(geom_verts, m)
+        mat = np.array(obj.matrix_world, dtype=np.float32).transpose()
+        self.vertices = multiply_verts_on_matrix_4x4(geom_verts, mat)
         self.triangle_indices = get_triangulation_indices(obj.data)
 
     def init_geom_data_from_mesh(self, obj: Object) -> None:
