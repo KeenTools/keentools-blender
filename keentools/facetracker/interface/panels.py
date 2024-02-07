@@ -497,3 +497,79 @@ class FT_PT_TrackingPanel(AllVisible):
         if settings.pinmode:
             self._tracking_remove_keys_row(settings, col)
             self._tracking_center_block(settings, layout)
+
+
+class FT_PT_AppearancePanel(AllVisible):
+    bl_idname = FTConfig.ft_appearance_panel_idname
+    bl_label = 'Appearance'
+
+    def draw_header_preset(self, context):
+        layout = self.layout
+        row = layout.row(align=True)
+        row.active = False
+        row.operator(
+            FTConfig.ft_addon_setup_defaults_idname,
+            text='', icon='PREFERENCES')
+        row.operator(
+            FTConfig.ft_help_appearance_idname,
+            text='', icon='QUESTION')
+
+    def draw(self, context):
+        layout = self.layout
+        settings = ft_settings()
+        if settings is None:
+            return
+
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.label(text='Pins')
+        col.separator(factor=0.4)
+        btn = row.column(align=True)
+        btn.active = False
+        btn.scale_y = 0.75
+        btn.operator(
+            FTConfig.ft_default_pin_settings_idname,
+            text='', icon='LOOP_BACK', emboss=False, depress=False)
+        col.prop(settings, 'pin_size', slider=True)
+        col.prop(settings, 'pin_sensitivity', slider=True)
+
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.label(text='Wireframe')
+        col.separator(factor=0.4)
+        btn = row.column(align=True)
+        btn.active = False
+        btn.scale_y = 0.75
+        btn.operator(
+            FTConfig.ft_default_wireframe_settings_idname,
+            text='', icon='LOOP_BACK', emboss=False, depress=False)
+
+        split = col.split(factor=0.625)
+        row = split.row(align=True)
+        row.prop(settings, 'wireframe_color', text='')
+        row.prop(settings, 'wireframe_special_color', text='')
+        row.prop(settings, 'wireframe_midline_color', text='')
+        split.prop(settings, 'wireframe_opacity', text='', slider=True)
+
+        row = layout.row(align=True)
+        op = row.operator(FTConfig.ft_wireframe_color_idname, text='R')
+        op.action = 'wireframe_red'
+        op = row.operator(FTConfig.ft_wireframe_color_idname, text='G')
+        op.action = 'wireframe_green'
+        op = row.operator(FTConfig.ft_wireframe_color_idname, text='B')
+        op.action = 'wireframe_blue'
+        op = row.operator(FTConfig.ft_wireframe_color_idname, text='C')
+        op.action = 'wireframe_cyan'
+        op = row.operator(FTConfig.ft_wireframe_color_idname, text='M')
+        op.action = 'wireframe_magenta'
+        op = row.operator(FTConfig.ft_wireframe_color_idname, text='Y')
+        op.action = 'wireframe_yellow'
+        op = row.operator(FTConfig.ft_wireframe_color_idname, text='K')
+        op.action = 'wireframe_black'
+        op = row.operator(FTConfig.ft_wireframe_color_idname, text='W')
+        op.action = 'wireframe_white'
+
+        col = layout.column(align=True)
+        col.prop(settings, 'show_specials', text='Highlight head parts')
+        col.prop(settings, 'wireframe_backface_culling')
+        col.prop(settings, 'use_adaptive_opacity')

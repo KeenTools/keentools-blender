@@ -261,7 +261,8 @@ class PinMode(Operator):
         vp = loader.viewport()
         vp.create_batch_2d(area)
         _log.output('GT REGISTER SHADER HANDLERS')
-        loader.update_viewport_shaders(area, wireframe_data=True,
+        loader.update_viewport_shaders(area, wireframe_colors=True,
+                                       wireframe_data=True,
                                        edge_indices=True,
                                        geomobj_matrix=True, wireframe=True,
                                        pins_and_residuals=True, timeline=True)
@@ -464,9 +465,7 @@ class PinMode(Operator):
         if settings.selection_mode:
             if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
                 settings.end_selection(context.area, event.mouse_region_x, event.mouse_region_y)
-                loader.update_viewport_shaders(wireframe=False,
-                                               geomobj_matrix=False,
-                                               pins_and_residuals=True)
+                loader.update_viewport_shaders(pins_and_residuals=True)
             else:
                 settings.do_selection(event.mouse_region_x, event.mouse_region_y)
             vp.tag_redraw()

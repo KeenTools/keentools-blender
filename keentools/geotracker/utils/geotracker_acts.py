@@ -1072,8 +1072,7 @@ def bake_texture_from_frames_act(
 
     if settings.pinmode:
         settings.reload_current_geotracker()
-        settings.loader().update_viewport_shaders(wireframe=False,
-                                                  geomobj_matrix=True,
+        settings.loader().update_viewport_shaders(geomobj_matrix=True,
                                                   pins_and_residuals=True)
     if built_texture is None:
         bad_frame = get_bad_frame()
@@ -1465,7 +1464,7 @@ def scale_scene_tracking_act(
         return ActionStatus(False, msg)
 
     if settings.pinmode:
-        loader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
+        loader.update_viewport_shaders(geomobj_matrix=True,
                                        pins_and_residuals=True)
     return ActionStatus(True, 'ok')
 
@@ -1548,7 +1547,7 @@ def scale_scene_trajectory_act(
         return ActionStatus(False, msg)
 
     if settings.pinmode:
-        loader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
+        loader.update_viewport_shaders(geomobj_matrix=True,
                                        pins_and_residuals=True)
     return ActionStatus(True, 'ok')
 
@@ -1619,8 +1618,8 @@ def move_scene_tracking_act(
         return ActionStatus(False, msg)
 
     if settings.pinmode:
-        loader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
-                                         pins_and_residuals=True)
+        loader.update_viewport_shaders(geomobj_matrix=True,
+                                       pins_and_residuals=True)
     return ActionStatus(True, 'ok')
 
 

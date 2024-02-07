@@ -111,6 +111,7 @@ class FTConfig:
     ft_addon_setup_defaults_idname = operators + '.addon_setup_defaults'
     ft_user_preferences_get_colors = operators + '.user_pref_get_colors'
     ft_user_preferences_reset_all = operators + '.user_pref_reset_all'
+    ft_wireframe_color_idname = operators + '.wireframe_color'
 
     ft_render_with_background_idname = operators + '.render_with_background'
     ft_revert_default_render_idname = operators + '.revert_default_render'

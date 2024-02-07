@@ -306,12 +306,12 @@ def update_wireframe(settings, context: Any) -> None:
         return
     settings.loader().update_viewport_shaders(adaptive_opacity=True,
                                               geomobj_matrix=True,
+                                              wireframe_colors=True,
                                               wireframe=True)
 
 
 def update_wireframe_image(settings: Any, context: Any) -> None:
-    settings.loader().update_viewport_shaders(wireframe_colors=True,
-                                              wireframe_image=True)
+    settings.loader().update_viewport_shaders(wireframe_colors=True)
 
 
 def update_mask_2d_color(settings, context: Any) -> None:

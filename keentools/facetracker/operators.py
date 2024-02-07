@@ -28,13 +28,21 @@ from bpy.props import (BoolProperty,
                        PointerProperty)
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import ft_settings, get_operator, ProductType, product_name
+from ..addon_config import (Config,
+                            ft_settings,
+                            get_operator,
+                            ProductType,
+                            product_name,
+                            show_user_preferences,
+                            show_tool_preferences)
 from ..facetracker_config import FTConfig
 from ..geotracker_config import GTConfig
 from .ui_strings import buttons
 from .ftloader import FTLoader
 from ..geotracker.utils.prechecks import common_checks
-from ..utils.bpy_common import bpy_call_menu, bpy_background_mode
+from ..utils.bpy_common import (bpy_call_menu,
+                                bpy_background_mode,
+                                bpy_show_addon_preferences)
 from ..utils.manipulate import force_undo_push
 from ..utils.video import get_movieclip_duration
 from ..geotracker.utils.precalc import PrecalcTimer
@@ -638,6 +646,91 @@ class FT_OT_InterruptModal(Operator):
         return {'PASS_THROUGH'}
 
 
+class FT_OT_DefaultPinSettings(ButtonOperator, Operator):
+    bl_idname = FTConfig.ft_default_pin_settings_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.yellow(f'{self.__class__.__name__} execute')
+        settings = ft_settings()
+        prefs = settings.preferences()
+        settings.pin_size = prefs.pin_size
+        settings.pin_sensitivity = prefs.pin_sensitivity
+        return {'FINISHED'}
+
+
+class FT_OT_DefaultWireframeSettings(ButtonOperator, Operator):
+    bl_idname = FTConfig.ft_default_wireframe_settings_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.yellow(f'{self.__class__.__name__} execute')
+        settings = ft_settings()
+        prefs = settings.preferences()
+        settings.wireframe_color = prefs.fb_wireframe_color
+        settings.wireframe_special_color = prefs.fb_wireframe_special_color
+        settings.wireframe_midline_color = prefs.fb_wireframe_midline_color
+        settings.wireframe_opacity = prefs.fb_wireframe_opacity
+        return {'FINISHED'}
+
+
+class FT_OT_AddonSetupDefaults(Operator):
+    bl_idname = FTConfig.ft_addon_setup_defaults_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER'}
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        _log.yellow(f'{self.__class__.__name__} execute')
+        show_user_preferences(facebuilder=False, geotracker=False, facetracker=True)
+        show_tool_preferences(facebuilder=False, geotracker=False, facetracker=True)
+        bpy_show_addon_preferences()
+        return {'FINISHED'}
+
+
+class FT_OT_WireframeColor(Operator):
+    bl_idname = FTConfig.ft_wireframe_color_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+
+    action: StringProperty(name="Action Name")
+
+    def draw(self, context):
+        pass
+
+    def execute(self, context):
+        _log.yellow(f'{self.__class__.__name__} execute action={self.action}')
+        def _setup_colors_from_scheme(name):
+            settings = ft_settings()
+            settings.wireframe_color = Config.fb_color_schemes[name][0]
+            settings.wireframe_special_color = Config.fb_color_schemes[name][1]
+
+        if self.action == 'wireframe_red':
+            _setup_colors_from_scheme('red')
+        elif self.action == 'wireframe_green':
+            _setup_colors_from_scheme('green')
+        elif self.action == 'wireframe_blue':
+            _setup_colors_from_scheme('blue')
+        elif self.action == 'wireframe_cyan':
+            _setup_colors_from_scheme('cyan')
+        elif self.action == 'wireframe_magenta':
+            _setup_colors_from_scheme('magenta')
+        elif self.action == 'wireframe_yellow':
+            _setup_colors_from_scheme('yellow')
+        elif self.action == 'wireframe_black':
+            _setup_colors_from_scheme('black')
+        elif self.action == 'wireframe_white':
+            _setup_colors_from_scheme('white')
+
+        return {'FINISHED'}
+
+
 BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_DeleteFaceTracker,
                   FT_OT_SelectGeotrackerObjects,
@@ -667,4 +760,8 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_AutoNamePrecalc,
                   FT_OT_SplitVideoExec,
                   FT_OT_InterruptModal,
-                  FT_OT_ExitPinMode)
+                  FT_OT_ExitPinMode,
+                  FT_OT_AddonSetupDefaults,
+                  FT_OT_DefaultPinSettings,
+                  FT_OT_DefaultWireframeSettings,
+                  FT_OT_WireframeColor)
