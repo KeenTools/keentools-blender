@@ -20,7 +20,8 @@ from ...utils.kt_logging import KTLogger
 from .panels import (FT_PT_FacetrackersPanel,
                      FT_PT_InputsPanel,
                      FT_PT_TrackingPanel,
-                     FT_PT_AppearancePanel)
+                     FT_PT_AppearancePanel,
+                     FT_PT_SmoothingPanel)
 from .helps import (FTHELP_OT_InputsHelp,
                     FTHELP_OT_MasksHelp,
                     FTHELP_OT_AnalyzeHelp,
@@ -50,6 +51,7 @@ CLASSES_TO_REGISTER = (FTHELP_OT_InputsHelp,
                        FT_PT_FacetrackersPanel,
                        FT_PT_InputsPanel,
                        FT_PT_TrackingPanel,
+                       FT_PT_SmoothingPanel,
                        FT_PT_AppearancePanel,
                        FT_MT_ClipMenu,
                        FT_MT_ClearAllTrackingMenu)

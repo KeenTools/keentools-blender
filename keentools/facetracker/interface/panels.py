@@ -573,3 +573,41 @@ class FT_PT_AppearancePanel(AllVisible):
         col.prop(settings, 'show_specials', text='Highlight head parts')
         col.prop(settings, 'wireframe_backface_culling')
         col.prop(settings, 'use_adaptive_opacity')
+
+
+class FT_PT_SmoothingPanel(AllVisible):
+    bl_idname = FTConfig.ft_smoothing_panel_idname
+    bl_label = 'Smoothing'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw_header_preset(self, context: Any) -> None:
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+
+        settings = ft_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if geotracker and \
+                (geotracker.smoothing_depth_coeff != 0 or
+                 geotracker.smoothing_xy_translations_coeff != 0 or
+                 geotracker.smoothing_focal_length_coeff != 0 or
+                 geotracker.smoothing_rotations_coeff !=0):
+            row.label(text='On')
+
+        row.operator(
+            FTConfig.ft_help_smoothing_idname,
+            text='', icon='QUESTION', emboss=False)
+
+    def draw(self, context: Any) -> None:
+        settings = ft_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if not geotracker:
+            return
+
+        layout = self.layout
+        col = layout.column(align=True)
+        col.label(text='Smoothing')
+        col.prop(geotracker, 'smoothing_depth_coeff')
+        col.prop(geotracker, 'smoothing_xy_translations_coeff')
+        col.prop(geotracker, 'smoothing_rotations_coeff')
+        col.prop(geotracker, 'smoothing_focal_length_coeff')
