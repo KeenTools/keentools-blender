@@ -18,7 +18,9 @@
 
 from typing import Any
 from functools import partial
+import re
 
+import bpy
 from bpy.types import Area, Panel
 
 from ...utils.kt_logging import KTLogger
@@ -28,6 +30,7 @@ from ...addon_config import (Config,
                              addon_pinmode,
                              ProductType)
 from ...facetracker_config import FTConfig
+from ...geotracker_config import GTConfig
 from ...blender_independent_packages.pykeentools_loader import is_installed as pkt_is_installed
 from ...updater.panels import KTUpdater
 from ...utils.localview import check_context_localview, exit_area_localview
@@ -574,9 +577,112 @@ class FT_PT_TrackingPanel(AllVisible):
             self._tracking_center_block(settings, layout)
 
 
+class FT_PT_MasksPanel(AllVisible):
+    bl_idname = FTConfig.ft_masks_panel_idname
+    bl_label = 'Masks'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def _mask_3d_block(self, layout: Any, geotracker: Any) -> None:
+        if not geotracker.geomobj:
+            return
+
+        col = layout.column(align=True)
+        col.label(text='Surface Mask')
+        row = col.row(align=True)
+        row.prop_search(geotracker, 'mask_3d',
+                        geotracker.geomobj, 'vertex_groups', text='')
+        row.prop(geotracker, 'mask_3d_inverted',
+                 text='', icon='ARROW_LEFTRIGHT')
+
+    def _mask_2d_block(self, layout: Any, geotracker: Any,
+                       show_threshold: bool = False) -> None:
+        row = layout.row(align=True)
+        row.prop_search(geotracker, 'mask_2d',
+                        bpy.data, 'movieclips', text='')
+        op = row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
+                          text='', icon='FILEBROWSER')
+        op.product = ProductType.FACETRACKER
+        row.prop(geotracker, 'mask_2d_inverted',
+                 text='', icon='ARROW_LEFTRIGHT')
+
+        row = layout.row(align=True)
+        row.prop(geotracker, 'mask_2d_channel_r', toggle=1)
+        row.prop(geotracker, 'mask_2d_channel_g', toggle=1)
+        row.prop(geotracker, 'mask_2d_channel_b', toggle=1)
+        row.prop(geotracker, 'mask_2d_channel_a', toggle=1)
+
+        if show_threshold:
+            row = layout.row(align=True)
+            row.prop(geotracker, 'mask_2d_threshold', slider=True)
+
+        if geotracker.mask_2d_info == '':
+            return
+
+        arr = re.split('\r\n|\n', geotracker.mask_2d_info)
+        for txt in arr:
+            col = layout.column(align=True)
+            col.scale_y = Config.text_scale_y
+            col.label(text=txt)
+
+    def _mask_compositing_block(self, layout: Any, geotracker: Any,
+                                show_threshold: bool = False) -> None:
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.prop_search(geotracker, 'compositing_mask',
+                        bpy.data, 'masks', text='')
+        row.prop(geotracker, 'compositing_mask_inverted',
+                 text='', icon='ARROW_LEFTRIGHT')
+
+        if show_threshold:
+            row = col.row(align=True)
+            row.prop(geotracker, 'compositing_mask_threshold', slider=True)
+
+    def _mask_3d_enabled(self, geotracker: Any) -> bool:
+        return geotracker and geotracker.geomobj and geotracker.mask_3d != ''
+
+    def _mask_2d_enabled(self, geotracker: Any) -> bool:
+        return geotracker and geotracker.get_2d_mask_source() != 'NONE'
+
+    def draw_header_preset(self, context: Any) -> None:
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        settings = ft_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if self._mask_3d_enabled(geotracker):
+            if self._mask_2d_enabled(geotracker):
+                row.label(text='2D / 3D')
+            else:
+                row.label(text='3D')
+        else:
+            if self._mask_2d_enabled(geotracker):
+                row.label(text='2D')
+        row.operator(FTConfig.ft_help_masks_idname,
+                     text='', icon='QUESTION', emboss=False)
+
+    def draw(self, context: Any) -> None:
+        settings = ft_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if not geotracker:
+            return
+
+        layout = self.layout
+        self._mask_3d_block(layout, geotracker)
+
+        col = layout.column(align=True)
+        col.label(text='2D Mask')
+        row = col.row(align=True)
+        row.prop(geotracker, 'mask_2d_mode', expand=True)
+        if geotracker.mask_2d_mode == 'MASK_2D':
+            self._mask_2d_block(layout, geotracker)
+        elif geotracker.mask_2d_mode == 'COMP_MASK':
+            self._mask_compositing_block(layout, geotracker)
+
+
 class FT_PT_AppearancePanel(AllVisible):
     bl_idname = FTConfig.ft_appearance_panel_idname
     bl_label = 'Appearance'
+    bl_options = {'DEFAULT_CLOSED'}
 
     def draw_header_preset(self, context):
         layout = self.layout

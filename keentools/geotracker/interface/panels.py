@@ -407,8 +407,9 @@ class GT_PT_MasksPanel(AllVisible):
         row = layout.row(align=True)
         row.prop_search(geotracker, 'mask_2d',
                         bpy.data, 'movieclips', text='')
-        row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
-                     text='', icon='FILEBROWSER')
+        op = row.operator(GTConfig.gt_mask_sequence_filebrowser_idname,
+                          text='', icon='FILEBROWSER')
+        op.product = ProductType.GEOTRACKER
         row.prop(geotracker, 'mask_2d_inverted',
                  text='', icon='ARROW_LEFTRIGHT')
 

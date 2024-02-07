@@ -31,6 +31,7 @@ from bpy.path import ensure_ext
 from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
                              gt_settings,
+                             get_settings,
                              get_operator,
                              ProductType,
                              get_settings)
@@ -199,6 +200,8 @@ class GT_OT_MaskSequenceFilebrowser(Operator, ImportHelper):
         subtype='DIR_PATH',
     )
 
+    product: IntProperty(default=ProductType.GEOTRACKER)
+
     def draw(self, context):
         layout = self.layout
         col = layout.column()
@@ -207,7 +210,7 @@ class GT_OT_MaskSequenceFilebrowser(Operator, ImportHelper):
         col.label(text='or a movie file')
 
     def execute(self, context):
-        settings = gt_settings()
+        settings = get_settings(product=self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
