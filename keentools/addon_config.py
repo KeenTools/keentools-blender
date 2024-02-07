@@ -374,6 +374,7 @@ class ProductType:
     FACEBUILDER: int = 0
     GEOTRACKER: int = 1
     FACETRACKER: int = 2
+    ADDON: int = 3
 
 
 def get_settings(product: int) -> Any:
@@ -387,12 +388,14 @@ def get_settings(product: int) -> Any:
 
 
 def product_name(product: int) -> str:
+    if product == ProductType.FACEBUILDER:
+        return 'FaceBuilder'
     if product == ProductType.GEOTRACKER:
         return 'GeoTracker'
     if product == ProductType.FACETRACKER:
         return 'FaceTracker'
-    if product == ProductType.FACEBUILDER:
-        return 'FaceBuilder'
+    if product == ProductType.ADDON:
+        return 'KeenTools'
     assert False, f'product_name: Improper product {product}'
 
 

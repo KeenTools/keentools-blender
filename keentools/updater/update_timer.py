@@ -1,6 +1,6 @@
 # ##### BEGIN GPL LICENSE BLOCK #####
 # KeenTools for blender is a blender addon for using KeenTools in Blender.
-# Copyright (C) 2019-2022  KeenTools
+# Copyright (C) 2019-2024  KeenTools
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,13 +19,9 @@
 from typing import Optional
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import (Config,
-                            get_operator,
-                            ErrorType,
-                            ProductType,
-                            product_name)
-from .timer import KTTimer
-from ..preferences.operators import get_product_license_manager
+from ..addon_config import product_name
+from ..utils.timer import KTTimer
+from .panels import KTUpdater
 from ..blender_independent_packages.pykeentools_loader \
     import is_installed as pkt_is_installed
 
@@ -33,8 +29,8 @@ from ..blender_independent_packages.pykeentools_loader \
 _log = KTLogger(__name__)
 
 
-class KTGraceTimer(KTTimer):
-    def __init__(self, product: int, interval: float = 600.0):
+class KTUpdateTimer(KTTimer):
+    def __init__(self, product: int, interval: float = 120.0):
         super().__init__()
         self._interval: float = interval
         self._product: int = product
@@ -43,27 +39,15 @@ class KTGraceTimer(KTTimer):
         if self.check_stop_all_timers():
             return None
 
-        _log.output(f'CHECK GRACE PERIOD FOR {product_name(self._product)}')
+        _log.output(f'CHECK UPDATE FOR {product_name(self._product)}')
+        KTUpdater.call_updater(product_name(self._product))
         if not pkt_is_installed():
             _log.error('PYKEENTOOLS WAS DEACTIVATED')
             self.stop()
             return None
 
-        lm = get_product_license_manager(product=self._product)
-        if lm.is_grace_period_active():
-            if self._product == ProductType.FACEBUILDER:
-                warn = get_operator(Config.kt_warning_idname)
-                warn('INVOKE_DEFAULT', msg=ErrorType.FBGracePeriod)
-            elif self._product == ProductType.GEOTRACKER:
-                warn = get_operator(Config.kt_warning_idname)
-                warn('INVOKE_DEFAULT', msg=ErrorType.GTGracePeriod)
-            _log.output(f'{product_name(self._product)} GRACE PERIOD HAS BEEN '
-                        f'DETECTED. TIMER IS SWITCHED OFF')
-            self.stop()
-            return None
-        else:
-            _log.debug(f'GRACE PERIOD CHECKING FOR {product_name(self._product)} '
-                       f'IS DELAYED FOR {self._interval:.1f} sec.')
+        _log.debug(f'UPDATE CHECKING FOR {product_name(self._product)} '
+                   f'IS DELAYED FOR {self._interval:.1f} sec.')
         return self._interval
 
     def start(self) -> None:
