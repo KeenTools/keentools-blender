@@ -87,8 +87,8 @@ from .utils.geotracker_acts import (create_geotracker_action,
                                     bake_texture_from_frames_act,
                                     transfer_tracking_to_camera_act,
                                     transfer_tracking_to_geometry_act,
-                                    remove_focal_keyframe_act,
-                                    remove_focal_keyframes_act,
+                                    remove_focal_keyframe_action,
+                                    remove_focal_keyframes_action,
                                     select_tracker_objects_action,
                                     render_with_background_act,
                                     revert_default_render_act,
@@ -1209,7 +1209,8 @@ class GT_OT_RemoveFocalKeyframe(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        act_status = remove_focal_keyframe_act()
+        product = ProductType.GEOTRACKER
+        act_status = remove_focal_keyframe_action(product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -1222,8 +1223,9 @@ class GT_OT_RemoveFocalKeyframes(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
-        act_status = remove_focal_keyframes_act()
+        _log.yellow(f'{self.__class__.__name__} execute')
+        product = ProductType.GEOTRACKER
+        act_status = remove_focal_keyframes_action(product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}

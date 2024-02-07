@@ -340,6 +340,81 @@ class FT_PT_InputsPanel(AllVisible):
             self._draw_analyze_btn(col, geotracker)
 
 
+class FT_PT_CameraPanel(AllVisible):
+    bl_idname = FTConfig.ft_camera_panel_idname
+    bl_label = 'Camera'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context: Any) -> bool:
+        if not facetracker_enabled():
+            return False
+        if not pkt_is_installed():
+            return False
+        settings = ft_settings()
+        if not settings.current_tracker_num() >= 0:
+            return False
+        geotracker = settings.get_current_geotracker_item()
+        return not not geotracker.camobj
+
+    def _camera_lens_row(self, layout: Any, cam_data: Any) -> None:
+        row = layout.row(align=True)
+        row.prop(cam_data, 'lens')
+        row.operator(FTConfig.ft_remove_focal_keyframe_idname,
+                     text='', icon='KEY_DEHLT')
+        row.operator(FTConfig.ft_remove_focal_keyframes_idname,
+                     text='', icon='CANCEL')
+
+    def _camera_sensor_size(self, layout: Any, cam_data: Any) -> None:
+        col = layout.column(align=True)
+        col.prop(cam_data, 'sensor_width')
+        col.prop(cam_data, 'sensor_height')
+
+    def _camera_header_lens_info(self, layout: Any, geotracker: Any) -> None:
+        col = layout.column()
+        if geotracker and geotracker.camobj:
+            col.active = False
+            col.label(text=f'{geotracker.camobj.data.lens:.2f}mm')
+        else:
+            col.alert = True
+            col.label(text='', icon='ERROR')
+
+    def _camera_header_help_button(self, layout: Any) -> None:
+        col = layout.column()
+        col.active = False
+        col.operator(FTConfig.ft_help_camera_idname,
+                     text='', icon='QUESTION', emboss=False)
+
+    def draw_header_preset(self, context: Any) -> None:
+        layout = self.layout
+
+        settings = ft_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+
+        self._camera_header_lens_info(layout, geotracker)
+        self._camera_header_help_button(layout)
+
+    def draw(self, context: Any) -> None:
+        settings = ft_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if not geotracker or not geotracker.camobj:
+            return
+
+        layout = self.layout
+        cam_data = geotracker.camobj.data
+
+        col = layout.column()
+        col.prop(geotracker, 'lens_mode')
+        row = col.row()
+        row.prop(geotracker, 'focal_length_estimation')
+        if geotracker.lens_mode == 'ZOOM':
+            row = col.row()
+            row.prop(geotracker, 'track_focal_length')
+
+        self._camera_lens_row(layout, cam_data)
+        self._camera_sensor_size(layout, cam_data)
+
+
 class FT_PT_TrackingPanel(AllVisible):
     bl_idname = FTConfig.ft_tracking_panel_idname
     bl_label = 'Tracking'
@@ -361,7 +436,7 @@ class FT_PT_TrackingPanel(AllVisible):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.operator(FTConfig.ft_switch_to_geometry_mode_idname,
-                     icon='MESH_ICOSPHERE',
+                     icon='USER',
                      depress=not geotracker.solve_for_camera)
         row.operator(FTConfig.ft_switch_to_camera_mode_idname,
                      icon='CAMERA_DATA',

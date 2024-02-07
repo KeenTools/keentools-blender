@@ -53,6 +53,8 @@ from ..geotracker.utils.geotracker_acts import (create_facetracker_action,
                                                 next_keyframe_action,
                                                 add_keyframe_action,
                                                 remove_keyframe_action,
+                                                remove_focal_keyframe_action,
+                                                remove_focal_keyframes_action,
                                                 clear_all_action,
                                                 clear_all_except_keyframes_action,
                                                 clear_direction_action,
@@ -731,6 +733,36 @@ class FT_OT_WireframeColor(Operator):
         return {'FINISHED'}
 
 
+class FT_OT_RemoveFocalKeyframe(ButtonOperator, Operator):
+    bl_idname = FTConfig.ft_remove_focal_keyframe_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.yellow(f'{self.__class__.__name__} execute')
+        product = ProductType.FACETRACKER
+        act_status = remove_focal_keyframe_action(product=product)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+class FT_OT_RemoveFocalKeyframes(ButtonOperator, Operator):
+    bl_idname = FTConfig.ft_remove_focal_keyframes_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.yellow(f'{self.__class__.__name__} execute')
+        product = ProductType.FACETRACKER
+        act_status = remove_focal_keyframes_action(product=product)
+        if not act_status.success:
+            self.report({'ERROR'}, act_status.error_message)
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
 BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_DeleteFaceTracker,
                   FT_OT_SelectGeotrackerObjects,
@@ -764,4 +796,6 @@ BUTTON_CLASSES = (FT_OT_CreateFaceTracker,
                   FT_OT_AddonSetupDefaults,
                   FT_OT_DefaultPinSettings,
                   FT_OT_DefaultWireframeSettings,
-                  FT_OT_WireframeColor)
+                  FT_OT_WireframeColor,
+                  FT_OT_RemoveFocalKeyframe,
+                  FT_OT_RemoveFocalKeyframes)

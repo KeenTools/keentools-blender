@@ -659,8 +659,8 @@ def clear_all_except_keyframes_action(*, product: int) -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def remove_focal_keyframe_act(
-        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def remove_focal_keyframe_action(*, product: int) -> ActionStatus:
+    _log.output(f'remove_focal_keyframe_action start [{product_name(product)}]')
     check_status = common_checks(product=product,
                                  object_mode=False, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
@@ -671,11 +671,12 @@ def remove_focal_keyframe_act(
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     remove_fcurve_point(geotracker.camobj.data, bpy_current_frame(), 'lens')
+    _log.output('remove_focal_keyframe_action end')
     return ActionStatus(True, 'ok')
 
 
-def remove_focal_keyframes_act(
-        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def remove_focal_keyframes_action(*, product: int) -> ActionStatus:
+    _log.output(f'remove_focal_keyframes_action start [{product_name(product)}]')
     check_status = common_checks(product=product,
                                  object_mode=False, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
@@ -686,6 +687,7 @@ def remove_focal_keyframes_act(
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     remove_fcurve_from_object(geotracker.camobj.data, 'lens')
+    _log.output('remove_focal_keyframes_action end')
     return ActionStatus(True, 'ok')
 
 
