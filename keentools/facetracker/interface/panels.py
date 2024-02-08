@@ -806,6 +806,92 @@ def _draw_calculating_indicator(layout: Any) -> None:
                  icon=icon)
 
 
+class FT_PT_ScenePanel(AllVisible):
+    bl_idname = FTConfig.ft_scene_panel_idname
+    bl_label = 'Scene'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def _draw_dist_between_camera_and_object(self, layout):
+        settings = ft_settings()
+        geotracker = settings.get_current_geotracker_item(safe=True)
+        if geotracker and geotracker.geomobj and geotracker.camobj:
+            geom_loc = geotracker.geomobj.matrix_world.to_translation()
+            cam_loc = geotracker.camobj.matrix_world.to_translation()
+            dist = (geom_loc - cam_loc).length
+            layout.label(text=f'Dist: {dist:.3f}')
+
+    def draw_header_preset(self, context: Any) -> None:
+        layout = self.layout
+        row = layout.row(align=True)
+        row.active = False
+
+        row.operator(FTConfig.ft_help_animation_idname,
+                     text='', icon='QUESTION', emboss=False)
+
+    def draw(self, context: Any) -> None:
+        layout = self.layout
+        settings = ft_settings()
+        geotracker = settings.get_current_geotracker_item()
+
+        layout.label(text='Transform')
+
+        col = layout.row(align=True)
+        op = col.operator(GTConfig.gt_rescale_window_idname)
+        op.product = ProductType.FACETRACKER
+
+        op = col.operator(GTConfig.gt_move_window_idname)
+        op.product = ProductType.FACETRACKER
+
+        op = layout.operator(GTConfig.gt_rig_window_idname)
+        op.product = ProductType.FACETRACKER
+
+        layout.label(text='Animation')
+
+        col = layout.column(align=True)
+        col.prop(settings, 'transfer_animation_selector', text='')
+        op = col.operator(GTConfig.gt_transfer_tracking_idname)
+        op.product = ProductType.FACETRACKER
+
+        layout.separator()
+
+        op = layout.operator(GTConfig.gt_unbreak_rotation_idname)
+        op.product = ProductType.FACETRACKER
+
+        layout.separator()
+
+        col = layout.column(align=True)
+        col.prop(settings, 'bake_animation_selector', text='')
+        btn = col.row()
+        if settings.bake_animation_selector == 'CAMERA' \
+                and geotracker.camobj and geotracker.camobj.parent:
+            btn.enabled = True
+        elif settings.bake_animation_selector == 'GEOMETRY' \
+                and geotracker.geomobj and geotracker.geomobj.parent:
+            btn.enabled = True
+        elif settings.bake_animation_selector == 'GEOMETRY_AND_CAMERA' \
+                and geotracker.geomobj and geotracker.camobj \
+                and (geotracker.geomobj.parent or geotracker.camobj.parent):
+            btn.enabled = True
+        else:
+            btn.enabled = False
+        op = btn.operator(GTConfig.gt_bake_animation_to_world_idname,
+                          text='Bake')
+        op.product = ProductType.FACETRACKER
+
+        layout.separator()
+
+        col = layout.column(align=True)
+        col.prop(settings, 'export_locator_selector', text='')
+        if settings.export_locator_selector == 'SELECTED_PINS':
+            row = col.split(factor=0.4, align=True)
+            row.label(text='Orientation')
+            row.prop(settings, 'export_locator_orientation', text='')
+        row = col.split(factor=0.4, align=True)
+        row.prop(settings, 'export_linked_locator')
+        op = row.operator(GTConfig.gt_export_animated_empty_idname)
+        op.product = ProductType.FACETRACKER
+
+
 class FT_UL_selected_frame_list(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data,
                   active_propname, index):

@@ -117,6 +117,7 @@ def create_edge_indices(*, fb: Optional[Any] = None,
     me = working_geo.mesh(0)
     vert_count = me.points_count()
     poly_count = me.faces_count()
+    _log.green(f'mesh points: {vert_count} polygons: {poly_count}')
 
     cache_key = poly_count * 1000000 + vert_count
 

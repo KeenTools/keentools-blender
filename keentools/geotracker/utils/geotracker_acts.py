@@ -804,10 +804,9 @@ def center_geo_action(*, product: int) -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def create_animated_empty_act(
+def create_animated_empty_action(
         obj: Object, linked: bool=False,
-        force_bake_all_frames: bool=False, *,
-        product: int = ProductType.GEOTRACKER) -> ActionStatus:
+        force_bake_all_frames: bool=False) -> ActionStatus:
     if not bpy_poll_is_mesh(None, obj) and not bpy_poll_is_camera(None, obj):
         msg = 'Selected object is not Geometry or Camera'
         return ActionStatus(False, msg)
@@ -864,10 +863,10 @@ def create_animated_empty_act(
     return ActionStatus(True, 'ok')
 
 
-def create_empty_from_selected_pins_act(
+def create_empty_from_selected_pins_action(
         from_frame: int, to_frame: int, linked: bool = False,
-        orientation: str = 'NORMAL', size: float = 1.0, *,
-        product: int = ProductType.GEOTRACKER) -> ActionStatus:
+        orientation: str = 'NORMAL', size: float = 1.0,
+        *, product: int) -> ActionStatus:
     check_status = common_checks(product=product,
                                  object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
@@ -893,7 +892,12 @@ def create_empty_from_selected_pins_act(
         return ActionStatus(False, 'No pins selected')
 
     current_frame = bpy_current_frame()
-    geo = gt.geo()
+    if product == ProductType.GEOTRACKER:
+        geo = gt.geo()
+    elif product == ProductType.FACETRACKER:
+        geo = loader.get_geo()
+    else:
+        assert False, 'Wrong product in create_empty_from_selected_pins_actions'
     geo_mesh = geo.mesh(0)
 
     points = np.empty((selected_pins_count, 3), dtype=np.float32)
@@ -1103,8 +1107,7 @@ def bake_texture_from_frames_action(area: Area, selected_frames: List,
     return ActionStatus(True, 'ok')
 
 
-def transfer_tracking_to_camera_act(
-        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def transfer_tracking_to_camera_action(*, product: int) -> ActionStatus:
     check_status = common_checks(product=product,
                                  object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
@@ -1158,8 +1161,7 @@ def transfer_tracking_to_camera_act(
     return ActionStatus(True, 'ok')
 
 
-def transfer_tracking_to_geometry_act(
-        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def transfer_tracking_to_geometry_action(*, product: int) -> ActionStatus:
     check_status = common_checks(product=product,
                                  object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
@@ -1301,7 +1303,7 @@ def store_geomobj_state(operator: Operator, geomobj: Object) -> None:
     operator.geom_scale = geomobj.scale
 
 
-def revert_object_states(*, product: int = ProductType.GEOTRACKER) -> bool:
+def revert_object_states(*, product: int) -> bool:
     _log.output('revert_object_states')
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
@@ -1338,8 +1340,7 @@ def _apply_camobj_scale(camobj: Object, operator: Operator) -> None:
                         operator.cam_scale[2] * operator.value)
 
 
-def _get_operator_origin_matrix(
-        origin_point: str, *, product: int = ProductType.GEOTRACKER) -> Matrix:
+def _get_operator_origin_matrix(origin_point: str, *, product: int) -> Matrix:
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     origin_matrix = Matrix.Identity(4)
@@ -1371,22 +1372,22 @@ def scale_scene_tracking_preview_func(
     _apply_geomobj_scale(geomobj, operator)
 
 
-def scale_scene_tracking_act(
-        operator: Operator, *,
-        product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def scale_scene_tracking_action(operator: Operator,
+                                *, product: int) -> ActionStatus:
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
     current_frame = bpy_current_frame()
-    revert_object_states()
+    revert_object_states(product=product)
 
     geom_animated_frame_set = set(get_object_keyframe_numbers(geomobj))
     cam_animated_frame_set = set(get_object_keyframe_numbers(camobj))
     all_animated_frame_set = geom_animated_frame_set.union(
         cam_animated_frame_set)
 
-    static_origin_matrix = _get_operator_origin_matrix(operator.origin_point)
+    static_origin_matrix = _get_operator_origin_matrix(operator.origin_point,
+                                                       product=product)
     static_rescale_matrix = _scale_relative_to_point_matrix(
         static_origin_matrix, operator.value)
     rescale_matrix = static_rescale_matrix
@@ -1557,8 +1558,8 @@ def scale_scene_trajectory_act(
     return ActionStatus(True, 'ok')
 
 
-def get_operator_reposition_matrix(
-        operator: Operator, *, product: int = ProductType.GEOTRACKER) -> Matrix:
+def get_operator_reposition_matrix(operator: Operator,
+                                   *, product: int) -> Matrix:
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     from_matrix = geotracker.geomobj.matrix_world \
@@ -1571,21 +1572,20 @@ def get_operator_reposition_matrix(
     return target_matrix @ source_matrix.inverted()
 
 
-def move_scene_tracking_act(
-        operator: Operator, *,
-        product: int = ProductType.GEOTRACKER) -> ActionStatus:
-    _log.output('move_scene_tracking_act call')
+def move_scene_tracking_action(operator: Operator,
+                               *, product: int) -> ActionStatus:
+    _log.output('move_scene_tracking_action call')
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
     current_frame = bpy_current_frame()
-    revert_object_states()
+    revert_object_states(product=product)
 
     geom_animated_frame_set = set(get_object_keyframe_numbers(geomobj))
     cam_animated_frame_set = set(get_object_keyframe_numbers(camobj))
 
-    transform_matrix = get_operator_reposition_matrix(operator)
+    transform_matrix = get_operator_reposition_matrix(operator, product=product)
     _log.output(f'transform_matrix:\n{transform_matrix}')
 
     for frame in geom_animated_frame_set:
@@ -1618,7 +1618,7 @@ def move_scene_tracking_act(
             return unbreak_status
 
     if not settings.reload_current_geotracker():
-        msg = 'Cannot reload GeoTracker data'
+        msg = f'Cannot reload {product_name(product)} data'
         _log.error(msg)
         return ActionStatus(False, msg)
 
@@ -1628,8 +1628,7 @@ def move_scene_tracking_act(
     return ActionStatus(True, 'ok')
 
 
-def bake_locrot_act(obj: Object, *,
-                    product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def bake_locrot_act(obj: Object, *, product: int) -> ActionStatus:
     def _remove_all_constraints(obj: Object):
         if len(obj.constraints) != 0:
             all_constraints = [x for x in obj.constraints]

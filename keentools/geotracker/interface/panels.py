@@ -929,8 +929,8 @@ class GT_PT_TexturePanel(AllVisible):
             _draw_calculating_indicator(layout)
 
 
-class GT_PT_AnimationPanel(AllVisible):
-    bl_idname = GTConfig.gt_animation_panel_idname
+class GT_PT_ScenePanel(AllVisible):
+    bl_idname = GTConfig.gt_scene_panel_idname
     bl_label = 'Scene'
     bl_options = {'DEFAULT_CLOSED'}
 
@@ -959,21 +959,26 @@ class GT_PT_AnimationPanel(AllVisible):
         layout.label(text='Transform')
 
         col = layout.row(align=True)
-        col.operator(GTConfig.gt_rescale_window_idname)
+        op = col.operator(GTConfig.gt_rescale_window_idname)
+        op.product = ProductType.GEOTRACKER
 
-        col.operator(GTConfig.gt_move_window_idname)
+        op = col.operator(GTConfig.gt_move_window_idname)
+        op.product = ProductType.GEOTRACKER
 
-        layout.operator(GTConfig.gt_rig_window_idname)
+        op = layout.operator(GTConfig.gt_rig_window_idname)
+        op.product = ProductType.GEOTRACKER
 
         layout.label(text='Animation')
 
         col = layout.column(align=True)
         col.prop(settings, 'transfer_animation_selector', text='')
-        col.operator(GTConfig.gt_transfer_tracking_idname)
+        op = col.operator(GTConfig.gt_transfer_tracking_idname)
+        op.product = ProductType.GEOTRACKER
 
         layout.separator()
 
-        layout.operator(GTConfig.gt_unbreak_rotation_idname)
+        op = layout.operator(GTConfig.gt_unbreak_rotation_idname)
+        op.product = ProductType.GEOTRACKER
 
         layout.separator()
 
@@ -992,7 +997,9 @@ class GT_PT_AnimationPanel(AllVisible):
             btn.enabled = True
         else:
             btn.enabled = False
-        btn.operator(GTConfig.gt_bake_animation_to_world_idname, text='Bake')
+        op = btn.operator(GTConfig.gt_bake_animation_to_world_idname,
+                          text='Bake')
+        op.product = ProductType.GEOTRACKER
 
         layout.separator()
 
@@ -1004,7 +1011,8 @@ class GT_PT_AnimationPanel(AllVisible):
             row.prop(settings, 'export_locator_orientation', text='')
         row = col.split(factor=0.4, align=True)
         row.prop(settings, 'export_linked_locator')
-        row.operator(GTConfig.gt_export_animated_empty_idname)
+        op = row.operator(GTConfig.gt_export_animated_empty_idname)
+        op.product = ProductType.GEOTRACKER
 
 
 class GT_PT_RenderingPanel(AllVisible):

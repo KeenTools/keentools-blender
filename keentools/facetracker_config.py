@@ -144,7 +144,7 @@ class FTConfig:
     ft_camera_panel_idname = _PT + 'camera_panel'
     ft_tracking_panel_idname = _PT + 'tracking_panel'
     ft_appearance_panel_idname = _PT + 'appearance_panel'
-    ft_animation_panel_idname = _PT + 'animation_panel'
+    ft_scene_panel_idname = _PT + 'scene_panel'
     ft_texture_panel_idname = _PT + 'texture_panel'
     ft_rendering_panel_idname = _PT + 'rendering_panel'
     ft_smoothing_panel_idname = _PT + 'smoothing_panel'

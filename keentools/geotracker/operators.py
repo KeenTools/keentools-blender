@@ -84,11 +84,11 @@ from .utils.geotracker_acts import (create_geotracker_action,
                                     remove_pins_action,
                                     toggle_pins_action,
                                     center_geo_action,
-                                    create_animated_empty_act,
-                                    create_empty_from_selected_pins_act,
+                                    create_animated_empty_action,
+                                    create_empty_from_selected_pins_action,
                                     bake_texture_from_frames_action,
-                                    transfer_tracking_to_camera_act,
-                                    transfer_tracking_to_geometry_act,
+                                    transfer_tracking_to_camera_action,
+                                    transfer_tracking_to_geometry_action,
                                     remove_focal_keyframe_action,
                                     remove_focal_keyframes_action,
                                     select_tracker_objects_action,
@@ -99,7 +99,7 @@ from .utils.geotracker_acts import (create_geotracker_action,
                                     get_stored_data,
                                     scale_scene_tracking_preview_func,
                                     revert_object_states,
-                                    scale_scene_tracking_act,
+                                    scale_scene_tracking_action,
                                     scale_scene_trajectory_act,
                                     check_uv_exists,
                                     check_uv_overlapping_with_status,
@@ -107,7 +107,7 @@ from .utils.geotracker_acts import (create_geotracker_action,
                                     repack_uv_act,
                                     bake_locrot_act,
                                     get_operator_reposition_matrix,
-                                    move_scene_tracking_act,
+                                    move_scene_tracking_action,
                                     unbreak_rotation_act)
 
 
@@ -566,22 +566,25 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def draw(self, context):
         return
 
     def invoke(self, context, event):
-        _log.output(f'{self.__class__.__name__} invoke')
+        _log.output(f'{self.__class__.__name__} invoke '
+                    f'[{product_name(self.product)}]')
 
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        check_status = common_checks(product=self.product,
                                      object_mode=True, is_calculating=True,
                                      geotracker=True)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = gt_settings()
+        settings = get_settings(self.product)
         if settings.export_locator_selector == 'SELECTED_PINS':
-            check_status = common_checks(product=ProductType.GEOTRACKER,
+            check_status = common_checks(product=self.product,
                                          pinmode=True, geotracker=True,
                                          geometry=True, camera=True,
                                          reload_geotracker=True)
@@ -592,13 +595,13 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
         return self.execute(context)
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
-
-        settings = gt_settings()
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
 
         if settings.export_locator_selector == 'GEOMETRY':
-            act_status = create_animated_empty_act(
+            act_status = create_animated_empty_action(
                 geotracker.geomobj, settings.export_linked_locator)
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
@@ -606,7 +609,7 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
             return {'FINISHED'}
 
         elif settings.export_locator_selector == 'CAMERA':
-            act_status = create_animated_empty_act(
+            act_status = create_animated_empty_action(
                 geotracker.camobj, settings.export_linked_locator)
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
@@ -614,16 +617,17 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
             return {'FINISHED'}
 
         elif settings.export_locator_selector == 'SELECTED_PINS':
-            if len(GTLoader.viewport().pins().get_selected_pins()) == 0:
+            if len(settings.loader().viewport().pins().get_selected_pins()) == 0:
                 msg = 'No pins selected'
                 _log.error(msg)
                 self.report({'ERROR'}, msg)
                 return {'CANCELLED'}
 
-            act_status = create_empty_from_selected_pins_act(
+            act_status = create_empty_from_selected_pins_action(
                 bpy_start_frame(), bpy_end_frame(),
                 linked=settings.export_linked_locator,
-                orientation=settings.export_locator_orientation)
+                orientation=settings.export_locator_orientation,
+                product=self.product)
             if not act_status.success:
                 _log.error(act_status.error_message)
                 self.report({'ERROR'}, act_status.error_message)
@@ -1171,13 +1175,16 @@ class GT_OT_TransferTracking(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
-        settings = gt_settings()
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
+        settings = get_settings(self.product)
         if settings.transfer_animation_selector == 'CAMERA_TO_GEOMETRY':
-            act_status = transfer_tracking_to_geometry_act()
+            act_status = transfer_tracking_to_geometry_action(product=self.product)
         elif settings.transfer_animation_selector == 'GEOMETRY_TO_CAMERA':
-            act_status = transfer_tracking_to_camera_act()
+            act_status = transfer_tracking_to_camera_action(product=self.product)
         else:
             act_status = (False, 'Unknown selector state')
 
@@ -1192,9 +1199,12 @@ class GT_OT_BakeAnimationToWorld(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
+        check_status = common_checks(product=self.product,
                                      object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True,
@@ -1204,20 +1214,24 @@ class GT_OT_BakeAnimationToWorld(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = gt_settings()
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
 
         if settings.bake_animation_selector == 'GEOMETRY':
-            act_status = bake_locrot_act(geotracker.geomobj)
+            act_status = bake_locrot_act(geotracker.geomobj,
+                                         product=self.product)
         elif settings.bake_animation_selector == 'CAMERA':
-            act_status = bake_locrot_act(geotracker.camobj)
+            act_status = bake_locrot_act(geotracker.camobj,
+                                         product=self.product)
         elif settings.bake_animation_selector == 'GEOMETRY_AND_CAMERA':
             act_status = None
             if geotracker.geomobj and geotracker.geomobj.parent:
-                act_status = bake_locrot_act(geotracker.geomobj)
+                act_status = bake_locrot_act(geotracker.geomobj,
+                                             product=self.product)
             if act_status is None or (act_status.success and geotracker.camobj
                     and geotracker.camobj.parent):
-                act_status = bake_locrot_act(geotracker.camobj)
+                act_status = bake_locrot_act(geotracker.camobj,
+                                             product=self.product)
             if act_status is None:
                 self.report({'ERROR'}, 'Unknown error with both objects')
                 return {'CANCELLED'}
@@ -1352,10 +1366,12 @@ class GT_OT_UnbreakRotation(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
-        product = ProductType.GEOTRACKER
-        check_status = common_checks(product=product,
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
+        check_status = common_checks(product=self.product,
                                      object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True)
@@ -1363,7 +1379,7 @@ class GT_OT_UnbreakRotation(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        act_status = unbreak_rotation_act(product=product)
+        act_status = unbreak_rotation_act(product=self.product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -1484,6 +1500,8 @@ class GT_OT_RescaleWindow(Operator):
     done: BoolProperty(default=False)
     warning_message: StringProperty(default='')
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def _draw_scale_slider(self, layout):
         row = layout.row()
         row.scale_y = 1.5
@@ -1532,22 +1550,25 @@ class GT_OT_RescaleWindow(Operator):
         layout.separator()
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
         self.done = True
-        act_status = scale_scene_tracking_act(self)
+        act_status = scale_scene_tracking_action(self, product=self.product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
         return {'FINISHED'}
 
     def cancel(self, context):
-        _log.output(f'{self.__class__.__name__} cancel')
+        _log.output(f'{self.__class__.__name__} cancel '
+                    f'[{product_name(self.product)}]')
         self.done = True
         revert_object_states()
 
     def invoke(self, context, event):
-        _log.output(f'{self.__class__.__name__} invoke')
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        _log.output(f'{self.__class__.__name__} invoke '
+                    f'[{product_name(self.product)}]')
+        check_status = common_checks(product=self.product,
                                      object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True,
@@ -1556,12 +1577,12 @@ class GT_OT_RescaleWindow(Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        check_status = common_checks(product=self.product,
                                      constraints=True)
         self.warning_message = '' if check_status.success else \
             check_status.error_message
 
-        settings = gt_settings()
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         store_camobj_state(self, geotracker.camobj)
         store_geomobj_state(self, geotracker.geomobj)
@@ -1650,6 +1671,8 @@ class GT_OT_MoveWindow(Operator):
     done: BoolProperty(default=False)
     warning_message: StringProperty(default='')
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def draw(self, context) -> None:
         layout = self.layout
         if self.done:
@@ -1675,22 +1698,25 @@ class GT_OT_MoveWindow(Operator):
         layout.separator()
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
         self.done = True
-        act_status = move_scene_tracking_act(self)
+        act_status = move_scene_tracking_action(self, product=self.product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
         return {'FINISHED'}
 
     def cancel(self, context):
-        _log.output(f'{self.__class__.__name__} cancel')
+        _log.output(f'{self.__class__.__name__} cancel '
+                    f'[{product_name(self.product)}]')
         self.done = True
-        revert_object_states()
+        revert_object_states(product=self.product)
 
     def invoke(self, context, event):
-        _log.output(f'{self.__class__.__name__} invoke')
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        _log.output(f'{self.__class__.__name__} invoke '
+                    f'[{product_name(self.product)}]')
+        check_status = common_checks(product=self.product,
                                      object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True,
@@ -1699,12 +1725,12 @@ class GT_OT_MoveWindow(Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        check_status = common_checks(product=self.product,
                                      constraints=True)
         self.warning_message = '' if check_status.success else \
             check_status.error_message
 
-        settings = gt_settings()
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         store_camobj_state(self, geotracker.camobj)
         store_geomobj_state(self, geotracker.geomobj)
@@ -1770,6 +1796,8 @@ class GT_OT_RigWindow(Operator):
     parent_geometry_active: BoolProperty(default=True)
     done: BoolProperty(default=False)
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def draw(self, context) -> None:
         layout = self.layout
         if self.done:
@@ -1808,7 +1836,8 @@ class GT_OT_RigWindow(Operator):
         layout.separator()
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
         self.done = True
         global _rig_empty
 
@@ -1840,7 +1869,8 @@ class GT_OT_RigWindow(Operator):
         return {'FINISHED'}
 
     def cancel(self, context):
-        _log.output(f'{self.__class__.__name__} cancel')
+        _log.output(f'{self.__class__.__name__} cancel '
+                    f'[{product_name(self.product)}]')
         self.done = True
         global _rig_empty
         if _rig_empty is None:
@@ -1857,15 +1887,16 @@ class GT_OT_RigWindow(Operator):
         self.parent_camera_active = True
 
     def invoke(self, context, event):
-        _log.output(f'{self.__class__.__name__} invoke')
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        _log.output(f'{self.__class__.__name__} invoke '
+                    f'[{product_name(self.product)}]')
+        check_status = common_checks(product=self.product,
                                      object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = gt_settings()
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
 
         global _rig_empty
