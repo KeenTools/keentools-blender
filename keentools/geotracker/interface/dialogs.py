@@ -23,7 +23,7 @@ from bpy.types import Operator
 from bpy.props import IntProperty
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import Config, ProductType, get_settings
+from ...addon_config import Config, ProductType, get_settings, product_name
 from ...geotracker_config import GTConfig
 from ..ui_strings import buttons
 
@@ -55,7 +55,7 @@ class GT_OT_PrecalcInfo(Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL', 'UNDO'}
 
-    product: IntProperty(default=ProductType.GEOTRACKER)
+    product: IntProperty(default=ProductType.UNDEFINED)
 
     def draw(self, context):
         layout = self.layout
@@ -67,13 +67,17 @@ class GT_OT_PrecalcInfo(Operator):
         _draw_precalc_file_info(layout, geotracker)
 
     def cancel(self, context):
-        _log.output('CANCEL PRECALC INFO')
+        _log.output(f'{self.__class__.__name__} cancel '
+                    f'[{product_name(self.product)}]')
 
     def execute(self, context):
-        _log.output('EXECUTE PRECALC INFO')
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
         return {'FINISHED'}
 
     def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke '
+                    f'[{product_name(self.product)}]')
         settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
@@ -88,9 +92,11 @@ class GT_OT_TextureBakeOptions(Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL', 'UNDO'}
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def draw(self, context):
         layout = self.layout
-        settings = get_settings(ProductType.GEOTRACKER)
+        settings = get_settings(self.product)
         if settings is None:
             return
 
@@ -99,8 +105,10 @@ class GT_OT_TextureBakeOptions(Operator):
         row.label(text='Resolution (in pixels)')
         btn = row.column(align=True)
         btn.active = False
-        btn.operator(GTConfig.gt_reset_texture_resolution_idname,
-                     text='', icon='LOOP_BACK', emboss=False, depress=False)
+        op = btn.operator(GTConfig.gt_reset_texture_resolution_idname,
+                          text='', icon='LOOP_BACK', emboss=False,
+                          depress=False)
+        op.product = self.product
 
         col.separator(factor=0.4)
         row = col.row(align=True)
@@ -112,8 +120,10 @@ class GT_OT_TextureBakeOptions(Operator):
         row.label(text='Advanced')
         btn = row.column(align=True)
         btn.active = False
-        btn.operator(GTConfig.gt_reset_advanced_settings_idname,
-                     text='', icon='LOOP_BACK', emboss=False, depress=False)
+        op = btn.operator(GTConfig.gt_reset_advanced_settings_idname,
+                          text='', icon='LOOP_BACK', emboss=False,
+                          depress=False)
+        op.product = self.product
 
         col.separator(factor=0.4)
         col.prop(settings, 'tex_face_angles_affection')
@@ -121,10 +131,15 @@ class GT_OT_TextureBakeOptions(Operator):
         col.separator(factor=0.8)
 
     def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
         return {'FINISHED'}
 
     def cancel(self, context):
-        pass
+        _log.output(f'{self.__class__.__name__} cancel '
+                    f'[{product_name(self.product)}]')
 
     def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke '
+                    f'[{product_name(self.product)}]')
         return context.window_manager.invoke_props_dialog(self, width=350)

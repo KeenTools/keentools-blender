@@ -116,9 +116,8 @@ class FTConfig:
     ft_render_with_background_idname = operators + '.render_with_background'
     ft_revert_default_render_idname = operators + '.revert_default_render'
 
-    ft_analyze_call_idname = 'keentools_gt' + '.analyze_call'  # TODO: Check operator!
-
-    ft_precalc_info_idname = 'keentools_gt' + '.precalc_info'  # TODO: Check operator!
+    ft_analyze_call_idname = operators + '.analyze_call'
+    ft_precalc_info_idname = operators + '.precalc_info'
 
     ft_confirm_recreate_precalc_idname = operators + '.confirm_recreate_precalc'
     ft_auto_name_precalc_idname = operators + '.auto_name_precalc'

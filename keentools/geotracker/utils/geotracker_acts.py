@@ -357,12 +357,15 @@ def track_to(forward: bool, *, product: int) -> ActionStatus:
             tracking_timer = TrackTimer(
                 tracking_computation, current_frame,
                 success_callback=unbreak_after if forward else unbreak_after_reversed,
-                error_callback=unbreak_after if forward else unbreak_after_reversed)
+                error_callback=unbreak_after if forward else unbreak_after_reversed,
+                product=product)
         elif product == ProductType.FACETRACKER:
             tracking_timer = FTTrackTimer(
                 tracking_computation, current_frame,
                 success_callback=unbreak_after_facetracker if forward else unbreak_after_reversed_facetracker,
-                error_callback=unbreak_after_facetracker if forward else unbreak_after_reversed_facetracker)
+                error_callback=unbreak_after_facetracker if forward else unbreak_after_reversed_facetracker,
+                product=product
+            )
         else:
             assert False, f'Wrong product type [{product}]'
 
@@ -462,20 +465,24 @@ def refine_async_action(*, product: int) -> ActionStatus:
         if geotracker.precalcless:
             if product == ProductType.GEOTRACKER:
                 refine_timer = RefineTimer(refine_computation, current_frame,
-                                           success_callback=unbreak_after)
+                                           success_callback=unbreak_after,
+                                           product=product)
             elif product == ProductType.FACETRACKER:
                 refine_timer = FTRefineTimer(refine_computation, current_frame,
-                                             success_callback=unbreak_after_facetracker)
+                                             success_callback=unbreak_after_facetracker,
+                                             product=product)
             else:
                 assert False, f'Wrong product (1) {product}'
         else:
             if product == ProductType.GEOTRACKER:
                 refine_timer = RefineTimerFast(refine_computation, current_frame,
-                                               success_callback=unbreak_after)
+                                               success_callback=unbreak_after,
+                                               product=product)
             elif product == ProductType.FACETRACKER:
                 refine_timer = FTRefineTimerFast(refine_computation,
                                                  current_frame,
-                                                 success_callback=unbreak_after_facetracker)
+                                                 success_callback=unbreak_after_facetracker,
+                                                 product=product)
             else:
                 assert False, f'Wrong product (2) {product}'
 
@@ -511,10 +518,12 @@ def refine_all_async_action(*, product: int) -> ActionStatus:
         if geotracker.precalcless:
             if product == ProductType.GEOTRACKER:
                 refine_timer = RefineTimer(refine_computation, current_frame,
-                                           success_callback=unbreak_after)
+                                           success_callback=unbreak_after,
+                                           product=product)
             elif product == ProductType.FACETRACKER:
                 refine_timer = FTRefineTimer(refine_computation, current_frame,
-                                             success_callback=unbreak_after_facetracker)
+                                             success_callback=unbreak_after_facetracker,
+                                             product=product)
             else:
                 assert False, f'Wrong product (1) {product}'
         else:
@@ -786,10 +795,10 @@ def center_geo_action(*, product: int) -> ActionStatus:
         near = camobj.data.clip_start
         far = camobj.data.clip_end
         if near != camera_clip_start or far != camera_clip_end:
-            clipping_changed_screen_message(near, far)
+            clipping_changed_screen_message(near, far, product=product)
 
     loader.update_viewport_shaders(wireframe=True, geomobj_matrix=True,
-                                     pins_and_residuals=True)
+                                   pins_and_residuals=True)
     loader.viewport_area_redraw()
     _log.output('center_geo_act end')
     return ActionStatus(True, 'ok')
@@ -953,15 +962,13 @@ def create_empty_from_selected_pins_act(
     return ActionStatus(True, 'ok')
 
 
-def check_uv_exists(obj: Optional[Object], *,
-                    product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def check_uv_exists(obj: Optional[Object]) -> ActionStatus:
     if not obj or not obj.data.uv_layers.active:
         return ActionStatus(False, 'No UV map on object')
     return ActionStatus(True, 'ok')
 
 
-def check_uv_overlapping(obj: Optional[Object], *,
-                         product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def check_uv_overlapping(obj: Optional[Object]) -> ActionStatus:
     if not BVersion.uv_select_overlap_exists:
         return ActionStatus(False, 'Too old Blender version for overlapping check')
 
@@ -976,7 +983,7 @@ def check_uv_overlapping(obj: Optional[Object], *,
     switch_to_mode('OBJECT')
 
     uvmap = obj.data.uv_layers.active.data
-    selected = np.empty((len(uvmap),), dtype=np.bool)
+    selected = np.empty((len(uvmap),), dtype=np.bool_)
     uvmap.foreach_get('select', selected.ravel())
 
     switch_to_mode(old_mode)
@@ -985,16 +992,13 @@ def check_uv_overlapping(obj: Optional[Object], *,
     return ActionStatus(True, 'ok')
 
 
-def check_uv_overlapping_with_status(
-        geotracker: Any, *,
-        product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def check_uv_overlapping_with_status(geotracker: Any) -> ActionStatus:
     status = check_uv_overlapping(geotracker.geomobj)
     geotracker.overlapping_detected = not status.success
     return status
 
 
-def create_non_overlapping_uv_act(
-        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def create_non_overlapping_uv_action(*, product: int) -> ActionStatus:
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
@@ -1047,9 +1051,8 @@ def repack_uv_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def bake_texture_from_frames_act(
-        area: Area, selected_frames: List, *,
-        product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def bake_texture_from_frames_action(area: Area, selected_frames: List,
+                                    *, product: int) -> ActionStatus:
     _log.output(f'bake_texture_from_frames_act [{product}]: {selected_frames}')
     if not area:
         return ActionStatus(False, 'Improper context area')
@@ -1069,7 +1072,7 @@ def bake_texture_from_frames_act(
     check_status = check_uv_overlapping_with_status(geotracker)
 
     prepare_camera(area, product=product)
-    built_texture = bake_texture(geotracker, selected_frames)
+    built_texture = bake_texture(geotracker, selected_frames, product=product)
     revert_camera(area)
 
     if settings.pinmode:

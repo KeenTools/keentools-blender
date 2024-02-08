@@ -35,6 +35,8 @@ from ..utils.kt_logging import KTLogger
 from ..utils.version import BVersion
 from ..addon_config import (Config,
                             gt_settings,
+                            get_settings,
+                            product_name,
                             get_operator,
                             ProductType,
                             show_user_preferences,
@@ -84,7 +86,7 @@ from .utils.geotracker_acts import (create_geotracker_action,
                                     center_geo_action,
                                     create_animated_empty_act,
                                     create_empty_from_selected_pins_act,
-                                    bake_texture_from_frames_act,
+                                    bake_texture_from_frames_action,
                                     transfer_tracking_to_camera_act,
                                     transfer_tracking_to_geometry_act,
                                     remove_focal_keyframe_action,
@@ -101,7 +103,7 @@ from .utils.geotracker_acts import (create_geotracker_action,
                                     scale_scene_trajectory_act,
                                     check_uv_exists,
                                     check_uv_overlapping_with_status,
-                                    create_non_overlapping_uv_act,
+                                    create_non_overlapping_uv_action,
                                     repack_uv_act,
                                     bake_locrot_act,
                                     get_operator_reposition_matrix,
@@ -200,10 +202,11 @@ class GT_OT_CreatePrecalc(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
-    product: IntProperty(default=ProductType.GEOTRACKER)
+    product: IntProperty(default=ProductType.UNDEFINED)
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute [{self.product}]')
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
         check_status = common_checks(product=self.product,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=False, geotracker=True,
@@ -768,9 +771,12 @@ class GT_OT_ResetTextureResolution(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
-        settings = gt_settings()
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
+        settings = get_settings(self.product)
         if not settings:
             return {'CANCELLED'}
         settings.tex_width = Config.default_tex_width
@@ -783,9 +789,12 @@ class GT_OT_ResetTextureSettings(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
-        settings = gt_settings()
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
+        settings = get_settings(self.product)
         if not settings:
             return {'CANCELLED'}
         settings.tex_face_angles_affection = Config.default_tex_face_angles_affection
@@ -826,9 +835,12 @@ class GT_OT_CheckUVOverlapping(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
+        check_status = common_checks(product=self.product,
                                      object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True)
@@ -836,7 +848,7 @@ class GT_OT_CheckUVOverlapping(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = gt_settings()
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
 
         check_status = check_uv_exists(geotracker.geomobj)
@@ -859,9 +871,11 @@ class GT_OT_RepackOverlappingUV(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     done: BoolProperty(default=False)
+    product: IntProperty(default=ProductType.UNDEFINED)
 
     def cancel(self, context):
-        _log.output(f'{self.__class__.__name__} cancel')
+        _log.output(f'{self.__class__.__name__} cancel '
+                    f'[{product_name(self.product)}]')
         self.done = True
 
     def draw(self, context):
@@ -885,16 +899,18 @@ class GT_OT_RepackOverlappingUV(ButtonOperator, Operator):
             col.label(text=txt)
 
     def invoke(self, context, event):
-        _log.output(f'{self.__class__.__name__} invoke')
+        _log.output(f'{self.__class__.__name__} invoke '
+                    f'[{product_name(self.product)}]')
         self.done = False
         if BVersion.pack_uv_problem_exists:
             return context.window_manager.invoke_props_dialog(self, width=400)
         return self.execute(context)
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
         self.done = True
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        check_status = common_checks(product=self.product,
                                      pinmode_out=True,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
@@ -908,7 +924,7 @@ class GT_OT_RepackOverlappingUV(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        settings = gt_settings()
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         check_status = check_uv_overlapping_with_status(geotracker)
         if not check_status.success:
@@ -924,9 +940,12 @@ class GT_OT_CreateNonOverlappingUV(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'[{product_name(self.product)}]')
+        check_status = common_checks(product=self.product,
                                      pinmode_out=True,
                                      object_mode=False, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
@@ -935,7 +954,7 @@ class GT_OT_CreateNonOverlappingUV(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        act_status = create_non_overlapping_uv_act()
+        act_status = create_non_overlapping_uv_action(product=self.product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -956,6 +975,7 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     warning: BoolProperty(default=False)
+    product: IntProperty(default=ProductType.UNDEFINED)
 
     def _draw_overlapping_warning(self, context):
         global _overlapping_warning_message
@@ -973,9 +993,10 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
             layout.label(text='Operation has been done')
 
     def invoke(self, context, event):
-        _log.output(f'{self.__class__.__name__} invoke')
+        _log.output(f'{self.__class__.__name__} invoke '
+                    f'product={product_name(self.product)}')
         self.warning = False
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        check_status = common_checks(product=self.product,
                                      object_mode=True, is_calculating=True,
                                      reload_geotracker=True, geotracker=True,
                                      camera=True, geometry=True,
@@ -984,7 +1005,7 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = gt_settings()
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         geotracker.geomobj.hide_set(False)
 
@@ -1004,20 +1025,21 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
         return self.execute(context)
 
     def start_text_on_screen(self, context):
-        settings = gt_settings()
+        settings = get_settings(self.product)
         single_line_screen_message('Projecting and baking… Please wait',
                                    register=not settings.pinmode,
-                                   context=context)
+                                   context=context, product=self.product)
 
     def finish_text_on_screen(self):
-        settings = gt_settings()
-        revert_default_screen_message(unregister=not settings.pinmode)
+        settings = get_settings(self.product)
+        revert_default_screen_message(unregister=not settings.pinmode,
+                                      product=self.product)
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
         self.warning = False
 
-        check_status = common_checks(product=ProductType.GEOTRACKER,
+        check_status = common_checks(product=self.product,
                                      object_mode=True, is_calculating=True,
                                      geotracker=True, camera=True,
                                      geometry=True, movie_clip=True)
@@ -1025,7 +1047,7 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        settings = gt_settings()
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         selected_keyframes = [x.num for x in geotracker.selected_frames]
         if len(selected_keyframes) == 0:
@@ -1034,17 +1056,17 @@ class GT_OT_BakeFromSelected(ButtonOperator, Operator):
 
         _log.output('GT START TEXTURE CREATION')
         self.start_text_on_screen(context)
-        act_status = bake_texture_from_frames_act(context.area,
-                                                  selected_keyframes)
+        act_status = bake_texture_from_frames_action(context.area,
+                                                     selected_keyframes,
+                                                     product=self.product)
         self.finish_text_on_screen()
 
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'FINISHED'}
 
-        settings = gt_settings()
         if settings.pinmode:
-            GTLoader.out_pinmode()
+            settings.loader().out_pinmode()
 
         return {'FINISHED'}
 
@@ -1054,9 +1076,12 @@ class GT_OT_AddBakeFrame(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
-        settings = gt_settings()
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'product={product_name(self.product)}]')
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -1092,9 +1117,12 @@ class GT_OT_RemoveBakeFrame(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
-        settings = gt_settings()
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'product={product_name(self.product)}]')
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -1117,9 +1145,12 @@ class GT_OT_GoToBakeFrame(ButtonOperator, Operator):
 
     num: IntProperty(default=0)
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
-        settings = gt_settings()
+        _log.output(f'{self.__class__.__name__} execute '
+                    f'product={product_name(self.product)}]')
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}
@@ -1370,11 +1401,15 @@ class GT_OT_DeleteTexture(Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'UNDO'}
 
+    product: IntProperty(default=ProductType.UNDEFINED)
+
     def draw(self, context):
         pass
 
     def execute(self, context):
-        settings = gt_settings()
+        _log.output(f'{self.__class__.__name__}.execute '
+                    f'[{product_name(self.product)}]')
+        settings = get_settings(self.product)
         geotracker = settings.get_current_geotracker_item()
         if not geotracker:
             return {'CANCELLED'}

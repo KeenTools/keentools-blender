@@ -21,7 +21,7 @@ from functools import partial
 import re
 
 import bpy
-from bpy.types import Area, Panel
+from bpy.types import Area, Panel, UIList
 
 from ...utils.kt_logging import KTLogger
 from ...addon_config import (Config,
@@ -38,6 +38,7 @@ from ...utils.viewport_state import force_show_ui_overlays
 from ...utils.grace_timer import KTGraceTimer
 from ..ftloader import FTLoader
 from ...utils.bpy_common import bpy_timer_register
+from ...utils.materials import find_bpy_image_by_name
 
 
 _log = KTLogger(__name__)
@@ -291,7 +292,7 @@ class FT_PT_InputsPanel(AllVisible):
             col.alert = error
             if not error:
                 txt = 'Re-analyse'
-        op = col.operator(FTConfig.ft_analyze_call_idname, text=txt)
+        op = col.operator(GTConfig.gt_analyze_call_idname, text=txt)
         op.product = ProductType.FACETRACKER
 
     def draw(self, context: Any) -> None:
@@ -327,7 +328,7 @@ class FT_PT_InputsPanel(AllVisible):
         op.product = ProductType.FACETRACKER
 
         if not precalc_path_is_empty:
-            op = row.operator(FTConfig.ft_precalc_info_idname,
+            op = row.operator(GTConfig.gt_precalc_info_idname,
                               text='', icon='INFO')
             op.product = ProductType.FACETRACKER
         else:
@@ -792,3 +793,143 @@ class FT_PT_SmoothingPanel(AllVisible):
         col.prop(geotracker, 'smoothing_xy_translations_coeff')
         col.prop(geotracker, 'smoothing_rotations_coeff')
         col.prop(geotracker, 'smoothing_focal_length_coeff')
+
+
+def _draw_calculating_indicator(layout: Any) -> None:
+    settings = ft_settings()
+    row = layout.row(align=True)
+    row.prop(settings, 'user_percent', text='Calculating...')
+    col = row.column(align=True)
+    col.alert = True
+    icon = 'CANCEL' if not settings.user_interrupts else 'X'
+    col.operator(FTConfig.ft_stop_calculating_idname, text='',
+                 icon=icon)
+
+
+class FT_UL_selected_frame_list(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data,
+                  active_propname, index):
+        layout.label(text=f'frame {item.num}')
+        op = layout.operator(GTConfig.gt_go_to_bake_frame_idname, text='',
+                             icon='HIDE_OFF', emboss=False)
+        op.num = index
+        op.product = ProductType.FACETRACKER
+
+
+class FT_PT_TexturePanel(AllVisible):
+    bl_idname = FTConfig.ft_texture_panel_idname
+    bl_label = 'Texture'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw_header_preset(self, context: Any) -> None:
+        layout = self.layout
+        row = layout.row()
+        row.active = False
+        row.operator(FTConfig.ft_help_texture_idname,
+                     text='', icon='QUESTION', emboss=False)
+
+    def _draw_buttons(self, layout, active=True):
+        col = layout.column(align=True)
+        col.active = active
+        col.scale_y = Config.btn_scale_y
+
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.scale_y = 2.0
+        op = row.operator(GTConfig.gt_bake_from_selected_frames_idname,
+                          icon='IMAGE')
+        op.product = ProductType.FACETRACKER
+
+        settings = ft_settings()
+        geotracker = settings.get_current_geotracker_item()
+        texture_exists = find_bpy_image_by_name(
+            geotracker.preview_texture_name())
+
+        if texture_exists:
+            row = col.row(align=True)
+            op = row.operator(GTConfig.gt_texture_file_export_idname,
+                              text='Export', icon='EXPORT')
+            op.product = ProductType.FACETRACKER
+            op = row.operator(GTConfig.gt_delete_texture_idname,
+                              text='Delete', icon='X')
+            op.product = ProductType.FACETRACKER
+
+        layout.separator()
+        row = layout.row()
+        row.scale_y = Config.btn_scale_y
+        op = row.operator(GTConfig.gt_reproject_tex_sequence_idname)
+        op.product = ProductType.FACETRACKER
+
+    def _draw_no_uv_warning(self, layout):
+        box = layout.box()
+        col = box.column()
+        col.alert = True
+        row = col.split(factor=0.15, align=True)
+        row.label(text='', icon='ERROR')
+        row.label(text='Missing UVs')
+        op = box.operator(GTConfig.gt_create_non_overlapping_uv_idname)
+        op.product = ProductType.FACETRACKER
+
+    def _draw_overlapping_detected(self, layout):
+        box = layout.box()
+        col = box.column()
+        col.alert = True
+        row = col.split(factor=0.15, align=True)
+        row.label(text='', icon='ERROR')
+        col = row.column(align=True)
+        col.scale_y = Config.text_scale_y
+        for i, txt in enumerate(['Overlapping UVs','detected!']):
+            col.label(text=txt)
+
+        col = box.column(align=True)
+        op = col.operator(GTConfig.gt_repack_overlapping_uv_idname)
+        op.product = ProductType.FACETRACKER
+        op = col.operator(GTConfig.gt_create_non_overlapping_uv_idname)
+        op.product = ProductType.FACETRACKER
+        op = col.operator(GTConfig.gt_check_uv_overlapping_idname, text='Re-check')
+        op.product = ProductType.FACETRACKER
+
+    def draw(self, context: Any) -> None:
+        layout = self.layout
+        settings = ft_settings()
+        geotracker = settings.get_current_geotracker_item()
+
+        if not geotracker or not geotracker.geomobj or \
+                not geotracker.geomobj.data.uv_layers.active:
+            self._draw_no_uv_warning(layout)
+            return
+
+        if geotracker.overlapping_detected:
+            self._draw_overlapping_detected(layout)
+
+        col = layout.column(align=True)
+        col.label(text='Add frames')
+        row = col.row()
+        row.template_list(
+            'FT_UL_selected_frame_list',
+            'selected_frame_list',
+            geotracker,
+            'selected_frames',
+            geotracker,
+            'selected_frame_index',
+            type='DEFAULT',
+            rows=4
+        )
+
+        col2 = row.column(align=True)
+        op = col2.operator(GTConfig.gt_add_bake_frame_idname,
+                           text='', icon='ADD')
+        op.product = ProductType.FACETRACKER
+        op = col2.operator(GTConfig.gt_remove_bake_frame_idname,
+                           text='', icon='REMOVE')
+        op.product = ProductType.FACETRACKER
+        col2.separator()
+        op = col2.operator(GTConfig.gt_texture_bake_options_idname,
+                           text='', icon='PREFERENCES')
+        op.product = ProductType.FACETRACKER
+
+        col.separator()
+        self._draw_buttons(col, not not geotracker.movie_clip)
+
+        if settings.is_calculating('REPROJECT'):
+            _draw_calculating_indicator(layout)
