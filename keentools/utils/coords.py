@@ -174,15 +174,17 @@ def image_space_to_frame(x: float, y: float, shift_x: float=0.0,
                          shift_y: float=0.0) -> Tuple[float, float]:
     """ Image centered Relative coords to Frame pixels """
     w, h = bpy_render_frame()
-    return (x + shift_x + 0.5) * w, (y + shift_y) * w + 0.5 * h
+    asp = 1.0 if w >= h else h / w
+    return (x + shift_x * asp + 0.5) * w, (y + shift_y * asp) * w + 0.5 * h
 
 
 def frame_to_image_space(frame_x: float, frame_y: float,
                          frame_w: float, frame_h: float,
                          shift_x: float=0.0,
                          shift_y: float=0.0) -> Tuple[float, float]:
-    return (frame_x / frame_w - 0.5 - shift_x,
-            (frame_y - 0.5 * frame_h) / frame_w - shift_y)
+    asp = 1.0 if frame_w >= frame_h else frame_h / frame_w
+    return (frame_x / frame_w - 0.5 - shift_x * asp,
+            (frame_y - 0.5 * frame_h) / frame_w - shift_y * asp)
 
 
 def image_space_to_region(x: float, y: float, x1: float, y1: float,
