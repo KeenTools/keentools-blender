@@ -62,7 +62,8 @@ class FTRasterEdgeShader3D(FBRasterEdgeShader3D):
     def init_edge_indices(self) -> None:
         _log.blue('init_edge_indices')
         geo = ft_settings().loader().get_geo()  # TODO: Fix this!!!
-        self.edge_indices, self.edge_uvs = create_edge_indices(geo=None)
+        me = geo.mesh(0)
+        self.edge_indices, self.edge_uvs = create_edge_indices(vertex_count=me.points_count())
 
     def init_selection_from_mesh(self, obj: Object, mask_3d: str,
                                  inverted: bool) -> None:

@@ -892,12 +892,7 @@ def create_empty_from_selected_pins_action(
         return ActionStatus(False, 'No pins selected')
 
     current_frame = bpy_current_frame()
-    if product == ProductType.GEOTRACKER:
-        geo = gt.geo()
-    elif product == ProductType.FACETRACKER:
-        geo = loader.get_geo()
-    else:
-        assert False, 'Wrong product in create_empty_from_selected_pins_actions'
+    geo = loader.get_geo()
     geo_mesh = geo.mesh(0)
 
     points = np.empty((selected_pins_count, 3), dtype=np.float32)

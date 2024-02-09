@@ -185,7 +185,6 @@ def frame_change_post_handler_wrapper(settings_func: Callable,
 
 class Loader:
     _viewport: Any = GTViewport()
-    _geo: Any = None
     _geomobj_edit_mode: str = 'OBJECT'
 
     _geo_input: Any = None
@@ -283,10 +282,6 @@ class Loader:
     @classmethod
     def viewport(cls) -> Any:
         return cls._viewport
-
-    @classmethod
-    def geo(cls) -> Any:
-        return cls._geo
 
     @classmethod
     def new_kt_geotracker(cls) -> Any:
@@ -594,7 +589,6 @@ class Loader:
                                 adaptive_opacity: bool = False,
                                 wireframe_colors: bool = False,
                                 geomobj_matrix: bool = False,
-                                camera_pos: bool = False,
                                 edge_indices: bool = False,
                                 wireframe: bool = False,
                                 wireframe_data: bool = False,
