@@ -293,8 +293,8 @@ class FB_OT_WireframeColor(Operator):
     def execute(self, context):
         def _setup_colors_from_scheme(name):
             settings = fb_settings()
-            settings.wireframe_color = FBConfig.color_schemes[name][0]
-            settings.wireframe_special_color = FBConfig.color_schemes[name][1]
+            settings.wireframe_color = Config.fb_color_schemes[name][0]
+            settings.wireframe_special_color = Config.fb_color_schemes[name][1]
 
         if self.action == 'wireframe_red':
             _setup_colors_from_scheme('red')

@@ -61,16 +61,16 @@ _log = KTLogger(__name__)
 _playback_mode: bool = False
 
 
-def _playback_message(area: Area) -> None:
+def _playback_message(area: Area, *, product: int) -> None:
     global _playback_mode
     current_playback_mode = bpy_is_animation_playing()
     if current_playback_mode != _playback_mode:
         _playback_mode = current_playback_mode
         _log.output(_log.color('green', f'_playback_mode: {_playback_mode}'))
         if _playback_mode:
-            playback_mode_screen_message()
+            playback_mode_screen_message(product=product)
         else:
-            revert_default_screen_message()
+            revert_default_screen_message(product=product)
         area.tag_redraw()
 
 
@@ -242,6 +242,7 @@ class PinMode(Operator):
 
     def _init_pinmode(self, area: Area, context: Optional[Any]=None) -> None:
         settings = self.get_settings()
+        product = settings.product_type()
         loader = settings.loader()
         if not loader.load_geotracker():
             _log.output('NEW KT_GEOTRACKER')
@@ -261,16 +262,17 @@ class PinMode(Operator):
         vp = loader.viewport()
         vp.create_batch_2d(area)
         _log.output('GT REGISTER SHADER HANDLERS')
-        loader.update_viewport_shaders(area, wireframe_data=True,
+        loader.update_viewport_shaders(area, wireframe_colors=True,
+                                       wireframe_data=True,
                                        edge_indices=True,
                                        geomobj_matrix=True, wireframe=True,
                                        pins_and_residuals=True, timeline=True)
 
         # TODO: Make this part more common for FaceTracker and GeoTracker
-        if settings.product_type() == ProductType.FACETRACKER:
+        if product == ProductType.FACETRACKER:
             wf = loader.viewport().wireframer()
             wf.set_camera_pos(geotracker.camobj, geotracker.geomobj)
-            wf.init_wireframe_image(True)  # TODO: use settings.show_specials
+            wf.init_wireframe_image(settings.show_specials)
 
         self.camera_clip_start = geotracker.camobj.data.clip_start
         self.camera_clip_end = geotracker.camobj.data.clip_end
@@ -280,7 +282,7 @@ class PinMode(Operator):
                                                 prev_clip_end=self.camera_clip_end):
             near = geotracker.camobj.data.clip_start
             far = geotracker.camobj.data.clip_end
-            clipping_changed_screen_message(near, far)
+            clipping_changed_screen_message(near, far, product=product)
 
         if context is not None:
             vp.register_handlers(context)
@@ -328,13 +330,14 @@ class PinMode(Operator):
     def _change_wireframe_visibility(self, *, toggle: bool=True,
                                      value: bool=True) -> None:
         settings = self.get_settings()
+        product = settings.product_type()
         vp = settings.loader().viewport()
         flag = not vp.wireframer().is_visible() if toggle else value
         vp.set_visible(flag)
         if flag:
-            revert_default_screen_message()
+            revert_default_screen_message(product=product)
         else:
-            how_to_show_wireframe_screen_message()
+            how_to_show_wireframe_screen_message(product=product)
 
     def perform_checks_before_pinmode(self) -> None:
         pass
@@ -425,6 +428,7 @@ class PinMode(Operator):
 
     def modal(self, context: Any, event: Any) -> Set:
         settings = self.get_settings()
+        product = settings.product_type()
         loader = settings.loader()
         vp = loader.viewport()
 
@@ -447,7 +451,7 @@ class PinMode(Operator):
                 loader.out_pinmode()
                 return {'FINISHED'}
 
-        _playback_message(context.area)
+        _playback_message(context.area, product=product)
 
         if event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'} \
                 and event.value == 'PRESS':
@@ -464,9 +468,7 @@ class PinMode(Operator):
         if settings.selection_mode:
             if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
                 settings.end_selection(context.area, event.mouse_region_x, event.mouse_region_y)
-                loader.update_viewport_shaders(wireframe=False,
-                                               geomobj_matrix=False,
-                                               pins_and_residuals=True)
+                loader.update_viewport_shaders(pins_and_residuals=True)
             else:
                 settings.do_selection(event.mouse_region_x, event.mouse_region_y)
             vp.tag_redraw()
@@ -521,7 +523,7 @@ class PinMode(Operator):
 
         if event.type == 'TIMER' and loader.get_stored_geomobj_mode() == 'EDIT':
             _log.output('TIMER IN EDIT_MODE')
-            in_edit_mode_screen_message()
+            in_edit_mode_screen_message(product=product)
             loader.update_geomobj_mesh()
             vp.hide_pins_and_residuals()
             loader.update_viewport_shaders(hash=True, wireframe_data=True,

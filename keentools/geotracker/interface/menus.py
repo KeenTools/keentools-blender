@@ -47,8 +47,9 @@ class GT_MT_ClipMenu(Menu):
         op.product = ProductType.GEOTRACKER
 
         col.separator()
-        col.operator(GTConfig.gt_split_video_to_frames_exec_idname,
-                     icon='RENDER_RESULT')
+        op = col.operator(GTConfig.gt_split_video_to_frames_exec_idname,
+                          icon='RENDER_RESULT')
+        op.product = ProductType.GEOTRACKER
 
 
 class GT_MT_ClearAllTrackingMenu(Menu):

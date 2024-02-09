@@ -224,7 +224,8 @@ def update_geomobj(geotracker, context: Any) -> None:
     GTLoader.save_geotracker()
 
     if settings.pinmode:
-        GTLoader.update_viewport_shaders(wireframe_data=True,
+        GTLoader.update_viewport_shaders(wireframe_colors=True,
+                                         wireframe_data=True,
                                          geomobj_matrix=True, wireframe=True,
                                          pins_and_residuals=True, timeline=True)
 
@@ -296,6 +297,7 @@ def update_wireframe(settings, context: Any) -> None:
         return
     GTLoader.update_viewport_shaders(adaptive_opacity=True,
                                      geomobj_matrix=True,
+                                     wireframe_colors=True,
                                      wireframe=True)
 
 
@@ -312,7 +314,7 @@ def update_mask_3d_color(settings, context: Any) -> None:
     wf = vp.wireframer()
     wf.selection_fill_color = (*settings.mask_3d_color, settings.mask_3d_opacity)
     if settings.pinmode:
-        GTLoader.update_viewport_shaders(wireframe=True)
+        GTLoader.update_viewport_shaders(wireframe_colors=True, wireframe=True)
 
 
 def update_wireframe_backface_culling(settings, context: Any) -> None:
@@ -323,7 +325,7 @@ def update_wireframe_backface_culling(settings, context: Any) -> None:
     gt.set_back_face_culling(settings.wireframe_backface_culling)
     GTLoader.save_geotracker()
     if settings.pinmode:
-        GTLoader.update_viewport_shaders(wireframe=True)
+        GTLoader.update_viewport_shaders(wireframe_colors=True, wireframe=True)
 
 
 def update_background_tone_mapping(geotracker, context: Any) -> None:

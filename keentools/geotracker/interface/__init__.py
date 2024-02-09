@@ -33,7 +33,7 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
                        GT_PT_TrackingPanel,
                        GT_PT_MasksPanel,
                        GT_PT_SmoothingPanel,
-                       GT_PT_AnimationPanel,
+                       GT_PT_ScenePanel,
                        GT_PT_AppearanceSettingsPanel,
                        GT_UL_selected_frame_list,
                        GT_PT_TexturePanel,
