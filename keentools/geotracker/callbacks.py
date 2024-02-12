@@ -44,7 +44,7 @@ from ..utils.bpy_common import (bpy_render_frame,
                                 bpy_object_name)
 from ..utils.animation import count_fcurve_points
 from ..utils.manipulate import select_object_only, switch_to_camera
-from ..utils.ui_redraw import total_redraw_ui
+from ..utils.ui_redraw import total_redraw_ui, timeline_view_all
 from .utils.tracking import check_unbreak_rotaion_is_needed
 from ..utils.unbreak import unbreak_object_rotation_act, mark_object_keyframes
 
@@ -275,6 +275,8 @@ def update_movieclip(geotracker, context: Any) -> None:
 
     if context is not None:
         subscribe_movie_clip_color_space_watcher(geotracker)
+
+    timeline_view_all()
 
 
 def update_precalc_path(geotracker, context: Any) -> None:
