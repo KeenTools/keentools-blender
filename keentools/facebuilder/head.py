@@ -19,11 +19,10 @@
 from bpy.types import Operator
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, get_operator, ErrorType
-from ..facebuilder_config import FBConfig, get_fb_settings
+from ..addon_config import Config, fb_settings, get_operator, ErrorType
+from ..facebuilder_config import FBConfig
 from ..utils import attrs
 from ..utils.ui_redraw import show_ui_panel
-from .fbloader import FBLoader
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..utils.manipulate import center_viewports_on_object
 from .ui_strings import buttons
@@ -41,7 +40,8 @@ class MESH_OT_FBAddHead(Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__}.execute call')
-        settings = get_fb_settings()
+        settings = fb_settings()
+        loader = settings.loader()
         heads_deleted, cams_deleted = settings.fix_heads()
         try:
             obj = self.new_head()
@@ -68,17 +68,17 @@ class MESH_OT_FBAddHead(Operator):
             return {'CANCELLED'}
 
         attrs.add_to_fb_collection(obj)  # link to FB objects collection
-        FBLoader.set_keentools_attributes(obj)
+        loader.set_keentools_attributes(obj)
 
         center_viewports_on_object(obj)
 
         # bpy.ops.object.shade_smooth()
-        h = get_fb_settings().heads.add()
+        h = settings.heads.add()
         h.headobj = obj
         h.reset_sensor_size()
 
         settings.current_headnum = settings.get_last_headnum()
-        FBLoader.save_fb_serial_and_image_pathes(settings.current_headnum)
+        loader.save_fb_serial_and_image_pathes(settings.current_headnum)
 
         show_ui_panel(context)
 
@@ -87,8 +87,9 @@ class MESH_OT_FBAddHead(Operator):
 
     @classmethod
     def new_head(cls):
-        _log.output('FBLoader.universal_mesh_loader')
-        mesh = FBLoader.universal_mesh_loader(FBConfig.default_fb_mesh_name)
+        _log.yellow('new_head')
+        settings = fb_settings()
+        mesh = settings.loader().universal_mesh_loader(FBConfig.default_fb_mesh_name)
         _log.output('bpy_create_object')
         obj = bpy_create_object(FBConfig.default_fb_object_name, mesh)
         return obj

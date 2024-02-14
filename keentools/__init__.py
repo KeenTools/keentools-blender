@@ -17,8 +17,8 @@
 # ##### END GPL LICENSE BLOCK #####
 
 bl_info = {
-    "name": "KeenTools FaceBuilder & GeoTracker 2023.3.0",  # (1/5)
-    "version": (2023, 3, 0),  # 2023.3.0 (2/5)
+    "name": "KeenTools FaceBuilder & GeoTracker 2023.3.1",  # (1/5)
+    "version": (2023, 3, 1),  # 2023.3.1 (2/5)
     "author": "KeenTools",
     "description": "FaceBuilder: Create Heads. GeoTracker: Track Objects in videos using 3D models",
     "blender": (2, 80, 0),
@@ -40,7 +40,7 @@ from bpy.types import AddonPreferences
 from bpy.utils import register_class, unregister_class
 
 # Only minimal imports are performed to check the start
-from .addon_config import Config
+from .addon_config import Config, output_import_statistics
 from .messages import (ERROR_MESSAGES, draw_warning_labels, get_system_info,
                        draw_system_info, draw_long_label, draw_long_labels)
 
@@ -67,7 +67,7 @@ def _is_python_64bit():
 
 
 def _is_config_latest():
-    return Config.addon_version == '2023.3.0'  # (3/5)
+    return Config.addon_version == '2023.3.1'  # (3/5)
 
 
 def _is_blender_too_old():
@@ -162,6 +162,7 @@ else:
     from .preferences import CLASSES_TO_REGISTER as PREFERENCES_CLASSES
     from .facebuilder import facebuilder_register, facebuilder_unregister
     from .geotracker import geotracker_register, geotracker_unregister
+    from .facetracker import facetracker_register, facetracker_unregister
     from .utils.viewport_state import ViewportStateItem
     from .utils.warning import KT_OT_AddonWarning
     from .utils.common_operators import CLASSES_TO_REGISTER as COMMON_OPERATOR_CLASSES
@@ -196,7 +197,10 @@ else:
         _log.info('FaceBuilder classes have been registered')
         geotracker_register()
         _log.info('GeoTracker classes have been registered')
+        facetracker_register()
+        _log.info('FaceTracker classes have been registered')
         _log.debug(f'=== KEENTOOLS ADDON {bl_info["version"]} REGISTERED ===')
+        output_import_statistics()
 
 
     def unregister():
@@ -204,6 +208,8 @@ else:
                    f'UNREGISTER ---')
         stop_timers(True)
         _log.debug('START UNREGISTER CLASSES')
+        facetracker_unregister()
+        _log.info('FaceTracker classes have been unregistered')
         geotracker_unregister()
         _log.info('GeoTracker classes have been unregistered')
         facebuilder_unregister()

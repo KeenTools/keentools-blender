@@ -23,22 +23,27 @@ from enum import Enum
 import bpy
 from bpy.types import Area
 
-from ...utils.kt_logging import KTLogger
-from ...addon_config import get_operator
-from ...geotracker_config import get_gt_settings, GTConfig
-from ..gtloader import GTLoader
-from ...utils.manipulate import exit_area_localview
-from ...utils.ui_redraw import force_ui_redraw
-from ...utils.bpy_common import (bpy_current_frame,
+from ..utils.kt_logging import KTLogger
+from ..addon_config import (gt_settings,
+                            ft_settings,
+                            get_operator,
+                            ProductType,
+                            get_settings)
+from ..geotracker_config import GTConfig
+from ..facetracker_config import FTConfig
+from ..utils.manipulate import exit_area_localview
+from ..utils.ui_redraw import force_ui_redraw
+from ..utils.bpy_common import (bpy_current_frame,
                                  bpy_set_current_frame,
                                  bpy_background_mode,
                                  bpy_timer_register)
-from ...utils.timer import RepeatTimer
-from ...blender_independent_packages.pykeentools_loader import module as pkt_module
-from .prechecks import show_warning_dialog
-from ..interface.screen_mesages import (revert_default_screen_message,
+from ..utils.timer import RepeatTimer
+from ..blender_independent_packages.pykeentools_loader import module as pkt_module
+from ..geotracker.utils.prechecks import show_warning_dialog
+from ..geotracker.interface.screen_mesages import (revert_default_screen_message,
                                         operation_calculation_screen_message,
                                         staged_calculation_screen_message)
+from ..tracker.tracking_blendshapes import create_relative_shape_keyframe
 
 
 _log = KTLogger(__name__)
@@ -74,8 +79,12 @@ class TimerMixin:
 
 
 class CalcTimer(TimerMixin):
+    def get_settings(self) -> Any:
+        return get_settings(self.product_type)
+
     def __init__(self, area: Optional[Area] = None,
-                 runner: Optional[Any] = None):
+                 runner: Optional[Any] = None, *,
+                 product: int = ProductType.GEOTRACKER):
         self.current_state: Callable = self.timeline_state
 
         self._interval: float = 0.001
@@ -84,7 +93,13 @@ class CalcTimer(TimerMixin):
         self._runner: Any = runner
         self._start_time: float = 0.0
         self._area: Area = area
-        settings = get_gt_settings()
+
+        self.product_type = product
+        self.interrupt_operator_name = GTConfig.gt_interrupt_modal_idname \
+            if product == ProductType.GEOTRACKER \
+            else FTConfig.ft_interrupt_modal_idname
+
+        settings = self.get_settings()
         self._started_in_pinmode: bool = settings.pinmode
         self._start_frame: int = bpy_current_frame()
         self._error_message: str = ''
@@ -117,9 +132,10 @@ class CalcTimer(TimerMixin):
         area.header_text_set(txt)
 
     def finish_calc_mode(self) -> None:
+        _log.debug('finish_calc_mode start')
         self._runner.cancel()
         self.remove_timer(self)
-        settings = get_gt_settings()
+        settings = self.get_settings()
         settings.stop_calculating()
         revert_default_screen_message(unregister=not settings.pinmode)
 
@@ -135,11 +151,12 @@ class CalcTimer(TimerMixin):
                   time.time() - self._start_time))
 
     def common_checks(self) -> bool:
-        settings = get_gt_settings()
+        settings = self.get_settings()
         _log.output(f'common_checks: state={self.current_state_name()} '
                     f'target={self._target_frame} '
                     f'current={bpy_current_frame()}')
         if settings.user_interrupts:
+            _log.error('common_checks settings.user_interrupts detected')
             settings.stop_calculating()
         if not settings.is_calculating():
             self._runner.cancel()
@@ -192,6 +209,14 @@ class CalcTimer(TimerMixin):
 
 
 class _CommonTimer(TimerMixin):
+    @classmethod
+    def get_settings(cls) -> Any:
+        return gt_settings()
+
+    @classmethod
+    def user_interrupt_operator_name(cls):
+        return GTConfig.gt_interrupt_modal_idname
+
     def __init__(self, computation: Any, from_frame: int = -1,
                  revert_current_frame: bool=False,
                  *, success_callback: Optional[Callable] = None,
@@ -215,6 +240,9 @@ class _CommonTimer(TimerMixin):
         self._error_callback: Optional[Callable] = error_callback
         self.add_timer(self)
 
+    def create_shape_keyframe(self):
+        pass
+
     def set_current_state(self, func: Callable) -> None:
         self.current_state = func
 
@@ -228,8 +256,13 @@ class _CommonTimer(TimerMixin):
             return names[funcs.index(self.current_state)]
         return 'unknown'
 
-    def add_performed_frame(self, frame: int) -> None:
+    def add_performed_frame(self, frame: int) -> bool:
+        if frame in self._performed_frames:
+            _log.output(_log.color('red', f'add_performed_frame: * {frame} *'))
+            return False
+        _log.output(f'add_performed_frame: {frame}')
         self._performed_frames.add(frame)
+        return True
 
     def performed_frames(self) -> List:
         return sorted(self._performed_frames)
@@ -238,7 +271,7 @@ class _CommonTimer(TimerMixin):
         return 0, 1
 
     def timeline_state(self) -> Optional[float]:
-        settings = get_gt_settings()
+        settings = self.get_settings()
         if settings.user_interrupts or not settings.pinmode:
             self._cancel()
 
@@ -251,7 +284,7 @@ class _CommonTimer(TimerMixin):
         return self._interval
 
     def computation_state(self) -> Optional[float]:
-        settings = get_gt_settings()
+        settings = self.get_settings()
         if settings.user_interrupts or not settings.pinmode:
             self._cancel()
 
@@ -268,6 +301,7 @@ class _CommonTimer(TimerMixin):
 
         if result in [_ComputationState.RUNNING, _ComputationState.SUCCESS]:
             self.add_performed_frame(tracking_current_frame)
+            self.create_shape_keyframe()
 
         if result == _ComputationState.SUCCESS:
             self.set_current_state(self.finish_success_state)
@@ -280,7 +314,7 @@ class _CommonTimer(TimerMixin):
             return self.current_state()
 
         if self._prevent_playback:
-            GTLoader.viewport().tag_redraw()
+            settings.loader().viewport().tag_redraw()
             return self._interval
 
         if result and tracking_current_frame != current_frame:
@@ -293,7 +327,7 @@ class _CommonTimer(TimerMixin):
 
     def finish_success_state(self) -> None:
         _log.output(_log.color('red', f'{self._operation_name} '
-                                     f'finish_success_state call'))
+                                      f'finish_success_state call'))
         self._finish_computation()
         if self._success_callback is not None:
             self._success_callback(self.performed_frames())
@@ -301,7 +335,7 @@ class _CommonTimer(TimerMixin):
 
     def finish_error_state(self) -> None:
         _log.output(_log.color('red', f'{self._operation_name} '
-                                     f'finish_error_state call'))
+                                      f'finish_error_state call'))
         self._finish_computation()
         if self._error_callback is not None:
             self._error_callback(self.performed_frames())
@@ -323,22 +357,23 @@ class _CommonTimer(TimerMixin):
             _log.error(f'PROBLEM WITH COMPUTATION STOP')
         revert_default_screen_message()
         self._stop_user_interrupt_operator()
-        GTLoader.save_geotracker()
-        settings = get_gt_settings()
+        settings = self.get_settings()
+        loader = settings.loader()
+        loader.save_geotracker()
         settings.stop_calculating()
         self.remove_timer(self)
         if self._revert_current_frame:
             bpy_set_current_frame(self._start_frame)
 
-        GTLoader.viewport().tag_redraw()
+        loader.viewport().tag_redraw()
         return None
 
     def _start_user_interrupt_operator(self) -> None:
-        op = get_operator(GTConfig.gt_interrupt_modal_idname)
+        op = get_operator(self.user_interrupt_operator_name())
         op('INVOKE_DEFAULT')
 
     def _stop_user_interrupt_operator(self) -> None:
-        settings = get_gt_settings()
+        settings = self.get_settings()
         settings.user_interrupts = True
 
     def _safe_resume(self) -> _ComputationState:
@@ -360,7 +395,7 @@ class _CommonTimer(TimerMixin):
                     total_frames=total_frames,
                     current_stage=current_stage + 1,
                     total_stages=total_stages)
-                settings = get_gt_settings()
+                settings = self.get_settings()
                 total = total_frames if total_frames != 0 else 1
                 settings.user_percent = 100 * finished_frames / total
                 return _ComputationState.RUNNING
@@ -381,7 +416,8 @@ class _CommonTimer(TimerMixin):
         overall = self._overall_func()
         _log.output(f'--- {self._operation_name} statistics ---')
         _log.output(f'Total calc frames: {overall}')
-        gt = GTLoader.kt_geotracker()
+        settings = self.get_settings()
+        gt = settings.loader().kt_geotracker()
         _log.output(f'KEYFRAMES: {gt.keyframes()}')
         _log.output(f'TRACKED FRAMES: {gt.track_frames()}\n')
         _log.output(f'PERFORMED FRAMES: {self.performed_frames()}')
@@ -401,7 +437,7 @@ class _CommonTimer(TimerMixin):
             self._start_user_interrupt_operator()
         operation_calculation_screen_message(self._operation_name,
                                              self._operation_help)
-        settings = get_gt_settings()
+        settings = self.get_settings()
         settings.calculating_mode = self._calc_mode
 
         _func = self.timer_func
@@ -428,6 +464,19 @@ class TrackTimer(_CommonTimer):
         self._overall_func = computation.finished_and_total_frames
 
 
+class FTTrackTimer(TrackTimer):
+    @classmethod
+    def get_settings(cls) -> Any:
+        return ft_settings()
+
+    @classmethod
+    def user_interrupt_operator_name(cls):
+        return FTConfig.ft_interrupt_modal_idname
+
+    def create_shape_keyframe(self):
+        create_relative_shape_keyframe(bpy_current_frame())
+
+
 class RefineTimer(_CommonTimer):
     def __init__(self, computation: Any, from_frame: int = -1,
                  *, success_callback: Optional[Callable] = None,
@@ -445,6 +494,16 @@ class RefineTimer(_CommonTimer):
                self.tracking_computation.total_stages()
 
 
+class FTRefineTimer(RefineTimer):
+    @classmethod
+    def get_settings(cls) -> Any:
+        return ft_settings()
+
+    @classmethod
+    def user_interrupt_operator_name(cls):
+        return FTConfig.ft_interrupt_modal_idname
+
+
 class RefineTimerFast(RefineTimer):
     def __init__(self, computation: Any, from_frame: int = -1,
                  *, success_callback: Optional[Callable] = None,
@@ -453,3 +512,13 @@ class RefineTimerFast(RefineTimer):
                          success_callback=success_callback,
                          error_callback=error_callback)
         self._prevent_playback = True
+
+
+class FTRefineTimerFast(RefineTimerFast):
+    @classmethod
+    def get_settings(cls) -> Any:
+        return ft_settings()
+
+    @classmethod
+    def user_interrupt_operator_name(cls):
+        return FTConfig.ft_interrupt_modal_idname

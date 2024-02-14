@@ -22,8 +22,8 @@ import numpy as np
 import bpy
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import Config, get_operator, ErrorType
-from ..facebuilder_config import get_fb_settings, FBConfig
+from ..addon_config import Config, fb_settings, get_operator, ErrorType
+from ..facebuilder_config import FBConfig
 from .fbloader import FBLoader
 from ..utils import coords
 from ..utils.manipulate import (get_vertex_groups,
@@ -39,7 +39,7 @@ _log = KTLogger(__name__)
 def mesh_update_accepted(headnum: int) -> None:
     _log.output('callbacks.update_mesh_geometry')
 
-    settings = get_fb_settings()
+    settings = fb_settings()
     head = settings.get_head(headnum)
 
     if not head or not head.model_changed():
@@ -74,7 +74,7 @@ def mesh_update_accepted(headnum: int) -> None:
 
 def mesh_update_canceled(headnum: int) -> None:
     _log.output('callbacks.mesh_update_canceled')
-    settings = get_fb_settings()
+    settings = fb_settings()
     head = settings.get_head(headnum)
     if not head:
         _log.output('WRONG_HEAD')
@@ -111,7 +111,7 @@ def update_mesh_simple(head: Any, context: Any) -> None:
 def _update_mesh_now(headnum: int) -> bool:
     _log.output('callbacks.update_mesh')
 
-    settings = get_fb_settings()
+    settings = fb_settings()
     head = settings.get_head(headnum)
     if not head:
         _log.output('WRONG_HEAD')
@@ -209,13 +209,13 @@ def _update_mesh_now(headnum: int) -> bool:
     mesh.name = mesh_name
 
     if settings.pinmode:
-        FBLoader.update_viewport_shaders(wireframe=True,
-                                         pins_and_residuals=True)
+        FBLoader.update_fb_viewport_shaders(wireframe=True,
+                                            pins_and_residuals=True)
     return True
 
 
 def _update_expressions(head: Any, context: Any) -> None:
-    settings = get_fb_settings()
+    settings = fb_settings()
     headnum = head.get_headnum()
     if headnum < 0:
         _log.error('WRONG HEADNUM {}'.format(headnum))
@@ -231,18 +231,18 @@ def _update_expressions(head: Any, context: Any) -> None:
 
     if not settings.pinmode:
         return
-    FBLoader.update_viewport_shaders(wireframe=True, pins_and_residuals=True)
+    FBLoader.update_fb_viewport_shaders(wireframe=True, pins_and_residuals=True)
 
 
 def update_use_emotions(head: Any, context: Any) -> None:
-    settings = get_fb_settings()
+    settings = fb_settings()
     if settings.ui_write_mode:
         return
     _update_expressions(head, context)
 
 
 def _update_head_shape_with_expressions(head: Any, context: Any) -> None:
-    settings = get_fb_settings()
+    settings = fb_settings()
     headnum = head.get_headnum()
     camnum = settings.current_camnum
     if headnum < 0 or camnum < 0:
@@ -259,19 +259,19 @@ def _update_head_shape_with_expressions(head: Any, context: Any) -> None:
     if not settings.pinmode:
         return
 
-    FBLoader.update_viewport_shaders(area=context.area,
-                                     wireframe=True, pins_and_residuals=True)
+    FBLoader.update_fb_viewport_shaders(area=context.area,
+                                        wireframe=True, pins_and_residuals=True)
 
 
 def update_lock_blinking(head: Any, context: Any) -> None:
-    settings = get_fb_settings()
+    settings = fb_settings()
     if settings.ui_write_mode:
         return
     _update_head_shape_with_expressions(head, context)
 
 
 def update_lock_neck_movement(head: Any, context: Any) -> None:
-    settings = get_fb_settings()
+    settings = fb_settings()
     if settings.ui_write_mode:
         return
     _update_head_shape_with_expressions(head, context)
@@ -300,14 +300,14 @@ def update_expression_view(head: Any, context: Any) -> None:
 
 
 def update_wireframe_image(settings: Any, context: Any) -> None:
-    FBLoader.update_viewport_shaders(wireframe_colors=True,
-                                     wireframe_image=True)
+    FBLoader.update_fb_viewport_shaders(wireframe_colors=True,
+                                        wireframe_image=True)
 
 
 def update_wireframe_func(settings: Any, context: Any) -> None:
-    FBLoader.update_viewport_shaders(adaptive_opacity=True,
-                                     wireframe_colors=True,
-                                     batch_wireframe=True)
+    FBLoader.update_fb_viewport_shaders(adaptive_opacity=True,
+                                        wireframe_colors=True,
+                                        batch_wireframe=True)
 
 
 def update_pin_sensitivity(settings: Any, context: Any) -> None:
@@ -336,7 +336,7 @@ def update_model_scale(head: Any, context: Any) -> None:
     FBLoader.update_all_camera_positions(headnum)
     FBLoader.update_all_camera_focals(headnum)
     FBLoader.save_fb_serial_str(headnum)
-    settings = get_fb_settings()
+    settings = fb_settings()
     if settings.pinmode:
         head.need_update = True
 
@@ -353,7 +353,7 @@ def update_head_focal(head: Any, context: Any) -> None:
 
 def update_camera_focal(camera: Any, context: Any) -> None:
     def _check_current_selection_is_not_actual(headnum, camnum):
-        settings = get_fb_settings()
+        settings = fb_settings()
         return headnum < 0 or headnum != settings.current_headnum \
                 or camnum != settings.current_camnum
 
@@ -377,7 +377,7 @@ def update_camera_focal(camera: Any, context: Any) -> None:
 
 
 def update_background_tone_mapping(camera: Any, context: Any) -> None:
-    settings = get_fb_settings()
+    settings = fb_settings()
     if not settings.pinmode:
         return
     camera.apply_tone_mapping()

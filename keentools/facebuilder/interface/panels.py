@@ -28,8 +28,12 @@ from ...updater.panels import (KT_PT_UpdatePanel,
                                KT_PT_DownloadingProblemPanel,
                                KT_PT_UpdatesInstallationPanel)
 from ...updater.utils import KTUpdater
-from ...addon_config import Config, facebuilder_enabled, addon_pinmode
-from ...facebuilder_config import FBConfig, get_fb_settings
+from ...addon_config import (Config,
+                             fb_settings,
+                             facebuilder_enabled,
+                             addon_pinmode,
+                             ProductType)
+from ...facebuilder_config import FBConfig
 from ...utils.version import BVersion
 from ..fbloader import FBLoader
 from ...utils.manipulate import (has_no_blendshape,
@@ -45,7 +49,7 @@ from ...utils.grace_timer import KTGraceTimer
 _log = KTLogger(__name__)
 
 
-_fb_grace_timer = KTGraceTimer('facebuilder')
+_fb_grace_timer = KTGraceTimer(ProductType.FACEBUILDER)
 
 
 def _state_valid_to_show(state):
@@ -66,7 +70,7 @@ def _show_all_panels_no_blendshapes():
     state, headnum = what_is_state()
     if not _state_valid_to_show(state):
         return False
-    settings = get_fb_settings()
+    settings = fb_settings()
     if settings is None:
         return False
     return settings.get_head(headnum).has_no_blendshapes()
@@ -84,7 +88,7 @@ def _draw_update_blendshapes_panel(layout):
 
 def _pinmode_escaper(area: Area, window: Optional[Window],
                      screen: Optional[Screen]) -> None:
-    settings = get_fb_settings()
+    settings = fb_settings()
     exit_area_localview(area, window, screen)
     settings.pinmode = False
     settings.viewport_state.show_ui_elements(area)
@@ -106,7 +110,7 @@ def _exit_from_localview_button(layout, context):
 
 
 def _geomobj_delete_handler() -> None:
-    settings = get_fb_settings()
+    settings = fb_settings()
     settings.force_out_pinmode = True
     return None
 
@@ -129,7 +133,7 @@ def _start_autoloader_handler(headnum: int) -> None:
 class Common:
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = FBConfig.fb_tab_category
+    bl_category = Config.fb_tab_category
     bl_context = 'objectmode'
 
     @classmethod
@@ -210,7 +214,7 @@ class FB_PT_HeaderPanel(Common, Panel):
 
     def _draw_many_heads(self, layout):
         # Output List of all heads in Scene
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
         state, headnum = what_is_state()
@@ -354,7 +358,7 @@ class FB_PT_CameraPanel(AllVisibleClosed, Panel):
                     col.label(text=a)
 
         layout = self.layout
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
         head = get_current_head()
@@ -380,7 +384,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             text='', icon='QUESTION')
 
     def _draw_pins_panel(self, headnum, camnum):
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
         layout = self.layout
@@ -401,7 +405,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
         op.camnum = camnum
 
     def _draw_camera_list(self, headnum, layout):
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
         head = settings.get_head(headnum)
@@ -469,7 +473,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
 
 
     def _draw_camera_hint(self, layout, headnum):
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
         head = settings.get_head(headnum)
@@ -485,7 +489,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             col.label(text='to switch to Pin mode', icon='BLANK1')
 
     def _draw_exit_pinmode(self, layout):
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
         if settings.pinmode:
@@ -495,7 +499,7 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
                          text='Exit Pin mode', icon='LOOP_BACK', depress=True)
 
     def draw(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
         layout = self.layout
@@ -542,7 +546,7 @@ class FB_PT_Model(AllVisibleClosed, Panel):
 
     def draw(self, context):
         layout = self.layout
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
 
@@ -621,7 +625,7 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
     def draw(self, context):
         layout = self.layout
         obj = context.object
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
         headnum = settings.head_by_obj(obj)
@@ -699,7 +703,7 @@ class FB_PT_AppearancePanel(AllVisible, Panel):
 
     def draw(self, context):
         layout = self.layout
-        settings = get_fb_settings()
+        settings = fb_settings()
         if settings is None:
             return
 

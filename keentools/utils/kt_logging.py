@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
-from typing import Optional
+from typing import Optional, List
 
 
 _log_colors = {
@@ -29,6 +29,14 @@ _log_colors = {
     'magenta': '\x1b[0;35m',
     'cyan': '\x1b[1;36m',
     'reset': '\x1b[0m'}
+
+
+_module_names: List[str] = []
+
+
+def _add_module_name(name: str) -> None:
+    global _module_names
+    _module_names.append(name)
 
 
 class KTLogger():
@@ -50,6 +58,9 @@ class KTLogger():
             self.output = self.error
         else:
             self.output = self.debug
+
+        _add_module_name(name)
+        self.green(f'import: {name}')
 
     def info(self, message: str) -> None:
         if self._info_color is None:
@@ -83,3 +94,30 @@ class KTLogger():
         if color not in _log_colors:
             return txt
         return f"{_log_colors[color]}{txt}{_log_colors['reset']}"
+
+    def gray(self, txt: str) -> None:
+        self.output(self.color('gray', txt))
+
+    def red(self, txt: str) -> None:
+        self.output(self.color('red', txt))
+
+    def green(self, txt: str) -> None:
+        self.output(self.color('green', txt))
+
+    def yellow(self, txt: str) -> None:
+        self.output(self.color('yellow', txt))
+
+    def blue(self, txt: str) -> None:
+        self.output(self.color('blue', txt))
+
+    def magenta(self, txt: str) -> None:
+        self.output(self.color('magenta', txt))
+
+    def cyan(self, txt: str) -> None:
+        self.output(self.color('cyan', txt))
+
+    def module_names(self) -> List[str]:
+        return (_module_names)
+
+
+_log = KTLogger(__name__)

@@ -30,7 +30,8 @@ from ..blender_independent_packages.pykeentools_loader import (
     os_name as pkt_os_name)
 from ..addon_config import (Config,
                             get_operator,
-                            get_addon_preferences)
+                            get_addon_preferences,
+                            ProductType)
 from .formatting import replace_newlines_with_spaces
 from ..preferences.progress import InstallationProgress
 from ..messages import get_system_info, get_gpu_info
@@ -44,15 +45,17 @@ _log = KTLogger(__name__)
 _please_accept_eula = 'You need to accept our EULA before installation'
 
 
-def get_product_license_manager(product: str) -> Any:
-    if product == 'facebuilder':
+def get_product_license_manager(product: int) -> Any:
+    if product == ProductType.FACEBUILDER:
         return pkt_module().FaceBuilder.license_manager()
-    elif product == 'geotracker':
+    elif product == ProductType.GEOTRACKER:
         return pkt_module().GeoTracker.license_manager()
-    assert False, 'Wrong product ID'
+    elif product == ProductType.FACETRACKER:
+        return pkt_module().FaceTracker.license_manager()
+    assert False, 'get_product_license_manager Wrong product ID'
 
 
-def _get_hardware_id(product: str = 'facebuilder') -> str:
+def _get_hardware_id(product: int = ProductType.FACEBUILDER) -> str:
     lm = get_product_license_manager(product)
     return lm.hardware_id()
 
@@ -221,7 +224,7 @@ class KTPREF_OT_OpenManualInstallPage(Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    product: StringProperty(default='')
+    product: IntProperty(default=ProductType.UNDEFINED)
 
     def execute(self, context):
         hardware_id = _get_hardware_id(self.product)
@@ -248,14 +251,14 @@ class KTPREF_OT_InstallLicenseOnline(Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    product: StringProperty(default='')
+    product: IntProperty(default=ProductType.UNDEFINED)
     license_key: StringProperty()
 
     def _clear_license_key(self):
         prefs = get_addon_preferences()
-        if self.product == 'facebuilder':
+        if self.product == ProductType.FACEBUILDER:
             prefs.fb_license_key = ''
-        elif self.product == 'geotracker':
+        elif self.product == ProductType.GEOTRACKER:
             prefs.gt_license_key = ''
 
     def execute(self, context):
@@ -291,7 +294,7 @@ class KTPREF_OT_InstallLicenseOffline(Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    product: StringProperty(default='')
+    product: IntProperty(default=ProductType.UNDEFINED)
     lic_path: StringProperty()
 
     def _clear_license_path(self):
@@ -331,7 +334,7 @@ class KTPREF_OT_FloatingConnect(Operator):
     bl_description = buttons[bl_idname].description
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    product: StringProperty(default='')
+    product: IntProperty(default=ProductType.UNDEFINED)
     license_server: StringProperty()
     license_server_port: IntProperty()
 

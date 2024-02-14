@@ -68,7 +68,7 @@ def circular_dot_2d_shader(use_old: bool = _use_old_shaders) -> Any:
     if use_old:
         shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
                                      fragment_vars + fragment_glsl)
-        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
+        _log.magenta(f'{shader_name}: Old Shader')
         return shader
 
     vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
@@ -127,7 +127,7 @@ def circular_dot_3d_shader(use_old: bool = _use_old_shaders) -> Any:
     if use_old:
         shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
                                      fragment_vars + fragment_glsl)
-        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
+        _log.magenta(f'{shader_name}: Old Shader')
         return shader
 
     vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
@@ -185,7 +185,7 @@ def line_3d_local_shader(use_old: bool = _use_old_shaders) -> Any:
     if use_old:
         shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
                                      fragment_vars + fragment_glsl)
-        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
+        _log.magenta(f'{shader_name}: Old Shader')
         return shader
 
     vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
@@ -243,7 +243,7 @@ def solid_line_2d_shader(use_old: bool = _use_old_shaders) -> Any:
     if use_old:
         shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
                                      fragment_vars + fragment_glsl)
-        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
+        _log.magenta(f'{shader_name}: Old Shader')
         return shader
 
     vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
@@ -305,7 +305,7 @@ def dashed_2d_shader(use_old: bool = _use_old_shaders, *,
     if use_old:
         shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
                                      fragment_vars + fragment_glsl)
-        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
+        _log.magenta(f'{shader_name}: Old Shader')
         return shader
 
     vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
@@ -391,7 +391,7 @@ def raster_image_mask_shader(use_old: bool = _use_old_shaders) -> Any:
     if use_old:
         shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
                                      fragment_vars + fragment_glsl)
-        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
+        _log.magenta(f'{shader_name}: Old Shader')
         return shader
 
     vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
@@ -506,7 +506,7 @@ def raster_image_shader(use_old: bool = _use_old_shaders) -> Any:
     if use_old:
         shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
                                      fragment_vars + fragment_glsl)
-        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
+        _log.magenta(f'{shader_name}: Old Shader')
         return shader
 
     vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
@@ -621,7 +621,7 @@ def uniform_color_3d_shader(use_old: bool = _use_old_shaders) -> Any:
     if use_old:
         shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
                                      fragment_vars + fragment_glsl)
-        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
+        _log.magenta(f'{shader_name}: Old Shader')
         return shader
 
     vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
@@ -681,7 +681,7 @@ def black_offset_fill_local_shader(use_old: bool = _use_old_shaders) -> Any:
     if use_old:
         shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
                                      fragment_vars + fragment_glsl)
-        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
+        _log.magenta(f'{shader_name}: Old Shader')
         return shader
 
     shader_info = gpu.types.GPUShaderCreateInfo()
@@ -865,7 +865,7 @@ def lit_aa_local_shader(use_old: bool = _use_old_shaders) -> Any:
     if use_old:
         shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
                                      fragment_vars + fragment_glsl)
-        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
+        _log.magenta(f'{shader_name}: Old Shader')
         return shader
 
     vert_out = gpu.types.GPUStageInterfaceInfo(f'{shader_name}_interface')
@@ -936,7 +936,7 @@ def simple_uniform_color_2d_shader(use_old: bool = _use_old_shaders) -> Any:
     if use_old:
         shader = gpu.types.GPUShader(vertex_vars + vertex_glsl,
                                      fragment_vars + fragment_glsl)
-        _log.output(_log.color('magenta', f'{shader_name}: Old Shader'))
+        _log.magenta(f'{shader_name}: Old Shader')
         return shader
 
     shader_info = gpu.types.GPUShaderCreateInfo()

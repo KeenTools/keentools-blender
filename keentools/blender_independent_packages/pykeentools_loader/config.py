@@ -50,8 +50,8 @@ def addon_installation_dir():
     return os.path.join(addons_path, 'keentools')
 
 
-MINIMUM_VERSION_REQUIRED = (2023, 3, 0)  # 2023.3.0 (4/5)
-_SUPPORTED_PYTHON_VERSIONS = ((3, 7), (3, 9), (3, 10))
+MINIMUM_VERSION_REQUIRED = (2023, 3, 1)  # 2023.3.1 (4/5)
+_SUPPORTED_PYTHON_VERSIONS = ((3, 7), (3, 9), (3, 10), (3, 11))
 
 
 def is_python_supported():

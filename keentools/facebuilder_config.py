@@ -15,16 +15,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
+
 import math
-import bpy
 
-from .utils.version import BVersion
+from .utils.kt_logging import KTLogger
 
 
-_company = 'keentools'
-_PT = 'FBUILDER_PT_'
-_MT = 'FBUILDER_MT_'
-prefix = 'keentools_fb'
+_log = KTLogger(__name__)
+
+
+_PT: str = 'FBUILDER_PT_'
+_MT: str = 'FBUILDER_MT_'
+prefix: str = 'keentools_fb'
 
 
 class FBConfig:
@@ -34,12 +36,9 @@ class FBConfig:
     default_fb_camera_data_name = 'fbCamData'
     default_fb_camera_name = 'fbCamera'
 
-    fb_global_var_name = prefix + '_settings'
     fb_tool_name = 'FaceBuilder'
 
     operators = 'keentools_fb'
-
-    fb_tab_category = 'FaceBuilder'
 
     fb_license_purchase_url = 'https://link.keentools.io/fb-lc-fbbmld?utm_source=fbb-missing-license-dialog'
     coloring_texture_name = '.ktWireframeTexture'
@@ -160,7 +159,7 @@ class FBConfig:
     empty_expression_view_name = ''
 
     # Object Custom Properties
-    version_prop_name = _company + '_version'
+    version_prop_name = 'keentools_version'
     fb_serial_prop_name = prefix + '_serial'
     fb_images_prop_name = prefix + '_images'
     fb_dir_prop_name = prefix + '_dir'
@@ -223,38 +222,3 @@ class FBConfig:
 
     selected_rectangle_color = (0.871, 0.107, 0.001, 1.0)
     regular_rectangle_color = (0.024, 0.246, 0.905, 1.0)
-
-
-def get_fb_settings_func():
-    return getattr(bpy.context.scene, FBConfig.fb_global_var_name)
-
-
-_get_fb_settings = get_fb_settings_func
-
-
-def get_fb_settings():
-    global _get_fb_settings
-    return _get_fb_settings()
-
-
-def set_fb_settings_func(func):
-    global _get_fb_settings
-    _get_fb_settings = func
-
-
-def check_addon_settings_var_exists():
-    return hasattr(bpy.types.Scene, FBConfig.fb_global_var_name)
-
-
-def remove_addon_settings_var():
-    delattr(bpy.types.Scene, FBConfig.fb_global_var_name)
-
-
-def check_addon_settings_var_type():
-    if not hasattr(bpy.types.Scene, FBConfig.fb_global_var_name):
-        return None
-    attr = getattr(bpy.types.Scene, FBConfig.fb_global_var_name)
-    if BVersion.property_keywords_enabled:
-        return attr.keywords['type']
-    else:
-        return attr[1]['type']

@@ -27,7 +27,9 @@ from .bpy_common import (bpy_current_frame,
                          bpy_set_current_frame,
                          create_empty_object,
                          operator_with_context,
-                         update_depsgraph)
+                         update_depsgraph,
+                         bpy_new_action,
+                         bpy_remove_action)
 
 from .fcurve_operations import *
 from .kt_logging import KTLogger
@@ -61,7 +63,7 @@ def remove_fcurve_point(obj: Object, frame: int, data_path: str,
     if remove_empty_curve and fcurve.is_empty:
         action.fcurves.remove(fcurve)
     if remove_empty_action and len(action.fcurves) == 0:
-        bpy.data.actions.remove(action)
+        bpy_remove_action(action)
 
 
 def get_evaluated_fcurve(obj: Object, frame: int, data_path: str,
@@ -103,7 +105,7 @@ def _get_safe_action(obj: Object,
         if not animation_data:
             return None
     if not animation_data.action:
-        animation_data.action = bpy.data.actions.new(action_name)
+        animation_data.action = bpy_new_action(action_name)
     return animation_data.action
 
 
@@ -129,9 +131,10 @@ def create_animated_empty(anim_dict: Dict) -> Object:
 
 
 def insert_point_in_fcurve(fcurve: FCurve, frame: int, value: float,
-                           keyframe_type: str = 'KEYFRAME') -> Keyframe:
+                           keyframe_type: Optional[str] = None) -> Keyframe:
     k = fcurve.keyframe_points.insert(frame, value, options={'NEEDED'})
-    k.type = keyframe_type
+    if keyframe_type is not None:
+        k.type = keyframe_type
     return k
 
 
@@ -176,7 +179,7 @@ def mark_all_points_in_locrot(obj: Object,
     locrot_dict = get_locrot_dict()
     for name in locrot_dict.keys():
         fcurve = get_action_fcurve(action, locrot_dict[name]['data_path'],
-                                    index=locrot_dict[name]['index'])
+                                   index=locrot_dict[name]['index'])
         if fcurve is not None:
             mark_all_points_in_fcurve(fcurve, keyframe_type)
 
@@ -189,7 +192,7 @@ def mark_selected_points_in_locrot(obj: Object, selected_frames: List[int],
     locrot_dict = get_locrot_dict()
     for name in locrot_dict.keys():
         fcurve = get_action_fcurve(action, locrot_dict[name]['data_path'],
-                                    index=locrot_dict[name]['index'])
+                                   index=locrot_dict[name]['index'])
         if fcurve is not None:
             mark_selected_points_in_fcurve(fcurve, selected_frames, keyframe_type)
 
@@ -202,7 +205,7 @@ def get_locrot_keys_in_frame(obj: Object, frame: int) -> Dict:
     locrot_dict = get_locrot_dict()
     for name in locrot_dict.keys():
         fcurve = get_action_fcurve(action, locrot_dict[name]['data_path'],
-                                    index=locrot_dict[name]['index'])
+                                   index=locrot_dict[name]['index'])
         if fcurve is None:
             continue
         points = [p.co[1] for p in fcurve.keyframe_points if p.co[0] == frame]
@@ -246,7 +249,7 @@ def remove_fcurve_from_action(action: Action, data_path: str, index: int = 0,
     if fcurve:
         action.fcurves.remove(fcurve)
     if remove_empty_action and len(action.fcurves) == 0:
-        bpy.data.actions.remove(action)
+        bpy_remove_action(action)
 
 
 def remove_fcurve_from_object(obj: Object, data_path: str, index: int = 0,

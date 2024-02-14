@@ -18,7 +18,8 @@
 
 from bpy.types import Menu, Operator
 
-from ...geotracker_config import GTConfig, get_gt_settings
+from ...addon_config import gt_settings, ProductType
+from ...geotracker_config import GTConfig
 from ...utils.bpy_common import bpy_call_menu
 from ..ui_strings import buttons
 
@@ -30,17 +31,20 @@ class GT_MT_ClipMenu(Menu):
 
     def draw(self, context):
         layout = self.layout
-        settings = get_gt_settings()
+        settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
 
         layout.separator()
         col = layout.column()
-        col.operator(GTConfig.gt_sequence_filebrowser_idname,
-                     icon='FILEBROWSER')
+        op = col.operator(GTConfig.gt_sequence_filebrowser_idname,
+                          icon='FILEBROWSER')
+        op.product = ProductType.GEOTRACKER
+
         if not geotracker or not geotracker.movie_clip:
             return
         col.separator()
-        col.operator(GTConfig.gt_video_snapshot_idname, icon='IMAGE')
+        op = col.operator(GTConfig.gt_video_snapshot_idname, icon='IMAGE')
+        op.product = ProductType.GEOTRACKER
 
         col.separator()
         col.operator(GTConfig.gt_split_video_to_frames_exec_idname,

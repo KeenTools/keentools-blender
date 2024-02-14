@@ -22,13 +22,14 @@ from bpy.types import Area, Window
 import addon_utils
 
 from .kt_logging import KTLogger
-from .bpy_common import bpy_background_mode
+from .bpy_common import bpy_background_mode, operator_with_context
+from ..utils.coords import get_area_region
 
 
 _log = KTLogger(__name__)
 
 
-def get_areas_by_type(area_type: str = 'VIEW_3D') -> List[Tuple]:
+def get_areas_by_type(area_type: str = 'VIEW_3D') -> List[Tuple[Area, Window]]:
     pairs = []
     for window in bpy.data.window_managers['WinMan'].windows:
         for area in window.screen.areas:
@@ -122,3 +123,16 @@ def total_redraw_ui_overriding_window() -> None:
         }
         bpy.ops.wm.redraw_timer(override, type='DRAW_WIN_SWAP', iterations=1)
         _log.output(_log.color('red', 'total_redraw_ui_overriding_window'))
+
+
+
+def timeline_view_all() -> None:
+    _log.output('timeline_view_all')
+    pairs = get_areas_by_type('DOPESHEET_EDITOR')
+    for area, _ in pairs:
+        region = get_area_region(area)
+        if not region:
+            continue
+        _log.output(f'area: {area}')
+        operator_with_context(bpy.ops.action.view_all,
+                              {'area': area, 'region': region})

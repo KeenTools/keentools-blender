@@ -25,8 +25,8 @@ from bpy.props import BoolProperty, IntProperty, StringProperty, EnumProperty, C
 from bpy.path import ensure_ext
 
 from ...utils.kt_logging import KTLogger
-from ...addon_config import get_operator
-from ...facebuilder_config import FBConfig, get_fb_settings
+from ...addon_config import fb_settings, get_operator
+from ...facebuilder_config import FBConfig
 from ..fbloader import FBLoader
 from ..utils.exif_reader import (read_exif_to_camera,
                                  auto_setup_camera_from_exif)
@@ -80,7 +80,7 @@ class FB_OT_SingleFilebrowserExec(Operator):
         pass
 
     def execute(self, context):
-        settings = get_fb_settings()
+        settings = fb_settings()
 
         op = get_operator(FBConfig.fb_single_filebrowser_idname)
         op('INVOKE_DEFAULT', headnum=settings.tmp_headnum,
@@ -90,7 +90,7 @@ class FB_OT_SingleFilebrowserExec(Operator):
 
 
 def load_single_image_file(headnum: int, camnum: int, filepath: str) -> bool:
-        settings = get_fb_settings()
+        settings = fb_settings()
         _log.info('Load image file: {}'.format(filepath))
 
         if not settings.check_heads_and_cams():
@@ -146,6 +146,7 @@ class FB_OT_SingleFilebrowser(Operator, ImportHelper):
         pass
 
     def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
         if load_single_image_file(self.headnum, self.camnum, self.filepath):
             return {'FINISHED'}
 
@@ -213,8 +214,9 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
         layout.prop(self, 'file_format', expand=True)
 
     def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
         _log.output(f'START SAVE TEXTURE: {self.filepath}')
-        settings = get_fb_settings()
+        settings = fb_settings()
         head = settings.get_head(self.headnum)
         if head is None:
             return {'CANCELLED'}
@@ -231,7 +233,8 @@ class FB_OT_TextureFileExport(Operator, ExportHelper):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        settings = get_fb_settings()
+        _log.output(f'{self.__class__.__name__} invoke')
+        settings = fb_settings()
         head = settings.get_head(self.headnum)
         if head is None:
             return {'CANCELLED'}
@@ -252,6 +255,7 @@ class FB_OT_MultipleFilebrowserExec(Operator):
         pass
 
     def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
         op = get_operator(FBConfig.fb_multiple_filebrowser_idname)
         op('INVOKE_DEFAULT', headnum=self.headnum)
 
@@ -291,8 +295,8 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
         layout.label(text='You can select multiple images at once')
 
     def execute(self, context):
-        """ Selected files processing"""
-        settings = get_fb_settings()
+        _log.output(f'{self.__class__.__name__} execute')
+        settings = fb_settings()
         if not settings.is_proper_headnum(self.headnum):
             _log.error(f'WRONG HEADNUM: {self.headnum}/'
                        f'{settings.get_last_headnum()}')
@@ -306,14 +310,16 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
 
         head = settings.get_head(self.headnum)
         last_camnum = head.get_last_camnum()
+        _log.output(f'last_camnum: {last_camnum}')
 
         for f in self.files:
             try:
                 filepath = os.path.join(self.directory, f.name)
-                _log.output(f'IMAGE FILE: {filepath}')
+                _log.output(f'{self.__class__.__name__} IMAGE:\n{filepath}')
 
                 camera = FBLoader.add_new_camera_with_image(self.headnum,
                                                             filepath)
+                _log.output(f'read_exif_to_camera')
                 read_exif_to_camera(
                     self.headnum, head.get_last_camnum(), filepath)
                 camera.orientation = camera.exif.orientation
@@ -321,9 +327,20 @@ class FB_OT_MultipleFilebrowser(Operator, ImportHelper):
             except RuntimeError as ex:
                 _log.error(f'FILE READ ERROR: {f.name}')
 
+        fb = FBLoader.get_builder()
         for i, camera in enumerate(head.cameras):
             if i > last_camnum:
+                _log.output(f'auto_setup_camera_from_exif: {i}')
                 auto_setup_camera_from_exif(camera)
+
+                mode = fb.focal_length_estimation_mode()
+                _log.output(f'focal_length_estimation_mode: {mode}')
+                if mode in ['FB_ESTIMATE_VARYING_FOCAL_LENGTH',
+                            'FB_ESTIMATE_STATIC_FOCAL_LENGTH']:
+                    fb.set_focal_length_at(
+                        camera.get_keyframe(),
+                        camera.get_focal_length_in_pixels_coef() * camera.focal)
+
                 FBLoader.center_geo_camera_projection(self.headnum, i)
 
         FBLoader.save_fb_serial_and_image_pathes(self.headnum)
@@ -347,6 +364,7 @@ class FB_OT_AnimationFilebrowser(Operator, ImportHelper):
         pass
 
     def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
         obj = bpy_objects()[self.obj_name]
         assert obj.type == 'MESH'
 

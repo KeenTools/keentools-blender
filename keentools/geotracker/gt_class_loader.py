@@ -50,6 +50,10 @@ class GTClassLoader:
         return pkt_module().GeoTracker
 
     @staticmethod
+    def FaceTracker_class():
+        return pkt_module().FaceTracker
+
+    @staticmethod
     def TrackerFocalLengthMode_class():
         return pkt_module().TrackerFocalLengthMode
 
@@ -57,11 +61,6 @@ class GTClassLoader:
     def PrecalcRunner_class():
         from .utils.precalc_runner import PrecalcRunner
         return PrecalcRunner
-
-    @staticmethod
-    def CalculationClient_class():
-        from .utils.calculation_client import CalculationClient
-        return CalculationClient
 
     @staticmethod
     def precalc():
@@ -76,8 +75,3 @@ class GTClassLoader:
     def RFProgressCallBack_class():
         from .utils.progress_callbacks import RFProgressCallBack
         return RFProgressCallBack
-
-    @staticmethod
-    def DetectionProgressCallback_class():
-        from .utils.progress_callbacks import DetectionProgressCallback
-        return DetectionProgressCallback

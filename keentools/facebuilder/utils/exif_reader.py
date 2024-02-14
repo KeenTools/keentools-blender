@@ -24,7 +24,8 @@ from ...blender_independent_packages.exifread import \
     DEFAULT_STOP_TAG, FIELD_TYPES
 
 from ...utils.kt_logging import KTLogger
-from ...facebuilder_config import FBConfig, get_fb_settings
+from ...addon_config import fb_settings
+from ...facebuilder_config import FBConfig
 
 
 _log = KTLogger(__name__)
@@ -253,7 +254,7 @@ def _exif_info_message(exif: Any, data: Dict) -> str:
 
 
 def _exif_sizes_message(headnum: int, image: Any) -> str:
-    settings = get_fb_settings()
+    settings = fb_settings()
     head = settings.get_head(headnum)
 
     if image is None:
@@ -315,7 +316,8 @@ def _exif_sizes_message(headnum: int, image: Any) -> str:
 
 
 def reload_all_camera_exif(headnum: int) -> None:
-    settings = get_fb_settings()
+    _log.output('reload_all_camera_exif')
+    settings = fb_settings()
     head = settings.get_head(headnum)
     for i, camera in enumerate(head.cameras):
         filepath = camera.get_abspath()
@@ -324,7 +326,8 @@ def reload_all_camera_exif(headnum: int) -> None:
 
 
 def read_exif_to_camera(headnum: int, camnum: int, filepath: str) -> bool:
-    settings = get_fb_settings()
+    _log.output('read_exif_to_camera')
+    settings = fb_settings()
     camera = settings.get_camera(headnum, camnum)
     if camera is None:
         return False
@@ -335,7 +338,7 @@ def read_exif_to_camera(headnum: int, camnum: int, filepath: str) -> bool:
 
 
 def update_exif_sizes_message(headnum: int, image: Any) -> bool:
-    settings = get_fb_settings()
+    settings = fb_settings()
     head = settings.get_head(headnum)
     if head is None:
         return False
@@ -345,6 +348,7 @@ def update_exif_sizes_message(headnum: int, image: Any) -> bool:
 
 
 def auto_setup_camera_from_exif(camera: Any) -> None:
+    _log.output('auto_setup_camera_from_exif')
     real_w, real_h = camera.get_background_size()
 
     if camera.exif.focal35mm > 0:
@@ -400,7 +404,7 @@ def copy_exif_parameters_from_camera_to_head(camera: Any, head: Any) -> None:
 
 
 def read_exif_from_camera(headnum: int, camnum: int) -> bool:
-    settings = get_fb_settings()
+    settings = fb_settings()
     head = settings.get_head(headnum)
     if head is None:
         return False

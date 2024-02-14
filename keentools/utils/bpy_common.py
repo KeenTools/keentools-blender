@@ -396,3 +396,34 @@ def bpy_object_name(obj: Object, default_name: str = 'Undefined') -> str:
     except Exception as err:
         _log.output(f'bpy_object_name Exception:\n{str(err)}')
     return default_name
+
+
+def bpy_new_action(name: str) -> Any:
+    return bpy.data.actions.new(name)
+
+
+def bpy_remove_action(action: Any) -> None:
+    if not action:
+        return
+    bpy.data.actions.remove(action)
+
+
+def bpy_shape_key_move(obj: Object, type_direction: str = 'UP') -> None:
+    operator_with_context(bpy.ops.object.shape_key_move,
+                          {'object': obj}, type=type_direction)
+
+
+def bpy_shape_key_move_top(obj: Object) -> None:
+    bpy_shape_key_move(obj, 'TOP')
+
+
+def bpy_shape_key_move_up(obj: Object) -> None:
+    bpy_shape_key_move(obj, 'UP')
+
+
+def bpy_shape_key_move_down(obj: Object) -> None:
+    bpy_shape_key_move(obj, 'DOWN')
+
+
+def bpy_shape_key_move_bottom(obj: Object) -> None:
+    bpy_shape_key_move(obj, 'BOTTOM')

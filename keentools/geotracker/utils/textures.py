@@ -22,6 +22,8 @@ from typing import Any, List, Optional, Tuple
 from bpy.types import Object, Area
 
 from ...utils.kt_logging import KTLogger
+from ...addon_config import gt_settings
+from ...utils.version import BVersion
 from ...utils.bpy_common import (bpy_current_frame,
                                  bpy_set_current_frame,
                                  bpy_render_frame,
@@ -31,26 +33,24 @@ from ...utils.bpy_common import (bpy_current_frame,
                                  bpy_progress_update)
 from ...blender_independent_packages.pykeentools_loader import module as pkt_module
 from ...utils.mesh_builder import build_geo
-from ...utils.images import np_array_from_background_image
+from ...utils.images import (np_array_from_background_image,
+                             create_bpy_image_from_np_array,
+                             create_compatible_bpy_image,
+                             assign_pixels_data,
+                             remove_bpy_image)
 from ...utils.coords import camera_projection
 from ...utils.ui_redraw import (total_redraw_ui,
                                 total_redraw_ui_overriding_window)
-from ...utils.images import create_bpy_image_from_np_array
 from ...utils.materials import (remove_bpy_texture_if_exists,
                                 show_texture_in_mat,
                                 assign_material_to_object,
                                 switch_to_mode)
-from ...utils.images import (create_compatible_bpy_image,
-                             assign_pixels_data,
-                             remove_bpy_image)
-from ...geotracker_config import GTConfig, get_gt_settings
 from ..gtloader import GTLoader
 from .prechecks import prepare_camera
 from ...utils.localview import exit_area_localview
 from ..interface.screen_mesages import (revert_default_screen_message,
                                         single_line_screen_message,
                                         texture_projection_screen_message)
-from ...utils.version import BVersion
 
 
 _log = KTLogger(__name__)
@@ -110,7 +110,7 @@ def bake_texture(geotracker: Any, selected_frames: List[int]) -> Any:
 
     progress_callBack = ProgressCallBack()
 
-    settings = get_gt_settings()
+    settings = gt_settings()
     current_frame = bpy_current_frame()
     bpy_progress_begin(0, 1)
     _set_bad_frame()
@@ -166,7 +166,7 @@ def bake_generator(area: Area, geotracker: Any, filepath_pattern: str,
         settings.user_interrupts = True
 
     delta = 0.001
-    settings = get_gt_settings()
+    settings = gt_settings()
     settings.calculating_mode = 'REPROJECT'
 
     single_line_screen_message('Projecting and baking… Please wait')
@@ -221,7 +221,7 @@ def bake_texture_sequence(context: Any, geotracker: Any, filepath_pattern: str,
                                          file_format=file_format,
                                          frames=frames, digits=digits)
     prepare_camera(context.area)
-    settings = get_gt_settings()
+    settings = gt_settings()
     if not settings.pinmode:
         vp = GTLoader.viewport()
         vp.texter().register_handler(context)
