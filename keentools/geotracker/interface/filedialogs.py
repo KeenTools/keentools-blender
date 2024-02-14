@@ -48,6 +48,7 @@ from ...utils.bpy_common import (bpy_start_frame,
 from ..utils.prechecks import common_checks
 from ..ui_strings import buttons
 from ..utils.textures import bake_texture_sequence
+from ...utils.ui_redraw import timeline_view_all
 
 
 _log = KTLogger(__name__)
@@ -163,6 +164,8 @@ class GT_OT_SequenceFilebrowser(Operator, ImportHelper):
             return {'CANCELLED'}
 
         geotracker.movie_clip = new_movieclip
+
+        timeline_view_all()
 
         _log.output(f'LOADED MOVIECLIP: {geotracker.movie_clip.name}')
         return {'FINISHED'}
