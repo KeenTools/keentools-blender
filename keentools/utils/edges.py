@@ -371,6 +371,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
         self.selection_fill_batch: Optional[Any] = None
         self.selection_triangle_indices: List[Tuple[int, int, int]] = []
 
+        self.camera_pos: Vector = Vector((0, 0, 0))
         self.lit_color: Tuple[float, float, float, float] = (0., 1., 0., 1.0)
         self.lit_shader: Optional[Any] = None
         self.lit_batch: Optional[Any] = None
@@ -392,6 +393,7 @@ class KTLitEdgeShaderLocal3D(KTEdgeShaderBase):
         _log.output('set_lit_light_matrix')
         mat = geomobj_matrix_world.inverted() @ camobj_matrix_world
         self.lit_light_matrix = mat
+        self.camera_pos = mat @ Vector((0, 0, 0))
 
     def set_viewport_size(self, region: Any):
         if not region or not region.width or not region.height:

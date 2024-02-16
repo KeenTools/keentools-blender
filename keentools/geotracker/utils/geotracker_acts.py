@@ -357,12 +357,15 @@ def track_to(forward: bool, *, product: int) -> ActionStatus:
             tracking_timer = TrackTimer(
                 tracking_computation, current_frame,
                 success_callback=unbreak_after if forward else unbreak_after_reversed,
-                error_callback=unbreak_after if forward else unbreak_after_reversed)
+                error_callback=unbreak_after if forward else unbreak_after_reversed,
+                product=product)
         elif product == ProductType.FACETRACKER:
             tracking_timer = FTTrackTimer(
                 tracking_computation, current_frame,
                 success_callback=unbreak_after_facetracker if forward else unbreak_after_reversed_facetracker,
-                error_callback=unbreak_after_facetracker if forward else unbreak_after_reversed_facetracker)
+                error_callback=unbreak_after_facetracker if forward else unbreak_after_reversed_facetracker,
+                product=product
+            )
         else:
             assert False, f'Wrong product type [{product}]'
 
@@ -462,20 +465,24 @@ def refine_async_action(*, product: int) -> ActionStatus:
         if geotracker.precalcless:
             if product == ProductType.GEOTRACKER:
                 refine_timer = RefineTimer(refine_computation, current_frame,
-                                           success_callback=unbreak_after)
+                                           success_callback=unbreak_after,
+                                           product=product)
             elif product == ProductType.FACETRACKER:
                 refine_timer = FTRefineTimer(refine_computation, current_frame,
-                                             success_callback=unbreak_after_facetracker)
+                                             success_callback=unbreak_after_facetracker,
+                                             product=product)
             else:
                 assert False, f'Wrong product (1) {product}'
         else:
             if product == ProductType.GEOTRACKER:
                 refine_timer = RefineTimerFast(refine_computation, current_frame,
-                                               success_callback=unbreak_after)
+                                               success_callback=unbreak_after,
+                                               product=product)
             elif product == ProductType.FACETRACKER:
                 refine_timer = FTRefineTimerFast(refine_computation,
                                                  current_frame,
-                                                 success_callback=unbreak_after_facetracker)
+                                                 success_callback=unbreak_after_facetracker,
+                                                 product=product)
             else:
                 assert False, f'Wrong product (2) {product}'
 
@@ -511,10 +518,12 @@ def refine_all_async_action(*, product: int) -> ActionStatus:
         if geotracker.precalcless:
             if product == ProductType.GEOTRACKER:
                 refine_timer = RefineTimer(refine_computation, current_frame,
-                                           success_callback=unbreak_after)
+                                           success_callback=unbreak_after,
+                                           product=product)
             elif product == ProductType.FACETRACKER:
                 refine_timer = FTRefineTimer(refine_computation, current_frame,
-                                             success_callback=unbreak_after_facetracker)
+                                             success_callback=unbreak_after_facetracker,
+                                             product=product)
             else:
                 assert False, f'Wrong product (1) {product}'
         else:
@@ -659,8 +668,8 @@ def clear_all_except_keyframes_action(*, product: int) -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def remove_focal_keyframe_act(
-        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def remove_focal_keyframe_action(*, product: int) -> ActionStatus:
+    _log.output(f'remove_focal_keyframe_action start [{product_name(product)}]')
     check_status = common_checks(product=product,
                                  object_mode=False, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
@@ -671,11 +680,12 @@ def remove_focal_keyframe_act(
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     remove_fcurve_point(geotracker.camobj.data, bpy_current_frame(), 'lens')
+    _log.output('remove_focal_keyframe_action end')
     return ActionStatus(True, 'ok')
 
 
-def remove_focal_keyframes_act(
-        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def remove_focal_keyframes_action(*, product: int) -> ActionStatus:
+    _log.output(f'remove_focal_keyframes_action start [{product_name(product)}]')
     check_status = common_checks(product=product,
                                  object_mode=False, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
@@ -686,6 +696,7 @@ def remove_focal_keyframes_act(
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     remove_fcurve_from_object(geotracker.camobj.data, 'lens')
+    _log.output('remove_focal_keyframes_action end')
     return ActionStatus(True, 'ok')
 
 
@@ -784,19 +795,18 @@ def center_geo_action(*, product: int) -> ActionStatus:
         near = camobj.data.clip_start
         far = camobj.data.clip_end
         if near != camera_clip_start or far != camera_clip_end:
-            clipping_changed_screen_message(near, far)
+            clipping_changed_screen_message(near, far, product=product)
 
     loader.update_viewport_shaders(wireframe=True, geomobj_matrix=True,
-                                     pins_and_residuals=True)
+                                   pins_and_residuals=True)
     loader.viewport_area_redraw()
     _log.output('center_geo_act end')
     return ActionStatus(True, 'ok')
 
 
-def create_animated_empty_act(
+def create_animated_empty_action(
         obj: Object, linked: bool=False,
-        force_bake_all_frames: bool=False, *,
-        product: int = ProductType.GEOTRACKER) -> ActionStatus:
+        force_bake_all_frames: bool=False) -> ActionStatus:
     if not bpy_poll_is_mesh(None, obj) and not bpy_poll_is_camera(None, obj):
         msg = 'Selected object is not Geometry or Camera'
         return ActionStatus(False, msg)
@@ -853,10 +863,10 @@ def create_animated_empty_act(
     return ActionStatus(True, 'ok')
 
 
-def create_empty_from_selected_pins_act(
+def create_empty_from_selected_pins_action(
         from_frame: int, to_frame: int, linked: bool = False,
-        orientation: str = 'NORMAL', size: float = 1.0, *,
-        product: int = ProductType.GEOTRACKER) -> ActionStatus:
+        orientation: str = 'NORMAL', size: float = 1.0,
+        *, product: int) -> ActionStatus:
     check_status = common_checks(product=product,
                                  object_mode=True, pinmode=True,
                                  is_calculating=True, reload_geotracker=True,
@@ -882,7 +892,7 @@ def create_empty_from_selected_pins_act(
         return ActionStatus(False, 'No pins selected')
 
     current_frame = bpy_current_frame()
-    geo = gt.geo()
+    geo = loader.get_geo()
     geo_mesh = geo.mesh(0)
 
     points = np.empty((selected_pins_count, 3), dtype=np.float32)
@@ -951,15 +961,13 @@ def create_empty_from_selected_pins_act(
     return ActionStatus(True, 'ok')
 
 
-def check_uv_exists(obj: Optional[Object], *,
-                    product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def check_uv_exists(obj: Optional[Object]) -> ActionStatus:
     if not obj or not obj.data.uv_layers.active:
         return ActionStatus(False, 'No UV map on object')
     return ActionStatus(True, 'ok')
 
 
-def check_uv_overlapping(obj: Optional[Object], *,
-                         product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def check_uv_overlapping(obj: Optional[Object]) -> ActionStatus:
     if not BVersion.uv_select_overlap_exists:
         return ActionStatus(False, 'Too old Blender version for overlapping check')
 
@@ -974,7 +982,7 @@ def check_uv_overlapping(obj: Optional[Object], *,
     switch_to_mode('OBJECT')
 
     uvmap = obj.data.uv_layers.active.data
-    selected = np.empty((len(uvmap),), dtype=np.bool)
+    selected = np.empty((len(uvmap),), dtype=np.bool_)
     uvmap.foreach_get('select', selected.ravel())
 
     switch_to_mode(old_mode)
@@ -983,16 +991,13 @@ def check_uv_overlapping(obj: Optional[Object], *,
     return ActionStatus(True, 'ok')
 
 
-def check_uv_overlapping_with_status(
-        geotracker: Any, *,
-        product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def check_uv_overlapping_with_status(geotracker: Any) -> ActionStatus:
     status = check_uv_overlapping(geotracker.geomobj)
     geotracker.overlapping_detected = not status.success
     return status
 
 
-def create_non_overlapping_uv_act(
-        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def create_non_overlapping_uv_action(*, product: int) -> ActionStatus:
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
@@ -1045,9 +1050,8 @@ def repack_uv_act(*, product: int = ProductType.GEOTRACKER) -> ActionStatus:
     return ActionStatus(True, 'ok')
 
 
-def bake_texture_from_frames_act(
-        area: Area, selected_frames: List, *,
-        product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def bake_texture_from_frames_action(area: Area, selected_frames: List,
+                                    *, product: int) -> ActionStatus:
     _log.output(f'bake_texture_from_frames_act [{product}]: {selected_frames}')
     if not area:
         return ActionStatus(False, 'Improper context area')
@@ -1067,13 +1071,12 @@ def bake_texture_from_frames_act(
     check_status = check_uv_overlapping_with_status(geotracker)
 
     prepare_camera(area, product=product)
-    built_texture = bake_texture(geotracker, selected_frames)
+    built_texture = bake_texture(geotracker, selected_frames, product=product)
     revert_camera(area)
 
     if settings.pinmode:
         settings.reload_current_geotracker()
-        settings.loader().update_viewport_shaders(wireframe=False,
-                                                  geomobj_matrix=True,
+        settings.loader().update_viewport_shaders(geomobj_matrix=True,
                                                   pins_and_residuals=True)
     if built_texture is None:
         bad_frame = get_bad_frame()
@@ -1099,8 +1102,7 @@ def bake_texture_from_frames_act(
     return ActionStatus(True, 'ok')
 
 
-def transfer_tracking_to_camera_act(
-        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def transfer_tracking_to_camera_action(*, product: int) -> ActionStatus:
     check_status = common_checks(product=product,
                                  object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
@@ -1154,8 +1156,7 @@ def transfer_tracking_to_camera_act(
     return ActionStatus(True, 'ok')
 
 
-def transfer_tracking_to_geometry_act(
-        *, product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def transfer_tracking_to_geometry_action(*, product: int) -> ActionStatus:
     check_status = common_checks(product=product,
                                  object_mode=True, is_calculating=True,
                                  reload_geotracker=True, geotracker=True,
@@ -1297,7 +1298,7 @@ def store_geomobj_state(operator: Operator, geomobj: Object) -> None:
     operator.geom_scale = geomobj.scale
 
 
-def revert_object_states(*, product: int = ProductType.GEOTRACKER) -> bool:
+def revert_object_states(*, product: int) -> bool:
     _log.output('revert_object_states')
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
@@ -1334,8 +1335,7 @@ def _apply_camobj_scale(camobj: Object, operator: Operator) -> None:
                         operator.cam_scale[2] * operator.value)
 
 
-def _get_operator_origin_matrix(
-        origin_point: str, *, product: int = ProductType.GEOTRACKER) -> Matrix:
+def _get_operator_origin_matrix(origin_point: str, *, product: int) -> Matrix:
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     origin_matrix = Matrix.Identity(4)
@@ -1367,22 +1367,22 @@ def scale_scene_tracking_preview_func(
     _apply_geomobj_scale(geomobj, operator)
 
 
-def scale_scene_tracking_act(
-        operator: Operator, *,
-        product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def scale_scene_tracking_action(operator: Operator,
+                                *, product: int) -> ActionStatus:
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
     current_frame = bpy_current_frame()
-    revert_object_states()
+    revert_object_states(product=product)
 
     geom_animated_frame_set = set(get_object_keyframe_numbers(geomobj))
     cam_animated_frame_set = set(get_object_keyframe_numbers(camobj))
     all_animated_frame_set = geom_animated_frame_set.union(
         cam_animated_frame_set)
 
-    static_origin_matrix = _get_operator_origin_matrix(operator.origin_point)
+    static_origin_matrix = _get_operator_origin_matrix(operator.origin_point,
+                                                       product=product)
     static_rescale_matrix = _scale_relative_to_point_matrix(
         static_origin_matrix, operator.value)
     rescale_matrix = static_rescale_matrix
@@ -1465,7 +1465,7 @@ def scale_scene_tracking_act(
         return ActionStatus(False, msg)
 
     if settings.pinmode:
-        loader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
+        loader.update_viewport_shaders(geomobj_matrix=True,
                                        pins_and_residuals=True)
     return ActionStatus(True, 'ok')
 
@@ -1548,13 +1548,13 @@ def scale_scene_trajectory_act(
         return ActionStatus(False, msg)
 
     if settings.pinmode:
-        loader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
+        loader.update_viewport_shaders(geomobj_matrix=True,
                                        pins_and_residuals=True)
     return ActionStatus(True, 'ok')
 
 
-def get_operator_reposition_matrix(
-        operator: Operator, *, product: int = ProductType.GEOTRACKER) -> Matrix:
+def get_operator_reposition_matrix(operator: Operator,
+                                   *, product: int) -> Matrix:
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     from_matrix = geotracker.geomobj.matrix_world \
@@ -1567,21 +1567,20 @@ def get_operator_reposition_matrix(
     return target_matrix @ source_matrix.inverted()
 
 
-def move_scene_tracking_act(
-        operator: Operator, *,
-        product: int = ProductType.GEOTRACKER) -> ActionStatus:
-    _log.output('move_scene_tracking_act call')
+def move_scene_tracking_action(operator: Operator,
+                               *, product: int) -> ActionStatus:
+    _log.output('move_scene_tracking_action call')
     settings = get_settings(product)
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
     current_frame = bpy_current_frame()
-    revert_object_states()
+    revert_object_states(product=product)
 
     geom_animated_frame_set = set(get_object_keyframe_numbers(geomobj))
     cam_animated_frame_set = set(get_object_keyframe_numbers(camobj))
 
-    transform_matrix = get_operator_reposition_matrix(operator)
+    transform_matrix = get_operator_reposition_matrix(operator, product=product)
     _log.output(f'transform_matrix:\n{transform_matrix}')
 
     for frame in geom_animated_frame_set:
@@ -1614,18 +1613,17 @@ def move_scene_tracking_act(
             return unbreak_status
 
     if not settings.reload_current_geotracker():
-        msg = 'Cannot reload GeoTracker data'
+        msg = f'Cannot reload {product_name(product)} data'
         _log.error(msg)
         return ActionStatus(False, msg)
 
     if settings.pinmode:
-        loader.update_viewport_shaders(wireframe=False, geomobj_matrix=True,
-                                         pins_and_residuals=True)
+        loader.update_viewport_shaders(geomobj_matrix=True,
+                                       pins_and_residuals=True)
     return ActionStatus(True, 'ok')
 
 
-def bake_locrot_act(obj: Object, *,
-                    product: int = ProductType.GEOTRACKER) -> ActionStatus:
+def bake_locrot_act(obj: Object, *, product: int) -> ActionStatus:
     def _remove_all_constraints(obj: Object):
         if len(obj.constraints) != 0:
             all_constraints = [x for x in obj.constraints]

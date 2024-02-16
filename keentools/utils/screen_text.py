@@ -29,10 +29,13 @@ from .base_shaders import KTShaderBase
 _log = KTLogger(__name__)
 
 
+_text_opacity: float = 1.0
+
+
 class KTScreenText(KTShaderBase):
     def __init__(self, target_class: Any=bpy.types.SpaceView3D):
         super().__init__(target_class)
-        self.defaults: Dict = {'color': (1., 1., 1., 0.5),
+        self.defaults: Dict = {'color': (1., 1., 1., _text_opacity),
                                'size': 24,
                                'shadow_color': (0., 0., 0., 0.75),
                                'shadow_blur': 5,
@@ -41,12 +44,12 @@ class KTScreenText(KTShaderBase):
         self.message: List[Dict] = []
         self.default_text: List[Dict] = [
             {'text': 'Pin Mode ',
-             'color': (1., 1., 1., 0.5),
+             'color': (1., 1., 1., _text_opacity),
              'size': 24,
              'y': 60},  # line 1
             {'text': 'ESC: Exit | LEFT CLICK: Create Pin '
                      '| RIGHT CLICK: Delete Pin | TAB: Hide/Show',
-             'color': (1., 1., 1., 0.5),
+             'color': (1., 1., 1., _text_opacity),
              'size': 20,
              'y': 30}  # line 2
         ]

@@ -99,7 +99,7 @@ _cached_edge_indices_dict: Dict = dict()
 
 
 def create_edge_indices(*, fb: Optional[Any] = None,
-                        geo: Optional[Any] = None) -> Tuple[Any, Any]:
+                        vertex_count: Optional[int] = None) -> Tuple[Any, Any]:
     def _empty_result() -> Tuple[Any, Any]:
         _log.red('create_edge_indices _empty_result')
         return (np.empty(shape=(0, 2), dtype=np.int32),
@@ -113,12 +113,19 @@ def create_edge_indices(*, fb: Optional[Any] = None,
         _log.error('create_edge_indices: fb.face_texture_available is False')
         return _empty_result()
 
-    working_geo = geo if geo is not None else work_fb.applied_args_replaced_uvs_model()
+    working_geo = work_fb.applied_args_replaced_uvs_model()
     me = working_geo.mesh(0)
     vert_count = me.points_count()
     poly_count = me.faces_count()
 
-    cache_key = poly_count * 1000000 + vert_count
+    _log.green(f'mesh points: {vert_count} polygons: {poly_count}')
+
+    if vertex_count is not None and vertex_count != vert_count:
+        # TODO: Change LOD
+        _log.error('LOD needs to be changed')
+        pass
+
+    cache_key = vert_count * 1000000 + poly_count
 
     if cache_key in _cached_edge_indices_dict:
         _log.green(f'create_edge_indices: cached data is used [{cache_key}]')

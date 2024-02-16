@@ -242,7 +242,7 @@ class KTPREF_OT_UserPreferencesResetAllWarning(Operator):
                          f'to reset all {product_name(self.product)} settings')
 
     def execute(self, _):
-        _log.output(f'user_preferences_reset_all {self.product}')
+        _log.output(f'user_preferences_reset_all {product_name(self.product)}')
         if not self.accept:
             return {'CANCELLED'}
         if self.product == ProductType.FACEBUILDER:

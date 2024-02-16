@@ -231,6 +231,7 @@ class MovePin(bpy.types.Operator):
         if not geotracker:
             return self.on_default_modal()
 
+        product = settings.product_type()
         frame = bpy_current_frame()
 
         if not self._pin_drag(frame, area, mouse_x, mouse_y):
@@ -249,9 +250,9 @@ class MovePin(bpy.types.Operator):
             near = geotracker.camobj.data.clip_start
             far = geotracker.camobj.data.clip_end
             if near == self.camera_clip_start and far == self.camera_clip_end:
-                revert_default_screen_message()
+                revert_default_screen_message(product=product)
             else:
-                clipping_changed_screen_message(near, far)
+                clipping_changed_screen_message(near, far, product=product)
 
         self.update_wireframe()
 
