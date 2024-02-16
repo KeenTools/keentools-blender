@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 import numpy as np
 import math
+from math import radians
 from typing import Any, Tuple, List, Optional, Set, Callable
 
 from bpy.types import Area, Object
@@ -657,3 +658,16 @@ def bound_box_center(obj: Object) -> Vector:
     else:
         verts = np.array([obj.bound_box[i] for i in range(8)], dtype=np.float32)
     return Vector(np.mean(verts, axis=0))
+
+
+def rotate_camera_around_model(model_matrix_world: Matrix,
+                               camera_matrix_world: Matrix,
+                               angle: float = 45.0) -> Matrix:
+    rot_mat = Matrix.Rotation(radians(angle), 4, 'Z')
+    return model_matrix_world @ rot_mat @ model_matrix_world.inverted() @ camera_matrix_world
+
+
+def model_mat_by_bpy_model_and_camera(model_matrix_world: Matrix,
+                                      camera_matrix_world: Matrix) -> Any:
+    return np.array(camera_matrix_world.inverted() @ model_matrix_world,
+                    dtype=np.float32) @ xz_to_xy_rotation_matrix_4x4()

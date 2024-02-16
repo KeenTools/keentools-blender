@@ -16,7 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy
+import re
+
 from bpy.props import (
     StringProperty,
     IntProperty,
@@ -32,15 +33,17 @@ from ..addon_config import (Config,
                             show_tool_preferences)
 from ..utils.bpy_common import (bpy_background_mode,
                                 bpy_show_addon_preferences,
-                                bpy_view_camera)
+                                bpy_view_camera,
+                                bpy_remove_object,
+                                bpy_call_menu)
 from ..facebuilder_config import FBConfig
 from .fbloader import FBLoader
 from ..utils import manipulate, materials, coords, images
+from ..utils.coords import update_head_mesh_non_neutral
 from ..utils.attrs import get_obj_collection, safe_delete_collection
 from ..facebuilder.utils.exif_reader import (update_exif_sizes_message,
                                              copy_exif_parameters_from_camera_to_head)
-from .utils.manipulate import check_settings
-from .utils.manipulate import push_head_in_undo_history
+from .utils.manipulate import check_settings, push_head_in_undo_history
 from ..utils.operator_action import (create_blendshapes,
                                      delete_blendshapes,
                                      load_animation_from_csv,
@@ -53,6 +56,11 @@ from ..utils.operator_action import (create_blendshapes,
                                      reconstruct_by_mesh)
 from ..utils.localview import exit_area_localview
 from .ui_strings import buttons
+from .facebuilder_acts import (solve_head,
+                               remove_pins_act,
+                               rotate_head_act,
+                               reset_expression_act,
+                               center_geo_act)
 from .integration import FB_OT_ExportToCC
 
 
@@ -112,15 +120,13 @@ class FB_OT_DeleteHead(Operator):
 
         for c in head.cameras:
             try:
-                # Remove camera object
-                bpy.data.objects.remove(c.camobj)  # , do_unlink=True
+                bpy_remove_object(c.camobj)
             except Exception:
                 pass
 
         try:
             col = get_obj_collection(head.headobj)
-            # Remove head object
-            bpy.data.objects.remove(head.headobj)  # , do_unlink=True
+            bpy_remove_object(head.headobj)
             safe_delete_collection(col)
         except Exception:
             pass
@@ -166,7 +172,7 @@ class FB_OT_CenterGeo(Operator):
     bl_idname = FBConfig.fb_center_geo_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
@@ -178,20 +184,16 @@ class FB_OT_CenterGeo(Operator):
         if not check_settings():
             return {'CANCELLED'}
 
-        settings = fb_settings()
         headnum = self.headnum
         camnum = self.camnum
 
-        FBLoader.center_geo_camera_projection(headnum, camnum)
-        FBLoader.save_fb_serial_and_image_pathes(headnum)
-        FBLoader.place_camera(headnum, camnum)
+        act_status = center_geo_act(headnum, camnum, update=True)
+        if not act_status.success:
+            msg = act_status.error_message
+            self.report({'ERROR'}, msg)
+            _log.error(f'{msg}')
+            return {'CANCELLED'}
 
-        push_head_in_undo_history(settings.get_head(headnum), 'Reset Camera.')
-
-        FBLoader.update_fb_viewport_shaders(area=context.area,
-                                            headnum=headnum, camnum=camnum,
-                                            wireframe=True,
-                                            pins_and_residuals=True)
         return {'FINISHED'}
 
 
@@ -222,7 +224,7 @@ class FB_OT_Unmorph(Operator):
             fb.remove_pins(camera.get_keyframe())
             camera.pins_count = 0
 
-        coords.update_head_mesh_non_neutral(fb, head)
+        update_head_mesh_non_neutral(fb, head)
         FBLoader.save_fb_serial_and_image_pathes(headnum)
 
         if settings.pinmode:
@@ -241,7 +243,7 @@ class FB_OT_RemovePins(Operator):
     bl_idname = FBConfig.fb_remove_pins_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
@@ -258,21 +260,12 @@ class FB_OT_RemovePins(Operator):
         headnum = self.headnum
         camnum = self.camnum
 
-        fb = FBLoader.get_builder()
-        kid = settings.get_keyframe(headnum, camnum)
-
-        fb.remove_pins(kid)
-        FBLoader.solve(headnum, camnum)
-
-        FBLoader.save_fb_serial_and_image_pathes(headnum)
-        FBLoader.update_camera_pins_count(headnum, camnum)
-        FBLoader.load_pins_into_viewport(headnum, camnum)
-        FBLoader.update_fb_viewport_shaders(area=context.area,
-                                            headnum=headnum, camnum=camnum,
-                                            wireframe=True,
-                                            pins_and_residuals=True)
-
-        push_head_in_undo_history(settings.get_head(headnum), 'Remove pins')
+        act_status = remove_pins_act(headnum, camnum, update=True)
+        if not act_status.success:
+            msg = act_status.error_message
+            self.report({'ERROR'}, msg)
+            _log.error(f'{msg}')
+            return {'CANCELLED'}
 
         return {'FINISHED'}
 
@@ -406,8 +399,8 @@ class FB_OT_ProperViewMenuExec(Operator):
         settings = fb_settings()
         settings.tmp_headnum = self.headnum
         settings.tmp_camnum = self.camnum
-        bpy.ops.wm.call_menu(
-            'INVOKE_DEFAULT', name=FBConfig.fb_proper_view_menu_idname)
+        bpy_call_menu('INVOKE_DEFAULT',
+                      name=FBConfig.fb_proper_view_menu_idname)
         return {'FINISHED'}
 
 
@@ -563,28 +556,17 @@ class FB_OT_ResetExpression(Operator):
 
     def execute(self, context):
         settings = fb_settings()
-        head = settings.get_head(self.headnum)
-
-        if not settings.pinmode:
-            return {'CANCELLED'}
-        if head is None:
-            return {'CANCELLED'}
-        if not head.has_camera(settings.current_camnum):
+        if not settings:
             return {'CANCELLED'}
 
-        FBLoader.load_model(self.headnum)
-        fb = FBLoader.get_builder()
-        fb.reset_to_neutral_emotions(head.get_keyframe(self.camnum))
-
-        FBLoader.save_fb_serial_and_image_pathes(self.headnum)
-        coords.update_head_mesh_non_neutral(fb, head)
-        FBLoader.update_fb_viewport_shaders(area=context.area,
-                                            headnum=self.headnum,
-                                            camnum=self.camnum,
-                                            wireframe=True,
-                                            pins_and_residuals=True)
-
-        push_head_in_undo_history(head, 'Reset Expression.')
+        headnum = self.headnum
+        camnum = self.camnum
+        act_status = reset_expression_act(headnum, camnum, update=True)
+        if not act_status.success:
+            msg = act_status.error_message
+            self.report({'ERROR'}, msg)
+            _log.error(f'{msg}')
+            return {'CANCELLED'}
 
         return {'FINISHED'}
 
@@ -814,12 +796,13 @@ class FB_OT_ResetToneGain(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
-    headnum: IntProperty(default=0)
-    camnum: IntProperty(default=0)
-
     def execute(self, context):
         settings = fb_settings()
-        cam = settings.get_camera(self.headnum, self.camnum)
+        cam = settings.get_camera(settings.current_headnum,
+                                  settings.current_camnum)
+        if not cam:
+            return {'CANCELLED'}
+
         cam.tone_exposure = Config.default_tone_exposure
         return {'FINISHED'}
 
@@ -829,14 +812,281 @@ class FB_OT_ResetToneGamma(ButtonOperator, Operator):
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
 
-    headnum: IntProperty(default=0)
-    camnum: IntProperty(default=0)
-
     def execute(self, context):
         settings = fb_settings()
-        cam = settings.get_camera(self.headnum, self.camnum)
+        cam = settings.get_camera(settings.current_headnum,
+                                  settings.current_camnum)
+        if not cam:
+            return {'CANCELLED'}
         cam.tone_gamma = Config.default_tone_gamma
         return {'FINISHED'}
+
+
+class FB_OT_ResetToneMapping(ButtonOperator, Operator):
+    bl_idname = FBConfig.fb_reset_tone_mapping_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        settings = fb_settings()
+        cam = settings.get_camera(settings.current_headnum,
+                                  settings.current_camnum)
+        if not cam:
+            return {'CANCELLED'}
+        cam.tone_exposure = Config.default_tone_exposure
+
+        cam.tone_gamma = Config.default_tone_gamma
+        return {'FINISHED'}
+
+
+def _draw_exif(layout, head):
+    # Show EXIF info message
+    if len(head.exif.info_message) > 0:
+        box = layout.box()
+        arr = re.split("\r\n|\n", head.exif.info_message)
+        col = box.column()
+        col.scale_y = Config.text_scale_y
+        for a in arr:
+            col.label(text=a)
+
+    # Show EXIF sizes message
+    if len(head.exif.sizes_message) > 0:
+        box = layout.box()
+        arr = re.split("\r\n|\n", head.exif.sizes_message)
+        col = box.column()
+        col.scale_y = Config.text_scale_y
+        for a in arr:
+            col.label(text=a)
+
+
+class FB_OT_ImageInfo(Operator):
+    bl_idname = FBConfig.fb_image_info_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL', 'UNDO'}
+
+    def draw(self, context):
+        layout = self.layout
+        settings = fb_settings()
+        head = settings.get_head(settings.current_headnum)
+        if not head:
+            return
+        camera = head.get_camera(settings.current_camnum)
+        if camera is None:
+            return
+        col = layout.column()
+        col.label(text=f'File: {camera.get_image_name()}')
+        _draw_exif(layout, head)
+
+    def cancel(self, context):
+        _log.output('CANCEL PRECALC INFO')
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke')
+        settings = fb_settings()
+        head = settings.get_head(settings.current_headnum)
+        if not head:
+            return {'CANCELLED'}
+        return context.window_manager.invoke_popup(self, width=350)
+
+
+class FB_OT_TextureBakeOptions(Operator):
+    bl_idname = FBConfig.fb_texture_bake_options_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER', 'INTERNAL', 'UNDO'}
+
+    def draw(self, context):
+        layout = self.layout
+        settings = fb_settings()
+        if settings is None:
+            return
+
+        col = layout.column(align=True)
+        row = col.row()
+        row.label(text='Resolution (in pixels)')
+        btn = row.column(align=True)
+        btn.active = False
+        btn.operator(FBConfig.fb_reset_texture_resolution_idname,
+                     text='', icon='LOOP_BACK', emboss=False, depress=False)
+
+        col.separator(factor=0.4)
+        row = col.row(align=True)
+        row.prop(settings, 'tex_width', text='W')
+        row.prop(settings, 'tex_height', text='H')
+
+        col = layout.column(align=True)
+        row = col.row()
+        row.label(text='Advanced')
+        btn = row.column(align=True)
+        btn.active = False
+        btn.operator(FBConfig.fb_reset_advanced_settings_idname,
+                     text='', icon='LOOP_BACK', emboss=False, depress=False)
+
+        col.separator(factor=0.4)
+        col.prop(settings, 'tex_face_angles_affection')
+        col.prop(settings, 'tex_uv_expand_percents')
+        col.separator(factor=0.8)
+        col.prop(settings, 'tex_equalize_brightness')
+        col.prop(settings, 'tex_equalize_colour')
+        col.prop(settings, 'tex_fill_gaps')
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def cancel(self, context):
+        pass
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=350)
+
+
+class FB_OT_ResetTextureResolution(ButtonOperator, Operator):
+    bl_idname = FBConfig.fb_reset_texture_resolution_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        settings = fb_settings()
+        if not settings:
+            return {'CANCELLED'}
+        settings.tex_width = Config.default_tex_width
+        settings.tex_height = Config.default_tex_height
+        return {'FINISHED'}
+
+
+class FB_OT_ResetTextureSettings(ButtonOperator, Operator):
+    bl_idname = FBConfig.fb_reset_advanced_settings_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute')
+        settings = fb_settings()
+        if not settings:
+            return {'CANCELLED'}
+        settings.tex_face_angles_affection = Config.default_tex_face_angles_affection
+        settings.tex_uv_expand_percents = Config.default_tex_uv_expand_percents
+        return {'FINISHED'}
+
+
+class FB_OT_RotateHeadForward(ButtonOperator, Operator):
+    bl_idname = FBConfig.fb_rotate_head_forward_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        settings = fb_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        act_status = rotate_head_act(settings.current_headnum,
+                                     settings.current_camnum, -45.0)
+        if not act_status.success:
+            msg = act_status.error_message
+            self.report({'ERROR'}, msg)
+            _log.error(f'{msg}')
+            return {'CANCELLED'}
+
+        return {'FINISHED'}
+
+
+class FB_OT_RotateHeadBackward(ButtonOperator, Operator):
+    bl_idname = FBConfig.fb_rotate_head_backward_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        settings = fb_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        act_status = rotate_head_act(settings.current_headnum,
+                                     settings.current_camnum, 45.0)
+        if not act_status.success:
+            msg = act_status.error_message
+            self.report({'ERROR'}, msg)
+            _log.error(f'{msg}')
+            return {'CANCELLED'}
+
+        return {'FINISHED'}
+
+
+class FB_OT_ResetView(ButtonOperator, Operator):
+    bl_idname = FBConfig.fb_reset_view_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        settings = fb_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+
+        headnum = settings.current_headnum
+        camnum = settings.current_camnum
+
+        act_status = reset_expression_act(headnum, camnum, update=False)
+        if not act_status.success:
+            msg = act_status.error_message
+            self.report({'ERROR'}, msg)
+            _log.error(f'{msg}')
+            return {'CANCELLED'}
+
+        act_status = center_geo_act(headnum, camnum, update=False)
+        if not act_status.success:
+            msg = act_status.error_message
+            self.report({'ERROR'}, msg)
+            _log.error(f'{msg}')
+            return {'CANCELLED'}
+
+        act_status = remove_pins_act(headnum, camnum, update=True)
+        if not act_status.success:
+            msg = act_status.error_message
+            self.report({'ERROR'}, msg)
+            _log.error(f'{msg}')
+            return {'CANCELLED'}
+
+        return {'FINISHED'}
+
+
+class FB_OT_MoveWrapper(ButtonOperator, Operator):
+    bl_idname = 'keentools_fb.move_wrapper'
+    bl_label = 'move wrapper'
+    bl_description = 'KeenTools move wrapper operator'
+
+    use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
+
+    def execute(self, context):
+        _log.output(f'{self.__class__.__name__} execute use_cursor_init={self.use_cursor_init}')
+        settings = fb_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        op = get_operator('view3d.move')
+        return op('EXEC_DEFAULT', use_cursor_init=self.use_cursor_init)
+
+    def invoke(self, context, event):
+        _log.output(f'{self.__class__.__name__} invoke use_cursor_init={self.use_cursor_init}')
+        settings = fb_settings()
+        if not settings:
+            return {'CANCELLED'}
+
+        work_area = FBLoader.get_work_area()
+        if work_area != context.area:
+            return {'PASS_THROUGH'}
+
+        op = get_operator('view3d.move')
+        return op('INVOKE_DEFAULT', use_cursor_init=self.use_cursor_init)
 
 
 CLASSES_TO_REGISTER = (FB_OT_SelectHead,
@@ -875,4 +1125,13 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_DefaultPinSettings,
                        FB_OT_DefaultWireframeSettings,
                        FB_OT_ResetToneGain,
-                       FB_OT_ResetToneGamma)
+                       FB_OT_ResetToneGamma,
+                       FB_OT_ResetToneMapping,
+                       FB_OT_ImageInfo,
+                       FB_OT_TextureBakeOptions,
+                       FB_OT_ResetTextureResolution,
+                       FB_OT_ResetTextureSettings,
+                       FB_OT_RotateHeadForward,
+                       FB_OT_RotateHeadBackward,
+                       FB_OT_ResetView,
+                       FB_OT_MoveWrapper)

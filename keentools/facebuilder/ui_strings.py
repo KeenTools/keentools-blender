@@ -68,9 +68,25 @@ buttons = {
         'Blendshapes can\'t be created',
         ''
     ),
+    FBConfig.fb_image_info_idname: Button(
+        'Image info',
+        'Show EXIF info'
+    ),
     FBConfig.fb_tex_selector_idname: Button(
         'Select images:',
         'Create texture using pinned views'
+    ),
+    FBConfig.fb_texture_bake_options_idname: Button(
+        'Texture settings',
+        'Setup texture options for baking'
+    ),
+    FBConfig.fb_reset_texture_resolution_idname: Button(
+        'Reset',
+        'Reset texture resolution to default values'
+    ),
+    FBConfig.fb_reset_advanced_settings_idname: Button(
+        'Reset',
+        'Reset advanced texture baking settings'
     ),
     FBConfig.fb_pickmode_idname: Button(
         'FaceBuilder Pick Face mode',
@@ -168,7 +184,7 @@ buttons = {
         'Hide texture and go back to Solid mode'
     ),
     FBConfig.fb_exit_pinmode_idname: Button(
-        'Exit Pin mode',
+        'Back to 3D',
         'Exit Pin mode'
     ),
     FBConfig.fb_create_blendshapes_idname: Button(
@@ -245,11 +261,28 @@ buttons = {
         'Reset gamma',
         'Reset gamma in tone mapping'
     ),
+    FBConfig.fb_reset_tone_mapping_idname: Button(
+        'Reset tone mapping',
+        'Reset exposure and gamma in tone mapping'
+    ),
     FBConfig.fb_export_to_cc_idname: Button(
         'Character Creator',
         'Export to Character Creator. '
         'Requirements: Character Creator 4.0, Headshot 2.0'
     ),
+    FBConfig.fb_rotate_head_forward_idname: Button(
+        'Rotate forward',
+        'Rotate forward'
+    ),
+    FBConfig.fb_rotate_head_backward_idname: Button(
+        'Rotate backward',
+        'Rotate backward'
+    ),
+    FBConfig.fb_reset_view_idname: Button(
+        'Reset view',
+        'Reset view'
+    ),
+
     # Help buttons
     FBConfig.fb_help_camera_idname: Button(
         'Camera settings',

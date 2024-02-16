@@ -149,7 +149,8 @@ class FBCameraItem(PropertyGroup):
 
     focal: FloatProperty(
         description="35mm equivalent focal length (mm)",
-        name="Focal Length (mm)", default=50,
+        name="Focal Length", default=50,
+        unit="CAMERA",
         min=0.1, update=update_camera_focal)
 
     background_scale: FloatProperty(
@@ -158,7 +159,7 @@ class FBCameraItem(PropertyGroup):
         min=0.0001)
 
     auto_focal_estimation: BoolProperty(
-        name="Focal Length Estimation",
+        name="Estimate focal length",
         description="When turned on, FaceBuilder will try to estimate "
                     "focal length based on the position of the model "
                     "in the frame",
@@ -436,9 +437,9 @@ def expression_views_callback(self, context):
 class FBHeadItem(PropertyGroup):
     use_emotions: BoolProperty(name='Allow facial expressions',
                                default=False, update=update_use_emotions)
-    lock_blinking: BoolProperty(name='Lock eye blinking',
+    lock_blinking: BoolProperty(name='Lock eyelids',
                                 default=False, update=update_lock_blinking)
-    lock_neck_movement: BoolProperty(name='Lock neck movement',
+    lock_neck_movement: BoolProperty(name='Lock neck',
                                      default=False,
                                      update=update_lock_neck_movement)
     headobj: PointerProperty(name='Head', type=Object)
@@ -461,7 +462,7 @@ class FBHeadItem(PropertyGroup):
         min=0.01, update=update_head_focal)
 
     auto_focal_estimation: BoolProperty(
-        name="Focal Length Estimation",
+        name="Estimate focal length",
         description="When turned on, FaceBuilder will try to estimate "
                     "focal length based on the position of the model "
                     "in the frame",
