@@ -85,11 +85,13 @@ class FT_OT_CreateFaceTracker(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = create_facetracker_action()
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -101,12 +103,14 @@ class FT_OT_DeleteFaceTracker(ButtonOperator, Operator):
     geotracker_num: IntProperty(default=-1)
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = delete_tracker_action(self.geotracker_num,
                                            product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -118,13 +122,15 @@ class FT_OT_SelectGeotrackerObjects(ButtonOperator, Operator):
     geotracker_num: IntProperty(default=0)
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = select_tracker_objects_action(self.geotracker_num,
                                                    product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -134,7 +140,9 @@ class FT_OT_ExitPinMode(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         FTLoader.out_pinmode()
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -144,7 +152,7 @@ class FT_OT_SwitchToCameraMode(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         check_status = common_checks(product=product,
                                      object_mode=False, is_calculating=True,
@@ -158,6 +166,7 @@ class FT_OT_SwitchToCameraMode(ButtonOperator, Operator):
         settings = ft_settings()
         geotracker = settings.get_current_geotracker_item()
         geotracker.solve_for_camera = True
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -167,7 +176,7 @@ class FT_OT_SwitchToGeometryMode(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         check_status = common_checks(product=product,
                                      object_mode=False, is_calculating=True,
@@ -181,6 +190,7 @@ class FT_OT_SwitchToGeometryMode(ButtonOperator, Operator):
         settings = ft_settings()
         geotracker = settings.get_current_geotracker_item()
         geotracker.solve_for_camera = False
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -190,12 +200,14 @@ class FT_OT_TrackToStart(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = track_to(forward=False, product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -205,12 +217,14 @@ class FT_OT_TrackToEnd(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = track_to(forward=True, product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -220,12 +234,14 @@ class FT_OT_TrackNext(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = track_next_frame_action(forward=True, product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -235,12 +251,14 @@ class FT_OT_TrackPrev(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = track_next_frame_action(forward=False, product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -250,12 +268,14 @@ class FT_OT_Refine(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = refine_async_action(product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -265,12 +285,14 @@ class FT_OT_RefineAll(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = refine_all_async_action(product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -281,7 +303,7 @@ class FT_OT_PrevKeyframe(ButtonOperator, Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         settings = ft_settings()
         check_status = common_checks(product=product,
@@ -300,6 +322,7 @@ class FT_OT_PrevKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, act_status.error_message)
             return {'CANCELLED'}
 
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -310,7 +333,7 @@ class FT_OT_NextKeyframe(ButtonOperator, Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         settings = ft_settings()
         check_status = common_checks(product=product,
@@ -329,6 +352,7 @@ class FT_OT_NextKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, act_status.error_message)
             return {'CANCELLED'}
 
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -339,7 +363,7 @@ class FT_OT_AddKeyframe(ButtonOperator, Operator):
     bl_options = {'REGISTER'}
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = add_keyframe_action(product=product)
         if not act_status.success:
@@ -347,6 +371,7 @@ class FT_OT_AddKeyframe(ButtonOperator, Operator):
             return {'CANCELLED'}
         FTLoader.update_viewport_shaders(timeline=True)
         force_undo_push(f'Add {product_name(product)} keyframe')
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -357,7 +382,7 @@ class FT_OT_RemoveKeyframe(ButtonOperator, Operator):
     bl_options = {'REGISTER'}
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = remove_keyframe_action(product=product)
         if not act_status.success:
@@ -369,6 +394,7 @@ class FT_OT_RemoveKeyframe(ButtonOperator, Operator):
                                          wireframe=True,
                                          pins_and_residuals=True,
                                          timeline=True)
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -378,13 +404,15 @@ class FT_OT_ClearAllTracking(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = clear_all_action(product=product)
         FTLoader.update_viewport_shaders(timeline=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -394,13 +422,15 @@ class FT_OT_ClearTrackingExceptKeyframes(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = clear_all_except_keyframes_action(product=product)
         FTLoader.update_viewport_shaders(timeline=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -410,13 +440,15 @@ class FT_OT_ClearTrackingForward(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = clear_direction_action(forward=True, product=product)
         FTLoader.update_viewport_shaders(timeline=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -426,13 +458,15 @@ class FT_OT_ClearTrackingBackward(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = clear_direction_action(forward=False, product=product)
         FTLoader.update_viewport_shaders(timeline=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -442,13 +476,15 @@ class FT_OT_ClearTrackingBetween(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = clear_between_keyframes_action(product=product)
         FTLoader.update_viewport_shaders(timeline=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -462,8 +498,10 @@ class FT_OT_ClearAllTrackingMenuExec(Operator):
         pass
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         bpy_call_menu('INVOKE_DEFAULT',
                       name=FTConfig.ft_clear_tracking_menu_idname)
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -473,13 +511,15 @@ class FT_OT_CenterGeo(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = center_geo_action(product=product)
         FTLoader.update_viewport_shaders(timeline=True, pins_and_residuals=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -489,13 +529,15 @@ class FT_OT_RemovePins(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = remove_pins_action(product=product)
         FTLoader.update_viewport_shaders(pins_and_residuals=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -505,13 +547,15 @@ class FT_OT_TogglePins(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = toggle_pins_action(product=product)
         FTLoader.update_viewport_shaders(pins_and_residuals=True)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -521,12 +565,14 @@ class FT_OT_LockView(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = toggle_lock_view_action(product=product)
         if not act_status.success:
             self.report({'INFO'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -538,7 +584,7 @@ class FT_OT_StopCalculating(Operator):
     attempts: IntProperty(default=0)
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         settings = ft_settings()
         _log.output(f'StopCalculating btn: {settings.user_interrupts}')
 
@@ -567,6 +613,7 @@ class FT_OT_StopCalculating(Operator):
             if len(FTRefineTimer.active_timers()) == 0:
                 settings.stop_calculating()
 
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -576,7 +623,7 @@ class FT_OT_AutoNamePrecalc(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         settings = ft_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
@@ -588,6 +635,8 @@ class FT_OT_AutoNamePrecalc(ButtonOperator, Operator):
         if not status:
             _log.error(msg)
             self.report({'INFO'}, msg)
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -601,7 +650,7 @@ class FT_OT_SplitVideoExec(Operator):
         pass
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         settings = ft_settings()
         geotracker = settings.get_current_geotracker_item()
         if not geotracker or not geotracker.movie_clip:
@@ -611,6 +660,8 @@ class FT_OT_SplitVideoExec(Operator):
         op('INVOKE_DEFAULT', from_frame=1,
            to_frame=get_movieclip_duration(geotracker.movie_clip),
            filepath=os.path.join(os.path.dirname(geotracker.movie_clip.filepath),''))
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -621,7 +672,7 @@ class FT_OT_InterruptModal(Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def invoke(self, context, event):
-        _log.output(f'{self.__class__.__name__} invoke')
+        _log.green(f'{self.__class__.__name__} invoke')
         settings = ft_settings()
         settings.user_interrupts = False
 
@@ -654,11 +705,12 @@ class FT_OT_DefaultPinSettings(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.yellow(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         settings = ft_settings()
         prefs = settings.preferences()
         settings.pin_size = prefs.pin_size
         settings.pin_sensitivity = prefs.pin_sensitivity
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -668,13 +720,14 @@ class FT_OT_DefaultWireframeSettings(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.yellow(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         settings = ft_settings()
         prefs = settings.preferences()
         settings.wireframe_color = prefs.fb_wireframe_color
         settings.wireframe_special_color = prefs.fb_wireframe_special_color
         settings.wireframe_midline_color = prefs.fb_wireframe_midline_color
         settings.wireframe_opacity = prefs.fb_wireframe_opacity
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -688,10 +741,11 @@ class FT_OT_AddonSetupDefaults(Operator):
         pass
 
     def execute(self, context):
-        _log.yellow(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         show_user_preferences(facebuilder=False, geotracker=False, facetracker=True)
         show_tool_preferences(facebuilder=False, geotracker=False, facetracker=True)
         bpy_show_addon_preferences()
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -707,7 +761,7 @@ class FT_OT_WireframeColor(Operator):
         pass
 
     def execute(self, context):
-        _log.yellow(f'{self.__class__.__name__} execute action={self.action}')
+        _log.green(f'{self.__class__.__name__} execute action={self.action}')
         def _setup_colors_from_scheme(name):
             settings = ft_settings()
             settings.wireframe_color = Config.fb_color_schemes[name][0]
@@ -730,6 +784,7 @@ class FT_OT_WireframeColor(Operator):
         elif self.action == 'wireframe_white':
             _setup_colors_from_scheme('white')
 
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -739,12 +794,14 @@ class FT_OT_RemoveFocalKeyframe(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.yellow(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = remove_focal_keyframe_action(product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -754,12 +811,14 @@ class FT_OT_RemoveFocalKeyframes(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.yellow(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         product = ProductType.FACETRACKER
         act_status = remove_focal_keyframes_action(product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 

@@ -38,12 +38,20 @@ from ..utils.bpy_common import (bpy_background_mode,
                                 bpy_call_menu)
 from ..facebuilder_config import FBConfig
 from .fbloader import FBLoader
-from ..utils import manipulate, materials, coords, images
+from ..utils.images import remove_bpy_image_by_name
 from ..utils.coords import update_head_mesh_non_neutral
 from ..utils.attrs import get_obj_collection, safe_delete_collection
 from ..facebuilder.utils.exif_reader import (update_exif_sizes_message,
                                              copy_exif_parameters_from_camera_to_head)
 from .utils.manipulate import check_settings, push_head_in_undo_history
+from ..utils.manipulate import center_viewports_on_object
+from ..utils.materials import (bake_tex,
+                               show_texture_in_mat,
+                               assign_material_to_object,
+                               toggle_mode,
+                               switch_to_mode,
+                               remove_mat_by_name,
+                               find_bpy_image_by_name)
 from ..utils.operator_action import (create_blendshapes,
                                      delete_blendshapes,
                                      load_animation_from_csv,
@@ -56,11 +64,11 @@ from ..utils.operator_action import (create_blendshapes,
                                      reconstruct_by_mesh)
 from ..utils.localview import exit_area_localview
 from .ui_strings import buttons
-from .facebuilder_acts import (solve_head,
-                               remove_pins_act,
+from .facebuilder_acts import (remove_pins_act,
                                rotate_head_act,
                                reset_expression_act,
                                center_geo_act)
+from .prechecks import common_fb_checks
 from .integration import FB_OT_ExportToCC
 
 
@@ -78,41 +86,74 @@ class ActiveButtonOperator(ButtonOperator):
     active_button: BoolProperty(default=True)
 
 
-class FB_OT_SelectHead(Operator):
+class FB_OT_SelectHead(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_select_head_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO'}
 
     headnum: IntProperty(default=0)
 
-    def draw(self, context):
-        pass
-
     def execute(self, context):
-        if not check_settings():
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True,
+                                        fix_facebuilders=True,
+                                        head_only=True,
+                                        headnum=self.headnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
         settings = fb_settings()
         head = settings.get_head(self.headnum)
-
-        manipulate.center_viewports_on_object(head.headobj)
+        center_viewports_on_object(head.headobj)
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_DeleteHead(Operator):
-    bl_idname = FBConfig.fb_delete_head_idname
+# Duplicate FB_OT_SelectHead operator but with different tooltip
+class FB_OT_SelectCurrentHead(ButtonOperator, Operator):
+    bl_idname = FBConfig.fb_select_current_head_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO'}
 
     headnum: IntProperty(default=0)
 
-    def draw(self, context):
-        pass
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True,
+                                        fix_facebuilders=True,
+                                        head_only=True,
+                                        headnum=self.headnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
+        settings = fb_settings()
+        head = settings.get_head(self.headnum)
+        center_viewports_on_object(head.headobj)
+        _log.output(f'{self.__class__.__name__} execute end')
+        return {'FINISHED'}
+
+
+class FB_OT_DeleteHead(ButtonOperator, Operator):
+    bl_idname = FBConfig.fb_delete_head_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+
+    headnum: IntProperty(default=0)
 
     def execute(self, context):
-        if not check_settings():
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        pinmode_out=True,
+                                        is_calculating=True,
+                                        fix_facebuilders=True,
+                                        head_only=True,
+                                        headnum=self.headnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
         settings = fb_settings()
@@ -131,23 +172,28 @@ class FB_OT_DeleteHead(Operator):
         except Exception:
             pass
         settings.heads.remove(self.headnum)
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_SelectCamera(Operator):
+class FB_OT_SelectCamera(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_select_camera_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
-    def draw(self, context):
-        pass
-
     def execute(self, context):
-        if not check_settings():
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True,
+                                        fix_facebuilders=True,
+                                        head_and_camera=True,
+                                        headnum=self.headnum,
+                                        camnum=self.camnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
         settings = fb_settings()
@@ -163,55 +209,67 @@ class FB_OT_SelectCamera(Operator):
                 pinmode_op('INVOKE_DEFAULT',
                            headnum=self.headnum, camnum=self.camnum)
             except Exception as err:
-                self.report({'ERROR'}, str(err))
+                msg = f'{str(err)}'
+                self.report({'ERROR'}, msg)
+                _log.error(f'{type(err)}\n{msg}')
 
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_CenterGeo(Operator):
+class FB_OT_CenterGeo(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_center_geo_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
-    def draw(self, context):
-        pass
-
     def execute(self, context):
-        if not check_settings():
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        pinmode=True,
+                                        is_calculating=True,
+                                        reload_facebuilder=True,
+                                        head_and_camera=True,
+                                        headnum=self.headnum,
+                                        camnum=self.camnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        headnum = self.headnum
-        camnum = self.camnum
-
-        act_status = center_geo_act(headnum, camnum, update=True)
+        act_status = center_geo_act(self.headnum, self.camnum, update=True)
         if not act_status.success:
             msg = act_status.error_message
             self.report({'ERROR'}, msg)
             _log.error(f'{msg}')
             return {'CANCELLED'}
 
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_Unmorph(Operator):
+class FB_OT_Unmorph(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_unmorph_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
-    def draw(self, context):
-        pass
-
     def execute(self, context):
-        if not check_settings():
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        pinmode=True,
+                                        is_calculating=True,
+                                        reload_facebuilder=True,
+                                        head_and_camera=True,
+                                        headnum=self.headnum,
+                                        camnum=self.camnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
+
         settings = fb_settings()
         headnum = self.headnum
         camnum = self.camnum
@@ -234,58 +292,60 @@ class FB_OT_Unmorph(Operator):
                                                 wireframe=True,
                                                 pins_and_residuals=True)
 
-        push_head_in_undo_history(settings.get_head(headnum), 'After Reset')
-
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_RemovePins(Operator):
+class FB_OT_RemovePins(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_remove_pins_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
-    def draw(self, context):
-        pass
-
     def execute(self, context):
-        settings = fb_settings()
-
-        if not settings.pinmode:
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        pinmode=True,
+                                        is_calculating=True,
+                                        reload_facebuilder=True,
+                                        head_and_camera=True,
+                                        headnum=self.headnum,
+                                        camnum=self.camnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        headnum = self.headnum
-        camnum = self.camnum
-
-        act_status = remove_pins_act(headnum, camnum, update=True)
+        act_status = remove_pins_act(self.headnum, self.camnum, update=True)
         if not act_status.success:
             msg = act_status.error_message
             self.report({'ERROR'}, msg)
             _log.error(f'{msg}')
             return {'CANCELLED'}
 
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_WireframeColor(Operator):
+class FB_OT_WireframeColor(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_wireframe_color_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     action: StringProperty(name="Action Name")
-
-    def draw(self, context):
-        pass
 
     def execute(self, context):
         def _setup_colors_from_scheme(name):
             settings = fb_settings()
             settings.wireframe_color = Config.fb_color_schemes[name][0]
             settings.wireframe_special_color = Config.fb_color_schemes[name][1]
+
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(is_calculating=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
 
         if self.action == 'wireframe_red':
             _setup_colors_from_scheme('red')
@@ -304,24 +364,28 @@ class FB_OT_WireframeColor(Operator):
         elif self.action == 'wireframe_white':
             _setup_colors_from_scheme('white')
 
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_FilterCameras(Operator):
+class FB_OT_FilterCameras(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_filter_cameras_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
-    action: StringProperty(name="Action Name")
+    action: StringProperty(name='Action Name')
     headnum: IntProperty(default=0)
 
-    def draw(self, context):
-        pass
-
     def execute(self, context):
-        settings = fb_settings()
+        _log.green(f'{self.__class__.__name__} execute action={self.action}')
+        check_status = common_fb_checks(is_calculating=True,
+                                        head_only=True,
+                                        headnum=self.headnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
 
+        settings = fb_settings()
         if self.action == 'select_all_cameras':
             for c in settings.get_head(self.headnum).cameras:
                 c.use_in_tex_baking = True
@@ -330,23 +394,29 @@ class FB_OT_FilterCameras(Operator):
             for c in settings.get_head(self.headnum).cameras:
                 c.use_in_tex_baking = False
 
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_DeleteCamera(Operator):
+class FB_OT_DeleteCamera(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_delete_camera_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO'}
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
-    def draw(self, context):
-        pass
-
     def execute(self, context):
-        if not check_settings():
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True,
+                                        fix_facebuilders=True,
+                                        reload_facebuilder=True,
+                                        head_and_camera=True,
+                                        headnum=self.headnum,
+                                        camnum=self.camnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
         settings = fb_settings()
@@ -354,12 +424,7 @@ class FB_OT_DeleteCamera(Operator):
         camnum = self.camnum
 
         head = settings.get_head(headnum)
-        if head is None:
-            return {'CANCELLED'}
         camera = head.get_camera(camnum)
-        if camera is None:
-            return {'CANCELLED'}
-
         kid = camera.get_keyframe()
         if head.get_expression_view_keyframe() == kid:
             head.set_neutral_expression_view()
@@ -380,27 +445,35 @@ class FB_OT_DeleteCamera(Operator):
             settings.reset_pinmode_id()
 
         _log.output(f'CAMERA H:{headnum} C:{camnum} REMOVED')
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_ProperViewMenuExec(Operator):
+class FB_OT_ProperViewMenuExec(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_proper_view_menu_exec_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO'}
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
-    def draw(self, context):
-        pass
-
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(is_calculating=True,
+                                        fix_facebuilders=True,
+                                        head_and_camera=True,
+                                        headnum=self.headnum,
+                                        camnum=self.camnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         settings = fb_settings()
         settings.tmp_headnum = self.headnum
         settings.tmp_camnum = self.camnum
         bpy_call_menu('INVOKE_DEFAULT',
                       name=FBConfig.fb_proper_view_menu_idname)
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -414,179 +487,228 @@ class FB_OT_AddonSetupDefaults(Operator):
         pass
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         show_user_preferences(facebuilder=True, geotracker=False)
         show_tool_preferences(facebuilder=True, geotracker=False)
         bpy_show_addon_preferences()
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_BakeTexture(Operator):
+class FB_OT_BakeTexture(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_bake_tex_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO'}
 
     headnum: IntProperty(default=0)
 
-    def draw(self, context):
-        pass
-
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True,
+                                        fix_facebuilders=True,
+                                        reload_facebuilder=True,
+                                        head_only=True,
+                                        headnum=self.headnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         settings = fb_settings()
         head = settings.get_head(self.headnum)
-        texture_baked = materials.bake_tex(
-            self.headnum, head.preview_texture_name())
+        texture_baked = bake_tex(self.headnum, head.preview_texture_name())
 
         if not texture_baked:
+            _log.error('Texture has not been baked')
             return {'CANCELLED'}
 
         if settings.tex_auto_preview:
-            mat = materials.show_texture_in_mat(
-                head.preview_texture_name(),
-                head.preview_material_name())
-            materials.assign_material_to_object(head.headobj, mat)
-            materials.toggle_mode(('MATERIAL',))
+            mat = show_texture_in_mat(head.preview_texture_name(),
+                                      head.preview_material_name())
+            assign_material_to_object(head.headobj, mat)
+            toggle_mode(('MATERIAL',))
 
             if settings.pinmode:
                 settings.force_out_pinmode = True
                 if head.should_use_emotions():
                     bpy_view_camera()
 
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_DeleteTexture(Operator):
+class FB_OT_DeleteTexture(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_delete_texture_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO'}
 
     headnum: IntProperty(default=0)
 
-    def draw(self, context):
-        pass
-
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(is_calculating=True,
+                                        fix_facebuilders=True,
+                                        reload_facebuilder=True,
+                                        head_only=True,
+                                        headnum=self.headnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         settings = fb_settings()
         head = settings.get_head(self.headnum)
-        if head is None:
-            return {'CANCELLED'}
-        images.remove_bpy_image_by_name(head.preview_texture_name())
-        materials.remove_mat_by_name(head.preview_material_name())
+        remove_bpy_image_by_name(head.preview_texture_name())
+        remove_mat_by_name(head.preview_material_name())
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_RotateImageCW(Operator):
+class FB_OT_RotateImageCW(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_rotate_image_cw_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO'}
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
-    def draw(self, context):
-        pass
-
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True,
+                                        fix_facebuilders=True,
+                                        reload_facebuilder=True,
+                                        head_and_camera=True,
+                                        headnum=self.headnum,
+                                        camnum=self.camnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         settings = fb_settings()
         camera = settings.get_camera(self.headnum, self.camnum)
         camera.rotate_background_image(1)
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
         FBLoader.save_fb_serial_and_image_pathes(self.headnum)
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_RotateImageCCW(Operator):
+class FB_OT_RotateImageCCW(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_rotate_image_ccw_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO'}
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
-    def draw(self, context):
-        pass
-
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True,
+                                        fix_facebuilders=True,
+                                        reload_facebuilder=True,
+                                        head_and_camera=True,
+                                        headnum=self.headnum,
+                                        camnum=self.camnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         settings = fb_settings()
         camera = settings.get_camera(self.headnum, self.camnum)
         camera.rotate_background_image(-1)
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
         FBLoader.save_fb_serial_and_image_pathes(self.headnum)
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_ResetImageRotation(Operator):
+class FB_OT_ResetImageRotation(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_reset_image_rotation_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO'}
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
-    def draw(self, context):
-        pass
-
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True,
+                                        fix_facebuilders=True,
+                                        reload_facebuilder=True,
+                                        head_and_camera=True,
+                                        headnum=self.headnum,
+                                        camnum=self.camnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         settings = fb_settings()
         camera = settings.get_camera(self.headnum, self.camnum)
         camera.reset_background_image_rotation()
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
         FBLoader.save_fb_serial_and_image_pathes(self.headnum)
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_ResetExpression(Operator):
+class FB_OT_ResetExpression(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_reset_expression_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO'}
 
     headnum: IntProperty(default=0)
     camnum: IntProperty(default=0)
 
-    def draw(self, context):
-        pass
-
     def execute(self, context):
-        settings = fb_settings()
-        if not settings:
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True,
+                                        fix_facebuilders=True,
+                                        reload_facebuilder=True,
+                                        head_and_camera=True,
+                                        headnum=self.headnum,
+                                        camnum=self.camnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        headnum = self.headnum
-        camnum = self.camnum
-        act_status = reset_expression_act(headnum, camnum, update=True)
+        act_status = reset_expression_act(self.headnum, self.camnum,
+                                          update=True)
         if not act_status.success:
             msg = act_status.error_message
             self.report({'ERROR'}, msg)
             _log.error(f'{msg}')
             return {'CANCELLED'}
 
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_ShowTexture(Operator):
+class FB_OT_ShowTexture(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_show_tex_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def draw(self, context):
-        pass
 
     def execute(self, context):
-        settings = fb_settings()
-        head = settings.get_head(settings.current_headnum)
-        if head is None:
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True,
+                                        fix_facebuilders=True,
+                                        reload_facebuilder=True,
+                                        head_only=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        tex = materials.find_bpy_image_by_name(head.preview_texture_name())
+        settings = fb_settings()
+        head = settings.get_head(settings.current_headnum)
+
+        tex = find_bpy_image_by_name(head.preview_texture_name())
         if tex is None:
             return {'CANCELLED'}
 
@@ -594,47 +716,59 @@ class FB_OT_ShowTexture(Operator):
             FBLoader.out_pinmode(settings.current_headnum)
             exit_area_localview(context.area)
 
-        mat = materials.show_texture_in_mat(
-            head.preview_texture_name(), head.preview_material_name())
-        materials.assign_material_to_object(head.headobj, mat)
-        materials.switch_to_mode('MATERIAL')
+        mat = show_texture_in_mat(head.preview_texture_name(),
+                                  head.preview_material_name())
+        assign_material_to_object(head.headobj, mat)
+        switch_to_mode('MATERIAL')
 
         _log.output('SWITCH TO MATERIAL MODE WITH TEXTURE')
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_ShowSolid(Operator):
+class FB_OT_ShowSolid(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_show_solid_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def draw(self, context):
-        pass
 
     def execute(self, context):
-        _log.output('SWITCH TO SOLID MODE')
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True,
+                                        fix_facebuilders=True,
+                                        reload_facebuilder=True,
+                                        head_only=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         settings = fb_settings()
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
             exit_area_localview(context.area)
-        materials.switch_to_mode('SOLID')
+        switch_to_mode('SOLID')
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
-class FB_OT_ExitPinmode(Operator):
+class FB_OT_ExitPinmode(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_exit_pinmode_idname
     bl_label = buttons[bl_idname].label
     bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def draw(self, context):
-        pass
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(is_calculating=True,
+                                        fix_facebuilders=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         settings = fb_settings()
         if settings.pinmode:
             settings.force_out_pinmode = True
+
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -644,6 +778,12 @@ class FB_OT_CreateBlendshapes(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
         return create_blendshapes(self)
 
 
@@ -653,6 +793,13 @@ class FB_OT_DeleteBlendshapes(ActiveButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         if not self.active_button:
             return {'CANCELLED'}
         return delete_blendshapes(self)
@@ -664,6 +811,12 @@ class FB_OT_LoadAnimationFromCSV(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
         return load_animation_from_csv(self)
 
 
@@ -673,6 +826,13 @@ class FB_OT_CreateExampleAnimation(ActiveButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         if not self.active_button:
             return {'CANCELLED'}
         return create_example_animation(self)
@@ -684,6 +844,12 @@ class FB_OT_ResetBlendshapeValues(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
         return reset_blendshape_values(self)
 
 
@@ -693,6 +859,13 @@ class FB_OT_ClearAnimation(ActiveButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         if not self.active_button:
             return {'CANCELLED'}
         return clear_animation(self)
@@ -704,6 +877,13 @@ class FB_OT_ExportHeadToFBX(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         settings = fb_settings()
         if settings.pinmode:
             FBLoader.out_pinmode(settings.current_headnum)
@@ -718,6 +898,12 @@ class FB_OT_UpdateBlendshapes(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
         return update_blendshapes(self)
 
 
@@ -727,6 +913,12 @@ class FB_OT_UnhideHead(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
         return unhide_head(self, context)
 
 
@@ -736,6 +928,12 @@ class FB_OT_ReconstructHead(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
         return reconstruct_by_mesh()
 
 
@@ -745,10 +943,12 @@ class FB_OT_DefaultPinSettings(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         settings = fb_settings()
         prefs = settings.preferences()
         settings.pin_size = prefs.pin_size
         settings.pin_sensitivity = prefs.pin_sensitivity
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -758,25 +958,14 @@ class FB_OT_DefaultWireframeSettings(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         settings = fb_settings()
         prefs = settings.preferences()
         settings.wireframe_color = prefs.fb_wireframe_color
         settings.wireframe_special_color = prefs.fb_wireframe_special_color
         settings.wireframe_midline_color = prefs.fb_wireframe_midline_color
         settings.wireframe_opacity = prefs.fb_wireframe_opacity
-        return {'FINISHED'}
-
-
-class FB_OT_SelectCurrentHead(ButtonOperator, Operator):
-    bl_idname = FBConfig.fb_select_current_head_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    headnum: IntProperty(default=0)
-
-    def execute(self, context):
-        op = get_operator(FBConfig.fb_select_head_idname)
-        op('EXEC_DEFAULT', headnum=self.headnum)
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -786,8 +975,16 @@ class FB_OT_SelectCurrentCamera(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         op = get_operator(FBConfig.fb_exit_pinmode_idname)
         op('EXEC_DEFAULT')
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -797,6 +994,13 @@ class FB_OT_ResetToneGain(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(is_calculating=True,
+                                        head_and_camera=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         settings = fb_settings()
         cam = settings.get_camera(settings.current_headnum,
                                   settings.current_camnum)
@@ -804,6 +1008,7 @@ class FB_OT_ResetToneGain(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         cam.tone_exposure = Config.default_tone_exposure
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -813,12 +1018,21 @@ class FB_OT_ResetToneGamma(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(is_calculating=True,
+                                        head_and_camera=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         settings = fb_settings()
         cam = settings.get_camera(settings.current_headnum,
                                   settings.current_camnum)
         if not cam:
             return {'CANCELLED'}
+
         cam.tone_gamma = Config.default_tone_gamma
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -829,14 +1043,21 @@ class FB_OT_ResetToneMapping(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
+        check_status = common_fb_checks(is_calculating=True,
+                                        head_and_camera=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
+
         settings = fb_settings()
         cam = settings.get_camera(settings.current_headnum,
                                   settings.current_camnum)
         if not cam:
             return {'CANCELLED'}
-        cam.tone_exposure = Config.default_tone_exposure
 
+        cam.tone_exposure = Config.default_tone_exposure
         cam.tone_gamma = Config.default_tone_gamma
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -888,10 +1109,13 @@ class FB_OT_ImageInfo(Operator):
 
     def invoke(self, context, event):
         _log.output(f'{self.__class__.__name__} invoke')
-        settings = fb_settings()
-        head = settings.get_head(settings.current_headnum)
-        if not head:
+        check_status = common_fb_checks(is_calculating=True,
+                                        fix_facebuilders=True,
+                                        head_and_camera=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
+
         return context.window_manager.invoke_popup(self, width=350)
 
 
@@ -937,12 +1161,18 @@ class FB_OT_TextureBakeOptions(Operator):
         col.prop(settings, 'tex_fill_gaps')
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         return {'FINISHED'}
 
     def cancel(self, context):
-        pass
+        _log.green(f'{self.__class__.__name__} cancel')
 
     def invoke(self, context, event):
+        _log.green(f'{self.__class__.__name__} invoke')
+        check_status = common_fb_checks(is_calculating=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            return {'CANCELLED'}
         return context.window_manager.invoke_props_dialog(self, width=350)
 
 
@@ -953,11 +1183,15 @@ class FB_OT_ResetTextureResolution(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = fb_settings()
-        if not settings:
+        check_status = common_fb_checks(is_calculating=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
+
+        settings = fb_settings()
         settings.tex_width = Config.default_tex_width
         settings.tex_height = Config.default_tex_height
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -968,11 +1202,15 @@ class FB_OT_ResetTextureSettings(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.output(f'{self.__class__.__name__} execute')
-        settings = fb_settings()
-        if not settings:
+        check_status = common_fb_checks(is_calculating=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
+
+        settings = fb_settings()
         settings.tex_face_angles_affection = Config.default_tex_face_angles_affection
         settings.tex_uv_expand_percents = Config.default_tex_uv_expand_percents
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -983,10 +1221,15 @@ class FB_OT_RotateHeadForward(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
-        settings = fb_settings()
-        if not settings:
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True,
+                                        reload_facebuilder=True,
+                                        head_and_camera=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
+        settings = fb_settings()
         act_status = rotate_head_act(settings.current_headnum,
                                      settings.current_camnum, -45.0)
         if not act_status.success:
@@ -995,6 +1238,7 @@ class FB_OT_RotateHeadForward(ButtonOperator, Operator):
             _log.error(f'{msg}')
             return {'CANCELLED'}
 
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -1005,10 +1249,15 @@ class FB_OT_RotateHeadBackward(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
-        settings = fb_settings()
-        if not settings:
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True,
+                                        reload_facebuilder=True,
+                                        head_and_camera=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
+        settings = fb_settings()
         act_status = rotate_head_act(settings.current_headnum,
                                      settings.current_camnum, 45.0)
         if not act_status.success:
@@ -1017,6 +1266,7 @@ class FB_OT_RotateHeadBackward(ButtonOperator, Operator):
             _log.error(f'{msg}')
             return {'CANCELLED'}
 
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -1027,11 +1277,16 @@ class FB_OT_ResetView(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
-        settings = fb_settings()
-        if not settings:
+        check_status = common_fb_checks(object_mode=True,
+                                        pinmode=True,
+                                        is_calculating=True,
+                                        reload_facebuilder=True,
+                                        head_and_camera=True)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-
+        settings = fb_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
 
@@ -1056,6 +1311,7 @@ class FB_OT_ResetView(ButtonOperator, Operator):
             _log.error(f'{msg}')
             return {'CANCELLED'}
 
+        _log.output(f'{self.__class__.__name__} execute end')
         return {'FINISHED'}
 
 
@@ -1067,7 +1323,8 @@ class FB_OT_MoveWrapper(ButtonOperator, Operator):
     use_cursor_init: BoolProperty(name='Use Mouse Position', default=True)
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute use_cursor_init={self.use_cursor_init}')
+        _log.green(f'{self.__class__.__name__} execute '
+                   f'use_cursor_init={self.use_cursor_init}')
         settings = fb_settings()
         if not settings:
             return {'CANCELLED'}
@@ -1076,7 +1333,8 @@ class FB_OT_MoveWrapper(ButtonOperator, Operator):
         return op('EXEC_DEFAULT', use_cursor_init=self.use_cursor_init)
 
     def invoke(self, context, event):
-        _log.output(f'{self.__class__.__name__} invoke use_cursor_init={self.use_cursor_init}')
+        _log.green(f'{self.__class__.__name__} invoke '
+                   f'use_cursor_init={self.use_cursor_init}')
         settings = fb_settings()
         if not settings:
             return {'CANCELLED'}
