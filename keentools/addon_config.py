@@ -287,6 +287,14 @@ def ft_pinmode() -> bool:
     return settings.pinmode
 
 
+def calculation_in_progress() -> bool:
+    gts = gt_settings()
+    fts = ft_settings()
+    if not gts or not fts:
+        return False
+    return gts.is_calculating() or fts.is_calculating()
+
+
 def addon_pinmode() -> bool:
     return fb_pinmode() or gt_pinmode() or ft_pinmode()
 

@@ -1351,7 +1351,7 @@ def _get_operator_origin_matrix(origin_point: str, *, product: int) -> Matrix:
 def scale_scene_tracking_preview_func(
         operator: Operator, context: Any, *,
         product: int = ProductType.GEOTRACKER) -> None:
-    if not revert_object_states():
+    if not revert_object_states(product=product):
         return
 
     settings = get_settings(product)
@@ -1518,7 +1518,7 @@ def scale_scene_trajectory_act(
     model_matrices = [LocRotWithoutScale(cam_matrices[x].inverted() @ geom_matrices[x])
                       for x in all_animated_frame_set]
 
-    revert_object_states()
+    revert_object_states(product=product)
 
     for frame in all_animated_frame_set:
         bpy_set_current_frame(frame)

@@ -132,13 +132,14 @@ def _start_autoloader_handler(headnum: int) -> None:
 def _draw_align_button(layout, scale=2.0, depress=False):
     settings = fb_settings()
     row = layout.row(align=True)
+    row.scale_x = 1.2  # Trick to enlarge side buttons
     row.scale_y = scale
     row.operator(FBConfig.fb_rotate_head_backward_idname,
                  **KTIcons.key_value('rotate_head_backward'), text='')
 
     op = row.operator(FBConfig.fb_pickmode_starter_idname,
                       **KTIcons.key_value('align_face'), depress=depress,
-                      text='Auto Align      ')  # Extra spaces are for layout!
+                      text='Auto Align      ')  # 6 Extra spaces are for layout!
     op.headnum = settings.current_headnum
     op.camnum = settings.current_camnum
     op.auto_detect_single = False
