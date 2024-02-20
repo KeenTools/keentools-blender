@@ -89,7 +89,12 @@ class FBConfig:
     fb_noblenshapes_until_expression_warning_idname = operators + \
         '.no_blenshapes_until_expression_warning'
 
+    fb_image_info_idname = operators + '.image_info'
     fb_tex_selector_idname = operators + '.tex_selector'
+    fb_texture_bake_options_idname = operators + '.texture_bake_options'
+    fb_reset_texture_resolution_idname = operators + '.reset_texture_resolution'
+    fb_reset_advanced_settings_idname = operators + '.reset_advanced_settings'
+
     fb_exit_pinmode_idname = operators + '.exit_pinmode'
 
     fb_create_blendshapes_idname = operators + '.create_blendshapes'
@@ -100,6 +105,10 @@ class FBConfig:
     fb_clear_animation_idname = operators + '.clear_animation'
     fb_update_blendshapes_idname = operators + '.update_blendshapes'
     fb_export_head_to_fbx_idname = operators + '.export_head_to_fbx'
+
+    fb_rotate_head_forward_idname = operators + '.rotate_head_forward'
+    fb_rotate_head_backward_idname = operators + '.rotate_head_backward'
+    fb_reset_view_idname = operators + '.reset_view'
 
     fb_unhide_head_idname = operators + '.unhide_head'
     fb_reconstruct_head_idname = operators + '.reconstruct_head'
@@ -114,19 +123,18 @@ class FBConfig:
         operators + '.default_wireframe_settings'
     fb_reset_tone_exposure_idname = operators + '.reset_tone_exposure'
     fb_reset_tone_gamma_idname = operators + '.reset_tone_gamma'
+    fb_reset_tone_mapping_idname = operators + '.reset_tone_mapping'
 
     # Integration
     fb_export_to_cc_idname = operators + '.export_to_cc'
 
     # Panel ids
     fb_header_panel_idname = _PT + 'header_panel'
-    fb_camera_panel_idname = _PT + 'camera_panel'
-
     fb_views_panel_idname = _PT + 'views_panel'
-    fb_exif_panel_idname = _PT + 'exif_panel'
-    fb_texture_panel_idname = _PT + 'texture_panel'
+    fb_options_panel_idname = _PT + 'options_panel'
     fb_model_panel_idname = _PT + 'model_panel'
     fb_appearance_panel_idname = _PT + 'appearance_panel'
+    fb_texture_panel_idname = _PT + 'texture_panel'
     fb_blendshapes_panel_idname = _PT + 'blendshapes_panel'
     fb_export_panel_idname = _PT + 'export_panel'
 
