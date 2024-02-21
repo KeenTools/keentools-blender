@@ -98,6 +98,7 @@ from ...utils.unbreak import (mark_object_keyframes,
                               unbreak_object_rotation_act,
                               unbreak_rotation_act,
                               unbreak_rotation_with_status)
+from ...tracker.tracking_blendshapes import create_relative_shape_keyframe
 
 
 _log = KTLogger(__name__)
@@ -239,6 +240,10 @@ def add_keyframe_action(*, product: int) -> ActionStatus:
         return ActionStatus(False, 'Working area does not exist')
 
     loader.safe_keyframe_add(bpy_current_frame(), update=True)
+
+    if product == ProductType.FACETRACKER:
+        create_relative_shape_keyframe(bpy_current_frame())
+
     loader.save_geotracker()
     _log.output('add_keyframe_action end')
     return ActionStatus(True, 'ok')
