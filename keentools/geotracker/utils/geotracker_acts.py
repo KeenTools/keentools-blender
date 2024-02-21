@@ -1363,7 +1363,8 @@ def scale_scene_tracking_preview_func(
     geotracker = settings.get_current_geotracker_item()
     geomobj = geotracker.geomobj
     camobj = geotracker.camobj
-    origin_matrix = _get_operator_origin_matrix(operator.origin_point)
+    origin_matrix = _get_operator_origin_matrix(operator.origin_point,
+                                                product=product)
     rescale_matrix = _scale_relative_to_point_matrix(origin_matrix,
                                                      operator.value)
     camobj.matrix_world = rescale_matrix @ camobj.matrix_world
@@ -1494,7 +1495,8 @@ def scale_scene_trajectory_act(
     geom_animated_frames = get_object_keyframe_numbers(geomobj)
     cam_animated_frames = get_object_keyframe_numbers(camobj)
 
-    origin_matrix = _get_operator_origin_matrix(operator.origin_point)
+    origin_matrix = _get_operator_origin_matrix(operator.origin_point,
+                                                product=product)
     rescale_matrix = _scale_relative_to_point_matrix(origin_matrix,
                                                      operator.value)
 
