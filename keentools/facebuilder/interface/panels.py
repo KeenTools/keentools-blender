@@ -160,11 +160,11 @@ def _draw_pins_panel(layout):
         op.headnum = headnum
         op.camnum = camnum
 
-    op = col.operator(FBConfig.fb_center_geo_idname, text='Reset camera')
+    op = col.operator(FBConfig.fb_center_geo_idname)
     op.headnum = headnum
     op.camnum = camnum
 
-    op = col.operator(FBConfig.fb_remove_pins_idname, text='Remove all pins')
+    op = col.operator(FBConfig.fb_remove_pins_idname)
     op.headnum = headnum
     op.camnum = camnum
 
@@ -548,7 +548,7 @@ class FB_PT_Model(AllVisibleClosed, Panel):
             _draw_update_blendshapes_panel(layout)
 
         col = layout.column(align=True)
-        col.label(text='Apply expression in 3D:')
+        col.label(text='Resulting expression in 3D:')
         col.prop(head, 'expression_view', text='')
 
         if FBLoader.is_not_loaded():
@@ -697,7 +697,7 @@ class FB_PT_AppearancePanel(AllVisibleClosed, Panel):
         op.action = 'wireframe_white'
 
         col = layout.column(align=True)
-        col.prop(settings, 'show_specials', text='Highlight head parts')
+        col.prop(settings, 'show_specials')
         col.prop(settings, 'wireframe_backface_culling')
         col.prop(settings, 'use_adaptive_opacity')
 

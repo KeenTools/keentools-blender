@@ -26,7 +26,7 @@ Button = namedtuple('Button', ['label', 'description'])
 buttons = {
     FBConfig.fb_add_head_operator_idname: Button(
         'FaceBuilder Head',
-        'Add FaceBuilder Head into scene'
+        'Add FaceBuilder Head to scene'
     ),
     FBConfig.fb_single_filebrowser_exec_idname: Button(
         'File Browser Execute',
@@ -94,7 +94,7 @@ buttons = {
     ),
     FBConfig.fb_pickmode_starter_idname: Button(
         'FaceBuilder Pick Face mode starter',
-        'Detect a face on the photo and pin the model to the selected face'
+        'Auto align mesh in current view'
     ),
     FBConfig.fb_pinmode_idname: Button(
         'FaceBuilder Pinmode',
@@ -111,15 +111,15 @@ buttons = {
     ),
     FBConfig.fb_delete_head_idname: Button(
         'Delete head',
-        'Delete the head and its cameras from the scene'
+        'Delete the head and related cameras from the scene'
     ),
     FBConfig.fb_select_camera_idname: Button(
-        'Pin Mode Select Camera',
-        'Switch to Pin mode for this view'
+        'Select Camera',
+        'Go to this view to align mesh'
     ),
     FBConfig.fb_center_geo_idname: Button(
         'Reset Camera',
-        'Place the camera so the model will be centred in the view'
+        'Reset camera position so the model is centered in the view'
     ),
     FBConfig.fb_unmorph_idname: Button(
         'Reset',
@@ -127,12 +127,12 @@ buttons = {
         'It will remove all pins as well'
     ),
     FBConfig.fb_remove_pins_idname: Button(
-        'Remove pins',
-        'Remove all pins on this view'
+        'Remove All Pins',
+        'Remove all pins in current view'
     ),
     FBConfig.fb_wireframe_color_idname: Button(
         'Wireframe color',
-        'Choose the wireframe coloring scheme'
+        'Wireframe colour scheme'
     ),
     FBConfig.fb_filter_cameras_idname: Button(
         'Camera Filter',
@@ -140,11 +140,11 @@ buttons = {
     ),
     FBConfig.fb_delete_camera_idname: Button(
         'Delete View',
-        'Delete this view and its camera from the scene'
+        'Delete this view and related camera from the scene'
     ),
     FBConfig.fb_proper_view_menu_exec_idname: Button(
         'View operations',
-        'Delete the view or modify the image file path'
+        'Delete, rotate, change file path'
     ),
     FBConfig.fb_addon_setup_defaults_idname: Button(
         'Setup FaceBuilder defaults',
@@ -172,8 +172,8 @@ buttons = {
         'Reset Image Rotation'
     ),
     FBConfig.fb_reset_expression_idname: Button(
-        'Reset expression',
-        'Reset expression'
+        'Reset Expression',
+        'Reset expression in current view'
     ),
     FBConfig.fb_show_tex_idname: Button(
         'Show Texture',
@@ -238,12 +238,12 @@ buttons = {
         'Reconstruct head by KeenTools attributes on mesh'
     ),
     FBConfig.fb_default_pin_settings_idname: Button(
-        'Revert to defaults',
-        'Set pin size and active area as in the saved defaults'
+        'Reset',
+        'Reset all to default values'
     ),
     FBConfig.fb_default_wireframe_settings_idname: Button(
-        'Revert to defaults',
-        'Set the wireframe colours and opacity as in the saved defaults'
+        'Reset',
+        'Reset all to default values'
     ),
     FBConfig.fb_select_current_head_idname: Button(
         'Current head',
@@ -251,19 +251,19 @@ buttons = {
     ),
     FBConfig.fb_select_current_camera_idname: Button(
         'Current view',
-        'Current view. Press to exit from Pin mode'
+        'Current view. Press to go back to 3D'
     ),
     FBConfig.fb_reset_tone_exposure_idname: Button(
-        'Reset exposure',
-        'Reset exposure in tone mapping'
+        'Reset',
+        'Reset exposure to default value'
     ),
     FBConfig.fb_reset_tone_gamma_idname: Button(
-        'Reset gamma',
-        'Reset gamma in tone mapping'
+        'Reset',
+        'Reset gamma to default value'
     ),
     FBConfig.fb_reset_tone_mapping_idname: Button(
-        'Reset tone mapping',
-        'Reset exposure and gamma in tone mapping'
+        'Reset',
+        'Reset all to default values'
     ),
     FBConfig.fb_export_to_cc_idname: Button(
         'Character Creator',
@@ -279,8 +279,8 @@ buttons = {
         'Rotate backward'
     ),
     FBConfig.fb_reset_view_idname: Button(
-        'Reset view',
-        'Reset view'
+        'Reset View',
+        'Remove all pins and reset camera position'
     ),
 
     # Help buttons

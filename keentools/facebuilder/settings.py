@@ -166,13 +166,13 @@ class FBCameraItem(PropertyGroup):
         default=True)
 
     tone_exposure: FloatProperty(
-        name='Exposure', description='Tone gain',
+        name='Exposure', description='Adjust exposure in current view',
         default=Config.default_tone_exposure,
         min=-10.0, max=10.0, soft_min=-4.0, soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
 
     tone_gamma: FloatProperty(
-        name='Gamma correction', description='Tone gamma correction',
+        name='Gamma', description='Adjust gamma in current view',
         default=Config.default_tone_gamma, min=0.01, max=10.0, soft_max=4.0, precision=2,
         update=update_background_tone_mapping)
 
@@ -505,7 +505,7 @@ class FBHeadItem(PropertyGroup):
 
     expression_view: EnumProperty(name='Expression View Selector',
                                   items=expression_views_callback,
-                                  description='What expression will display after pinning',
+                                  description='Use expression from',
                                   update=update_expression_view)
 
     def blenshapes_are_relevant(self):
@@ -733,8 +733,8 @@ class FBSceneSettings(PropertyGroup):
         self.adaptive_opacity = (x2 - x1) / denom
 
     wireframe_opacity: FloatProperty(
-        description='From 0.0 to 1.0',
-        name='The FaceBuilder wireframe Opacity',
+        description='',
+        name='Wireframe opacity',
         default=UserPreferences.get_value_safe('fb_wireframe_opacity',
                                                UserPreferences.type_float),
         min=0.0, max=1.0,
@@ -742,8 +742,8 @@ class FBSceneSettings(PropertyGroup):
         get=universal_cached_getter('fb_wireframe_opacity', 'float'),
         set=universal_cached_setter('fb_wireframe_opacity'))
     wireframe_color: FloatVectorProperty(
-        description='Color of the FaceBuilder mesh wireframe in pin-mode',
-        name='Wireframe Color', subtype='COLOR',
+        description='',
+        name='Base mesh colour', subtype='COLOR',
         default=UserPreferences.get_value_safe('fb_wireframe_color',
                                                UserPreferences.type_color),
         min=0.0, max=1.0,
@@ -751,8 +751,8 @@ class FBSceneSettings(PropertyGroup):
         get=universal_cached_getter('fb_wireframe_color', 'color'),
         set=universal_cached_setter('fb_wireframe_color'))
     wireframe_special_color: FloatVectorProperty(
-        description='Color of special parts in pin-mode',
-        name='Wireframe Special Color', subtype='COLOR',
+        description='',
+        name='Facial features colour', subtype='COLOR',
         default=UserPreferences.get_value_safe('fb_wireframe_special_color',
                                                UserPreferences.type_color),
         min=0.0, max=1.0,
@@ -760,8 +760,8 @@ class FBSceneSettings(PropertyGroup):
         get=universal_cached_getter('fb_wireframe_special_color', 'color'),
         set=universal_cached_setter('fb_wireframe_special_color'))
     wireframe_midline_color: FloatVectorProperty(
-        description='Color of midline in pin-mode',
-        name='Wireframe Midline Color', subtype='COLOR',
+        description='',
+        name='Midlines colour', subtype='COLOR',
         default=UserPreferences.get_value_safe('fb_wireframe_midline_color',
                                                UserPreferences.type_color),
         min=0.0, max=1.0,
@@ -769,9 +769,8 @@ class FBSceneSettings(PropertyGroup):
         get=universal_cached_getter('fb_wireframe_midline_color', 'color'),
         set=universal_cached_setter('fb_wireframe_midline_color'))
     show_specials: BoolProperty(
-        description='Use different colors for important head parts '
-                    'on the mesh',
-        name='Special face parts', default=True, update=update_wireframe_image)
+        description='',
+        name='Highlight facial features', default=True, update=update_wireframe_image)
     wireframe_backface_culling: BoolProperty(
         name='Backface culling',
         default=True,
@@ -787,8 +786,7 @@ class FBSceneSettings(PropertyGroup):
         get=universal_cached_getter('pin_size', 'float'),
         set=universal_cached_setter('pin_size'))
     pin_sensitivity: FloatProperty(
-        description='Set active area in pixels',
-        name='Active area',
+        name='Sensitivity', description='Active area in pixels',
         default=UserPreferences.get_value_safe('pin_sensitivity',
                                                UserPreferences.type_float),
         min=1.0, max=100.0,
