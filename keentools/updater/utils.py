@@ -178,7 +178,7 @@ class CurrentStateExecutor:
 
 class KTUpdater:
     _response: Dict = {'FaceBuilder': None, 'GeoTracker': None,
-                       'FaceTracker': None}
+                       'FaceTracker': None, 'KeenTools': None}
     _parsed_response_content: Dict = {'FaceBuilder': None, 'GeoTracker': None,
                                       'FaceTracker': None, 'KeenTools': None}
     _max_log_counter: int = 25
@@ -217,7 +217,9 @@ class KTUpdater:
 
     @classmethod
     def set_response(cls, product: str, val: Optional[Any]) -> None:
+        _log.green(f'set_response:\n{product}\n{val}')
         cls._response[product] = val
+        _log.yellow(f'response:\n{cls._response}')
 
     @classmethod
     def get_response(cls, *, product: Optional[str]=None) -> Optional[Any]:
@@ -241,6 +243,7 @@ class KTUpdater:
 
     @classmethod
     def set_parsed(cls, product: str, val: Optional[Any]) -> None:
+        _log.green(f'set_parsed:\n{product}\n{val}')
         cls._parsed_response_content[product] = val
 
     @classmethod
