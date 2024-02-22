@@ -132,7 +132,6 @@ def _start_autoloader_handler(headnum: int) -> None:
 def _draw_align_button(layout, scale=2.0, depress=False):
     settings = fb_settings()
     row = layout.row(align=True)
-    row.scale_x = 1.2  # Trick to enlarge side buttons
     row.scale_y = scale
     row.operator(FBConfig.fb_rotate_head_backward_idname,
                  **KTIcons.key_value('rotate_head_backward'), text='')
