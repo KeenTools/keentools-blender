@@ -165,6 +165,10 @@ class GT_PT_GeotrackersPanel(View3DPanel):
         settings = gt_settings()
         geotracker_num = settings.current_tracker_num()
 
+        if len(settings.trackers()) > 0:
+            op = layout.operator(Config.kt_share_feedback_idname, icon='WORLD')
+            op.product = ProductType.GEOTRACKER
+
         for i, geotracker in enumerate(settings.trackers()):
 
             row = layout.row(align=True)

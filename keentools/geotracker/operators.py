@@ -1478,30 +1478,6 @@ class GT_OT_UnbreakRotation(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
-class GT_OT_ShareFeedback(ButtonOperator, Operator):
-    bl_idname = GTConfig.gt_share_feedback_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        _log.green(f'{self.__class__.__name__} execute')
-        params = {
-            'hl': 'en',
-            'usp': 'pp_url',
-            'entry.783336314': f'{platform.platform()}',
-            'entry.1510351504': f'{platform.machine()} {platform.processor()}',
-            'entry.1095779847': f'{BVersion.version_string}',
-            'entry.1252663858': f'{Config.addon_name} {Config.addon_version}'
-        }
-        url = f'https://docs.google.com/forms/d/e/' \
-              f'1FAIpQLSf7Up-IPtqqSVjEy_BicDHE-1p31SynJsUUXHbBiMOpqpJ_2Q/' \
-              f'viewform?{urlencode(params)}'
-        _log.output(f'\n{url}')
-        bpy_url_open(url)
-        _log.output(f'{self.__class__.__name__} execute end >>>')
-        return {'FINISHED'}
-
-
 class GT_OT_DeleteTexture(Operator):
     bl_idname = GTConfig.gt_delete_texture_idname
     bl_label = buttons[bl_idname].label
@@ -2121,7 +2097,6 @@ BUTTON_CLASSES = (GT_OT_CreateGeoTracker,
                   GT_OT_AddonSetupDefaults,
                   GT_OT_AutoNamePrecalc,
                   GT_OT_UnbreakRotation,
-                  GT_OT_ShareFeedback,
                   GT_OT_DeleteTexture,
                   GT_OT_RescaleWindow,
                   GT_OT_MoveWindow,

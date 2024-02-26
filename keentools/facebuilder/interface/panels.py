@@ -320,6 +320,9 @@ class FB_PT_HeaderPanel(Common, Panel):
                 row.operator(FBConfig.fb_unhide_head_idname, icon='HIDE_OFF')
                 _start_pinmode_escaper(context)
 
+            op = layout.operator(Config.kt_share_feedback_idname, icon='WORLD')
+            op.product = ProductType.FACEBUILDER
+
             col = layout.column(align=True)
             self._draw_many_heads(col, active=False)
             self._create_head_button(col, active=False)
@@ -338,6 +341,9 @@ class FB_PT_HeaderPanel(Common, Panel):
             return
 
         else:
+            op = layout.operator(Config.kt_share_feedback_idname, icon='WORLD')
+            op.product = ProductType.FACEBUILDER
+
             col = layout.column(align=True)
             self._draw_many_heads(col)
             self._create_head_button(col)

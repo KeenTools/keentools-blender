@@ -91,6 +91,7 @@ class Config:
     kt_open_url_idname = operators + '.open_url'
     kt_addon_search_idname = operators + '.addon_search'
     kt_exit_localview_idname = operators + '.exit_localview'
+    kt_share_feedback_idname = operators + '.share_feedback'
 
     kt_warning_idname = operators + '.common_addon_warning'
 

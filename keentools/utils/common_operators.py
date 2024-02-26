@@ -16,13 +16,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
+import platform
+from urllib.parse import urlencode
+
 import bpy
 from bpy.types import Operator
-from bpy.props import StringProperty
+from bpy.props import StringProperty, IntProperty
 
+from .kt_logging import KTLogger
+from .version import BVersion
 from ..addon_config import (Config,
                             show_user_preferences,
-                            show_tool_preferences)
+                            show_tool_preferences,
+                            product_name,
+                            ProductType)
 from .localview import check_context_localview
 from .viewport_state import force_show_ui_overlays
 from ..utils.ui_redraw import (force_ui_redraw,
@@ -32,6 +39,9 @@ from ..utils.ui_redraw import (force_ui_redraw,
                                mark_old_modules)
 from .bpy_common import bpy_localview, bpy_show_addon_preferences, bpy_url_open
 from ..ui_strings import buttons
+
+
+_log = KTLogger(__name__)
 
 
 class KT_OT_AddonSettings(Operator):
@@ -46,6 +56,7 @@ class KT_OT_AddonSettings(Operator):
         pass
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         show_user_preferences(facebuilder=False, geotracker=False,
                               facetracker=False)
         if self.show == 'facebuilder':
@@ -61,6 +72,7 @@ class KT_OT_AddonSettings(Operator):
             show_tool_preferences(facebuilder=False, geotracker=False,
                                   facetracker=False)
         bpy_show_addon_preferences()
+        _log.output(f'{self.__class__.__name__} end >>>')
         return {'FINISHED'}
 
 
@@ -70,7 +82,9 @@ class KT_OT_OpenURLBase:
     url: StringProperty(name='URL', default='')
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         bpy_url_open(url=self.url)
+        _log.output(f'{self.__class__.__name__} end >>>')
         return {'FINISHED'}
 
 
@@ -92,6 +106,7 @@ class KT_OT_AddonSearch(Operator):
         pass
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         bpy.context.window_manager.addon_search = self.search
         bpy.ops.screen.userpref_show()
         mods = find_modules_by_name_starting_with(self.search)
@@ -101,6 +116,7 @@ class KT_OT_AddonSearch(Operator):
                 mods, 'KeenTools FaceBuilder')
             mark_old_modules(keentools_fb_mods, {'category': 'Add Mesh'})
         force_ui_redraw(area_type='PREFERENCES')
+        _log.output(f'{self.__class__.__name__} end >>>')
         return {'FINISHED'}
 
 
@@ -111,15 +127,68 @@ class KT_OT_ExitLocalview(Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute')
         if not check_context_localview(context):
             self.report({'ERROR', 'Cannot set proper context for operator'})
             return {'CANCELLED'}
         bpy_localview()
         force_show_ui_overlays(context.area)
+        _log.output(f'{self.__class__.__name__} end >>>')
+        return {'FINISHED'}
+
+
+def _gt_feedback_url() -> str:
+    params = {
+        'hl': 'en',
+        'usp': 'pp_url',
+        'entry.783336314': f'{platform.platform()}',
+        'entry.1510351504': f'{platform.machine()} {platform.processor()}',
+        'entry.1095779847': f'{BVersion.version_string}',
+        'entry.1252663858': f'{Config.addon_name} {Config.addon_version}'
+    }
+    url = f'https://docs.google.com/forms/d/e/' \
+          f'1FAIpQLSf7Up-IPtqqSVjEy_BicDHE-1p31SynJsUUXHbBiMOpqpJ_2Q/' \
+          f'viewform?{urlencode(params)}'
+    return url
+
+
+def _fb_feedback_url() -> str:
+    return _gt_feedback_url()
+
+
+def _ft_feedback_url() -> str:
+    return _gt_feedback_url()
+
+
+class KT_OT_ShareFeedback(Operator):
+    bl_idname = Config.kt_share_feedback_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    bl_options = {'REGISTER'}
+
+    product: IntProperty(default=ProductType.UNDEFINED)
+
+    def execute(self, context):
+        _log.green(f'{self.__class__.__name__} execute [{product_name(self.product)}]')
+
+        if self.product == ProductType.FACEBUILDER:
+            url = _fb_feedback_url()
+        elif self.product == ProductType.GEOTRACKER:
+            url = _gt_feedback_url()
+        elif self.product == ProductType.FACETRACKER:
+            url = _gt_feedback_url()
+        else:
+            self.report({'ERROR', 'Wrong Product ID'})
+            url = 'https://keentools.io'
+
+        _log.output(f'\n{url}')
+        bpy_url_open(url)
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
 CLASSES_TO_REGISTER = (KT_OT_AddonSettings,
                        KT_OT_OpenURL,
                        KT_OT_AddonSearch,
-                       KT_OT_ExitLocalview,)
+                       KT_OT_ExitLocalview,
+                       KT_OT_ShareFeedback)

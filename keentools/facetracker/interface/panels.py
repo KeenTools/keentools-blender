@@ -150,6 +150,10 @@ class FT_PT_FacetrackersPanel(View3DPanel):
         settings = ft_settings()
         facetracker_num = settings.current_tracker_num()
 
+        if len(settings.trackers()) > 0:
+            op = layout.operator(Config.kt_share_feedback_idname, icon='WORLD')
+            op.product = ProductType.FACETRACKER
+
         for i, facetracker in enumerate(settings.trackers()):
 
             row = layout.row(align=True)
