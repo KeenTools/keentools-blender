@@ -102,7 +102,7 @@ def reorder_tracking_frames(obj) -> None:
     key_blocks = obj.data.shape_keys.key_blocks
     check_status, arr = check_tracking_frames(key_blocks)
     if check_status:
-        _log.output(f'reorder_tracking_frames [no need]:\n{arr}')
+        _log.output(f'reorder_tracking_frames [no need]')
         return
     pairs = arr[arr[:, 1] >= 0]
     res = pairs[pairs[:, 1].argsort()]
@@ -161,7 +161,7 @@ def bubble_frame_shape(obj: Object, shape_index: int, frame: int) -> int:
 
 def create_relative_shape_keyframe(frame: int, *,
                                    action_name: str = FTConfig.ft_action_name) -> None:
-    _log.output(_log.color('yellow', f'create_shape_keyframe: {frame}'))
+    _log.yellow(f'create_shape_keyframe: {frame}')
     settings = ft_settings()
     loader = settings.loader()
     geotracker = settings.get_current_geotracker_item()
@@ -194,7 +194,7 @@ def create_relative_shape_keyframe(frame: int, *,
 
     if new_shape_created:
         shape_index = bubble_frame_shape(geomobj, shape_index, frame)
-        _log.error(f'bubble_shape: {shape_index}')
+        _log.red(f'bubble_shape: {shape_index}')
 
     prev_index1, prev_frame1 = get_prev_frame_shape(key_blocks, shape_index)
     next_index1, next_frame1 = get_next_frame_shape(key_blocks, shape_index)
@@ -204,7 +204,7 @@ def create_relative_shape_keyframe(frame: int, *,
     if not check_nearest_frame_sequence([prev_frame2, prev_frame1, frame,
                                          next_frame1, next_frame2],
                                         len(key_blocks)):
-        _log.error('check_nearest_frame_sequence is not passed!')
+        _log.red('check_nearest_frame_sequence is not passed!')
         reorder_tracking_frames(geomobj)
         shape_index, _, _ = get_blendshape(geomobj, name=shape_name)
         prev_index1, prev_frame1 = get_prev_frame_shape(key_blocks, shape_index)
@@ -238,10 +238,11 @@ def create_relative_shape_keyframe(frame: int, *,
         make_fcurve_pile_animation(next_fcurve,
                                    [frame, next_frame1, next_frame2],
                                    keyframe_set)
+    _log.output(f'create_shape_keyframe end >>>')
 
 
 def remove_relative_shape_keyframe(frame: int) -> None:
-    _log.output(_log.color('yellow', f'remove_relative_shape_keyframe: {frame}'))
+    _log.yellow(f'remove_relative_shape_keyframe: {frame}')
     settings = ft_settings()
     geotracker = settings.get_current_geotracker_item()
     if not geotracker:
@@ -256,7 +257,7 @@ def remove_relative_shape_keyframe(frame: int) -> None:
 
     basis_index, basis_shape, _ = get_blendshape(geomobj, name='Basis')
     if basis_index < 0:
-        _log.output('remove_relative_shape_keyframe: no Basis')
+        _log.red('remove_relative_shape_keyframe: no Basis')
         return
 
     if basis_index != 0:
@@ -267,7 +268,7 @@ def remove_relative_shape_keyframe(frame: int) -> None:
     shape_index, shape, new_shape_created = get_blendshape(geomobj,
                                                            name=shape_name)
     if not shape:
-        _log.output(f'remove_relative_shape_keyframe: no shape {shape_name}')
+        _log.red(f'remove_relative_shape_keyframe: no shape {shape_name}')
         return
 
     key_blocks = mesh.shape_keys.key_blocks
@@ -280,7 +281,7 @@ def remove_relative_shape_keyframe(frame: int) -> None:
     if not check_nearest_frame_sequence([prev_frame2, prev_frame1, frame,
                                          next_frame1, next_frame2],
                                         len(key_blocks)):
-        _log.error('check_nearest_frame_sequence is not passed!')
+        _log.red('check_nearest_frame_sequence is not passed!')
         reorder_tracking_frames(geomobj)
         shape_index, _, _ = get_blendshape(geomobj, name=shape_name)
         prev_index1, prev_frame1 = get_prev_frame_shape(key_blocks, shape_index)
@@ -297,6 +298,7 @@ def remove_relative_shape_keyframe(frame: int) -> None:
 
     main_fcurve = get_action_fcurve(action, f'key_blocks["{shape_name}"].value')
     if not main_fcurve:
+        _log.red('no main_fcurve')
         return
 
     gt = settings.loader().kt_geotracker()
@@ -318,3 +320,4 @@ def remove_relative_shape_keyframe(frame: int) -> None:
 
     action.fcurves.remove(main_fcurve)
     geomobj.shape_key_remove(shape)
+    _log.output(f'remove_relative_shape_keyframe end >>>')

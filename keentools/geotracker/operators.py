@@ -92,8 +92,8 @@ from .utils.geotracker_acts import (create_geotracker_action,
                                     remove_focal_keyframe_action,
                                     remove_focal_keyframes_action,
                                     select_tracker_objects_action,
-                                    render_with_background_act,
-                                    revert_default_render_act,
+                                    render_with_background_action,
+                                    revert_default_render_action,
                                     store_camobj_state,
                                     store_geomobj_state,
                                     get_stored_data,
@@ -104,8 +104,8 @@ from .utils.geotracker_acts import (create_geotracker_action,
                                     check_uv_exists,
                                     check_uv_overlapping_with_status,
                                     create_non_overlapping_uv_action,
-                                    repack_uv_act,
-                                    bake_locrot_act,
+                                    repack_uv_action,
+                                    bake_locrot_action,
                                     get_operator_reposition_matrix,
                                     move_scene_tracking_action,
                                     unbreak_rotation_act)
@@ -132,7 +132,7 @@ class GT_OT_CreateGeoTracker(ButtonOperator, Operator):
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -151,7 +151,7 @@ class GT_OT_DeleteGeoTracker(ButtonOperator, Operator):
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -175,7 +175,7 @@ class GT_OT_SwitchToCameraMode(ButtonOperator, Operator):
         settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         geotracker.solve_for_camera = True
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -199,7 +199,7 @@ class GT_OT_SwitchToGeometryMode(ButtonOperator, Operator):
         settings = gt_settings()
         geotracker = settings.get_current_geotracker_item()
         geotracker.solve_for_camera = False
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -226,7 +226,7 @@ class GT_OT_CreatePrecalc(ButtonOperator, Operator):
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -256,7 +256,7 @@ class GT_OT_PrevKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -286,7 +286,7 @@ class GT_OT_NextKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -303,7 +303,7 @@ class GT_OT_LockView(ButtonOperator, Operator):
             self.report({'INFO'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -320,7 +320,7 @@ class GT_OT_TrackToStart(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -337,7 +337,7 @@ class GT_OT_TrackToEnd(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -354,7 +354,7 @@ class GT_OT_TrackNext(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -371,7 +371,7 @@ class GT_OT_TrackPrev(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -390,7 +390,7 @@ class GT_OT_AddKeyframe(ButtonOperator, Operator):
             return {'CANCELLED'}
         GTLoader.update_viewport_shaders(timeline=True)
         force_undo_push('Add GeoTracker keyframe')
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -409,7 +409,7 @@ class GT_OT_RemoveKeyframe(ButtonOperator, Operator):
             return {'CANCELLED'}
         GTLoader.update_viewport_shaders(timeline=True)
         force_undo_push('Remove GeoTracker keyframe')
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -427,7 +427,7 @@ class GT_OT_ClearAllTracking(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -445,7 +445,7 @@ class GT_OT_ClearTrackingExceptKeyframes(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -463,7 +463,7 @@ class GT_OT_ClearTrackingForward(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -481,7 +481,7 @@ class GT_OT_ClearTrackingBackward(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -499,7 +499,7 @@ class GT_OT_ClearTrackingBetween(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -516,7 +516,7 @@ class GT_OT_Refine(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -533,7 +533,7 @@ class GT_OT_RefineAll(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -551,7 +551,7 @@ class GT_OT_CenterGeo(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -564,7 +564,7 @@ class GT_OT_BtnMagicKeyframe(ButtonOperator, Operator):
         _log.green(f'{self.__class__.__name__} execute')
         op = get_operator(GTConfig.gt_actor_idname)
         op('EXEC_DEFAULT', action='magic_keyframe')
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -582,7 +582,7 @@ class GT_OT_RemovePins(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -600,7 +600,7 @@ class GT_OT_TogglePins(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -635,7 +635,7 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
                 self.report({'ERROR'}, check_status.error_message)
                 return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} invoke end')
+        _log.output(f'{self.__class__.__name__} invoke end >>>')
         return self.execute(context)
 
     def execute(self, context):
@@ -650,7 +650,7 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
                 return {'CANCELLED'}
-            _log.output(f'{self.__class__.__name__} execute end')
+            _log.output(f'{self.__class__.__name__} execute end >>>')
             return {'FINISHED'}
 
         elif settings.export_locator_selector == 'CAMERA':
@@ -659,7 +659,7 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
             if not act_status.success:
                 self.report({'ERROR'}, act_status.error_message)
                 return {'CANCELLED'}
-            _log.output(f'{self.__class__.__name__} execute end')
+            _log.output(f'{self.__class__.__name__} execute end >>>')
             return {'FINISHED'}
 
         elif settings.export_locator_selector == 'SELECTED_PINS':
@@ -678,7 +678,7 @@ class GT_OT_ExportAnimatedEmpty(ButtonOperator, Operator):
                 _log.error(act_status.error_message)
                 self.report({'ERROR'}, act_status.error_message)
                 return {'CANCELLED'}
-            _log.output(f'{self.__class__.__name__} execute end')
+            _log.output(f'{self.__class__.__name__} execute end >>>')
             return {'FINISHED'}
 
         msg = 'Unknown selector state'
@@ -695,7 +695,7 @@ class GT_OT_ExitPinMode(ButtonOperator, Operator):
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
         GTLoader.out_pinmode()
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -714,7 +714,7 @@ class GT_OT_StopCalculating(Operator):
         if not settings.user_interrupts:
             settings.user_interrupts = True
             self.attempts = 0
-            _log.output(f'{self.__class__.__name__} execute end')
+            _log.output(f'{self.__class__.__name__} execute end >>>')
             return {'FINISHED'}
 
         self.attempts += 1
@@ -722,7 +722,7 @@ class GT_OT_StopCalculating(Operator):
             _log.error(f'Extreme calculation stop')
             settings.stop_calculating()
             self.attempts = 0
-            _log.output(f'{self.__class__.__name__} execute end')
+            _log.output(f'{self.__class__.__name__} execute end >>>')
             return {'FINISHED'}
 
         if settings.calculating_mode == 'PRECALC':
@@ -738,7 +738,7 @@ class GT_OT_StopCalculating(Operator):
             if len(RefineTimer.active_timers()) == 0:
                 settings.stop_calculating()
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -766,13 +766,13 @@ class GT_OT_InterruptModal(Operator):
         if settings.user_interrupts:
             _log.output('GT Interruptor has been stopped by value')
             settings.user_interrupts = True
-            _log.output(f'{self.__class__.__name__} execute end')
+            _log.output(f'{self.__class__.__name__} execute end >>>')
             return {'FINISHED'}
 
         if event.type == 'ESC' and event.value == 'PRESS':
             _log.output('Exit GT Interruptor by ESC')
             settings.user_interrupts = True
-            _log.output(f'{self.__class__.__name__} execute end')
+            _log.output(f'{self.__class__.__name__} execute end >>>')
             return {'FINISHED'}
 
         return {'PASS_THROUGH'}
@@ -790,7 +790,7 @@ class GT_OT_ResetToneGain(ButtonOperator, Operator):
         if not geotracker:
             return {'CANCELLED'}
         geotracker.tone_exposure = Config.default_tone_exposure
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -806,7 +806,7 @@ class GT_OT_ResetToneGamma(ButtonOperator, Operator):
         if not geotracker:
             return {'CANCELLED'}
         geotracker.tone_gamma = Config.default_tone_gamma
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -823,7 +823,7 @@ class GT_OT_ResetToneMapping(ButtonOperator, Operator):
             return {'CANCELLED'}
         geotracker.tone_exposure = Config.default_tone_exposure
         geotracker.tone_gamma = Config.default_tone_gamma
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -842,7 +842,7 @@ class GT_OT_ResetTextureResolution(ButtonOperator, Operator):
             return {'CANCELLED'}
         settings.tex_width = Config.default_tex_width
         settings.tex_height = Config.default_tex_height
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -861,7 +861,7 @@ class GT_OT_ResetTextureSettings(ButtonOperator, Operator):
             return {'CANCELLED'}
         settings.tex_face_angles_affection = Config.default_tex_face_angles_affection
         settings.tex_uv_expand_percents = Config.default_tex_uv_expand_percents
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -876,7 +876,7 @@ class GT_OT_DefaultWireframeSettings(ButtonOperator, Operator):
         prefs = settings.preferences()
         settings.wireframe_color = prefs.gt_wireframe_color
         settings.wireframe_opacity = prefs.gt_wireframe_opacity
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -891,7 +891,7 @@ class GT_OT_DefaultPinSettings(ButtonOperator, Operator):
         prefs = settings.preferences()
         settings.pin_size = prefs.pin_size
         settings.pin_sensitivity = prefs.pin_sensitivity
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -927,7 +927,7 @@ class GT_OT_CheckUVOverlapping(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         self.report({'INFO'}, 'UV check success!')
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -985,7 +985,7 @@ class GT_OT_RepackOverlappingUV(ButtonOperator, Operator):
             self.report({'ERROR'}, check_status.error_message)
             return {'CANCELLED'}
 
-        act_status = repack_uv_act()
+        act_status = repack_uv_action(product=self.product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
@@ -995,11 +995,11 @@ class GT_OT_RepackOverlappingUV(ButtonOperator, Operator):
         check_status = check_uv_overlapping_with_status(geotracker)
         if not check_status.success:
             self.report({'ERROR'}, f'Done but {check_status.error_message}')
-            _log.output(f'{self.__class__.__name__} execute end')
+            _log.output(f'{self.__class__.__name__} execute end >>>')
             return {'FINISHED'}
 
         self.report({'INFO'}, 'Non-overlapping UVs successfully created')
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1027,7 +1027,7 @@ class GT_OT_CreateNonOverlappingUV(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
         self.report({'INFO'}, 'Non-overlapping UVs successfully created')
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1180,7 +1180,7 @@ class GT_OT_AddBakeFrame(ButtonOperator, Operator):
 
         geotracker.selected_frame_index = frames.index(frame)
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1207,7 +1207,7 @@ class GT_OT_RemoveBakeFrame(ButtonOperator, Operator):
             geotracker.selected_frame_index -= 1
         geotracker.selected_frames.remove(index)
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1236,7 +1236,7 @@ class GT_OT_GoToBakeFrame(ButtonOperator, Operator):
         bpy_set_current_frame(frame)
         geotracker.selected_frame_index = index
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1262,7 +1262,7 @@ class GT_OT_TransferTracking(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1290,20 +1290,20 @@ class GT_OT_BakeAnimationToWorld(ButtonOperator, Operator):
         geotracker = settings.get_current_geotracker_item()
 
         if settings.bake_animation_selector == 'GEOMETRY':
-            act_status = bake_locrot_act(geotracker.geomobj,
-                                         product=self.product)
+            act_status = bake_locrot_action(geotracker.geomobj,
+                                            product=self.product)
         elif settings.bake_animation_selector == 'CAMERA':
-            act_status = bake_locrot_act(geotracker.camobj,
-                                         product=self.product)
+            act_status = bake_locrot_action(geotracker.camobj,
+                                            product=self.product)
         elif settings.bake_animation_selector == 'GEOMETRY_AND_CAMERA':
             act_status = None
             if geotracker.geomobj and geotracker.geomobj.parent:
-                act_status = bake_locrot_act(geotracker.geomobj,
-                                             product=self.product)
+                act_status = bake_locrot_action(geotracker.geomobj,
+                                                product=self.product)
             if act_status is None or (act_status.success and geotracker.camobj
                     and geotracker.camobj.parent):
-                act_status = bake_locrot_act(geotracker.camobj,
-                                             product=self.product)
+                act_status = bake_locrot_action(geotracker.camobj,
+                                                product=self.product)
             if act_status is None:
                 self.report({'ERROR'}, 'Unknown error with both objects')
                 return {'CANCELLED'}
@@ -1317,7 +1317,7 @@ class GT_OT_BakeAnimationToWorld(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1334,7 +1334,7 @@ class GT_OT_RemoveFocalKeyframe(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1351,7 +1351,7 @@ class GT_OT_RemoveFocalKeyframes(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1371,7 +1371,7 @@ class GT_OT_SelectGeotrackerObjects(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1382,12 +1382,13 @@ class GT_OT_RenderWithBackground(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
-        act_status = render_with_background_act()
+        product = ProductType.GEOTRACKER
+        act_status = render_with_background_action(product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1398,12 +1399,13 @@ class GT_OT_RevertDefaultRender(ButtonOperator, Operator):
 
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
-        act_status = revert_default_render_act()
+        product = ProductType.GEOTRACKER
+        act_status = revert_default_render_action(product=product)
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1421,7 +1423,7 @@ class GT_OT_AddonSetupDefaults(Operator):
         show_user_preferences(facebuilder=False, geotracker=True)
         show_tool_preferences(facebuilder=False, geotracker=True)
         bpy_show_addon_preferences()
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1444,7 +1446,7 @@ class GT_OT_AutoNamePrecalc(ButtonOperator, Operator):
             _log.error(msg)
             self.report({'INFO'}, msg)
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1472,7 +1474,7 @@ class GT_OT_UnbreakRotation(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         self.report({'INFO'}, 'Unbreak Rotation has been done')
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1496,7 +1498,7 @@ class GT_OT_ShareFeedback(ButtonOperator, Operator):
               f'viewform?{urlencode(params)}'
         _log.output(f'\n{url}')
         bpy_url_open(url)
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1520,7 +1522,7 @@ class GT_OT_DeleteTexture(Operator):
             return {'CANCELLED'}
         remove_bpy_image_by_name(geotracker.preview_texture_name())
         remove_mat_by_name(geotracker.preview_material_name())
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1648,7 +1650,7 @@ class GT_OT_RescaleWindow(Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
     def cancel(self, context):
@@ -1798,7 +1800,7 @@ class GT_OT_MoveWindow(Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
     def cancel(self, context):
@@ -2062,7 +2064,7 @@ class GT_OT_SwitchCameraToFixedWarning(Operator):
                 else:
                     geotracker.focal_length_mode = 'CAMERA_FOCAL_LENGTH'
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 

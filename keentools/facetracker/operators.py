@@ -91,7 +91,7 @@ class FT_OT_CreateFaceTracker(ButtonOperator, Operator):
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -110,7 +110,7 @@ class FT_OT_DeleteFaceTracker(ButtonOperator, Operator):
         if not act_status.success:
             self.report({'ERROR'}, act_status.error_message)
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -130,7 +130,7 @@ class FT_OT_SelectGeotrackerObjects(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -142,7 +142,7 @@ class FT_OT_ExitPinMode(ButtonOperator, Operator):
     def execute(self, context):
         _log.green(f'{self.__class__.__name__} execute')
         FTLoader.out_pinmode()
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -166,7 +166,7 @@ class FT_OT_SwitchToCameraMode(ButtonOperator, Operator):
         settings = ft_settings()
         geotracker = settings.get_current_geotracker_item()
         geotracker.solve_for_camera = True
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -190,7 +190,7 @@ class FT_OT_SwitchToGeometryMode(ButtonOperator, Operator):
         settings = ft_settings()
         geotracker = settings.get_current_geotracker_item()
         geotracker.solve_for_camera = False
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -207,7 +207,7 @@ class FT_OT_TrackToStart(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -224,7 +224,7 @@ class FT_OT_TrackToEnd(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -241,7 +241,7 @@ class FT_OT_TrackNext(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -258,7 +258,7 @@ class FT_OT_TrackPrev(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -275,7 +275,7 @@ class FT_OT_Refine(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -292,7 +292,7 @@ class FT_OT_RefineAll(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -322,7 +322,7 @@ class FT_OT_PrevKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -352,7 +352,7 @@ class FT_OT_NextKeyframe(ButtonOperator, Operator):
             self.report({'INFO'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -371,7 +371,7 @@ class FT_OT_AddKeyframe(ButtonOperator, Operator):
             return {'CANCELLED'}
         FTLoader.update_viewport_shaders(timeline=True)
         force_undo_push(f'Add {product_name(product)} keyframe')
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -394,7 +394,7 @@ class FT_OT_RemoveKeyframe(ButtonOperator, Operator):
                                          wireframe=True,
                                          pins_and_residuals=True,
                                          timeline=True)
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -412,7 +412,7 @@ class FT_OT_ClearAllTracking(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -430,7 +430,7 @@ class FT_OT_ClearTrackingExceptKeyframes(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -448,7 +448,7 @@ class FT_OT_ClearTrackingForward(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -466,7 +466,7 @@ class FT_OT_ClearTrackingBackward(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -484,7 +484,7 @@ class FT_OT_ClearTrackingBetween(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -501,7 +501,7 @@ class FT_OT_ClearAllTrackingMenuExec(Operator):
         _log.green(f'{self.__class__.__name__} execute')
         bpy_call_menu('INVOKE_DEFAULT',
                       name=FTConfig.ft_clear_tracking_menu_idname)
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -519,7 +519,7 @@ class FT_OT_CenterGeo(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -537,7 +537,7 @@ class FT_OT_RemovePins(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -555,7 +555,7 @@ class FT_OT_TogglePins(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -572,7 +572,7 @@ class FT_OT_LockView(ButtonOperator, Operator):
             self.report({'INFO'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -613,7 +613,7 @@ class FT_OT_StopCalculating(Operator):
             if len(FTRefineTimer.active_timers()) == 0:
                 settings.stop_calculating()
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -636,7 +636,7 @@ class FT_OT_AutoNamePrecalc(ButtonOperator, Operator):
             _log.error(msg)
             self.report({'INFO'}, msg)
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -661,7 +661,7 @@ class FT_OT_SplitVideoExec(Operator):
            to_frame=get_movieclip_duration(geotracker.movie_clip),
            filepath=os.path.join(os.path.dirname(geotracker.movie_clip.filepath),''))
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -710,7 +710,7 @@ class FT_OT_DefaultPinSettings(ButtonOperator, Operator):
         prefs = settings.preferences()
         settings.pin_size = prefs.pin_size
         settings.pin_sensitivity = prefs.pin_sensitivity
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -727,7 +727,7 @@ class FT_OT_DefaultWireframeSettings(ButtonOperator, Operator):
         settings.wireframe_special_color = prefs.fb_wireframe_special_color
         settings.wireframe_midline_color = prefs.fb_wireframe_midline_color
         settings.wireframe_opacity = prefs.fb_wireframe_opacity
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -745,7 +745,7 @@ class FT_OT_AddonSetupDefaults(Operator):
         show_user_preferences(facebuilder=False, geotracker=False, facetracker=True)
         show_tool_preferences(facebuilder=False, geotracker=False, facetracker=True)
         bpy_show_addon_preferences()
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -784,7 +784,7 @@ class FT_OT_WireframeColor(Operator):
         elif self.action == 'wireframe_white':
             _setup_colors_from_scheme('white')
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -801,7 +801,7 @@ class FT_OT_RemoveFocalKeyframe(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -818,7 +818,7 @@ class FT_OT_RemoveFocalKeyframes(ButtonOperator, Operator):
             self.report({'ERROR'}, act_status.error_message)
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
