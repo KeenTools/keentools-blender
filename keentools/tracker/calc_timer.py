@@ -243,7 +243,7 @@ class _CommonTimer(TimerMixin):
         self.add_timer(self)
 
     def create_shape_keyframe(self):
-        pass
+        _log.magenta(f'{self.__class__.__name__} empty create_shape_keyframe')
 
     def set_current_state(self, func: Callable) -> None:
         self.current_state = func
@@ -509,6 +509,10 @@ class FTRefineTimer(RefineTimer):
     @classmethod
     def user_interrupt_operator_name(cls):
         return FTConfig.ft_interrupt_modal_idname
+
+    def create_shape_keyframe(self):
+        _log.red(f'{self.__class__.__name__} create_shape_keyframe')
+        create_relative_shape_keyframe(bpy_current_frame())
 
 
 class RefineTimerFast(RefineTimer):
