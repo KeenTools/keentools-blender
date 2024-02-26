@@ -507,8 +507,6 @@ class FB_PT_ViewsPanel(AllVisible, Panel):
             _draw_align_button(col, scale=2.0, depress=False)
             col.operator(FBConfig.fb_reset_view_idname)
 
-            _draw_pins_panel(layout)
-
         if head.headobj and head.headobj.users == 1:
             _start_geomobj_delete_handler()
 
@@ -740,7 +738,7 @@ class FB_PT_AppearancePanel(AllVisibleClosed, Panel):
 
 class FB_PT_BlendShapesPanel(AllVisibleClosed, Panel):
     bl_idname = FBConfig.fb_blendshapes_panel_idname
-    bl_label = 'Blendshapes'
+    bl_label = 'Blendshapes (FACS)'
 
     @classmethod
     def poll(cls, context):
@@ -773,35 +771,31 @@ class FB_PT_BlendShapesPanel(AllVisibleClosed, Panel):
         col.scale_y = Config.btn_scale_y
         col.operator(FBConfig.fb_create_blendshapes_idname)
 
-        row = col.row(align=True)
-        if no_blendshapes:
-            row.active = False
-        op = row.operator(FBConfig.fb_delete_blendshapes_idname)
-        op.active_button = not no_blendshapes
+        if not no_blendshapes:
+            row = col.row(align=True)
+            op = row.operator(FBConfig.fb_delete_blendshapes_idname)
+            op.active_button = not no_blendshapes
 
         if not no_blendshapes:
             col.operator(FBConfig.fb_reset_blendshape_values_idname)
 
         if not no_blendshapes:
-            box = layout.box()
-            col = box.column(align=True)
+            col = layout.column(align=True)
             col.scale_y = Config.btn_scale_y
             col.label(text='Animation')
             col.separator(factor=0.4)
 
             col.operator(FBConfig.fb_load_animation_from_csv_idname)
 
-            row = col.row(align=True)
-            if has_blendshapes_act:
-                row.active = False
-            op = row.operator(FBConfig.fb_create_example_animation_idname)
-            op.active_button = not has_blendshapes_act
-
-            row = col.row(align=True)
             if not has_blendshapes_act:
-                row.active = False
-            op = row.operator(FBConfig.fb_clear_animation_idname)
-            op.active_button = has_blendshapes_act
+                row = col.row(align=True)
+                op = row.operator(FBConfig.fb_create_example_animation_idname)
+                op.active_button = not has_blendshapes_act
+
+            if has_blendshapes_act:
+                row = col.row(align=True)
+                op = row.operator(FBConfig.fb_clear_animation_idname)
+                op.active_button = has_blendshapes_act
 
 
 class FB_PT_ExportPanel(AllVisibleClosed, Panel):
