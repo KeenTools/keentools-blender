@@ -39,7 +39,7 @@ class MESH_OT_FBAddHead(Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__}.execute call')
+        _log.green(f'{self.__class__.__name__} execute')
         settings = fb_settings()
         loader = settings.loader()
         heads_deleted, cams_deleted = settings.fix_heads()
@@ -83,6 +83,7 @@ class MESH_OT_FBAddHead(Operator):
         show_ui_panel(context)
 
         _log.output('HEAD HAS BEEN SUCCESSFULLY CREATED')
+        _log.output(f'{self.__class__.__name__} end >>>')
         return {'FINISHED'}
 
     @classmethod
@@ -92,4 +93,5 @@ class MESH_OT_FBAddHead(Operator):
         mesh = settings.loader().universal_mesh_loader(FBConfig.default_fb_mesh_name)
         _log.output('bpy_create_object')
         obj = bpy_create_object(FBConfig.default_fb_object_name, mesh)
+        _log.output('new_head end >>>')
         return obj

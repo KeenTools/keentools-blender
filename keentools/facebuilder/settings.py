@@ -148,7 +148,7 @@ class FBCameraItem(PropertyGroup):
     orientation: IntProperty(default=0)  # angle = orientation * Pi/2
 
     focal: FloatProperty(
-        description="35mm equivalent focal length (mm)",
+        description="35mm equivalent focal length",
         name="Focal Length", default=50,
         unit="CAMERA",
         min=0.1, update=update_camera_focal)
@@ -159,10 +159,10 @@ class FBCameraItem(PropertyGroup):
         min=0.0001)
 
     auto_focal_estimation: BoolProperty(
-        name="Estimate focal length",
-        description="When turned on, FaceBuilder will try to estimate "
-                    "focal length based on the position of the model "
-                    "in the frame",
+        name='Estimate focal length',
+        description='Automatically estimate focal length '
+                    'while aligning mesh to image. '
+                    'Activates from 4th pin and on',
         default=True)
 
     tone_exposure: FloatProperty(
@@ -468,7 +468,8 @@ class FBHeadItem(PropertyGroup):
                     "in the frame",
         default=False)
 
-    masks: BoolVectorProperty(name='Masks', description='Head parts visibility',
+    masks: BoolVectorProperty(name='Masks',
+                              description='Turn model parts on and off',
                               size=12, subtype='NONE',
                               default=(True,) * 12,
                               update=update_mesh_simple)
@@ -483,8 +484,7 @@ class FBHeadItem(PropertyGroup):
     exif: PointerProperty(type=FBExifItem)
 
     model_scale: FloatProperty(
-        description="Geometry input scale. "
-                    "All operations are performed with the scaled geometry.",
+        description="Adjust absolute size of 3D head",
         name="Scale", default=1.0, min=0.01, max=100.0,
         update=update_model_scale)
 
@@ -496,7 +496,7 @@ class FBHeadItem(PropertyGroup):
         default=False)
 
     model_type: EnumProperty(name='Topology', items=model_type_callback,
-                             description='Model selector',
+                             description='Selected topology',
                              update=update_mesh_with_dialog)
 
     model_type_previous: EnumProperty(name='Current Topology',
@@ -829,43 +829,37 @@ class FBSceneSettings(PropertyGroup):
     # Texture Baking parameters
     # -------------------------
     tex_width: IntProperty(
-        description="Width size of output texture",
+        description="Width in pixels",
         name="Width", default=Config.default_tex_width)
     tex_height: IntProperty(
-        description="Height size of output texture",
+        description="Height in pixels",
         name="Height", default=Config.default_tex_height)
 
     tex_face_angles_affection: FloatProperty(
-        description="Choose how much a polygon view angle affects "
-                    "a pixel color: with 0 you will get an average "
-                    "color from all views; with 100 you'll get color "
-                    "information only from the polygons at which a camera "
-                    "is looking at 90 degrees",
+        description="Blending of colours between different cameras: "
+                    "0 - average colour from all views, "
+                    "100 - colour from 90 degree views only",
         name="Angle strictness",
         default=Config.default_tex_face_angles_affection, min=0.0, max=100.0)
     tex_uv_expand_percents: FloatProperty(
-        description="Expand texture edges",
+        description="Extrapolate texture to fill gaps",
         name="Expand edges (%)", default=Config.default_tex_uv_expand_percents)
     tex_back_face_culling: BoolProperty(
         description="Exclude backfacing polygons from the created texture",
         name="Back face culling", default=True)
     tex_equalize_brightness: BoolProperty(
-        description="Experimental. Automatically equalize "
-                    "brightness across images",
+        description="Equalize brightness",
         name="Equalize brightness", default=False)
     tex_equalize_colour: BoolProperty(
-        description="Experimental. Automatically equalize "
-                    "colors across images",
+        description="Equalize color",
         name="Equalize color", default=False)
     tex_fill_gaps: BoolProperty(
-        description="Experimental. Tries automatically fill "
-                    "holes in face texture with appropriate "
-                    "color",
+        description="Automatically fill the gaps with nearby colour",
         name="Autofill", default=False)
 
     tex_auto_preview: BoolProperty(
-        description="Automatically apply the created texture",
-        name="Automatically apply the created texture", default=True)
+        description="Make texture visible in viewport after baking",
+        name="Automatically apply texture to 3D head", default=True)
 
     @contextmanager
     def ui_write_mode_context(self):
