@@ -24,7 +24,7 @@ from bpy.types import Object, Material
 
 from .kt_logging import KTLogger
 from .version import BVersion
-from ..addon_config import fb_settings
+from ..addon_config import fb_settings, ActionStatus
 from ..facebuilder_config import FBConfig
 from ..facebuilder.fbloader import FBLoader
 from ..utils.images import load_rgba, find_bpy_image_by_name, assign_pixels_data
@@ -199,13 +199,14 @@ def _create_frame_data_loader(head: Any, camnums: List, fb: Any) -> Any:
     return frame_data_loader
 
 
-def bake_tex(headnum: int, tex_name: str) -> bool:
+def bake_tex(headnum: int, tex_name: str) -> ActionStatus:
     settings = fb_settings()
     head = settings.get_head(headnum)
 
     if not head.has_cameras():
-        _log.output('NO CAMERAS ON HEAD')
-        return False
+        msg = 'No cameras on Head'
+        _log.error(msg)
+        return ActionStatus(False, msg)
 
     camnums = [cam_idx for cam_idx, cam in enumerate(head.cameras)
                if cam.use_in_tex_baking and \
@@ -214,8 +215,9 @@ def bake_tex(headnum: int, tex_name: str) -> bool:
 
     frames_count = len(camnums)
     if frames_count == 0:
-        _log.output('NO FRAMES FOR TEXTURE BUILDING')
-        return False
+        msg = 'No frames for texture building'
+        _log.error(msg)
+        return ActionStatus(False, msg)
     
     fb = _get_fb_for_bake_tex(headnum, head)
     frame_data_loader = _create_frame_data_loader(head, camnums, fb)
@@ -236,7 +238,7 @@ def bake_tex(headnum: int, tex_name: str) -> bool:
     bpy_progress_end()
 
     _create_bpy_texture_from_img(built_texture, tex_name)
-    return True
+    return ActionStatus(True, 'ok')
 
 
 def get_nodes_by_type(nodes: List, find_type: str) -> List:

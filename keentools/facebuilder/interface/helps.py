@@ -97,3 +97,11 @@ class FBHELP_OT_BlendshapesHelp(FBHELP_Common, Operator):
     bl_description = buttons[bl_idname].description
     draw = _universal_draw(bl_idname)
     invoke = _universal_invoke(bl_idname)
+
+
+CLASSES_TO_REGISTER = (FBHELP_OT_CameraHelp,
+                       FBHELP_OT_ViewsHelp,
+                       FBHELP_OT_ModelHelp,
+                       FBHELP_OT_AppearanceHelp,
+                       FBHELP_OT_TextureHelp,
+                       FBHELP_OT_BlendshapesHelp)

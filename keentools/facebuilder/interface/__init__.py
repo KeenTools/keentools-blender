@@ -16,38 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ##### END GPL LICENSE BLOCK #####
 
-from .menus import *
-from .panels import *
-from .dialogs import *
-from .filedialog import *
-from .helps import *
+from .menus import CLASSES_TO_REGISTER as MENUS_CLASSES
+from .panels import CLASSES_TO_REGISTER as PANELS_CLASSES
+from .dialogs import CLASSES_TO_REGISTER as DIALOGS_CLASSES
+from .filedialog import CLASSES_TO_REGISTER as FILEDIALOG_CLASSES
+from .helps import CLASSES_TO_REGISTER as HELPS_CLASSES
 
 
-CLASSES_TO_REGISTER = (FB_MT_ProperViewMenu,  # menus
-                       FB_PT_HeaderPanel,  # panels
-                       FB_PT_UpdatePanel,
-                       FB_PT_DownloadNotification,
-                       FB_PT_DownloadingProblemPanel,
-                       FB_PT_UpdatesInstallationPanel,
-                       FB_PT_ViewsPanel,
-                       FB_PT_OptionsPanel,
-                       FB_PT_Model,
-                       FB_PT_AppearancePanel,
-                       FB_PT_TexturePanel,
-                       FB_PT_BlendShapesPanel,
-                       FB_PT_ExportPanel,
-                       FBHELP_OT_CameraHelp,  # helps
-                       FBHELP_OT_ViewsHelp,
-                       FBHELP_OT_ModelHelp,
-                       FBHELP_OT_AppearanceHelp,
-                       FBHELP_OT_TextureHelp,
-                       FBHELP_OT_BlendshapesHelp,
-                       FB_OT_BlendshapesWarning,  # dialogs
-                       FB_OT_NoBlendshapesUntilExpressionWarning,
-                       FB_OT_TexSelector,
-                       FB_OT_SingleFilebrowser,  # file dialogs
-                       FB_OT_SingleFilebrowserExec,
-                       FB_OT_TextureFileExport,
-                       FB_OT_AnimationFilebrowser,
-                       FB_OT_MultipleFilebrowser,
-                       FB_OT_MultipleFilebrowserExec)
+CLASSES_TO_REGISTER = MENUS_CLASSES + PANELS_CLASSES + FILEDIALOG_CLASSES + HELPS_CLASSES + DIALOGS_CLASSES

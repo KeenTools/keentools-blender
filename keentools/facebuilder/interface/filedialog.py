@@ -380,3 +380,11 @@ class FB_OT_AnimationFilebrowser(Operator, ImportHelper):
         else:
             self.report({'ERROR'}, res['message'])
         return {'FINISHED'}
+
+
+CLASSES_TO_REGISTER = (FB_OT_SingleFilebrowser,
+                       FB_OT_SingleFilebrowserExec,
+                       FB_OT_TextureFileExport,
+                       FB_OT_AnimationFilebrowser,
+                       FB_OT_MultipleFilebrowser,
+                       FB_OT_MultipleFilebrowserExec)

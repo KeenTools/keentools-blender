@@ -65,6 +65,7 @@ class FBConfig:
     fb_reset_image_rotation_idname = operators + '.reset_image_rotation'
 
     fb_reset_expression_idname = operators + '.reset_expression'
+
     fb_bake_tex_idname = operators + '.bake_tex'
     fb_show_tex_idname = operators + '.show_tex'
     fb_show_solid_idname = operators + '.show_solid'
@@ -90,7 +91,6 @@ class FBConfig:
         '.no_blenshapes_until_expression_warning'
 
     fb_image_info_idname = operators + '.image_info'
-    fb_tex_selector_idname = operators + '.tex_selector'
     fb_texture_bake_options_idname = operators + '.texture_bake_options'
     fb_reset_texture_resolution_idname = operators + '.reset_texture_resolution'
     fb_reset_advanced_settings_idname = operators + '.reset_advanced_settings'

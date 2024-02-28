@@ -516,10 +516,11 @@ class FB_OT_BakeTexture(ButtonOperator, Operator):
 
         settings = fb_settings()
         head = settings.get_head(self.headnum)
-        texture_baked = bake_tex(self.headnum, head.preview_texture_name())
+        bake_status = bake_tex(self.headnum, head.preview_texture_name())
 
-        if not texture_baked:
+        if not bake_status.success:
             _log.error('Texture has not been baked')
+            self.report({'ERROR'}, bake_status.error_message)
             return {'CANCELLED'}
 
         if settings.tex_auto_preview:
@@ -533,6 +534,7 @@ class FB_OT_BakeTexture(ButtonOperator, Operator):
                 if head.should_use_emotions():
                     bpy_view_camera()
 
+        self.report({'INFO'}, 'Texture has been created')
         _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
@@ -1061,159 +1063,6 @@ class FB_OT_ResetToneMapping(ButtonOperator, Operator):
         return {'FINISHED'}
 
 
-def _draw_exif(layout, head):
-    # Show EXIF info message
-    if len(head.exif.info_message) > 0:
-        box = layout.box()
-        arr = re.split("\r\n|\n", head.exif.info_message)
-        col = box.column()
-        col.scale_y = Config.text_scale_y
-        for a in arr:
-            col.label(text=a)
-
-    # Show EXIF sizes message
-    if len(head.exif.sizes_message) > 0:
-        box = layout.box()
-        arr = re.split("\r\n|\n", head.exif.sizes_message)
-        col = box.column()
-        col.scale_y = Config.text_scale_y
-        for a in arr:
-            col.label(text=a)
-
-
-class FB_OT_ImageInfo(Operator):
-    bl_idname = FBConfig.fb_image_info_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL', 'UNDO'}
-
-    def draw(self, context):
-        layout = self.layout
-        settings = fb_settings()
-        head = settings.get_head(settings.current_headnum)
-        if not head:
-            return
-        camera = head.get_camera(settings.current_camnum)
-        if camera is None:
-            return
-        col = layout.column()
-        col.label(text=f'File: {camera.get_image_name()}')
-        _draw_exif(layout, head)
-
-    def cancel(self, context):
-        _log.green(f'{self.__class__.__name__} cancel')
-
-    def execute(self, context):
-        _log.green(f'{self.__class__.__name__} execute')
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        _log.green(f'{self.__class__.__name__} invoke')
-        check_status = common_fb_checks(is_calculating=True,
-                                        fix_facebuilders=True,
-                                        head_and_camera=True)
-        if not check_status.success:
-            self.report({'ERROR'}, check_status.error_message)
-            return {'CANCELLED'}
-
-        return context.window_manager.invoke_popup(self, width=350)
-
-
-class FB_OT_TextureBakeOptions(Operator):
-    bl_idname = FBConfig.fb_texture_bake_options_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    bl_options = {'REGISTER', 'INTERNAL', 'UNDO'}
-
-    def draw(self, context):
-        layout = self.layout
-        settings = fb_settings()
-        if settings is None:
-            return
-
-        col = layout.column(align=True)
-        row = col.row()
-        row.label(text='Resolution (in pixels)')
-        btn = row.column(align=True)
-        btn.active = False
-        btn.operator(FBConfig.fb_reset_texture_resolution_idname,
-                     text='', icon='LOOP_BACK', emboss=False, depress=False)
-
-        col.separator(factor=0.4)
-        row = col.row(align=True)
-        row.prop(settings, 'tex_width', text='W')
-        row.prop(settings, 'tex_height', text='H')
-
-        col = layout.column(align=True)
-        row = col.row()
-        row.label(text='Advanced')
-        btn = row.column(align=True)
-        btn.active = False
-        btn.operator(FBConfig.fb_reset_advanced_settings_idname,
-                     text='', icon='LOOP_BACK', emboss=False, depress=False)
-
-        col.separator(factor=0.4)
-        col.prop(settings, 'tex_face_angles_affection')
-        col.prop(settings, 'tex_uv_expand_percents')
-        col.separator(factor=0.8)
-        col.prop(settings, 'tex_equalize_brightness')
-        col.prop(settings, 'tex_equalize_colour')
-        col.prop(settings, 'tex_fill_gaps')
-
-    def execute(self, context):
-        _log.green(f'{self.__class__.__name__} execute')
-        return {'FINISHED'}
-
-    def cancel(self, context):
-        _log.green(f'{self.__class__.__name__} cancel')
-
-    def invoke(self, context, event):
-        _log.green(f'{self.__class__.__name__} invoke')
-        check_status = common_fb_checks(is_calculating=True)
-        if not check_status.success:
-            self.report({'ERROR'}, check_status.error_message)
-            return {'CANCELLED'}
-        return context.window_manager.invoke_props_dialog(self, width=350)
-
-
-class FB_OT_ResetTextureResolution(ButtonOperator, Operator):
-    bl_idname = FBConfig.fb_reset_texture_resolution_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        _log.green(f'{self.__class__.__name__} execute')
-        check_status = common_fb_checks(is_calculating=True)
-        if not check_status.success:
-            self.report({'ERROR'}, check_status.error_message)
-            return {'CANCELLED'}
-
-        settings = fb_settings()
-        settings.tex_width = Config.default_tex_width
-        settings.tex_height = Config.default_tex_height
-        _log.output(f'{self.__class__.__name__} execute end >>>')
-        return {'FINISHED'}
-
-
-class FB_OT_ResetTextureSettings(ButtonOperator, Operator):
-    bl_idname = FBConfig.fb_reset_advanced_settings_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-
-    def execute(self, context):
-        _log.green(f'{self.__class__.__name__} execute')
-        check_status = common_fb_checks(is_calculating=True)
-        if not check_status.success:
-            self.report({'ERROR'}, check_status.error_message)
-            return {'CANCELLED'}
-
-        settings = fb_settings()
-        settings.tex_face_angles_affection = Config.default_tex_face_angles_affection
-        settings.tex_uv_expand_percents = Config.default_tex_uv_expand_percents
-        _log.output(f'{self.__class__.__name__} execute end >>>')
-        return {'FINISHED'}
-
-
 class FB_OT_RotateHeadForward(ButtonOperator, Operator):
     bl_idname = FBConfig.fb_rotate_head_forward_idname
     bl_label = buttons[bl_idname].label
@@ -1385,10 +1234,6 @@ CLASSES_TO_REGISTER = (FB_OT_SelectHead,
                        FB_OT_ResetToneGain,
                        FB_OT_ResetToneGamma,
                        FB_OT_ResetToneMapping,
-                       FB_OT_ImageInfo,
-                       FB_OT_TextureBakeOptions,
-                       FB_OT_ResetTextureResolution,
-                       FB_OT_ResetTextureSettings,
                        FB_OT_RotateHeadForward,
                        FB_OT_RotateHeadBackward,
                        FB_OT_ResetView,
