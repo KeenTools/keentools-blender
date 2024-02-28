@@ -32,7 +32,7 @@ buttons = {
     ),
     Config.kt_install_latest_pkt_idname: Button(
         'Install online',
-        'Install Core library from website'
+        'Press to download and install Core Library online'
     ),
     Config.kt_install_pkt_from_file_with_warning_idname: Button(
         'Please confirm installation',
@@ -40,8 +40,7 @@ buttons = {
     ),
     Config.kt_install_pkt_from_file_idname: Button(
         'Install from file',
-        'You can download Core library manually '
-        'and install it using this button'
+        'Install Core Library offline'
     ),
     Config.kt_open_manual_install_page_idname: Button(
         'Open in web browser',
@@ -69,7 +68,7 @@ buttons = {
     ),
     Config.kt_pref_downloads_url_idname: Button(
         'Download',
-        'Open downloads page in web browser'
+        'Open Core Library download page in web browser'
     ),
     Config.kt_pref_computer_info_idname: Button(
         'Computer info',

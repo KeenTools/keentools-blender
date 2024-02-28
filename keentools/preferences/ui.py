@@ -747,46 +747,33 @@ class KTAddonPreferences(AddonPreferences):
         return col
 
     def _draw_download_install_buttons(self, layout):
-        # Install online / Install from disk / Download
-        row = layout.split(factor=0.35)
-        box2 = row.box()
-        row2 = box2.row()
-        if not self.license_accepted:
-            row2.active = False
-            # row2.alert = True
+        row = layout.split(factor=0.7)
+        col = row.column()
+        col.active = self.license_accepted
 
-        op = row2.operator(
-            Config.kt_install_latest_pkt_idname,
-            text='Install online', icon='WORLD')
-        op.license_accepted = self._license_was_accepted()
+        col.scale_y = 2.0
+        op = col.operator(Config.kt_install_latest_pkt_idname,
+                          icon='WORLD', depress=self.license_accepted)
+        op.license_accepted = self.license_accepted
 
-        box2 = row.box()
-        row2 = box2.split(factor=0.6)
-        if not self.license_accepted:
-            row2.active = False
-            # row2.alert = True
-
-        op = row2.operator(Config.kt_install_pkt_from_file_idname,
-                           text='Install from disk', icon='FILEBROWSER')
-        op.license_accepted = self._license_was_accepted()
-
-        op = row2.operator(Config.kt_pref_downloads_url_idname,
-                           text='Download', icon='URL')
+        col = row.column(align=True)
+        col.active = self.license_accepted
+        op = col.operator(Config.kt_pref_downloads_url_idname,
+                          text='Download page', icon='URL')
         op.url = Config.core_download_website_url
 
+        op = col.operator(Config.kt_install_pkt_from_file_idname,
+                          text='Install from disk', icon='FILEBROWSER')
+        op.license_accepted = self.license_accepted
+
     def _draw_please_accept_license(self, layout):
-        box = layout.box()
-        self._draw_warning_labels(box, USER_MESSAGES['WE_CANNOT_SHIP'])
-
-        box2 = box.box()
-        row = box2.split(factor=0.85)
+        self._draw_warning_labels(layout, USER_MESSAGES['WE_CANNOT_SHIP'])
+        row = layout.split(factor=0.85)
         row.prop(self, 'license_accepted')
-
         row.operator(Config.kt_open_pkt_license_page_idname,
                      text='Read', icon='URL')
-
-        self._draw_download_install_buttons(box)
-        return box
+        self._draw_download_install_buttons(layout)
+        return layout
 
     def _draw_accepted_license(self, layout):
         box = layout.box()
