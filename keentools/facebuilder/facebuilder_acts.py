@@ -54,7 +54,7 @@ def solve_head(headnum: int) -> None:
     if camnum < 0:
         return
     FBLoader.solve(headnum, camnum)
-    _log.output('solve_head end')
+    _log.output('solve_head end >>>')
 
 
 def remove_pins_act(headnum: int, camnum: int, update: bool = True) -> ActionStatus:
@@ -76,7 +76,7 @@ def remove_pins_act(headnum: int, camnum: int, update: bool = True) -> ActionSta
     camera.pins_count = 0
 
     if not update:
-        _log.output('remove_pins_act early end')
+        _log.output('remove_pins_act early end >>>')
         return ActionStatus(True, 'ok')
 
     solve_head(headnum)
@@ -89,7 +89,7 @@ def remove_pins_act(headnum: int, camnum: int, update: bool = True) -> ActionSta
                                         pins_and_residuals=True,
                                         batch_wireframe=True)
     FBLoader.viewport().tag_redraw()
-    _log.output('remove_pins_act end')
+    _log.output('remove_pins_act end >>>')
     return ActionStatus(True, 'ok')
 
 
@@ -127,7 +127,7 @@ def rotate_head_act(headnum: int, camnum: int, angle: float) -> ActionStatus:
                                         pins_and_residuals=True,
                                         batch_wireframe=True)
     FBLoader.viewport().tag_redraw()
-    _log.output('rotate_head_act end')
+    _log.output('rotate_head_act end >>>')
     return ActionStatus(True, 'ok')
 
 
@@ -153,7 +153,7 @@ def reset_expression_act(headnum: int, camnum: int,
     fb.reset_to_neutral_emotions(kid)
 
     if not update:
-        _log.output('reset_expression_act early end')
+        _log.output('reset_expression_act early end >>>')
         return ActionStatus(True, 'ok')
 
     FBLoader.save_fb_serial_and_image_pathes(headnum)
@@ -164,7 +164,7 @@ def reset_expression_act(headnum: int, camnum: int,
                                         pins_and_residuals=True,
                                         batch_wireframe=True)
     FBLoader.viewport().tag_redraw()
-    _log.output('reset_expression_act end')
+    _log.output('reset_expression_act end >>>')
     return ActionStatus(True, 'ok')
 
 
@@ -190,7 +190,7 @@ def center_geo_act(headnum: int, camnum: int,
     FBLoader.place_camera(headnum, camnum)
 
     if not update:
-        _log.output('center_geo_act early end')
+        _log.output('center_geo_act early end >>>')
         return ActionStatus(True, 'ok')
 
     FBLoader.save_fb_serial_and_image_pathes(headnum)
@@ -200,5 +200,5 @@ def center_geo_act(headnum: int, camnum: int,
                                         pins_and_residuals=True,
                                         batch_wireframe=True)
     FBLoader.viewport().tag_redraw()
-    _log.output('center_geo_act end')
+    _log.output('center_geo_act end >>>')
     return ActionStatus(True, 'ok')

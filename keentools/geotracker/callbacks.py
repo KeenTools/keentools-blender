@@ -78,7 +78,7 @@ def _set_old_focal_lens_mm(value: float):
 def unsubscribe_watcher(owner: object) -> None:
     _log.yellow(f'unsubscribe_watcher start: {owner}')
     bpy_msgbus_clear_by_owner(owner)
-    _log.output(f'unsubscribe_watcher end')
+    _log.output(f'unsubscribe_watcher end >>>')
 
 
 def subscribe_camera_lens_watcher(camobj: Optional[Object]) -> None:
@@ -92,7 +92,7 @@ def subscribe_camera_lens_watcher(camobj: Optional[Object]) -> None:
                              owner=_camobj_lens_watcher_owner,
                              args=(),
                              notify=lens_change_callback)
-    _log.output('subscribe_camera_lens_watcher end')
+    _log.output('subscribe_camera_lens_watcher end >>>')
 
 
 def subscribe_movie_clip_color_space_watcher(geotracker: Any) -> None:
@@ -108,7 +108,7 @@ def subscribe_movie_clip_color_space_watcher(geotracker: Any) -> None:
                              owner=_movie_clip_color_space_watcher_owner,
                              args=(geotracker.movie_clip.colorspace_settings.name,),
                              notify=color_space_change_callback)
-    _log.output('subscribe_movie_clip_color_space_watcher end')
+    _log.output('subscribe_movie_clip_color_space_watcher end >>>')
 
 
 def color_space_change_callback(old_name: str) -> None:
@@ -171,6 +171,7 @@ def lens_change_callback() -> None:
                                              wireframe=True,
                                              pins_and_residuals=True,
                                              timeline=True)
+    _log.output('lens_change_callback end >>>')
 
 
 def update_camobj(geotracker, context: Any) -> None:

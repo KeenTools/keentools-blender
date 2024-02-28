@@ -189,7 +189,7 @@ class FB_OT_PinMode(Operator):
             vp.message_to_screen(default_txt)
 
     def _delete_found_pin(self, nearest: int, area: Area) -> Set:
-        _log.output('_delete_found_pin call')
+        _log.yellow('_delete_found_pin call')
         settings = fb_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
@@ -225,7 +225,7 @@ class FB_OT_PinMode(Operator):
                                             wireframe=True,
                                             pins_and_residuals=True)
 
-        _log.output('_delete_found_pin end')
+        _log.output('_delete_found_pin end >>>')
 
         return {'RUNNING_MODAL'}
 
@@ -282,12 +282,12 @@ class FB_OT_PinMode(Operator):
         return True
 
     def execute(self, context: Any) -> Set:  # Testing purpose only
-        _log.output('PinMode execute call')
+        _log.green('PinMode execute call')
         self._init_wireframer_colors_and_batches()
         return {'FINISHED'}
 
     def invoke(self, context: Any, event: Any) -> Set:
-        _log.output(f'{self.__class__.__name__} invoke')
+        _log.green(f'{self.__class__.__name__} invoke')
         settings = fb_settings()
 
         _log.output(f'FB PINMODE ENTER. CURRENT_HEAD: {settings.current_headnum} '

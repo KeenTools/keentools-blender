@@ -107,7 +107,7 @@ class FB_OT_SelectHead(ButtonOperator, Operator):
         settings = fb_settings()
         head = settings.get_head(self.headnum)
         center_viewports_on_object(head.headobj)
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -133,7 +133,7 @@ class FB_OT_SelectCurrentHead(ButtonOperator, Operator):
         settings = fb_settings()
         head = settings.get_head(self.headnum)
         center_viewports_on_object(head.headobj)
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -172,7 +172,7 @@ class FB_OT_DeleteHead(ButtonOperator, Operator):
         except Exception:
             pass
         settings.heads.remove(self.headnum)
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -213,7 +213,7 @@ class FB_OT_SelectCamera(ButtonOperator, Operator):
                 self.report({'ERROR'}, msg)
                 _log.error(f'{type(err)}\n{msg}')
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -245,7 +245,7 @@ class FB_OT_CenterGeo(ButtonOperator, Operator):
             _log.error(f'{msg}')
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -292,7 +292,7 @@ class FB_OT_Unmorph(ButtonOperator, Operator):
                                                 wireframe=True,
                                                 pins_and_residuals=True)
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -324,7 +324,7 @@ class FB_OT_RemovePins(ButtonOperator, Operator):
             _log.error(f'{msg}')
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -364,7 +364,7 @@ class FB_OT_WireframeColor(ButtonOperator, Operator):
         elif self.action == 'wireframe_white':
             _setup_colors_from_scheme('white')
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -394,7 +394,7 @@ class FB_OT_FilterCameras(ButtonOperator, Operator):
             for c in settings.get_head(self.headnum).cameras:
                 c.use_in_tex_baking = False
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -445,7 +445,7 @@ class FB_OT_DeleteCamera(ButtonOperator, Operator):
             settings.reset_pinmode_id()
 
         _log.output(f'CAMERA H:{headnum} C:{camnum} REMOVED')
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -473,7 +473,7 @@ class FB_OT_ProperViewMenuExec(ButtonOperator, Operator):
         settings.tmp_camnum = self.camnum
         bpy_call_menu('INVOKE_DEFAULT',
                       name=FBConfig.fb_proper_view_menu_idname)
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -491,7 +491,7 @@ class FB_OT_AddonSetupDefaults(Operator):
         show_user_preferences(facebuilder=True, geotracker=False)
         show_tool_preferences(facebuilder=True, geotracker=False)
         bpy_show_addon_preferences()
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -533,7 +533,7 @@ class FB_OT_BakeTexture(ButtonOperator, Operator):
                 if head.should_use_emotions():
                     bpy_view_camera()
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -559,7 +559,7 @@ class FB_OT_DeleteTexture(ButtonOperator, Operator):
         head = settings.get_head(self.headnum)
         remove_bpy_image_by_name(head.preview_texture_name())
         remove_mat_by_name(head.preview_material_name())
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -590,7 +590,7 @@ class FB_OT_RotateImageCW(ButtonOperator, Operator):
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
         FBLoader.save_fb_serial_and_image_pathes(self.headnum)
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -621,7 +621,7 @@ class FB_OT_RotateImageCCW(ButtonOperator, Operator):
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
         FBLoader.save_fb_serial_and_image_pathes(self.headnum)
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -652,7 +652,7 @@ class FB_OT_ResetImageRotation(ButtonOperator, Operator):
         camera.update_scene_frame_size()
         camera.update_background_image_scale()
         FBLoader.save_fb_serial_and_image_pathes(self.headnum)
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -685,7 +685,7 @@ class FB_OT_ResetExpression(ButtonOperator, Operator):
             _log.error(f'{msg}')
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -722,7 +722,7 @@ class FB_OT_ShowTexture(ButtonOperator, Operator):
         switch_to_mode('MATERIAL')
 
         _log.output('SWITCH TO MATERIAL MODE WITH TEXTURE')
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -747,7 +747,7 @@ class FB_OT_ShowSolid(ButtonOperator, Operator):
             FBLoader.out_pinmode(settings.current_headnum)
             exit_area_localview(context.area)
         switch_to_mode('SOLID')
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -768,7 +768,7 @@ class FB_OT_ExitPinmode(ButtonOperator, Operator):
         if settings.pinmode:
             settings.force_out_pinmode = True
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -948,7 +948,7 @@ class FB_OT_DefaultPinSettings(ButtonOperator, Operator):
         prefs = settings.preferences()
         settings.pin_size = prefs.pin_size
         settings.pin_sensitivity = prefs.pin_sensitivity
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -965,7 +965,7 @@ class FB_OT_DefaultWireframeSettings(ButtonOperator, Operator):
         settings.wireframe_special_color = prefs.fb_wireframe_special_color
         settings.wireframe_midline_color = prefs.fb_wireframe_midline_color
         settings.wireframe_opacity = prefs.fb_wireframe_opacity
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -984,7 +984,7 @@ class FB_OT_SelectCurrentCamera(ButtonOperator, Operator):
 
         op = get_operator(FBConfig.fb_exit_pinmode_idname)
         op('EXEC_DEFAULT')
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1008,7 +1008,7 @@ class FB_OT_ResetToneGain(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         cam.tone_exposure = Config.default_tone_exposure
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1032,7 +1032,7 @@ class FB_OT_ResetToneGamma(ButtonOperator, Operator):
             return {'CANCELLED'}
 
         cam.tone_gamma = Config.default_tone_gamma
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1042,7 +1042,7 @@ class FB_OT_ResetToneMapping(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         check_status = common_fb_checks(is_calculating=True,
                                         head_and_camera=True)
         if not check_status.success:
@@ -1057,7 +1057,7 @@ class FB_OT_ResetToneMapping(ButtonOperator, Operator):
 
         cam.tone_exposure = Config.default_tone_exposure
         cam.tone_gamma = Config.default_tone_gamma
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1101,14 +1101,14 @@ class FB_OT_ImageInfo(Operator):
         _draw_exif(layout, head)
 
     def cancel(self, context):
-        _log.output('CANCEL PRECALC INFO')
+        _log.green(f'{self.__class__.__name__} cancel')
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        _log.output(f'{self.__class__.__name__} invoke')
+        _log.green(f'{self.__class__.__name__} invoke')
         check_status = common_fb_checks(is_calculating=True,
                                         fix_facebuilders=True,
                                         head_and_camera=True)
@@ -1182,7 +1182,7 @@ class FB_OT_ResetTextureResolution(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         check_status = common_fb_checks(is_calculating=True)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
@@ -1191,7 +1191,7 @@ class FB_OT_ResetTextureResolution(ButtonOperator, Operator):
         settings = fb_settings()
         settings.tex_width = Config.default_tex_width
         settings.tex_height = Config.default_tex_height
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1201,7 +1201,7 @@ class FB_OT_ResetTextureSettings(ButtonOperator, Operator):
     bl_description = buttons[bl_idname].description
 
     def execute(self, context):
-        _log.output(f'{self.__class__.__name__} execute')
+        _log.green(f'{self.__class__.__name__} execute')
         check_status = common_fb_checks(is_calculating=True)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
@@ -1210,7 +1210,7 @@ class FB_OT_ResetTextureSettings(ButtonOperator, Operator):
         settings = fb_settings()
         settings.tex_face_angles_affection = Config.default_tex_face_angles_affection
         settings.tex_uv_expand_percents = Config.default_tex_uv_expand_percents
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1238,7 +1238,7 @@ class FB_OT_RotateHeadForward(ButtonOperator, Operator):
             _log.error(f'{msg}')
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1266,7 +1266,7 @@ class FB_OT_RotateHeadBackward(ButtonOperator, Operator):
             _log.error(f'{msg}')
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 
@@ -1311,7 +1311,7 @@ class FB_OT_ResetView(ButtonOperator, Operator):
             _log.error(f'{msg}')
             return {'CANCELLED'}
 
-        _log.output(f'{self.__class__.__name__} execute end')
+        _log.output(f'{self.__class__.__name__} execute end >>>')
         return {'FINISHED'}
 
 

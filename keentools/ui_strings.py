@@ -129,6 +129,10 @@ buttons = {
         'Exit Local view',
         'Exit Local view'
     ),
+    Config.kt_share_feedback_idname: Button(
+        'Share Feedback',
+        'Send feedback. Help us improve'
+    ),
 }
 
 
