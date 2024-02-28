@@ -36,7 +36,7 @@ def get_keyconfig() -> Any:
 
 def geotracker_keymaps_register() -> None:
     global _geotracker_keymaps
-    _log.output('geotracker_keymaps_register start')
+    _log.yellow('geotracker_keymaps_register start')
     keyconfig = get_keyconfig()
     km = keyconfig.keymaps.new(name='Window', space_type='EMPTY')
     kmi1 = km.keymap_items.new(idname=GTConfig.gt_prev_keyframe_idname,
@@ -52,11 +52,11 @@ def geotracker_keymaps_register() -> None:
                                type='L',
                                value='PRESS')
     _geotracker_keymaps.append((km, kmi3))
-    _log.output('geotracker_keymaps_register end')
+    _log.output('geotracker_keymaps_register end >>>')
 
 
 def geotracker_keymaps_unregister() -> None:
-    _log.output('geotracker_keymaps_unregister start')
+    _log.yellow('geotracker_keymaps_unregister start')
     global _geotracker_keymaps
     try:
         for km, kmi in _geotracker_keymaps:
@@ -66,11 +66,11 @@ def geotracker_keymaps_unregister() -> None:
     except Exception as err:
         _log.error(f'geotracker_keymaps_unregister Exception:\n{str(err)}')
     _geotracker_keymaps.clear()
-    _log.output('geotracker_keymaps_unregister end')
+    _log.output('geotracker_keymaps_unregister end >>>')
 
 
-def facebuilder_keymaps_register() -> None:
-    _log.output('facebuilder_keymaps_register start')
+def facebuilder_keymaps_register(use_trackpad: bool = False) -> None:
+    _log.yellow('facebuilder_keymaps_register start')
     global _facebuilder_keymaps
     keyconfig = get_keyconfig()
     category_name = '3D View Generic'
@@ -84,11 +84,12 @@ def facebuilder_keymaps_register() -> None:
     _facebuilder_keymaps.append((km, kmi1))
     kmi1.active = True
 
-    kmi2 = km.keymap_items.new(idname='keentools_fb.move_wrapper',
-                               type='TRACKPADPAN',
-                               value='ANY', head=True)
-    _facebuilder_keymaps.append((km, kmi2))
-    kmi2.active = True
+    if use_trackpad:
+        kmi2 = km.keymap_items.new(idname='keentools_fb.move_wrapper',
+                                   type='TRACKPADPAN',
+                                   value='ANY', head=True)
+        _facebuilder_keymaps.append((km, kmi2))
+        kmi2.active = True
 
     kmi3 = km.keymap_items.new(idname='keentools_fb.move_wrapper',
                                type='MOUSEROTATE',
@@ -96,11 +97,11 @@ def facebuilder_keymaps_register() -> None:
     _facebuilder_keymaps.append((km, kmi3))
     kmi3.active = True
 
-    _log.output('facebuilder_keymaps_register end')
+    _log.output('facebuilder_keymaps_register end >>>')
 
 
 def facebuilder_keymaps_unregister() -> None:
-    _log.output('facebuilder_keymaps_unregister start')
+    _log.yellow('facebuilder_keymaps_unregister start')
     global _facebuilder_keymaps
     for km, kmi in _facebuilder_keymaps:
         try:
@@ -109,4 +110,4 @@ def facebuilder_keymaps_unregister() -> None:
         except Exception as err:
             _log.error(f'facebuilder_keymaps_unregister Exception:\n{str(err)}')
     _facebuilder_keymaps.clear()
-    _log.output('facebuilder_keymaps_unregister end')
+    _log.output('facebuilder_keymaps_unregister end >>>')
