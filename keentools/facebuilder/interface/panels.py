@@ -826,11 +826,7 @@ class FB_PT_ExportPanel(AllVisibleClosed, Panel):
         col.scale_y = Config.btn_scale_y
         col.operator(FBConfig.fb_export_head_to_fbx_idname)
 
-        if not Config.integration_enabled or BVersion.os_name != 'windows':
-            return
-
-        state, _ = what_is_state()
-        if _state_valid_to_show(state):
+        if BVersion.demo_mode or (Config.integration_enabled and BVersion.os_name == 'windows'):
             col.operator(FBConfig.fb_export_to_cc_idname)
 
 

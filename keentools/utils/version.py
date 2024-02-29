@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 from sys import platform
+import os
 from typing import Tuple, Optional
 
 import bpy
@@ -69,3 +70,5 @@ class BVersion:
     os_name: str = _os_name()
     gpu_backend: str = _get_gpu_backend(property_gpu_backend_exists)
     # Property fields of operators cannot be inherited in old Blenders (< 2.93)
+
+    demo_mode: bool = 'KEENTOOLS_ENABLE_DEMO_MODE' in os.environ
