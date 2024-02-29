@@ -30,8 +30,8 @@ _log = KTLogger(__name__)
 
 USER_MESSAGES = {
     'WE_CANNOT_SHIP': [
-        'We cannot ship our core library with our addon due to Blender ',
-        'license limitations, so you need to install it yourself.'],
+        'To complete installation press \'Install online\'. ',
+        'This will download and install Core Library to your computer. '],
 
     'RESTART_BLENDER_TO_UNLOAD_CORE': [
         'Before installing the new Core version you need '

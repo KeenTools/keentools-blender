@@ -37,16 +37,16 @@ buttons = {
         'Open single image file'
     ),
     FBConfig.fb_texture_file_export_idname: Button(
-        'Export texture',
-        'Export the created texture to a file'
+        'Export',
+        'Export texture to a file'
     ),
     FBConfig.fb_multiple_filebrowser_exec_idname: Button(
         'Open Images',
-        'Load images and create views. You can select multiple images at once'
+        'New cameras will be created according to number of views'
     ),
     FBConfig.fb_multiple_filebrowser_idname: Button(
         'Open Images',
-        'Load images and create views. You can select multiple images at once'
+        'New cameras will be created according to number of views'
     ),
     FBConfig.fb_animation_filebrowser_idname: Button(
         'Load animation',
@@ -70,15 +70,11 @@ buttons = {
     ),
     FBConfig.fb_image_info_idname: Button(
         'Image info',
-        'Show EXIF info'
-    ),
-    FBConfig.fb_tex_selector_idname: Button(
-        'Select images:',
-        'Create texture using pinned views'
+        'Show image properties based on file EXIF'
     ),
     FBConfig.fb_texture_bake_options_idname: Button(
         'Texture settings',
-        'Setup texture options for baking'
+        'Source images, size and other texture settings'
     ),
     FBConfig.fb_reset_texture_resolution_idname: Button(
         'Reset',
@@ -136,7 +132,7 @@ buttons = {
     ),
     FBConfig.fb_filter_cameras_idname: Button(
         'Camera Filter',
-        'Select cameras to use for texture baking'
+        'Modify selection'
     ),
     FBConfig.fb_delete_camera_idname: Button(
         'Delete View',
@@ -151,13 +147,12 @@ buttons = {
         'Open FaceBuilder Settings in Preferences window'
     ),
     FBConfig.fb_bake_tex_idname: Button(
-        'Bake Texture',
-        'Bake the texture using all selected cameras. '
-        'It can take a lot of time, be patient'
+        'Create Texture',
+        'Create texture using reference views'
     ),
     FBConfig.fb_delete_texture_idname: Button(
-        'Delete texture',
-        'Delete the created texture from the scene'
+        'Clear',
+        'Delete texture from the scene'
     ),
     FBConfig.fb_rotate_image_cw_idname: Button(
         'Rotate Image CW',

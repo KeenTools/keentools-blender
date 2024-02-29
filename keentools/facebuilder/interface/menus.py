@@ -63,3 +63,6 @@ class FB_MT_ProperViewMenu(Menu):
             layout.label(text='Rotate CW', icon='LOOP_FORWARDS')
             layout.label(text='Rotate CCW', icon='LOOP_BACK')
             layout.label(text='Reset Orientation', icon='OUTLINER_OB_IMAGE')
+
+
+CLASSES_TO_REGISTER = (FB_MT_ProperViewMenu,)

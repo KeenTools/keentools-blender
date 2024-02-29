@@ -80,8 +80,8 @@ def _draw_update_blendshapes_panel(layout):
     col = box.column()
     col.alert = True
     col.scale_y = Config.text_scale_y
-    col.label(text='The shape has been changed,')
-    col.label(text='blendshapes need to be updated')
+    col.label(text='Mesh shape changed.')
+    col.label(text='Update blendshapes')
     box.operator(FBConfig.fb_update_blendshapes_idname)
 
 
@@ -551,9 +551,10 @@ class FB_PT_Model(AllVisibleClosed, Panel):
         if not head.blenshapes_are_relevant() and head.model_changed_by_scale:
             _draw_update_blendshapes_panel(layout)
 
-        col = layout.column(align=True)
-        col.label(text='Resulting expression in 3D:')
-        col.prop(head, 'expression_view', text='')
+        if head.should_use_emotions():
+            col = layout.column(align=True)
+            col.label(text='Resulting expression in 3D:')
+            col.prop(head, 'expression_view', text='')
 
         if FBLoader.is_not_loaded():
             return
@@ -568,13 +569,6 @@ class FB_PT_Model(AllVisibleClosed, Panel):
             row.prop(head, 'masks', index=i, text=names[i])
 
         layout.prop(head, 'model_scale')
-
-        col = layout.column()
-        col.scale_y = Config.btn_scale_y
-        col.alert = True
-        op = col.operator(FBConfig.fb_unmorph_idname, text='Reset Head')
-        op.headnum = headnum
-        op.camnum = settings.current_camnum
 
 
 class FB_PT_TexturePanel(AllVisibleClosed, Panel):
@@ -613,12 +607,12 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.scale_y = 2.0
-        op = row.operator(FBConfig.fb_tex_selector_idname,
-                          text='Create texture', icon='IMAGE')
+        op = row.operator(FBConfig.fb_bake_tex_idname, icon='IMAGE')
         op.headnum = headnum
 
-        row.operator(FBConfig.fb_texture_bake_options_idname,
-                     text='', icon='PREFERENCES')
+        op = row.operator(FBConfig.fb_texture_bake_options_idname,
+                          text='', icon='PREFERENCES')
+        op.headnum = headnum
 
         texture_exists = find_bpy_image_by_name(head.preview_texture_name())
         if texture_exists:
@@ -627,10 +621,10 @@ class FB_PT_TexturePanel(AllVisibleClosed, Panel):
             if not texture_exists:
                 row.active = False
             op = row.operator(FBConfig.fb_texture_file_export_idname,
-                              text='Export', icon='EXPORT')
+                              icon='EXPORT')
             op.headnum = headnum
             op = row.operator(FBConfig.fb_delete_texture_idname,
-                              text='Delete', icon='X')
+                              icon='X')
             op.headnum = headnum
 
 
@@ -744,7 +738,7 @@ class FB_PT_AppearancePanel(AllVisibleClosed, Panel):
 
 class FB_PT_BlendShapesPanel(AllVisibleClosed, Panel):
     bl_idname = FBConfig.fb_blendshapes_panel_idname
-    bl_label = 'Blendshapes (FACS)'
+    bl_label = 'FACS Blendshapes'
 
     @classmethod
     def poll(cls, context):
@@ -838,3 +832,17 @@ class FB_PT_ExportPanel(AllVisibleClosed, Panel):
         state, _ = what_is_state()
         if _state_valid_to_show(state):
             col.operator(FBConfig.fb_export_to_cc_idname)
+
+
+CLASSES_TO_REGISTER = (FB_PT_HeaderPanel,
+                       FB_PT_UpdatePanel,
+                       FB_PT_DownloadNotification,
+                       FB_PT_DownloadingProblemPanel,
+                       FB_PT_UpdatesInstallationPanel,
+                       FB_PT_ViewsPanel,
+                       FB_PT_OptionsPanel,
+                       FB_PT_Model,
+                       FB_PT_AppearancePanel,
+                       FB_PT_TexturePanel,
+                       FB_PT_BlendShapesPanel,
+                       FB_PT_ExportPanel)
