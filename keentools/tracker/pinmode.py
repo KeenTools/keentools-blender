@@ -343,22 +343,26 @@ class PinMode(Operator):
         pass
 
     def invoke(self, context: Any, event: Any) -> Set:
+        _log.green(f'{self.__class__.__name__} invoke')
         _log.output(f'INVOKE PINMODE: {self.geotracker_num}')
 
         settings = self.get_settings()
         check_status = common_checks(
             product = settings.product_type(),
             object_mode=True, is_calculating=True,
+            stop_another_pinmode=True,
             reload_geotracker=True, geotracker=True,
             camera=True, geometry=True, movie_clip=False)
         if not check_status.success:
             self.report({'ERROR'}, check_status.error_message)
+            _log.red(f'{self.__class__.__name__} cancelled 1 >>>')
             return {'CANCELLED'}
 
         if fb_pinmode():
             msg = 'Cannot start while FaceBuilder is in Pin mode!'
             _log.error(msg)
             self.report({'ERROR'}, msg)
+            _log.red(f'{self.__class__.__name__} cancelled 2 >>>')
             return {'CANCELLED'}
 
         old_geotracker_num = settings.current_tracker_num()
@@ -367,16 +371,19 @@ class PinMode(Operator):
 
         if not settings.is_proper_geotracker_number(new_geotracker_num):
             _log.error(f'WRONG GEOTRACKER NUMBER: {new_geotracker_num}')
+            _log.red(f'{self.__class__.__name__} cancelled 3 >>>')
             return {'CANCELLED'}
 
         if not supported_gpu_backend():
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.UnsupportedGPUBackend)
+            _log.red(f'{self.__class__.__name__} cancelled 4 >>>')
             return {'CANCELLED'}
 
         loader = settings.loader()
         vp = loader.viewport()
         if not vp.load_all_shaders() and Config.strict_shader_check:
+            _log.red(f'{self.__class__.__name__} cancelled 5 >>>')
             return {'CANCELLED'}
 
         vp.pins().on_start()
@@ -388,6 +395,7 @@ class PinMode(Operator):
 
         if settings.pinmode and old_geotracker_num == new_geotracker_num and vp.is_working():
             _log.output(f'SAME GEOTRACKER. NOTHING TO DO: {new_geotracker_num}')
+            _log.red(f'{self.__class__.__name__} cancelled 6 >>>')
             return {'CANCELLED'}
 
         new_geotracker = settings.get_geotracker_item(new_geotracker_num)
@@ -397,12 +405,14 @@ class PinMode(Operator):
             msg = f'No Geometry object in GeoTracker {new_geotracker_num}'
             _log.error(msg)
             self.report({'INFO'}, msg)
+            _log.red(f'{self.__class__.__name__} cancelled 7 >>>')
             return {'CANCELLED'}
 
         if not new_geotracker.camobj:
             msg = f'No Camera object in GeoTracker {new_geotracker_num}'
             _log.error(msg)
             self.report({'INFO'}, msg)
+            _log.red(f'{self.__class__.__name__} cancelled 8 >>>')
             return {'CANCELLED'}
 
         _log.output('GEOTRACKER PINMODE CHECKS PASSED')
@@ -413,6 +423,7 @@ class PinMode(Operator):
         fit_render_size(new_geotracker.movie_clip)
         if settings.pinmode:
             self._switch_to_new_geotracker(new_geotracker_num)
+            _log.red(f'{self.__class__.__name__} switched to new finished >>>')
             return {'FINISHED'}
 
         settings.change_current_geotracker(new_geotracker_num)
@@ -423,7 +434,7 @@ class PinMode(Operator):
         context.window_manager.modal_handler_add(self)
         loader.register_undo_redo_handlers()
         vp.unhide_all_shaders()
-        _log.output('PINMODE STARTED')
+        _log.red(f'{self.__class__.__name__} Start pinmode modal >>>')
         return {'RUNNING_MODAL'}
 
     def modal(self, context: Any, event: Any) -> Set:
@@ -433,7 +444,7 @@ class PinMode(Operator):
         vp = loader.viewport()
 
         if self.pinmode_id != settings.pinmode_id:
-            _log.output('Extreme GeoTracker pinmode operator stop')
+            _log.red(f'{self.__class__.__name__} Extreme pinmode stop >>>')
             _log.output(f'{self.pinmode_id} != {settings.pinmode_id}')
             return {'FINISHED'}
 

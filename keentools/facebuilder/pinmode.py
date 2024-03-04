@@ -56,6 +56,7 @@ from ..utils.manipulate import switch_to_camera, center_viewports_on_object
 from .ui_strings import buttons
 from ..preferences.hotkeys import (facebuilder_keymaps_register,
                                    facebuilder_keymaps_unregister)
+from .prechecks import common_fb_checks
 
 
 _log = KTLogger(__name__)
@@ -293,31 +294,31 @@ class FB_OT_PinMode(Operator):
         _log.output(f'FB PINMODE ENTER. CURRENT_HEAD: {settings.current_headnum} '
                     f'FB CURRENT_CAM: {settings.current_camnum}')
 
-        if not settings.check_heads_and_cams():
-            self._fix_heads_with_warning()
-            return {'CANCELLED'}
-
-        if gt_pinmode():
-            msg = 'Cannot start while GeoTracker is in Pin mode!'
-            _log.error(msg)
-            self.report({'ERROR'}, msg)
-            return {'CANCELLED'}
-
-        head = settings.get_head(self.headnum)
-        if not head or not head.headobj:
-            _log.error('FB CANNOT FIND head or headobj')
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True,
+                                        stop_another_pinmode=True,
+                                        fix_facebuilders=True,
+                                        head_and_camera=True,
+                                        headnum=self.headnum,
+                                        camnum=self.camnum)
+        if not check_status.success:
+            self.report({'ERROR'}, check_status.error_message)
+            _log.red(f'{self.__class__.__name__} cancelled 1 >>>')
             return {'CANCELLED'}
 
         if not supported_gpu_backend():
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.UnsupportedGPUBackend)
+            _log.red(f'{self.__class__.__name__} cancelled 2 >>>')
             return {'CANCELLED'}
 
+        head = settings.get_head(self.headnum)
         headobj = head.headobj
         first_start = True
 
         vp = FBLoader.viewport()
         if not vp.load_all_shaders() and Config.strict_shader_check:
+            _log.red(f'{self.__class__.__name__} cancelled 3 >>>')
             return {'CANCELLED'}
 
         # Stopped shaders means that we need to restart pinmode
@@ -378,6 +379,7 @@ class FB_OT_PinMode(Operator):
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.CustomMessage,
                  msg_content=error_message)
+            _log.red(f'{self.__class__.__name__} cancelled 4 >>>')
             return {'CANCELLED'}
 
         _log.output('model loaded')
@@ -392,6 +394,7 @@ class FB_OT_PinMode(Operator):
 
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.MeshCorrupted)
+            _log.red(f'{self.__class__.__name__} cancelled 5 >>>')
             return {'CANCELLED'}
 
         fb = FBLoader.get_builder()
@@ -410,6 +413,7 @@ class FB_OT_PinMode(Operator):
                                   settings.current_camnum)
         except Exception:
             _log.output('FB UPDATE KEYFRAME PROBLEM')
+            _log.red(f'{self.__class__.__name__} cancelled 6 >>>')
             return {'CANCELLED'}
 
         update_head_mesh_non_neutral(FBLoader.get_builder(), head)
@@ -467,11 +471,11 @@ class FB_OT_PinMode(Operator):
                 facebuilder_keymaps_register()
         else:
             push_head_in_undo_history(head, 'Pin Mode Switch')
-            _log.output('FB PINMODE SWITCH ONLY')
+            _log.red(f'{self.__class__.__name__} switch only finished >>>')
             return {'FINISHED'}
 
         register_undo_handler()
-        _log.output('FB PINMODE STARTED')
+        _log.red(f'{self.__class__.__name__} Start pinmode modal >>>')
         return {'RUNNING_MODAL'}
 
     def _modal_should_finish(self, context: Any, event: Any) -> bool:

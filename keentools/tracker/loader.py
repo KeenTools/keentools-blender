@@ -705,10 +705,11 @@ class Loader:
 
     @classmethod
     def stop_viewport_shaders(cls) -> None:
+        _log.yellow(f'{cls.__name__} stop_viewport_shaders')
         cls.check_shader_timer.stop()
         vp = cls.viewport()
         vp.unregister_handlers()
-        _log.output('GT VIEWPORT SHADERS HAVE BEEN STOPPED')
+        _log.output(f'{cls.__name__} stop_viewport_shaders >>>')
 
     @classmethod
     def status_info(cls):
@@ -752,7 +753,7 @@ class Loader:
     @classmethod
     def out_pinmode(cls) -> None:
         settings = cls.get_settings()
-        _log.output(f'out_pinmode call')
+        _log.magenta(f'{cls.__name__} out_pinmode')
         _log.output(f'\n--- Before out\n{cls.status_info()}')
         settings.pinmode = False
 
@@ -762,9 +763,7 @@ class Loader:
         try:
             exit_area_localview(area)
         except Exception as err:
-            _log.error(_log.color(
-                'magenta',
-                f'out_pinmode CANNOT OUT FROM LOCALVIEW:\n{str(err)}'))
+            _log.red(f'out_pinmode CANNOT OUT FROM LOCALVIEW:\n{str(err)}')
 
         settings.reset_pinmode_id()
         settings.viewport_state.show_ui_elements(area)
@@ -773,17 +772,18 @@ class Loader:
         if geotracker is None:
             geotracker = settings.get_current_geotracker_item()
         if geotracker is None:
-            _log.error(f'out_pinmode error: No geotracker')
+            _log.error(f'{cls.__name__} out_pinmode: No tracker >>>')
             return
 
         geotracker.reset_focal_length_estimation()
 
         cls.set_geotracker_item(None)
         _log.output(f'\n--- After out\n{cls.status_info()}')
+        _log.magenta(f'{cls.__name__} out_pinmode >>>')
 
     @classmethod
     def register_undo_redo_handlers(cls):
-        _log.output('register_undo_redo_handlers start')
+        _log.yellow('register_undo_redo_handlers start')
         cls.unregister_undo_redo_handlers()
         register_app_handler(bpy.app.handlers.undo_post, cls.undo_redo_handler)
         register_app_handler(bpy.app.handlers.redo_post, cls.undo_redo_handler)
@@ -791,15 +791,15 @@ class Loader:
                              cls.depsgraph_update_handler)
         register_app_handler(bpy.app.handlers.frame_change_post,
                              cls.frame_change_post_handler)
-        _log.output('register_undo_redo_handlers end')
+        _log.output('register_undo_redo_handlers end >>>')
 
     @classmethod
     def unregister_undo_redo_handlers(cls):
-        _log.output('unregister_undo_redo_handlers start')
+        _log.yellow('unregister_undo_redo_handlers start')
         unregister_app_handler(bpy.app.handlers.frame_change_post,
                                cls.frame_change_post_handler)
         unregister_app_handler(bpy.app.handlers.depsgraph_update_post,
                                cls.depsgraph_update_handler)
         unregister_app_handler(bpy.app.handlers.undo_post, cls.undo_redo_handler)
         unregister_app_handler(bpy.app.handlers.redo_post, cls.undo_redo_handler)
-        _log.output('unregister_undo_redo_handlers end')
+        _log.output('unregister_undo_redo_handlers end >>>')

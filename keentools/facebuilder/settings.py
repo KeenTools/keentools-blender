@@ -689,15 +689,10 @@ class FBSceneSettings(PropertyGroup):
     def loader(self) -> Any:
         return FBLoader
 
-    # ---------------------
-    # Main settings
-    # ---------------------
     heads: CollectionProperty(type=FBHeadItem, name="Heads")
     frame_width: IntProperty(default=-1)
     frame_height: IntProperty(default=-1)
-    # ---------------------
-    # Operational settings
-    # ---------------------
+
     opnum: IntProperty(name="Operation Number", default=0)
     pinmode: BoolProperty(name="Pin Mode", default=False)
     pinmode_id: StringProperty(name="Unique pinmode ID")
@@ -706,9 +701,7 @@ class FBSceneSettings(PropertyGroup):
 
     ui_write_mode: BoolProperty(name='UI Write mode', default=False)
     viewport_state: PointerProperty(type=ViewportStateItem)
-    # ---------------------
-    # Model View parameters
-    # ---------------------
+
     adaptive_opacity: FloatProperty(
         description='From 0.0 to 1.0',
         name='FaceBuilder Adaptive Opacity',
@@ -825,9 +818,15 @@ class FBSceneSettings(PropertyGroup):
     tmp_headnum: IntProperty(name='Temporary Head Number', default=-1)
     tmp_camnum: IntProperty(name='Temporary Camera Number', default=-1)
 
-    # -------------------------
-    # Texture Baking parameters
-    # -------------------------
+    calculating_mode: EnumProperty(name='Calculating mode', items=[
+        ('NONE', 'NONE', 'No calculation mode', 0),
+        ('TEXTURE_BAKING', 'TEXTURE_BAKING', 'Project and bake texture is calculating', 1),
+    ])
+
+    selection_mode: BoolProperty(name='Selection mode', default=False)
+    selection_x: FloatProperty(name='Selection X', default=0.0)
+    selection_y: FloatProperty(name='Selection Y', default=0.0)
+
     tex_width: IntProperty(
         description="Width in pixels",
         name="Width", default=Config.default_tex_width)
@@ -872,6 +871,14 @@ class FBSceneSettings(PropertyGroup):
 
     def wrong_pinmode_id(self):
         return self.pinmode_id in {'', 'stop'}
+
+    def stop_calculating(self) -> None:
+        self.calculating_mode = 'NONE'
+
+    def is_calculating(self, mode=None) -> bool:
+        if mode is None:
+            return self.calculating_mode != 'NONE'
+        return self.calculating_mode == mode
 
     def get_head(self, headnum):
         if headnum < 0 and len(self.heads) + headnum >= 0:

@@ -21,6 +21,10 @@ from typing import Optional, Any, List
 from ..utils.kt_logging import KTLogger
 from ..addon_config import (fb_settings,
                             calculation_in_progress,
+                            tool_pinmode,
+                            stop_gt_pinmode,
+                            stop_ft_pinmode,
+                            ProductType,
                             ActionStatus)
 from ..utils.bpy_common import bpy_context
 from ..facebuilder.utils.manipulate import check_facs_available
@@ -33,6 +37,7 @@ _log = KTLogger(__name__)
 def common_fb_checks(*, object_mode: bool = False,
                      pinmode: bool = False,
                      pinmode_out: bool = False,
+                     stop_another_pinmode: bool = False,
                      is_calculating: bool = False,
                      fix_facebuilders: bool = False,
                      reload_facebuilder: bool = False,
@@ -57,10 +62,11 @@ def common_fb_checks(*, object_mode: bool = False,
         _log.error(msg)
         return ActionStatus(False, msg)
 
-    if is_calculating and calculation_in_progress():
-        msg = 'Calculation in progress'
-        _log.error(msg)
-        return ActionStatus(False, msg)
+    if is_calculating:
+        calc_status = calculation_in_progress()
+        if not calc_status.success:
+            _log.error(calc_status.error_message)
+            return calc_status
     if pinmode and not settings.pinmode:
         msg = 'This operation works only in Pin mode'
         _log.error(msg)
@@ -69,6 +75,24 @@ def common_fb_checks(*, object_mode: bool = False,
         msg = 'This operation does not work in Pin mode'
         _log.error(msg)
         return ActionStatus(False, msg)
+
+    if stop_another_pinmode:
+        pm = tool_pinmode(facebuilder=False, geotracker=True, facetracker=True)
+        if pm is not None:
+            if pm == ProductType.GEOTRACKER:
+                stop_gt_pinmode()
+                msg = 'GeoTracker interactive mode stopped'
+                _log.warning(msg)
+                return ActionStatus(False, msg)
+            elif pm == ProductType.FACETRACKER:
+                stop_ft_pinmode()
+                msg = 'FaceTracker interactive mode stopped'
+                _log.warning(msg)
+                return ActionStatus(False, msg)
+
+            msg = f'Unknown product type in common check {pm}'
+            _log.error(msg)
+            return ActionStatus(False, msg)
 
     if fix_facebuilders:
         if not settings.check_heads_and_cams():
