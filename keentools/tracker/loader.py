@@ -705,11 +705,11 @@ class Loader:
 
     @classmethod
     def stop_viewport_shaders(cls) -> None:
-        _log.yellow(f'{cls.__name__} stop_viewport_shaders')
+        _log.yellow(f'{cls.__name__} stop_viewport_shaders start')
         cls.check_shader_timer.stop()
         vp = cls.viewport()
         vp.unregister_handlers()
-        _log.output(f'{cls.__name__} stop_viewport_shaders >>>')
+        _log.output(f'{cls.__name__} stop_viewport_shaders end >>>')
 
     @classmethod
     def status_info(cls):
@@ -753,7 +753,7 @@ class Loader:
     @classmethod
     def out_pinmode(cls) -> None:
         settings = cls.get_settings()
-        _log.magenta(f'{cls.__name__} out_pinmode')
+        _log.magenta(f'{cls.__name__} out_pinmode start')
         _log.output(f'\n--- Before out\n{cls.status_info()}')
         settings.pinmode = False
 
@@ -779,7 +779,7 @@ class Loader:
 
         cls.set_geotracker_item(None)
         _log.output(f'\n--- After out\n{cls.status_info()}')
-        _log.magenta(f'{cls.__name__} out_pinmode >>>')
+        _log.magenta(f'{cls.__name__} out_pinmode end >>>')
 
     @classmethod
     def register_undo_redo_handlers(cls):

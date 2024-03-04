@@ -291,8 +291,8 @@ class FB_OT_PinMode(Operator):
         _log.green(f'{self.__class__.__name__} invoke')
         settings = fb_settings()
 
-        _log.output(f'FB PINMODE ENTER. CURRENT_HEAD: {settings.current_headnum} '
-                    f'FB CURRENT_CAM: {settings.current_camnum}')
+        _log.output(f'current_headnum: {settings.current_headnum} '
+                    f'current_camnum: {settings.current_camnum}')
 
         check_status = common_fb_checks(object_mode=True,
                                         is_calculating=True,
@@ -305,6 +305,8 @@ class FB_OT_PinMode(Operator):
             self.report({'ERROR'}, check_status.error_message)
             _log.red(f'{self.__class__.__name__} cancelled 1 >>>')
             return {'CANCELLED'}
+
+        _log.output('common checks passed')
 
         if not supported_gpu_backend():
             warn = get_operator(Config.kt_warning_idname)

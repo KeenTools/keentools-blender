@@ -152,7 +152,7 @@ def common_checks(*, object_mode: bool = False,
         calc_status = calculation_in_progress()
         if not calc_status.success:
             _log.error(calc_status.error_message)
-        return calc_status
+            return calc_status
     if pinmode and not settings.pinmode:
         msg = 'This operation works only in Pin mode'
         _log.error(msg)
@@ -164,7 +164,6 @@ def common_checks(*, object_mode: bool = False,
 
     if stop_another_pinmode:
         pm = tool_pinmode(facebuilder=True, geotracker=True, facetracker=True)
-        _log.magenta(f'pm: {pm}')
         if pm is not None:
             if pm == ProductType.FACEBUILDER:
                 stop_fb_pinmode()

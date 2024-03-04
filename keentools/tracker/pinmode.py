@@ -241,6 +241,7 @@ class PinMode(Operator):
         settings.pinmode_id = self.pinmode_id
 
     def _init_pinmode(self, area: Area, context: Optional[Any]=None) -> None:
+        _log.yellow(f'{self.__class__.__name__} _init_pinmode')
         settings = self.get_settings()
         product = settings.product_type()
         loader = settings.loader()
@@ -287,9 +288,10 @@ class PinMode(Operator):
         if context is not None:
             vp.register_handlers(context)
         vp.tag_redraw()
+        _log.output(f'{self.__class__.__name__} _start_new_pinmode end >>>')
 
     def _start_new_pinmode(self, context: Any) -> None:
-        _log.output('_start_new_pinmode')
+        _log.yellow(f'{self.__class__.__name__} _start_new_pinmode')
         settings = self.get_settings()
         settings.pinmode = True
         self._new_pinmode_id()
@@ -297,9 +299,10 @@ class PinMode(Operator):
 
         self._set_new_geotracker(context.area)
         self._init_pinmode(context.area, context)
+        _log.output(f'{self.__class__.__name__} _start_new_pinmode end >>>')
 
     def _set_new_geotracker(self, area: Area, num: Optional[int]=None) -> None:
-        _log.output(f'_set_new_geotracker: area={id(area)} num={num}')
+        _log.yellow(f'{self.__class__.__name__} _set_new_geotracker: area={id(area)} num={num}')
         settings = self.get_settings()
         if num is not None:
             settings.change_current_geotracker(num)
@@ -315,9 +318,10 @@ class PinMode(Operator):
                          geotracker.animatable_object())
 
         settings.viewport_state.hide_ui_elements(area)
+        _log.output(f'{self.__class__.__name__} _set_new_geotracker end >>>')
 
     def _switch_to_new_geotracker(self, num: int) -> None:
-        _log.output('_switch_to_new_geotracker')
+        _log.yellow(f'{self.__class__.__name__} _switch_to_new_geotracker')
         settings = self.get_settings()
         settings.pinmode = True
 
@@ -326,6 +330,7 @@ class PinMode(Operator):
 
         self._set_new_geotracker(area, num)
         self._init_pinmode(area)
+        _log.output(f'{self.__class__.__name__} _switch_to_new_geotracker end >>>')
 
     def _change_wireframe_visibility(self, *, toggle: bool=True,
                                      value: bool=True) -> None:
@@ -344,7 +349,7 @@ class PinMode(Operator):
 
     def invoke(self, context: Any, event: Any) -> Set:
         _log.green(f'{self.__class__.__name__} invoke')
-        _log.output(f'INVOKE PINMODE: {self.geotracker_num}')
+        _log.output(f'self.geotracker_num: {self.geotracker_num}')
 
         settings = self.get_settings()
         check_status = common_checks(
@@ -357,6 +362,8 @@ class PinMode(Operator):
             self.report({'ERROR'}, check_status.error_message)
             _log.red(f'{self.__class__.__name__} cancelled 1 >>>')
             return {'CANCELLED'}
+
+        _log.output(f'common checks passed: {check_status}')
 
         if fb_pinmode():
             msg = 'Cannot start while FaceBuilder is in Pin mode!'
@@ -434,7 +441,7 @@ class PinMode(Operator):
         context.window_manager.modal_handler_add(self)
         loader.register_undo_redo_handlers()
         vp.unhide_all_shaders()
-        _log.red(f'{self.__class__.__name__} Start pinmode modal >>>')
+        _log.red(f'{self.__class__.__name__} Start pinmode -- modal >>>')
         return {'RUNNING_MODAL'}
 
     def modal(self, context: Any, event: Any) -> Set:
@@ -444,13 +451,14 @@ class PinMode(Operator):
         vp = loader.viewport()
 
         if self.pinmode_id != settings.pinmode_id:
-            _log.red(f'{self.__class__.__name__} Extreme pinmode stop >>>')
             _log.output(f'{self.pinmode_id} != {settings.pinmode_id}')
+            _log.red(f'{self.__class__.__name__} Extreme pinmode stop -- finished >>>')
             return {'FINISHED'}
 
         if not context.space_data:
             _log.output('VIEWPORT IS CLOSED')
             loader.out_pinmode()
+            _log.red(f'{self.__class__.__name__} viewport closed -- finished >>>')
             return {'FINISHED'}
 
         if context.space_data.region_3d.view_perspective != 'CAMERA':
@@ -460,6 +468,7 @@ class PinMode(Operator):
             else:
                 _log.output('CAMERA ROTATED PINMODE OUT')
                 loader.out_pinmode()
+                _log.red(f'{self.__class__.__name__} camera rotated -- finished >>>')
                 return {'FINISHED'}
 
         _playback_message(context.area, product=product)
@@ -483,6 +492,7 @@ class PinMode(Operator):
             else:
                 settings.do_selection(event.mouse_region_x, event.mouse_region_y)
             vp.tag_redraw()
+            _log.red(f'{self.__class__.__name__} mouse selection -- modal >>>')
             return {'RUNNING_MODAL'}
 
         if event.type == 'ESC' and event.value == 'PRESS':
@@ -490,12 +500,14 @@ class PinMode(Operator):
                 settings.cancel_selection()
                 settings.set_add_selection_mode(False)
                 vp.tag_redraw()
+                _log.red(f'{self.__class__.__name__} selection ESC -- finished >>>')
                 return {'RUNNING_MODAL'}
             if not bpy_background_mode() and bpy_is_animation_playing():
                 _log.output('STOP ANIMATION PLAYBACK')
                 return {'PASS_THROUGH'}
             _log.output('Exit pinmode by ESC')
             loader.out_pinmode()
+            _log.red(f'{self.__class__.__name__} Exit by ESC -- finished >>>')
             return {'FINISHED'}
 
         if event.type == 'TAB' and event.value == 'PRESS':
@@ -503,10 +515,11 @@ class PinMode(Operator):
                                 event.mouse_region_x, event.mouse_region_y):
                 self._change_wireframe_visibility()
                 vp.tag_redraw()
+                _log.red(f'{self.__class__.__name__} Tab pressed -- modal >>>')
                 return {'RUNNING_MODAL'}
 
         if loader.geomobj_mode_changed_to_object():
-            _log.output(_log.color('green', 'RETURNED TO OBJECT_MODE'))
+            _log.green('RETURNED TO OBJECT_MODE')
             self._change_wireframe_visibility(toggle=False, value=True)
             loader.load_geotracker()
             loader.load_pins_into_viewport()
