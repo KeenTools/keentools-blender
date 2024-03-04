@@ -266,12 +266,12 @@ buttons = {
         'Requirements: Character Creator 4.0, Headshot 2.0'
     ),
     FBConfig.fb_rotate_head_forward_idname: Button(
-        'Rotate forward',
-        'Rotate forward'
+        'Rotate right',
+        '45 degree'
     ),
     FBConfig.fb_rotate_head_backward_idname: Button(
-        'Rotate backward',
-        'Rotate backward'
+        'Rotate left',
+        '45 degree'
     ),
     FBConfig.fb_reset_view_idname: Button(
         'Reset View',
