@@ -604,7 +604,7 @@ class FBLoader:
 
     @classmethod
     def add_new_camera(cls, headnum: int, img: Optional[Any]) -> Object:
-        _log.yellow(f'{cls.__name__} add_background_to_camera start')
+        _log.yellow(f'{cls.__name__} add_new_camera start')
         settings = fb_settings()
         head = settings.get_head(headnum)
 
@@ -664,6 +664,7 @@ class FBLoader:
                                    adaptive_opacity: bool = False,
                                    camera_pos: bool = False,
                                    batch_wireframe: bool = False,
+                                   tag_redraw: bool = False,
                                    pins_and_residuals: bool = False) -> None:
         settings = fb_settings()
         hnum = headnum if headnum is not None else settings.current_headnum
@@ -679,26 +680,30 @@ class FBLoader:
             if settings.use_adaptive_opacity:
                 settings.calc_adaptive_opacity(work_area)
         if wireframe_colors:
-            vp = FBLoader.viewport()
+            vp = cls.viewport()
             vp.update_wireframe_colors()
         if wireframe_image:
-            wf = FBLoader.wireframer()
+            wf = cls.wireframer()
             wf.init_wireframe_image(settings.show_specials)
         if camera_pos:
             cam = head.get_camera(cnum)
             if cam:
-                wf = FBLoader.wireframer()
+                wf = cls.wireframer()
                 wf.set_camera_pos(cam.camobj, head.headobj)
         if wireframe:
             cls._update_wireframe(head.headobj, kid)
         if pins_and_residuals:
             cls._update_points_and_residuals(work_area, head.headobj, kid)
         if batch_wireframe:
-            wf = FBLoader.wireframer()
+            wf = cls.wireframer()
             wf.create_batches()
+        if tag_redraw:
+            vp = cls.viewport()
+            vp.tag_redraw()
 
     @classmethod
     def load_pins_into_viewport(cls, headnum: int, camnum: int) -> None:
+        _log.yellow('load_pins_into_viewport')
         settings = fb_settings()
         kid = settings.get_keyframe(headnum, camnum)
         fb = cls.get_builder()
@@ -713,7 +718,7 @@ class FBLoader:
 
     @classmethod
     def get_geo_shader_data(cls, geo: Any) -> Tuple:
-        _log.output('get_geo_shader_data')
+        _log.yellow('get_geo_shader_data start')
         mat = xy_to_xz_rotation_matrix_3x3()
 
         utls = pkt_module().utils
@@ -723,5 +728,5 @@ class FBLoader:
                                      dtype=np.float32) @ mat
         edge_vertex_normals = np.array(utls.get_normals_for_lines(geo),
                                        dtype=np.float32) @ mat
-
+        _log.output('get_geo_shader_data end >>>')
         return edge_vertices, edge_vertex_normals, triangle_vertices

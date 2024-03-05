@@ -416,7 +416,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
     def init_geom_data_from_core(self, edge_vertices: Any,
                                  edge_vertex_normals: Any,
                                  triangle_vertices: Any) -> None:
-        _log.output(_log.color('yellow', 'init_geom_data_from_core'))
+        _log.yellow('init_geom_data_from_core start')
         len_edge_vertices = len(edge_vertices)
         if len_edge_vertices * 3 != len(self.wide_vertex_pos_indices):
             _log.output('init_geom_data_from_core recalc index arrays')
@@ -429,3 +429,4 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
 
         self.wide_edge_uvs = self.edge_uvs[self.wide_vertex_pos_indices]
         self.triangle_vertices = triangle_vertices
+        _log.output('init_geom_data_from_core end >>>')

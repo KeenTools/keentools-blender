@@ -48,7 +48,7 @@ def has_blendshapes_action(obj: Optional[Object]) -> bool:
 
 
 def force_undo_push(msg: str = 'KeenTools operation') -> None:
-    _log.output(f'UNDO PUSH: {msg}')
+    _log.magenta(f'force_undo_push: {msg}')
     bpy.ops.ed.undo_push(message=msg)
 
 
@@ -65,7 +65,7 @@ def switch_to_mode(mode: str = 'OBJECT') -> None:
 
 
 def select_object_only(obj: Optional[Object]) -> None:
-    _log.output(f'select_object_only: {obj}')
+    _log.yellow(f'select_object_only: {obj}')
     if not obj:
         return
     if bpy.context.mode != 'OBJECT':
@@ -100,7 +100,7 @@ def create_vertex_groups(obj: Object, vg_dict: Dict) -> None:
 
 def switch_to_camera(area: Area, camobj: Object,
                      select_obj: Optional[Object]=None) -> None:
-    _log.output(f'switch_to_camera: area={area}'
+    _log.yellow(f'switch_to_camera: area={area}'
                 f'\ncamobj={camobj}'
                 f'\nselect_obj={select_obj}')
     exit_area_localview(area)
@@ -120,27 +120,33 @@ def switch_to_camera(area: Area, camobj: Object,
 
 
 def center_viewport(area, window=None):
+    _log.yellow('center_viewport start')
     override_context = {'window': bpy.context.window if window is None else window,
                         'area': area,
                         'region': get_area_region(area)}
     operator_with_context(bpy.ops.view3d.view_selected,
                           override_context,
                           use_all_regions=True)
+    _log.output('center_viewport end >>>')
 
 
 def center_viewports_on_object(obj: Optional[Object]=None) -> None:
+    _log.yellow('center_viewports_on_object start')
     if obj is not None:
         select_object_only(obj)
     if bpy_background_mode():
+        _log.output('center_viewports_on_object background mode end >>>')
         return
 
     pairs = get_areas_by_type(area_type='VIEW_3D')
     for area, window in pairs:
         _log.output(area)
         center_viewport(area, window=window)
+    _log.output('center_viewports_on_object end >>>')
 
 
 def select_objects_only(obj_list: List[Object]) -> None:
+    _log.yellow('select_objects_only start')
     deselect_all()
     selected = -1
     for i, obj in enumerate(obj_list):
@@ -150,3 +156,4 @@ def select_objects_only(obj_list: List[Object]) -> None:
                 selected = i
     if len(obj_list) > 0 and selected >=0:
         bpy.context.view_layer.objects.active = obj_list[selected]
+    _log.output('select_objects_only end >>>')
