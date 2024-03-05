@@ -419,6 +419,11 @@ def tool_pinmode(facebuilder: bool = True, geotracker: bool = True,
 def stop_fb_pinmode():
     settings = fb_settings()
     if settings:
+        headnum = settings.current_headnum
+        loader = settings.loader()
+        if not settings.is_proper_headnum(headnum):
+            loader.out_pinmode(headnum)
+        settings.viewport_state.show_ui_elements(loader.get_work_area())
         settings.reset_pinmode_id()
 
 
