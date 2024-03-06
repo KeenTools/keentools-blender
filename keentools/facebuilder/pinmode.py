@@ -31,7 +31,6 @@ from ..addon_config import (Config,
                             get_operator,
                             ErrorType,
                             show_user_preferences,
-                            gt_pinmode,
                             supported_gpu_backend)
 from ..facebuilder_config import FBConfig
 from ..utils.bpy_common import (operator_with_context,
@@ -65,38 +64,38 @@ _log = KTLogger(__name__)
 _undo_handler: Optional[Callable] = None
 
 
-def undo_handler(scene: Any) -> None:
-    _log.green('undo_handler start')
+def fb_undo_handler(scene: Any) -> None:
+    _log.green('fb_undo_handler start')
     try:
         settings = fb_settings()
         if not settings.pinmode or settings.current_headnum < 0:
-            unregister_undo_handler()
+            unregister_fb_undo_handler()
             return
         head = settings.get_head(settings.current_headnum)
         head.need_update = True
     except Exception as err:
-        _log.error(f'undo_handler {str(err)}')
-        unregister_undo_handler()
-    _log.output('undo_handler end >>>')
+        _log.error(f'fb_undo_handler {str(err)}')
+        unregister_fb_undo_handler()
+    _log.output('fb_undo_handler end >>>')
 
 
-def unregister_undo_handler() -> None:
-    _log.yellow('unregister_undo_handler start')
+def unregister_fb_undo_handler() -> None:
+    _log.yellow('unregister_fb_undo_handler start')
     global _undo_handler
     if _undo_handler is not None:
         if _undo_handler in bpy.app.handlers.undo_post:
             bpy.app.handlers.undo_post.remove(_undo_handler)
     _undo_handler = None
-    _log.output('unregister_undo_handler end >>>')
+    _log.output('unregister_fb_undo_handler end >>>')
 
 
-def register_undo_handler() -> None:
-    _log.yellow('register_undo_handler start')
+def register_fb_undo_handler() -> None:
+    _log.yellow('register_fb_undo_handler start')
     global _undo_handler
-    unregister_undo_handler()
-    _undo_handler = undo_handler
+    unregister_fb_undo_handler()
+    _undo_handler = fb_undo_handler
     bpy.app.handlers.undo_post.append(_undo_handler)
-    _log.output('register_undo_handler end >>>')
+    _log.output('register_fb_undo_handler end >>>')
 
 
 def _calc_adaptive_opacity(area: Area) -> None:
@@ -209,7 +208,7 @@ class FB_OT_PinMode(Operator):
 
         if not FBLoader.solve(headnum, camnum):
             _log.error('FB DELETE PIN PROBLEM')
-            unregister_undo_handler()
+            unregister_fb_undo_handler()
 
             facebuilder_keymaps_unregister()
             return {'FINISHED'}
@@ -236,7 +235,7 @@ class FB_OT_PinMode(Operator):
         return {'RUNNING_MODAL'}
 
     def _undo_detected(self, area: Area) -> None:
-        _log.yellow(f'{self.__class__.__name__} _undo_detected')
+        _log.magenta(f'{self.__class__.__name__} _undo_detected')
         settings = fb_settings()
         headnum = settings.current_headnum
         camnum = settings.current_camnum
@@ -249,7 +248,7 @@ class FB_OT_PinMode(Operator):
         FBLoader.update_fb_viewport_shaders(area=area,
                                             wireframe=True,
                                             pins_and_residuals=True,
-                                            batch_wireframe=True,
+                                            camera_pos=True,
                                             tag_redraw=True)
         _log.output(f'{self.__class__.__name__} _undo_detected end >>>')
 
@@ -451,12 +450,11 @@ class FB_OT_PinMode(Operator):
             _log.output('START FB SHADERS')
             self._change_wireframe_visibility(toggle=False, value=True)
             vp.create_batch_2d(area)
-            _log.output('REGISTER FB SHADER HANDLERS')
             vp.register_handlers(context)
 
             context.window_manager.modal_handler_add(self)
 
-            _log.output('FB SHADER STOPPER START')
+            _log.output('START FB SHADER STOPPER')
             self.pinmode_id = str(uuid4())
             settings.pinmode_id = self.pinmode_id
             FBLoader.start_shader_timer(self.pinmode_id)
@@ -489,7 +487,7 @@ class FB_OT_PinMode(Operator):
             _log.red(f'{self.__class__.__name__} Switch only finished >>>')
             return {'FINISHED'}
 
-        register_undo_handler()
+        register_fb_undo_handler()
         _log.red(f'{self.__class__.__name__} Start pinmode modal >>>')
         return {'RUNNING_MODAL'}
 
@@ -550,7 +548,7 @@ class FB_OT_PinMode(Operator):
         if self.pinmode_id != settings.pinmode_id:
             _log.error('Extreme pinmode operator stop')
             _log.error(f'{self.pinmode_id} != {settings.pinmode_id}')
-            unregister_undo_handler()
+            unregister_fb_undo_handler()
             exit_area_localview(context.area)
 
             facebuilder_keymaps_unregister()
@@ -560,7 +558,7 @@ class FB_OT_PinMode(Operator):
         head = settings.get_head(headnum)
 
         if self._modal_should_finish(context, event):
-            unregister_undo_handler()
+            unregister_fb_undo_handler()
             exit_area_localview(context.area)
 
             facebuilder_keymaps_unregister()
@@ -598,13 +596,12 @@ class FB_OT_PinMode(Operator):
         kid = settings.get_keyframe(headnum, camnum)
 
         if head.need_update:
-            _log.output('UNDO CALL DETECTED')
             self._undo_detected(context.area)
 
         vp = FBLoader.viewport()
         if not (vp.wireframer().is_working()):
-            _log.output('WIREFRAME IS OFF')
-            unregister_undo_handler()
+            _log.error('WIREFRAME IS OFF')
+            unregister_fb_undo_handler()
             FBLoader.out_pinmode(headnum)
 
             facebuilder_keymaps_unregister()

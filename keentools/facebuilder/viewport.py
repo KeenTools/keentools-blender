@@ -94,8 +94,8 @@ class FBViewport(KTViewport):
         return True
 
     def register_handlers(self, context: Any) -> None:
+        _log.yellow(f'{self.__class__.__name__}.register_handlers')
         self.unregister_handlers()
-        _log.output(f'{self.__class__.__name__}.register_handlers')
         self.set_work_area(context.area)
         self.residuals().register_handler(context)
         self.rectangler().register_handler(context)
@@ -104,9 +104,10 @@ class FBViewport(KTViewport):
         self.texter().register_handler(context)
         self.wireframer().register_handler(context)
         self.register_draw_update_timer(time_step=FBConfig.viewport_redraw_interval)
+        _log.output(f'{self.__class__.__name__}.register_handlers end >>>')
 
     def unregister_handlers(self) -> None:
-        _log.output(f'{self.__class__.__name__}.unregister_handlers')
+        _log.yellow(f'{self.__class__.__name__}.unregister_handlers')
         self.unregister_draw_update_timer()
         self.wireframer().unregister_handler()
         self.texter().unregister_handler()
@@ -115,6 +116,7 @@ class FBViewport(KTViewport):
         self.rectangler().unregister_handler()
         self.residuals().unregister_handler()
         self.clear_work_area()
+        _log.output(f'{self.__class__.__name__}.unregister_handlers end >>>')
 
     def update_surface_points(
             self, fb: Any, headobj: Object, keyframe: int=-1,

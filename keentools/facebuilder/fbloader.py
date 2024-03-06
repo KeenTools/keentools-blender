@@ -168,7 +168,7 @@ class FBLoader:
 
     @classmethod
     def out_pinmode_without_save(cls, headnum: int) -> None:
-        _log.yellow(f'{cls.__name__} out_pinmode_without_save start: {headnum}')
+        _log.yellow(f'out_pinmode_without_save start: h={headnum}')
         cls.stop_viewport_shaders()
         settings = fb_settings()
         head = settings.get_head(headnum)
@@ -187,17 +187,18 @@ class FBLoader:
         camera = head.get_camera(settings.current_camnum)
         if camera:
             camera.reset_tone_mapping()
-        _log.output(f'{cls.__name__} out_pinmode_without_save end >>>')
+        _log.output(f'out_pinmode_without_save end >>>')
 
     @classmethod
     def out_pinmode(cls, headnum: int) -> None:
-        _log.yellow(f'{cls.__name__} out_pinmode start: {headnum}')
+        _log.yellow(f'{cls.__name__} out_pinmode start: h={headnum}')
         cls.save_pinmode_state(headnum)
         cls.out_pinmode_without_save(headnum)
         _log.output(f'{cls.__name__} out_pinmode end >>>')
 
     @classmethod
     def save_fb_serial_str(cls, headnum: int) -> None:
+        _log.output(f'save_fb_serial_str h={headnum}')
         settings = fb_settings()
         head = settings.get_head(headnum)
         if not head:
@@ -208,6 +209,7 @@ class FBLoader:
     @classmethod
     def _save_fb_images_and_keentools_attribute_on_headobj(
             cls, headnum: int) -> None:
+        _log.output(f'_save_fb_images_and_keentools_attribute_on_headobj h={headnum}')
         settings = fb_settings()
         head = settings.get_head(headnum)
         if not head or not head.headobj:
@@ -217,6 +219,7 @@ class FBLoader:
 
     @classmethod
     def save_fb_serial_and_image_pathes(cls, headnum: int) -> None:
+        _log.output(f'save_fb_serial_and_image_pathes h={headnum}')
         cls.save_fb_serial_str(headnum)
         cls._save_fb_images_and_keentools_attribute_on_headobj(headnum)
 
@@ -232,6 +235,7 @@ class FBLoader:
 
     @classmethod
     def update_all_camera_positions(cls, headnum: int) -> None:
+        _log.output(f'update_all_camera_positions h={headnum}')
         settings = fb_settings()
         head = settings.get_head(headnum)
 
@@ -265,6 +269,7 @@ class FBLoader:
 
     @classmethod
     def center_geo_camera_projection(cls, headnum: int, camnum: int) -> None:
+        _log.output(f'center_geo_camera_projection h={headnum} c={camnum}')
         settings = fb_settings()
         camera = settings.get_camera(headnum, camnum)
         if camera is None:
@@ -365,8 +370,10 @@ class FBLoader:
     def universal_mesh_loader(cls, mesh_name: str = 'keentools_mesh',
                               masks: List = (), uv_set: str = 'uv0',
                               keyframe: Optional[int]=None) -> None:
+        _log.yellow('universal_mesh_loader start')
         builder = cls.new_builder()
         mesh = cls.get_builder_mesh(builder, mesh_name, masks, uv_set, keyframe)
+        _log.output('universal_mesh_loader end >>>')
         return mesh
 
     @classmethod
@@ -382,16 +389,17 @@ class FBLoader:
 
     @classmethod
     def load_model_throw_exception(cls, headnum: int) -> bool:
-        _log.output('load_model_throw_exception')
+        _log.yellow('load_model_throw_exception')
         settings = fb_settings()
         head = settings.get_head(headnum)
         if head is None:
+            _log.red('load_model_throw_exception no head False end >>>')
             return False
         return cls._load_model_from_head(head)
 
     @classmethod
     def _deserialize_global_options(cls, headnum: int) -> None:
-        _log.yellow(f'_deserialize_global_options start: {headnum}')
+        _log.yellow(f'_deserialize_global_options start: h={headnum}')
         settings = fb_settings()
         head = settings.get_head(headnum)  # we assume that head is checked
         fb = cls.get_builder()
@@ -410,7 +418,7 @@ class FBLoader:
 
     @classmethod
     def load_model(cls, headnum: int) -> bool:
-        _log.yellow(f'load_model start: {headnum}')
+        _log.yellow(f'load_model start: h={headnum}')
         try:
             if not cls.load_model_throw_exception(headnum):
                 _log.output(f'load_model False 1 end >>>')
@@ -636,6 +644,7 @@ class FBLoader:
 
     @classmethod
     def _update_wireframe(cls, obj: Object, keyframe: int) -> None:
+        _log.blue('_update_wireframe start')
         fb = cls.get_builder()
         vp = cls.viewport()
         wf = vp.wireframer()
@@ -644,15 +653,18 @@ class FBLoader:
         geo = fb.applied_args_model_at(keyframe)
         wf.init_geom_data_from_core(*FBLoader.get_geo_shader_data(geo))
         wf.create_batches()
+        _log.output('_update_wireframe end >>>')
 
     @classmethod
     def _update_points_and_residuals(cls, area: Area, obj: Object,
                                      keyframe: int) -> None:
+        _log.yellow('_update_points_and_residuals start')
         fb = cls.get_builder()
         vp = cls.viewport()
         vp.update_surface_points(fb, obj, keyframe)
         vp.update_residuals(fb, keyframe, area)
         vp.create_batch_2d(area)
+        _log.output('_update_points_and_residuals end >>>')
 
     @classmethod
     def update_fb_viewport_shaders(cls, *, area: Area = None,
@@ -666,6 +678,7 @@ class FBLoader:
                                    batch_wireframe: bool = False,
                                    tag_redraw: bool = False,
                                    pins_and_residuals: bool = False) -> None:
+        _log.yellow('update_fb_viewport_shaders start')
         settings = fb_settings()
         hnum = headnum if headnum is not None else settings.current_headnum
         cnum = camnum if camnum is not None else settings.current_camnum
@@ -700,6 +713,7 @@ class FBLoader:
         if tag_redraw:
             vp = cls.viewport()
             vp.tag_redraw()
+        _log.output('update_fb_viewport_shaders end >>>')
 
     @classmethod
     def load_pins_into_viewport(cls, headnum: int, camnum: int) -> None:
@@ -718,7 +732,7 @@ class FBLoader:
 
     @classmethod
     def get_geo_shader_data(cls, geo: Any) -> Tuple:
-        _log.yellow('get_geo_shader_data start')
+        _log.magenta('get_geo_shader_data start')
         mat = xy_to_xz_rotation_matrix_3x3()
 
         utls = pkt_module().utils

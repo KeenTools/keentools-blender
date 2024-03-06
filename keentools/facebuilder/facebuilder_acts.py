@@ -87,7 +87,6 @@ def remove_pins_act(headnum: int, camnum: int, update: bool = True) -> ActionSta
     FBLoader.update_fb_viewport_shaders(camera_pos=True,
                                         wireframe=True,
                                         pins_and_residuals=True,
-                                        batch_wireframe=True,
                                         tag_redraw=True)
     _log.output('remove_pins_act end >>>')
     return ActionStatus(True, 'ok')
@@ -125,7 +124,6 @@ def rotate_head_act(headnum: int, camnum: int, angle: float) -> ActionStatus:
     FBLoader.update_fb_viewport_shaders(camera_pos=True,
                                         wireframe=True,
                                         pins_and_residuals=True,
-                                        batch_wireframe=True,
                                         tag_redraw=True)
     _log.output('rotate_head_act end >>>')
     return ActionStatus(True, 'ok')
@@ -162,7 +160,6 @@ def reset_expression_act(headnum: int, camnum: int,
     FBLoader.update_fb_viewport_shaders(camera_pos=True,
                                         wireframe=True,
                                         pins_and_residuals=True,
-                                        batch_wireframe=True,
                                         tag_redraw=True)
     _log.output('reset_expression_act end >>>')
     return ActionStatus(True, 'ok')
@@ -198,7 +195,6 @@ def center_geo_act(headnum: int, camnum: int,
     FBLoader.update_fb_viewport_shaders(camera_pos=True,
                                         wireframe=True,
                                         pins_and_residuals=True,
-                                        batch_wireframe=True,
                                         tag_redraw=True)
     _log.output('center_geo_act end >>>')
     return ActionStatus(True, 'ok')

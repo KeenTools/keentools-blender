@@ -194,6 +194,7 @@ class FBRasterEdgeShader3D(KTEdgeShaderBase):
 
     def set_camera_pos(self, camobj: Optional[Object],
                        geomobj: Optional[Object]) -> None:
+        _log.red('set_camera_pos')
         if not geomobj or not camobj:
             return
         mat = geomobj.matrix_world.inverted() @ camobj.matrix_world
