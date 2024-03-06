@@ -242,6 +242,7 @@ class FB_OT_PinMode(Operator):
         FBLoader.load_pins_into_viewport(headnum, camnum)
         FBLoader.update_fb_viewport_shaders(area=area,
                                             wireframe=True,
+                                            camera_pos=True,
                                             pins_and_residuals=True)
 
     def _on_right_mouse_press(self, area: Area,
