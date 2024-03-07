@@ -70,11 +70,16 @@ def fb_undo_handler(scene: Any) -> None:
         settings = fb_settings()
         if not settings.pinmode or settings.current_headnum < 0:
             unregister_fb_undo_handler()
+            _log.red(f'fb_undo_handler not in pinmode end >>>')
             return
         head = settings.get_head(settings.current_headnum)
+        if not head:
+            unregister_fb_undo_handler()
+            _log.red(f'fb_undo_handler not in pinmode end >>>')
+            return
         head.need_update = True
     except Exception as err:
-        _log.error(f'fb_undo_handler {str(err)}')
+        _log.error(f'fb_undo_handler:\n{str(err)}')
         unregister_fb_undo_handler()
     _log.output('fb_undo_handler end >>>')
 
@@ -237,9 +242,18 @@ class FB_OT_PinMode(Operator):
     def _undo_detected(self, area: Area) -> None:
         _log.magenta(f'{self.__class__.__name__} _undo_detected')
         settings = fb_settings()
+        if not settings or not settings.pinmode:
+            unregister_fb_undo_handler()
+            _log.red(f'_undo_detected not in pinmode end >>>')
+            return
+
         headnum = settings.current_headnum
         camnum = settings.current_camnum
         head = settings.get_head(headnum)
+        if not head:
+            unregister_fb_undo_handler()
+            _log.red(f'_undo_detected no head end >>>')
+            return
 
         head.need_update = False
         FBLoader.load_model(headnum)
