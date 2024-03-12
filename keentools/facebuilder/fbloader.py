@@ -19,12 +19,11 @@
 from typing import Any, Optional, Tuple, List
 import numpy as np
 
-import bpy
 import bmesh
 from bpy.types import Object, Area, Mesh
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import fb_settings
+from ..addon_config import fb_settings, ActionStatus
 from ..facebuilder_config import FBConfig
 from ..utils.coords import (xy_to_xz_rotation_matrix_3x3,
                             focal_by_projection_matrix_mm,
@@ -40,7 +39,10 @@ from ..blender_independent_packages.pykeentools_loader import module as pkt_modu
 from ..utils.bpy_common import (bpy_create_object,
                                 bpy_create_camera_data,
                                 bpy_link_to_scene,
-                                bpy_render_frame)
+                                bpy_render_frame,
+                                bpy_context,
+                                bpy_load_image,
+                                bpy_new_mesh)
 
 
 _log = KTLogger(__name__)
@@ -48,7 +50,7 @@ _log = KTLogger(__name__)
 
 def _create_mesh_from_pydata(mesh_name: str,
                              vertices: List, faces: List) -> Mesh:
-    mesh = bpy.data.meshes.new(mesh_name)
+    mesh = bpy_new_mesh(mesh_name)
 
     bm = bmesh.new()
     verts = [bm.verts.new(v) for v in vertices]
@@ -177,7 +179,7 @@ class FBLoader:
             area = FBLoader.get_work_area()
              # TODO: Need to think about better architecture
             if area is None:
-                area = bpy.context.area
+                area = bpy_context().area
                 _log.output('working area was redefined from context')
             _log.output(f'out_pinmode_without_save area={area}')
             settings.viewport_state.show_ui_elements(area)
@@ -639,7 +641,7 @@ class FBLoader:
     @classmethod
     def add_new_camera_with_image(cls, headnum: int, img_path: str) -> Object:
         _log.yellow(f'{cls.__name__} add_new_camera_with_image')
-        img = bpy.data.images.load(img_path)
+        img = bpy_load_image(img_path)
         return cls.add_new_camera(headnum, img)
 
     @classmethod
