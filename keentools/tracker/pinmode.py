@@ -286,7 +286,7 @@ class PinMode(Operator):
             clipping_changed_screen_message(near, far, product=product)
 
         if context is not None:
-            vp.register_handlers(context)
+            vp.register_handlers(area=area)
         vp.tag_redraw()
         _log.output(f'{self.__class__.__name__} _start_new_pinmode end >>>')
 

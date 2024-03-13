@@ -464,7 +464,7 @@ class FB_OT_PinMode(Operator):
             _log.output('START FB SHADERS')
             self._change_wireframe_visibility(toggle=False, value=True)
             vp.create_batch_2d(area)
-            vp.register_handlers(context)
+            vp.register_handlers(area=area)
 
             context.window_manager.modal_handler_add(self)
 

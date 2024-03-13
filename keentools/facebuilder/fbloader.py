@@ -43,6 +43,7 @@ from ..utils.bpy_common import (bpy_create_object,
                                 bpy_context,
                                 bpy_load_image,
                                 bpy_new_mesh)
+from ..utils.fb_wireframe_image import create_wireframe_image
 
 
 _log = KTLogger(__name__)
@@ -165,19 +166,22 @@ class FBLoader:
         _log.yellow(f'{cls.__name__} stop_viewport_shaders start')
         cls._check_shader_timer.stop()
         vp = cls.viewport()
+        area = vp.get_work_area()
         vp.unregister_handlers()
+        if area:
+            area.tag_redraw()
         _log.output(f'{cls.__name__} stop_viewport_shaders end >>>')
 
     @classmethod
     def out_pinmode_without_save(cls, headnum: int) -> None:
         _log.yellow(f'out_pinmode_without_save start: h={headnum}')
+        area = FBLoader.get_work_area()
         cls.stop_viewport_shaders()
+
         settings = fb_settings()
         head = settings.get_head(headnum)
         if head and head.headobj:
             head.headobj.hide_set(False)
-            area = FBLoader.get_work_area()
-             # TODO: Need to think about better architecture
             if area is None:
                 area = bpy_context().area
                 _log.output('working area was redefined from context')
@@ -746,3 +750,30 @@ class FBLoader:
                                        dtype=np.float32) @ mat
         _log.output('get_geo_shader_data end >>>')
         return edge_vertices, edge_vertex_normals, triangle_vertices
+
+    @classmethod
+    def start_viewport(cls, *, area: Any,
+                       texture_colors: Tuple = ((1., 0., 0.),
+                                                (0., 1., 0.),
+                                                (0., 0., 1.))) -> ActionStatus:
+        _log.green(f'{cls.__name__}.start_viewport start')
+        vp = cls.viewport()
+        if not vp.load_all_shaders():
+            msg = 'Problem with loading shaders (see console)'
+            _log.error(msg)
+            _log.output(f'{cls.__name__}.start_viewport loading shaders error >>>')
+            return ActionStatus(False, msg)
+
+        create_wireframe_image(list(texture_colors))
+        vp.register_handlers(area=area)
+        vp.unhide_all_shaders()
+        vp.tag_redraw()
+        _log.output(f'{cls.__name__}.start_viewport end >>>')
+        return ActionStatus(True, 'ok')
+
+    @classmethod
+    def stop_viewport(cls) -> ActionStatus:
+        _log.green(f'{cls.__name__}.stop_viewport start')
+        cls.stop_viewport_shaders()
+        _log.output(f'{cls.__name__}.stop_viewport end >>>')
+        return ActionStatus(True, 'ok')
