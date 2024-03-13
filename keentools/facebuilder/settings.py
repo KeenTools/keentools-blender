@@ -798,8 +798,8 @@ class FBSceneSettings(PropertyGroup):
 
     # Other settings
     shape_rigidity: FloatProperty(
-        description='Change how much pins affect the model shape. '
-                    'Accessible in Pinmode only',
+        description='Adjust overall mesh rigidity: '
+                    '0 - most flexible, 10 - most rigid, default = 1',
         name='Shape rigidity', default=1.0, min=0.001, max=1000.0,
         update=update_shape_rigidity)
     expression_rigidity: FloatProperty(

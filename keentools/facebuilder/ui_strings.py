@@ -41,7 +41,7 @@ buttons = {
         'Export texture to a file'
     ),
     FBConfig.fb_multiple_filebrowser_exec_idname: Button(
-        'Open Images',
+        'Add more images',
         'New cameras will be created according to number of views'
     ),
     FBConfig.fb_multiple_filebrowser_idname: Button(
@@ -469,20 +469,16 @@ help_texts = {
 Warning = namedtuple('Warning', ['content_red', 'content_white'])
 warnings = {
     FBConfig.fb_blendshapes_warning_idname: Warning([
-        'Your model has FaceBuilder FACS blendshapes attached to it.',
-        'Once you change the topology, the blendshapes will be recreated.',
-        'All modifications added to the standard blendshapes, ',
-        'as well as all custom blendshapes are going to be lost.',
+        'Your model contains FACS blendshapes. Once you change',
+        'topology, blendshapes will be recreated. All modifications',
+        'added to blendshapes as well as custom blendshapes will be lost.',
         ' '
     ], [
-        'If you have animated the model using old blendshapes, ',
-        'the new ones will be linked to the same Action track,',
-        'so you\'re not going to lose your animation.',
-        'If you have deleted some of the standard FaceBuilder '
-        'FACS blendshapes, ',
-        'they\'re not going to be recreated again.',
+        'New blendshapes will be linked to the same Action tracks,',
+        'so no animation will be lost, if you had any. Previously',
+        'deleted blendshapes will not be recreated.',
         ' ',
-        'We recommend saving a backup file before changing the topology.',
+        'Back up your project before continuing.',
         ' '
     ]),
     FBConfig.fb_noblenshapes_until_expression_warning_idname: Warning([

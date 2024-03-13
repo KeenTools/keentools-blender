@@ -136,7 +136,7 @@ class KT_PT_UpdatesInstallationPanel(Common, Panel):
         layout.operator(Config.kt_install_updates_idname,
                         text='Install and restart', icon='FILE_REFRESH')
         layout.operator(Config.kt_remind_install_later_idname,
-                        text='Remind tomorrow', icon='RECOVER_LAST')
+                        icon='RECOVER_LAST')
         layout.operator(Config.kt_skip_installation_idname,
                         text='Skip this version', icon='X')
 

@@ -116,8 +116,8 @@ buttons = {
         'Press to install the update and relaunch Blender'
     ),
     Config.kt_remind_install_later_idname: Button(
-        'Remind install tomorrow',
-        'Remind install tomorrow'
+        'Remind tomorrow',
+        'Remind me to install tomorrow'
     ),
     Config.kt_skip_installation_idname: Button(
         'Skip installation',

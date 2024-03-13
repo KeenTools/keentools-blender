@@ -410,7 +410,7 @@ class FB_PT_OptionsPanel(AllVisible, Panel):
             _draw_camera_info(layout)
 
         col = layout.column(align=True)
-        col.label(text='Mesh Rigidity')
+        col.label(text='Mesh rigidity')
 
         row = col.row(align=True)
         row.enabled = settings.pinmode
@@ -418,7 +418,7 @@ class FB_PT_OptionsPanel(AllVisible, Panel):
 
         if head.should_use_emotions():
             row = col.row(align=True)
-            row.prop(settings, 'expression_rigidity', text='Expression')
+            row.prop(settings, 'expression_rigidity', text='Expressions')
             row.enabled = head.should_use_emotions()
 
         if not head.lock_blinking and head.should_use_emotions():

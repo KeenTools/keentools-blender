@@ -39,7 +39,8 @@ class FB_OT_BlendshapesWarning(Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     headnum: IntProperty(default=0)
-    accept: BoolProperty(name='Change the topology and recreate blendshapes',
+    accept: BoolProperty(name='Proceed with topology change '
+                              'and recreate blendshapes',
                          default=False)
     content_red = []
     content_white = []
