@@ -44,7 +44,7 @@ class FTViewport(GTViewport):
         self._points2d = KTPoints2D(SpaceView3D)
         self._points3d = KTPoints3D(SpaceView3D)
         self._residuals = KTEdgeShader2D(SpaceView3D)
-        self._texter = KTScreenText(SpaceView3D)
+        self._texter = KTScreenText(SpaceView3D, 'FaceTracker')
         self._wireframer = FTRasterEdgeShader3D(SpaceView3D)
         self._timeliner = KTEdgeShaderAll2D(SpaceDopeSheetEditor,
                                             GTConfig.timeline_keyframe_color)

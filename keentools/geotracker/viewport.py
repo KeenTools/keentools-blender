@@ -60,7 +60,7 @@ class GTViewport(KTViewport):
         self._points2d = KTPoints2D(SpaceView3D)
         self._points3d = KTPoints3D(SpaceView3D)
         self._residuals = KTEdgeShader2D(SpaceView3D)
-        self._texter = KTScreenText(SpaceView3D)
+        self._texter = KTScreenText(SpaceView3D, 'GeoTracker')
         self._wireframer = KTLitEdgeShaderLocal3D(SpaceView3D, mask_color=(
             *UserPreferences.get_value_safe('gt_mask_3d_color',
                                             UserPreferences.type_color),

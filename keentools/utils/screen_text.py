@@ -34,7 +34,8 @@ _text_opacity: float = 1.0
 
 
 class KTScreenText(KTShaderBase):
-    def __init__(self, target_class: Any=bpy.types.SpaceView3D):
+    def __init__(self, target_class: Any=bpy.types.SpaceView3D,
+                 main_text: str = 'Pin Mode'):
         super().__init__(target_class)
         self.defaults: Dict = {'color': (1., 1., 1., _text_opacity),
                                'size': 24,
@@ -44,8 +45,8 @@ class KTScreenText(KTShaderBase):
                                'y': 60}
         self.message: List[Dict] = []
         self.default_text: List[Dict] = [
-            {'text': 'Pin Mode ',
-             'color': (1., 1., 1., _text_opacity),
+            {'text': main_text,
+             'color': (0.871, 0.107, 0.001, _text_opacity),
              'size': 24,
              'y': 60},  # line 1
             {'text': 'ESC: Exit | LEFT CLICK: Create Pin '

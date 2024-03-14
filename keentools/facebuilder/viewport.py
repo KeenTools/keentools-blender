@@ -50,7 +50,7 @@ class FBViewport(KTViewport):
         self._points2d: Any = KTPoints2D(SpaceView3D)
         self._points3d: Any = KTPoints3D(SpaceView3D)
         self._residuals: Any = KTEdgeShader2D(SpaceView3D)
-        self._texter: Any = KTScreenText(SpaceView3D)
+        self._texter: Any = KTScreenText(SpaceView3D, 'FaceBuilder')
         self._wireframer: Any = FBRasterEdgeShader3D(SpaceView3D)
         self._rectangler: Any = FBRectangleShader2D(SpaceView3D)
         self._draw_update_timer_handler: Optional[Callable] = None
