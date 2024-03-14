@@ -19,7 +19,7 @@
 from typing import Any
 
 from ..utils.kt_logging import KTLogger
-from ..addon_config import gt_settings, ProductType
+from ..addon_config import gt_settings, ProductType, ActionStatus
 from ..tracker.loader import Loader
 
 
@@ -34,6 +34,22 @@ class GTLoader(Loader):
     @classmethod
     def get_settings(cls) -> Any:
         return gt_settings()
+
+    @classmethod
+    def start_viewport(cls, *, area: Any) -> ActionStatus:
+        _log.green(f'{cls.__name__}.start_viewport start')
+        vp = cls.viewport()
+        if not vp.load_all_shaders():
+            msg = 'Problem with loading shaders (see console)'
+            _log.error(msg)
+            _log.output(f'{cls.__name__}.start_viewport loading shaders error >>>')
+            return ActionStatus(False, msg)
+
+        vp.register_handlers(area=area)
+        vp.unhide_all_shaders()
+        vp.tag_redraw()
+        _log.output(f'{cls.__name__}.start_viewport end >>>')
+        return ActionStatus(True, 'ok')
 
 
 GTLoader.init_handlers()

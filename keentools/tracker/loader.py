@@ -28,7 +28,8 @@ from ..addon_config import (Config,
                             get_operator,
                             ErrorType,
                             show_user_preferences,
-                            ProductType)
+                            ProductType,
+                            ActionStatus)
 from ..geotracker.viewport import GTViewport
 from ..utils.coords import (image_space_to_frame,
                             calc_bpy_camera_mat_relative_to_model,
@@ -708,7 +709,10 @@ class Loader:
         _log.yellow(f'{cls.__name__} stop_viewport_shaders start')
         cls.check_shader_timer.stop()
         vp = cls.viewport()
+        area = vp.get_work_area()
         vp.unregister_handlers()
+        if area:
+            area.tag_redraw()
         _log.output(f'{cls.__name__} stop_viewport_shaders end >>>')
 
     @classmethod
@@ -803,3 +807,10 @@ class Loader:
         unregister_app_handler(bpy.app.handlers.undo_post, cls.undo_redo_handler)
         unregister_app_handler(bpy.app.handlers.redo_post, cls.undo_redo_handler)
         _log.output('unregister_undo_redo_handlers end >>>')
+
+    @classmethod
+    def stop_viewport(cls) -> ActionStatus:
+        _log.green(f'{cls.__name__}.stop_viewport start')
+        cls.stop_viewport_shaders()
+        _log.output(f'{cls.__name__}.stop_viewport end >>>')
+        return ActionStatus(True, 'ok')
