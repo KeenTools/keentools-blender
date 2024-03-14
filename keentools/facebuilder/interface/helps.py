@@ -51,14 +51,6 @@ class FBHELP_Common:
         return {'FINISHED'}
 
 
-class FBHELP_OT_CameraHelp(FBHELP_Common, Operator):
-    bl_idname = FBConfig.fb_help_camera_idname
-    bl_label = buttons[bl_idname].label
-    bl_description = buttons[bl_idname].description
-    draw = _universal_draw(bl_idname)
-    invoke = _universal_invoke(bl_idname)
-
-
 class FBHELP_OT_ViewsHelp(FBHELP_Common, Operator):
     bl_idname = FBConfig.fb_help_views_idname
     bl_label = buttons[bl_idname].label
@@ -99,9 +91,17 @@ class FBHELP_OT_BlendshapesHelp(FBHELP_Common, Operator):
     invoke = _universal_invoke(bl_idname)
 
 
-CLASSES_TO_REGISTER = (FBHELP_OT_CameraHelp,
-                       FBHELP_OT_ViewsHelp,
+class FBHELP_OT_ExportHelp(FBHELP_Common, Operator):
+    bl_idname = FBConfig.fb_help_export_idname
+    bl_label = buttons[bl_idname].label
+    bl_description = buttons[bl_idname].description
+    draw = _universal_draw(bl_idname)
+    invoke = _universal_invoke(bl_idname)
+
+
+CLASSES_TO_REGISTER = (FBHELP_OT_ViewsHelp,
                        FBHELP_OT_ModelHelp,
                        FBHELP_OT_AppearanceHelp,
                        FBHELP_OT_TextureHelp,
-                       FBHELP_OT_BlendshapesHelp)
+                       FBHELP_OT_BlendshapesHelp,
+                       FBHELP_OT_ExportHelp)

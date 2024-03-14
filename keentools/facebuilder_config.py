@@ -145,6 +145,7 @@ class FBConfig:
     fb_help_appearance_idname = operators + '.help_appearance'
     fb_help_texture_idname = operators + '.help_texture'
     fb_help_blendshapes_idname = operators + '.help_blendshapes'
+    fb_help_export_idname = operators + '.help_export'
 
     # Updater panels
     fb_update_panel_idname = _PT + 'update_panel'

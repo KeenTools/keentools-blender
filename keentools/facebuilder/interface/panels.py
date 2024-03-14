@@ -816,7 +816,7 @@ class FB_PT_ExportPanel(AllVisibleClosed, Panel):
         row = layout.row()
         row.active = False
         row.operator(
-            FBConfig.fb_help_blendshapes_idname,
+            FBConfig.fb_help_export_idname,
             text='', icon='QUESTION', emboss=False)
 
     def draw(self, context):
