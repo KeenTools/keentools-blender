@@ -54,6 +54,8 @@ from ..utils.ui_redraw import force_ui_redraw
 from ..utils.localview import exit_area_localview, check_localview
 from ..blender_independent_packages.pykeentools_loader import module as pkt_module
 from ..utils.images import get_background_image_strict
+from ..geotracker.utils.prechecks import common_checks
+from ..utils.manipulate import switch_to_camera
 
 
 _log = KTLogger(__name__)
@@ -815,4 +817,40 @@ class Loader:
         _log.green(f'{cls.__name__}.stop_viewport start')
         cls.stop_viewport_shaders()
         _log.output(f'{cls.__name__}.stop_viewport end >>>')
+        return ActionStatus(True, 'ok')
+
+    @classmethod
+    def show_pinmode(cls) -> ActionStatus:
+        area = cls.get_work_area()
+        if not area:
+            return ActionStatus(False, 'No working area defined')
+
+        check_status = common_checks(object_mode=True,
+                                     is_calculating=True,
+                                     reload_geotracker=True,
+                                     stop_another_pinmode=True,
+                                     geotracker=True,
+                                     camera=True,
+                                     geometry=True,
+                                     product=cls.product_type())
+        if not check_status.success:
+            return check_status
+
+        settings = cls.get_settings()
+        geotracker = settings.get_current_geotracker_item()
+
+        switch_to_camera(area, geotracker.camobj,
+                         geotracker.animatable_object())
+
+        cls.load_pins_into_viewport()
+        cls.update_viewport_shaders(hash=True,
+                                    adaptive_opacity=True,
+                                    wireframe_colors=True,
+                                    geomobj_matrix=True,
+                                    edge_indices=True,
+                                    wireframe=True,
+                                    wireframe_data=True,
+                                    pins_and_residuals=True,
+                                    timeline=True,
+                                    mask=True)
         return ActionStatus(True, 'ok')

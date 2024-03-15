@@ -28,7 +28,6 @@ from ..addon_config import (fb_settings,
                             ActionStatus)
 from ..utils.bpy_common import bpy_context
 from ..facebuilder.utils.manipulate import check_facs_available
-from .fbloader import FBLoader
 
 
 _log = KTLogger(__name__)
@@ -107,7 +106,7 @@ def common_fb_checks(*, object_mode: bool = False,
 
     if reload_facebuilder:
         hnum = headnum if headnum is not None else settings.current_headnum
-        if not FBLoader.load_model(hnum):
+        if not settings.loader().load_model(hnum):
             msg = 'Cannot load FaceBuilder data'
             _log.error(msg)
             return ActionStatus(False, msg)

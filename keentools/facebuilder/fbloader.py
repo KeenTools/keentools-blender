@@ -44,6 +44,8 @@ from ..utils.bpy_common import (bpy_create_object,
                                 bpy_load_image,
                                 bpy_new_mesh)
 from ..utils.fb_wireframe_image import create_wireframe_image
+from .prechecks import common_fb_checks
+from ..utils.manipulate import switch_to_camera, center_viewports_on_object
 
 
 _log = KTLogger(__name__)
@@ -776,4 +778,38 @@ class FBLoader:
         _log.green(f'{cls.__name__}.stop_viewport start')
         cls.stop_viewport_shaders()
         _log.output(f'{cls.__name__}.stop_viewport end >>>')
+        return ActionStatus(True, 'ok')
+
+    @classmethod
+    def show_pinmode(cls) -> ActionStatus:
+        area = cls.get_work_area()
+        if not area:
+            return ActionStatus(False, 'No working area defined')
+
+        check_status = common_fb_checks(object_mode=True,
+                                        is_calculating=True,
+                                        reload_facebuilder=True,
+                                        stop_another_pinmode=True,
+                                        head_and_camera=True)
+        if not check_status.success:
+            return check_status
+
+        settings = fb_settings()
+        headnum = settings.current_headnum
+        camnum = settings.current_camnum
+        head = settings.get_head(headnum)
+        camera = head.get_camera(camnum)
+
+        center_viewports_on_object(head.headobj)
+        switch_to_camera(area, camera.camobj)
+        camera.show_background_image()
+
+        cls.load_pins_into_viewport(headnum, camnum)
+        cls.update_fb_viewport_shaders(wireframe=True,
+                                       wireframe_colors=True,
+                                       wireframe_image=True,
+                                       camera_pos=True,
+                                       adaptive_opacity=True,
+                                       pins_and_residuals=True,
+                                       tag_redraw=True)
         return ActionStatus(True, 'ok')
