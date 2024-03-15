@@ -21,6 +21,7 @@ from typing import Any
 from ..utils.kt_logging import KTLogger
 from ..addon_config import gt_settings, ProductType, ActionStatus
 from ..tracker.loader import Loader
+from ..utils.ui_redraw import force_ui_redraw
 
 
 _log = KTLogger(__name__)
@@ -48,6 +49,7 @@ class GTLoader(Loader):
         vp.register_handlers(area=area)
         vp.unhide_all_shaders()
         vp.tag_redraw()
+        force_ui_redraw('DOPESHEET_EDITOR')
         _log.output(f'{cls.__name__}.start_viewport end >>>')
         return ActionStatus(True, 'ok')
 

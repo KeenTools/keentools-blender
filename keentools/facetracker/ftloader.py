@@ -25,6 +25,7 @@ from ..tracker.loader import Loader
 from ..tracker.class_loader import KTClassLoader
 from ..facetracker.viewport import FTViewport
 from ..utils.fb_wireframe_image import create_wireframe_image
+from ..utils.ui_redraw import force_ui_redraw
 
 
 _log = KTLogger(__name__)
@@ -82,6 +83,7 @@ class FTLoader(Loader):
         vp.register_handlers(area=area)
         vp.unhide_all_shaders()
         vp.tag_redraw()
+        force_ui_redraw('DOPESHEET_EDITOR')
         _log.output(f'{cls.__name__}.start_viewport end >>>')
         return ActionStatus(True, 'ok')
 

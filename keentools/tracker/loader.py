@@ -217,6 +217,7 @@ class Loader:
 
     @classmethod
     def init_handlers(cls):
+        _log.yellow(f'{cls.__name__}.init_handlers start')
         cls.frame_change_post_handler = frame_change_post_handler_wrapper(
             cls.get_settings, cls)
         cls.depsgraph_update_handler = depsgraph_update_handler_wrapper(
@@ -225,6 +226,7 @@ class Loader:
 
         cls.check_shader_timer = KTStopShaderTimer(cls.get_settings,
                                                    cls.force_stop_shaders)
+        _log.output(f'{cls.__name__}.init_handlers end >>>')
 
     @classmethod
     def force_stop_shaders(cls) -> None:
