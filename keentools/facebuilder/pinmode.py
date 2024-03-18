@@ -103,14 +103,6 @@ def register_fb_undo_handler() -> None:
     _log.output('register_fb_undo_handler end >>>')
 
 
-def _calc_adaptive_opacity(area: Area) -> None:
-    settings = fb_settings()
-    if not settings.use_adaptive_opacity:
-        return
-    settings.calc_adaptive_opacity(area)
-    FBLoader.update_fb_viewport_shaders(wireframe_colors=True)
-
-
 class FB_OT_PinMode(Operator):
     bl_idname = FBConfig.fb_pinmode_idname
     bl_label = buttons[bl_idname].label
@@ -432,10 +424,9 @@ class FB_OT_PinMode(Operator):
 
         self._check_camera_state_changed(get_area_region_3d(area))
         self._check_area_state_changed(area)
-        _log.output('pinmode invoke _calc_adaptive_opacity')
-        _calc_adaptive_opacity(area)
 
-        FBLoader.update_fb_viewport_shaders(wireframe_colors=True,
+        FBLoader.update_fb_viewport_shaders(adaptive_opacity=True,
+                                            wireframe_colors=True,
                                             wireframe_image=True,
                                             camera_pos=True,
                                             load_pins=True,
@@ -564,8 +555,8 @@ class FB_OT_PinMode(Operator):
         area_check = self._check_area_state_changed(FBLoader.get_work_area())
         if region_check or area_check:
             _log.output('CAMERA STATE CHANGED. FORCE TAG REDRAW')
-            _calc_adaptive_opacity(context.area)
-            context.area.tag_redraw()
+            FBLoader.update_fb_viewport_shaders(adaptive_opacity=True,
+                                                tag_redraw=True)
 
         if event.value == 'PRESS' and event.type == 'TAB':
             self._change_wireframe_visibility()
