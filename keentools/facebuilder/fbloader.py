@@ -685,6 +685,7 @@ class FBLoader:
                                    camera_pos: bool = False,
                                    batch_wireframe: bool = False,
                                    tag_redraw: bool = False,
+                                   load_pins: bool = False,
                                    pins_and_residuals: bool = False) -> None:
         _log.yellow('update_fb_viewport_shaders start')
         settings = fb_settings()
@@ -713,6 +714,8 @@ class FBLoader:
                 wf.set_camera_pos(cam.camobj, head.headobj)
         if wireframe:
             cls._update_wireframe(head.headobj, kid)
+        if load_pins:
+            cls.load_pins_into_viewport(hnum, cnum)
         if pins_and_residuals:
             cls._update_points_and_residuals(work_area, head.headobj, kid)
         if batch_wireframe:

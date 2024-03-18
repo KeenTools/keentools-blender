@@ -108,8 +108,7 @@ def _calc_adaptive_opacity(area: Area) -> None:
     if not settings.use_adaptive_opacity:
         return
     settings.calc_adaptive_opacity(area)
-    vp = FBLoader.viewport()
-    vp.update_wireframe_colors()
+    FBLoader.update_fb_viewport_shaders(wireframe_colors=True)
 
 
 class FB_OT_PinMode(Operator):
@@ -163,27 +162,6 @@ class FB_OT_PinMode(Operator):
         if heads_deleted == 0:
             warn = get_operator(Config.kt_warning_idname)
             warn('INVOKE_DEFAULT', msg=ErrorType.SceneDamaged)
-
-    def _init_wireframer_colors_and_batches(self) -> None:
-        settings = fb_settings()
-        head = settings.get_head(settings.current_headnum)
-
-        vp = FBLoader.viewport()
-        vp.update_wireframe_colors()
-        wf = vp.wireframer()
-        fb = FBLoader.get_builder()
-        wf.init_wireframe_image(settings.show_specials)
-
-        keyframe = head.get_keyframe(settings.current_camnum)
-        wf.init_edge_indices()
-
-        wf.set_object_world_matrix(head.headobj.matrix_world)
-        camobj = head.get_camera(settings.current_camnum).camobj
-        wf.set_camera_pos(camobj, head.headobj)
-        geo = fb.applied_args_model_at(keyframe)
-        wf.init_geom_data_from_core(*FBLoader.get_geo_shader_data(geo))
-
-        wf.create_batches()
 
     def _change_wireframe_visibility(self, *, toggle: bool=True,
                                      value: bool=True) -> None:
@@ -305,7 +283,10 @@ class FB_OT_PinMode(Operator):
 
     def execute(self, context: Any) -> Set:  # Testing purpose only
         _log.green('PinMode execute call')
-        self._init_wireframer_colors_and_batches()
+        FBLoader.update_fb_viewport_shaders(wireframe_colors=True,
+                                            wireframe_image=True,
+                                            camera_pos=True,
+                                            wireframe=True)
         return {'FINISHED'}
 
     def invoke(self, context: Any, event: Any) -> Set:
@@ -454,10 +435,11 @@ class FB_OT_PinMode(Operator):
         _log.output('pinmode invoke _calc_adaptive_opacity')
         _calc_adaptive_opacity(area)
 
-        FBLoader.load_pins_into_viewport(settings.current_headnum,
-                                         settings.current_camnum)
-
-        self._init_wireframer_colors_and_batches()
+        FBLoader.update_fb_viewport_shaders(wireframe_colors=True,
+                                            wireframe_image=True,
+                                            camera_pos=True,
+                                            load_pins=True,
+                                            wireframe=True)
         if first_start:
             settings.viewport_state.hide_ui_elements(area)
 
