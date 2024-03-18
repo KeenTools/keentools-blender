@@ -125,15 +125,16 @@ def _create_head() -> Optional[Object]:
 
 
 def _check_hklm_registry_key(reg_path: str) -> bool:
-    from winreg import (ConnectRegistry, HKEY_LOCAL_MACHINE, OpenKeyEx,
-                        QueryValueEx, CloseKey)
     try:
+        from winreg import (ConnectRegistry, HKEY_LOCAL_MACHINE, OpenKeyEx,
+                            QueryValueEx, CloseKey)
+
         hklm = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
         reg_key = OpenKeyEx(hklm, reg_path)
         _log.output(f'_check_hklm_registry_key_unsafe reg_path: {reg_path}')
         CloseKey(reg_key)
     except Exception as err:
-        _log.error(f'_check_hklm_registry_key_unsafe Exception: {str(err)}')
+        _log.error(f'_check_hklm_registry_key_unsafe Exception:\n{str(err)}')
         return False
     return True
 
