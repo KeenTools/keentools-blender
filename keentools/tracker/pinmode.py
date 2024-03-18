@@ -76,9 +76,6 @@ def _playback_message(area: Area, *, product: int) -> None:
 
 class PinMode(Operator):
     _shift_pressed: bool = False
-    _prev_camera_state: Tuple = ()
-    _prev_area_state: Tuple = ()
-
     movepin_operator_idname: str = 'impossible_movepin_operator_name'
 
     @classmethod
