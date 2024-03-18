@@ -143,6 +143,7 @@ class GTConfig:
     gt_texture_panel_idname = _PT + 'texture_panel'
     gt_rendering_panel_idname = _PT + 'rendering_panel'
     gt_smoothing_panel_idname = _PT + 'smoothing_panel'
+    gt_support_panel_idname = _PT + 'support_panel'
 
     # Help ids
     gt_help_inputs_idname = operators + '.help_inputs'

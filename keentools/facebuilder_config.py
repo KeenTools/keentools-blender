@@ -137,6 +137,7 @@ class FBConfig:
     fb_texture_panel_idname = _PT + 'texture_panel'
     fb_blendshapes_panel_idname = _PT + 'blendshapes_panel'
     fb_export_panel_idname = _PT + 'export_panel'
+    fb_support_panel_idname = _PT + 'support_panel'
 
     # Help ids
     fb_help_camera_idname = operators + '.help_camera'

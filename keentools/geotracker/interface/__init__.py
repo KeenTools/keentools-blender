@@ -37,6 +37,7 @@ CLASSES_TO_REGISTER = (GT_PT_GeotrackersPanel,  # UI panels
                        GT_PT_AppearanceSettingsPanel,
                        GT_UL_selected_frame_list,
                        GT_PT_TexturePanel,
+                       GT_PT_SupportPanel,
                        GT_OT_SequenceFilebrowser,  # file dialogs
                        GT_OT_MaskSequenceFilebrowser,
                        GT_OT_ChoosePrecalcFile,

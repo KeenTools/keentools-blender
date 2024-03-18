@@ -26,7 +26,8 @@ from .panels import (FT_PT_FacetrackersPanel,
                      FT_PT_SmoothingPanel,
                      FT_PT_ScenePanel,
                      FT_UL_selected_frame_list,
-                     FT_PT_TexturePanel)
+                     FT_PT_TexturePanel,
+                     FT_PT_SupportPanel)
 from .helps import (FTHELP_OT_InputsHelp,
                     FTHELP_OT_MasksHelp,
                     FTHELP_OT_AnalyzeHelp,
@@ -63,5 +64,6 @@ CLASSES_TO_REGISTER = (FTHELP_OT_InputsHelp,
                        FT_PT_AppearancePanel,
                        FT_UL_selected_frame_list,
                        FT_PT_TexturePanel,
+                       FT_PT_SupportPanel,
                        FT_MT_ClipMenu,
                        FT_MT_ClearAllTrackingMenu)
