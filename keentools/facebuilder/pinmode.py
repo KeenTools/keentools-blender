@@ -115,28 +115,6 @@ class FB_OT_PinMode(Operator):
     pinmode_id: StringProperty(default='')
 
     _shift_pressed: bool = False
-    _prev_camera_state: Tuple[float, Tuple[float, float]] = ()
-    _prev_area_state: Tuple[int, int, int, int] = ()
-
-    @classmethod
-    def _check_camera_state_changed(cls, rv3d: Any) -> bool:
-        if not rv3d:
-            return False
-        camera_state = (rv3d.view_camera_zoom, rv3d.view_camera_offset)
-        if camera_state != cls._prev_camera_state:
-            cls._prev_camera_state = camera_state
-            return True
-        return False
-
-    @classmethod
-    def _check_area_state_changed(cls, area: Area) -> bool:
-        if not area:
-            return False
-        area_state = (area.x, area.y, area.width, area.height)
-        if area_state != cls._prev_area_state:
-            cls._prev_area_state = area_state
-            return True
-        return False
 
     @classmethod
     def _set_shift_pressed(cls, val: bool) -> None:
@@ -422,8 +400,8 @@ class FB_OT_PinMode(Operator):
         update_camera_focal(camera, fb)
         _log.output('after update_camera_focal')
 
-        self._check_camera_state_changed(get_area_region_3d(area))
-        self._check_area_state_changed(area)
+        vp.check_camera_state_changed(get_area_region_3d(area))
+        vp.check_area_state_changed(area)
 
         FBLoader.update_fb_viewport_shaders(adaptive_opacity=True,
                                             wireframe_colors=True,
@@ -551,8 +529,9 @@ class FB_OT_PinMode(Operator):
             facebuilder_keymaps_unregister()
             return {'FINISHED'}
 
-        region_check = self._check_camera_state_changed(context.space_data.region_3d)
-        area_check = self._check_area_state_changed(FBLoader.get_work_area())
+        vp = FBLoader.viewport()
+        region_check = vp.check_camera_state_changed(context.space_data.region_3d)
+        area_check = vp.check_area_state_changed(vp.get_work_area())
         if region_check or area_check:
             _log.output('CAMERA STATE CHANGED. FORCE TAG REDRAW')
             FBLoader.update_fb_viewport_shaders(adaptive_opacity=True,

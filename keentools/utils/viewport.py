@@ -17,14 +17,18 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import cProfile
-from typing import List, Optional, Any, Callable
+from typing import List, Optional, Any, Callable, Tuple
 
 import bpy
 from bpy.types import Area
 
+from ..utils.kt_logging import KTLogger
 from ..preferences.user_preferences import UserPreferences
 from .points import KTScreenPins
 from .coords import get_pixel_relative_size
+
+
+_log = KTLogger(__name__)
 
 
 class KTViewport:
@@ -59,6 +63,8 @@ class KTViewport:
             'pin_sensitivity', UserPreferences.type_float)
         self._pixel_size: float = 0.1  # Auto Calculated
         self._work_area: Optional[Area] = None
+        self._prev_camera_state: Tuple = ()
+        self._prev_area_state: Tuple = ()
 
     def get_work_area(self) -> Optional[Area]:
         return self._work_area
@@ -152,3 +158,23 @@ class KTViewport:
         texter.set_message(texter.get_default_text())
         if unregister:
             texter.unregister_handler()
+
+    def check_camera_state_changed(self, rv3d: Any, reset: bool = False) -> bool:
+        if not rv3d or reset:
+            self._prev_camera_state = ()
+            return False
+        camera_state = (rv3d.view_camera_zoom, *rv3d.view_camera_offset)
+        if camera_state != self._prev_camera_state:
+            self._prev_camera_state = camera_state
+            return True
+        return False
+
+    def check_area_state_changed(self, area: Area, reset: bool = False) -> bool:
+        if not area or reset:
+            self._prev_area_state = ()
+            return False
+        area_state = (area.x, area.y, area.width, area.height)
+        if area_state != self._prev_area_state:
+            self._prev_area_state = area_state
+            return True
+        return False

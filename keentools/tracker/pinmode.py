@@ -95,22 +95,6 @@ class PinMode(Operator):
         vp.wireframer().set_adaptive_opacity(settings.get_adaptive_opacity())
 
     @classmethod
-    def _check_camera_state_changed(cls, rv3d: Any) -> bool:
-        camera_state = (rv3d.view_camera_zoom, *rv3d.view_camera_offset)
-        if camera_state != cls._prev_camera_state:
-            cls._prev_camera_state = camera_state
-            return True
-        return False
-
-    @classmethod
-    def _check_area_state_changed(cls, area: Area) -> bool:
-        area_state = (area.x, area.y, area.width, area.height)
-        if area_state != cls._prev_area_state:
-            cls._prev_area_state = area_state
-            return True
-        return False
-
-    @classmethod
     def _set_shift_pressed(cls, val: bool) -> None:
         cls._shift_pressed = val
 
@@ -528,8 +512,8 @@ class PinMode(Operator):
                                            geomobj_matrix=True,
                                            pins_and_residuals=True)
 
-        if self._check_camera_state_changed(context.space_data.region_3d) \
-                or self._check_area_state_changed(loader.get_work_area()):
+        if vp.check_camera_state_changed(context.space_data.region_3d) \
+                or vp.check_area_state_changed(loader.get_work_area()):
             _log.output('VIEWPORT ZOOM/OFFSET')
 
             self._calc_adaptive_opacity(context.area)
