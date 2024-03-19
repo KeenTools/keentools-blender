@@ -132,6 +132,10 @@ buttons = {
         'Share Feedback',
         'Send feedback. Help us improve'
     ),
+    Config.kt_report_bug_idname: Button(
+        'Report Bug',
+        'Report a Bug'
+    ),
 }
 
 

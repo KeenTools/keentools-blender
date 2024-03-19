@@ -165,10 +165,6 @@ class GT_PT_GeotrackersPanel(View3DPanel):
         settings = gt_settings()
         geotracker_num = settings.current_tracker_num()
 
-        if len(settings.trackers()) > 0:
-            op = layout.operator(Config.kt_share_feedback_idname, icon='WORLD')
-            op.product = ProductType.GEOTRACKER
-
         for i, geotracker in enumerate(settings.trackers()):
 
             row = layout.row(align=True)
@@ -1109,3 +1105,30 @@ class GT_PT_SmoothingPanel(AllVisible):
 
         if not GTConfig.hidden_feature:
             self._tracking_locks(layout, geotracker)
+
+
+class GT_PT_SupportPanel(AllVisible, Panel):
+    bl_idname = GTConfig.gt_support_panel_idname
+    bl_label = 'Support'
+
+    @classmethod
+    def poll(cls, context: Any) -> bool:
+        if not geotracker_enabled():
+            return False
+        if not pkt_is_installed():
+            return False
+        settings = gt_settings()
+        if not settings.current_tracker_num() >= 0:
+            return False
+        return True
+
+    def draw(self, context):
+        layout = self.layout
+
+        col = layout.column(align=True)
+        col.scale_y = Config.btn_scale_y
+        op = col.operator(Config.kt_report_bug_idname, icon='ERROR')
+        op.product = ProductType.GEOTRACKER
+        op = col.operator(Config.kt_share_feedback_idname,
+                          icon='OUTLINER_OB_LIGHT')
+        op.product = ProductType.GEOTRACKER

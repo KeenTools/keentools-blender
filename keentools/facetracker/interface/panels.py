@@ -150,10 +150,6 @@ class FT_PT_FacetrackersPanel(View3DPanel):
         settings = ft_settings()
         facetracker_num = settings.current_tracker_num()
 
-        if len(settings.trackers()) > 0:
-            op = layout.operator(Config.kt_share_feedback_idname, icon='WORLD')
-            op.product = ProductType.FACETRACKER
-
         for i, facetracker in enumerate(settings.trackers()):
 
             row = layout.row(align=True)
@@ -1023,3 +1019,30 @@ class FT_PT_TexturePanel(AllVisible):
 
         if settings.is_calculating('REPROJECT'):
             _draw_calculating_indicator(layout)
+
+
+class FT_PT_SupportPanel(AllVisible, Panel):
+    bl_idname = FTConfig.ft_support_panel_idname
+    bl_label = 'Support'
+
+    @classmethod
+    def poll(cls, context: Any) -> bool:
+        if not facetracker_enabled():
+            return False
+        if not pkt_is_installed():
+            return False
+        settings = ft_settings()
+        if not settings.current_tracker_num() >= 0:
+            return False
+        return True
+
+    def draw(self, context):
+        layout = self.layout
+
+        col = layout.column(align=True)
+        col.scale_y = Config.btn_scale_y
+        op = col.operator(Config.kt_report_bug_idname, icon='ERROR')
+        op.product = ProductType.FACETRACKER
+        op = col.operator(Config.kt_share_feedback_idname,
+                          icon='OUTLINER_OB_LIGHT')
+        op.product = ProductType.FACETRACKER
