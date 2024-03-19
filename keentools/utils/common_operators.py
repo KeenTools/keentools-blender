@@ -137,27 +137,60 @@ class KT_OT_ExitLocalview(Operator):
         return {'FINISHED'}
 
 
+def get_machine_specs() -> str:
+    txt = f'{platform.machine()} {platform.processor()}; {BVersion.gpu_backend}; '
+    gpu_txt = ''
+    try:
+        import gpu
+        gpu_txt = f'{gpu.platform.renderer_get()}'
+    except Exception as err:
+        _log.error(f'get_machine_specs error:\n{str(err)}')
+    return txt + gpu_txt
+
+
+def _fb_feedback_url() -> str:
+    params = {
+        'hl': 'en',
+        'usp': 'pp_url',
+        'entry.783336314': f'{platform.platform()}',
+        'entry.1510351504': f'{get_machine_specs()}',
+        'entry.1095779847': f'{BVersion.version_string}',
+        'entry.1252663858': f'{Config.addon_name} {Config.addon_version}'
+    }
+    url = (f'https://docs.google.com/forms/d/e/'
+           f'1FAIpQLSftXdcCX7YjPPBkvwGihHBXECLVswM4KuNbxOQGR2bOBPtI6w/'
+           f'viewform?{urlencode(params)}')
+    return url
+
+
 def _gt_feedback_url() -> str:
     params = {
         'hl': 'en',
         'usp': 'pp_url',
         'entry.783336314': f'{platform.platform()}',
-        'entry.1510351504': f'{platform.machine()} {platform.processor()}',
+        'entry.1510351504': f'{get_machine_specs()}',
         'entry.1095779847': f'{BVersion.version_string}',
         'entry.1252663858': f'{Config.addon_name} {Config.addon_version}'
     }
-    url = f'https://docs.google.com/forms/d/e/' \
-          f'1FAIpQLSf7Up-IPtqqSVjEy_BicDHE-1p31SynJsUUXHbBiMOpqpJ_2Q/' \
-          f'viewform?{urlencode(params)}'
+    url = (f'https://docs.google.com/forms/d/e/'
+           f'1FAIpQLSf7Up-IPtqqSVjEy_BicDHE-1p31SynJsUUXHbBiMOpqpJ_2Q/'
+           f'viewform?{urlencode(params)}')
     return url
 
 
-def _fb_feedback_url() -> str:
-    return _gt_feedback_url()
-
-
 def _ft_feedback_url() -> str:
-    return _gt_feedback_url()
+    params = {
+        'hl': 'en',
+        'usp': 'pp_url',
+        'entry.783336314': f'{platform.platform()}',
+        'entry.1510351504': f'{get_machine_specs()}',
+        'entry.1095779847': f'{BVersion.version_string}',
+        'entry.1252663858': f'{Config.addon_name} {Config.addon_version}'
+    }
+    url = (f'https://docs.google.com/forms/d/e/'
+           f'1FAIpQLSdfphsWt-dVKBt8Ysq0fLBb9qarZ0QeNKThZjhhbqCmhp9dHw/'
+           f'viewform?{urlencode(params)}')
+    return url
 
 
 class KT_OT_ShareFeedback(Operator):
@@ -187,27 +220,49 @@ class KT_OT_ShareFeedback(Operator):
         return {'FINISHED'}
 
 
+def _fb_report_bug_url() -> str:
+    params = {
+        'hl': 'en',
+        'usp': 'pp_url',
+        'entry.829556545': f'{platform.platform()}',
+        'entry.1380547335': f'{get_machine_specs()}',
+        'entry.1878956515': f'{BVersion.version_string}',
+        'entry.369889899': f'{Config.addon_name} {Config.addon_version}'
+    }
+    url = (f'https://docs.google.com/forms/d/e/'
+           f'1FAIpQLSc8KtSmpnk5P5zCaE64y0fUSYfzOQRrJk3jWfAlO2hyCMPS7g/'
+           f'viewform?{urlencode(params)}')
+    return url
+
+
 def _gt_report_bug_url() -> str:
     params = {
         'hl': 'en',
         'usp': 'pp_url',
-        'entry.783336314': f'{platform.platform()}',
-        'entry.1510351504': f'{platform.machine()} {platform.processor()}',
-        'entry.1095779847': f'{BVersion.version_string}',
-        'entry.1252663858': f'{Config.addon_name} {Config.addon_version}'
+        'entry.829556545': f'{platform.platform()}',
+        'entry.1778135883': f'{get_machine_specs()}',
+        'entry.1878956515': f'{BVersion.version_string}',
+        'entry.369889899': f'{Config.addon_name} {Config.addon_version}'
     }
-    url = f'https://docs.google.com/forms/d/e/' \
-          f'1FAIpQLSf7Up-IPtqqSVjEy_BicDHE-1p31SynJsUUXHbBiMOpqpJ_2Q/' \
-          f'viewform?{urlencode(params)}'
+    url = (f'https://docs.google.com/forms/d/e/'
+           f'1FAIpQLScoRDBhL9prv-vVKiLwyqZduQCEC0VlxtOW3lEmO-d77p8kcQ/'
+           f'viewform?{urlencode(params)}')
     return url
 
 
-def _fb_report_bug_url() -> str:
-    return _gt_report_bug_url()
-
-
 def _ft_report_bug_url() -> str:
-    return _gt_report_bug_url()
+    params = {
+        'hl': 'en',
+        'usp': 'pp_url',
+        'entry.829556545': f'{platform.platform()}',
+        'entry.1075934335': f'{get_machine_specs()}',
+        'entry.1878956515': f'{BVersion.version_string}',
+        'entry.369889899': f'{Config.addon_name} {Config.addon_version}'
+    }
+    url = (f'https://docs.google.com/forms/d/e/'
+           f'1FAIpQLSfVRO7_ptdnHJEk4hgdjPIb_PAP1Qa7luw3ZBDpEslB8TzE9A/'
+           f'viewform?{urlencode(params)}')
+    return url
 
 
 class KT_OT_ReportBug(Operator):
